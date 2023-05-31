@@ -1,0 +1,665 @@
+swagger: '2.0'
+basePath: /
+info:
+  version: '0.1'
+  title: API Gateway Resources
+  description: ''
+schemes:
+- http
+paths:
+  /api/v1/apis/:
+    get:
+      operationId: get_apis
+      description: 查询网关
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/apis/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/access_strategies/sync/:
+    post:
+      operationId: sync_access_strategy
+      description: 同步策略
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/access_strategies/sync/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/permissions/apply/:
+    post:
+      operationId: apply_permissions
+      description: 申请网关API访问权限
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/permissions/apply/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/permissions/grant/:
+    post:
+      operationId: grant_permissions
+      description: 网关为应用主动授权
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/permissions/grant/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/permissions/revoke/:
+    delete:
+      operationId: revoke_permissions
+      description: 回收应用访问网关 API 的权限
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: delete
+          path: /backend/api/v1/apis/{api_name}/permissions/revoke/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/public_key/:
+    get:
+      operationId: get_apigw_public_key
+      description: 获取网关公钥
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/apis/{api_name}/public_key/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/related-apps/:
+    post:
+      operationId: add_related_apps
+      description: 添加网关关联应用
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/related-apps/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/released/stages/{stage_name}/resources/:
+    get:
+      operationId: get_released_resources
+      description: 查询已发布资源列表
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/apis/{api_name}/released/stages/{stage_name}/resources/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/resource-docs/import/by-archive/:
+    post:
+      operationId: import_resource_docs_by_archive
+      description: 通过文档归档文件导入资源文档
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/resource-docs/import/by-archive/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/resource-docs/import/by-swagger/:
+    post:
+      operationId: import_resource_docs_by_swagger
+      description: 通过 Swagger 格式导入文档
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/resource-docs/import/by-swagger/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/resources/sync/:
+    post:
+      operationId: sync_resources
+      description: 同步资源
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/resources/sync/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/resource_versions/:
+    get:
+      operationId: list_resource_versions
+      description: 查询资源版本
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/apis/{api_name}/resource_versions/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn: List resource versions
+    post:
+      operationId: create_resource_version
+      description: 创建资源版本
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/resource_versions/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/resource_versions/latest/:
+    get:
+      operationId: get_latest_resource_version
+      description: 获取网关最新版本
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/apis/{api_name}/resource_versions/latest/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/resource_versions/release/:
+    post:
+      operationId: release
+      description: 发布版本
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/resource_versions/release/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/sdk/:
+    post:
+      operationId: generate_sdk
+      description: 生成 SDK
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/sdk/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/stages/:
+    get:
+      operationId: get_stages
+      description: 查询环境
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/apis/{api_name}/stages/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/stages/sync/:
+    post:
+      operationId: sync_stage
+      description: 同步环境
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/stages/sync/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/stages/with-resource-version/:
+    get:
+      operationId: get_stages_with_resource_version
+      description: 查询网关环境资源版本
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/apis/{api_name}/stages/with-resource-version/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn: get stages with resource version
+  /api/v1/apis/{api_name}/status/:
+    post:
+      operationId: update_gateway_status
+      description: 修改网关状态
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/status/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/apis/{api_name}/sync/:
+    post:
+      operationId: sync_api
+      description: 同步网关
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: post
+          path: /backend/api/v1/apis/{api_name}/sync/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/edge-controller/micro-gateway/{instance_id}/gateway/:
+    get:
+      operationId: get_micro_gateway_info
+      description: 获取微网关信息
+      tags:
+      - edge-controller
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/edge-controller/micro-gateway/{instance_id}/gateway/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/edge-controller/micro-gateway/{instance_id}/permissions/:
+    get:
+      operationId: get_micro_gateway_app_permissions
+      description: 获取微网关应用权限
+      tags:
+      - edge-controller
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/edge-controller/micro-gateway/{instance_id}/permissions/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/edge-controller/micro-gateway/{instance_id}/permissions/gateway/newest/:
+    get:
+      operationId: get_micro_gateway_newest_gateway_permissions
+      description: 获取微网关新添加的网关权限
+      tags:
+      - edge-controller
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/edge-controller/micro-gateway/{instance_id}/permissions/gateway/newest/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/edge-controller/micro-gateway/{instance_id}/permissions/resource/newest/:
+    get:
+      operationId: get_micro_gateway_newest_resource_permissions
+      description: 获取微网关新添加的网关权限
+      tags:
+      - edge-controller
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: get
+          path: /backend/api/v1/edge-controller/micro-gateway/{instance_id}/permissions/resource/newest/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:
+  /api/v1/edge-controller/micro-gateway/{instance_id}/status/:
+    put:
+      operationId: update_micro_gateway_status
+      description: 更新微网关实例状态
+      tags:
+      - edge-controller
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: put
+          path: /backend/api/v1/edge-controller/micro-gateway/{instance_id}/status/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        disabledStages: []
+        descriptionEn:

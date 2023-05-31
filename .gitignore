@@ -1,0 +1,9 @@
+build.yml
+.DS_Store
+.pre_commit_hooks
+.coverage
+.codecc
+.idea
+.vscode
+
+.envrc

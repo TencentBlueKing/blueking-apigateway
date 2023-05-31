@@ -1,0 +1,19 @@
+{% if context.resources is not none %}
+{%- for key, resource in context.resources.items() -%}
+{%- set raw_resource = context.raw_resources[key] -%}
+
+apiVersion: {{ $.Values.apiVersion }}
+kind: {$ raw_resource.kind $}
+metadata:
+  name: {$ raw_resource.key $}
+  labels: {{ include "bk-gateway-release.labels" . | nindent 4 }}
+  {%- for label, value in raw_resource.metadata.labels.items() %}
+    {$ label $}: {$ value $}
+  {%- endfor %}
+
+spec:
+  {$ resource | to_spec_yaml(indent_level=2) $}
+---
+
+{% endfor -%}
+{% endif %}

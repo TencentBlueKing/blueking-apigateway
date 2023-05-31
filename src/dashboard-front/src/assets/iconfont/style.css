@@ -1,0 +1,250 @@
+@font-face {
+	font-family: "apigateway";
+	src: url("fonts/iconcool.svg#iconcool") format("svg"),
+url("fonts/iconcool.ttf") format("truetype"),
+url("fonts/iconcool.woff") format("woff"),
+url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+.apigateway-icon {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'apigateway' !important;
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  text-align: center;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-ag-document:before {
+	content: "\e10a";
+}
+.icon-ag-jump:before {
+	content: "\e109";
+}
+.icon-ag-lock:before {
+	content: "\e10b";
+}
+.icon-ag-minus-circle:before {
+	content: "\e10f";
+}
+.icon-ag-plus-circle:before {
+	content: "\e110";
+}
+.icon-ag-copy-fill:before {
+	content: "\e118";
+}
+.icon-ag-help:before {
+	content: "\e106";
+}
+.icon-ag-help-document-fill:before {
+	content: "\e14b";
+}
+.icon-ag-help-document:before {
+	content: "\e146";
+}
+.icon-ag-history:before {
+	content: "\e13e";
+}
+.icon-ag-down:before {
+	content: "\e114";
+}
+.icon-ag-download:before {
+	content: "\e14d";
+}
+.icon-ag-message-fill:before {
+	content: "\e14a";
+}
+.icon-ag-email-fill:before {
+	content: "\e11c";
+}
+.icon-ag-info:before {
+	content: "\e107";
+}
+.icon-ag-info-fill:before {
+	content: "\e108";
+}
+.icon-ag-menu:before {
+	content: "\e155";
+}
+.icon-ag-return-small:before {
+	content: "\e104";
+}
+.icon-ag-add-small:before {
+	content: "\e113";
+}
+.icon-ag-down-small:before {
+	content: "\e115";
+}
+.icon-ag-arrows-up:before {
+	content: "\e117";
+}
+.icon-ag-arrows-down:before {
+	content: "\e116";
+}
+.icon-ag-my-perm:before {
+	content: "\e149";
+}
+.icon-ag-increase:before {
+	content: "\e111";
+}
+.icon-ag-reduce1:before {
+	content: "\e112";
+}
+.icon-ag-check-1:before {
+	content: "\e147";
+}
+.icon-ag-check-circle-shape:before {
+	content: "\e105";
+}
+.icon-ag-circle-shape:before {
+	content: "\e103";
+}
+.icon-ag-down-shape:before {
+	content: "\e102";
+}
+.icon-ag-minus-circle-shape:before {
+	content: "\e10c";
+}
+.icon-ag-plus-circle-shape:before {
+	content: "\e10e";
+}
+.icon-ag-plus-square-shape:before {
+	content: "\e10d";
+}
+.icon-ag-up-shape:before {
+	content: "\e101";
+}
+.icon-ag-weixin-shape:before {
+	content: "\e11d";
+}
+.icon-ag-clipboard:before {
+	content: "\e11b";
+}
+.icon-ag-minus:before {
+	content: "\e11a";
+}
+.icon-ag-plus:before {
+	content: "\e119";
+}
+.icon-ag-qiye-weixin:before {
+	content: "\e11e";
+}
+.icon-ag-panel-permission:before {
+	content: "\e11f";
+}
+.icon-ag-cog:before {
+	content: "\e120";
+}
+.icon-ag-order:before {
+	content: "\e121";
+}
+.icon-ag-log-collection:before {
+	content: "\e122";
+}
+.icon-ag-apply:before {
+	content: "\e123";
+}
+.icon-ag-bar-chart:before {
+	content: "\e125";
+}
+.icon-ag-apps:before {
+	content: "\e124";
+}
+.icon-ag-qq-color:before {
+	content: "\e12e";
+}
+.icon-ag-qw:before {
+	content: "\e12f";
+}
+.icon-ag-wechat-color:before {
+	content: "\e130";
+}
+.icon-ag-email-color:before {
+	content: "\e131";
+}
+.icon-ag-bukeyulan:before {
+	content: "\e143";
+}
+.icon-ag-debug:before {
+	content: "\e132";
+}
+.icon-ag-audit:before {
+	content: "\e133";
+}
+.icon-ag-cc-history:before {
+	content: "\e145";
+}
+.icon-ag-monitor-fill:before {
+	content: "\e135";
+}
+.icon-ag-monitor:before {
+	content: "\e134";
+}
+.icon-ag-copy:before {
+	content: "\e14c";
+}
+.icon-ag-yishanchu:before {
+	content: "\e136";
+}
+.icon-ag-exchange-line:before {
+	content: "\e137";
+}
+.icon-ag-icon0:before {
+	content: "\e14e";
+}
+.icon-ag-icon3:before {
+	content: "\e14f";
+}
+.icon-ag-icon2:before {
+	content: "\e150";
+}
+.icon-ag-icon1:before {
+	content: "\e151";
+}
+.icon-ag-download-line:before {
+	content: "\e152";
+}
+.icon-ag-fenzu-copy:before {
+	content: "\e153";
+}
+.icon-ag-zan:before {
+	content: "\e154";
+}
+.icon-ag-copy-info:before {
+	content: "\e138";
+}
+.icon-ag-runtime:before {
+	content: "\e139";
+}
+.icon-ag-system-mgr:before {
+	content: "\e13b";
+}
+.icon-ag-doc-mgr:before {
+	content: "\e13a";
+}
+.icon-ag-components:before {
+	content: "\e13c";
+}
+.icon-ag-component-intro:before {
+	content: "\e13d";
+}
+.icon-ag-insights:before {
+	content: "\e144";
+}
+.icon-ag-miniapi:before {
+	content: "\e141";
+}
+.icon-ag-permission:before {
+	content: "\e142";
+}
+.icon-ag-zonghe:before {
+	content: "\e148";
+}

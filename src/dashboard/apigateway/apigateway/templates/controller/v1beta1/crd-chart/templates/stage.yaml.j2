@@ -1,0 +1,14 @@
+{% if context.stage is not none %}
+{%- set raw_stage = context.raw_stage -%}
+apiVersion: {{ $.Values.apiVersion }}
+kind: {$ raw_stage.kind $}
+metadata:
+  name: {$ raw_stage.key $}
+  labels: {{ include "bk-gateway-release.labels" . | nindent 4 }}
+  {%- for label, value in raw_stage.metadata.labels.items() %}
+    {$ label $}: {$ value $}
+  {%- endfor %}
+
+spec: {$ context.stage | to_spec_yaml(indent_level=1) $}
+---
+{% endif %}

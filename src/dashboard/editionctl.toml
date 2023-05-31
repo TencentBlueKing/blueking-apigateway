@@ -1,0 +1,11 @@
+project_root = 'apigateway/apigateway'
+editions_root = 'apigateway/apigateway/editions'
+linker_type = 'symbol-link'
+
+[[editions]]
+name = "TE"
+rel_directory = 'te'
+
+[[editions]]
+name = "EE"
+rel_directory = 'ee'

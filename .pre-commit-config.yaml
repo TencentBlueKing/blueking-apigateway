@@ -1,0 +1,66 @@
+fail_fast: true
+repos:
+  - repo: local
+    hooks:
+      - id: isort
+        name: isort
+        language: python
+        types: [python]
+        entry: isort --settings-path=src/dashboard/pyproject.toml
+        files: src/dashboard/
+      - id: black
+        name: black
+        language: python
+        types: [python]
+        entry: black --config=src/dashboard/pyproject.toml
+        files: src/dashboard/
+      - id: ruff
+        name: ruff
+        language: python
+        types: [python]
+        entry: ruff --config=src/dashboard/pyproject.toml --force-exclude --fix
+        files: src/dashboard/
+      - id: mypy
+        name: mypy
+        language: python
+        types: [python]
+        entry: mypy --config=src/dashboard/pyproject.toml
+        files: src/dashboard/
+  - repo: local
+    hooks:
+      - id: isort
+        name: isort
+        language: python
+        types: [python]
+        entry: isort --settings-path=src/esb/pyproject.toml
+        files: src/esb/
+      - id: black
+        name: black
+        language: python
+        types: [python]
+        entry: black --config=src/esb/pyproject.toml
+        files: src/esb/
+      - id: ruff
+        name: ruff
+        language: python
+        types: [python]
+        entry: ruff --config=src/esb/pyproject.toml --force-exclude --fix
+        files: src/esb/
+      - id: mypy
+        name: mypy
+        language: python
+        types: [python]
+        entry: mypy --config=src/esb/pyproject.toml
+        files: src/esb/
+  - repo: local
+    hooks:
+      - id: Name check
+        name: Check sensitive info
+        verbose: true
+        language: script
+        entry: .pre_commit_hooks/rtx.sh
+      - id: IP check
+        name: Check sensitive info
+        verbose: true
+        language: script
+        entry: .pre_commit_hooks/ip.sh

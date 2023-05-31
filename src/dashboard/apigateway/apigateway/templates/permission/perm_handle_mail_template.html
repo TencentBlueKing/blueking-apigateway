@@ -1,0 +1,105 @@
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<table class="template-table" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size: 14px; min-width: auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt; background-color: #fff; background: #fff;">
+    <tbody>
+        <tr>
+            <td align="center" valign="top" width="100%" style="padding: 16px;">
+                <table class="template-table" border="0" cellpadding="0" cellspacing="0" width="1056" style="font-size: 14px; min-width: auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+                    <tbody>
+                        <tr>
+                            <td valign="top" align="center">
+                                <table cellpadding="0" cellspacing="0" border="0" bgcolor="#f9f8f6" class="layout layout-table root-table" width="100%" style="font-size: 14px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+                                    <tbody>
+                                        <tr style="height: 64px; background: #555;">
+                                            <td style="padding-left: 30px;">
+                                                <img src="cid:api_gateway.png" width="176" style="display: block">
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td valign="top" align="center" style="padding: 24px;" bgcolor="#f9f8f6">
+                                <table cellpadding="0" cellspacing="0" width="100%" style="font-size: 14px; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border: 1px solid #e6e6e6;">
+                                    <tr>
+                                        <td class="email-title" style="padding: 20px 36px; line-height: 1.5; border-bottom: 1px solid #e6e6e6; background: #fff; font-size: 22px;">{{ title }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="email-content" style="padding: 0 36px; background: #fff;">
+                                            <table cellpadding="0" cellspacing="0" width="100%" style="font-size: 14px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+                                                <tr>
+                                                    <td class="email-source" style="padding: 14px 0; color: #bebebe;">来自蓝鲸API网关</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding-top: 36px; padding-bottom: 14px; color: #707070;">以下是你申请访问网关资源权限的审批结果</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <table cellpadding="0" cellspacing="0" width="100%" style="font-size: 14px; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border: 1px solid #e6e6e6; border-collapse: collapse;">
+                                                            <thead style="background: #f6f8f8;">
+                                                                <tr style="color: #333C48;">
+                                                                    <th width="15%" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">蓝鲸应用</th>
+                                                                    <th width="15%" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">网关名称</th>
+                                                                    <th width="10%" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">授权维度</th>
+                                                                    <th width="30%" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">资源列表</th>
+                                                                    <th width="10%" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">有效时间</th>
+                                                                    <th width="10%" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">审批结果</th>
+                                                                    <th width="10%" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">审批意见</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody style="color: #707070;">
+
+                                                                <tr>
+                                                                    <td rowspan="2" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">{{ bk_app_code }}</td>
+                                                                    <td rowspan="2" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">{{ api_name }}</td>
+                                                                    <td rowspan="2" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">{{ grant_dimension_display }}</td>
+                                                                    <td rowspan="1" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">
+                                                                        <ul>
+                                                                            {% for name in part1_permission.resource_names %}
+                                                                             <li>{{ name }}</li>
+                                                                            {% endfor %}
+                                                                        </ul>
+                                                                    </td>
+                                                                    <td rowspan="1" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">{{ part1_permission.expire_days_display }}</td>
+                                                                    <td rowspan="1" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">{{ part1_permission.apply_status }}</td>
+                                                                    <td rowspan="2" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">{{ comment }}</td>
+                                                                </tr>
+                                                                {% if part2_permission.resource_names %}
+                                                                <tr>
+                                                                    <td rowspan="1" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">
+                                                                        <ul>
+                                                                            {% for name in part2_permission.resource_names %}
+                                                                             <li>{{ name }}</li>
+                                                                            {% endfor %}
+                                                                        </ul>
+                                                                    </td>
+                                                                    <td rowspan="1" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">{{ part2_permission.expire_days_display }}</td>
+                                                                    <td rowspan="1" style=" padding: 16px; border: 1px solid #e6e6e6;text-align: left; font-weight: normal;">{{ part2_permission.apply_status }}</td>
+                                                                </tr>
+                                                                {% endif %}
+
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+
+                                                <tr class="info-remark">
+                                                    <td style="padding: 20px 0; text-align: right; line-height: 24px; color: #707070;">
+                                                        <div>{% now "Y-m-d H:i:s" %}</div>
+                                                    </td>
+                                                </tr>
+
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr class="email-footer">
+                                        <td style=" padding: 20px 0 20px 36px; border-top: 1px solid #e6e6e6; background: #fff; color: #c7c7c7;">你收到此邮件，是因为你是蓝鲸API网关资源访问权限的申请人</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+</table>

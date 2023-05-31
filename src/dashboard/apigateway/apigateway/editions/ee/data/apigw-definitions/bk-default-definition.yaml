@@ -1,0 +1,19 @@
+release:
+  comment: "default"
+
+apigateway:
+  description: 默认微网关，官方内置网关，请勿修改
+  description_en: Default micro gateway, official built-in gateway, do not modify
+  is_public: false
+  api_type: 1
+  maintainers: []
+
+stage:
+  name: "{{ environ.DEFAULT_MICRO_GATEWAY_STAGE_NAME }}"
+  vars: {}
+  proxy_http:
+    timeout: 60
+    upstreams:
+      loadbalance: roundrobin
+      hosts:
+        - host: http://0.0.0.1

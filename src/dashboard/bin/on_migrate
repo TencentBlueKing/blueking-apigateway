@@ -1,0 +1,42 @@
+#!/bin/bash
+set -ex
+
+envfile="${BK_HOME}/etc/bk_apigateway/bk_apigateway.env"
+
+if [ -f "${envfile}" ]; then
+    set -a
+    source "${envfile}"
+    set +a
+fi
+
+# 数据库
+python manage.py migrate
+python manage.py migrate bkcore --database bkcore
+python manage.py loaddata -i apigateway/fixtures/*.yaml
+
+# dashboard 相关
+python manage.py sync_schema
+python manage.py sync_managers_to_user
+# 早期版本 hosting-type 设置为 0，需更新这些版本网关数据
+python manage.py update_gateway_hosting_type --all --hosting-type=1
+python manage.py migrate_plugin_models
+
+# 微网关初始化
+python manage.py sync_api --name "${DEFAULT_MICRO_GATEWAY_API_NAME}" --hosting-type 1
+python manage.py add_stage --api "${DEFAULT_MICRO_GATEWAY_API_NAME}" --name "${DEFAULT_MICRO_GATEWAY_STAGE_NAME}"
+python manage.py add_related_app --api-name "${DEFAULT_MICRO_GATEWAY_API_NAME}" --app-code "${BK_APP_CODE}"
+python manage.py sync_default_micro_gateway \
+--api "${DEFAULT_MICRO_GATEWAY_API_NAME}" \
+--stage "${DEFAULT_MICRO_GATEWAY_STAGE_NAME}" \
+--name "${DEFAULT_MICRO_GATEWAY_NAME}" \
+--secret "${DEFAULT_MICRO_GATEWAY_SECRET}" \
+--http-url "${DEFAULT_MICRO_GATEWAY_HTTP_URL}"
+
+# ESB 相关
+python manage.py create_esb_jwt_key
+python manage.py sync_legacy_esb_reusable_data
+python manage.py create_esb_gateway
+python manage.py sync_esb_jwt_key_to_gateway
+python manage.py update_esb_user_verified_unrequired_apps
+python manage.py sync_esb_verified_user_exempted_apps_to_gateway
+python manage.py add_plugin_error_status_code_200

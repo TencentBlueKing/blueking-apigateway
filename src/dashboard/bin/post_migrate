@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# sync apigateway and release new resource-version
+set -e
+
+envfile="${BK_HOME}/etc/bk_apigateway/bk_apigateway.env"
+
+if [ -f "${envfile}" ]; then
+    set -a
+    source "${envfile}"
+    set +a
+fi
+
+DASHBOARD_INNER_URL=${DASHBOARD_INNER_URL:-"http://apigw-dashboard.service.consul:6000"}
+APIGW_DEFINITIONS_DIR="./apigateway/data/apigw-definitions"
+
+sync_bk_apigateway() {
+    # sync gateway bk-apigateway
+    echo "API gateway bk-apigateway sync definition start ..."
+    python manage.py sync_apigw_config --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
+    python manage.py sync_apigw_stage --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
+    python manage.py sync_apigw_resources --delete --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-resources.yaml"
+    python manage.py fetch_apigw_public_key --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend
+    python manage.py create_version_and_release_apigw --generate-sdks --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
+    echo "API gateway bk-apigateway sync definition end"
+}
+
+sync_bk_apigateway_inner() {
+    # sync gateway bk-apigateway-inner
+    echo "API gateway bk-apigateway-inner sync definition start ..."
+    python manage.py sync_apigw_config --api-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-inner-definition.yaml"
+    python manage.py sync_apigw_stage --api-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-inner-definition.yaml"
+    python manage.py sync_apigw_resources --delete --api-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-inner-resources.yaml"
+    python manage.py grant_apigw_permissions --api-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-inner-definition.yaml"
+    python manage.py fetch_apigw_public_key --api-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend
+    python manage.py create_version_and_release_apigw --api-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-inner-definition.yaml"
+    echo "API gateway bk-apigateway-inner sync definition end"
+}
+
+sync_bk_esb() {
+    # sync gateway bk-esb
+    echo "API gateway bk-esb sync definition start ..."
+    python manage.py sync_apigw_config --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
+    python manage.py sync_apigw_stage --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
+    python manage.py update_esb_gateway_config
+    python manage.py sync_to_gateway_and_release --async
+    python manage.py grant_apigw_permissions --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
+    python manage.py fetch_apigw_public_key --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend
+    echo "API gateway bk-esb sync definition end"
+}
+
+sync_bk_esb_buffet() {
+    # sync gateway bk-esb-buffet
+    echo "API gateway bk-esb-buffet sync definition start ..."
+    python manage.py sync_apigw_config --api-name=bk-esb-buffet --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-buffet-definition.yaml"
+    echo "API gateway bk-esb-buffet sync definition end ..."
+}
+
+sync_bk_default() {
+    # sync gateway bk-default
+    echo "API gateway ${DEFAULT_MICRO_GATEWAY_API_NAME} sync definition start ..."
+    python manage.py sync_apigw_config --api-name="${DEFAULT_MICRO_GATEWAY_API_NAME}" --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-default-definition.yaml"
+    python manage.py sync_apigw_stage --api-name="${DEFAULT_MICRO_GATEWAY_API_NAME}" --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-default-definition.yaml"
+    python manage.py sync_apigw_resources --delete --api-name="${DEFAULT_MICRO_GATEWAY_API_NAME}" --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-default-resources.yaml"
+    python manage.py create_version_and_release_apigw --api-name="${DEFAULT_MICRO_GATEWAY_API_NAME}" --stage=default --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-default-definition.yaml"
+    echo "API gateway ${DEFAULT_MICRO_GATEWAY_API_NAME} sync definition end"
+}
+
+# 同步内置网关
+# 默认共享网关实例挂在 bk-default 这个网关中，所以 sync_bk_default 必须在第一位
+sync_bk_default
+sync_bk_apigateway
+sync_bk_esb
+sync_bk_esb_buffet
+sync_bk_apigateway_inner

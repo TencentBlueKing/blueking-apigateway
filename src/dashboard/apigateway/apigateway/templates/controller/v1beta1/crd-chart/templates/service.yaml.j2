@@ -1,0 +1,18 @@
+{% if context.services is not none %}
+{%- for key, service in context.services.items() -%}
+{%- set raw_service = context.raw_services[key] -%}
+
+apiVersion: {{ $.Values.apiVersion }}
+kind: {$ raw_service.kind $}
+metadata:
+  name: {$ raw_service.key $}
+  labels: {{ include "bk-gateway-release.labels" . | nindent 4 }}
+  {%- for label, value in raw_service.metadata.labels.items() %}
+    {$ label $}: {$ value $}
+  {%- endfor %}
+
+spec: {$ service | to_spec_yaml(indent_level=1) $}
+---
+
+{% endfor -%}
+{% endif %}

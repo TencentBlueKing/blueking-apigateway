@@ -1,0 +1,18 @@
+{% if context.plugin_metadata is not none %}
+{%- for key, metadata in context.plugin_metadata.items() -%}
+{%- set raw_plugin_metadata = context.raw_plugin_metadata[key] -%}
+
+apiVersion: {{ $.Values.apiVersion }}
+kind: {$ raw_plugin_metadata.kind $}
+metadata:
+  name: {$ raw_plugin_metadata.key $}
+  labels: {{ include "bk-gateway-release.labels" . | nindent 4 }}
+  {%- for label, value in raw_plugin_metadata.metadata.labels.items() %}
+    {$ label $}: {$ value $}
+  {%- endfor %}
+
+spec: {$ metadata | to_spec_yaml(indent_level=1) $}
+---
+
+{% endfor -%}
+{% endif %}

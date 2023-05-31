@@ -1,0 +1,52 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+.skd-wrapper {
+    width: 1200px;
+    margin: 20px auto;
+}
+
+.column-key {
+    font-size: 14px;
+    color: #63656E;
+    line-height: 22px;
+}
+
+.column-value {
+    font-size: 14px;
+    color: #313238;
+    line-height: 22px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 90%;
+    display: inline-block;
+}
+
+.ag-doc-icon {
+    font-size: 16px;
+    color: #979BA5;
+    cursor: pointer;
+    margin-right: 5px;
+
+    &:hover {
+        color: #3A84FF;
+    }
+}
+.skd-wrapper /deep/ .bk-tab-section {
+    padding: 20px !important;
+}

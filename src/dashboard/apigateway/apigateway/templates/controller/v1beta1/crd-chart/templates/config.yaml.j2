@@ -1,0 +1,13 @@
+{% if context.config is not none %}
+{%- set raw_config = context.raw_config -%}
+apiVersion: {{ $.Values.apiVersion }}
+kind: {$ raw_config.kind $}
+metadata:
+  name: {$ raw_config.key $}
+  labels: {{ include "bk-gateway-release.labels" . | nindent 4 }}
+  {%- for label, value in raw_config.metadata.labels.items() %}
+    {$ label $}: {$ value $}
+  {%- endfor %}
+
+spec: {$ context.config | to_spec_yaml(indent_level=1) $}
+{% endif %}

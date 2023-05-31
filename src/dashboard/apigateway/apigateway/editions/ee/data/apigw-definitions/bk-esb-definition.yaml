@@ -1,0 +1,22 @@
+release:
+  comment: "蓝鲸 ESB 编码组件数据同步"
+
+apigateway:
+  description: "蓝鲸 ESB 编码组件"
+  description_en: "BlueKing ESB component"
+  is_public: true
+  maintainers:
+    - "admin"
+
+stage:
+  name: "prod"
+  vars: {}
+  proxy_http:
+    timeout: 600
+    upstreams:
+      loadbalance: "roundrobin"
+      hosts:
+        - host: "{{ environ.BK_COMPONENT_API_INNER_URL }}"
+
+grant_permissions:
+  - bk_app_code: bk_apigateway

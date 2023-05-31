@@ -1,0 +1,1226 @@
+- model: schema.schema
+  fields:
+    created_time: 2023-02-02 14:54:21.010753+00:00
+    updated_time: 2023-02-02 14:54:21.010788+00:00
+    name: bk-cors
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "properties": {
+          "allow_origins": {
+            "description": "you can use '*' to allow all origins when no credentials, '**' to allow forcefully(it will bring some security risks, be carefully), multiple origin use ',' to split. default: *.",
+            "type": "string",
+            "pattern": "^(\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
+            "default": "*"
+          },
+          "allow_methods": {
+            "description": "you can use '*' to allow all methods when no credentials, '**' to allow forcefully(it will bring some security risks, be carefully), multiple method use ',' to split. default: *.",
+            "type": "string",
+            "default": "*"
+          },
+          "allow_headers": {
+            "description": "you can use '*' to allow all header when no credentials, '**' to allow forcefully(it will bring some security risks, be carefully), multiple header use ',' to split. default: *.",
+            "type": "string",
+            "default": "*"
+          },
+          "expose_headers": {
+            "description": "you can use '*' to expose all header when no credentials, '**' to allow forcefully(it will bring some security risks, be carefully), multiple header use ',' to split. default: *.",
+            "type": "string",
+            "default": "*"
+          },
+          "max_age": {
+            "description": "maximum number of seconds the results can be cached. -1 means no cached, the max value is depend on browser, more details plz check MDN. default: 5.",
+            "type": "integer",
+            "default": 5
+          },
+          "allow_credential": {
+            "description": "allow client append credential. according to CORS specification, if you set this option to 'true', you can not use '*' for other options.",
+            "type": "boolean",
+            "default": false
+          },
+          "allow_origins_by_regex": {
+            "type": "array",
+            "description": "you can use regex to allow specific origins when no credentials, for example use [.*\\.test.com] to allow a.test.com and b.test.com",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "allow_origins_by_metadata": {
+            "type": "array",
+            "description": "set allowed origins by referencing origins in plugin metadata",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "_meta": {
+            "type": "object",
+            "properties": {
+              "priority": {
+                "description": "priority of plugins by customized order",
+                "type": "integer"
+              },
+              "disable": {
+                "type": "boolean"
+              },
+              "error_response": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object"
+                  }
+                ]
+              },
+              "filter": {
+                "description": "filter determines whether the plugin needs to be executed at runtime",
+                "type": "array"
+              }
+            }
+          }
+        }
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-cors
+    name: 跨域资源共享（CORS）
+    name_en: Cross-Origin Resource Sharing (CORS)
+    is_public: true
+    schema:
+    - bk-cors
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - bk-cors
+    notes: cors 插件可以让你轻松地为服务端启用 CORS（Cross-Origin Resource Sharing，跨域资源共享）的返回头。
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "required": [
+            "allow_origins",
+            "allow_methods",
+            "allow_headers",
+            "max_age"
+          ],
+          "properties": {
+            "allow_origins": {
+              "description": "允许跨域访问的 Origin，格式为 scheme://host:port，示例如 https://somedomain.com:8081。如果你有多个 Origin，请使用 , 分隔。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Origin 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Origin 均通过，但请注意这样存在安全隐患。",
+              "type": "string",
+              "pattern": "^(\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
+              "default": "*",
+              "ui:rules": [
+                "required"
+              ]
+            },
+            "allow_methods": {
+              "description": "允许跨域访问的 Method，比如：GET，POST 等。如果你有多个 Method，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Method 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Method 都通过，但请注意这样存在安全隐患。",
+              "type": "string",
+              "default": "*",
+              "ui:rules": [
+                "required"
+              ]
+            },
+            "allow_headers": {
+              "description": "允许跨域访问时请求方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Header 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Header 都通过，但请注意这样存在安全隐患。",
+              "type": "string",
+              "default": "*",
+              "ui:rules": [
+                "required"
+              ]
+            },
+            "expose_headers": {
+              "description": "允许跨域访问时响应方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许任意 Header 。你也可以在启用了 allow_credential 后使用 ** 强制允许任意 Header，但请注意这样存在安全隐患。",
+              "type": "string",
+              "default": "*"
+            },
+            "max_age": {
+              "description": "浏览器缓存 CORS 结果的最大时间，单位为秒。在这个时间范围内，浏览器会复用上一次的检查结果，-1 表示不缓存。请注意各个浏览器允许的最大时间不同。",
+              "type": "integer",
+              "default": 86400,
+              "ui:rules": [
+                "required"
+              ],
+              "ui:component": {
+                "name": "bfInput",
+                "props": {
+                  "min": -1,
+                  "unit": "秒"
+                }
+              }
+            },
+            "allow_credential": {
+              "description": "是否允许跨域访问的请求方携带凭据（如 Cookie 等）。根据 CORS 规范，如果设置该选项为 true，那么将不能在其他属性中使用 *。",
+              "type": "boolean",
+              "default": false
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - bk-cors
+    notes: The cors Plugins lets you enable CORS easily.
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "required": [
+            "allow_origins",
+            "allow_methods",
+            "allow_headers",
+            "max_age"
+          ],
+          "properties": {
+            "allow_origins": {
+              "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues.",
+              "type": "string",
+              "pattern": "^(\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
+              "default": "*",
+              "ui:rules": [
+                "required"
+              ]
+            },
+            "allow_methods": {
+              "description": "Request methods to enable CORS on. For example GET, POST. Use , to add multiple methods. If allow_credential is set to false, you can enable CORS for all methods by using *. If allow_credential is set to true, you can forcefully allow CORS on all methods by using ** but it will pose some security issues.",
+              "type": "string",
+              "default": "*",
+              "ui:rules": [
+                "required"
+              ]
+            },
+            "allow_headers": {
+              "description": "Headers in the request allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all request headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all request headers by using ** but it will pose some security issues.",
+              "type": "string",
+              "default": "*",
+              "ui:rules": [
+                "required"
+              ]
+            },
+            "expose_headers": {
+              "description": "Headers in the response allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all response headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all response headers by using ** but it will pose some security issues.",
+              "type": "string",
+              "default": "*"
+            },
+            "max_age": {
+              "description": "Maximum time in seconds the result is cached. If the time is within this limit, the browser will check the cached result. Set to -1 to disable caching. Note that the maximum value is browser dependent.",
+              "type": "integer",
+              "default": 86400,
+              "ui:rules": [
+                "required"
+              ],
+              "ui:component": {
+                "name": "bfInput",
+                "props": {
+                  "min": -1,
+                  "unit": "秒"
+                }
+              }
+            },
+            "allow_credential": {
+              "description": "When set to true, allows requests to include credentials like cookies. According to CORS specification, if you set this to true, you cannot use '*' to allow all for the other attributes.",
+              "type": "boolean",
+              "default": false
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: schema.schema
+  fields:
+    created_time: 2022-11-24 11:59:49.409202+00:00
+    updated_time: 2023-02-01 08:08:33.453910+00:00
+    name: bk-ip-restriction
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "properties": {
+          "whitelist": {
+            "items": {
+              "anyOf": [
+                {
+                  "format": "ipv4",
+                  "type": "string",
+                  "title": "IPv4"
+                },
+                {
+                  "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
+                  "type": "string",
+                  "title": "IPv4/CIDR"
+                },
+                {
+                  "format": "ipv6",
+                  "type": "string",
+                  "title": "IPv6"
+                },
+                {
+                  "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
+                  "type": "string",
+                  "title": "IPv6/CIDR"
+                }
+              ]
+            },
+            "type": "array",
+            "minItems": 1
+          },
+          "message": {
+            "default": "Your IP address is not allowed",
+            "minLength": 1,
+            "type": "string",
+            "maxLength": 1024
+          },
+          "blacklist": {
+            "items": {
+              "anyOf": [
+                {
+                  "format": "ipv4",
+                  "type": "string",
+                  "title": "IPv4"
+                },
+                {
+                  "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
+                  "type": "string",
+                  "title": "IPv4/CIDR"
+                },
+                {
+                  "format": "ipv6",
+                  "type": "string",
+                  "title": "IPv6"
+                },
+                {
+                  "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
+                  "type": "string",
+                  "title": "IPv6/CIDR"
+                }
+              ]
+            },
+            "type": "array",
+            "minItems": 1
+          },
+          "_meta": {
+            "type": "object",
+            "properties": {
+              "error_response": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object"
+                  }
+                ]
+              },
+              "disable": {
+                "type": "boolean"
+              },
+              "priority": {
+                "description": "priority of plugins by customized order",
+                "type": "integer"
+              },
+              "filter": {
+                "description": "filter determines whether the plugin needs to be executed at runtime",
+                "type": "array"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "oneOf": [
+          {
+            "required": [
+              "whitelist"
+            ]
+          },
+          {
+            "required": [
+              "blacklist"
+            ]
+          }
+        ]
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-ip-restriction
+    name: IP 访问保护
+    name_en: IP restriction
+    is_public: true
+    schema:
+    - bk-ip-restriction
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - bk-ip-restriction
+    notes: |-
+      该插件可以通过将 IP 地址列入白名单或黑名单来限制对资源的访问。
+      支持对单个 IP 地址、多个 IP 地址和类似 1.1.1.0/24 的 CIDR（无类别域间路由）范围的限制。
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "oneOf": [
+            {
+              "required": [
+                "whitelist"
+              ],
+              "title": "白名单",
+              "properties": {
+                "whitelist": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "anyOf": [
+                      {
+                        "title": "IPv4",
+                        "format": "ipv4",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv4/CIDR",
+                        "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv6",
+                        "format": "ipv6",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv6/CIDR",
+                        "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
+                        "type": "string"
+                      }
+                    ],
+                    "ui:composition": {
+                      "style": {
+                        "background": "#F5F7FA",
+                        "padding": "20px 30px 20px 0"
+                      }
+                    },
+                    "ui:anyOf": {
+                      "name": "select",
+                      "props": {
+                        "title": "地址类型"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "required": [
+                "blacklist"
+              ],
+              "title": "黑名单",
+              "properties": {
+                "blacklist": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "anyOf": [
+                      {
+                        "title": "IPv4",
+                        "format": "ipv4",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv4/CIDR",
+                        "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv6",
+                        "format": "ipv6",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv6/CIDR",
+                        "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
+                        "type": "string"
+                      }
+                    ],
+                    "ui:composition": {
+                      "style": {
+                        "background": "#F5F7FA",
+                        "padding": "20px 30px 20px 0"
+                      }
+                    },
+                    "ui:anyOf": {
+                      "name": "select",
+                      "props": {
+                        "title": "地址类型"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "ui:oneOf": {
+            "props": {
+              "title": "类型"
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - bk-ip-restriction
+    notes: |-
+      This plugin allows you to restrict access to a Resource by either whitelisting or blacklisting IP addresses.
+      Single IPs, multiple IPs or even IP ranges in CIDR notation like 1.1.1.0/24 can be used.
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "oneOf": [
+            {
+              "required": [
+                "whitelist"
+              ],
+              "title": "White list",
+              "properties": {
+                "whitelist": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "anyOf": [
+                      {
+                        "title": "IPv4",
+                        "format": "ipv4",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv4/CIDR",
+                        "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv6",
+                        "format": "ipv6",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv6/CIDR",
+                        "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
+                        "type": "string"
+                      }
+                    ],
+                    "ui:composition": {
+                      "style": {
+                        "background": "#F5F7FA",
+                        "padding": "20px 30px 20px 0"
+                      }
+                    },
+                    "ui:anyOf": {
+                      "name": "select",
+                      "props": {
+                        "title": "Format"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "required": [
+                "blacklist"
+              ],
+              "title": "Black list",
+              "properties": {
+                "blacklist": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "anyOf": [
+                      {
+                        "title": "IPv4",
+                        "format": "ipv4",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv4/CIDR",
+                        "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv6",
+                        "format": "ipv6",
+                        "type": "string"
+                      },
+                      {
+                        "title": "IPv6/CIDR",
+                        "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
+                        "type": "string"
+                      }
+                    ],
+                    "ui:composition": {
+                      "style": {
+                        "background": "#F5F7FA",
+                        "padding": "20px 30px 20px 0"
+                      }
+                    },
+                    "ui:anyOf": {
+                      "name": "select",
+                      "props": {
+                        "title": "Format"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "ui:oneOf": {
+            "props": {
+              "title": "Type"
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: schema.schema
+  fields:
+    created_time: 2023-04-26 14:54:21.010753+00:00
+    updated_time: 2023-04-26 14:54:21.010753+00:00
+    name: bk-rate-limit
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "properties": {
+          "rates": {
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "period": {
+                    "type": "integer"
+                  },
+                  "tokens": {
+                    "type": "integer"
+                  }
+                }
+              }
+            },
+            "type": "object"
+          },
+          "_meta": {
+            "properties": {
+              "priority": {
+                "description": "priority of plugins by customized order",
+                "type": "integer"
+              },
+              "disable": {
+                "type": "boolean"
+              },
+              "error_response": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object"
+                  }
+                ]
+              },
+              "filter": {
+                "description": "filter determines whether the plugin needs to be executed at runtime",
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object"
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-rate-limit
+    name: 频率控制
+    name_en: Rate Limit
+    is_public: true
+    schema:
+    - bk-rate-limit
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - bk-rate-limit
+    notes: 默认频率限制，表示单个应用的默认频率限制；特殊应用频率限制，对指定应用设置单独的频率限制。频率控制插件，绑定环境时，表示应用对环境下所有资源的总频率限制；绑定资源时，表示应用对单个资源的频率限制
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "title": "频率控制",
+          "type": "object",
+          "properties": {
+            "rates": {
+              "type": "object",
+              "properties": {
+                "default": {
+                  "type": "object",
+                  "title": "默认频率限制",
+                  "ui:group": {
+                    "props": {
+                      "type": "card",
+                      "showTitle": true
+                    },
+                    "style": {
+                      "background": "#F5F7FA",
+                      "padding": "10px 20px 10px 30px"
+                    }
+                  },
+                  "required": [
+                    "tokens",
+                    "period"
+                  ],
+                  "properties": {
+                    "tokens": {
+                      "type": "integer",
+                      "title": "次数",
+                      "default": 100,
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:component": {
+                        "name": "bfInput",
+                        "props": {
+                          "min": 1
+                        }
+                      }
+                    },
+                    "period": {
+                      "type": "integer",
+                      "title": "时间范围",
+                      "default": 1,
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:component": {
+                        "name": "select",
+                        "props": {
+                          "datasource": [
+                            {
+                              "label": "秒",
+                              "value": 1
+                            },
+                            {
+                              "label": "分",
+                              "value": 60
+                            },
+                            {
+                              "label": "时",
+                              "value": 3600
+                            },
+                            {
+                              "label": "天",
+                              "value": 86400
+                            }
+                          ],
+                          "clearable": false
+                        }
+                      }
+                    }
+                  }
+                },
+                "specials": {
+                  "type": "array",
+                  "title": "特殊应用频率限制",
+                  "ui:group": {
+                    "props": {
+                      "type": "card",
+                      "showTitle": true
+                    },
+                    "style": {
+                      "background": "#F5F7FA",
+                      "padding": "10px 20px 20px 20px"
+                    }
+                  },
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "tokens",
+                      "period",
+                      "bk_app_code"
+                    ],
+                    "ui:group": {
+                      "style": {
+                        "background": "#FFF",
+                        "padding": "10px 10px 10px 10px"
+                      }
+                    },
+                    "properties": {
+                      "tokens": {
+                        "type": "integer",
+                        "title": "次数",
+                        "default": 1,
+                        "ui:rules": [
+                          "required"
+                        ],
+                        "ui:component": {
+                          "name": "bfInput",
+                          "props": {
+                            "min": 1
+                          }
+                        }
+                      },
+                      "period": {
+                        "type": "integer",
+                        "title": "时间范围",
+                        "default": 1,
+                        "ui:rules": [
+                          "required"
+                        ],
+                        "ui:component": {
+                          "name": "select",
+                          "props": {
+                            "datasource": [
+                              {
+                                "label": "秒",
+                                "value": 1
+                              },
+                              {
+                                "label": "分",
+                                "value": 60
+                              },
+                              {
+                                "label": "时",
+                                "value": 3600
+                              },
+                              {
+                                "label": "天",
+                                "value": 86400
+                              }
+                            ],
+                            "clearable": false
+                          }
+                        }
+                      },
+                      "bk_app_code": {
+                        "type": "string",
+                        "title": "蓝鲸应用ID",
+                        "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+                        "ui:rules": [
+                          "required"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "layout": [
+          [
+            {
+              "prop": "rates",
+              "group": [
+                [
+                  {
+                    "prop": "default",
+                    "container": {
+                      "grid-template-columns": "300px 250px"
+                    },
+                    "group": [
+                      [
+                        "tokens",
+                        "period"
+                      ]
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "prop": "specials",
+                    "container": {
+                      "grid-template-columns": "300px 250px 300px"
+                    },
+                    "group": [
+                      [
+                        "tokens",
+                        "period",
+                        "bk_app_code"
+                      ]
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        ],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - bk-rate-limit
+    notes: The default rate limit indicates the default rate limit for a single app;
+      the special app rate limit sets a separate rate limit for a specified app. Rate
+      Limit plugin, when binding a stage, indicates the total rate limit of all resources
+      in the stage by the app; when binding a resource, indicates the rate limit of
+      an app on the single resource.
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "title": "Rate Limit",
+          "type": "object",
+          "properties": {
+            "rates": {
+              "type": "object",
+              "properties": {
+                "default": {
+                  "type": "object",
+                  "title": "Default Rate Limit",
+                  "ui:group": {
+                    "props": {
+                      "type": "card",
+                      "showTitle": true
+                    },
+                    "style": {
+                      "background": "#F5F7FA",
+                      "padding": "10px 20px 10px 30px"
+                    }
+                  },
+                  "required": [
+                    "tokens",
+                    "period"
+                  ],
+                  "properties": {
+                    "tokens": {
+                      "type": "integer",
+                      "title": "Count",
+                      "default": 100,
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:component": {
+                        "name": "bfInput",
+                        "props": {
+                          "min": 1
+                        }
+                      }
+                    },
+                    "period": {
+                      "type": "integer",
+                      "title": "Time Range",
+                      "default": 1,
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:component": {
+                        "name": "select",
+                        "props": {
+                          "datasource": [
+                            {
+                              "label": "Second",
+                              "value": 1
+                            },
+                            {
+                              "label": "Minute",
+                              "value": 60
+                            },
+                            {
+                              "label": "Hour",
+                              "value": 3600
+                            },
+                            {
+                              "label": "Day",
+                              "value": 86400
+                            }
+                          ],
+                          "clearable": false
+                        }
+                      }
+                    }
+                  }
+                },
+                "specials": {
+                  "type": "array",
+                  "title": "Special Apps Rate Limit",
+                  "ui:group": {
+                    "props": {
+                      "type": "card",
+                      "showTitle": true
+                    },
+                    "style": {
+                      "background": "#F5F7FA",
+                      "padding": "10px 20px 20px 20px"
+                    }
+                  },
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "tokens",
+                      "period",
+                      "bk_app_code"
+                    ],
+                    "ui:group": {
+                      "style": {
+                        "background": "#FFF",
+                        "padding": "10px 10px 10px 10px"
+                      }
+                    },
+                    "properties": {
+                      "tokens": {
+                        "type": "integer",
+                        "title": "Count",
+                        "default": 1,
+                        "ui:rules": [
+                          "required"
+                        ],
+                        "ui:component": {
+                          "name": "bfInput",
+                          "props": {
+                            "min": 1
+                          }
+                        }
+                      },
+                      "period": {
+                        "type": "integer",
+                        "title": "Time Range",
+                        "default": 1,
+                        "ui:rules": [
+                          "required"
+                        ],
+                        "ui:component": {
+                          "name": "select",
+                          "props": {
+                            "datasource": [
+                              {
+                                "label": "Second",
+                                "value": 1
+                              },
+                              {
+                                "label": "Minute",
+                                "value": 60
+                              },
+                              {
+                                "label": "Hour",
+                                "value": 3600
+                              },
+                              {
+                                "label": "Day",
+                                "value": 86400
+                              }
+                            ],
+                            "clearable": false
+                          }
+                        }
+                      },
+                      "bk_app_code": {
+                        "type": "string",
+                        "title": "App Id",
+                        "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+                        "ui:rules": [
+                          "required"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "layout": [
+          [
+            {
+              "prop": "rates",
+              "group": [
+                [
+                  {
+                    "prop": "default",
+                    "container": {
+                      "grid-template-columns": "300px 250px"
+                    },
+                    "group": [
+                      [
+                        "tokens",
+                        "period"
+                      ]
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "prop": "specials",
+                    "container": {
+                      "grid-template-columns": "300px 250px 300px"
+                    },
+                    "group": [
+                      [
+                        "tokens",
+                        "period",
+                        "bk_app_code"
+                      ]
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        ],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.plugintype
+  fields:
+    code: bk-status-rewrite
+    name: 网关错误使用HTTP状态码200(不推荐)
+    name_en: Gateway error using HTTP status code 200 (not recommended)
+    is_public: false
+    schema: null
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - bk-status-rewrite
+    notes: Gateway error using HTTP status code 200 (not recommended)
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {},
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: schema.schema
+  fields:
+    created_time: 2023-02-02 14:54:21.010753+00:00
+    updated_time: 2023-02-02 14:54:21.010788+00:00
+    name: bk-verified-user-exempted-apps
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "properties": {
+          "_meta": {
+            "properties": {
+              "disable": {
+                "type": "boolean"
+              },
+              "error_response": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object"
+                  }
+                ]
+              },
+              "priority": {
+                "type": "integer",
+                "description": "priority of plugins by customized order"
+              },
+              "filter": {
+                "type": "array",
+                "description": "filter determines whether the plugin needs to be executed at runtime"
+              }
+            },
+            "type": "object"
+          },
+          "exempted_apps": {
+            "items": {
+              "properties": {
+                "dimension": {
+                  "type": "string"
+                },
+                "bk_app_code": {
+                  "type": "string"
+                },
+                "resource_ids": {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exempted_apps"
+        ],
+        "$comment": "this is a mark for our injected plugin schema"
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-verified-user-exempted-apps
+    name: 免用户认证应用白名单
+    name_en: Exempted user auth apps white list
+    is_public: true
+    schema:
+    - bk-verified-user-exempted-apps
+    - plugin
+    - '0'
+- model: plugin.plugintype
+  fields:
+    code: ip-restriction
+    name: IP 保护（旧）
+    name_en: legacy ip restriction
+    is_public: false
+    schema: null

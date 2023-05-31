@@ -1,0 +1,24 @@
+release:
+  version: 1.0.1
+  title: 为网关同步SDK提供接口
+  comment: 为网关同步SDK提供接口
+
+apigateway:
+  description: 蓝鲸API网关，官方内置网关，请勿修改
+  description_en: BlueKing API Gateway, official built-in gateway, do not modify
+  is_public: true
+  api_type: 1
+
+stage:
+  name: prod
+  vars: {}
+  proxy_http:
+    timeout: 60
+    upstreams:
+      loadbalance: roundrobin
+      hosts:
+        - host: "{{ environ.DASHBOARD_INNER_URL }}"
+
+grant_permissions:
+  - bk_app_code: visual-layout
+  - bk_app_code: bk_lesscode

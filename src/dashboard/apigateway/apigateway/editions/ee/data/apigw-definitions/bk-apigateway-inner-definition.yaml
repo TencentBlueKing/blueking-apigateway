@@ -1,0 +1,27 @@
+release:
+  version: 1.0.1
+  title: 提供权限申请、资源文档接口
+  comment: 提供权限申请、资源文档接口
+
+apigateway:
+  description: 蓝鲸API网关内部私有接口，官方内置网关，请勿修改
+  description_en: BlueKing API Gateway internal private interface, official built-in gateway, do not modify
+  is_public: false
+  api_type: 1
+  user_config:
+    from_bk_token: true
+    from_username: true
+
+stage:
+  name: prod
+  vars: {}
+  proxy_http:
+    timeout: 60
+    upstreams:
+      loadbalance: roundrobin
+      hosts:
+        - host: "{{ environ.DASHBOARD_INNER_URL }}"
+
+grant_permissions:
+  - bk_app_code: bk_apigateway
+  - bk_app_code: bk_paas3
