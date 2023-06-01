@@ -1,0 +1,22 @@
+name: "Feature Request"
+description: Suggest an enhancement to blueking-apigateway.
+title: "feat: ......"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        _提供足够详细的信息, 以便我们能够快速帮助你__
+        _The more information you share, the faster we can help you._
+
+        提交 Issue 前, 请先搜索 [开放的 Issue](https://github.com/TencentBlueKing/blueking-apigateway/issues), 避免重复提交.
+        Search the [open issues](https://github.com/apache/apisix/issues) first before you open a new issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: 描述你期望支持的特性 (Describe the feature you would like to see.)
+      placeholder: |
+        功能需求描述, 包含具体需求背景和功能描述 (Functional requirements description, including specific requirements background and functional description)
+    validations:
+      required: true
