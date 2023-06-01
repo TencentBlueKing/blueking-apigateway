@@ -5,40 +5,40 @@ body:
   - type: markdown
     attributes:
       value: |
-        _提供足够详细的信息, 以便我们能够快速帮助你__
+        _请提供足够详细的信息， 以便我们能够快速帮助你__
 
-        _The more information you share, the faster we can help you._
+        提交 Issue 前，请先搜索 [开放的 Issue](https://github.com/TencentBlueKing/blueking-apigateway/issues)，避免重复提交。
 
-        提交 Issue 前, 请先搜索 [开放的 Issue](https://github.com/TencentBlueKing/blueking-apigateway/issues), 避免重复提交.
+        _The more information you share, the faster we can help you_
 
-        Search the [open issues](https://github.com/apache/apisix/issues) first before you open a new issue.
+        Search the [open issues](https://github.com/apache/apisix/issues) before you open a new issue.
 
   - type: textarea
     id: current-behavior
     attributes:
       label: Current Behavior
-      description: 遇到的问题(Describe the issue you are facing)
+      description: 遇到的问题 (Describe the issue you are facing)
     validations:
       required: true
   - type: textarea
     id: expected-behavior
     attributes:
       label: Expected Behavior
-      description: 预期行为(Describe what you expected to happen)
+      description: 预期行为 (Describe what you expected to happen)
     validations:
       required: false
   - type: textarea
     id: error
     attributes:
       label: Error Logs
-      description: 错误日志(Paste the error logs if any)
+      description: 错误日志 (Paste the error logs if any)
     validations:
       required: false
   - type: textarea
     id: steps
     attributes:
       label: Steps to Reproduce
-      description: 复现步骤(Share the steps you took so that we can reproduce the issue. Reports without proper steps details will likely be closed.)
+      description: 复现步骤 (Share the steps you took so that we can reproduce the issue. Reports without proper steps details will likely be closed.)
       placeholder: |
         1. ...
         2. ...
@@ -49,14 +49,14 @@ body:
     id: version-environment
     attributes:
       label: Version and Environment
-      description: 版本及环境信息(Share your version and environment details)
+      description: 版本及环境信息 (Share your version and environment details)
       value: |
-        - 蓝鲸版本号(blueking version):
-        - 容器化部署还是二进制部署(containerized or binary):
-        - 二进制部署请提供网关版本号(binary version of bk-apigateway):
-        - 容器化部署请提供(Provide the following information if you are using containerized deployment):
+        - 蓝鲸版本号 (the version of BlueKing platform):
+        - 容器化部署还是二进制部署 (deployed on Kubernetes or using binary files):
+        - 二进制部署请提供网关版本号 (the version of bk-apigateway, required for binary distribution):
+        - 容器化部署请提供 (provide the following information, required for Kubernetes helm chart distribution):
           - bk-apigateway helm chart version:
-          - value.yaml中是否做了修改(whether you have modified the value.yaml):
-          - value.yaml中的配置, 注意去除敏感信息(share the value.yaml, remove sensitive information):
+          - `values.yaml` 中是否做了修改 (whether you have modified the `values.yaml`):
+          - `values.yaml` 中的配置, 注意去除敏感信息 (the contents of the `values.yaml` file, remember to remove any sensitive information):
     validations:
       required: true

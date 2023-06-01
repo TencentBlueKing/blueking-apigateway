@@ -5,11 +5,13 @@ body:
   - type: markdown
     attributes:
       value: |
-        _提供足够详细的信息, 以便我们能够快速帮助你__
-        _The more information you share, the faster we can help you._
+        _请提供足够详细的信息， 以便我们能够快速帮助你__
 
-        提交 Issue 前, 请先搜索 [开放的 Issue](https://github.com/TencentBlueKing/blueking-apigateway/issues), 避免重复提交.
-        Search the [open issues](https://github.com/apache/apisix/issues) first before you open a new issue.
+        提交 Issue 前，请先搜索 [开放的 Issue](https://github.com/TencentBlueKing/blueking-apigateway/issues)，避免重复提交。
+
+        _The more information you share, the faster we can help you_
+
+        Search the [open issues](https://github.com/apache/apisix/issues) before you open a new issue.
 
   - type: textarea
     id: description
