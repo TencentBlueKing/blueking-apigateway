@@ -165,7 +165,7 @@
             </bk-select>
           </bk-form-item>
           <bk-form-item :label="$t('系统负责人')">
-            <user v-model="formData.maintainers"></user>
+            <user v-model="formData.maintainers" ref="userRef"></user>
           </bk-form-item>
           <bk-form-item :label="$t('超时时长')">
             <bk-input type="number" :max="600" :min="1" :precision="0" v-model="formData.timeout">
@@ -568,6 +568,7 @@
       },
 
       async handleBeforeClose () {
+        this.$refs.userRef && this.$refs.userRef.handleBlur()
         return this.$isSidebarClosed(JSON.stringify(this.formData))
       }
     }

@@ -79,6 +79,9 @@
       focus () {
         this.$refs.userSelector.focus()
       },
+      handleBlur () {
+        this.$refs.userSelector.handleBlur()
+      },
       async fuzzySearchMethod (keyword, page = 1) {
         const users = await this.$http.get(this.api, {
           params: {
