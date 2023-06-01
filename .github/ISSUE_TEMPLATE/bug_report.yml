@@ -55,7 +55,7 @@ body:
         - 容器化部署还是二进制部署(containerized or binary):
         - 二进制部署请提供网关版本号(binary version of bk-apigateway):
         - 容器化部署请提供(Provide the following information if you are using containerized deployment):
-          - helm chart bk-apigateway version:
+          - bk-apigateway helm chart version:
           - value.yaml中是否做了修改(whether you have modified the value.yaml):
           - value.yaml中的配置, 注意去除敏感信息(share the value.yaml, remove sensitive information):
     validations:
