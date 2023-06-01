@@ -992,7 +992,7 @@
           this.$router.push({
             name: routeName,
             params: {
-              id: this.apigwId
+              id: routeName === 'index' ? '' : this.apigwId
             }
           })
         }
