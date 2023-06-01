@@ -118,7 +118,7 @@
       :data="resourceList"
       :size="setting.size"
       :pagination="pagination"
-      :ext-cls="resourceList.length > 1 ? 'ag-resources-table' : 'ag-resource-table'"
+      :ext-cls="resourceList.length > 0 ? 'ag-resources-table' : 'ag-resource-table'"
       v-bkloading="{ isLoading: isDataLoading, opacity: 1, immediate: true }"
       :default-expand-all="false"
       @page-limit-change="handlePageLimitChange"
@@ -404,7 +404,7 @@
         key="updateTime"
         :render-header="$renderHeader">
       </bk-table-column>
-      <bk-table-column :label="$t('操作')" width="90" class="ag-action" :show-overflow-tooltip="false">
+      <bk-table-column :label="$t('操作')" width="90" class="ag-action" fixed="right" :show-overflow-tooltip="false">
         <template slot-scope="props">
           <bk-button
             class="mr5"
@@ -413,7 +413,7 @@
             @click.stop="handleEditResource(props.row)">
             {{ $t('编辑') }}
           </bk-button>
-          <bk-dropdown-menu ref="dropdown" align="right">
+          <bk-dropdown-menu ref="dropdown" align="right" position-fixed>
             <i class="bk-icon icon-more ag-more-btn ml10 icon-more-hover" slot="dropdown-trigger"></i>
             <ul class="bk-dropdown-list" slot="dropdown-content" style="width: 80px; ">
               <!-- <li>
