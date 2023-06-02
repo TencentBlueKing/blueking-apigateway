@@ -142,25 +142,41 @@ class ResourceImportValidator:
             key_to_id[key] = resource_id
 
     def _validate_resource_name(self):
-        """
-        - 校验 name 不能重复
-        """
-        resource_name_to_id = {
-            resource["name"]: resource_id for resource_id, resource in self._existed_resource_id_to_fields.items()
-        }
-        for resource in self._importing_resources:
-            resource_id = resource.get("id")
-            if resource_id:
-                existed_resource_fields = self._existed_resource_id_to_fields[resource_id]
-                resource_name_to_id.pop(existed_resource_fields["name"])
+        """校验资源名称是否合法，不符合标准的几种情况：
 
-            key = resource["name"]
-            if key in resource_name_to_id:
+        - 资源名称已存在，并且指定的 ID 不等于已存在的值
+        - 资源名称已存在，但路径或方法名变了（无法自动匹配到资源 ID，ID 值为空）
+        - 同一个资源名称被重复使用
+
+        :raise APIError: When validation fails.
+        """
+        existed_name_res_map = {obj["name"]: obj for obj in self._existed_resource_id_to_fields.values()}
+        seen_names = set()
+        for resource in self._importing_resources:
+            name = resource["name"]
+            # Check if there are any existing resources using the same name.
+            existed_res = existed_name_res_map.get(name)
+            if existed_res and existed_res["id"] != resource.get("id"):
                 raise error_codes.VALIDATE_ERROR.format(
-                    message=_("资源名称【name={name}】重复。").format(name=resource["name"])
+                    _(
+                        "资源（{input_method} {input_path}）的名称【name={name}】重复，该名字已被现有资源"
+                        "（{method} {path}）占用，需调整资源名或维持相同的请求方法和路径。"
+                    ).format(  # noqa: E501
+                        input_method=resource.get("method", ""),
+                        input_path=resource.get("path", ""),
+                        name=name,
+                        method=existed_res["method"],
+                        path=existed_res["path"],
+                    ),
                 )
 
-            resource_name_to_id[key] = resource_id
+            # Check if the name is duplicated
+            if name in seen_names:
+                raise error_codes.VALIDATE_ERROR.format(
+                    _("资源名称【name={name}】重复，该名字在当前配置数据中被多次使用。").format(name=name),
+                )
+            else:
+                seen_names.add(name)
 
     def _validate_resource_count(self):
         new_resources = [resource for resource in self._importing_resources if not resource.get("id")]

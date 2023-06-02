@@ -57,10 +57,12 @@ repos:
       - id: Name check
         name: Check sensitive info
         verbose: true
-        language: script
-        entry: .pre_commit_hooks/rtx.sh
+        language: system
+        require_serial: true
+        entry: bash -c "if [[ -d pre_commit_hooks ]]; then pre_commit_hooks/rtx.sh $@; fi"
       - id: IP check
         name: Check sensitive info
         verbose: true
-        language: script
-        entry: .pre_commit_hooks/ip.sh
+        language: system
+        require_serial: true
+        entry: bash -c "if [[ -d pre_commit_hooks ]]; then pre_commit_hooks/ip.sh $@; fi"
