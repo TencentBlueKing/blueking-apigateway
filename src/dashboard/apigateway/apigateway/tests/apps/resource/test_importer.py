@@ -305,14 +305,17 @@ class TestResourceImportValidator:
         with pytest.raises(expected_error):
             validator._validate_method_path()
 
+    # The data for testing name validation
+    _test_data_name = {
+        1: {"id": 1, "name": "a", "method": "GET", "path": "/a/"},
+        2: {"id": 2, "name": "b", "method": "GET", "path": "/b/"},
+    }
+
     @pytest.mark.parametrize(
         "mock_resource_id_to_fields, importing_resources, expected_error",
         [
             (
-                {
-                    1: {"id": 1, "name": "a"},
-                    2: {"id": 2, "name": "b"},
-                },
+                _test_data_name,
                 [
                     {"name": "c"},
                     {"name": "d"},
@@ -320,42 +323,39 @@ class TestResourceImportValidator:
                 None,
             ),
             (
-                {
-                    1: {"id": 1, "name": "a"},
-                    2: {"id": 2, "name": "b"},
-                },
+                _test_data_name,
                 [
                     {"id": 1, "name": "a"},
                 ],
                 None,
             ),
             (
-                {
-                    1: {"id": 1, "name": "a"},
-                    2: {"id": 2, "name": "b"},
-                },
+                _test_data_name,
                 [
                     {"id": 1, "name": "c"},
                 ],
                 None,
             ),
             (
-                {
-                    1: {"id": 1, "name": "a"},
-                    2: {"id": 2, "name": "b"},
-                },
+                _test_data_name,
                 [
                     {"name": "a"},
                 ],
                 APIError,
             ),
             (
-                {
-                    1: {"id": 1, "name": "a"},
-                    2: {"id": 2, "name": "b"},
-                },
+                _test_data_name,
                 [
                     {"id": 2, "name": "a"},
+                ],
+                APIError,
+            ),
+            (
+                # Duplicated resource name in new resources
+                {},
+                [
+                    {"name": "a"},
+                    {"name": "a"},
                 ],
                 APIError,
             ),

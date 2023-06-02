@@ -27,7 +27,29 @@ BKAPI_AUTHORIZATION_DESCRIPTION_ZH = """
 {%- if app_verified_required or user_verified_required %}
 ### 公共请求参数
 
-公共请求参数是用于标识应用和用户的参数，如果云 API 接口需要认证应用或用户，则请求时需要携带这些参数，才能正常发起请求。公共请求参数，可通过请求头 `X-Bkapi-Authorization` 传递，值为 JSON 格式字符串
+公共请求参数是用于标识应用和用户的参数，如果云 API 接口需要认证应用或用户，则请求时需要携带这些参数，才能正常发起请求。公共请求参数，可通过请求头 `X-Bkapi-Authorization` 传递，值为 JSON 格式字符串。
+
+**示例：** 使用 curl 命令，请求时携带认证请求头
+
+```shell
+curl -H 'X-Bkapi-Authorization: {"access_token": "your_token"}' "http://example.com/api"
+```
+
+**示例：** 使用 Python 语言和 requests 模块
+
+```python
+import json
+import requests
+
+requests.get(
+    'http://example.com/api',
+    headers={
+        'X-Bkapi-Authorization': json.dumps({'access_token': 'your_token'})
+    },
+)
+```
+
+`X-Bkapi-Authorization` 请求头所支持的全部字段如下表所示：
 
 | 字段  | 类型 | 必选 |  描述 |
 |-----------|------------|--------|------------|
@@ -47,7 +69,29 @@ BKAPI_AUTHORIZATION_DESCRIPTION_EN = """
 {%- if app_verified_required or user_verified_required %}
 ### Public Request Parameters
 
-Public request parameters are parameters used to identify the application and user. If the cloud API requires authentication of the application or user, the request needs to carry these parameters in order to initiate the request properly. The public request parameters, which can be passed through the request header `X-Bkapi-Authorization`, have the value as a JSON formatted string
+Public request parameters are parameters used to identify the application and user. If the cloud API requires authentication of the application or user, the request needs to carry these parameters in order to initiate the request properly. The public request parameters, which can be passed through the request header `X-Bkapi-Authorization`, have the value as a JSON formatted string.
+
+**Example：** Use `curl` to carry the authorization header
+
+```shell
+curl -H 'X-Bkapi-Authorization: {"access_token": "your_token"}' "http://example.com/api"
+```
+
+**Example：** Use Python and the `requests` module
+
+```python
+import json
+import requests
+
+requests.get(
+    'http://example.com/api',
+    headers={
+        'X-Bkapi-Authorization': json.dumps({'access_token': 'your_token'})
+    },
+)
+```
+
+The supported fields of the header `X-Bkapi-Authorization` are shown in the following table:
 
 | Field  | Type | Required |  Description |
 |-----------|------------|--------|------------|
