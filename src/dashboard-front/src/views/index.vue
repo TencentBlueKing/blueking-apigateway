@@ -39,7 +39,7 @@
       <table class="data-table" v-bkloading="{ isLoading: isLoading, zIndex: 10 }">
         <thead class="apigw-table-thead">
           <tr>
-            <th class="name" style="padding-left: 40px;"> {{ $t('网关名') }} </th>
+            <th class="name"> {{ $t('网关名') }} </th>
             <th class="desc"> {{ $t('描述') }} </th>
             <th class="creator"> {{ $t('创建者') }} </th>
             <th class="env"> {{ $t('环境列表') }} </th>
@@ -173,6 +173,9 @@
           })
         } finally {
           this.isDataLoading = false
+          this.$nextTick(() => {
+            this.hasElemnetScrollbar('.container-content')
+          })
         }
       },
 
@@ -284,6 +287,15 @@
             item.isNewCreated = true
           }
         })
+      },
+
+      /**
+       * 当前容器是否存在滚动条
+       */
+      hasElemnetScrollbar (elClassName) {
+        const element = document.querySelector(elClassName)
+        const hasVerticalScrollbar = element.scrollHeight > element.clientHeight
+        hasVerticalScrollbar ? element.classList.add('content-scroll-cls') : element.classList.remove('content-scroll-cls')
       }
     }
   }
@@ -299,7 +311,7 @@
         top: 0;
         left: 0;
         height: 80px;
-        background: linear-gradient(to right, #f5f7fa 99%, transparent 0px);
+        background: #f5f7fa;
         z-index: 9;
         overflow: hidden;
         .content {
@@ -398,7 +410,7 @@
             left: 0;
             overflow: hidden;
             z-index: 9;
-            background: linear-gradient(to right, #f5f7fa 99%, transparent 0px);
+            background: #f5f7fa;
             tr {
                 display: block;
                 width: 1280px;
@@ -570,5 +582,14 @@
     }
     .gateway-wrapper /deep/ .bk-loading .bk-loading-wrapper {
         top: 260px;
+    }
+
+    .container-content.content-scroll-cls {
+      .header {
+        width: calc(100% - 6px);
+      }
+      .apigw-table-thead {
+        width: calc(100% - 6px);
+      }
     }
 </style>

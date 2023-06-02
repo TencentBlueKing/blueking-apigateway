@@ -550,7 +550,8 @@
           3: ['componentAPI', 'ComponentAPIDetailIntro', 'ComponentAPIDetailDoc'],
           4: ['apigwSDK'],
           5: ['esbSDK']
-        }
+        },
+        isSwitch: false
       }
     },
     computed: {
@@ -991,7 +992,7 @@
           this.$router.push({
             name: routeName,
             params: {
-              id: this.apigwId
+              id: routeName === 'index' ? '' : this.apigwId
             }
           })
         }
@@ -1053,7 +1054,10 @@
       emitSideToggleEnd () {
         bus.$emit('side-toggle-end')
       },
-      handleApigwSelect (index) {
+      handleApigwSelect (id) {
+        if (!id) {
+          return
+        }
         const routeParams = {
           name: this.$route.meta.matchRoute || this.$route.name,
           params: this.$route.params,
@@ -1062,7 +1066,7 @@
         if (routeParams.name !== 'apigwVersionCreate') {
           routeParams.query = this.$route.query
         }
-        routeParams.params.id = index
+        routeParams.params.id = this.isSwitch ? this.activeApigwId : id
         this.$router.push(routeParams)
       },
       async changeLanguage (languageType) {
@@ -1110,6 +1114,7 @@
           })
         } else {
           optionInput.removeEventListener('keydown', this.handleNavigate)
+          this.isSwitch = false
         }
       },
       // 键盘上下键回车处理
@@ -1122,15 +1127,18 @@
             } else {
               this.selectIndex--
             }
+            this.isSwitch = true
             break
           case 40:
             this.selectIndex < length - 1 ? this.selectIndex++ : this.selectIndex = 0
+            this.isSwitch = true
             break
           case 13:
             e.preventDefault()
             this.selectApigwId = this.activeApigwId
             break
           default:
+            this.isSwitch = false
             break
         }
       },
