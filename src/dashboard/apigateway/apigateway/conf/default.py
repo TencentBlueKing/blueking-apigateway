@@ -560,8 +560,8 @@ DEFAULT_STAGE_RATE_LIMIT_CONFIG = {
 }
 
 # 微网关 chart 信息
-BCS_MICRO_GATEWAY_CHART_NAME = "bk-micro-gateway-operator"
-BCS_MICRO_GATEWAY_CHART_VERSION = "0.0.1"
+BCS_MICRO_GATEWAY_CHART_NAME = "bk-micro-gateway"
+BCS_MICRO_GATEWAY_CHART_VERSION = "v1.0.0-alpha.2"
 BCS_MICRO_GATEWAY_IMAGE_REGISTRY = ""
 BCS_MICRO_GATEWAY_SENTRY_DSN = env.str("BCS_MICRO_GATEWAY_SENTRY_DSN", "")
 
@@ -650,7 +650,7 @@ PLUGIN_METADATA_CONFIG = {
 }
 
 APISIX_CONFIG = {
-    "plugin_attr": {
+    "pluginAttrs": {
         "log-rotate": {
             # 每间隔多长时间切分一次日志，秒为单位
             "interval": 60 * 60,

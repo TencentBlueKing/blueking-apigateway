@@ -46,7 +46,7 @@ class TestMicroGatewayValuesGenerator:
 
     def test_generate_values(self, mocker, micro_gateway, settings):
         settings.APISIX_CONFIG = {
-            "plugin_attr": {
+            "pluginAttrs": {
                 "log-rotate": {
                     # 每间隔多长时间切分一次日志，秒为单位
                     "interval": 60 * 60,
@@ -67,35 +67,19 @@ class TestMicroGatewayValuesGenerator:
         assert values == {
             "global": {
                 "imageRegistry": settings.BCS_MICRO_GATEWAY_IMAGE_REGISTRY,
-                "serviceMonitor": {
-                    "enabled": True,
-                },
             },
-            "sentry": {
-                "enabled": settings.BCS_MICRO_GATEWAY_SENTRY_DSN != "",
-                "dsn": settings.BCS_MICRO_GATEWAY_SENTRY_DSN,
+            "serviceMonitor": {
+                "enabled": True,
+            },
+            "operator": {
+                "sentryDsn": settings.BCS_MICRO_GATEWAY_SENTRY_DSN,
             },
             "replicaCount": 2,
-            "gatewayStageEnabled": False,
             "service": {
                 "type": "NodePort",
             },
-            "gatewayConfigEnabled": True,
-            "gatewayConfig": {
-                "instance_id": micro_gateway.instance_id,
-                "controller": {
-                    "endpoints": [settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")],
-                    "base_path": settings.EDGE_CONTROLLER_API_BASE_PATH,
-                    "jwt_auth": {
-                        "secret": "jwt_secret_key",
-                    },
-                },
-            },
-            "gomicro-discovery-operator": {
-                "enabled": False,
-            },
-            "apisixConfig": {
-                "plugin_attr": {
+            "apisix": {
+                "pluginAttrs": {
                     "log-rotate": {
                         "interval": 60 * 60,
                         "max_kept": 24 * 7,
@@ -106,12 +90,10 @@ class TestMicroGatewayValuesGenerator:
                         },
                     },
                 },
-                "bk_gateway": {
-                    "instance_id": micro_gateway.instance_id,
-                    "controller": {
-                        "endpoints": [settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")],
-                        "base_path": settings.EDGE_CONTROLLER_API_BASE_PATH,
-                        "jwt_auth": {"secret": "jwt_secret_key"},
+                "bkGateway": {
+                    "instance": {
+                        "id": micro_gateway.instance_id,
+                        "secret": "jwt_secret_key",
                     },
                 },
             },
@@ -123,9 +105,10 @@ class TestMicroGatewayValuesGenerator:
             "values": {
                 "extraEnvVarsSecret": "env-vars-secret",
                 "replicaCount": 1,
-                "gatewayConfigEnabled": True,
-                "gatewayConfig": {
-                    "instance_id": "not-allowed",
+                "bkGateway": {
+                    "instance": {
+                        "id": "not-allowed",
+                    }
                 },
             },
         }
@@ -135,4 +118,4 @@ class TestMicroGatewayValuesGenerator:
 
         assert values["replicaCount"] == 1
         assert values["extraEnvVarsSecret"] == "env-vars-secret"
-        assert values["gatewayConfig"]["instance_id"] == micro_gateway.instance_id
+        assert values["bkGateway"]["instance"]["id"] == micro_gateway.instance_id
