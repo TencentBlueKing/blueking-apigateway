@@ -160,7 +160,7 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     description_en = description_i18n.field("en", default=None)
 
     # 环境对应的微网关实例，不同环境允许使用不同网关实例，提供隔离能力
-    micro_gateway = models.ForeignKey("MicroGateway", on_delete=models.SET_NULL, null=True, default=None, blank=True)  # NOTE 关联外键, 可以反向查询到
+    micro_gateway = models.ForeignKey("MicroGateway", on_delete=models.SET_NULL, null=True, default=None, blank=True)
 
     _vars = models.TextField(db_column="vars")
 
