@@ -22,7 +22,7 @@ from attrs import define, field
 from django.conf import settings
 
 from apigateway.controller.crds.config_controller import create_config_controller
-from apigateway.core.micro_gateway_config import MicroGatewayHTTPInfo, MicroGatewayJWTAuth
+from apigateway.core.micro_gateway_config import MicroGatewayHTTPInfo
 from apigateway.core.models import MicroGateway, Stage
 
 
@@ -70,9 +70,7 @@ class MicroGatewayValuesGenerator:
             },
             "replicaCount": 2,
             "operator": {
-                "sentry": {
-                    "dsn": settings.BCS_MICRO_GATEWAY_SENTRY_DSN,
-                },
+                "sentryDsn": settings.BCS_MICRO_GATEWAY_SENTRY_DSN,
             },
             "service": {
                 "type": "NodePort",
