@@ -71,7 +71,9 @@ class TestMicroGatewayValuesGenerator:
             "serviceMonitor": {
                 "enabled": True,
             },
-            "sentryDsn": settings.BCS_MICRO_GATEWAY_SENTRY_DSN,
+            "operator": {
+                "sentryDsn": settings.BCS_MICRO_GATEWAY_SENTRY_DSN,
+            },
             "replicaCount": 2,
             "service": {
                 "type": "NodePort",
