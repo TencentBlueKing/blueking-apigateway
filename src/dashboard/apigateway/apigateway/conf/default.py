@@ -650,7 +650,7 @@ PLUGIN_METADATA_CONFIG = {
 }
 
 APISIX_CONFIG = {
-    "plugin_attr": {
+    "pluginAttrs": {
         "log-rotate": {
             # 每间隔多长时间切分一次日志，秒为单位
             "interval": 60 * 60,
