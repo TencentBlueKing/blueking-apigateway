@@ -31,7 +31,10 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install 'setuptools<58.0.0' && \
+        pip install --upgrade 'setuptools<58.0.0'
+        echo '-----------------'
+        python <<< 'import setuptools; print(setuptools.version.__version__)'
+        echo '-----------------'
         pip install -r src/esb/esb/requirements_dev.txt -i https://pypi.org/simple/
 
     - name: Lint
