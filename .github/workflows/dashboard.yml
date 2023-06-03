@@ -29,7 +29,9 @@ jobs:
       run: pip install -r src/dashboard/apigateway/requirements_dev.txt -i https://pypi.org/simple/
 
     - name: Lint
-      run: cd src/dashboard && make edition-ee && make lint
+      run: make edition-ee && make lint
+      working-directory: src/dashboard
 
     - name: Test
-      run:  cd src/dashboard && make edition-ee && make test
+      run:  make edition-ee && make test
+      working-directory: src/dashboard

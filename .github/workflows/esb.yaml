@@ -33,7 +33,9 @@ jobs:
         pip install -r src/esb/esb/requirements_dev.txt -i https://pypi.org/simple/
 
     - name: Lint
-      run: cd src/esb && make lint
+      run: make lint
+      working-directory: src/esb
 
     - name: Test
-      run: cd src/esb && make test
+      run: make test
+      working-directory: src/esb
