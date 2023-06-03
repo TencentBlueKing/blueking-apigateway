@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ master, pre_*, ft_*, release/* ]
 
+defaults:
+  run:
+    working-directory: src/core-api
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -21,16 +25,15 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.20'
-        cache-dependency-path: src/core-api/go.sum
+        cache-dependency-path: go.sum
 
     - name: Build
-      run: cd src/core-api && make build
+      run: make build
 
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v3
       with:
         version: v1.46.2
-        working-directory: src/core-api
 
     - name: Test
-      run: cd src/core-api && make test
+      run: make test
