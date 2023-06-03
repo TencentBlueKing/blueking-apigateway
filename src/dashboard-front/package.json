@@ -92,7 +92,6 @@
     "@blueking/bkui-form": "0.0.28",
     "@blueking/user-selector": "^1.0.5-beta.2",
     "@icon-cool/bk-icon-devops": "0.0.15",
-    "@tencent/bk-icon-apigateway": "^0.1.17",
     "ansi-html-community": "0.0.8",
     "art-template": "^4.13.2",
     "axios": "^0.27.2",
