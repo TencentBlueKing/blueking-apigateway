@@ -12,12 +12,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # python3.7, can't install ConcurrentLogHandler even if setuptools < 58.0.0
-        python-version: ["3.7"]
+        python-version: ["3.6"]
         # python3.6 should use ubuntu-20.04
         # reference: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
         os: [ubuntu-20.04]
-        # os: [ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v3
@@ -32,6 +30,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade 'setuptools<58.0.0'
+        python -m pip install --upgrade pip setuptools == 57.5.0
         pip install concurrentloghandler==0.9.1
         echo '-----------------'
         python <<< 'import setuptools; print(setuptools.version.__version__)'
