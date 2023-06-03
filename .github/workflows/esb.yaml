@@ -26,7 +26,10 @@ jobs:
         cache-dependency-path: 'src/esb/esb/requirements_dev.txt'
 
     - name: Install dependencies
-      run: pip install 'setuptools==57.5.0' && pip install -r src/esb/esb/requirements_dev.txt -i https://pypi.org/simple/
+      run: |
+        pip install --upgrade pip && \
+        pip install 'setuptools<58.0' && \
+        pip install -r src/esb/esb/requirements_dev.txt -i https://pypi.org/simple/
 
     - name: Lint
       run: cd src/esb && make lint

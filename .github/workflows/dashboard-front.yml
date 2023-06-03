@@ -1,4 +1,4 @@
-name: dashboard-front
+name: dashboard-front ci
 
 on:
   push:

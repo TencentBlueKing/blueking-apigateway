@@ -1,4 +1,4 @@
-name: core-api
+name: core-api ci
 
 on:
   push:
@@ -30,7 +30,8 @@ jobs:
       uses: golangci/golangci-lint-action@v3
       with:
         version: v1.29
-        working-directory: src/core-api
+      env:
+        GOFLAGS: '-mod=vendor'
 
     - name: Test
-      run: cd src/core-api && make test
+      run: pwd && cd src/core-api && make test
