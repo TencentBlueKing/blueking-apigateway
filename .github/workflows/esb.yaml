@@ -12,7 +12,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # python 3.7, cannot install ConcurrentLogHandler
         python-version: ["3.6"]
+        # python3.6 should use ubuntu-20.04
+        # reference: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
         os: [ubuntu-20.04]
 
     steps:
