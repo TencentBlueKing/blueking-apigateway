@@ -27,7 +27,9 @@ jobs:
         registry-url: https://registry.npmjs.org/
 
     - name: Install dependencies
-      run: cd src/dashboard-front && npm i
+      run: npm i
+      working-directory: src/dashboard-front
 
     - name: ESLint
-      run: cd src/dashboard-front && npx eslint --ext .js,.vue .
+      run: npx eslint --ext .js,.vue .
+      working-directory: src/dashboard-front
