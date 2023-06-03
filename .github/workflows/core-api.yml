@@ -28,10 +28,14 @@ jobs:
       working-directory: src/core-api
 
     - name: Lint
-      uses: golangci/golangci-lint-action@v3
-      with:
-        version: v1.52.2
-        working-directory: src/core-api
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.52.2
+        make lint
+      working-directory: src/core-api
+      # uses: golangci/golangci-lint-action@v3
+      # with:
+      #   version: v1.52.2
+      #   working-directory: src/core-api
 
     - name: Test
       run: make dep && make test
