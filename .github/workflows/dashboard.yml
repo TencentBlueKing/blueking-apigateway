@@ -26,7 +26,7 @@ jobs:
         cache-dependency-path: 'src/dashboard/apigateway/requirements_dev.txt'
 
     - name: Install dependencies
-      run: pip install -r src/dashboard/apigateway/requirements.txt -i https://mirrors.cloud.tencent.com/pypi/simple/
+      run: pip install -r src/dashboard/apigateway/requirements.txt -i https://pypi.org/simple/
 
     - name: Lint
       run: cd src/dashboard && make edition-ee && make lint

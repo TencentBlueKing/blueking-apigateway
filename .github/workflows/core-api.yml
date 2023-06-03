@@ -23,10 +23,10 @@ jobs:
         go-version: '1.20'
 
     - name: Build
-      run: cd core-api && make build
+      run: cd src/core-api && make build
 
     - name: Lint
-      run: cd core-api && make lint
+      run: cd src/core-api && make lint
 
     - name: Test
-      run: cd core-api && make test
+      run: cd src/core-api && make test

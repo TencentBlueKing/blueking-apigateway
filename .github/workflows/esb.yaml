@@ -26,7 +26,7 @@ jobs:
         cache-dependency-path: 'src/esb/esb/requirements_dev.txt'
 
     - name: Install dependencies
-      run: pip install -r src/esb/esb/requirements.txt -i https://mirrors.cloud.tencent.com/pypi/simple/
+      run: pip install 'setuptools<58.0.0' && pip install -r src/esb/esb/requirements.txt -i https://pypi.org/simple/
 
     - name: Lint
       run: cd src/esb && make lint
