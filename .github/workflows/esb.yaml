@@ -28,6 +28,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install 'setuptools==57.5.0' -i https://pypi.org/simple/ && \
+        pip freeze && \
         pip install -r src/esb/esb/requirements_dev.txt -i https://pypi.org/simple/
 
     - name: Lint
