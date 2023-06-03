@@ -29,11 +29,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install --upgrade 'setuptools<58.0.0'
-        pip install concurrentloghandler==0.9.1
-        echo '-----------------'
-        python <<< 'import setuptools; print(setuptools.version.__version__)'
-        echo '-----------------'
+        pip install --upgrade 'setuptools<58.0.0' && \
         pip install -r src/esb/esb/requirements_dev.txt -i https://pypi.org/simple/
 
     - name: Lint
