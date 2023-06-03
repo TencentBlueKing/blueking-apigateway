@@ -1,0 +1,32 @@
+name: core-api
+
+on:
+  push:
+    branches: [ master, pre_*, ft_*, release/* ]
+  pull_request:
+    branches: [ master, pre_*, ft_*, release/* ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+
+    - name: Build
+      run: cd core-api && make build
+
+    - name: Lint
+      run: cd core-api && make lint
+
+    - name: Test
+      run: cd core-api && make test

@@ -1,0 +1,32 @@
+name: dashboard-front
+
+on:
+  push:
+    branches: [ master, pre_*, ft_*, release/* ]
+  pull_request:
+    branches: [ master, pre_*, ft_*, release/* ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [12-stretch-slim]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: 'src/dashboard-front/package.json'
+
+    - name: Install dependencies
+      run: cd src/dashboard-front && npm i
+
+    - name: ESLint
+      run: cd src/dashboard-front && npx eslint --ext .js,.vue .
