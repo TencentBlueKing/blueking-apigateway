@@ -28,11 +28,10 @@ jobs:
       run: cd src/core-api && make build
 
     - name: Lint
-      uses: golangci/golangci-lint-action@v2
+      uses: golangci/golangci-lint-action@v3
       with:
         version: v1.52.2
         args: --timeout 5m
-        skip-go-installation: true
         working-directory: src/core-api
 
     - name: Test
