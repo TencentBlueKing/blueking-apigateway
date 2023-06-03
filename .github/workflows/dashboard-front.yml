@@ -24,6 +24,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
         cache-dependency-path: 'src/dashboard-front/package.json'
+        registry-url: https://registry.npmjs.org/
 
     - name: Install dependencies
       run: cd src/dashboard-front && npm i
