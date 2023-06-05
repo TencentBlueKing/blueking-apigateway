@@ -1198,5 +1198,8 @@ export default {
     'SDK 说明': 'SDK 说明',
     '离开将会导致未保存信息丢失': '离开将会导致未保存信息丢失',
     '离开': '离开',
-    '绑定成功，绑定插件 5 分钟内生效，请稍候...': '绑定成功，绑定插件 5 分钟内生效，请稍候...'
+    '绑定成功，绑定插件 5 分钟内生效，请稍候...': '绑定成功，绑定插件 5 分钟内生效，请稍候...',
+    '添加标签': '添加标签',
+    '<div>可用率恢复至 {value_str}%, 低可用持续时间: <strong> {time}</strong></div>': '<div>可用率恢复至 {value_str}%, 低可用持续时间: <strong> {time}</strong></div>',
+    '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>': '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>'
 }

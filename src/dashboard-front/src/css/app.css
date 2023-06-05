@@ -1312,6 +1312,7 @@ body {
 }
 
 .ag-navigation-header .header-nav-item {
+    flex-shrink: 0;
     > span,
     > a {
         line-height: 50px;
