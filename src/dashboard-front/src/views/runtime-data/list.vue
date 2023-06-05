@@ -77,8 +77,7 @@
   import Ring from '@/components/ring'
   import moment from 'moment'
   import { catchErrorHandler } from '@/common/util'
-
-  moment.locale('zh-cn')
+  import i18n from '@/language/i18n.js'
 
   export default {
     components: {
@@ -95,13 +94,13 @@
         containerHeight: '100%',
         timeRange: '1m',
         timeList: [
-          { id: '1m', name: this.$t('最近 1 分钟') },
-          { id: '10m', name: this.$t('最近 10 分钟') },
-          { id: '30m', name: this.$t('最近 30 分钟') },
-          { id: '1h', name: this.$t('最近 1 小时') },
-          { id: '6h', name: this.$t('最近 6 小时') },
-          { id: '12h', name: this.$t('最近 12 小时') },
-          { id: '24h', name: this.$t('最近 24 小时') }
+          { id: '1m', name: i18n.t('最近 1 分钟') },
+          { id: '10m', name: i18n.t('最近 10 分钟') },
+          { id: '30m', name: i18n.t('最近 30 分钟') },
+          { id: '1h', name: i18n.t('最近 1 小时') },
+          { id: '6h', name: i18n.t('最近 6 小时') },
+          { id: '12h', name: i18n.t('最近 12 小时') },
+          { id: '24h', name: i18n.t('最近 24 小时') }
         ]
       }
     },
@@ -176,12 +175,19 @@
               const end = moment(item.mts_end)
 
               const timeSpan = end.from(start, true)
-              data.content = `<div>可用率恢复至 ${item.data.rate_availability.value_str}%, 低可用持续时间: <strong> ${timeSpan}</strong></div>`
+              data.content = this.$t(`<div>可用率恢复至 {value_str}%, 低可用持续时间: <strong> {time}</strong></div>`, {
+                value_str: item.data.rate_availability.value_str,
+                time: timeSpan
+              })
               break
 
             case 'availability_dropped':
               data.type = 'danger'
-              data.content = `<div>可用率下降至 <strong>${item.data.rate_availability.value_str}%</strong>, 调用错误数/总次数: <strong> ${item.data.requests.error_count}/${item.data.requests.count}</strong></div>`
+              data.content = this.$t(`<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>`, {
+                value_str: item.data.rate_availability.value_str,
+                error_count: item.data.requests.error_count,
+                count: item.data.requests.count
+              })
               break
           }
           this.statusList.push(data)
