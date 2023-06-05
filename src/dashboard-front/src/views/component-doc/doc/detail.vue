@@ -229,7 +229,9 @@
           }
           // query参数是的环境是否存在
           const queryStage = this.$route.query.stage
-          const resStage = this.stageList[0].name
+          // prod为默认环境
+          const prodStage = this.stageList.find(item => item.name === 'prod')
+          const resStage = prodStage ? prodStage.name : this.stageList[0].name
           if (queryStage) {
             const stageDetils = this.stageList.filter(item => item.name === queryStage)
             if (stageDetils.length) {
