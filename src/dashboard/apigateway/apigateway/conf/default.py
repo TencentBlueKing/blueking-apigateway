@@ -849,3 +849,35 @@ ESB_BOARD_CONFIGS = {
         "sdk_description": gettext("访问蓝鲸智云组件 API"),
     },
 }
+
+# 网关资源数量限制
+API_GATEWAY_RESOURCE_LIMITS = {
+    "max_gateway_per_app": env.int("MAX_GATEWAY_PER_APP", 10),  # 每个app最多创建的网关数量
+    "max_resource_per_gateway": env.int("MAX_RESOURCE_PER_GATEWAY", 1000),  # 每个网关最多创建的api数量
+    # 配置app的特殊规则
+    "app_gateway_whitelist": {
+        "bk_sops": float("inf"),  # 标准运维网关数量无限制
+    },
+    # 配置网关的特殊规则
+    "gateway_resource_whitelist": {
+        # "gateway_name": 1000
+    },
+}
+
+if env.str("APP_GATEWAY_WHITELIST", ""):
+    # bk_sops:1000,bk_cmdg:1000
+    for app_limit in env.str("APP_GATEWAY_WHITELIST", "").split(","):
+        app_code, limit = app_limit.split(":")
+        try:
+            API_GATEWAY_RESOURCE_LIMITS["app_gateway_whitelist"][app_code] = int(limit)
+        except ValueError:
+            pass
+
+if env.str("GATEWAY_RESOURCE_WHITELIST", ""):
+    # gateway_name:1000,gateway_name:1000
+    for gateway_limit in env.str("GATEWAY_RESOURCE_WHITELIST", "").split(","):
+        gateway, limit = gateway_limit.split(":")
+        try:
+            API_GATEWAY_RESOURCE_LIMITS["gateway_resource_whitelist"][gateway] = int(limit)
+        except ValueError:
+            pass

@@ -154,8 +154,7 @@ class GatewayHandler:
 
         # 5. create related app
         if related_app_code:
-
-            APIRelatedApp.objects.create(api=gateway, bk_app_code=related_app_code)
+            APIRelatedApp.objects.add_related_app(gateway.id, related_app_code)
 
     @staticmethod
     def delete_gateway(gateway_id: int):

@@ -189,6 +189,7 @@ class GatewayRelatedAppViewSet(viewsets.ViewSet):
         slz.is_valid(raise_exception=True)
 
         for bk_app_code in slz.validated_data["target_app_codes"]:
-            APIRelatedApp.objects.get_or_create(api=request.gateway, bk_app_code=bk_app_code)
+            if not APIRelatedApp.objects.filter(api_id=request.gateway.id, bk_app_code=bk_app_code).exists():
+                APIRelatedApp.objects.add_related_app(request.gateway.id, bk_app_code)
 
         return OKJsonResponse("OK")

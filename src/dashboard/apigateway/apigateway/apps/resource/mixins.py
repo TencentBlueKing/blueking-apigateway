@@ -18,12 +18,14 @@
 #
 from typing import Any, Dict
 
+from django.conf import settings
 from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.resource import serializers
 from apigateway.biz.resource import ResourceHandler
+from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, Resource
 
 
@@ -33,6 +35,9 @@ class CreateResourceMixin:
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
+
+        # 检查网关的资源数量是否超限
+        self._check_gateway_resource_limit(gateway)
 
         # 1. save resource, proxy_id can't be null, set a default value
         slz.save(
@@ -68,6 +73,16 @@ class CreateResourceMixin:
         )
 
         return slz.instance
+
+    def _check_gateway_resource_limit(self, gateway: Gateway):
+        max_resource_per_gateway = settings.API_GATEWAY_RESOURCE_LIMITS["gateway_resource_whitelist"].get(
+            gateway.name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_per_gateway"]
+        )
+        if Resource.objects.filter(api_id=gateway.id).count() >= max_resource_per_gateway:
+            raise error_codes.VALIDATE_ERROR.format(
+                f"The gateway [{gateway.name}] exceeds the limit of the number of resources that can be created."
+                + f" The maximum limit is {max_resource_per_gateway}."
+            )
 
 
 class UpdateResourceMixin:
