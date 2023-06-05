@@ -587,8 +587,7 @@
       :is-show.sync="diffSidesliderConf.isShow"
       :title="diffSidesliderConf.title"
       :width="diffSidesliderConf.width"
-      :quick-close="true"
-      :before-close="handleDiffBeforeClose">
+      :quick-close="true">
       <div slot="content" class="p20">
         <version-diff ref="diffRef" :apigw-id="apigwId" :source-id="diffSourceId" :target-id="diffTargetId"></version-diff>
       </div>
@@ -723,7 +722,6 @@
   import versionDiff from '@/components/version-diff'
   import _ from 'lodash'
   import { bkTableSettingContent } from 'bk-magic-vue'
-  import sidebarMixin from '@/mixins/sidebar-mixin'
 
   Vue.use(mavonEditor)
   export default {
@@ -733,7 +731,6 @@
       versionDiff,
       bkTableSettingContent
     },
-    mixins: [sidebarMixin],
     data () {
       const fields = [{
         id: 'requestMethod',
@@ -1352,10 +1349,6 @@
         this.diffSidesliderConf.isShow = true
         this.diffSourceId = ''
         this.diffTargetId = ''
-        this.$nextTick(() => {
-          // 收集 diff 初始状态
-          this.initSidebarFormData(this.$refs.diffRef.searchParams || {})
-        })
       },
 
       handleBatchDelete () {
@@ -2103,9 +2096,6 @@
       },
       removeEvent () {
         window.removeEventListener('click', this.hideSelected)
-      },
-      handleDiffBeforeClose () {
-        return this.$isSidebarClosed(JSON.stringify(this.$refs.diffRef.searchParams || {}))
       }
     }
   }
