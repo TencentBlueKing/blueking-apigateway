@@ -8,7 +8,7 @@
         </bk-popover>
       </template>
       <template v-else>
-        <bk-button theme="default" class="mr5" @click="handleShowDiffDialog"> {{ $t('版本对比') }} </bk-button>
+        <bk-button theme="default" class="mr5" :disabled="!selectedList.length" @click="handleShowDiffDialog"> {{ $t('版本对比') }} </bk-button>
       </template>
     </div>
     <bk-table
@@ -108,8 +108,7 @@
       :is-show.sync="diffSidesliderConf.isShow"
       :title="diffSidesliderConf.title"
       :width="diffSidesliderConf.width"
-      :quick-close="true"
-      :before-close="handleBeforeClose">
+      :quick-close="true">
       <div slot="content" class="p20">
         <version-diff ref="versionDiffRef" :apigw-id="apigwId" :source-id="diffSourceId" :target-id="diffTargetId" :version-list="versionList"></version-diff>
       </div>
@@ -298,14 +297,12 @@
   import { catchErrorHandler } from '@/common/util'
   import versionCreateDialog from '@/components/create-version'
   import versionDiff from '@/components/version-diff'
-  import sidebarMixin from '@/mixins/sidebar-mixin'
 
   export default {
     components: {
       versionCreateDialog,
       versionDiff
     },
-    mixins: [sidebarMixin],
     data () {
       return {
         keyword: '',
@@ -465,11 +462,6 @@
         this.diffSourceId = this.sourceVersion.id
         this.diffTargetId = this.targetVersion.id
         // this.getVersionDiff(sourceId, targetId)
-        this.$nextTick(() => {
-          if (this.$refs.versionDiffRef) {
-            this.initSidebarFormData(this.$refs.versionDiffRef.searchParams || {})
-          }
-        })
       },
 
       async getVersionDiff (sourceId, targetId) {
@@ -723,10 +715,6 @@
             content: ''
           }
         })
-      },
-
-      async handleBeforeClose () {
-        return this.$isSidebarClosed(JSON.stringify(this.$refs.versionDiffRef.searchParams || {}))
       }
     }
   }

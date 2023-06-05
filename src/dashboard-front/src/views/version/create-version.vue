@@ -248,8 +248,7 @@
       :is-show.sync="diffSidesliderConf.isShow"
       :title="diffSidesliderConf.title"
       :width="diffSidesliderConf.width"
-      :quick-close="true"
-      :before-close="handleBeforeClose">
+      :quick-close="true">
       <div slot="content" class="p20">
         <version-diff
           ref="versionDiffRef"
@@ -278,14 +277,12 @@
   import { catchErrorHandler } from '@/common/util'
   import versionCreateDialog from '@/components/create-version'
   import versionDiff from '@/components/version-diff'
-  import sidebarMixin from '@/mixins/sidebar-mixin'
 
   export default {
     components: {
       versionCreateDialog,
       versionDiff
     },
-    mixins: [sidebarMixin],
     data () {
       return {
         isPageLoading: false,
@@ -624,15 +621,6 @@
         this.diffSidesliderConf.sourceTag = `${this.$t('环境 ')}${data.name}${this.$t('当前版本')}`
         this.diffSidesliderConf.isShow = true
         this.diffSourceId = data.resource_version_id
-        this.$nextTick(() => {
-          if (this.$refs.versionDiffRef) {
-            this.initSidebarFormData(this.$refs.versionDiffRef.searchParams || {})
-          }
-        })
-      },
-
-      async handleBeforeClose () {
-        return this.$isSidebarClosed(JSON.stringify(this.$refs.versionDiffRef.searchParams || {}))
       }
     }
   }
