@@ -784,7 +784,6 @@
       }
     },
     mounted () {
-      console.log('1')
       const self = this
       bus.$on('show-login-modal', data => {
         self.$refs.bkAuth.showLoginModal(data)
