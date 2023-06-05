@@ -140,7 +140,7 @@ module.exports = {
       'always',
       {
         'line': {
-          'markers': ['*package', '!', '/', ',', '='],
+          'markers': ['*package', '!', '/', ',', '=']
         },
         'block': {
           // 前后空格是否平衡
@@ -190,7 +190,7 @@ module.exports = {
     // 后端数据字段经常不是驼峰，所以不限制 properties，也不限制解构
     'vue/camelcase': [
       'error',
-      { 'properties': 'never', 'ignoreDestructuring': true },
+      { 'properties': 'never', 'ignoreDestructuring': true }
     ],
 
     // https://github.com/vuejs/eslint-plugin-vue/blob/master/docs/rules/comma-dangle.md
@@ -223,7 +223,7 @@ module.exports = {
       {
         'startTag': 'never',
         'endTag': 'never',
-        'selfClosingTag': 'always',
+        'selfClosingTag': 'always'
       }
     ],
 
