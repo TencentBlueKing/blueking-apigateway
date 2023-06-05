@@ -1090,7 +1090,7 @@ export default {
     '发布前，可在': 'Before publishing, you can in',
     '检查网关环境的环境变量、代理配置是否正确': 'check whether stage variables and backend service are correct',
     '编辑网关': 'Edit Gateway',
-    '版本号需符合 Semver 规范': 'The version must comply with the Semver specification',
+    '版本号须符合 Semver 规范，例如：1.0.0': 'The version must comply with the Semver specification, Example: 1.0.0',
     '关闭': 'Close',
     '标签最多只能选择10个': 'Tags can only select up to 10',
     '确认删除网关【{name}】？': 'Confirm to delete gateway [{name}]?',

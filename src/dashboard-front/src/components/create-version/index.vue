@@ -32,7 +32,7 @@
         <template>
           <div class="ag-alert" style="line-height: 1;">
             <i class="apigateway-icon icon-ag-info"></i>
-            &nbsp;{{ $t('版本号需符合 Semver 规范') }}
+            &nbsp;{{ $t('版本号须符合 Semver 规范，例如：1.0.0') }}
           </div>
         </template>
       </bk-form-item>
