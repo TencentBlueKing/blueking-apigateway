@@ -79,4 +79,7 @@ static/runtime/runtime.js
 static/lib-manifest.json
 static/lib.bundle.js
 
+# assets
+src/assets/iconfont
+
 .envrc
