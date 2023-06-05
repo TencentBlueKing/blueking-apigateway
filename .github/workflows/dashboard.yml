@@ -1,0 +1,39 @@
+name: dashboard ci
+
+on:
+  push:
+    branches: [ master, pre_*, ft_*, release/* ]
+    paths: ['src/dashboard/**']
+  pull_request:
+    branches: [ master, pre_*, ft_*, release/* ]
+    paths: ['src/dashboard/**']
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.7"]
+        os: [ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+        cache-dependency-path: 'src/dashboard/apigateway/requirements_dev.txt'
+
+    - name: Install dependencies
+      run: pip install -r src/dashboard/apigateway/requirements_dev.txt -i https://pypi.org/simple/
+
+    - name: Lint
+      run: make edition-ee && make lint
+      working-directory: src/dashboard
+
+    - name: Test
+      run:  make edition-ee && make test
+      working-directory: src/dashboard

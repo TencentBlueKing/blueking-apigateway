@@ -39,6 +39,7 @@ cryptography = "3.4.8"
 django-prometheus = "^2.1.0"
 tencent-apigateway-common = "0.1.11"
 apigw-manager = "1.0.1"
+setuptools = "57.5.0"
 
 [tool.poetry.dev-dependencies]
 coverage = "4.5.4"
