@@ -9,3 +9,4 @@ src/common/bklogout.js
 
 src/components/ui/code-viewer/index.vue
 src/views/runtime-data/chart.vue
+src/assets/iconfont/
