@@ -20,6 +20,7 @@ import datetime
 import json
 
 import pytest
+from django.conf import settings
 from django.test import TestCase
 from django.utils.encoding import smart_bytes
 from django_dynamic_fixture import G
@@ -1530,6 +1531,23 @@ class TestAPIRelatedApp:
 
         APIRelatedApp.objects.add_related_app(gateway.id, "bar")
         assert APIRelatedApp.objects.filter(api_id=gateway.id).count() == 2
+
+    def test_check_app_gateway_limit(self):
+        APIRelatedApp.objects.all().delete()
+
+        settings.API_GATEWAY_RESOURCE_LIMITS["app_gateway_whitelist"]["bk_test"] = 1
+
+        gateway = G(Gateway)
+        APIRelatedApp.objects._check_app_gateway_limit("bk_test")
+
+        APIRelatedApp.objects.add_related_app(gateway.id, "bk_test")
+        with pytest.raises(APIError):
+            APIRelatedApp.objects._check_app_gateway_limit("bk_test")
+
+        del settings.API_GATEWAY_RESOURCE_LIMITS["app_gateway_whitelist"]["bk_test"]
+        APIRelatedApp.objects._check_app_gateway_limit("bk_test")
+
+        APIRelatedApp.objects.all().delete()
 
 
 class TestBackendServiceManager:
