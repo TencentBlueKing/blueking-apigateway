@@ -80,6 +80,6 @@ static/lib-manifest.json
 static/lib.bundle.js
 
 # assets
-src/assets/iconfont
+src/assets/iconfont/
 
 .envrc
