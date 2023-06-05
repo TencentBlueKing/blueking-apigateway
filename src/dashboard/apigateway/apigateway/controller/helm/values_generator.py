@@ -112,7 +112,7 @@ class MicroGatewayValuesGenerator:
             "bkGateway": {
                 "instance": {
                     "id": self.micro_gateway.instance_id,
-                    "secret": controller.jwt_auth.secret,
+                    "secret": controller.jwt_auth.secret_key,
                 }
             }
         }

@@ -3,8 +3,10 @@ name: dashboard-front ci
 on:
   push:
     branches: [ master, pre_*, ft_*, release/* ]
+    paths: ['src/dashboard-front/**']
   pull_request:
     branches: [ master, pre_*, ft_*, release/* ]
+    paths: ['src/dashboard-front/**']
 
 jobs:
   build:

@@ -118,4 +118,4 @@ class TestMicroGatewayValuesGenerator:
 
         assert values["replicaCount"] == 1
         assert values["extraEnvVarsSecret"] == "env-vars-secret"
-        assert values["bkGateway"]["instance"]["id"] == "not-allowed"
+        assert values["bkGateway"]["instance"]["id"] == micro_gateway.instance_id

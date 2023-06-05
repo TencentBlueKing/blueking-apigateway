@@ -3,8 +3,10 @@ name: core-api ci
 on:
   push:
     branches: [ master, pre_*, ft_*, release/* ]
+    paths: ['src/core-api/**']
   pull_request:
     branches: [ master, pre_*, ft_*, release/* ]
+    paths: ['src/core-api/**']
 
 jobs:
   build:
@@ -28,10 +30,10 @@ jobs:
       working-directory: src/core-api
 
     - name: Lint
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.52.2
-        make lint
-      working-directory: src/core-api
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: v1.52.2
+        working-directory: src/core-api
 
     - name: Test
       run: make dep && make test
