@@ -686,6 +686,7 @@
     },
     watch: {
       async '$route' (to, from) {
+        console.log('1')
         if (COMPONENT_API_ROUTER.map(item => item.url).includes(to.meta.matchRoute)
           || COMPONENT_API_ROUTER.some(item => (item.children && item.children.length > 0) && item.indexUrl === to.meta.matchIndexRouter)) {
           this.getEsbApigwPermissionApplyList()
