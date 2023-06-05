@@ -1200,6 +1200,6 @@ export default {
     '离开': 'Leave',
     '绑定成功，绑定插件 5 分钟内生效，请稍候...': 'Binding succeeded, the plugin will take effect within 5 minutes, please wait...',
     '添加标签': 'Add tag',
-    '<div>可用率恢复至 {value_str}%, 低可用持续时间: <strong> {time}</strong></div>': '<div>Availability rate restored to {value_str}%, low availability duration: <strong> {time}</strong></div>',
-    '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>': '<div>Availability rate dropped to <strong>{value_str}%</strong>, call errors/total times: <strong> {error_count}/{count}</strong></div>'
+    '<div>可用率恢复至 {value_str}%, 低可用持续时间: <strong> {time}</strong></div>': '<div>Availability restored to {value_str}%, low availability duration: <strong> {time}</strong></div>',
+    '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>': '<div>Availability dropped to <strong>{value_str}%</strong>, errors/total times: <strong> {error_count}/{count}</strong></div>'
 }
