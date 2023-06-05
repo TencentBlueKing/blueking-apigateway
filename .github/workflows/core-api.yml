@@ -3,7 +3,6 @@ name: core-api ci
 on:
   push:
     branches: [ master, pre_*, ft_*, release/* ]
-    paths: ['src/core-api/**']
   pull_request:
     branches: [ master, pre_*, ft_*, release/* ]
 
