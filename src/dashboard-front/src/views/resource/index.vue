@@ -184,7 +184,7 @@
                   <p v-else>--</p>
                 </template>
               </bk-table-column>
-              <bk-table-column width="90" :label="$t('操作')">
+              <bk-table-column width="90" :label="$t('操作')" class-name="sub-operation">
                 <template slot-scope="resourceItem">
                   <bk-button :disabled="!resourceItem.row.stage_release_status" :text="true" @click="handleShowReleaseResource(resourceItem, resourceItem.row)"> {{ $t('查看资源') }} </bk-button>
                 </template>
@@ -2441,5 +2441,8 @@
             background-color: #ccc;
         }
     }
+}
+.ag-expand-table .sub-operation{
+    z-index: 99;
 }
 </style>
