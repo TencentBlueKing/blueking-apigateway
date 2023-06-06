@@ -297,7 +297,7 @@ const routes = [
             }
           },
           {
-            path: 'apigw-api/:apigwId/:stage/:resourceId/doc',
+            path: 'apigw-api/:apigwId/:resourceId/doc',
             alias: '',
             name: 'apigwAPIDetailDoc',
             component: ApigwAPIDetailDoc,
