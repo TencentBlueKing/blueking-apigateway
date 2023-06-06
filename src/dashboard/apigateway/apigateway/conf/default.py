@@ -688,20 +688,18 @@ API_GATEWAY_RESOURCE_LIMITS = {
     "max_gateway_count_per_app": env.int("MAX_GATEWAY_COUNT_PER_APP", 10),  # 每个app最多创建的网关数量
     "max_resource_count_per_gateway": env.int("MAX_RESOURCE_COUNT_PER_GATEWAY", 1000),  # 每个网关最多创建的api数量
     # 配置app的特殊规则
-    "max_gateway_count_per_app_whitelist": env.dict(
-        "MAX_GATEWAY_COUNT_PER_APP_WHITELIST",
-        default={
-            "bk_sops": 1000000,  # 标准运维网关数量无限制
-        },
-    ),
+    "max_gateway_count_per_app_whitelist": {
+        "bk_sops": 1000000,  # 标准运维网关数量无限制
+    },
     # 配置网关的特殊规则
-    "max_resource_count_per_gateway_whitelist": env.dict(
-        "MAX_RESOURCE_COUNT_PER_GATEWAY_WHITELIST",
-        default={
-            "bk-esb": 5000,
-        },
-    ),
+    "max_resource_count_per_gateway_whitelist": {
+        "bk-esb": 5000,
+    },
 }
+for k, v in env.dict("MAX_GATEWAY_COUNT_PER_APP_WHITELIST", default={}).items():
+    API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"][k] = v
+for k, v in env.dict("MAX_RESOURCE_COUNT_PER_GATEWAY_WHITELIST", default={}).items():
+    API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"][k] = v
 
 # 网关下对象的最大数量
 MAX_API_LABEL_COUNT_PER_GATEWAY = env.int("MAX_API_LABEL_COUNT_PER_GATEWAY", 100)
