@@ -170,6 +170,6 @@
 
 <style lang="postcss">
     body {
-        background: #FAFBFD !important;
+        background: #F5F7FA !important;
     }
 </style>
