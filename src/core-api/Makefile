@@ -51,7 +51,7 @@ cov:
 
 .PHONY: build
 build:
-	go build -o bk-apigateway-core-api
+	go build -ldflags "-X core/pkg/version.Version=${VERSION} -X core/pkg/version.Commit=`git rev-parse HEAD` -X core/pkg/version.BuildTime=`date +%Y-%m-%d_%I:%M:%S` -X 'core/pkg/version.GoVersion=`go version`'" -o bk-apigateway-core-api
 
 .PHONY: serve
 serve: build
