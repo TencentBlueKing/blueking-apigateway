@@ -1535,7 +1535,7 @@ class TestAPIRelatedApp:
     def test_check_app_gateway_limit(self):
         APIRelatedApp.objects.all().delete()
 
-        settings.API_GATEWAY_RESOURCE_LIMITS["app_gateway_whitelist"]["bk_test"] = 1
+        settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"]["bk_test"] = 1
 
         gateway = G(Gateway)
         APIRelatedApp.objects._check_app_gateway_limit("bk_test")
@@ -1544,7 +1544,7 @@ class TestAPIRelatedApp:
         with pytest.raises(APIError):
             APIRelatedApp.objects._check_app_gateway_limit("bk_test")
 
-        del settings.API_GATEWAY_RESOURCE_LIMITS["app_gateway_whitelist"]["bk_test"]
+        del settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"]["bk_test"]
         APIRelatedApp.objects._check_app_gateway_limit("bk_test")
 
         APIRelatedApp.objects.all().delete()

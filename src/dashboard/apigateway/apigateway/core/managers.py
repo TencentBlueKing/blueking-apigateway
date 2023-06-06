@@ -1603,8 +1603,8 @@ class APIRelatedAppManager(models.Manager):
         self.get_or_create(api_id=gateway_id, bk_app_code=bk_app_code)
 
     def _check_app_gateway_limit(self, bk_app_code: str):
-        max_gateway_per_app = settings.API_GATEWAY_RESOURCE_LIMITS["app_gateway_whitelist"].get(
-            bk_app_code, settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_per_app"]
+        max_gateway_per_app = settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"].get(
+            bk_app_code, settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app"]
         )
         if self.filter(bk_app_code=bk_app_code).count() >= max_gateway_per_app:
             raise error_codes.VALIDATE_ERROR.format(

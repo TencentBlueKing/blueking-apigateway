@@ -134,7 +134,7 @@ class TestCreateResourceMixin:
 
     def test_check_gateway_resource_limit(self, fake_gateway):
         Resource.objects.all().delete()
-        settings.API_GATEWAY_RESOURCE_LIMITS["gateway_resource_whitelist"][fake_gateway.name] = 1
+        settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"][fake_gateway.name] = 1
 
         mixin = CreateResourceMixin()
         mixin._check_gateway_resource_limit(fake_gateway)
@@ -178,7 +178,7 @@ class TestCreateResourceMixin:
         with pytest.raises(APIError):
             mixin._check_gateway_resource_limit(fake_gateway)
 
-        del settings.API_GATEWAY_RESOURCE_LIMITS["gateway_resource_whitelist"][fake_gateway.name]
+        del settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"][fake_gateway.name]
         mixin._check_gateway_resource_limit(fake_gateway)
 
 

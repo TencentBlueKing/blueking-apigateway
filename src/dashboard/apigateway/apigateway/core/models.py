@@ -139,7 +139,9 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     @property
     def max_resource_count(self) -> int:
-        return settings.MAX_RESOURCE_COUNT_SPECIFIED_GATEWAY.get(self.name, settings.MAX_RESOURCE_COUNT_PER_GATEWAY)
+        return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
+            self.name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
+        )
 
     @property
     def max_api_label_count(self) -> int:
