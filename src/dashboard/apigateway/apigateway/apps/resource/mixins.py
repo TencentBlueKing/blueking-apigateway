@@ -18,7 +18,6 @@
 #
 from typing import Any, Dict
 
-from django.conf import settings
 from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
@@ -72,9 +71,7 @@ class CreateResourceMixin:
         return slz.instance
 
     def _check_gateway_resource_limit(self, gateway: Gateway):
-        max_resource_per_gateway = settings.API_GATEWAY_RESOURCE_LIMITS[
-            "max_resource_count_per_gateway_whitelist"
-        ].get(gateway.name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"])
+        max_resource_per_gateway = gateway.max_resource_count
         if Resource.objects.filter(api_id=gateway.id).count() >= max_resource_per_gateway:
             raise error_codes.VALIDATE_ERROR.format(
                 f"The gateway [{gateway.name}] exceeds the limit of the number of resources that can be created."

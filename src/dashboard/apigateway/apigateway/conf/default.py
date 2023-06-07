@@ -697,9 +697,9 @@ API_GATEWAY_RESOURCE_LIMITS = {
     },
 }
 for k, v in env.dict("MAX_GATEWAY_COUNT_PER_APP_WHITELIST", default={}).items():
-    API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"][k] = v
+    API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"][k] = int(v)
 for k, v in env.dict("MAX_RESOURCE_COUNT_PER_GATEWAY_WHITELIST", default={}).items():
-    API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"][k] = v
+    API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"][k] = int(v)
 
 # 网关下对象的最大数量
 MAX_API_LABEL_COUNT_PER_GATEWAY = env.int("MAX_API_LABEL_COUNT_PER_GATEWAY", 100)
