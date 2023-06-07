@@ -2,6 +2,8 @@ ENCRYPT_KEY="dGVzdDMzNDA4YWJlNDMyNGJmYzE4Mjk4NGM3ZXRlc3Q="
 BK_APP_SECRET="egrKq5TnJvlFiPLIrtquv3Mow792xVgTzqTiSrVkUIk="
 
 DASHBOARD_CSRF_COOKIE_DOMAIN=".example.com"
+DASHBOARD_CSRF_COOKIE_NAME="bk_apigateway_csrftoken"
+BK_PAAS_LOGIN_URL="http://paas.example.com/login"
 
 BK_APIGW_DATABASE_HOST="localhost"
 
@@ -20,3 +22,4 @@ BK_ESB_DATABASE_PASSWORD_UNENCRYPTED=""
 # FIXME: can't only set unencrypted to empty, the code a or b will check the password
 BK_APIGW_REDIS_PASSWORD=""
 BK_APIGW_REDIS_PASSWORD_UNENCRYPTED=""
+

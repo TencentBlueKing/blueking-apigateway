@@ -9,16 +9,33 @@ npm install
 
 #### 配置host
 ```
-127.0.0.1 dev.bkapps-t.example.com
+127.0.0.1 dev-apigw.example.com
 ```
 
 #### 配置开发环境变量
-编辑build/dev.env.js
+
+编辑build/dev.env.js, 修改配置中涉及的域名
+
+- LOCAL_DEV_URL 本地运行的url，例如http://dev.bkapps-t.example.com
+- LOCAL_DEV_PORT 本地运行的端口
+- DASHBOARD_URL 后端接口前缀
+
+示例
+
+```javascript
+export default merge(prodEnv, {
+    NODE_ENV: NODE_ENV,
+    LOCAL_DEV_URL: JSON.stringify('http://dev-apigw.example.com'), // 本地运行的url，例如 http://dev.bkapps-t.example.com
+    LOCAL_DEV_PORT: JSON.stringify('5000'),
+    AJAX_MOCK_PARAM: JSON.stringify('mock-file'),
+    DASHBOARD_URL: 'http://dev-apigw.example.com/backend',
+    APISUPPORT_URL: 'http://dev-apigw.example.com/backend/docs',
+    BK_LOGIN_SIGN_IN_URL: 'http://paas.example.com/login',
+    DASHBOARD_CSRF_COOKIE_NAME: 'bk_apigateway_csrftoken',
+})
+
 ```
-LOCAL_DEV_URL 本地运行的url，例如http://dev.bkapps-t.example.com
-LOCAL_DEV_PORT 本地运行的端口
-DASHBOARD_URL 后端接口前缀
-```
+
 
 #### 启动服务
 ```

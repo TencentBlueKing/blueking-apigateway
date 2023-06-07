@@ -44,9 +44,31 @@ CREATE DATABASE IF NOT EXISTS `bk_esb` DEFAULT CHARACTER SET utf8 COLLATE utf8_g
 cp apigateway/conf/.env.tpl apigateway/conf/.env
 # 编辑 apigateway/conf/.env 文件，修改数据库连接信息/域名配置等
 
+# migrate
+python manage.py migrate
+python manage.py migrate --database bkcore
+
 # 启动进程
 python manage.py runserver
 ```
+
+根据 [dashboard-front/README.md](../dashboard-front/README.md) 拉起前端后, 可以配置`nginx`反向代理
+
+
+```nginx
+    server {
+        listen        80;
+        server_name   dev-apigw.example.com;
+
+        location / {
+            proxy_pass http://127.0.0.1:8888;
+        }
+        location /backend/ {
+            proxy_pass http://127.0.0.1:8000;
+        }
+    }
+```
+
 
 ## 如何维护插件类型
 
