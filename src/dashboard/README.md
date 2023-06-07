@@ -25,6 +25,29 @@ make develop
 make edition-modules
 ```
 
+## 本地开发
+
+
+```shell
+# 进入项目根路径
+cd src/dashboard/apigateway
+
+# 安装依赖包
+pip install -r requirements.txt
+pip install -r requirements_dev.txt
+
+# 新建数据库(在 MySQL 中操作)
+CREATE DATABASE IF NOT EXISTS `bk_apigateway` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS `bk_esb` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+
+# 修改配置文件
+cp apigateway/conf/.env.tpl apigateway/conf/.env
+# 编辑 apigateway/conf/.env 文件，修改数据库连接信息/域名配置等
+
+# 启动进程
+python manage.py runserver
+```
+
 ## 如何维护插件类型
 
 1. 在本地环境中，执行 `make load_fixtures` 命令，保证数据库数据和线上一致；

@@ -15,6 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
+import environ
+
+# 读取当前目录下的 .env, .env中可以配置例如db的连接信息等
+environ.Env.read_env()
+
 from .default import *  # noqa
 
 DEBUG = True
