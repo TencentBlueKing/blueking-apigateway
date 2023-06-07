@@ -54,7 +54,7 @@
         :model="curLabel"
         :rules="rules"
         ref="labelForm">
-        <bk-form-item :label="$t('标签名称')" :required="true" :property="'name'">
+        <bk-form-item :label="$t('标签名称')" :required="true" :property="'name'" :error-display-type="'normal'">
           <bk-input v-model="curLabel.name"></bk-input>
         </bk-form-item>
       </bk-form>

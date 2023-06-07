@@ -188,7 +188,8 @@
             :label="$t('名称')"
             :required="true"
             :rules="IPGroupRule.name"
-            :property="'name'">
+            :property="'name'"
+            :error-display-type="'normal'">
             <bk-input :placeholder="$t('请输入')" v-model="curIPGroup.name"></bk-input>
           </bk-form-item>
           <bk-form-item :label="$t('IP列表')"
@@ -1380,5 +1381,9 @@
             font-size: 12px;
             color: #63656E;
         }
+    }
+
+    .ag-strategy-tab {
+        background: transparent;
     }
 </style>

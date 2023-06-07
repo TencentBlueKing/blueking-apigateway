@@ -136,14 +136,14 @@
       :before-close="handleBeforeClose">
       <div slot="content" style="padding: 20px;" v-bkloading="{ isLoading: detailLoading, opacity: 1 }">
         <bk-form :label-width="160" :rules="rules" ref="form" :model="formData" v-show="!detailLoading">
-          <bk-form-item :label="$t('名称')" :required="true" property="name">
+          <bk-form-item :label="$t('名称')" :required="true" property="name" :error-display-type="'normal'">
             <bk-input v-model="formData.name" :placeholder="$t('由英文字母、下划线(_)或数字组成，并且以字母开头，长度小于64个字符')" :disabled="isDisabled"></bk-input>
             <p class="tips" slot="tip"><i class="apigateway-icon icon-ag-info"></i> {{ $t('系统唯一标识') }} </p>
           </bk-form-item>
-          <bk-form-item :label="$t('描述')" :required="true" property="description">
+          <bk-form-item :label="$t('描述')" :required="true" property="description" :error-display-type="'normal'">
             <bk-input :disabled="isDisabled" :maxlength="128" v-model="formData.description" :placeholder="$t('不超过128个字符')"></bk-input>
           </bk-form-item>
-          <bk-form-item :label="$t('文档分类')" :required="true" property="doc_category_id">
+          <bk-form-item :label="$t('文档分类')" :required="true" property="doc_category_id" :error-display-type="'normal'">
             <template v-if="isDisabled">
               <bk-input v-model="curSystem.doc_category_name" disabled></bk-input>
             </template>

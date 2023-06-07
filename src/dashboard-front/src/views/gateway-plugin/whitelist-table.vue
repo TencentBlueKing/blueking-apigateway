@@ -144,7 +144,7 @@
           <bk-form-item label="">
             <p class="top-tips">{{ $t('你将对指定的蓝鲸应用添加免用户认证白名单') }}</p>
           </bk-form-item>
-          <bk-form-item :label="$t('蓝鲸应用ID')" :required="true" :label-width="150" :property="'bkAppCode'" :rules="rules.bkAppCode">
+          <bk-form-item :label="$t('蓝鲸应用ID')" :required="true" :label-width="150" :property="'bkAppCode'" :rules="rules.bkAppCode" :error-display-type="'normal'">
             <bk-input :placeholder="$t('请输入应用ID')" v-model="curResource.bkAppCode" :disabled="resourceSliderConf.type === 'edit'"></bk-input>
           </bk-form-item>
           <bk-form-item label="">

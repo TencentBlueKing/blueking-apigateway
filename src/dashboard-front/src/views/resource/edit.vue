@@ -40,7 +40,8 @@
               ref="nameFormItem"
               :rules="rules.name"
               :required="true"
-              :property="'name'">
+              :property="'name'"
+              :error-display-type="'normal'">
               <bk-input :placeholder="$t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符')" v-model="curResource.name"></bk-input>
               <p slot="tip" class="ag-tip mt5">
                 <i class="apigateway-icon icon-ag-info"></i> {{ $t('资源名称在网关下唯一，将在SDK中用作操作名称，若修改，请联系SDK用户做相应调整') }}
@@ -168,7 +169,8 @@
             <bk-form-item
               :label="$t('请求方法')"
               :required="true"
-              ref="methodFormItem">
+              ref="methodFormItem"
+              :error-display-type="'normal'">
               <bk-select
                 :clearable="false"
                 v-model="curResource.method"
@@ -188,7 +190,8 @@
               :property="'path'"
               :label="$t('请求路径')"
               :icon-offset="localLanguage === 'en' ? 178 : 156"
-              ref="pathFormItem">
+              ref="pathFormItem"
+              :error-display-type="'normal'">
               <div class="path-form-warpper">
                 <bk-input
                   v-model="curResource.path"
@@ -244,7 +247,8 @@
             <section v-show="curResource.proxy_type === 'http'">
               <bk-form-item
                 label="Method"
-                :required="true">
+                :required="true"
+                :error-display-type="'normal'">
                 <bk-select
                   :clearable="false"
                   v-model="curResource.proxy_configs.http.method">
@@ -260,7 +264,8 @@
                 :required="true"
                 :property="'proxy_configs.http.path'"
                 :icon-offset="230"
-                label="Path">
+                label="Path"
+                :error-display-type="'normal'">
                 <div class="path-form-warpper">
                   <bk-input
                     type="text"
@@ -338,7 +343,8 @@
                   <bk-form ref="proxyForm" :label-width="190" :model="curResource">
                     <bk-form-item
                       :label="$t('负载均衡类型')"
-                      :required="true">
+                      :required="true"
+                      :error-display-type="'normal'">
                       <bk-select
                         :clearable="false"
                         :placeholder="$t('负载均衡类型')"
@@ -358,7 +364,8 @@
                       v-for="(hostItem, index) of curResource.proxy_configs.http.upstreams.hosts"
                       :key="index"
                       :icon-offset="curResource.proxy_configs.http.upstreams.loadbalance === 'weighted-roundrobin' ? 90 : 10"
-                      :class="{ 'form-item-special': index !== 0 }">
+                      :class="{ 'form-item-special': index !== 0 }"
+                      :error-display-type="'normal'">
                       <div class="host-item mb10">
                         <bk-input
                           :placeholder="$t('格式: http(s)://host:port')"
@@ -441,7 +448,8 @@
                     :property="'proxy_configs.http.timeout'"
                     :icon-offset="192"
                     :required="true"
-                    style="width: 480px;">
+                    style="width: 480px;"
+                    :error-display-type="'normal'">
                     <bk-input
                       type="number"
                       :show-controls="false"
@@ -536,7 +544,8 @@
                 label="Status Code"
                 :required="true"
                 :rules="rules.code"
-                :property="'proxy_configs.mock.code'">
+                :property="'proxy_configs.mock.code'"
+                :error-display-type="'normal'">
                 <bk-input
                   type="number"
                   :min="0"
@@ -561,7 +570,8 @@
               <bk-form-item
                 label="Headers"
                 :rules="rules.name"
-                :property="'name'">
+                :property="'name'"
+                :error-display-type="'normal'">
                 <apigw-key-valuer
                   ref="mockKeyValuer"
                   :key="curResource.proxy_type"

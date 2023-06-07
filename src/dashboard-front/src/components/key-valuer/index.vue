@@ -6,7 +6,7 @@
         <template v-if="list.length">
           <div class="biz-key-item" v-for="(keyItem, index) in list" :key="index">
             <bk-form :ref="`key-${index}`" style="width: 190px; display: inline-block;" :label-width="0" :model="keyItem">
-              <bk-form-item :rules="rules.key" :property="'key'">
+              <bk-form-item :rules="rules.key" :property="'key'" :error-display-type="'normal'">
                 <bk-input
                   type="text"
                   :readonly="keyReadonly"
@@ -25,7 +25,7 @@
               style="width: 190px; display: inline-block;"
               :label-width="0"
               :model="keyItem">
-              <bk-form-item :rules="rules.value" :property="'value'">
+              <bk-form-item :rules="rules.value" :property="'value'" :error-display-type="'normal'">
                 <bk-input
                   type="text"
                   :placeholder="valuePlaceholder || $t('值')"
