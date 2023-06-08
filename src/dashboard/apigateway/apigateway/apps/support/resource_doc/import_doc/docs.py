@@ -57,6 +57,8 @@ class BaseDoc:
 class ArchiveDoc(BaseDoc):
     filename: str = ""
     resource_doc_path: str = ""
+    # we think is changed unless the old and new md5 are the same
+    has_changed: bool = True
 
     @property
     def resource_doc_markdown(self) -> str:
@@ -102,4 +104,5 @@ class SwaggerDoc(BaseDoc):
             doc_path = generate_markdown(
                 swagger=swagger, language=self.language.value, output=os.path.join(temp_dir, "docs.md")
             )
+            return read_file(doc_path).decode().strip()
             return read_file(doc_path).decode().strip()

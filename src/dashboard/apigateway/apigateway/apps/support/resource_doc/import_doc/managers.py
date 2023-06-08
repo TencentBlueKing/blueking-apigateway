@@ -51,9 +51,13 @@ class ArchiveImportDocManager:
         parser = ArchiveParser()
         handler = DocsHandler(gateway_id=gateway_id)
 
-        filenames = ArchiveFileFactory.from_fileobj(archive_file).get_names(archive_file)
-        docs = parser.parse({name: "" for name in filenames})
-        return handler.enrich_docs(gateway_id, docs)
+        with TemporaryDirectory() as output_dir:
+            files = ArchiveFileFactory.from_fileobj(archive_file).extractall(output_dir, archive_file)
+
+            docs = parser.parse(files)
+            return handler.enrich_docs(gateway_id, docs)
+        # filenames = ArchiveFileFactory.from_fileobj(archive_file).get_names(archive_file)
+        # docs = parser.parse({name: "" for name in filenames})
 
     def _delete_resource_doc_swagger(self, gateway_id: int, docs: Sequence[BaseDoc]):
         """删除关联的 swagger 文档"""

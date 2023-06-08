@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import hashlib
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Set, TypeVar
 
@@ -57,17 +58,30 @@ class DocsHandler:
         - 设置资源 ID
         - 设置资源文档 ID
         - 设置关联的 swagger 文档 ID
+
+        note: en/zh share the same resource_id, use the doc_key to distinguish
         """
         resource_name_to_id = Resource.objects.filter_resource_name_to_id(gateway_id)
         doc_key_to_id = ResourceDoc.objects.get_doc_key_to_id(gateway_id)
         doc_id_to_swagger_id = ResourceDocSwagger.objects.get_resource_doc_id_to_id(gateway_id)
+
+        doc_key_to_content_md5 = ResourceDoc.objects.query_doc_key_to_content_md5(gateway_id)
 
         for doc in docs:
             doc.resource_id = resource_name_to_id.get(doc.resource_name)
             doc.resource_doc_id = doc_key_to_id.get(doc.doc_key)  # type: ignore
             doc.resource_doc_swagger_id = doc_id_to_swagger_id.get(doc.resource_doc_id)  # type: ignore
 
+            doc.has_changed = True
+            if doc.doc_key is not None:
+                old_md5 = doc_key_to_content_md5.get(doc.doc_key)
+                current_md5 = self._generate_md5(doc.resource_doc_markdown)
+                doc.has_changed = old_md5 != current_md5
+
         return docs
+
+    def _generate_md5(self, content: str) -> str:
+        return hashlib.md5(content.encode("utf-8")).hexdigest()
 
     def filter_valid_docs(self, docs: Sequence[DocType]) -> Sequence[DocType]:
         return [doc for doc in docs if doc.resource_id]
