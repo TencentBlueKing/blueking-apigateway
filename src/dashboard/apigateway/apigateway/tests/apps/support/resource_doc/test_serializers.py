@@ -99,6 +99,7 @@ class TestArchiveDocParseResultSLZ:
                     "resource_id": None,
                     "resource_name": "get_user",
                     "resource_doc_id": None,
+                    "resource_doc_content_changed": True,
                 },
                 {},
                 {
@@ -110,6 +111,7 @@ class TestArchiveDocParseResultSLZ:
                     "description": "",
                     "resource_doc_id": None,
                     "resource_doc_language": "en",
+                    "resource_doc_content_changed": True,
                 },
             ),
             (
@@ -119,6 +121,7 @@ class TestArchiveDocParseResultSLZ:
                     "resource_id": 1,
                     "resource_name": "get_user",
                     "resource_doc_id": None,
+                    "resource_doc_content_changed": True,
                 },
                 {
                     1: {
@@ -136,6 +139,7 @@ class TestArchiveDocParseResultSLZ:
                     "description": "test",
                     "resource_doc_id": None,
                     "resource_doc_language": "en",
+                    "resource_doc_content_changed": True,
                 },
             ),
         ],

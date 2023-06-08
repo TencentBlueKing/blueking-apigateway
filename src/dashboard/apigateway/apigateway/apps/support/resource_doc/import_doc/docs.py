@@ -105,4 +105,3 @@ class SwaggerDoc(BaseDoc):
                 swagger=swagger, language=self.language.value, output=os.path.join(temp_dir, "docs.md")
             )
             return read_file(doc_path).decode().strip()
-            return read_file(doc_path).decode().strip()
