@@ -16,10 +16,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.common.constants import ChoiceEnum, LanguageCodeEnum
+from enum import Enum
+
+from apigateway.common.constants import ChoiceEnumMixin, LanguageCodeEnum
 
 
-class APIDocTypeEnum(ChoiceEnum):
+class APIDocTypeEnum(ChoiceEnumMixin, Enum):
     MARKDOWN = "markdown"
 
 

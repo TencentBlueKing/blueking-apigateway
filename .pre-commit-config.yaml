@@ -24,7 +24,7 @@ repos:
         name: mypy
         language: python
         types: [python]
-        entry: mypy --config=src/dashboard/pyproject.toml
+        entry: mypy --config-file=src/dashboard/pyproject.toml
         files: src/dashboard/
   - repo: local
     hooks:
@@ -50,7 +50,7 @@ repos:
         name: mypy
         language: python
         types: [python]
-        entry: mypy --config=src/esb/pyproject.toml
+        entry: mypy --config-file=src/esb/pyproject.toml
         files: src/esb/
   - repo: local
     hooks:
