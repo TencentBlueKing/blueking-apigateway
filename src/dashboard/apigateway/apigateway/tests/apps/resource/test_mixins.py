@@ -18,9 +18,11 @@
 #
 import pytest
 from ddf import G
+from django.conf import settings
 
 from apigateway.apps.resource.mixins import CreateResourceMixin, UpdateResourceMixin
 from apigateway.biz.resource import ResourceHandler
+from apigateway.common.error_codes import APIError
 from apigateway.core import constants
 from apigateway.core.models import Context, Proxy, Resource
 
@@ -129,6 +131,55 @@ class TestCreateResourceMixin:
             type=constants.ContextTypeEnum.RESOURCE_AUTH.value,
         )
         assert context.config == expected_context_config
+
+    def test_check_gateway_resource_limit(self, fake_gateway):
+        Resource.objects.all().delete()
+        settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"][fake_gateway.name] = 1
+
+        mixin = CreateResourceMixin()
+        mixin._check_gateway_resource_limit(fake_gateway)
+
+        resource = {
+            "name": "post_echo",
+            "description": "desc",
+            "is_public": True,
+            "method": "POST",
+            "path": "/echo/",
+            "match_subpath": True,
+            "label_ids": [],
+            "proxy_type": "http",
+            "proxy_configs": {
+                "http": {
+                    "method": "GET",
+                    "path": "/echo/",
+                    "match_subpath": True,
+                    "timeout": 30,
+                    "upstreams": {
+                        "loadbalance": "roundrobin",
+                        "hosts": [
+                            {
+                                "host": "http://www.a.com",
+                                "weight": 100,
+                            }
+                        ],
+                    },
+                    "transform_headers": {},
+                }
+            },
+            "auth_config": {
+                "auth_verified_required": False,
+                "app_verified_required": True,
+                "resource_perm_required": True,
+            },
+            "disabled_stage_ids": [],
+        }
+        mixin._create_resource(fake_gateway, resource, "admin")
+
+        with pytest.raises(APIError):
+            mixin._check_gateway_resource_limit(fake_gateway)
+
+        del settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"][fake_gateway.name]
+        mixin._check_gateway_resource_limit(fake_gateway)
 
 
 class TestUpdateResourceMixin:

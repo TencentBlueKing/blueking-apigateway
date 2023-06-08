@@ -96,6 +96,9 @@ class ResourceViewSet(BaseResourceViewSet, CreateResourceMixin, UpdateResourceMi
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=serializers.ResourceSLZ, tags=["Resource"])
     @transaction.atomic
     def create(self, request, *args, **kwargs):
+        # 检查网关资源是否超限
+        self._check_gateway_resource_limit(request.gateway)
+
         instance = self._create_resource(
             gateway=request.gateway,
             data=request.data,

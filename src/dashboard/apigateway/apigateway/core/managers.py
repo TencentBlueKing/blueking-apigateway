@@ -1596,7 +1596,21 @@ class APIRelatedAppManager(models.Manager):
 
     def add_related_app(self, gateway_id: int, bk_app_code: str):
         """添加关联应用"""
+
+        # 检查app能关联的网关最大数量
+        self._check_app_gateway_limit(bk_app_code)
+
         self.get_or_create(api_id=gateway_id, bk_app_code=bk_app_code)
+
+    def _check_app_gateway_limit(self, bk_app_code: str):
+        max_gateway_per_app = settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"].get(
+            bk_app_code, settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app"]
+        )
+        if self.filter(bk_app_code=bk_app_code).count() >= max_gateway_per_app:
+            raise error_codes.VALIDATE_ERROR.format(
+                f"The app [{bk_app_code}] exceeds the limit of the number of gateways that can be related."
+                + f" The maximum limit is {max_gateway_per_app}."
+            )
 
 
 class MicroGatewayManager(models.Manager):

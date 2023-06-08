@@ -416,7 +416,7 @@ class TestResourceImportValidator:
         max_resource_count,
         expected_error,
     ):
-        settings.MAX_RESOURCE_COUNT_PER_GATEWAY = max_resource_count
+        settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"] = max_resource_count
         mocker.patch(
             "apigateway.apps.resource.importer.Resource.objects.filter_id_to_fields",
             return_value=mock_resource_id_to_fields,

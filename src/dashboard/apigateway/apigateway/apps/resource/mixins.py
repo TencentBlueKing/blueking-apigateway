@@ -24,6 +24,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.resource import serializers
 from apigateway.biz.resource import ResourceHandler
+from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, Resource
 
 
@@ -68,6 +69,14 @@ class CreateResourceMixin:
         )
 
         return slz.instance
+
+    def _check_gateway_resource_limit(self, gateway: Gateway):
+        max_resource_per_gateway = gateway.max_resource_count
+        if Resource.objects.filter(api_id=gateway.id).count() >= max_resource_per_gateway:
+            raise error_codes.VALIDATE_ERROR.format(
+                f"The gateway [{gateway.name}] exceeds the limit of the number of resources that can be created."
+                + f" The maximum limit is {max_resource_per_gateway}."
+            )
 
 
 class UpdateResourceMixin:
