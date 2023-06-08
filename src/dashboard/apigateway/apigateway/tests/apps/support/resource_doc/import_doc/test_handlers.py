@@ -73,7 +73,7 @@ class TestDocsHandler:
         mock_save_docs.assert_called_once_with(gateway.id, docs)
 
     def test_enrich_docs(self):
-        content = "hello"
+        content = ""
         gateway = G(Gateway)
         resource = G(Resource, api=gateway)
         resource_doc = G(ResourceDoc, resource_id=resource.id, api=gateway, content=content)
