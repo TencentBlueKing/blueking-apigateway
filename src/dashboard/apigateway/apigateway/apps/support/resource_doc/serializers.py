@@ -74,6 +74,7 @@ class ArchiveDocParseResultSLZ(serializers.Serializer):
     description = serializers.SerializerMethodField()
     resource_doc_id = serializers.IntegerField(allow_null=True, read_only=True)
     resource_doc_language = serializers.CharField(source="language.value", read_only=True)
+    resource_doc_content_changed = serializers.BooleanField(read_only=True, source="has_changed")
 
     def get_method(self, obj):
         return self._get_resource_field(obj, "method", "")
