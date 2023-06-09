@@ -37,7 +37,7 @@ socket_timeout = settings.REQUEST_TIMEOUT_SECS * 1000
 class BaseGSEClient(object):
     """Base class for GSEclient"""
 
-    client_module = None
+    client_module = None  # type: ignore
     transport_class = TTransport.TFramedTransport
     MAX_CONNECT_RETRIES = 3
 
@@ -108,7 +108,7 @@ class BaseGSEClient(object):
 class GSEProcServerClient(BaseGSEClient):
     """Wrapped client class for ProcService"""
 
-    client_module = ProcService
+    client_module = ProcService  # type: ignore
 
     def __init__(self, *args, **kwargs):
         super(GSEProcServerClient, self).__init__(*args, **kwargs)
@@ -133,7 +133,7 @@ class GSEProcServerClient(BaseGSEClient):
             return {
                 "result": False,
                 "code": "1%s" % response.error_code,
-                "message": u"Request GSE service failed: %s" % response.error_msg,
+                "message": "Request GSE service failed: %s" % response.error_msg,
                 "__tresp": response,
             }
         else:

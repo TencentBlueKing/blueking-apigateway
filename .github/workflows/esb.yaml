@@ -14,10 +14,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.6"]
-        # python3.6 should use ubuntu-20.04
+        python-version: ["3.7"]
         # reference: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
-        os: [ubuntu-20.04]
+        os: [ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v3
@@ -31,6 +30,9 @@ jobs:
 
     - name: Install dependencies
       run: |
+        # python3.7 install concurrentloghandler failed even with setuptools<58.0.0 installed,
+        # but python 3.6 does not support ruff, therefore, use python3.7 but do not install concurrentloghandler
+        sed -i '/concurrentloghandler==0.9.1/d' src/esb/esb/requirements_dev.txt
         pip install --upgrade 'setuptools<58.0.0' && \
         pip install -r src/esb/esb/requirements_dev.txt -i https://pypi.org/simple/
 
