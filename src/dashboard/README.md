@@ -27,18 +27,22 @@ make edition-modules
 
 ## 本地开发
 
+准备数据库
+
+```sql
+# 新建数据库(在 MySQL 中操作)
+CREATE DATABASE IF NOT EXISTS `bk_apigateway` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS `bk_esb` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+```
 
 ```shell
 # 进入项目根路径
 cd src/dashboard/apigateway
 
+# 建议使用虚拟环境
 # 安装依赖包
 pip install -r requirements.txt
 pip install -r requirements_dev.txt
-
-# 新建数据库(在 MySQL 中操作)
-CREATE DATABASE IF NOT EXISTS `bk_apigateway` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
-CREATE DATABASE IF NOT EXISTS `bk_esb` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 # 修改配置文件
 cp apigateway/conf/.env.tpl apigateway/conf/.env
@@ -54,6 +58,7 @@ python manage.py runserver
 
 根据 [dashboard-front/README.md](../dashboard-front/README.md) 拉起前端后, 可以配置`nginx`反向代理
 
+一份示例的 Nginx 配置（只包含 server 部分）如下：
 
 ```nginx
     server {
@@ -68,7 +73,6 @@ python manage.py runserver
         }
     }
 ```
-
 
 ## 如何维护插件类型
 

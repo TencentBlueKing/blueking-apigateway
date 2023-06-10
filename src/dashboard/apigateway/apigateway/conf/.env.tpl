@@ -19,7 +19,10 @@ BK_ESB_DATABASE_PORT=3306
 BK_ESB_DATABASE_USER="root"
 BK_ESB_DATABASE_PASSWORD_UNENCRYPTED=""
 
-# FIXME: can't only set unencrypted to empty, the code a or b will check the password
+# FIXME: can't only set unencrypted to empty,
+# in default.py env.str("BK_APIGW_REDIS_PASSWORD_UNENCRYPTED", "") or sec_env.str("BK_APIGW_REDIS_PASSWORD") will check the password
 BK_APIGW_REDIS_PASSWORD=""
 BK_APIGW_REDIS_PASSWORD_UNENCRYPTED=""
 
+# add the frontend domain, will add to CORS_ORIGIN_REGEX_WHITELIST
+DASHBOARD_FE_URL="http://apigw.example.com"
