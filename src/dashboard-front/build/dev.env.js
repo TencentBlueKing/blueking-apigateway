@@ -37,13 +37,7 @@ const NODE_ENV = JSON.stringify('development')
 
 export default merge(prodEnv, {
     NODE_ENV: NODE_ENV,
-    LOCAL_DEV_URL: JSON.stringify('http://dev-apigw.paasv3-dev.woa.com'), // 本地运行的url，例如 http://dev.bkapps-t.example.com
+    LOCAL_DEV_URL: JSON.stringify(''), // 本地运行的url，例如 http://dev.bkapps-t.example.com
     LOCAL_DEV_PORT: JSON.stringify('5000'),
-    AJAX_MOCK_PARAM: JSON.stringify('mock-file'),
-    DASHBOARD_URL: 'http://dev-apigw.paasv3-dev.woa.com/backend',
-    APISUPPORT_URL: 'http://dev-apigw.paasv3-dev.woa.com/backend/docs',
-    BK_LOGIN_SIGN_IN_URL: 'http://paas.paasv3-dev.woa.com/login',
-    DASHBOARD_CSRF_COOKIE_NAME: 'bk_apigateway_csrftoken',
+    AJAX_MOCK_PARAM: JSON.stringify('mock-file')
 })
-
-
