@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import hashlib
 import itertools
 import operator
 from collections import defaultdict
@@ -45,10 +44,10 @@ class ResourceDocManager(models.Manager):
             for doc in self.filter(api_id=gateway_id).values("id", "resource_id", "language")
         }
 
-    def query_doc_key_to_content_md5(self, gateway_id: int) -> Dict[str, str]:
+    def query_doc_key_to_content(self, gateway_id: int) -> Dict[str, str]:
         # note: the content is rendered, not the raw file content
         return {
-            f"{doc['resource_id']}:{doc['language']}": hashlib.md5(doc["content"].encode("utf-8")).hexdigest()
+            f"{doc['resource_id']}:{doc['language']}": doc["content"]
             for doc in self.filter(api_id=gateway_id).values("resource_id", "content", "language")
         }
 

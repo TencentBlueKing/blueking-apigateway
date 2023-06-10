@@ -65,7 +65,7 @@ class DocsHandler:
         doc_key_to_id = ResourceDoc.objects.get_doc_key_to_id(gateway_id)
         doc_id_to_swagger_id = ResourceDocSwagger.objects.get_resource_doc_id_to_id(gateway_id)
 
-        doc_key_to_content_md5 = ResourceDoc.objects.query_doc_key_to_content_md5(gateway_id)
+        doc_key_to_content = ResourceDoc.objects.query_doc_key_to_content(gateway_id)
 
         for doc in docs:
             doc.resource_id = resource_name_to_id.get(doc.resource_name)
@@ -74,7 +74,7 @@ class DocsHandler:
 
             doc.has_changed = True
             if doc.doc_key is not None:
-                old_md5 = doc_key_to_content_md5.get(doc.doc_key)
+                old_md5 = self._generate_md5(doc_key_to_content.get(doc.doc_key))
                 current_md5 = self._generate_md5(doc.resource_doc_markdown)
                 doc.has_changed = old_md5 != current_md5
 
