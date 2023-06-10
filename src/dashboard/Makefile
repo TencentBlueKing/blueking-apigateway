@@ -40,7 +40,7 @@ test:
 		--reuse-db \
 		--maxfail 1 \
 		-n auto \
-		apigateway/tests
+		tests
 	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
 
 .PHONY: test-pdb
