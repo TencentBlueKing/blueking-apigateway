@@ -25,6 +25,55 @@ make develop
 make edition-modules
 ```
 
+## 本地开发
+
+准备数据库
+
+```sql
+# 新建数据库(在 MySQL 中操作)
+CREATE DATABASE IF NOT EXISTS `bk_apigateway` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS `bk_esb` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+```
+
+```shell
+# 进入项目根路径
+cd src/dashboard/apigateway
+
+# 建议使用虚拟环境
+# 安装依赖包
+pip install -r requirements.txt
+pip install -r requirements_dev.txt
+
+# 修改配置文件
+cp apigateway/conf/.env.tpl apigateway/conf/.env
+# 编辑 apigateway/conf/.env 文件，修改数据库连接信息/域名配置等
+
+# migrate
+python manage.py migrate
+python manage.py migrate --database bkcore
+
+# 启动进程
+python manage.py runserver
+```
+
+根据 [dashboard-front/README.md](../dashboard-front/README.md) 拉起前端后, 可以配置`nginx`反向代理
+
+一份示例的 Nginx 配置（只包含 server 部分）如下：
+
+```nginx
+    server {
+        listen        80;
+        server_name   dev-apigw.example.com;
+
+        location / {
+            proxy_pass http://127.0.0.1:8888;
+        }
+        location /backend/ {
+            proxy_pass http://127.0.0.1:8000;
+        }
+    }
+```
+
 ## 如何维护插件类型
 
 1. 在本地环境中，执行 `make load_fixtures` 命令，保证数据库数据和线上一致；
