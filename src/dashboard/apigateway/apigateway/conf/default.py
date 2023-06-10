@@ -292,7 +292,7 @@ DATABASES = {
         "USER": env.str("BK_APIGW_DATABASE_USER", BK_APP_CODE),
         "PASSWORD": env.str("BK_APIGW_DATABASE_PASSWORD_UNENCRYPTED", "")
         or sec_env.str("BK_APIGW_DATABASE_PASSWORD", ""),
-        "HOST": env.str("BK_APIGW_DATABASE_HOST"),
+        "HOST": env.str("BK_APIGW_DATABASE_HOST", "localhost"),
         "PORT": env.int("BK_APIGW_DATABASE_PORT", 3306),
         "OPTIONS": {
             "isolation_level": env.str("BK_APIGW_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
@@ -300,10 +300,10 @@ DATABASES = {
     },
     "bkcore": {
         "ENGINE": env.str("BK_ESB_DATABASE_ENGINE", "django.db.backends.mysql"),
-        "NAME": env.str("BK_ESB_DATABASE_NAME"),
+        "NAME": env.str("BK_ESB_DATABASE_NAME", "bk_esb"),
         "USER": env.str("BK_ESB_DATABASE_USER", BK_APP_CODE),
         "PASSWORD": env.str("BK_ESB_DATABASE_PASSWORD_UNENCRYPTED", "") or sec_env.str("BK_ESB_DATABASE_PASSWORD", ""),
-        "HOST": env.str("BK_ESB_DATABASE_HOST"),
+        "HOST": env.str("BK_ESB_DATABASE_HOST", "localhost"),
         "PORT": env.int("BK_ESB_DATABASE_PORT", 3306),
         "OPTIONS": {
             "isolation_level": env.str("BK_ESB_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
