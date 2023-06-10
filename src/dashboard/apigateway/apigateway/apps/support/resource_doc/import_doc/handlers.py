@@ -74,7 +74,7 @@ class DocsHandler:
 
             doc.has_changed = True
             if doc.doc_key is not None:
-                old_md5 = self._generate_md5(doc_key_to_content.get(doc.doc_key))
+                old_md5 = self._generate_md5(doc_key_to_content.get(doc.doc_key, ""))
                 current_md5 = self._generate_md5(doc.resource_doc_markdown)
                 doc.has_changed = old_md5 != current_md5
 
