@@ -1090,7 +1090,7 @@ export default {
     '发布前，可在': '发布前，可在',
     '检查网关环境的环境变量、代理配置是否正确': '检查网关环境的环境变量、代理配置是否正确',
     '编辑网关': '编辑网关',
-    '版本号需符合 Semver 规范': '版本号需符合 Semver 规范',
+    '版本号须符合 Semver 规范，例如：1.0.0': '版本号须符合 Semver 规范，例如：1.0.0',
     '关闭': '关闭',
     '标签最多只能选择10个': '标签最多只能选择10个',
     '确认删除网关【{name}】？': '确认删除网关【{name}】？',
@@ -1201,5 +1201,6 @@ export default {
     '绑定成功，绑定插件 5 分钟内生效，请稍候...': '绑定成功，绑定插件 5 分钟内生效，请稍候...',
     '添加标签': '添加标签',
     '<div>可用率恢复至 {value_str}%, 低可用持续时间: <strong> {time}</strong></div>': '<div>可用率恢复至 {value_str}%, 低可用持续时间: <strong> {time}</strong></div>',
-    '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>': '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>'
+    '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>': '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>',
+    '仅支持 json, yaml 格式': '仅支持 json, yaml 格式'
 }

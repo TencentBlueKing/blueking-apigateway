@@ -34,7 +34,7 @@
           <div class="import-top" v-if="docType === 'swagger'">
             <bk-button icon="plus" class="import-btn" :key="uploadButtonKey">
               {{ $t('导入 Swagger 文件') }}
-              <input ref="fileInput" type="file" name="upload" class="file-input" @change="handleFileInput">
+              <input ref="fileInput" type="file" name="upload" class="file-input" accept=".yaml,.json,.yml" @change="handleFileInput">
             </bk-button>
             <!-- <span class="import-tip">（json /yaml 格式）</span> -->
 
@@ -583,6 +583,14 @@
         const self = this
         if (fileInput.files && fileInput.files.length) {
           const file = fileInput.files[0]
+          const reg = '.*\\.(json|yaml|yml)'
+          if (!file.name.match(reg)) {
+            this.$bkMessage({
+              theme: 'error',
+              message: this.$t('仅支持 json, yaml 格式')
+            })
+            return
+          }
           if (window.FileReader) {
             const reader = new FileReader()
             reader.onloadend = function (event) {

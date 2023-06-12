@@ -184,7 +184,7 @@
                   <p v-else>--</p>
                 </template>
               </bk-table-column>
-              <bk-table-column width="90" :label="$t('操作')">
+              <bk-table-column width="90" :label="$t('操作')" class-name="sub-operation">
                 <template slot-scope="resourceItem">
                   <bk-button :disabled="!resourceItem.row.stage_release_status" :text="true" @click="handleShowReleaseResource(resourceItem, resourceItem.row)"> {{ $t('查看资源') }} </bk-button>
                 </template>
@@ -587,8 +587,7 @@
       :is-show.sync="diffSidesliderConf.isShow"
       :title="diffSidesliderConf.title"
       :width="diffSidesliderConf.width"
-      :quick-close="true"
-      :before-close="handleDiffBeforeClose">
+      :quick-close="true">
       <div slot="content" class="p20">
         <version-diff ref="diffRef" :apigw-id="apigwId" :source-id="diffSourceId" :target-id="diffTargetId"></version-diff>
       </div>
@@ -723,7 +722,6 @@
   import versionDiff from '@/components/version-diff'
   import _ from 'lodash'
   import { bkTableSettingContent } from 'bk-magic-vue'
-  import sidebarMixin from '@/mixins/sidebar-mixin'
 
   Vue.use(mavonEditor)
   export default {
@@ -733,7 +731,6 @@
       versionDiff,
       bkTableSettingContent
     },
-    mixins: [sidebarMixin],
     data () {
       const fields = [{
         id: 'requestMethod',
@@ -1352,10 +1349,6 @@
         this.diffSidesliderConf.isShow = true
         this.diffSourceId = ''
         this.diffTargetId = ''
-        this.$nextTick(() => {
-          // 收集 diff 初始状态
-          this.initSidebarFormData(this.$refs.diffRef.searchParams || {})
-        })
       },
 
       handleBatchDelete () {
@@ -2103,9 +2096,6 @@
       },
       removeEvent () {
         window.removeEventListener('click', this.hideSelected)
-      },
-      handleDiffBeforeClose () {
-        return this.$isSidebarClosed(JSON.stringify(this.$refs.diffRef.searchParams || {}))
       }
     }
   }
@@ -2451,5 +2441,8 @@
             background-color: #ccc;
         }
     }
+}
+.ag-expand-table .sub-operation{
+    z-index: 99;
 }
 </style>
