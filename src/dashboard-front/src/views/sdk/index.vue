@@ -6,7 +6,19 @@
         <bk-button class="fr" theme="primary" @click="handleBuildSDK"> {{ $t('生成SDK') }} </bk-button>
 
         <bk-form class="fr mr15" form-type="inline">
-          <bk-form-item :label="$t('SDK版本号')">
+          <bk-form-item label="">
+            <bk-search-select
+              style="min-width: 500px;"
+              v-model="searchFilters"
+              :data="searchData"
+              :placeholder="$t('输入SDK版本号、资源版本进行搜索')"
+              :show-popover-tag-change="true"
+              :show-condition="false"
+              clearable
+              @change="formatFilterData"
+              @clear="clearSearchFilters"></bk-search-select>
+          </bk-form-item>
+          <!-- <bk-form-item :label="$t('SDK版本号')">
             <bk-input
               :clearable="true"
               v-model="sdkVersionKeyword"
@@ -30,7 +42,7 @@
                 :name="`${option.resource_version_display || '--'}`">
               </bk-option>
             </bk-select>
-          </bk-form-item>
+          </bk-form-item> -->
         </bk-form>
       </div>
       <div class="basic-bd">
@@ -159,7 +171,7 @@
         :label-width="150"
         ref="versionForm"
         :model="buildData">
-        <bk-form-item :label="$t('资源版本')" required>
+        <bk-form-item :label="$t('资源版本')" required :error-display-type="'normal'">
           <bk-select
             searchable
             ext-popover-cls="resource-version-dropdown-content"
@@ -288,7 +300,9 @@
         tableEmptyConf: {
           keyword: '',
           isAbnormal: false
-        }
+        },
+        sdkAllList: [],
+        searchFilters: []
       }
     },
     computed: {
@@ -306,6 +320,24 @@
       },
       buildConfirmButtonDisabled () {
         return this.resourceVersionEmpty || !this.buildData.resource_version_id
+      },
+      searchData () {
+        return [
+          {
+            name: this.$t('资源版本'),
+            id: 'version',
+            children: this.versionList.map(v => {
+              return { name: v.resource_version_display, id: v.id }
+            })
+          },
+          {
+            name: this.$t('SDK版本号'),
+            id: 'sdk',
+            children: this.sdkAllList.map(v => {
+              return { name: v.version_number, id: v.version_number }
+            })
+          }
+        ]
       }
     },
     mounted () {
@@ -343,6 +375,9 @@
         try {
           const res = await this.$store.dispatch('sdk/getApigwSDKs', { apigwId, params })
           this.sdkList = res.data.results
+          if (!this.searchParams.version && !this.searchParams.sdk) {
+            this.sdkAllList = res.data.results
+          }
           this.pagination.count = res.data.count
           this.updateTableEmptyConfig()
           this.tableEmptyConf.isAbnormal = false
@@ -508,6 +543,26 @@
           return
         }
         this.tableEmptyConf.keyword = ''
+      },
+      formatFilterData () {
+        const map = {}
+        this.searchFilters.forEach(filter => {
+          map[filter.id] = filter
+        })
+        for (const key in this.searchParams) {
+          if (map[key]) {
+            this.searchParams[key] = map[key].values[0].id
+          } else {
+            this.searchParams[key] = ''
+          }
+        }
+      },
+      // 清空筛选条件
+      clearSearchFilters () {
+        this.searchFilters = []
+        for (const key in this.searchParams) {
+          this.searchParams[key] = ''
+        }
       }
     }
   }
