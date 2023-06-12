@@ -1212,7 +1212,7 @@
     code: bk-verified-user-exempted-apps
     name: 免用户认证应用白名单
     name_en: Exempted user auth apps white list
-    is_public: true
+    is_public: false
     schema:
     - bk-verified-user-exempted-apps
     - plugin
