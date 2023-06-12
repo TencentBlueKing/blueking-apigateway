@@ -200,10 +200,10 @@
         min-width="160"
         key="name"
         prop="name"
-        :show-overflow-tooltip="true">
+        :show-overflow-tooltip="false">
         <template slot-scope="props">
           <div class="ag-flex">
-            <span class="ag-auto-text">
+            <span class="ag-auto-text" v-bk-overflow-tips>
               <span>{{props.row.name || '--'}}</span>
             </span>
             <div>
