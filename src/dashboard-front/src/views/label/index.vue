@@ -8,7 +8,7 @@
         v-model="keyword"
         :placeholder="$t('请输入标签名，按Enter搜索')"
         :right-icon="'bk-icon icon-search'"
-        style="width: 300px;"
+        style="width: 327px;"
         @enter="handleSearch">
       </bk-input>
     </div>
@@ -54,7 +54,7 @@
         :model="curLabel"
         :rules="rules"
         ref="labelForm">
-        <bk-form-item :label="$t('标签名称')" :required="true" :property="'name'">
+        <bk-form-item :label="$t('标签名称')" :required="true" :property="'name'" :error-display-type="'normal'">
           <bk-input v-model="curLabel.name"></bk-input>
         </bk-form-item>
       </bk-form>

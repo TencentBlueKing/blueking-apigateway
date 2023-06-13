@@ -27,16 +27,17 @@
       <bk-form-item
         :label="$t('版本号')"
         :required="true"
-        :property="'version'">
+        :property="'version'"
+        :error-display-type="'normal'">
         <bk-input :placeholder="$t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')" :readonly="isReadonly" v-model="versionParams.version"></bk-input>
-        <template>
+        <template slot="tip">
           <div class="ag-alert" style="line-height: 1;">
             <i class="apigateway-icon icon-ag-info"></i>
             &nbsp;{{ $t('版本号须符合 Semver 规范，例如：1.0.0') }}
           </div>
         </template>
       </bk-form-item>
-      <bk-form-item :label="$t('版本标题')" :required="true" :property="'title'">
+      <bk-form-item :label="$t('版本标题')" :required="true" :property="'title'" :error-display-type="'normal'">
         <bk-input :placeholder="$t('请输入版本标题')" v-model="versionParams.title"></bk-input>
       </bk-form-item>
       <bk-form-item :label="$t('版本说明')">

@@ -11,7 +11,8 @@
               :label="$t('名称')"
               :required="true"
               :rules="rules.name"
-              :property="'name'">
+              :property="'name'"
+              :error-display-type="'normal'">
               <bk-input
                 :placeholder="$t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于20个字符')"
                 v-model="bcsInfo.name">
@@ -21,7 +22,8 @@
               :label="$t('描述')"
               :required="true"
               :rules="rules.description"
-              :property="'description'">
+              :property="'description'"
+              :error-display-type="'normal'">
               <bk-input
                 v-model="bcsInfo.description"
                 :placeholder="$t('请输入描述')"></bk-input>
@@ -47,7 +49,8 @@
               :label="$t('容器项目')"
               :required="true"
               :rules="rules.projectId"
-              :property="'projectId'">
+              :property="'projectId'"
+              :error-display-type="'normal'">
               <bk-select v-model="bcsInfo.projectId" :disabled="isProject" searchable @change="containerProjectChange">
                 <bk-option
                   v-for="option in projects"
@@ -61,7 +64,8 @@
               :label="$t('容器集群')"
               :required="true"
               :rules="rules.cluster"
-              :property="'cluster'">
+              :property="'cluster'"
+              :error-display-type="'normal'">
               <bk-select v-model="bcsInfo.cluster" :disabled="isDisabled" :loading="clusterIsLoading" searchable @change="clusterChange">
                 <bk-option
                   v-for="option in clustersList"
@@ -75,7 +79,8 @@
               :label="$t('命名空间')"
               :required="true"
               :rules="rules.namespace"
-              :property="'namespace'">
+              :property="'namespace'"
+              :error-display-type="'normal'">
               <bk-select v-model="bcsInfo.namespace" :disabled="isNamespace" :loading="namespaceIsLoading" searchable @change="namespaceChange">
                 <bk-option
                   v-for="option in namespaces"
@@ -90,13 +95,14 @@
               v-if="createType === 'microgateway'"
               :required="true"
               :rules="rules.releaseName"
-              :property="'releaseName'">
+              :property="'releaseName'"
+              :error-display-type="'normal'">
               <bk-input
                 :placeholder="$t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
                 :disabled="releaseIsdisabled"
                 v-model="bcsInfo.releaseName">
               </bk-input>
-              <p class="ag-tip pt10">
+              <p slot="tip" class="ag-tip pt10">
                 <i class="apigateway-icon icon-ag-info"></i>
                 <span>{{ $t('Release 标识，创建后不可修改') }}</span>
               </p>
@@ -106,7 +112,8 @@
               v-else
               :required="true"
               :rules="rules.release"
-              :property="'release'">
+              :property="'release'"
+              :error-display-type="'normal'">
               <bk-select v-model="bcsInfo.release" :disabled="isRelease" :loading="releaseIsLoading" searchable>
                 <bk-option
                   v-for="option in releases"
@@ -115,7 +122,7 @@
                   :name="option.release_name">
                 </bk-option>
               </bk-select>
-              <p class="ag-tip pt10">
+              <p slot="tip" class="ag-tip pt10">
                 <i class="apigateway-icon icon-ag-info"></i>
                 <span>{{ $t('Release 标识，创建后不可修改') }}</span>
               </p>
@@ -170,12 +177,13 @@
               :label="$t('访问地址')"
               :required="true"
               :rules="rules.url"
-              :property="'url'">
+              :property="'url'"
+              :error-display-type="'normal'">
               <bk-input
                 :placeholder="$t('如: http://api.example.com/v1/')"
                 v-model="bcsInfo.url">
               </bk-input>
-              <p class="ag-tip pt10">
+              <p slot="tip" class="ag-tip pt10">
                 <i class="apigateway-icon icon-ag-info"></i>
                 <span> {{ $t('微网关对外提供接口服务的地址，此地址加上具体接口的路径，即为该微网关对外提供接口的完整访问地址') }} </span>
               </p>
@@ -210,6 +218,7 @@
 
 <script>
   import { catchErrorHandler } from '@/common/util'
+  import i18n from '@/language/i18n.js'
 
   export default {
     name: 'createMicroGateway',
@@ -444,14 +453,14 @@
 
     beforeRouteEnter (to, from, next) {
       if (to.query.MicroId) {
-        to.meta.title = this.$t('编辑微网关实例')
+        to.meta.title = i18n.t('编辑微网关实例')
         to.meta.isCreate = 'edit'
         next(vm => {
           vm.getMicrogateway()
           vm.releaseIsdisabled = true
         })
       } else {
-        to.meta.title = this.$t('新建微网关实例')
+        to.meta.title = i18n.t('新建微网关实例')
         to.meta.isCreate = 'create'
       }
       next()
@@ -463,9 +472,9 @@
       } else if (this.bcsInfo.name !== '' || this.bcsInfo.description !== '' || this.bcsInfo.projectId !== '' || this.bcsInfo.url !== '') {
         this.$bkInfo({
           type: 'warning',
-          okText: this.$t('确认'),
-          title: this.$t('确认离开当前页？'),
-          subTitle: this.$t('离开当前页面，填写内容将不会保留，请谨慎操作'),
+          okText: i18n.t('确认'),
+          title: i18n.t('确认离开当前页？'),
+          subTitle: i18n.t('离开当前页面，填写内容将不会保留，请谨慎操作'),
           confirmFn () {
             next()
           }

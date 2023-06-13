@@ -11,13 +11,14 @@
               :label="$t('名称')"
               :required="true"
               :rules="rules.name"
-              :property="'name'">
+              :property="'name'"
+              :error-display-type="'normal'">
               <bk-input
                 :placeholder="$t('由字母、数字、连接符（-）、下划线（_）组成，首字符必须是字母，长度小于20个字符')"
                 v-model="curStage.name"
                 :disabled="stageId !== undefined">
               </bk-input>
-              <p class="ag-tip mt5">
+              <p slot="tip" class="ag-tip mt5">
                 <i class="apigateway-icon icon-ag-info"></i> {{ $t('环境唯一标识，创建后不可修改') }}
               </p>
             </bk-form-item>
@@ -138,7 +139,7 @@
       <div class="panel-content">
         <div class="panel-wrapper">
           <bk-form ref="proxyForm" :label-width="180" :model="curStage">
-            <bk-form-item :label="$t('负载均衡类型')" :required="true">
+            <bk-form-item :label="$t('负载均衡类型')" :required="true" :error-display-type="'normal'">
               <bk-select
                 :clearable="false"
                 :placeholder="$t('负载均衡类型')"
@@ -150,7 +151,7 @@
                 </bk-option>
               </bk-select>
             </bk-form-item>
-
+            
             <bk-form-item
               label="Hosts"
               v-for="(hostItem, index) of curStage.proxy_http.upstreams.hosts"
@@ -159,7 +160,8 @@
               :property="'proxy_http.upstreams.hosts.' + index + '.host'"
               :icon-offset="curStage.proxy_http.upstreams.loadbalance === 'weighted-roundrobin' ? 90 : 10"
               :key="index"
-              :class="{ 'form-item-special': index !== 0 }">
+              :class="{ 'form-item-special': index !== 0 }"
+              :error-display-type="'normal'">
               <div class="host-item mb10">
                 <bk-input
                   :placeholder="$t('格式: http(s)://host:port')"
@@ -200,7 +202,14 @@
           <div class="ag-span"></div>
 
           <bk-form ref="timeoutForm" :label-width="180" :model="curStage">
-            <bk-form-item :label="$t('超时时间')" :required="true" :rules="rules.timeout" :property="'proxy_http.timeout'" :icon-offset="220" style="width: 500px;">
+            <bk-form-item
+              :label="$t('超时时间')"
+              :required="true"
+              :rules="rules.timeout"
+              :property="'proxy_http.timeout'"
+              :icon-offset="220"
+              style="width: 500px;"
+              :error-display-type="'normal'">
               <bk-input
                 type="number"
                 :min="1"

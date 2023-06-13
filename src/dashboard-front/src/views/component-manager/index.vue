@@ -199,7 +199,7 @@
       @animation-end="handleAnimationEnd">
       <div slot="content" style="padding: 20px; padding-bottom: 40px;" v-bkloading="{ isLoading: detailLoading, opacity: 1 }">
         <bk-form :label-width="180" :rules="rules" ref="form" :model="formData" v-show="!detailLoading">
-          <bk-form-item :label="$t('系统')" :required="true" property="system_id">
+          <bk-form-item :label="$t('系统')" :required="true" property="system_id" :error-display-type="'normal'">
             <bk-select
               :disabled="isDisabled"
               :clearable="false"
@@ -212,14 +212,14 @@
               </bk-option>
             </bk-select>
           </bk-form-item>
-          <bk-form-item :label="$t('组件名称simple')" :required="true" property="name">
+          <bk-form-item :label="$t('组件名称simple')" :required="true" property="name" :error-display-type="'normal'">
             <bk-input :maxlength="128" :disabled="isDisabled" v-model="formData.name" :placeholder="$t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于128个字符')"></bk-input>
             <p class="tips" slot="tip"><i class="apigateway-icon icon-ag-info"></i> {{ $t('组件名称在具体系统下应唯一，将用于展示组件时的标识') }} </p>
           </bk-form-item>
-          <bk-form-item :label="$t('组件描述simple')" :required="true" property="description">
+          <bk-form-item :label="$t('组件描述simple')" :required="true" property="description" :error-display-type="'normal'">
             <bk-input :maxlength="128" :disabled="isDisabled" v-model="formData.description" :placeholder="$t('不超过128个字符')"></bk-input>
           </bk-form-item>
-          <bk-form-item :label="$t('请求方法')" :required="true" property="method">
+          <bk-form-item :label="$t('请求方法')" :required="true" property="method" :error-display-type="'normal'">
             <bk-select
               :disabled="isDisabled"
               :clearable="false"
@@ -231,15 +231,15 @@
               </bk-option>
             </bk-select>
           </bk-form-item>
-          <bk-form-item :label="$t('组件路径')" :required="true" property="path">
+          <bk-form-item :label="$t('组件路径')" :required="true" property="path" :error-display-type="'normal'">
             <bk-input :disabled="isDisabled" :maxlength="255" v-model="formData.path" :placeholder="$t('以斜杠开头，可包含斜杠、字母、数字、下划线(_)、连接符(-)，长度小于255个字符')"></bk-input>
             <p class="tips" slot="tip"><i class="apigateway-icon icon-ag-info"></i>{{ $t(`可设置为'/{system_name}/{component_name}/'，例如'/host/get_host_list/'`) }}</p>
           </bk-form-item>
-          <bk-form-item :label="$t('组件类代号')" :required="true" property="component_codename">
+          <bk-form-item :label="$t('组件类代号')" :required="true" property="component_codename" :error-display-type="'normal'">
             <bk-input :disabled="isDisabled" v-model="formData.component_codename" :placeholder="$t('包含小写字母、数字、下划线或点号，长度小于255个字符')"></bk-input>
             <p class="tips" slot="tip"><i class="apigateway-icon icon-ag-info"></i>{{ $t('一般由三部分组成：“前缀(generic).小写的系统名.小写的组件类名”，例如 "generic.host.get_host_list"') }}</p>
           </bk-form-item>
-          <bk-form-item :label="$t('权限级别')" :required="true" property="permission_level">
+          <bk-form-item :label="$t('权限级别')" :required="true" property="permission_level" :error-display-type="'normal'">
             <bk-select :clearable="false" v-model="formData.permission_level">
               <bk-option v-for="option in levelList"
                 :key="option.id"
@@ -249,13 +249,13 @@
             </bk-select>
             <p class="tips" slot="tip"><i class="apigateway-icon icon-ag-info"></i> {{ $t('无权限，应用不需申请组件API权限；普通权限，应用需在开发者中心申请组件API权限，审批通过后访问') }} </p>
           </bk-form-item>
-          <bk-form-item :label="$t('用户认证')" :required="true" property="verified_user_required">
+          <bk-form-item :label="$t('用户认证')" :required="true" property="verified_user_required" :error-display-type="'normal'">
             <bk-checkbox
               :true-value="true"
               :false-value="false"
               v-model="formData.verified_user_required">
             </bk-checkbox>
-            <p class="ag-tip mt5">
+            <p slot="tip" class="ag-tip mt5">
               <i class="apigateway-icon icon-ag-info"></i>
               {{ $t('用户认证，请求方需提供蓝鲸用户身份信息') }}
             </p>

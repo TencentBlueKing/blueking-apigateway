@@ -1526,3 +1526,7 @@ div::-webkit-scrollbar-thumb {
     border-radius: 4px;
     background-color: #ccc;
 }
+
+.bk-table-pagination-wrapper {
+    background: #fff;
+}

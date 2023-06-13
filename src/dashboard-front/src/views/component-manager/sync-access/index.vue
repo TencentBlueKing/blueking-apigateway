@@ -1,12 +1,14 @@
 <template>
   <div class="app-content apigw-access-manager-wrapper">
     <div class="wrapper">
-      <p class="f14 ag-table-header"> {{ $t('请确认以下组件对应网关资源的变更：') }}
-        <span v-html="addInfo"></span>
-        <span v-html="updateInfo"></span>
-        <span v-html="deleteInfo"></span>
+      <div class="f14 ag-table-header">
+        <p>
+          {{ $t('请确认以下组件对应网关资源的变更：') }}
+          <span v-html="addInfo"></span>
+          <span v-html="updateInfo"></span>
+          <span v-html="deleteInfo"></span>
+        </p>
         <bk-input
-          class="fr"
           :clearable="true"
           v-model="pathUrl"
           :placeholder="$t('请输入组件名称、请求路径，按Enter搜索')"
@@ -14,7 +16,7 @@
           style="width: 328px;"
           @enter="filterData">
         </bk-input>
-      </p>
+      </div>
       <ag-loader
         :offset-top="0"
         :offset-left="0"
@@ -533,6 +535,11 @@
         .search-wrapper {
             display: flex;
             justify-content: space-between;
+        }
+        .ag-table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .bk-table {
             .api-name,

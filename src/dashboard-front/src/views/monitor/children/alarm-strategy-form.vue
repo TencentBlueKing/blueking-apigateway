@@ -8,7 +8,8 @@
               :label="$t('告警策略名称')"
               :required="true"
               :rules="rules.name"
-              :property="'name'">
+              :property="'name'"
+              :error-display-type="'normal'">
               <bk-input :placeholder="$t('请输入')" :maxlength="128" v-model="formData.name"></bk-input>
             </bk-form-item>
           </div>
@@ -19,7 +20,8 @@
                 :label="$t('告警规则')"
                 :required="true"
                 :rules="rules.alarm_subtype"
-                :property="'alarm_subtype'">
+                :property="'alarm_subtype'"
+                :error-display-type="'normal'">
                 <bk-select :clearable="false" v-model="formData.alarm_subtype">
                   <bk-option v-for="option in alarmStrategyOptions.alarmSubType"
                     :key="option.value"

@@ -652,6 +652,7 @@
       },
       themeColor () {
         return {
+          'item-default-color': '#63656E',
           'item-active-bg-color': '#E1ECFF',
           'item-active-color': '#3A84FF',
           'item-active-icon-color': '#3A84FF',
@@ -1559,7 +1560,7 @@
             right: 18px;
             z-index: 99;
             font-size: 14px;
-            color: #C4C6CC;
+            color: #979BA5;
             transition: .3s;
             pointer-events: none;
             &.up {

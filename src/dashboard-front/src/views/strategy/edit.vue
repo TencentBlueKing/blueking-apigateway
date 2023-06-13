@@ -16,14 +16,16 @@
             :label="$t('名称')"
             :required="true"
             :rules="rules.name"
-            :property="'name'">
+            :property="'name'"
+            :error-display-type="'normal'">
             <bk-input :placeholder="$t('请输入')" v-model="curStrategy.name"></bk-input>
           </bk-form-item>
           <bk-form-item
             :label="$t('类型')"
             :required="true"
             :rules="rules.type"
-            :property="'type'">
+            :property="'type'"
+            :error-display-type="'normal'">
             <bk-select v-model="curStrategy.type" :disabled="strategyId !== undefined">
               <bk-option
                 v-for="option in typeList"
@@ -40,7 +42,7 @@
           <div class="ag-span"></div>
 
           <template v-if="curStrategy.type && curStrategy.type === 'ip_access_control'">
-            <bk-form-item :label="$t('访问控制类型')" :required="true">
+            <bk-form-item :label="$t('访问控制类型')" :required="true" :error-display-type="'normal'">
               <bk-select
                 :clearable="false"
                 :disabled="strategyId !== undefined"
@@ -205,7 +207,8 @@
               label="Allowed origins"
               :required="true"
               :rules="rules.allowed_origins"
-              :property="'cors.allowed_origins'">
+              :property="'cors.allowed_origins'"
+              :error-display-type="'normal'">
               <bk-tag-input
                 v-model="curStrategy.cors.allowed_origins"
                 :allow-create="true"
@@ -213,7 +216,7 @@
                 :has-delete-icon="true"
                 :paste-fn="pasteAllowedOrigins">
               </bk-tag-input>
-              <p class="ag-tip pt10">
+              <p slot="tip" class="ag-tip pt10">
                 <i class="apigateway-icon icon-ag-info"></i>
                 {{ $t('首部Access-Control-Allow-Origin，指定允许访问该服务的请求域，如 http://example.com') }}
               </p>
@@ -222,7 +225,8 @@
               label="Allowed methods"
               :required="true"
               :rules="rules.allowed_methods"
-              :property="'cors.allowed_methods'">
+              :property="'cors.allowed_methods'"
+              :error-display-type="'normal'">
               <bk-select
                 multiple
                 :clearable="false"
@@ -234,7 +238,7 @@
                   :name="option.name">
                 </bk-option>
               </bk-select>
-              <p class="ag-tip pt10">
+              <p slot="tip" class="ag-tip pt10">
                 <i class="apigateway-icon icon-ag-info"></i>
                 {{ $t('首部Access-Control-Allow-Methods，用于预检请求的响应，指明实际请求所允许使用的 HTTP 方法') }}
               </p>
@@ -243,7 +247,8 @@
               label="Allowed headers"
               :required="true"
               :rules="rules.allowed_headers"
-              :property="'cors.allowed_headers'">
+              :property="'cors.allowed_headers'"
+              :error-display-type="'normal'">
               <bk-tag-input
                 v-model="curStrategy.cors.allowed_headers"
                 :allow-create="true"
@@ -251,7 +256,7 @@
                 :has-delete-icon="true"
                 :paste-fn="pasteAllowedHeaders">
               </bk-tag-input>
-              <p class="ag-tip pt10">
+              <p slot="tip" class="ag-tip pt10">
                 <i class="apigateway-icon icon-ag-info"></i>
                 {{ $t('首部Access-Control-Allow-Headers，用于预检请求的响应，指明实际请求中允许携带的首部字段') }}
               </p>
@@ -355,7 +360,8 @@
               :required="true"
               :rules="rules.window_duration"
               :property="'circuit_breaker.window.duration'"
-              :icon-offset="50">
+              :icon-offset="50"
+              :error-display-type="'normal'">
               <bk-input
                 type="number"
                 v-model="curStrategy.circuit_breaker.window.duration"
@@ -368,7 +374,7 @@
                   <div class="group-text">秒</div>
                 </template>
               </bk-input>
-              <p class="ag-tip pt10">
+              <p slot="tip" class="ag-tip pt10">
                 <i class="apigateway-icon icon-ag-info"></i>
                 {{ $t('统计请求次数的时间窗口，取值范围 10~120 秒') }}
               </p>
@@ -378,7 +384,8 @@
               :label="$t('请求错误数阈值')"
               :required="true"
               :rules="rules.threshold"
-              :property="'circuit_breaker.strategy.options.threshold'">
+              :property="'circuit_breaker.strategy.options.threshold'"
+              :error-display-type="'normal'">
               <bk-input
                 type="number"
                 v-model="curStrategy.circuit_breaker.strategy.options.threshold"
@@ -388,7 +395,7 @@
                 :show-controls="false"
                 :precision="0">
               </bk-input>
-              <p class="ag-tip pt10">
+              <p slot="tip" class="ag-tip pt10">
                 <i class="apigateway-icon icon-ag-info"></i>
                 {{ $t('触发断路的请求出错次数阈值，取值范围 1~10000 次；计数时间窗口内，若资源后端主机符合条件的出错次数达到阈值，则该资源后端主机触发断路，断路器处于断开状态') }}
               </p>
@@ -399,7 +406,8 @@
               :required="true"
               :rules="rules.back_off"
               :property="'circuit_breaker.back_off.options.interval'"
-              :icon-offset="50">
+              :icon-offset="50"
+              :error-display-type="'normal'">
               <bk-input
                 type="number"
                 v-model="curStrategy.circuit_breaker.back_off.options.interval"
@@ -412,7 +420,7 @@
                   <div class="group-text">秒</div>
                 </template>
               </bk-input>
-              <p class="ag-tip pt10">
+              <p slot="tip" class="ag-tip pt10">
                 <i class="apigateway-icon icon-ag-info"></i>
                 {{ $t('断路器断开后，允许探测请求通过的时间间隔，取值范围 10~300 秒；断开并等待重试间隔后，将允许部分探测请求通过，这些请求成功，则结束断路，否则，重新开始断路') }}
               </p>
