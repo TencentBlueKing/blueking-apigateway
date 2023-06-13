@@ -1112,7 +1112,7 @@ config = {
                         "/v2/usermanage/fe_update_user_language/",
                         {
                             "comp_codename": "generic.v2.usermanage.fe_update_user_language",
-                            "method": "PUT",
+                            "method": "GET",
                             "request_validators": [APIGatewayAdapter(), VerifiedUserRequiredValidator()],
                             "permission_level": "unlimited",
                             "verified_user_required": False,
