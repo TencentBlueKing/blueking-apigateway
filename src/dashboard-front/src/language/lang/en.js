@@ -1203,5 +1203,5 @@ export default {
     '<div>可用率恢复至 {value_str}%, 低可用持续时间: <strong> {time}</strong></div>': '<div>Availability restored to {value_str}%, low availability duration: <strong> {time}</strong></div>',
     '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>': '<div>Availability dropped to <strong>{value_str}%</strong>, errors/total times: <strong> {error_count}/{count}</strong></div>',
     '仅支持 json, yaml 格式': 'Only supports json, yaml format',
-    '输入SDK版本号、资源版本进行搜索': 'Enter the SDK version and resource version to search'
+    '输入SDK版本号、资源版本进行搜索': 'Enter the SDK version or resource version to search'
 }
