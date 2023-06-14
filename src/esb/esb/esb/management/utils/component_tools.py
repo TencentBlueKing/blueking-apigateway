@@ -34,7 +34,6 @@ from esb.utils.confapis import get_confapis_manager
 
 
 class ComponentClient(object):
-
     is_confapi = False
 
     def __init__(self, channel_conf=None, comp_codename=None, comp_class=None):
@@ -134,9 +133,15 @@ class ComponentClient(object):
             return self.get_comp_doc_md_from_compdoc()
 
     def get_comp_doc_md_from_compdoc(self):
+        with translation.override("en"):
+            en_doc = engines["jinja2"].from_string(self.comp_doc).render()
+
+        with translation.override("zh-hans"):
+            zh_doc = engines["jinja2"].from_string(self.comp_doc).render()
+
         return {
-            "en": self.comp_doc,
-            "zh-hans": self.comp_doc,
+            "en": en_doc,
+            "zh-hans": zh_doc,
         }
 
     def is_comp_doc_md_from_mdfile(self):
@@ -169,7 +174,6 @@ class ComponentClient(object):
 
 
 class ConfapiComponentClient(ComponentClient):
-
     is_confapi = True
 
     def __init__(self, channel_conf, comp_codename=None, comp_class=None):

@@ -187,7 +187,7 @@ class APIDoc(object):
     def _format_md_to_html(self, doc_md):
         doc_html = markdown.markdown(
             doc_md,
-            extensions=["tables", "attr_list", "fenced_code", "smart_strong", "codehilite", "toc"],
+            extensions=["tables", "attr_list", "fenced_code", "smarty", "codehilite", "toc"],
         )
         return doc_html
 
