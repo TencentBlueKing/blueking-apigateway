@@ -13,7 +13,9 @@ RUN make build && chmod +x ${BINARY}
 
 FROM debian:bullseye-slim
 
-RUN mkdir /app/
+ARG BINARY=bk-apigateway-core-api
+
+RUN mkdir -p /app/logs
 COPY --from=builder /app/${BINARY} /app/${BINARY}
 
 CMD ["/app/bk-apigateway-core-api", "-c", "/app/config.yaml"]
