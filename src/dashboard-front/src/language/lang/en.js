@@ -43,7 +43,7 @@ export default {
     "发布变更": "Release",
     "版本发布": "Release",
     "版本管理": "Versions",
-    "发布历史": "Histories",
+    "发布历史": "History",
     "运行数据": "Statistics",
     "流水日志": "Logs",
     "统计报表": "Statistics",
@@ -688,7 +688,7 @@ export default {
     "资源配置": "Resource",
     "全部资源": "All Resources",
     "已筛选资源": "Filtered Resources",
-    "版本对比": "Version Diff",
+    "版本对比": "Diff",
     "去发布版本": "Release",
     "请输入请求路径、名称，按Enter搜索": "Please input path, name, and press Enter to search",
     "环境信息": "Stage",
@@ -1155,7 +1155,7 @@ export default {
     '应用访问该组件API时，是否需要提供用户认证信息': 'Whether the app needs to provide user authentication when accessing the API',
     '是否需申请权限': 'Permission Required',
     '应用访问该网关API前，是否需要在开发者中心申请该网关API权限': 'Whether the app needs to apply for API permission in the Developer Center before accessing the API',
-    'SDK 列表': 'SDKs',
+    'SDK 列表': 'SDK',
     '请输入网关名称或描述': 'Please input the gateway name or description',
     '网关管理': 'API Gateway',
     '网关名称': 'Gateway Name',
@@ -1203,5 +1203,8 @@ export default {
     '<div>可用率恢复至 {value_str}%, 低可用持续时间: <strong> {time}</strong></div>': '<div>Availability restored to {value_str}%, low availability duration: <strong> {time}</strong></div>',
     '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>': '<div>Availability dropped to <strong>{value_str}%</strong>, errors/total times: <strong> {error_count}/{count}</strong></div>',
     '仅支持 json, yaml 格式': 'Only supports json, yaml format',
-    '输入SDK版本号、资源版本进行搜索': 'Enter the SDK version or resource version to search'
+    '输入SDK版本号、资源版本进行搜索': 'Enter the SDK version or resource version to search',
+    '添加文档': 'Add document',
+    '请输入关键字搜索': 'Please input keyword',
+    'API Gateway | 腾讯蓝鲸智云': 'API Gateway | BlueKing'
 }
