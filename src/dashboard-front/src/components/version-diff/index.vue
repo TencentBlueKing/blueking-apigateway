@@ -395,8 +395,9 @@
         }
         const method = item.method.toLowerCase()
         const path = item.path.toLowerCase()
+        const name = item.name.toLowerCase()
         const keyword = this.searchKeyword.toLowerCase()
-        return method.indexOf(keyword) > -1 || path.indexOf(keyword) > -1
+        return method.indexOf(keyword) > -1 || path.indexOf(keyword) > -1 || name.indexOf(keyword) > -1
       },
 
       renderTitle (item) {

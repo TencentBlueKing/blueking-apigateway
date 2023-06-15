@@ -341,7 +341,7 @@
             text: this.$t('资源不存在')
           }
         ],
-        typeFiltersEmums: { 'create': this.$t('新建'), 'merge': this.$t('覆盖') },
+        typeFiltersEmums: { 'create': '新建', 'merge': '覆盖' },
         archiveTip: {
           theme: 'dark',
           allowHtml: true,
