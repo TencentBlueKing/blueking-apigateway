@@ -116,25 +116,34 @@
         "schema": {
           "type": "object",
           "required": [
-            "allow_origins",
             "allow_methods",
             "allow_headers",
             "max_age"
           ],
           "properties": {
             "allow_origins": {
-              "description": "允许跨域访问的 Origin，格式为 scheme://host:port，示例如 https://somedomain.com:8081。如果你有多个 Origin，请使用 , 分隔。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Origin 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Origin 均通过，但请注意这样存在安全隐患。",
+              "description": "允许跨域访问的 Origin，格式为 scheme://host:port，示例如 https://example.com:8081。如果你有多个 Origin，请使用 , 分隔。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Origin 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Origin 均通过，但请注意这样存在安全隐患。",
               "type": "string",
-              "pattern": "^(\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
-              "default": "*",
-              "ui:rules": [
-                "required"
-              ]
+              "pattern": "^(|\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
+              "default": ""
+            },
+            "allow_origins_by_regex": {
+              "description": "使用正则表示的允许跨域访问的 Origin，示例如 '^https://.*\\.example\\.com:8081$'，此正则允许 https://a.example.com:8081, https://b.example.com:8081。",
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "ui:component": {
+                "name": "bfArray"
+              }
             },
             "allow_methods": {
               "description": "允许跨域访问的 Method，比如：GET，POST 等。如果你有多个 Method，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Method 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Method 都通过，但请注意这样存在安全隐患。",
               "type": "string",
-              "default": "*",
+              "default": "**",
               "ui:rules": [
                 "required"
               ]
@@ -142,7 +151,7 @@
             "allow_headers": {
               "description": "允许跨域访问时请求方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Header 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Header 都通过，但请注意这样存在安全隐患。",
               "type": "string",
-              "default": "*",
+              "default": "**",
               "ui:rules": [
                 "required"
               ]
@@ -150,7 +159,7 @@
             "expose_headers": {
               "description": "允许跨域访问时响应方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许任意 Header 。你也可以在启用了 allow_credential 后使用 ** 强制允许任意 Header，但请注意这样存在安全隐患。",
               "type": "string",
-              "default": "*"
+              "default": ""
             },
             "max_age": {
               "description": "浏览器缓存 CORS 结果的最大时间，单位为秒。在这个时间范围内，浏览器会复用上一次的检查结果，-1 表示不缓存。请注意各个浏览器允许的最大时间不同。",
@@ -170,7 +179,7 @@
             "allow_credential": {
               "description": "是否允许跨域访问的请求方携带凭据（如 Cookie 等）。根据 CORS 规范，如果设置该选项为 true，那么将不能在其他属性中使用 *。",
               "type": "boolean",
-              "default": false
+              "default": true
             }
           }
         },
@@ -191,7 +200,6 @@
         "schema": {
           "type": "object",
           "required": [
-            "allow_origins",
             "allow_methods",
             "allow_headers",
             "max_age"
@@ -200,16 +208,26 @@
             "allow_origins": {
               "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues.",
               "type": "string",
-              "pattern": "^(\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
-              "default": "*",
-              "ui:rules": [
-                "required"
-              ]
+              "pattern": "^(|\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
+              "default": ""
+            },
+            "allow_origins_by_regex": {
+              "description": "Origin that allows CORS using regular expressions. You can use regex to allow specific origins when no credentials, for example, '^https://.*\\.example\\.com:8081$', this regular expression allows https://a.example.com:8081, https://b.example.com:8081.",
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "ui:component": {
+                "name": "bfArray"
+              }
             },
             "allow_methods": {
               "description": "Request methods to enable CORS on. For example GET, POST. Use , to add multiple methods. If allow_credential is set to false, you can enable CORS for all methods by using *. If allow_credential is set to true, you can forcefully allow CORS on all methods by using ** but it will pose some security issues.",
               "type": "string",
-              "default": "*",
+              "default": "**",
               "ui:rules": [
                 "required"
               ]
@@ -217,7 +235,7 @@
             "allow_headers": {
               "description": "Headers in the request allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all request headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all request headers by using ** but it will pose some security issues.",
               "type": "string",
-              "default": "*",
+              "default": "**",
               "ui:rules": [
                 "required"
               ]
@@ -225,7 +243,7 @@
             "expose_headers": {
               "description": "Headers in the response allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all response headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all response headers by using ** but it will pose some security issues.",
               "type": "string",
-              "default": "*"
+              "default": ""
             },
             "max_age": {
               "description": "Maximum time in seconds the result is cached. If the time is within this limit, the browser will check the cached result. Set to -1 to disable caching. Note that the maximum value is browser dependent.",
@@ -238,14 +256,14 @@
                 "name": "bfInput",
                 "props": {
                   "min": -1,
-                  "unit": "秒"
+                  "unit": "second"
                 }
               }
             },
             "allow_credential": {
               "description": "When set to true, allows requests to include credentials like cookies. According to CORS specification, if you set this to true, you cannot use '*' to allow all for the other attributes.",
               "type": "boolean",
-              "default": false
+              "default": true
             }
           }
         },

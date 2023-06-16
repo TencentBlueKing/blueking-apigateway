@@ -9,7 +9,7 @@
         :name="'baseInfo'">
         <bk-form
           ref="form"
-          :label-width="150"
+          :label-width="180"
           :model="curPlugin"
           class="pl20 pr20"
           style="max-width: 1280px;">
@@ -66,6 +66,7 @@
             class="mt20"
             v-model="schemaFormData"
             ref="bkForm"
+            :label-width="180"
             :schema="formConfig.schema"
             :layout="formConfig.layout"
             :rules="formConfig.rules">
