@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-01 15:22+0800\n"
+"POT-Creation-Date: 2023-06-16 15:53+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -143,7 +143,7 @@ msgid "请求时间"
 msgstr "Request Time"
 
 #: apigateway/apps/access_log/constants.py:37
-#: apigateway/apps/plugin/constants.py:33 apigateway/core/constants.py:156
+#: apigateway/apps/plugin/constants.py:38 apigateway/core/constants.py:156
 #: apigateway/core/constants.py:199
 msgid "环境"
 msgstr "Stage"
@@ -431,8 +431,8 @@ msgstr "Component API Doc"
 msgid "资源版本ID"
 msgstr "Resource Version ID"
 
-#: apigateway/apps/esb/bkcore/models.py:321 apigateway/core/models.py:644
-#: apigateway/core/models.py:765
+#: apigateway/apps/esb/bkcore/models.py:321 apigateway/core/models.py:646
+#: apigateway/core/models.py:767
 #: apigateway/editions/ee/apps/esb/bkcore/models.py:321
 msgid "发布状态"
 msgstr "Release Status"
@@ -597,7 +597,7 @@ msgstr ""
 msgid "当前已有同步任务正在执行，请稍后重试。"
 msgstr "Syncing, please try again later."
 
-#: apigateway/apps/esb/constants.py:32 apigateway/conf/default.py:826
+#: apigateway/apps/esb/constants.py:32 apigateway/conf/default.py:840
 #: apigateway/editions/ee/apps/esb/constants.py:32
 msgid "蓝鲸智云"
 msgstr "BlueKing"
@@ -938,7 +938,7 @@ msgid "蓝鲸应用ID"
 msgstr "App ID"
 
 #: apigateway/apps/permission/views.py:169
-#: apigateway/apps/permission/views.py:181 apigateway/core/models.py:819
+#: apigateway/apps/permission/views.py:181 apigateway/core/models.py:821
 msgid "过期时间"
 msgstr "Expire Time"
 
@@ -970,6 +970,7 @@ msgid "IP访问控制"
 msgstr "IP Access Control"
 
 #: apigateway/apps/plugin/constants.py:26
+#: apigateway/apps/plugin/constants.py:33
 msgid "频率控制"
 msgstr "Rate Limit"
 
@@ -981,27 +982,27 @@ msgstr "Circuit Breaker"
 msgid "免用户认证应用白名单"
 msgstr "Applications whitelist without user authentication"
 
-#: apigateway/apps/plugin/constants.py:34 apigateway/core/constants.py:200
+#: apigateway/apps/plugin/constants.py:39 apigateway/core/constants.py:200
 msgid "资源"
 msgstr "Resource"
 
-#: apigateway/apps/plugin/constants.py:38
+#: apigateway/apps/plugin/constants.py:43
 msgid "全量资源"
 msgstr "All resources"
 
-#: apigateway/apps/plugin/constants.py:39
+#: apigateway/apps/plugin/constants.py:44
 msgid "具体资源"
 msgstr "Particular resources"
 
-#: apigateway/apps/plugin/constants.py:43
+#: apigateway/apps/plugin/constants.py:48
 msgid "原生"
 msgstr "Native"
 
-#: apigateway/apps/plugin/constants.py:44
+#: apigateway/apps/plugin/constants.py:49
 msgid "动态"
 msgstr "Dynamic"
 
-#: apigateway/apps/plugin/constants.py:45
+#: apigateway/apps/plugin/constants.py:50
 msgid "固定"
 msgstr "Fixed"
 
@@ -1025,20 +1026,36 @@ msgstr "Plugin"
 msgid "插件绑定"
 msgstr "Plugin Binding"
 
-#: apigateway/apps/plugin/plugin/serializers.py:65
+#: apigateway/apps/plugin/plugin/checker.py:46
+#, python-brace-format
+msgid "当 'allow_credential' 为 True 时, {key} 不能为 '*'。"
+msgstr "{key} cannot be '*' when 'allow_credential' is True."
+
+#: apigateway/apps/plugin/plugin/checker.py:53
+#, python-brace-format
+msgid "allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。"
+msgstr ""
+"The '{re_rule}' in allow_origins_by_regex is not a legal regex expression."
+
+#: apigateway/apps/plugin/plugin/checker.py:57
+msgid "allow_origins, allow_origins_by_regex 不能同时为空。"
+msgstr ""
+"allow_origins, allow_origins_by_regex cannot be empty at the same time."
+
+#: apigateway/apps/plugin/plugin/convertor.py:71
 #, python-brace-format
 msgid "蓝鲸应用ID重复: {bk_app_code}"
 msgstr "app id is duplicated: {bk_app_code}"
 
-#: apigateway/apps/plugin/plugin/serializers.py:152
+#: apigateway/apps/plugin/plugin/serializers.py:71
 msgid "网关下插件名称+类型已经存在，请检查。"
 msgstr "plugin name + type already exists, please check."
 
-#: apigateway/apps/plugin/plugin/serializers.py:189
+#: apigateway/apps/plugin/plugin/serializers.py:114
 msgid "此插件类型未公开，不能用于启用插件。"
 msgstr "The plugin type is not public, cannot be used to enable new plugin."
 
-#: apigateway/apps/plugin/plugin/serializers.py:197
+#: apigateway/apps/plugin/plugin/serializers.py:122
 msgid "插件类型不允许更改。"
 msgstr "The plugin type is not allowed to change."
 
@@ -1150,11 +1167,11 @@ msgstr "Importing invalid json/yaml data, {err}."
 msgid "导入内容不符合 swagger 2.0 协议，{err}。"
 msgstr "Imported content does not conform to the swagger 2.0 protocol, {err}."
 
-#: apigateway/apps/resource/mixins.py:67
+#: apigateway/apps/resource/mixins.py:68
 msgid "创建资源"
 msgstr "Create resource"
 
-#: apigateway/apps/resource/mixins.py:105
+#: apigateway/apps/resource/mixins.py:114
 msgid "更新资源"
 msgstr "Update resource"
 
@@ -1285,15 +1302,15 @@ msgstr ""
 "The stage variable [{var_name}] in the backend path does not exist in the "
 "stage [{stage_name}]."
 
-#: apigateway/apps/resource/views.py:143
+#: apigateway/apps/resource/views.py:146
 msgid "删除资源"
 msgstr "Delete resource"
 
-#: apigateway/apps/resource/views.py:255
+#: apigateway/apps/resource/views.py:258
 msgid "批量更新资源"
 msgstr "Batch update resources"
 
-#: apigateway/apps/resource/views.py:283
+#: apigateway/apps/resource/views.py:286
 msgid "批量删除资源"
 msgstr "Batch delete resources"
 
@@ -1551,11 +1568,11 @@ msgstr ""
 "Users can log in to the BlueKing platform and get bk_token from cookies that "
 "indicates them"
 
-#: apigateway/biz/gateway.py:210
+#: apigateway/biz/gateway.py:209
 msgid "创建网关"
 msgstr "Create gateway"
 
-#: apigateway/biz/gateway.py:223
+#: apigateway/biz/gateway.py:222
 msgid "更新网关"
 msgstr "Update gateway"
 
@@ -1716,23 +1733,23 @@ msgid "请求 bkpaas3 获取应用信息失败，{code_slug}，{message}。"
 msgstr ""
 "Request for bkpaas3 to get app information failed, {code_slug}, {message}."
 
-#: apigateway/conf/default.py:831
+#: apigateway/conf/default.py:845
 msgid "正式环境"
 msgstr "Prod"
 
-#: apigateway/conf/default.py:833
+#: apigateway/conf/default.py:847
 msgid "访问后端正式环境"
 msgstr "request third-party API prod environment"
 
-#: apigateway/conf/default.py:837
+#: apigateway/conf/default.py:851
 msgid "测试环境"
 msgstr "test"
 
-#: apigateway/conf/default.py:839
+#: apigateway/conf/default.py:853
 msgid "访问后端测试环境"
 msgstr "request third-party API test environment"
 
-#: apigateway/conf/default.py:849
+#: apigateway/conf/default.py:863
 msgid "访问蓝鲸智云组件 API"
 msgstr "request BlueKing component API"
 
@@ -1836,21 +1853,21 @@ msgstr "Gateway"
 msgid "网关密钥不存在。"
 msgstr "JWT key does not exist."
 
-#: apigateway/core/managers.py:1633
+#: apigateway/core/managers.py:1647
 #, python-brace-format
 msgid "后端服务【id={id}】被资源【id={resource_id}】引用，无法删除。"
 msgstr ""
 "The backend service [id={id}] is referenced by the resource "
 "[id={resource_id}] and cannot be deleted."
 
-#: apigateway/core/managers.py:1661
+#: apigateway/core/managers.py:1675
 #, python-brace-format
 msgid "SSL 证书【id={id}】被 {scope_label}【id={scope_id}】引用，无法删除。"
 msgstr ""
 "SSL certificate [id={id}] is referenced by {scope_label} [id={scope_id}] and "
 "cannot be deleted."
 
-#: apigateway/core/managers.py:1727
+#: apigateway/core/managers.py:1741
 #, python-brace-format
 msgid ""
 "环境配置项【id={id}】被后端服务【id={backend_service_id}, "
@@ -1859,27 +1876,27 @@ msgstr ""
 "Stage config item [id={id}] is referenced by backend service "
 "[id={backend_service_id}, name={backend_service_name}] and cannot be deleted."
 
-#: apigateway/core/managers.py:1745
+#: apigateway/core/managers.py:1759
 msgid "后端服务"
 msgstr "Backend Service"
 
-#: apigateway/core/models.py:528
+#: apigateway/core/models.py:530
 msgid "符合 semver 规范"
 msgstr "Conform to semver specification"
 
-#: apigateway/core/models.py:529
+#: apigateway/core/models.py:531
 msgid "[Deprecated] 版本名"
 msgstr "[Deprecated] Name"
 
-#: apigateway/core/models.py:722
+#: apigateway/core/models.py:724
 msgid "是否共享实例"
 msgstr "Is shared instance"
 
-#: apigateway/core/models.py:724
+#: apigateway/core/models.py:726
 msgid "是否托管实例"
 msgstr "Is managed instance"
 
-#: apigateway/core/models.py:814
+#: apigateway/core/models.py:816
 msgid "引用类证书，名称表示引用名称"
 msgstr "Reference certificate, the name indicates the reference name"
 
