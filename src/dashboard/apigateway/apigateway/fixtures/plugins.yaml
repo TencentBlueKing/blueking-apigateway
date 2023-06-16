@@ -238,7 +238,7 @@
                 "name": "bfInput",
                 "props": {
                   "min": -1,
-                  "unit": "秒"
+                  "unit": "Seconds"
                 }
               }
             },
