@@ -43,14 +43,14 @@ class BkCorsChecker(BaseChecker):
         if loaded_data.get("allow_credential"):
             for key in ["allow_origins", "allow_methods", "allow_headers", "expose_headers"]:
                 if loaded_data.get(key) == "*":
-                    raise ValueError(_("当 'allow_credential' 为 True 时, {key} 不能为 '*'").format(key=key))
+                    raise ValueError(_("当 'allow_credential' 为 True 时, {key} 不能为 '*'。").format(key=key))
 
         if loaded_data.get("allow_origins_by_regex"):
             for re_rule in loaded_data["allow_origins_by_regex"]:
                 try:
                     re.compile(re_rule)
                 except Exception:
-                    raise ValueError(_("allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式").format(re_rule=re_rule))
+                    raise ValueError(_("allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。").format(re_rule=re_rule))
 
         # 非 apisix check_schema 中逻辑，根据业务需要添加的校验逻辑
         if not (loaded_data.get("allow_origins") or loaded_data.get("allow_origins_by_regex")):
