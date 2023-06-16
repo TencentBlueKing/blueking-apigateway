@@ -16,102 +16,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, ClassVar, Dict
+from typing import Any, Dict
 
-from attr import define
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from jsonschema import ValidationError as SchemaValidationError
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.settings import api_settings
 from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
+from apigateway.apps.plugin.plugin.checker import PluginConfigYamlChecker
+from apigateway.apps.plugin.plugin.convertor import PluginConfigYamlConvertor
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.utils.yaml import yaml_dumps, yaml_loads
-
-
-class RateLimitYamlConvertor:
-    """
-    前端传入的数据样例
-    rates:
-      default:
-        period: 1
-        tokens: 1
-      specials:
-        - period: 1
-          bk_app_code: test
-          tokens: 10
-
-    存储的数据样例
-    rates:
-      __default:
-        - period: 1
-          tokens: 1
-      test:
-        - period: 1
-          tokens: 10
-    """
-
-    def to_internal_value(self, data):
-        loaded_data = yaml_loads(data)
-
-        result = {"rates": {}}
-        # 特殊应用频率
-        for item in loaded_data["rates"].get("specials", []):
-            bk_app_code = item["bk_app_code"]
-            if bk_app_code in result["rates"]:
-                raise ValidationError({"bk_app_code": _(f"蓝鲸应用ID重复: {bk_app_code}").format(bk_app_code=bk_app_code)})
-
-            result["rates"][bk_app_code] = [{"period": item["period"], "tokens": item["tokens"]}]
-
-        # 蓝鲸应用默认频率
-        default_rate = loaded_data["rates"]["default"]
-        result["rates"]["__default"] = [{"period": default_rate["period"], "tokens": default_rate["tokens"]}]
-
-        return yaml_dumps(result)
-
-    def to_representation(self, value):
-        loaded_data = yaml_loads(value)
-
-        result = {"rates": {"default": {}, "specials": []}}
-        for bk_app_code, rates in loaded_data["rates"].items():
-            # 目前仅支持单个频率配置
-            rate = rates[0]
-
-            if bk_app_code == "__default":
-                result["rates"]["default"] = {"period": rate["period"], "tokens": rate["tokens"]}
-            else:
-                result["rates"]["specials"].append(
-                    {
-                        "period": rate["period"],
-                        "tokens": rate["tokens"],
-                        "bk_app_code": bk_app_code,
-                    }
-                )
-
-        return yaml_dumps(result)
-
-
-@define(slots=False)
-class PluginConfigYamlConvertor:
-    type_code: str
-    type_code_to_convertor: ClassVar[Dict[str, Any]] = {
-        "bk-rate-limit": RateLimitYamlConvertor(),
-    }
-
-    def to_internal_value(self, data):
-        convertor = self.type_code_to_convertor.get(self.type_code)
-        if not convertor:
-            return data
-        return convertor.to_internal_value(data)
-
-    def to_representation(self, value):
-        convertor = self.type_code_to_convertor.get(self.type_code)
-        if not convertor:
-            return value
-        return convertor.to_representation(value)
 
 
 class PluginConfigSLZ(serializers.ModelSerializer):
@@ -156,7 +75,6 @@ class PluginConfigSLZ(serializers.ModelSerializer):
     def to_internal_value(self, data):
         internal_data = super().to_internal_value(data)
 
-        # TODO: bk-rate-limit 前端表单插件生成数据的格式，暂与实际需要不一致，待升级后，可删除此转换
         yaml_convertor = PluginConfigYamlConvertor(internal_data["type_id"].code)
         internal_data["yaml"] = yaml_convertor.to_internal_value(internal_data["yaml"])
 
@@ -165,7 +83,6 @@ class PluginConfigSLZ(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
 
-        # TODO: bk-rate-limit 前端表单插件生成数据的格式，暂与实际需要不一致，待升级后，可删除此转换
         yaml_convertor = PluginConfigYamlConvertor(instance.type.code)
         data["yaml"] = yaml_convertor.to_representation(instance.yaml)
 
@@ -178,7 +95,15 @@ class PluginConfigSLZ(serializers.ModelSerializer):
         try:
             plugin.config = validated_data["yaml"]
         except SchemaValidationError as err:
-            raise ValidationError(f"{err.message}, path {list(err.absolute_path)}")
+            raise ValidationError(
+                {api_settings.NON_FIELD_ERRORS_KEY: f"{err.message}, path {list(err.absolute_path)}"}
+            )
+
+        checker = PluginConfigYamlChecker(plugin.type.code)
+        try:
+            checker.check(validated_data["yaml"])
+        except Exception as err:
+            raise ValidationError({api_settings.NON_FIELD_ERRORS_KEY: f"{err}"})
 
         plugin.save()
         return plugin
