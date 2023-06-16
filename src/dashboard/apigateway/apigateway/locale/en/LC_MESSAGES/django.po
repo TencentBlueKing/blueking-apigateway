@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-01 15:22+0800\n"
+"POT-Creation-Date: 2023-06-16 15:48+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -143,7 +143,7 @@ msgid "请求时间"
 msgstr "Request Time"
 
 #: apigateway/apps/access_log/constants.py:37
-#: apigateway/apps/plugin/constants.py:33 apigateway/core/constants.py:156
+#: apigateway/apps/plugin/constants.py:38 apigateway/core/constants.py:156
 #: apigateway/core/constants.py:199
 msgid "环境"
 msgstr "Stage"
@@ -970,6 +970,7 @@ msgid "IP访问控制"
 msgstr "IP Access Control"
 
 #: apigateway/apps/plugin/constants.py:26
+#: apigateway/apps/plugin/constants.py:33
 msgid "频率控制"
 msgstr "Rate Limit"
 
@@ -981,27 +982,27 @@ msgstr "Circuit Breaker"
 msgid "免用户认证应用白名单"
 msgstr "Applications whitelist without user authentication"
 
-#: apigateway/apps/plugin/constants.py:34 apigateway/core/constants.py:200
+#: apigateway/apps/plugin/constants.py:39 apigateway/core/constants.py:200
 msgid "资源"
 msgstr "Resource"
 
-#: apigateway/apps/plugin/constants.py:38
+#: apigateway/apps/plugin/constants.py:43
 msgid "全量资源"
 msgstr "All resources"
 
-#: apigateway/apps/plugin/constants.py:39
+#: apigateway/apps/plugin/constants.py:44
 msgid "具体资源"
 msgstr "Particular resources"
 
-#: apigateway/apps/plugin/constants.py:43
+#: apigateway/apps/plugin/constants.py:48
 msgid "原生"
 msgstr "Native"
 
-#: apigateway/apps/plugin/constants.py:44
+#: apigateway/apps/plugin/constants.py:49
 msgid "动态"
 msgstr "Dynamic"
 
-#: apigateway/apps/plugin/constants.py:45
+#: apigateway/apps/plugin/constants.py:50
 msgid "固定"
 msgstr "Fixed"
 
@@ -1025,20 +1026,36 @@ msgstr "Plugin"
 msgid "插件绑定"
 msgstr "Plugin Binding"
 
-#: apigateway/apps/plugin/plugin/serializers.py:65
+#: apigateway/apps/plugin/plugin/checker.py:46
+#, python-brace-format
+msgid "当 'allow_credential' 为 True 时, {key} 不能为 '*'。"
+msgstr "{key} cannot be '*' when 'allow_credential' is True."
+
+#: apigateway/apps/plugin/plugin/checker.py:53
+#, python-brace-format
+msgid "allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。"
+msgstr ""
+"The '{re_rule}' in allow_origins_by_regex is not a legal regex expression."
+
+#: apigateway/apps/plugin/plugin/checker.py:57
+msgid "allow_origins, allow_origins_by_regex 不能同时为空。"
+msgstr ""
+"allow_origins, allow_origins_by_regex cannot be empty at the same time."
+
+#: apigateway/apps/plugin/plugin/convertor.py:71
 #, python-brace-format
 msgid "蓝鲸应用ID重复: {bk_app_code}"
 msgstr "app id is duplicated: {bk_app_code}"
 
-#: apigateway/apps/plugin/plugin/serializers.py:152
+#: apigateway/apps/plugin/plugin/serializers.py:71
 msgid "网关下插件名称+类型已经存在，请检查。"
 msgstr "plugin name + type already exists, please check."
 
-#: apigateway/apps/plugin/plugin/serializers.py:189
+#: apigateway/apps/plugin/plugin/serializers.py:114
 msgid "此插件类型未公开，不能用于启用插件。"
 msgstr "The plugin type is not public, cannot be used to enable new plugin."
 
-#: apigateway/apps/plugin/plugin/serializers.py:197
+#: apigateway/apps/plugin/plugin/serializers.py:122
 msgid "插件类型不允许更改。"
 msgstr "The plugin type is not allowed to change."
 

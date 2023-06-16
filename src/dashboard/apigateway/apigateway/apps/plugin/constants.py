@@ -29,6 +29,11 @@ class PluginTypeEnum(StructuredEnum):
     VERIFIED_USER_EXEMPTED_APPS = EnumField("bk-verified-user-exempted-apps", label=_("免用户认证应用白名单"))
 
 
+class PluginTypeCodeEnum(StructuredEnum):
+    BK_RATE_LIMIT = EnumField("bk-rate-limit", label=_("频率控制"))
+    BK_CORS = EnumField("bk-cors", label="CORS")
+
+
 class PluginBindingScopeEnum(StructuredEnum):
     STAGE = EnumField(ScopeTypeEnum.STAGE.value, label=_("环境"))
     RESOURCE = EnumField(ScopeTypeEnum.RESOURCE.value, label=_("资源"))

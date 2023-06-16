@@ -20,158 +20,10 @@ from ddf import G
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.plugin.models import PluginType
-from apigateway.apps.plugin.plugin.serializers import (
-    PluginConfigSLZ,
-    PluginConfigYamlConvertor,
-    RateLimitYamlConvertor,
-)
-from apigateway.utils.yaml import yaml_dumps, yaml_loads
+from apigateway.apps.plugin.plugin.serializers import PluginConfigSLZ
+from apigateway.utils.yaml import yaml_dumps
 
 pytestmark = pytest.mark.django_db
-
-
-class TestRateLimitYamlConvertor:
-    @pytest.mark.parametrize(
-        "data, expected",
-        [
-            (
-                {
-                    "rates": {
-                        "default": {"period": 1, "tokens": 10},
-                        "specials": [{"period": 1, "tokens": 20, "bk_app_code": "test"}],
-                    }
-                },
-                {"rates": {"__default": [{"period": 1, "tokens": 10}], "test": [{"period": 1, "tokens": 20}]}},
-            ),
-            (
-                {
-                    "rates": {
-                        "default": {"period": 1, "tokens": 10},
-                    }
-                },
-                {
-                    "rates": {
-                        "__default": [{"period": 1, "tokens": 10}],
-                    }
-                },
-            ),
-        ],
-    )
-    def test_to_internal_value(self, data, expected):
-        convertor = RateLimitYamlConvertor()
-        result = convertor.to_internal_value(yaml_dumps(data))
-        assert yaml_loads(result) == expected
-
-    @pytest.mark.parametrize(
-        "data",
-        [
-            {
-                "rates": {
-                    "default": {"period": 1, "tokens": 10},
-                    "specials": [
-                        {"period": 1, "tokens": 20, "bk_app_code": "test"},
-                        {"period": 1, "tokens": 20, "bk_app_code": "test"},
-                    ],
-                }
-            },
-        ],
-    )
-    def test_to_internal_value__error(self, data):
-        convertor = RateLimitYamlConvertor()
-        with pytest.raises(ValidationError):
-            convertor.to_internal_value(yaml_dumps(data))
-
-    @pytest.mark.parametrize(
-        "data, expected",
-        [
-            (
-                {"rates": {"__default": [{"period": 1, "tokens": 10}], "test": [{"period": 1, "tokens": 20}]}},
-                {
-                    "rates": {
-                        "default": {"period": 1, "tokens": 10},
-                        "specials": [{"period": 1, "tokens": 20, "bk_app_code": "test"}],
-                    }
-                },
-            ),
-            (
-                {
-                    "rates": {
-                        "__default": [{"period": 1, "tokens": 10}],
-                    }
-                },
-                {
-                    "rates": {
-                        "default": {"period": 1, "tokens": 10},
-                        "specials": [],
-                    }
-                },
-            ),
-        ],
-    )
-    def test_to_representation(self, data, expected):
-        convertor = RateLimitYamlConvertor()
-        result = convertor.to_representation(yaml_dumps(data))
-        assert yaml_loads(result) == expected
-
-
-class TestPluginConfigYamlConvertor:
-    @pytest.mark.parametrize(
-        "type_code, data, expected",
-        [
-            (
-                "bk-test",
-                {"foo": "bar", "colors": ["green"]},
-                {"foo": "bar", "colors": ["green"]},
-            ),
-            (
-                "bk-rate-limit",
-                {
-                    "rates": {
-                        "default": {"period": 1, "tokens": 10},
-                        "specials": [],
-                    }
-                },
-                {
-                    "rates": {
-                        "__default": [{"period": 1, "tokens": 10}],
-                    }
-                },
-            ),
-        ],
-    )
-    def test_to_internal_value(self, type_code, data, expected):
-        convertor = PluginConfigYamlConvertor(type_code)
-        result = convertor.to_internal_value(yaml_dumps(data))
-        assert yaml_loads(result) == expected
-
-    @pytest.mark.parametrize(
-        "type_code, data, expected",
-        [
-            (
-                "bk-test",
-                {"foo": "bar", "colors": ["green"]},
-                {"foo": "bar", "colors": ["green"]},
-            ),
-            (
-                "bk-rate-limit",
-                {
-                    "rates": {
-                        "__default": [{"period": 1, "tokens": 10}],
-                    }
-                },
-                {
-                    "rates": {
-                        "default": {"period": 1, "tokens": 10},
-                        "specials": [],
-                    }
-                },
-            ),
-        ],
-    )
-    def test_to_representation(self, type_code, data, expected):
-        convertor = PluginConfigYamlConvertor(type_code)
-        result = convertor.to_representation(yaml_dumps(data))
-        assert yaml_loads(result) == expected
 
 
 class TestPluginConfigSLZ:
@@ -206,3 +58,26 @@ class TestPluginConfigSLZ:
 
         with pytest.raises(ValidationError):
             slz.save()
+
+    def test_update_plugin__error(self, fake_gateway, faker, fake_plugin_config):
+        fake_plugin_config.type.code = "bk-cors"
+
+        params = {
+            "api": fake_gateway,
+            "name": faker.pystr(),
+            "description": faker.pystr(),
+            "yaml": yaml_dumps(
+                {
+                    "allow_origins": "*",
+                    "allow_methods": "*",
+                    "allow_headers": "*",
+                    "expose_headers": "",
+                    "max_age": 100,
+                    "allow_credential": True,
+                }
+            ),
+        }
+
+        slz = PluginConfigSLZ()
+        with pytest.raises(ValidationError):
+            slz._update_plugin(fake_plugin_config, params)
