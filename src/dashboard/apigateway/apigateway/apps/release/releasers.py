@@ -303,8 +303,10 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         release_success_callback = mark_release_history_status.si(
             release_history_id=release_history.pk,
             status=ReleaseStatusEnum.SUCCESS.value,
-            message=_("配置下发成功"),
+            message="configuration released success",
         )  # type: ignore
+        # => now we use en instead(no lang in celery, won't be translated)
+        # FIXME: the release status should be set to release_event.type + result
         release_failure_callback = mark_release_history_failure.s(
             release_history_id=release_history.pk,
         )  # type: ignore
