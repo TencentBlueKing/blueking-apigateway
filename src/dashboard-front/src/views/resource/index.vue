@@ -254,7 +254,7 @@
         key="doc">
         <template slot-scope="props">
           <template v-if="!props.row.resource_doc_languages.length">
-            <bk-popover content="添加文档" ext-cls="popover-tips-cls">
+            <bk-popover :content="$t('添加文档')" ext-cls="popover-tips-cls">
               <span
                 class="ml10"
                 @click.stop="handleShowDoc(props.row, 'zh')">

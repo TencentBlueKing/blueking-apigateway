@@ -128,6 +128,7 @@
                 ext-cls="ag-select-apigw"
                 :clearable="false"
                 :searchable="true"
+                :search-placeholder="$t('请输入关键字搜索')"
                 :style="{ 'min-width': '240px', 'opacity': menuOpened ? 1 : 0 }"
                 @toggle="handleApigwToggle"
                 @selected="handleApigwSelect">

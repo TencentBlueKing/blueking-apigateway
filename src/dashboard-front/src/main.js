@@ -71,7 +71,7 @@ if (!Vue.prototype.GLOBAL_CONFIG) {
   }
 }
 Vue.prototype.$renderHeader = renderHeader
-console.log('Vue.prototype.GLOBAL_CONFIG', Vue.prototype.GLOBAL_CONFIG)
+document.title = i18n.t('API Gateway | 腾讯蓝鲸智云')
 auth.requestCurrentUser().then(async (user) => {
   injectCSRFTokenToHeaders()
   if (user.isAuthenticated) {
