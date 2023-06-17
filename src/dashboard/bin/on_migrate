@@ -1,6 +1,14 @@
 #!/bin/bash
 set -ex
 
+while getopts ":a:" opt; do
+    case ${opt} in
+        a)
+            esb_verified_user_exempted_apps=${OPTARG}
+            ;;
+    esac
+done
+
 envfile="${BK_HOME}/etc/bk_apigateway/bk_apigateway.env"
 
 if [ -f "${envfile}" ]; then
@@ -37,6 +45,6 @@ python manage.py create_esb_jwt_key
 python manage.py sync_legacy_esb_reusable_data
 python manage.py create_esb_gateway
 python manage.py sync_esb_jwt_key_to_gateway
-python manage.py update_esb_user_verified_unrequired_apps
+python manage.py update_esb_user_verified_unrequired_apps ${esb_verified_user_exempted_apps}
 python manage.py sync_esb_verified_user_exempted_apps_to_gateway
 python manage.py add_plugin_error_status_code_200
