@@ -592,6 +592,7 @@ PLUGIN_METADATA_CONFIG = {
             "app_code": "$bk_app_code",
             "client_ip": "$remote_addr",
             "request_id": "$bk_request_id",
+            "x_request_id": "$x_request_id",
             "request_duration": "$bk_log_request_duration",
             # 网关信息
             "api_id": "$bk_gateway_id",
