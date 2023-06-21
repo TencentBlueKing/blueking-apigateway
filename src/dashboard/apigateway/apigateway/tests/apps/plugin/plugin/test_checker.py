@@ -78,12 +78,98 @@ class TestBkCorsChecker:
                 "max_age": 100,
                 "allow_credential": False,
             },
+            {
+                "allow_origins": "http://foo.com",
+                "allow_methods": "GET,POST,PUT,GET",
+                "allow_headers": "**",
+                "expose_headers": "**",
+                "max_age": 100,
+                "allow_credential": False,
+            },
+            {
+                "allow_origins": "http://foo.com",
+                "allow_methods": "**",
+                "allow_headers": "x-token,x-token",
+                "expose_headers": "",
+                "max_age": 100,
+                "allow_credential": False,
+            },
         ],
     )
     def test_check__error(self, data):
         checker = BkCorsChecker()
         with pytest.raises(ValueError):
             checker.check(yaml_dumps(data))
+
+    @pytest.mark.parametrize(
+        "allow_methods",
+        [
+            "*",
+            "**",
+            "GET,POST,PUT,DELETE,PATCH,HEAD,OPTIONS,CONNECT,TRACE",
+            "GET,POST,OPTIONS",
+            "GET",
+        ],
+    )
+    def test_check_allow_methods(self, allow_methods):
+        checker = BkCorsChecker()
+        assert checker._check_allow_methods(allow_methods) is None
+
+    @pytest.mark.parametrize(
+        "allow_methods",
+        [
+            "GET,POST,GET",
+        ],
+    )
+    def test_check_allow_methods__error(self, allow_methods):
+        checker = BkCorsChecker()
+        with pytest.raises(ValueError):
+            checker._check_allow_methods(allow_methods)
+
+    @pytest.mark.parametrize(
+        "headers",
+        [
+            "Bk-Token",
+            "Bk-Token,X-Token",
+            "BK-TOKEN",
+        ],
+    )
+    def test_check_headers(self, headers):
+        checker = BkCorsChecker()
+        assert checker._check_headers(headers, "key") is None
+
+    @pytest.mark.parametrize(
+        "headers",
+        [
+            "Bk-Token,Bk-Token",
+        ],
+    )
+    def test_check_headers__error(self, headers):
+        checker = BkCorsChecker()
+        with pytest.raises(ValueError):
+            checker._check_headers(headers, "key")
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            ["a", "b"],
+        ],
+    )
+    def test_check_duplicate_items(self, data):
+        checker = BkCorsChecker()
+        result = checker._check_duplicate_items(data, "key")
+        assert result is None
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            ["a", "b", "a"],
+        ],
+    )
+    def test_check_duplicate_items__error(self, data):
+        checker = BkCorsChecker()
+        with pytest.raises(ValueError):
+            checker._check_duplicate_items(data, "key")
 
 
 class TestPluginConfigYamlChecker:
