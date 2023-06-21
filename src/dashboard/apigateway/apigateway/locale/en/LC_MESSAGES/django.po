@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-16 15:48+0800\n"
+"POT-Creation-Date: 2023-06-21 15:03+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1026,21 +1026,25 @@ msgstr "Plugin"
 msgid "插件绑定"
 msgstr "Plugin Binding"
 
-#: apigateway/apps/plugin/plugin/checker.py:46
+#: apigateway/apps/plugin/plugin/checker.py:53
 #, python-brace-format
 msgid "当 'allow_credential' 为 True 时, {key} 不能为 '*'。"
 msgstr "{key} cannot be '*' when 'allow_credential' is True."
-
-#: apigateway/apps/plugin/plugin/checker.py:53
-#, python-brace-format
-msgid "allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。"
-msgstr ""
-"The '{re_rule}' in allow_origins_by_regex is not a legal regex expression."
 
 #: apigateway/apps/plugin/plugin/checker.py:57
 msgid "allow_origins, allow_origins_by_regex 不能同时为空。"
 msgstr ""
 "allow_origins, allow_origins_by_regex cannot be empty at the same time."
+
+#: apigateway/apps/plugin/plugin/checker.py:79
+#, python-brace-format
+msgid "allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。"
+msgstr ""
+"The '{re_rule}' in allow_origins_by_regex is not a legal regex expression."
+
+#: apigateway/apps/plugin/plugin/checker.py:84
+msgid "{} 存在重复的元素：{}。"
+msgstr "Duplicate element in {}: {}."
 
 #: apigateway/apps/plugin/plugin/convertor.py:71
 #, python-brace-format
@@ -1101,10 +1105,6 @@ msgstr "The shared micro-gateway instance does not exist."
 #: apigateway/apps/release/releasers.py:253
 msgid "发布中"
 msgstr "Releasing"
-
-#: apigateway/apps/release/releasers.py:306
-msgid "配置下发成功"
-msgstr "configuration release success"
 
 #: apigateway/apps/release/views.py:51
 msgid "当前选择环境未发布版本，请先发布版本到该环境。"
@@ -1919,6 +1919,9 @@ msgstr "App [{value}] does not match the required pattern."
 #, python-brace-format
 msgid "蓝鲸应用【{app_codes}】不匹配要求的模式。"
 msgstr "App [{app_codes}] does not match the required pattern."
+
+#~ msgid "配置下发成功"
+#~ msgstr "configuration release success"
 
 #~ msgid "资源名称【name={name}】重复。"
 #~ msgstr "Resource name [{name}] already exists."
