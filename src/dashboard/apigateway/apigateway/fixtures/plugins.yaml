@@ -124,7 +124,8 @@
             "allow_origins": {
               "description": "允许跨域访问的 Origin，格式为 scheme://host:port，示例如 https://example.com:8081。如果你有多个 Origin，请使用 , 分隔。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Origin 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Origin 均通过，但请注意这样存在安全隐患。",
               "type": "string",
-              "pattern": "^(|\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
+              "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
+              "maxLength": 4096,
               "default": ""
             },
             "allow_origins_by_regex": {
@@ -134,7 +135,8 @@
               "items": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 4096
+                "maxLength": 4096,
+                "pattern": "^(\\^)?[-a-zA-Z0-9:/\\[\\]\\{\\}\\(\\)\\.\\*\\+\\?\\|\\\\]+(\\$)?$"
               },
               "ui:component": {
                 "name": "bfArray"
@@ -144,6 +146,8 @@
               "description": "允许跨域访问的 Method，比如：GET，POST 等。如果你有多个 Method，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Method 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Method 都通过，但请注意这样存在安全隐患。",
               "type": "string",
               "default": "**",
+              "pattern": "^(\\*|\\*\\*|(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)(,(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE))*)$",
+              "maxLength": 100,
               "ui:rules": [
                 "required"
               ]
@@ -152,6 +156,8 @@
               "description": "允许跨域访问时请求方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Header 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Header 都通过，但请注意这样存在安全隐患。",
               "type": "string",
               "default": "**",
+              "pattern": "^(\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+              "maxLength": 4096,
               "ui:rules": [
                 "required"
               ]
@@ -159,6 +165,8 @@
             "expose_headers": {
               "description": "允许跨域访问时响应方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许任意 Header 。你也可以在启用了 allow_credential 后使用 ** 强制允许任意 Header，但请注意这样存在安全隐患。",
               "type": "string",
+              "pattern": "^(|\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+              "maxLength": 4096,
               "default": ""
             },
             "max_age": {
@@ -208,7 +216,7 @@
             "allow_origins": {
               "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues.",
               "type": "string",
-              "pattern": "^(|\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
+              "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
               "default": ""
             },
             "allow_origins_by_regex": {
@@ -218,7 +226,8 @@
               "items": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 4096
+                "maxLength": 4096,
+                "pattern": "^(\\^)?[-a-zA-Z0-9:/\\[\\]\\{\\}\\(\\)\\.\\*\\+\\?\\|\\\\]+(\\$)?$"
               },
               "ui:component": {
                 "name": "bfArray"
@@ -228,6 +237,8 @@
               "description": "Request methods to enable CORS on. For example GET, POST. Use , to add multiple methods. If allow_credential is set to false, you can enable CORS for all methods by using *. If allow_credential is set to true, you can forcefully allow CORS on all methods by using ** but it will pose some security issues.",
               "type": "string",
               "default": "**",
+              "pattern": "^(\\*|\\*\\*|(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)(,(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE))*)$",
+              "maxLength": 100,
               "ui:rules": [
                 "required"
               ]
@@ -236,6 +247,8 @@
               "description": "Headers in the request allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all request headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all request headers by using ** but it will pose some security issues.",
               "type": "string",
               "default": "**",
+              "pattern": "^(\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+              "maxLength": 4096,
               "ui:rules": [
                 "required"
               ]
@@ -243,6 +256,8 @@
             "expose_headers": {
               "description": "Headers in the response allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all response headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all response headers by using ** but it will pose some security issues.",
               "type": "string",
+              "pattern": "^(|\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+              "maxLength": 4096,
               "default": ""
             },
             "max_age": {

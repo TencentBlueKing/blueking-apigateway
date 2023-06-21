@@ -483,7 +483,7 @@
               name: i18n.t('组件API文档'),
               id: 5,
               url: 'componentAPI',
-              enabled: this.GLOBAL_CONFIG.PLATFORM_FEATURE.MENU_ITEM_ESB_API
+              enabled: this.GLOBAL_CONFIG.PLATFORM_FEATURE.MENU_ITEM_ESB_API_DOC
             },
             {
               name: this.$t('网关API SDK'),
