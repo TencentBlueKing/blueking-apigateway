@@ -43,6 +43,7 @@ class TestFeatureFlagViewSet:
         view = FeatureFlagViewSet.as_view({"get": "list"})
         response = view(request)
         result = get_response_json(response)
-        assert len(result["data"]) == 2
+        assert len(result["data"]) == 3
         assert settings.DEFAULT_FEATURE_FLAG == {"MENU_ITEM_ESB_API": True}
         assert result["data"]["MENU_ITEM_ESB_API"] == expected
+        assert result["data"]["MENU_ITEM_ESB_API_DOC"] is True
