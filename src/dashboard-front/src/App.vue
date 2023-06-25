@@ -250,7 +250,7 @@
 </template>
 <script>
   import { mapGetters } from 'vuex'
-  import { sortByKey } from '@/common/util'
+  import { sortByKey, jsonpRequest } from '@/common/util'
   import { bus } from '@/common/bus'
   import { bk_logout as bkLogout } from '../static/js/bklogout'
   import i18n from '@/language/i18n.js'
@@ -1087,6 +1087,14 @@
               'X-CSRFToken': CSRFToken
             }
           })
+          if (window.BK_COMPONENT_API_URL) {
+            jsonpRequest(
+              `${window.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fe_update_user_language/`,
+              {
+                language
+              }
+            )
+          }
           this.$router.go(0)
         } catch (e) {
           console.error(e)
