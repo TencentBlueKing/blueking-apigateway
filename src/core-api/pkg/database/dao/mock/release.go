@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	dao "core/pkg/database/dao"
 	reflect "reflect"
 
@@ -35,16 +36,16 @@ func (m *MockReleaseManager) EXPECT() *MockReleaseManagerMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockReleaseManager) Get(gatewayID, stageID int64) (dao.Release, error) {
+func (m *MockReleaseManager) Get(ctx context.Context, gatewayID, stageID int64) (dao.Release, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", gatewayID, stageID)
+	ret := m.ctrl.Call(m, "Get", ctx, gatewayID, stageID)
 	ret0, _ := ret[0].(dao.Release)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockReleaseManagerMockRecorder) Get(gatewayID, stageID interface{}) *gomock.Call {
+func (mr *MockReleaseManagerMockRecorder) Get(ctx, gatewayID, stageID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockReleaseManager)(nil).Get), gatewayID, stageID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockReleaseManager)(nil).Get), ctx, gatewayID, stageID)
 }

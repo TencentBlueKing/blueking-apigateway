@@ -21,6 +21,7 @@ package dao
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
 import (
+	"context"
 	"core/pkg/database"
 
 	"github.com/jmoiron/sqlx"
@@ -36,7 +37,7 @@ type Stage struct {
 
 // StageManager ...
 type StageManager interface {
-	GetByName(gatewayID int64, stageName string) (Stage, error)
+	GetByName(ctx context.Context, gatewayID int64, stageName string) (Stage, error)
 }
 
 // NewStageManager ...
@@ -51,7 +52,7 @@ type stageManager struct {
 }
 
 // GetByName ...
-func (m stageManager) GetByName(gatewayID int64, stageName string) (Stage, error) {
+func (m stageManager) GetByName(ctx context.Context, gatewayID int64, stageName string) (Stage, error) {
 	Stage := Stage{}
 	query := `SELECT
 		id,
@@ -59,6 +60,6 @@ func (m stageManager) GetByName(gatewayID int64, stageName string) (Stage, error
 		FROM core_stage
 		WHERE api_id = ?
 		AND name = ?`
-	err := database.SqlxGet(m.DB, &Stage, query, gatewayID, stageName)
+	err := database.SqlxGet(ctx, m.DB, &Stage, query, gatewayID, stageName)
 	return Stage, err
 }

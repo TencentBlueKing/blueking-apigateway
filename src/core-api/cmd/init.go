@@ -25,6 +25,7 @@ import (
 	"core/pkg/database"
 	"core/pkg/logging"
 	"core/pkg/metric"
+	"core/pkg/trace"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/spf13/viper"
@@ -60,7 +61,7 @@ func initDatabase() {
 		panic("database apigateway should be configured")
 	}
 
-	database.InitDBClients(&defaultDBConfig)
+	database.InitDBClients(&defaultDBConfig, globalConfig.Tracing)
 
 	logging.GetLogger().Info("init Database success")
 }
@@ -85,4 +86,18 @@ func initSentry() {
 func initMetrics() {
 	metric.InitMetrics()
 	logging.GetLogger().Info("init Metrics success")
+}
+
+func initTracing() {
+	if !globalConfig.Tracing.Enable {
+		logging.GetLogger().Info("tracing is not enabled, will not init it")
+		return
+	}
+	logging.GetLogger().Info("enabling tracing")
+	err := trace.InitTrace(globalConfig.Tracing)
+	if err != nil {
+		logging.GetLogger().Errorf("init tracing fail: %+v", err)
+		return
+	}
+	logging.GetLogger().Info("init tracing success")
 }

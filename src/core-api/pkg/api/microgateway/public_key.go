@@ -49,7 +49,7 @@ func QueryPublicKey(c *gin.Context) {
 	}
 
 	svc := service.NewGatewayPublicKeyService()
-	publicKey, err := svc.Get(util.GetInstanceID(c), query.BkGatewayName)
+	publicKey, err := svc.Get(c.Request.Context(), util.GetInstanceID(c), query.BkGatewayName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			util.NotFoundJSONResponse(c, err.Error())

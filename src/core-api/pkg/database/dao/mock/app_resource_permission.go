@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	dao "core/pkg/database/dao"
 	reflect "reflect"
 
@@ -35,16 +36,16 @@ func (m *MockAppResourcePermissionManager) EXPECT() *MockAppResourcePermissionMa
 }
 
 // Get mocks base method.
-func (m *MockAppResourcePermissionManager) Get(bkAppCode string, gatewayID, resourceID int64) (dao.AppResourcePermission, error) {
+func (m *MockAppResourcePermissionManager) Get(ctx context.Context, bkAppCode string, gatewayID, resourceID int64) (dao.AppResourcePermission, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", bkAppCode, gatewayID, resourceID)
+	ret := m.ctrl.Call(m, "Get", ctx, bkAppCode, gatewayID, resourceID)
 	ret0, _ := ret[0].(dao.AppResourcePermission)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockAppResourcePermissionManagerMockRecorder) Get(bkAppCode, gatewayID, resourceID interface{}) *gomock.Call {
+func (mr *MockAppResourcePermissionManagerMockRecorder) Get(ctx, bkAppCode, gatewayID, resourceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppResourcePermissionManager)(nil).Get), bkAppCode, gatewayID, resourceID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppResourcePermissionManager)(nil).Get), ctx, bkAppCode, gatewayID, resourceID)
 }

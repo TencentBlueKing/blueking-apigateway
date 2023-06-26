@@ -19,6 +19,7 @@
 package dao
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -53,7 +54,7 @@ func Test_appResourcePermissionManager_Get(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs(bkAppCode, gatewayID, resourceID).WillReturnRows(mockRows)
 
 		manager := &appResourcePermissionManager{DB: db}
-		p, err := manager.Get(bkAppCode, gatewayID, resourceID)
+		p, err := manager.Get(context.Background(), bkAppCode, gatewayID, resourceID)
 
 		assert.NoError(t, err, "query from db fail.")
 		assert.Equal(t, permission, p)

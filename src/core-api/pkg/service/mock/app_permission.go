@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -34,16 +35,16 @@ func (m *MockAppPermissionService) EXPECT() *MockAppPermissionServiceMockRecorde
 }
 
 // Query mocks base method.
-func (m *MockAppPermissionService) Query(instanceID, gatewayName, stageName, resourceName, appCode string) (map[string]int64, error) {
+func (m *MockAppPermissionService) Query(ctx context.Context, instanceID, gatewayName, stageName, resourceName, appCode string) (map[string]int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Query", instanceID, gatewayName, stageName, resourceName, appCode)
+	ret := m.ctrl.Call(m, "Query", ctx, instanceID, gatewayName, stageName, resourceName, appCode)
 	ret0, _ := ret[0].(map[string]int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Query indicates an expected call of Query.
-func (mr *MockAppPermissionServiceMockRecorder) Query(instanceID, gatewayName, stageName, resourceName, appCode interface{}) *gomock.Call {
+func (mr *MockAppPermissionServiceMockRecorder) Query(ctx, instanceID, gatewayName, stageName, resourceName, appCode interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockAppPermissionService)(nil).Query), instanceID, gatewayName, stageName, resourceName, appCode)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockAppPermissionService)(nil).Query), ctx, instanceID, gatewayName, stageName, resourceName, appCode)
 }

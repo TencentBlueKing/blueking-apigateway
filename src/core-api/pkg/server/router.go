@@ -29,6 +29,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func checkDatabase(dbConfig *config.Database) error {
@@ -75,7 +76,11 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	// metrics
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	// router.GET("/version", handler.Version)
-
+	// trace
+	if cfg.Tracing.GinAPIEnabled() {
+		// set gin otel
+		router.Use(otelgin.Middleware(cfg.Tracing.ServiceName))
+	}
 	microGatewayRouter := router.Group("/api/v1/micro-gateway")
 	microGatewayRouter.Use(middleware.APILogger())
 	microGatewayRouter.Use(middleware.MicroGatewayInstanceMiddleware())

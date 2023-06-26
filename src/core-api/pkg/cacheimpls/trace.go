@@ -20,44 +20,32 @@ package cacheimpls
 
 import (
 	"context"
-	"errors"
-	"testing"
-	"time"
+
+	"core/pkg/trace"
 
 	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
-	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/attribute"
 )
 
-func TestJWTPublicKeyCacheKey_Key(t *testing.T) {
-	k := JWTPublicKeyCacheKey{
-		GatewayID: 1,
+// tracedFuncWrapper
+func tracedFuncWrapper(name string, fn memory.RetrieveFunc) memory.RetrieveFunc {
+	return func(ctx context.Context, key cache.Key) (interface{}, error) {
+		startTrace, span := trace.StartTrace(ctx, "cache_load")
+		if span != nil {
+			span.SetAttributes(attribute.String("cache_name", name))
+			defer span.End()
+		}
+		return fn(startTrace, key)
 	}
-	assert.Equal(t, "1", k.Key())
 }
 
-func TestGetJWTPublicKey(t *testing.T) {
-	expiration := 5 * time.Minute
-
-	// valid
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return "hello", nil
+// cacheGet
+func cacheGet(ctx context.Context, cache memory.Cache, key cache.Key) (interface{}, error) {
+	startCtx, span := trace.StartTrace(ctx, "cache_get")
+	if span != nil {
+		span.SetAttributes(attribute.String("key", key.Key()))
+		defer span.End()
 	}
-	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
-	jwtPublicKeyCache = mockCache
-
-	_, err := GetJWTPublicKey(context.Background(), 1)
-	assert.NoError(t, err)
-
-	// error
-	retrieveFunc = func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return false, errors.New("error here")
-	}
-	mockCache = memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
-	jwtPublicKeyCache = mockCache
-
-	_, err = GetJWTPublicKey(context.Background(), 1)
-	assert.Error(t, err)
+	return cache.Get(startCtx, key)
 }

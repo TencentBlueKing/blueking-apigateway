@@ -19,6 +19,7 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -43,24 +44,24 @@ func TestGetAppResourcePermissionExpiredAt(t *testing.T) {
 	expiration := 5 * time.Minute
 
 	// valid
-	retrieveFunc := func(key cache.Key) (interface{}, error) {
+	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return dao.AppResourcePermission{}, nil
 	}
 	mockCache := memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	appResourcePermissionCache = mockCache
 
-	_, err := GetAppResourcePermissionExpiredAt("hello", 1, 2)
+	_, err := GetAppResourcePermissionExpiredAt(context.Background(), "hello", 1, 2)
 	assert.NoError(t, err)
 
 	// error
-	retrieveFunc = func(key cache.Key) (interface{}, error) {
+	retrieveFunc = func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	appResourcePermissionCache = mockCache
 
-	_, err = GetAppResourcePermissionExpiredAt("hello", 1, 2)
+	_, err = GetAppResourcePermissionExpiredAt(context.Background(), "hello", 1, 2)
 	assert.Error(t, err)
 }

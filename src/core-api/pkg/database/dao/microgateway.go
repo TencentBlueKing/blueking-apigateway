@@ -21,6 +21,7 @@ package dao
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
 import (
+	"context"
 	"strings"
 
 	"core/pkg/database"
@@ -44,7 +45,7 @@ type MicroGateway struct {
 
 // MicroGatewayManager ...
 type MicroGatewayManager interface {
-	Get(instanceID string) (MicroGateway, error)
+	Get(ctx context.Context, instanceID string) (MicroGateway, error)
 }
 
 // NewMicroGatewayManager ...
@@ -59,7 +60,7 @@ type microGatewayManager struct {
 }
 
 // Get ...
-func (m microGatewayManager) Get(instanceID string) (MicroGateway, error) {
+func (m microGatewayManager) Get(ctx context.Context, instanceID string) (MicroGateway, error) {
 	// the id in database is uuid(32), the django handled the 36 to 32 by default
 	// but here we need to do it ourselves
 	instanceID = strings.ReplaceAll(instanceID, "-", "")
@@ -73,6 +74,6 @@ func (m microGatewayManager) Get(instanceID string) (MicroGateway, error) {
 		config
 		FROM core_micro_gateway
 		WHERE id = ?`
-	err := database.SqlxGet(m.DB, &perm, query, instanceID)
+	err := database.SqlxGet(ctx, m.DB, &perm, query, instanceID)
 	return perm, err
 }

@@ -39,10 +39,12 @@ var (
 var defaultDBClientOnce sync.Once
 
 // InitDBClients ...
-func InitDBClients(defaultDBConfig *config.Database) {
+func InitDBClients(defaultDBConfig *config.Database, tracerConfig config.Tracing) {
 	if DefaultDBClient == nil {
 		defaultDBClientOnce.Do(func() {
 			DefaultDBClient = NewDBClient(defaultDBConfig)
+			//set db trace
+			DefaultDBClient.SetTraceEnabled(tracerConfig.DBAPIEnabled())
 			if err := DefaultDBClient.Connect(); err != nil {
 				panic(err)
 			}

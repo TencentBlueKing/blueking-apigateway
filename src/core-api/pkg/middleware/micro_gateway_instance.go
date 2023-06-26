@@ -47,7 +47,7 @@ func MicroGatewayInstanceMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		matched, err := cacheimpls.VerifyMicroGatewayCredentials(instanceID, instanceSecret)
+		matched, err := cacheimpls.VerifyMicroGatewayCredentials(c.Request.Context(), instanceID, instanceSecret)
 		if err != nil {
 			err = fmt.Errorf("verify micro_gateway credentials fail, %w", err)
 			util.SystemErrorJSONResponse(c, err)
