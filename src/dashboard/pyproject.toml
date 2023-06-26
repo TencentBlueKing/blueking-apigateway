@@ -172,7 +172,8 @@ build-backend = "poetry.masonry.api"
 [tool.ruff]
 # Enable Pyflakes `E` and `F` codes by default.
 select = ["E", "F", "W"]
-ignore = ["E741", "F841"]
+# Disable E501 until this issue is fixed: https://github.com/astral-sh/ruff/issues/3825
+ignore = ["E741", "F841", "E501"]
 
 # Exclude a variety of commonly ignored directories.
 exclude = [
