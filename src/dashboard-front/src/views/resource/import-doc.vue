@@ -50,7 +50,7 @@
           <div class="import-top" v-else>
             <bk-button icon="plus" class="import-btn" :key="uploadButtonKey">
               {{ $t('导入文档压缩包') }}
-              <input ref="fileArchive" type="file" name="upload" class="file-input" @change="handleFileArchive">
+              <input ref="fileArchive" type="file" name="upload" class="file-input" accept=".tar.gz,.tgz,.zip" @change="handleFileArchive">
             </bk-button>
           </div>
         </bk-form-item>
