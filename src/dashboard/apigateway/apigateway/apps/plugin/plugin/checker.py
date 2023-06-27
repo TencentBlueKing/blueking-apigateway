@@ -56,6 +56,9 @@ class BkCorsChecker(BaseChecker):
         if not (loaded_data.get("allow_origins") or loaded_data.get("allow_origins_by_regex")):
             raise ValueError(_("allow_origins, allow_origins_by_regex 不能同时为空。"))
 
+        if loaded_data.get("allow_origins") and loaded_data.get("allow_origins_by_regex"):
+            raise ValueError(_("allow_origins, allow_origins_by_regex 只能一个有效。"))
+
     def _check_allow_origins(self, allow_origins: Optional[str]):
         if not allow_origins:
             return

@@ -122,14 +122,14 @@
           ],
           "properties": {
             "allow_origins": {
-              "description": "允许跨域访问的 Origin，格式为 scheme://host:port，示例如 https://example.com:8081。如果你有多个 Origin，请使用 , 分隔。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Origin 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Origin 均通过，但请注意这样存在安全隐患。",
+              "description": "允许跨域访问的 Origin，格式为 scheme://host:port，示例如 https://example.com:8081。如果你有多个 Origin，请使用 , 分隔。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Origin 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Origin 均通过，但请注意这样存在安全隐患。allow_origins、allow_origins_by_regex 只能一个有效。",
               "type": "string",
               "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
               "maxLength": 4096,
               "default": ""
             },
             "allow_origins_by_regex": {
-              "description": "使用正则表示的允许跨域访问的 Origin，示例如 '^https://.*\\.example\\.com:8081$'，此正则允许 https://a.example.com:8081, https://b.example.com:8081。",
+              "description": "使用正则表示的允许跨域访问的 Origin，示例如 '^https://.*\\.example\\.com:8081$'，此正则允许 https://a.example.com:8081, https://b.example.com:8081。allow_origins、allow_origins_by_regex 只能一个有效。",
               "type": "array",
               "uniqueItems": true,
               "items": {
@@ -214,13 +214,13 @@
           ],
           "properties": {
             "allow_origins": {
-              "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues.",
+              "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues. allow_origins, allow_origins_by_regex can only be one valid at a time.",
               "type": "string",
               "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
               "default": ""
             },
             "allow_origins_by_regex": {
-              "description": "Origin that allows CORS using regular expressions. You can use regex to allow specific origins when no credentials, for example, '^https://.*\\.example\\.com:8081$', this regular expression allows https://a.example.com:8081, https://b.example.com:8081.",
+              "description": "Origin that allows CORS using regular expressions. You can use regex to allow specific origins when no credentials, for example, '^https://.*\\.example\\.com:8081$', this regular expression allows https://a.example.com:8081, https://b.example.com:8081. allow_origins, allow_origins_by_regex can only be one valid at a time.",
               "type": "array",
               "uniqueItems": true,
               "items": {
