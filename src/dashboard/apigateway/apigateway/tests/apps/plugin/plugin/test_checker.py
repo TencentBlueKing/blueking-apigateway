@@ -27,6 +27,13 @@ class TestBkCorsChecker:
         [
             {
                 "allow_origins": "**",
+                "allow_methods": "**",
+                "allow_headers": "**",
+                "expose_headers": "",
+                "max_age": 100,
+                "allow_credential": True,
+            },
+            {
                 "allow_origins_by_regex": ["^http://.*\\.example\\.com$"],
                 "allow_methods": "**",
                 "allow_headers": "**",
@@ -61,8 +68,16 @@ class TestBkCorsChecker:
                 "allow_credential": True,
             },
             {
-                "allow_origins": "*",
                 "allow_origins_by_regex": ["\\"],
+                "allow_methods": "*",
+                "allow_headers": "*",
+                "expose_headers": "*",
+                "max_age": 100,
+                "allow_credential": False,
+            },
+            {
+                "allow_origins": "*",
+                "allow_origins_by_regex": "http://.*.example.com",
                 "allow_methods": "*",
                 "allow_headers": "*",
                 "expose_headers": "*",
