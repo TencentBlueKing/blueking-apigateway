@@ -33,7 +33,6 @@ from urllib.parse import quote
 
 from celery.schedules import crontab
 from tencent_apigateway_common.env import Env
-from tencent_apigateway_common.secure.dj_environ import SecureEnv
 
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
@@ -43,9 +42,6 @@ from apigateway.conf.utils import get_default_keepalive_options
 env = Env()
 
 ENCRYPT_KEY = env.str("ENCRYPT_KEY")
-
-sec_env = SecureEnv()
-sec_env.set_secure_key(ENCRYPT_KEY)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -68,9 +64,6 @@ LOG_LINK_SECRET = ENCRYPT_KEY
 
 # use the same nonce, should not be changed at all!!!!!!
 CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
-
-# 网关公钥，服务部分接口接入网关，配置此网关的公钥，以校验网关 jwt
-APIGW_PUBLIC_KEY = sec_env.str("APIGW_PUBLIC_KEY", "")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", False)
@@ -234,7 +227,7 @@ LANGUAGE_COOKIE_DOMAIN = env.str("DASHBOARD_LANGUAGE_COOKIE_DOMAIN", None) or CS
 # django translation, 避免循环引用
 gettext = lambda s: s  # noqa
 
-# 站点URL
+# 站点 URL
 SITE_URL = "/"
 
 # Static files (CSS, JavaScript, Images)
@@ -290,8 +283,7 @@ DATABASES = {
         "ENGINE": env.str("BK_APIGW_DATABASE_ENGINE", "django.db.backends.mysql"),
         "NAME": env.str("BK_APIGW_DATABASE_NAME", BK_APP_CODE),
         "USER": env.str("BK_APIGW_DATABASE_USER", BK_APP_CODE),
-        "PASSWORD": env.str("BK_APIGW_DATABASE_PASSWORD_UNENCRYPTED", "")
-        or sec_env.str("BK_APIGW_DATABASE_PASSWORD", ""),
+        "PASSWORD": env.str("BK_APIGW_DATABASE_PASSWORD", ""),
         "HOST": env.str("BK_APIGW_DATABASE_HOST", "localhost"),
         "PORT": env.int("BK_APIGW_DATABASE_PORT", 3306),
         "OPTIONS": {
@@ -302,7 +294,7 @@ DATABASES = {
         "ENGINE": env.str("BK_ESB_DATABASE_ENGINE", "django.db.backends.mysql"),
         "NAME": env.str("BK_ESB_DATABASE_NAME", "bk_esb"),
         "USER": env.str("BK_ESB_DATABASE_USER", BK_APP_CODE),
-        "PASSWORD": env.str("BK_ESB_DATABASE_PASSWORD_UNENCRYPTED", "") or sec_env.str("BK_ESB_DATABASE_PASSWORD", ""),
+        "PASSWORD": env.str("BK_ESB_DATABASE_PASSWORD", ""),
         "HOST": env.str("BK_ESB_DATABASE_HOST", "localhost"),
         "PORT": env.int("BK_ESB_DATABASE_PORT", 3306),
         "OPTIONS": {
@@ -313,8 +305,7 @@ DATABASES = {
         "ENGINE": env.str("BK_PAAS2_DATABASE_ENGINE", "django.db.backends.mysql"),
         "NAME": env.str("BK_PAAS2_DATABASE_NAME", ""),
         "USER": env.str("BK_PAAS2_DATABASE_USER", ""),
-        "PASSWORD": env.str("BK_PAAS2_DATABASE_PASSWORD_UNENCRYPTED", "")
-        or sec_env.str("BK_PAAS2_DATABASE_PASSWORD", ""),
+        "PASSWORD": env.str("BK_PAAS2_DATABASE_PASSWORD", ""),
         "HOST": env.str("BK_PAAS2_DATABASE_HOST", ""),
         "PORT": env.int("BK_PAAS2_DATABASE_PORT", 3306),
         "OPTIONS": {
@@ -331,7 +322,7 @@ if not BK_PAAS2_ENABLED:
 # redis 配置
 REDIS_HOST = env.str("BK_APIGW_REDIS_HOST", "localhost")
 REDIS_PORT = env.int("BK_APIGW_REDIS_PORT", 6379)
-REDIS_PASSWORD = env.str("BK_APIGW_REDIS_PASSWORD_UNENCRYPTED", "") or sec_env.str("BK_APIGW_REDIS_PASSWORD")
+REDIS_PASSWORD = env.str("BK_APIGW_REDIS_PASSWORD", "")
 REDIS_PREFIX = env.str("BK_APIGW_REDIS_PREFIX", "apigw::")
 REDIS_MAX_CONNECTIONS = env.int("BK_APIGW_REDIS_MAX_CONNECTIONS", 100)
 REDIS_DB = env.int("BK_APIGW_REDIS_DB", 0)
@@ -452,9 +443,7 @@ RAVEN_CONFIG = {
 # Elasticsearch 配置
 BK_APIGW_ES_USER = env.str("BK_APIGW_ES_USER", BK_APP_CODE)
 # 密码中可能包含特殊字符
-BK_APIGW_ES_PASSWORD = quote(
-    env.str("BK_APIGW_ES_PASSWORD_UNENCRYPTED", "") or sec_env.str("BK_APIGW_ES_PASSWORD", "")
-)
+BK_APIGW_ES_PASSWORD = quote(env.str("BK_APIGW_ES_PASSWORD", ""))
 BK_APIGW_ES_HOST = env.list("BK_APIGW_ES_HOST", default=[])
 BK_APIGW_ES_PORT = env.str("BK_APIGW_ES_PORT", "9200")
 ELASTICSEARCH_HOSTS = []
@@ -483,7 +472,7 @@ PYPI_MIRRORS_CONFIG = {
         "repository_url": env.str("DEFAULT_PYPI_REPOSITORY_URL", ""),
         "index_url": env.str("DEFAULT_PYPI_INDEX_URL", ""),
         "username": env.str("DEFAULT_PYPI_USERNAME", ""),
-        "password": env.str("DEFAULT_PYPI_PASSWORD_UNENCRYPTED", "") or sec_env.str("DEFAULT_PYPI_PASSWORD", ""),
+        "password": env.str("DEFAULT_PYPI_PASSWORD", ""),
     }
 }
 
@@ -686,9 +675,9 @@ RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE = env.int("RELEASED_RESOURCE_DOC_CREATE_
 # 网关资源数量限制
 MAX_STAGE_COUNT_PER_GATEWAY = env.int("MAX_STAGE_COUNT_PER_GATEWAY", 20)
 API_GATEWAY_RESOURCE_LIMITS = {
-    "max_gateway_count_per_app": env.int("MAX_GATEWAY_COUNT_PER_APP", 10),  # 每个app最多创建的网关数量
-    "max_resource_count_per_gateway": env.int("MAX_RESOURCE_COUNT_PER_GATEWAY", 1000),  # 每个网关最多创建的api数量
-    # 配置app的特殊规则
+    "max_gateway_count_per_app": env.int("MAX_GATEWAY_COUNT_PER_APP", 10),  # 每个 app 最多创建的网关数量
+    "max_resource_count_per_gateway": env.int("MAX_RESOURCE_COUNT_PER_GATEWAY", 1000),  # 每个网关最多创建的 api 数量
+    # 配置 app 的特殊规则
     "max_gateway_count_per_app_whitelist": {
         "bk_sops": 1000000,  # 标准运维网关数量无限制
     },
