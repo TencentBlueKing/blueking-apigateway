@@ -44,6 +44,13 @@ class ResourceDocManager(models.Manager):
             for doc in self.filter(api_id=gateway_id).values("id", "resource_id", "language")
         }
 
+    def query_doc_key_to_content(self, gateway_id: int) -> Dict[str, str]:
+        # note: the content is rendered, not the raw file content
+        return {
+            f"{doc['resource_id']}:{doc['language']}": doc["content"]
+            for doc in self.filter(api_id=gateway_id).values("resource_id", "content", "language")
+        }
+
     def get_doc_languages_of_resources(self, gateway_id: int, resource_ids: List[int]) -> Dict[int, List[str]]:
         data = (
             self.filter(api_id=gateway_id, resource_id__in=resource_ids)

@@ -15,6 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import os
+from tempfile import TemporaryDirectory
+
 import pytest
 from ddf import G
 
@@ -23,6 +26,7 @@ from apigateway.apps.support.models import ResourceDoc, ResourceDocSwagger
 from apigateway.apps.support.resource_doc.import_doc.docs import ArchiveDoc, SwaggerDoc
 from apigateway.apps.support.resource_doc.import_doc.managers import ArchiveImportDocManager, SwaggerImportDocManager
 from apigateway.core.models import Gateway, Resource
+from apigateway.utils.file import write_to_file
 
 pytestmark = pytest.mark.django_db
 
@@ -52,21 +56,21 @@ class TestArchiveImportDocManager:
         assert result is None
 
     def test_parse_doc_file(self, mocker, fake_zip_file):
-        mocker.patch(
-            "apigateway.apps.support.resource_doc.import_doc.managers.ArchiveFileFactory.from_fileobj",
-            return_value=mocker.MagicMock(
-                **{
-                    "get_names.return_value": ["en/get_user.md"],
-                }
-            ),
-        )
-        gateway = G(Gateway)
-        resource = G(Resource, name="get_user", api=gateway)
+        with TemporaryDirectory() as output:
+            path = os.path.join(output, "get_user.md")
+            write_to_file("# get_user", path)
 
-        manager = ArchiveImportDocManager()
-        result = manager.parse_doc_file(gateway.id, fake_zip_file)
-        assert len(result) == 1
-        assert result[0].resource_id == resource.id
+            mocker.patch(
+                "apigateway.apps.support.resource_doc.import_doc.managers.ArchiveFileFactory.from_fileobj",
+                return_value=mocker.MagicMock(**{"extractall.return_value": {"en/get_user.md": path}}),
+            )
+            gateway = G(Gateway)
+            resource = G(Resource, name="get_user", api=gateway)
+
+            manager = ArchiveImportDocManager()
+            result = manager.parse_doc_file(gateway.id, fake_zip_file)
+            assert len(result) == 1
+            assert result[0].resource_id == resource.id
 
     def test_delete_resource_doc_swagger(self):
         gateway = G(Gateway)
