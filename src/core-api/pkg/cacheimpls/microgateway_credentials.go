@@ -19,6 +19,7 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -37,10 +38,10 @@ func (k MicroGatewayCredentialsCacheKey) Key() string {
 	return k.InstanceID + ":" + k.InstanceSecret
 }
 
-func retrieveAndVerifyMicroGatewayCredentials(k cache.Key) (interface{}, error) {
+func retrieveAndVerifyMicroGatewayCredentials(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(MicroGatewayCredentialsCacheKey)
 
-	microGateway, err := GetMicroGateway(key.InstanceID)
+	microGateway, err := GetMicroGateway(ctx, key.InstanceID)
 	if err != nil {
 		return false, fmt.Errorf("get micro_gateway fail, %w", err)
 	}
@@ -58,13 +59,13 @@ func retrieveAndVerifyMicroGatewayCredentials(k cache.Key) (interface{}, error) 
 
 // VerifyMicroGatewayCredentials will verify the micro gateway credentials from cache by instanceID and instanceSecret
 // the result is cached, so it's fast
-func VerifyMicroGatewayCredentials(instanceID, instanceSecret string) (bool, error) {
+func VerifyMicroGatewayCredentials(ctx context.Context, instanceID, instanceSecret string) (bool, error) {
 	key := MicroGatewayCredentialsCacheKey{
 		InstanceID:     instanceID,
 		InstanceSecret: instanceSecret,
 	}
 	var value interface{}
-	value, err := microGatewayCredentialsCache.Get(key)
+	value, err := cacheGet(ctx, microGatewayCredentialsCache, key)
 	if err != nil {
 		return false, err
 	}

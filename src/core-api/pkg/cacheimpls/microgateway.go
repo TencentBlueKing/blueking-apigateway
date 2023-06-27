@@ -19,6 +19,7 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 
 	"core/pkg/database/dao"
@@ -36,19 +37,19 @@ func (k MicroGatewayKey) Key() string {
 	return k.InstanceID
 }
 
-func retrieveMicroGateway(k cache.Key) (interface{}, error) {
+func retrieveMicroGateway(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(MicroGatewayKey)
 
 	instanceID := key.InstanceID
 	manager := dao.NewMicroGatewayManager()
-	return manager.Get(instanceID)
+	return manager.Get(ctx, instanceID)
 }
 
 // GetMicroGateway will get the micro gateway object from cache by instanceID
-func GetMicroGateway(instanceID string) (microGateway dao.MicroGateway, err error) {
+func GetMicroGateway(ctx context.Context, instanceID string) (microGateway dao.MicroGateway, err error) {
 	key := MicroGatewayKey{InstanceID: instanceID}
 	var value interface{}
-	value, err = microGatewayCache.Get(key)
+	value, err = cacheGet(ctx, microGatewayCache, key)
 	if err != nil {
 		return
 	}

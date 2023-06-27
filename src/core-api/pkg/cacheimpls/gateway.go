@@ -19,6 +19,7 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 
 	"core/pkg/database/dao"
@@ -36,20 +37,20 @@ func (k GatewayNameKey) Key() string {
 	return k.Name
 }
 
-func retrieveGatewayByName(k cache.Key) (interface{}, error) {
+func retrieveGatewayByName(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(GatewayNameKey)
 
 	manager := dao.NewGatewayManager()
-	return manager.GetByName(key.Name)
+	return manager.GetByName(ctx, key.Name)
 }
 
 // GetGatewayByName will get the gateway object from cache by name
-func GetGatewayByName(name string) (gateway dao.Gateway, err error) {
+func GetGatewayByName(ctx context.Context, name string) (gateway dao.Gateway, err error) {
 	key := GatewayNameKey{
 		Name: name,
 	}
 	var value interface{}
-	value, err = gatewayCache.Get(key)
+	value, err = cacheGet(ctx, gatewayCache, key)
 	if err != nil {
 		return
 	}

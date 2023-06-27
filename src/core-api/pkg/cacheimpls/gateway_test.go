@@ -19,6 +19,7 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -41,24 +42,24 @@ func TestGetGatewayByName(t *testing.T) {
 	expiration := 5 * time.Minute
 
 	// valid
-	retrieveFunc := func(key cache.Key) (interface{}, error) {
+	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return dao.Gateway{}, nil
 	}
 	mockCache := memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	gatewayCache = mockCache
 
-	_, err := GetGatewayByName("hello")
+	_, err := GetGatewayByName(context.Background(), "hello")
 	assert.NoError(t, err)
 
 	// error
-	retrieveFunc = func(key cache.Key) (interface{}, error) {
+	retrieveFunc = func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	gatewayCache = mockCache
 
-	_, err = GetGatewayByName("hello")
+	_, err = GetGatewayByName(context.Background(), "hello")
 	assert.Error(t, err)
 }

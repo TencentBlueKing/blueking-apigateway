@@ -55,6 +55,7 @@ func QueryPermission(c *gin.Context) {
 
 	svc := service.NewAppPermissionService()
 	permissions, err := svc.Query(
+		c.Request.Context(),
 		util.GetInstanceID(c),
 		query.BkGatewayName,
 		query.BkStageName,

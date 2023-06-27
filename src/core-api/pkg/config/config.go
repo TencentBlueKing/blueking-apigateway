@@ -70,6 +70,24 @@ type Sentry struct {
 	DSN    string
 }
 
+// Tracing is the config for trace
+type Tracing struct {
+	Enable       bool
+	Endpoint     string
+	Type         string
+	Token        string
+	Sampler      string
+	SamplerRatio float64
+	ServiceName  string
+	Instrument   Instrument
+}
+
+// Instrument  is the config for trace
+type Instrument struct {
+	GinAPI bool
+	DbAPI  bool
+}
+
 // Config is the config for the whole project
 type Config struct {
 	Debug bool
@@ -79,8 +97,9 @@ type Config struct {
 
 	Databases   []Database
 	DatabaseMap map[string]Database
-	// Cache       Cache
-	Logger Logger
+
+	Logger  Logger
+	Tracing Tracing
 }
 
 // Load will load config from viper
@@ -102,4 +121,14 @@ func Load(v *viper.Viper) (*Config, error) {
 		return nil, errors.New("database cannot be empty")
 	}
 	return &cfg, nil
+}
+
+// GinAPIEnabled get gin api trace switch
+func (t Tracing) GinAPIEnabled() bool {
+	return t.Enable && t.Instrument.GinAPI
+}
+
+// DBAPIEnabled get db api trace switch
+func (t Tracing) DBAPIEnabled() bool {
+	return t.Enable && t.Instrument.DbAPI
 }

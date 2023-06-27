@@ -35,3 +35,18 @@ logger:
     writer: file
     buffered: true
     settings: {name: core_api.log, size: 100, backups: 10, age: 7, path: ./}
+
+## config for trace
+tracing:
+  enable: true
+  endpoint: "127.0.0.1:4318"
+  ## report type: grpc/http
+  type: "http"
+  ## support: "always_on"/"always_off"/"trace_id_ratio"/"parentbased_always_on",if not config,default: "trace_id_ratio"
+  sampler: "trace_id_ratio"
+  samplerRatio: 0.001
+  token: "blueking"
+  serviceName: "apigateway-core-api"
+  instrument:
+    ginAPI: true
+    dbAPI: true

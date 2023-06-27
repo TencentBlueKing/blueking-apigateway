@@ -19,6 +19,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"testing"
@@ -46,7 +47,7 @@ func TestSqlxSelect(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WillReturnRows(mockRows)
 
 		snippets := []Snippet{}
-		err := SqlxSelect(db, &snippets, "select name from snippet")
+		err := SqlxSelect(context.Background(), db, &snippets, "select name from snippet")
 
 		assert.NoError(t, err)
 		for index, mockSnippet := range mockSnippets {
@@ -61,7 +62,7 @@ func TestSqlxSelect(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WillReturnRows(mockRows)
 
 		snippets := []Snippet{}
-		err := SqlxSelect(db, &snippets, "select name from snippet")
+		err := SqlxSelect(context.Background(), db, &snippets, "select name from snippet")
 
 		assert.NoError(t, err)
 		assert.Equal(t, []Snippet{}, snippets)
@@ -72,7 +73,7 @@ func TestSqlxSelect(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WillReturnError(fmt.Errorf("some error"))
 
 		snippets := []Snippet{}
-		err := SqlxSelect(db, &snippets, "select name from snippet")
+		err := SqlxSelect(context.Background(), db, &snippets, "select name from snippet")
 
 		assert.Error(t, err)
 		assert.NotEqual(t, sql.ErrNoRows, err)
@@ -94,7 +95,7 @@ func TestSqlxGet(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs("test").WillReturnRows(mockRows)
 
 		snippet := Snippet{}
-		err := SqlxGet(db, &snippet, "select name from snippet where name=?", "test")
+		err := SqlxGet(context.Background(), db, &snippet, "select name from snippet where name=?", "test")
 
 		assert.NoError(t, err)
 		mockSnippet := mockSnippets[0].(Snippet)
@@ -107,7 +108,7 @@ func TestSqlxGet(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs("test").WillReturnRows(mockRows)
 
 		snippets := Snippet{}
-		err := SqlxGet(db, &snippets, "select name from snippet where name=?", "test")
+		err := SqlxGet(context.Background(), db, &snippets, "select name from snippet where name=?", "test")
 
 		assert.Error(t, err)
 		assert.Equal(t, sql.ErrNoRows, err)
@@ -118,7 +119,7 @@ func TestSqlxGet(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs("test").WillReturnError(fmt.Errorf("some error"))
 
 		snippets := Snippet{}
-		err := SqlxGet(db, &snippets, "select name from snippet where name=?", "test")
+		err := SqlxGet(context.Background(), db, &snippets, "select name from snippet where name=?", "test")
 
 		assert.Error(t, err)
 		assert.NotEqual(t, sql.ErrNoRows, err)

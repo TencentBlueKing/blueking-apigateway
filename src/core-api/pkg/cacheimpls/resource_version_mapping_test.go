@@ -19,6 +19,7 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -39,24 +40,24 @@ func TestGetResourceVersionMapping(t *testing.T) {
 	expiration := 5 * time.Minute
 
 	// valid
-	retrieveFunc := func(key cache.Key) (interface{}, error) {
+	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return map[string]int64{}, nil
 	}
 	mockCache := memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	resourceVersionMappingCache = mockCache
 
-	_, err := GetResourceVersionMapping(1)
+	_, err := GetResourceVersionMapping(context.Background(), 1)
 	assert.NoError(t, err)
 
 	// error
-	retrieveFunc = func(key cache.Key) (interface{}, error) {
+	retrieveFunc = func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	resourceVersionMappingCache = mockCache
 
-	_, err = GetResourceVersionMapping(1)
+	_, err = GetResourceVersionMapping(context.Background(), 1)
 	assert.Error(t, err)
 }

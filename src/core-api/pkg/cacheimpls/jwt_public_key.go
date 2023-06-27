@@ -19,6 +19,7 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 	"strconv"
 
@@ -37,12 +38,12 @@ func (k JWTPublicKeyCacheKey) Key() string {
 	return strconv.FormatInt(k.GatewayID, 10)
 }
 
-func retrieveJWTPublicKey(k cache.Key) (interface{}, error) {
+func retrieveJWTPublicKey(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(JWTPublicKeyCacheKey)
 
 	manager := dao.NewJWTManager()
 
-	jwt, err := manager.Get(key.GatewayID)
+	jwt, err := manager.Get(ctx, key.GatewayID)
 	if err != nil {
 		return "", err
 	}
@@ -51,12 +52,12 @@ func retrieveJWTPublicKey(k cache.Key) (interface{}, error) {
 }
 
 // GetJWTPublicKey will get the jwt public key from cache by gatewayID
-func GetJWTPublicKey(gatewayID int64) (publicKey string, err error) {
+func GetJWTPublicKey(ctx context.Context, gatewayID int64) (publicKey string, err error) {
 	key := JWTPublicKeyCacheKey{
 		GatewayID: gatewayID,
 	}
 	var value interface{}
-	value, err = jwtPublicKeyCache.Get(key)
+	value, err = cacheGet(ctx, jwtPublicKeyCache, key)
 	if err != nil {
 		return
 	}

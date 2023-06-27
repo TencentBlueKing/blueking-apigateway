@@ -19,6 +19,7 @@
 package dao
 
 import (
+	"context"
 	"testing"
 
 	"core/pkg/database"
@@ -46,7 +47,7 @@ func Test_jwtManager_Get(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs(gatewayID).WillReturnRows(mockRows)
 
 		manager := &jwtManager{DB: db}
-		p, err := manager.Get(gatewayID)
+		p, err := manager.Get(context.Background(), gatewayID)
 
 		assert.NoError(t, err, "query from db fail.")
 		assert.Equal(t, record, p)

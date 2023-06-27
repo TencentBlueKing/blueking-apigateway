@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	dao "core/pkg/database/dao"
 	reflect "reflect"
 
@@ -35,16 +36,16 @@ func (m *MockMicroGatewayManager) EXPECT() *MockMicroGatewayManagerMockRecorder 
 }
 
 // Get mocks base method.
-func (m *MockMicroGatewayManager) Get(instanceID string) (dao.MicroGateway, error) {
+func (m *MockMicroGatewayManager) Get(ctx context.Context, instanceID string) (dao.MicroGateway, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", instanceID)
+	ret := m.ctrl.Call(m, "Get", ctx, instanceID)
 	ret0, _ := ret[0].(dao.MicroGateway)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockMicroGatewayManagerMockRecorder) Get(instanceID interface{}) *gomock.Call {
+func (mr *MockMicroGatewayManagerMockRecorder) Get(ctx, instanceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockMicroGatewayManager)(nil).Get), instanceID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockMicroGatewayManager)(nil).Get), ctx, instanceID)
 }

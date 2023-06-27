@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -34,16 +35,16 @@ func (m *MockGatewayPublicKeyService) EXPECT() *MockGatewayPublicKeyServiceMockR
 }
 
 // Get mocks base method.
-func (m *MockGatewayPublicKeyService) Get(instanceID, gatewayName string) (string, error) {
+func (m *MockGatewayPublicKeyService) Get(ctx context.Context, instanceID, gatewayName string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", instanceID, gatewayName)
+	ret := m.ctrl.Call(m, "Get", ctx, instanceID, gatewayName)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockGatewayPublicKeyServiceMockRecorder) Get(instanceID, gatewayName interface{}) *gomock.Call {
+func (mr *MockGatewayPublicKeyServiceMockRecorder) Get(ctx, instanceID, gatewayName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockGatewayPublicKeyService)(nil).Get), instanceID, gatewayName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockGatewayPublicKeyService)(nil).Get), ctx, instanceID, gatewayName)
 }
