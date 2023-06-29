@@ -684,6 +684,7 @@ API_GATEWAY_RESOURCE_LIMITS = {
     # 配置网关的特殊规则
     "max_resource_count_per_gateway_whitelist": {
         "bk-esb": 5000,
+        "bk-base": 2000,
     },
 }
 for k, v in env.dict("MAX_GATEWAY_COUNT_PER_APP_WHITELIST", default={}).items():
