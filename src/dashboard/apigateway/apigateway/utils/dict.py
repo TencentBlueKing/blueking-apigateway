@@ -21,8 +21,8 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Type, Union
 
 def new_dict(
     data: Dict[str, Any],
-    include: Union[Set[str], List[str]] = None,
-    exclude: Union[Set[str], List[str]] = None,
+    include: Union[Set[str], List[str], None] = None,
+    exclude: Union[Set[str], List[str], None] = None,
     exclude_none: bool = False,
 ) -> Dict[str, Any]:
     def calculate_keys() -> Optional[Set[str]]:
