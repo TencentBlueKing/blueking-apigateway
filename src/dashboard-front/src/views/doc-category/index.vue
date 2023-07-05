@@ -184,17 +184,6 @@
         }
       }
     },
-    computed: {
-      isEdit () {
-        return Object.keys(this.curDocCategory).length > 0
-      },
-      isDisabled () {
-        return this.curDocCategory.is_official
-      },
-      sliderTitle () {
-        return this.isEdit ? this.$t('编辑文档分类') : this.$t('新建文档分类')
-      }
-    },
     watch: {
       keyword (newVal, oldVal) {
         if (oldVal && !newVal && this.isFilter) {

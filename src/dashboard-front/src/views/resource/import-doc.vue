@@ -414,8 +414,6 @@
 
     watch: {
       selectOperateType (value, oldVal) {
-        console.log('value', value)
-        console.log('this.selectTypeValue', this.selectTypeValue)
         this.selectedResourceDocs = []
         if (!value.length) {
           if (!this.selectedResourceDocsCopy.length) {
@@ -436,7 +434,6 @@
         }
 
         if (value.join('') === 'merge') {
-          console.log('this.selectTypeValue', this.selectTypeValue)
           if (this.selectTypeValue === 'merge') {
             this.originResourceList.filter(e => e.typeText === '覆盖').forEach(item => {
               this.$refs.groupTableRef && this.$refs.groupTableRef.toggleRowSelection(item, true)
@@ -455,7 +452,6 @@
               this.$refs.groupTableRef && this.$refs.groupTableRef.toggleRowSelection(item, false)
             })
             const data = this.originResourceList.filter(e => !!e.id && !!e.resource_doc_id)
-            console.log('data1111', data)
             this.handChangeData(data)
           }
         }
@@ -485,7 +481,6 @@
 
         if (value.length === 2) {
           let data = this.originResourceList
-          console.log('this.selectTypeValue', this.selectTypeValue)
           if (this.selectTypeValue === 'merge') {
             data = this.originResourceList.filter(e => !!e.id && !!e.resource_doc_id)
           } else if (this.selectTypeValue === 'create') {
@@ -515,7 +510,6 @@
 
           this.selectedResourceDocsCopy = [...this.selectedResourceDocs]
         }
-        console.log('this.selectedResourceDocs', this.selectedResourceDocs)
       },
       pathUrl (value) {
         if (!value) {
@@ -595,7 +589,6 @@
             const reader = new FileReader()
             reader.onloadend = function (event) {
               if (event.target.readyState === FileReader.DONE) {
-                console.log(event.target)
                 self.content = event.target.result
                 self.resource.content = event.target.result
                 setTimeout(() => {
@@ -861,7 +854,6 @@
       },
 
       handlViewerFocus () {
-        console.log(this.$refs.bodyCodeViewer.$ace)
         this.$refs.bodyCodeViewer.$ace.focus()
       },
 
