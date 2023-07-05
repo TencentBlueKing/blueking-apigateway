@@ -103,8 +103,7 @@ class TestEtcdDistributor:
     ):
         for resource in ignored_models + revoked_models:
             self.registry.apply_resource(resource)
-
-        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config)
+        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config, include_stage=True)
         mocker.patch.object(distributor, "_get_registry", return_value=self.registry)
 
         assert distributor.revoke(stage=fake_stage, micro_gateway=micro_gateway)
