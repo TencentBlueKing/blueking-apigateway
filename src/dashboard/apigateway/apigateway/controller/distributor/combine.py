@@ -46,12 +46,17 @@ class CombineDistributor(BaseDistributor):
         assert micro_gateway.is_shared
 
         managed_micro_gateway = stage.micro_gateway
-        if managed_micro_gateway != micro_gateway:
-            # 指定的共享实例
-            callback(self.etcd_distributor_type(include_gateway_global_config=False), micro_gateway)
-
         if not managed_micro_gateway:
+            callback(self.etcd_distributor_type(include_gateway_global_config=False), micro_gateway)
             return
+
+        # NOTE: 发布专享网关时不再同时发布共享网关
+        # if managed_micro_gateway != micro_gateway:
+        #     # 指定的共享实例
+        #     callback(self.etcd_distributor_type(include_gateway_global_config=False), micro_gateway)
+
+        # if not managed_micro_gateway:
+        #     return
 
         if managed_micro_gateway.is_shared:
             # 共享实例

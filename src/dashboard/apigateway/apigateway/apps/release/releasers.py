@@ -293,7 +293,14 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         )  # type: ignore
 
     def _create_release_tasks(self, release: Release, release_history: ReleaseHistory):
-        for fn in [self._create_release_task_for_shared_gateway, self._create_release_task_for_micro_gateway]:
+        # NOTE: 发布微网关时不再同时发布专享网关
+        micro_gateway = release.stage.micro_gateway
+        if not micro_gateway or micro_gateway.is_shared:
+            functions = [self._create_release_task_for_shared_gateway]
+        else:
+            functions = [self._create_release_task_for_micro_gateway]
+
+        for fn in functions:
             task = fn(release, release_history)
             if task:
                 yield task
