@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
+import re
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 from attrs import define
@@ -33,6 +35,7 @@ class AccessStrategyConvertor:
     plugin_type_code: ClassVar[str]
 
     def to_plugin_data(self, scope_type: AccessStrategyBindScopeEnum, access_strategy: AccessStrategy) -> PluginData:
+        # here, the type_code is the new plugin name, config is the plugin config
         return PluginData(
             type_code=self.plugin_type_code,
             config=self._to_plugin_config(access_strategy),
@@ -81,20 +84,48 @@ class IpAccessControlASC(AccessStrategyConvertor):
     """IP 访问控制"""
 
     access_strategy_type: ClassVar[AccessStrategyTypeEnum] = AccessStrategyTypeEnum.IP_ACCESS_CONTROL
-    plugin_type_code: ClassVar[str] = "bk-ip-group-restriction"
+    plugin_type_code: ClassVar[str] = "bk-ip-restriction"
+
+    def _parse_ip_content_list(self, ipContentList: List[str]) -> List[str]:
+        ips = set()
+        for ipContent in ipContentList:
+            # split with \n\r, then ignore blank line and `# comment`
+            ip_lines = re.split(r"[\n\r]+", ipContent)
+            for ip_line in ip_lines:
+                ip_line = ip_line.strip()
+                if not ip_line or ip_line.startswith("#"):
+                    continue
+                ips.add(ip_line)
+
+        # we are not going to do the merge now, we will do it in the future if that become a problem
+        # TODO: merge by cidr
+        return list(ips)
 
     def _to_plugin_config(self, access_strategy: AccessStrategy):
+        """
+        old data:
+            allow: { content: group._ips } / deny: { content: group._ips }
+            (group._ips is a text field, with empty lines, comments)
+        convert to:
+            whitelist: [] and blacklist: []
+        """
+        whitelist: List[str] = []
+        blacklist: List[str] = []
+
         config = access_strategy.config
+        ipContentList = [group._ips for group in IPGroup.objects.filter(id__in=config["ip_group_list"])]
+        ip_list = self._parse_ip_content_list(ipContentList)
+
+        # the access strategy will be remove soon, so use `allow` and `deny` here directly
+        if config["type"] == "allow":
+            whitelist = ip_list
+        elif config["type"] == "deny":
+            blacklist = ip_list
+        # do nothing if type is wrong
+
         return {
-            config["type"]: [
-                {
-                    "id": group.pk,
-                    "name": group.name,
-                    "content": group._ips,
-                    "comment": group.comment,
-                }
-                for group in IPGroup.objects.filter(id__in=config["ip_group_list"])
-            ]
+            "whitelist": whitelist,
+            "blacklist": blacklist,
         }
 
 
@@ -106,7 +137,7 @@ class CorsASC(AccessStrategyConvertor):
 
     def _to_plugin_config(self, access_strategy: AccessStrategy) -> Dict[str, Any]:
         """
-        apisix cors 插件: https://github.com/apache/apisix/blob/master/apisix/plugins/cors.lua
+        apisix cors 插件：https://github.com/apache/apisix/blob/master/apisix/plugins/cors.lua
         """
         config = access_strategy.config
         allow_origins, allow_origins_by_regex = self._convert_allowed_origins(config["allowed_origins"])

@@ -16,13 +16,71 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from ddf import G
 
 from apigateway.apps.access_strategy.constants import AccessStrategyTypeEnum
+from apigateway.apps.access_strategy.models import IPGroup
 from apigateway.controller.crds.release_data.access_strategy import (
     AccessStrategyConvertorFactory,
     CorsASC,
+    IpAccessControlASC,
     RateLimitASC,
+    StatusCode200ASC,
+    UserVerifiedUnrequiredAppsASC,
 )
+
+
+class TestIpAccessControlASC:
+    @pytest.fixture(autouse=True)
+    def setup_fixture(self):
+        self.convertor = IpAccessControlASC()
+
+    @pytest.mark.parametrize(
+        "ipContentList, expected",
+        [
+            (["127.0.0.1"], ["127.0.0.1"]),
+            (["127.0.0.1\n192.168.1.1"], ["127.0.0.1", "192.168.1.1"]),
+            (["127.0.0.1\n\n192.168.1.1"], ["127.0.0.1", "192.168.1.1"]),
+            (["127.0.0.1\n # comment\n192.168.1.1"], ["127.0.0.1", "192.168.1.1"]),
+            (["\n\n127.0.0.1\n192.168.1.1"], ["127.0.0.1", "192.168.1.1"]),
+            (["\n # comment \n127.0.0.1\n192.168.1.1"], ["127.0.0.1", "192.168.1.1"]),
+            (["127.0.0.1\n192.168.1.1\n 127.0.0.1\n192.168.1.1 "], ["127.0.0.1", "192.168.1.1"]),
+            (["127.0.0.1/24\n\r192.168.1.1"], ["127.0.0.1/24", "192.168.1.1"]),
+        ],
+    )
+    def test_parse_ip_content_list(self, ipContentList, expected):
+        result = self.convertor._parse_ip_content_list(ipContentList)
+
+        assert sorted(result) == sorted(expected)
+
+    @pytest.mark.parametrize(
+        "config, expected",
+        [
+            (
+                {"type": "allow", "ip_group_list": [1]},
+                {"whitelist": ["127.0.0.1"], "blacklist": []},
+            ),
+            (
+                {"type": "deny", "ip_group_list": [1]},
+                {"whitelist": [], "blacklist": ["127.0.0.1"]},
+            ),
+            (
+                {"type": "allow", "ip_group_list": [2]},
+                {"whitelist": ["127.0.0.1"], "blacklist": []},
+            ),
+            (
+                {"type": "allow", "ip_group_list": [1, 2]},
+                {"whitelist": ["127.0.0.1"], "blacklist": []},
+            ),
+        ],
+    )
+    def test_to_plugin_config(self, ip_access_control_access_strategy, config, expected):
+        G(IPGroup, id=1, _ips="127.0.0.1")
+        G(IPGroup, id=2, _ips="\n\r\n# comment\n127.0.0.1\n#test\n127.0.0.1")
+
+        ip_access_control_access_strategy.config = config
+        result = self.convertor._to_plugin_config(ip_access_control_access_strategy)
+        assert result == expected
 
 
 class TestCorsASC:
@@ -193,8 +251,17 @@ class TestCorsASC:
 
 class TestAccessStrategyConvertorFactory:
     def test_get_convertor(self):
+        convertor = AccessStrategyConvertorFactory.get_convertor(AccessStrategyTypeEnum.ERROR_STATUS_CODE_200)
+        assert isinstance(convertor, StatusCode200ASC)
+
+        convertor = AccessStrategyConvertorFactory.get_convertor(AccessStrategyTypeEnum.USER_VERIFIED_UNREQUIRED_APPS)
+        assert isinstance(convertor, UserVerifiedUnrequiredAppsASC)
+
         convertor = AccessStrategyConvertorFactory.get_convertor(AccessStrategyTypeEnum.CORS)
         assert isinstance(convertor, CorsASC)
 
         convertor = AccessStrategyConvertorFactory.get_convertor(AccessStrategyTypeEnum.RATE_LIMIT)
         assert isinstance(convertor, RateLimitASC)
+
+        convertor = AccessStrategyConvertorFactory.get_convertor(AccessStrategyTypeEnum.IP_ACCESS_CONTROL)
+        assert isinstance(convertor, IpAccessControlASC)
