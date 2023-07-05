@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,3 +16,30 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.contrib import admin
+
+from apigateway.iam.models import IAMGradeManager, IAMUserGroup
+
+
+class IAMGradeManagerAdmin(admin.ModelAdmin):
+    list_display = [
+        "id",
+        "gateway",
+        "grade_manager_id",
+    ]
+    search_fields = ["gateway_id", "grade_manager_id"]
+
+
+class IAMUserGroupAdmin(admin.ModelAdmin):
+    list_display = [
+        "id",
+        "gateway",
+        "role",
+        "user_group_id",
+    ]
+    search_fields = ["gateway_id", "grade_manager_id"]
+    list_filter = ["gateway"]
+
+
+admin.site.register(IAMGradeManager, IAMGradeManagerAdmin)
+admin.site.register(IAMUserGroup, IAMUserGroupAdmin)

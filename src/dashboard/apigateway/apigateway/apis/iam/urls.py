@@ -15,3 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.urls import path
+
+from apigateway.apis.iam.views import IAMResourceAPIView
+
+urlpatterns = [
+    path(
+        "iam-provider/<slug:resource_type>/",
+        IAMResourceAPIView.as_view(),
+        name="apis.iam.iam_provider.resource_type",
+    ),
+]

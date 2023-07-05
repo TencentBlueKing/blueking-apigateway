@@ -15,3 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
+from iam.contrib.iam_migration.migrator import IAMMigrator as BaseIAMMigrator
+
+
+class IAMMigrator(BaseIAMMigrator):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._bk_app_code = settings.BK_APP_CODE
+        self._bk_app_secret = settings.BK_APP_SECRET

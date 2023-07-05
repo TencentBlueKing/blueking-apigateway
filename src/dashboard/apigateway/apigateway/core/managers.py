@@ -65,6 +65,11 @@ class GatewayManager(models.Manager):
 
         return [api for api in queryset if api.has_permission(username)]
 
+    def fetch_authorized_gateway_ids(self, username: str) -> List[str]:
+        """获取用户有权限的网关 ID 列表"""
+        queryset = self.filter(_maintainers__contains=username)
+        return [gateway.id for gateway in queryset if gateway.has_permission(username)]
+
     # def save_auth_config(
     #     self,
     #     gateway_id: int,

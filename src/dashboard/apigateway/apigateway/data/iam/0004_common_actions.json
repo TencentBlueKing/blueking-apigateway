@@ -1,0 +1,190 @@
+{
+  "system_id": "bk_apigateway",
+  "operations": [
+    {
+      "operation": "upsert_common_actions",
+      "data": [
+        {
+          "name": "网关管理员",
+          "name_en": "Gateway Manager",
+          "actions": [
+            {
+              "id": "manage_gateway"
+            },
+            {
+              "id": "view_gateway"
+            },
+            {
+              "id": "manage_members"
+            },
+            {
+              "id": "manage_sdk"
+            },
+            {
+              "id": "api_test"
+            },
+            {
+              "id": "create_stage"
+            },
+            {
+              "id": "edit_stage"
+            },
+            {
+              "id": "release_stage"
+            },
+            {
+              "id": "delete_stage"
+            },
+            {
+              "id": "view_stage"
+            },
+            {
+              "id": "create_resource"
+            },
+            {
+              "id": "edit_resource"
+            },
+            {
+              "id": "delete_resource"
+            },
+            {
+              "id": "view_resource"
+            },
+            {
+              "id": "manage_resource_doc"
+            },
+            {
+              "id": "manage_label"
+            },
+            {
+              "id": "create_plugin_config"
+            },
+            {
+              "id": "edit_plugin_config"
+            },
+            {
+              "id": "delete_plugin_config"
+            },
+            {
+              "id": "view_plugin_config"
+            },
+            {
+              "id": "bind_plugin_config"
+            },
+            {
+              "id": "view_version"
+            },
+            {
+              "id": "approve_permission"
+            },
+            {
+              "id": "grant_permission"
+            },
+            {
+              "id": "revoke_permission"
+            },
+            {
+              "id": "view_permission"
+            },
+            {
+              "id": "view_log"
+            },
+            {
+              "id": "view_statistics"
+            },
+            {
+              "id": "view_audit"
+            }
+          ]
+        },
+        {
+          "name": "网关开发者",
+          "name_en": "Gateway Developer",
+          "actions": [
+            {
+              "id": "view_gateway"
+            },
+            {
+              "id": "manage_sdk"
+            },
+            {
+              "id": "api_test"
+            },
+            {
+              "id": "view_stage"
+            },
+            {
+              "id": "create_resource"
+            },
+            {
+              "id": "edit_resource"
+            },
+            {
+              "id": "delete_resource"
+            },
+            {
+              "id": "view_resource"
+            },
+            {
+              "id": "manage_resource_doc"
+            },
+            {
+              "id": "manage_label"
+            },
+            {
+              "id": "view_plugin_config"
+            },
+            {
+              "id": "view_version"
+            },
+            {
+              "id": "approve_permission"
+            },
+            {
+              "id": "grant_permission"
+            },
+            {
+              "id": "revoke_permission"
+            },
+            {
+              "id": "view_permission"
+            },
+            {
+              "id": "view_log"
+            },
+            {
+              "id": "view_statistics"
+            }
+          ]
+        },
+        {
+          "name": "网关运营者",
+          "name_en": "Gateway Operator",
+          "actions": [
+            {
+              "id": "view_gateway"
+            },
+            {
+              "id": "manage_resource_doc"
+            },
+            {
+              "id": "approve_permission"
+            },
+            {
+              "id": "grant_permission"
+            },
+            {
+              "id": "view_permission"
+            },
+            {
+              "id": "view_log"
+            },
+            {
+              "id": "view_statistics"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

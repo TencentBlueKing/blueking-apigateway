@@ -15,3 +15,25 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import pytest
+
+from apigateway.iam.constants import UserRoleEnum
+from apigateway.iam.handlers.authorization_scopes import AuthorizationScopes
+
+
+class TestAuthorizationScopes:
+    @pytest.mark.parametrize(
+        "role",
+        [
+            UserRoleEnum.MANAGER,
+            UserRoleEnum.DEVELOPER,
+            UserRoleEnum.OPERATOR,
+        ],
+    )
+    def test_get_scopes(self, role, faker):
+        gateway_id = faker.pyint()
+        gateway_name = faker.pystr()
+
+        scopes = AuthorizationScopes.get_scopes(role, gateway_id, gateway_name)
+        assert len(scopes) >= 1
+        assert len(scopes[0]["actions"]) > 0

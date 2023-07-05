@@ -112,6 +112,10 @@ INSTALLED_APPS = [
     "apigw_manager.apigw",
     "apigateway.controller",
     "apigateway.healthz",
+    "apigateway.iam",
+    # TODO: 待启用 IAM 鉴权后，需启用以下两个 django app
+    # "apigateway.iam.apigw_iam_migration",
+    # "iam.contrib.iam_migration",
     # 开源版旧版 ESB 数据
     "apigateway.legacy_esb",
     "apigateway.legacy_esb.paas2",
@@ -490,7 +494,7 @@ PYPI_MIRRORS_CONFIG = {
 PYPI_MIRRORS_REPOSITORY = env.str("PYPI_INDEX_URL", "https://pypi.org/simple/")
 
 # 模板变量
-BK_API_URL_TMPL = env.str("BK_API_URL_TMPL", "")
+BK_API_URL_TMPL = env.str("BK_API_URL_TMPL", "").rstrip("/")
 BK_COMPONENT_API_URL = env.str("BK_COMPONENT_API_URL", "")
 API_RESOURCE_URL_TMPL = env.str("API_RESOURCE_URL_TMPL", "")
 API_DOCS_URL_TMPL = env.str("API_DOCS_URL_TMPL", "")
@@ -500,6 +504,8 @@ BK_API_INNER_URL_TMPL = env.str("BK_API_INNER_URL_TMPL", "") or BK_API_URL_TMPL
 BK_COMPONENT_API_INNER_URL = env.str("BK_COMPONENT_API_INNER_URL", "") or BK_COMPONENT_API_URL
 BK_PAAS3_API_URL = BK_API_INNER_URL_TMPL.format(api_name="bkpaas3")
 BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
+
+DASHBOARD_URL = env.str("DASHBOARD_URL", "").rstrip("/")
 
 DASHBOARD_FE_URL = env.str("DASHBOARD_FE_URL", "").rstrip("/")
 # 将前端 URL 默认添加到 CORS 白名单，可不配置环境变量 CORS_ORIGIN_REGEX_WHITELIST
@@ -747,6 +753,20 @@ BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_PAAS_LOGIN_URL}/api/v3/is_login/"
 BKAUTH_TOKEN_APP_CODE = BK_APP_CODE
 BKAUTH_TOKEN_SECRET_KEY = BK_APP_SECRET
 BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"
+
+# bk-iam 配置
+BK_IAM_SYSTEM_ID = "bk_apigateway"
+BK_IAM_USE_APIGATEWAY = True
+BK_IAM_GATEWAY_STAGE = BK_API_DEFAULT_STAGE_MAPPINGS.get("bk-iam", "prod")
+BK_IAM_APIGATEWAY_URL = f"{BK_API_URL_TMPL.format(api_name='bk-iam')}/{BK_IAM_GATEWAY_STAGE}"
+BK_IAM_MIGRATION_JSON_PATH = "data/iam"
+BK_IAM_MIGRATION_APP_NAME = "apigateway.iam.apigw_iam_migration"
+BK_IAM_RESOURCE_API_HOST = env.str("BK_IAM_RESOURCE_API_HOST", DASHBOARD_URL)
+# 跳过注册权限模型到权限中心（注意：仅跳过注册权限模型，不关注权限校验是否依赖权限中心）
+BK_IAM_SKIP = env.bool("BK_IAM_SKIP", False)
+# 使用权限中心数据进行鉴权（创建网关时，会创建分级管理员、用户组，校验权限时依赖权限中心）
+# TODO: 待启用 IAM 鉴权时，将默认值改为 True
+USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
 
 # ==============================================================================
 # Feature Flag

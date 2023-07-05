@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from blue_krill.async_utils.django_utils import delay_on_commit
+from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -26,6 +27,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.gateway import serializers
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.iam import IAMHandler
 from apigateway.common.contexts import APIAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.controller.tasks import revoke_release, rolling_update_release
@@ -69,7 +71,11 @@ class GatewayViewSet(BaseGatewayViewSet):
             username=request.user.username,
         )
 
-        # 3. record audit log
+        # 3. 在权限中心注册分级管理员，创建用户组
+        if settings.USE_BK_IAM_PERMISSION:
+            IAMHandler.register_grade_manager_and_builtin_user_groups(slz.instance)
+
+        # 4. record audit log
         GatewayHandler().add_create_audit_log(slz.instance, request.user.username)
 
         return OKJsonResponse("OK", data={"id": slz.instance.id})
@@ -137,6 +143,9 @@ class GatewayViewSet(BaseGatewayViewSet):
         # 网关为"停用"状态，才可以删除
         if instance.is_active:
             return FailJsonResponse(_("请先停用网关，然后再删除。"))
+
+        # 删除权限中心中网关的分级管理员和用户组
+        IAMHandler.delete_grade_manager_and_builtin_user_groups(instance)
 
         GatewayHandler().delete_gateway(instance_id)
 

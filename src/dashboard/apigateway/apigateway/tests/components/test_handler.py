@@ -62,3 +62,16 @@ class TestRequestAPIHandler:
         api_result = {"result": False, "data": {}}
         result = handler.parse_api_result(api_result, response)
         assert result == api_result
+
+    def test_parse_response(self, mocker, faker):
+        handler = RequestAPIHandler(faker.pystr())
+        with pytest.raises(RemoteRequestError):
+            handler.parse_response(None, None)
+
+        response = mocker.MagicMock(json=mocker.MagicMock(return_value={"foo": "bar"}))
+        result = handler.parse_response(None, response)
+        assert result == {"foo": "bar"}
+
+        response = mocker.MagicMock(json=mocker.MagicMock(side_effect=TypeError()))
+        with pytest.raises(RemoteRequestError):
+            handler.parse_response(None, response)

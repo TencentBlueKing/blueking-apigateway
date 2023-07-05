@@ -15,3 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from rest_framework import serializers
+
+from apigateway.apis.iam.constants import MethodTypeEnum
+from apigateway.iam.constants import ResourceTypeEnum
+
+
+class QueryIAMResourceSLZ(serializers.Serializer):
+    method = serializers.ChoiceField(choices=MethodTypeEnum.get_choices())
+    type = serializers.ChoiceField(choices=ResourceTypeEnum.get_choices())
+    filter = serializers.DictField(default=dict)
+    page = serializers.DictField(default=dict)
