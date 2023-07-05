@@ -189,6 +189,29 @@ class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
     RELEASING = "releasing"  # 发布中
 
 
+class PublishEventEnum(ChoiceEnumMixin, Enum):
+    # dashboard
+    GenerateTask = "generate release task"
+    DistributeConfiguration = "distribute configuration"
+    # operator
+    ParseConfiguration = "parse configuration"
+    ApplyConfiguration = "apply configuration"
+    # apisix
+    LoadConfiguration = "load configuration"
+
+    @classmethod
+    def get_event_step(cls, name: str) -> int:
+        # 获取事件所属的step，如：name="load configuration"==>5
+        return [i.value for i in cls].index(name) + 1
+
+
+class PublishEventStatusEnum(ChoiceEnumMixin, Enum):
+    SUCCESS = "success"  # 执行成功
+    FAILURE = "failure"  # 执行失败
+    PENDING = "pending"  # 待执行
+    DOING = "doing"  # 执行中
+
+
 class ProxyTypeEnum(StructuredEnum):
     HTTP = EnumField("http", "http")
     MOCK = EnumField("mock", "mock")
@@ -269,7 +292,6 @@ class SwaggerFormatEnum(StructuredEnum):
 
 # 每个资源允许关联的最大标签个数
 MAX_LABEL_COUNT_PER_RESOURCE = 10
-
 
 DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100

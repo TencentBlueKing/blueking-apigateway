@@ -43,6 +43,8 @@ from apigateway.core.constants import (
     MicroGatewayStatusEnum,
     PassHostEnum,
     ProxyTypeEnum,
+    PublishEventEnum,
+    PublishEventStatusEnum,
     ReleaseStatusEnum,
     SchemeEnum,
     SSLCertificateBindingScopeTypeEnum,
@@ -639,7 +641,6 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
     stages = models.ManyToManyField(Stage)
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
-
     comment = models.CharField(max_length=512, blank=True, null=True)
 
     status = models.CharField(
@@ -659,6 +660,51 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         verbose_name = "ReleaseHistory"
         verbose_name_plural = "ReleaseHistory"
         db_table = "core_release_history"
+
+
+class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
+    """
+    publish event
+    Store the publish events records
+    """
+
+    id = models.AutoField(primary_key=True)
+    gateway = models.ForeignKey(Gateway, related_name="+", on_delete=models.CASCADE)
+    stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
+    publish = models.ForeignKey(ReleaseHistory, related_name="+", on_delete=models.CASCADE, db_column="publish_id")
+    name = models.CharField(
+        max_length=64,
+        blank=True,
+        null=False,
+        choices=PublishEventEnum.choices(),
+    )
+    step = models.IntegerField(blank=False, null=False)
+    status = models.CharField(
+        _("status"),
+        max_length=16,
+        choices=PublishEventStatusEnum.choices(),
+        default=PublishEventStatusEnum.PENDING.value,
+    )
+    _detail = JSONField(help_text="detail", null=True, default="{}", db_column="detail")
+
+    objects = managers.PublishEventManager()
+
+    @property
+    def detail(self):
+        return json.loads(self._detail)
+
+    @detail.setter
+    def detail(self, detail: dict):
+        self._detail = json.dumps(detail)
+
+    def __str__(self):
+        return f"<PublishEvent: {self.gateway_id}/{self.stage_id}/{self.publish_id}/{self.name}>/{self.status}"
+
+    class Meta:
+        verbose_name = "PublishEvent"
+        verbose_name_plural = "PublishEvent"
+        db_table = "core_publish_event"
+        unique_together = ("gateway_id", "publish_id")
 
 
 # ============================================ auth ============================================
