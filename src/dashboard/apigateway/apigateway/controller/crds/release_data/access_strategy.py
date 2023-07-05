@@ -47,7 +47,7 @@ class AccessStrategyConvertor:
 
 
 class StatusCode200ASC(AccessStrategyConvertor):
-    """网关错误使用HTTP状态码200(不推荐)"""
+    """网关错误使用 HTTP 状态码 200(不推荐)"""
 
     access_strategy_type: ClassVar[AccessStrategyTypeEnum] = AccessStrategyTypeEnum.ERROR_STATUS_CODE_200
     plugin_type_code: ClassVar[str] = "bk-status-rewrite"
@@ -86,11 +86,11 @@ class IpAccessControlASC(AccessStrategyConvertor):
     access_strategy_type: ClassVar[AccessStrategyTypeEnum] = AccessStrategyTypeEnum.IP_ACCESS_CONTROL
     plugin_type_code: ClassVar[str] = "bk-ip-restriction"
 
-    def _parse_ip_content_list(self, ipContentList: List[str]) -> List[str]:
+    def _parse_ip_content_list(self, ip_content_list: List[str]) -> List[str]:
         ips = set()
-        for ipContent in ipContentList:
+        for ip_content in ip_content_list:
             # split with \n\r, then ignore blank line and `# comment`
-            ip_lines = re.split(r"[\n\r]+", ipContent)
+            ip_lines = re.split(r"[\n\r]+", ip_content)
             for ip_line in ip_lines:
                 ip_line = ip_line.strip()
                 if not ip_line or ip_line.startswith("#"):
@@ -107,7 +107,7 @@ class IpAccessControlASC(AccessStrategyConvertor):
             allow: { content: group._ips } / deny: { content: group._ips }
             (group._ips is a text field, with empty lines, comments)
         convert to:
-            whitelist: [] and blacklist: []
+            whitelist: [] / blacklist: []
         """
         whitelist: List[str] = []
         blacklist: List[str] = []
