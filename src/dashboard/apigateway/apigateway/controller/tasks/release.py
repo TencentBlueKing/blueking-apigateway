@@ -25,8 +25,8 @@ from apigateway.controller.distributor.helm import HelmDistributor
 from apigateway.controller.helm.chart import ChartHelper
 from apigateway.controller.helm.release import ReleaseHelper
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
-from apigateway.core.constants import ReleaseStatusEnum
-from apigateway.core.models import MicroGateway, MicroGatewayReleaseHistory, Release, ReleaseHistory
+from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum, ReleaseStatusEnum
+from apigateway.core.models import MicroGateway, MicroGatewayReleaseHistory, PublishEvent, Release, ReleaseHistory
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,17 @@ def mark_release_history_status(release_history_id, status: str, message: str):
         release_history_id,
     )
     ReleaseHistory.objects.filter(id=release_history_id).update(status=status, message=message)
+
+    # add  success event(only for success)
+    if status == ReleaseStatusEnum.SUCCESS.value:
+        history = ReleaseHistory.objects.get(id=release_history_id)
+        PublishEvent.objects.add_event(
+            gateway_id=history.api.id,
+            stage_id=history.stage.id,
+            release_id=history.id,
+            name=PublishEventEnum.SendConfiguration,
+            status=PublishEventStatusEnum.SUCCESS,
+        )
 
 
 @shared_task(ignore_result=True)
@@ -63,6 +74,14 @@ def mark_release_history_failure(request=None, exc=None, traceback=None, release
     history.message = f"环境[{','.join(stages)}]发布失败，请联系管理员"
     history.status = ReleaseStatusEnum.FAILURE.value
     history.save()
+    # add publish failure event
+    PublishEvent.objects.add_event(
+        gateway_id=history.api.id,
+        stage_id=history.stage.id,
+        release_id=history.id,
+        name=PublishEventEnum.SendConfiguration,
+        status=PublishEventStatusEnum.FAILURE,
+    )
 
 
 def _release_gateway(
@@ -75,15 +94,31 @@ def _release_gateway(
     """发布资源到微网关"""
     procedure_logger.info(f"release begin, micro_gateway_release_history_id({micro_gateway_release_history_id})")
     release_history_qs = MicroGatewayReleaseHistory.objects.filter(id=micro_gateway_release_history_id)
-
+    release_history_qs_last = release_history_qs.last()
     # 表明发布已开始
     release_history_qs.update(status=ReleaseStatusEnum.RELEASING.value)
-
+    # add publish event
+    history = ReleaseHistory.objects.get(id=release_history_qs_last.release_history_id)
+    PublishEvent.objects.add_event(
+        gateway_id=history.api.id,
+        stage_id=history.stage.id,
+        release_id=history.id,
+        name=PublishEventEnum.GenerateTask,
+        status=PublishEventStatusEnum.SUCCESS,
+    )
+    PublishEvent.objects.add_event(
+        gateway_id=history.api.id,
+        stage_id=history.stage.id,
+        release_id=history.id,
+        name=PublishEventEnum.SendConfiguration,
+        status=PublishEventStatusEnum.DOING,
+    )
     try:
         if distributor.distribute(
             release=release,
             micro_gateway=micro_gateway,
             release_task_id=procedure_logger.release_task_id,
+            release_history_id=release_history_qs_last.release_history_id,
         ):
             release_history_qs.update(status=ReleaseStatusEnum.SUCCESS.value)
         else:
@@ -152,7 +187,6 @@ def release_gateway_by_registry(micro_gateway_id, release_id, micro_gateway_rele
         micro_gateway_id,
         micro_gateway_release_history_id,
     )
-
     release = Release.objects.prefetch_related("stage", "api", "resource_version").get(id=release_id)
     micro_gateway = MicroGateway.objects.get(id=micro_gateway_id, is_shared=True)
     # 如果是共享实例对应的网关发布，同时将对应的实例资源下发
@@ -164,9 +198,11 @@ def release_gateway_by_registry(micro_gateway_id, release_id, micro_gateway_rele
         stage=release.stage,
         micro_gateway=micro_gateway,
     )
-
     return _release_gateway(
-        distributor=EtcdDistributor(include_gateway_global_config=include_gateway_global_config),
+        distributor=EtcdDistributor(
+            include_gateway_global_config=include_gateway_global_config,
+            include_stage=True,  # 需要将release_id通过stage资源下发出去
+        ),
         micro_gateway_release_history_id=micro_gateway_release_history_id,
         release=release,
         micro_gateway=micro_gateway,

@@ -43,6 +43,10 @@ from apigateway.core.constants import (
     MicroGatewayStatusEnum,
     PassHostEnum,
     ProxyTypeEnum,
+    PublishEventEnum,
+    PublishEventStatusEnum,
+    ReleaseOperationEnum,
+    ReleaseSituationEnum,
     ReleaseStatusEnum,
     SchemeEnum,
     SSLCertificateBindingScopeTypeEnum,
@@ -639,7 +643,19 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
     stages = models.ManyToManyField(Stage)
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
-
+    situation = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        choices=ReleaseSituationEnum.choices(),
+        default=ReleaseSituationEnum.VERSION.value,
+    )
+    operation = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        choices=ReleaseOperationEnum.choices(),
+    )
     comment = models.CharField(max_length=512, blank=True, null=True)
 
     status = models.CharField(
@@ -659,6 +675,42 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         verbose_name = "ReleaseHistory"
         verbose_name_plural = "ReleaseHistory"
         db_table = "core_release_history"
+
+
+class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
+    """
+    publish event
+    Store the publish events records
+    """
+
+    id = models.AutoField(primary_key=True)
+    gateway_id = models.IntegerField(blank=False, null=False, db_index=True)
+    stage_id = models.IntegerField(blank=False, null=False, db_index=True)
+    release_id = models.IntegerField(blank=False, null=False, db_index=True)
+    name = models.CharField(
+        max_length=64,
+        blank=True,
+        null=False,
+        choices=PublishEventEnum.choices(),
+    )
+    step = models.IntegerField(blank=False, null=False)
+    status = models.CharField(
+        _("publish event status"),
+        max_length=16,
+        choices=PublishEventStatusEnum.choices(),
+        default=PublishEventStatusEnum.PENDING.value,
+    )
+    detail = models.TextField(help_text="event detail", blank=True, default="")
+
+    objects = managers.PublishEventManager()
+
+    def __str__(self):
+        return f"<Publish: {self.gateway_id}/{self.stage_id}/{self.release_id}/{self.name}>/{self.status}"
+
+    class Meta:
+        verbose_name = "PublishEvent"
+        verbose_name_plural = "PublishEvent"
+        db_table = "core_publish_event"
 
 
 # ============================================ auth ============================================

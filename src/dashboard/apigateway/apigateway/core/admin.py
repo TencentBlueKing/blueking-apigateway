@@ -26,6 +26,7 @@ from apigateway.core.models import (
     MicroGateway,
     MicroGatewayReleaseHistory,
     Proxy,
+    PublishEvent,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -108,10 +109,15 @@ class ReleasedResourceAdmin(admin.ModelAdmin):
 
 
 class ReleaseHistoryAdmin(admin.ModelAdmin):
-    list_display = ["api", "resource_version", "status", "created_by", "created_time"]
+    list_display = ["api", "resource_version", "status", "created_by", "created_time", "situation", "operation"]
     list_filter = ["api", "created_time"]
     filter_horizontal = ["stages"]
     raw_id_fields = ["resource_version"]
+
+
+class PublishEventAdmin(admin.ModelAdmin):
+    list_display = ["gateway_id", "stage_id", "release_id", "name", "created_by", "created_time", "detail", "status"]
+    list_filter = ["gateway_id", "release_id"]
 
 
 class ContextAdmin(admin.ModelAdmin):
@@ -171,6 +177,7 @@ admin.site.register(ResourceVersion, ResourceVersionAdmin)
 admin.site.register(Release, ReleaseAdmin)
 admin.site.register(ReleasedResource, ReleasedResourceAdmin)
 admin.site.register(ReleaseHistory, ReleaseHistoryAdmin)
+admin.site.register(PublishEvent, PublishEventAdmin)
 admin.site.register(Context, ContextAdmin)
 admin.site.register(JWT, JWTAdmin)
 admin.site.register(APIRelatedApp, APIRelatedAppAdmin)

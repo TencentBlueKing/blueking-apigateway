@@ -39,25 +39,30 @@ class SyncFail(Exception):
 
 
 class EtcdDistributor(BaseDistributor):
-    def __init__(self, include_gateway_global_config: bool = False):
+    def __init__(self, include_gateway_global_config: bool = False, include_stage: bool = False):
         """
         :param include_gateway_global_config: 是否应包含网关全局配置资源，如：BkGatewayConfig, BkGatewayPluginMetadata；
             共享网关，专享网关，当同步对应网关的数据到共享网关集群时，应包含这些网关的全局配置资源
+            include_stage: 是否保护stage资源配置
         """
         self.include_gateway_global_config = include_gateway_global_config
+        self.include_stage = include_stage
 
     def distribute(
         self,
         release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
+        release_history_id: Optional[str] = None,
     ) -> bool:
         """将 release 发布到 micro-gateway 对应的 registry 中"""
         convertor = CustomResourceConvertor(
             release=release,
+            release_history_id=release_history_id,
             micro_gateway=micro_gateway,
             include_config=self.include_gateway_global_config,
             include_plugin_metadata=self.include_gateway_global_config,
+            include_stage=self.include_stage,
         )
         registry = self._get_registry(release.api, release.stage, micro_gateway)
         procedure_logger = ReleaseProcedureLogger(
@@ -92,6 +97,7 @@ class EtcdDistributor(BaseDistributor):
         stage: Stage,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
+        release_history_id: Optional[str] = None,
     ) -> bool:
         """撤销已发布到 micro-gateway 对应的 registry 中的配置"""
         registry = self._get_registry(stage.api, stage, micro_gateway)

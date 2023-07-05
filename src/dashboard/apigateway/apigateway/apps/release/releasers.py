@@ -39,11 +39,12 @@ from apigateway.controller.tasks import (
     release_gateway_by_helm,
     release_gateway_by_registry,
 )
-from apigateway.core.constants import ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import (
     Gateway,
     MicroGateway,
     MicroGatewayReleaseHistory,
+    PublishEvent,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -264,7 +265,6 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             release_history=release_history,
             status=ReleaseStatusEnum.RELEASING.value,
         )
-
         return release_gateway_by_registry.si(
             release_id=release.pk,
             micro_gateway_release_history_id=history.pk,
@@ -293,6 +293,14 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         )  # type: ignore
 
     def _create_release_tasks(self, release: Release, release_history: ReleaseHistory):
+        # create publish event
+        PublishEvent.objects.add_event(
+            gateway_id=release.api.id,
+            stage_id=release.stage.id,
+            release_id=release_history.id,
+            name=PublishEventEnum.GenerateTask,
+            status=PublishEventStatusEnum.DOING,
+        )
         for fn in [self._create_release_task_for_shared_gateway, self._create_release_task_for_micro_gateway]:
             task = fn(release, release_history)
             if task:
