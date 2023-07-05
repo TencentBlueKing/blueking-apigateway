@@ -49,7 +49,7 @@ class TestEtcdDistributor:
     def test_distribute(
         self, mocker, include_gateway_global_config, ignored_models, distributed_models, edge_release, micro_gateway
     ):
-        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config)
+        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config, include_stage=True)
         mocker.patch.object(distributor, "_get_registry", return_value=self.registry)
         assert distributor.distribute(
             release=edge_release,
