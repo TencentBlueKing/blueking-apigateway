@@ -51,8 +51,8 @@ class CustomResourceConvertor:
     # 3. 中间 registry 应该看做目标 registry 的最终状态
 
     release: Release
-    release_history_id: Optional[str]
     micro_gateway: MicroGateway
+    release_history_id: Optional[str] = field(default=None)
     # 包含哪些资源的开关
     include_config: bool = field(default=True)
     include_stage: bool = field(default=True)
