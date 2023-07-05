@@ -15,28 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Optional
-
-from apigateway.core.models import MicroGateway, Release, Stage
-
-
-class BaseDistributor:
-    def distribute(
-        self,
-        release: Release,
-        micro_gateway: MicroGateway,
-        release_task_id: Optional[str] = None,
-        release_history_id: Optional[str] = None,
-    ) -> bool:
-        """发布到微网关"""
-        raise NotImplementedError()
-
-    def revoke(
-        self,
-        stage: Stage,
-        micro_gateway: MicroGateway,
-        release_task_id: Optional[str] = None,
-        release_history_id: Optional[str] = None,
-    ) -> bool:
-        """撤销微网关已发布内容"""
-        raise NotImplementedError()
