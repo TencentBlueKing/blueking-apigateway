@@ -17,6 +17,8 @@
 #
 from typing import List
 
+from django.utils.translation import gettext as _
+
 from apigateway.components.bk_iam_bkapi import BKIAMClient
 from apigateway.iam.constants import GATEWAY_DEFAULT_ROLES, NEVER_EXPIRE_TIMESTAMP, UserRoleEnum
 from apigateway.iam.exceptions import IAMGradeManagerNotExist, IAMUserRoleNotExist
@@ -58,21 +60,21 @@ class IAMUserGroupHandler:
 
     def _generate_user_group_name(self, role: UserRoleEnum, gateway_name: str) -> str:
         if role == UserRoleEnum.MANAGER:
-            return f"API网关-{gateway_name}-管理员"
+            return _("API网关-{gateway_name}-管理员").format(gateway_name=gateway_name)
         elif role == UserRoleEnum.DEVELOPER:
-            return f"API网关-{gateway_name}-开发者"
+            return _("API网关-{gateway_name}-开发者").format(gateway_name=gateway_name)
         elif role == UserRoleEnum.OPERATOR:
-            return f"API网关-{gateway_name}-运营者"
+            return _("API网关-{gateway_name}-运营者").format(gateway_name=gateway_name)
 
         raise ValueError(f"unsupported role: {role.value}")
 
     def _generate_user_group_description(self, role: UserRoleEnum, gateway_name: str) -> str:
         if role == UserRoleEnum.MANAGER:
-            return f"API网关 ({gateway_name}) 管理员，拥有网关的全部权限。"
+            return _("API网关 ({gateway_name}) 管理员，拥有网关的全部权限。").format(gateway_name=gateway_name)
         elif role == UserRoleEnum.DEVELOPER:
-            return f"API网关 ({gateway_name}) 开发者，拥有网关的开发权限，如管理资源，查看日志，在线测试等。"
+            return _("API网关 ({gateway_name}) 开发者，拥有网关的开发权限，如管理资源，查看日志，在线测试等。").format(gateway_name=gateway_name)
         elif role == UserRoleEnum.OPERATOR:
-            return f"API网关 ({gateway_name}) 运营者，拥有网关的运营权限，如管理权限，查看日志等。"
+            return _("API网关 ({gateway_name}) 运营者，拥有网关的运营权限，如管理权限，查看日志等。").format(gateway_name=gateway_name)
 
         raise ValueError(f"unsupported role: {role.value}")
 

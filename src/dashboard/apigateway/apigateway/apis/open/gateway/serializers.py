@@ -24,7 +24,6 @@ from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.iam import IAMHandler
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
     API_NAME_PATTERN,
@@ -143,11 +142,7 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             api_type=None if api_type is None else APITypeEnum(api_type),
         )
 
-        # 3. 在权限中心注册分级管理员，创建用户组
-        if settings.USE_BK_IAM_PERMISSION:
-            IAMHandler.register_grade_manager_and_builtin_user_groups(instance)
-
-        # 4. record audit log
+        # 3. record audit log
         GatewayHandler().add_create_audit_log(instance, validated_data.get("created_by", ""))
 
         return instance

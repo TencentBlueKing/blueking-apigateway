@@ -48,7 +48,7 @@ urlpatterns = [
     # edge-controller
     path("backend/api/v1/edge-controller/", include("apigateway.apis.controller.urls")),
     # iam provider
-    path("backend/api/v1/", include("apigateway.apis.iam.urls")),
+    path("backend/api/", include("apigateway.apis.iam.urls")),
     # apps: core
     path("backend/apis/", include("apigateway.apps.gateway.urls")),
     path("backend/apis/<int:gateway_id>/", include("apigateway.apps.stage_item.urls")),

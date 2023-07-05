@@ -15,7 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-"""API 网关 bk-iam(权限中心) 相关接口"""
 import logging
 from operator import itemgetter
 from typing import Any, Dict, List
@@ -31,6 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 class BKIAMClient:
+    """API 网关 bk-iam(权限中心) 相关接口"""
+
     def __init__(self):
         self._client = get_client_by_username(Client, username="admin")
         self._client.session.register_hook("request", inject_accept_language)

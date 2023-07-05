@@ -46,12 +46,12 @@ class IAMHandler:
         user_group_handler.add_user_group_members(gateway.id, UserRoleEnum.MANAGER, members)
 
     @classmethod
-    def delete_grade_manager_and_builtin_user_groups(cls, gateway: Gateway):
+    def delete_grade_manager_and_builtin_user_groups(cls, gateway_id: int):
         """在权限中心上，删除网关的分级管理员及内建的 3 个用户组"""
         # 1. 删除用户组
         user_group_handler = IAMUserGroupHandler()
-        user_group_handler.delete_user_groups(gateway.id)
+        user_group_handler.delete_user_groups(gateway_id)
 
         # 2. 删除分级管理员
         grade_manager_handler = IAMGradeManagerHandler()
-        grade_manager_handler.delete_grade_manager(gateway.id)
+        grade_manager_handler.delete_grade_manager(gateway_id)

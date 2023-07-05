@@ -15,12 +15,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import Tuple
+
+from cachetools import TTLCache, cached
 from django.conf import settings
 from iam import IAM
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.exceptions import AuthenticationFailed as RESTAuthenticationFailed
 
 from apigateway.apis.iam.exceptions import AuthenticationFailed
+from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
 
 
 class IAMBasicAuthentication(BasicAuthentication):
@@ -40,12 +44,7 @@ class IAMBasicAuthentication(BasicAuthentication):
         if userid != "bk_iam":
             raise AuthenticationFailed("username is not bk_iam")
 
-        iam = IAM(
-            app_code=settings.BK_APP_CODE,
-            app_secret=settings.BK_APP_SECRET,
-            bk_apigateway_url=settings.BK_IAM_APIGATEWAY_URL,
-        )
-        ok, msg, token = iam.get_token(settings.BK_IAM_SYSTEM_ID)
+        ok, msg, token = self._get_iam_token()
         if not ok:
             raise AuthenticationFailed(f"get system token failed: {msg}")
 
@@ -53,3 +52,12 @@ class IAMBasicAuthentication(BasicAuthentication):
             raise AuthenticationFailed("password in basic auth not equals to system token")
 
         return ({"username": userid, "password": password}, None)
+
+    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_SHORT.value))
+    def _get_iam_token(self) -> Tuple[bool, str, str]:
+        iam_client = IAM(
+            app_code=settings.BK_APP_CODE,
+            app_secret=settings.BK_APP_SECRET,
+            bk_apigateway_url=settings.BK_IAM_APIGATEWAY_URL,
+        )
+        return iam_client.get_token(settings.BK_IAM_SYSTEM_ID)
