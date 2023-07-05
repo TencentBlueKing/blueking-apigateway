@@ -292,18 +292,13 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             username=self.username,
         )  # type: ignore
 
-    def _create_release_tasks(self, release: Release, release_history: ReleaseHistory):
+    def _create_release_task(self, release: Release, release_history: ReleaseHistory):
         # NOTE: 发布微网关时不再同时发布专享网关
         micro_gateway = release.stage.micro_gateway
         if not micro_gateway or micro_gateway.is_shared:
-            functions = [self._create_release_task_for_shared_gateway]
-        else:
-            functions = [self._create_release_task_for_micro_gateway]
+            return self._create_release_task_for_shared_gateway(release, release_history)
 
-        for fn in functions:
-            task = fn(release, release_history)
-            if task:
-                yield task
+        return self._create_release_task_for_micro_gateway(release, release_history)
 
     def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
         tasks = []
@@ -319,9 +314,9 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         )  # type: ignore
 
         for release in releases:
-            for task in self._create_release_tasks(release, release_history):
-                # 任意一个任务失败都表示发布失败
-                tasks.append(task.on_error(release_failure_callback))
+            task = self._create_release_task(release, release_history)
+            # 任意一个任务失败都表示发布失败
+            tasks.append(task.on_error(release_failure_callback))
 
         # 使用 celery 的编排能力，并发发布多个微网关，并且在发布完成后，更新微网关发布历史的状态
         delay_on_commit(group(*tasks) | release_success_callback)
