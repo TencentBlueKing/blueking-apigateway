@@ -73,9 +73,10 @@ class TestDocsHandler:
         mock_save_docs.assert_called_once_with(gateway.id, docs)
 
     def test_enrich_docs(self):
+        content = ""
         gateway = G(Gateway)
         resource = G(Resource, api=gateway)
-        resource_doc = G(ResourceDoc, resource_id=resource.id, api=gateway)
+        resource_doc = G(ResourceDoc, resource_id=resource.id, api=gateway, content=content)
         resource_doc_swagger = G(ResourceDocSwagger, resource_doc=resource_doc, api=gateway)
 
         handler = DocsHandler(gateway_id=gateway.id)
@@ -83,6 +84,7 @@ class TestDocsHandler:
             SwaggerDoc(
                 language=DocLanguageEnum.ZH,
                 resource_name=resource.name,
+                resource_doc_swagger=content,
             ),
         ]
         docs = handler.enrich_docs(gateway.id, docs)
@@ -91,6 +93,7 @@ class TestDocsHandler:
         assert docs[0].resource_id == resource.id
         assert docs[0].resource_doc_id == resource_doc.id
         assert docs[0].resource_doc_swagger_id == resource_doc_swagger.id
+        assert docs[0].has_changed is False
 
     def test_filter_valid_docs(self, faker):
         handler = DocsHandler(0)

@@ -19,6 +19,7 @@
 package dao
 
 import (
+	"context"
 	"testing"
 
 	"core/pkg/database"
@@ -48,7 +49,7 @@ func Test_gatewayManager_GetByName(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs(name).WillReturnRows(mockRows)
 
 		manager := &gatewayManager{DB: db}
-		p, err := manager.GetByName(name)
+		p, err := manager.GetByName(context.Background(), name)
 
 		assert.NoError(t, err, "query from db fail.")
 		assert.Equal(t, record, p)

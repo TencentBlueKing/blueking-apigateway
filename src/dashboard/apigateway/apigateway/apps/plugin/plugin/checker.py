@@ -23,7 +23,8 @@
 - apisix 插件的 check_schema 除校验 schema 外，可能还有一些额外的校验，这些插件配置的额外校验，放在此模块处理
 """
 import re
-from typing import ClassVar, Dict
+from collections import Counter
+from typing import ClassVar, Dict, List, Optional
 
 from django.utils.translation import gettext as _
 
@@ -40,21 +41,50 @@ class BkCorsChecker(BaseChecker):
     def check(self, yaml_: str):
         loaded_data = yaml_loads(yaml_)
 
+        self._check_allow_origins(loaded_data.get("allow_origins"))
+        self._check_allow_origins_by_regex(loaded_data.get("allow_origins_by_regex"))
+        self._check_allow_methods(loaded_data["allow_methods"])
+        self._check_headers(loaded_data["allow_headers"], key="allow_headers")
+        self._check_headers(loaded_data["expose_headers"], key="expose_headers")
+
         if loaded_data.get("allow_credential"):
             for key in ["allow_origins", "allow_methods", "allow_headers", "expose_headers"]:
                 if loaded_data.get(key) == "*":
                     raise ValueError(_("当 'allow_credential' 为 True 时, {key} 不能为 '*'。").format(key=key))
 
-        if loaded_data.get("allow_origins_by_regex"):
-            for re_rule in loaded_data["allow_origins_by_regex"]:
-                try:
-                    re.compile(re_rule)
-                except Exception:
-                    raise ValueError(_("allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。").format(re_rule=re_rule))
-
         # 非 apisix check_schema 中逻辑，根据业务需要添加的校验逻辑
         if not (loaded_data.get("allow_origins") or loaded_data.get("allow_origins_by_regex")):
             raise ValueError(_("allow_origins, allow_origins_by_regex 不能同时为空。"))
+
+        if loaded_data.get("allow_origins") and loaded_data.get("allow_origins_by_regex"):
+            raise ValueError(_("allow_origins, allow_origins_by_regex 只能一个有效。"))
+
+    def _check_allow_origins(self, allow_origins: Optional[str]):
+        if not allow_origins:
+            return
+        self._check_duplicate_items(allow_origins.split(","), "allow_origins")
+
+    def _check_allow_methods(self, allow_methods: str):
+        self._check_duplicate_items(allow_methods.split(","), "allow_methods")
+
+    def _check_headers(self, headers: str, key: str):
+        self._check_duplicate_items(headers.split(","), key)
+
+    def _check_allow_origins_by_regex(self, allow_origins_by_regex: Optional[str]):
+        if not allow_origins_by_regex:
+            return
+
+        # 必须是一个合法的正则表达式
+        for re_rule in allow_origins_by_regex:
+            try:
+                re.compile(re_rule)
+            except Exception:
+                raise ValueError(_("allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。").format(re_rule=re_rule))
+
+    def _check_duplicate_items(self, data: List[str], key: str):
+        duplicate_items = [item for item, count in Counter(data).items() if count >= 2]
+        if duplicate_items:
+            raise ValueError(_("{} 存在重复的元素：{}。").format(key, ", ".join(duplicate_items)))
 
 
 class PluginConfigYamlChecker:

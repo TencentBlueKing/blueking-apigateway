@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-16 15:53+0800\n"
+"POT-Creation-Date: 2023-06-27 11:09+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -597,7 +597,7 @@ msgstr ""
 msgid "当前已有同步任务正在执行，请稍后重试。"
 msgstr "Syncing, please try again later."
 
-#: apigateway/apps/esb/constants.py:32 apigateway/conf/default.py:840
+#: apigateway/apps/esb/constants.py:32 apigateway/conf/default.py:841
 #: apigateway/editions/ee/apps/esb/constants.py:32
 msgid "蓝鲸智云"
 msgstr "BlueKing"
@@ -1026,21 +1026,30 @@ msgstr "Plugin"
 msgid "插件绑定"
 msgstr "Plugin Binding"
 
-#: apigateway/apps/plugin/plugin/checker.py:46
+#: apigateway/apps/plugin/plugin/checker.py:53
 #, python-brace-format
 msgid "当 'allow_credential' 为 True 时, {key} 不能为 '*'。"
 msgstr "{key} cannot be '*' when 'allow_credential' is True."
-
-#: apigateway/apps/plugin/plugin/checker.py:53
-#, python-brace-format
-msgid "allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。"
-msgstr ""
-"The '{re_rule}' in allow_origins_by_regex is not a legal regex expression."
 
 #: apigateway/apps/plugin/plugin/checker.py:57
 msgid "allow_origins, allow_origins_by_regex 不能同时为空。"
 msgstr ""
 "allow_origins, allow_origins_by_regex cannot be empty at the same time."
+
+#: apigateway/apps/plugin/plugin/checker.py:60
+msgid "allow_origins, allow_origins_by_regex 只能一个有效。"
+msgstr ""
+"allow_origins, allow_origins_by_regex can only be one valid at a time."
+
+#: apigateway/apps/plugin/plugin/checker.py:82
+#, python-brace-format
+msgid "allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。"
+msgstr ""
+"The '{re_rule}' in allow_origins_by_regex is not a legal regex expression."
+
+#: apigateway/apps/plugin/plugin/checker.py:87
+msgid "{} 存在重复的元素：{}。"
+msgstr "Duplicate element in {}: {}."
 
 #: apigateway/apps/plugin/plugin/convertor.py:71
 #, python-brace-format
@@ -1101,10 +1110,6 @@ msgstr "The shared micro-gateway instance does not exist."
 #: apigateway/apps/release/releasers.py:253
 msgid "发布中"
 msgstr "Releasing"
-
-#: apigateway/apps/release/releasers.py:306
-msgid "配置下发成功"
-msgstr "configuration release success"
 
 #: apigateway/apps/release/views.py:51
 msgid "当前选择环境未发布版本，请先发布版本到该环境。"
@@ -1546,12 +1551,12 @@ msgstr "No valid resource document."
 msgid "该资源的 {value} 文档已存在。"
 msgstr "The {value} document of this resource already exists."
 
-#: apigateway/apps/support/resource_doc/serializers.py:110
+#: apigateway/apps/support/resource_doc/serializers.py:111
 #, python-brace-format
 msgid "资源 {resource_name} 不存在。"
 msgstr "Resource {resource_name} does not exist."
 
-#: apigateway/apps/support/resource_doc/serializers.py:131
+#: apigateway/apps/support/resource_doc/serializers.py:132
 msgid "通过 swagger 方式导入资源文档，选中资源文档的语言应一致。"
 msgstr ""
 "Import resource documents by swagger, the language of the selected resource "
@@ -1629,31 +1634,35 @@ msgid "资源文档导入失败"
 msgstr "Resource document import failed"
 
 #: apigateway/common/error_codes.py:104
+msgid "处理 SDK 请求时发生内部错误"
+msgstr "An internal error occurred while processing the SDK request"
+
+#: apigateway/common/error_codes.py:107
 #, python-brace-format
 msgid "组件对应的网关 [name={api_name}] 不存在"
 msgstr "The gateway [name={api_name}] does not exist"
 
-#: apigateway/common/error_codes.py:105
+#: apigateway/common/error_codes.py:108
 msgid "组件请求方法配置错误"
 msgstr "Component request method config error"
 
-#: apigateway/common/error_codes.py:107
+#: apigateway/common/error_codes.py:110
 msgid "用户未登录或登录态失效，请使用登录链接重新登录"
 msgstr "User is not logged in or login status is invalid, please log in again"
 
-#: apigateway/common/error_codes.py:108
+#: apigateway/common/error_codes.py:111
 msgid "没有访问权限"
 msgstr "Forbidden"
 
-#: apigateway/common/error_codes.py:109
+#: apigateway/common/error_codes.py:112
 msgid "数据不存在"
 msgstr "Not Found"
 
-#: apigateway/common/error_codes.py:111
+#: apigateway/common/error_codes.py:114
 msgid "系统未配置 Elasticsearch 地址"
 msgstr "No Elasticsearch host configured"
 
-#: apigateway/common/error_codes.py:112
+#: apigateway/common/error_codes.py:115
 #, python-brace-format
 msgid ""
 "连接 Elasticsearch {es_hosts_display} 出现错误: {err}，请检查服务是否正常"
@@ -1661,7 +1670,7 @@ msgstr ""
 "Error connecting to Elasticsearch {es_hosts_display}: {err}, please check if "
 "the service is normal"
 
-#: apigateway/common/error_codes.py:114
+#: apigateway/common/error_codes.py:117
 #, python-brace-format
 msgid ""
 "请求 Elasticsearch {es_hosts_display} 超时（read timeout={timeout}），请稍后"
@@ -1670,7 +1679,7 @@ msgstr ""
 "Request to Elasticsearch {es_hosts_display} timed out (read "
 "timeout={timeout}), please try again later"
 
-#: apigateway/common/error_codes.py:117
+#: apigateway/common/error_codes.py:120
 #, python-brace-format
 msgid ""
 "请求 Elasticsearch {es_hosts_display} 出现错误，elasticsearch index {index} "
@@ -1679,14 +1688,14 @@ msgstr ""
 "Error requesting Elasticsearch {es_hosts_display}, elasticsearch index "
 "{index} does not exist"
 
-#: apigateway/common/error_codes.py:119
+#: apigateway/common/error_codes.py:122
 #, python-brace-format
 msgid "请求 Elasticsearch {es_hosts_display} 认证失败，请检查认证信息是否正确"
 msgstr ""
 "Requesting Elasticsearch {es_hosts_display} authentication failed, please "
 "check whether the authentication information is correct"
 
-#: apigateway/common/error_codes.py:120
+#: apigateway/common/error_codes.py:123
 #, python-brace-format
 msgid ""
 "请求 Elasticsearch {es_hosts_display} 出现错误: {err}，请联系系统负责人处理"
@@ -1733,23 +1742,23 @@ msgid "请求 bkpaas3 获取应用信息失败，{code_slug}，{message}。"
 msgstr ""
 "Request for bkpaas3 to get app information failed, {code_slug}, {message}."
 
-#: apigateway/conf/default.py:845
+#: apigateway/conf/default.py:846
 msgid "正式环境"
 msgstr "Prod"
 
-#: apigateway/conf/default.py:847
+#: apigateway/conf/default.py:848
 msgid "访问后端正式环境"
 msgstr "request third-party API prod environment"
 
-#: apigateway/conf/default.py:851
+#: apigateway/conf/default.py:852
 msgid "测试环境"
 msgstr "test"
 
-#: apigateway/conf/default.py:853
+#: apigateway/conf/default.py:854
 msgid "访问后端测试环境"
 msgstr "request third-party API test environment"
 
-#: apigateway/conf/default.py:863
+#: apigateway/conf/default.py:864
 msgid "访问蓝鲸智云组件 API"
 msgstr "request BlueKing component API"
 
@@ -1919,6 +1928,9 @@ msgstr "App [{value}] does not match the required pattern."
 #, python-brace-format
 msgid "蓝鲸应用【{app_codes}】不匹配要求的模式。"
 msgstr "App [{app_codes}] does not match the required pattern."
+
+#~ msgid "配置下发成功"
+#~ msgstr "configuration release success"
 
 #~ msgid "资源名称【name={name}】重复。"
 #~ msgstr "Resource name [{name}] already exists."

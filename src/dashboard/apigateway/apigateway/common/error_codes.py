@@ -100,6 +100,9 @@ error_codes.add_codes(
         ErrorCode("SDK_ERROR", 50100, _("网关SDK生成或上传失败")),
         ErrorCode("RESOURCE_DOC_EXPORT_ERROR", 50101, _("网关文档导出失败")),
         ErrorCode("RESOURCE_DOC_IMPORT_ERROR", 50102, _("资源文档导入失败")),
+        ErrorCode(
+            "SDK_INTERNAL_ERROR", 50103, _("处理 SDK 请求时发生内部错误"), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
         # ESB 对应的网关不存在
         ErrorCode("COMPONENT_GATEWAY_NOT_FOUND", 50203, _("组件对应的网关 [name={api_name}] 不存在")),
         ErrorCode("COMPONENT_METHOD_INVALID", 50204, _("组件请求方法配置错误")),

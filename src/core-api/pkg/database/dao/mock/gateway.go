@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	dao "core/pkg/database/dao"
 	reflect "reflect"
 
@@ -35,16 +36,16 @@ func (m *MockGatewayManager) EXPECT() *MockGatewayManagerMockRecorder {
 }
 
 // GetByName mocks base method.
-func (m *MockGatewayManager) GetByName(name string) (dao.Gateway, error) {
+func (m *MockGatewayManager) GetByName(ctx context.Context, name string) (dao.Gateway, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByName", name)
+	ret := m.ctrl.Call(m, "GetByName", ctx, name)
 	ret0, _ := ret[0].(dao.Gateway)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByName indicates an expected call of GetByName.
-func (mr *MockGatewayManagerMockRecorder) GetByName(name interface{}) *gomock.Call {
+func (mr *MockGatewayManagerMockRecorder) GetByName(ctx, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockGatewayManager)(nil).GetByName), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockGatewayManager)(nil).GetByName), ctx, name)
 }

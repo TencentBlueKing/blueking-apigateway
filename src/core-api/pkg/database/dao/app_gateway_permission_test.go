@@ -19,6 +19,7 @@
 package dao
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -50,7 +51,7 @@ func Test_appGatewayPermissionManager_Get(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs(bkAppCode, gatewayID).WillReturnRows(mockRows)
 
 		manager := &appGatewayPermissionManager{DB: db}
-		p, err := manager.Get(bkAppCode, gatewayID)
+		p, err := manager.Get(context.Background(), bkAppCode, gatewayID)
 
 		assert.NoError(t, err, "query from db fail.")
 		assert.Equal(t, permission, p)

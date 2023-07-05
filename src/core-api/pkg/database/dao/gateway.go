@@ -21,6 +21,7 @@ package dao
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
 import (
+	"context"
 	"core/pkg/database"
 
 	"github.com/jmoiron/sqlx"
@@ -36,7 +37,7 @@ type Gateway struct {
 
 // GatewayManager ...
 type GatewayManager interface {
-	GetByName(name string) (Gateway, error)
+	GetByName(ctx context.Context, name string) (Gateway, error)
 }
 
 // NewGatewayManager ...
@@ -51,13 +52,13 @@ type gatewayManager struct {
 }
 
 // GetByName ...
-func (m gatewayManager) GetByName(name string) (Gateway, error) {
+func (m gatewayManager) GetByName(ctx context.Context, name string) (Gateway, error) {
 	gateway := Gateway{}
 	query := `SELECT
 		id,
 		name
 		FROM core_api
 		WHERE name = ?`
-	err := database.SqlxGet(m.DB, &gateway, query, name)
+	err := database.SqlxGet(ctx, m.DB, &gateway, query, name)
 	return gateway, err
 }

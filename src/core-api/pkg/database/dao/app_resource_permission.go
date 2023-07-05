@@ -21,6 +21,7 @@ package dao
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
 import (
+	"context"
 	"time"
 
 	"core/pkg/database"
@@ -42,7 +43,7 @@ type AppResourcePermission struct {
 
 // AppResourcePermissionManager ...
 type AppResourcePermissionManager interface {
-	Get(bkAppCode string, gatewayID int64, resourceID int64) (AppResourcePermission, error)
+	Get(ctx context.Context, bkAppCode string, gatewayID int64, resourceID int64) (AppResourcePermission, error)
 }
 
 // NewAppResourcePermissionManager ...
@@ -57,11 +58,7 @@ type appResourcePermissionManager struct {
 }
 
 // Get ...
-func (m appResourcePermissionManager) Get(
-	bkAppCode string,
-	gatewayID int64,
-	resourceID int64,
-) (AppResourcePermission, error) {
+func (m appResourcePermissionManager) Get(ctx context.Context, bkAppCode string, gatewayID int64, resourceID int64) (AppResourcePermission, error) {
 	perm := AppResourcePermission{}
 	query := `SELECT
 		id,
@@ -73,6 +70,6 @@ func (m appResourcePermissionManager) Get(
 		WHERE bk_app_code = ?
 		AND api_id = ?
 		AND resource_id = ?`
-	err := database.SqlxGet(m.DB, &perm, query, bkAppCode, gatewayID, resourceID)
+	err := database.SqlxGet(ctx, m.DB, &perm, query, bkAppCode, gatewayID, resourceID)
 	return perm, err
 }

@@ -19,6 +19,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	"core/pkg/cacheimpls"
@@ -58,18 +59,18 @@ var _ = Describe("GatewayPublicKeyService", func() {
 		It("error", func() {
 			patches.ApplyFunc(
 				getGatewayID,
-				func(instanceID, gatewayName string) (int64, error) {
+				func(ctx context.Context, instanceID, gatewayName string) (int64, error) {
 					return 1, nil
 				},
 			)
 			patches.ApplyFunc(
 				cacheimpls.GetJWTPublicKey,
-				func(gatewayID int64) (string, error) {
+				func(ctx context.Context, gatewayID int64) (string, error) {
 					return "", errors.New("get GetActionDetail fail")
 				},
 			)
 
-			publicKey, err := svc.Get(instanceID, gatewayName)
+			publicKey, err := svc.Get(context.Background(), instanceID, gatewayName)
 			assert.Empty(GinkgoT(), publicKey)
 			assert.Error(GinkgoT(), err)
 		})
@@ -77,18 +78,18 @@ var _ = Describe("GatewayPublicKeyService", func() {
 		It("ok", func() {
 			patches.ApplyFunc(
 				getGatewayID,
-				func(instanceID, gatewayName string) (int64, error) {
+				func(ctx context.Context, instanceID, gatewayName string) (int64, error) {
 					return 1, nil
 				},
 			)
 			patches.ApplyFunc(
 				cacheimpls.GetJWTPublicKey,
-				func(gatewayID int64) (string, error) {
+				func(ctx context.Context, gatewayID int64) (string, error) {
 					return "publicKey", nil
 				},
 			)
 
-			publicKey, err := svc.Get(instanceID, gatewayName)
+			publicKey, err := svc.Get(context.Background(), instanceID, gatewayName)
 			assert.Equal(GinkgoT(), "publicKey", publicKey)
 			assert.NoError(GinkgoT(), err)
 		})

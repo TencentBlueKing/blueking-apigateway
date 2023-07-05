@@ -130,7 +130,7 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
     api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
     name = models.CharField(max_length=64, db_index=True)
     type = models.ForeignKey(PluginType, null=True, on_delete=models.PROTECT)
-    description_i18n = I18nProperty(models.TextField(blank=True, default=""))
+    description_i18n = I18nProperty(models.TextField(default=None, blank=True, null=True))
     description = description_i18n.default_field()
     description_en = description_i18n.field("en")
     yaml = models.TextField(blank=True, default=None, null=True)

@@ -19,6 +19,7 @@
 package cacheimpls
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -40,12 +41,12 @@ func (k ResourceVersionMappingKey) Key() string {
 	return strconv.FormatInt(k.ID, 10)
 }
 
-func retrieveResourceVersionMapping(k cache.Key) (interface{}, error) {
+func retrieveResourceVersionMapping(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(ResourceVersionMappingKey)
 
 	manager := dao.NewResourceVersionManager()
 
-	releaseResources, err := manager.Get(key.ID)
+	releaseResources, err := manager.Get(ctx, key.ID)
 	if err != nil {
 		// TODO: wrap
 		return nil, err
@@ -79,12 +80,12 @@ func retrieveResourceVersionMapping(k cache.Key) (interface{}, error) {
 
 // GetResourceVersionMapping will get the resource version mapping from cache
 // the mapping key is resource name, the value is resource id, resource_name => resource_id
-func GetResourceVersionMapping(id int64) (resourceNameToID map[string]int64, err error) {
+func GetResourceVersionMapping(ctx context.Context, id int64) (resourceNameToID map[string]int64, err error) {
 	key := ResourceVersionMappingKey{
 		ID: id,
 	}
 	var value interface{}
-	value, err = resourceVersionMappingCache.Get(key)
+	value, err = cacheGet(ctx, resourceVersionMappingCache, key)
 	if err != nil {
 		return
 	}

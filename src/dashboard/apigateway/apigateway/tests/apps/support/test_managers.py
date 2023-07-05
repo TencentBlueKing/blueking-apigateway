@@ -50,6 +50,21 @@ class TestResourceDocManager:
             f"{r2.id}:en": doc2.id,
         }
 
+    def test_query_doc_key_to_content(self):
+        gateway = G(Gateway)
+
+        r1 = G(Resource, api=gateway)
+        r2 = G(Resource, api=gateway)
+
+        doc1 = G(ResourceDoc, resource_id=r1.id, api=gateway, content="content1")
+        doc2 = G(ResourceDoc, resource_id=r2.id, api=gateway, content="content2", language="en")
+
+        result = ResourceDoc.objects.query_doc_key_to_content(gateway.id)
+        assert result == {
+            f"{r1.id}:zh": "content1",
+            f"{r2.id}:en": "content2",
+        }
+
     def test_get_doc_languages_of_resources(self):
         gateway = G(Gateway)
 

@@ -19,6 +19,7 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -40,24 +41,24 @@ func TestVerifyMicroGatewayCredentials(t *testing.T) {
 	expiration := 5 * time.Minute
 
 	// valid
-	retrieveFunc := func(key cache.Key) (interface{}, error) {
+	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return true, nil
 	}
 	mockCache := memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	microGatewayCredentialsCache = mockCache
 
-	_, err := VerifyMicroGatewayCredentials("hello", "world")
+	_, err := VerifyMicroGatewayCredentials(context.Background(), "hello", "world")
 	assert.NoError(t, err)
 
 	// error
-	retrieveFunc = func(key cache.Key) (interface{}, error) {
+	retrieveFunc = func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	microGatewayCredentialsCache = mockCache
 
-	_, err = VerifyMicroGatewayCredentials("hello", "world")
+	_, err = VerifyMicroGatewayCredentials(context.Background(), "hello", "world")
 	assert.Error(t, err)
 }

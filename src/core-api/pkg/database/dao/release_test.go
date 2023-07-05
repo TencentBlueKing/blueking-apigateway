@@ -19,6 +19,7 @@
 package dao
 
 import (
+	"context"
 	"testing"
 
 	"core/pkg/database"
@@ -50,7 +51,7 @@ func Test_releaseManager_Get(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs(gatewayID, stageID).WillReturnRows(mockRows)
 
 		manager := &releaseManager{DB: db}
-		p, err := manager.Get(gatewayID, stageID)
+		p, err := manager.Get(context.Background(), gatewayID, stageID)
 
 		assert.NoError(t, err, "query from db fail.")
 		assert.Equal(t, record, p)
