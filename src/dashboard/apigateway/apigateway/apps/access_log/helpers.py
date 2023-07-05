@@ -20,7 +20,7 @@ import json
 import logging
 import urllib
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import ClassVar, Type
 
 from django.conf import settings
 from django.utils.translation import gettext as _
@@ -64,7 +64,7 @@ class LogSearchFactory:
 class BaseLogSearch(ABC):
     _es_index: str = settings.ACCESS_LOG_CONFIG["es_index"]
     _es_time_field_name: str = settings.ACCESS_LOG_CONFIG["es_time_field_name"]
-    _es_client_class: ClassVar[BaseESClient]
+    _es_client_class: ClassVar[Type[BaseESClient]]
 
     # FIXME: change api_id to gateway_id
     def __init__(

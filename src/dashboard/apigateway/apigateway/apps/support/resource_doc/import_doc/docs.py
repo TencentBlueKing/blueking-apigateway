@@ -41,6 +41,7 @@ class BaseDoc:
     resource_id: Optional[int] = None
     resource_doc_id: Optional[int] = None
     resource_doc_swagger_id: Optional[int] = None
+    has_changed: bool = True
 
     @property
     def doc_key(self) -> Optional[str]:

@@ -95,9 +95,11 @@ class CustomResourceConvertor:
 
     def get_kubernetes_resources(self) -> Iterable[KubernetesResource]:
         if self.include_config:
+            assert self._gateway_config
             yield self._gateway_config
 
         if self.include_stage:
+            assert self._stage
             yield self._stage
 
         if self.include_service:

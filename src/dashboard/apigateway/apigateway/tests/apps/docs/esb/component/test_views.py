@@ -19,9 +19,9 @@
 from unittest.mock import MagicMock
 
 import pytest
-from tests.utils.testing import get_response_json
 
 from apigateway.apps.docs.esb.component import views
+from apigateway.tests.utils.testing import get_response_json
 
 
 class TestAPIViewSet:
