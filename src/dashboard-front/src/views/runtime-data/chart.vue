@@ -84,7 +84,6 @@
                     echarts_status.setOption(chart_options);
                     echarts_status.on('datazoom', function(params) {
                         chart_options = echarts_status.getOption();
-                        console.log('chart_options', chart_options)
                         var start_value = chart_options.dataZoom[0].startValue;
                         var end_value = chart_options.dataZoom[0].endValue;
                         self.$emit('time-change', start_value, end_value)

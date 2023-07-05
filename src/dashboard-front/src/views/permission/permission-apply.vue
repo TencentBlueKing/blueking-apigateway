@@ -518,7 +518,6 @@
 
       handleApplyApprove (props) {
         const data = props.row
-        console.log(props.store.states.expandRows)
         this.curPermission = data
         this.curAction = {
           ids: [data.id],
