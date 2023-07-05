@@ -18,9 +18,9 @@
 #
 import pytest
 from django.conf import settings
-from tests.utils.testing import get_response_json
 
 from apigateway.apps.docs.esb.system import views
+from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
 

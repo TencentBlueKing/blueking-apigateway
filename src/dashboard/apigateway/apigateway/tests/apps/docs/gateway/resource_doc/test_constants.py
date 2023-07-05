@@ -15,9 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from utils.jinja2 import render_to_string
 
 from apigateway.apps.docs.gateway.resource_doc.constants import BKAPI_AUTHORIZATION_DESCRIPTION_ZH
+from apigateway.utils.jinja2 import render_to_string
 
 
 def test_bkapi_authorization_description():
