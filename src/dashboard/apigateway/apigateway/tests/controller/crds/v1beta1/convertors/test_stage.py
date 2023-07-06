@@ -74,15 +74,19 @@ class TestStageConvertor:
         assert plugin is not None
         assert plugin.name == name
 
-    def test_global_rate_limit_plugin(self, edge_gateway_stage_context_stage_rate_limit, fake_stage_convertor):
+    def test_stage_global_rate_limit_plugin(self, edge_gateway_stage_context_stage_rate_limit, fake_stage_convertor):
         # The plugin exists when the configuration is enabled by the fixture.
-        plugin = self.get_stage_plugin_by_name(fake_stage_convertor, "bk-global-rate-limit")
+        plugin = self.get_stage_plugin_by_name(fake_stage_convertor, "bk-stage-global-rate-limit")
 
         assert plugin is not None
-        assert plugin.name == "bk-global-rate-limit"
-        assert plugin.config == edge_gateway_stage_context_stage_rate_limit.config
+        assert plugin.name == "bk-stage-global-rate-limit"
 
-    def test_global_rate_limit_plugin__disabled(
+        stage_rate_config = edge_gateway_stage_context_stage_rate_limit.config
+        if "enabled" in stage_rate_config:
+            stage_rate_config.pop("enabled")
+        assert plugin.config == stage_rate_config
+
+    def test_stage_global_rate_limit_plugin__disabled(
         self, edge_gateway_stage_context_stage_rate_limit, fake_stage_convertor
     ):
         # Set the ".enabled" field of the plugin config to false
@@ -93,7 +97,7 @@ class TestStageConvertor:
         g_rate_context.save(update_fields=["_config"])
 
         # The plugin should be removed now
-        plugin = self.get_stage_plugin_by_name(fake_stage_convertor, "bk-global-rate-limit")
+        plugin = self.get_stage_plugin_by_name(fake_stage_convertor, "bk-stage-global-rate-limit")
         assert plugin is None
 
     def test_stage_rate_limit_plugin(
