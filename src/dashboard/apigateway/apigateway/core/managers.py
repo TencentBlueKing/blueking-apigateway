@@ -1513,7 +1513,7 @@ class PublishEventManager(models.Manager):
         publish_id,
         name: PublishEventEnum,
         status: PublishEventStatusEnum,
-        detail: dict,
+        detail: dict = None,
     ):
         return self.create(
             gateway_id=gateway_id,
