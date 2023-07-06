@@ -58,7 +58,7 @@ class EtcdDistributor(BaseDistributor):
         """将 release 发布到 micro-gateway 对应的 registry 中"""
         convertor = CustomResourceConvertor(
             release=release,
-            release_history_id=release_history_id,
+            publish_id=release_history_id,
             micro_gateway=micro_gateway,
             include_config=self.include_gateway_global_config,
             include_plugin_metadata=self.include_gateway_global_config,
