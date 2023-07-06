@@ -32,24 +32,35 @@ class TestEtcdDistributor:
         self.registry = DictRegistry()
 
     @pytest.mark.parametrize(
-        "include_gateway_global_config, ignored_models, distributed_models",
+        "include_gateway_global_config,include_stage, ignored_models, distributed_models",
         [
             [
+                True,
                 True,
                 [],
                 [BkGatewayConfig, BkGatewayPluginMetadata, BkGatewayStage, BkGatewayService, BkGatewayResource],
             ],
             [
                 False,
+                True,
                 [BkGatewayConfig, BkGatewayPluginMetadata],
                 [BkGatewayStage, BkGatewayService, BkGatewayResource],
             ],
         ],
     )
     def test_distribute(
-        self, mocker, include_gateway_global_config, ignored_models, distributed_models, edge_release, micro_gateway
+        self,
+        mocker,
+        include_gateway_global_config,
+        include_stage,
+        ignored_models,
+        distributed_models,
+        edge_release,
+        micro_gateway,
     ):
-        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config, include_stage=True)
+        distributor = EtcdDistributor(
+            include_gateway_global_config=include_gateway_global_config, include_stage=include_stage
+        )
         mocker.patch.object(distributor, "_get_registry", return_value=self.registry)
         assert distributor.distribute(
             release=edge_release,
