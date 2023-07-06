@@ -94,7 +94,7 @@ def _release_gateway(
             release=release,
             micro_gateway=micro_gateway,
             release_task_id=procedure_logger.release_task_id,
-            release_history_id=release_history_qs_last.publish_id,
+            release_history_id=release_history_qs_last.release_history_id,
         ):
             release_history_qs.update(status=ReleaseStatusEnum.SUCCESS.value)
         else:
