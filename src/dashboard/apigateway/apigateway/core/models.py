@@ -685,7 +685,7 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
         choices=PublishEventStatusEnum.choices(),
         default=PublishEventStatusEnum.PENDING.value,
     )
-    _detail = JSONField(help_text="detail", null=True, default="{}", db_column="detail")
+    _detail = models.TextField(help_text="detail", null=True, default="{}", db_column="detail")
 
     objects = managers.PublishEventManager()
 

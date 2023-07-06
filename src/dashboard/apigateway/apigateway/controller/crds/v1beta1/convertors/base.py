@@ -57,10 +57,9 @@ class UrlInfo:
 
 
 class BaseConvertor:
-    def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway, publish_id: str = None):
+    def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway):
         self._release_data = release_data
         self._micro_gateway = micro_gateway
-        self._publish_id = publish_id
 
     def convert(self):
         return NotImplementedError()
@@ -77,12 +76,6 @@ class BaseConvertor:
                 "stage": stage,
             }
         )
-        if self._publish_id:
-            labels.update(
-                {
-                    "publish_id": self._publish_id,
-                }
-            )
         metadata.add_labels(labels)
 
         key = shortcuts.to_lower_dash_case(f"{gateway}-{stage}-{name}")

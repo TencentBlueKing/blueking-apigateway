@@ -52,7 +52,7 @@ class CustomResourceConvertor:
 
     release: Release
     micro_gateway: MicroGateway
-    publish_id: Optional[str] = field(default=None)
+    publish_id: Optional[int] = field(default=None)
     # 包含哪些资源的开关
     include_config: bool = field(default=True)
     include_stage: bool = field(default=True)

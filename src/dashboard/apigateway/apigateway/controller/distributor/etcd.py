@@ -53,7 +53,7 @@ class EtcdDistributor(BaseDistributor):
         release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
     ) -> bool:
         """将 release 发布到 micro-gateway 对应的 registry 中"""
         convertor = CustomResourceConvertor(

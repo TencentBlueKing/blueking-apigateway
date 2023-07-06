@@ -294,7 +294,8 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
     def _create_release_tasks(self, release: Release, release_history: ReleaseHistory):
         # create publish event
-        PublishEventReporter.report_doing_create_publish_task_event(release_history)
+        if self._shared_micro_gateway:
+            PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
         for fn in [self._create_release_task_for_shared_gateway, self._create_release_task_for_micro_gateway]:
             task = fn(release, release_history)
             if task:
@@ -306,11 +307,12 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             release_history_id=release_history.pk,
             status=ReleaseStatusEnum.SUCCESS.value,
             message="configuration released success",
+            stage_ids=[release.stage.id for release in releases],
         )  # type: ignore
         # => now we use en instead(no lang in celery, won't be translated)
         # FIXME: the release status should be set to release_event.type + result
         release_failure_callback = mark_release_history_failure.s(
-            release_history_id=release_history.pk,
+            release_history_id=release_history.pk, stage_ids=[release.stage.id for release in releases]
         )  # type: ignore
 
         for release in releases:

@@ -16,17 +16,30 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import base64
-from typing import List
+from typing import Dict, List, Optional
 
 from django.utils.encoding import force_bytes, force_str
 
+from apigateway.controller.crds.base import KubernetesResourceMetadata
+from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor, UrlInfo
 from apigateway.controller.crds.v1beta1.models.base import PluginConfig
 from apigateway.controller.crds.v1beta1.models.gateway_stage import BkGatewayStage, BkGatewayStageSpec, StageRewrite
 from apigateway.core.micro_gateway_config import MicroGatewayHTTPInfo
+from apigateway.core.models import MicroGateway
 
 
 class StageConvertor(BaseConvertor):
+    def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway, publish_id: int = None):
+        super().__init__(release_data, micro_gateway)
+        self._publish_id = publish_id
+
+    def _common_metadata(self, name: str, labels: Optional[Dict[str, str]] = None) -> KubernetesResourceMetadata:
+        labels = labels or {}
+        if self._publish_id:
+            labels["publish_id"] = str(self._publish_id)
+        return super()._common_metadata(name, labels)
+
     def convert(self) -> BkGatewayStage:
         # FIXME: 如何处理 http/https 协议
         http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(self._micro_gateway.config)
