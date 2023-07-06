@@ -184,7 +184,7 @@ class HelmDistributor(BaseDistributor):
         release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
     ) -> bool:
         """将 release 通过 bcs helm manager 发布"""
         bcs_info = MicroGatewayBcsInfo.from_micro_gateway_config(micro_gateway.config)

@@ -97,7 +97,7 @@ class EtcdDistributor(BaseDistributor):
         stage: Stage,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
     ) -> bool:
         """撤销已发布到 micro-gateway 对应的 registry 中的配置"""
         registry = self._get_registry(stage.api, stage, micro_gateway)

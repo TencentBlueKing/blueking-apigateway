@@ -84,7 +84,7 @@ class CombineDistributor(BaseDistributor):
         stage: Stage,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
     ) -> bool:
         has_failure = False
 
