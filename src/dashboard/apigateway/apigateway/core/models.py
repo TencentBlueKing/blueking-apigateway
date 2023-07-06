@@ -671,7 +671,7 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
     id = models.AutoField(primary_key=True)
     gateway = models.ForeignKey(Gateway, related_name="+", on_delete=models.CASCADE)
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
-    publish_id = models.ForeignKey(ReleaseHistory, related_name="+", on_delete=models.CASCADE, db_column="publish_id")
+    publish = models.ForeignKey(ReleaseHistory, related_name="+", on_delete=models.CASCADE, db_column="publish_id")
     name = models.CharField(
         max_length=64,
         blank=True,

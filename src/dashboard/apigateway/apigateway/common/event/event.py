@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum
-from apigateway.core.models import PublishEvent
+from apigateway.core.models import PublishEvent, ReleaseHistory
 
 
 class PublishEventReporter:
@@ -25,66 +25,66 @@ class PublishEventReporter:
     """
 
     @classmethod
-    def report_doing_create_publish_task_event(cls, gateway_id, stage_id, publish_id):
+    def report_doing_create_publish_task_event(cls, publish: ReleaseHistory):
         """
         dashboard创建发布任务事件上报
         """
         PublishEvent.objects.add_event(
-            gateway_id=gateway_id,
-            stage_id=stage_id,
-            publish_id=publish_id,
+            gateway=publish.api,
+            stage=publish.stage,
+            publish=publish,
             name=PublishEventEnum.GenerateTask,
             status=PublishEventStatusEnum.DOING,
         )
 
     @classmethod
-    def report_success_create_publish_task_event(cls, gateway_id, stage_id, publish_id):
+    def report_success_create_publish_task_event(cls, publish: ReleaseHistory):
         """
         dashboard创建发布任务成功事件上报
         """
         PublishEvent.objects.add_event(
-            gateway_id=gateway_id,
-            stage_id=stage_id,
-            publish_id=publish_id,
+            gateway=publish.api,
+            stage=publish.stage,
+            publish=publish,
             name=PublishEventEnum.GenerateTask,
             status=PublishEventStatusEnum.SUCCESS,
         )
 
     @classmethod
-    def report_doing_distribute_configuration_event(cls, gateway_id, stage_id, publish_id):
+    def report_doing_distribute_configuration_event(cls, publish: ReleaseHistory):
         """
         dashboard下发配置执行事件上报
         """
         PublishEvent.objects.add_event(
-            gateway_id=gateway_id,
-            stage_id=stage_id,
-            publish_id=publish_id,
+            gateway=publish.api,
+            stage=publish.stage,
+            publish=publish,
             name=PublishEventEnum.DistributeConfiguration,
             status=PublishEventStatusEnum.DOING,
         )
 
     @classmethod
-    def report_success_distribute_configuration_event(cls, gateway_id, stage_id, publish_id):
+    def report_success_distribute_configuration_event(cls, publish: ReleaseHistory):
         """
         dashboard下发配置成功事件上报
         """
         PublishEvent.objects.add_event(
-            gateway_id=gateway_id,
-            stage_id=stage_id,
-            publish_id=publish_id,
+            gateway=publish.api,
+            stage=publish.stage,
+            publish=publish,
             name=PublishEventEnum.DistributeConfiguration,
             status=PublishEventStatusEnum.SUCCESS,
         )
 
     @classmethod
-    def report_fail_distribute_configuration_event(cls, gateway_id, stage_id, publish_id):
+    def report_fail_distribute_configuration_event(cls, publish: ReleaseHistory):
         """
         dashboard下发配置失败事件上报
         """
         PublishEvent.objects.add_event(
-            gateway_id=gateway_id,
-            stage_id=stage_id,
-            publish_id=publish_id,
+            gateway=publish.api,
+            stage=publish.stage,
+            publish=publish,
             name=PublishEventEnum.DistributeConfiguration,
             status=PublishEventStatusEnum.FAILURE,
         )

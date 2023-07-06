@@ -45,11 +45,7 @@ def mark_release_history_status(release_history_id, status: str, message: str):
     # add  success event(only for success)
     if status == ReleaseStatusEnum.SUCCESS.value:
         history = ReleaseHistory.objects.get(id=release_history_id)
-        PublishEventReporter.report_success_distribute_configuration_event(
-            gateway_id=history.api.id,
-            stage_id=history.stage.id,
-            publish_id=history.id,
-        )
+        PublishEventReporter.report_success_distribute_configuration_event(history)
 
 
 @shared_task(ignore_result=True)
@@ -74,11 +70,7 @@ def mark_release_history_failure(request=None, exc=None, traceback=None, release
     history.status = ReleaseStatusEnum.FAILURE.value
     history.save()
     # add publish failure event
-    PublishEventReporter.report_fail_distribute_configuration_event(
-        gateway_id=history.api.id,
-        stage_id=history.stage.id,
-        publish_id=history.id,
-    )
+    PublishEventReporter.report_fail_distribute_configuration_event(publish=history)
 
 
 def _release_gateway(
@@ -96,16 +88,8 @@ def _release_gateway(
     release_history_qs.update(status=ReleaseStatusEnum.RELEASING.value)
     # add publish event
     history = ReleaseHistory.objects.get(id=release_history_qs_last.publish_id)
-    PublishEventReporter.report_success_create_publish_task_event(
-        gateway_id=history.api.id,
-        stage_id=history.stage.id,
-        publish_id=history.id,
-    )
-    PublishEventReporter.report_doing_distribute_configuration_event(
-        gateway_id=history.api.id,
-        stage_id=history.stage.id,
-        publish_id=history.id,
-    )
+    PublishEventReporter.report_success_create_publish_task_event(history)
+    PublishEventReporter.report_doing_distribute_configuration_event(history)
     try:
         if distributor.distribute(
             release=release,

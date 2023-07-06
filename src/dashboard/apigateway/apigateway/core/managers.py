@@ -1508,18 +1508,18 @@ class ReleaseHistoryManager(models.Manager):
 class PublishEventManager(models.Manager):
     def add_event(
         self,
-        gateway_id,
-        stage_id,
-        publish_id,
+        gateway,
+        stage,
+        publish,
         name: PublishEventEnum,
         status: PublishEventStatusEnum,
         detail: dict = None,
     ):
         return self.create(
-            gateway_id=gateway_id,
-            stage_id=stage_id,
+            gateway=gateway,
+            stage=stage,
             step=PublishEventEnum.get_event_step(name.value),
-            publish_id=publish_id,
+            publish=publish,
             name=name.value,
             _detail=detail,
             status=status.value,
