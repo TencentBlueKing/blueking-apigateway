@@ -52,7 +52,7 @@ class CustomResourceConvertor:
 
     release: Release
     micro_gateway: MicroGateway
-    release_history_id: Optional[str] = field(default=None)
+    publish_id: Optional[str] = field(default=None)
     # 包含哪些资源的开关
     include_config: bool = field(default=True)
     include_stage: bool = field(default=True)
@@ -78,7 +78,7 @@ class CustomResourceConvertor:
             self._gateway_config = config_convertor.convert()
 
         if self.include_stage:
-            stage_convertor = StageConvertor(self._release_data, self.micro_gateway, self.release_history_id)
+            stage_convertor = StageConvertor(self._release_data, self.micro_gateway, self.publish_id)
             self._stage = stage_convertor.convert()
 
         if self.include_service:

@@ -1510,18 +1510,18 @@ class PublishEventManager(models.Manager):
         self,
         gateway_id,
         stage_id,
-        release_id,
+        publish_id,
         name: PublishEventEnum,
         status: PublishEventStatusEnum,
-        detail: str = "",
+        detail: dict,
     ):
         return self.create(
             gateway_id=gateway_id,
             stage_id=stage_id,
             step=PublishEventEnum.get_event_step(name.value),
-            release_id=release_id,
+            publish_id=publish_id,
             name=name.value,
-            detail=detail,
+            _detail=detail,
             status=status.value,
         )
 

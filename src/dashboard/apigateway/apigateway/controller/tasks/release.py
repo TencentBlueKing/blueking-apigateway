@@ -19,14 +19,15 @@ import logging
 
 from celery import shared_task
 
+from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
 from apigateway.controller.distributor.helm import HelmDistributor
 from apigateway.controller.helm.chart import ChartHelper
 from apigateway.controller.helm.release import ReleaseHelper
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
-from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum, ReleaseStatusEnum
-from apigateway.core.models import MicroGateway, MicroGatewayReleaseHistory, PublishEvent, Release, ReleaseHistory
+from apigateway.core.constants import ReleaseStatusEnum
+from apigateway.core.models import MicroGateway, MicroGatewayReleaseHistory, Release, ReleaseHistory
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +45,10 @@ def mark_release_history_status(release_history_id, status: str, message: str):
     # add  success event(only for success)
     if status == ReleaseStatusEnum.SUCCESS.value:
         history = ReleaseHistory.objects.get(id=release_history_id)
-        PublishEvent.objects.add_event(
+        PublishEventReporter.report_success_distribute_configuration_event(
             gateway_id=history.api.id,
             stage_id=history.stage.id,
-            release_id=history.id,
-            name=PublishEventEnum.SendConfiguration,
-            status=PublishEventStatusEnum.SUCCESS,
+            publish_id=history.id,
         )
 
 
@@ -75,12 +74,10 @@ def mark_release_history_failure(request=None, exc=None, traceback=None, release
     history.status = ReleaseStatusEnum.FAILURE.value
     history.save()
     # add publish failure event
-    PublishEvent.objects.add_event(
+    PublishEventReporter.report_fail_distribute_configuration_event(
         gateway_id=history.api.id,
         stage_id=history.stage.id,
-        release_id=history.id,
-        name=PublishEventEnum.SendConfiguration,
-        status=PublishEventStatusEnum.FAILURE,
+        publish_id=history.id,
     )
 
 
@@ -98,27 +95,23 @@ def _release_gateway(
     # 表明发布已开始
     release_history_qs.update(status=ReleaseStatusEnum.RELEASING.value)
     # add publish event
-    history = ReleaseHistory.objects.get(id=release_history_qs_last.release_history_id)
-    PublishEvent.objects.add_event(
+    history = ReleaseHistory.objects.get(id=release_history_qs_last.publish_id)
+    PublishEventReporter.report_success_create_publish_task_event(
         gateway_id=history.api.id,
         stage_id=history.stage.id,
-        release_id=history.id,
-        name=PublishEventEnum.GenerateTask,
-        status=PublishEventStatusEnum.SUCCESS,
+        publish_id=history.id,
     )
-    PublishEvent.objects.add_event(
+    PublishEventReporter.report_doing_distribute_configuration_event(
         gateway_id=history.api.id,
         stage_id=history.stage.id,
-        release_id=history.id,
-        name=PublishEventEnum.SendConfiguration,
-        status=PublishEventStatusEnum.DOING,
+        publish_id=history.id,
     )
     try:
         if distributor.distribute(
             release=release,
             micro_gateway=micro_gateway,
             release_task_id=procedure_logger.release_task_id,
-            release_history_id=release_history_qs_last.release_history_id,
+            release_history_id=release_history_qs_last.publish_id,
         ):
             release_history_qs.update(status=ReleaseStatusEnum.SUCCESS.value)
         else:

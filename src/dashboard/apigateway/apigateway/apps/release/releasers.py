@@ -33,18 +33,18 @@ from apigateway.apps.release.serializers import ReleaseBatchSLZ
 from apigateway.apps.stage.validators import StageVarsValuesValidator
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.common.contexts import StageProxyHTTPContext
+from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.tasks import (
     mark_release_history_failure,
     mark_release_history_status,
     release_gateway_by_helm,
     release_gateway_by_registry,
 )
-from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum, ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.constants import ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import (
     Gateway,
     MicroGateway,
     MicroGatewayReleaseHistory,
-    PublishEvent,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -294,12 +294,10 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
     def _create_release_tasks(self, release: Release, release_history: ReleaseHistory):
         # create publish event
-        PublishEvent.objects.add_event(
+        PublishEventReporter.report_doing_create_publish_task_event(
             gateway_id=release.api.id,
             stage_id=release.stage.id,
-            release_id=release_history.id,
-            name=PublishEventEnum.GenerateTask,
-            status=PublishEventStatusEnum.DOING,
+            publish_id=release_history.id,
         )
         for fn in [self._create_release_task_for_shared_gateway, self._create_release_task_for_micro_gateway]:
             task = fn(release, release_history)

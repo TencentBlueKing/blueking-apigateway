@@ -57,10 +57,10 @@ class UrlInfo:
 
 
 class BaseConvertor:
-    def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway, release_history_id: str = None):
+    def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway, publish_id: str = None):
         self._release_data = release_data
         self._micro_gateway = micro_gateway
-        self._release_history_id = release_history_id
+        self._publish_id = publish_id
 
     def convert(self):
         return NotImplementedError()
@@ -69,14 +69,20 @@ class BaseConvertor:
         gateway = self._release_data.gateway.name
         stage = self._release_data.stage.name
         metadata = KubernetesResourceMetadata()
+
         labels = labels or {}
-        labels_value = {
-            "gateway": gateway,
-            "stage": stage,
-        }
-        if self._release_history_id:
-            labels_value["release_id"] = self._release_history_id
-        labels.update(labels_value)
+        labels.update(
+            {
+                "gateway": gateway,
+                "stage": stage,
+            }
+        )
+        if self._publish_id:
+            labels.update(
+                {
+                    "publish_id": self._publish_id,
+                }
+            )
         metadata.add_labels(labels)
 
         key = shortcuts.to_lower_dash_case(f"{gateway}-{stage}-{name}")
