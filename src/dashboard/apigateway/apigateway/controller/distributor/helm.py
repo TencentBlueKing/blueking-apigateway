@@ -235,7 +235,7 @@ class HelmDistributor(BaseDistributor):
         stage: Stage,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
     ) -> bool:
         """卸载对应的 helm release"""
         # TODO: Implement me
