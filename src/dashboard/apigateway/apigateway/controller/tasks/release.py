@@ -87,9 +87,8 @@ def _release_gateway(
     # 表明发布已开始
     release_history_qs.update(status=ReleaseStatusEnum.RELEASING.value)
     # add publish event
-    history = ReleaseHistory.objects.get(id=release_history_qs_last.publish_id)
-    PublishEventReporter.report_success_create_publish_task_event(history)
-    PublishEventReporter.report_doing_distribute_configuration_event(history)
+    PublishEventReporter.report_success_create_publish_task_event(release_history_qs_last.release_history)
+    PublishEventReporter.report_doing_distribute_configuration_event(release_history_qs_last.release_history)
     try:
         if distributor.distribute(
             release=release,
