@@ -49,7 +49,7 @@ class TestEtcdDistributor:
     def test_distribute(
         self, mocker, include_gateway_global_config, ignored_models, distributed_models, edge_release, micro_gateway
     ):
-        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config, include_stage=True)
+        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config)
         mocker.patch.object(distributor, "_get_registry", return_value=self.registry)
         assert distributor.distribute(
             release=edge_release,
@@ -103,7 +103,7 @@ class TestEtcdDistributor:
     ):
         for resource in ignored_models + revoked_models:
             self.registry.apply_resource(resource)
-        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config, include_stage=True)
+        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config)
         mocker.patch.object(distributor, "_get_registry", return_value=self.registry)
 
         assert distributor.revoke(stage=fake_stage, micro_gateway=micro_gateway)
