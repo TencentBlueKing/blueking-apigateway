@@ -704,7 +704,7 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
         verbose_name = "PublishEvent"
         verbose_name_plural = "PublishEvent"
         db_table = "core_publish_event"
-        unique_together = ("gateway_id", "publish_id")
+        index_together = ("gateway_id", "publish_id")
 
 
 # ============================================ auth ============================================
