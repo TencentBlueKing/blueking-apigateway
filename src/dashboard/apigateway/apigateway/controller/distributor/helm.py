@@ -151,6 +151,8 @@ class HelmDistributor(BaseDistributor):
             micro_gateway=micro_gateway,
             include_config=False,  # BkGatewayConfig 随着 micro-gateway 的 release 下发，所以无需包含
             include_plugin_metadata=True,
+            include_stage=False,
+            publish_id=None,
         )
         convertor.convert()
 
@@ -182,6 +184,7 @@ class HelmDistributor(BaseDistributor):
         release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
     ) -> bool:
         """将 release 通过 bcs helm manager 发布"""
         bcs_info = MicroGatewayBcsInfo.from_micro_gateway_config(micro_gateway.config)
@@ -227,7 +230,13 @@ class HelmDistributor(BaseDistributor):
 
         return True
 
-    def revoke(self, stage: Stage, micro_gateway: MicroGateway, release_task_id: Optional[str] = None) -> bool:
+    def revoke(
+        self,
+        stage: Stage,
+        micro_gateway: MicroGateway,
+        release_task_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
+    ) -> bool:
         """卸载对应的 helm release"""
         # TODO: Implement me
         return False

@@ -62,7 +62,13 @@ class CombineDistributor(BaseDistributor):
             # 专享实例
             callback(self.helm_distributor_type(generate_chart=False), managed_micro_gateway)
 
-    def distribute(self, release: Release, micro_gateway: MicroGateway, release_task_id: Optional[str] = None) -> bool:
+    def distribute(
+        self,
+        release: Release,
+        micro_gateway: MicroGateway,
+        release_task_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
+    ) -> bool:
         has_failure = False
 
         def do_distribute(distributor: BaseDistributor, gateway: MicroGateway):
@@ -73,7 +79,13 @@ class CombineDistributor(BaseDistributor):
         self.foreach_distributor(release.stage, micro_gateway, do_distribute)
         return not has_failure
 
-    def revoke(self, stage: Stage, micro_gateway: MicroGateway, release_task_id: Optional[str] = None) -> bool:
+    def revoke(
+        self,
+        stage: Stage,
+        micro_gateway: MicroGateway,
+        release_task_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
+    ) -> bool:
         has_failure = False
 
         def do_revoke(distributor: BaseDistributor, gateway: MicroGateway):

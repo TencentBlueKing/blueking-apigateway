@@ -32,24 +32,35 @@ class TestEtcdDistributor:
         self.registry = DictRegistry()
 
     @pytest.mark.parametrize(
-        "include_gateway_global_config, ignored_models, distributed_models",
+        "include_gateway_global_config,include_stage, ignored_models, distributed_models",
         [
             [
+                True,
                 True,
                 [],
                 [BkGatewayConfig, BkGatewayPluginMetadata, BkGatewayStage, BkGatewayService, BkGatewayResource],
             ],
             [
                 False,
+                True,
                 [BkGatewayConfig, BkGatewayPluginMetadata],
                 [BkGatewayStage, BkGatewayService, BkGatewayResource],
             ],
         ],
     )
     def test_distribute(
-        self, mocker, include_gateway_global_config, ignored_models, distributed_models, edge_release, micro_gateway
+        self,
+        mocker,
+        include_gateway_global_config,
+        include_stage,
+        ignored_models,
+        distributed_models,
+        edge_release,
+        micro_gateway,
     ):
-        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config)
+        distributor = EtcdDistributor(
+            include_gateway_global_config=include_gateway_global_config, include_stage=include_stage
+        )
         mocker.patch.object(distributor, "_get_registry", return_value=self.registry)
         assert distributor.distribute(
             release=edge_release,
@@ -63,9 +74,10 @@ class TestEtcdDistributor:
             assert len(list(self.registry.iter_by_type(m))) > 0
 
     @pytest.mark.parametrize(
-        "include_gateway_global_config, ignored_models, revoked_models",
+        "include_gateway_global_config,include_stage, ignored_models, revoked_models",
         [
             [
+                True,
                 True,
                 [],
                 [
@@ -78,6 +90,7 @@ class TestEtcdDistributor:
             ],
             [
                 False,
+                True,
                 [
                     BkGatewayConfig(metadata={"name": "gateway"}, spec={}),
                     BkGatewayPluginMetadata(metadata={"name": "metadata"}, spec={}),
@@ -95,6 +108,7 @@ class TestEtcdDistributor:
         faker,
         mocker,
         include_gateway_global_config,
+        include_stage,
         ignored_models,
         revoked_models,
         fake_gateway,
@@ -104,7 +118,9 @@ class TestEtcdDistributor:
         for resource in ignored_models + revoked_models:
             self.registry.apply_resource(resource)
 
-        distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config)
+        distributor = EtcdDistributor(
+            include_gateway_global_config=include_gateway_global_config, include_stage=include_stage
+        )
         mocker.patch.object(distributor, "_get_registry", return_value=self.registry)
 
         assert distributor.revoke(stage=fake_stage, micro_gateway=micro_gateway)

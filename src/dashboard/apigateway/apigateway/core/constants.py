@@ -189,6 +189,44 @@ class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
     RELEASING = "releasing"  # 发布中
 
 
+class PublishEventEnum(StructuredEnum):
+    # dashboard
+    GenerateTask = EnumField("generate_release_task", "generate release task")
+    DistributeConfiguration = EnumField("distribute_configuration", "distribute configuration")
+    # operator
+    ParseConfiguration = EnumField("parse_configuration", "parse configuration")
+    ApplyConfiguration = EnumField("apply_configuration", "apply configuration")
+    # apisix
+    LoadConfiguration = EnumField("load_configuration", "load configuration")
+
+
+class PublishEventNameTypeEnum(ChoiceEnumMixin, Enum):
+    GenerateTask = PublishEventEnum.GenerateTask.value
+    DistributeConfiguration = PublishEventEnum.DistributeConfiguration.value
+    ParseConfiguration = PublishEventEnum.ParseConfiguration.value
+    ApplyConfiguration = PublishEventEnum.ApplyConfiguration.value
+    LoadConfiguration = PublishEventEnum.LoadConfiguration.value
+
+    @classmethod
+    def get_event_step(cls, name: str) -> int:
+        # 获取事件所属的step，如：name="load configuration"==>5
+        return [i.value for i in cls].index(name) + 1
+
+
+class PublishEventStatusEnum(StructuredEnum):
+    SUCCESS = EnumField("success", "success")  # 执行成功
+    FAILURE = EnumField("failure", "failure")  # 执行失败
+    PENDING = EnumField("pending", "pending")  # 待执行
+    DOING = EnumField("doing", "doing")  # 执行中
+
+
+class PublishEventStatusTypeEnum(ChoiceEnumMixin, Enum):
+    SUCCESS = PublishEventStatusEnum.SUCCESS.value
+    FAILURE = PublishEventStatusEnum.FAILURE.value
+    PENDING = PublishEventStatusEnum.PENDING.value
+    DOING = PublishEventStatusEnum.DOING.value
+
+
 class ProxyTypeEnum(StructuredEnum):
     HTTP = EnumField("http", "http")
     MOCK = EnumField("mock", "mock")
@@ -269,7 +307,6 @@ class SwaggerFormatEnum(StructuredEnum):
 
 # 每个资源允许关联的最大标签个数
 MAX_LABEL_COUNT_PER_RESOURCE = 10
-
 
 DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100

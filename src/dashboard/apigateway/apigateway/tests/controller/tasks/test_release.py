@@ -36,7 +36,9 @@ def micro_gateway_release_history():
 class TestMarkReleaseHistoryStatus:
     @pytest.mark.parametrize("value, name", ReleaseStatusEnum.choices())
     def test_normal(self, release_history, value, name):
-        tasks.mark_release_history_status(release_history.id, status=value, message=name)
+        tasks.mark_release_history_status(
+            release_history.id, status=value, message=name, stage_ids=[release_history.stage.id]
+        )
 
         release_history.refresh_from_db()
         assert release_history.status == value
@@ -45,7 +47,9 @@ class TestMarkReleaseHistoryStatus:
 
 class TestMarkReleaseHistoryFailure:
     def test_normal(self, release_history):
-        tasks.mark_release_history_failure(release_history_id=release_history.id, exc=ValueError("testing"))
+        tasks.mark_release_history_failure(
+            release_history_id=release_history.id, stage_ids=[release_history.stage.id], exc=ValueError("testing")
+        )
 
         release_history.refresh_from_db()
         assert release_history.status == ReleaseStatusEnum.FAILURE.value
@@ -119,7 +123,7 @@ class TestReleaseGatewayByRegistry:
 
         assert tasks.release_gateway_by_registry(micro_gateway.id, edge_release.id, micro_gateway_release_history.id)
 
-        self.distributor_factory.assert_called_once_with(include_gateway_global_config=False)
+        self.distributor_factory.assert_called_once_with(include_gateway_global_config=False, include_stage=True)
 
         micro_gateway_release_history.refresh_from_db()
         micro_gateway_release_history.status = ReleaseStatusEnum.SUCCESS.value
@@ -132,7 +136,7 @@ class TestReleaseGatewayByRegistry:
 
         assert tasks.release_gateway_by_registry(micro_gateway.id, edge_release.id, micro_gateway_release_history.id)
 
-        self.distributor_factory.assert_called_once_with(include_gateway_global_config=True)
+        self.distributor_factory.assert_called_once_with(include_gateway_global_config=True, include_stage=True)
 
         micro_gateway_release_history.refresh_from_db()
         micro_gateway_release_history.status = ReleaseStatusEnum.SUCCESS.value

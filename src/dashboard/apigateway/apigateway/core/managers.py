@@ -42,6 +42,8 @@ from apigateway.core.constants import (
     APIStatusEnum,
     BackendConfigTypeEnum,
     ProxyTypeEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusTypeEnum,
     SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
@@ -1506,6 +1508,27 @@ class ReleaseHistoryManager(models.Manager):
     def get_recent_releasers(self, gateway_id: int) -> List[str]:
         qs = self.filter(api_id=gateway_id).order_by("-id")[:10]
         return list(set(qs.values_list("created_by", flat=True)))
+
+
+class PublishEventManager(models.Manager):
+    def add_event(
+        self,
+        gateway,
+        stage,
+        publish,
+        name: PublishEventNameTypeEnum,
+        status: PublishEventStatusTypeEnum,
+        detail: Optional[dict] = None,
+    ):
+        return self.create(
+            gateway=gateway,
+            stage=stage,
+            step=PublishEventNameTypeEnum.get_event_step(name.value),
+            publish=publish,
+            name=name.value,
+            _detail=detail,
+            status=status.value,
+        )
 
 
 class ContextManager(models.Manager):
