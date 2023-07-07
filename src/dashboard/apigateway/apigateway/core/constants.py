@@ -201,7 +201,7 @@ class PublishEventEnum(StructuredEnum):
 
     @classmethod
     def get_event_step(cls, name: str) -> int:
-        # 获取事件所属的step，如：name="load configuration"==>5
+        # 获取事件所属的step，如：name="load_configuration"==>5
         return cls.get_values().index(name)
 
 
