@@ -22,6 +22,7 @@ import operator
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
+from django.conf import settings
 from django.utils.translation import gettext as _
 
 from apigateway.apps.access_strategy.models import AccessStrategy
@@ -29,6 +30,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
+from apigateway.biz.iam import IAMHandler
 from apigateway.common.contexts import APIAuthContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import APITypeEnum, ContextScopeTypeEnum
@@ -156,8 +158,15 @@ class GatewayHandler:
         if related_app_code:
             APIRelatedApp.objects.add_related_app(gateway.id, related_app_code)
 
+        # 6. 在权限中心注册分级管理员，创建用户组
+        if settings.USE_BK_IAM_PERMISSION:
+            IAMHandler.register_grade_manager_and_builtin_user_groups(gateway)
+
     @staticmethod
     def delete_gateway(gateway_id: int):
+        # 0. 删除权限中心中网关的分级管理员和用户组
+        IAMHandler.delete_grade_manager_and_builtin_user_groups(gateway_id)
+
         # 1. delete api context
 
         Context.objects.delete_by_scope_ids(

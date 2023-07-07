@@ -15,3 +15,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.db import migrations
+
+from apigateway.iam.apigw_iam_migration.migrator import IAMMigrator
+
+
+def forward_func(apps, schema_editor):
+
+    migrator = IAMMigrator(Migration.migration_json)
+    migrator.migrate()
+
+
+class Migration(migrations.Migration):
+    migration_json = "0002_actions.json"
+
+    dependencies = [("apigw_iam_migration", "0001_initial")]
+
+    operations = [migrations.RunPython(forward_func)]

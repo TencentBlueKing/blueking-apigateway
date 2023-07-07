@@ -15,3 +15,18 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from blue_krill.data_types.enum import StructuredEnum
+
+
+class MethodTypeEnum(str, StructuredEnum):
+    """
+    权限中心拉取资源的 method 参数值
+    字段协议说明 https://bk.tencent.com/docs/document/6.0/160/8427?r=1
+    """
+
+    LIST_ATTR = "list_attr"
+    LIST_ATTR_VALUE = "list_attr_value"
+    LIST_INSTANCE = "list_instance"
+    FETCH_INSTANCE_INFO = "fetch_instance_info"
+    LIST_INSTANCE_BY_POLICY = "list_instance_by_policy"
+    SEARCH_INSTANCE = "search_instance"

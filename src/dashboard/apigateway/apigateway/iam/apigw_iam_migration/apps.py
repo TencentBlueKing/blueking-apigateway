@@ -15,3 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.apps import AppConfig
+
+
+class AccountConfig(AppConfig):
+    name = "apigateway.iam.apigw_iam_migration"

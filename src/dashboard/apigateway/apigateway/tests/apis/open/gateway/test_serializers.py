@@ -207,6 +207,7 @@ class TestGatewaySyncSLZ:
             slz.is_valid(raise_exception=True)
 
     def test_create(self, settings, unique_gateway_name):
+        settings.USE_BK_IAM_PERMISSION = False
         settings.SPECIAL_API_AUTH_CONFIGS = {
             unique_gateway_name: {
                 "unfiltered_sensitive_keys": ["bk_token"],

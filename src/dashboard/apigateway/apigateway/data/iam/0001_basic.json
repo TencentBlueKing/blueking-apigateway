@@ -1,0 +1,159 @@
+{
+  "system_id": "bk_apigateway",
+  "operations": [
+    {
+      "operation": "upsert_system",
+      "data": {
+        "id": "bk_apigateway",
+        "name": "API 网关",
+        "name_en": "API Gateway",
+        "description": "蓝鲸 API 网关（API Gateway），是一种高性能、高可用的 API 托管服务，可以帮助开发者创建、发布、维护、监控和保护 API， 以快速、低成本、低风险地对外开放蓝鲸应用或其他系统的数据或服务。",
+        "description_en": "BlueKing API Gateway is a high-performance and highly available API hosting service that helps developers create, publish, maintain, monitor, and protect APIs, allowing for quick, low-cost, and low-risk access to data or services from BlueKing applications or other systems.",
+        "clients": "bk_apigateway",
+        "provider_config": {
+          "host": "",
+          "auth": "basic"
+        }
+      }
+    },
+    {
+      "operation": "upsert_resource_type",
+      "data": {
+        "id": "gateway",
+        "name": "网关",
+        "name_en": "Gateway",
+        "description": "API 网关中的网关",
+        "description_en": "Gateway in API Gateway",
+        "parents": [],
+        "provider_config": {
+          "path": "/backend/api/iam/v1/gateway/"
+        },
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_resource_type",
+      "data": {
+        "id": "stage",
+        "name": "环境",
+        "name_en": "Stage",
+        "description": "网关中的环境",
+        "description_en": "Stage in the gateway",
+        "parents": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway"
+          }
+        ],
+        "provider_config": {
+          "path": "/backend/api/iam/v1/stage/"
+        },
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_resource_type",
+      "data": {
+        "id": "resource",
+        "name": "资源",
+        "name_en": "Resource",
+        "description": "网关中的资源",
+        "description_en": "Resource in the gateway",
+        "parents": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway"
+          }
+        ],
+        "provider_config": {
+          "path": "/backend/api/iam/v1/resource/"
+        },
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_resource_type",
+      "data": {
+        "id": "plugin_config",
+        "name": "插件配置",
+        "name_en": "Plugin Config",
+        "description": "网关中的插件配置",
+        "description_en": "Plugin config in the gateway",
+        "parents": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway"
+          }
+        ],
+        "provider_config": {
+          "path": "/backend/api/iam/v1/plugin_config/"
+        },
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_instance_selection",
+      "data": {
+        "id": "gateway_list",
+        "name": "网关列表",
+        "name_en": "Gateway List",
+        "resource_type_chain": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway"
+          }
+        ]
+      }
+    },
+    {
+      "operation": "upsert_instance_selection",
+      "data": {
+        "id": "stage_list",
+        "name": "环境列表",
+        "name_en": "Stage List",
+        "resource_type_chain": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway"
+          },
+          {
+            "system_id": "bk_apigateway",
+            "id": "stage"
+          }
+        ]
+      }
+    },
+    {
+      "operation": "upsert_instance_selection",
+      "data": {
+        "id": "resource_list",
+        "name": "资源列表",
+        "name_en": "Resource List",
+        "resource_type_chain": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway"
+          }
+        ]
+      }
+    },
+    {
+      "operation": "upsert_instance_selection",
+      "data": {
+        "id": "plugin_config_list",
+        "name": "插件配置列表",
+        "name_en": "Plugin Config List",
+        "resource_type_chain": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway"
+          },
+          {
+            "system_id": "bk_apigateway",
+            "id": "plugin_config"
+          }
+        ]
+      }
+    }
+  ]
+}
