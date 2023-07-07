@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from django.db import models
 from django.utils.translation import get_language
@@ -100,7 +100,9 @@ class PluginBindingManager(models.Manager):
 
         qs.delete()
 
-    def delete_bindings(self, gateway_id: int, plugin_ids: List[int] = None, config_ids: List[int] = None):
+    def delete_bindings(
+        self, gateway_id: int, plugin_ids: Union[List[int], None] = None, config_ids: Union[List[int], None] = None
+    ):
         queryset = self.filter(api_id=gateway_id)
         if plugin_ids is not None:
             queryset = queryset.filter(plugin_id__in=plugin_ids)

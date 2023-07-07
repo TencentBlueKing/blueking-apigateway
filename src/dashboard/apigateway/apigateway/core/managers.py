@@ -20,7 +20,7 @@ import itertools
 import json
 import operator
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set, Union
 
 from cachetools import TTLCache, cached
 from django.conf import settings
@@ -190,7 +190,7 @@ class GatewayManager(models.Manager):
         """获取托管类型为微网关，且已启用的网关，用于获取可发布到共享微网关实例的网关"""
         return self.filter(hosting_type=APIHostingTypeEnum.MICRO.value, status=APIStatusEnum.ACTIVE.value)
 
-    def query_micro_and_active_ids(self, ids: List[int] = None) -> List[int]:
+    def query_micro_and_active_ids(self, ids: Union[List[int], None] = None) -> List[int]:
         """获取托管类型为微网关，且已启用的网关 ID 列表；如果给定了网关 ID 列表，则返回其中符合条件的 ID 列表"""
         queryset = self.filter_micro_and_active_queryset()
         if ids is not None:
