@@ -21,7 +21,6 @@ import json
 from builtins import object
 
 from common.log import logger
-
 from . import configs
 
 

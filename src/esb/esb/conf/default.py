@@ -18,8 +18,9 @@
 #
 import os
 
-from conf.log_utils import get_logging_config, makedirs_when_not_exists
 from tencent_apigateway_common.env import Env
+
+from conf.log_utils import get_logging_config, makedirs_when_not_exists
 
 env = Env()
 

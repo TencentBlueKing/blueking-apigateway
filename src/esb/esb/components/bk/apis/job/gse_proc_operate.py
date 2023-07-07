@@ -23,7 +23,6 @@ from common.base_utils import get_not_empty_value
 from common.constants import API_TYPE_OP
 from common.forms import BaseComponentForm, TypeCheckField
 from components.component import Component
-
 from .toolkit import configs, tools
 
 

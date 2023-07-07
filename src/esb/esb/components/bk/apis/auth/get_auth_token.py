@@ -25,7 +25,6 @@ from common.base_utils import generate_token
 from common.constants import API_TYPE_Q
 from components.component import Component
 from esb.bkcore.models import AccessToken
-
 from .toolkit import configs
 
 

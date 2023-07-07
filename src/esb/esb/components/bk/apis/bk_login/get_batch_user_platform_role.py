@@ -24,7 +24,6 @@ from django import forms
 from common.constants import API_TYPE_Q
 from common.forms import BaseComponentForm, ListField
 from components.component import Component
-
 from .toolkit import configs
 
 

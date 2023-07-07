@@ -20,7 +20,6 @@
 from common.constants import API_TYPE_Q, HTTP_METHOD
 from components.component import Component
 from esb.utils.jwt_utils import JWTKey
-
 from .toolkit import configs
 
 
