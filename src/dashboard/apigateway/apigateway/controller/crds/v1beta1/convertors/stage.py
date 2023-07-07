@@ -97,7 +97,9 @@ class StageConvertor(BaseConvertor):
         # of implementing our own similar mechanics.
         global_rate_limit_config = self._release_data.stage_rate_limit_config
         if global_rate_limit_config and global_rate_limit_config.get("enabled", False):
-            plugins.append(PluginConfig(name="bk-global-rate-limit", config=global_rate_limit_config))
+            if "enabled" in global_rate_limit_config:
+                del global_rate_limit_config["enabled"]
+            plugins.append(PluginConfig(name="bk-stage-global-rate-limit", config=global_rate_limit_config))
 
         return plugins
 
