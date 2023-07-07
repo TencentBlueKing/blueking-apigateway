@@ -130,8 +130,8 @@ class HelmDistributor(BaseDistributor):
     def __init__(
         self,
         operator: str = getattr(settings, "BK_APP_CODE", ""),
-        chart_helper: ChartHelper = None,
-        release_helper: ReleaseHelper = None,
+        chart_helper: Optional[ChartHelper] = None,
+        release_helper: Optional[ReleaseHelper] = None,
         generate_chart: bool = True,
         release_callback: Optional[Callable[[Release, MicroGateway, ReleaseInfo], bool]] = None,
     ):
