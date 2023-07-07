@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum
+from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
 from apigateway.core.models import PublishEvent, ReleaseHistory, Stage
 
 
@@ -33,8 +33,8 @@ class PublishEventReporter:
             gateway=publish.api,
             stage=stage,
             publish=publish,
-            name=PublishEventEnum.GenerateTask,
-            status=PublishEventStatusEnum.DOING,
+            name=PublishEventNameTypeEnum.GenerateTask,
+            status=PublishEventStatusTypeEnum.DOING,
         )
 
     @classmethod
@@ -46,8 +46,8 @@ class PublishEventReporter:
             gateway=publish.api,
             stage=stage,
             publish=publish,
-            name=PublishEventEnum.GenerateTask,
-            status=PublishEventStatusEnum.SUCCESS,
+            name=PublishEventNameTypeEnum.GenerateTask,
+            status=PublishEventStatusTypeEnum.SUCCESS,
         )
 
     @classmethod
@@ -59,8 +59,8 @@ class PublishEventReporter:
             gateway=publish.api,
             stage=stage,
             publish=publish,
-            name=PublishEventEnum.DistributeConfiguration,
-            status=PublishEventStatusEnum.DOING,
+            name=PublishEventNameTypeEnum.DistributeConfiguration,
+            status=PublishEventStatusTypeEnum.DOING,
         )
 
     @classmethod
@@ -74,8 +74,8 @@ class PublishEventReporter:
             gateway=publish.api,
             stage=stage,
             publish=publish,
-            name=PublishEventEnum.DistributeConfiguration,
-            status=PublishEventStatusEnum.SUCCESS,
+            name=PublishEventNameTypeEnum.DistributeConfiguration,
+            status=PublishEventStatusTypeEnum.SUCCESS,
         )
 
     @classmethod
@@ -88,6 +88,6 @@ class PublishEventReporter:
             gateway=publish.api,
             stage=stage,
             publish=publish,
-            name=PublishEventEnum.DistributeConfiguration,
-            status=PublishEventStatusEnum.FAILURE,
+            name=PublishEventNameTypeEnum.DistributeConfiguration,
+            status=PublishEventStatusTypeEnum.FAILURE,
         )

@@ -42,8 +42,8 @@ from apigateway.core.constants import (
     APIStatusEnum,
     BackendConfigTypeEnum,
     ProxyTypeEnum,
-    PublishEventEnum,
-    PublishEventStatusEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusTypeEnum,
     SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
@@ -1511,14 +1511,14 @@ class PublishEventManager(models.Manager):
         gateway,
         stage,
         publish,
-        name: PublishEventEnum,
-        status: PublishEventStatusEnum,
+        name: PublishEventNameTypeEnum,
+        status: PublishEventStatusTypeEnum,
         detail: Optional[dict] = None,
     ):
         return self.create(
             gateway=gateway,
             stage=stage,
-            step=PublishEventEnum.get_event_step(name.value),
+            step=PublishEventNameTypeEnum.get_event_step(name.value),
             publish=publish,
             name=name.value,
             _detail=detail,

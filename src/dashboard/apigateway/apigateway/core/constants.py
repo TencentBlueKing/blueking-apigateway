@@ -192,17 +192,25 @@ class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
 class PublishEventEnum(StructuredEnum):
     # dashboard
     GenerateTask = EnumField("generate_release_task", "generate release task")
-    DistributeConfiguration = ("distribute_configuration", "distribute configuration")
+    DistributeConfiguration = EnumField("distribute_configuration", "distribute configuration")
     # operator
-    ParseConfiguration = ("parse_configuration", "parse configuration")
-    ApplyConfiguration = ("apply_configuration", "apply configuration")
+    ParseConfiguration = EnumField("parse_configuration", "parse configuration")
+    ApplyConfiguration = EnumField("apply_configuration", "apply configuration")
     # apisix
-    LoadConfiguration = ("load_configuration", "load configuration")
+    LoadConfiguration = EnumField("load_configuration", "load configuration")
+
+
+class PublishEventNameTypeEnum(ChoiceEnumMixin, Enum):
+    GenerateTask = PublishEventEnum.GenerateTask.value
+    DistributeConfiguration = PublishEventEnum.DistributeConfiguration.value
+    ParseConfiguration = PublishEventEnum.ParseConfiguration.value
+    ApplyConfiguration = PublishEventEnum.ApplyConfiguration.value
+    LoadConfiguration = PublishEventEnum.LoadConfiguration.value
 
     @classmethod
     def get_event_step(cls, name: str) -> int:
-        # 获取事件所属的step，如：name="load_configuration"==>5
-        return cls.get_values().index(name)
+        # 获取事件所属的step，如：name="load configuration"==>5
+        return [i.value for i in cls].index(name) + 1
 
 
 class PublishEventStatusEnum(StructuredEnum):
@@ -210,6 +218,13 @@ class PublishEventStatusEnum(StructuredEnum):
     FAILURE = EnumField("failure", "failure")  # 执行失败
     PENDING = EnumField("pending", "pending")  # 待执行
     DOING = EnumField("doing", "doing")  # 执行中
+
+
+class PublishEventStatusTypeEnum(ChoiceEnumMixin, Enum):
+    SUCCESS = PublishEventStatusEnum.SUCCESS.value
+    FAILURE = PublishEventStatusEnum.FAILURE.value
+    PENDING = PublishEventStatusEnum.PENDING.value
+    DOING = PublishEventStatusEnum.DOING.value
 
 
 class ProxyTypeEnum(StructuredEnum):
