@@ -7,8 +7,7 @@ WORKDIR /app
 RUN apt-get clean && \
     apt-get update && \
     apt-get install --no-install-recommends -y libssl-dev default-libmysqlclient-dev \
-    libffi-dev build-essential libc6-dev libjpeg-dev zlib1g-dev && \
-    apt-get autoremove -y && \
+    libffi-dev build-essential libc6-dev libjpeg-dev zlib1g-dev vim && \
     apt-get clean -y && \
     rm -rf \
     /usr/share/doc \
