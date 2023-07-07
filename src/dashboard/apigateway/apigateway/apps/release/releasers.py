@@ -293,7 +293,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         )  # type: ignore
 
     def _create_release_task(self, release: Release, release_history: ReleaseHistory):
-        # NOTE: 发布微网关时不再同时发布专享网关
+        # NOTE: 发布专享网关时，不再将资源同时发布到共享网关
         micro_gateway = release.stage.micro_gateway
         if not micro_gateway or micro_gateway.is_shared:
             return self._create_release_task_for_shared_gateway(release, release_history)
