@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import base64
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from django.utils.encoding import force_bytes, force_str
 
@@ -30,7 +30,7 @@ from apigateway.core.models import MicroGateway
 
 
 class StageConvertor(BaseConvertor):
-    def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway, publish_id: Optional[int]):
+    def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway, publish_id: Union[int, None] = None):
         super().__init__(release_data, micro_gateway)
         self._publish_id = publish_id
 
