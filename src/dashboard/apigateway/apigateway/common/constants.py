@@ -18,7 +18,7 @@
 #
 import re
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 
@@ -40,7 +40,7 @@ class CacheTimeLevel(Enum):
 
 
 class ExtendEnumField(EnumField):
-    def __init__(self, *args, metadata: Dict[str, Any] = None, **kwargs):
+    def __init__(self, *args, metadata: Optional[Dict[str, Any]] = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.metadata = metadata or {}
 
