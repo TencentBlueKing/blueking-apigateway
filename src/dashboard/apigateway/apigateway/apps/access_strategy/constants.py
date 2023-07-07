@@ -41,7 +41,7 @@ class AccessStrategyTypeEnum(StructuredEnum):
 
 # 访问策略类型 -> 插件类型，用于二者类型的转换
 STRATEGY_TYPE_TO_PLUGIN_TYPE: Dict[str, str] = {
-    AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value: "bk-ip-group-restriction",
+    AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value: "bk-ip-restriction",
     AccessStrategyTypeEnum.RATE_LIMIT.value: "bk-rate-limit",
     AccessStrategyTypeEnum.USER_VERIFIED_UNREQUIRED_APPS.value: "bk-verified-user-exempted-apps",
     AccessStrategyTypeEnum.ERROR_STATUS_CODE_200.value: "bk-status-rewrite",

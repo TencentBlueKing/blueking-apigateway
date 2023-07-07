@@ -56,7 +56,7 @@ class TestPluginBindingValidator:
             ("bk-verified-user-exempted-apps", "user_verified_unrequired_apps"),
             ("bk-status-rewrite", "error_status_code_200"),
             ("bk-cors", "cors"),
-            ("bk-ip-restriction", None),
+            ("bk-ip-restriction", "ip_access_control"),
         ],
     )
     def test_get_access_strategy_type(self, fake_gateway, type_code, strategy_type):

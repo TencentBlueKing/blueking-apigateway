@@ -103,7 +103,7 @@ class TestStageConvertor:
         assert plugin is not None
         assert plugin.config == rate_limit_access_strategy.config
 
-    def test_convert_ip_group_restriction_plugin(
+    def test_convert_ip_restriction_plugin(
         self,
         ip_group,
         ip_access_control_access_strategy,
@@ -112,19 +112,20 @@ class TestStageConvertor:
     ):
         plugin = self.get_stage_plugin_by_name(
             fake_stage_convertor,
-            "bk-ip-group-restriction",
+            "bk-ip-restriction",
         )
 
         assert plugin is not None
 
         access_strategy_config = ip_access_control_access_strategy.config
 
-        groups = plugin.config[access_strategy_config["type"]]
+        # allow to whitelist: [ip]
+        assert access_strategy_config["type"] == "allow"
+
+        groups = plugin.config["whitelist"]
         assert len(groups) == 1
 
-        group = groups[0]
-        assert group["name"] == ip_group.name
-        assert group["content"] == ip_group._ips
+        assert groups[0] == ip_group._ips
 
     def test_stage_plugin(
         self,
