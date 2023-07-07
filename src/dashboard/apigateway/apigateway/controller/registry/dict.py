@@ -38,7 +38,7 @@ class DictRegistry(Registry):
         self._registry_dict[self._get_key(resource.kind, resource.metadata.name)] = deepcopy(resource)
         return True
 
-    def sync_resources_by_key_prefix(self, resources: List[KubernetesResource]) -> List[KubernetesResource]:
+    def sync_resources_by_key_prefix(self, resources: Iterable[KubernetesResource]) -> List[KubernetesResource]:
         self.delete_resources_by_key_prefix()
 
         for resource in resources:

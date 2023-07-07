@@ -17,9 +17,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from tests.utils.testing import get_response_json
 
 from apigateway.apps.docs.esb.doc import views
+from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
 

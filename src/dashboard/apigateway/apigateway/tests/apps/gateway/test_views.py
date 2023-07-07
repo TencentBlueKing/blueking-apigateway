@@ -71,6 +71,7 @@ class TestAPIViewSet:
     )
     def test_create(self, settings, request_factory, params, expected):
         settings.DEFAULT_GATEWAY_HOSTING_TYPE = 0
+        settings.USE_BK_IAM_PERMISSION = False
 
         request = request_factory.post("/apis/", data=params)
 

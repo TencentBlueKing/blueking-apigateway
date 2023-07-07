@@ -18,6 +18,7 @@
 #
 import datetime
 import math
+from typing import Union
 
 import arrow
 from dateutil.tz import tzutc
@@ -92,7 +93,7 @@ def far_away_future():
         return datetime.datetime(year=2050, month=1, day=1)
 
 
-def to_datetime_from_now(days: int = None) -> datetime.datetime:
+def to_datetime_from_now(days: Union[int, None] = None) -> datetime.datetime:
     result = timezone.now()
     if days is not None:
         result += datetime.timedelta(days=days)
@@ -100,7 +101,7 @@ def to_datetime_from_now(days: int = None) -> datetime.datetime:
     return result
 
 
-def to_seconds(days: int = None) -> int:
+def to_seconds(days: Union[int, None] = None) -> int:
     result = 0
     if days is not None:
         result += days * 24 * 3600

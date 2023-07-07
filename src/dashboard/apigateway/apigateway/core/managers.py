@@ -20,7 +20,7 @@ import itertools
 import json
 import operator
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set, Union
 
 from cachetools import TTLCache, cached
 from django.conf import settings
@@ -42,6 +42,8 @@ from apigateway.core.constants import (
     APIStatusEnum,
     BackendConfigTypeEnum,
     ProxyTypeEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusTypeEnum,
     SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
@@ -64,6 +66,11 @@ class GatewayManager(models.Manager):
             queryset = queryset.order_by(order_by)
 
         return [api for api in queryset if api.has_permission(username)]
+
+    def fetch_authorized_gateway_ids(self, username: str) -> List[str]:
+        """获取用户有权限的网关 ID 列表"""
+        queryset = self.filter(_maintainers__contains=username)
+        return [gateway.id for gateway in queryset if gateway.has_permission(username)]
 
     # def save_auth_config(
     #     self,
@@ -190,7 +197,7 @@ class GatewayManager(models.Manager):
         """获取托管类型为微网关，且已启用的网关，用于获取可发布到共享微网关实例的网关"""
         return self.filter(hosting_type=APIHostingTypeEnum.MICRO.value, status=APIStatusEnum.ACTIVE.value)
 
-    def query_micro_and_active_ids(self, ids: List[int] = None) -> List[int]:
+    def query_micro_and_active_ids(self, ids: Union[List[int], None] = None) -> List[int]:
         """获取托管类型为微网关，且已启用的网关 ID 列表；如果给定了网关 ID 列表，则返回其中符合条件的 ID 列表"""
         queryset = self.filter_micro_and_active_queryset()
         if ids is not None:
@@ -1501,6 +1508,27 @@ class ReleaseHistoryManager(models.Manager):
     def get_recent_releasers(self, gateway_id: int) -> List[str]:
         qs = self.filter(api_id=gateway_id).order_by("-id")[:10]
         return list(set(qs.values_list("created_by", flat=True)))
+
+
+class PublishEventManager(models.Manager):
+    def add_event(
+        self,
+        gateway,
+        stage,
+        publish,
+        name: PublishEventNameTypeEnum,
+        status: PublishEventStatusTypeEnum,
+        detail: Optional[dict] = None,
+    ):
+        return self.create(
+            gateway=gateway,
+            stage=stage,
+            step=PublishEventNameTypeEnum.get_event_step(name.value),
+            publish=publish,
+            name=name.value,
+            _detail=detail,
+            status=status.value,
+        )
 
 
 class ContextManager(models.Manager):

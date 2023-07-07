@@ -148,7 +148,7 @@ apigateway/fixtures/plugins.yaml: FORCE
 	cd apigateway && python manage.py dump_plugin_data -f apigateway/fixtures/plugins.yaml
 
 .PHONY: dump_fixtures
-dump_fixtures: apigateway/apigateway/fixtures/plugins.yaml
+dump_fixtures: apigateway/fixtures/plugins.yaml
 
 .PHONY: load_fixtures
 load_fixtures:

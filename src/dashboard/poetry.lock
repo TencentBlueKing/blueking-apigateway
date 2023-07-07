@@ -249,6 +249,28 @@ url = "https://mirrors.cloud.tencent.com/pypi/simple"
 reference = "tencent"
 
 [[package]]
+name = "bk-iam"
+version = "1.3.4"
+description = "bk-iam python sdk"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "bk-iam-1.3.4.tar.gz", hash = "sha256:74272e23db7a9400c9abb4515b26442c813142df1bdf02f58df2fa8522469684"},
+]
+
+[package.dependencies]
+cachetools = ">=3.1.1,<6.0"
+curlify = "2.2.1"
+requests = "*"
+six = ">=1.11.0"
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
 name = "bkapi-bcs-api-gateway"
 version = "1.12.1"
 description = "bk-bcs容器化部署方案api-gateway"
@@ -4771,4 +4793,4 @@ reference = "tencent"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.6.6 || ~3.7"
-content-hash = "d403fdf4b085a7a4f1baa654e86aea294251b884a5b85c57317dab0b87b13b83"
+content-hash = "a023b43f198dc9cc0d8a82e83c2137445fc30420f4d60c6cf286db147473ab6f"

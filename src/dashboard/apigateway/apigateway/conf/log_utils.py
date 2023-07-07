@@ -63,6 +63,7 @@ def get_logging_config(log_level: str, is_local: bool, log_dir: str, log_to_file
             "component": _get_logging_handler(
                 log_to_file, os.path.join(log_dir, "dashboard-component.log"), "verbose"
             ),
+            "iam": _get_logging_handler(log_to_file, os.path.join(log_dir, "dashboard-iam.log"), "verbose"),
             "mysql": _get_logging_handler(log_to_file, os.path.join(log_dir, "dashboard-mysql.log"), "verbose"),
             "celery": _get_logging_handler(log_to_file, os.path.join(log_dir, "dashboard-celery.log"), "verbose"),
             "sentry": {
@@ -95,6 +96,11 @@ def get_logging_config(log_level: str, is_local: bool, log_dir: str, log_to_file
             },
             "bkapi_client_core": {
                 "handlers": ["component", "sentry"],
+                "level": log_level,
+                "propagate": False,
+            },
+            "iam": {
+                "handlers": ["iam", "sentry"],
                 "level": log_level,
                 "propagate": False,
             },

@@ -19,7 +19,7 @@
 """
 请求Elasticsearch辅助Client
 """
-from typing import ClassVar
+from typing import ClassVar, Type
 
 from django.conf import settings
 
@@ -28,10 +28,9 @@ from apigateway.apps.access_log.es_clients import BaseESClient, BKLogESClient, R
 
 
 class BaseSearchClient:
-
     _es_index = settings.BK_ESB_ACCESS_LOG_CONFIG["es_index"]
     _es_time_field_name = settings.BK_ESB_ACCESS_LOG_CONFIG["es_time_field_name"]
-    _es_client_class: ClassVar[BaseESClient]
+    _es_client_class: ClassVar[Type[BaseESClient]]
 
     def __init__(self):
         self._es_client = self._es_client_class(self._es_index)
