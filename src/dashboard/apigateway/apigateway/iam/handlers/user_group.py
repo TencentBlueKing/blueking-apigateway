@@ -51,12 +51,12 @@ class IAMUserGroupHandler:
         result = self._bk_iam_client.create_user_groups(grade_manager_id, user_groups)
 
         # 记录用户分组信息
-        for user_group_id, role in zip(result, GATEWAY_DEFAULT_ROLES):
-            IAMUserGroup.objects.create(
-                gateway_id=gateway_id,
-                role=role.value,
-                user_group_id=user_group_id,
-            )
+        IAMUserGroup.objects.bulk_create(
+            [
+                IAMUserGroup(gateway_id=gateway_id, role=role.value, user_group_id=user_group_id)
+                for user_group_id, role in zip(result, GATEWAY_DEFAULT_ROLES)
+            ]
+        )
 
     def _generate_user_group_name(self, role: UserRoleEnum, gateway_name: str) -> str:
         if role == UserRoleEnum.MANAGER:

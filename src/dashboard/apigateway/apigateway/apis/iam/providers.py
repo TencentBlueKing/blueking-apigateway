@@ -19,6 +19,7 @@ import functools
 import logging
 from typing import Dict, List, Optional, Tuple, Type, Union
 
+from django.db.models.query import QuerySet
 from iam.collection import FancyDict
 from iam.resource.provider import ListResult, ResourceProvider
 from iam.resource.utils import Page, get_filter_obj, get_page_obj
@@ -74,54 +75,57 @@ def fetch_gateway_id_in_filter(func):
 class GatewayProvider(BaseResourceProvider):
     """网关反向拉取"""
 
-    def _get_gateway_queryset(self):
-        """仅获取已创建 IAM 分级管理员的网关"""
+    def _get_gateways_with_registered_to_iam(self) -> QuerySet:
+        """
+        仅获取已创建 IAM 分级管理员的网关
+
+        :returns: 返回 values 中仅包含 id, name 字段
+        """
         gateway_ids = IAMGradeManager.objects.all().values_list("gateway_id", flat=True)
-        return Gateway.objects.filter(id__in=list(gateway_ids))
+        queryset = Gateway.objects.filter(id__in=list(gateway_ids))
+        return queryset.values("id", "name")
 
     def list_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        queryset = self._get_gateway_queryset()
-        queryset_values = queryset.values("id", "name")
+        queryset = self._get_gateways_with_registered_to_iam()
         results = [
             {
                 "id": str(gateway["id"]),
                 "display_name": gateway["name"],
             }
-            for gateway in queryset_values[page_obj.slice_from : page_obj.slice_to]
+            for gateway in queryset[page_obj.slice_from : page_obj.slice_to]
         ]
-        return ListResult(results=results, count=queryset_values.count())
+        return ListResult(results=results, count=queryset.count())
 
     def fetch_instance_info(self, filter_obj: FancyDict, **options) -> ListResult:
         ids = filter_obj.ids or []
 
-        queryset_values = Gateway.objects.filter(id__in=map(int, ids)).values("id", "name")
-        approvers = self._fetch_gateway_approvers([gateway["id"] for gateway in queryset_values])
+        queryset = Gateway.objects.filter(id__in=map(int, ids)).values("id", "name")
+        approvers = self._fetch_gateway_approvers([gateway["id"] for gateway in queryset])
         results = [
             {
                 "id": str(gateway["id"]),
                 "display_name": gateway["name"],
                 "_bk_iam_approver_": approvers.get(gateway["id"]) or [],
             }
-            for gateway in queryset_values
+            for gateway in queryset
         ]
 
         return ListResult(results=results, count=len(results))
 
     def search_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
         """支持模糊搜索网关名"""
-        queryset = self._get_gateway_queryset()
+        queryset = self._get_gateways_with_registered_to_iam()
         if filter_obj.keyword:
             queryset = queryset.filter(name__icontains=filter_obj.keyword)
 
-        queryset_values = queryset.values("id", "name")
         results = [
             {
                 "id": str(gateway["id"]),
                 "display_name": gateway["name"],
             }
-            for gateway in queryset_values[page_obj.slice_from : page_obj.slice_to]
+            for gateway in queryset[page_obj.slice_from : page_obj.slice_to]
         ]
-        return ListResult(results=results, count=queryset_values.count())
+        return ListResult(results=results, count=queryset.count())
 
 
 class GatewayStageProvider(BaseResourceProvider):
@@ -129,15 +133,15 @@ class GatewayStageProvider(BaseResourceProvider):
 
     @fetch_gateway_id_in_filter
     def list_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        queryset_values = Stage.objects.filter(api_id=self.gateway_id_in_filter).values("id", "name")
+        queryset = Stage.objects.filter(api_id=self.gateway_id_in_filter).values("id", "name")
         results = [
             {
                 "id": str(stage["id"]),
                 "display_name": stage["name"],
             }
-            for stage in queryset_values[page_obj.slice_from : page_obj.slice_to]
+            for stage in queryset[page_obj.slice_from : page_obj.slice_to]
         ]
-        return ListResult(results=results, count=queryset_values.count())
+        return ListResult(results=results, count=queryset.count())
 
     @fetch_gateway_id_in_filter
     def fetch_instance_info(self, filter_obj: FancyDict, **options) -> ListResult:
@@ -146,16 +150,14 @@ class GatewayStageProvider(BaseResourceProvider):
         approvers = self._fetch_gateway_approvers([self.gateway_id_in_filter])
         iam_approver = approvers.get(self.gateway_id_in_filter) or []
 
-        queryset_values = Stage.objects.filter(api_id=self.gateway_id_in_filter, id__in=map(int, ids)).values(
-            "id", "name"
-        )
+        queryset = Stage.objects.filter(api_id=self.gateway_id_in_filter, id__in=map(int, ids)).values("id", "name")
         results = [
             {
                 "id": str(stage["id"]),
                 "display_name": stage["name"],
                 "_bk_iam_approver_": iam_approver,
             }
-            for stage in queryset_values
+            for stage in queryset
         ]
 
         return ListResult(results=results, count=len(results))
@@ -167,16 +169,16 @@ class GatewayStageProvider(BaseResourceProvider):
         if filter_obj.keyword:
             queryset = queryset.filter(name__icontains=filter_obj.keyword)
 
-        queryset_values = queryset.values("id", "name")
+        queryset = queryset.values("id", "name")
         results = [
             {
                 "id": str(stage["id"]),
                 "display_name": stage["name"],
             }
-            for stage in queryset_values[page_obj.slice_from : page_obj.slice_to]
+            for stage in queryset[page_obj.slice_from : page_obj.slice_to]
         ]
 
-        return ListResult(results=results, count=queryset_values.count())
+        return ListResult(results=results, count=queryset.count())
 
 
 class GatewayResourceProvider(BaseResourceProvider):
@@ -184,15 +186,15 @@ class GatewayResourceProvider(BaseResourceProvider):
 
     @fetch_gateway_id_in_filter
     def list_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        queryset_values = Resource.objects.filter(api_id=self.gateway_id_in_filter).values("id", "name")
+        queryset = Resource.objects.filter(api_id=self.gateway_id_in_filter).values("id", "name")
         results = [
             {
                 "id": str(resource["id"]),
                 "display_name": resource["name"],
             }
-            for resource in queryset_values[page_obj.slice_from : page_obj.slice_to]
+            for resource in queryset[page_obj.slice_from : page_obj.slice_to]
         ]
-        return ListResult(results=results, count=queryset_values.count())
+        return ListResult(results=results, count=queryset.count())
 
     @fetch_gateway_id_in_filter
     def fetch_instance_info(self, filter_obj: FancyDict, **options) -> ListResult:
@@ -201,16 +203,14 @@ class GatewayResourceProvider(BaseResourceProvider):
         approvers = self._fetch_gateway_approvers([self.gateway_id_in_filter])
         iam_approver = approvers.get(self.gateway_id_in_filter) or []
 
-        queryset_values = Resource.objects.filter(api_id=self.gateway_id_in_filter, id__in=map(int, ids)).values(
-            "id", "name"
-        )
+        queryset = Resource.objects.filter(api_id=self.gateway_id_in_filter, id__in=map(int, ids)).values("id", "name")
         results = [
             {
                 "id": str(resource["id"]),
                 "display_name": resource["name"],
                 "_bk_iam_approver_": iam_approver,
             }
-            for resource in queryset_values
+            for resource in queryset
         ]
 
         return ListResult(results=results, count=len(results))
@@ -222,15 +222,15 @@ class GatewayResourceProvider(BaseResourceProvider):
         if filter_obj.keyword:
             queryset = queryset.filter(name__icontains=filter_obj.keyword)
 
-        queryset_values = queryset.values("id", "name")
+        queryset = queryset.values("id", "name")
         results = [
             {
                 "id": str(resource["id"]),
                 "display_name": resource["name"],
             }
-            for resource in queryset_values[page_obj.slice_from : page_obj.slice_to]
+            for resource in queryset[page_obj.slice_from : page_obj.slice_to]
         ]
-        return ListResult(results=results, count=queryset_values.count())
+        return ListResult(results=results, count=queryset.count())
 
 
 class GatewayPluginConfigProvider(BaseResourceProvider):
@@ -238,15 +238,15 @@ class GatewayPluginConfigProvider(BaseResourceProvider):
 
     @fetch_gateway_id_in_filter
     def list_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        queryset_values = PluginConfig.objects.filter(api_id=self.gateway_id_in_filter).values("id", "name")
+        queryset = PluginConfig.objects.filter(api_id=self.gateway_id_in_filter).values("id", "name")
         results = [
             {
                 "id": str(plugin["id"]),
                 "display_name": plugin["name"],
             }
-            for plugin in queryset_values[page_obj.slice_from : page_obj.slice_to]
+            for plugin in queryset[page_obj.slice_from : page_obj.slice_to]
         ]
-        return ListResult(results=results, count=queryset_values.count())
+        return ListResult(results=results, count=queryset.count())
 
     @fetch_gateway_id_in_filter
     def fetch_instance_info(self, filter_obj: FancyDict, **options) -> ListResult:
@@ -255,7 +255,7 @@ class GatewayPluginConfigProvider(BaseResourceProvider):
         approvers = self._fetch_gateway_approvers([self.gateway_id_in_filter])
         iam_approver = approvers.get(self.gateway_id_in_filter) or []
 
-        queryset_values = PluginConfig.objects.filter(api_id=self.gateway_id_in_filter, id__in=map(int, ids)).values(
+        queryset = PluginConfig.objects.filter(api_id=self.gateway_id_in_filter, id__in=map(int, ids)).values(
             "id", "name"
         )
         results = [
@@ -264,10 +264,10 @@ class GatewayPluginConfigProvider(BaseResourceProvider):
                 "display_name": plugin["name"],
                 "_bk_iam_approver_": iam_approver,
             }
-            for plugin in queryset_values
+            for plugin in queryset
         ]
 
-        return ListResult(results=results, count=queryset_values.count())
+        return ListResult(results=results, count=queryset.count())
 
     @fetch_gateway_id_in_filter
     def search_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
@@ -276,15 +276,15 @@ class GatewayPluginConfigProvider(BaseResourceProvider):
         if filter_obj.keyword:
             queryset = queryset.filter(name__icontains=filter_obj.keyword)
 
-        queryset_values = queryset.values("id", "name")
+        queryset = queryset.values("id", "name")
         results = [
             {
                 "id": str(plugin["id"]),
                 "display_name": plugin["name"],
             }
-            for plugin in queryset_values[page_obj.slice_from : page_obj.slice_to]
+            for plugin in queryset[page_obj.slice_from : page_obj.slice_to]
         ]
-        return ListResult(results=results, count=queryset_values.count())
+        return ListResult(results=results, count=queryset.count())
 
 
 class IAMResourceProviderFactory:

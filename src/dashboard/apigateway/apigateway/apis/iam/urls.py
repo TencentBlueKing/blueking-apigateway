@@ -21,7 +21,7 @@ from apigateway.apis.iam.views import IAMResourceAPIView
 
 urlpatterns = [
     path(
-        "iam/v1/<slug:resource_type>/",
+        "v1/<slug:resource_type>/",
         IAMResourceAPIView.as_view(),
         name="apis.iam.iam_provider.resource_type",
     ),
