@@ -36,7 +36,7 @@ class TestIpAccessControlASC:
         self.convertor = IpAccessControlASC()
 
     @pytest.mark.parametrize(
-        "ipContentList, expected",
+        "ip_content_list, expected",
         [
             (["127.0.0.1"], ["127.0.0.1"]),
             (["127.0.0.1\n192.168.1.1"], ["127.0.0.1", "192.168.1.1"]),
@@ -48,8 +48,8 @@ class TestIpAccessControlASC:
             (["127.0.0.1/24\n\r192.168.1.1"], ["127.0.0.1/24", "192.168.1.1"]),
         ],
     )
-    def test_parse_ip_content_list(self, ipContentList, expected):
-        result = self.convertor._parse_ip_content_list(ipContentList)
+    def test_parse_ip_content_list(self, ip_content_list, expected):
+        result = self.convertor._parse_ip_content_list(ip_content_list)
 
         assert sorted(result) == sorted(expected)
 
