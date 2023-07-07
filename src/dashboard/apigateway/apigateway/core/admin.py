@@ -116,8 +116,9 @@ class ReleaseHistoryAdmin(admin.ModelAdmin):
 
 
 class PublishEventAdmin(admin.ModelAdmin):
-    list_display = ["gateway_id", "stage_id", "publish_id", "name", "created_by", "created_time", "detail", "status"]
-    list_filter = ["gateway_id", "publish_id"]
+    list_display = ["gateway_id", "stage_id", "publish_id", "name", "status", "created_by", "created_time"]
+    list_filter = ["gateway_id"]
+    search_fields = ["gateway_id", "publish_id"]
 
 
 class ContextAdmin(admin.ModelAdmin):

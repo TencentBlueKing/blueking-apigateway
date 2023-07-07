@@ -189,27 +189,27 @@ class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
     RELEASING = "releasing"  # 发布中
 
 
-class PublishEventEnum(ChoiceEnumMixin, Enum):
+class PublishEventEnum(StructuredEnum):
     # dashboard
-    GenerateTask = "generate release task"
-    DistributeConfiguration = "distribute configuration"
+    GenerateTask = EnumField("generate_release_task", "generate release task")
+    DistributeConfiguration = ("distribute_configuration", "distribute configuration")
     # operator
-    ParseConfiguration = "parse configuration"
-    ApplyConfiguration = "apply configuration"
+    ParseConfiguration = ("parse_configuration", "parse configuration")
+    ApplyConfiguration = ("apply_configuration", "apply configuration")
     # apisix
-    LoadConfiguration = "load configuration"
+    LoadConfiguration = ("load_configuration", "load configuration")
 
     @classmethod
     def get_event_step(cls, name: str) -> int:
         # 获取事件所属的step，如：name="load configuration"==>5
-        return [i.value for i in cls].index(name) + 1
+        return cls.get_values().index(name)
 
 
-class PublishEventStatusEnum(ChoiceEnumMixin, Enum):
-    SUCCESS = "success"  # 执行成功
-    FAILURE = "failure"  # 执行失败
-    PENDING = "pending"  # 待执行
-    DOING = "doing"  # 执行中
+class PublishEventStatusEnum(StructuredEnum):
+    SUCCESS = EnumField("success", "success")  # 执行成功
+    FAILURE = EnumField("failure", "failure")  # 执行失败
+    PENDING = EnumField("pending", "pending")  # 待执行
+    DOING = EnumField("doing", "doing")  # 执行中
 
 
 class ProxyTypeEnum(StructuredEnum):

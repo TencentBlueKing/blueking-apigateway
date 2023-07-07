@@ -294,6 +294,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
     def _create_release_tasks(self, release: Release, release_history: ReleaseHistory):
         # create publish event
+
         if self._shared_micro_gateway:
             PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
         for fn in [self._create_release_task_for_shared_gateway, self._create_release_task_for_micro_gateway]:

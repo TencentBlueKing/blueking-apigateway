@@ -31,7 +31,7 @@ class PublishEventReporter:
         """
         PublishEvent.objects.add_event(
             gateway=publish.api,
-            stage=stage,  # 支持多环境发布
+            stage=stage,
             publish=publish,
             name=PublishEventEnum.GenerateTask,
             status=PublishEventStatusEnum.DOING,

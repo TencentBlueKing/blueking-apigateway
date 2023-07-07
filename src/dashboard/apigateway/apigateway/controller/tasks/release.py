@@ -85,22 +85,22 @@ def _release_gateway(
     """发布资源到微网关"""
     procedure_logger.info(f"release begin, micro_gateway_release_history_id({micro_gateway_release_history_id})")
     release_history_qs = MicroGatewayReleaseHistory.objects.filter(id=micro_gateway_release_history_id)
-    release_history_qs_last = release_history_qs.last()
+    latest_micro_gateway_release_history = release_history_qs.last()
     # 表明发布已开始
     release_history_qs.update(status=ReleaseStatusEnum.RELEASING.value)
     # add publish event
     PublishEventReporter.report_create_publish_task_success_event(
-        release_history_qs_last.release_history, release.stage
+        latest_micro_gateway_release_history.release_history, release.stage
     )
     PublishEventReporter.report_distribute_configuration_doing_event(
-        release_history_qs_last.release_history, release.stage
+        latest_micro_gateway_release_history.release_history, release.stage
     )
     try:
         if distributor.distribute(
             release=release,
             micro_gateway=micro_gateway,
             release_task_id=procedure_logger.release_task_id,
-            release_history_id=release_history_qs_last.release_history_id,
+            release_history_id=latest_micro_gateway_release_history.release_history_id,
         ):
             release_history_qs.update(status=ReleaseStatusEnum.SUCCESS.value)
         else:

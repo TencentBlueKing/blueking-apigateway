@@ -30,7 +30,7 @@ from apigateway.core.models import MicroGateway
 
 
 class StageConvertor(BaseConvertor):
-    def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway, publish_id: int = None):
+    def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway, publish_id: Optional[int]):
         super().__init__(release_data, micro_gateway)
         self._publish_id = publish_id
 

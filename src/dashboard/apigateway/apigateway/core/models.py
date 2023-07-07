@@ -676,14 +676,12 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
         max_length=64,
         blank=True,
         null=False,
-        choices=PublishEventEnum.choices(),
+        choices=PublishEventEnum.get_choices(),
     )
     step = models.IntegerField(blank=False, null=False)
     status = models.CharField(
-        _("status"),
-        max_length=16,
-        choices=PublishEventStatusEnum.choices(),
-        default=PublishEventStatusEnum.PENDING.value,
+        max_length=32,
+        choices=PublishEventStatusEnum.get_choices(),
     )
     _detail = models.TextField(help_text="detail", null=True, default="{}", db_column="detail")
 
