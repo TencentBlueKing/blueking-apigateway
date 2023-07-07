@@ -33,7 +33,7 @@ class PublishEventReporter:
             gateway=publish.api,
             stage=stage,
             publish=publish,
-            name=PublishEventEnum.GenerateTask,
+            name=PublishEventEnum.GenerateTask.value,
             status=PublishEventStatusEnum.DOING,
         )
 
@@ -46,8 +46,8 @@ class PublishEventReporter:
             gateway=publish.api,
             stage=stage,
             publish=publish,
-            name=PublishEventEnum.GenerateTask,
-            status=PublishEventStatusEnum.SUCCESS,
+            name=PublishEventEnum.GenerateTask.value,
+            status=PublishEventStatusEnum.SUCCESS.value,
         )
 
     @classmethod
@@ -59,8 +59,8 @@ class PublishEventReporter:
             gateway=publish.api,
             stage=stage,
             publish=publish,
-            name=PublishEventEnum.DistributeConfiguration,
-            status=PublishEventStatusEnum.DOING,
+            name=PublishEventEnum.DistributeConfiguration.value,
+            status=PublishEventStatusEnum.DOING.value,
         )
 
     @classmethod
@@ -74,8 +74,8 @@ class PublishEventReporter:
             gateway=publish.api,
             stage=stage,
             publish=publish,
-            name=PublishEventEnum.DistributeConfiguration,
-            status=PublishEventStatusEnum.SUCCESS,
+            name=PublishEventEnum.DistributeConfiguration.value,
+            status=PublishEventStatusEnum.SUCCESS.value,
         )
 
     @classmethod
@@ -88,6 +88,6 @@ class PublishEventReporter:
             gateway=publish.api,
             stage=stage,
             publish=publish,
-            name=PublishEventEnum.DistributeConfiguration,
-            status=PublishEventStatusEnum.FAILURE,
+            name=PublishEventEnum.DistributeConfiguration.value,
+            status=PublishEventStatusEnum.FAILURE.value,
         )
