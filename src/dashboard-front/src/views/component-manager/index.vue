@@ -17,7 +17,12 @@
         :offset-left="0"
         loader="stage-loader"
         :is-loading="false">
-        <bk-alert class="mb15" type="warning" :title="$t('组件配置有更新，新增组件或更新组件请求方法、请求路径、权限级别、用户认证，需同步到网关才能生效')" v-if="needNewVersion && syncEsbToApigwEnabled"></bk-alert>
+        <bk-alert
+          v-if="needNewVersion && syncEsbToApigwEnabled"
+          class="mb15"
+          type="warning"
+          :title="$t('组件配置有更新，新增组件或更新组件请求方法、请求路径、权限级别、用户认证，需同步到网关才能生效')">
+        </bk-alert>
         <div class="search-wrapper">
           <div class="action-wrapper">
             <bk-button
@@ -428,9 +433,7 @@
         needNewVersion: false,
         versionMessage: '',
         isCursor: false,
-        switchIcon: false,
         cursorId: '',
-        displayColumn: false,
         setting: {
           max: 9,
           fields: fields,
@@ -636,7 +639,6 @@
       async checkNeedNewVersion () {
         try {
           const res = await this.$store.dispatch('component/checkNeedNewVersion')
-          console.log('res', res)
           this.needNewVersion = res.data.need_new_release
         } catch (e) {
           // catchErrorHandler(e, this)
@@ -891,10 +893,6 @@
       changeLeave (row) {
         this.cursorId = ''
         this.isCursor = false
-      },
-
-      changeColumn () {
-        this.displayColumn = !this.displayColumn
       },
 
       handleSettingChange ({ fields, size }) {

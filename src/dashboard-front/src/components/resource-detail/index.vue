@@ -446,7 +446,6 @@
         if (keys.some(item => item.startsWith('localData.disabled_stages'))) {
           this.diffMap['localData.disabled_stages'] = true
         }
-        console.log('diffMap', this.diffMap)
       },
 
       findAllDiff (value, prePath = 'localData', index) {

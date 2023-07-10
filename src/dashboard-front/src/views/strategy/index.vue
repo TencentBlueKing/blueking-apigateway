@@ -520,10 +520,8 @@
             {
               validator (value) {
                 const ipReg = /^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}$/
-                console.log(value.split(/[\s\n]/))
                 const ips = value.split(/[\s\n]/)
                 for (const ip of ips) {
-                  console.log(ip)
                   if (!ipReg.test(ip)) {
                     return false
                   }
@@ -1198,7 +1196,6 @@
           })
 
           if (this.bindChangeResources.length) {
-            console.log(this.bindChangeResources, 'xxxxx')
             this.tableIndex++
             setTimeout(() => {
               this.unbindResourceConf.isShow = true
