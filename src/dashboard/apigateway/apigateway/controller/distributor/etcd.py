@@ -39,14 +39,12 @@ class SyncFail(Exception):
 
 
 class EtcdDistributor(BaseDistributor):
-    def __init__(self, include_gateway_global_config: bool = False, include_stage: bool = False):
+    def __init__(self, include_gateway_global_config: bool = False):
         """
         :param include_gateway_global_config: 是否应包含网关全局配置资源，如：BkGatewayConfig, BkGatewayPluginMetadata；
             共享网关，专享网关，当同步对应网关的数据到共享网关集群时，应包含这些网关的全局配置资源
-            include_stage: 是否包含stage资源配置
         """
         self.include_gateway_global_config = include_gateway_global_config
-        self.include_stage = include_stage
 
     def distribute(
         self,
@@ -62,7 +60,6 @@ class EtcdDistributor(BaseDistributor):
             micro_gateway=micro_gateway,
             include_config=self.include_gateway_global_config,
             include_plugin_metadata=self.include_gateway_global_config,
-            include_stage=self.include_stage,
         )
         registry = self._get_registry(release.api, release.stage, micro_gateway)
         procedure_logger = ReleaseProcedureLogger(

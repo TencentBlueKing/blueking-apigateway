@@ -60,7 +60,6 @@ export default {
 
     checkNeedNewVersion (context, config = {}) {
       const url = `${DASHBOARD_URL}/esb/components/sync/need_new_release/`
-      console.log('url', url)
       return http.get(url, {})
     },
 

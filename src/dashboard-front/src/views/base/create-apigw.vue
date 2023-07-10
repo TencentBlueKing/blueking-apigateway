@@ -64,7 +64,6 @@
 <script>
   import { catchErrorHandler } from '@/common/util'
   import User from '@/components/user'
-  // import cookie from 'cookie'
 
   export default {
     components: {
@@ -74,12 +73,6 @@
       return {
         isPageLoading: true,
         isDataLoading: false,
-        customDesc: {
-          width: 120,
-          theme: 'light',
-          content: `hello<a href="#">world</a>`,
-          placement: 'top'
-        },
         curApigw: {
           name: '',
           description: '',
@@ -128,7 +121,6 @@
             }
           ]
         },
-        shares: '',
         MICRO_GATEWAY_ENABLED: false
 
       }
@@ -157,12 +149,7 @@
     },
     methods: {
       init () {
-        // this.curUser = cookie.parse(document.cookie)['bk_uid'] || ''
         this.initCurapigw()
-      },
-
-      handlerChange (value) {
-        console.log(value)
       },
 
       async getFeature () {

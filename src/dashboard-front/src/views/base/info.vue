@@ -78,7 +78,7 @@
             <div class="ag-form-label"> {{ $t('访问域名') }} </div>
           </bk-col>
           <bk-col :span="10">
-            <div class="ag-form-content ag-link">
+            <div class="ag-form-content">
               {{curApigw.domain}}
               <i class="apigateway-icon icon-ag-document ml15 copy-btn" @click="handleCopy(curApigw.domain)"></i>
               <!-- <a :href="curApigw.domain" target="_blank"><i class="apigateway-icon icon-ag-jump ml5"></i></a> -->
@@ -90,7 +90,7 @@
             <div class="ag-form-label"> {{ $t('文档地址') }} </div>
           </bk-col>
           <bk-col :span="10">
-            <div class="ag-form-content ag-link">
+            <div class="ag-form-content">
               <template v-if="curApigw.is_public">
                 {{curApigw.docs_url}}
                 <i class="apigateway-icon icon-ag-document ml15 copy-btn" @click="handleCopy(curApigw.docs_url)"></i>

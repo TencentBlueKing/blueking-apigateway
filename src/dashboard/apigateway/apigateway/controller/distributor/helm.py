@@ -151,7 +151,6 @@ class HelmDistributor(BaseDistributor):
             micro_gateway=micro_gateway,
             include_config=False,  # BkGatewayConfig 随着 micro-gateway 的 release 下发，所以无需包含
             include_plugin_metadata=True,
-            include_stage=False,
             publish_id=None,
         )
         convertor.convert()
