@@ -168,7 +168,6 @@
           :unique-opened="true"
           :toggle-active="nav.toggle"
           v-bind="themeColor">
-          <!-- v-if="apigwId !== undefined" -->
           <template>
             <bk-navigation-menu-item
               v-for="item in nav.list"
@@ -596,9 +595,6 @@
         if (!this.curApigwFeature.feature_flags) return false
         return this.curApigwFeature.feature_flags.ACCESS_STRATEGY_ENABLED
       },
-      curHeaderNav () {
-        return this.header.list[this.header.active] || {}
-      },
       isIndex () {
         return this.$route.name === 'index'
       },
@@ -644,9 +640,6 @@
       },
       localLanguage () {
         return this.$store.state.localLanguage
-      },
-      iconClass () {
-        return this.localLanguage === 'en' ? 'bk-icon icon-english lang-icon icon-style' : 'bk-icon icon-chinese lang-icon icon-style'
       },
       curLanguage () {
         return jsCookie.get('blueking_language') || 'zh-hans'
@@ -1815,10 +1808,6 @@
     }
     .monitor-navigation-admin .nav-item:hover,
     .monitor-navigation-admin .nav-item a:hover {
-        /* a {
-            color: #3A84FF;
-        }
-        color: #3A84FF; */
         cursor: pointer;
         background-color: #F5F7FA;
     }
@@ -1841,10 +1830,6 @@
         transform: translateY(1px);
     }
     .active-language-item {
-        /* a {
-            color: #3A84FF;
-        }
-        color: #3A84FF; */
         cursor: pointer;
         background-color: #F5F7FA;
     }

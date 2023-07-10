@@ -8,7 +8,6 @@
             <strong> {{ $t('最近发布：') }} </strong>
             {{ $t('环境') }}【{{latestRelease.stage_names.join(', ')}}】，
             {{ $t('版本') }} <strong>{{latestRelease.resource_version_display}}</strong> ，
-            <!-- {{ $t('由') }} {{latestRelease.created_by}} {{ $t('于') }} {{latestRelease.created_time}} {{ $t('发布') }}， -->
             {{ latestReleaseText }}
             <template v-if="latestRelease.status === 'success'">
               <span class="ag-success"> {{ $t('发布成功') }} </span>，
