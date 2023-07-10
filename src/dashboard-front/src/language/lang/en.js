@@ -1205,5 +1205,7 @@ export default {
     "输入SDK版本号、资源版本进行搜索": "Enter the SDK version or resource version to search",
     "添加文档": "Add document",
     "请输入关键字搜索": "Please input keyword",
-    "API Gateway | 腾讯蓝鲸智云": "API Gateway | BlueKing"
+    "API Gateway | 腾讯蓝鲸智云": "API Gateway | BlueKing",
+    "只支持.tar.gz、.tgz、.zip 压缩格式": "Only supports .tar.gz, .tgz, .zip compression formats",
+    "未知错误": "Unknown mistake"
 }
