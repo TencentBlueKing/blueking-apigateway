@@ -20,6 +20,14 @@
 
 - 前端插件表单和后端存储的数据，可能不一致，需要自定义转换逻辑
 - 尽量使用插件表单的数据，减少不必要的转换
+
+-------------------
+
+为了更好的支持插件表单的编辑和展示，前端产生的数据直接存储，不做任何转换; apisix 使用的配置单独在发布时做处理
+
+NOTE:
+1. 新插件尽量不写 convertor, 直接保存表单的数据，在 转换成 apisix 配置的时候，进行转换 (以确保编辑态的数据顺序和内容)
+2. 存量已经编写了 convertor 的插件暂时不动
 """
 from typing import ClassVar, Dict
 
@@ -117,10 +125,28 @@ class CorsYamlConvertor(BasePluginYamlConvertor):
         return yaml_dumps(loaded_data)
 
 
+class IPRestrictionYamlConvertor(BasePluginYamlConvertor):
+    def to_representation(self, yaml_: str) -> str:
+        """this is a compatibility method, for old data, convert to new format"""
+        if yaml_.startswith("whitelist: |-") or yaml_.startswith("blacklist: |-"):
+            return yaml_
+
+        # old: whitelist:\n  - 1.1.1.1\n  - 2.2.2.2\n  - 1.1.1.1/24
+        # new: whitelist: |-\n  127.0.0.1\n\n  1.1.1.1\n\n  # abcde\n\n  2.2.2.2\n\n  3.3.3.3
+        if yaml_.startswith("whitelist:") and (not yaml_.startswith("whitelist: |-")):
+            return yaml_.replace("- ", "").replace("whitelist:", "whitelist: |-")
+
+        if yaml_.startswith("blacklist:") and (not yaml_.startswith("blacklist: |-")):
+            return yaml_.replace("- ", "").replace("blacklist:", "blacklist: |-")
+
+        return yaml_
+
+
 class PluginConfigYamlConvertor:
     type_code_to_convertor: ClassVar[Dict[str, BasePluginYamlConvertor]] = {
         PluginTypeCodeEnum.BK_RATE_LIMIT.value: RateLimitYamlConvertor(),
         PluginTypeCodeEnum.BK_CORS.value: CorsYamlConvertor(),
+        PluginTypeCodeEnum.BK_IP_RESTRICTION.value: IPRestrictionYamlConvertor(),
     }
 
     def __init__(self, type_code: str):

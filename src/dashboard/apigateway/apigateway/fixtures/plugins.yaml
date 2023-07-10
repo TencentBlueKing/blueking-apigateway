@@ -341,6 +341,7 @@
     notes: |-
       该插件可以通过将 IP 地址列入白名单或黑名单来限制对资源的访问。
       支持对单个 IP 地址、多个 IP 地址和类似 1.1.1.0/24 的 CIDR（无类别域间路由）范围的限制。
+      每行一条数据, 并且支持空行及注释行（以 # 开头）。
     style: dynamic
     default_value: ''
     config: |-
@@ -407,6 +408,7 @@
     notes: |-
       This plugin allows you to restrict access to a Resource by either whitelisting or blacklisting IP addresses.
       Single IPs, multiple IPs or even IP ranges in CIDR notation like 1.1.1.0/24 can be used.
+      One piece of data per line, and supports blank lines and comment lines (beginning with #).
     style: dynamic
     default_value: ''
     config: |-
@@ -1059,10 +1061,3 @@
     - bk-verified-user-exempted-apps
     - plugin
     - '0'
-- model: plugin.plugintype
-  fields:
-    code: ip-restriction
-    name: IP 保护（旧）
-    name_en: legacy ip restriction
-    is_public: false
-    schema: null

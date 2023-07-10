@@ -22,6 +22,7 @@
 - apisix 插件的 check_schema 校验失败，将导致绑定了插件的 API 无法访问
 - apisix 插件的 check_schema 除校验 schema 外，可能还有一些额外的校验，这些插件配置的额外校验，放在此模块处理
 """
+import ipaddress
 import re
 from collections import Counter
 from typing import ClassVar, Dict, List, Optional
@@ -87,9 +88,40 @@ class BkCorsChecker(BaseChecker):
             raise ValueError(_("{} 存在重复的元素：{}。").format(key, ", ".join(duplicate_items)))
 
 
+class BkIPRestrictionChecker(BaseChecker):
+    def _check_ip_content(self, ip_content: str):
+        """check each line is a valid ipv4/ipv6 or ipv4 cidr/ipv6 cidr
+        here we process line by line because we want to show the line number when raise error
+        """
+        ip_lines = ip_content.splitlines()
+
+        for index, ip_line in enumerate(ip_lines):
+            ip_line = ip_line.strip()
+            # ignore empty line and comment line
+            if not ip_line or ip_line.startswith("#"):
+                continue
+
+            try:
+                ipaddress.ip_interface(ip_line)
+            except Exception as e:
+                raise ValueError("line {}: {}".format(index + 1, e))
+
+    def check(self, yaml_: str):
+        loaded_data = yaml_loads(yaml_)
+
+        whitelist = loaded_data.get("whitelist")
+        if whitelist:
+            self._check_ip_content(whitelist)
+
+        blacklist = loaded_data.get("blacklist")
+        if blacklist:
+            self._check_ip_content(blacklist)
+
+
 class PluginConfigYamlChecker:
     type_code_to_checker: ClassVar[Dict[str, BaseChecker]] = {
         PluginTypeCodeEnum.BK_CORS.value: BkCorsChecker(),
+        PluginTypeCodeEnum.BK_IP_RESTRICTION.value: BkIPRestrictionChecker(),
     }
 
     def __init__(self, type_code: str):

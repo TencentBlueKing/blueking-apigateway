@@ -104,8 +104,6 @@ class StageConvertor(BaseConvertor):
         ]
 
         # Only append this plugin config if it's enabled
-        #
-        # TODO: Upgrade the plugin schema and remove the “enabled” field entirely,
         # it’s better to take advantage of the “_meta.disabled” field directly instead
         # of implementing our own similar mechanics.
         global_rate_limit_config = self._release_data.stage_rate_limit_config

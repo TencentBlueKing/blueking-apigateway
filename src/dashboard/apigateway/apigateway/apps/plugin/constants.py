@@ -32,6 +32,7 @@ class PluginTypeEnum(StructuredEnum):
 class PluginTypeCodeEnum(StructuredEnum):
     BK_RATE_LIMIT = EnumField("bk-rate-limit", label=_("频率控制"))
     BK_CORS = EnumField("bk-cors", label="CORS")
+    BK_IP_RESTRICTION = EnumField("bk-ip-restriction", label="ip-restriction")
 
 
 class PluginBindingScopeEnum(StructuredEnum):
