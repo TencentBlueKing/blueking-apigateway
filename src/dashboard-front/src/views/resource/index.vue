@@ -2445,4 +2445,7 @@
 .ag-expand-table .sub-operation{
     z-index: 99;
 }
+.ag-resources-table .ag-expand-table .is-last {
+    position: unset;
+}
 </style>

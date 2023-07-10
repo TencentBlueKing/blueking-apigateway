@@ -1205,5 +1205,7 @@ export default {
     "输入SDK版本号、资源版本进行搜索": "输入SDK版本号、资源版本进行搜索",
     "添加文档": "添加文档",
     "请输入关键字搜索": "请输入关键字搜索",
-    "API Gateway | 腾讯蓝鲸智云": "API Gateway | 腾讯蓝鲸智云"
+    "API Gateway | 腾讯蓝鲸智云": "API Gateway | 腾讯蓝鲸智云",
+    "只支持.tar.gz、.tgz、.zip 压缩格式": "只支持.tar.gz、.tgz、.zip 压缩格式",
+    "未知错误": "未知错误"
 }

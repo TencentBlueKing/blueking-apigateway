@@ -50,7 +50,7 @@
           <div class="import-top" v-else>
             <bk-button icon="plus" class="import-btn" :key="uploadButtonKey">
               {{ $t('导入文档压缩包') }}
-              <input ref="fileArchive" type="file" name="upload" class="file-input" accept=".tar.gz,.tgz,.zip" @change="handleFileArchive">
+              <input ref="fileArchive" type="file" name="upload" class="file-input" accept=".gz,.tgz,.zip" @change="handleFileArchive">
             </bk-button>
           </div>
         </bk-form-item>
@@ -608,6 +608,14 @@
         const fileArchive = this.$refs.fileArchive
         if (fileArchive.files && fileArchive.files.length) {
           this.file = fileArchive.files[0]
+          // 校验压缩文件后缀
+          if (!/\.(tar\.gz|tgz|zip)$/i.test(this.file.name)) {
+            this.$bkMessage({
+              theme: 'error',
+              message: this.$t('只支持.tar.gz、.tgz、.zip 压缩格式')
+            })
+            return
+          }
           const formData = new FormData()
           formData.append('file', this.file)
           const CSRFToken = cookie.parse(document.cookie)[DASHBOARD_CSRF_COOKIE_NAME || `${window.PROJECT_CONFIG.BKPAAS_APP_ID}_csrftoken`]
@@ -642,10 +650,17 @@
                 message: this.$t('系统出现异常')
               })
             } else {
-              this.$bkMessage({
-                theme: 'error',
-                message: data.message
-              })
+              if (data) {
+                this.$bkMessage({
+                  theme: 'error',
+                  message: data.message
+                })
+              } else {
+                this.$bkMessage({
+                  theme: 'error',
+                  message: this.$t('未知错误')
+                })
+              }
             }
           }).finally(() => {
             this.uploadButtonKey++
