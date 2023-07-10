@@ -123,7 +123,7 @@ class TestReleaseGatewayByRegistry:
 
         assert tasks.release_gateway_by_registry(micro_gateway.id, edge_release.id, micro_gateway_release_history.id)
 
-        self.distributor_factory.assert_called_once_with(include_gateway_global_config=False, include_stage=True)
+        self.distributor_factory.assert_called_once_with(include_gateway_global_config=False)
 
         micro_gateway_release_history.refresh_from_db()
         micro_gateway_release_history.status = ReleaseStatusEnum.SUCCESS.value
@@ -136,7 +136,7 @@ class TestReleaseGatewayByRegistry:
 
         assert tasks.release_gateway_by_registry(micro_gateway.id, edge_release.id, micro_gateway_release_history.id)
 
-        self.distributor_factory.assert_called_once_with(include_gateway_global_config=True, include_stage=True)
+        self.distributor_factory.assert_called_once_with(include_gateway_global_config=True)
 
         micro_gateway_release_history.refresh_from_db()
         micro_gateway_release_history.status = ReleaseStatusEnum.SUCCESS.value
