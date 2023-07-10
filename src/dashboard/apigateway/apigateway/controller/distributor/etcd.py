@@ -43,7 +43,6 @@ class EtcdDistributor(BaseDistributor):
         """
         :param include_gateway_global_config: 是否应包含网关全局配置资源，如：BkGatewayConfig, BkGatewayPluginMetadata；
             共享网关，专享网关，当同步对应网关的数据到共享网关集群时，应包含这些网关的全局配置资源
-            include_stage: 是否包含stage资源配置
         """
         self.include_gateway_global_config = include_gateway_global_config
 
