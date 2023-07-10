@@ -1243,8 +1243,8 @@
 - model: plugin.plugintype
   fields:
     code: bk-verified-user-exempted-apps
-    name: 免用户认证应用白名单
-    name_en: Exempted user auth apps white list
+    name: 免用户认证应用白名单(不推荐)
+    name_en: Exempted user auth apps white list (not recommended)
     is_public: false
     schema:
     - bk-verified-user-exempted-apps
