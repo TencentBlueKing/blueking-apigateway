@@ -238,7 +238,8 @@
           keyword: '',
           isAbnormal: false
         },
-        filterList: {}
+        filterList: {},
+        isFilter: false
       }
     },
     computed: {
@@ -292,7 +293,6 @@
     },
     created () {
       this.init()
-      this.isFilter = false
     },
     methods: {
       init () {

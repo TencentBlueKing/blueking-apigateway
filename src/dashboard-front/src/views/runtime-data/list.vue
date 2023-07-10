@@ -154,7 +154,6 @@
       },
 
       initTimeline () {
-        console.log('timelines', this.timelines)
         this.timelines.forEach(item => {
           const time = moment(item.data.mts).fromNow()
           const data = {

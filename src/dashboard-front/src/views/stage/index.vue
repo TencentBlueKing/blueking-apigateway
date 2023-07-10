@@ -397,14 +397,7 @@
       },
 
       handleSearch (event) {
-        console.log(event)
         this.getApigwStages()
-      },
-
-      handleRename (data) {
-        this.curStage = JSON.parse(JSON.stringify(data))
-        this.stageDialogConf.title = this.$t('重命名标签')
-        this.stageDialogConf.visiable = true
       },
 
       handleEditStage (data) {
