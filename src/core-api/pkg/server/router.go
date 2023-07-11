@@ -86,6 +86,6 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	microGatewayRouter.Use(middleware.MicroGatewayInstanceMiddleware())
 	microGatewayRouter.GET("/:micro_gateway_instance_id/permissions/", microgateway.QueryPermission)
 	microGatewayRouter.GET("/:micro_gateway_instance_id/public_keys/", microgateway.QueryPublicKey)
-
+	microGatewayRouter.POST("/release/:publish_id/events/", microgateway.ReportPublishEvent)
 	return router
 }

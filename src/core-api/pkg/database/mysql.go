@@ -29,7 +29,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/uptrace/opentelemetry-go-extra/otelsql"
 	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
-	"go.opentelemetry.io/otel/semconv/v1.10.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 )
 
 // ! set the default https://making.pusher.com/production-ready-connection-pooling-in-go/
@@ -43,6 +43,11 @@ const (
 	defaultMaxOpenConns    = 100
 	defaultMaxIdleConns    = 25
 	defaultConnMaxLifetime = 10 * time.Minute
+)
+
+const (
+	// sql errCode
+	DuplicateErrCode uint16 = 1062
 )
 
 // DBClient MySQL DB Instance
