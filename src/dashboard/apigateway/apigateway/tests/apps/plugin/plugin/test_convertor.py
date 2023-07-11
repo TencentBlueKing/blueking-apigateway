@@ -20,6 +20,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.plugin.plugin.convertor import (
     CorsYamlConvertor,
+    IPRestrictionYamlConvertor,
     PluginConfigYamlConvertor,
     RateLimitYamlConvertor,
 )
@@ -162,6 +163,38 @@ class TestCorsYamlConvertor:
         convertor = CorsYamlConvertor()
         result = convertor.to_internal_value(yaml_dumps(data))
         assert yaml_loads(result) == expected
+
+
+class TestIPRestrictionYamlConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                "",
+                "",
+            ),
+            (
+                "whitelist: |- \n1.1.1.1",
+                "whitelist: |- \n1.1.1.1",
+            ),
+            (
+                "blacklist: |- \n1.1.1.1",
+                "blacklist: |- \n1.1.1.1",
+            ),
+            (
+                "whitelist:\n - 1.1.1.1",
+                "whitelist: |-\n 1.1.1.1",
+            ),
+            (
+                "blacklist:\n - 1.1.1.1",
+                "blacklist: |-\n 1.1.1.1",
+            ),
+        ],
+    )
+    def test_to_representation(self, data, expected):
+        convertor = IPRestrictionYamlConvertor()
+        result = convertor.to_representation(data)
+        assert result == expected
 
 
 class TestPluginConfigYamlConvertor:

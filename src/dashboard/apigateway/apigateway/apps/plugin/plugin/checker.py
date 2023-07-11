@@ -108,6 +108,8 @@ class BkIPRestrictionChecker(BaseChecker):
 
     def check(self, yaml_: str):
         loaded_data = yaml_loads(yaml_)
+        if not loaded_data:
+            raise ValueError("yaml can not be empty")
 
         whitelist = loaded_data.get("whitelist")
         if whitelist:
@@ -116,6 +118,9 @@ class BkIPRestrictionChecker(BaseChecker):
         blacklist = loaded_data.get("blacklist")
         if blacklist:
             self._check_ip_content(blacklist)
+
+        if not (whitelist or blacklist):
+            raise ValueError("whitelist and blacklist can not be empty at the same time")
 
 
 class PluginConfigYamlChecker:

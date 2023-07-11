@@ -17,23 +17,19 @@
 #
 
 
-from typing import List
+import pytest
+
+from apigateway.utils.ip import parse_ip_content_to_list
 
 
-def parse_ip_content_to_list(ip_content: str) -> List[str]:
-    """ip_content is a text with ip list, line breaker and comment,
-    parse it, and remove the comment and blank line, deduplicate, return a list of ip
-
-    in:  1.1.1.1\n2.2.2.2\r\n#comment\n1.1.1.1
-    out: ["1.1.1.1", "2.2.2.2"]
-    """
-    # split with \n\r, then ignore blank line and `# comment`
-    ips = set()
-    ip_lines = ip_content.splitlines()
-    for ip_line in ip_lines:
-        ip_line = ip_line.strip()
-        if not ip_line or ip_line.startswith("#"):
-            continue
-        ips.add(ip_line)
-
-    return list(ips)
+class TestIP:
+    @pytest.mark.parametrize(
+        "ip_content, expected",
+        [
+            ("", []),
+            ("1.1.1.1", ["1.1.1.1"]),
+            ("1.1.1.1\n2.2.2.2 \r\n#comment\n 1.1.1.1", ["1.1.1.1", "2.2.2.2"]),
+        ],
+    )
+    def test_parse_ip_content_to_list(self, ip_content, expected):
+        assert sorted(parse_ip_content_to_list(ip_content)) == sorted(expected)
