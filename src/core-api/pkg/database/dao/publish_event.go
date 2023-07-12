@@ -50,23 +50,23 @@ type PublishEvent struct {
 type Detail map[string]interface{}
 
 // Scan Implement the sql.Scanner interface, Scan scans the value to Detail
-func (j *Detail) Scan(value interface{}) error {
+func (d *Detail) Scan(value interface{}) error {
 	bytes, ok := value.([]byte)
 	if !ok {
 		return errors.New(fmt.Sprint("Failed to unmarshal Detail value:", value))
 	}
 	resultMap := make(Detail)
 	err := json.Unmarshal(bytes, &resultMap)
-	*j = resultMap
+	*d = resultMap
 	return err
 }
 
 // Value Implement driver.Valuer interface, Value returns Detail value
-func (j Detail) Value() (driver.Value, error) {
-	if len(j) == 0 {
+func (d Detail) Value() (driver.Value, error) {
+	if len(d) == 0 {
 		return nil, nil
 	}
-	return json.Marshal(j)
+	return json.Marshal(d)
 }
 
 type PublishEventManger interface {
