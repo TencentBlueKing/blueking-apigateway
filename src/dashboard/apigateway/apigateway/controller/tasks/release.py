@@ -183,7 +183,6 @@ def release_gateway_by_registry(micro_gateway_id, release_id, micro_gateway_rele
     return _release_gateway(
         distributor=EtcdDistributor(
             include_gateway_global_config=include_gateway_global_config,
-            include_stage=True,  # 需要将release_id通过stage资源下发出去
         ),
         micro_gateway_release_history_id=micro_gateway_release_history_id,
         release=release,

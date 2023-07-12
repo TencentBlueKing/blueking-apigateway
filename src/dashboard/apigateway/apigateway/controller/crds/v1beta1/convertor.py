@@ -55,6 +55,7 @@ class CustomResourceConvertor:
     publish_id: Optional[int] = field(default=None)
     # 包含哪些资源的开关
     include_config: bool = field(default=True)
+    # 默认包含stage资源，调用方不需要传
     include_stage: bool = field(default=True)
     include_http_resource: bool = field(default=True)
     include_service: bool = field(default=True)
