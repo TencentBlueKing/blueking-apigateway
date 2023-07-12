@@ -15,20 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
-
-
-class TestCustomResourceConvertor:
-    def test_fixture(self, edge_custom_release_convertor):
-        assert isinstance(edge_custom_release_convertor, CustomResourceConvertor)
-
-    def test_convert(self, mocker, edge_custom_release_convertor):
-        mocker.patch(
-            "apigateway.controller.crds.v1beta1.convertors.resource.HttpResourceConvertor._save_resource_header_rewrite_plugin",
-            return_value=None,
-        )
-
-        edge_custom_release_convertor.convert()
-
-        resources = list(edge_custom_release_convertor.get_kubernetes_resources())
-        assert len(resources) > 0

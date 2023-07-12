@@ -25,7 +25,12 @@ from django.core.management import call_command
 from apigateway.utils.yaml import yaml_load_all
 
 
-def test_generate_chart(edge_gateway, edge_gateway_stage, edge_release, tmpdir):
+def test_generate_chart(mocker, edge_gateway, edge_gateway_stage, edge_release, tmpdir):
+    mocker.patch(
+        "apigateway.controller.crds.v1beta1.convertors.resource.HttpResourceConvertor._save_resource_header_rewrite_plugin",
+        return_value=None,
+    )
+
     chart_file = "chart.tgz"
     values_file = "values.yaml"
     call_command(

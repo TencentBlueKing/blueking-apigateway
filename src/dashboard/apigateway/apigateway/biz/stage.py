@@ -26,7 +26,9 @@ from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnu
 from apigateway.apps.access_strategy.models import AccessStrategyBinding
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
+from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 from apigateway.core.constants import DEFAULT_STAGE_NAME, ContextScopeTypeEnum, StageStatusEnum
 from apigateway.core.models import Context, MicroGateway, Release, ReleaseHistory, Stage
 from apigateway.utils.time import now_datetime
@@ -157,3 +159,10 @@ class StageHandler:
             op_object=stage.name,
             comment=_("更新环境"),
         )
+
+    def save_header_rewrite_plugin(self, stage, transform_headers: dict):
+        # 生成header rewrite插件配置
+        plugin_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(transform_headers)
+
+        # 创建header rewrite插件配置
+        HeaderRewriteConvertor.alter_plugin(stage.api, PluginBindingScopeEnum.STAGE.value, stage.id, plugin_config)

@@ -20,6 +20,8 @@ from typing import Any, Dict, List, Optional
 
 from django.utils.functional import cached_property
 
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 from apigateway.controller.crds.constants import (
     ResourceRewriteHeadersStrategyEnum,
     UpstreamSchemeEnum,
@@ -84,6 +86,9 @@ class HttpResourceConvertor(BaseConvertor):
         methods = []
         if resource["method"] != "ANY":
             methods = [resource["method"]]
+
+        # 版本发布前使用rewrite相关信息, 创建header插件配置
+        self._save_resource_header_rewrite_plugin(resource, resource_proxy)
 
         return BkGatewayResource(
             metadata=self._common_metadata(resource["name"]),
@@ -185,3 +190,19 @@ class HttpResourceConvertor(BaseConvertor):
         )
 
         return plugins
+
+    def _save_resource_header_rewrite_plugin(self, resource: Dict[str, Any], resource_proxy: Dict[str, Any]):
+        # 1. 合并stage的transform_headers与资源的transform_headers为header rewrite插件数据
+        stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(
+            self._release_data.stage_proxy_config.get("transform_headers", {})
+        )
+        resource_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(
+            resource_proxy.get("transform_headers", {})
+        )
+
+        plugin_config = HeaderRewriteConvertor.merge_plugin_config(stage_config, resource_config)
+
+        # 2. 变更插件header rewrite插件配置
+        HeaderRewriteConvertor.alter_plugin(
+            self._release_data.gateway, PluginBindingScopeEnum.RESOURCE.value, resource["id"], plugin_config
+        )

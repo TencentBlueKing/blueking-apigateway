@@ -133,6 +133,11 @@ class TestStageSyncViewSet:
             return_value=True,
         )
 
+        mocker.patch(
+            "apigateway.biz.stage.StageHandler.save_header_rewrite_plugin",
+            return_value=None,
+        )
+
         api = G(Gateway, name=unique_gateway_name, is_public=False)
 
         request = request_factory.post(
