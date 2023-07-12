@@ -19,9 +19,9 @@
 package middleware
 
 import (
-	"core/pkg/util"
-
 	"github.com/gin-gonic/gin"
+
+	"core/pkg/util"
 )
 
 // RequestIDHeaderKey is a key to set the request id in header

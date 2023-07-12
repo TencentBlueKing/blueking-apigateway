@@ -22,13 +22,13 @@ import (
 	"fmt"
 	"os"
 
-	"core/pkg/server"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	// Register mysql resource
 	_ "github.com/go-sql-driver/mysql"
+
+	"core/pkg/server"
 )
 
 // rootCmd represents the base command when called without any subcommands

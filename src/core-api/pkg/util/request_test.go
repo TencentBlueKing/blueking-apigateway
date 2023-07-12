@@ -21,11 +21,11 @@ package util_test
 import (
 	"net/http"
 
-	"core/pkg/util"
-
 	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/util"
 )
 
 var _ = Describe("Request", func() {

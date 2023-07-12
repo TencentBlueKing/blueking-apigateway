@@ -22,6 +22,7 @@ package dao
 
 import (
 	"context"
+
 	"core/pkg/database"
 
 	"github.com/jmoiron/sqlx"
@@ -40,15 +41,15 @@ type StageManager interface {
 	GetByName(ctx context.Context, gatewayID int64, stageName string) (Stage, error)
 }
 
+type stageManager struct {
+	DB *sqlx.DB
+}
+
 // NewStageManager ...
 func NewStageManager() StageManager {
 	return &stageManager{
 		DB: database.GetDefaultDBClient().DB,
 	}
-}
-
-type stageManager struct {
-	DB *sqlx.DB
 }
 
 // GetByName ...

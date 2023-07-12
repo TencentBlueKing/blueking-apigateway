@@ -19,11 +19,11 @@
 package microgateway
 
 import (
-	"core/pkg/service"
-	"core/pkg/util"
-
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
+
+	"core/pkg/service"
+	"core/pkg/util"
 )
 
 type reportPublishEventSerializer struct {

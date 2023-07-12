@@ -61,12 +61,12 @@ var _ ReleaseHistoryManger = releaseHistoryManager{}
 // Get release history by id
 func (p releaseHistoryManager) Get(ctx context.Context, publishID int64) (ReleaseHistory, error) {
 	query := `SELECT 
-				stage_id,
-				api_id,
-				created_time,
-				updated_time 
-			  FROM core_publish_event 
-			  WHERE id = ?`
+		stage_id,
+		api_id,
+		created_time,
+		updated_time 
+		FROM core_publish_event 
+		WHERE id = ?`
 	var releaseHistory ReleaseHistory
 	err := database.SqlxGet(ctx, p.DB, &releaseHistory, query, publishID)
 	if err != nil {

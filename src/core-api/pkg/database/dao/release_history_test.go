@@ -59,5 +59,4 @@ func Test_releaseHistoryManager_Get(t *testing.T) {
 		assert.NoError(t, err, "query from db fail.")
 		assert.Equal(t, record.ID, p.ID)
 	})
-
 }

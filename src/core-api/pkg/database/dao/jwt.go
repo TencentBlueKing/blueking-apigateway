@@ -22,6 +22,7 @@ package dao
 
 import (
 	"context"
+
 	"core/pkg/database"
 
 	"github.com/jmoiron/sqlx"
@@ -37,15 +38,15 @@ type JWTManager interface {
 	Get(ctx context.Context, gatewayID int64) (JWT, error)
 }
 
+type jwtManager struct {
+	DB *sqlx.DB
+}
+
 // NewJWTManager ...
 func NewJWTManager() JWTManager {
 	return &jwtManager{
 		DB: database.GetDefaultDBClient().DB,
 	}
-}
-
-type jwtManager struct {
-	DB *sqlx.DB
 }
 
 // Get ...

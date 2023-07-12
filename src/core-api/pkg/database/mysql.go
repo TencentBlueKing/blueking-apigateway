@@ -23,13 +23,13 @@ import (
 	"net/url"
 	"time"
 
-	"core/pkg/config"
-	"core/pkg/logging"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/uptrace/opentelemetry-go-extra/otelsql"
 	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+
+	"core/pkg/config"
+	"core/pkg/logging"
 )
 
 // ! set the default https://making.pusher.com/production-ready-connection-pooling-in-go/

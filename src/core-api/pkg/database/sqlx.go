@@ -26,8 +26,10 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type queryFunc func(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error
-type execFunc func(ctx context.Context, db *sqlx.DB, query string, args ...any) (sql.Result, error)
+type (
+	queryFunc func(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error
+	execFunc  func(ctx context.Context, db *sqlx.DB, query string, args ...any) (sql.Result, error)
+)
 
 func queryTimer(f queryFunc) queryFunc {
 	return func(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {

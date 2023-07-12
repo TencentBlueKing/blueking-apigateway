@@ -48,15 +48,15 @@ type MicroGatewayManager interface {
 	Get(ctx context.Context, instanceID string) (MicroGateway, error)
 }
 
+type microGatewayManager struct {
+	DB *sqlx.DB
+}
+
 // NewMicroGatewayManager ...
 func NewMicroGatewayManager() MicroGatewayManager {
 	return &microGatewayManager{
 		DB: database.GetDefaultDBClient().DB,
 	}
-}
-
-type microGatewayManager struct {
-	DB *sqlx.DB
 }
 
 // Get ...

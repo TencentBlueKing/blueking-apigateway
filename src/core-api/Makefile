@@ -13,6 +13,8 @@ init:
 	go install mvdan.cc/gofumpt@latest
 	# for golines
 	go install github.com/segmentio/golines@latest
+    # for goimports
+	go install golang.org/x/tools/cmd/goimports@latest
 
 .PHONY: dep
 dep:
@@ -38,7 +40,8 @@ check-license:
 .PHONY: fmt
 fmt:
 	golines ./ -m 120 -w --base-formatter gofmt --no-reformat-tags
-	gofumpt -l -w .
+	gofumpt  -l -w .
+	goimports -local "core"  -l -w .
 
 
 .PHONY: test

@@ -58,7 +58,12 @@ type appResourcePermissionManager struct {
 }
 
 // Get ...
-func (m appResourcePermissionManager) Get(ctx context.Context, bkAppCode string, gatewayID int64, resourceID int64) (AppResourcePermission, error) {
+func (m appResourcePermissionManager) Get(
+	ctx context.Context,
+	bkAppCode string,
+	gatewayID int64,
+	resourceID int64,
+) (AppResourcePermission, error) {
 	perm := AppResourcePermission{}
 	query := `SELECT
 		id,

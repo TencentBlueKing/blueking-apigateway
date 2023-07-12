@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"io"
 
-	"core/pkg/logging"
-
 	"github.com/go-playground/validator/v10"
+
+	"core/pkg/logging"
 )
 
 // 这里是通用的 FieldError 处理, 如果需要针对某些字段或struct做定制, 需要自行定义一个

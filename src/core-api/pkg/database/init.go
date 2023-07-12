@@ -43,7 +43,7 @@ func InitDBClients(defaultDBConfig *config.Database, tracerConfig config.Tracing
 	if DefaultDBClient == nil {
 		defaultDBClientOnce.Do(func() {
 			DefaultDBClient = NewDBClient(defaultDBConfig)
-			//set db trace
+			// set db trace
 			DefaultDBClient.SetTraceEnabled(tracerConfig.DBAPIEnabled())
 			if err := DefaultDBClient.Connect(); err != nil {
 				panic(err)

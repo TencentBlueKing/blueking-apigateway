@@ -26,10 +26,10 @@ import (
 	"fmt"
 	"time"
 
-	"core/pkg/database"
-
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
@@ -73,6 +73,10 @@ type PublishEventManger interface {
 	Create(ctx context.Context, publishEvent PublishEvent) (int64, error)
 }
 
+type publishEventManager struct {
+	DB *sqlx.DB
+}
+
 // NewPublishEventManger
 func NewPublishEventManger() PublishEventManger {
 	return &publishEventManager{
@@ -80,32 +84,19 @@ func NewPublishEventManger() PublishEventManger {
 	}
 }
 
-type publishEventManager struct {
-	DB *sqlx.DB
-}
-
 var _ PublishEventManger = publishEventManager{}
 
 // Create  publish event
 func (p publishEventManager) Create(ctx context.Context, publishEvent PublishEvent) (int64, error) {
 	insertSql := `INSERT INTO core_publish_event (
-                   gateway_id, 
-                   publish_id, 
-                   stage_id,
-                   name,
-                   step, 
-                   status, 
-                   detail
-                   )
-			      VALUES (
-			       :gateway_id, 
-			       :publish_id, 
-			       :stage_id, 
-			       :name, 
-			       :step, 
-			       :status, 
-			       :detail
-			       )`
+        gateway_id, 
+        publish_id, 
+        stage_id,
+        name,
+        step, 
+        status, 
+        detail
+        )VALUES (:gateway_id, :publish_id, :stage_id, :name, :step, :status, :detail)`
 	query, args, err := sqlx.Named(insertSql, publishEvent)
 	if err != nil {
 		return 0, err

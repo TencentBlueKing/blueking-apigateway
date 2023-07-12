@@ -23,9 +23,9 @@ import (
 	"errors"
 	"strconv"
 
-	"core/pkg/database/dao"
-
 	"github.com/TencentBlueKing/gopkg/cache"
+
+	"core/pkg/database/dao"
 )
 
 // ReleaseHistoryCacheKey is the key of jwt public key
@@ -52,9 +52,9 @@ func retrieveReleaseHistory(ctx context.Context, k cache.Key) (interface{}, erro
 }
 
 // GetReleaseHistory will get the jwt public key from cache by ReleaseID
-func GetReleaseHistory(ctx context.Context, ReleaseID int64) (releaseHistory dao.ReleaseHistory, err error) {
+func GetReleaseHistory(ctx context.Context, releaseID int64) (releaseHistory dao.ReleaseHistory, err error) {
 	key := ReleaseHistoryCacheKey{
-		ReleaseID: ReleaseID,
+		ReleaseID: releaseID,
 	}
 	var value interface{}
 	value, err = cacheGet(ctx, releaseHistoryCache, key)
@@ -65,7 +65,7 @@ func GetReleaseHistory(ctx context.Context, ReleaseID int64) (releaseHistory dao
 	var ok bool
 	releaseHistory, ok = value.(dao.ReleaseHistory)
 	if !ok {
-		err = errors.New("not string in cache")
+		err = errors.New("not ReleaseHistory in cache")
 		return
 	}
 	return

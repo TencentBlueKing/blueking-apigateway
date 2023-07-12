@@ -172,5 +172,4 @@ var _ = Describe("PublishEventService", func() {
 			assert.NoError(GinkgoT(), err)
 		})
 	})
-
 })

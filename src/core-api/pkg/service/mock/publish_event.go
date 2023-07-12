@@ -6,8 +6,9 @@ package mock
 
 import (
 	context "context"
-	service "core/pkg/service"
 	reflect "reflect"
+
+	service "core/pkg/service"
 
 	gomock "github.com/golang/mock/gomock"
 )
