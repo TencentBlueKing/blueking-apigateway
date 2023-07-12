@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.apps.plugin.plugin.checker import BkCorsChecker, PluginConfigYamlChecker
+from apigateway.apps.plugin.plugin.checker import BkCorsChecker, HeaderRewriteChecker, PluginConfigYamlChecker
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -234,3 +234,59 @@ class TestPluginConfigYamlChecker:
         checker = PluginConfigYamlChecker(type_code)
         with pytest.raises(ValueError):
             checker.check(yaml_dumps(data))
+
+
+class TestHeaderRewriteChecker:
+    @pytest.mark.parametrize(
+        "data, raise_error",
+        [
+            (
+                {
+                    "set": [{"key": "key1", "value": "value1"}, {"key": "key2", "value": "value2"}],
+                },
+                False,
+            ),
+            (
+                {
+                    "set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}],
+                },
+                True,
+            ),
+        ],
+    )
+    def test_check(self, data, raise_error):
+        checker = HeaderRewriteChecker()
+        try:
+            checker.check(yaml_dumps(data))
+            raise_checker = False
+        except ValueError:
+            raise_checker = True
+        assert raise_checker == raise_error
+
+    @pytest.mark.parametrize(
+        "type_code, data, raise_error",
+        [
+            (
+                "bk-header-rewrite",
+                {
+                    "set": [{"key": "key1", "value": "value1"}, {"key": "key2", "value": "value2"}],
+                },
+                False,
+            ),
+            (
+                "bk-header-rewrite",
+                {
+                    "set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}],
+                },
+                True,
+            ),
+        ],
+    )
+    def test_check_plugin(self, type_code, data, raise_error):
+        checker = PluginConfigYamlChecker(type_code)
+        try:
+            checker.check(yaml_dumps(data))
+            raise_checker = False
+        except ValueError:
+            raise_checker = True
+        assert raise_checker == raise_error

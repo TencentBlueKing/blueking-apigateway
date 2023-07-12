@@ -87,9 +87,20 @@ class BkCorsChecker(BaseChecker):
             raise ValueError(_("{} 存在重复的元素：{}。").format(key, ", ".join(duplicate_items)))
 
 
+class HeaderRewriteChecker(BaseChecker):
+    def check(self, yaml_: str):
+        loaded_data = yaml_loads(yaml_)
+
+        set_keys = [item["key"] for item in loaded_data["set"]]
+        duplicate_keys = [key for key, count in Counter(set_keys).items() if count >= 2]
+        if duplicate_keys:
+            raise ValueError(_("set 存在重复的元素：{}。").format(", ".join(duplicate_keys)))
+
+
 class PluginConfigYamlChecker:
     type_code_to_checker: ClassVar[Dict[str, BaseChecker]] = {
         PluginTypeCodeEnum.BK_CORS.value: BkCorsChecker(),
+        PluginTypeCodeEnum.BK_HEADER_REWRITE.value: HeaderRewriteChecker(),
     }
 
     def __init__(self, type_code: str):

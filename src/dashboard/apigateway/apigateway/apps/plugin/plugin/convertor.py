@@ -21,7 +21,7 @@
 - 前端插件表单和后端存储的数据，可能不一致，需要自定义转换逻辑
 - 尽量使用插件表单的数据，减少不必要的转换
 """
-from typing import Any, ClassVar, Dict
+from typing import ClassVar, Dict
 
 from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
@@ -117,52 +117,10 @@ class CorsYamlConvertor(BasePluginYamlConvertor):
         return yaml_dumps(loaded_data)
 
 
-class HeaderRewriteYamlConvertor(BasePluginYamlConvertor):
-    """
-    前端传入的数据样例
-    set:
-      - key: key1
-        value: value1
-    remove:
-      - key: key2
-
-    存储的数据样例
-    set:
-      key1: value1
-    remove:
-      - key2
-    """
-
-    def to_internal_value(self, yaml_: str) -> str:
-        loaded_data = yaml_loads(yaml_)
-
-        result: Dict[str, Any] = {"set": {}, "remove": []}
-        for item in loaded_data["set"]:
-            result["set"][item["key"]] = item["value"]
-
-        for item in loaded_data["remove"]:
-            result["remove"].append(item["key"])
-
-        return yaml_dumps(result)
-
-    def to_representation(self, yaml_: str) -> str:
-        loaded_data = yaml_loads(yaml_)
-
-        result: Dict[str, list] = {"set": [], "remove": []}
-        for key, value in loaded_data["set"].items():
-            result["set"].append({"key": key, "value": value})
-
-        for key in loaded_data["remove"]:
-            result["remove"].append({"key": key})
-
-        return yaml_dumps(result)
-
-
 class PluginConfigYamlConvertor:
     type_code_to_convertor: ClassVar[Dict[str, BasePluginYamlConvertor]] = {
         PluginTypeCodeEnum.BK_RATE_LIMIT.value: RateLimitYamlConvertor(),
         PluginTypeCodeEnum.BK_CORS.value: CorsYamlConvertor(),
-        PluginTypeCodeEnum.BK_HEADER_REWRITE.value: HeaderRewriteYamlConvertor(),
     }
 
     def __init__(self, type_code: str):

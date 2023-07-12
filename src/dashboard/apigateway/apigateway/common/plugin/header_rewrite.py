@@ -15,7 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from copy import deepcopy
 from typing import Optional
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
@@ -33,7 +32,10 @@ class HeaderRewriteConvertor:
         ):
             return None
 
-        return {"set": transform_headers.get("set") or {}, "remove": transform_headers.get("delete") or []}
+        return {
+            "set": [{"key": key, "value": value} for key, value in (transform_headers.get("set") or {}).items()],
+            "remove": [{"key": key} for key in transform_headers.get("delete") or []],
+        }
 
     @staticmethod
     def merge_plugin_config(stage_config: Optional[dict], resource_config: Optional[dict]) -> Optional[dict]:
@@ -46,13 +48,16 @@ class HeaderRewriteConvertor:
         if stage_config and not resource_config:
             return stage_config
 
-        merge_config = deepcopy(stage_config)
-        merge_config["set"].update(resource_config.get("set", {}))  # type: ignore
-        for key in resource_config.get("remove", []):  # type: ignore
-            if key not in merge_config["remove"]:  # type: ignore
-                merge_config["remove"].append(key)  # type: ignore
+        remove_keys = {item["key"] for item in resource_config["remove"]} | {  # type: ignore
+            item["key"] for item in stage_config["remove"]  # type: ignore
+        }
+        set_headers = {item["key"]: item["value"] for item in stage_config["set"]}  # type: ignore
+        set_headers.update({item["key"]: item["value"] for item in resource_config["set"]})  # type: ignore
 
-        return merge_config
+        return {
+            "set": [{"key": key, "value": value} for key, value in set_headers.items()],
+            "remove": [{"key": key} for key in remove_keys],
+        }
 
     @staticmethod
     def alter_plugin(gateway: Gateway, scope_type: str, scope_id: int, plugin_config: Optional[dict]):
