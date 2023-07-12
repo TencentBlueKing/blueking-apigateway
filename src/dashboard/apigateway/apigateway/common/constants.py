@@ -18,6 +18,7 @@
 #
 import re
 from enum import Enum
+from typing import Any, Dict, Optional
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 
@@ -33,10 +34,15 @@ class ChoiceEnum(ChoiceEnumMixin, Enum):
 
 
 class CacheTimeLevel(Enum):
-
     CACHE_TIME_SHORT = 5 * 60
     CACHE_TIME_MEDIUM = 3600
     CACHE_TIME_LONG = 24 * 3600
+
+
+class ExtendEnumField(EnumField):
+    def __init__(self, *args, metadata: Optional[Dict[str, Any]] = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.metadata = metadata or {}
 
 
 CACHE_MAXSIZE = 2000

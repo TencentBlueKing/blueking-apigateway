@@ -197,15 +197,6 @@
         this.gatewaySort()
       },
 
-      handleApigwInfo (apigw) {
-        this.$router.push({
-          name: 'apigwInfo',
-          params: {
-            id: apigw.id
-          }
-        })
-      },
-
       handleGoPage (routeName, apigw) {
         this.$router.push({
           name: routeName,

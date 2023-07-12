@@ -46,23 +46,35 @@ class CombineDistributor(BaseDistributor):
         assert micro_gateway.is_shared
 
         managed_micro_gateway = stage.micro_gateway
-        if managed_micro_gateway != micro_gateway:
-            # 指定的共享实例
-            callback(self.etcd_distributor_type(include_gateway_global_config=False), micro_gateway)
-
+        # 如果微网关不存在, 只发布default共享网关
         if not managed_micro_gateway:
+            callback(self.etcd_distributor_type(include_gateway_global_config=False), micro_gateway)
             return
 
+        # NOTE: 发布专享网关时不再同时发布共享网关
+        # if managed_micro_gateway != micro_gateway:
+        #     # 指定的共享实例
+        #     callback(self.etcd_distributor_type(include_gateway_global_config=False), micro_gateway)
+
+        # if not managed_micro_gateway:
+        #     return
+
+        # 发布共享网关
         if managed_micro_gateway.is_shared:
-            # 共享实例
             callback(self.etcd_distributor_type(include_gateway_global_config=True), managed_micro_gateway)
             return
 
+        # 发布专享网关
         if managed_micro_gateway.is_managed:
-            # 专享实例
             callback(self.helm_distributor_type(generate_chart=False), managed_micro_gateway)
 
-    def distribute(self, release: Release, micro_gateway: MicroGateway, release_task_id: Optional[str] = None) -> bool:
+    def distribute(
+        self,
+        release: Release,
+        micro_gateway: MicroGateway,
+        release_task_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
+    ) -> bool:
         has_failure = False
 
         def do_distribute(distributor: BaseDistributor, gateway: MicroGateway):
@@ -73,7 +85,13 @@ class CombineDistributor(BaseDistributor):
         self.foreach_distributor(release.stage, micro_gateway, do_distribute)
         return not has_failure
 
-    def revoke(self, stage: Stage, micro_gateway: MicroGateway, release_task_id: Optional[str] = None) -> bool:
+    def revoke(
+        self,
+        stage: Stage,
+        micro_gateway: MicroGateway,
+        release_task_id: Optional[str] = None,
+        release_history_id: Optional[int] = None,
+    ) -> bool:
         has_failure = False
 
         def do_revoke(distributor: BaseDistributor, gateway: MicroGateway):

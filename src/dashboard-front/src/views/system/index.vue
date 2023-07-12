@@ -131,9 +131,9 @@
       :is-show.sync="isSliderShow"
       :width="750"
       :title="sliderTitle"
-      @hidden="handleHidden"
       :quick-close="true"
-      :before-close="handleBeforeClose">
+      :before-close="handleBeforeClose"
+      @hidden="handleHidden">
       <div slot="content" style="padding: 20px;" v-bkloading="{ isLoading: detailLoading, opacity: 1 }">
         <bk-form :label-width="160" :rules="rules" ref="form" :model="formData" v-show="!detailLoading">
           <bk-form-item :label="$t('名称')" :required="true" property="name" :error-display-type="'normal'">
@@ -243,11 +243,6 @@
           count: 0,
           limit: 10
         },
-        stageDialogConf: {
-          isLoading: false,
-          visiable: false,
-          title: this.$t('新建标签')
-        },
         curSystem: {},
         deleteDialogConf: {
           visiable: false,
@@ -274,7 +269,31 @@
           keyword: '',
           isAbnormal: false
         },
-        filterDocCategory: []
+        filterDocCategory: [],
+        isFilter: false,
+        rules: {
+          name: [
+            {
+              required: true,
+              message: this.$t('必填项'),
+              trigger: 'blur'
+            }
+          ],
+          description: [
+            {
+              required: true,
+              message: this.$t('必填项'),
+              trigger: 'blur'
+            }
+          ],
+          doc_category_id: [
+            {
+              required: true,
+              message: this.$t('必填项'),
+              trigger: 'blur'
+            }
+          ]
+        }
       }
     },
     computed: {
@@ -308,30 +327,6 @@
     },
     created () {
       this.init()
-      this.isFilter = false
-      this.rules = {
-        name: [
-          {
-            required: true,
-            message: this.$t('必填项'),
-            trigger: 'blur'
-          }
-        ],
-        description: [
-          {
-            required: true,
-            message: this.$t('必填项'),
-            trigger: 'blur'
-          }
-        ],
-        doc_category_id: [
-          {
-            required: true,
-            message: this.$t('必填项'),
-            trigger: 'blur'
-          }
-        ]
-      }
     },
     methods: {
       init () {
