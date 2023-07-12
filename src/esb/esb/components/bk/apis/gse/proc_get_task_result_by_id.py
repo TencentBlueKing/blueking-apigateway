@@ -23,7 +23,6 @@ from common.base_utils import smart_unicode_v2
 from common.constants import API_TYPE_Q
 from common.forms import BaseComponentForm
 from components.component import Component
-
 from .toolkit import configs, tools
 
 

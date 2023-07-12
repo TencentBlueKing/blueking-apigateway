@@ -84,7 +84,6 @@ dev-image:
 
 .PHONY: lint
 lint:
-	isort --settings-path=pyproject.toml .
 	black --config=pyproject.toml .
 	ruff --config=pyproject.toml --force-exclude --fix .
 	mypy --config-file=pyproject.toml .

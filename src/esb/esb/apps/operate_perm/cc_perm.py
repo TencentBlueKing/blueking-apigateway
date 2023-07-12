@@ -18,7 +18,6 @@
 #
 
 from common.errors import error_codes
-
 from .base import BasePerm
 
 

@@ -21,7 +21,6 @@ import re
 
 from common.base_utils import get_client_real_ip
 from components.component import BaseComponent, SetupConfMixin
-
 from .toolkit import configs
 
 

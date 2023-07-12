@@ -20,7 +20,6 @@
 from common.base_utils import str_bool
 from common.constants import API_TYPE_Q, HTTP_METHOD
 from components.component import Component, SetupConfMixin
-
 from .toolkit import configs
 
 

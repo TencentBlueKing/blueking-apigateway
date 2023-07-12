@@ -18,7 +18,6 @@
 #
 from common.constants import API_TYPE_Q
 from components.component import Component, SetupConfMixin
-
 from .toolkit import configs
 
 

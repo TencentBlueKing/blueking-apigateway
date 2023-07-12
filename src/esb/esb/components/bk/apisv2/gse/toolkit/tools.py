@@ -29,7 +29,6 @@ from common.log import logger
 from esb.outgoing import RequestHelperClient
 from lib.gse.cacheApi import CacheAPI
 from lib.gse.procServer import ProcService
-
 from . import configs
 
 socket_timeout = settings.REQUEST_TIMEOUT_SECS * 1000

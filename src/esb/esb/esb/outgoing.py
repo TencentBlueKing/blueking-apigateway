@@ -40,7 +40,6 @@ from common.errors import HostNotFoundException, RequestSSLException, RequestThi
 from common.log import logger, logger_api  # noqa: E402
 from esb.bkapp.models import BKApp  # noqa: E402
 from esb.utils.jwt_utils import JWTClient  # noqa: E402
-
 from .utils import SmartHost, get_ssl_root_dir  # noqa: E402
 
 """

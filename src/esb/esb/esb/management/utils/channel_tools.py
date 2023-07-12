@@ -19,7 +19,6 @@
 from builtins import object
 
 from esb.bkcore.constants import PermissionLevelEnum
-
 from .component_tools import ComponentClient, ConfapiComponentClient
 
 

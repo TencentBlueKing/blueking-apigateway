@@ -23,7 +23,6 @@ from common.constants import API_TYPE_OP, HTTP_METHOD
 from common.forms import BaseComponentForm, DefaultBooleanField, ListField, TypeCheckField
 from components.component import Component, SetupConfMixin
 from esb.channel import get_channel_manager
-
 from .toolkit import configs
 
 

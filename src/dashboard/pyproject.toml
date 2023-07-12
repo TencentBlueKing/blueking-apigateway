@@ -88,7 +88,6 @@ pytest-mock = "3.6.1"
 Faker = "14.2.1"
 responses = "0.17.0"
 pre-commit = "2.17.0"
-isort = "5.10.1"
 mypy = "*"
 black = "^21.12b0"
 rope = "1.1.1"
@@ -102,7 +101,8 @@ types-redis = "^4.3.21.7"
 types-cachetools = "^5.3.0.4"
 types-pytz = "^2022.7.0.0"
 types-dataclasses = {version = "^0.6.6", python = "~3.6.1"}
-ruff = {version = "^0.0.259", python = "~3.7.0"}
+ruff = {version = "^0.0.277", python = "~3.7.0"}
+# isort = "5.10.1"
 pytest-pretty = {version = "^1.1.0", python = "~3.7.0"}
 types-docutils = "^0.19.1.6"
 types-PyYAML = "6.0.12.9"
@@ -121,15 +121,15 @@ force-exclude = '''
 )/
 '''
 
-[tool.isort]
-multi_line_output = 3
-include_trailing_comma = 'true'
-force_grid_wrap = 0
-use_parentheses = 'true'
-line_length = 119
-skip_glob = ["*/migrations/**"]
-profile = "black"
-src_paths = ["apigateway"]
+# [tool.isort]
+# multi_line_output = 3
+# include_trailing_comma = 'true'
+# force_grid_wrap = 0
+# use_parentheses = 'true'
+# line_length = 119
+# skip_glob = ["*/migrations/**"]
+# profile = "black"
+# src_paths = ["apigateway"]
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -172,7 +172,8 @@ build-backend = "poetry.masonry.api"
 
 [tool.ruff]
 # Enable Pyflakes `E` and `F` codes by default.
-select = ["E", "F", "W"]
+select = ["E", "F", "W", "I", "C90"]
+# TODO: enable `SIM` / `RET` / `N` / `C4` / `G` / `PT` / `PL` / `TRY` / `PERF`
 # Disable E501 until this issue is fixed: https://github.com/astral-sh/ruff/issues/3825
 ignore = ["E741", "F841", "E501"]
 
@@ -207,3 +208,9 @@ line-length = 119
 [tool.ruff.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 12
+
+[tool.ruff.isort]
+relative-imports-order = "closest-to-furthest"
+
+# [tool.ruff.pep8-naming]
+
