@@ -58,7 +58,7 @@ func GetGatewayByName(ctx context.Context, name string) (gateway dao.Gateway, er
 	var ok bool
 	gateway, ok = value.(dao.Gateway)
 	if !ok {
-		err = errors.New("not dao.GatewayName in cache")
+		err = errors.New("not dao.Gateway in cache")
 		return
 	}
 	return
