@@ -82,24 +82,11 @@ urlpatterns = [
     ),
     # switch language
     path("backend/i18n/setlang/", set_language, name="set_language"),
-    # NOTE: merge api-support -- begin
-    # TODO: 下一个版本可删除 docs/backend 开头的路径
-    # TODO: the frontend should change url to backend/accounts/
-    path("docs/backend/accounts/", include("apigateway.account.urls")),
-    # TODO: the frontend should change url to backend/i18n/setlang/
-    path("docs/backend/i18n/setlang/", set_language, name="set_language_2"),
-    # TODO: change the urls, and frontend should switch to new urls
-    path("docs/backend/apigateway/", include("apigateway.apps.docs.gateway.urls")),
-    path("docs/backend/esb/", include("apigateway.apps.docs.esb.urls")),
-    path("docs/backend/feature/", include("apigateway.apps.docs.feature.urls")),
-    path("docs/backend/feedback/", include("apigateway.apps.docs.feedback.urls")),
-    # NOTE: merge api-support -- end
-    # NOTE: api-support backend/docs urls -- begin
+    # api-support backend/docs urls -- begin
     path("backend/docs/apigateway/", include("apigateway.apps.docs.gateway.urls")),
     path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
     path("backend/docs/feature/", include("apigateway.apps.docs.feature.urls")),
     path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
-    # NOTE: api-support backend/docs urls -- end
 ]
 
 # add drf-yasg automatically generated documents
