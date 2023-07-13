@@ -418,7 +418,7 @@ CELERY_BEAT_SCHEDULE.update(
     }
 )
 
-if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", False):
+if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
     CELERY_BEAT_SCHEDULE.update(
         {
             "apigateway.apps.metrics.tasks.statistics_request_by_day": {
@@ -566,6 +566,9 @@ BCS_PUBLIC_CHART_REPOSITORY = "public-repo"
 
 # BCS 为网关分配的认证 Token
 BCS_API_GATEWAY_TOKEN = env.str("BCS_API_GATEWAY_TOKEN", "")
+
+# 网关部署集群所属业务ID，影响从蓝鲸监控拉取 Prometheus 数据等功能；开源环境默认部署在蓝鲸业务(业务 ID=2)
+BCS_CLUSTER_BK_BIZ_ID = env.str("BCS_CLUSTER_BK_BIZ_ID", "2")
 
 # edge controller 配置
 EDGE_CONTROLLER_API_NAME = "bk-apigateway"
@@ -759,6 +762,10 @@ BK_IAM_SKIP = env.bool("BK_IAM_SKIP", False)
 # TODO: 待启用 IAM 鉴权时，将默认值改为 True
 USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
 
+# 使用 bkmonitorv3 网关 API，还是 monitor_v3 组件 API
+USE_BKAPI_BKMONITORV3 = env.bool("USE_BKAPI_BKMONITORV3", False)
+
+
 # ==============================================================================
 # Feature Flag
 # ==============================================================================
@@ -767,7 +774,7 @@ USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
 DEFAULT_FEATURE_FLAG = {
     "ENABLE_MONITOR": env.bool("FEATURE_FLAG_ENABLE_MONITOR", False),
     "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", True),
-    "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", False),
+    "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True),
     "ALLOW_UPLOAD_SDK_TO_REPOSITORY": env.bool("FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY", False),
     "MENU_ITEM_HELP": env.bool("FEATURE_FLAG_MENU_ITEM_HELP", False),
     "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),

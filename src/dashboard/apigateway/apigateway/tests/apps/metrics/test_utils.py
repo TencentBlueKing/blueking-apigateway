@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,21 +15,27 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from blue_krill.data_types.enum import EnumField, StructuredEnum
+import pytest
+
+from apigateway.apps.metrics.utils import MetricsSmartTimeRange
 
 
-class MetricsEnum(StructuredEnum):
-    REQUESTS = EnumField("requests")
-    FAILED_REQUESTS = EnumField("failed_requests")
-    RESPONSE_TIME_95TH = EnumField("response_time_95th")
-    RESPONSE_TIME_90TH = EnumField("response_time_90th")
-    RESPONSE_TIME_80TH = EnumField("response_time_80th")
-    RESPONSE_TIME_50TH = EnumField("response_time_50th")
-
-
-class DimensionEnum(StructuredEnum):
-    ALL = EnumField("all")
-    APP = EnumField("app")
-    RESOURCE = EnumField("resource")
-    # 资源+非200状态码
-    RESOURCE_NON200_STATUS = EnumField("resource_non200_status")
+class TestMetricsSmartTimeRange:
+    @pytest.mark.parametrize(
+        "time_range_minutes, expected",
+        [
+            (10, "1m"),
+            (59, "1m"),
+            (60, "1m"),
+            (300, "5m"),
+            (360, "5m"),
+            (720, "10m"),
+            (1440, "30m"),
+            (4320, "1h"),
+            (10080, "3h"),
+            (20000, "12h"),
+        ],
+    )
+    def test_get_recommended_step(self, time_range_minutes, expected):
+        smart_time_range = MetricsSmartTimeRange(time_range=time_range_minutes * 60)
+        assert smart_time_range.get_recommended_step() == expected

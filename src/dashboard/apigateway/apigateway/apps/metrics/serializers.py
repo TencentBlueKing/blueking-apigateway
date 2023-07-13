@@ -19,14 +19,14 @@
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from .constants import DimensionEnum, MetricsEnum
+from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
 
 
 class MetricsQuerySLZ(serializers.Serializer):
     stage_id = serializers.IntegerField(required=True)
     resource_id = serializers.IntegerField(allow_null=True, required=False)
-    dimension = serializers.ChoiceField(choices=DimensionEnum.choices())
-    metrics = serializers.ChoiceField(choices=MetricsEnum.choices())
+    dimension = serializers.ChoiceField(choices=DimensionEnum.get_choices())
+    metrics = serializers.ChoiceField(choices=MetricsEnum.get_choices())
     time_range = serializers.IntegerField(required=False, min_value=0)
     time_start = serializers.IntegerField(required=False, min_value=0)
     time_end = serializers.IntegerField(required=False, min_value=0)
@@ -35,13 +35,3 @@ class MetricsQuerySLZ(serializers.Serializer):
         if not (data.get("time_start") and data.get("time_end") or data.get("time_range")):
             raise serializers.ValidationError(_("参数 time_start+time_end, time_range 必须一组有效。"))
         return data
-
-
-class PrometheusMatrixResultSLZ(serializers.Serializer):
-    metric = serializers.DictField(child=serializers.CharField())
-    values = serializers.ListField(child=serializers.ListField(max_length=2, min_length=2))
-
-
-class PrometheusMatrixDataSLZ(serializers.Serializer):
-    resultType = serializers.CharField()
-    result = serializers.ListField(child=PrometheusMatrixResultSLZ())

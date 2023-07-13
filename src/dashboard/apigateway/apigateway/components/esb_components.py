@@ -45,11 +45,21 @@ class EsbGroup(OperationGroup):
     )
 
 
+class MonitorV3Group(OperationGroup):
+    promql_query = bind_property(
+        Operation,
+        name="promql_query",
+        method="POST",
+        path="/api/c/compapi/v2/monitor_v3/graph_promql_query/",
+    )
+
+
 class Client(ESBClient):
     """ESB Components"""
 
     bk_log = bind_property(BkLogGroup, name="bk_log")
     esb = bind_property(EsbGroup, name="esb")
+    monitor_v3 = bind_property(MonitorV3Group, name="monitor_v3")
 
 
 get_client_by_username = _partial(Client, _get_client_by_username)

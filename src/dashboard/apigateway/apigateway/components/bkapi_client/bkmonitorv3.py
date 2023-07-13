@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,21 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from blue_krill.data_types.enum import EnumField, StructuredEnum
+from bkapi_client_core.apigateway import APIGatewayClient, Operation, OperationGroup, bind_property
 
 
-class MetricsEnum(StructuredEnum):
-    REQUESTS = EnumField("requests")
-    FAILED_REQUESTS = EnumField("failed_requests")
-    RESPONSE_TIME_95TH = EnumField("response_time_95th")
-    RESPONSE_TIME_90TH = EnumField("response_time_90th")
-    RESPONSE_TIME_80TH = EnumField("response_time_80th")
-    RESPONSE_TIME_50TH = EnumField("response_time_50th")
+class Group(OperationGroup):
+    # 统一查询时序数据
+    promql_query = bind_property(
+        Operation,
+        name="promql_query",
+        method="POST",
+        path="/promql_query/",
+    )
 
 
-class DimensionEnum(StructuredEnum):
-    ALL = EnumField("all")
-    APP = EnumField("app")
-    RESOURCE = EnumField("resource")
-    # 资源+非200状态码
-    RESOURCE_NON200_STATUS = EnumField("resource_non200_status")
+class Client(APIGatewayClient):
+    """Bkapi bkmonitorv3 client"""
+
+    _api_name = "bkmonitorv3"
+
+    api = bind_property(Group, name="api")
