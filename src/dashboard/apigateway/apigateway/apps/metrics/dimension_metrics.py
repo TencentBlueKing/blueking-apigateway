@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Text, Tuple, Type
+from typing import ClassVar, Dict, List, Optional, Text, Tuple, Type
 
 from django.conf import settings
 
@@ -37,8 +37,8 @@ class BasePrometheusMetrics(ABC):
 
 
 class BaseDimensionMetrics(BasePrometheusMetrics):
-    dimension: DimensionEnum
-    metrics: MetricsEnum
+    dimension: ClassVar[DimensionEnum]
+    metrics: ClassVar[MetricsEnum]
 
     @abstractmethod
     def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
