@@ -133,7 +133,7 @@ class StatisticsHandler:
 
         # 保存数据
         statistics_record = []
-        for item in app_request_count.get("series"):
+        for item in app_request_count.get("series", []):
             count = int(item["datapoints"][0][0])
 
             if count == 0:
