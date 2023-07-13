@@ -109,7 +109,7 @@ var _ = Describe("PublishEventService", func() {
 			assert.Contains(GinkgoT(), err.Error(), "event has passed for a long time")
 		})
 
-		It("error: StageName not found", func() {
+		It("error: stage not found", func() {
 			releaseHistory.CreatedTime = time.Now()
 			patches.ApplyFunc(
 				cacheimpls.GetReleaseHistory,
@@ -125,7 +125,7 @@ var _ = Describe("PublishEventService", func() {
 			)
 			err := svc.Report(ctx, event)
 			assert.Error(GinkgoT(), err)
-			assert.Contains(GinkgoT(), err.Error(), "get StageName[test] info failed")
+			assert.Contains(GinkgoT(), err.Error(), "get stage[test] info failed")
 		})
 
 		It("error: duplicate report", func() {
