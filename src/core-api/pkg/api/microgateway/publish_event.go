@@ -27,11 +27,11 @@ import (
 )
 
 type reportPublishEventSerializer struct {
-	GatewayName string                 `json:"gateway_name" binding:"required" example:"benchmark"`
-	StageName   string                 `json:"stage_name"  binding:"required" example:"dev"`
-	Name        string                 `json:"name"  binding:"required" example:"generate_release_task"`
-	Status      string                 `json:"status" binding:"required" example:"success" `
-	Detail      map[string]interface{} `json:"detail"`
+	BkGatewayName string                 `json:"bk_gateway_name" binding:"required" example:"benchmark"`
+	BkStageName   string                 `json:"bk_stage_name"  binding:"required" example:"dev"`
+	Name          string                 `json:"name"  binding:"required" example:"generate_release_task"`
+	Status        string                 `json:"status" binding:"required" example:"success" `
+	Detail        map[string]interface{} `json:"detail"`
 }
 
 // ReportPublishEvent report publish event
@@ -44,8 +44,8 @@ func ReportPublishEvent(c *gin.Context) {
 	svc := service.NewPublishEventService()
 	publishID := cast.ToInt64(c.Param("publish_id"))
 	event := service.Event{
-		Gateway:   query.GatewayName,
-		Stage:     query.StageName,
+		Gateway:   query.BkGatewayName,
+		Stage:     query.BkGatewayName,
 		Name:      query.Name,
 		Status:    query.Status,
 		PublishID: publishID,

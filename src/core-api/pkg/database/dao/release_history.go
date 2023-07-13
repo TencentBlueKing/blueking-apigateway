@@ -71,9 +71,9 @@ func (p releaseHistoryManager) Get(ctx context.Context, publishID int64) (Releas
 	err := database.SqlxGet(ctx, p.DB, &releaseHistory, query, publishID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return releaseHistory, nil
+			return releaseHistory, fmt.Errorf("release[ id:%d ] history  not found: %w", publishID, err)
 		}
-		return releaseHistory, fmt.Errorf("get release history err: %w", err)
+		return releaseHistory, fmt.Errorf("get release[ id:%d ] history err: %w", publishID, err)
 	}
 	return releaseHistory, nil
 }
