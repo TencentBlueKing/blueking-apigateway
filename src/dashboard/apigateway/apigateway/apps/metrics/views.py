@@ -22,6 +22,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 
 from apigateway.apps.metrics import serializers
+from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
 from apigateway.apps.metrics.dimension_metrics import DimensionMetricsFactory
 from apigateway.apps.metrics.utils import MetricsSmartTimeRange
 from apigateway.core.models import Resource, Stage
@@ -56,7 +57,9 @@ class QueryRangeAPIView(APIView):
         time_start, time_end = smart_time_range.get_head_and_tail()
         step = smart_time_range.get_recommended_step()
 
-        metrics = DimensionMetricsFactory.create_dimension_metrics(data["dimension"], data["metrics"])
+        metrics = DimensionMetricsFactory.create_dimension_metrics(
+            DimensionEnum(data["dimension"]), MetricsEnum(data["metrics"])
+        )
         data = metrics.query_range(
             gateway_name=request.gateway.name,
             stage_name=stage_name,

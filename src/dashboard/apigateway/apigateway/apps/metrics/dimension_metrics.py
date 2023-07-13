@@ -37,8 +37,8 @@ class BasePrometheusMetrics(ABC):
 
 
 class BaseDimensionMetrics(BasePrometheusMetrics):
-    dimension: str
-    metrics: str
+    dimension: DimensionEnum
+    metrics: MetricsEnum
 
     @abstractmethod
     def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
@@ -67,8 +67,8 @@ class BaseDimensionMetrics(BasePrometheusMetrics):
 
 
 class RequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.ALL.value
-    metrics = MetricsEnum.REQUESTS.value
+    dimension = DimensionEnum.ALL
+    metrics = MetricsEnum.REQUESTS
 
     def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
         labels = self._get_labels_expression(
@@ -83,8 +83,8 @@ class RequestsMetrics(BaseDimensionMetrics):
 
 
 class FailedRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.ALL.value
-    metrics = MetricsEnum.FAILED_REQUESTS.value
+    dimension = DimensionEnum.ALL
+    metrics = MetricsEnum.FAILED_REQUESTS
 
     def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
         labels = self._get_labels_expression(
@@ -120,32 +120,32 @@ class BaseResponseTimePercentileMetrics(BaseDimensionMetrics):
 
 
 class ResponseTime95thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL.value
-    metrics = MetricsEnum.RESPONSE_TIME_95TH.value
+    dimension = DimensionEnum.ALL
+    metrics = MetricsEnum.RESPONSE_TIME_95TH
     quantile = 0.95
 
 
 class ResponseTime90thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL.value
-    metrics = MetricsEnum.RESPONSE_TIME_90TH.value
+    dimension = DimensionEnum.ALL
+    metrics = MetricsEnum.RESPONSE_TIME_90TH
     quantile = 0.90
 
 
 class ResponseTime80thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL.value
-    metrics = MetricsEnum.RESPONSE_TIME_80TH.value
+    dimension = DimensionEnum.ALL
+    metrics = MetricsEnum.RESPONSE_TIME_80TH
     quantile = 0.80
 
 
 class ResponseTime50thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL.value
-    metrics = MetricsEnum.RESPONSE_TIME_50TH.value
+    dimension = DimensionEnum.ALL
+    metrics = MetricsEnum.RESPONSE_TIME_50TH
     quantile = 0.50
 
 
 class ResourceRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.RESOURCE.value
-    metrics = MetricsEnum.REQUESTS.value
+    dimension = DimensionEnum.RESOURCE
+    metrics = MetricsEnum.REQUESTS
 
     def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
         labels = self._get_labels_expression(
@@ -164,8 +164,8 @@ class ResourceRequestsMetrics(BaseDimensionMetrics):
 
 
 class ResourceFailedRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.RESOURCE.value
-    metrics = MetricsEnum.FAILED_REQUESTS.value
+    dimension = DimensionEnum.RESOURCE
+    metrics = MetricsEnum.FAILED_REQUESTS
 
     def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
         labels = self._get_labels_expression(
@@ -185,8 +185,8 @@ class ResourceFailedRequestsMetrics(BaseDimensionMetrics):
 
 
 class AppRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.APP.value
-    metrics = MetricsEnum.REQUESTS.value
+    dimension = DimensionEnum.APP
+    metrics = MetricsEnum.REQUESTS
 
     def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
         labels = self._get_labels_expression(
@@ -205,8 +205,8 @@ class AppRequestsMetrics(BaseDimensionMetrics):
 
 
 class ResourceNon200StatusRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.RESOURCE_NON200_STATUS.value
-    metrics = MetricsEnum.REQUESTS.value
+    dimension = DimensionEnum.RESOURCE_NON200_STATUS
+    metrics = MetricsEnum.REQUESTS
 
     def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
         labels = self._get_labels_expression(
@@ -230,7 +230,7 @@ class DimensionMetricsFactory:
     _registry: Dict[Text, Dict[Text, Type[BaseDimensionMetrics]]] = {}
 
     @classmethod
-    def create_dimension_metrics(cls, dimension: str, metrics: str) -> BaseDimensionMetrics:
+    def create_dimension_metrics(cls, dimension: DimensionEnum, metrics: MetricsEnum) -> BaseDimensionMetrics:
         _class = cls._registry.get(dimension, {}).get(metrics)
         if not _class:
             raise error_codes.INVALID_ARGS.format(f"unsupported grant_dimension={dimension}, metrics={metrics}")

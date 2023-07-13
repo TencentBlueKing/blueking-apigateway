@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.apps.metrics import dimension_metrics
+from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
 
 
 class TestRequestsMetrics:
@@ -350,7 +351,7 @@ class TestDimensionMetricsFactory:
         ]
         for test in data:
             result = dimension_metrics.DimensionMetricsFactory.create_dimension_metrics(
-                test["dimension"],
-                test["metrics"],
+                DimensionEnum(test["dimension"]),
+                MetricsEnum(test["metrics"]),
             )
             assert isinstance(result, test["expected"])
