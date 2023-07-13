@@ -1009,6 +1009,8 @@ export default {
     "覆盖 <strong style=\"color: #EA3536;\"> {updateNum} </strong> 条": "Override <strong style=\"color: #EA3536;\"> {updateNum} </strong>",
     "新建 <strong style=\"color: #2DCB56;\"> {createDocNum} </strong> 条，": "Create <strong style=\"color: #2DCB56;\"> {createDocNum} </strong>，",
     "覆盖 <strong style=\"color: #EA3536;\"> {updateDocNum} </strong> 条": "Override <strong style=\"color: #EA3536;\"> {updateDocNum} </strong>",
+    "变更 <strong style=\"color: #2DCB56;\"> {updateNum} </strong> 条，": "Change <strong style=\"color: #2DCB56;\"> {updateNum} </strong>，",
+    "未变更 <strong style=\"color: #63656E\"> {updateNum} </strong> 条，": "Unchanged <strong style=\"color: #63656E\"> {updateNum} </strong>，",
     "环境【{curStage}】将发布版本 {releaseVersion}，当前版本将被覆盖，发布后，环境下新版本的资源可被访问。": "The stage [{curStage}] will release version {releaseVersion}, the current version will be overwritten, and after the release, the resources of the new version will be accessible.",
     "蓝鲸应用ID [{detailsAppCode}] 访问API网关 [{currentApigwName}] 资源的请求详情": "App [{detailsAppCode}] Request details for accessing resources of the gateway [{currentApigwName}]",
     "确定删除 【{DataName}】标签": "Confirm to delete the label [{DataName}]",
