@@ -39,11 +39,11 @@ from apigateway.utils.yaml import yaml_dumps, yaml_loads
 
 
 class BasePluginYamlConvertor:
-    def to_internal_value(self, yaml_: str) -> str:
-        return yaml_
+    def to_internal_value(self, payload: str) -> str:
+        return payload
 
-    def to_representation(self, yaml_: str) -> str:
-        return yaml_
+    def to_representation(self, payload: str) -> str:
+        return payload
 
 
 class RateLimitYamlConvertor(BasePluginYamlConvertor):
@@ -68,8 +68,8 @@ class RateLimitYamlConvertor(BasePluginYamlConvertor):
           tokens: 10
     """
 
-    def to_internal_value(self, yaml_: str) -> str:
-        loaded_data = yaml_loads(yaml_)
+    def to_internal_value(self, payload: str) -> str:
+        loaded_data = yaml_loads(payload)
 
         result: Dict[str, dict] = {"rates": {}}
         # 特殊应用频率
@@ -86,8 +86,8 @@ class RateLimitYamlConvertor(BasePluginYamlConvertor):
 
         return yaml_dumps(result)
 
-    def to_representation(self, yaml_: str) -> str:
-        loaded_data = yaml_loads(yaml_)
+    def to_representation(self, payload: str) -> str:
+        loaded_data = yaml_loads(payload)
 
         result: Dict[str, dict] = {"rates": {"default": {}, "specials": []}}
         for bk_app_code, rates in loaded_data["rates"].items():
@@ -109,8 +109,8 @@ class RateLimitYamlConvertor(BasePluginYamlConvertor):
 
 
 class CorsYamlConvertor(BasePluginYamlConvertor):
-    def to_internal_value(self, yaml_: str) -> str:
-        loaded_data = yaml_loads(yaml_)
+    def to_internal_value(self, payload: str) -> str:
+        loaded_data = yaml_loads(payload)
 
         # 前端表单不支持不设置字段值，为使数据满足 schema 校验条件，删除一些空数据
 
@@ -126,20 +126,20 @@ class CorsYamlConvertor(BasePluginYamlConvertor):
 
 
 class IPRestrictionYamlConvertor(BasePluginYamlConvertor):
-    def to_representation(self, yaml_: str) -> str:
+    def to_representation(self, payload: str) -> str:
         """this is a compatibility method, for old data, convert to new format"""
-        if yaml_.startswith("whitelist: |-") or yaml_.startswith("blacklist: |-"):
-            return yaml_
+        if payload.startswith("whitelist: |-") or payload.startswith("blacklist: |-"):
+            return payload
 
         # old: whitelist:\n  - 1.1.1.1\n  - 2.2.2.2\n  - 1.1.1.1/24
         # new: whitelist: |-\n  127.0.0.1\n\n  1.1.1.1\n\n  # abcde\n\n  2.2.2.2\n\n  3.3.3.3
-        if yaml_.startswith("whitelist:") and (not yaml_.startswith("whitelist: |-")):
-            return yaml_.replace("- ", "").replace("whitelist:", "whitelist: |-")
+        if payload.startswith("whitelist:") and (not payload.startswith("whitelist: |-")):
+            return payload.replace("- ", "").replace("whitelist:", "whitelist: |-")
 
-        if yaml_.startswith("blacklist:") and (not yaml_.startswith("blacklist: |-")):
-            return yaml_.replace("- ", "").replace("blacklist:", "blacklist: |-")
+        if payload.startswith("blacklist:") and (not payload.startswith("blacklist: |-")):
+            return payload.replace("- ", "").replace("blacklist:", "blacklist: |-")
 
-        return yaml_
+        return payload
 
 
 class PluginConfigYamlConvertor:
@@ -152,14 +152,14 @@ class PluginConfigYamlConvertor:
     def __init__(self, type_code: str):
         self.type_code = type_code
 
-    def to_internal_value(self, yaml_: str) -> str:
+    def to_internal_value(self, payload: str) -> str:
         convertor = self.type_code_to_convertor.get(self.type_code)
         if not convertor:
-            return yaml_
-        return convertor.to_internal_value(yaml_)
+            return payload
+        return convertor.to_internal_value(payload)
 
-    def to_representation(self, yaml_: str) -> str:
+    def to_representation(self, payload: str) -> str:
         convertor = self.type_code_to_convertor.get(self.type_code)
         if not convertor:
-            return yaml_
-        return convertor.to_representation(yaml_)
+            return payload
+        return convertor.to_representation(payload)

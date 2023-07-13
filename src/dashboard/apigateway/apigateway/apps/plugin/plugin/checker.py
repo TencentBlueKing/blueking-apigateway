@@ -34,13 +34,13 @@ from apigateway.utils.yaml import yaml_loads
 
 
 class BaseChecker:
-    def check(self, yaml_: str):
+    def check(self, payload: str):
         pass
 
 
 class BkCorsChecker(BaseChecker):
-    def check(self, yaml_: str):
-        loaded_data = yaml_loads(yaml_)
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
 
         self._check_allow_origins(loaded_data.get("allow_origins"))
         self._check_allow_origins_by_regex(loaded_data.get("allow_origins_by_regex"))
@@ -106,8 +106,14 @@ class BkIPRestrictionChecker(BaseChecker):
             except Exception as e:
                 raise ValueError("line {}: {}".format(index + 1, e))
 
-    def check(self, yaml_: str):
-        loaded_data = yaml_loads(yaml_)
+    def check(self, payload: str):
+        """check the yaml payload is valid
+        - yaml can not be empty
+        - whitelist and blacklist can not be empty at the same time
+        - each line of whitelist/blacklist is a valid ipv4/ipv6 or ipv4 cidr/ipv6 cidr(ignore empty line and comment)
+        """
+
+        loaded_data = yaml_loads(payload)
         if not loaded_data:
             raise ValueError("yaml can not be empty")
 
@@ -132,7 +138,7 @@ class PluginConfigYamlChecker:
     def __init__(self, type_code: str):
         self.type_code = type_code
 
-    def check(self, yaml_: str):
+    def check(self, payload: str):
         checker = self.type_code_to_checker.get(self.type_code)
         if checker:
-            checker.check(yaml_)
+            checker.check(payload)
