@@ -14,7 +14,7 @@ init:
 	# for golines
 	go install github.com/segmentio/golines@latest
     # for goimports
-	go install golang.org/x/tools/cmd/goimports@latest
+	go install -v github.com/incu6us/goimports-reviser/v3@latest
 
 .PHONY: dep
 dep:
@@ -41,7 +41,7 @@ check-license:
 fmt:
 	golines ./ -m 120 -w --base-formatter gofmt --no-reformat-tags
 	gofumpt  -l -w .
-	goimports -local "core"  -l -w .
+	goimports-reviser -rm-unused -set-alias -format ./...
 
 
 .PHONY: test

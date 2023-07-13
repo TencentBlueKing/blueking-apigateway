@@ -23,9 +23,9 @@ package dao
 import (
 	"context"
 
-	"core/pkg/database"
-
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 // JWT ...

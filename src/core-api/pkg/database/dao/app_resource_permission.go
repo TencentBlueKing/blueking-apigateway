@@ -24,9 +24,9 @@ import (
 	"context"
 	"time"
 
-	"core/pkg/database"
-
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 // TODO: split into thinx and x, for better performance

@@ -23,17 +23,17 @@ import (
 	"errors"
 	"time"
 
+	gomonkey "github.com/agiledragon/gomonkey/v2"
+	"github.com/go-sql-driver/mysql"
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/ginkgo/v2"
+	"github.com/stretchr/testify/assert"
+
 	"core/pkg/cacheimpls"
 	"core/pkg/constant"
 	"core/pkg/database"
 	"core/pkg/database/dao"
 	"core/pkg/database/dao/mock"
-
-	"github.com/agiledragon/gomonkey/v2"
-	"github.com/go-sql-driver/mysql"
-	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo/v2"
-	"github.com/stretchr/testify/assert"
 )
 
 var _ = Describe("PublishEventService", func() {

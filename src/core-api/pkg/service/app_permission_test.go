@@ -23,7 +23,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/agiledragon/gomonkey/v2"
+	gomonkey "github.com/agiledragon/gomonkey/v2"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/assert"
 

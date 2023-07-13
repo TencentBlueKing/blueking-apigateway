@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/go-playground/validator/v10"
+	validator "github.com/go-playground/validator/v10"
 
 	"core/pkg/logging"
 )

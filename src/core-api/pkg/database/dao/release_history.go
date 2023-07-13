@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"time"
 
-	"core/pkg/database"
-
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock

@@ -23,11 +23,11 @@ import (
 	"testing"
 	"time"
 
-	"core/pkg/database"
-
-	"github.com/DATA-DOG/go-sqlmock"
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/database"
 )
 
 func Test_releaseHistoryManager_Get(t *testing.T) {
