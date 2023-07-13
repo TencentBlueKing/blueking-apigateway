@@ -125,7 +125,7 @@ var _ = Describe("PublishEventService", func() {
 			)
 			err := svc.Report(ctx, event)
 			assert.Error(GinkgoT(), err)
-			assert.Contains(GinkgoT(), err.Error(), "get stage[test] info failed")
+			assert.Contains(GinkgoT(), err.Error(), "get Stage[test] info failed")
 		})
 
 		It("error: duplicate report", func() {
