@@ -20,6 +20,14 @@
 
 - 前端插件表单和后端存储的数据，可能不一致，需要自定义转换逻辑
 - 尽量使用插件表单的数据，减少不必要的转换
+
+-------------------
+
+为了更好的支持插件表单的编辑和展示，前端产生的数据直接存储，不做任何转换; apisix 使用的配置单独在发布时做处理
+
+NOTE:
+1. 新插件尽量不写 convertor, 直接保存表单的数据，在 转换成 apisix 配置的时候，进行转换 (以确保编辑态的数据顺序和内容)
+2. 存量已经编写了 convertor 的插件暂时不动
 """
 from typing import ClassVar, Dict
 
@@ -31,11 +39,11 @@ from apigateway.utils.yaml import yaml_dumps, yaml_loads
 
 
 class BasePluginYamlConvertor:
-    def to_internal_value(self, yaml_: str) -> str:
-        return yaml_
+    def to_internal_value(self, payload: str) -> str:
+        return payload
 
-    def to_representation(self, yaml_: str) -> str:
-        return yaml_
+    def to_representation(self, payload: str) -> str:
+        return payload
 
 
 class RateLimitYamlConvertor(BasePluginYamlConvertor):
@@ -60,8 +68,8 @@ class RateLimitYamlConvertor(BasePluginYamlConvertor):
           tokens: 10
     """
 
-    def to_internal_value(self, yaml_: str) -> str:
-        loaded_data = yaml_loads(yaml_)
+    def to_internal_value(self, payload: str) -> str:
+        loaded_data = yaml_loads(payload)
 
         result: Dict[str, dict] = {"rates": {}}
         # 特殊应用频率
@@ -78,8 +86,8 @@ class RateLimitYamlConvertor(BasePluginYamlConvertor):
 
         return yaml_dumps(result)
 
-    def to_representation(self, yaml_: str) -> str:
-        loaded_data = yaml_loads(yaml_)
+    def to_representation(self, payload: str) -> str:
+        loaded_data = yaml_loads(payload)
 
         result: Dict[str, dict] = {"rates": {"default": {}, "specials": []}}
         for bk_app_code, rates in loaded_data["rates"].items():
@@ -101,8 +109,8 @@ class RateLimitYamlConvertor(BasePluginYamlConvertor):
 
 
 class CorsYamlConvertor(BasePluginYamlConvertor):
-    def to_internal_value(self, yaml_: str) -> str:
-        loaded_data = yaml_loads(yaml_)
+    def to_internal_value(self, payload: str) -> str:
+        loaded_data = yaml_loads(payload)
 
         # 前端表单不支持不设置字段值，为使数据满足 schema 校验条件，删除一些空数据
 
@@ -117,23 +125,41 @@ class CorsYamlConvertor(BasePluginYamlConvertor):
         return yaml_dumps(loaded_data)
 
 
+class IPRestrictionYamlConvertor(BasePluginYamlConvertor):
+    def to_representation(self, payload: str) -> str:
+        """this is a compatibility method, for old data, convert to new format"""
+        if payload.startswith("whitelist: |-") or payload.startswith("blacklist: |-"):
+            return payload
+
+        # old: whitelist:\n  - 1.1.1.1\n  - 2.2.2.2\n  - 1.1.1.1/24
+        # new: whitelist: |-\n  127.0.0.1\n\n  1.1.1.1\n\n  # abcde\n\n  2.2.2.2\n\n  3.3.3.3
+        if payload.startswith("whitelist:") and (not payload.startswith("whitelist: |-")):
+            return payload.replace("- ", "").replace("whitelist:", "whitelist: |-")
+
+        if payload.startswith("blacklist:") and (not payload.startswith("blacklist: |-")):
+            return payload.replace("- ", "").replace("blacklist:", "blacklist: |-")
+
+        return payload
+
+
 class PluginConfigYamlConvertor:
     type_code_to_convertor: ClassVar[Dict[str, BasePluginYamlConvertor]] = {
         PluginTypeCodeEnum.BK_RATE_LIMIT.value: RateLimitYamlConvertor(),
         PluginTypeCodeEnum.BK_CORS.value: CorsYamlConvertor(),
+        PluginTypeCodeEnum.BK_IP_RESTRICTION.value: IPRestrictionYamlConvertor(),
     }
 
     def __init__(self, type_code: str):
         self.type_code = type_code
 
-    def to_internal_value(self, yaml_: str) -> str:
+    def to_internal_value(self, payload: str) -> str:
         convertor = self.type_code_to_convertor.get(self.type_code)
         if not convertor:
-            return yaml_
-        return convertor.to_internal_value(yaml_)
+            return payload
+        return convertor.to_internal_value(payload)
 
-    def to_representation(self, yaml_: str) -> str:
+    def to_representation(self, payload: str) -> str:
         convertor = self.type_code_to_convertor.get(self.type_code)
         if not convertor:
-            return yaml_
-        return convertor.to_representation(yaml_)
+            return payload
+        return convertor.to_representation(payload)
