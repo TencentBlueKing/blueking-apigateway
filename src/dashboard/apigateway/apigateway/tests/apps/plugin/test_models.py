@@ -74,18 +74,6 @@ class TestPluginConfig:
             _data = convertor.convert(fake_plugin_config)
             validate(_data, schema=fake_plugin_config.type.schema.schema)
 
-    @pytest.mark.parametrize(
-        "yaml_",
-        [
-            "",
-            "true",
-            "0",
-        ],
-    )
-    def test_config_setter_not_dict_error(self, fake_plugin_config, yaml_):
-        # with pytest.raises(ValueError):
-        fake_plugin_config.config = yaml_
-
 
 class TestPlugin:
     def test_create_without_related_type(self, fake_gateway, related_model_not_exist):
@@ -120,13 +108,6 @@ class TestPlugin:
         assert echo_plugin.name == legacy_plugin.name
 
     def test_update_with_related_model_validation(self, faker, legacy_plugin, echo_plugin):
-        legacy_plugin.config = None
-        # with pytest.raises(ValueError):
-        legacy_plugin.save()
-
-        legacy_plugin.config = {"foo": "bar"}
-        # with pytest.raises(ValidationError):
-        legacy_plugin.save()
 
         echo_plugin.refresh_from_db()
         assert echo_plugin.config is not None

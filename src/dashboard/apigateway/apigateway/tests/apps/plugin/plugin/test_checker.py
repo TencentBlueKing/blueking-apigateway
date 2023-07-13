@@ -241,15 +241,11 @@ class TestHeaderRewriteChecker:
         "data, raise_error",
         [
             (
-                {
-                    "set": [{"key": "key1", "value": "value1"}, {"key": "key2", "value": "value2"}],
-                },
+                {"set": [{"key": "key1", "value": "value1"}, {"key": "key2", "value": "value2"}], "remove": []},
                 False,
             ),
             (
-                {
-                    "set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}],
-                },
+                {"set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}], "remove": []},
                 True,
             ),
         ],
@@ -267,16 +263,28 @@ class TestHeaderRewriteChecker:
         "type_code, data, raise_error",
         [
             (
-                "bk-header-rewrite",
+                "bk-header-rewrite",  # set key 无重复
+                {"set": [{"key": "key1", "value": "value1"}, {"key": "key2", "value": "value2"}], "remove": []},
+                False,
+            ),
+            (
+                "bk-header-rewrite",  # set key 重复
+                {"set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}], "remove": []},
+                True,
+            ),
+            (
+                "bk-header-rewrite",  # remove key 无重复
                 {
-                    "set": [{"key": "key1", "value": "value1"}, {"key": "key2", "value": "value2"}],
+                    "set": [],
+                    "remove": [{"key": "key1"}, {"key": "key2"}],
                 },
                 False,
             ),
             (
-                "bk-header-rewrite",
+                "bk-header-rewrite",  # remove key 重复
                 {
-                    "set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}],
+                    "set": [],
+                    "remove": [{"key": "key1"}, {"key": "key1"}],
                 },
                 True,
             ),

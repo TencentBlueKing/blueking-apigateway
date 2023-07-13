@@ -92,9 +92,14 @@ class HeaderRewriteChecker(BaseChecker):
         loaded_data = yaml_loads(yaml_)
 
         set_keys = [item["key"] for item in loaded_data["set"]]
-        duplicate_keys = [key for key, count in Counter(set_keys).items() if count >= 2]
-        if duplicate_keys:
-            raise ValueError(_("set 存在重复的元素：{}。").format(", ".join(duplicate_keys)))
+        set_duplicate_keys = [key for key, count in Counter(set_keys).items() if count >= 2]
+        if set_duplicate_keys:
+            raise ValueError(_("set 存在重复的元素：{}。").format(", ".join(set_duplicate_keys)))
+
+        remove_keys = [item["key"] for item in loaded_data["remove"]]
+        remove_duplicate_keys = [key for key, count in Counter(remove_keys).items() if count >= 2]
+        if remove_duplicate_keys:
+            raise ValueError(_("remove 存在重复的元素：{}。").format(", ".join(remove_duplicate_keys)))
 
 
 class PluginConfigYamlChecker:

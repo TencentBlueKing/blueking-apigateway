@@ -27,14 +27,12 @@ class HeaderRewriteConvertor:
     @staticmethod
     def transform_headers_to_plugin_config(transform_headers: dict) -> Optional[dict]:
         # both set and delete empty
-        if not transform_headers or (
-            not transform_headers.get("set", None) and not transform_headers.get("delete", None)
-        ):
+        if not transform_headers or (not transform_headers.get("set") and not transform_headers.get("delete")):
             return None
 
         return {
             "set": [{"key": key, "value": value} for key, value in (transform_headers.get("set") or {}).items()],
-            "remove": [{"key": key} for key in transform_headers.get("delete") or []],
+            "remove": [{"key": key} for key in (transform_headers.get("delete") or [])],
         }
 
     @staticmethod
@@ -50,7 +48,7 @@ class HeaderRewriteConvertor:
 
         remove_keys = {item["key"] for item in resource_config["remove"]} | {  # type: ignore
             item["key"] for item in stage_config["remove"]  # type: ignore
-        }
+        }  # stage remove keys 与 resource remove keys 取合集
         set_headers = {item["key"]: item["value"] for item in stage_config["set"]}  # type: ignore
         set_headers.update({item["key"]: item["value"] for item in resource_config["set"]})  # type: ignore
 
@@ -72,9 +70,19 @@ class HeaderRewriteConvertor:
             .first()
         )
 
-        # 2. 创建/更新/删除对应的插件与插件配置
-        # 插件配置为空, 清理数据
-        if binding and not plugin_config:
+        if not binding and not plugin_config:
+            return
+
+        if binding:
+            if plugin_config:
+                # 如果已经绑定, 更新插件配置
+                config = binding.config
+                config.yaml = yaml_dumps(plugin_config)
+                # NOTE: 用bulk_update避免触发信号
+                PluginConfig.objects.bulk_update([config], ["yaml"])
+                return
+
+            # 插件配置为空, 清理数据
             config = binding.config
             # NOTE: 用bulk_delete避免触发信号
             PluginBinding.objects.bulk_delete([binding])
@@ -82,7 +90,7 @@ class HeaderRewriteConvertor:
             return
 
         # 如果没有绑定, 新建插件配置, 并绑定到stage
-        if not binding and plugin_config:
+        if plugin_config:
             config = PluginConfig(
                 api=gateway,
                 name=f"{scope_type} [{scope_id}] header rewrite",
@@ -98,11 +106,3 @@ class HeaderRewriteConvertor:
             )
             # NOTE: 用bulk_create避免触发信号
             PluginBinding.objects.bulk_create([binding])
-            return
-
-        # 如果已经绑定, 更新插件配置
-        if binding and plugin_config:
-            config = binding.config
-            config.yaml = yaml_dumps(plugin_config)
-            # NOTE: 用bulk_update避免触发信号
-            PluginConfig.objects.bulk_update([config], ["yaml"])
