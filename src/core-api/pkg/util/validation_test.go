@@ -23,11 +23,11 @@ import (
 	"io"
 	"strings"
 
-	"core/pkg/util"
-
-	"github.com/go-playground/validator/v10"
+	validator "github.com/go-playground/validator/v10"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/util"
 )
 
 var _ = Describe("Validation", func() {

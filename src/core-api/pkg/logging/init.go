@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
 	"go.uber.org/zap/zapcore"
 
 	"core/pkg/config"

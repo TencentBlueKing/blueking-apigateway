@@ -27,7 +27,8 @@ import (
 	"core/pkg/util"
 )
 
-// MicroGatewayInstanceMiddleware is the middleware to verify the micro gateway instance by instance id and instance secret
+// MicroGatewayInstanceMiddleware is the middleware to verify the micro gateway instance by instance id and instance
+// secret
 func MicroGatewayInstanceMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		instanceID := c.GetHeader("X-Bk-Micro-Gateway-Instance-Id")

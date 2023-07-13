@@ -20,12 +20,16 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
-type queryFunc func(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error
+type (
+	queryFunc func(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error
+	execFunc  func(ctx context.Context, db *sqlx.DB, query string, args ...any) (sql.Result, error)
+)
 
 func queryTimer(f queryFunc) queryFunc {
 	return func(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {
@@ -33,6 +37,15 @@ func queryTimer(f queryFunc) queryFunc {
 		defer logSlowSQL(start, query, args)
 		// NOTE: must be args...
 		return f(ctx, db, dest, query, args...)
+	}
+}
+
+func execTimer(f execFunc) execFunc {
+	return func(ctx context.Context, db *sqlx.DB, query string, args ...any) (sql.Result, error) {
+		start := time.Now()
+		defer logSlowSQL(start, query, args)
+		// NOTE: must be args...
+		return f(ctx, db, query, args...)
 	}
 }
 
@@ -59,6 +72,10 @@ func sqlxGetFunc(ctx context.Context, db *sqlx.DB, dest interface{}, query strin
 	return err
 }
 
+func sqlxExecFunc(ctx context.Context, db *sqlx.DB, query string, args ...any) (sql.Result, error) {
+	return db.ExecContext(ctx, query, args...)
+}
+
 // note: if you want to add more functions, please take a look at
 //       https://github.com/TencentBlueKing/bk-iam/blob/master/pkg/database/sqlx.go
 
@@ -66,4 +83,5 @@ func sqlxGetFunc(ctx context.Context, db *sqlx.DB, dest interface{}, query strin
 var (
 	SqlxSelect = queryTimer(sqlxSelectFunc)
 	SqlxGet    = queryTimer(sqlxGetFunc)
+	SqxExec    = execTimer(sqlxExecFunc)
 )

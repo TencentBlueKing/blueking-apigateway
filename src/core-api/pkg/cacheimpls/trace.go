@@ -21,11 +21,11 @@ package cacheimpls
 import (
 	"context"
 
-	"core/pkg/trace"
-
 	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
 	"go.opentelemetry.io/otel/attribute"
+
+	"core/pkg/trace"
 )
 
 // tracedFuncWrapper

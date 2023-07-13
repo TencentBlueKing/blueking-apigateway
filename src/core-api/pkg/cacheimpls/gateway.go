@@ -22,9 +22,9 @@ import (
 	"context"
 	"errors"
 
-	"core/pkg/database/dao"
-
 	"github.com/TencentBlueKing/gopkg/cache"
+
+	"core/pkg/database/dao"
 )
 
 // GatewayNameKey is the key of gateway

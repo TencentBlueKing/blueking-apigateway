@@ -23,8 +23,6 @@ import (
 	"fmt"
 	"sync"
 
-	"core/pkg/config"
-
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -34,6 +32,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	tc "go.opentelemetry.io/otel/trace"
+
+	"core/pkg/config"
 )
 
 const (
@@ -131,7 +131,7 @@ func getTraceSampler(samplerStrategy string, ratio float64) trace.TracerProvider
 	case sampleTypeParentBaseAlwaysOn:
 		return trace.WithSampler(trace.ParentBased(trace.AlwaysSample()))
 	default:
-		//TraceIDRatioBased samples
+		// TraceIDRatioBased samples
 		return trace.WithSampler(trace.TraceIDRatioBased(ratio))
 	}
 }

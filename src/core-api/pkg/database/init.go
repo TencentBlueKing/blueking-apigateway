@@ -21,11 +21,11 @@ package database
 import (
 	"sync"
 
-	"core/pkg/config"
-
 	"github.com/dlmiddlecote/sqlstats"
 	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"core/pkg/config"
 )
 
 // NOTE: 独立/原子/单一
@@ -43,7 +43,7 @@ func InitDBClients(defaultDBConfig *config.Database, tracerConfig config.Tracing
 	if DefaultDBClient == nil {
 		defaultDBClientOnce.Do(func() {
 			DefaultDBClient = NewDBClient(defaultDBConfig)
-			//set db trace
+			// set db trace
 			DefaultDBClient.SetTraceEnabled(tracerConfig.DBAPIEnabled())
 			if err := DefaultDBClient.Connect(); err != nil {
 				panic(err)

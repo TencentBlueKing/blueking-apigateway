@@ -22,11 +22,11 @@ import (
 	"context"
 	"testing"
 
-	"core/pkg/database"
-
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/database"
 )
 
 func Test_microGatewayManager_Get(t *testing.T) {
