@@ -1009,6 +1009,8 @@ export default {
     "覆盖 <strong style=\"color: #EA3536;\"> {updateNum} </strong> 条": "覆盖 <strong style=\"color: #EA3536;\"> {updateNum} </strong> 条",
     "新建 <strong style=\"color: #2DCB56;\"> {createDocNum} </strong> 条，": "新建 <strong style=\"color: #2DCB56;\"> {createDocNum} </strong> 条，",
     "覆盖 <strong style=\"color: #EA3536;\"> {updateDocNum} </strong> 条": "覆盖 <strong style=\"color: #EA3536;\"> {updateDocNum} </strong> 条",
+    "变更 <strong style=\"color: #2DCB56;\"> {updateNum} </strong> 条，": "变更 <strong style=\"color: #2DCB56;\"> {updateNum} </strong> 条，",
+    "未变更 <strong style=\"color: #63656E\"> {updateNum} </strong> 条，": "未变更 <strong style=\"color: #63656E\"> {updateNum} </strong> 条，",
     "环境【{curStage}】将发布版本 {releaseVersion}，当前版本将被覆盖，发布后，环境下新版本的资源可被访问。": "环境【{curStage}】将发布版本 {releaseVersion}，当前版本将被覆盖，发布后，环境下新版本的资源可被访问。",
     "蓝鲸应用ID [{detailsAppCode}] 访问API网关 [{currentApigwName}] 资源的请求详情": "蓝鲸应用ID [{detailsAppCode}] 访问API网关 [{currentApigwName}] 资源的请求详情",
     "确定删除 【{DataName}】标签": "确定删除 【{DataName}】标签",

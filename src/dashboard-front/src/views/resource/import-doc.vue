@@ -111,7 +111,8 @@
       <p class="f14 ag-table-header">
         {{ $t('请确认以下文档变更：') }}
         <span v-html="addInfo"></span>
-        <span v-html="coverInfo"></span>
+        <span v-html="changeInfo"></span>
+        <span v-html="unchangedInfo"></span>
         <span v-html="resourceInfo"></span>
         <bk-input
           class="fr"
@@ -393,9 +394,9 @@
         const results = this.selectedResourceDocs.filter(item => item.id && !item.resource_doc_id)
         return results.length
       },
-      updateNum () {
+      updateDocList () {
         const results = this.selectedResourceDocs.filter(item => item.id && item.resource_doc_id)
-        return results.length
+        return results
       },
       noExistNum () {
         const results = this.resourceList.filter(item => !item.id)
@@ -404,8 +405,11 @@
       addInfo () {
         return this.$t(`新建 <strong style="color: #2DCB56;"> {createNum} </strong> 条，`, { createNum: this.createNum })
       },
-      coverInfo () {
-        return this.$t(`覆盖 <strong style="color: #3a84ff;"> {updateNum} </strong> 条，`, { updateNum: this.updateNum })
+      changeInfo () {
+        return this.$t(`变更 <strong style="color: #2DCB56;"> {updateNum} </strong> 条，`, { updateNum: this.updateDocList.filter(v => v.is_change).length })
+      },
+      unchangedInfo () {
+        return this.$t(`未变更 <strong style="color: #63656E"> {updateNum} </strong> 条，`, { updateNum: this.updateDocList.filter(v => !v.is_change).length })
       },
       resourceInfo () {
         return this.$t(`资源不存在 <strong style="color: #EA3536;"> {noExistNum} </strong> 条`, { noExistNum: this.noExistNum })
@@ -443,7 +447,8 @@
                 name: item.name,
                 id: item.id,
                 resource_doc_id: item.resource_doc_id,
-                filename: item.filename || ''
+                filename: item.filename || '',
+                is_change: item.resource_doc_content_changed
               })
             })
           }
@@ -466,7 +471,8 @@
                 name: item.name,
                 id: item.id,
                 resource_doc_id: item.resource_doc_id,
-                filename: item.filename || ''
+                filename: item.filename || '',
+                is_change: item.resource_doc_content_changed
               })
             })
           }
@@ -503,7 +509,8 @@
                 name: item.name,
                 id: item.id,
                 resource_doc_id: item.resource_doc_id,
-                filename: item.filename || ''
+                filename: item.filename || '',
+                is_change: item.resource_doc_content_changed
               })
             }
           })
@@ -787,7 +794,8 @@
                   name: item.name,
                   id: item.id,
                   resource_doc_id: item.resource_doc_id,
-                  filename: item.filename || ''
+                  filename: item.filename || '',
+                  is_change: item.resource_doc_content_changed
                 })
               }
             })
@@ -809,7 +817,8 @@
                     name: item.name,
                     id: item.id,
                     resource_doc_id: item.resource_doc_id,
-                    filename: item.filename || ''
+                    filename: item.filename || '',
+                    is_change: item.resource_doc_content_changed
                   })
                 }
               }
@@ -861,7 +870,8 @@
             name: item.name,
             id: item.id,
             resource_doc_id: item.resource_doc_id,
-            filename: item.filename || ''
+            filename: item.filename || '',
+            is_change: item.resource_doc_content_changed
           })
           return prev
         }, [])
