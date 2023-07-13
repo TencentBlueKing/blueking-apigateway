@@ -213,7 +213,7 @@ func getGatewayID(ctx context.Context, instanceID, gatewayName string) (int64, e
 		return 0, fmt.Errorf("call GetMicroGateway fail: %w, instanceID=%s", err, instanceID)
 	}
 
-	// var gateway dao.GatewayName
+	// var gateway dao.Gateway
 	if microGateway.IsShared {
 		gateway, err := cacheimpls.GetGatewayByName(ctx, gatewayName)
 		if err != nil {
@@ -241,7 +241,7 @@ func getResourceIDByName(
 	stageID int64,
 	resourceName string,
 ) (resourceID int64, ok bool, err error) {
-	// NOTE: there got no resourceID in private GatewayName(isShared=False), only have resourceName
+	// NOTE: there got no resourceID in private Gateway(isShared=False), only have resourceName
 	//       so, we should get resourceID by resourceName
 	// 1. get `Release` by gatewayID and stageID, release has a reference field `resource_version_id ` to ResourceVersion
 	// 2. get `ResourceVersion` by `resource_version_id`, ResourceVersion has data field `[{}, {}]`
