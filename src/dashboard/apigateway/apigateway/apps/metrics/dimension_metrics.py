@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from abc import ABC, abstractmethod
-from typing import ClassVar, Dict, List, Optional, Text, Tuple, Type
+from typing import ClassVar, Dict, List, Optional, Tuple, Type
 
 from django.conf import settings
 
@@ -227,13 +227,13 @@ class ResourceNon200StatusRequestsMetrics(BaseDimensionMetrics):
 
 class DimensionMetricsFactory:
     # map: dimension -> metrics -> dimension_metrics_class
-    _registry: Dict[Text, Dict[Text, Type[BaseDimensionMetrics]]] = {}
+    _registry: Dict[DimensionEnum, Dict[MetricsEnum, Type[BaseDimensionMetrics]]] = {}
 
     @classmethod
     def create_dimension_metrics(cls, dimension: DimensionEnum, metrics: MetricsEnum) -> BaseDimensionMetrics:
         _class = cls._registry.get(dimension, {}).get(metrics)
         if not _class:
-            raise error_codes.INVALID_ARGS.format(f"unsupported grant_dimension={dimension}, metrics={metrics}")
+            raise error_codes.INVALID_ARGS.format(f"unsupported dimension={dimension.value}, metrics={metrics.value}")
         return _class()
 
     @classmethod
