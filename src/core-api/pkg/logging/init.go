@@ -26,8 +26,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"core/pkg/config"
 	"go.uber.org/zap/zapcore"
+
+	"core/pkg/config"
 )
 
 var loggerInitOnce sync.Once
