@@ -28,6 +28,8 @@ class PluginData:
     _type_code_to_name: ClassVar[Dict[str, str]] = {
         "bk-rate-limit:stage": "bk-stage-rate-limit",
         "bk-rate-limit:resource": "bk-resource-rate-limit",
+        "bk-header-rewrite:stage": "bk-stage-header-rewrite",
+        "bk-header-rewrite:resource": "bk-resource-header-rewrite",
     }
 
     @property

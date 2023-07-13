@@ -22,12 +22,7 @@ class TestCustomResourceConvertor:
     def test_fixture(self, edge_custom_release_convertor):
         assert isinstance(edge_custom_release_convertor, CustomResourceConvertor)
 
-    def test_convert(self, mocker, edge_custom_release_convertor):
-        mocker.patch(
-            "apigateway.controller.crds.v1beta1.convertors.resource.HttpResourceConvertor._save_resource_header_rewrite_plugin",
-            return_value=None,
-        )
-
+    def test_convert(self, edge_custom_release_convertor):
         edge_custom_release_convertor.convert()
 
         resources = list(edge_custom_release_convertor.get_kubernetes_resources())

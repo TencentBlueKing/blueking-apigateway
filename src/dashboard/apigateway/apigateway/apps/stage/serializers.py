@@ -199,9 +199,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             validated_data.get("rate_limit") or settings.DEFAULT_STAGE_RATE_LIMIT_CONFIG,
         )
 
-        # 创建header插件配置并绑定到stage
-        StageHandler().save_header_rewrite_plugin(instance, validated_data["proxy_http"].get("transform_headers", {}))
-
         # 3. record audit log
         StageHandler().add_create_audit_log(validated_data["api"], instance, validated_data.get("created_by", ""))
 
@@ -222,9 +219,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             validated_data["proxy_http"],
             validated_data.get("rate_limit"),
         )
-
-        # 更新header插件配置并绑定到stage
-        StageHandler().save_header_rewrite_plugin(instance, validated_data["proxy_http"].get("transform_headers", {}))
 
         # 3. send signal
         reversion_update_signal.send(sender=Stage, instance_id=instance.id, action="update")

@@ -34,36 +34,3 @@ class TestHeaderRewriteConvertor:
     )
     def test_transform_headers_to_plugin_config(self, transform_headers, expected):
         assert HeaderRewriteConvertor.transform_headers_to_plugin_config(transform_headers) == expected
-
-    @pytest.mark.parametrize(
-        "stage_config, resource_config, expected",
-        [
-            (None, None, None),
-            (
-                {"set": [{"key": "key1", "value": "value1"}], "remove": [{"key": "key2"}]},
-                None,
-                {"set": [{"key": "key1", "value": "value1"}], "remove": [{"key": "key2"}]},
-            ),
-            (
-                None,
-                {"set": [{"key": "key1", "value": "value1"}], "remove": [{"key": "key2"}]},
-                {"set": [{"key": "key1", "value": "value1"}], "remove": [{"key": "key2"}]},
-            ),
-        ],
-    )
-    def test_merge_plugin_config(self, stage_config, resource_config, expected):
-        assert HeaderRewriteConvertor.merge_plugin_config(stage_config, resource_config) == expected
-
-    def test_merge_plugin_config_2(self):
-        config = HeaderRewriteConvertor.merge_plugin_config(
-            {
-                "set": [{"key": "key1", "value": "value1"}, {"key": "key5", "value": "value5"}],
-                "remove": [{"key": "key2"}],
-            },
-            {
-                "set": [{"key": "key1", "value": "value2"}, {"key": "key4", "value": "value4"}],
-                "remove": [{"key": "key2"}, {"key": "key3"}],
-            },
-        )
-        assert len(config["set"]) == 3
-        assert len(config["remove"]) == 2

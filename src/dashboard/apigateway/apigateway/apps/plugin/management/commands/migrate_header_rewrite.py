@@ -15,7 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 import logging
 
 from django.core.management.base import BaseCommand
@@ -24,7 +23,7 @@ from django.core.paginator import Paginator
 from apigateway.apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 from apigateway.apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
-from apigateway.core.models import Context, Release, Stage
+from apigateway.core.models import Context, Proxy, Stage
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +33,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # 遍历stage, 迁移proxy请求头
-        qs = Stage.objects.prefetch_related("api").all()
+        qs = Stage.objects.all()
 
-        logger.info("start migrate header rewrite plugin config, all stage count %s", qs.count())
+        logger.info("start migrate stage header rewrite plugin config, all stage count %s", qs.count())
 
         paginator = Paginator(qs, 100)
         for i in paginator.page_range:
-
             logger.info("migrate stage count %s", (i + 1) * 100)
 
             for stage in paginator.page(i):
@@ -50,28 +48,52 @@ class Command(BaseCommand):
                     type=ContextTypeEnum.STAGE_PROXY_HTTP.value,
                 ).first()
 
-                # 1. 迁移stage的proxy请求头
-                stage_transform_headers = context.config.get("transform_headers", {}) if context else {}
-                stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
-                HeaderRewriteConvertor.alter_plugin(
-                    stage.api, PluginBindingScopeEnum.STAGE.value, stage.id, stage_config
-                )
-
-                # 2. 迁移resource的proxy请求头
-                release = Release.objects.filter(stage=stage).prefetch_related("resource_version").first()
-                if not release:
+                if not context:
                     continue
 
-                for resource in release.resource_version.data:
-                    resource_proxy = json.loads(resource["proxy"]["config"])
-                    resource_transform_headers = resource_proxy.get("transform_headers", {})
-                    resource_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(
-                        resource_transform_headers
-                    )
+                config = context.config
+                if "transform_headers" not in config:
+                    continue
 
-                    plugin_config = HeaderRewriteConvertor.merge_plugin_config(stage_config, resource_config)
-                    HeaderRewriteConvertor.alter_plugin(
-                        stage.api, PluginBindingScopeEnum.RESOURCE.value, resource["id"], plugin_config
-                    )
+                # 迁移stage的proxy请求头
+                stage_transform_headers = context.config.get("transform_headers")
+                stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
+                HeaderRewriteConvertor.alter_plugin(
+                    stage.api_id, PluginBindingScopeEnum.STAGE.value, stage.id, stage_config
+                )
 
-        logger.info("finish migrate header rewrite plugin config")
+                # 迁移后清理 transform_headers
+                config.pop("transform_headers")
+                context.config = config
+                context.save()
+
+        logger.info("finish migrate stage header rewrite plugin config")
+
+        # 迁移resource的proxy请求头
+        qs = Proxy.objects.prefetch_related("resource").all()
+
+        logger.info("start migrate resource header rewrite plugin config, all stage count %s", qs.count())
+
+        paginator = Paginator(qs, 100)
+        for i in paginator.page_range:
+            logger.info("migrate resource count %s", (i + 1) * 100)
+
+            for proxy in paginator.page(i):
+                config = proxy.config
+
+                if "transform_headers" not in config:
+                    continue
+
+                resource_transform_headers = config.get("transform_headers")
+                resource_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(resource_transform_headers)
+
+                HeaderRewriteConvertor.alter_plugin(
+                    proxy.resource.api_id, PluginBindingScopeEnum.RESOURCE.value, proxy.resource.id, resource_config
+                )
+
+                # 迁移后清理 transform_headers
+                config.pop("transform_headers")
+                proxy.config = config
+                proxy.save()
+
+        logger.info("finish migrate resource header rewrite plugin config")

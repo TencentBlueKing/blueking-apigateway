@@ -94,7 +94,6 @@ class TestHttpResourceConvertor:
 
     def test_convert_http_resources_with_edge_resource_inherit_stage(
         self,
-        mocker,
         edge_gateway,
         edge_gateway_stage,
         edge_gateway_stage_context_proxy_http,
@@ -102,11 +101,6 @@ class TestHttpResourceConvertor:
         edge_resource_inherit_stage_proxy,
         fake_http_resource_convertor,
     ):
-        mocker.patch(
-            "apigateway.controller.crds.v1beta1.convertors.resource.HttpResourceConvertor._save_resource_header_rewrite_plugin",
-            return_value=None,
-        )
-
         resource = None
 
         for r in fake_http_resource_convertor.convert():
@@ -154,7 +148,6 @@ class TestHttpResourceConvertor:
 
     def test_convert_http_resources_with_edge_resource_overwrite_stage(
         self,
-        mocker,
         edge_gateway,
         edge_gateway_stage,
         edge_gateway_stage_context_proxy_http,
@@ -162,11 +155,6 @@ class TestHttpResourceConvertor:
         edge_resource_overwrite_stage_proxy,
         fake_http_resource_convertor,
     ):
-        mocker.patch(
-            "apigateway.controller.crds.v1beta1.convertors.resource.HttpResourceConvertor._save_resource_header_rewrite_plugin",
-            return_value=None,
-        )
-
         resource = None
         for r in fake_http_resource_convertor.convert():
             if r.spec.name == edge_resource_overwrite_stage.name:

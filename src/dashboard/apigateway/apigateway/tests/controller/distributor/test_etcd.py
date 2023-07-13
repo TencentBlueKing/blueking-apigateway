@@ -30,10 +30,6 @@ class TestEtcdDistributor:
     @pytest.fixture(autouse=True)
     def setup(self, mocker):
         self.registry = DictRegistry()
-        mocker.patch(
-            "apigateway.controller.crds.v1beta1.convertors.resource.HttpResourceConvertor._save_resource_header_rewrite_plugin",
-            return_value=None,
-        )
 
     @pytest.mark.parametrize(
         "include_gateway_global_config, ignored_models, distributed_models",

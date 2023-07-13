@@ -55,12 +55,7 @@ class TestStageWithResourceVersionV1SLZ:
             ),
         ],
     )
-    def test_to_representation(self, mocker, fake_stage, stage_name, stage_release, expected):
-        mocker.patch(
-            "apigateway.biz.stage.StageHandler.save_header_rewrite_plugin",
-            return_value=None,
-        )
-
+    def test_to_representation(self, fake_stage, stage_name, stage_release, expected):
         fake_stage.name = stage_name
         slz = serializers.StageWithResourceVersionV1SLZ(
             [fake_stage],

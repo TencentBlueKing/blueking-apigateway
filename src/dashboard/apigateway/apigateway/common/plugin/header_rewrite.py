@@ -19,7 +19,6 @@ from typing import Optional
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
-from apigateway.core.models import Gateway
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -36,29 +35,7 @@ class HeaderRewriteConvertor:
         }
 
     @staticmethod
-    def merge_plugin_config(stage_config: Optional[dict], resource_config: Optional[dict]) -> Optional[dict]:
-        if not stage_config and not resource_config:
-            return None
-
-        if not stage_config and resource_config:
-            return resource_config
-
-        if stage_config and not resource_config:
-            return stage_config
-
-        remove_keys = {item["key"] for item in resource_config["remove"]} | {  # type: ignore
-            item["key"] for item in stage_config["remove"]  # type: ignore
-        }  # stage remove keys 与 resource remove keys 取合集
-        set_headers = {item["key"]: item["value"] for item in stage_config["set"]}  # type: ignore
-        set_headers.update({item["key"]: item["value"] for item in resource_config["set"]})  # type: ignore
-
-        return {
-            "set": [{"key": key, "value": value} for key, value in set_headers.items()],
-            "remove": [{"key": key} for key in remove_keys],
-        }
-
-    @staticmethod
-    def alter_plugin(gateway: Gateway, scope_type: str, scope_id: int, plugin_config: Optional[dict]):
+    def alter_plugin(gateway_id: int, scope_type: str, scope_id: int, plugin_config: Optional[dict]):
         # 1. 判断resource是否已经绑定header rewrite插件
         binding = (
             PluginBinding.objects.filter(
@@ -92,14 +69,14 @@ class HeaderRewriteConvertor:
         # 如果没有绑定, 新建插件配置, 并绑定到stage
         if plugin_config:
             config = PluginConfig(
-                api=gateway,
+                api_id=gateway_id,
                 name=f"{scope_type} [{scope_id}] header rewrite",
                 type=PluginType.objects.get(code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value),
                 yaml=yaml_dumps(plugin_config),
             )
             config.save()
             binding = PluginBinding(
-                api=gateway,
+                api_id=gateway_id,
                 scope_type=scope_type,
                 scope_id=scope_id,
                 config=config,

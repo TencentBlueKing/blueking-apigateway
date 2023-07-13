@@ -33,11 +33,6 @@ class TestHelmDistributor:
         self.release_helper = mocker.MagicMock()
         self.release_helper.ensure_release.return_value = ReleaseInfo.from_api({})
 
-        mocker.patch(
-            "apigateway.controller.crds.v1beta1.convertors.resource.HttpResourceConvertor._save_resource_header_rewrite_plugin",
-            return_value=None,
-        )
-
     def test_distribute_with_generate_chart(self, mocker, faker, edge_release, micro_gateway):
         distributor = HelmDistributor(
             generate_chart=True,
