@@ -22,7 +22,6 @@ import json
 from builtins import object
 
 from common.errors import CommonAPIError
-
 from . import configs
 
 

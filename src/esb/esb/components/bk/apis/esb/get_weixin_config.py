@@ -20,7 +20,6 @@
 from common.constants import API_TYPE_Q
 from components.component import Component
 from esb.bkcore.models import ESBChannel
-
 from .toolkit import configs
 
 

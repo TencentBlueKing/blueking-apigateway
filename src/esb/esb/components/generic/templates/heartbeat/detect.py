@@ -23,7 +23,6 @@ from django import forms
 
 from common.forms import BaseComponentForm
 from components.component import Component
-
 from .toolkit import configs
 
 

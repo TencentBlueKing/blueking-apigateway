@@ -23,11 +23,10 @@ import (
 	"reflect"
 	"testing"
 
-	"core/pkg/logging"
-
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
-	// log "github.com/sirupsen/logrus"
+
+	"core/pkg/logging"
 )
 
 // NewMockSqlxDB ...

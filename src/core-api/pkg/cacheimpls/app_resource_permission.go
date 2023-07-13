@@ -24,10 +24,10 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/TencentBlueKing/gopkg/cache"
+
 	"core/pkg/database/dao"
 	"core/pkg/logging"
-
-	"github.com/TencentBlueKing/gopkg/cache"
 )
 
 // AppResourcePermissionKey is the key of app-resource permission

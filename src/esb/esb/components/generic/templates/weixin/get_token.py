@@ -24,7 +24,6 @@ from common.errors import CommonAPIError
 from common.forms import BaseComponentForm, DefaultBooleanField
 from components.component import Component, SetupConfMixin
 from esb.bkcore.models import ESBChannel
-
 from .toolkit import configs
 
 

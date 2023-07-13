@@ -26,7 +26,6 @@ from components.esb_conf import CUSTOM_APIS_REL_PATH
 from esb.utils import fpath_to_module
 from esb.utils.confapis import get_confapis_manager
 from esb.utils.esb_config import EsbConfigParser
-
 from .channel_tools import ChannelClient
 
 logger = logging.getLogger(__name__)

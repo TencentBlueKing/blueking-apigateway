@@ -23,9 +23,9 @@ import (
 	"errors"
 	"strconv"
 
-	"core/pkg/database/dao"
-
 	"github.com/TencentBlueKing/gopkg/cache"
+
+	"core/pkg/database/dao"
 )
 
 // StageKey is the key of stage

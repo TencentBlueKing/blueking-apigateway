@@ -27,7 +27,6 @@ from common.base_utils import str_bool
 from common.constants import API_TYPE_OP
 from common.forms import BaseComponentForm, DefaultBooleanField, ListField, TypeCheckField
 from components.component import Component, SetupConfMixin
-
 from .toolkit import configs, send_mail_with_smtp, tools
 
 

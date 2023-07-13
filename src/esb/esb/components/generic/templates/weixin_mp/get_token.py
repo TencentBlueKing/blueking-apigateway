@@ -27,7 +27,6 @@ from common.errors import CommonAPIError
 from common.forms import BaseComponentForm, DefaultBooleanField
 from components.component import Component, SetupConfMixin
 from esb.bkcore.models import WxmpAccessToken
-
 from .toolkit import configs, tools
 
 

@@ -24,11 +24,11 @@ import (
 	"errors"
 	"strconv"
 
-	"core/pkg/database/dao"
-	"core/pkg/logging"
-
 	"github.com/TencentBlueKing/gopkg/cache"
 	jsoniter "github.com/json-iterator/go"
+
+	"core/pkg/database/dao"
+	"core/pkg/logging"
 )
 
 // ResourceVersionMappingKey is the key of resource version mapping

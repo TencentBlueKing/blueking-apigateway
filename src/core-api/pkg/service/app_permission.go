@@ -37,7 +37,10 @@ const (
 
 // AppPermissionService is the interface of app permission service
 type AppPermissionService interface {
-	Query(ctx context.Context, instanceID, gatewayName, stageName, resourceName, appCode string) (map[string]int64, error)
+	Query(
+		ctx context.Context,
+		instanceID, gatewayName, stageName, resourceName, appCode string,
+	) (map[string]int64, error)
 }
 
 type appPermissionService struct {
@@ -166,8 +169,13 @@ func (s *appPermissionService) Query(
 		return permissions, nil
 	}
 
-	// 2.2 query teh app-resource permission
-	resourcePermissionExpiredAt, err := cacheimpls.GetAppResourcePermissionExpiredAt(ctx, appCode, gatewayID, resourceID)
+	// 2.2 query app-resource permission
+	resourcePermissionExpiredAt, err := cacheimpls.GetAppResourcePermissionExpiredAt(
+		ctx,
+		appCode,
+		gatewayID,
+		resourceID,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"call GetAppResourcePermissionExpiredAt fail: %w, appCode=%s, gatewayID=%d, resourceID=%d",
@@ -227,7 +235,12 @@ func getStageID(ctx context.Context, gatewayID int64, stageName string) (int64, 
 	return stage.ID, nil
 }
 
-func getResourceIDByName(ctx context.Context, gatewayID int64, stageID int64, resourceName string) (resourceID int64, ok bool, err error) {
+func getResourceIDByName(
+	ctx context.Context,
+	gatewayID int64,
+	stageID int64,
+	resourceName string,
+) (resourceID int64, ok bool, err error) {
 	// NOTE: there got no resourceID in private Gateway(isShared=False), only have resourceName
 	//       so, we should get resourceID by resourceName
 	// 1. get `Release` by gatewayID and stageID, release has a reference field `resource_version_id ` to ResourceVersion
@@ -254,5 +267,6 @@ func getResourceIDByName(ctx context.Context, gatewayID int64, stageID int64, re
 
 	// 2.2 get resource id
 	resourceID, ok = resourceNameToID[resourceName]
+	//nolint
 	return
 }

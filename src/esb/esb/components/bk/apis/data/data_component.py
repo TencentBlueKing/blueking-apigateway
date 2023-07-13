@@ -23,7 +23,6 @@ import re
 from common.errors import error_codes
 from components.component import BaseComponent, SetupConfMixin
 from esb.utils.base import has_path_vars
-
 from .toolkit import configs
 
 

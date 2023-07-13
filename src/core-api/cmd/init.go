@@ -21,14 +21,14 @@ package cmd
 import (
 	"fmt"
 
+	sentry "github.com/getsentry/sentry-go"
+	"github.com/spf13/viper"
+
 	"core/pkg/config"
 	"core/pkg/database"
 	"core/pkg/logging"
 	"core/pkg/metric"
 	"core/pkg/trace"
-
-	"github.com/getsentry/sentry-go"
-	"github.com/spf13/viper"
 )
 
 var globalConfig *config.Config

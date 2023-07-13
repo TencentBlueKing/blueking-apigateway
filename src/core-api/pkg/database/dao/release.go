@@ -22,9 +22,10 @@ package dao
 
 import (
 	"context"
-	"core/pkg/database"
 
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 // TODO: split into thinx and x, for better performance
@@ -45,15 +46,15 @@ type ReleaseManager interface {
 	Get(ctx context.Context, gatewayID int64, stageID int64) (Release, error)
 }
 
+type releaseManager struct {
+	DB *sqlx.DB
+}
+
 // NewReleaseManager ...
 func NewReleaseManager() ReleaseManager {
 	return &releaseManager{
 		DB: database.GetDefaultDBClient().DB,
 	}
-}
-
-type releaseManager struct {
-	DB *sqlx.DB
 }
 
 // Get ...

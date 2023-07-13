@@ -24,10 +24,10 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/TencentBlueKing/gopkg/cache"
+
 	"core/pkg/database/dao"
 	"core/pkg/logging"
-
-	"github.com/TencentBlueKing/gopkg/cache"
 )
 
 // AppGatewayPermissionKey is the key of app-gateway permission
