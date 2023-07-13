@@ -79,12 +79,14 @@ func (p publishEventService) Report(ctx context.Context, event Event) error {
 	}
 	// create event
 	publishEvent := dao.PublishEvent{
-		PublishID: event.PublishID,
-		StageID:   stageInfo.ID,
-		Name:      event.Name,
-		Status:    event.Status,
-		Detail:    event.DetailMap,
-		Step:      constant.GetStep(event.Name),
+		PublishID:   event.PublishID,
+		StageID:     stageInfo.ID,
+		Name:        event.Name,
+		Status:      event.Status,
+		Detail:      event.DetailMap,
+		Step:        constant.GetStep(event.Name),
+		CreatedTime: time.Now(),
+		UpdatedTime: time.Now(),
 	}
 	_, err = p.publishEventManager.Create(ctx, publishEvent)
 	if err != nil {
