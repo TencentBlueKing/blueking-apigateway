@@ -108,10 +108,10 @@ func (p publishEventManager) Create(ctx context.Context, publishEvent PublishEve
 		// make sure err is a mysql.MySQLError.
 		if errMySQL, ok := err.(*mysql.MySQLError); ok {
 			if errMySQL.Number == database.DuplicateErrCode {
-				return 0, fmt.Errorf("insert event duplicated err:%w", err)
+				return 0, fmt.Errorf("insert event duplicated err: %w", err)
 			}
 		}
-		return 0, fmt.Errorf("failed to insert publish event：%w", err)
+		return 0, fmt.Errorf("failed to insert publish event: %w", err)
 	}
 	return result.LastInsertId()
 }

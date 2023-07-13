@@ -31,8 +31,8 @@ import (
 // secret
 func MicroGatewayInstanceMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		instanceID := c.GetHeader("X-Bk-Micro-Gateway-Instance-Id")
-		instanceSecret := c.GetHeader("X-Bk-Micro-Gateway-Instance-Secret")
+		instanceID := c.GetHeader("X-Bk-Micro-GatewayName-Instance-Id")
+		instanceSecret := c.GetHeader("X-Bk-Micro-GatewayName-Instance-Secret")
 
 		if instanceID == "" || instanceSecret == "" {
 			util.UnauthorizedJSONResponse(c, "no authorization credentials provided")

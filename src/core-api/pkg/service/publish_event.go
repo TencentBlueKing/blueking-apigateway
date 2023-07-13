@@ -63,19 +63,19 @@ func (p publishEventService) Report(ctx context.Context, event Event) error {
 	// get release history info by publish id
 	releaseHistory, err := cacheimpls.GetReleaseHistory(ctx, event.PublishID)
 	if err != nil {
-		return fmt.Errorf("gateway[%s] get Stage [%s] release history by publish_id:%d failed, err: %w",
+		return fmt.Errorf("gateway[%s] get StageName [%s] release history by publish_id:%d failed, err: %w",
 			event.Gateway, event.Stage, event.PublishID, err)
 	}
 	// For events that have passed for a long time,  filter and lose it
 	if time.Since(releaseHistory.CreatedTime) > eventExpireTime {
-		return fmt.Errorf("gateway[%s] get Stage [%s] event has passed for a long time, publish id: %d",
+		return fmt.Errorf("gateway[%s] get StageName [%s] event has passed for a long time, publish id: %d",
 			event.Gateway, event.Stage, event.PublishID)
 	}
 	// determine whether the event is reported
-	// get Stage id
+	// get StageName id
 	stageInfo, err := cacheimpls.GetStage(ctx, releaseHistory.GatewayID, event.Stage)
 	if err != nil {
-		return fmt.Errorf("gateway[%s] get Stage[%s] info failed, err: %w", event.Gateway, event.Stage, err)
+		return fmt.Errorf("gateway[%s] get StageName[%s] info failed, err: %w", event.Gateway, event.Stage, err)
 	}
 	// create event
 	publishEvent := dao.PublishEvent{

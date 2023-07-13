@@ -20,7 +20,7 @@ package constant
 
 const (
 	// dashboard
-	EventNameGenerateTask            = "generate_release_task"
+	EventNameGenerateReleaseTask     = "generate_release_task"
 	EventNameDistributeConfiguration = "distribute_configuration"
 
 	// operator
@@ -37,7 +37,7 @@ func GetStep(name string) int {
 	GenerateTask-> DistributeConfiguration-> ParseConfiguration-> ApplyConfiguration-> LoadConfiguration
 	*/
 	switch name {
-	case EventNameGenerateTask:
+	case EventNameGenerateReleaseTask:
 		return 1
 	case EventNameDistributeConfiguration:
 		return 2

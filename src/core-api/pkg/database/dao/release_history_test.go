@@ -37,7 +37,7 @@ func Test_releaseHistoryManager_Get(t *testing.T) {
                          api_id,
                          created_time,
 				         updated_time 
-			         FROM core_publish_event 
+			         FROM core_release_history 
 			         WHERE id = ?`
 		publishID := 16
 		record := ReleaseHistory{

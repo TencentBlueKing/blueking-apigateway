@@ -33,12 +33,12 @@ import (
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
 type ReleaseHistory struct {
-	ID                int64     `db:"id;"`
+	ID                int64     `db:"id"`
+	GatewayID         int64     `db:"api_id"`
+	StageID           int       `db:"stage_id"`
+	ResourceVersionID int       `db:"resource_version_id"`
 	CreatedTime       time.Time `db:"created_time"`
 	UpdatedTime       time.Time `db:"updated_time"`
-	GatewayID         int64     `db:"api_id"`
-	ResourceVersionID int       `db:"resource_version_id"`
-	StageID           int       `db:"stage_id"`
 }
 
 type ReleaseHistoryManger interface {
@@ -65,7 +65,7 @@ func (p releaseHistoryManager) Get(ctx context.Context, publishID int64) (Releas
 		api_id,
 		created_time,
 		updated_time 
-		FROM core_publish_event 
+		FROM core_release_history 
 		WHERE id = ?`
 	var releaseHistory ReleaseHistory
 	err := database.SqlxGet(ctx, p.DB, &releaseHistory, query, publishID)
@@ -73,7 +73,7 @@ func (p releaseHistoryManager) Get(ctx context.Context, publishID int64) (Releas
 		if errors.Is(err, sql.ErrNoRows) {
 			return releaseHistory, nil
 		}
-		return releaseHistory, fmt.Errorf("get release history err:%w", err)
+		return releaseHistory, fmt.Errorf("get release history err: %w", err)
 	}
 	return releaseHistory, nil
 }

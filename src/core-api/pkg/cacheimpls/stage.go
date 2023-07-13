@@ -62,7 +62,7 @@ func GetStage(ctx context.Context, gatewayID int64, name string) (stage dao.Stag
 	var ok bool
 	stage, ok = value.(dao.Stage)
 	if !ok {
-		err = errors.New("not dao.Stage in cache")
+		err = errors.New("not dao.StageName in cache")
 		return
 	}
 	return
