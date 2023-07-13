@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,16 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import arrow
-from django.core.management.base import BaseCommand
-
-from apigateway.apps.metrics.statistics import StatisticsHandler
+from bkapi_client_core.apigateway import APIGatewayClient, Operation, OperationGroup, bind_property
 
 
-class Command(BaseCommand):
-    def handle(self, *args, **options):
-        start, end = arrow.utcnow().shift(days=-1).span("day")
-        step = "1d"
+class Group(OperationGroup):
+    # 统一查询时序数据
+    promql_query = bind_property(
+        Operation,
+        name="promql_query",
+        method="POST",
+        path="/promql_query/",
+    )
 
-        handler = StatisticsHandler()
-        handler.stats(start.int_timestamp, end.int_timestamp, step)
+
+class Client(APIGatewayClient):
+    """Bkapi bkmonitorv3 client"""
+
+    _api_name = "bkmonitorv3"
+
+    api = bind_property(Group, name="api")

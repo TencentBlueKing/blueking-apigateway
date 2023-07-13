@@ -16,101 +16,82 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from math import nan
-from typing import Any, Dict, List, Text, Tuple
+from operator import itemgetter
+from typing import Any, Dict
 
+from bkapi_client_core.apigateway import OperationGroup
+from bkapi_client_core.apigateway.django_helper import get_client_by_username as get_client_by_username_for_apigateway
 from django.conf import settings
-from pydantic import BaseModel
 
-from apigateway.common.error_codes import error_codes
-from apigateway.utils.http import http_get
-
-from .component import BaseComponent
-
-PROMETHEUS_API_TIMEOUT = 30
+from apigateway.components.bkapi_client.bkmonitorv3 import Client as BkMonitorV3Client
+from apigateway.components.esb_components import get_client_by_username as get_client_by_username_for_esb
+from apigateway.components.handler import RequestAPIHandler
 
 
-class RequestResult(BaseModel):
-    status: Text = ""
-    data: Dict[Text, Any] = {}
-    error: Text = ""
+class PrometheusComponent:
+    def __init__(self):
+        self._api_client: OperationGroup = self._get_api_client()
+        self._request_handler = RequestAPIHandler("bkmonitorv3")
 
+    def query_range(self, bk_biz_id: str, promql: str, start: int, end: int, step: str) -> Dict[str, Any]:
+        """
+        Evaluate an expression query over a range of time
 
-class InstantVector(BaseModel):
-    metric: Dict[Text, Text] = {}
-    value: Tuple[float, Text] = (nan, "NaN")
+        :param bk_biz_id: business ID
+        :param promql: prometheus query language
+        :param start: start timestamp, e.g. 1622009400
+        :param end: end timestamp, e.g. 1622009500
+        :param step: step, e.g. "1m"
+        """
+        return self._promql_query(bk_biz_id, promql, start, end, step, "range")
 
+    def query(self, bk_biz_id: str, promql: str, time_: int) -> Dict[str, Any]:
+        """
+        Evaluate an instant query at a single point in time
 
-class RangeVector(BaseModel):
-    metric: Dict[Text, Text] = {}
-    values: List[Tuple[float, Text]] = []
+        :param bk_biz_id: business ID
+        :param promql: prometheus query language
+        :param time_: evaluation timestamp, e.g. 1622009400
+        """
+        # Instant query, no need for start, step,
+        # but the backend does not allow the value to be null, so set a default value.
+        # step: set to 1m, backend use it to calculate real evaluation timestamp
+        return self._promql_query(bk_biz_id, promql, 0, time_, "1m", "instant")
 
+    def _promql_query(
+        self, bk_biz_id: str, promql: str, start: int, end: int, step: str, type_: str
+    ) -> Dict[str, Any]:
+        """
+        Common query Prometheus data interface
 
-class QueryResult(BaseModel):
-    result: List[InstantVector] = []
-
-
-class QueryRangeResult(BaseModel):
-    result: List[RangeVector] = []
-
-
-class PrometheusComponent(BaseComponent):
-
-    HOST = getattr(settings, "BCS_THANOS_URL", "")
-
-    def parse_response(self, http_ok, resp):
-        if not (http_ok and resp):
-            return False, "", None
-
-        result = RequestResult(**resp)
-        return result.status == "success", result.error, result.data
-
-    def _call_api(self, http_func, path, data, **kwargs):
-        # TODO: _call_api 更改了父类的协议，
-        # components 内部逻辑统一调整 1 使用 dynatic 封装响应，2 出错抛出异常，方法直接返回需要的数据
-        ok, message, data = super()._call_api(
-            http_func,
-            path,
-            data,
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            timeout=PROMETHEUS_API_TIMEOUT,
-            auth=(getattr(settings, "BCS_THANOS_USER", ""), getattr(settings, "BCS_THANOS_PASSWD", "")),
-        )
-
-        if not ok:
-            raise error_codes.COMPONENT_ERROR.format(message)
-
-        return data
-
-    def query_range(self, query, start, end, step):
-        params = {
-            "query": query,
-            "start": start,
-            "end": end,
+        :param type_: choices: range, instant
+            - range: corresponds to Prometheus /api/v1/query_range
+            - instant: corresponds to Prometheus /api/v1/query
+        """
+        data = {
+            "bk_biz_id": bk_biz_id,
+            "promql": promql,
+            "start_time": start,
+            "end_time": end,
             "step": step,
-            "timeout": PROMETHEUS_API_TIMEOUT,
+            "format": "time_series",
+            "type": type_,
         }
-        data = self._call_api(
-            http_get,
-            "/api/v1/query_range",
-            params,
-        )
-        return QueryRangeResult(**data)
 
-    def query(self, query, time):
-        params = {
-            "query": query,
-            "time": time,
-            "timeout": PROMETHEUS_API_TIMEOUT,
-        }
-        data = self._call_api(
-            http_get,
-            "/api/v1/query",
-            params,
-        )
-        return QueryResult(**data)
+        headers = {"X-Bk-Scope-Space-Uid": f"bkcc__{bk_biz_id}"}
+
+        api_result, response = self._request_handler.call_api(self._api_client.promql_query, data, headers=headers)
+        return self._request_handler.parse_api_result(api_result, response, {"code": 200}, itemgetter("data"))
+
+    def _get_api_client(self) -> OperationGroup:
+        # use gateway: bkmonitorv3
+        if settings.USE_BKAPI_BKMONITORV3:
+            apigw_client = get_client_by_username_for_apigateway(BkMonitorV3Client, username="admin")
+            return apigw_client.api
+
+        # use esb api
+        esb_client = get_client_by_username_for_esb("admin")
+        return esb_client.monitor_v3
 
 
 prometheus_component = PrometheusComponent()

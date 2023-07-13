@@ -16,112 +16,45 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
-
-import pytest
-from django_dynamic_fixture import G
-
-from apigateway.apps.metrics.views import QueryRangeAPIView
-from apigateway.components.prometheus import QueryRangeResult
-from apigateway.core.models import Stage
-from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, get_response_json
 
 
 class TestQueryRangeAPIView:
-    @pytest.fixture(autouse=True)
-    def setup_test_data(self):
-        self.factory = APIRequestFactory()
-        self.gateway = create_gateway()
-        self.stage = G(Stage, api=self.gateway, name="prod")
+    def test_get(self, mocker, fake_stage, request_view):
+        mocker.patch(
+            "apigateway.apps.metrics.views.DimensionMetricsFactory.create_dimension_metrics",
+            return_value=mocker.Mock(query_range=mocker.Mock(return_value={"foo": "bar"})),
+        )
 
-    def test_get(self, mocker, settings):
-        settings.PROMETHEUS_METRIC_NAME_PREFIX = "apigateway_"
-
-        data = [
-            {
-                "params": {
-                    "stage_id": self.stage.id,
-                    "resource_id": "",
-                    "dimension": "all",
-                    "metrics": "requests",
-                    "time_range": 3600,
-                },
-                "mock_metrics": "apigateway.apps.metrics.helpers.RequestsMetrics",
-                "mock_query_expression": (
-                    'sum(increase(apigateway_apigateway_api_requests_total{job="apigateway", api="2", '
-                    'stage="prod", resource=~".*"}[1m]))'
-                ),
+        response = request_view(
+            "GET",
+            "metrics.query_range",
+            path_params={
+                "gateway_id": fake_stage.api.id,
             },
-            {
-                "params": {
-                    "stage_id": self.stage.id,
-                    "resource_id": "",
-                    "dimension": "all",
-                    "metrics": "failed_requests",
-                    "time_range": 3600,
-                },
-                "mock_metrics": "apigateway.apps.metrics.helpers.FailedRequestsMetrics",
-                "mock_query_expression": (
-                    'sum(increase(apigateway_apigateway_api_requests_total{job="apigateway", api="2", '
-                    'stage="prod", resource=~".*", proxy_error="1"}[1m]))'
-                ),
+            data={
+                "stage_id": fake_stage.id,
+                "dimension": "all",
+                "metrics": "requests",
+                "time_range": 300,
             },
-            {
-                "params": {
-                    "stage_id": self.stage.id,
-                    "resource_id": "",
-                    "dimension": "all",
-                    "metrics": "response_time_95th",
-                    "time_range": 3600,
-                },
-                "mock_metrics": "apigateway.apps.metrics.helpers.ResponseTime95thMetrics",
-                "mock_query_expression": (
-                    "histogram_quantile(0.95, sum(rate(apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'job="apigateway", api="2", stage="prod", resource=~".*"}[1m])) by (le, api))'
-                ),
+        )
+        result = response.json()
+        assert response.status_code == 200
+        assert result["result"] is True
+        assert result["data"] == {"foo": "bar"}
+
+        # stage not found
+        response = request_view(
+            "GET",
+            "metrics.query_range",
+            path_params={
+                "gateway_id": fake_stage.api.id,
             },
-            {
-                "params": {
-                    "stage_id": self.stage.id,
-                    "resource_id": "",
-                    "dimension": "app",
-                    "metrics": "requests",
-                    "time_range": 3600,
-                },
-                "mock_metrics": "apigateway.apps.metrics.helpers.AppRequestsMetrics",
-                "mock_query_expression": (
-                    'topk(10, sum(increase(apigateway_apigateway_app_requests_total{job="apigateway", api="2", '
-                    'stage="prod", resource=~".*"}[1m])) by (api, app_code))'
-                ),
+            data={
+                "stage_id": 0,
+                "dimension": "all",
+                "metrics": "requests",
+                "time_range": 300,
             },
-        ]
-
-        for test in data:
-            query_range = mocker.patch("apigateway.apps.metrics.views.prometheus_component.query_range")
-            get_query_expression = mocker.patch(f'{test["mock_metrics"]}.get_query_expression')
-            query_range.return_value = QueryRangeResult(
-                **{
-                    "resultType": "matrix",
-                    "result": [
-                        {
-                            "metric": {
-                                "api": "2",
-                                "app_code": "test",
-                            },
-                            "values": [
-                                [1582880683, "22698.666666666664"],
-                            ],
-                        }
-                    ],
-                }
-            )
-            get_query_expression.return_value = test["mock_query_expression"]
-
-            request = self.factory.get(f"/apis/{self.gateway.id}/metrics/query_range/", data=test["params"])
-
-            view = QueryRangeAPIView.as_view()
-            response = view(request, gateway_id=self.gateway.id)
-            result = get_response_json(response)
-
-            assert response.status_code == 200, json.dumps(result)
-            assert result["result"] is True
+        )
+        assert response.status_code == 404

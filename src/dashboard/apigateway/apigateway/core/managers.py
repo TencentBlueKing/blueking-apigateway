@@ -429,6 +429,9 @@ class StageManager(models.Manager):
 
         return gateway_name_to_stage_names
 
+    def get_name(self, gateway_id: int, id_: int) -> Optional[str]:
+        return self.filter(api_id=gateway_id, id=id_).values_list("name", flat=True).first()
+
 
 class ResourceManager(models.Manager):
     # TODO: 断点, 把这个函数挪到 ResourceHandler里面去
@@ -728,6 +731,9 @@ class ResourceManager(models.Manager):
             return []
 
         return list(self.filter(api_id=gateway_id, name__in=resource_names).values_list("id", flat=True))
+
+    def get_name(self, gateway_id: int, id_: int) -> Optional[str]:
+        return self.filter(api=gateway_id, id=id_).values_list("name", flat=True).first()
 
 
 class ProxyManager(models.Manager):

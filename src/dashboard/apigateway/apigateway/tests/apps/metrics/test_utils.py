@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,16 +15,27 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import arrow
-from django.core.management.base import BaseCommand
+import pytest
 
-from apigateway.apps.metrics.statistics import StatisticsHandler
+from apigateway.apps.metrics.utils import MetricsSmartTimeRange
 
 
-class Command(BaseCommand):
-    def handle(self, *args, **options):
-        start, end = arrow.utcnow().shift(days=-1).span("day")
-        step = "1d"
-
-        handler = StatisticsHandler()
-        handler.stats(start.int_timestamp, end.int_timestamp, step)
+class TestMetricsSmartTimeRange:
+    @pytest.mark.parametrize(
+        "time_range_minutes, expected",
+        [
+            (10, "1m"),
+            (59, "1m"),
+            (60, "1m"),
+            (300, "5m"),
+            (360, "5m"),
+            (720, "10m"),
+            (1440, "30m"),
+            (4320, "1h"),
+            (10080, "3h"),
+            (20000, "12h"),
+        ],
+    )
+    def test_get_recommended_step(self, time_range_minutes, expected):
+        smart_time_range = MetricsSmartTimeRange(time_range=time_range_minutes * 60)
+        assert smart_time_range.get_recommended_step() == expected

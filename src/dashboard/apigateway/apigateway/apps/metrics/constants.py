@@ -16,14 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from enum import Enum
-
-from apigateway.common.constants import ChoiceEnumMixin
-
-JOB_NAME = "apigateway"
+from blue_krill.data_types.enum import StructuredEnum
 
 
-class MetricsEnum(ChoiceEnumMixin, Enum):
+class MetricsEnum(StructuredEnum):
     REQUESTS = "requests"
     FAILED_REQUESTS = "failed_requests"
     RESPONSE_TIME_95TH = "response_time_95th"
@@ -32,14 +28,9 @@ class MetricsEnum(ChoiceEnumMixin, Enum):
     RESPONSE_TIME_50TH = "response_time_50th"
 
 
-class DimensionEnum(ChoiceEnumMixin, Enum):
+class DimensionEnum(StructuredEnum):
     ALL = "all"
     APP = "app"
     RESOURCE = "resource"
     # 资源+非200状态码
     RESOURCE_NON200_STATUS = "resource_non200_status"
-
-
-class StatisticsIntervalEnum(ChoiceEnumMixin, Enum):
-    HOUR = "hour"
-    DAY = "day"

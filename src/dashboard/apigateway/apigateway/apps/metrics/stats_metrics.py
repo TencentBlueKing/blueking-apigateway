@@ -18,49 +18,50 @@
 #
 from abc import abstractmethod
 
-from apigateway.apps.metrics.helpers import BasePrometheusMetrics
+from django.conf import settings
+
+from apigateway.apps.metrics.dimension_metrics import BasePrometheusMetrics
 from apigateway.components.prometheus import prometheus_component
 
 
 class BaseStatisticsMetrics(BasePrometheusMetrics):
     @abstractmethod
-    def _get_query_expression(self, step: str):
+    def _get_query_promql(self, step: str):
         pass
 
-    def query(self, time: float, step: str):
+    def query(self, time_: int, step: str):
         return prometheus_component.query(
-            query=self._get_query_expression(step),
-            time=time,
+            bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
+            promql=self._get_query_promql(step),
+            time_=time_,
         )
 
 
 class StatisticsAPIRequestMetrics(BaseStatisticsMetrics):
-    def _get_query_expression(self, step):
+    def _get_query_promql(self, step):
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
-                ("job", "=", self.job_name),
             ]
         )
         return (
             f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
             f"{labels}"
-            f"}}[{step}])) by (api, stage, resource, proxy_error)"
+            f"}}[{step}])) by (api_name, stage_name, resource_name, proxy_error)"
         )
 
 
 class StatisticsAPIRequestDurationMetrics(BaseStatisticsMetrics):
-    def _get_query_expression(self, step):
+    def _get_query_promql(self, step):
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
-                ("job", "=", self.job_name),
             ]
         )
         return (
             f"sum(increase({self.metric_name_prefix}apigateway_api_request_duration_milliseconds_sum{{"
             f"{labels}"
-            f"}}[{step}])) by (api, stage, resource)"
+            f"}}[{step}])) by (api_name, stage_name, resource_name)"
         )
 
 
@@ -69,17 +70,16 @@ class StatisticsAppRequestMetrics(BaseStatisticsMetrics):
     根据网关、环境、资源，统计应用请求量
     """
 
-    def _get_query_expression(self, step):
+    def _get_query_promql(self, step):
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
-                ("job", "=", self.job_name),
             ]
         )
         return (
             f"sum(increase({self.metric_name_prefix}apigateway_app_requests_total{{"
             f"{labels}"
-            f"}}[{step}])) by (app_code, api, stage, resource)"
+            f"}}[{step}])) by (app_code, api_name, stage_name, resource_name)"
         )
 
 
@@ -88,15 +88,14 @@ class StatisticsAppRequestByResourceMetrics(BaseStatisticsMetrics):
     根据网关、资源，统计应用请求量
     """
 
-    def _get_query_expression(self, step):
+    def _get_query_promql(self, step):
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
-                ("job", "=", self.job_name),
             ]
         )
         return (
             f"sum(increase({self.metric_name_prefix}apigateway_app_requests_total{{"
             f"{labels}"
-            f"}}[{step}])) by (app_code, api, resource)"
+            f"}}[{step}])) by (app_code, api_name, resource_name)"
         )
