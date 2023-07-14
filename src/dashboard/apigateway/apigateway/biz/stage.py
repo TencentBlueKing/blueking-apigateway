@@ -19,19 +19,23 @@
 
 from typing import Any, Dict, Optional
 
-from django.conf import settings
-from django.utils.translation import gettext as _
-
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
+from apigateway.apps.access_strategy.constants import \
+    AccessStrategyBindScopeEnum
 from apigateway.apps.access_strategy.models import AccessStrategyBinding
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.constants import (OpObjectTypeEnum, OpStatusEnum,
+                                             OpTypeEnum)
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
+from apigateway.common.contexts import (StageProxyHTTPContext,
+                                        StageRateLimitContext)
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.core.constants import DEFAULT_STAGE_NAME, ContextScopeTypeEnum, StageStatusEnum
-from apigateway.core.models import Context, MicroGateway, Release, ReleaseHistory, Stage
+from apigateway.core.constants import (DEFAULT_STAGE_NAME,
+                                       ContextScopeTypeEnum, StageStatusEnum)
+from apigateway.core.models import (Context, MicroGateway, Release,
+                                    ReleaseHistory, Stage)
 from apigateway.utils.time import now_datetime
+from django.conf import settings
+from django.utils.translation import gettext as _
 
 
 class StageHandler:
@@ -80,7 +84,7 @@ class StageHandler:
             StageRateLimitContext().save(stage.id, rate_limit_config)
 
         # 3. create or update header rewrite plugin config
-        stage_transform_headers = proxy_http_config.get("transform_headers")
+        stage_transform_headers = proxy_http_config.get("transform_headers") or {}
         stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
         HeaderRewriteConvertor.alter_plugin(stage.api_id, PluginBindingScopeEnum.STAGE.value, stage.id, stage_config)
 
