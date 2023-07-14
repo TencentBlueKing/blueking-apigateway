@@ -36,7 +36,7 @@ class HeaderRewriteConvertor:
 
     @staticmethod
     def alter_plugin(gateway_id: int, scope_type: str, scope_id: int, plugin_config: Optional[dict]):
-        # 1. 判断resource是否已经绑定header rewrite插件
+        # 判断是否已经绑定header rewrite插件
         binding = (
             PluginBinding.objects.filter(
                 scope_type=scope_type,
@@ -66,7 +66,7 @@ class HeaderRewriteConvertor:
             PluginConfig.objects.bulk_delete([config])
             return
 
-        # 如果没有绑定, 新建插件配置, 并绑定到stage
+        # 如果没有绑定, 新建插件配置, 并绑定到scope
         if plugin_config:
             config = PluginConfig(
                 api_id=gateway_id,

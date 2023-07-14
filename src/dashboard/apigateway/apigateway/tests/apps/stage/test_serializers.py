@@ -538,7 +538,12 @@ class TestStageSLZ:
             ),
         ],
     )
-    def test_create(self, data, will_error, fake_gateway, fake_request):
+    def test_create(self, mocker, data, will_error, fake_gateway, fake_request):
+        mocker.patch(
+            "apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.alter_plugin",
+            return_value=True,
+        )
+
         fake_request.gateway = fake_gateway
         micro_gateway = G(MicroGateway, api=fake_gateway)
         data["api"] = fake_gateway
@@ -622,7 +627,12 @@ class TestStageSLZ:
             ),
         ],
     )
-    def test_update(self, data, will_error, fake_gateway, fake_request):
+    def test_update(self, mocker, data, will_error, fake_gateway, fake_request):
+        mocker.patch(
+            "apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.alter_plugin",
+            return_value=True,
+        )
+
         micro_gateway = G(MicroGateway, api=fake_gateway)
         stage = G(
             Stage, api=fake_gateway, name="test-03", status=0, description="t1", _vars=json.dumps({"test": "123"})

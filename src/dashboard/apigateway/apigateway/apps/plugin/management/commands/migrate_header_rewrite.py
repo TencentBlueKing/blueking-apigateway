@@ -62,10 +62,11 @@ class Command(BaseCommand):
                     stage.api_id, PluginBindingScopeEnum.STAGE.value, stage.id, stage_config
                 )
 
+                # TODO 1.14 执行清理
                 # 迁移后清理 transform_headers
-                config.pop("transform_headers")
-                context.config = config
-                context.save()
+                # config.pop("transform_headers")
+                # context.config = config
+                # context.save()
 
         logger.info("finish migrate stage header rewrite plugin config")
 
@@ -91,9 +92,10 @@ class Command(BaseCommand):
                     proxy.resource.api_id, PluginBindingScopeEnum.RESOURCE.value, proxy.resource.id, resource_config
                 )
 
+                # TODO 1.14 执行清理
                 # 迁移后清理 transform_headers
-                config.pop("transform_headers")
-                proxy.config = config
-                proxy.save()
+                # config.pop("transform_headers")
+                # proxy.config = config
+                # proxy.save()
 
         logger.info("finish migrate resource header rewrite plugin config")
