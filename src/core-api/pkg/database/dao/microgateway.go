@@ -24,9 +24,9 @@ import (
 	"context"
 	"strings"
 
-	"core/pkg/database"
-
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 // TODO: split into thinx and x, for better performance
@@ -48,15 +48,15 @@ type MicroGatewayManager interface {
 	Get(ctx context.Context, instanceID string) (MicroGateway, error)
 }
 
+type microGatewayManager struct {
+	DB *sqlx.DB
+}
+
 // NewMicroGatewayManager ...
 func NewMicroGatewayManager() MicroGatewayManager {
 	return &microGatewayManager{
 		DB: database.GetDefaultDBClient().DB,
 	}
-}
-
-type microGatewayManager struct {
-	DB *sqlx.DB
 }
 
 // Get ...

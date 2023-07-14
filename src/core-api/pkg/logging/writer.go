@@ -27,7 +27,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gopkg.in/natefinch/lumberjack.v2"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 func getWriter(writerType string, settings map[string]string) (io.Writer, error) {

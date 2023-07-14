@@ -21,7 +21,6 @@ from django.conf import settings
 
 from common.constants import API_TYPE_Q
 from components.component import ConfComponent
-
 from .toolkit import configs
 
 

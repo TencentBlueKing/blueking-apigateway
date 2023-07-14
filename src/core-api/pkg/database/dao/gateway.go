@@ -22,9 +22,10 @@ package dao
 
 import (
 	"context"
-	"core/pkg/database"
 
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 // TODO: split into thinx and x, for better performance
@@ -40,15 +41,15 @@ type GatewayManager interface {
 	GetByName(ctx context.Context, name string) (Gateway, error)
 }
 
+type gatewayManager struct {
+	DB *sqlx.DB
+}
+
 // NewGatewayManager ...
 func NewGatewayManager() GatewayManager {
 	return &gatewayManager{
 		DB: database.GetDefaultDBClient().DB,
 	}
-}
-
-type gatewayManager struct {
-	DB *sqlx.DB
 }
 
 // GetByName ...

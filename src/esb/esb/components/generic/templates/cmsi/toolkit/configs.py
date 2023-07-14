@@ -18,7 +18,6 @@
 #
 
 from esb.utils import SmartHost
-
 from .tools import get_base64_icon
 
 SYSTEM_NAME = "CMSI"

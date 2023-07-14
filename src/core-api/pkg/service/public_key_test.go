@@ -22,13 +22,13 @@ import (
 	"context"
 	"errors"
 
-	"core/pkg/cacheimpls"
-	"core/pkg/database/dao/mock"
-
-	"github.com/agiledragon/gomonkey/v2"
+	gomonkey "github.com/agiledragon/gomonkey/v2"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/cacheimpls"
+	"core/pkg/database/dao/mock"
 )
 
 var _ = Describe("GatewayPublicKeyService", func() {

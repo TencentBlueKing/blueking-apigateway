@@ -24,11 +24,11 @@ import (
 	"testing"
 	"time"
 
-	"core/pkg/database/dao"
-
 	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/database/dao"
 )
 
 func TestGatewayNameKey_Key(t *testing.T) {

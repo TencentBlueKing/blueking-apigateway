@@ -23,7 +23,6 @@ from builtins import map
 from common.constants import API_TYPE_OP, HTTP_METHOD
 from common.forms import BaseComponentForm, ListField, TypeCheckField
 from components.component import Component
-
 from .toolkit import configs, tools
 
 

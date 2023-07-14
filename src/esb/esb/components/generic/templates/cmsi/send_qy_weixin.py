@@ -22,7 +22,6 @@ from django import forms
 from common.constants import API_TYPE_OP
 from common.forms import BaseComponentForm, ListField
 from components.component import Component, SetupConfMixin
-
 from .toolkit import configs
 
 

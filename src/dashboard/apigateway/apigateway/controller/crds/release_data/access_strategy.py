@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import re
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 from attrs import define
@@ -25,6 +24,7 @@ from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnu
 from apigateway.apps.access_strategy.models import AccessStrategy, IPGroup
 from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.utils.header import canonical_header_key
+from apigateway.utils.ip import parse_ip_content_to_list
 
 
 @define(slots=False)
@@ -89,13 +89,8 @@ class IpAccessControlASC(AccessStrategyConvertor):
     def _parse_ip_content_list(self, ip_content_list: List[str]) -> List[str]:
         ips = set()
         for ip_content in ip_content_list:
-            # split with \n\r, then ignore blank line and `# comment`
-            ip_lines = re.split(r"[\n\r]+", ip_content)
-            for ip_line in ip_lines:
-                ip_line = ip_line.strip()
-                if not ip_line or ip_line.startswith("#"):
-                    continue
-                ips.add(ip_line)
+            ip_list = parse_ip_content_to_list(ip_content)
+            ips.update(ip_list)
 
         # we are not going to do the merge now, we will do it in the future if that become a problem
         # TODO: merge by cidr

@@ -23,9 +23,9 @@ import (
 	"errors"
 	"strconv"
 
-	"core/pkg/database/dao"
-
 	"github.com/TencentBlueKing/gopkg/cache"
+
+	"core/pkg/database/dao"
 )
 
 // JWTPublicKeyCacheKey is the key of jwt public key

@@ -19,7 +19,6 @@
 
 from common.constants import API_TYPE_OP, HTTP_METHOD
 from components.component import Component
-
 from .toolkit import configs
 
 

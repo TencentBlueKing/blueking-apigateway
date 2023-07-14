@@ -23,12 +23,12 @@ import (
 	"errors"
 	"time"
 
-	"core/pkg/cacheimpls"
-	"core/pkg/database/dao"
-
-	"github.com/agiledragon/gomonkey/v2"
+	gomonkey "github.com/agiledragon/gomonkey/v2"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/cacheimpls"
+	"core/pkg/database/dao"
 )
 
 var _ = Describe("AppPermissionService", func() {
@@ -350,7 +350,14 @@ var _ = Describe("AppPermissionService", func() {
 			)
 
 			svc := &appPermissionService{}
-			permissions, err := svc.Query(context.Background(), instanceID, gatewayName, stageName, resourceName, appCode)
+			permissions, err := svc.Query(
+				context.Background(),
+				instanceID,
+				gatewayName,
+				stageName,
+				resourceName,
+				appCode,
+			)
 			assert.NoError(GinkgoT(), err)
 
 			assert.Equal(GinkgoT(), int64(123), permissions[gatewayName+":-:"+appCode])
@@ -373,7 +380,14 @@ var _ = Describe("AppPermissionService", func() {
 			)
 
 			svc := &appPermissionService{}
-			permissions, err := svc.Query(context.Background(), instanceID, gatewayName, stageName, resourceName, appCode)
+			permissions, err := svc.Query(
+				context.Background(),
+				instanceID,
+				gatewayName,
+				stageName,
+				resourceName,
+				appCode,
+			)
 			assert.NoError(GinkgoT(), err)
 
 			assert.Equal(GinkgoT(), expiredAt, permissions[gatewayName+":-:"+appCode])

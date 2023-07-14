@@ -29,7 +29,6 @@ from common.forms import BaseComponentForm
 from components.component import Component
 from esb.bkcore.constants import DataTypeEnum
 from esb.bkcore.models import ESBChannel
-
 from .toolkit import configs
 
 

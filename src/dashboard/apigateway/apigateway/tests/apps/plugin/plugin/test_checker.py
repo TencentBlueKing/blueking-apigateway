@@ -17,7 +17,8 @@
 #
 import pytest
 
-from apigateway.apps.plugin.plugin.checker import BkCorsChecker, HeaderRewriteChecker, PluginConfigYamlChecker
+
+from apigateway.apps.plugin.plugin.checker import BkCorsChecker, BkIPRestrictionChecker, HeaderRewriteChecker, PluginConfigYamlChecker
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -185,6 +186,40 @@ class TestBkCorsChecker:
         checker = BkCorsChecker()
         with pytest.raises(ValueError):
             checker._check_duplicate_items(data, "key")
+
+
+class TestBkIPRestrictionChecker:
+    @pytest.mark.parametrize(
+        "data",
+        [
+            "whitelist: |-\n 1.1.1.1",
+            "blacklist: |-\n 1.1.1.1",
+            "whitelist: |-\n 1.1.1.1/24",
+            "whitelist: |-\n 2002::1234:abcd:ffff:c0a8:101",
+            "whitelist: |-\n 2002::1234:abcd:ffff:c0a8:101/64",
+            "whitelist: |-\n 1.1.1.1\n 2.2.2.2",
+            "whitelist: |-\n 1.1.1.1\n 2.2.2.2\r\n 3.3.3.3",
+            "whitelist: |-\n 1.1.1.1\n # comment\r\n 3.3.3.3",
+        ],
+    )
+    def test_check(self, data):
+        checker = BkIPRestrictionChecker()
+        result = checker.check(data)
+        assert result is None
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            "",
+            "abc: |-\n 1.1.1.1",
+            "whitelist: |-\n a",
+            "blacklist: |-\n a",
+        ],
+    )
+    def test_check__error(self, data):
+        checker = BkIPRestrictionChecker()
+        with pytest.raises(ValueError):
+            checker.check(data)
 
 
 class TestPluginConfigYamlChecker:
