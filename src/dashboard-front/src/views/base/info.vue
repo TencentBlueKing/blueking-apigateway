@@ -94,7 +94,7 @@
               <template v-if="curApigw.is_public">
                 {{curApigw.docs_url}}
                 <i class="apigateway-icon icon-ag-document ml15 copy-btn" @click="handleCopy(curApigw.docs_url)"></i>
-                <a :href="curApigw.docs_url" target="_blank"><i class="apigateway-icon icon-ag-jump ml5"></i></a>
+                <!-- <a :href="curApigw.docs_url" target="_blank"><i class="apigateway-icon icon-ag-jump ml5"></i></a> -->
               </template>
               <template v-else>
                 <span style="color: #dcdee5;"> {{ $t('网关未公开，不提供在线 API 文档') }} </span>

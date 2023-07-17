@@ -195,8 +195,7 @@
           >
           </bk-input>
           <p class="ag-tip mt5">
-            <i class="apigateway-icon icon-ag-info"></i> {{ $t('为空则由网关自动生成版本号，自定义版本号推荐遵从') }}
-            &nbsp;{{ $t('Semver 规范') }}
+            <i class="apigateway-icon icon-ag-info"></i> {{ $t('为空则由网关自动生成版本号，自定义版本号推荐遵从 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}
           </p>
         </bk-form-item>
         <bk-form-item
