@@ -984,13 +984,11 @@
       },
       goPage (routeName) {
         if (routeName) {
-          const notParamsList = ['index', 'apigwAccess']
-          this.$router.push({
-            name: routeName,
-            params: {
-              id: notParamsList.includes(routeName) ? undefined : this.apigwId
-            }
-          })
+          const route = { name: routeName }
+          if (!['index', 'apigwAccess'].includes(routeName)) {
+            route.params = this.apigwId
+          }
+          this.$router.push(route)
         }
       },
       dropdownShow () {
