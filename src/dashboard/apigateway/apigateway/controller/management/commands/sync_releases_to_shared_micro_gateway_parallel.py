@@ -36,7 +36,7 @@ def sync_gateway(gateway):
     connection.close()
 
     print(f"syncing release for gateway {gateway.name} ...")
-    ok = syncing.rolling_update_release(gateway.id)
+    ok = syncing.rolling_update_release(gateway.id, publish_id=-1)
     if not ok:
         print(f"[ERROR] syncing release for gateway {gateway.name} failed")
         return gateway.name

@@ -40,7 +40,7 @@ class Command(BaseCommand):
         failed_gateway_names = []
         for gateway in gateways:
             print(f"syncing release for gateway {gateway.name} ...")
-            ok = syncing.rolling_update_release(gateway.id)
+            ok = syncing.rolling_update_release(gateway.id, publish_id=-1)  # publish_id=-1 标识cli同步网关发布操作
             if not ok:
                 print(f"[ERROR] syncing release for gateway {gateway.name} failed")
                 failed_gateway_names.append(gateway.name)
