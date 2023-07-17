@@ -125,7 +125,7 @@ class HttpResourceConvertor(BaseConvertor):
             "headers": {"Content-Type": "application/json"},
         }
         auth_config = {
-            "skip_auth_verification": False,
+            "skip_auth_verification": True,
             "auth_verified_required": False,
             "app_verified_required": False,
             "resource_perm_required": False,
@@ -138,7 +138,7 @@ class HttpResourceConvertor(BaseConvertor):
             "method": "GET",
             "path": uri,
             "match_subpath": False,
-            "is_public": True,
+            "is_public": False,
             "allow_apply_permission": False,
             "proxy": {
                 "id": 4,
