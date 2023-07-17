@@ -29,7 +29,7 @@ cffi==1.15.0 ; python_full_version >= "3.6.6" and python_version < "3.8"
 cfgv==3.3.1 ; python_full_version >= "3.6.6" and python_version < "3.8"
 charset-normalizer==2.0.12 ; python_full_version >= "3.6.6" and python_version < "3.8"
 click==7.1.2 ; python_full_version >= "3.6.6" and python_version < "3.8"
-colorama==0.4.4 ; python_full_version >= "3.6.6" and python_version < "3.8" and (sys_platform == "win32" or platform_system == "Windows")
+colorama==0.4.4 ; python_full_version >= "3.6.6" and python_version < "3.8" and sys_platform == "win32" or python_full_version >= "3.6.6" and python_version < "3.8" and platform_system == "Windows"
 commonmark==0.9.1 ; python_version >= "3.7" and python_version < "3.8"
 contextvars==2.4 ; python_full_version >= "3.6.6" and python_version < "3.7"
 coreapi==2.3.3 ; python_full_version >= "3.6.6" and python_version < "3.8"
