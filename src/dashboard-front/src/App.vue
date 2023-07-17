@@ -984,10 +984,11 @@
       },
       goPage (routeName) {
         if (routeName) {
+          const notParamsList = ['index', 'apigwAccess']
           this.$router.push({
             name: routeName,
             params: {
-              id: routeName === 'index' ? '' : this.apigwId
+              id: notParamsList.includes(routeName) ? undefined : this.apigwId
             }
           })
         }
