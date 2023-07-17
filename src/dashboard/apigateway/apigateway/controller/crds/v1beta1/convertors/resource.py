@@ -15,9 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
+import pytz
 from django.utils.functional import cached_property
 
 from apigateway.controller.crds.constants import (
@@ -44,9 +46,11 @@ class HttpResourceConvertor(BaseConvertor):
         release_data: ReleaseData,
         micro_gateway: MicroGateway,
         gateway_service: List[BkGatewayService],
+        publish_id: Union[int, None] = None,
     ):
         super().__init__(release_data, micro_gateway)
         self._gateway_services = gateway_service
+        self._publish_id = publish_id
 
     @cached_property
     def _default_stage_service_key(self) -> str:
@@ -59,12 +63,15 @@ class HttpResourceConvertor(BaseConvertor):
 
     def convert(self) -> List[BkGatewayResource]:
         resources: List[BkGatewayResource] = []
-
         for resource in self._release_data.resource_version.data:
             crd = self._convert_http_resource(resource)
             if crd:
                 resources.append(crd)
-
+        # 如果是版本发布需要加上版本路由
+        if self._publish_id:
+            version_route_crd = self._convert_http_resource(self._get_version_route_resource())
+            if version_route_crd:
+                resources.append(version_route_crd)
         return resources
 
     def _convert_http_resource(self, resource: Dict[str, Any]) -> Optional[BkGatewayResource]:
@@ -102,6 +109,56 @@ class HttpResourceConvertor(BaseConvertor):
                 plugins=self._convert_http_resource_plugins(resource),
             ),
         )
+
+    def _get_version_route_resource(self) -> dict:
+        uri = "/_version"
+        name = "get_release_version"
+        now = datetime.datetime.now(pytz.timezone("Asia/Shanghai"))
+        now_formatted_time = now.strftime("%Y-%m-%d %H:%M:%S %Z%z")
+        mock_result = {
+            "publish_id": self._publish_id,
+            "start_time": now_formatted_time,
+        }
+        mock_config = {
+            "code": 200,
+            "body": json.dumps(mock_result),
+            "headers": {"Content-Type": "application/json"},
+        }
+        auth_config = {
+            "skip_auth_verification": False,
+            "auth_verified_required": False,
+            "app_verified_required": False,
+            "resource_perm_required": False,
+        }
+        resource = {
+            "id": -1,
+            "name": name,
+            "description": "版本发布结果获取路由",
+            "description_en": "version release result get route",
+            "method": "GET",
+            "path": uri,
+            "match_subpath": False,
+            "is_public": True,
+            "allow_apply_permission": False,
+            "proxy": {
+                "id": 4,
+                "type": ProxyTypeEnum.MOCK.value,
+                "config": json.dumps(mock_config),
+            },
+            "contexts": {
+                "resource_auth": {
+                    "id": -1,
+                    "scope_type": "resource",
+                    "scope_id": -1,
+                    "type": "resource_auth",
+                    "config": json.dumps(auth_config),
+                    "schema": {"id": 2, "name": "ContextResourceBKAuth", "type": "context", "version": "1"},
+                }
+            },
+            "disabled_stages": [],
+            "api_labels": [],
+        }
+        return resource
 
     def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any]) -> Optional[Upstream]:
         upstreams = resource_proxy.get("upstreams")

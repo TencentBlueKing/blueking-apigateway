@@ -88,7 +88,9 @@ class CustomResourceConvertor:
 
         if self.include_http_resource:
             # 协议类型为 http 的资源，与 grpc 等协议区分，而不是后端 proxy 类型为 http 的资源
-            http_resource_convertor = HttpResourceConvertor(self._release_data, self.micro_gateway, self._services)
+            http_resource_convertor = HttpResourceConvertor(
+                self._release_data, self.micro_gateway, self._services, self.publish_id
+            )
             self._http_resources = http_resource_convertor.convert()
 
         if self.include_plugin_metadata:
