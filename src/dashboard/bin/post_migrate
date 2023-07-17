@@ -20,6 +20,7 @@ sync_bk_apigateway() {
     python manage.py sync_apigw_config --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
     python manage.py sync_apigw_stage --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
     python manage.py sync_apigw_resources --delete --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-resources.yaml"
+    python manage.py grant_apigw_permissions --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
     python manage.py fetch_apigw_public_key --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend
     python manage.py create_version_and_release_apigw --generate-sdks --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
     echo "API gateway bk-apigateway sync definition end"
