@@ -45,7 +45,7 @@ func ReportPublishEvent(c *gin.Context) {
 	publishID := cast.ToInt64(c.Param("publish_id"))
 	event := service.Event{
 		Gateway:   query.BkGatewayName,
-		Stage:     query.BkGatewayName,
+		Stage:     query.BkStageName,
 		Name:      query.Name,
 		Status:    query.Status,
 		PublishID: publishID,

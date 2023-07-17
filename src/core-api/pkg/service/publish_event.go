@@ -79,6 +79,7 @@ func (p publishEventService) Report(ctx context.Context, event Event) error {
 	}
 	// create event
 	publishEvent := dao.PublishEvent{
+		GatewayID:   releaseHistory.GatewayID,
 		PublishID:   event.PublishID,
 		StageID:     stageInfo.ID,
 		Name:        event.Name,
