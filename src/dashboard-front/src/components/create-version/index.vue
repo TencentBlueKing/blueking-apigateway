@@ -2,7 +2,7 @@
   <bk-dialog
     v-model="versionDialogConf.visiable"
     theme="primary"
-    :width="620"
+    :width="670"
     :mask-close="false"
     :header-position="'left'"
     :title="versionDialogConf.title"
@@ -11,7 +11,7 @@
     @cancel="handleCancel">
     <bk-form
       class="mt20 mb10"
-      style="width: 540px;"
+      style="width: 590px;"
       :label-width="100"
       :model="versionParams"
       :rules="rules"
@@ -33,7 +33,7 @@
         <template slot="tip">
           <div class="ag-alert" style="line-height: 1;">
             <i class="apigateway-icon icon-ag-info"></i>
-            &nbsp;{{ $t('版本号须符合 Semver 规范，例如：1.0.0') }}
+            &nbsp;{{ $t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}
           </div>
         </template>
       </bk-form-item>
