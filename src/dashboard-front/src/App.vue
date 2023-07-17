@@ -990,11 +990,12 @@
       },
       goPage (routeName) {
         if (routeName) {
-          const route = { name: routeName }
-          if (!['index', 'apigwAccess'].includes(routeName)) {
-            route.params = this.apigwId
-          }
-          this.$router.push(route)
+          this.$router.push({
+            name: routeName,
+            params: {
+              id: ['index', 'apigwAccess'].includes(routeName) ? '' : this.apigwId
+            }
+          })
         }
       },
       dropdownShow () {
