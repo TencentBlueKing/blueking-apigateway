@@ -69,7 +69,7 @@ class HttpResourceConvertor(BaseConvertor):
                 resources.append(crd)
         # 如果是版本发布需要加上版本路由
         if self._publish_id:
-            version_route_crd = self._convert_http_resource(self._get_version_route_resource())
+            version_route_crd = self._convert_http_resource(self._get_release_version_route_resource())
             if version_route_crd:
                 resources.append(version_route_crd)
         return resources
@@ -110,7 +110,7 @@ class HttpResourceConvertor(BaseConvertor):
             ),
         )
 
-    def _get_version_route_resource(self) -> dict:
+    def _get_release_version_route_resource(self) -> dict:
         uri = "/_version"
         name = "get_release_version"
         now = datetime.datetime.now(pytz.timezone("Asia/Shanghai"))
@@ -141,18 +141,14 @@ class HttpResourceConvertor(BaseConvertor):
             "is_public": False,
             "allow_apply_permission": False,
             "proxy": {
-                "id": 4,
                 "type": ProxyTypeEnum.MOCK.value,
                 "config": json.dumps(mock_config),
             },
             "contexts": {
                 "resource_auth": {
-                    "id": -1,
                     "scope_type": "resource",
-                    "scope_id": -1,
                     "type": "resource_auth",
                     "config": json.dumps(auth_config),
-                    "schema": {"id": 2, "name": "ContextResourceBKAuth", "type": "context", "version": "1"},
                 }
             },
             "disabled_stages": [],
