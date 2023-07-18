@@ -407,7 +407,7 @@ class AccessToken(TimestampedModelMixin):
 
 
 class AppAccount(models.Model):
-    """应用帐号"""
+    """应用账号"""
 
     app_code = models.CharField(_("蓝鲸应用编码"), max_length=30, unique=True)
     app_token = models.CharField(_("应用Token"), max_length=128)

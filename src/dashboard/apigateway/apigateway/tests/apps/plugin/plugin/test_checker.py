@@ -17,8 +17,12 @@
 #
 import pytest
 
-
-from apigateway.apps.plugin.plugin.checker import BkCorsChecker, BkIPRestrictionChecker, HeaderRewriteChecker, PluginConfigYamlChecker
+from apigateway.apps.plugin.plugin.checker import (
+    BkCorsChecker,
+    BkIPRestrictionChecker,
+    HeaderRewriteChecker,
+    PluginConfigYamlChecker,
+)
 from apigateway.utils.yaml import yaml_dumps
 
 
