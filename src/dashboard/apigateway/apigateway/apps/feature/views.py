@@ -37,7 +37,7 @@ class FeatureFlagViewSet(viewsets.GenericViewSet):
         feature_flags.update(
             {
                 "MENU_ITEM_ESB_API": feature_flags.get("MENU_ITEM_ESB_API", False) and request.user.is_superuser,
-                "MENU_ITEM_ESB_API_DOC": feature_flags.get("MENU_ITEM_ESB_API", False),
+                "MENU_ITEM_ESB_API_DOC": feature_flags.get("MENU_ITEM_ESB_API_DOC", False),
             }
         )
 
