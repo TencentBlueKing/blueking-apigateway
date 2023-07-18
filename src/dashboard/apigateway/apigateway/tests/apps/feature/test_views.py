@@ -31,7 +31,7 @@ class TestFeatureFlagViewSet:
         ],
     )
     def test_list(self, settings, request_factory, mocker, faker, is_superuser, expected):
-        settings.DEFAULT_FEATURE_FLAG = {"MENU_ITEM_ESB_API": True}
+        settings.DEFAULT_FEATURE_FLAG = {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
         mocker.patch(
             "apigateway.apps.feature.views.UserFeatureFlag.objects.get_feature_flags",
             return_value={faker.color_name(): False},
@@ -44,6 +44,6 @@ class TestFeatureFlagViewSet:
         response = view(request)
         result = get_response_json(response)
         assert len(result["data"]) == 3
-        assert settings.DEFAULT_FEATURE_FLAG == {"MENU_ITEM_ESB_API": True}
+        assert settings.DEFAULT_FEATURE_FLAG == {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
         assert result["data"]["MENU_ITEM_ESB_API"] == expected
         assert result["data"]["MENU_ITEM_ESB_API_DOC"] is True
