@@ -241,67 +241,6 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
         # )
         db_table = "core_resource"
 
-    # def snapshot(
-    #     self,
-    #     as_dict=False,
-    #     proxy_map=None,
-    #     context_map=None,
-    #     disabled_stage_map=None,
-    #     api_label_map=None,
-    # ):
-    #     """
-    #     - can add field
-    #     - should not delete field!!!!!!!!!
-    #     """
-    #     from apigateway.apps.label.models import ResourceLabel
-    #
-    #     data = {
-    #         "id": self.pk,
-    #         "name": self.name,
-    #         "description": self.description,
-    #         "description_en": self.description_en,
-    #         "method": self.method,
-    #         "path": self.path,
-    #         "match_subpath": self.match_subpath,
-    #         "is_public": self.is_public,
-    #         "allow_apply_permission": self.allow_apply_permission,
-    #         "created_time": time.format(self.created_time),
-    #         "updated_time": time.format(self.updated_time),
-    #     }
-    #
-    #     if proxy_map is None:
-    #         data["proxy"] = Proxy.objects.get(id=self.proxy_id).snapshot(as_dict=True)
-    #     else:
-    #         data["proxy"] = proxy_map[self.proxy_id]
-    #
-    #     if context_map is None:
-    #         contexts = Context.objects.filter(
-    #             scope_type=ContextScopeTypeEnum.RESOURCE.value,
-    #             scope_id=self.pk,
-    #         ).all()
-    #         data["contexts"] = {c.type: c.snapshot(as_dict=True) for c in contexts}
-    #     else:
-    #         data["contexts"] = context_map[self.pk]
-    #
-    #     if disabled_stage_map is None:
-    #         data["disabled_stages"] = list(
-    #             StageResourceDisabled.objects.filter(resource=self).values_list("stage__name", flat=True)
-    #         )
-    #     else:
-    #         data["disabled_stages"] = disabled_stage_map.get(self.pk, [])
-    #
-    #     if api_label_map is None:
-    #         data["api_labels"] = list(
-    #             ResourceLabel.objects.filter(resource_id=self.pk).values_list("api_label_id", flat=True)
-    #         )
-    #     else:
-    #         data["api_labels"] = api_label_map.get(self.pk, [])
-    #
-    #     if as_dict:
-    #         return data
-    #
-    #     return json.dumps(data)
-
     @property
     def identity(self):
         """

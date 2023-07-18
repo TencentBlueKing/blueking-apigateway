@@ -51,6 +51,10 @@ from apigateway.core.utils import get_resource_doc_link
 from apigateway.utils.crypto import KeyGenerator
 from apigateway.utils.time import now_datetime
 
+# TODO
+# - 所有带 FIXME 的都需要处理，挪到合适的层
+# - managers.py 下面不能存在跨 models 的操作，每个 manager 只关心自己的逻辑 (避免循环引用)
+
 
 class GatewayManager(models.Manager):
     def search_gateways(self, username, name=None, order_by=None):
@@ -71,110 +75,6 @@ class GatewayManager(models.Manager):
         """获取用户有权限的网关 ID 列表"""
         queryset = self.filter(_maintainers__contains=username)
         return [gateway.id for gateway in queryset if gateway.has_permission(username)]
-
-    # def save_auth_config(
-    #     self,
-    #     gateway_id: int,
-    #     user_auth_type: Optional[str] = None,
-    #     user_conf: Optional[dict] = None,
-    #     api_type: Optional[APITypeEnum] = None,
-    #     allow_update_api_auth: Optional[bool] = None,
-    #     unfiltered_sensitive_keys: Optional[List[str]] = None,
-    # ):
-    #     """
-    #     存储网关认证配置
-    #
-    #     :param gateway_id: 网关id
-    #     :param user_auth_type:
-    #     :param user_conf: 用户类型为 default 的用户的认证配置
-    #     :param api_type: 网关类型，只有 ESB 才能被设置为 SUPER_OFFICIAL_API 网关，网关会将所有请求参数透传给其后端服务
-    #     :param allow_update_api_auth: 是否允许编辑网关资源安全设置中的应用认证配置
-    #     :param unfiltered_sensitive_keys:
-    #     """
-    #     new_config: Dict[str, Any] = {}
-    #
-    #     if user_auth_type is not None:
-    #         new_config["user_auth_type"] = user_auth_type
-    #
-    #     if user_conf is not None:
-    #         new_config["user_conf"] = user_conf
-    #
-    #     if api_type is not None:
-    #         new_config["api_type"] = api_type.value
-    #
-    #     if allow_update_api_auth is not None:
-    #         new_config["allow_update_api_auth"] = allow_update_api_auth
-    #
-    #     if unfiltered_sensitive_keys is not None:
-    #         new_config["unfiltered_sensitive_keys"] = unfiltered_sensitive_keys
-    #
-    #     if not new_config:
-    #         return
-    #
-    #     current_config = self.get_current_gateway_auth_config(gateway_id)
-    #
-    #     # 因用户配置为 dict，参数 user_conf 仅传递了部分用户配置，因此需合并当前配置与传入配置
-    #     api_auth_config = APIAuthConfig.parse_obj(deep_update(current_config, new_config))
-    #
-    #     return APIAuthContext().save(gateway_id, api_auth_config.config)
-    #
-    # def get_current_gateway_auth_config(self, gateway_id: int) -> dict:
-    #     """
-    #     获取网关当前的认证配置
-    #     """
-    #     from apigateway.core.models import Context
-    #
-    #     try:
-    #         return APIAuthContext().get_config(gateway_id)
-    #     except Context.DoesNotExist:
-    #         return {}
-
-    # def delete_gateway(self, gateway_id):
-    #     # 1. delete api context
-    #     from apigateway.core.models import Context
-    #
-    #     Context.objects.delete_by_scope_ids(
-    #         scope_type=ContextScopeTypeEnum.API.value,
-    #         scope_ids=[gateway_id],
-    #     )
-    #
-    #     # 2. delete release
-    #     from apigateway.core.models import Release
-    #
-    #     Release.objects.delete_by_gateway_id(gateway_id)
-    #
-    #     # 3. delete stage
-    #     from apigateway.core.models import Stage
-    #
-    #     Stage.objects.delete_by_gateway_id(gateway_id)
-    #
-    #     # 4. delete resource
-    #     from apigateway.core.models import Resource
-    #
-    #     Resource.objects.delete_by_gateway_id(gateway_id)
-    #
-    #     # 5. delete resource-version
-    #     from apigateway.core.models import ResourceVersion
-    #
-    #     ResourceVersion.objects.delete_by_gateway_id(gateway_id)
-    #
-    #     # 6. delete access_strategy
-    #     from apigateway.apps.access_strategy.models import AccessStrategy
-    #
-    #     AccessStrategy.objects.delete_by_gateway_id(gateway_id)
-    #
-    #     # plugin bindings
-    #     from apigateway.apps.plugin.models import PluginBinding
-    #
-    #     PluginBinding.objects.delete_by_gateway_id(gateway_id)
-    #
-    #     # delete ssl-certificate
-    #     from apigateway.core.models import SslCertificate
-    #
-    #     SslCertificate.objects.delete_by_gateway_id(gateway_id)
-    #
-    #     # delete api
-    #     self.filter(id=gateway_id).delete()
 
     def get_or_new_gateway(self, name):
         if self.filter(name=name).exists():
@@ -205,70 +105,6 @@ class GatewayManager(models.Manager):
 
         return list(queryset.values_list("id", flat=True))
 
-    # def save_related_data(
-    #     self,
-    #     gateway,
-    #     user_auth_type: str,
-    #     username: str,
-    #     related_app_code: Optional[str] = None,
-    #     user_config: Optional[dict] = None,
-    #     unfiltered_sensitive_keys: Optional[List[str]] = None,
-    #     api_type: Optional[APITypeEnum] = None,
-    # ):
-    #     # 1. save api auth_config
-    #     self.save_auth_config(
-    #         gateway.id,
-    #         user_auth_type=user_auth_type,
-    #         user_conf=user_config,
-    #         api_type=api_type,
-    #         unfiltered_sensitive_keys=unfiltered_sensitive_keys,
-    #     )
-    #
-    #     # 2. save jwt
-    #     from apigateway.core.models import JWT
-    #
-    #     JWT.objects.create_jwt(gateway)
-    #
-    #     # 3. create default stage
-    #     from apigateway.core.models import Stage
-    #
-    #     Stage.objects.create_default(gateway, created_by=username)
-    #
-    #     # 4. create default alarm-strategy
-    #     from apigateway.apps.monitor.models import AlarmStrategy
-    #
-    #     AlarmStrategy.objects.create_default_strategy(gateway, created_by=username)
-    #
-    #     # 5. create related app
-    #     if related_app_code:
-    #         from apigateway.core.models import APIRelatedApp
-    #
-    #         APIRelatedApp.objects.create(api=gateway, bk_app_code=related_app_code)
-
-    # def add_create_audit_log(self, gateway, username: str):
-    #     record_audit_log(
-    #         username=username,
-    #         op_type=OpTypeEnum.CREATE.value,
-    #         op_status=OpStatusEnum.SUCCESS.value,
-    #         op_object_group=gateway.id,
-    #         op_object_type=OpObjectTypeEnum.API.value,
-    #         op_object_id=gateway.id,
-    #         op_object=gateway.name,
-    #         comment=_("创建网关"),
-    #     )
-
-    # def add_update_audit_log(self, gateway, username: str):
-    #     record_audit_log(
-    #         username=username,
-    #         op_type=OpTypeEnum.MODIFY.value,
-    #         op_status=OpStatusEnum.SUCCESS.value,
-    #         op_object_group=gateway.id,
-    #         op_object_type=OpObjectTypeEnum.API.value,
-    #         op_object_id=gateway.id,
-    #         op_object=gateway.name,
-    #         comment=_("更新网关"),
-    #     )
-
 
 class StageManager(models.Manager):
     def get_names(self, gateway_id):
@@ -286,134 +122,12 @@ class StageManager(models.Manager):
     def filter_valid_ids(self, gateway, ids):
         return list(self.filter(api_id=gateway.id, id__in=ids).values_list("id", flat=True))
 
-    # def create_default(self, gateway, created_by):
-    #     """
-    #     创建默认 stage，网关创建时，需要创建一个默认环境
-    #     """
-    #     stage = self.create(
-    #         api=gateway,
-    #         name=DEFAULT_STAGE_NAME,
-    #         description=_("正式环境"),
-    #         description_en="Prod",
-    #         vars={},
-    #         status=StageStatusEnum.INACTIVE.value,
-    #         created_by=created_by,
-    #         updated_by=created_by,
-    #         created_time=now_datetime(),
-    #         updated_time=now_datetime(),
-    #     )
-    #
-    #     # 保存关联数据
-    #     self.save_related_data(
-    #         stage,
-    #         proxy_http_config={
-    #             "timeout": 30,
-    #             "upstreams": settings.DEFAULT_STAGE_UPSTREAMS,
-    #             "transform_headers": {
-    #                 "set": {},
-    #                 "delete": [],
-    #             },
-    #         },
-    #         rate_limit_config=settings.DEFAULT_STAGE_RATE_LIMIT_CONFIG,
-    #     )
-    #
-    #     return stage
-
-    # def save_related_data(self, stage, proxy_http_config: dict, rate_limit_config: Optional[dict]):
-    #     # 1. save proxy http config
-    #     StageProxyHTTPContext().save(stage.id, proxy_http_config)
-    #
-    #     # 2. save rate-limit config
-    #     if rate_limit_config is not None:
-    #         StageRateLimitContext().save(stage.id, rate_limit_config)
-
-    # def delete_stages(self, gateway_id, stage_ids):
-    #     # 1. delete proxy http config/rate-limit config
-    #     from apigateway.core.models import Context
-    #
-    #     Context.objects.delete_by_scope_ids(
-    #         scope_type=ContextScopeTypeEnum.STAGE.value,
-    #         scope_ids=stage_ids,
-    #     )
-    #
-    #     # 2. delete release
-    #     from apigateway.core.models import Release
-    #
-    #     Release.objects.delete_by_stage_ids(stage_ids)
-    #
-    #     # 3. delete access-strategy-binding
-    #     from apigateway.apps.access_strategy.models import AccessStrategyBinding
-    #
-    #     AccessStrategyBinding.objects.delete_by_scope_ids(
-    #         scope_type=AccessStrategyBindScopeEnum.STAGE.value,
-    #         scope_ids=stage_ids,
-    #     )
-    #
-    #     # 4. delete stages
-    #     self.filter(id__in=stage_ids).delete()
-    #
-    #     # 5. delete release-history
-    #     from apigateway.core.models import ReleaseHistory
-    #
-    #     ReleaseHistory.objects.delete_without_stage_related(gateway_id)
-    #
-    # def delete_by_gateway_id(self, gateway_id):
-    #     stage_ids = list(self.filter(api_id=gateway_id).values_list("id", flat=True))
-    #     if not stage_ids:
-    #         return
-    #
-    #     self.delete_stages(gateway_id, stage_ids)
-
-    # def add_create_audit_log(self, gateway, stage, username: str):
-    #     record_audit_log(
-    #         username=username,
-    #         op_type=OpTypeEnum.CREATE.value,
-    #         op_status=OpStatusEnum.SUCCESS.value,
-    #         op_object_group=gateway.id,
-    #         op_object_type=OpObjectTypeEnum.STAGE.value,
-    #         op_object_id=stage.id,
-    #         op_object=stage.name,
-    #         comment=_("创建环境"),
-    #     )
-
-    # def add_update_audit_log(self, gateway, stage, username: str):
-    #     record_audit_log(
-    #         username=username,
-    #         op_type=OpTypeEnum.MODIFY.value,
-    #         op_status=OpStatusEnum.SUCCESS.value,
-    #         op_object_group=gateway.id,
-    #         op_object_type=OpObjectTypeEnum.STAGE.value,
-    #         op_object_id=stage.id,
-    #         op_object=stage.name,
-    #         comment=_("更新环境"),
-    #     )
-
     def get_micro_gateway_id_to_fields(self, gateway_id: int) -> Dict[str, Dict[str, Any]]:
         return {
             item["micro_gateway_id"]: item
             for item in self.filter(api_id=gateway_id).values("id", "name", "micro_gateway_id")
             if item["micro_gateway_id"]
         }
-
-    # def get_id_to_micro_gateway_id(self, gateway_id: int) -> Dict[int, Optional[str]]:
-    #     return dict(self.filter(api_id=gateway_id).values_list("id", "micro_gateway_id"))
-    #
-    # def get_id_to_micro_gateway_fields(self, gateway_id: int) -> Dict[int, Optional[Dict[str, Any]]]:
-    #     id_to_micro_gateway_id = self.get_id_to_micro_gateway_id(gateway_id)
-    #     result: Dict[int, Optional[Dict[str, Any]]] = {i: None for i in id_to_micro_gateway_id}
-    #
-    #     valid_micro_gateway_ids = set(i for i in id_to_micro_gateway_id.values() if i is not None)
-    #     if not valid_micro_gateway_ids:
-    #         return result
-    #
-    #     from apigateway.core.models import MicroGateway
-    #
-    #     micro_gateway_id_to_fields = MicroGateway.objects.get_id_to_fields(valid_micro_gateway_ids)
-    #     for id_, micro_gateway_id in id_to_micro_gateway_id.items():
-    #         if micro_gateway_id is not None:
-    #             result[id_] = micro_gateway_id_to_fields.get(micro_gateway_id)
-    #
-    #     return result
 
     def get_gateway_name_to_active_stage_names(self, gateways) -> Dict[str, List[str]]:
         gateway_id_to_name = {g.id: g.name for g in gateways}
@@ -434,222 +148,12 @@ class StageManager(models.Manager):
 
 
 class ResourceManager(models.Manager):
-    # TODO: 断点, 把这个函数挪到 ResourceHandler里面去
-    # def save_related_data(
-    #     self,
-    #     gateway,
-    #     resource,
-    #     proxy_type,
-    #     proxy_config,
-    #     auth_config,
-    #     label_ids,
-    #     disabled_stage_ids,
-    #     backend_config_type: str = BackendConfigTypeEnum.DEFAULT.value,
-    #     backend_service_id: Optional[int] = None,
-    # ):
-    #     # 1. save proxy, and set resource proxy_id
-    #     self.save_proxy_config(
-    #         resource,
-    #         proxy_type,
-    #         proxy_config,
-    #         backend_config_type=backend_config_type,
-    #         backend_service_id=backend_service_id,
-    #     )
-    #
-    #     # 2. save auth config
-    #     self.save_auth_config(resource.id, auth_config)
-    #
-    #     # 3. save labels
-    #     self.save_labels(gateway, resource, label_ids, delete_unspecified=True)
-    #
-    #     # 4. save disabled stags
-    #     self.save_disabled_stages(gateway, resource, disabled_stage_ids, delete_unspecified=True)
-
-    # def delete_resources(self, resource_ids: List[int], api=None):
-    #     if not resource_ids:
-    #         return
-    #
-    #     if api is not None:
-    #         # 指定网关时，二次确认资源属于该网关，防止误删除
-    #         resource_ids = self.filter_by_ids(api, resource_ids)
-    #         assert resource_ids
-    #
-    #     # 1. delete auth config context
-    #     from apigateway.core.models import Context
-    #
-    #     Context.objects.delete_by_scope_ids(
-    #         scope_type=ContextScopeTypeEnum.RESOURCE.value,
-    #         scope_ids=resource_ids,
-    #     )
-    #
-    #     # 2. delete proxy
-    #     from apigateway.core.models import Proxy
-    #
-    #     Proxy.objects.delete_by_resource_ids(resource_ids)
-    #
-    #     # 3. delete access-strategy binding
-    #     from apigateway.apps.access_strategy.models import AccessStrategyBinding
-    #
-    #     AccessStrategyBinding.objects.delete_by_scope_ids(
-    #         scope_type=AccessStrategyBindScopeEnum.RESOURCE.value,
-    #         scope_ids=resource_ids,
-    #     )
-    #
-    #     # 4. delete resource doc
-    #     from apigateway.apps.support.models import ResourceDoc
-    #
-    #     ResourceDoc.objects.delete_by_resource_ids(resource_ids)
-    #
-    #     # 5. delete resource
-    #     self.filter(id__in=resource_ids).delete()
-
-    # def delete_by_gateway_id(self, gateway_id):
-    #     resource_ids = list(self.filter(api_id=gateway_id).values_list("id", flat=True))
-    #     if not resource_ids:
-    #         return
-    #     self.delete_resources(resource_ids)
-
-    # def save_labels(self, gateway, resource, label_ids, delete_unspecified=False):
-    #     """
-    #     存储标签
-    #     :param bool delete_unspecified: 是否删除未指定的标签，资源下非本次提供的即为未指定标签
-    #     """
-    #     from apigateway.apps.label.models import APILabel, ResourceLabel
-    #
-    #     # 筛选出在 ResourceLabel 中不存在的 label_ids 进行添加
-    #     exist_label_ids = ResourceLabel.objects.filter(resource=resource, api_label__id__in=label_ids).values_list(
-    #         "api_label__id", flat=True
-    #     )
-    #     labels_to_add = APILabel.objects.filter(api=gateway, id__in=list(set(label_ids) - set(exist_label_ids)))
-    #     for label in labels_to_add:
-    #         ResourceLabel.objects.update_or_create(resource=resource, api_label=label)
-    #
-    #     if delete_unspecified:
-    #         # 清理非本次添加的标签
-    #         ResourceLabel.objects.filter(resource=resource).exclude(api_label__id__in=label_ids).delete()
-
-    # def save_disabled_stages(self, gateway, resource, disabled_stage_ids, delete_unspecified=False):
-    #     """
-    #     存储资源禁用环境
-    #     :param bool delete_unspecified: 是否删除未指定的禁用环境，资源下非本次提供的禁用环境即为未指定禁用环境
-    #     """
-    #     from apigateway.core.models import Stage, StageResourceDisabled
-    #
-    #     # 筛选出 StageResourceDisabled 中不存在的 disabled_stage_ids 进行添加
-    #     exist_disabled_stage_ids = StageResourceDisabled.objects.filter(
-    #         resource=resource, stage__id__in=disabled_stage_ids
-    #     ).values_list("stage__id", flat=True)
-    #     disabled_stages_to_add = Stage.objects.filter(
-    #         api=gateway, id__in=list(set(disabled_stage_ids) - set(exist_disabled_stage_ids))
-    #     )
-    #     for stage in disabled_stages_to_add:
-    #         StageResourceDisabled.objects.update_or_create(stage=stage, resource=resource)
-    #
-    #     if delete_unspecified:
-    #         # 清理非本次添加的禁用环境
-    #         StageResourceDisabled.objects.filter(resource=resource).exclude(stage__id__in=disabled_stage_ids).delete()
-
-    # def save_auth_config(self, resource_id, config):
-    #     """
-    #     存储资源认证配置
-    #     """
-    #     auth_config = self._get_current_auth_config(resource_id)
-    #     auth_config.update(config)
-    #
-    #     return ResourceAuthContext().save(resource_id, auth_config)
-    #
-    # def _get_current_auth_config(self, resource_id):
-    #     """
-    #     获取资源当前认证配置
-    #     """
-    #     default_hidden_config = {
-    #         # 跳过用户认证逻辑，值为False时，不根据请求参数中的用户信息校验用户
-    #         "skip_auth_verification": False,
-    #         "auth_verified_required": True,
-    #         "app_verified_required": True,
-    #         "resource_perm_required": True,
-    #     }
-    #
-    #     from apigateway.core.models import Context
-    #
-    #     try:
-    #         return ResourceAuthContext().get_config(resource_id)
-    #     except Context.DoesNotExist:
-    #         return default_hidden_config
-
-    # def save_proxy_config(
-    #     self,
-    #     resource,
-    #     proxy_type,
-    #     proxy_config,
-    #     backend_config_type: str = BackendConfigTypeEnum.DEFAULT.value,
-    #     backend_service_id: Optional[int] = None,
-    # ):
-    #     from apigateway.core.models import Proxy
-    #
-    #     proxy, created = Proxy.objects.save_proxy_config(
-    #         resource,
-    #         proxy_type,
-    #         proxy_config,
-    #         backend_config_type=backend_config_type,
-    #         backend_service_id=backend_service_id,
-    #     )
-    #     resource.proxy_id = proxy.id
-    #     resource.save(update_fields=["proxy_id", "updated_time"])
-    #     return proxy, created
-
-    # def filter_resource(self, gateway, query=None, path=None,
-    #       method=None, label_name=None, order_by=None, fuzzy=True):
-    #     """
-    #     查询资源，根据模糊查询串匹配，根据path、method匹配，根据标签匹配
-    #     """
-    #     queryset = self.filter(api=gateway)
-    #
-    #     # query 不是模型字段，仅支持模糊匹配，如需精确匹配，可使用具体字段
-    #     if query and fuzzy:
-    #         queryset = queryset.filter(Q(path__contains=query) | Q(name__contains=query))
-    #
-    #     if path:
-    #         if fuzzy:
-    #             queryset = queryset.filter(path__contains=path)
-    #         else:
-    #             queryset = queryset.filter(path=path)
-    #
-    #     if method:
-    #         queryset = queryset.filter(method=method)
-    #
-    #     if label_name:
-    #         from apigateway.apps.label.models import ResourceLabel
-    #
-    #         resource_ids = ResourceLabel.objects.filter_resource_ids(gateway=gateway, label_name=label_name)
-    #         queryset = queryset.filter(id__in=resource_ids)
-    #
-    #     if order_by:
-    #         queryset = queryset.order_by(order_by)
-    #
-    #     return queryset
-
     def get_api_resource_count(self, gateway_ids):
         """
         获取网关资源数量
         """
         api_resource_count = self.filter(api_id__in=gateway_ids).values("api_id").annotate(count=Count("api_id"))
         return {i["api_id"]: i["count"] for i in api_resource_count}
-
-    # def get_proxy_configs(self, resource):
-    #     """
-    #     获取资源代理配置，及当前代理类型
-    #     """
-    #     from apigateway.core.models import Proxy
-    #
-    #     current_proxy = Proxy.objects.get(id=resource.proxy_id)
-    #
-    #     return {
-    #         "type": current_proxy.type,
-    #         "backend_config_type": current_proxy.backend_config_type,
-    #         "backend_service_id": current_proxy.backend_service_id,
-    #         "configs": {proxy.type: proxy.config for proxy in Proxy.objects.filter(resource=resource)},
-    #     }
 
     def filter_by_ids(self, gateway, ids):
         if not ids:
@@ -842,64 +346,11 @@ class StageResourceDisabledManager(models.Manager):
 
 
 class ResourceVersionManager(models.Manager):
-    # def make_version(self, gateway):
-    #     from apigateway.apps.label.models import ResourceLabel
-    #     from apigateway.core.models import Context, Proxy, Resource, StageResourceDisabled
-    #
-    #     resource_queryset = Resource.objects.filter(api_id=gateway.id).all()
-    #     resource_ids = list(resource_queryset.values_list("id", flat=True))
-    #
-    #     proxy_map = Proxy.objects.filter_id_snapshot_map(resource_ids)
-    #
-    #     context_map = Context.objects.filter_id_type_snapshot_map(
-    #         scope_type=ContextScopeTypeEnum.RESOURCE.value,
-    #         scope_ids=resource_ids,
-    #     )
-    #
-    #     disabled_stage_map = {
-    #         resource_id: [stage["name"] for stage in stages]
-    #       for resource_id, stages in StageResourceDisabled.objects.filter_disabled_stages_by_gateway(gateway).items()
-    #     }
-    #
-    #     api_label_map = {
-    #         resource_id: [label["id"] for label in labels]
-    #         for resource_id, labels in ResourceLabel.objects.filter_labels_by_gateway(gateway).items()
-    #     }
-    #
-    #     return [
-    #         r.snapshot(
-    #             as_dict=True,
-    #             proxy_map=proxy_map,
-    #             context_map=context_map,
-    #             disabled_stage_map=disabled_stage_map,
-    #             api_label_map=api_label_map,
-    #         )
-    #         for r in resource_queryset
-    #     ]
-
-    # def get_data_by_id_or_new(self, gateway, resource_version_id: Optional[int]) -> list:
-    #     """
-    #     根据版本ID获取Data，或者获取当前资源列表中的版本数据
-    #     """
-    #     if resource_version_id:
-    #         return self.get(api=gateway, id=resource_version_id).data
-    #
-    #     return self.make_version(gateway)
-
     def get_latest_version(self, gateway_id: int):
         """
         网关最新的版本
         """
         return self.filter(api_id=gateway_id).last()
-
-    # def delete_by_gateway_id(self, gateway_id):
-    #     from apigateway.core.models import Release
-    #
-    #     # delete api release
-    #     Release.objects.delete_by_gateway_id(gateway_id)
-    #
-    #     # delete resource version
-    #     self.filter(api_id=gateway_id).delete()
 
     # TODO: 缓存优化：可使用 django cache(with database backend) or dogpile 缓存
     # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
@@ -947,31 +398,6 @@ class ResourceVersionManager(models.Manager):
 
         return False
 
-    # def get_released_public_resources(self, gateway_id: int, stage_name: Optional[str] = None) -> List[dict]:
-    #     """
-    #     获取已发布的所有资源，将各环境发布的资源合并
-    #     """
-    #     from apigateway.core.models import Release, Stage
-    #
-    #     # 已发布版本中，以最新版本中资源配置为准
-    #     resource_mapping = {}
-    #     resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id, stage_name)
-    #     for resource_version_id in sorted(resource_version_ids):
-    #         resources_in_version = self.get_resources(gateway_id, resource_version_id)
-    #         resource_mapping.update(resources_in_version)
-    #
-    #     # 只展示公开的资源
-    #     resources = filter(lambda x: x["is_public"], resource_mapping.values())
-    #
-    #     # 若资源无可用环境，则不展示该资源
-    #     # 比如：资源测试阶段，禁用环境 prod，则 prod 环境下不应展示该资源
-    #     current_stage_names = set([stage_name] if stage_name else Stage.objects.get_names(gateway_id))
-    #     return [
-    #         resource
-    #         for resource in resources
-    #         if not resource["disabled_stages"] or (current_stage_names - set(resource["disabled_stages"]))
-    #     ]
-
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_LONG.value))
     def get_resources(self, gateway_id: int, id: int) -> Dict[int, dict]:
         resource_version = self.filter(api_id=gateway_id, id=id).first()
@@ -998,34 +424,6 @@ class ResourceVersionManager(models.Manager):
             }
         return resources
 
-    # def need_new_version(self, gateway_id):
-    #     """
-    #     是否需要创建新的资源版本
-    #     """
-    #     from apigateway.core.models import Resource
-    #
-    #     latest_version = self.get_latest_version(gateway_id)
-    #     latest_resource = Resource.objects.get_latest_resource(gateway_id)
-    #
-    #     if not (latest_version or latest_resource):
-    #         return False
-    #
-    #     # 无资源版本
-    #     if not latest_version:
-    #         return True
-    #
-    #     # 如果有最近更新的资源，最近的更新资源时间 > 最新版本生成时间
-    #     if latest_resource and latest_resource.updated_time > latest_version.created_time:
-    #         return True
-    #
-    #     # 版本中资源数量是否发生变化
-    #     # some resource could be deleted
-    #     resource_count = Resource.objects.filter(api_id=gateway_id).count()
-    #     if resource_count != len(latest_version.data):
-    #         return True
-    #
-    #     return False
-
     def get_id_to_fields_map(
         self,
         gateway_id: Optional[int] = None,
@@ -1041,18 +439,6 @@ class ResourceVersionManager(models.Manager):
             queryset = queryset.filter(id__in=resource_version_ids)
 
         return {rv["id"]: dict(rv) for rv in queryset.values("id", "name", "title", "version")}
-
-    # def add_create_audit_log(self, gateway, resource_version, username: str):
-    #     record_audit_log(
-    #         username=username,
-    #         op_type=OpTypeEnum.CREATE.value,
-    #         op_status=OpStatusEnum.SUCCESS.value,
-    #         op_object_group=gateway.id,
-    #         op_object_type=OpObjectTypeEnum.RESOURCE_VERSION.value,
-    #         op_object_id=resource_version.id,
-    #         op_object=resource_version.name,
-    #         comment=_("生成版本"),
-    #     )
 
     def get_id_by_name(self, gateway, name: str) -> Optional[int]:
         # 版本中 data 数据量较大，查询时不查询 data 数据
