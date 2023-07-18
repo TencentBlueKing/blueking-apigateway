@@ -17,6 +17,7 @@
 #
 import logging
 import uuid
+from typing import Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 from celery import shared_task
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(ignore_result=True)
-def rolling_update_release(gateway_id):
+def rolling_update_release(gateway_id, publish_id: Optional[int] = None):
     """滚动同步微网关配置，不会生成新的版本"""
     # 剔除非微网关托管的网关
     logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
@@ -70,7 +71,9 @@ def rolling_update_release(gateway_id):
             continue
 
         procedure_logger.info("distribute begin")
-        if not distributor.distribute(release, micro_gateway=shared_gateway, release_task_id=release_task_id):
+        if not distributor.distribute(
+            release, micro_gateway=shared_gateway, release_task_id=release_task_id, release_history_id=publish_id
+        ):
             procedure_logger.info("distribute failed")
             has_failure = True
         else:

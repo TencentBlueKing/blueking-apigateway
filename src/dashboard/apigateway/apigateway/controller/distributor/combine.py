@@ -78,7 +78,7 @@ class CombineDistributor(BaseDistributor):
         has_failure = False
 
         def do_distribute(distributor: BaseDistributor, gateway: MicroGateway):
-            if not distributor.distribute(release, gateway, release_task_id):
+            if not distributor.distribute(release, gateway, release_task_id, release_history_id):
                 nonlocal has_failure
                 has_failure = True
 

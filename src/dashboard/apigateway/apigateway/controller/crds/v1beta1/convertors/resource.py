@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from django.utils.functional import cached_property
 
@@ -36,6 +36,7 @@ from apigateway.controller.crds.v1beta1.models.gateway_resource import (
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService
 from apigateway.core.constants import ProxyTypeEnum
 from apigateway.core.models import MicroGateway
+from apigateway.utils.time import now_str
 
 
 class HttpResourceConvertor(BaseConvertor):
@@ -44,9 +45,11 @@ class HttpResourceConvertor(BaseConvertor):
         release_data: ReleaseData,
         micro_gateway: MicroGateway,
         gateway_service: List[BkGatewayService],
+        publish_id: Union[int, None] = None,
     ):
         super().__init__(release_data, micro_gateway)
         self._gateway_services = gateway_service
+        self._publish_id = publish_id
 
     @cached_property
     def _default_stage_service_key(self) -> str:
@@ -59,12 +62,15 @@ class HttpResourceConvertor(BaseConvertor):
 
     def convert(self) -> List[BkGatewayResource]:
         resources: List[BkGatewayResource] = []
-
         for resource in self._release_data.resource_version.data:
             crd = self._convert_http_resource(resource)
             if crd:
                 resources.append(crd)
-
+        # 如果是版本发布需要加上版本路由，版本发布需要新增一个版本路由，方便查询发布结果探测
+        if self._publish_id:
+            version_route_crd = self._convert_http_resource(self._get_release_version_route_resource())
+            if version_route_crd:
+                resources.append(version_route_crd)
         return resources
 
     def _convert_http_resource(self, resource: Dict[str, Any]) -> Optional[BkGatewayResource]:
@@ -102,6 +108,51 @@ class HttpResourceConvertor(BaseConvertor):
                 plugins=self._convert_http_resource_plugins(resource),
             ),
         )
+
+    def _get_release_version_route_resource(self) -> dict:
+        uri = "/_version"
+        name = "apigw_builtin__mock_release_version"
+        mock_config = {
+            "code": 200,
+            "body": json.dumps(
+                {
+                    "publish_id": self._publish_id,
+                    "start_time": now_str(),
+                }
+            ),
+            "headers": {"Content-Type": "application/json"},
+        }
+        auth_config = {
+            "skip_auth_verification": True,
+            "auth_verified_required": False,
+            "app_verified_required": False,
+            "resource_perm_required": False,
+        }
+        resource = {
+            "id": -1,
+            "name": name,
+            "description": "获取发布信息，用于检查版本发布结果",
+            "description_en": "Get release information for checking version release result",
+            "method": "GET",
+            "path": uri,
+            "match_subpath": False,
+            "is_public": False,
+            "allow_apply_permission": False,
+            "proxy": {
+                "type": ProxyTypeEnum.MOCK.value,
+                "config": json.dumps(mock_config),
+            },
+            "contexts": {
+                "resource_auth": {
+                    "scope_type": "resource",
+                    "type": "resource_auth",
+                    "config": json.dumps(auth_config),
+                }
+            },
+            "disabled_stages": [],
+            "api_labels": [],
+        }
+        return resource
 
     def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any]) -> Optional[Upstream]:
         upstreams = resource_proxy.get("upstreams")
