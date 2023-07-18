@@ -806,7 +806,12 @@ class TestResourceImportExportViewSet:
                 resource = Resource.objects.get(api=self.gateway, path=expected["path"], method=expected["method"])
                 assert resource.name == expected["name"]
 
-    def test_export_resources(self):
+    def test_export_resources(self, mocker):
+        mocker.patch(
+            "apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.alter_plugin",
+            return_value=True,
+        )
+
         stage = G(Stage, api=self.gateway, name="prod")
         resource1 = G(Resource, api=self.gateway, path="/echo/", method="GET", name="get_echo", description="desc")
         resource2 = G(Resource, api=self.gateway, path="/echo/2/", method="ANY", name="any_echo", description="desc")

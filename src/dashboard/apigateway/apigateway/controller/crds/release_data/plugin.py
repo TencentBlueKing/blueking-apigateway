@@ -19,6 +19,7 @@
 # PluginConfig 中前端表单数据，转换成 apisix 插件配置
 
 from abc import ABC, abstractmethod
+
 from typing import Any, ClassVar, Dict, List, Union
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
@@ -42,6 +43,18 @@ class DefaultPluginConvertor(PluginConvertor):
         if need covert, overwrite this method
         """
         return plugin_config.config
+
+
+class HeaderWriteConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[str] = PluginTypeCodeEnum.BK_HEADER_REWRITE.value
+
+    def convert(self, plugin_config: PluginConfig) -> Dict[str, Any]:
+        config = plugin_config.config
+
+        return {
+            "set": {item["key"]: item["value"] for item in config["set"]},
+            "remove": [item["key"] for item in config["remove"]],
+        }
 
 
 class IPRestrictionConvertor(PluginConvertor):
@@ -83,6 +96,7 @@ class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c  # type: ignore
         for c in [
+            HeaderWriteConvertor(),
             IPRestrictionConvertor(),
         ]
     }

@@ -24,7 +24,9 @@ from apigateway.controller.crds.release_data.plugin import (
     DefaultPluginConvertor,
     IPRestrictionConvertor,
     PluginConvertorFactory,
+    HeaderWriteConvertor,
 )
+from apigateway.utils.yaml import yaml_dumps
 
 
 class TestDefaultPluginConvertor:
@@ -112,6 +114,27 @@ class TestIPRestrictionConvertor:
 
         with pytest.raises(ValueError):
             self.convertor.convert(PluginConfig.objects.get(id=1))
+
+
+class TestHeaderWriteConvertor:
+    @pytest.fixture(autouse=True)
+    def setup_fixture(self):
+        self.convertor = HeaderWriteConvertor()
+
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {"set": [{"key": "key1", "value": "value1"}], "remove": [{"key": "key2"}]},
+                {"set": {"key1": "value1"}, "remove": ["key2"]},
+            ),
+        ],
+    )
+    def test_convert(self, data, expected):
+        G(PluginConfig, id=1, yaml=yaml_dumps(data))
+
+        config = self.convertor.convert(PluginConfig.objects.get(id=1))
+        assert config == expected
 
 
 class TestPluginConvertorFactory:

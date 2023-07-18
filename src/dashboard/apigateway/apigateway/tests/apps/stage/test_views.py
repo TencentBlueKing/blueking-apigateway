@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from unittest.mock import patch
 
 from django.test import TestCase
 from django_dynamic_fixture import G
@@ -29,12 +30,17 @@ from apigateway.core.models import Context, Release, ResourceVersion, Stage
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, dummy_time, get_response_json
 
 
+def mock_alter_plugin(*args, **kwargs):
+    return None
+
+
 class TestStageViewSet(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
         cls.gateway = create_gateway()
 
+    @patch("apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.alter_plugin", mock_alter_plugin)
     def test_create(self):
         data = [
             # ok
@@ -325,6 +331,7 @@ class TestStageViewSet(TestCase):
             self.assertEqual(result["code"], 0)
             self.assertEqual(result["data"]["results"], test["expected"])
 
+    @patch("apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.alter_plugin", mock_alter_plugin)
     def test_update(self):
         stage = G(
             Stage, api=self.gateway, name="test-03", status=0, description="t1", _vars=json.dumps({"test": "123"})

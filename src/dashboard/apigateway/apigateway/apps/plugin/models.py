@@ -22,7 +22,6 @@ from django.db import models
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
-from jsonschema import validate
 from tencent_apigateway_common.i18n.field import I18nProperty
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeEnum
@@ -154,19 +153,7 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
 
     @config.setter
     def config(self, yaml_: str):
-        loaded_config = yaml_loads(yaml_)
-        self._validate_config(loaded_config)
         self.yaml = yaml_
-
-    def _validate_config(self, config: Dict[str, Any]):
-        if not isinstance(config, dict):
-            raise ValueError("config must be a dict")
-
-        schema = self.type and self.type.schema
-        if not schema:
-            return
-
-        validate(config, schema=schema.schema)
 
     def __str__(self) -> str:
         return f"<PluginConfig {self.name}({self.pk})>"

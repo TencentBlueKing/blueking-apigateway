@@ -15,27 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, ClassVar, Dict
+import pytest
 
-from attr import define
+from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 
 
-@define(slots=False)
-class PluginData:
-    type_code: str
-    config: Dict[str, Any]
-    binding_scope_type: str
-    _type_code_to_name: ClassVar[Dict[str, str]] = {
-        "bk-rate-limit:stage": "bk-stage-rate-limit",
-        "bk-rate-limit:resource": "bk-resource-rate-limit",
-        "bk-header-rewrite:stage": "bk-stage-header-rewrite",
-        "bk-header-rewrite:resource": "bk-resource-header-rewrite",
-    }
-
-    @property
-    def name(self) -> str:
-        """
-        插件信息中, type_code 为插件类型，一般情况下，此即为插件名；
-        但是，频率控制插件绑定到环境、资源时，使用了不同的插件，所以要做一下转换
-        """
-        return self._type_code_to_name.get(f"{self.type_code}:{self.binding_scope_type}", self.type_code)
+class TestHeaderRewriteConvertor:
+    @pytest.mark.parametrize(
+        "transform_headers, expected",
+        [
+            (None, None),
+            ({"set": {}, "delete": []}, None),
+            (
+                {"set": {"key1": "value1"}, "delete": ["key2"]},
+                {"set": [{"key": "key1", "value": "value1"}], "remove": [{"key": "key2"}]},
+            ),
+        ],
+    )
+    def test_transform_headers_to_plugin_config(self, transform_headers, expected):
+        assert HeaderRewriteConvertor.transform_headers_to_plugin_config(transform_headers) == expected
