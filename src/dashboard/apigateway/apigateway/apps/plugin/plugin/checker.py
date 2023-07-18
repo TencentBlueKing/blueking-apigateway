@@ -89,8 +89,8 @@ class BkCorsChecker(BaseChecker):
 
 
 class HeaderRewriteChecker(BaseChecker):
-    def check(self, yaml_: str):
-        loaded_data = yaml_loads(yaml_)
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
 
         set_keys = [item["key"] for item in loaded_data["set"]]
         set_duplicate_keys = [key for key, count in Counter(set_keys).items() if count >= 2]
