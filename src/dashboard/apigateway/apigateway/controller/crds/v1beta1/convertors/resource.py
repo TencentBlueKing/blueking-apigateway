@@ -15,11 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 import json
 from typing import Any, Dict, List, Optional, Union
 
-import pytz
 from django.utils.functional import cached_property
 
 from apigateway.controller.crds.constants import (
@@ -38,6 +36,7 @@ from apigateway.controller.crds.v1beta1.models.gateway_resource import (
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService
 from apigateway.core.constants import ProxyTypeEnum
 from apigateway.core.models import MicroGateway
+from apigateway.utils.time import now_str
 
 
 class HttpResourceConvertor(BaseConvertor):
@@ -67,7 +66,7 @@ class HttpResourceConvertor(BaseConvertor):
             crd = self._convert_http_resource(resource)
             if crd:
                 resources.append(crd)
-        # 如果是版本发布需要加上版本路由
+        # 如果是版本发布需要加上版本路由，版本发布需要新增一个版本路由，方便查询发布结果探测
         if self._publish_id:
             version_route_crd = self._convert_http_resource(self._get_release_version_route_resource())
             if version_route_crd:
@@ -112,16 +111,15 @@ class HttpResourceConvertor(BaseConvertor):
 
     def _get_release_version_route_resource(self) -> dict:
         uri = "/_version"
-        name = "get_release_version"
-        now = datetime.datetime.now(pytz.timezone("Asia/Shanghai"))
-        now_formatted_time = now.strftime("%Y-%m-%d %H:%M:%S %Z%z")
-        mock_result = {
-            "publish_id": self._publish_id,
-            "start_time": now_formatted_time,
-        }
+        name = "apigw_builtin__mock_release_version"
         mock_config = {
             "code": 200,
-            "body": json.dumps(mock_result),
+            "body": json.dumps(
+                {
+                    "publish_id": self._publish_id,
+                    "start_time": now_str(),
+                }
+            ),
             "headers": {"Content-Type": "application/json"},
         }
         auth_config = {
@@ -133,8 +131,8 @@ class HttpResourceConvertor(BaseConvertor):
         resource = {
             "id": -1,
             "name": name,
-            "description": "版本发布结果获取路由",
-            "description_en": "version release result get route",
+            "description": "获取发布信息，用于检查版本发布结果",
+            "description_en": "Get release information for checking version release result",
             "method": "GET",
             "path": uri,
             "match_subpath": False,

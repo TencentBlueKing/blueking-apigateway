@@ -17,6 +17,9 @@
 #
 import enum
 
+# cli发布资源特殊publish_id
+NO_NEED_REPORT_EVENT_PUBLISH_ID = -1
+
 
 class MicroGatewayStatusCodeEnum(int, enum.Enum):
     OK = 0
