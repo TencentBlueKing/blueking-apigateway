@@ -17,10 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from apigateway.core.management.commands.update_jwt_key import Command
-from apigateway.core.models import JWT, Gateway
 from ddf import G
 from django.core.management.base import CommandError
+
+from apigateway.core.management.commands.update_jwt_key import Command
+from apigateway.core.models import JWT, Gateway
 
 pytestmark = pytest.mark.django_db
 
