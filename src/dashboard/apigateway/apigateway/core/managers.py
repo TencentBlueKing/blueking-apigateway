@@ -1538,8 +1538,8 @@ class PublishEventManager(models.Manager):
 
     def get_publish_events_by_publish_ids(self, publish_ids):
         # 发布事件dict：key：publish_id,value: 最后一个事件
-        query_set = self.filter(publish_id__in=publish_ids).order_by("publish_id", "step", "status").values()
-        return dict((query["publish_id"], query) for query in query_set)
+        query_set = self.filter(publish_id__in=publish_ids).order_by("publish_id", "step", "status")
+        return dict((query.publish_id, query) for query in query_set)
 
 
 class ContextManager(models.Manager):

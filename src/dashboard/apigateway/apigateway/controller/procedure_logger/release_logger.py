@@ -57,6 +57,7 @@ class ReleaseProcedureLogger(ProcedureLogger):
 
         if self._micro_gateway:
             parts.append(f"micro_gateway={self._micro_gateway.pk}")
+
         if self._publish_id:
             parts.append(f"publish_id={self._publish_id}")
         parts.append(f"release_task_id={self.release_task_id}")

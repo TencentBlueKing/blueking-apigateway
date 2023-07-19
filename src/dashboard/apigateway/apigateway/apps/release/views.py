@@ -151,12 +151,12 @@ class ReleaseHistoryViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         # 查询发布事件
         publish_ids = [release_history.id for release_history in page]
-        publish_last_event = PublishEvent.objects.get_publish_events_by_publish_ids(publish_ids)
+        publish_last_events = PublishEvent.objects.get_publish_events_by_publish_ids(publish_ids)
         for history in page:
-            if history.id in publish_last_event:
-                history.message = (
-                    f'{publish_last_event[history.id]["name"]}:{publish_last_event[history.id]["status"]}'
-                )
+            event = publish_last_events.get(history.id)
+            if event:
+                history.message = f"{event.name}:{event.status}"
+
         serializer = self.get_serializer(page, many=True)
         return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 

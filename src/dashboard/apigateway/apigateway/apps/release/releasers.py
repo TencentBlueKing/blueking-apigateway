@@ -269,6 +269,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             release_id=release.pk,
             micro_gateway_release_history_id=history.pk,
             micro_gateway_id=shared_gateway.pk,
+            publish_id=release_history.pk,
         )  # type: ignore
 
     def _create_release_task_for_micro_gateway(self, release: Release, release_history: ReleaseHistory):
