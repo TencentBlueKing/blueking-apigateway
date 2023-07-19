@@ -21,20 +21,18 @@
 import json
 from typing import List, Optional
 
-from apigateway.apps.access_strategy.constants import \
-    AccessStrategyBindScopeEnum
+from django.db.models import Q
+
+from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
 from apigateway.apps.access_strategy.models import AccessStrategyBinding
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.core.constants import (BackendConfigTypeEnum,
-                                       ContextScopeTypeEnum)
-from apigateway.core.models import (Context, Proxy, Resource, Stage,
-                                    StageResourceDisabled)
+from apigateway.core.constants import BackendConfigTypeEnum, ContextScopeTypeEnum
+from apigateway.core.models import Context, Proxy, Resource, Stage, StageResourceDisabled
 from apigateway.utils import time
-from django.db.models import Q
 
 
 class ResourceHandler:

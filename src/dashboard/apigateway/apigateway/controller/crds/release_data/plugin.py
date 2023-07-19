@@ -19,7 +19,6 @@
 # PluginConfig 中前端表单数据，转换成 apisix 插件配置
 
 from abc import ABC, abstractmethod
-
 from typing import Any, ClassVar, Dict, List, Union
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum

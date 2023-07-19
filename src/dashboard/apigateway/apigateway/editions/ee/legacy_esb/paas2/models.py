@@ -37,7 +37,7 @@ class FunctionController(models.Model):
 
 
 class AppAccount(models.Model):
-    """应用帐号"""
+    """应用账号"""
 
     app_code = models.CharField("应用编码", max_length=30, unique=True)
     app_token = models.CharField("应用Token", max_length=128)
