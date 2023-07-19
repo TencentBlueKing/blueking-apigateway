@@ -12,8 +12,8 @@ repos:
         name: ruff
         language: python
         types: [python]
-        entry: ruff --config=src/dashboard/pyproject.toml --force-exclude --fix
-        files: src/dashboard/
+        entry: bash -c 'cd src/dashboard && ruff --config=pyproject.toml --force-exclude --fix'
+        files: ^src/dashboard/
       - id: mypy
         name: mypy
         language: python
