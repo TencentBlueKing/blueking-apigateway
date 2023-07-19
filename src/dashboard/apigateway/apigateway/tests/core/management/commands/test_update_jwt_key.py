@@ -19,7 +19,6 @@
 import pytest
 from ddf import G
 from django.core.management.base import CommandError
-
 from apigateway.core.management.commands.update_jwt_key import Command
 from apigateway.core.models import JWT, Gateway
 
