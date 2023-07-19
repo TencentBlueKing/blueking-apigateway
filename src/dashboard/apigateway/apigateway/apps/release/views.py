@@ -27,7 +27,7 @@ from apigateway.apps.release import serializers
 from apigateway.apps.release.releasers import ReleaseBatchManager, ReleaseError
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
+from apigateway.core.models import PublishEvent, Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
@@ -149,7 +149,14 @@ class ReleaseHistoryViewSet(viewsets.ModelViewSet):
             fuzzy=True,
         )
         page = self.paginate_queryset(queryset)
-
+        # 查询发布事件
+        publish_ids = [release_history.id for release_history in page]
+        publish_last_event = PublishEvent.objects.get_publish_events_by_publish_ids(publish_ids)
+        for history in page:
+            if history.id in publish_last_event:
+                history.message = (
+                    f'{publish_last_event[history.id]["name"]}:{publish_last_event[history.id]["status"]}'
+                )
         serializer = self.get_serializer(page, many=True)
         return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 

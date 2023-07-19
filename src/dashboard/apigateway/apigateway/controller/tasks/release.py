@@ -179,6 +179,7 @@ def release_gateway_by_registry(micro_gateway_id, release_id, micro_gateway_rele
         gateway=release.api,
         stage=release.stage,
         micro_gateway=micro_gateway,
+        release_task_id=micro_gateway_release_history_id,
     )
     return _release_gateway(
         distributor=EtcdDistributor(

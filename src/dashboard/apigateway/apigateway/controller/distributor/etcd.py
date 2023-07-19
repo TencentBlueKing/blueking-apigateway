@@ -51,12 +51,12 @@ class EtcdDistributor(BaseDistributor):
         release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[int] = None,
+        publish_id: Optional[int] = None,
     ) -> bool:
         """将 release 发布到 micro-gateway 对应的 registry 中"""
         convertor = CustomResourceConvertor(
             release=release,
-            publish_id=release_history_id,
+            publish_id=publish_id,
             micro_gateway=micro_gateway,
             include_config=self.include_gateway_global_config,
             include_plugin_metadata=self.include_gateway_global_config,
@@ -69,6 +69,7 @@ class EtcdDistributor(BaseDistributor):
             stage=release.stage,
             micro_gateway=micro_gateway,
             release_task_id=release_task_id,
+            publish_id=publish_id,
         )
 
         try:
@@ -94,7 +95,7 @@ class EtcdDistributor(BaseDistributor):
         stage: Stage,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[int] = None,
+        publish_id: Optional[int] = None,
     ) -> bool:
         """撤销已发布到 micro-gateway 对应的 registry 中的配置"""
         registry = self._get_registry(stage.api, stage, micro_gateway)
@@ -105,6 +106,7 @@ class EtcdDistributor(BaseDistributor):
             stage=stage,
             micro_gateway=micro_gateway,
             release_task_id=release_task_id,
+            publish_id=publish_id,
         )
 
         try:
