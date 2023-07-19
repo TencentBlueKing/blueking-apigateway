@@ -1536,9 +1536,6 @@ class PublishEventManager(models.Manager):
             status=status.value,
         )
 
-    def get_publish_events_by_publish_ids(self, publish_ids):
-        return self.filter(publish_id__in=publish_ids).order_by("publish_id", "step", "status")
-
 
 class ContextManager(models.Manager):
     def save_config(self, scope_type, scope_id, type, config, schema):
