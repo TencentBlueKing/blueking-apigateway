@@ -149,11 +149,16 @@ class ReleaseHistoryViewSet(viewsets.ModelViewSet):
             fuzzy=True,
         )
         page = self.paginate_queryset(queryset)
-        # 查询发布事件
+
+        # 查询发布事件,填充message为最后一个发布事件的状态信息
         publish_ids = [release_history.id for release_history in page]
-        publish_last_events = PublishEvent.objects.get_publish_events_by_publish_ids(publish_ids)
+
+        # 发布事件dict：key：publish_id,value: 最后一个事件
+        publish_events = PublishEvent.objects.get_publish_events_by_publish_ids(publish_ids)
+        publish_last_event = dict((event.publish_id, event) for event in publish_events)
+
         for history in page:
-            event = publish_last_events.get(history.id)
+            event = publish_last_event.get(history.id)
             if event:
                 history.message = f"{event.name}:{event.status}"
 
