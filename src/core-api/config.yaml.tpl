@@ -9,7 +9,6 @@ server:
   idleTimeout: 180
 
 sentry:
-  enable: false
   dsn: ""
   ## zapcore.Level
   reportLogLevel: 2

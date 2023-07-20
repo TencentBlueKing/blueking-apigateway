@@ -66,7 +66,6 @@ type Database struct {
 
 // Sentry is the config for sentry
 type Sentry struct {
-	Enable         bool
 	DSN            string
 	ReportLogLevel int
 }

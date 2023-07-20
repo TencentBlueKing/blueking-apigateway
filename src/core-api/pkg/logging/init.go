@@ -55,7 +55,7 @@ func newZapSugarLogger() *zap.SugaredLogger {
 func InitLogger(config *config.Config) {
 	loggerInitOnce.Do(func() {
 		options := make([]zap.Option, 0, 3)
-		if config.Sentry.Enable {
+		if len(strings.TrimSpace(config.Sentry.DSN)) != 0 {
 			// init sentryCore
 			sentryCore, err := newSentryLogCore(config)
 			if err != nil {
