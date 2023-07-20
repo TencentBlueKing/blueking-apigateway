@@ -82,6 +82,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 		router.Use(otelgin.Middleware(cfg.Tracing.ServiceName))
 	}
 	microGatewayRouter := router.Group("/api/v1/micro-gateway")
+	microGatewayRouter.Use(middleware.Metrics())
 	microGatewayRouter.Use(middleware.APILogger())
 	microGatewayRouter.Use(middleware.MicroGatewayInstanceMiddleware())
 	microGatewayRouter.GET("/:micro_gateway_instance_id/permissions/", microgateway.QueryPermission)
