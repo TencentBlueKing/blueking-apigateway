@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	serviceName = "iam"
+	serviceName = "apigateway-core-api"
 )
 
 // RequestCount ...
@@ -35,7 +35,7 @@ var (
 			Help:        "How many HTTP requests processed, partitioned by status code, method and HTTP path.",
 			ConstLabels: prometheus.Labels{"service": serviceName},
 		},
-		[]string{"method", "path", "status", "error"},
+		[]string{"method", "path", "status"},
 	)
 
 	// RequestDuration api响应时间分布
