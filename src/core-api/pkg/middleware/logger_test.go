@@ -32,7 +32,7 @@ import (
 )
 
 func TestAPILogger(t *testing.T) {
-	logging.InitLogger(&config.Logger{})
+	logging.InitLogger(&config.Config{})
 
 	r := gin.Default()
 	r.Use(APILogger())
