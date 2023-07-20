@@ -20,7 +20,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/getsentry/raven-go"
 	sentry "github.com/getsentry/sentry-go"
@@ -69,7 +68,7 @@ func initDatabase() {
 }
 
 func initSentry() {
-	if len(strings.TrimSpace(globalConfig.Sentry.DSN)) != 0 {
+	if len(globalConfig.Sentry.DSN) != 0 {
 		err := sentry.Init(sentry.ClientOptions{
 			Dsn: globalConfig.Sentry.DSN,
 		})
