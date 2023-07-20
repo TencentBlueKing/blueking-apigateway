@@ -84,8 +84,8 @@ func Start() {
 
 	// 1. init components
 	initTracing()
-	initLogger()
 	initSentry()
+	initLogger()
 	initMetrics()
 	initDatabase()
 

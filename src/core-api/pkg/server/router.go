@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/getsentry/raven-go"
+	"github.com/gin-gonic/contrib/sentry"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -82,7 +84,12 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 		router.Use(otelgin.Middleware(cfg.Tracing.ServiceName))
 	}
 	microGatewayRouter := router.Group("/api/v1/micro-gateway")
+
+	// metrics
 	microGatewayRouter.Use(middleware.Metrics())
+	// recovery sentry
+	microGatewayRouter.Use(sentry.Recovery(raven.DefaultClient, false))
+
 	microGatewayRouter.Use(middleware.APILogger())
 	microGatewayRouter.Use(middleware.MicroGatewayInstanceMiddleware())
 	microGatewayRouter.GET("/:micro_gateway_instance_id/permissions/", microgateway.QueryPermission)

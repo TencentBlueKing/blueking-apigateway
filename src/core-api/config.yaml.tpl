@@ -11,6 +11,8 @@ server:
 sentry:
   enable: false
   dsn: ""
+  ## zapcore.Level
+  reportLogLevel: 2
 
 
 databases:
