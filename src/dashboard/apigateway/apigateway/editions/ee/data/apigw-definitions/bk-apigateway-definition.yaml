@@ -1,7 +1,7 @@
 release:
-  version: 1.0.1
-  title: 为网关同步SDK提供接口
-  comment: 为网关同步SDK提供接口
+  version: 1.0.2
+  title: 更新网关 API 文档
+  comment: 更新网关 API 文档
 
 apigateway:
   description: 蓝鲸API网关，官方内置网关，请勿修改
@@ -22,3 +22,6 @@ stage:
 grant_permissions:
   - bk_app_code: visual-layout
   - bk_app_code: bk_lesscode
+
+resource_docs:
+  basedir: "{{ settings.BASE_DIR }}/data/apidocs/"
