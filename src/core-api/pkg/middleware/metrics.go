@@ -30,26 +30,23 @@ import (
 
 // Metrics ...
 func Metrics() gin.HandlerFunc {
-
 	return func(c *gin.Context) {
-
 		start := time.Now()
 
 		c.Next()
 
 		duration := time.Since(start)
 		status := strconv.Itoa(c.Writer.Status())
-		// request count
 		metric.RequestCount.With(prometheus.Labels{
 			"method": c.Request.Method,
-			"path":   c.Request.URL.Path,
+			"path":   c.FullPath(),
 			"status": status,
 		}).Inc()
 
 		// request duration, in ms
 		metric.RequestDuration.With(prometheus.Labels{
 			"method": c.Request.Method,
-			"path":   c.Request.URL.Path,
+			"path":   c.FullPath(),
 			"status": status,
 		}).Observe(float64(duration / time.Millisecond))
 	}

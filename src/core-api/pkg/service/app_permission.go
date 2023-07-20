@@ -252,6 +252,7 @@ func getResourceIDByName(
 	release, err := cacheimpls.GetRelease(ctx, gatewayID, stageID)
 	if err != nil {
 		err = fmt.Errorf("call GetRelease fail: %w, gatewayID=%d, stageID=%d", err, gatewayID, stageID)
+		//nolint
 		return
 	}
 
@@ -262,6 +263,7 @@ func getResourceIDByName(
 			release.ID,
 			release.ResourceVersionID,
 		)
+		//nolint
 		return
 	}
 
