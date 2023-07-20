@@ -112,3 +112,16 @@ class TestCommand:
         assert PluginBinding.objects.filter(api=fake_gateway, plugin=plugin).count() == 1
         command._delete_legacy_models(plugin, False)
         assert PluginBinding.objects.filter(api=fake_gateway, plugin=None).count() == 1
+
+    def test_validate_plugin_config(self, echo_plugin):
+        command = Command()
+
+        command._validate_plugin_config(echo_plugin)
+
+        echo_plugin.config = yaml_dumps({"foo": "bar"})
+        with pytest.raises(CommandError):
+            command._validate_plugin_config(echo_plugin)
+
+        # no plugin_type
+        plugin_config = G(PluginConfig, type=None)
+        command._validate_plugin_config(plugin_config)

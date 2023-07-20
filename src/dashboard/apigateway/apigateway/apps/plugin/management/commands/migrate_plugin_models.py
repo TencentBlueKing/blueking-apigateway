@@ -19,9 +19,12 @@ from typing import Optional
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from jsonschema import ValidationError as SchemaValidationError
+from jsonschema import validate
 
 from apigateway.apps.plugin.constants import PluginTypeEnum
 from apigateway.apps.plugin.models import Plugin, PluginBinding, PluginConfig, PluginType
+from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
 
 
 class Command(BaseCommand):
@@ -87,6 +90,7 @@ class Command(BaseCommand):
                 },
             )
             plugin_config.config = plugin._config
+            self._validate_plugin_config(plugin_config)
             plugin_config.save(update_fields=["yaml"])
 
             plugin.target = plugin_config
@@ -145,3 +149,22 @@ class Command(BaseCommand):
 
             if not dry_run:
                 configs.update(type=current)
+
+    def _validate_plugin_config(self, plugin_config: PluginConfig):
+        schema = plugin_config.type and plugin_config.type.schema
+        if not schema:
+            return
+
+        convertor = PluginConvertorFactory.get_convertor(plugin_config.type.code)
+        try:
+            validate(convertor.convert(plugin_config), schema=schema.schema)
+        except SchemaValidationError as err:
+            raise CommandError(
+                "plugin config is invalid: gateway_id=%s, name=%s, config=%s, err=%s"
+                % (
+                    plugin_config.api.id,
+                    plugin_config.name,
+                    plugin_config.config,
+                    err,
+                )
+            )
