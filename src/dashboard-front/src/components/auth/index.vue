@@ -23,7 +23,8 @@
       },
       showLoginModal (data) {
         const callbackUrl = `${location.origin}/static/login_success.html?is_ajax=1`
-        const url = `${window.GLOBAL_CONFIG.LOGIN_URL}/plain?size=big&c_url=${callbackUrl}`
+        const loginUrl = window.GLOBAL_CONFIG.LOGIN_URL
+        const url = `${loginUrl.endsWith('/') ? loginUrl : `${loginUrl}/`}plain/?c_url=${callbackUrl}`
         if (!url) {
           console.warn('The response don\'t return login_url')
           return
