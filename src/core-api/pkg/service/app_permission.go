@@ -240,7 +240,7 @@ func getResourceIDByName(
 	gatewayID int64,
 	stageID int64,
 	resourceName string,
-) (resourceID int64, ok bool, err error) {
+) (int64, bool, error) {
 	// NOTE: there got no resourceID in private Gateway(isShared=False), only have resourceName
 	//       so, we should get resourceID by resourceName
 	// 1. get `Release` by gatewayID and stageID, release has a reference field `resource_version_id ` to ResourceVersion
@@ -252,8 +252,7 @@ func getResourceIDByName(
 	release, err := cacheimpls.GetRelease(ctx, gatewayID, stageID)
 	if err != nil {
 		err = fmt.Errorf("call GetRelease fail: %w, gatewayID=%d, stageID=%d", err, gatewayID, stageID)
-		//nolint
-		return
+		return 0, false, err
 	}
 
 	resourceNameToID, err := cacheimpls.GetResourceVersionMapping(ctx, release.ResourceVersionID)
@@ -263,12 +262,10 @@ func getResourceIDByName(
 			release.ID,
 			release.ResourceVersionID,
 		)
-		//nolint
-		return
+		return 0, false, err
 	}
 
 	// 2.2 get resource id
-	resourceID, ok = resourceNameToID[resourceName]
-	//nolint
-	return
+	resourceID, ok := resourceNameToID[resourceName]
+	return resourceID, ok, nil
 }
