@@ -200,6 +200,15 @@ class TestStageManager:
         result = Stage.objects.get_gateway_name_to_active_stage_names([gateway])
         assert result == {gateway.name: ["s1", "s3"]}
 
+    def test_get_name(self, fake_gateway):
+        s = G(Stage, api=fake_gateway)
+
+        name = Stage.objects.get_name(fake_gateway.id, s.id)
+        assert name == s.name
+
+        name = Stage.objects.get_name(fake_gateway.id, 0)
+        assert name is None
+
 
 class TestResourceManager:
     @pytest.fixture(autouse=True)
@@ -367,6 +376,15 @@ class TestResourceManager:
             resource_1.id,
             resource_2.id,
         ]
+
+    def test_get_name(self, fake_gateway):
+        resource = G(Resource, api=fake_gateway)
+
+        name = Resource.objects.get_name(fake_gateway.id, resource.id)
+        assert name == resource.name
+
+        name = Resource.objects.get_name(fake_gateway.id, 0)
+        assert name is None
 
 
 class TestContextManager(TestCase):

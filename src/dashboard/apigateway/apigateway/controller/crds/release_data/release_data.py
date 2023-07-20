@@ -30,6 +30,7 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.common.contexts import APIAuthContext
 from apigateway.controller.crds.release_data.access_strategy import AccessStrategyConvertorFactory
 from apigateway.controller.crds.release_data.base import PluginData
+from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
 from apigateway.core.models import JWT, Context, Gateway, Release, ResourceVersion, Stage
 
@@ -108,7 +109,7 @@ class ReleaseData:
             [
                 PluginData(
                     type_code=binding.get_type(),
-                    config=binding.get_config(),
+                    config=PluginConvertorFactory.get_convertor(binding.get_type()).convert(binding.config),
                     binding_scope_type=PluginBindingScopeEnum.STAGE.value,
                 )
                 for binding in stage_id_to_plugin_bindings.get(self.stage.pk, [])
@@ -148,7 +149,7 @@ class ReleaseData:
                 [
                     PluginData(
                         type_code=binding.get_type(),
-                        config=binding.get_config(),
+                        config=PluginConvertorFactory.get_convertor(binding.get_type()).convert(binding.config),
                         binding_scope_type=PluginBindingScopeEnum.RESOURCE.value,
                     )
                     for binding in bindings

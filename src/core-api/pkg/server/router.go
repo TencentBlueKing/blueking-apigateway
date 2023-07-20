@@ -22,14 +22,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
 	"core/pkg/api/microgateway"
 	"core/pkg/config"
 	"core/pkg/database"
 	"core/pkg/middleware"
-
-	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func checkDatabase(dbConfig *config.Database) error {
@@ -86,6 +86,6 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	microGatewayRouter.Use(middleware.MicroGatewayInstanceMiddleware())
 	microGatewayRouter.GET("/:micro_gateway_instance_id/permissions/", microgateway.QueryPermission)
 	microGatewayRouter.GET("/:micro_gateway_instance_id/public_keys/", microgateway.QueryPublicKey)
-
+	microGatewayRouter.POST("/:micro_gateway_instance_id/release/:publish_id/events/", microgateway.ReportPublishEvent)
 	return router
 }

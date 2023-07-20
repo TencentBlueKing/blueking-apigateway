@@ -19,10 +19,10 @@
 package util_test
 
 import (
-	"core/pkg/util"
-
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/util"
 )
 
 var _ = Describe("String", func() {

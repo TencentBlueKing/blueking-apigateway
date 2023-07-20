@@ -17,15 +17,16 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import base64
+import datetime
 import logging
 from collections import defaultdict
 
-import arrow
 from celery import shared_task
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.utils import timezone
 
-from apigateway.apps.metrics.stats_helpers import StatisticsAppRequestByResourceMetrics
+from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.apps.permission.constants import (
     APIGW_LOGO_PATH,
     ApplyStatusEnum,
@@ -36,7 +37,6 @@ from apigateway.apps.permission.constants import (
 from apigateway.apps.permission.helpers import PermissionDimensionManager
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord, AppResourcePermission
 from apigateway.components.cmsi import cmsi_component
-from apigateway.core.models import Gateway
 from apigateway.utils.file import read_file
 
 logger = logging.getLogger(__name__)
@@ -161,45 +161,26 @@ def send_mail_for_perm_handle(record_id):
 def renew_app_resource_permission():
     """
     蓝鲸应用访问资源权限自动续期
+
+    - 仅续期未过期的应用资源权限
     """
-    # 统计前一天的请求数据，为防止临界时间点的数据统计不到，时间跨度设置为 25 小时
-    _, end = arrow.utcnow().shift(days=-1).span("day")
-    step = "25h"
+    # 为防止统计数据获取偏差，时间跨度设置为 2 天
+    time_range_days = 2
 
-    app_request_count = StatisticsAppRequestByResourceMetrics().query(end.float_timestamp, step)
-    if not app_request_count.result:
-        logger.error("statistics app requests by resource to renew app resource permission fail.")
-        return
+    time_ = timezone.now() + datetime.timedelta(days=-time_range_days)
+    queryset = StatisticsAppRequestByDay.objects.filter(end_time__gt=time_)
 
-    app_api_resources = {}
-    for item in app_request_count.result:
-        count = float(item.value[1])
-        if count <= 0:
+    app_request_data = defaultdict(dict)
+    for item in queryset:
+        if not item.bk_app_code:
             continue
+        app_request_data[item.bk_app_code].setdefault(item.api_id, set())
+        app_request_data[item.bk_app_code][item.api_id].add(item.resource_id)
 
-        # 部分资源不认证应用
-        if not item.metric.get("app_code"):
-            continue
-
-        app_api_resources.setdefault(item.metric["app_code"], defaultdict(list))
-        app_api_resources[item.metric["app_code"]][item.metric["api"]].append(int(item.metric["resource"]))
-
-    for bk_app_code, api_resources in app_api_resources.items():
-        for gateway_id, resource_ids in api_resources.items():
-            gateway = Gateway.objects.filter(id=int(gateway_id)).first()
-            if not gateway:
-                logger.warning(f"api[id={gateway_id}] not exist, renew app resource permission fail")
-                continue
-
-            # 如果应用-资源权限不存在，则将按网关的权限同步到应用-资源权限
-            AppResourcePermission.objects.sync_from_gateway_permission(
-                gateway,
-                bk_app_code=bk_app_code,
-                resource_ids=resource_ids,
-            )
-
-            AppResourcePermission.objects.renew_permission(
-                gateway,
+    for bk_app_code, gateway_resources in app_request_data.items():
+        for gateway_id, resource_ids in gateway_resources.items():
+            AppResourcePermission.objects.renew_not_expired_permissions(
+                gateway_id,
                 bk_app_code=bk_app_code,
                 resource_ids=resource_ids,
                 grant_type=GrantTypeEnum.AUTO_RENEW.value,

@@ -84,8 +84,11 @@ class AppAPIPermissionManager(models.Manager):
 
     def renew_permission(self, gateway, ids=None):
         queryset = self.filter_permission(gateway=gateway, ids=ids)
+        # 仅续期权限期限小于待续期时间的权限
+        expires = to_datetime_from_now(days=DEFAULT_PERMISSION_EXPIRE_DAYS)
+        queryset = queryset.filter(expires__lt=expires)
         queryset.update(
-            expires=to_datetime_from_now(days=DEFAULT_PERMISSION_EXPIRE_DAYS),
+            expires=expires,
             updated_time=now_datetime(),
         )
 
@@ -159,8 +162,32 @@ class AppResourcePermissionManager(models.Manager):
         expire_days=DEFAULT_PERMISSION_EXPIRE_DAYS,
     ):
         queryset = self.filter_permission(gateway=gateway, bk_app_code=bk_app_code, resource_ids=resource_ids, ids=ids)
+        # 仅续期权限期限小于待续期时间的权限
+        expires = to_datetime_from_now(days=expire_days)
+        queryset = queryset.filter(expires__lt=expires)
         queryset.update(
-            expires=to_datetime_from_now(days=expire_days),
+            expires=expires,
+            grant_type=grant_type,
+        )
+
+    def renew_not_expired_permissions(
+        self,
+        gateway_id: int,
+        bk_app_code: str,
+        resource_ids: List[int],
+        grant_type=GrantTypeEnum.RENEW.value,
+        expire_days=DEFAULT_PERMISSION_EXPIRE_DAYS,
+    ):
+        """仅续期未过期且权限期限小于待续期时间的权限"""
+        expires = to_datetime_from_now(days=expire_days)
+        queryset = self.filter(
+            api_id=gateway_id,
+            bk_app_code=bk_app_code,
+            resource_id__in=resource_ids,
+            expires__range=(now_datetime(), expires),
+        )
+        queryset.update(
+            expires=expires,
             grant_type=grant_type,
         )
 

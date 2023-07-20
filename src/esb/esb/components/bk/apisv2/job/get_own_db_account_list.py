@@ -28,7 +28,7 @@ from .toolkit import configs, tools
 
 class GetOwnDbAccountList(Component):
     suggest_method = HTTP_METHOD.GET
-    label = u"查询用户有权限的DB帐号列表"
+    label = "查询用户有权限的DB账号列表"
     label_en = "Get own db account list"
 
     sys_name = configs.SYSTEM_NAME

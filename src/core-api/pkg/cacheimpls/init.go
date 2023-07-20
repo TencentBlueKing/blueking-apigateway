@@ -140,6 +140,14 @@ var (
 		newRandomDuration(10),
 	)
 
+	releaseHistoryCache = memory.NewCache(
+		"release_history",
+		DisableCache,
+		tracedFuncWrapper("release_history", retrieveReleaseHistory),
+		1*time.Minute,
+		newRandomDuration(10),
+	)
+
 	// app_code + gateway_id => permission, may change frequently
 	appGatewayPermissionCache = memory.NewCache(
 		"app_gateway_permission",

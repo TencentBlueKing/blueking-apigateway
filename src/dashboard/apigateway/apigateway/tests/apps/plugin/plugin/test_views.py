@@ -24,7 +24,7 @@ class TestPluginViewSet:
         "config_tmpl, code",
         [
             ["{config}", 0],  # success
-            ["", 40000],  # config is None
+            ["", 40002],  # config is None
             ["foo: bar", 40002],  # config validate failure by schema
         ],
     )
@@ -69,7 +69,7 @@ class TestPluginViewSet:
         "config_tmpl, code",
         [
             ["{config}", 0],  # success
-            ["", 40000],  # config is None
+            ["", 40002],  # config is None
             ["foo: bar", 40002],  # config validate failure by schema
         ],
     )

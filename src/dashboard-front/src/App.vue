@@ -987,7 +987,7 @@
           this.$router.push({
             name: routeName,
             params: {
-              id: routeName === 'index' ? '' : this.apigwId
+              id: ['index', 'apigwAccess'].includes(routeName) ? '' : this.apigwId
             }
           })
         }

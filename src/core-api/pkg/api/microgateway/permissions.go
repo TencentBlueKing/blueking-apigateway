@@ -22,10 +22,10 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/gin-gonic/gin"
+
 	"core/pkg/service"
 	"core/pkg/util"
-
-	"github.com/gin-gonic/gin"
 )
 
 type queryPermissionSerializer struct {

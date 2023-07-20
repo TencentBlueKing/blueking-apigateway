@@ -24,9 +24,9 @@ import (
 	"context"
 	"time"
 
-	"core/pkg/database"
-
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 // TODO: split into thinx and x, for better performance
@@ -45,6 +45,10 @@ type AppGatewayPermissionManager interface {
 	Get(ctx context.Context, bkAppCode string, gatewayID int64) (AppGatewayPermission, error)
 }
 
+type appGatewayPermissionManager struct {
+	DB *sqlx.DB
+}
+
 // NewAppGatewayPermissionManager ...
 func NewAppGatewayPermissionManager() AppGatewayPermissionManager {
 	return &appGatewayPermissionManager{
@@ -52,12 +56,12 @@ func NewAppGatewayPermissionManager() AppGatewayPermissionManager {
 	}
 }
 
-type appGatewayPermissionManager struct {
-	DB *sqlx.DB
-}
-
 // Get ...
-func (m appGatewayPermissionManager) Get(ctx context.Context, bkAppCode string, gatewayID int64) (AppGatewayPermission, error) {
+func (m appGatewayPermissionManager) Get(
+	ctx context.Context,
+	bkAppCode string,
+	gatewayID int64,
+) (AppGatewayPermission, error) {
 	perm := AppGatewayPermission{}
 	query := `SELECT
 		id,

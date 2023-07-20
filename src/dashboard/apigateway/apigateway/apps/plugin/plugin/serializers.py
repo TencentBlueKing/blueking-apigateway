@@ -21,6 +21,7 @@ from typing import Any, Dict
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from jsonschema import ValidationError as SchemaValidationError
+from jsonschema import validate
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
@@ -31,6 +32,7 @@ from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
 from apigateway.apps.plugin.plugin.checker import PluginConfigYamlChecker
 from apigateway.apps.plugin.plugin.convertor import PluginConfigYamlConvertor
 from apigateway.common.fields import CurrentGatewayDefault
+from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
 
 
 class PluginConfigSLZ(serializers.ModelSerializer):
@@ -94,6 +96,12 @@ class PluginConfigSLZ(serializers.ModelSerializer):
 
         try:
             plugin.config = validated_data["yaml"]
+            # 转换数据, 校验apisix schema
+            schema = plugin.type and plugin.type.schema
+            if schema:
+                convertor = PluginConvertorFactory.get_convertor(plugin.type.code)
+                _data = convertor.convert(plugin)
+                validate(_data, schema=schema.schema)
         except SchemaValidationError as err:
             raise ValidationError(
                 {api_settings.NON_FIELD_ERRORS_KEY: f"{err.message}, path {list(err.absolute_path)}"}

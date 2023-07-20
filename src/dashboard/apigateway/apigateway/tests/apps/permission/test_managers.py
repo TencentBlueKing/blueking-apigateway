@@ -25,7 +25,7 @@ from django_dynamic_fixture import G
 from apigateway.apps.permission import models
 from apigateway.core.models import Gateway, Resource
 from apigateway.tests.utils.testing import dummy_time
-from apigateway.utils.time import now_datetime
+from apigateway.utils.time import now_datetime, to_datetime_from_now
 
 # from apigateway.apps.permission import constants
 
@@ -116,15 +116,25 @@ class TestAppAPIPermissionManager:
             models.AppAPIPermission,
             api=self.gateway,
             bk_app_code="test-2",
-            expires=dummy_time.time,
+            expires=to_datetime_from_now(170),
+        )
+        perm_3 = G(
+            models.AppAPIPermission,
+            api=self.gateway,
+            bk_app_code="test-3",
+            expires=to_datetime_from_now(days=720),
         )
 
         models.AppAPIPermission.objects.renew_permission(
             self.gateway,
-            ids=[perm_1.id, perm_2.id],
+            ids=[perm_1.id, perm_2.id, perm_3.id],
         )
         perm_1 = models.AppAPIPermission.objects.get(id=perm_1.id)
-        assert 180 * 24 * 3600 - 10 < (perm_1.expires - now_datetime()).total_seconds() < 180 * 24 * 3600
+        perm_2 = models.AppAPIPermission.objects.get(id=perm_2.id)
+        perm_3 = models.AppAPIPermission.objects.get(id=perm_3.id)
+        assert to_datetime_from_now(days=179) < perm_1.expires < to_datetime_from_now(days=181)
+        assert to_datetime_from_now(days=179) < perm_2.expires < to_datetime_from_now(days=181)
+        assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(days=721)
 
     def test_delete_permission(self, fake_gateway):
         p1 = G(models.AppAPIPermission, api=fake_gateway, bk_app_code="app1")
@@ -239,16 +249,63 @@ class TestAppResourcePermissionManager:
             models.AppResourcePermission,
             api=self.gateway,
             bk_app_code="test-2",
-            expires=dummy_time.time,
+            expires=to_datetime_from_now(days=70),
+            resource_id=self.resource.id,
+        )
+        perm_3 = G(
+            models.AppResourcePermission,
+            api=self.gateway,
+            bk_app_code="test-3",
+            expires=to_datetime_from_now(days=720),
             resource_id=self.resource.id,
         )
 
         models.AppResourcePermission.objects.renew_permission(
             self.gateway,
-            ids=[perm_1.id, perm_2.id],
+            ids=[perm_1.id, perm_2.id, perm_3.id],
         )
         perm_1 = models.AppResourcePermission.objects.get(id=perm_1.id)
-        assert 180 * 24 * 3600 - 10 < (perm_1.expires - now_datetime()).total_seconds() < 180 * 24 * 3600
+        perm_2 = models.AppResourcePermission.objects.get(id=perm_2.id)
+        perm_3 = models.AppResourcePermission.objects.get(id=perm_3.id)
+        assert to_datetime_from_now(days=179) < perm_1.expires < to_datetime_from_now(181)
+        assert to_datetime_from_now(days=179) < perm_2.expires < to_datetime_from_now(181)
+        assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(721)
+
+    def test_renew_not_expired_permission(self):
+        perm_1 = G(
+            models.AppResourcePermission,
+            api=self.gateway,
+            bk_app_code="test-1",
+            expires=dummy_time.time,
+            resource_id=self.resource.id,
+        )
+        perm_2 = G(
+            models.AppResourcePermission,
+            api=self.gateway,
+            bk_app_code="test-2",
+            expires=to_datetime_from_now(days=70),
+            resource_id=self.resource.id,
+        )
+        perm_3 = G(
+            models.AppResourcePermission,
+            api=self.gateway,
+            bk_app_code="test-3",
+            expires=to_datetime_from_now(days=720),
+            resource_id=self.resource.id,
+        )
+
+        for bk_app_code in ["test-1", "test-2", "test-3"]:
+            models.AppResourcePermission.objects.renew_not_expired_permissions(
+                self.gateway,
+                bk_app_code=bk_app_code,
+                resource_ids=[self.resource.id],
+            )
+        perm_1 = models.AppResourcePermission.objects.get(id=perm_1.id)
+        perm_2 = models.AppResourcePermission.objects.get(id=perm_2.id)
+        perm_3 = models.AppResourcePermission.objects.get(id=perm_3.id)
+        assert perm_1.expires == dummy_time.time
+        assert to_datetime_from_now(days=179) < perm_2.expires < to_datetime_from_now(181)
+        assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(721)
 
     def test_save_permissions(self):
         resource_1 = G(Resource, api=self.gateway)

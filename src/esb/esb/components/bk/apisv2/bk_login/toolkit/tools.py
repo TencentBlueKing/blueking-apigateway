@@ -26,22 +26,25 @@ class LOGINClient(object):
     def __init__(self, http_client):
         self.http_client = http_client
 
-    def request(self, method, host, path, data=None, params=None):
+    def request(self, method, host, path, data=None, params=None, headers=None):
+        headers = headers or {}
+        headers.update(configs.headers)
+
         result = self.http_client.request(
             method=method,
             host=host,
             path=path,
             data=data,
             params=params,
-            headers=configs.headers,
+            headers=headers,
         )
         return self.format_result(result)
 
-    def post(self, host, path, data=None):
-        return self.request(method="POST", host=host, path=path, data=data)
+    def post(self, host, path, data=None, headers=None):
+        return self.request(method="POST", host=host, path=path, data=data, headers=headers)
 
-    def get(self, host, path, params=None):
-        return self.request(method="GET", host=host, path=path, params=params)
+    def get(self, host, path, params=None, headers=None):
+        return self.request(method="GET", host=host, path=path, params=params, headers=headers)
 
     def format_result(self, result):
         if result["bk_error_code"] == 0:

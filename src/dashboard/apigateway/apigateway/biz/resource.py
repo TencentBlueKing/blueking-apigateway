@@ -26,8 +26,10 @@ from django.db.models import Q
 from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
 from apigateway.apps.access_strategy.models import AccessStrategyBinding
 from apigateway.apps.label.models import APILabel, ResourceLabel
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.common.contexts import ResourceAuthContext
+from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 from apigateway.core.constants import BackendConfigTypeEnum, ContextScopeTypeEnum
 from apigateway.core.models import Context, Proxy, Resource, Stage, StageResourceDisabled
 from apigateway.utils import time
@@ -63,6 +65,14 @@ class ResourceHandler:
 
         # 4. save disabled stags
         ResourceHandler().save_disabled_stages(gateway, resource, disabled_stage_ids, delete_unspecified=True)
+
+        # 5. create or update resource header rewrite plugin config
+        resource_transform_headers = proxy_config.get("transform_headers") or {}
+        resource_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(resource_transform_headers)
+
+        HeaderRewriteConvertor.alter_plugin(
+            resource.api_id, PluginBindingScopeEnum.RESOURCE.value, resource.id, resource_config
+        )
 
     @staticmethod
     def save_labels(gateway, resource, label_ids, delete_unspecified=False):

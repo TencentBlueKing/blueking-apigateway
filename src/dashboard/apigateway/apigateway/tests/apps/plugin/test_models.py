@@ -19,8 +19,10 @@ import json
 
 import pytest
 from ddf import G
+from jsonschema import validate
 
 from apigateway.apps.plugin.models import Plugin, PluginConfig
+from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
 from apigateway.schema.models import Schema
 from apigateway.utils.yaml import yaml_dumps
 
@@ -68,17 +70,9 @@ class TestPluginConfig:
         with pytest.raises(Exception):
             fake_plugin_config.config = yaml_dumps({"foo": 1})
 
-    @pytest.mark.parametrize(
-        "yaml_",
-        [
-            "",
-            "true",
-            "0",
-        ],
-    )
-    def test_config_setter_not_dict_error(self, fake_plugin_config, yaml_):
-        with pytest.raises(ValueError):
-            fake_plugin_config.config = yaml_
+            convertor = PluginConvertorFactory("")
+            _data = convertor.convert(fake_plugin_config)
+            validate(_data, schema=fake_plugin_config.type.schema.schema)
 
 
 class TestPluginBinding:

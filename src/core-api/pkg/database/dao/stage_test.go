@@ -22,11 +22,11 @@ import (
 	"context"
 	"testing"
 
-	"core/pkg/database"
-
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/database"
 )
 
 func Test_stageManager_GetByName(t *testing.T) {

@@ -27,7 +27,7 @@ from .toolkit import configs, tools
 
 class GetUser(Component):
     suggest_method = HTTP_METHOD.GET
-    label = u"获取用户信息"
+    label = "获取用户信息"
     label_en = "get user"
 
     sys_name = configs.SYSTEM_NAME
@@ -43,4 +43,7 @@ class GetUser(Component):
             host=configs.host,
             path="/login/api/v2/get_user/",
             params=self.form_data,
+            headers={
+                "x-verified-bk-app-code": self.request.app_code,
+            },
         )

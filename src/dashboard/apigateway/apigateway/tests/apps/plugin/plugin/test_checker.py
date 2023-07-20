@@ -17,7 +17,12 @@
 #
 import pytest
 
-from apigateway.apps.plugin.plugin.checker import BkCorsChecker, PluginConfigYamlChecker
+from apigateway.apps.plugin.plugin.checker import (
+    BkCorsChecker,
+    BkIPRestrictionChecker,
+    HeaderRewriteChecker,
+    PluginConfigYamlChecker,
+)
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -187,6 +192,40 @@ class TestBkCorsChecker:
             checker._check_duplicate_items(data, "key")
 
 
+class TestBkIPRestrictionChecker:
+    @pytest.mark.parametrize(
+        "data",
+        [
+            "whitelist: |-\n 1.1.1.1",
+            "blacklist: |-\n 1.1.1.1",
+            "whitelist: |-\n 1.1.1.1/24",
+            "whitelist: |-\n 2002::1234:abcd:ffff:c0a8:101",
+            "whitelist: |-\n 2002::1234:abcd:ffff:c0a8:101/64",
+            "whitelist: |-\n 1.1.1.1\n 2.2.2.2",
+            "whitelist: |-\n 1.1.1.1\n 2.2.2.2\r\n 3.3.3.3",
+            "whitelist: |-\n 1.1.1.1\n # comment\r\n 3.3.3.3",
+        ],
+    )
+    def test_check(self, data):
+        checker = BkIPRestrictionChecker()
+        result = checker.check(data)
+        assert result is None
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            "",
+            "abc: |-\n 1.1.1.1",
+            "whitelist: |-\n a",
+            "blacklist: |-\n a",
+        ],
+    )
+    def test_check__error(self, data):
+        checker = BkIPRestrictionChecker()
+        with pytest.raises(ValueError):
+            checker.check(data)
+
+
 class TestPluginConfigYamlChecker:
     @pytest.mark.parametrize(
         "type_code, data",
@@ -234,3 +273,67 @@ class TestPluginConfigYamlChecker:
         checker = PluginConfigYamlChecker(type_code)
         with pytest.raises(ValueError):
             checker.check(yaml_dumps(data))
+
+
+class TestHeaderRewriteChecker:
+    @pytest.mark.parametrize(
+        "data, raise_error",
+        [
+            (
+                {"set": [{"key": "key1", "value": "value1"}, {"key": "key2", "value": "value2"}], "remove": []},
+                False,
+            ),
+            (
+                {"set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}], "remove": []},
+                True,
+            ),
+        ],
+    )
+    def test_check(self, data, raise_error):
+        checker = HeaderRewriteChecker()
+        try:
+            checker.check(yaml_dumps(data))
+            raise_checker = False
+        except ValueError:
+            raise_checker = True
+        assert raise_checker == raise_error
+
+    @pytest.mark.parametrize(
+        "type_code, data, raise_error",
+        [
+            (
+                "bk-header-rewrite",  # set key 无重复
+                {"set": [{"key": "key1", "value": "value1"}, {"key": "key2", "value": "value2"}], "remove": []},
+                False,
+            ),
+            (
+                "bk-header-rewrite",  # set key 重复
+                {"set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}], "remove": []},
+                True,
+            ),
+            (
+                "bk-header-rewrite",  # remove key 无重复
+                {
+                    "set": [],
+                    "remove": [{"key": "key1"}, {"key": "key2"}],
+                },
+                False,
+            ),
+            (
+                "bk-header-rewrite",  # remove key 重复
+                {
+                    "set": [],
+                    "remove": [{"key": "key1"}, {"key": "key1"}],
+                },
+                True,
+            ),
+        ],
+    )
+    def test_check_plugin(self, type_code, data, raise_error):
+        checker = PluginConfigYamlChecker(type_code)
+        try:
+            checker.check(yaml_dumps(data))
+            raise_checker = False
+        except ValueError:
+            raise_checker = True
+        assert raise_checker == raise_error

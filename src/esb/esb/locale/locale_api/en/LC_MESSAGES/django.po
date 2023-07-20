@@ -2449,10 +2449,10 @@ msgstr "Request method"
 #~ msgid "脚本超时时间，秒。默认1000，取值范围60-86400"
 #~ msgstr "Timeout in seconds, 1000 default, the range 60-86400"
 
-#~ msgid "执行帐号名/别名"
+#~ msgid "执行账号名/别名"
 #~ msgstr "OS account name, or 'Account Alias' in [Account Management] Features"
 
-#~ msgid "SQL执行的db帐号ID，SQL步骤必填"
+#~ msgid "SQL执行的db账号ID，SQL步骤必填"
 #~ msgstr ""
 #~ "Database Account Id in [Account "
 #~ "Management->DB Account] Features. SQL step "
@@ -2510,7 +2510,7 @@ msgstr "Request method"
 #~ msgid "SQL脚本ID"
 #~ msgstr "SQL Script ID"
 
-#~ msgid "SQL执行的db帐号ID，必填, 从帐号管理-DB帐号处获得。"
+#~ msgid "SQL执行的db账号ID，必填, 从账号管理-DB账号处获得。"
 #~ msgstr ""
 #~ "Database Account Id in [Account "
 #~ "Management->DB Account] Features. required"
@@ -2530,10 +2530,10 @@ msgstr "Request method"
 #~ msgid "定时作业状态：1.已启动、2.已暂停"
 #~ msgstr "Scheduled job status: 1.Started, 2.Paused"
 
-#~ msgid "定时作业创建人帐号"
+#~ msgid "定时作业创建人账号"
 #~ msgstr "Cron job creator"
 
-#~ msgid "作业修改人帐号"
+#~ msgid "作业修改人账号"
 #~ msgstr "Job last modifier"
 
 #~ msgid "默认0表示从第1条记录开始返回"
@@ -2553,7 +2553,7 @@ msgstr "Request method"
 #~ " (optional), such as: 0 0/5 * ? "
 #~ "indicates execution once every 5 minutes"
 
-#~ msgid "作业创建人帐号"
+#~ msgid "作业创建人账号"
 #~ msgstr "Job creator"
 
 #~ msgid "创建时间，YYYY-MM-DD HH:mm:ss格式"
@@ -2595,10 +2595,10 @@ msgstr "Request method"
 #~ msgid "步骤块名称"
 #~ msgstr "Job step block name"
 
-#~ msgid "作业步骤创建人帐号"
+#~ msgid "作业步骤创建人账号"
 #~ msgstr "Job step creator"
 
-#~ msgid "作业步骤修改人帐号"
+#~ msgid "作业步骤修改人账号"
 #~ msgstr "Job step last modifier"
 
 #~ msgid "最后修改时间，YYYY-MM-DD HH:mm:ss"
@@ -2767,7 +2767,7 @@ msgstr "Request method"
 #~ msgid "作业步骤块数组"
 #~ msgstr "Job step instance block info Array"
 
-#~ msgid "作业执行人帐号"
+#~ msgid "作业执行人账号"
 #~ msgstr "Job operator"
 
 #~ msgid "开始执行时间，YYYY-MM-DD HH:mm:ss格式"
@@ -2848,13 +2848,13 @@ msgstr "Request method"
 #~ msgid "账号创建时间"
 #~ msgstr "account create time"
 
-#~ msgid "查询用户有权限的DB帐号列表"
+#~ msgid "查询用户有权限的DB账号列表"
 #~ msgstr "Get own db account list"
 
-#~ msgid "db帐号ID,主键，执行脚本或作业的接口请求传递参数时用此参数"
+#~ msgid "db账号ID,主键，执行脚本或作业的接口请求传递参数时用此参数"
 #~ msgstr "DB Account ID"
 
-#~ msgid "帐号别名"
+#~ msgid "账号别名"
 #~ msgstr "db account alias"
 
 #~ msgid "进程操作结果查询"
@@ -3034,7 +3034,7 @@ msgstr "Request method"
 #~ "例如/usr/local/gse/gseagent/plugins/unifyTlogc/log/bk_gse_unifyTlogc.pid"
 #~ msgstr "The path process pid file"
 
-#~ msgid "系统帐号，默认不传为root"
+#~ msgid "系统账号，默认不传为root"
 #~ msgstr "OS account name, default is root"
 
 #~ msgid "操作服务器上的进程-v2版本"

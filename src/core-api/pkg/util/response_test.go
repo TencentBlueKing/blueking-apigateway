@@ -26,11 +26,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"core/pkg/util"
-
 	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/util"
 )
 
 func readResponse(w *httptest.ResponseRecorder) map[string]interface{} {
