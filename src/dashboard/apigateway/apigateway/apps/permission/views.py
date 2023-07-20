@@ -134,7 +134,12 @@ class AppPermissionViewSet(viewsets.ModelViewSet):
         slz = serializers.AppPermissionListSLZ(queryset, many=True)
         content = self._get_csv_content(data["dimension"], slz.data)
 
-        return DownloadableResponse(content, filename=f"{self.request.gateway.name}-permissions.csv")
+        response = DownloadableResponse(content, filename=f"{self.request.gateway.name}-permissions.csv")
+        # FIXME: change to export excel directly, while the exported csv file copy from mac to windows is not ok now!
+        # use utf-8-sig for windows
+        response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
+
+        return response
 
     @swagger_auto_schema(
         query_serializer=serializers.PermissionAppQuerySLZ,
