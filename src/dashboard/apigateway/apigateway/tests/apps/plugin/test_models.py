@@ -19,7 +19,6 @@ import json
 
 import pytest
 from ddf import G
-from jsonschema.exceptions import ValidationError
 
 from apigateway.apps.plugin.models import Plugin, PluginConfig
 from apigateway.schema.models import Schema
@@ -82,136 +81,7 @@ class TestPluginConfig:
             fake_plugin_config.config = yaml_
 
 
-class TestPlugin:
-    def test_create_without_related_type(self, fake_gateway, related_model_not_exist):
-        plugin = G(Plugin, api=fake_gateway)
-        assert plugin.target is None
-
-    def test_create_with_related_type(self, clone_model, legacy_plugin, echo_plugin):
-        echo_plugin.delete()
-        legacy_plugin.delete()
-
-        plugin = clone_model(legacy_plugin, target=None)
-
-        target = plugin.target
-        assert target is not None
-        assert target.api == plugin.api
-        assert target.name == plugin.name
-        assert target.config == echo_plugin.config
-        assert target.type_id == echo_plugin.type_id
-
-    def test_update_with_related_models(self, faker, legacy_plugin, echo_plugin):
-        legacy_plugin.description = faker.pystr()
-        legacy_plugin.save()
-
-        echo_plugin.refresh_from_db()
-        assert echo_plugin.description == legacy_plugin.description
-
-    def test_rename_with_related_models(self, faker, legacy_plugin, echo_plugin):
-        legacy_plugin.name = faker.pystr()
-        legacy_plugin.save()
-
-        echo_plugin.refresh_from_db()
-        assert echo_plugin.name == legacy_plugin.name
-
-    def test_update_with_related_model_validation(self, faker, legacy_plugin, echo_plugin):
-        legacy_plugin.config = None
-        with pytest.raises(ValueError):
-            legacy_plugin.save()
-
-        legacy_plugin.config = {"foo": "bar"}
-        with pytest.raises(ValidationError):
-            legacy_plugin.save()
-
-        echo_plugin.refresh_from_db()
-        assert echo_plugin.config is not None
-
-        legacy_plugin.refresh_from_db()
-        assert legacy_plugin.config is not None
-
-    def test_delete_without_related_models(self, legacy_plugin, related_model_not_exist):
-        legacy_plugin.delete()
-
-    def test_delete_with_related_models(self, faker, legacy_plugin, echo_plugin):
-        legacy_plugin.delete()
-        assert not PluginConfig.objects.filter(pk=echo_plugin.pk).exists()
-
-    def test_update_with_disable_syncing(self, faker, legacy_plugin, echo_plugin):
-        legacy_plugin.disable_syncing = True
-        legacy_plugin.description = faker.pystr()
-        legacy_plugin.save()
-
-        echo_plugin.refresh_from_db()
-        assert echo_plugin.description != legacy_plugin.description
-
-    def test_delete_with_disable_syncing(self, faker, legacy_plugin, echo_plugin):
-        legacy_plugin.disable_syncing = True
-        legacy_plugin.delete()
-
-        echo_plugin.refresh_from_db()
-
-
 class TestPluginBinding:
-    def test_bind_plugin_without_related_models(
-        self,
-        clone_model,
-        legacy_plugin,
-        echo_plugin_stage_binding,
-        related_model_not_exist,
-    ):
-        binding = clone_model(echo_plugin_stage_binding, plugin=legacy_plugin, type=legacy_plugin.type, config=None)
-        assert binding.config is None
-
-    def test_bind_plugin_with_related_models(
-        self,
-        clone_model,
-        legacy_plugin,
-        echo_plugin_stage_binding,
-    ):
-        binding = clone_model(echo_plugin_stage_binding, plugin=legacy_plugin, type=legacy_plugin.type, config=None)
-
-        assert binding.config is not None
-
-    def test_bind_config_with_related_models(
-        self,
-        echo_plugin,
-        echo_plugin_stage_binding,
-    ):
-        assert echo_plugin_stage_binding.config == echo_plugin
-        assert echo_plugin_stage_binding.type is None
-        assert echo_plugin_stage_binding.plugin is None
-
-    def test_bind_plugin_with_disable_syncing(
-        self,
-        clone_model,
-        legacy_plugin,
-        echo_plugin_stage_binding,
-    ):
-        legacy_plugin.disable_syncing = True
-        binding = clone_model(echo_plugin_stage_binding, plugin=legacy_plugin, type=legacy_plugin.type, config=None)
-
-        assert binding.config is None
-
-    def test_delete_plugin_with_disable_syncing(
-        self,
-        clone_model,
-        legacy_plugin,
-        echo_plugin_stage_binding,
-    ):
-        binding = clone_model(echo_plugin_stage_binding, plugin=legacy_plugin, type=legacy_plugin.type, config=None)
-
-        legacy_plugin.disable_syncing = True
-        legacy_plugin.delete()
-
-        binding.refresh_from_db()
-
-        assert binding.config is not None
-        assert binding.plugin is None
-
     def test_get_config_with_plugin_config(self, echo_plugin, echo_plugin_stage_binding):
         assert echo_plugin_stage_binding.get_config() == echo_plugin.config
         assert echo_plugin_stage_binding.get_type() == echo_plugin.type.code
-
-    def test_get_config_without_plugin_config(self, legacy_plugin, echo_plugin_stage_binding, related_model_not_exist):
-        assert echo_plugin_stage_binding.get_config() == legacy_plugin.config
-        assert echo_plugin_stage_binding.get_type() == legacy_plugin.type
