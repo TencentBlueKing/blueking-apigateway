@@ -92,6 +92,28 @@ auth.requestCurrentUser().then(async (user) => {
   } else {
     auth.redirectToLogin()
   }
-}, _ => {
-  auth.redirectToLogin()
+}, err => {
+  let title = '服务异常'
+  let status = err.response.status || 500
+  let message = '无法连接到后端服务，请稍候再试。'
+  const { data } = err.response
+  if (err.code === 'PRODUCT_NOT_READY') {
+    message = err.detail || err.message
+  } else if (status === 403 && data.code === 1302403) {
+    status = 403
+    title = '无该应用访问权限'
+    message = data.detail || err.detail || err.message
+  } else {
+    // 重新登录
+    auth.redirectToLogin()
+  }
+
+  global.paasVue = new Vue({
+    el: '#app',
+    methods: {},
+    template: `<bk-exception class="exception-wrap-item" scene="page" type="${status}" style="position: fixed; top: 40%; transform: translateY(-50%);">
+                        <span>${title}</span>
+                        <div class="text-subtitle f12 mt20 mb20" style="color: #979BA5;">${message}</div>
+                    </bk-exception>`
+  })
 })
