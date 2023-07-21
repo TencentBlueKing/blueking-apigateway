@@ -59,3 +59,4 @@ result = client.api.update_gateway_status(
 | ------- | ------ | ---------------------------------- |
 | code    | int    | 返回码，0 表示成功，其它值表示失败 |
 | message | string | 错误信息                           |
+| data    | object | 空                                 |
