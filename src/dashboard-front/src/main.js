@@ -93,12 +93,14 @@ auth.requestCurrentUser().then(async (user) => {
     auth.redirectToLogin()
   }
 }, err => {
-  let title = '服务异常'
-  let status = err.response.status || 500
-  let message = '无法连接到后端服务，请稍候再试。'
+  let title = ''
+  let message = ''
+  let status = err.response.status
   const { data } = err.response
-  if (err.code === 'PRODUCT_NOT_READY') {
-    message = err.detail || err.message
+  if (status === 500) {
+    status = 500
+    title = '服务异常'
+    message = data.detail || err.detail || err.message || '访问后端服务出现错误，请稍后再试。'
   } else if (status === 403 && data.code === 1302403) {
     status = 403
     title = '无该应用访问权限'
