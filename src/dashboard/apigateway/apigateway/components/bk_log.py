@@ -19,16 +19,20 @@
 from operator import itemgetter
 from typing import Any, Dict
 
-from apigateway.components.esb_components import get_client_by_username
+from bkapi_client_core.apigateway import OperationGroup
+from bkapi_client_core.apigateway.django_helper import get_client_by_username as get_client_by_username_for_apigateway
+from django.conf import settings
+
+from apigateway.components.bkapi_client.log_search import Client as LogSearchClient
+from apigateway.components.esb_components import get_client_by_username as get_client_by_username_for_esb
 from apigateway.components.handler import RequestAPIHandler
 from apigateway.components.utils import inject_accept_language
 
 
 class BKLogComponent:
     def __init__(self):
-        self._client = get_client_by_username("admin")
-        self._client.session.register_hook("request", inject_accept_language)
-        self._request_handler = RequestAPIHandler("bk-log", self._client.parse_response)
+        self._api_client: OperationGroup = self._get_api_client()
+        self._request_handler = RequestAPIHandler("bk-log")
 
     def esquery_dsl(self, index: str, body: Any) -> Dict[str, Any]:
         data = {
@@ -36,8 +40,21 @@ class BKLogComponent:
             "body": body,
         }
 
-        api_result, response = self._request_handler.call_api(self._client.bk_log.esquery_dsl, data)
+        headers = {"Content-Type": "application/json"}
+
+        api_result, response = self._request_handler.call_api(self._api_client.esquery_dsl, data, headers=headers)
         return self._request_handler.parse_api_result(api_result, response, {"result": True}, itemgetter("data"))
+
+    def _get_api_client(self) -> OperationGroup:
+        # use gateway: log-search
+        if settings.USE_BKAPI_BK_LOG:
+            apigw_client = get_client_by_username_for_apigateway(LogSearchClient, username="admin")
+            apigw_client.session.register_hook("request", inject_accept_language)
+            return apigw_client.api
+
+        esb_client = get_client_by_username_for_esb("admin")
+        esb_client.session.register_hook("request", inject_accept_language)
+        return esb_client.bk_log
 
 
 bk_log_component = BKLogComponent()

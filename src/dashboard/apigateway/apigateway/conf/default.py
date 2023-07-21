@@ -764,6 +764,8 @@ USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
 
 # 使用 bkmonitorv3 网关 API，还是 monitor_v3 组件 API
 USE_BKAPI_BKMONITORV3 = env.bool("USE_BKAPI_BKMONITORV3", False)
+# 是否使用 bklog 网关 API
+USE_BKAPI_BK_LOG = env.bool("USE_BKAPI_BK_LOG", False)
 
 
 # ==============================================================================
