@@ -71,11 +71,12 @@ result = client.api.get_released_resources(
 
 #### data
 
-| 参数名称          | 参数类型 | 描述                 |
-| ----------------- | -------- | -------------------- |
-| data.count        | int      | 资源数量             |
-| data.has_next     | boolean  | 分页，后续是否有数据 |
-| data.has_previous | boolean  | 分页，前面是否有数据 |
+| 参数名称     | 参数类型 | 描述                                     |
+| ------------ | -------- | ---------------------------------------- |
+| count        | int      | 资源数量                                 |
+| has_next     | boolean  | 分页，后续是否有数据                     |
+| has_previous | boolean  | 分页，前面是否有数据                     |
+| results      | array    | 本次查询的结果数据，详细信息请见下面说明 |
 
 data.results 中字段说明
 

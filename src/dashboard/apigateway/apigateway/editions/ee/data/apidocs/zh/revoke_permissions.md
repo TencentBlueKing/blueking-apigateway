@@ -21,7 +21,7 @@
 
 ```json
 {
-    "target_app_codes": ["bk-sops"],
+    "target_app_codes": ["my-app"],
     "grant_dimension": "api"
 }
 ```
@@ -34,7 +34,7 @@ from bkapi.bk_apigateway.shortcuts import get_client_by_request
 client = get_client_by_request(request)
 result = client.api.revoke_permissions(
     {
-        "target_app_codes": ["bk-sops"],
+        "target_app_codes": ["my-app"],
         "grant_dimension": "api"
     },
     path_params={
