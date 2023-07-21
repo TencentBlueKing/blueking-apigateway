@@ -34,9 +34,7 @@ result = client.api.get_apis({})
             "description": "",
             "maintainers": [
                 "admin"
-            ],
-            "api_type": 10,
-            "user_auth_type": "default"
+            ]
         }
     ]
 }
@@ -52,11 +50,9 @@ result = client.api.get_apis({})
 
 #### data
 
-| 参数名称       | 参数类型 | 描述                                |
-| -------------- | -------- | ----------------------------------- |
-| id             | int      | 网关ID                              |
-| name           | string   | 网关名称                            |
-| description    | string   | 网关描述                            |
-| maintainers    | array    | 网关管理员                          |
-| api_type       | int      | 网关类型，可选值: 10(普通网关)      |
-| user_auth_type | string   | 用户类型，可选值：default(蓝鲸用户) |
+| 参数名称    | 参数类型 | 描述       |
+| ----------- | -------- | ---------- |
+| id          | int      | 网关ID     |
+| name        | string   | 网关名称   |
+| description | string   | 网关描述   |
+| maintainers | array    | 网关管理员 |

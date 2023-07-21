@@ -13,12 +13,11 @@
 
 #### 请求参数
 
-| 参数名称       | 参数类型 | 必选 | 描述                                |
-| -------------- | -------- | ---- | ----------------------------------- |
-| description    | string   | 是   | 网关描述                            |
-| maintainers    | array    | 否   | 网关管理员                          |
-| is_public      | boolean  | 否   | 网关是否公开，默认公开              |
-| user_auth_type | string   | 否   | 用户类型，可选值：default(蓝鲸用户) |
+| 参数名称    | 参数类型 | 必选 | 描述                   |
+| ----------- | -------- | ---- | ---------------------- |
+| description | string   | 是   | 网关描述               |
+| maintainers | array    | 否   | 网关管理员             |
+| is_public   | boolean  | 否   | 网关是否公开，默认公开 |
 
 ### 请求参数示例
 
@@ -39,6 +38,8 @@ client = get_client_by_request(request)
 result = client.api.sync_api(
     {
         "description": "just for test",
+        "maintainers": ["admin"],
+        "is_public": True
     },
     path_params={
         "api_name": "demo",
