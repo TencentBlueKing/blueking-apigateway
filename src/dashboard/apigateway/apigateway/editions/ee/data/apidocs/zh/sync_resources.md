@@ -35,7 +35,8 @@ from bkapi.bk_apigateway.shortcuts import get_client_by_request
 client = get_client_by_request(request)
 result = client.api.sync_resources(
     {
-        "content": "xxx"
+        "content": "xxx",
+        "delete": False
     },
     path_params={
         "api_name": "demo",
@@ -69,8 +70,8 @@ result = client.api.sync_resources(
 
 #### data
 
-| 参数名称 | 参数类型 | 描述       |
-| -------- | -------- | ---------- |
-| added    | array    | 新增的资源 |
-| updated  | array    | 更新的资源 |
-| deleted  | array    | 删除的资源 |
+| 参数名称 | 参数类型 | 描述                                |
+| -------- | -------- | ----------------------------------- |
+| added    | array    | 新增的资源，其中数据，id 表示资源ID |
+| updated  | array    | 更新的资源，其中数据，id 表示资源ID |
+| deleted  | array    | 删除的资源，其中数据，id 表示资源ID |
