@@ -16,11 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from django.db import models
-from django.db.models.signals import post_delete, pre_save
-from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from tencent_apigateway_common.i18n.field import I18nProperty
 
@@ -162,9 +160,6 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
 class Plugin(ConfigModelMixin):
     """废弃模型，保留是为了迁移数据"""
 
-    # 是否允许通过信号同步到 PluginConfig
-    disable_syncing = False
-
     api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
     name = models.CharField(max_length=64, db_index=True)
     description = models.TextField(blank=True, default="")
@@ -197,12 +192,11 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
         db_index=True,
     )
     scope_id = models.IntegerField(db_index=True)
+    config = models.ForeignKey(PluginConfig, on_delete=models.PROTECT, null=True)
 
     # TODO: 删除旧模型后可直接删除下面两个废弃字段
     type = models.CharField(max_length=32, choices=PluginTypeEnum.get_choices(), null=True)
     plugin = models.ForeignKey(Plugin, on_delete=models.SET_NULL, null=True)
-
-    config = models.ForeignKey(PluginConfig, on_delete=models.PROTECT, null=True)
 
     objects = PluginBindingManager()
 
@@ -212,85 +206,7 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
         db_table = "plugin_binding"
 
     def get_config(self):
-        if self.config is not None:
-            return self.config.config
-
-        return self.plugin.config
+        return self.config.config
 
     def get_type(self):
-        if self.config is not None:
-            return self.config.type.code
-
-        return self.plugin.type
-
-
-# 处理特殊插件映射，暂无需增加
-legacy_plugin_type_mappings = {
-    PluginTypeEnum.IP_RESTRICTION.value: "bk-ip-restriction",
-    PluginTypeEnum.CORS.value: "bk-cors",
-    PluginTypeEnum.RATE_LIMIT.value: "bk-rate-limit",
-}
-
-
-def _get_plugin_type_by_plugin_instance(instance: Plugin) -> Optional[PluginType]:
-    """迁移模型后可删除"""
-    return PluginType.objects.filter(code=legacy_plugin_type_mappings.get(instance.type, instance.type)).last()
-
-
-@receiver(pre_save, sender=Plugin)
-def _sync_plugin_config(sender, instance: Plugin, **kwargs):
-    """同步插件配置更新，迁移模型后可删除"""
-    if instance.disable_syncing:
-        return
-
-    plugin_config = instance.target
-    if plugin_config is None:
-        plugin_type = _get_plugin_type_by_plugin_instance(instance)
-        if plugin_type is None:
-            logger.error("plugin type %s not found, you should initial it first", instance.type)
-            return
-
-        plugin_config, _ = PluginConfig.objects.get_or_create(
-            api_id=instance.api_id,
-            name=instance.name,
-            type=plugin_type,
-            defaults={"created_by": instance.created_by},
-        )
-        instance.target = plugin_config
-
-    plugin_config.name = instance.name
-    plugin_config.description = instance.description
-    plugin_config.updated_by = instance.updated_by
-    plugin_config.config = instance._config
-
-    plugin_config.save()
-
-
-@receiver(post_delete, sender=Plugin)
-def _delete_plugin_config(sender, instance: Plugin, **kwargs):
-    """同步删除关联插件配置，数据迁移时需要先删除这个的钩子，迁移模型后可删除"""
-    if instance.disable_syncing:
-        return
-
-    if instance.target is None:
-        return
-
-    instance.target.delete()
-
-
-@receiver(pre_save, sender=PluginBinding)
-def _sync_plugin_binding(sender, instance: PluginBinding, **kwargs):
-    """同步绑定插件配置，迁移模型后可删除"""
-
-    if instance.plugin is None:
-        return
-
-    if instance.plugin.disable_syncing:
-        return
-
-    if instance.plugin.target is None:
-        instance.config = None
-    elif PluginConfig.objects.filter(pk=instance.plugin.target.pk).exists():
-        instance.config_id = instance.plugin.target.pk
-    else:
-        instance.config = None
+        return self.config.type.code

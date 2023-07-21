@@ -24,7 +24,7 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import Signal, receiver
 
 from apigateway.apps.access_strategy.models import AccessStrategy, AccessStrategyBinding, IPGroup
-from apigateway.apps.plugin.models import Plugin, PluginBinding, PluginConfig
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.controller.tasks.syncing import revoke_release_by_stage
 from apigateway.core import models
 from apigateway.utils.redis_publisher import RedisPublisher
@@ -58,7 +58,6 @@ def _on_gateway_updated(sender, instance: models.Gateway, created: bool, **kwarg
     gateway_update_signal.send(sender, gateway_id=instance.pk)
 
 
-@receiver(post_save, sender=Plugin)
 @receiver(post_save, sender=PluginConfig)
 @receiver(post_save, sender=PluginBinding)
 @receiver(post_save, sender=AccessStrategy)
@@ -74,7 +73,6 @@ def _on_gateway_related_updated(sender, instance, created: bool, **kwargs):
     gateway_update_signal.send(sender, gateway_id=instance.api_id)
 
 
-@receiver(post_delete, sender=Plugin)
 @receiver(post_delete, sender=PluginConfig)
 @receiver(post_delete, sender=PluginBinding)
 @receiver(post_delete, sender=AccessStrategy)
