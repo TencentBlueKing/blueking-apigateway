@@ -12,20 +12,19 @@
 
 #### 请求参数
 
-| 参数名称                  | 参数类型      | 必选 | 描述                                                     |
-| ------------------------- | ------------- | ---- | -------------------------------------------------------- |
-| resource_version          | string        | 是   | 资源版本的版本号                                         |
-| languages                 | array[string] | 否   | 需要生成SDK的语言列表，可选值：python，默认为 python SDK |
-| include_private_resources | boolean       | 否   | 是否包含私有资源，默认为 false                           |
-| version                   | string        | 否   | SDK 版本号，未设置时，将使用资源版本的版本号             |
-
+| 参数名称         | 参数类型      | 必选 | 描述                                                     |
+| ---------------- | ------------- | ---- | -------------------------------------------------------- |
+| resource_version | string        | 是   | 资源版本的版本号                                         |
+| languages        | array[string] | 否   | 需要生成SDK的语言列表，可选值：python，默认为 python SDK |
+| version          | string        | 否   | SDK 版本号，未设置时，将使用资源版本的版本号             |
 
 ### 请求参数示例
 
 ```json
 {
     "resource_version": "1.0.1",
-    "languages": ["python"]
+    "languages": ["python"],
+    "version": "1.0.1"
 }
 ```
 
@@ -37,7 +36,9 @@ from bkapi.bk_apigateway.shortcuts import get_client_by_request
 client = get_client_by_request(request)
 result = client.api.generate_sdk(
     {
-        "resource_version": "1.0.1"
+        "resource_version": "1.0.1",
+        "languages": ["python"],
+        "version": "1.0.1"
     }
 )
 ```
