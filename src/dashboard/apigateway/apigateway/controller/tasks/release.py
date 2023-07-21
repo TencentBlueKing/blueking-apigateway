@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import List
+from typing import List, Optional
 
 from celery import shared_task
 
@@ -161,7 +161,9 @@ def release_gateway_by_helm(access_token: str, username, release_id, micro_gatew
 
 
 @shared_task(ignore_result=True)
-def release_gateway_by_registry(micro_gateway_id, release_id, micro_gateway_release_history_id):
+def release_gateway_by_registry(
+    micro_gateway_id, release_id, micro_gateway_release_history_id, publish_id: Optional[int] = None
+):
     """发布资源到共享网关，为了使得类似环境变量等引用生效，同时会将所有配置都进行同步"""
     logger.info(
         "release_gateway_by_etcd: release_id=%s, micro_gateway_id=%s, micro_gateway_release_history_id=%s",
@@ -179,6 +181,8 @@ def release_gateway_by_registry(micro_gateway_id, release_id, micro_gateway_rele
         gateway=release.api,
         stage=release.stage,
         micro_gateway=micro_gateway,
+        release_task_id=micro_gateway_release_history_id,
+        publish_id=publish_id,
     )
     return _release_gateway(
         distributor=EtcdDistributor(

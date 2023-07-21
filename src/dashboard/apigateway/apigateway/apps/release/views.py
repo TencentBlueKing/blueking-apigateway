@@ -27,7 +27,7 @@ from apigateway.apps.release import serializers
 from apigateway.apps.release.releasers import ReleaseBatchManager, ReleaseError
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
+from apigateway.core.models import PublishEvent, Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
@@ -149,6 +149,21 @@ class ReleaseHistoryViewSet(viewsets.ModelViewSet):
             fuzzy=True,
         )
         page = self.paginate_queryset(queryset)
+
+        # 查询发布事件,填充message为最后一个发布事件的状态信息
+        publish_ids = [release_history.id for release_history in page]
+
+        # 发布事件dict：key：publish_id,value: 最后一个事件
+        # 需要按照 "publish_id", "step", "status" 升序(django默认 ASC)排列,正确排列每个事件节点的不同状态事件
+        publish_events = PublishEvent.objects.filter(publish_id__in=publish_ids).order_by(
+            "publish_id", "step", "status"
+        )
+        publish_last_event = dict((event.publish_id, event) for event in publish_events)
+
+        for history in page:
+            event = publish_last_event.get(history.id)
+            if event:
+                history.message = f"{event.name}:{event.status}"
 
         serializer = self.get_serializer(page, many=True)
         return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
