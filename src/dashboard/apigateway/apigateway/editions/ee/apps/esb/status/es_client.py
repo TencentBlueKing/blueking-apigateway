@@ -23,8 +23,7 @@ from typing import ClassVar, Type
 
 from django.conf import settings
 
-from apigateway.apps.access_log.constants import ESClientTypeEnum
-from apigateway.apps.access_log.es_clients import BaseESClient, BKLogESClient, RawESClient
+from apigateway.common.es_clients import BaseESClient, BKLogESClient, ESClientTypeEnum, RawESClient
 
 
 class BaseSearchClient:

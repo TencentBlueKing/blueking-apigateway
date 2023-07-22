@@ -20,7 +20,7 @@ import json
 import logging
 from typing import Any, Dict
 
-from attrs import define
+from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.conf import settings
 from django.utils.translation import gettext as _
 from elasticsearch.client import Elasticsearch
@@ -30,10 +30,14 @@ from urllib3.exceptions import ConnectTimeoutError
 
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bk_log import bk_log_component
-from apigateway.components.bkdata import bkdata_component
 from apigateway.components.exceptions import RemoteAPIResultError, RemoteRequestError
 
 logger = logging.getLogger(__name__)
+
+
+class ESClientTypeEnum(StructuredEnum):
+    ELASTICSEARCH = EnumField("elasticsearch")
+    BK_LOG = EnumField("bk_log")
 
 
 class ElasticsearchGetter:
@@ -57,15 +61,14 @@ class ElasticsearchGetter:
         return self._search_timeout
 
 
-@define(slots=False)
 class BaseESClient:
-    _es_index: str
+    def __init__(self, es_index):
+        self._es_index = es_index
 
     def _get_es_index(self) -> str:
         return self._es_index
 
 
-@define(slots=False)
 class DslESClient(ElasticsearchGetter, BaseESClient):
     """Use Elasticsearch DSL"""
 
@@ -117,7 +120,6 @@ class DslESClient(ElasticsearchGetter, BaseESClient):
         )
 
 
-@define(slots=False)
 class RawESClient(ElasticsearchGetter, BaseESClient):
     """Use Elasticsearch directly"""
 
@@ -149,24 +151,6 @@ class RawESClient(ElasticsearchGetter, BaseESClient):
             raise error_codes.ES_SEARCH_ERROR.format(es_hosts_display=self._get_es_hosts_display(), err=err)
 
 
-@define(slots=False)
-class BKDataESClient(BaseESClient):
-    def execute_search(self, body: Dict[str, Any]) -> Dict[str, Any]:
-        result, message, data = bkdata_component.get_data(
-            prefer_storage="es",
-            sql=json.dumps(
-                {
-                    "index": self._get_es_index(),
-                    "body": body,
-                }
-            ),
-        )
-        if not result:
-            raise error_codes.COMPONENT_ERROR.format(message)
-        return data  # type: ignore
-
-
-@define(slots=False)
 class BKLogESClient(BaseESClient):
     def execute_search(self, body: Dict[str, Any]) -> Dict[str, Any]:
         try:
@@ -176,3 +160,16 @@ class BKLogESClient(BaseESClient):
             )
         except (RemoteRequestError, RemoteAPIResultError) as err:
             raise error_codes.REMOTE_REQUEST_ERROR.format(message=str(err))
+
+
+class ESClientFactory:
+    @classmethod
+    def get_es_client(cls, es_index: str) -> BaseESClient:
+        es_client_type = settings.ACCESS_LOG_CONFIG["es_client_type"]
+        if es_client_type == ESClientTypeEnum.BK_LOG.value:
+            return BKLogESClient(es_index)
+
+        elif es_client_type == ESClientTypeEnum.ELASTICSEARCH.value:
+            return RawESClient(es_index)
+
+        raise ValueError(f"unsupported es_client_type: {es_client_type}")
