@@ -676,6 +676,11 @@ DEFAULT_GATEWAY_HOSTING_TYPE = env.int("DEFAULT_GATEWAY_HOSTING_TYPE", 1)
 
 # prometheus 配置
 PROMETHEUS_METRIC_NAME_PREFIX = env.str("PROMETHEUS_METRIC_NAME_PREFIX", "bk_apigateway_")
+PROMETHEUS_DEFAULT_LABELS = [
+    # example: foo=bar => [("foo", "=", "bar")]
+    (key, "=", value)
+    for key, value in env.dict("PROMETHEUS_DEFAULT_LABELS", default={}).items()
+]
 
 # DB 操作大小配置
 RELEASED_RESOURCE_CREATE_BATCH_SIZE = env.int("RELEASED_RESOURCE_CREATE_BATCH_SIZE", 50)
