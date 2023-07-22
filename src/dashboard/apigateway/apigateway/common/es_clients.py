@@ -68,6 +68,9 @@ class BaseESClient:
     def _get_es_index(self) -> str:
         return self._es_index
 
+    def execute_search(self, body: Dict[str, Any]) -> Dict[str, Any]:
+        raise NotImplementedError()
+
 
 class DslESClient(ElasticsearchGetter, BaseESClient):
     """Use Elasticsearch DSL"""
