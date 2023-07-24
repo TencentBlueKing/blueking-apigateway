@@ -19,8 +19,53 @@ import json
 
 import pytest
 
-from apigateway.apps.api_test.prepared_request import PreparedRequestHeaders, PreparedRequestURL
+from apigateway.apis.web.api_test.prepared_request import PreparedRequestHeaders, PreparedRequestURL, render_path
 from apigateway.common.constants import HEADER_BKAPI_AUTHORIZATION
+
+
+@pytest.mark.parametrize(
+    "params, expected",
+    [
+        (
+            {
+                "path": "/echo/",
+                "path_params": {},
+            },
+            "/echo/",
+        ),
+        (
+            {
+                "path": "/echo/{api_id}",
+                "path_params": {"api_id": "123"},
+            },
+            "/echo/123",
+        ),
+        (
+            {
+                "path": "/echo/{api-id}",
+                "path_params": {"api-id": "123"},
+            },
+            "/echo/123",
+        ),
+        (
+            {
+                "path": "/echo/{api-id}",
+                "path_params": {},
+            },
+            "/echo/{api-id}",
+        ),
+        (
+            {
+                "path": "/echo/",
+                "path_params": {"api_id": 123},
+            },
+            "/echo/",
+        ),
+    ],
+)
+def test_render_path(params, expected):
+    result = render_path(**params)
+    assert result == expected
 
 
 class TestPreparedRequestHeaders:
@@ -166,7 +211,7 @@ class TestPreparedRequestURL:
     )
     def test_get_request_url(self, mocker, params, expected):
         mocker.patch(
-            "apigateway.apps.api_test.prepared_request.ResourceURLHandler.get_resource_url_tmpl",
+            "apigateway.apis.web.api_test.prepared_request.ResourceURLHandler.get_resource_url_tmpl",
             return_value="http://example.com/{api_name}/{stage_name}/{resource_path}",
         )
 

@@ -37,12 +37,9 @@ def render_path(path, path_params):
     return path
 
 
-@dataclass
 class PreparedRequestHeaders:
-    _headers: CaseInsensitiveDict = field(default_factory=CaseInsensitiveDict)
-    _sensitive_cleaner: SensitiveCleaner = field(init=False)
-
-    def __post_init__(self):
+    def __init__(self, headers=None):
+        self._headers = CaseInsensitiveDict(headers or {})
         self._sensitive_cleaner = SensitiveCleaner(
             ["bk_app_secret", "app_secret", "bk_token", "bk_ticket", "skey", "access_token"]
         )
