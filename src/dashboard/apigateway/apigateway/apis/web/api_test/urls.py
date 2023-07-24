@@ -18,8 +18,8 @@
 #
 from django.urls import path
 
-from apigateway.apps.api_test import views
+from .views import APITestApi
 
 urlpatterns = [
-    path("", views.APITestAPIView.as_view(), name="api_test.tests"),
+    path("", APITestApi.as_view(), name="api_test.tests"),
 ]

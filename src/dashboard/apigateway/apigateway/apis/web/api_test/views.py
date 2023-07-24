@@ -24,35 +24,34 @@ from django.http import Http404
 from django.utils.encoding import force_bytes
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
-from rest_framework.generics import get_object_or_404
-from rest_framework.views import APIView
+from rest_framework import generics, status
 
-from apigateway.apps.api_test.constants import TEST_PERMISSION_EXPIRE_DAYS
-from apigateway.apps.api_test.prepared_request import PreparedRequestHeaders, PreparedRequestURL
-from apigateway.apps.api_test.serializers import APITestDataSLZ, APITestSLZ
-from apigateway.apps.permission.constants import GrantTypeEnum
-from apigateway.apps.permission.models import AppResourcePermission
+from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.released_resource import get_released_resource_data
 from apigateway.core.models import Stage
 from apigateway.utils.curlify import to_curl
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.time import convert_second_to_epoch_millis
 
+from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
+from .serializers import APITestInputSLZ, APITestOutputSLZ
 
-class APITestAPIView(APIView):
+TEST_PERMISSION_EXPIRE_DAYS = 1
+
+
+class APITestApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        request_body=APITestSLZ,
-        responses={status.HTTP_200_OK: APITestDataSLZ},
+        request_body=APITestInputSLZ,
+        responses={status.HTTP_200_OK: APITestOutputSLZ},
         tags=["APITest"],
     )
     def post(self, request, *args, **kwargs):
-        slz = APITestSLZ(data=request.data)
+        slz = APITestInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
         # 获取资源
-        stage = get_object_or_404(Stage, api=request.gateway, id=data["stage_id"])
+        stage = generics.get_object_or_404(Stage, api=request.gateway, id=data["stage_id"])
         released_resource = get_released_resource_data(request.gateway, stage, data["resource_id"])
         if not released_resource:
             raise Http404
@@ -60,7 +59,9 @@ class APITestAPIView(APIView):
         authorization = data.get("authorization", {})
         if data.get("use_test_app") and released_resource.resource_perm_required:
             # 为测试账号临时授权
-            self._grant_permission(request.gateway, released_resource.id, authorization["bk_app_code"])
+            ResourcePermissionHandler().grant(
+                request.gateway, released_resource.id, authorization["bk_app_code"], TEST_PERMISSION_EXPIRE_DAYS
+            )
 
         prepared_request_headers = PreparedRequestHeaders()
         prepared_request_headers.prepare_headers(
@@ -89,7 +90,7 @@ class APITestAPIView(APIView):
                 headers=prepared_request_headers.headers,
                 # 隐式使用 cookies，不便于用户了解用户认证参数
                 # cookies=request.COOKIES,
-                # 10秒连接超时，300读超时
+                # 10 秒连接超时，300 读超时
                 timeout=(10, 300),
                 allow_redirects=False,
                 verify=False,
@@ -101,21 +102,6 @@ class APITestAPIView(APIView):
             "OK",
             data=self._get_response_data(response, prepared_request_headers.headers_without_sensitive, verify=False),
         )
-
-    def _grant_permission(self, gateway, resource_id, bk_app_code):
-        app_resource_permission = AppResourcePermission.objects.get_permission_or_none(
-            gateway=gateway,
-            resource_id=resource_id,
-            bk_app_code=bk_app_code,
-        )
-        if not app_resource_permission or app_resource_permission.will_expired_in(seconds=300):
-            AppResourcePermission.objects.save_permissions(
-                gateway=gateway,
-                resource_ids=[resource_id],
-                bk_app_code=bk_app_code,
-                grant_type=GrantTypeEnum.INITIALIZE.value,
-                expire_days=TEST_PERMISSION_EXPIRE_DAYS,
-            )
 
     def _get_response_data(self, response, headers_without_sensitive=Dict[str, Any], verify=False):
         return {

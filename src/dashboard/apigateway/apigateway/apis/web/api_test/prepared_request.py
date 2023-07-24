@@ -17,25 +17,32 @@
 #
 import copy
 import json
+from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from attrs import define, field
 from django.utils.translation import gettext as _
 from requests.structures import CaseInsensitiveDict
 
-from apigateway.apps.api_test.utils import render_path
 from apigateway.biz.resource_url import ResourceURLHandler
 from apigateway.common.constants import HEADER_BKAPI_AUTHORIZATION
 from apigateway.core.utils import get_resource_url
 from apigateway.utils.sensitive_cleaner import SensitiveCleaner
 
 
-@define
+def render_path(path, path_params):
+    for key, value in path_params.items():
+        tpl_key = "{%s}" % key
+        if path.find(tpl_key) >= 0:
+            path = path.replace(tpl_key, value)
+    return path
+
+
+@dataclass
 class PreparedRequestHeaders:
-    _headers: CaseInsensitiveDict = field(factory=dict, converter=CaseInsensitiveDict)
+    _headers: CaseInsensitiveDict = field(default_factory=CaseInsensitiveDict)
     _sensitive_cleaner: SensitiveCleaner = field(init=False)
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         self._sensitive_cleaner = SensitiveCleaner(
             ["bk_app_secret", "app_secret", "bk_token", "bk_ticket", "skey", "access_token"]
         )
@@ -84,17 +91,17 @@ class PreparedRequestHeaders:
         return headers
 
 
-@define
+@dataclass
 class PreparedRequestURL:
     resource_path: str = ""
     subpath: str = ""
     match_subpath: bool = False
-    path_params: Dict[str, Any] = field(factory=dict)
+    path_params: Dict[str, Any] = field(default_factory=dict)
     gateway_name: str = ""
     stage_name: str = ""
     request_url: str = field(init=False)
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         self.request_url = self._prepare_request_url()
 
     def _prepare_request_url(self) -> str:

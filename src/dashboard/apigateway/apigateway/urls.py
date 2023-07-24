@@ -59,7 +59,6 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/backend-services/", include("apigateway.apps.backend_service.urls")),
     path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     # apps: normal
-    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apps.api_test.urls")),
     path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apps.label.urls")),
     path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apps.access_log.urls")),
     path("backend/apis/<int:gateway_id>/metrics/", include("apigateway.apps.metrics.urls")),
@@ -87,6 +86,10 @@ urlpatterns = [
     path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
     path("backend/docs/feature/", include("apigateway.apps.docs.feature.urls")),
     path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
+    ##########
+    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
+    path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
+    ##########
 ]
 
 # add drf-yasg automatically generated documents
