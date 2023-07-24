@@ -18,8 +18,6 @@
 #
 import responses
 
-# from apigateway.apis.web.api_test.views import APITestApi
-# from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.core.utils import get_resource_url
 
 

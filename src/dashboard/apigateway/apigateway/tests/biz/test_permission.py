@@ -21,7 +21,7 @@ from apigateway.biz.permission import ResourcePermissionHandler
 
 
 class TestResourcePermissionHandler:
-    def test_grant_permission(self, fake_gateway, fake_resource):
+    def test_grant_or_renewal_expire_soon(self, fake_gateway, fake_resource):
         data = [
             {
                 "gateway": fake_gateway,
@@ -31,7 +31,7 @@ class TestResourcePermissionHandler:
         ]
         for test in data:
             handler = ResourcePermissionHandler()
-            handler.grant(test["gateway"], test["resource_id"], test["bk_app_code"], 1)
+            handler.grant_or_renewal_expire_soon(test["gateway"], test["resource_id"], test["bk_app_code"], 1, 300)
             app_resource_permission = AppResourcePermission.objects.get_permission_or_none(
                 gateway=test["gateway"],
                 resource_id=test["resource_id"],

@@ -59,8 +59,8 @@ class APITestApi(generics.CreateAPIView):
         authorization = data.get("authorization", {})
         if data.get("use_test_app") and released_resource.resource_perm_required:
             # 为测试账号临时授权
-            ResourcePermissionHandler().grant(
-                request.gateway, released_resource.id, authorization["bk_app_code"], TEST_PERMISSION_EXPIRE_DAYS
+            ResourcePermissionHandler().grant_or_renewal_expire_soon(
+                request.gateway, released_resource.id, authorization["bk_app_code"], TEST_PERMISSION_EXPIRE_DAYS, 300
             )
 
         prepared_request_headers = PreparedRequestHeaders()
