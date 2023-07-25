@@ -1212,6 +1212,6 @@ export default {
     "无该应用访问权限": "No access permission to this application.",
     "服务异常": "Service exception",
     "访问后端服务出现错误，请稍后再试。": "Access backend service error, please try again later.",
-    "未知错误": "Unknown mistake",
+    "未知错误": "Unknown error",
     "次": "times"
 }
