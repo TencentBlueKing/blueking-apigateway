@@ -17,6 +17,7 @@
 #
 import datetime
 
+import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
@@ -25,9 +26,9 @@ from apigateway.tests.utils.testing import create_gateway, dummy_time
 
 
 class TestResourceMonitorHandler:
-    @classmethod
-    def setUpTestData(cls):
-        cls.gateway = create_gateway()
+    @pytest.fixture(autouse=True)
+    def setup_fixtures(self):
+        self.gateway = create_gateway()
 
     def test_statistics_api_alarm_record(self):
         strategy_1 = G(AlarmStrategy)
