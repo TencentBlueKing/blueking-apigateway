@@ -72,7 +72,6 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     path("backend/esb/", include("apigateway.apps.esb.urls")),
     path("backend/users/", include("apigateway.apps.user.urls")),
-    path("backend/feature/", include("apigateway.apps.feature.urls")),
     # FIXME: change this to a new url in future
     # monitors
     path(
@@ -87,6 +86,7 @@ urlpatterns = [
     path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
     path("backend/docs/feature/", include("apigateway.apps.docs.feature.urls")),
     path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
+    path("backend/feature/", include("apigateway.apis.web.feature.urls")),
 ]
 
 # add drf-yasg automatically generated documents

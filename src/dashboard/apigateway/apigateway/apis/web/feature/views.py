@@ -20,13 +20,13 @@ import copy
 
 from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
+from rest_framework import generics, status
 
 from apigateway.apps.feature.models import UserFeatureFlag
 from apigateway.utils.responses import OKJsonResponse
 
 
-class FeatureFlagViewSet(viewsets.GenericViewSet):
+class FeatureFlagListAPI(generics.ListAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         tags=["Feature"],
