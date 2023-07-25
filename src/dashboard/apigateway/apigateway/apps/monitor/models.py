@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class AlarmFilterConfig(ConfigModelMixin):
     """
     告警过滤配置
-    从数据平台拉取告警事件后，可根据过滤配置，去除部分不需告警的记录
+    从请求记录中拉取告警事件后，可根据过滤配置，去除部分不需告警的记录
     """
 
     alarm_type = models.CharField(max_length=64, choices=AlarmTypeEnum.get_choices(), db_index=True)

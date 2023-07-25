@@ -22,7 +22,6 @@ from django.test import TestCase
 from apigateway.apps.access_log.constants import ES_OUTPUT_FIELDS, ES_QUERY_FIELDS
 from apigateway.apps.access_log.exceptions import NotScrubbedException
 from apigateway.apps.access_log.helpers import (
-    BKDataLogSearch,
     BKLogLogSearch,
     DataScrubber,
     DslESLogSearch,
@@ -35,10 +34,6 @@ class TestLogSearchFactory:
     @pytest.mark.parametrize(
         "es_client_type, expected",
         [
-            (
-                "bkdata",
-                BKDataLogSearch,
-            ),
             (
                 "bk_log",
                 BKLogLogSearch,
@@ -226,101 +221,6 @@ class TestDslESLogSearch:
 
         assert result["series"] == mocked_time_chart["series"]
         assert result["timeline"] == mocked_time_chart["timeline"]
-
-
-class TestBKDataLogSearch:
-    @pytest.mark.parametrize(
-        "params, expected",
-        [
-            (
-                {
-                    "api_id": 2,
-                    "stage_name": "prod",
-                },
-                {
-                    "total_count": 1023,
-                    "logs": [
-                        {
-                            "stage": "prod",
-                            "status": 200,
-                            "timestamp": 1579057485,
-                        }
-                    ],
-                },
-            )
-        ],
-    )
-    def test_search_logs(self, mocker, params, expected):
-        mocker.patch(
-            "apigateway.apps.access_log.helpers.BKDataLogSearch._es_client_class.execute_search",
-            return_value={
-                "list": {
-                    "hits": {
-                        "total": 1023,
-                        "hits": [
-                            {
-                                "_source": {
-                                    "stage": "prod",
-                                    "status": 200,
-                                },
-                                "sort": [
-                                    1579057485000,
-                                ],
-                            }
-                        ],
-                    }
-                }
-            },
-        )
-
-        bkdata_log_client = BKDataLogSearch(
-            api_id=params["api_id"],
-            stage_name=params["stage_name"],
-            time_range=3000,
-        )
-        total_count, logs = bkdata_log_client.search_logs(offset=0, limit=2)
-        assert total_count == expected["total_count"]
-        assert logs == expected["logs"]
-
-    @pytest.mark.parametrize(
-        "params, expected",
-        [
-            (
-                {
-                    "api_id": 2,
-                    "stage_name": "prod",
-                },
-                {
-                    "series": [3751, 17839],
-                    "timeline": [1579054920, 1579054980],
-                },
-            )
-        ],
-    )
-    def test_get_time_chart(self, mocker, params, expected):
-        mocker.patch(
-            "apigateway.apps.access_log.helpers.BKDataLogSearch._es_client_class.execute_search",
-            return_value={
-                "list": {
-                    "aggregations": {
-                        "histogram": {
-                            "buckets": [
-                                {"key_as_string": "1579054920000", "key": 1579054920000, "doc_count": 3751},
-                                {"key_as_string": "1579054980000", "key": 1579054980000, "doc_count": 17839},
-                            ]
-                        }
-                    }
-                }
-            },
-        )
-        bkdata_log_client = BKDataLogSearch(
-            api_id=params["api_id"],
-            stage_name=params["stage_name"],
-            time_range=3000,
-        )
-        result = bkdata_log_client.get_time_chart()
-        assert result["series"] == expected["series"]
-        assert result["timeline"] == expected["timeline"]
 
 
 class TestDataScrubber(TestCase):

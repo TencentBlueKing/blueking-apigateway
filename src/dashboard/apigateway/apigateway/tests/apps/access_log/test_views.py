@@ -37,7 +37,7 @@ class TestLogTimeChartAPIView:
         self.stage = G(Stage, api=self.api)
 
         settings.ACCESS_LOG_CONFIG = {
-            "es_client_type": "bkdata",
+            "es_client_type": "bk_log",
             "es_index": "test_index",
             "es_time_field_name": "dtEventTimeStamp",
         }
@@ -53,7 +53,7 @@ class TestLogTimeChartAPIView:
     )
     def test_get(self, mocker, mocked_time_chart):
         mocker.patch(
-            "apigateway.apps.access_log.helpers.BKDataLogSearch.get_time_chart",
+            "apigateway.apps.access_log.helpers.BKLogLogSearch.get_time_chart",
             return_value=mocked_time_chart,
         )
 
@@ -86,14 +86,14 @@ class TestSearchLogsView:
         self.stage = G(Stage, api=self.api)
 
         settings.ACCESS_LOG_CONFIG = {
-            "es_client_type": "bkdata",
+            "es_client_type": "bk_log",
             "es_index": "test_index",
             "es_time_field_name": "dtEventTimeStamp",
         }
 
     def test_get(self, mocker):
         mocker.patch(
-            "apigateway.apps.access_log.helpers.BKDataLogSearch.search_logs",
+            "apigateway.apps.access_log.helpers.BKLogLogSearch.search_logs",
             return_value=(3, [{"a": 1}, {"a": 2}, {"a": 3}]),
         )
 
@@ -129,7 +129,7 @@ class TestLogViewSet:
         self.api = fake_gateway
 
         settings.ACCESS_LOG_CONFIG = {
-            "es_client_type": "bkdata",
+            "es_client_type": "bk_log",
             "es_index": "test_index",
             "es_time_field_name": "dtEventTimeStamp",
         }
@@ -160,7 +160,7 @@ class TestLogViewSet:
 
     def test_retrieve(self, mocker):
         mocker.patch(
-            "apigateway.apps.access_log.helpers.BKDataLogSearch.search_logs",
+            "apigateway.apps.access_log.helpers.BKLogLogSearch.search_logs",
             return_value=(1, [{"a": 1}]),
         )
 

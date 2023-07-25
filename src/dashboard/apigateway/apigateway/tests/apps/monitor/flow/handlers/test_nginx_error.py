@@ -37,7 +37,7 @@ class TestNginxErrorAlerter:
             "log_records": [
                 {
                     "_source": {
-                        "line_log": "1990/09/16 10:28:41 [error] access forbidden by rule, server: bkapi.example.com",
+                        "log": "1990/09/16 10:28:41 [error] access forbidden by rule, server: bkapi.example.com",
                     }
                 }
             ]

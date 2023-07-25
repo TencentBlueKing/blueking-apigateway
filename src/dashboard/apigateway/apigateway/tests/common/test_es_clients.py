@@ -15,22 +15,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
-
 import pytest
 from bkapi_client_core.exceptions import BKAPIError
 from elasticsearch.exceptions import AuthenticationException, ConnectionError, ConnectionTimeout, NotFoundError
 from urllib3.exceptions import ConnectTimeoutError
 
-from apigateway.apps.access_log.es_clients import (
+from apigateway.common.error_codes import APIError
+from apigateway.common.es_clients import (
     BaseESClient,
-    BKDataESClient,
     BKLogESClient,
     DslESClient,
     ElasticsearchGetter,
+    ESClientFactory,
     RawESClient,
 )
-from apigateway.common.error_codes import APIError
 from apigateway.components.exceptions import RemoteRequestError
 
 
@@ -43,11 +41,11 @@ class TestElasticsearchGetter:
             getter._get_elasticsearch()
 
         mocker.patch.object(getter, "_hosts", new_callable=mocker.PropertyMock(return_value="es-hosts"))
-        mocker.patch("apigateway.apps.access_log.es_clients.Elasticsearch", return_value=mocker.MagicMock())
+        mocker.patch("apigateway.common.es_clients.Elasticsearch", return_value=mocker.MagicMock())
         assert getter._get_elasticsearch() is not None
 
         mocker.patch.object(getter, "_hosts", new_callable=mocker.PropertyMock(return_value="es-hosts"))
-        mocker.patch("apigateway.apps.access_log.es_clients.Elasticsearch", side_effect=Exception)
+        mocker.patch("apigateway.common.es_clients.Elasticsearch", side_effect=Exception)
         with pytest.raises(APIError):
             getter._get_elasticsearch()
 
@@ -144,36 +142,6 @@ class TestRawESClient:
             es_client.execute_search(faker.pystr())
 
 
-class TestBKDataESClient:
-    def test_execute_search(self, mocker, faker):
-        es_index = faker.pystr()
-        es_body = faker.pystr()
-        es_client = BKDataESClient(es_index)
-
-        mocker.patch(
-            "apigateway.apps.access_log.es_clients.bkdata_component.get_data",
-            return_value=(False, "", None),
-        )
-        with pytest.raises(APIError):
-            es_client.execute_search(es_body)
-
-        mocked_get_data = mocker.patch(
-            "apigateway.apps.access_log.es_clients.bkdata_component.get_data",
-            return_value=[True, "", {"test": 1}],
-        )
-        result = es_client.execute_search(es_body)
-        assert result == {"test": 1}
-        mocked_get_data.assert_called_once_with(
-            prefer_storage="es",
-            sql=json.dumps(
-                {
-                    "index": es_index,
-                    "body": es_body,
-                }
-            ),
-        )
-
-
 class TestBKLogESClientMixin:
     def test_execute_search(self, mocker, faker):
         es_index = faker.pystr()
@@ -182,16 +150,31 @@ class TestBKLogESClientMixin:
         es_client = BKLogESClient(es_index)
 
         mocker.patch(
-            "apigateway.apps.access_log.es_clients.bk_log_component.esquery_dsl",
+            "apigateway.common.es_clients.bk_log_component.esquery_dsl",
             side_effect=RemoteRequestError(faker.pystr, BKAPIError("error")),
         )
         with pytest.raises(APIError):
             es_client.execute_search(es_body)
 
         mocked_esquery_dsl = mocker.patch(
-            "apigateway.apps.access_log.es_clients.bk_log_component.esquery_dsl",
+            "apigateway.common.es_clients.bk_log_component.esquery_dsl",
             return_value={"test": 1},
         )
         result = es_client.execute_search(es_body)
         assert result == {"test": 1}
         mocked_esquery_dsl.assert_called_once_with(index=es_index, body=es_body)
+
+
+class TestESClientFactory:
+    def test_get_es_client(self, settings):
+        settings.ACCESS_LOG_CONFIG["es_client_type"] = "bk_log"
+        client = ESClientFactory.get_es_client("index")
+        assert isinstance(client, BKLogESClient)
+
+        settings.ACCESS_LOG_CONFIG["es_client_type"] = "elasticsearch"
+        client = ESClientFactory.get_es_client("index")
+        assert isinstance(client, RawESClient)
+
+        settings.ACCESS_LOG_CONFIG["es_client_type"] = "not-exist"
+        with pytest.raises(ValueError):
+            ESClientFactory.get_es_client("index")

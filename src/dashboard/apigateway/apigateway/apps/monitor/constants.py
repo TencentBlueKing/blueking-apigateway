@@ -75,7 +75,7 @@ DETECT_METHOD_CHOICES = [
 ]
 
 
-# 查询bkmonitor事件，及bkdata源数据的时间偏移量
+# 查询bkmonitor事件，及请求日志源数据的时间偏移量
 SOURCE_TIME_OFFSET_SECONDS = 300
 
 
@@ -102,8 +102,8 @@ API_ERRORLOG_OUTPUT_FIELDS = [
 
 
 NGINX_ERROR_OUTPUT_FIELDS = [
-    "ip",
-    "line_log",
+    "serverIp",
+    "log",
 ]
 
 
