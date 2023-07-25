@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.apis.web.access_log.constants import ES_OUTPUT_FIELDS, ES_QUERY_FIELDS
+from apigateway.apis.web.access_log.constants import ES_OUTPUT_FIELDS
 from apigateway.apis.web.access_log.log_search import LogSearchClient
 
 
@@ -155,7 +155,7 @@ class TestLogSearchClient:
                                 {"term": {"stage": "prod"}},
                                 {"range": {"@timestamp": {"gte": 1578904866000, "lte": 1578905166000}}},
                             ],
-                            "must": [{"query_string": {"fields": ES_QUERY_FIELDS, "query": "api_id: 2"}}],
+                            "must": [{"query_string": {"query": "api_id: 2"}}],
                         }
                     },
                     "sort": [{"@timestamp": {"order": "desc"}}],
@@ -196,11 +196,21 @@ class TestLogSearchClient:
                                 {"term": {"stage": "prod"}},
                                 {"range": {"@timestamp": {"gte": 1578904866000, "lte": 1578905166000}}},
                             ],
-                            "must": [{"query_string": {"fields": ES_QUERY_FIELDS, "query": "api_id: 2"}}],
+                            "must": [{"query_string": {"query": "api_id: 2"}}],
                         }
                     },
                     "aggs": {
-                        "histogram": {"date_histogram": {"field": "@timestamp", "interval": "10s", "min_doc_count": 1}}
+                        "histogram": {
+                            "date_histogram": {
+                                "field": "@timestamp",
+                                "fixed_interval": "10s",
+                                "min_doc_count": 0,
+                                "extended_bounds": {
+                                    "min": 1578904866000,
+                                    "max": 1578905166000,
+                                },
+                            }
+                        }
                     },
                     "from": 0,
                     "size": 0,
