@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,68 +15,85 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.test import TestCase
+import pytest
+from rest_framework.exceptions import ValidationError
 
-from apigateway.apps.access_log import serializers
+from apigateway.apis.web.access_log import serializers
 
 
-class TestSearchLogQuerySerializer(TestCase):
-    def test_validate(self):
-        data = [
-            {
-                "data": {
-                    "api_id": 1,
+class TestSearchLogQuerySerializer:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
                     "stage_id": 1,
                     "offset": 0,
                     "limit": 10,
                     "time_start": 1,
                     "time_end": 2,
                 },
-                "will_error": False,
-            },
-            {
-                "data": {
-                    "api_id": 1,
+                {
+                    "stage_id": 1,
+                    "offset": 0,
+                    "limit": 10,
+                    "time_start": 1,
+                    "time_end": 2,
+                },
+            ),
+            (
+                {
                     "stage_id": 1,
                     "offset": 0,
                     "limit": 10,
                     "time_range": 100000,
                 },
-                "will_error": False,
-            },
-            # error, time_start+time_end or time_range is required
-            {
-                "data": {
-                    "api_id": 1,
+                {
                     "stage_id": 1,
                     "offset": 0,
                     "limit": 10,
+                    "time_range": 100000,
                 },
-                "will_error": True,
-            },
-        ]
-        for test in data:
-            slz = serializers.SearchLogQuerySerializer(data=test["data"])
-            slz.is_valid()
-            if test["will_error"]:
-                self.assertTrue(slz.errors)
-            else:
-                self.assertFalse(slz.errors)
+            ),
+        ],
+    )
+    def test_validate(self, data, expected):
+        slz = serializers.SearchLogQuerySerializer(data=data)
+        slz.is_valid()
+        assert slz.validated_data == expected
 
-
-class TestLogLinkSerializer(TestCase):
-    def test_to_representation(self):
-        data = [
+    @pytest.mark.parametrize(
+        "data",
+        [
+            # error, time_start+time_end or time_range is required
             {
-                "data": {
+                "stage_id": 1,
+                "offset": 0,
+                "limit": 10,
+            }
+        ],
+    )
+    def test_validate__error(self, data):
+        with pytest.raises(ValidationError):
+            slz = serializers.SearchLogQuerySerializer(data=data)
+            slz.is_valid(raise_exception=True)
+
+
+class TestLogLinkSerializer:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
                     "request_id": "2230d0e25b274cb98b57ca5d0946d0f7",
                     "link": "test",
                 },
-                "expected": {
+                {
                     "link": "test",
                 },
-            },
-        ]
-        for test in data:
-            slz = serializers.LogLinkSerializer(test["data"])
-            self.assertEqual(slz.data, test["expected"])
+            )
+        ],
+    )
+    def test_to_representation(self, data, expected):
+        slz = serializers.LogLinkSerializer(data)
+        assert slz.data == expected

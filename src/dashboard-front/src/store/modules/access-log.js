@@ -30,22 +30,22 @@ export default {
   },
   actions: {
     getApigwAccessLogList (context, { apigwId, params }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/logs/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/logs/`
       return http.get(url, { params })
     },
 
     getApigwAccessLogChart (context, { apigwId, params }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/logs/timechart/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/logs/timechart/`
       return http.get(url, { params })
     },
 
     getApigwAccessLogShareLink (context, { apigwId, params }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/logs/${params.request_id}/link/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/logs/${params.request_id}/link/`
       return http.post(url, {}, config)
     },
 
     getApigwAccessLogDetail (context, { apigwId, requestId, params }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/logs/${requestId}`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/logs/${requestId}`
       return http.get(url, { params })
     }
   }

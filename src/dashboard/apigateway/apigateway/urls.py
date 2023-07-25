@@ -61,7 +61,6 @@ urlpatterns = [
     # apps: normal
     path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apps.api_test.urls")),
     path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apps.label.urls")),
-    path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apps.access_log.urls")),
     path("backend/apis/<int:gateway_id>/metrics/", include("apigateway.apps.metrics.urls")),
     path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apps.monitor.urls")),
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
@@ -87,6 +86,10 @@ urlpatterns = [
     path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
     path("backend/docs/feature/", include("apigateway.apps.docs.feature.urls")),
     path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
+    # refactoring begin ------
+    path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
+    path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
+    # refactoring end ------
 ]
 
 # add drf-yasg automatically generated documents
