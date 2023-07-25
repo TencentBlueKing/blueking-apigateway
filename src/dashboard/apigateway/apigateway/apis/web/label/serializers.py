@@ -24,7 +24,13 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.validators import MaxCountPerGatewayValidator
 
 
-class APILabelSLZ(serializers.ModelSerializer):
+class APILabelOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    updated_time = serializers.DateTimeField()
+
+
+class APILabelInputSLZ(serializers.ModelSerializer):
     api = serializers.HiddenField(default=CurrentGatewayDefault())
 
     class Meta:
@@ -33,10 +39,7 @@ class APILabelSLZ(serializers.ModelSerializer):
             "api",
             "id",
             "name",
-            "updated_time",
         ]
-        read_only_fields = ["id", "updated_time"]
-        lookup_field = "id"
 
         validators = [
             UniqueTogetherValidator(
@@ -52,7 +55,7 @@ class APILabelSLZ(serializers.ModelSerializer):
         ]
 
 
-class APILabelQuerySLZ(serializers.Serializer):
+class APILabelListQueryInputSLZ(serializers.Serializer):
     name = serializers.CharField(allow_blank=True, required=False)
     order_by = serializers.ChoiceField(
         choices=["name", "-name", "updated_time", "-updated_time"],
