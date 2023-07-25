@@ -26,7 +26,7 @@ from apigateway.apps.feature.models import UserFeatureFlag
 from apigateway.utils.responses import OKJsonResponse
 
 
-class FeatureFlagListAPI(generics.ListAPIView):
+class FeatureFlagListApi(generics.ListAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         tags=["Feature"],

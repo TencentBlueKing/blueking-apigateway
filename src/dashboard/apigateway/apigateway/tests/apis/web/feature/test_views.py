@@ -18,11 +18,11 @@
 #
 import pytest
 
-from apigateway.apis.web.feature.views import FeatureFlagListAPI
+from apigateway.apis.web.feature.views import FeatureFlagListApi
 from apigateway.tests.utils.testing import get_response_json
 
 
-class TestFeatureFlagViewSet:
+class TestFeatureFlagListApi:
     @pytest.mark.parametrize(
         "is_superuser, expected",
         [
@@ -33,14 +33,14 @@ class TestFeatureFlagViewSet:
     def test_list(self, settings, request_factory, mocker, faker, is_superuser, expected):
         settings.DEFAULT_FEATURE_FLAG = {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
         mocker.patch(
-            "apigateway.apps.feature.views.UserFeatureFlag.objects.get_feature_flags",
+            "apigateway.apis.web.feature.views.UserFeatureFlag.objects.get_feature_flags",
             return_value={faker.color_name(): False},
         )
 
         # user is not suerperuser
         request = request_factory.get("")
         request.user = mocker.MagicMock(username=faker.color_name(), is_superuser=is_superuser)
-        view = FeatureFlagListAPI.as_view()
+        view = FeatureFlagListApi.as_view()
         response = view(request)
         result = get_response_json(response)
         assert len(result["data"]) == 3

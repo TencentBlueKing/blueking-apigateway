@@ -21,5 +21,5 @@ from django.urls import path
 from apigateway.apis.web.feature import views
 
 urlpatterns = [
-    path("flags/", views.FeatureFlagListAPI.as_view(), name="feature.flags"),
+    path("flags/", views.FeatureFlagListApi.as_view(), name="feature.flags"),
 ]
