@@ -18,13 +18,20 @@
 #
 import json
 import logging
+import warnings
 from typing import Any, Dict
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.conf import settings
 from django.utils.translation import gettext as _
 from elasticsearch.client import Elasticsearch
-from elasticsearch.exceptions import AuthenticationException, ConnectionError, ConnectionTimeout, NotFoundError
+from elasticsearch.exceptions import (
+    AuthenticationException,
+    ConnectionError,
+    ConnectionTimeout,
+    ElasticsearchDeprecationWarning,
+    NotFoundError,
+)
 from elasticsearch_dsl import Search
 from urllib3.exceptions import ConnectTimeoutError
 
@@ -33,6 +40,8 @@ from apigateway.components.bk_log import bk_log_component
 from apigateway.components.exceptions import RemoteAPIResultError, RemoteRequestError
 
 logger = logging.getLogger(__name__)
+
+warnings.filterwarnings("ignore", category=ElasticsearchDeprecationWarning)
 
 
 class ESClientTypeEnum(StructuredEnum):
