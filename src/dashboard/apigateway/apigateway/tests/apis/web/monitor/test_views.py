@@ -23,14 +23,21 @@ from django.test import TestCase
 from django_dynamic_fixture import G
 from rest_framework.serializers import DateTimeField
 
+from apigateway.apis.web.monitor.views import (
+    AlarmRecordListApi,
+    AlarmRecordRetrieveApi,
+    AlarmRecordSummaryListApi,
+    AlarmStrategyListCreateApi,
+    AlarmStrategyRetrieveUpdateDestroyApi,
+    AlarmStrategyUpdateStatusApi,
+)
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
-from apigateway.apps.monitor.views import AlarmRecordSummaryViewSet, AlarmRecordViewSet, AlarmStrategyViewSet
 from apigateway.common.factories import SchemaFactory
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, dummy_time, get_response_json
 
 
-class TestAlarmStrategyViewSet(TestCase):
+class TestAlarmStrategyListCreateApi(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
@@ -64,7 +71,7 @@ class TestAlarmStrategyViewSet(TestCase):
         for test in data:
             request = self.factory.post(f"/apis/{self.gateway.id}/monitors/alarm/strategies/", data=test)
 
-            view = AlarmStrategyViewSet.as_view({"post": "create"})
+            view = AlarmStrategyListCreateApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
@@ -142,12 +149,20 @@ class TestAlarmStrategyViewSet(TestCase):
         for test in data:
             request = self.factory.get(f"/apis/{self.gateway.id}/monitors/alarm/strategies/", data=test["params"])
 
-            view = AlarmStrategyViewSet.as_view({"get": "list"})
+            view = AlarmStrategyListCreateApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
             self.assertEqual(result["code"], 0)
             self.assertEqual(result["data"]["results"], test["expected"])
+
+
+class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = APIRequestFactory()
+        cls.gateway = create_gateway()
+        cls.label = G(APILabel, api=cls.gateway)
 
     def test_retrieve(self):
         alarm_strategy = G(
@@ -177,7 +192,7 @@ class TestAlarmStrategyViewSet(TestCase):
 
         request = self.factory.get(f"/apis/{self.gateway.id}/monitors/alarm/strategies/{alarm_strategy.id}/")
 
-        view = AlarmStrategyViewSet.as_view({"get": "retrieve"})
+        view = AlarmStrategyRetrieveUpdateDestroyApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=alarm_strategy.id)
 
         result = get_response_json(response)
@@ -217,7 +232,7 @@ class TestAlarmStrategyViewSet(TestCase):
                 f"/apis/{self.gateway.id}/monitors/alarm/strategies/{alarm_strategy.id}/", data=test
             )
 
-            view = AlarmStrategyViewSet.as_view({"put": "update"})
+            view = AlarmStrategyRetrieveUpdateDestroyApi.as_view()
             response = view(request, gateway_id=self.gateway.id, id=alarm_strategy.id)
 
             result = get_response_json(response)
@@ -228,11 +243,19 @@ class TestAlarmStrategyViewSet(TestCase):
 
         request = self.factory.delete(f"/apis/{self.gateway.id}/monitors/alarm/strategies/{alarm_strategy.id}/")
 
-        view = AlarmStrategyViewSet.as_view({"delete": "destroy"})
+        view = AlarmStrategyRetrieveUpdateDestroyApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=alarm_strategy.id)
 
         result = get_response_json(response)
         self.assertEqual(result["code"], 0)
+
+
+class TestAlarmStrategyUpdateStatusApi(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = APIRequestFactory()
+        cls.gateway = create_gateway()
+        cls.label = G(APILabel, api=cls.gateway)
 
     def test_update_status(self):
         alarm_strategy = G(
@@ -270,14 +293,14 @@ class TestAlarmStrategyViewSet(TestCase):
             data=data,
         )
 
-        view = AlarmStrategyViewSet.as_view({"put": "update_status"})
+        view = AlarmStrategyUpdateStatusApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=alarm_strategy.id)
 
         result = get_response_json(response)
         self.assertEqual(result["code"], 0, result)
 
 
-class TestAlarmRecordViewSet(TestCase):
+class TestAlarmRecordListApi(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
@@ -319,12 +342,19 @@ class TestAlarmRecordViewSet(TestCase):
         for test in data:
             request = self.factory.get(f"/apis/{self.gateway.id}/monitors/alarm/records/", data=test)
 
-            view = AlarmRecordViewSet.as_view({"get": "list"})
+            view = AlarmRecordListApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
             self.assertEqual(result["code"], 0)
             self.assertEqual(len(result["data"]["results"]), test["expected"]["count"])
+
+
+class TestAlarmRecordRetrieveApi(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = APIRequestFactory()
+        cls.gateway = create_gateway()
 
     def test_retrieve(self):
         strategy = G(AlarmStrategy, api=self.gateway)
@@ -333,14 +363,14 @@ class TestAlarmRecordViewSet(TestCase):
 
         request = self.factory.get(f"/apis/{self.gateway.id}/monitors/alarm/records/{alarm_record.id}/")
 
-        view = AlarmRecordViewSet.as_view({"get": "retrieve"})
+        view = AlarmRecordRetrieveApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=alarm_record.id)
 
         result = get_response_json(response)
         self.assertEqual(result["code"], 0, result)
 
 
-class TestAlarmRecordSummaryViewSet(TestCase):
+class TestAlarmRecordSummaryListApi(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
@@ -422,9 +452,10 @@ class TestAlarmRecordSummaryViewSet(TestCase):
         for test in data:
             request = self.factory.get("/apis/monitors/alarm/records/summary/", data=test["params"])
 
-            view = AlarmRecordSummaryViewSet.as_view({"get": "list"})
+            view = AlarmRecordSummaryListApi.as_view()
             response = view(request)
 
             result = get_response_json(response)
+            print(result)
             self.assertEqual(result["code"], 0, result)
             self.assertEqual(result["data"], test["expected"])

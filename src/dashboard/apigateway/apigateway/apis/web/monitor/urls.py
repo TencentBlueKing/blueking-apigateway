@@ -18,24 +18,28 @@
 #
 from django.urls import path
 
-from .views import AlarmRecordViewSet, AlarmStrategyViewSet
+from apigateway.apis.web.monitor.views import (
+    AlarmRecordListApi,
+    AlarmRecordRetrieveApi,
+    AlarmStrategyListCreateApi,
+    AlarmStrategyRetrieveUpdateDestroyApi,
+    AlarmStrategyUpdateStatusApi,
+)
 
 urlpatterns = [
     # alarm-strategy
-    path("alarm/strategies/", AlarmStrategyViewSet.as_view({"get": "list", "post": "create"}), name="monitor.stages"),
+    path("alarm/strategies/", AlarmStrategyListCreateApi.as_view(), name="monitor.stages"),
     path(
         "alarm/strategies/<int:id>/",
-        AlarmStrategyViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"}),
+        AlarmStrategyRetrieveUpdateDestroyApi.as_view(),
         name="monitor.alarm_strategies.detail",
     ),
     path(
         "alarm/strategies/<int:id>/status/",
-        AlarmStrategyViewSet.as_view({"put": "update_status"}),
+        AlarmStrategyUpdateStatusApi.as_view(),
         name="monitor.alarm_strategies.update_status",
     ),
     # alarm-record
-    path("alarm/records/", AlarmRecordViewSet.as_view({"get": "list"}), name="monitor.alarm_records"),
-    path(
-        "alarm/records/<int:id>/", AlarmRecordViewSet.as_view({"get": "retrieve"}), name="monitor.alarm_records.detail"
-    ),
+    path("alarm/records/", AlarmRecordListApi.as_view(), name="monitor.alarm_records"),
+    path("alarm/records/<int:id>/", AlarmRecordRetrieveApi.as_view(), name="monitor.alarm_records.detail"),
 ]

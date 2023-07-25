@@ -37,7 +37,7 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
-from apigateway.apps.monitor.views import AlarmRecordSummaryViewSet
+from apigateway.apis.web.monitor.views import AlarmRecordSummaryListApi
 
 urlpatterns = [
     path("", include("django_prometheus.urls")),
@@ -62,7 +62,6 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apps.api_test.urls")),
     path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apps.access_log.urls")),
     path("backend/apis/<int:gateway_id>/metrics/", include("apigateway.apps.metrics.urls")),
-    path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apps.monitor.urls")),
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
     path("backend/apis/<int:gateway_id>/permissions/", include("apigateway.apps.permission.urls")),
     path("backend/apis/<int:gateway_id>/support/", include("apigateway.apps.support.urls")),
@@ -73,12 +72,6 @@ urlpatterns = [
     path("backend/users/", include("apigateway.apps.user.urls")),
     path("backend/feature/", include("apigateway.apps.feature.urls")),
     # FIXME: change this to a new url in future
-    # monitors
-    path(
-        "backend/apis/monitors/alarm/records/summary/",
-        AlarmRecordSummaryViewSet.as_view({"get": "list"}),
-        name="monitors.alamr_records.summary",
-    ),
     # switch language
     path("backend/i18n/setlang/", set_language, name="set_language"),
     # api-support backend/docs urls -- begin
@@ -90,6 +83,13 @@ urlpatterns = [
     # delete it later after frontend changed the url
     path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    # monitors
+    path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
+    path(
+        "backend/apis/monitors/alarm/records/summary/",
+        AlarmRecordSummaryListApi.as_view(),
+        name="monitors.alamr_records.summary",
+    ),
     # refactoring end ------
 ]
 

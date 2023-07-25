@@ -18,15 +18,15 @@
 #
 from rest_framework.filters import BaseFilterBackend
 
+from apigateway.apis.web.monitor.serializers import AlarmRecordQueryInputSLZ
 from apigateway.apps.monitor.models import AlarmStrategy
-from apigateway.apps.monitor.serializers import AlarmRecordQuerySLZ
 
 
 class AlarmRecordFilterBackend(BaseFilterBackend):
     """AlarmRecord filter"""
 
     def filter_queryset(self, request, queryset, view):
-        slz = AlarmRecordQuerySLZ(data=request.query_params)
+        slz = AlarmRecordQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data

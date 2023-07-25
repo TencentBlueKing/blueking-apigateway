@@ -16,29 +16,32 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from collections import defaultdict
+
 
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
-from rest_framework.serializers import DateTimeField
+from rest_framework import generics, status
 
-from apigateway.apps.monitor import filters, serializers
+from apigateway.apis.web.monitor import filters
+from apigateway.apis.web.monitor.serializers import (
+    AlarmRecordOutputSLZ,
+    AlarmRecordQueryInputSLZ,
+    AlarmRecordSummaryOutputSLZ,
+    AlarmRecordSummaryQueryInputSLZ,
+    AlarmStrategyInputSLZ,
+    AlarmStrategyListOutputSLZ,
+    AlarmStrategyQueryInputSLZ,
+    AlarmStrategyUpdateStatusInputSLZ,
+)
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
+from apigateway.biz.monitor import ResourceMonitorHandler
 from apigateway.common.factories import SchemaFactory
-from apigateway.common.mixins.views import ActionSerializerMixin
-from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 from apigateway.utils.time import now_datetime
 
 
-class AlarmStrategyViewSet(ActionSerializerMixin, viewsets.ModelViewSet):
-    serializer_class = serializers.AlarmStrategySLZ
-    action_serializers = {
-        "list": serializers.AlarmStrategyListSLZ,
-        "update_status": serializers.AlarmStrategyUpdateStatusSLZ,
-    }
-    lookup_field = "id"
+class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
+    serializer_class = AlarmStrategyInputSLZ
 
     def get_queryset(self):
         return AlarmStrategy.objects.filter(api=self.request.gateway)
@@ -65,12 +68,12 @@ class AlarmStrategyViewSet(ActionSerializerMixin, viewsets.ModelViewSet):
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=serializers.AlarmStrategyQuerySLZ,
-        responses={status.HTTP_200_OK: serializers.AlarmStrategyListSLZ(many=True)},
+        query_serializer=AlarmStrategyQueryInputSLZ,
+        responses={status.HTTP_200_OK: AlarmStrategyListOutputSLZ(many=True)},
         tags=["AlarmStrategy"],
     )
     def list(self, request, *args, **kwargs):
-        slz = serializers.AlarmStrategyQuerySLZ(data=request.query_params)
+        slz = AlarmStrategyQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -83,9 +86,16 @@ class AlarmStrategyViewSet(ActionSerializerMixin, viewsets.ModelViewSet):
         )
 
         page = self.paginate_queryset(queryset)
-
-        serializer = self.get_serializer(page, many=True)
+        serializer = AlarmStrategyListOutputSLZ(page, many=True)
         return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+
+
+class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AlarmStrategyInputSLZ
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return AlarmStrategy.objects.filter(api=self.request.gateway)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -122,12 +132,21 @@ class AlarmStrategyViewSet(ActionSerializerMixin, viewsets.ModelViewSet):
         instance.delete()
         return OKJsonResponse("OK")
 
+
+class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
+    lookup_field = "id"
+
+    serializer_class = AlarmStrategyUpdateStatusInputSLZ
+
+    def get_queryset(self):
+        return AlarmStrategy.objects.filter(api=self.request.gateway)
+
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        request_body=serializers.AlarmStrategyUpdateStatusSLZ,
+        request_body=AlarmStrategyUpdateStatusInputSLZ,
         tags=["AlarmStrategy"],
     )
-    def update_status(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance, data=request.data)
         slz.is_valid(raise_exception=True)
@@ -140,18 +159,17 @@ class AlarmStrategyViewSet(ActionSerializerMixin, viewsets.ModelViewSet):
         return OKJsonResponse("OK")
 
 
-class AlarmRecordViewSet(viewsets.ModelViewSet):
-    serializer_class = serializers.AlarmRecordSLZ
+class AlarmRecordListApi(generics.ListAPIView):
+    serializer_class = AlarmRecordOutputSLZ
     filter_backends = [filters.AlarmRecordFilterBackend]
-    lookup_field = "id"
 
     def get_queryset(self):
         return AlarmRecord.objects.all()
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=serializers.AlarmRecordQuerySLZ,
-        responses={status.HTTP_200_OK: serializers.AlarmRecordSLZ(many=True)},
+        query_serializer=AlarmRecordQueryInputSLZ,
+        responses={status.HTTP_200_OK: AlarmRecordOutputSLZ(many=True)},
         tags=["AlarmStrategy"],
     )
     def list(self, request, *args, **kwargs):
@@ -163,6 +181,16 @@ class AlarmRecordViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(page, many=True)
         return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
+
+class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
+    serializer_class = AlarmRecordOutputSLZ
+    filter_backends = [filters.AlarmRecordFilterBackend]
+
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return AlarmRecord.objects.all()
+
     @swagger_auto_schema(tags=["AlarmStrategy"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -170,75 +198,26 @@ class AlarmRecordViewSet(viewsets.ModelViewSet):
         return OKJsonResponse("OK", data=slz.data)
 
 
-class AlarmRecordSummaryViewSet(viewsets.GenericViewSet):
+class AlarmRecordSummaryListApi(generics.ListAPIView):
+    def get_queryset(self):
+        return AlarmRecord.objects.all()
+
     @swagger_auto_schema(
-        query_serializer=serializers.AlarmRecordSummaryQuerySLZ,
-        responses={status.HTTP_200_OK: serializers.AlarmRecordSummarySLZ(many=True)},
+        query_serializer=AlarmRecordSummaryQueryInputSLZ,
+        responses={status.HTTP_200_OK: AlarmRecordSummaryOutputSLZ(many=True)},
         tags=["AlarmStrategy"],
     )
     def list(self, request, *args, **kwargs):
-        slz = serializers.AlarmRecordSummaryQuerySLZ(data=request.query_params)
+        slz = AlarmRecordSummaryQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
 
-        # 1. get current user's gateways
-        gateways = Gateway.objects.search_gateways(username=self.request.user.username, name=data.get("query"))
-        gateway_id_map = {g.id: g for g in gateways}
-
-        # 2. annotate alarm-record by strategy
-        strategies = AlarmStrategy.objects.annotate_alarm_record_by_strategy(
-            gateway_ids=gateway_id_map.keys(),
+        results = ResourceMonitorHandler.statistics_api_alarm_record(
+            username=self.request.user.username,
+            name=data.get("query"),
             time_start=data.get("time_start"),
             time_end=data.get("time_end"),
         )
-
-        # 3. annotate alarm-record by api
-        api_alarmrecord_count_map = AlarmStrategy.objects.annotate_alarm_record_by_api(
-            gateway_ids=gateway_id_map.keys(),
-            time_start=data.get("time_start"),
-            time_end=data.get("time_end"),
-        )
-
-        # 4. summary
-        results = self._statistics_api_alarm_record(strategies, api_alarmrecord_count_map, gateway_id_map)
 
         return OKJsonResponse("OK", data=results)
-
-    def _statistics_api_alarm_record(self, strategies, api_alarmrecord_count_map, api_id_map):
-        """
-        统计网关下，各策略的告警信息
-        """
-        latest_alarm_record_ids = [s.latest_alarm_record_id for s in strategies]
-        alarm_record_id_map = AlarmRecord.objects.in_bulk(latest_alarm_record_ids)
-
-        api_summary_map = defaultdict(list)
-        for strategy in strategies:
-            alarm_record = alarm_record_id_map[strategy.latest_alarm_record_id]
-            api_summary_map[strategy.api_id].append(
-                {
-                    "id": strategy.id,
-                    "name": strategy.name,
-                    "alarm_record_count": strategy.alarm_record_count,
-                    "latest_alarm_record": {
-                        "id": alarm_record.id,
-                        "message": alarm_record.message,
-                        "created_time": DateTimeField().to_representation(alarm_record.created_time),
-                    },
-                }
-            )
-
-        api_summary = []
-        for api_id, summary in api_summary_map.items():
-            api = api_id_map[api_id]
-            api_summary.append(
-                {
-                    "api_id": api.id,
-                    "api_name": api.name,
-                    # 因为一个告警记录可能属于多条策略，因此将策略告警记录数量相加，并不等于网关告警记录数量
-                    "alarm_record_count": api_alarmrecord_count_map.get(api.id, 0),
-                    "strategy_summary": summary,
-                }
-            )
-
-        return sorted(api_summary, key=lambda x: x["api_name"])
