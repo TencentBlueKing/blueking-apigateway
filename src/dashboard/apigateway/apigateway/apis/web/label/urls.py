@@ -16,3 +16,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.urls import path
+
+from .views import APILabelListCreateApi, APILabelRetrieveUpdateDestroyApi
+
+urlpatterns = [
+    path("", APILabelListCreateApi.as_view(), name="label.list_create"),
+    path(
+        "<int:id>/",
+        APILabelRetrieveUpdateDestroyApi.as_view(),
+        name="label.retrieve_update_destroy",
+    ),
+]

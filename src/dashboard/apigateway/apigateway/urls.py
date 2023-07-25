@@ -89,6 +89,9 @@ urlpatterns = [
     # refactoring begin ------
     path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
     path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
+    # delete it later after frontend changed the url
+    path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     # refactoring end ------
 ]
 
