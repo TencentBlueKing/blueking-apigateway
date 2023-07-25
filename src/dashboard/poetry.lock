@@ -379,13 +379,12 @@ reference = "tencent"
 
 [[package]]
 name = "bkpaas-auth"
-version = "2.0.5"
+version = "2.0.6"
 description = "User authentication django app for blueking internal projects"
 optional = false
 python-versions = ">=3.6,<4.0"
 files = [
-    {file = "bkpaas-auth-2.0.5.tar.gz", hash = "sha256:9efaa201cc6af3cb7563da1a17e5e333d19ed659da6b1f824b4a421354dbee85"},
-    {file = "bkpaas_auth-2.0.5-py3-none-any.whl", hash = "sha256:bd7a8295fe212e4f248f627883402008279a07d4b89b5eaa841cb10f56ae3cd5"},
+    {file = "bkpaas-auth-2.0.6.tar.gz", hash = "sha256:3cf0168784c0c8763b5630de05464041d255fef4dbcd8ba08e6dc31ce997a5b4"},
 ]
 
 [package.dependencies]
@@ -4582,4 +4581,4 @@ reference = "tencent"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.6.6 || ~3.7"
-content-hash = "b4611ce75a4811e1b6452a89f40781b384fc4c72f3adb5245027def1a6103177"
+content-hash = "dda86d0f5e99e5087588d41ef2e870046e67c172bd49a7e08c31109f48c4891d"
