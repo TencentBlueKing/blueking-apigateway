@@ -1207,5 +1207,8 @@ export default {
     "请输入关键字搜索": "Please input keyword",
     "API Gateway | 腾讯蓝鲸智云": "API Gateway | BlueKing",
     "只支持.tar.gz、.tgz、.zip 压缩格式": "Only supports .tar.gz, .tgz, .zip compression formats",
-    "未知错误": "Unknown mistake"
+    "未知错误": "Unknown error",
+    "无该应用访问权限": "No access permission to this application.",
+    "服务异常": "Service exception",
+    "访问后端服务出现错误，请稍后再试。": "Access backend service error, please try again later."
 }
