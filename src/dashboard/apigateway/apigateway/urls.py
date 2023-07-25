@@ -86,7 +86,12 @@ urlpatterns = [
     path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
     path("backend/docs/feature/", include("apigateway.apps.docs.feature.urls")),
     path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
+    # refactoring begin ------
+    # delete it later after frontend changed the url
+    path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     path("backend/feature/", include("apigateway.apis.web.feature.urls")),
+    # refactoring end ------
 ]
 
 # add drf-yasg automatically generated documents
