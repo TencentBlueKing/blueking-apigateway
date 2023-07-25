@@ -117,12 +117,16 @@ class LogSearchClient:
         assert self._smart_time_range
 
         s = self._build_base_search()
-
+        start, end = self._smart_time_range.get_head_and_tail()
         aggs_by_dh = A(
             "date_histogram",
             field=self._es_time_field_name,
-            interval=self._smart_time_range.get_interval(),
-            min_doc_count=1,
+            fixed_interval=self._smart_time_range.get_interval(),
+            min_doc_count=0,
+            extended_bounds={
+                "min": time_utils.convert_second_to_epoch_millis(start),
+                "max": time_utils.convert_second_to_epoch_millis(end),
+            },
         )
         s.aggs.bucket("histogram", aggs_by_dh)
 

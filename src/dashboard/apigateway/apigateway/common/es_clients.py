@@ -137,7 +137,8 @@ class RawESClient(ElasticsearchGetter, BaseESClient):
 
     def execute_search(self, body: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            return self._get_elasticsearch().search(index=self._get_es_index(), body=body)
+            result = self._get_elasticsearch().search(index=self._get_es_index(), body=body)
+            return self._compatibility_result(result)
         except ConnectionError as err:
             logger.exception("failed to connect elasticsearch.")
             raise error_codes.ES_CONNECTION_ERROR.format(es_hosts_display=self._get_es_hosts_display(), err=err)
@@ -161,6 +162,12 @@ class RawESClient(ElasticsearchGetter, BaseESClient):
         except Exception as err:
             logger.exception("request elasticsearch error. index=%s, body=%s", self._get_es_index(), json.dumps(body))
             raise error_codes.ES_SEARCH_ERROR.format(es_hosts_display=self._get_es_hosts_display(), err=err)
+
+    def _compatibility_result(self, result: Dict[str, Any]) -> Dict[str, Any]:
+        # 修改结果中 count，使其与 bklog 保持一致
+        if "hits" in result and "total" in result["hits"] and isinstance(result["hits"]["total"], dict):
+            result["hits"]["total"] = result["hits"]["total"]["value"]
+        return result
 
 
 class BKLogESClient(BaseESClient):
