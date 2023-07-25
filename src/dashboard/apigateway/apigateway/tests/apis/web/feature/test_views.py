@@ -40,7 +40,7 @@ class TestFeatureFlagViewSet:
         # user is not suerperuser
         request = request_factory.get("")
         request.user = mocker.MagicMock(username=faker.color_name(), is_superuser=is_superuser)
-        view = FeatureFlagListAPI.as_view({"get": "list"})
+        view = FeatureFlagListAPI.as_view()
         response = view(request)
         result = get_response_json(response)
         assert len(result["data"]) == 3
