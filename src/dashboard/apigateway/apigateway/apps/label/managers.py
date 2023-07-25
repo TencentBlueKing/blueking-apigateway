@@ -18,7 +18,7 @@
 #
 import itertools
 import operator
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from django.db import models
 from django.utils.translation import gettext as _
@@ -28,19 +28,16 @@ from apigateway.apps.audit.utils import record_audit_log
 
 
 class APILabelManager(models.Manager):
-    def get_labels(self, gateway, ids=None):
+    def get_labels(self, gateway, ids=None) -> List[Dict[int, str]]:
         queryset = self.filter(api=gateway)
         if ids is not None:
             queryset = queryset.filter(id__in=ids)
         return list(queryset.values("id", "name"))
 
-    def get_label_ids(self, gateway):
+    def get_label_ids(self, gateway) -> List[int]:
         return list(self.filter(api_id=gateway.id).values_list("id", flat=True))
 
-    def get_label_names(self, gateway):
-        return list(self.filter(api_id=gateway.id).values_list("name", flat=True))
-
-    def get_name_id_map(self, gateway):
+    def get_name_id_map(self, gateway) -> Dict[str, int]:
         return dict(self.filter(api_id=gateway.id).values_list("name", "id"))
 
     def save_labels(self, gateway, names: List[str], username: str) -> Dict[str, int]:
@@ -77,14 +74,14 @@ class APILabelManager(models.Manager):
 
 
 class ResourceLabelManager(models.Manager):
-    def filter_resource_ids(self, gateway, label_name=None):
+    def filter_resource_ids(self, gateway, label_name=None) -> List[int]:
         from apigateway.apps.label.models import APILabel
 
         api_label_queryset = APILabel.objects.filter_by_label_name(gateway, label_name=label_name)
         queryset = self.filter(api_label__in=api_label_queryset)
         return list(set(queryset.values_list("resource_id", flat=True)))
 
-    def filter_labels_by_gateway(self, gateway):
+    def filter_labels_by_gateway(self, gateway) -> Dict[int, List[Dict[str, Any]]]:
         from apigateway.apps.label.models import APILabel
 
         api_label_ids = APILabel.objects.get_label_ids(gateway)
@@ -92,11 +89,11 @@ class ResourceLabelManager(models.Manager):
         queryset = self.filter(api_label_id__in=api_label_ids)
         return self._get_resource_labels(queryset)
 
-    def get_labels(self, resource_ids):
+    def get_labels(self, resource_ids) -> Dict[int, List[Dict[str, Any]]]:
         queryset = self.filter(resource_id__in=resource_ids)
         return self._get_resource_labels(queryset)
 
-    def _get_resource_labels(self, queryset):
+    def _get_resource_labels(self, queryset) -> Dict[int, List[Dict[str, Any]]]:
         queryset = queryset.values("api_label_id", "api_label__name", "resource_id")
 
         labels = sorted(queryset, key=operator.itemgetter("resource_id"))
@@ -113,5 +110,5 @@ class ResourceLabelManager(models.Manager):
             ]
         return resource_labels
 
-    def get_api_label_ids(self, resource_id):
+    def get_api_label_ids(self, resource_id) -> List[int]:
         return list(self.filter(resource_id=resource_id).values_list("api_label_id", flat=True))

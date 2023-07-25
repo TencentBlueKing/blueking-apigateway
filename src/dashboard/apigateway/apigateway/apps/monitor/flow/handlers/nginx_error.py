@@ -31,7 +31,7 @@ class NginxErrorAlerter(Alerter):
     def get_message(self, event: MonitorEvent) -> str:
         log_records = event.extend["log_records"]
         record_source = log_records[0]["_source"]
-        line_log = record_source["line_log"]
+        line_log = record_source["log"]
         parsed_log = self._parse_log(line_log)
         server = parsed_log.get("server", "")
 

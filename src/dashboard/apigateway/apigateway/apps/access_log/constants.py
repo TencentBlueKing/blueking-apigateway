@@ -20,8 +20,6 @@ import re
 
 from django.utils.translation import gettext_lazy as _
 
-from apigateway.common.constants import ChoiceEnum
-
 ES_LOG_FIELDS = [
     {
         "label": _("请求ID"),
@@ -188,12 +186,6 @@ SENSITIVE_KEYS_PART_MATCH = [
 
 SENSITIVE_KEYS_MATCH_PATTERN = re.compile(r"\b(%s)\b" % "|".join(SENSITIVE_KEYS))
 SENSITIVE_KEYS_PART_MATCH_PATTERN = re.compile(r"(%s)" % "|".join(SENSITIVE_KEYS_PART_MATCH))
-
-
-class ESClientTypeEnum(ChoiceEnum):
-    BKDATA = "bkdata"
-    ELASTICSEARCH = "elasticsearch"
-    BK_LOG = "bk_log"
 
 
 LOG_LINK_EXPIRE_SECONDS = 24 * 60 * 60

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,3 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from bkapi_client_core.apigateway import APIGatewayClient, Operation, OperationGroup, bind_property
+
+
+class Group(OperationGroup):
+    # 统一查询时序数据
+    esquery_dsl = bind_property(
+        Operation,
+        name="esquery_dsl",
+        method="POST",
+        path="/esquery_dsl/",
+    )
+
+
+class Client(APIGatewayClient):
+    """Bkapi log-search client"""
+
+    _api_name = "log-search"
+
+    api = bind_property(Group, name="api")
