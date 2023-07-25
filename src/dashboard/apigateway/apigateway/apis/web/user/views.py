@@ -17,15 +17,15 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.conf import settings
-from rest_framework import viewsets
-from rest_framework.views import APIView
+from rest_framework import generics
 
-from apigateway.apps.user import serializers
-from apigateway.apps.user.constants import USER_AUTH_TYPES
 from apigateway.utils.responses import OKJsonResponse
 
+from .constants import USER_AUTH_TYPES
+from .serializers import UserAuthTypeInputSLZ
 
-class UserAPIView(APIView):
+
+class UserTokenGetApi(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         # TODO: 此接口待删除
         return OKJsonResponse(
@@ -37,9 +37,9 @@ class UserAPIView(APIView):
         return {key: "" for key, _ in key_to_cookie_name_map.items()}
 
 
-class UserAuthTypeViewSet(viewsets.GenericViewSet):
-    def list(self, request, *args, **kwargs):
-        slz = serializers.UserAuthTypeSLZ(USER_AUTH_TYPES, many=True)
+class UserAuthTypeListApi(generics.ListAPIView):
+    def get(self, request, *args, **kwargs):
+        slz = UserAuthTypeInputSLZ(USER_AUTH_TYPES, many=True)
         return OKJsonResponse(
             "OK",
             data=slz.data,
