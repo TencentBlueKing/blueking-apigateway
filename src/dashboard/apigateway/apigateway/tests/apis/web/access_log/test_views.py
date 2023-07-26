@@ -17,12 +17,12 @@
 #
 import pytest
 
-from apigateway.apis.web.access_log.constants import ES_LOG_FIELDS
+from apigateway.biz.access_log.constants import ES_LOG_FIELDS
 
 pytestmark = pytest.mark.django_db
 
 
-class TestLogTimeChartAPIView:
+class TestLogTimeChartRetrieveApi:
     @pytest.mark.parametrize(
         "mocked_time_chart",
         [
@@ -32,7 +32,7 @@ class TestLogTimeChartAPIView:
             },
         ],
     )
-    def test_get(self, request_view, mocker, fake_stage, mocked_time_chart):
+    def test_retrieve(self, request_view, mocker, fake_stage, mocked_time_chart):
         mocker.patch(
             "apigateway.apis.web.access_log.views.LogSearchClient.get_time_chart",
             return_value=mocked_time_chart,
@@ -59,8 +59,8 @@ class TestLogTimeChartAPIView:
         }
 
 
-class TestSearchLogsView:
-    def test_get(self, mocker, request_view, fake_stage):
+class TestSearchLogListApi:
+    def test_list(self, mocker, request_view, fake_stage):
         mocker.patch(
             "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
             return_value=(3, [{"a": 1}, {"a": 2}, {"a": 3}]),
@@ -91,8 +91,8 @@ class TestSearchLogsView:
         assert result["data"]["fields"] == ES_LOG_FIELDS
 
 
-class TestLogDetailAPIView:
-    def test_get(self, mocker, request_view, fake_gateway):
+class TestLogDetailListApi:
+    def test_list(self, mocker, request_view, fake_gateway):
         mocker.patch(
             "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
             return_value=(1, [{"a": 1}]),
@@ -117,10 +117,10 @@ class TestLogDetailAPIView:
         assert result["data"]["fields"] == ES_LOG_FIELDS
 
 
-class TestLogLinkAPIView:
-    def test_link(self, request_view, fake_gateway):
+class TestLogLinkRetrieveApi:
+    def test_retrieve(self, request_view, fake_gateway):
         response = request_view(
-            "POST",
+            "GET",
             "access_log.logs.link",
             path_params={
                 "gateway_id": fake_gateway.id,

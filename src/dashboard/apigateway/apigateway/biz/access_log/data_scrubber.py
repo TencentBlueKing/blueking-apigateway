@@ -22,12 +22,12 @@ from urllib.parse import parse_qs, urlencode
 
 from django.utils.translation import gettext as _
 
-from .constants import (
+from apigateway.biz.access_log.constants import (
     SENSITIVE_KEYS,
     SENSITIVE_KEYS_MATCH_PATTERN,
     SENSITIVE_KEYS_PART_MATCH_PATTERN,
 )
-from .exceptions import NotScrubbedException
+from apigateway.biz.access_log.exceptions import NotScrubbedException
 
 logger = logging.getLogger(__name__)
 

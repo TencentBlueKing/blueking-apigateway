@@ -21,7 +21,7 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apis.web.access_log import serializers
 
 
-class TestSearchLogQuerySerializer:
+class TestRequestLogQueryInputSLZ:
     @pytest.mark.parametrize(
         "data, expected",
         [
@@ -58,7 +58,7 @@ class TestSearchLogQuerySerializer:
         ],
     )
     def test_validate(self, data, expected):
-        slz = serializers.SearchLogQuerySerializer(data=data)
+        slz = serializers.RequestLogQueryInputSLZ(data=data)
         slz.is_valid()
         assert slz.validated_data == expected
 
@@ -75,11 +75,11 @@ class TestSearchLogQuerySerializer:
     )
     def test_validate__error(self, data):
         with pytest.raises(ValidationError):
-            slz = serializers.SearchLogQuerySerializer(data=data)
+            slz = serializers.RequestLogQueryInputSLZ(data=data)
             slz.is_valid(raise_exception=True)
 
 
-class TestLogLinkSerializer:
+class TestLogLinkOutputSLZ:
     @pytest.mark.parametrize(
         "data, expected",
         [
@@ -95,5 +95,5 @@ class TestLogLinkSerializer:
         ],
     )
     def test_to_representation(self, data, expected):
-        slz = serializers.LogLinkSerializer(data)
+        slz = serializers.LogLinkOutputSLZ(data)
         assert slz.data == expected

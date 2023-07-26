@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,13 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
-
-from .views import LogDetailListApi, LogLinkRetrieveApi, LogTimeChartRetrieveApi, SearchLogListApi
-
-urlpatterns = [
-    path("", SearchLogListApi.as_view(), name="access_log.logs"),
-    path("timechart/", LogTimeChartRetrieveApi.as_view(), name="access_log.logs.time_chart"),
-    path("<slug:request_id>/link/", LogLinkRetrieveApi.as_view(), name="access_log.logs.link"),
-    path("<slug:request_id>/", LogDetailListApi.as_view(), name="access_log.logs.detail"),
-]

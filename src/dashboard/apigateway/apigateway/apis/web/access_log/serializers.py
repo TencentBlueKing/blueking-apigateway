@@ -20,7 +20,7 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 
-class SearchLogQuerySerializer(serializers.Serializer):
+class RequestLogQueryInputSLZ(serializers.Serializer):
     stage_id = serializers.IntegerField(required=True)
     query = serializers.CharField(label="查询条件", required=False, allow_blank=True)
     time_range = serializers.IntegerField(label="时间范围", required=False, min_value=0)
@@ -35,20 +35,43 @@ class SearchLogQuerySerializer(serializers.Serializer):
         return data
 
 
-class TimeChartSerializer(serializers.Serializer):
+class TimeChartOutputSLZ(serializers.Serializer):
     series = serializers.ListField(child=serializers.IntegerField())
     timeline = serializers.ListField(child=serializers.IntegerField())
 
 
-class LogSerializer(serializers.Serializer):
-    request_id = serializers.CharField()
+class RequestLogOutputSLZ(serializers.Serializer):
+    request_id = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    timestamp = serializers.IntegerField(required=False, allow_null=True)
+    stage = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    resource_id = serializers.IntegerField(required=False, allow_null=True)
+    resource_name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    app_code = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    client_ip = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    method = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    http_host = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    http_path = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    backend_method = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    backend_scheme = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    backend_host = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    backend_path = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    params = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    body = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    response_body = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    status = serializers.IntegerField(required=False, allow_null=True)
+    headers = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    request_duration = serializers.IntegerField(required=False, allow_null=True)
+    backend_duration = serializers.IntegerField(required=False, allow_null=True)
+    code_name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    error = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    response_desc = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
 
-class LogLinkSerializer(serializers.Serializer):
+class LogLinkOutputSLZ(serializers.Serializer):
     link = serializers.CharField(read_only=True)
 
 
-class LogDetailQuerySerializer(serializers.Serializer):
+class LogDetailQueryInputSLZ(serializers.Serializer):
     bk_nonce = serializers.IntegerField()
     bk_timestamp = serializers.IntegerField()
     bk_signature = serializers.CharField()

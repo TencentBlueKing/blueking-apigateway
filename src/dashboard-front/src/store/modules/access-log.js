@@ -41,7 +41,7 @@ export default {
 
     getApigwAccessLogShareLink (context, { apigwId, params }, config = {}) {
       const url = `${DASHBOARD_URL}/gateways/${apigwId}/logs/${params.request_id}/link/`
-      return http.post(url, {}, config)
+      return http.get(url, {})
     },
 
     getApigwAccessLogDetail (context, { apigwId, requestId, params }, config = {}) {

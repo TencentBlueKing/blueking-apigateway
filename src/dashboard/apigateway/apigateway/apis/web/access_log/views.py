@@ -25,35 +25,34 @@ from django.http import Http404
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
-from rest_framework.views import APIView
+from rest_framework import generics, status
 
+from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_SECONDS, LOG_LINK_SHARED_PATH
+from apigateway.biz.access_log.data_scrubber import DataScrubber
+from apigateway.biz.access_log.log_search import LogSearchClient
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
-from .constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_SECONDS, LOG_LINK_SHARED_PATH
-from .data_scrubber import DataScrubber
-from .log_search import LogSearchClient
 from .serializers import (
-    LogDetailQuerySerializer,
-    LogLinkSerializer,
-    LogSerializer,
-    SearchLogQuerySerializer,
-    TimeChartSerializer,
+    LogDetailQueryInputSLZ,
+    LogLinkOutputSLZ,
+    RequestLogOutputSLZ,
+    RequestLogQueryInputSLZ,
+    TimeChartOutputSLZ,
 )
 
 
-class LogTimeChartAPIView(APIView):
+class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
     @swagger_auto_schema(
-        query_serializer=SearchLogQuerySerializer,
-        responses={status.HTTP_200_OK: TimeChartSerializer()},
+        query_serializer=RequestLogQueryInputSLZ,
+        responses={status.HTTP_200_OK: TimeChartOutputSLZ()},
         tags=["AccessLog"],
     )
-    def get(self, request, *args, **kwargs):
-        slz = SearchLogQuerySerializer(data=request.query_params)
+    def retrieve(self, request, *args, **kwargs):
+        slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
@@ -69,18 +68,19 @@ class LogTimeChartAPIView(APIView):
             time_end=data.get("time_end"),
             time_range=data.get("time_range"),
         )
-        return OKJsonResponse("OK", data=client.get_time_chart())
+        slz = TimeChartOutputSLZ(instance=client.get_time_chart())
+        return OKJsonResponse("OK", data=slz.data)
 
 
-class SearchLogsAPIView(APIView):
+class SearchLogListApi(generics.ListAPIView):
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=SearchLogQuerySerializer,
-        responses={status.HTTP_200_OK: LogSerializer(many=True)},
+        query_serializer=RequestLogQueryInputSLZ,
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["AccessLog"],
     )
-    def get(self, request, *args, **kwargs):
-        slz = SearchLogQuerySerializer(data=request.query_params)
+    def list(self, request, *args, **kwargs):
+        slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
@@ -125,17 +125,17 @@ class SearchLogsAPIView(APIView):
         return logs
 
 
-class LogDetailAPIView(APIView):
+class LogDetailListApi(generics.ListAPIView):
     # 打开分享日志链接的，可能不是网关负责人，因此去除权限校验
     api_permission_exempt = True
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=LogDetailQuerySerializer,
-        responses={status.HTTP_200_OK: LogSerializer(many=True)},
+        query_serializer=LogDetailQueryInputSLZ,
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["AccessLog"],
     )
-    def get(self, request, request_id, *args, **kwargs):
+    def list(self, request, request_id, *args, **kwargs):
         """
         获取指定 request_id 的日志内容
         """
@@ -157,25 +157,21 @@ class LogDetailAPIView(APIView):
         return OKJsonResponse("OK", data=results)
 
 
-class LogLinkAPIView(APIView):
+class LogLinkRetrieveApi(generics.RetrieveAPIView):
     api_permission_exempt = False
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: LogLinkSerializer()},
+        responses={status.HTTP_200_OK: LogLinkOutputSLZ()},
         tags=["AccessLog"],
     )
-    def post(self, request, request_id, *args, **kwargs):
+    def retrieve(self, request, request_id, *args, **kwargs):
         """
         获取指定 request_id 日志的分享链接
         """
         shared_link_path = LOG_LINK_SHARED_PATH.format(gateway_id=request.gateway.id, request_id=request_id)
         query_string = self._get_query_string(request.user.username, request.gateway.id, request_id)
-        return OKJsonResponse(
-            "OK",
-            data={
-                "link": f"{settings.DASHBOARD_FE_URL}{shared_link_path}?{query_string}",
-            },
-        )
+        slz = LogLinkOutputSLZ(instance={"link": f"{settings.DASHBOARD_FE_URL}{shared_link_path}?{query_string}"})
+        return OKJsonResponse("OK", data=slz.data)
 
     def _get_query_string(self, username: str, gateway_id: int, request_id: str):
         params = {
