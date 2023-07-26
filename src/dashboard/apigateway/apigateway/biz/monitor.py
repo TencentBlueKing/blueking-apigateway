@@ -41,7 +41,7 @@ class ResourceMonitorHandler:
             time_end=time_end,
         )
         # 3. annotate alarm-record by api
-        api_alarmrecord_count_map = AlarmStrategy.objects.annotate_alarm_record_by_api(
+        api_alarmrecord_count_map = AlarmStrategy.objects.annotate_alarm_record_by_gateway(
             gateway_ids=gateway_id_map.keys(),
             time_start=time_start,
             time_end=time_end,
