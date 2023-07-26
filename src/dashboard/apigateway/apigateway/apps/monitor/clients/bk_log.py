@@ -16,23 +16,27 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
+from typing import List
+
+from django.conf import settings
 
 from apigateway.apps.monitor.constants import SOURCE_TIME_OFFSET_SECONDS
-from apigateway.components.bkdata import bkdata_component
+from apigateway.common.es_clients import ESClientFactory
 
 
-class BKDataSearchClient:
-    def __init__(self, es_index, output_fields):
+class LogSearchClient:
+    def __init__(self, es_index: str, output_fields: List[str]):
         self.es_index = es_index
         self.output_fields = output_fields
+        self._es_client = ESClientFactory.get_es_client(self.es_index)
+        self._es_time_field_name: str = settings.ACCESS_LOG_CONFIG["es_time_field_name"]
 
-    def search(self, source_timestamp, match_dimension):
+    def search(self, source_timestamp: int, match_dimension: dict):
         """获取触发告警的事件详情，即es中记录详情"""
         must_filter = [
             {
                 "range": {
-                    "dtEventTimeStamp": {
+                    self._es_time_field_name: {
                         "gte": (source_timestamp - SOURCE_TIME_OFFSET_SECONDS) * 1000,
                         "lt": (source_timestamp + SOURCE_TIME_OFFSET_SECONDS) * 1000,
                     }
@@ -43,28 +47,22 @@ class BKDataSearchClient:
         for key, value in match_dimension.items():
             must_filter.append({"term": {key: value}})
 
-        sql = {
-            "index": self.es_index,
-            "body": {
-                "from": 0,
-                "size": 1000,
-                "query": {
-                    "bool": {
-                        "must": must_filter,
-                    }
-                },
-                "_source": {
-                    "includes": self.output_fields,
-                },
+        body = {
+            "from": 0,
+            "size": 1000,
+            "query": {
+                "bool": {
+                    "must": must_filter,
+                }
+            },
+            "_source": {
+                "includes": self.output_fields,
             },
         }
 
-        result, message, data = bkdata_component.get_data(prefer_storage="es", sql=json.dumps(sql))
-        if not result:
-            return False, message, None
-
-        hits = data.get("list", {}).get("hits", {}).get("hits", [])  # type: ignore
+        data = self._es_client.execute_search(body)
+        hits = data.get("hits", {}).get("hits", [])
         if len(hits) == 0:
-            return False, "从数据平台获取数据为空", None
+            return False, "从日志平台获取数据为空", None
 
         return True, "", hits

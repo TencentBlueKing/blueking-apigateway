@@ -16,31 +16,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
+from django.urls import path
 
-from apigateway.apps.monitor.flow.handlers import nginx_error
+from .views import APILabelListCreateApi, APILabelRetrieveUpdateDestroyApi
 
-
-class TestNginxErrorAlerter:
-    @pytest.fixture(autouse=True)
-    def setup_fixture(self):
-        self.alerter = nginx_error.NginxErrorAlerter(notice_ways=[])
-
-    def test_get_receivers(self, settings, mock_event):
-        settings.APIGW_MANAGERS = ["admin"]
-
-        result = self.alerter.get_receivers(mock_event)
-        assert result == ["admin"]
-
-    def test_get_message(self, mock_event):
-        mock_event.extend = {
-            "log_records": [
-                {
-                    "_source": {
-                        "log": "1990/09/16 10:28:41 [error] access forbidden by rule, server: bkapi.example.com",
-                    }
-                }
-            ]
-        }
-        result = self.alerter.get_message(mock_event)
-        assert result != ""
+urlpatterns = [
+    path("", APILabelListCreateApi.as_view(), name="label.list_create"),
+    path(
+        "<int:id>/",
+        APILabelRetrieveUpdateDestroyApi.as_view(),
+        name="label.retrieve_update_destroy",
+    ),
+]

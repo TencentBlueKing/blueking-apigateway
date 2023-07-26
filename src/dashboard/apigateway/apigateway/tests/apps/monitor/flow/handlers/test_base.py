@@ -71,20 +71,18 @@ class TestRelatedLogRecordsFetcher:
     def setup_fixture(self):
         self.fetcher = base_handlers.RelatedLogRecordsFetcher("", [])
 
-    def test_get_bkdata_records(self, faker, mocker, mock_event):
-        mocker.patch(
-            "apigateway.apps.monitor.flow.handlers.base.BKDataSearchClient.search", return_value=[{"api_id": 1}]
-        )
-        result = self.fetcher._get_bkdata_records(mock_event)
+    def test_get_request_log_records(self, faker, mocker, mock_event):
+        mocker.patch("apigateway.apps.monitor.flow.handlers.base.LogSearchClient.search", return_value=[{"api_id": 1}])
+        result = self.fetcher._get_request_log_records(mock_event)
         assert result == [{"api_id": 1}]
 
-    def test_filter_bkdata_records(self, mocker):
+    def test_filter_request_log_records(self, mocker):
         mocker.patch(
             "apigateway.apps.monitor.flow.handlers.base.RelatedLogRecordsFetcher._is_record_need_alert",
             side_effect=[True, False, True],
         )
         records = [{"_source": {}}, {"_source": {}}, {"_source": {}}]
-        result = self.fetcher._filter_bkdata_records(AlarmTypeEnum.APP_REQUEST, records)
+        result = self.fetcher._filter_request_log_records(AlarmTypeEnum.APP_REQUEST, records)
 
         assert len(result) == 2
 
@@ -106,25 +104,25 @@ class TestRelatedLogRecordsFetcher:
 
     def test_do(self, mocker, faker, mock_event):
         mocker.patch(
-            "apigateway.apps.monitor.flow.handlers.base.RelatedLogRecordsFetcher._get_bkdata_records",
+            "apigateway.apps.monitor.flow.handlers.base.RelatedLogRecordsFetcher._get_request_log_records",
             return_value=(False, "", []),
         )
         result = self.fetcher._do(mock_event)
         assert result is None
 
         mocker.patch(
-            "apigateway.apps.monitor.flow.handlers.base.RelatedLogRecordsFetcher._get_bkdata_records",
+            "apigateway.apps.monitor.flow.handlers.base.RelatedLogRecordsFetcher._get_request_log_records",
             return_value=(True, "", []),
         )
         result = self.fetcher._do(mock_event)
         assert result is None
 
         mocker.patch(
-            "apigateway.apps.monitor.flow.handlers.base.RelatedLogRecordsFetcher._get_bkdata_records",
+            "apigateway.apps.monitor.flow.handlers.base.RelatedLogRecordsFetcher._get_request_log_records",
             return_value=(True, "", []),
         )
         mocker.patch(
-            "apigateway.apps.monitor.flow.handlers.base.RelatedLogRecordsFetcher._filter_bkdata_records",
+            "apigateway.apps.monitor.flow.handlers.base.RelatedLogRecordsFetcher._filter_request_log_records",
             return_value=[{"api_id": 1}],
         )
         result = self.fetcher._do(mock_event)

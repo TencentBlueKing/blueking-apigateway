@@ -17,9 +17,10 @@
 #
 from django.db import models
 
-from apigateway.apps.label.managers import APILabelManager, ResourceLabelManager
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway, Resource
+
+from .managers import APILabelManager, ResourceLabelManager
 
 
 class APILabel(TimestampedModelMixin, OperatorModelMixin):
@@ -43,6 +44,7 @@ class APILabel(TimestampedModelMixin, OperatorModelMixin):
 class ResourceLabel(TimestampedModelMixin):
     """
     Resource label
+    resource - api_label
     """
 
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)

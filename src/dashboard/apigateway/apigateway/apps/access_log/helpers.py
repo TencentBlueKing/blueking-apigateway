@@ -33,10 +33,9 @@ from apigateway.apps.access_log.constants import (
     SENSITIVE_KEYS,
     SENSITIVE_KEYS_MATCH_PATTERN,
     SENSITIVE_KEYS_PART_MATCH_PATTERN,
-    ESClientTypeEnum,
 )
-from apigateway.apps.access_log.es_clients import BaseESClient, BKDataESClient, BKLogESClient, DslESClient
 from apigateway.apps.access_log.exceptions import NotScrubbedException
+from apigateway.common.es_clients import BaseESClient, BKLogESClient, DslESClient, ESClientTypeEnum
 from apigateway.utils import time as time_utils
 
 logger = logging.getLogger(__name__)
@@ -49,10 +48,7 @@ def get_es_client_class():
 
 class LogSearchFactory:
     def get_client_class(self, es_client_type):
-        if es_client_type == ESClientTypeEnum.BKDATA.value:
-            return BKDataLogSearch
-
-        elif es_client_type == ESClientTypeEnum.BK_LOG.value:
+        if es_client_type == ESClientTypeEnum.BK_LOG.value:
             return BKLogLogSearch
 
         elif es_client_type == ESClientTypeEnum.ELASTICSEARCH.value:
@@ -191,26 +187,6 @@ class DslESLogSearch(BaseLogSearch):
         completed_search = self._es_client.complete_search(s)
         response = self._es_client.execute_search_with_dsl_search(completed_search)
         return response.aggregations.to_dict()
-
-
-class BKDataLogSearch(BaseLogSearch):
-    _es_client_class = BKDataESClient
-
-    def search_logs(self, offset=0, limit=None):
-        s = self._build_logs_search(offset=offset, limit=limit, order=True)
-        data = self._es_client.execute_search(s.to_dict())
-        hits = data["list"]["hits"]
-        return hits["total"], [self._to_log_display(hit) for hit in hits["hits"]]
-
-    def get_time_chart(self):
-        s = self._build_date_histogram_search()
-        data = self._es_client.execute_search(s.to_dict())
-        return self._convert_histogram_buckets(data["list"]["aggregations"])
-
-    def _to_log_display(self, hit):
-        log = hit["_source"]
-        log["timestamp"] = time_utils.convert_epoch_millis_to_second(hit["sort"][0])
-        return log
 
 
 class BKLogLogSearch(BaseLogSearch):

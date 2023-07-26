@@ -18,56 +18,72 @@
 #
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
+from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.label import serializers
 from apigateway.apps.label.models import APILabel
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 from apigateway.utils.time import now_datetime
 
+from .serializers import APILabelInputSLZ, APILabelListQueryInputSLZ, APILabelOutputSLZ
 
-class APILabelViewSet(viewsets.ModelViewSet):
-    serializer_class = serializers.APILabelSLZ
-    lookup_field = "id"
+
+def _record_label_audit_success(
+    username: str, gateway_id: int, op_type: OpTypeEnum, instance_id: int, instance_name: str
+) -> None:
+    comment = {
+        OpTypeEnum.CREATE: _("创建网关标签"),
+        OpTypeEnum.MODIFY: _("更新网关标签"),
+        OpTypeEnum.DELETE: _("删除网关标签"),
+    }.get(op_type, "-")
+
+    record_audit_log(
+        username=username,
+        op_type=op_type.value,
+        op_status=OpStatusEnum.SUCCESS.value,
+        op_object_group=gateway_id,
+        op_object_type=OpObjectTypeEnum.API_LABEL.value,
+        op_object_id=instance_id,
+        op_object=instance_name,
+        comment=comment,
+    )
+
+
+class APILabelListCreateApi(generics.ListCreateAPIView):
+    serializer_class = APILabelInputSLZ
 
     def get_queryset(self):
         return APILabel.objects.filter(api=self.request.gateway)
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=serializers.APILabelQuerySLZ,
-        responses={status.HTTP_200_OK: serializers.APILabelSLZ(many=True)},
+        query_serializer=APILabelListQueryInputSLZ,
+        responses={status.HTTP_200_OK: APILabelOutputSLZ(many=True)},
         tags=["APILabels"],
     )
     def list(self, request, *args, **kwargs):
-        slz = serializers.APILabelQuerySLZ(data=request.query_params)
+        slz = APILabelListQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
 
+        # build the queryset
         queryset = self.get_queryset()
         if data.get("name"):
             queryset = queryset.filter(name__contains=data["name"])
-
         # order
         queryset = queryset.order_by(data.get("order_by") or "-id")
 
+        # paginate
         page = self.paginate_queryset(queryset)
-
-        serializer = serializers.APILabelSLZ(page, many=True)
+        serializer = APILabelOutputSLZ(page, many=True)
         return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.APILabelSLZ()}, tags=["APILabels"])
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
-
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=serializers.APILabelSLZ, tags=["APILabels"])
+    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=APILabelInputSLZ, tags=["APILabels"])
     def create(self, request, gateway_id):
+        # the label is simple enough, so we can use the ModelSerializer
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
@@ -78,20 +94,32 @@ class APILabelViewSet(viewsets.ModelViewSet):
             updated_time=now_datetime(),
         )
 
-        record_audit_log(
+        _record_label_audit_success(
             username=request.user.username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.API_LABEL.value,
-            op_object_id=slz.instance.id,
-            op_object=slz.instance.name,
-            comment=_("创建网关标签"),
+            gateway_id=request.gateway.id,
+            op_type=OpTypeEnum.CREATE,
+            instance_id=slz.instance.id,
+            instance_name=slz.instance.name,
         )
 
         return OKJsonResponse("OK", data={"id": slz.instance.id})
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=serializers.APILabelSLZ, tags=["APILabels"])
+
+class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = APILabelInputSLZ
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return APILabel.objects.filter(api=self.request.gateway)
+
+    @swagger_auto_schema(responses={status.HTTP_200_OK: APILabelOutputSLZ()}, tags=["APILabels"])
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        slz = APILabelOutputSLZ(instance)
+        # slz = self.get_serializer(instance)
+        return OKJsonResponse("OK", data=slz.data)
+
+    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=APILabelInputSLZ, tags=["APILabels"])
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance, data=request.data)
@@ -102,15 +130,12 @@ class APILabelViewSet(viewsets.ModelViewSet):
             updated_time=now_datetime(),
         )
 
-        record_audit_log(
+        _record_label_audit_success(
             username=request.user.username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.API_LABEL.value,
-            op_object_id=slz.instance.id,
-            op_object=slz.instance.name,
-            comment=_("更新网关标签"),
+            gateway_id=request.gateway.id,
+            op_type=OpTypeEnum.MODIFY,
+            instance_id=slz.instance.id,
+            instance_name=slz.instance.name,
         )
 
         return OKJsonResponse("OK")
@@ -119,17 +144,15 @@ class APILabelViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance_id = instance.id
+        instance_name = instance.name
         instance.delete()
 
-        record_audit_log(
+        _record_label_audit_success(
             username=request.user.username,
-            op_type=OpTypeEnum.DELETE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.API_LABEL.value,
-            op_object_id=instance_id,
-            op_object=instance.name,
-            comment=_("删除网关标签"),
+            gateway_id=request.gateway.id,
+            op_type=OpTypeEnum.DELETE,
+            instance_id=instance_id,
+            instance_name=instance_name,
         )
 
         return OKJsonResponse("OK")
