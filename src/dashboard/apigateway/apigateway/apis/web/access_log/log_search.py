@@ -63,12 +63,27 @@ class LogSearchClient:
         self._es_client = ESClientFactory.get_es_client(self._es_index)
 
     def search_logs(self, offset: int = 0, limit: Optional[int] = None) -> Tuple[int, List[Dict]]:
+        """
+        查询日志列表
+
+        :param offset: 偏移量
+        :param limit: 查询数据量，limit 为 None 表示 offset 偏移量后的全部数据
+        """
         s = self._build_logs_search(offset=offset, limit=limit, order=True)
         data = self._es_client.execute_search(s.to_dict())
         hits = data["hits"]
         return hits["total"], [self._to_log_display(hit) for hit in hits["hits"]]
 
     def get_time_chart(self) -> Dict:
+        """
+        查询请求量图例
+
+        :return: series 为时间点对应的数据个数，timeline 为时间点对应的时间戳
+            {
+                "series": [3, 5, 20],
+                "timeline": [1690330800, 1690330860, 1690330920]
+            }
+        """
         s = self._build_date_histogram_search()
         data = self._es_client.execute_search(s.to_dict())
         return self._convert_histogram_buckets(data.get("aggregations", {}))
@@ -102,6 +117,7 @@ class LogSearchClient:
             s = s.sort({self._es_time_field_name: {"order": "desc"}})
 
         if self._query_string:
+            # 不能添加 fields 参数，如果 fields 中包含整数字段，查询会失败
             s = s.query("query_string", query=self._query_string)
 
         return s
@@ -122,6 +138,7 @@ class LogSearchClient:
             "date_histogram",
             field=self._es_time_field_name,
             fixed_interval=self._smart_time_range.get_interval(),
+            # min_doc_count=0，extended_bounds 强制返回空数据，时间间隔内缺少数据时，则自动补充 0，使存在空数据时，图例时间范围完整
             min_doc_count=0,
             extended_bounds={
                 "min": time_utils.convert_second_to_epoch_millis(start),

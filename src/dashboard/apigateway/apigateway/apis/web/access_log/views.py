@@ -126,6 +126,7 @@ class SearchLogsAPIView(APIView):
 
 
 class LogDetailAPIView(APIView):
+    # 打开分享日志链接的，可能不是网关负责人，因此去除权限校验
     api_permission_exempt = True
 
     @swagger_auto_schema(
