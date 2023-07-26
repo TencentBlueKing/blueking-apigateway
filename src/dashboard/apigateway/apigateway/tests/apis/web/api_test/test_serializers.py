@@ -19,7 +19,7 @@
 import pytest
 from django.test import override_settings
 
-from apigateway.apps.api_test.serializers import APITestSLZ, AuthorizationSLZ
+from apigateway.apis.web.api_test.serializers import APITestInputSLZ, AuthorizationSLZ
 
 
 class TestAuthorizationSLZ:
@@ -57,7 +57,7 @@ class TestAuthorizationSLZ:
         assert dict(slz.validated_data) == expected
 
 
-class TestAPITestSLZ:
+class TestAPITestInputSLZ:
     @pytest.mark.parametrize(
         "params, expected",
         [
@@ -121,7 +121,7 @@ class TestAPITestSLZ:
     )
     @override_settings(DEFAULT_TEST_APP={"bk_app_code": "test", "bk_app_secret": "test"})
     def test_validate(self, params, expected):
-        slz = APITestSLZ(data=params)
+        slz = APITestInputSLZ(data=params)
         slz.is_valid()
 
         assert dict(slz.validated_data) == expected

@@ -59,7 +59,6 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/backend-services/", include("apigateway.apps.backend_service.urls")),
     path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     # apps: normal
-    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apps.api_test.urls")),
     path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apps.access_log.urls")),
     path("backend/apis/<int:gateway_id>/metrics/", include("apigateway.apps.metrics.urls")),
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
@@ -70,7 +69,6 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     path("backend/esb/", include("apigateway.apps.esb.urls")),
     path("backend/users/", include("apigateway.apps.user.urls")),
-    path("backend/feature/", include("apigateway.apps.feature.urls")),
     # FIXME: change this to a new url in future
     # switch language
     path("backend/i18n/setlang/", set_language, name="set_language"),
@@ -80,13 +78,23 @@ urlpatterns = [
     path("backend/docs/feature/", include("apigateway.apps.docs.feature.urls")),
     path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
     # refactoring begin ------
+    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
+    path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
     # delete it later after frontend changed the url
     path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    path("backend/feature/", include("apigateway.apis.web.feature.urls")),
     # monitors
     path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
+    path("backend/gateways/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
+    # todo 不应该放在顶层, 后续要想办法挪到下层
     path(
         "backend/apis/monitors/alarm/records/summary/",
+        AlarmRecordSummaryListApi.as_view(),
+        name="monitors.alamr_records.summary",
+    ),
+    path(
+        "backend/gateways/monitors/alarm/records/summary/",
         AlarmRecordSummaryListApi.as_view(),
         name="monitors.alamr_records.summary",
     ),
