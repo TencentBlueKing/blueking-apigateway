@@ -137,43 +137,49 @@ class CorsASC(AccessStrategyConvertor):
         config = access_strategy.config
         allow_origins, allow_origins_by_regex = self._convert_allowed_origins(config["allowed_origins"])
         plugin_config = {
-            "allow_origins": allow_origins,
             "allow_methods": self._convert_allowed_methods(config["allowed_methods"]),
             "allow_headers": self._convert_allowed_headers(config["allowed_headers"]),
             "expose_headers": self._convert_expose_headers(config.get("exposed_headers", [])),
             "max_age": config.get("max_age", 5),
             "allow_credential": config.get("allow_credentials") or False,
         }
+
+        if allow_origins:
+            plugin_config["allow_origins"] = allow_origins
+
         if allow_origins_by_regex:
             plugin_config["allow_origins_by_regex"] = allow_origins_by_regex
 
         return plugin_config
 
-    def _convert_allowed_origins(self, allowed_origins: List[str]) -> Tuple[str, Optional[List]]:
-        allow_origins = []
+    def _convert_allowed_origins(self, allowed_origins: List[str]) -> Tuple[Optional[str], Optional[List]]:
+        # 存在 "*"，即支持所有域名
+        allow_all_origins = True if "*" in allowed_origins else False
+        if allow_all_origins:
+            return "**", None
+
+        # 域名中包含类似 http://*.example.com 的情况，则所有域名均应转换为正则模式，
+        # apisix 新版本不允许同时使用 allow_origin, allow_origins_by_regex
+        should_use_regex = bool([origin for origin in allowed_origins if "*" in origin])
+        if not should_use_regex:
+            # allow_origins 不能为空字符串，为空时将其设置为 null
+            return ",".join(allowed_origins) or "null", None
+
         allow_origins_by_regex = []
         for origin in allowed_origins:
-            if origin == "*":
-                return "**", None
+            # 1. 域名中，可能已包含正则中的特殊字符，需转义，如 "."
+            # 2. 域名中 * 表示任意字符，正则表达式中，需替换为".*"，如 http://*.example.com，需匹配 http://a.example.com, http://b.example.com
+            # 3. 正则添加开头和结尾 "^$"，防止 http://a.example.com1 匹配到正则 "http://.*\.example\.com"
+            origin_by_regex = "^{origin}$".format(
+                origin=origin.replace(".", r"\.")
+                .replace("-", r"\-")
+                .replace("[", r"\[")
+                .replace("]", r"\]")
+                .replace("*", ".*")
+            )
+            allow_origins_by_regex.append(origin_by_regex)
 
-            elif "*" in origin:
-                # 1. 域名中，可能已包含正则中的特殊字符，需转义，如 "."
-                # 2. 域名中 * 表示任意字符，正则表达式中，需替换为".*"，如 http://*.example.com，需匹配 http://a.example.com, http://b.example.com
-                # 3. 正则添加开头和结尾 "^$"，防止 http://a.example.com1 匹配到正则 "http://.*\.example\.com"
-                origin_by_regex = "^{origin}$".format(
-                    origin=origin.replace(".", r"\.")
-                    .replace("-", r"\-")
-                    .replace("[", r"\[")
-                    .replace("]", r"\]")
-                    .replace("*", ".*")
-                )
-                allow_origins_by_regex.append(origin_by_regex)
-
-            else:
-                allow_origins.append(origin)
-
-        # allow_origins 不能为空字符串，未设置时将使用默认值 "*"，因此为空时将其设置为 null
-        return ",".join(allow_origins) or "null", allow_origins_by_regex
+        return None, allow_origins_by_regex
 
     def _convert_allowed_methods(self, allowed_methods: List[str]) -> str:
         return ",".join(map(str.upper, allowed_methods))
