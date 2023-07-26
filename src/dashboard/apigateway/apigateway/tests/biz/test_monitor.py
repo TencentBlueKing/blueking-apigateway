@@ -72,6 +72,7 @@ class TestResourceMonitorHandler:
                 ],
             },
         ]
+
         for test in data:
             result = ResourceMonitorHandler.statistics_api_alarm_record(
                 username=test["params"].get("user_name"),
