@@ -18,8 +18,8 @@
 #
 from django.urls import path
 
-from apigateway.apps.api_test import views
+from apigateway.apis.web.feature import views
 
 urlpatterns = [
-    path("", views.APITestAPIView.as_view(), name="api_test.tests"),
+    path("flags/", views.FeatureFlagListApi.as_view(), name="feature.flags"),
 ]

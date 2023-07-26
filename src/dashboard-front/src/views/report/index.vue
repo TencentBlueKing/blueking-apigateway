@@ -445,17 +445,17 @@
 
         // 不同纬度返回的数据结构略有差异，因此分开处理
         if (['resource', 'resource_non200_status', 'app'].includes(dimension)) {
-          const chartData = this.chartData[chartId].data.result
+          const chartData = this.chartData[chartId].data.series
           chartData.forEach(item => {
-            const serieName = dimension === 'app' ? `APP=${item.metric.app_code}` : `${item.metric.resource}:${item.metric.path}`
-            const values = item.values.filter(value => !isNaN(Math.round(value[1])))
+            const serieName = dimension === 'app' ? `APP=${item.dimensions.bk_app_code || '--'}` : `${item.dimensions.resource_name}`
+            const values = item.datapoints.filter(value => !isNaN(Math.round(value[0])))
             chartOption.series.push(merge({}, baseOption.series[0], {
               name: serieName,
               data: values.map(value => ([
                 // x轴数据，x轴type为time数据需为时间戳
-                value[0] * 1000,
+                value[1],
                 // 系列数据
-                Math.round(value[1])
+                value[0]
               ])),
               // 1个数据点显示小圆点
               showSymbol: values.length === 1
@@ -473,7 +473,7 @@
           // })
 
           // 设置图表max和interval
-          const serieData = chartData.map(item => item.values).reduce((a, b) => a.concat(b), [])
+          const serieData = chartData.map(item => item.datapoints).reduce((a, b) => a.concat(b), [])
           moreOption = this.getChartMoreOption(serieData, chartInstances[chartInstId])
           chartOption.yAxis.scale = true
 
@@ -481,7 +481,7 @@
           chartOption.tooltip.formatter = (params) => {
             const html = [`<p>${dayjs(params[0].data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>`]
             params.forEach(param => {
-              html.push(`<p><span>${param.marker}${param.seriesName}: </span><span>${param.data[1].toLocaleString()} 次</span></p>`)
+              html.push(`<p><span>${param.marker}${param.seriesName}: </span><span>${param.data[1] !== null ? param.data[1].toLocaleString() : '0'} ${this.$t('次')}</span></p>`)
             })
             return html.join('')
           }
@@ -490,12 +490,12 @@
           this.chartEmpty[chartInstId] = !(chartData || []).length
         } else if (dimension === 'all') {
           if (chartId !== 'response_time') {
-            let chartData = (this.chartData[chartId].data.result[0] || {}).values || []
-            chartData = chartData.filter(value => !isNaN(Math.round(value[1])))
+            let chartData = (this.chartData[chartId].data.series[0] || {}).datapoints || []
+            chartData = chartData.filter(value => !isNaN(Math.round(value[0])))
             chartOption.series.push(merge({}, baseOption.series[0], {
               data: chartData.map(item => ([
-                item[0] * 1000,
-                Math.round(item[1])
+                item[1],
+                item[0]
               ]))
             }))
 
@@ -508,7 +508,7 @@
             chartOption.tooltip.formatter = (params) => {
               const html = [`<p>${dayjs(params[0].data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>`]
               params.forEach(param => {
-                html.push(`<p>${param.marker}${param.data[1].toLocaleString()} 次</p>`)
+                html.push(`<p>${param.marker}${param.data[1] !== null ? param.data[1].toLocaleString() : '0'} ${this.$t('次')}</p>`)
               })
               return html.join('')
             }
@@ -516,19 +516,19 @@
             this.chartEmpty[chartInstId] = !(chartData || []).length
           } else {
             const chartData = [
-              (this.chartData['response_time_95th'].data.result[0] || {}).values || [],
-              (this.chartData['response_time_90th'].data.result[0] || {}).values || [],
-              (this.chartData['response_time_80th'].data.result[0] || {}).values || [],
-              (this.chartData['response_time_50th'].data.result[0] || {}).values || []
+              (this.chartData['response_time_95th'].data.series[0] || {}).datapoints || [],
+              (this.chartData['response_time_90th'].data.series[0] || {}).datapoints || [],
+              (this.chartData['response_time_80th'].data.series[0] || {}).datapoints || [],
+              (this.chartData['response_time_50th'].data.series[0] || {}).datapoints || []
             ]
             const serieNames = ['95%', '90%', '80%', '50%']
             chartData.forEach((data, index) => {
-              const values = data.filter(value => !isNaN(Math.round(value[1])))
+              const values = data.filter(value => !isNaN(Math.round(value[0])))
               chartOption.series.push(merge({}, baseOption.series[0], {
                 name: serieNames[index],
                 data: values.map(item => ([
-                  item[0] * 1000,
-                  Math.round(item[1])
+                  item[1],
+                  item[0]
                 ]))
               }))
             })
@@ -560,14 +560,15 @@
       },
       getChartMoreOption (chartData, chartInstance) {
         // 1. 根据data的最大值，动态计算出max合适值和interval配置
-        const serieData = chartData.map(item => Math.round(item[1])).filter(item => !isNaN(item))
+        const serieData = chartData.map(item => Math.round(item[0])).filter(item => !isNaN(item))
         const maxNumber = Math.max(...serieData)
         const yAxisIntervalOption = this.$getChartIntervalOption(maxNumber, 'number', 'yAxis', chartInstance)
 
         // 2. 根据时间值计算xAxis显示年/月/日/时间部分
-        const xAxisData = chartData.map(item => Math.round(item[0]))
+        const xAxisData = chartData.map(item => Math.round(item[1]))
         xAxisData.sort((a, b) => a - b)
-        const timeDuration = xAxisData[xAxisData.length - 1] - xAxisData[0]
+        // timeDuration 需要秒为单位
+        const timeDuration = Math.round((xAxisData[xAxisData.length - 1] - xAxisData[0]) / 1000)
         const xAxisIntervalOption = this.$getChartIntervalOption(timeDuration, 'time', 'xAxis', chartInstance)
 
         return merge(yAxisIntervalOption, xAxisIntervalOption)

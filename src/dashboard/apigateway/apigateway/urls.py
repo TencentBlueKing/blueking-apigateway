@@ -59,7 +59,6 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/backend-services/", include("apigateway.apps.backend_service.urls")),
     path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     # apps: normal
-    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apps.api_test.urls")),
     path("backend/apis/<int:gateway_id>/metrics/", include("apigateway.apps.metrics.urls")),
     path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apps.monitor.urls")),
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
@@ -70,7 +69,6 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     path("backend/esb/", include("apigateway.apps.esb.urls")),
     path("backend/users/", include("apigateway.apps.user.urls")),
-    path("backend/feature/", include("apigateway.apps.feature.urls")),
     # FIXME: change this to a new url in future
     # monitors
     path(
@@ -88,9 +86,12 @@ urlpatterns = [
     # refactoring begin ------
     path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
     path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
+    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
+    path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
     # delete it later after frontend changed the url
     path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    path("backend/feature/", include("apigateway.apis.web.feature.urls")),
     # refactoring end ------
 ]
 
