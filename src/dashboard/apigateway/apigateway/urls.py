@@ -71,7 +71,6 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     path("backend/esb/", include("apigateway.apps.esb.urls")),
     path("backend/users/", include("apigateway.apps.user.urls")),
-    path("backend/feature/", include("apigateway.apps.feature.urls")),
     # FIXME: change this to a new url in future
     # monitors
     path(
@@ -90,6 +89,7 @@ urlpatterns = [
     # delete it later after frontend changed the url
     path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    path("backend/feature/", include("apigateway.apis.web.feature.urls")),
     # refactoring end ------
 ]
 
