@@ -60,7 +60,6 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     # apps: normal
     path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apps.api_test.urls")),
-    path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apps.label.urls")),
     path("backend/apis/<int:gateway_id>/metrics/", include("apigateway.apps.metrics.urls")),
     path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apps.monitor.urls")),
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
