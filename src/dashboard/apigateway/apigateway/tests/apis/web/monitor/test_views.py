@@ -21,6 +21,7 @@ import json
 
 from django.test import TestCase
 from django_dynamic_fixture import G
+from rest_framework.fields import DateTimeField
 
 from apigateway.apis.web.monitor.views import (
     AlarmRecordListApi,
@@ -389,38 +390,38 @@ class TestAlarmRecordSummaryListApi(TestCase):
         alarm_record_3.alarm_strategies.set([strategy_2])
 
         data = [
-            # {
-            #     "params": {},
-            #     "expected": [
-            #         {
-            #             "api_id": self.gateway.id,
-            #             "api_name": self.gateway.name,
-            #             "alarm_record_count": 3,
-            #             "strategy_summary": [
-            #                 {
-            #                     "id": strategy_1.id,
-            #                     "name": strategy_1.name,
-            #                     "alarm_record_count": 2,
-            #                     "latest_alarm_record": {
-            #                         "id": alarm_record_2.id,
-            #                         "message": alarm_record_2.message,
-            #                         "created_time": dummy_time.str,
-            #                     },
-            #                 },
-            #                 {
-            #                     "id": strategy_2.id,
-            #                     "name": strategy_2.name,
-            #                     "alarm_record_count": 1,
-            #                     "latest_alarm_record": {
-            #                         "id": alarm_record_3.id,
-            #                         "message": alarm_record_3.message,
-            #                         "created_time": DateTimeField().to_representation(alarm_record_3.created_time),
-            #                     },
-            #                 },
-            #             ],
-            #         }
-            #     ],
-            # },
+            {
+                "params": {},
+                "expected": [
+                    {
+                        "api_id": self.gateway.id,
+                        "api_name": self.gateway.name,
+                        "alarm_record_count": 3,
+                        "strategy_summary": [
+                            {
+                                "id": strategy_1.id,
+                                "name": strategy_1.name,
+                                "alarm_record_count": 2,
+                                "latest_alarm_record": {
+                                    "id": alarm_record_2.id,
+                                    "message": alarm_record_2.message,
+                                    "created_time": dummy_time.str,
+                                },
+                            },
+                            {
+                                "id": strategy_2.id,
+                                "name": strategy_2.name,
+                                "alarm_record_count": 1,
+                                "latest_alarm_record": {
+                                    "id": alarm_record_3.id,
+                                    "message": alarm_record_3.message,
+                                    "created_time": DateTimeField().to_representation(alarm_record_3.created_time),
+                                },
+                            },
+                        ],
+                    }
+                ],
+            },
             {
                 "params": {
                     "time_start": dummy_time.timestamp,
