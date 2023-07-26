@@ -18,8 +18,6 @@
 #
 import responses
 
-from apigateway.apps.api_test.views import APITestAPIView
-from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.core.utils import get_resource_url
 
 
@@ -62,21 +60,3 @@ class TestAPITestAPIView:
             "Content-Type": "text/plain",
             "x-token": "test",
         }
-
-    def test_grant_permission(self, fake_gateway, fake_resource):
-        data = [
-            {
-                "gateway": fake_gateway,
-                "resource_id": fake_resource.id,
-                "bk_app_code": "test",
-            },
-        ]
-        for test in data:
-            view = APITestAPIView()
-            view._grant_permission(test["gateway"], test["resource_id"], test["bk_app_code"])
-            app_resource_permission = AppResourcePermission.objects.get_permission_or_none(
-                gateway=test["gateway"],
-                resource_id=test["resource_id"],
-                bk_app_code=test["bk_app_code"],
-            )
-            assert not app_resource_permission.has_expired

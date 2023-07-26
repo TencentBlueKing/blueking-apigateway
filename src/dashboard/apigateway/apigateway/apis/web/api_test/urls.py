@@ -16,6 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.urls import path
 
+from .views import APITestApi
 
-TEST_PERMISSION_EXPIRE_DAYS = 1
+urlpatterns = [
+    path("", APITestApi.as_view(), name="api_test.tests"),
+]
