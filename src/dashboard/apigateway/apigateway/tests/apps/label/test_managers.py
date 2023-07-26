@@ -104,13 +104,6 @@ class TestAPILabelManager:
         result = APILabel.objects.get_label_ids(gateway)
         assert result == [l1.id, l2.id]
 
-    def test_get_label_names(self, fake_gateway):
-        l1 = G(APILabel, api=fake_gateway)
-        l2 = G(APILabel, api=fake_gateway)
-
-        result = APILabel.objects.get_label_names(fake_gateway)
-        assert set(result) == {l1.name, l2.name}
-
     def test_get_name_id_map(self):
         gateway = G(Gateway)
         l1 = G(APILabel, api=gateway, name="t1")
