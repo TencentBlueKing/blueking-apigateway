@@ -31,8 +31,8 @@ class TestResourceMonitorHandler:
         self.gateway = create_gateway()
 
     def test_statistics_api_alarm_record(self):
-        strategy_1 = G(AlarmStrategy)
-        strategy_2 = G(AlarmStrategy)
+        strategy_1 = G(AlarmStrategy, api=self.gateway)
+        strategy_2 = G(AlarmStrategy, api=self.gateway)
 
         alarm_record_1 = G(AlarmRecord, created_time=dummy_time.time)
         alarm_record_1.alarm_strategies.set([strategy_1])
@@ -48,8 +48,8 @@ class TestResourceMonitorHandler:
                 "params": {
                     "user_name": "admin",
                     "name": self.gateway.name,
-                    "time_start": dummy_time.timestamp,
-                    "time_end": dummy_time.timestamp + 10,
+                    "time_start": dummy_time.time,
+                    "time_end": dummy_time.time + datetime.timedelta(seconds=10),
                 },
                 "expected": [
                     {
@@ -73,10 +73,10 @@ class TestResourceMonitorHandler:
             },
         ]
         for test in data:
-            result = ResourceMonitorHandler().statistics_api_alarm_record(
-                username=test["params"]["user_name"],
-                name=test["params"]["name"],
-                time_start=test["params"]["time_start"],
-                time_end=test["params"]["time_end"],
+            result = ResourceMonitorHandler.statistics_api_alarm_record(
+                username=test["params"].get("user_name"),
+                name=test["params"].get("name"),
+                time_start=test["params"].get("time_start"),
+                time_end=test["params"].get("time_end"),
             )
             assert result == test["expected"]
