@@ -90,7 +90,7 @@ class APITestApi(generics.CreateAPIView):
                 headers=prepared_request_headers.headers,
                 # 隐式使用 cookies，不便于用户了解用户认证参数
                 # cookies=request.COOKIES,
-                # 10 秒连接超时，300 读超时
+                # 10 秒连接超时，300 秒读超时
                 timeout=(10, 300),
                 allow_redirects=False,
                 verify=False,
