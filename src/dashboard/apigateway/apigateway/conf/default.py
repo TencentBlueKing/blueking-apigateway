@@ -574,7 +574,8 @@ BCS_API_GATEWAY_TOKEN = env.str("BCS_API_GATEWAY_TOKEN", "")
 
 # edge controller 配置
 EDGE_CONTROLLER_API_NAME = "bk-apigateway"
-# 托管的微网关实例，实例部署所用 chart 由网关生成，此 chart 中，endpoints + base_path 应为微网关实例访问网关数据的网关接口地址前缀
+# 托管的微网关实例，实例部署所用 chart 由网关生成，
+# 此 chart 中，endpoints + base_path 应为微网关实例访问网关数据的网关接口地址前缀
 EDGE_CONTROLLER_API_BASE_PATH = env.str("EDGE_CONTROLLER_API_BASE_PATH", "/")
 
 # plugin metadata config
@@ -726,9 +727,8 @@ OTEL_INSTRUMENT_CELERY = env.bool("DASHBOARD_OTEL_INSTRUMENT_CELERY", default=Fa
 OTEL_INSTRUMENT_REDIS = env.bool("DASHBOARD_OTEL_INSTRUMENT_REDIS", default=False)
 
 # bkpaas-auth 配置
-BK_PAAS_LOGIN_URL = env.str("BK_PAAS_LOGIN_URL", "")
 BKAUTH_BACKEND_TYPE = "bk_token"
-BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_PAAS_LOGIN_URL}/api/v3/is_login/"
+BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/is_login/"
 
 BKAUTH_TOKEN_APP_CODE = BK_APP_CODE
 BKAUTH_TOKEN_SECRET_KEY = BK_APP_SECRET
