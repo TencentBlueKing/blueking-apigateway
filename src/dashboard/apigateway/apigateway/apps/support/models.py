@@ -152,7 +152,7 @@ class APISDK(ConfigModelMixin):
     name = models.CharField(max_length=128, blank=True, default="", help_text=_("SDK 名称"))
     url = models.TextField(blank=True, default="", help_text=_("下载地址"))
     filename = models.CharField(max_length=128, help_text=_("SDK 文件名, 废弃"))
-    language = models.CharField(max_length=32, choices=ProgrammingLanguageEnum.choices())
+    language = models.CharField(max_length=32, choices=ProgrammingLanguageEnum.get_choices())
     version_number = models.CharField(max_length=64)
     include_private_resources = models.BooleanField(default=False)
     is_public_latest = models.BooleanField(default=False, db_index=True, help_text=_("废弃"))
