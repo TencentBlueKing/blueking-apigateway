@@ -20,7 +20,6 @@ from django.db.models import QuerySet
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
     ApplyStatusEnum,
@@ -28,6 +27,7 @@ from apigateway.apps.permission.constants import (
     GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
 )
+from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.core.constants import ExportTypeEnum
 from apigateway.core.models import Resource
 from apigateway.core.validators import BKAppCodeValidator, ResourceIDValidator
