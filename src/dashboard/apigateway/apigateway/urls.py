@@ -64,7 +64,7 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/metrics/", include("apigateway.apps.metrics.urls")),
     path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apps.monitor.urls")),
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
-    path("backend/apis/<int:gateway_id>/permissions/", include("apigateway.apps.permission.urls")),
+    path("backend/apis/<int:gateway_id>/permissions/", include("apigateway.apis.web.permission.urls")),
     path("backend/apis/<int:gateway_id>/support/", include("apigateway.apps.support.urls")),
     path("backend/apis/<int:gateway_id>/access_strategies/", include("apigateway.apps.access_strategy.urls")),
     path("backend/apis/<int:gateway_id>/plugins/", include("apigateway.apps.plugin.urls")),
