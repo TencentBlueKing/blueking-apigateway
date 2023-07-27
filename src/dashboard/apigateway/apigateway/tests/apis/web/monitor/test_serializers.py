@@ -230,7 +230,7 @@ class TestAlarmRecordOutputSLZ(TestCase):
         alarm_record = G(AlarmRecord, created_time=dummy_time.time)
         alarm_record.alarm_strategies.set([alarm_strategy])
 
-        slz = serializers.AlarmRecordOutputSLZ(instance=alarm_record)
+        slz = serializers.AlarmRecordQueryOutputSLZ(instance=alarm_record)
 
         self.assertEqual(
             slz.data,

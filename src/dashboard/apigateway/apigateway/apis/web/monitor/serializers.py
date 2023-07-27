@@ -127,7 +127,7 @@ class AlarmRecordQueryInputSLZ(serializers.Serializer):
     status = serializers.ChoiceField(choices=AlarmStatusEnum.get_choices(), allow_blank=True, required=False)
 
 
-class AlarmRecordOutputSLZ(serializers.ModelSerializer):
+class AlarmRecordQueryOutputSLZ(serializers.ModelSerializer):
     alarm_strategy_names = serializers.SerializerMethodField()
 
     class Meta:
@@ -162,15 +162,15 @@ class AlarmRecordSummaryQueryInputSLZ(serializers.Serializer):
     time_end = TimestampField(allow_null=True, required=False)
 
 
-class AlarmStrategySummarySLZ(serializers.Serializer):
+class AlarmStrategySummaryQuerySLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     alarm_record_count = serializers.IntegerField(read_only=True)
     latest_alarm_record = serializers.DictField(read_only=True)
 
 
-class AlarmRecordSummaryOutputSLZ(serializers.Serializer):
+class AlarmRecordSummaryQueryOutputSLZ(serializers.Serializer):
     api_id = serializers.IntegerField(read_only=True)
     api_name = serializers.CharField(read_only=True)
     alarm_record_count = serializers.IntegerField(read_only=True)
-    strategy_summary = serializers.ListField(child=AlarmStrategySummarySLZ(), read_only=True)
+    strategy_summary = serializers.ListField(child=AlarmStrategySummaryQuerySLZ(), read_only=True)

@@ -30,10 +30,10 @@ from apigateway.utils.time import now_datetime
 
 from . import filters
 from .serializers import (
-    AlarmRecordOutputSLZ,
     AlarmRecordQueryInputSLZ,
-    AlarmRecordSummaryOutputSLZ,
+    AlarmRecordQueryOutputSLZ,
     AlarmRecordSummaryQueryInputSLZ,
+    AlarmRecordSummaryQueryOutputSLZ,
     AlarmStrategyInputSLZ,
     AlarmStrategyListOutputSLZ,
     AlarmStrategyQueryInputSLZ,
@@ -161,7 +161,7 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
 
 
 class AlarmRecordListApi(generics.ListAPIView):
-    serializer_class = AlarmRecordOutputSLZ
+    serializer_class = AlarmRecordQueryOutputSLZ
     filter_backends = [filters.AlarmRecordFilterBackend]
 
     def get_queryset(self):
@@ -170,7 +170,7 @@ class AlarmRecordListApi(generics.ListAPIView):
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=AlarmRecordQueryInputSLZ,
-        responses={status.HTTP_200_OK: AlarmRecordOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: AlarmRecordQueryOutputSLZ(many=True)},
         tags=["AlarmStrategy"],
     )
     def list(self, request, *args, **kwargs):
@@ -184,7 +184,7 @@ class AlarmRecordListApi(generics.ListAPIView):
 
 
 class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
-    serializer_class = AlarmRecordOutputSLZ
+    serializer_class = AlarmRecordQueryOutputSLZ
     filter_backends = [filters.AlarmRecordFilterBackend]
 
     lookup_field = "id"
@@ -205,7 +205,7 @@ class AlarmRecordSummaryListApi(generics.ListAPIView):
 
     @swagger_auto_schema(
         query_serializer=AlarmRecordSummaryQueryInputSLZ,
-        responses={status.HTTP_200_OK: AlarmRecordSummaryOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: AlarmRecordSummaryQueryOutputSLZ(many=True)},
         tags=["AlarmStrategy"],
     )
     def list(self, request, *args, **kwargs):
