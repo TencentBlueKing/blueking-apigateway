@@ -19,7 +19,6 @@
 import datetime
 
 import pytest
-from django.test import TestCase
 from django_dynamic_fixture import G
 
 from apigateway.apps.permission import models
@@ -46,66 +45,7 @@ class TestAppAPIPermissionManager:
 
         assert 1 == models.AppAPIPermission.objects.filter_public_permission_by_app(unique_id).count()
 
-    def test_filter_permission(self):
-        G(
-            models.AppAPIPermission,
-            api=self.gateway,
-            bk_app_code="test",
-        )
-        G(
-            models.AppAPIPermission,
-            api=self.gateway,
-            bk_app_code="test-2",
-        )
-
-        data = [
-            {
-                "params": {},
-                "expected": {
-                    "count": 2,
-                },
-            },
-            {
-                "params": {
-                    "bk_app_code": "test",
-                },
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {
-                    "bk_app_code": "test",
-                    "grant_type": "initialize",
-                },
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {
-                    "bk_app_code": "test",
-                    "grant_type": "apply",
-                },
-                "expected": {
-                    "count": 0,
-                },
-            },
-            {
-                "params": {
-                    "bk_app_codes": ["test-2", "test", "not-exist"],
-                },
-                "expected": {
-                    "count": 2,
-                },
-            },
-        ]
-
-        for test in data:
-            queryset = models.AppAPIPermission.objects.filter_permission(self.gateway, **test["params"])
-            assert queryset.count() == test["expected"]["count"]
-
-    def test_renew_permission(self):
+    def test_renew_by_ids(self):
         perm_1 = G(
             models.AppAPIPermission,
             api=self.gateway,
@@ -125,7 +65,7 @@ class TestAppAPIPermissionManager:
             expires=to_datetime_from_now(days=720),
         )
 
-        models.AppAPIPermission.objects.renew_permission(
+        models.AppAPIPermission.objects.renew_by_ids(
             self.gateway,
             ids=[perm_1.id, perm_2.id, perm_3.id],
         )
@@ -135,20 +75,6 @@ class TestAppAPIPermissionManager:
         assert to_datetime_from_now(days=179) < perm_1.expires < to_datetime_from_now(days=181)
         assert to_datetime_from_now(days=179) < perm_2.expires < to_datetime_from_now(days=181)
         assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(days=721)
-
-    def test_delete_permission(self, fake_gateway):
-        p1 = G(models.AppAPIPermission, api=fake_gateway, bk_app_code="app1")
-        p2 = G(models.AppAPIPermission, api=fake_gateway, bk_app_code="app2")
-        G(models.AppAPIPermission, api=fake_gateway, bk_app_code="app3")
-        G(models.AppAPIPermission, api=fake_gateway, bk_app_code="app4")
-
-        models.AppAPIPermission.objects.delete_permission(fake_gateway, ids=[p1.id])
-        assert not models.AppAPIPermission.objects.filter(api=fake_gateway, id=p1.id).exists()
-        assert models.AppAPIPermission.objects.filter(api=fake_gateway, id=p2.id).exists()
-
-        models.AppAPIPermission.objects.delete_permission(fake_gateway, bk_app_codes=["app2", "app3"])
-        assert not models.AppAPIPermission.objects.filter(api=fake_gateway, bk_app_code__in=["app2", "app3"]).exists()
-        assert models.AppAPIPermission.objects.filter(api=fake_gateway, bk_app_code="app4").exists()
 
 
 class TestAppResourcePermissionManager:
@@ -166,78 +92,7 @@ class TestAppResourcePermissionManager:
 
         assert 1 == models.AppResourcePermission.objects.filter_public_permission_by_app(unique_id).count()
 
-    def test_filter_permission(self):
-        G(
-            models.AppResourcePermission,
-            api=self.gateway,
-            bk_app_code="test",
-            grant_type="initialize",
-            resource_id=self.resource.id,
-        )
-        G(
-            models.AppResourcePermission,
-            api=self.gateway,
-            bk_app_code="test-2",
-            grant_type="apply",
-            resource_id=self.resource.id,
-        )
-
-        data = [
-            {
-                "params": {},
-                "expected": {
-                    "count": 2,
-                },
-            },
-            {
-                "params": {
-                    "bk_app_code": "test",
-                },
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {
-                    "bk_app_code": "test",
-                    "grant_type": "initialize",
-                },
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {
-                    "bk_app_code": "test-2",
-                    "grant_type": "apply",
-                },
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {
-                    "resource_ids": [self.resource.id],
-                },
-                "expected": {
-                    "count": 2,
-                },
-            },
-            {
-                "params": {
-                    "bk_app_codes": ["test", "test-2"],
-                },
-                "expected": {
-                    "count": 2,
-                },
-            },
-        ]
-
-        for test in data:
-            queryset = models.AppResourcePermission.objects.filter_permission(self.gateway, **test["params"])
-            assert queryset.count() == test["expected"]["count"]
-
-    def test_renew_permission(self):
+    def test_renew_by_ids(self):
         perm_1 = G(
             models.AppResourcePermission,
             api=self.gateway,
@@ -260,7 +115,7 @@ class TestAppResourcePermissionManager:
             resource_id=self.resource.id,
         )
 
-        models.AppResourcePermission.objects.renew_by_resource_ids(
+        models.AppResourcePermission.objects.renew_by_ids(
             self.gateway,
             ids=[perm_1.id, perm_2.id, perm_3.id],
         )
@@ -364,72 +219,6 @@ class TestAppResourcePermissionManager:
         models.AppResourcePermission.objects.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
         assert models.AppResourcePermission.objects.filter(api=gateway, bk_app_code=bk_app_code).count() == 1
 
-    def test_delete_permission(self, fake_gateway):
-        resource = G(Resource, api=fake_gateway)
-        p1 = G(models.AppResourcePermission, api=fake_gateway, bk_app_code="app1", resource_id=resource.id)
-        p2 = G(models.AppResourcePermission, api=fake_gateway, bk_app_code="app2", resource_id=resource.id)
-        G(models.AppResourcePermission, api=fake_gateway, bk_app_code="app3", resource_id=resource.id)
-        G(models.AppResourcePermission, api=fake_gateway, bk_app_code="app4", resource_id=resource.id)
-
-        models.AppResourcePermission.objects.delete_permission(fake_gateway, ids=[p1.id])
-        assert not models.AppResourcePermission.objects.filter(api=fake_gateway, id=p1.id).exists()
-        assert models.AppResourcePermission.objects.filter(api=fake_gateway, id=p2.id).exists()
-
-        models.AppResourcePermission.objects.delete_permission(fake_gateway, bk_app_codes=["app2", "app3"])
-        assert not models.AppResourcePermission.objects.filter(
-            api=fake_gateway, bk_app_code__in=["app2", "app3"]
-        ).exists()
-        assert models.AppResourcePermission.objects.filter(api=fake_gateway, bk_app_code="app4").exists()
-
-
-class TestAppPermissionApplyManager(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.gateway = G(Gateway)
-
-    def test_filter_apply(self):
-        G(
-            models.AppPermissionApply,
-            api=self.gateway,
-            bk_app_code="test",
-            applied_by="admin",
-        )
-        G(
-            models.AppPermissionApply,
-            api=self.gateway,
-            bk_app_code="test-2",
-            applied_by="admin-2",
-        )
-
-        data = [
-            {
-                "params": {},
-                "expected": {
-                    "count": 2,
-                },
-            },
-            {
-                "params": {
-                    "bk_app_code": "test",
-                },
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {
-                    "applied_by": "admin-2",
-                },
-                "expected": {
-                    "count": 1,
-                },
-            },
-        ]
-        for test in data:
-            queryset = models.AppPermissionApply.objects.filter(api=self.gateway)
-            queryset = models.AppPermissionApply.objects.filter_apply(queryset, **test["params"])
-            self.assertEqual(queryset.count(), test["expected"]["count"])
-
 
 class TestAppPermissionRecordManager:
     def test_filter_record(self):
@@ -463,23 +252,8 @@ class TestAppPermissionRecordManager:
             1
             == models.AppPermissionRecord.objects.filter_record(
                 queryset,
-                handled_time_start=now_datetime() - datetime.timedelta(seconds=10),
-                handled_time_end=now_datetime() + datetime.timedelta(seconds=10),
-            ).count()
-        )
-        assert (
-            1
-            == models.AppPermissionRecord.objects.filter_record(
-                queryset,
                 applied_time_start=now_datetime() - datetime.timedelta(seconds=10),
                 applied_time_end=now_datetime() + datetime.timedelta(seconds=10),
-            ).count()
-        )
-        assert (
-            1
-            == models.AppPermissionRecord.objects.filter_record(
-                queryset,
-                grant_dimension="api",
             ).count()
         )
         assert 1 == models.AppPermissionRecord.objects.filter_record(queryset, status="approved").count()

@@ -198,8 +198,8 @@ class AppPermissionRecordManager(models.Manager):
     def filter_record(
         self,
         queryset,
-        bk_app_code: str,
-        applied_by: str,
+        bk_app_code: str = "",
+        applied_by: str = "",
         applied_time_start: Optional[datetime.datetime] = None,
         applied_time_end: Optional[datetime.datetime] = None,
         status: str = "",

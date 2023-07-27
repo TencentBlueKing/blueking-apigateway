@@ -67,7 +67,7 @@ class AppResourcePermissionQuerySetMixin:
 
         # 仅展示资源存在的权限
         api_resource_ids = Resource.objects.filter(api=self.request.gateway).values_list("id", flat=True)
-        return self.filter(api=self.request.gateway, resource_id__in=api_resource_ids)
+        return queryset.filter(api=self.request.gateway, resource_id__in=api_resource_ids)
 
 
 class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, generics.ListCreateAPIView):
@@ -461,10 +461,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse("OK", data=slz.data)
 
 
-class AppPermissionApplyApprovalApi(generics.CreateAPIView):
-    def get_queryset(self):
-        return AppPermissionRecord.objects.filter(api=self.request.gateway).order_by("-handled_time")
-
+class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.CreateAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""}, request_body=AppPermissionApplyApprovalInputSLZ, tags=["Permission"]
     )
@@ -482,7 +479,6 @@ class AppPermissionApplyApprovalApi(generics.CreateAPIView):
         queryset = self.get_queryset().filter(id__in=data["ids"])
 
         for apply in queryset:
-            # TODO 放到biz中处理
             manager = PermissionDimensionManager.get_manager(apply.grant_dimension)
             record = manager.handle_permission_apply(
                 gateway=request.gateway,

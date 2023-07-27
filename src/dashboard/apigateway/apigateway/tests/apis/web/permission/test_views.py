@@ -23,8 +23,8 @@ import pytest
 from django.test import TestCase
 from django_dynamic_fixture import G
 
-from apigateway.apps.permission import models, views
-from apigateway.apps.permission.helpers import AppPermissionHelper
+from apigateway.apis.web.permission import views
+from apigateway.apps.permission import models
 from apigateway.core.models import Resource
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, dummy_time, get_response_json
 from apigateway.utils.time import now_datetime
@@ -32,19 +32,13 @@ from apigateway.utils.time import now_datetime
 pytestmark = pytest.mark.django_db
 
 
-class TestAppPermissionViewSet:
+class TestAppResourcePermissionViewSet:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self, mocker):
-        mocker.patch("apigateway.apps.permission.serializers.BKAppCodeValidator.__call__")
+        mocker.patch("apigateway.apis.web.permission.serializers.BKAppCodeValidator.__call__")
 
     def test_list(self, fake_resource, request_view):
         fake_gateway = fake_resource.api
-
-        G(
-            models.AppAPIPermission,
-            api=fake_gateway,
-            bk_app_code="test",
-        )
 
         G(
             models.AppResourcePermission,
@@ -64,16 +58,6 @@ class TestAppPermissionViewSet:
         data = [
             {
                 "params": {
-                    "dimension": "api",
-                    "bk_app_code": "test",
-                    "grant_type": "initialize",
-                },
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {
                     "dimension": "resource",
                     "bk_app_code": "",
                     "grant_type": "apply",
@@ -87,7 +71,7 @@ class TestAppPermissionViewSet:
         for test in data:
             response = request_view(
                 "GET",
-                "permissions.app-permissions",
+                "permissions.app-resource-permissions",
                 path_params={"gateway_id": fake_gateway.id},
                 gateway=fake_gateway,
                 data=test["params"],
@@ -107,7 +91,6 @@ class TestAppPermissionViewSet:
                     "bk_app_code": "apigw-test",
                     "expire_days": 180,
                     "resource_ids": [fake_resource.id],
-                    "dimension": "resource",
                 },
                 "expected": {
                     "expires": dummy_time.time,
@@ -119,19 +102,75 @@ class TestAppPermissionViewSet:
                     "bk_app_code": "apigw-test",
                     "expire_days": None,
                     "resource_ids": [fake_resource.id],
-                    "dimension": "resource",
                 },
                 "expected": {
                     "expires": None,
                     "permission_model": models.AppResourcePermission,
                 },
             },
+        ]
+
+        for test in data:
+            response = request_view(
+                "POST",
+                "permissions.app-resource-permissions",
+                path_params={"gateway_id": fake_gateway.id},
+                gateway=fake_gateway,
+                data=test["params"],
+            )
+            result = response.json()
+            assert result["code"] == 0, result
+
+
+class TestAppGatewayPermissionViewSet:
+    @pytest.fixture(autouse=True)
+    def setup_fixtures(self, mocker):
+        mocker.patch("apigateway.apis.web.permission.serializers.BKAppCodeValidator.__call__")
+
+    def test_list(self, fake_resource, request_view):
+        fake_gateway = fake_resource.api
+
+        G(
+            models.AppAPIPermission,
+            api=fake_gateway,
+            bk_app_code="test",
+        )
+
+        data = [
+            {
+                "params": {
+                    "bk_app_code": "test",
+                    "grant_type": "initialize",
+                },
+                "expected": {
+                    "count": 1,
+                },
+            }
+        ]
+
+        for test in data:
+            response = request_view(
+                "GET",
+                "permissions.app-gateway-permissions",
+                path_params={"gateway_id": fake_gateway.id},
+                gateway=fake_gateway,
+                data=test["params"],
+            )
+
+            result = response.json()
+            assert result["code"] == 0, result
+            assert result["data"]["count"] == test["expected"]["count"]
+
+    def test_create(self, mocker, request_view, fake_resource):
+        mocker.patch("apigateway.apps.permission.models.generate_expire_time", return_value=dummy_time.time)
+        fake_gateway = fake_resource.api
+
+        data = [
             {
                 "params": {
                     "bk_app_code": "apigw-test",
                     "expire_days": 180,
                     "resource_ids": None,
-                    "dimension": "api",
                 },
                 "expected": {
                     "expires": dummy_time.time,
@@ -143,7 +182,6 @@ class TestAppPermissionViewSet:
                     "bk_app_code": "apigw-test",
                     "expire_days": None,
                     "resource_ids": None,
-                    "dimension": "api",
                 },
                 "expected": {
                     "expires": None,
@@ -155,7 +193,7 @@ class TestAppPermissionViewSet:
         for test in data:
             response = request_view(
                 "POST",
-                "permissions.app-permissions",
+                "permissions.app-gateway-permissions",
                 path_params={"gateway_id": fake_gateway.id},
                 gateway=fake_gateway,
                 data=test["params"],
@@ -164,7 +202,90 @@ class TestAppPermissionViewSet:
             assert result["code"] == 0, result
 
 
-class TestAppPermissionBatchViewSet(TestCase):
+class TestAppResourcePermissionBatchViewSet(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = APIRequestFactory()
+        cls.gateway = create_gateway()
+
+    def test_renew(self):
+        resource = G(Resource, api=self.gateway)
+
+        perm_2 = G(
+            models.AppResourcePermission,
+            api=self.gateway,
+            bk_app_code="test",
+            resource_id=resource.id,
+            grant_type="apply",
+        )
+
+        data = [
+            {
+                "params": {
+                    "ids": [perm_2.id],
+                },
+            },
+        ]
+
+        for test in data:
+            request = self.factory.post(
+                f"/gateways/{self.gateway.id}/permissions/app-resource-permissions/renew/", data=test["params"]
+            )
+
+            view = views.AppResourcePermissionRenewApi.as_view()
+            response = view(request, gateway_id=self.gateway.id)
+
+            result = get_response_json(response)
+            self.assertEqual(result["code"], 0, result)
+
+            perm_record = models.AppResourcePermission.objects.filter(
+                api=self.gateway,
+                id=test["params"]["ids"][0],
+            ).first()
+            self.assertTrue(
+                180 * 24 * 3600 - 10 < (perm_record.expires - now_datetime()).total_seconds() < 180 * 24 * 3600
+            )
+
+    def test_destroy(self):
+        resource = G(Resource, api=self.gateway)
+
+        perm_2 = G(
+            models.AppResourcePermission,
+            api=self.gateway,
+            bk_app_code="test",
+            resource_id=resource.id,
+            grant_type="apply",
+        )
+
+        data = [
+            {
+                "params": {
+                    "ids": [perm_2.id],
+                },
+            },
+        ]
+
+        for test in data:
+            request = self.factory.post(
+                f"/gateways/{self.gateway.id}/permissions/app-resource-permissions/delete/", data=test["params"]
+            )
+
+            view = views.AppResourcePermissionDeleteApi.as_view()
+            response = view(request, gateway_id=self.gateway.id)
+
+            result = get_response_json(response)
+            self.assertEqual(result["code"], 0, result)
+
+            permission_model = models.AppResourcePermission
+            self.assertFalse(
+                permission_model.objects.filter(
+                    api=self.gateway,
+                    id=test["params"]["ids"][0],
+                ).exists()
+            )
+
+
+class TestAppGatewayPermissionBatchViewSet(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
@@ -179,38 +300,24 @@ class TestAppPermissionBatchViewSet(TestCase):
             bk_app_code="test",
         )
 
-        perm_2 = G(
-            models.AppResourcePermission,
-            api=self.gateway,
-            bk_app_code="test",
-            resource_id=resource.id,
-            grant_type="apply",
-        )
-
         data = [
             {
-                "params": {"dimension": "api", "ids": [perm_1.id]},
-            },
-            {
-                "params": {
-                    "dimension": "resource",
-                    "ids": [perm_2.id],
-                },
+                "params": {"ids": [perm_1.id]},
             },
         ]
 
         for test in data:
             request = self.factory.post(
-                f"/apis/{self.gateway.id}/permissions/app-permissions/batch/", data=test["params"]
+                f"/gateways/{self.gateway.id}/permissions/app-gateway-permissions/renew/", data=test["params"]
             )
 
-            view = views.AppPermissionBatchViewSet.as_view({"post": "renew"})
+            view = views.AppGatewayPermissionRenewApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
             self.assertEqual(result["code"], 0, result)
 
-            permission_model = AppPermissionHelper().get_permission_model(test["params"]["dimension"])
+            permission_model = models.AppAPIPermission
             perm_record = permission_model.objects.filter(
                 api=self.gateway,
                 id=test["params"]["ids"][0],
@@ -228,41 +335,26 @@ class TestAppPermissionBatchViewSet(TestCase):
             bk_app_code="test",
         )
 
-        perm_2 = G(
-            models.AppResourcePermission,
-            api=self.gateway,
-            bk_app_code="test",
-            resource_id=resource.id,
-            grant_type="apply",
-        )
-
         data = [
             {
                 "params": {
-                    "dimension": "api",
                     "ids": [perm_1.id],
-                },
-            },
-            {
-                "params": {
-                    "dimension": "resource",
-                    "ids": [perm_2.id],
                 },
             },
         ]
 
         for test in data:
-            request = self.factory.delete(
-                f"/apis/{self.gateway.id}/permissions/app-permissions/batch/", data=test["params"]
+            request = self.factory.post(
+                f"/apis/{self.gateway.id}/permissions/app-gateway-permissions/delete/", data=test["params"]
             )
 
-            view = views.AppPermissionBatchViewSet.as_view({"delete": "destroy"})
+            view = views.AppGatewayPermissionDeleteApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
             self.assertEqual(result["code"], 0, result)
 
-            permission_model = AppPermissionHelper().get_permission_model(test["params"]["dimension"])
+            permission_model = models.AppAPIPermission
             self.assertFalse(
                 permission_model.objects.filter(
                     api=self.gateway,
@@ -291,11 +383,11 @@ class TestAppPermissionApplyViewSet:
 
         for test in data:
             request = request_factory.get(
-                f"/apis/{fake_gateway.id}/permissions/app-permission-apply/",
+                f"/gateways/{fake_gateway.id}/permissions/app-permission-apply/",
                 data=test["params"],
             )
 
-            view = views.AppPermissionApplyViewSet.as_view({"get": "list"})
+            view = views.AppPermissionApplyListApi.as_view()
             response = view(request, gateway_id=fake_gateway.id)
 
             result = get_response_json(response)
@@ -314,7 +406,7 @@ class TestAppPermissionApplyBatchViewSet:
             return_value=mock.MagicMock(id=1),
         )
         mocker.patch(
-            "apigateway.apps.permission.views.send_mail_for_perm_handle",
+            "apigateway.apis.web.permission.views.send_mail_for_perm_handle",
             return_value=None,
         )
 
@@ -353,11 +445,11 @@ class TestAppPermissionApplyBatchViewSet:
 
         for test in data:
             request = request_factory.post(
-                f"/apis/{fake_gateway.id}/permissions/app-permission-apply/batch/",
+                f"/gateways/{fake_gateway.id}/permissions/app-permission-apply/approval/",
                 data=test["params"],
             )
 
-            view = views.AppPermissionApplyBatchViewSet.as_view({"post": "post"})
+            view = views.AppPermissionApplyApprovalApi.as_view()
             response = view(request, gateway_id=fake_gateway.id)
             result = get_response_json(response)
 
@@ -399,10 +491,10 @@ class TestAppPermissionRecordViewSet(TestCase):
 
         for test in data:
             request = self.factory.get(
-                f"/apis/{self.gateway.id}/permissions/app-permission-records/", data=test["params"]
+                f"/gateways/{self.gateway.id}/permissions/app-permission-records/", data=test["params"]
             )
 
-            view = views.AppPermissionRecordViewSet.as_view({"get": "list"})
+            view = views.AppPermissionRecordListApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
@@ -424,9 +516,9 @@ class TestAppPermissionRecordViewSet(TestCase):
             ),
         )
 
-        request = self.factory.get(f"/apis/{self.gateway.id}/permissions/app-permission-records/{record.id}/")
+        request = self.factory.get(f"/gateways/{self.gateway.id}/permissions/app-permission-records/{record.id}/")
 
-        view = views.AppPermissionRecordViewSet.as_view({"get": "retrieve"})
+        view = views.AppPermissionRecordRetrieveApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=record.id)
 
         result = get_response_json(response)

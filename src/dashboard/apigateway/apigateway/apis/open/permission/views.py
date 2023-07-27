@@ -314,7 +314,6 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
             status=data.get("apply_status"),
             query=data.get("query"),
             order_by="-id",
-            fuzzy=False,
         )
 
         page = self.paginate_queryset(queryset)
