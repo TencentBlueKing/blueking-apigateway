@@ -15,8 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.apps import AppConfig
-
-
-class AccessLogConfig(AppConfig):
-    name = "apigateway.apps.access_log"

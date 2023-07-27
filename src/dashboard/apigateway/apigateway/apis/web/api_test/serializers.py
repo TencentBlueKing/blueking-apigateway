@@ -42,7 +42,7 @@ class AuthorizationSLZ(serializers.Serializer):
         return {k: v for k, v in data.items() if v}
 
 
-class APITestSLZ(serializers.Serializer):
+class APITestInputSLZ(serializers.Serializer):
     stage_id = serializers.IntegerField()
     resource_id = serializers.IntegerField()
     method = serializers.ChoiceField(choices=HTTP_METHOD_CHOICES)
@@ -63,7 +63,7 @@ class APITestSLZ(serializers.Serializer):
         return data
 
 
-class APITestDataSLZ(serializers.Serializer):
+class APITestOutputSLZ(serializers.Serializer):
     status_code = serializers.IntegerField()
     proxy_time = serializers.IntegerField()
     size = serializers.FloatField()

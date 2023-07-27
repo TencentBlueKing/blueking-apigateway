@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -18,74 +17,85 @@
 #
 import random
 import time
-import urllib
+from typing import Dict, List
+from urllib.parse import urlencode
 
 from django.conf import settings
+from django.http import Http404
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
-from rest_framework.generics import get_object_or_404
-from rest_framework.views import APIView
+from rest_framework import generics, status
 
-from apigateway.apps.access_log.constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_SECONDS, LOG_SHARED_LINK_PATH
-from apigateway.apps.access_log.helpers import DataScrubber, get_es_client_class
-from apigateway.apps.access_log.serializers import (
-    LogDetailQuerySerializer,
-    LogLinkSerializer,
-    LogSerializer,
-    SearchLogQuerySerializer,
-    TimeChartSerializer,
-)
+from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_SECONDS, LOG_LINK_SHARED_PATH
+from apigateway.biz.access_log.data_scrubber import DataScrubber
+from apigateway.biz.access_log.log_search import LogSearchClient
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
+from .serializers import (
+    LogDetailQueryInputSLZ,
+    LogLinkOutputSLZ,
+    RequestLogOutputSLZ,
+    RequestLogQueryInputSLZ,
+    TimeChartOutputSLZ,
+)
 
-class BaseLogAPIView(APIView):
-    def _generate_client(self, request, serializer_class):
-        slz = serializer_class(data=request.query_params)
+
+class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
+    @swagger_auto_schema(
+        query_serializer=RequestLogQueryInputSLZ,
+        responses={status.HTTP_200_OK: TimeChartOutputSLZ()},
+        tags=["AccessLog"],
+    )
+    def retrieve(self, request, *args, **kwargs):
+        slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
-
         data = slz.validated_data
 
-        stage = get_object_or_404(Stage, api=request.gateway, id=data["stage_id"])
+        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        if not stage_name:
+            raise Http404
 
-        client_class = get_es_client_class()
-        client = client_class(
-            api_id=request.gateway.id,
-            stage_name=stage.name,
+        client = LogSearchClient(
+            gateway_id=request.gateway.id,
+            stage_name=stage_name,
             query=data.get("query"),
             time_start=data.get("time_start"),
             time_end=data.get("time_end"),
             time_range=data.get("time_range"),
         )
-        return client, data
+        slz = TimeChartOutputSLZ(instance=client.get_time_chart())
+        return OKJsonResponse("OK", data=slz.data)
 
 
-class LogTimeChartAPIView(BaseLogAPIView):
-    @swagger_auto_schema(
-        query_serializer=SearchLogQuerySerializer,
-        responses={status.HTTP_200_OK: TimeChartSerializer()},
-        tags=["AccessLog"],
-    )
-    def get(self, request, *args, **kwargs):
-        client, _ = self._generate_client(request, SearchLogQuerySerializer)
-        data = client.get_time_chart()
-        return OKJsonResponse("OK", data=data)
-
-
-class SearchLogsAPIView(BaseLogAPIView):
+class SearchLogListApi(generics.ListAPIView):
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=SearchLogQuerySerializer,
-        responses={status.HTTP_200_OK: LogSerializer(many=True)},
+        query_serializer=RequestLogQueryInputSLZ,
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["AccessLog"],
     )
-    def get(self, request, *args, **kwargs):
-        client, data = self._generate_client(request, SearchLogQuerySerializer)
+    def list(self, request, *args, **kwargs):
+        slz = RequestLogQueryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        if not stage_name:
+            raise Http404
+
+        client = LogSearchClient(
+            gateway_id=request.gateway.id,
+            stage_name=stage_name,
+            query=data.get("query"),
+            time_start=data.get("time_start"),
+            time_end=data.get("time_end"),
+            time_range=data.get("time_range"),
+        )
         total_count, logs = client.search_logs(
             offset=data["offset"],
             limit=data["limit"],
@@ -104,7 +114,7 @@ class SearchLogsAPIView(BaseLogAPIView):
 
         return OKJsonResponse("OK", data=results)
 
-    def _add_extend_fields(self, logs):
+    def _add_extend_fields(self, logs: List[Dict]):
         """为日志添加扩展字段"""
         for log in logs:
             if log.get("error"):
@@ -115,31 +125,24 @@ class SearchLogsAPIView(BaseLogAPIView):
         return logs
 
 
-class LogViewSet(viewsets.GenericViewSet):
-
-    api_permission_exempt = False
-
-    def _generate_client(self, request, request_id):
-        client_class = get_es_client_class()
-        client = client_class(
-            request_id=request_id,
-        )
-        return client
+class LogDetailListApi(generics.ListAPIView):
+    # 打开分享日志链接的，可能不是网关负责人，因此去除权限校验
+    api_permission_exempt = True
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=LogDetailQuerySerializer,
-        responses={status.HTTP_200_OK: LogSerializer(many=True)},
+        query_serializer=LogDetailQueryInputSLZ,
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["AccessLog"],
     )
-    def retrieve(self, request, request_id, *args, **kwargs):
+    def list(self, request, request_id, *args, **kwargs):
         """
         获取指定 request_id 的日志内容
         """
         validator = SignatureValidator(settings.LOG_LINK_SECRET, request, LOG_LINK_EXPIRE_SECONDS)
         validator.is_valid(raise_exception=True)
 
-        client = self._generate_client(request, request_id)
+        client = LogSearchClient(request_id=request_id)
 
         total_count, logs = client.search_logs()
         # 去除params、body中的敏感数据
@@ -153,37 +156,35 @@ class LogViewSet(viewsets.GenericViewSet):
 
         return OKJsonResponse("OK", data=results)
 
+
+class LogLinkRetrieveApi(generics.RetrieveAPIView):
+    api_permission_exempt = False
+
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: LogLinkSerializer()},
+        responses={status.HTTP_200_OK: LogLinkOutputSLZ()},
         tags=["AccessLog"],
     )
-    def link(self, request, request_id, *args, **kwargs):
+    def retrieve(self, request, request_id, *args, **kwargs):
         """
         获取指定 request_id 日志的分享链接
         """
-        shared_link_path = LOG_SHARED_LINK_PATH.format(
-            api_id=request.gateway.id,
-            request_id=request_id,
-        )
+        shared_link_path = LOG_LINK_SHARED_PATH.format(gateway_id=request.gateway.id, request_id=request_id)
+        query_string = self._get_query_string(request.user.username, request.gateway.id, request_id)
+        slz = LogLinkOutputSLZ(instance={"link": f"{settings.DASHBOARD_FE_URL}{shared_link_path}?{query_string}"})
+        return OKJsonResponse("OK", data=slz.data)
 
-        log_detail_path = reverse(
-            "access_log.logs.detail",
-            kwargs={
-                "gateway_id": request.gateway.id,
-                "request_id": request_id,
-            },
-        )
-
+    def _get_query_string(self, username: str, gateway_id: int, request_id: str):
         params = {
             "bk_timestamp": int(time.time()),
             "bk_nonce": random.randint(1, 999999),
-            "shared_by": request.user.username,
+            "shared_by": username,
         }
+
+        log_detail_path = reverse(
+            "access_log.logs.detail",
+            kwargs={"gateway_id": gateway_id, "request_id": request_id},
+        )
         params["bk_signature"] = SignatureGenerator(settings.LOG_LINK_SECRET).generate_signature(
             "GET", log_detail_path, params
         )
-        query_str = urllib.parse.urlencode(params)
-
-        apigw_domain = getattr(settings, "DASHBOARD_FE_URL", "").rstrip("/")
-
-        return OKJsonResponse("OK", data={"link": f"{apigw_domain}{shared_link_path}?{query_str}"})
+        return urlencode(params)
