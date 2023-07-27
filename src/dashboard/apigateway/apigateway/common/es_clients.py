@@ -18,13 +18,20 @@
 #
 import json
 import logging
+import warnings
 from typing import Any, Dict
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.conf import settings
 from django.utils.translation import gettext as _
 from elasticsearch.client import Elasticsearch
-from elasticsearch.exceptions import AuthenticationException, ConnectionError, ConnectionTimeout, NotFoundError
+from elasticsearch.exceptions import (
+    AuthenticationException,
+    ConnectionError,
+    ConnectionTimeout,
+    ElasticsearchDeprecationWarning,
+    NotFoundError,
+)
 from elasticsearch_dsl import Search
 from urllib3.exceptions import ConnectTimeoutError
 
@@ -33,6 +40,8 @@ from apigateway.components.bk_log import bk_log_component
 from apigateway.components.exceptions import RemoteAPIResultError, RemoteRequestError
 
 logger = logging.getLogger(__name__)
+
+warnings.filterwarnings("ignore", category=ElasticsearchDeprecationWarning)
 
 
 class ESClientTypeEnum(StructuredEnum):
@@ -128,7 +137,8 @@ class RawESClient(ElasticsearchGetter, BaseESClient):
 
     def execute_search(self, body: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            return self._get_elasticsearch().search(index=self._get_es_index(), body=body)
+            result = self._get_elasticsearch().search(index=self._get_es_index(), body=body)
+            return self._to_compatible_result(result)
         except ConnectionError as err:
             logger.exception("failed to connect elasticsearch.")
             raise error_codes.ES_CONNECTION_ERROR.format(es_hosts_display=self._get_es_hosts_display(), err=err)
@@ -152,6 +162,12 @@ class RawESClient(ElasticsearchGetter, BaseESClient):
         except Exception as err:
             logger.exception("request elasticsearch error. index=%s, body=%s", self._get_es_index(), json.dumps(body))
             raise error_codes.ES_SEARCH_ERROR.format(es_hosts_display=self._get_es_hosts_display(), err=err)
+
+    def _to_compatible_result(self, result: Dict[str, Any]) -> Dict[str, Any]:
+        # 修改结果中 count，使其与 bklog 保持一致
+        if "hits" in result and "total" in result["hits"] and isinstance(result["hits"]["total"], dict):
+            result["hits"]["total"] = result["hits"]["total"]["value"]
+        return result
 
 
 class BKLogESClient(BaseESClient):

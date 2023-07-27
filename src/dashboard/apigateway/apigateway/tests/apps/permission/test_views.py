@@ -306,11 +306,11 @@ class TestAppPermissionApplyViewSet:
 class TestAppPermissionApplyBatchViewSet:
     def test_post(self, mocker, fake_gateway, request_factory):
         mocker.patch(
-            "apigateway.apps.permission.helpers.APIPermissionDimensionManager.handle_permission_apply",
+            "apigateway.biz.permission.APIPermissionDimensionManager.handle_permission_apply",
             return_value=mock.MagicMock(id=1),
         )
         mocker.patch(
-            "apigateway.apps.permission.helpers.ResourcePermissionDimensionManager.handle_permission_apply",
+            "apigateway.biz.permission.ResourcePermissionDimensionManager.handle_permission_apply",
             return_value=mock.MagicMock(id=1),
         )
         mocker.patch(

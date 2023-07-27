@@ -189,7 +189,7 @@ class MicroGatewayPermissionViewSet(BaseMicroGatewayViewSet):
             return resource_permissions
 
         name_mappings = self._get_released_resource_name_mappings(release)
-        for permission in AppResourcePermission.objects.filter_permission(api_gateway, bk_app_codes=app_code_list):
+        for permission in AppResourcePermission.objects.filter(api=api_gateway, bk_app_code__in=app_code_list):
             # 因为 resource_version 为下发生效的真实版本，因此没有匹配的权限无需下发
             if permission.resource_id not in name_mappings:
                 continue
@@ -207,7 +207,7 @@ class MicroGatewayPermissionViewSet(BaseMicroGatewayViewSet):
         return resource_permissions
 
     def _get_api_permissions(self, api_gateway: Gateway, app_code_list: Optional[List[str]]):
-        qs = AppAPIPermission.objects.filter_permission(api_gateway, bk_app_codes=app_code_list)
+        qs = AppAPIPermission.objects.filter(api=api_gateway, bk_app_code__in=app_code_list)
 
         return qs
 

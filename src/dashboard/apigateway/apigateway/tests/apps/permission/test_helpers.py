@@ -22,16 +22,16 @@ import pytest
 from ddf import G
 
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
-from apigateway.apps.permission.helpers import (
-    APIPermissionDimensionManager,
-    PermissionDimensionManager,
-    ResourcePermissionDimensionManager,
-)
 from apigateway.apps.permission.models import (
     AppAPIPermission,
     AppPermissionApply,
     AppPermissionApplyStatus,
     AppResourcePermission,
+)
+from apigateway.biz.permission import (
+    APIPermissionDimensionManager,
+    PermissionDimensionManager,
+    ResourcePermissionDimensionManager,
 )
 from apigateway.core.models import Resource
 

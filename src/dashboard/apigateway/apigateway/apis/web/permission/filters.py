@@ -18,14 +18,13 @@
 #
 from django_filters import rest_framework as filters
 
+from apigateway.apps.permission.constants import GrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
     AppAPIPermission,
     AppPermissionApply,
     AppPermissionRecord,
     AppResourcePermission,
 )
-
-from .constants import GrantDimensionEnum, GrantTypeEnum
 
 
 class AppResourcePermissionFilter(filters.FilterSet):

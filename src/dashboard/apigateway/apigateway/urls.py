@@ -37,7 +37,7 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
-from apigateway.apps.monitor.views import AlarmRecordSummaryViewSet
+from apigateway.apis.web.monitor.views import AlarmRecordSummaryListApi
 
 urlpatterns = [
     path("", include("django_prometheus.urls")),
@@ -59,25 +59,14 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/backend-services/", include("apigateway.apps.backend_service.urls")),
     path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     # apps: normal
-    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apps.api_test.urls")),
-    path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apps.access_log.urls")),
     path("backend/apis/<int:gateway_id>/metrics/", include("apigateway.apps.metrics.urls")),
-    path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apps.monitor.urls")),
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
     path("backend/apis/<int:gateway_id>/support/", include("apigateway.apps.support.urls")),
     path("backend/apis/<int:gateway_id>/access_strategies/", include("apigateway.apps.access_strategy.urls")),
     path("backend/apis/<int:gateway_id>/plugins/", include("apigateway.apps.plugin.urls")),
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     path("backend/esb/", include("apigateway.apps.esb.urls")),
-    path("backend/users/", include("apigateway.apps.user.urls")),
-    path("backend/feature/", include("apigateway.apps.feature.urls")),
     # FIXME: change this to a new url in future
-    # monitors
-    path(
-        "backend/apis/monitors/alarm/records/summary/",
-        AlarmRecordSummaryViewSet.as_view({"get": "list"}),
-        name="monitors.alamr_records.summary",
-    ),
     # switch language
     path("backend/i18n/setlang/", set_language, name="set_language"),
     # api-support backend/docs urls -- begin
@@ -86,10 +75,30 @@ urlpatterns = [
     path("backend/docs/feature/", include("apigateway.apps.docs.feature.urls")),
     path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
     # refactoring begin ------
+    path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
+    path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
+    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
+    path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
     # delete it later after frontend changed the url
     path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     path("backend/gateways/<int:gateway_id>/permissions/", include("apigateway.apis.web.permission.urls")),
+    path("backend/users/", include("apigateway.apis.web.user.urls")),
+    path("backend/feature/", include("apigateway.apis.web.feature.urls")),
+    # monitors
+    path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
+    path("backend/gateways/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
+    # todo 不应该放在顶层, 后续要想办法挪到下层
+    path(
+        "backend/apis/monitors/alarm/records/summary/",
+        AlarmRecordSummaryListApi.as_view(),
+        name="monitors.alamr_records.summary",
+    ),
+    path(
+        "backend/gateways/monitors/alarm/records/summary/",
+        AlarmRecordSummaryListApi.as_view(),
+        name="monitors.alamr_records.summary",
+    ),
     # refactoring end ------
 ]
 

@@ -260,7 +260,7 @@ class TestAppResourcePermissionManager:
             resource_id=self.resource.id,
         )
 
-        models.AppResourcePermission.objects.renew_permission(
+        models.AppResourcePermission.objects.renew_by_resource_ids(
             self.gateway,
             ids=[perm_1.id, perm_2.id, perm_3.id],
         )

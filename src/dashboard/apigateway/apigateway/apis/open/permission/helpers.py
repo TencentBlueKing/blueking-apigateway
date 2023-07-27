@@ -28,7 +28,17 @@ from pydantic import BaseModel, parse_obj_as
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionLevelEnum, PermissionStatusEnum
 from apigateway.apps.permission.models import AppAPIPermission, AppPermissionApplyStatus, AppResourcePermission
 from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, ReleasedResource, Resource
+
+
+class AppPermissionHelper:
+    def get_permission_model(self, dimension):
+        if dimension == GrantDimensionEnum.API.value:
+            return AppAPIPermission
+        elif dimension == GrantDimensionEnum.RESOURCE.value:
+            return AppResourcePermission
+        raise error_codes.INVALID_ARGS.format(f"unsupported grant_dimension: {dimension}")
 
 
 class ResourcePermission(BaseModel):
@@ -142,16 +152,16 @@ class ResourcePermissionBuilder:
         return [perm.as_dict() for perm in resource_permissions]
 
     def _get_api_permission(self):
-        return AppAPIPermission.objects.filter_permission(
-            gateway=self.gateway,
+        return AppAPIPermission.objects.filter(
+            api=self.gateway,
             bk_app_code=self.target_app_code,
         ).first()
 
     def _get_resource_permission_map(self):
         return {
             perm.resource_id: perm
-            for perm in AppResourcePermission.objects.filter_permission(
-                gateway=self.gateway,
+            for perm in AppResourcePermission.objects.filter(
+                api=self.gateway,
                 bk_app_code=self.target_app_code,
             )
         }

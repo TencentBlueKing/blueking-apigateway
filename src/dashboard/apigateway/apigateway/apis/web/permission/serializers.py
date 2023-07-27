@@ -21,18 +21,17 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
-from apigateway.core.constants import ExportTypeEnum
-from apigateway.core.models import Resource
-from apigateway.core.validators import BKAppCodeValidator, ResourceIDValidator
-from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
-
-from .constants import (
+from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
     ApplyStatusEnum,
     GrantDimensionEnum,
     GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
 )
+from apigateway.core.constants import ExportTypeEnum
+from apigateway.core.models import Resource
+from apigateway.core.validators import BKAppCodeValidator, ResourceIDValidator
+from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
 
 class AppGatewayPermissionOutputSLZ(serializers.Serializer):
