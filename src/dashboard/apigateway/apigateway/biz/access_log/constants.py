@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -168,7 +167,7 @@ SENSITIVE_KEYS = [
 ]
 
 
-# 部分匹配的敏感key，如key password 匹配字段 my_password
+# 部分匹配的敏感 key，如 key password 匹配字段 my_password
 SENSITIVE_KEYS_PART_MATCH = [
     # sentry Server-Side Scrubbing, https://docs.sentry.io/data-management/sensitive-data/#server-side-scrubbing
     "password",
@@ -176,8 +175,6 @@ SENSITIVE_KEYS_PART_MATCH = [
     "passwd",
     "api_key",
     "apikey",
-    # "access_token",
-    # "auth_token",
     "credentials",
     "mysql_pwd",
     "stripetoken",
@@ -190,4 +187,4 @@ SENSITIVE_KEYS_PART_MATCH_PATTERN = re.compile(r"(%s)" % "|".join(SENSITIVE_KEYS
 
 LOG_LINK_EXPIRE_SECONDS = 24 * 60 * 60
 
-LOG_SHARED_LINK_PATH = "/{api_id}/access-log/{request_id}/"
+LOG_LINK_SHARED_PATH = "/{gateway_id}/access-log/{request_id}/"
