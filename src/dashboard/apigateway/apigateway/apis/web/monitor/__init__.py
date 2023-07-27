@@ -16,26 +16,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
-
-from .views import AlarmRecordViewSet, AlarmStrategyViewSet
-
-urlpatterns = [
-    # alarm-strategy
-    path("alarm/strategies/", AlarmStrategyViewSet.as_view({"get": "list", "post": "create"}), name="monitor.stages"),
-    path(
-        "alarm/strategies/<int:id>/",
-        AlarmStrategyViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"}),
-        name="monitor.alarm_strategies.detail",
-    ),
-    path(
-        "alarm/strategies/<int:id>/status/",
-        AlarmStrategyViewSet.as_view({"put": "update_status"}),
-        name="monitor.alarm_strategies.update_status",
-    ),
-    # alarm-record
-    path("alarm/records/", AlarmRecordViewSet.as_view({"get": "list"}), name="monitor.alarm_records"),
-    path(
-        "alarm/records/<int:id>/", AlarmRecordViewSet.as_view({"get": "retrieve"}), name="monitor.alarm_records.detail"
-    ),
-]

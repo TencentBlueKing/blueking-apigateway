@@ -21,8 +21,8 @@ import json
 from django.test import TestCase
 from django_dynamic_fixture import G
 
+from apigateway.apis.web.monitor import serializers
 from apigateway.apps.label.models import APILabel
-from apigateway.apps.monitor import serializers
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
 from apigateway.core.models import Gateway
 from apigateway.tests.utils.testing import create_request, dummy_time
@@ -93,7 +93,7 @@ class TestNoticeConfigSLZ(TestCase):
                 self.assertEqual(slz.validated_data, test)
 
 
-class TestAlarmStrategySLZ(TestCase):
+class TestAlarmStrategyInputSLZ(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.gateway = G(Gateway)
@@ -153,7 +153,7 @@ class TestAlarmStrategySLZ(TestCase):
             }
         ]
         for test in data:
-            slz = serializers.AlarmStrategySLZ(data=test, context={"request": self.request})
+            slz = serializers.AlarmStrategyInputSLZ(data=test, context={"request": self.request})
             slz.is_valid()
             self.assertEqual(slz.validated_data, test["expected"])
 
@@ -216,21 +216,21 @@ class TestAlarmStrategySLZ(TestCase):
             test["instance"].api_labels.set(test["api_label_ids"])
             test["expected"]["id"] = test["instance"].id
 
-            slz = serializers.AlarmStrategySLZ(instance=test["instance"])
+            slz = serializers.AlarmStrategyInputSLZ(instance=test["instance"])
             slz_data = slz.data
 
             slz_data["api_label_ids"] = sorted(slz_data["api_label_ids"])
             self.assertEqual(slz_data, test["expected"], dict(slz_data))
 
 
-class TestAlarmRecordSLZ(TestCase):
+class TestAlarmRecordOutputSLZ(TestCase):
     def test_to_representation(self):
         gateway = G(Gateway)
         alarm_strategy = G(AlarmStrategy, api=gateway, name="test")
         alarm_record = G(AlarmRecord, created_time=dummy_time.time)
         alarm_record.alarm_strategies.set([alarm_strategy])
 
-        slz = serializers.AlarmRecordSLZ(instance=alarm_record)
+        slz = serializers.AlarmRecordQueryOutputSLZ(instance=alarm_record)
 
         self.assertEqual(
             slz.data,

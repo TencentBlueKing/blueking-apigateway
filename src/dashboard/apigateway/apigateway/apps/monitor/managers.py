@@ -141,7 +141,7 @@ class AlarmStrategyManager(models.Manager):
             .filter(alarm_record_count__gt=0)
         )
 
-    def annotate_alarm_record_by_api(self, gateway_ids, time_start=None, time_end=None):
+    def annotate_alarm_record_by_gateway(self, gateway_ids, time_start=None, time_end=None):
         """
         统计指定网关下，告警记录的数量
         """
