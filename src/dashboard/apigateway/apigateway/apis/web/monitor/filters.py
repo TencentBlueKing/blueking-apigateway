@@ -18,8 +18,9 @@
 #
 from rest_framework.filters import BaseFilterBackend
 
-from apigateway.apis.web.monitor.serializers import AlarmRecordQueryInputSLZ
 from apigateway.apps.monitor.models import AlarmStrategy
+
+from .serializers import AlarmRecordQueryInputSLZ
 
 
 class AlarmRecordFilterBackend(BaseFilterBackend):

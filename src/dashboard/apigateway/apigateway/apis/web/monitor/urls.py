@@ -16,9 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
-from apigateway.apis.web.monitor.views import (
+from .views import (
     AlarmRecordListApi,
     AlarmRecordRetrieveApi,
     AlarmStrategyListCreateApi,
@@ -28,18 +28,32 @@ from apigateway.apis.web.monitor.views import (
 
 urlpatterns = [
     # alarm-strategy
-    path("alarm/strategies/", AlarmStrategyListCreateApi.as_view(), name="monitor.stages"),
     path(
-        "alarm/strategies/<int:id>/",
-        AlarmStrategyRetrieveUpdateDestroyApi.as_view(),
-        name="monitor.alarm_strategies.detail",
-    ),
-    path(
-        "alarm/strategies/<int:id>/status/",
-        AlarmStrategyUpdateStatusApi.as_view(),
-        name="monitor.alarm_strategies.update_status",
+        "alarm/strategies/",
+        include(
+            [
+                path("", AlarmStrategyListCreateApi.as_view(), name="monitor.stages"),
+                path(
+                    "<int:id>/",
+                    AlarmStrategyRetrieveUpdateDestroyApi.as_view(),
+                    name="monitor.alarm_strategies.detail",
+                ),
+                path(
+                    "<int:id>/status/",
+                    AlarmStrategyUpdateStatusApi.as_view(),
+                    name="monitor.alarm_strategies.update_status",
+                ),
+            ]
+        ),
     ),
     # alarm-record
-    path("alarm/records/", AlarmRecordListApi.as_view(), name="monitor.alarm_records"),
-    path("alarm/records/<int:id>/", AlarmRecordRetrieveApi.as_view(), name="monitor.alarm_records.detail"),
+    path(
+        "alarm/records/",
+        include(
+            [
+                path("", AlarmRecordListApi.as_view(), name="monitor.alarm_records"),
+                path("<int:id>/", AlarmRecordRetrieveApi.as_view(), name="monitor.alarm_records.detail"),
+            ]
+        ),
+    ),
 ]
