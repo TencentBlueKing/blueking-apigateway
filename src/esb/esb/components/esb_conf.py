@@ -212,7 +212,6 @@ config = {
                             "request_validators": [APIGatewayAdapter(), AppAuthValidator()],
                             "permission_level": "unlimited",
                             "verified_user_required": False,
-                            "is_hidden": True,
                         },
                     ),
                     # gse
