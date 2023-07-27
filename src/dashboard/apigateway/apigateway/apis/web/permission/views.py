@@ -114,7 +114,7 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
         return OKJsonResponse("OK")
 
 
-class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generics.GenericAPIView):
+class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generics.CreateAPIView):
     queryset = AppResourcePermission.objects.order_by("-id")
 
     @swagger_auto_schema(
@@ -122,7 +122,7 @@ class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generic
         responses={status.HTTP_200_OK: ""},
         tags=["Permission"],
     )
-    def export(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         """
         权限导出
         """
@@ -188,10 +188,10 @@ class AppResourcePermissionAppCodeApi(generics.ListAPIView):
         return OKJsonResponse("OK", data=app_codes)
 
 
-class AppResourcePermissionRenewApi(generics.GenericAPIView):
+class AppResourcePermissionRenewApi(generics.CreateAPIView):
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"])
     @transaction.atomic
-    def renew(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         """
         权限续期
         """
@@ -208,12 +208,12 @@ class AppResourcePermissionRenewApi(generics.GenericAPIView):
         return OKJsonResponse("OK")
 
 
-class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generics.GenericAPIView):
+class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generics.CreateAPIView):
     queryset = AppResourcePermission.objects.order_by("-id")
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"])
     @transaction.atomic
-    def destroy(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         slz = AppPermissionIDsSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
@@ -272,7 +272,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
         return OKJsonResponse("OK")
 
 
-class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.GenericAPIView):
+class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.CreateAPIView):
     queryset = AppAPIPermission.objects.order_by("-id")
 
     @swagger_auto_schema(
@@ -280,7 +280,7 @@ class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.
         responses={status.HTTP_200_OK: ""},
         tags=["Permission"],
     )
-    def export(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         """
         权限导出
         """
@@ -343,10 +343,10 @@ class AppGatewayPermissionAppCodeApi(generics.ListAPIView):
         return OKJsonResponse("OK", data=app_codes)
 
 
-class AppGatewayPermissionRenewApi(generics.GenericAPIView):
+class AppGatewayPermissionRenewApi(generics.CreateAPIView):
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"])
     @transaction.atomic
-    def renew(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         """
         权限续期
         """
@@ -363,12 +363,12 @@ class AppGatewayPermissionRenewApi(generics.GenericAPIView):
         return OKJsonResponse("OK")
 
 
-class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.GenericAPIView):
+class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.CreateAPIView):
     queryset = AppAPIPermission.objects.order_by("-id")
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"])
     @transaction.atomic
-    def destroy(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         slz = AppPermissionIDsSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
@@ -461,7 +461,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse("OK", data=slz.data)
 
 
-class AppPermissionApplyApprovalApi(generics.GenericAPIView):
+class AppPermissionApplyApprovalApi(generics.CreateAPIView):
     def get_queryset(self):
         return AppPermissionRecord.objects.filter(api=self.request.gateway).order_by("-handled_time")
 
@@ -469,7 +469,7 @@ class AppPermissionApplyApprovalApi(generics.GenericAPIView):
         responses={status.HTTP_200_OK: ""}, request_body=AppPermissionApplyApprovalInputSLZ, tags=["Permission"]
     )
     @transaction.atomic
-    def post(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         """
         审批操作
         """

@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
 from . import views
 
@@ -24,84 +24,93 @@ urlpatterns = [
     # app-resource-permission
     path(
         "app-resource-permissions/",
-        views.AppResourcePermissionListCreateApi.as_view({"get": "list", "post": "create"}),
-        name="permissions.app-resource-permissions",
-    ),
-    path(
-        "app-resource-permissions/renew/",
-        views.AppResourcePermissionRenewApi.as_view({"post": "renew"}),
-        name="permissions.app-resource-permissions.renew",
-    ),
-    # app-permission export
-    path(
-        "app-resource-permissions/export/",
-        views.AppResourcePermissionExportApi.as_view({"post": "export"}),
-        name="permissions.app-resource-permissions.export",
-    ),
-    path(
-        "app-resource-permissions/bk-app-codes/",
-        views.AppResourcePermissionAppCodeApi.as_view({"get": "list"}),
-        name="permissions.app-resource-permissions.get_bk_app_codes",
-    ),
-    # delete 不支持传参，改用 post
-    path(
-        "app-resource-permissions/delete/",
-        views.AppResourcePermissionDeleteApi.as_view({"post": "destroy"}),
-        name="permissions.app-resource-permissions.delete",
+        include(
+            [
+                path(
+                    "", views.AppResourcePermissionListCreateApi.as_view(), name="permissions.app-resource-permissions"
+                ),
+                path(
+                    "renew/",
+                    views.AppResourcePermissionRenewApi.as_view(),
+                    name="permissions.app-resource-permissions.renew",
+                ),
+                path(
+                    "export/",
+                    views.AppResourcePermissionExportApi.as_view(),
+                    name="permissions.app-resource-permissions.export",
+                ),
+                path(
+                    "delete/",
+                    views.AppResourcePermissionDeleteApi.as_view(),
+                    name="permissions.app-resource-permissions.delete",
+                ),
+                path(
+                    "bk-app-codes/",
+                    views.AppResourcePermissionAppCodeApi.as_view(),
+                    name="permissions.app-resource-permissions.get_bk_app_codes",
+                ),
+            ]
+        ),
     ),
     # app-gateway-permission
     path(
         "app-gateway-permissions/",
-        views.AppGatewayPermissionListCreateApi.as_view({"get": "list", "post": "create"}),
-        name="permissions.app-gateway-permissions",
-    ),
-    path(
-        "app-gateway-permissions/renew/",
-        views.AppGatewayPermissionRenewApi.as_view({"post": "renew"}),
-        name="permissions.app-gateway-permissions.renew",
-    ),
-    # app-permission export
-    path(
-        "app-gateway-permissions/export/",
-        views.AppGatewayPermissionExportApi.as_view({"post": "export"}),
-        name="permissions.app-gateway-permissions.export",
-    ),
-    path(
-        "app-gateway-permissions/bk-app-codes/",
-        views.AppGatewayPermissionAppCodeApi.as_view({"get": "list"}),
-        name="permissions.app-gateway-permissions.get_bk_app_codes",
-    ),
-    # delete 不支持传参，改用 post
-    path(
-        "app-gateway-permissions/delete/",
-        views.AppGatewayPermissionDeleteApi.as_view({"post": "destroy"}),
-        name="permissions.app-gateway-permissions.delete",
+        include(
+            [
+                path(
+                    "", views.AppGatewayPermissionListCreateApi.as_view(), name="permissions.app-gateway-permissions"
+                ),
+                path(
+                    "renew/",
+                    views.AppGatewayPermissionRenewApi.as_view(),
+                    name="permissions.app-gateway-permissions.renew",
+                ),
+                path(
+                    "export/",
+                    views.AppGatewayPermissionExportApi.as_view(),
+                    name="permissions.app-gateway-permissions.export",
+                ),
+                path(
+                    "delete/",
+                    views.AppGatewayPermissionDeleteApi.as_view(),
+                    name="permissions.app-gateway-permissions.delete",
+                ),
+                path(
+                    "bk-app-codes/",
+                    views.AppGatewayPermissionAppCodeApi.as_view(),
+                    name="permissions.app-gateway-permissions.get_bk_app_codes",
+                ),
+            ]
+        ),
     ),
     # app-permission-apply
     path(
         "app-permission-apply/",
-        views.AppPermissionApplyListApi.as_view({"get": "list"}),
-        name="permissions.app-permission-apply",
-    ),
-    path(
-        "app-permission-apply/<int:id>/",
-        views.AppPermissionApplyRetrieveApi.as_view({"get": "retrieve"}),
-        name="permissions.app-permission-apply.detail",
-    ),
-    path(
-        "app-permission-apply/approval/",
-        views.AppPermissionApplyApprovalApi.as_view({"post": "post"}),
-        name="permissions.app-permission-apply.approval",
+        include(
+            [
+                path("", views.AppPermissionApplyListApi.as_view(), name="permissions.app-permission-apply"),
+                path(
+                    "<int:id>/",
+                    views.AppPermissionApplyRetrieveApi.as_view(),
+                    name="permissions.app-permission-apply.detail",
+                ),
+                path(
+                    "approval/",
+                    views.AppPermissionApplyApprovalApi.as_view(),
+                    name="permissions.app-permission-apply.approval",
+                ),
+            ]
+        ),
     ),
     # app-permission-record
     path(
         "app-permission-records/",
-        views.AppPermissionRecordListApi.as_view({"get": "list"}),
+        views.AppPermissionRecordListApi.as_view(),
         name="permissions.app-permission-records",
     ),
     path(
         "app-permission-records/<int:id>/",
-        views.AppPermissionRecordRetrieveApi.as_view({"get": "retrieve"}),
+        views.AppPermissionRecordRetrieveApi.as_view(),
         name="permissions.app-permission-records.detail",
     ),
 ]

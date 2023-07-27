@@ -82,8 +82,8 @@ class AppAPIPermissionManager(models.Manager):
             },
         )
 
-    def renew_by_ids(self, gateway, ids):
-        expires = to_datetime_from_now(days=DEFAULT_PERMISSION_EXPIRE_DAYS)
+    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
+        expires = to_datetime_from_now(days=expires)
         self.filter(api=gateway, id__in=ids, expires__lt=expires).update(
             expires=expires,
             updated_time=now_datetime(),
@@ -159,8 +159,8 @@ class AppResourcePermissionManager(models.Manager):
 
         return queryset
 
-    def renew_by_ids(self, gateway, ids):
-        expires = to_datetime_from_now(days=DEFAULT_PERMISSION_EXPIRE_DAYS)
+    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
+        expires = to_datetime_from_now(days=expires)
         self.filter(api=gateway, id__in=ids, expires__lt=expires).update(
             expires=expires,
             grant_type=GrantTypeEnum.RENEW.value,
