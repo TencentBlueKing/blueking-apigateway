@@ -20,7 +20,7 @@ from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
-class UserAuthTypeSLZ(serializers.Serializer):
+class UserAuthTypeInputSLZ(serializers.Serializer):
     name = serializers.CharField()
     label = serializers.CharField()
     description = SerializerTranslatedField(translated_fields={"en": "description_en"})
