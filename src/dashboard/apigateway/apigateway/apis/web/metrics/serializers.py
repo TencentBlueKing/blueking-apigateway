@@ -22,7 +22,7 @@ from rest_framework import serializers
 from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
 
 
-class MetricsQuerySLZ(serializers.Serializer):
+class MetricsQueryInputSLZ(serializers.Serializer):
     stage_id = serializers.IntegerField(required=True)
     resource_id = serializers.IntegerField(allow_null=True, required=False)
     dimension = serializers.ChoiceField(choices=DimensionEnum.get_choices())

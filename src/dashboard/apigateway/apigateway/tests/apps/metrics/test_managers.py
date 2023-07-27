@@ -51,7 +51,7 @@ class TestStatisticsAPIRequestManager(TestCase):
             failed_count=100,
         )
 
-        result = StatisticsAPIRequestByDay.objects.filter_and_aggregate_by_api(
+        result = StatisticsAPIRequestByDay.objects.filter_and_aggregate_by_gateway(
             start_time=dummy_time.time, end_time=dummy_time.time
         )
 
@@ -102,7 +102,7 @@ class TestStatisticsAppRequestManager(TestCase):
             failed_count=100,
         )
 
-        result = StatisticsAppRequestByDay.objects.filter_app_and_aggregate_by_api(
+        result = StatisticsAppRequestByDay.objects.filter_app_and_aggregate_by_gateway(
             start_time=dummy_time.time, end_time=dummy_time.time
         )
         result[gateway_1.id]["bk_app_code_list"] = sorted(result[gateway_1.id]["bk_app_code_list"])

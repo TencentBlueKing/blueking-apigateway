@@ -16,13 +16,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.apps.metrics import dimension_metrics
 from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
+from apigateway.apps.metrics.prometheus import dimension
 
 
 class TestRequestsMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         data = [
             {
@@ -51,14 +53,16 @@ class TestRequestsMetrics:
             },
         ]
         for test in data:
-            metrics = dimension_metrics.RequestsMetrics()
+            metrics = dimension.RequestsMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"]
 
 
 class TestFailedRequestsMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         data = [
             {
@@ -87,14 +91,16 @@ class TestFailedRequestsMetrics:
             },
         ]
         for test in data:
-            metrics = dimension_metrics.FailedRequestsMetrics()
+            metrics = dimension.FailedRequestsMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
 
 class TestResponseTime95thMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         data = [
             {
@@ -124,14 +130,16 @@ class TestResponseTime95thMetrics:
             },
         ]
         for test in data:
-            metrics = dimension_metrics.ResponseTime95thMetrics()
+            metrics = dimension.ResponseTime95thMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
 
 class TestResponseTime50thMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         data = [
             {
@@ -161,14 +169,16 @@ class TestResponseTime50thMetrics:
             },
         ]
         for test in data:
-            metrics = dimension_metrics.ResponseTime50thMetrics()
+            metrics = dimension.ResponseTime50thMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
 
 class TestResourceRequestsMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         data = [
             {
@@ -197,14 +207,16 @@ class TestResourceRequestsMetrics:
             },
         ]
         for test in data:
-            metrics = dimension_metrics.ResourceRequestsMetrics()
+            metrics = dimension.ResourceRequestsMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
 
 class TestResourceFailedRequestsMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         data = [
             {
@@ -233,14 +245,16 @@ class TestResourceFailedRequestsMetrics:
             },
         ]
         for test in data:
-            metrics = dimension_metrics.ResourceFailedRequestsMetrics()
+            metrics = dimension.ResourceFailedRequestsMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
 
 class TestAppRequestsMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         data = [
             {
@@ -269,14 +283,16 @@ class TestAppRequestsMetrics:
             },
         ]
         for test in data:
-            metrics = dimension_metrics.AppRequestsMetrics()
+            metrics = dimension.AppRequestsMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
 
 class TestResourceNon200StatusRequestsMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         data = [
             {
@@ -305,7 +321,7 @@ class TestResourceNon200StatusRequestsMetrics:
             },
         ]
         for test in data:
-            metrics = dimension_metrics.ResourceNon200StatusRequestsMetrics()
+            metrics = dimension.ResourceNon200StatusRequestsMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
@@ -316,41 +332,41 @@ class TestDimensionMetricsFactory:
             {
                 "dimension": "all",
                 "metrics": "requests",
-                "expected": dimension_metrics.RequestsMetrics,
+                "expected": dimension.RequestsMetrics,
             },
             {
                 "dimension": "all",
                 "metrics": "failed_requests",
-                "expected": dimension_metrics.FailedRequestsMetrics,
+                "expected": dimension.FailedRequestsMetrics,
             },
             {
                 "dimension": "all",
                 "metrics": "response_time_95th",
-                "expected": dimension_metrics.ResponseTime95thMetrics,
+                "expected": dimension.ResponseTime95thMetrics,
             },
             {
                 "dimension": "all",
                 "metrics": "response_time_50th",
-                "expected": dimension_metrics.ResponseTime50thMetrics,
+                "expected": dimension.ResponseTime50thMetrics,
             },
             {
                 "dimension": "resource",
                 "metrics": "requests",
-                "expected": dimension_metrics.ResourceRequestsMetrics,
+                "expected": dimension.ResourceRequestsMetrics,
             },
             {
                 "dimension": "app",
                 "metrics": "requests",
-                "expected": dimension_metrics.AppRequestsMetrics,
+                "expected": dimension.AppRequestsMetrics,
             },
             {
                 "dimension": "resource_non200_status",
                 "metrics": "requests",
-                "expected": dimension_metrics.ResourceNon200StatusRequestsMetrics,
+                "expected": dimension.ResourceNon200StatusRequestsMetrics,
             },
         ]
         for test in data:
-            result = dimension_metrics.DimensionMetricsFactory.create_dimension_metrics(
+            result = dimension.DimensionMetricsFactory.create_dimension_metrics(
                 DimensionEnum(test["dimension"]),
                 MetricsEnum(test["metrics"]),
             )

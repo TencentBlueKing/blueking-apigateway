@@ -23,7 +23,7 @@ from django.db import models
 
 
 class StatisticsAPIRequestManager(models.Manager):
-    def filter_and_aggregate_by_api(self, start_time, end_time):
+    def filter_and_aggregate_by_gateway(self, start_time, end_time):
         """
         过滤，并根据网关聚合数据
         """
@@ -52,7 +52,7 @@ class StatisticsAPIRequestManager(models.Manager):
 
 
 class StatisticsAppRequestManager(models.Manager):
-    def filter_app_and_aggregate_by_api(self, start_time, end_time):
+    def filter_app_and_aggregate_by_gateway(self, start_time, end_time):
         """
         过滤出蓝鲸应用，并根据网关聚合数据
         """

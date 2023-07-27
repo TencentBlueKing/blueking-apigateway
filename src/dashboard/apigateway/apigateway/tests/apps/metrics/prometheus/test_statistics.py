@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.apps.metrics import stats_metrics
+from apigateway.apps.metrics.prometheus import statistics
 
 
 class TestStatisticsAPIRequestMetrics:
@@ -35,9 +35,11 @@ class TestStatisticsAPIRequestMetrics:
         ],
     )
     def test_get_query_promql(self, mocker, step, expected):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
-        metrics = stats_metrics.StatisticsAPIRequestMetrics()
+        metrics = statistics.StatisticsAPIRequestMetrics()
         result = metrics._get_query_promql(step)
         assert result == expected
 
@@ -56,9 +58,11 @@ class TestStatisticsAPIRequestDurationMetrics:
         ],
     )
     def test_get_query_promql(self, mocker, step, expected):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
-        metrics = stats_metrics.StatisticsAPIRequestDurationMetrics()
+        metrics = statistics.StatisticsAPIRequestDurationMetrics()
         result = metrics._get_query_promql(step)
         assert result == expected
 
@@ -77,9 +81,11 @@ class TestStatisticsAppRequestMetrics:
         ],
     )
     def test_get_query_promql(self, mocker, step, expected):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
-        metrics = stats_metrics.StatisticsAppRequestMetrics()
+        metrics = statistics.StatisticsAppRequestMetrics()
         result = metrics._get_query_promql(step)
         assert result == expected
 
@@ -98,8 +104,10 @@ class TestStatisticsAppRequestByResourceMetrics:
         ],
     )
     def test_get_query_promql(self, mocker, step, expected):
-        mocker.patch("apigateway.apps.metrics.dimension_metrics.BaseDimensionMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
-        metrics = stats_metrics.StatisticsAppRequestByResourceMetrics()
+        metrics = statistics.StatisticsAppRequestByResourceMetrics()
         result = metrics._get_query_promql(step)
         assert result == expected

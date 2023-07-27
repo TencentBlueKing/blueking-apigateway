@@ -44,13 +44,13 @@ class StatisticsV1ViewSet(viewsets.ModelViewSet):
         end_time = slz.validated_data["end_time"]
 
         # 获取网关请求数据
-        api_request_data = StatisticsAPIRequestByDay.objects.filter_and_aggregate_by_api(
+        api_request_data = StatisticsAPIRequestByDay.objects.filter_and_aggregate_by_gateway(
             start_time=start_time,
             end_time=end_time,
         )
 
         # 获取应用请求数据
-        app_request_data = StatisticsAppRequestByDay.objects.filter_app_and_aggregate_by_api(
+        app_request_data = StatisticsAppRequestByDay.objects.filter_app_and_aggregate_by_gateway(
             start_time=start_time,
             end_time=end_time,
         )
