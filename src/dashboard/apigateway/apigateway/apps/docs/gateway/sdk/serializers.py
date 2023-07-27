@@ -16,26 +16,26 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from blue_krill.data_types.enum import EnumField, StructuredEnum
 from rest_framework import serializers
 
 from apigateway.apps.docs.gateway.constants_ext import UserAuthTypeEnum
-from apigateway.common.constants import ChoiceEnum
 
 
-class ProgrammingLanguageEnum(ChoiceEnum):
-    PYTHON = "python"
+class ProgrammingLanguageEnum(StructuredEnum):
+    PYTHON = EnumField("python")
 
 
 class SDKQuerySLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
 
 class SDKDocConditionSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
 
 class SDKUsageExampleConditionSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
 
 class SDKSLZ(serializers.Serializer):
