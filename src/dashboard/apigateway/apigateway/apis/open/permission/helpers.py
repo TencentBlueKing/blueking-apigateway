@@ -28,17 +28,16 @@ from pydantic import BaseModel, parse_obj_as
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionLevelEnum, PermissionStatusEnum
 from apigateway.apps.permission.models import AppAPIPermission, AppPermissionApplyStatus, AppResourcePermission
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, ReleasedResource, Resource
 
 
 class AppPermissionHelper:
-    def get_permission_model(self, dimension):
+    def get_permission_model(self, dimension: str):
         if dimension == GrantDimensionEnum.API.value:
             return AppAPIPermission
         elif dimension == GrantDimensionEnum.RESOURCE.value:
             return AppResourcePermission
-        raise error_codes.INVALID_ARGS.format(f"unsupported grant_dimension: {dimension}")
+        raise ValueError(f"unsupported dimension: {dimension}")
 
 
 class ResourcePermission(BaseModel):

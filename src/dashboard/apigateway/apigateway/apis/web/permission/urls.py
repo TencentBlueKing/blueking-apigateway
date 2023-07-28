@@ -46,7 +46,7 @@ urlpatterns = [
                 ),
                 path(
                     "bk-app-codes/",
-                    views.AppResourcePermissionAppCodeApi.as_view(),
+                    views.AppResourcePermissionAppCodeListApi.as_view(),
                     name="permissions.app-resource-permissions.get_bk_app_codes",
                 ),
             ]
@@ -77,7 +77,7 @@ urlpatterns = [
                 ),
                 path(
                     "bk-app-codes/",
-                    views.AppGatewayPermissionAppCodeApi.as_view(),
+                    views.AppGatewayPermissionAppCodeListApi.as_view(),
                     name="permissions.app-gateway-permissions.get_bk_app_codes",
                 ),
             ]

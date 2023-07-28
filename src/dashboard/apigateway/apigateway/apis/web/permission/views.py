@@ -171,7 +171,7 @@ class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generic
         return content.getvalue()
 
 
-class AppResourcePermissionAppCodeApi(generics.ListAPIView):
+class AppResourcePermissionAppCodeListApi(generics.ListAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         tags=["Permission"],
@@ -326,7 +326,7 @@ class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.
         return content.getvalue()
 
 
-class AppGatewayPermissionAppCodeApi(generics.ListAPIView):
+class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         tags=["Permission"],
