@@ -28,10 +28,10 @@ class DocTypeEnum(ChoiceEnumMixin, Enum):
     MARKDOWN = "markdown"
 
 
-class ProgrammingLanguageEnum(ChoiceEnumMixin, Enum):
-    UNKNOWN = "unknown"
-    PYTHON = "python"
-    GOLANG = "golang"
+class ProgrammingLanguageEnum(StructuredEnum):
+    UNKNOWN = EnumField("unknown")
+    PYTHON = EnumField("python")
+    GOLANG = EnumField("golang")
 
 
 class DocLanguageEnum(StructuredEnum):
