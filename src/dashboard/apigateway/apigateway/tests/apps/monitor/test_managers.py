@@ -180,7 +180,7 @@ class TestAlarmStrategyManager(TestCase):
             },
         ]
         for test in data:
-            result = AlarmStrategy.objects.annotate_alarm_record_by_api(
+            result = AlarmStrategy.objects.annotate_alarm_record_by_gateway(
                 gateway_ids=test["gateway_ids"],
                 time_start=test.get("time_start"),
                 time_end=test.get("time_end"),

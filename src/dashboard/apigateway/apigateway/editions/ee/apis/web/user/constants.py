@@ -16,34 +16,33 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from enum import Enum
+import textwrap
 
-from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
 
-from apigateway.common.constants import ChoiceEnumMixin
-
-
-class DocTypeEnum(ChoiceEnumMixin, Enum):
-    MARKDOWN = "markdown"
-
-
-class ProgrammingLanguageEnum(StructuredEnum):
-    UNKNOWN = EnumField("unknown")
-    PYTHON = EnumField("python")
-    GOLANG = EnumField("golang")
-
-
-class DocLanguageEnum(StructuredEnum):
-    EN = EnumField("en", label=_("英文"))
-    ZH = EnumField("zh", label=_("中文"))
-
-
-class DocSourceEnum(StructuredEnum):
-    IMPORT = EnumField("import", label=_("导入"))
-    CUSTOM = EnumField("custom", label=_("自定义"))
-
-
-class DocArchiveTypeEnum(StructuredEnum):
-    TGZ = EnumField("tgz", label=_("tgz 归档文件"))
-    ZIP = EnumField("zip", label=_("zip 归档文件"))
+# 用户验证类型
+USER_AUTH_TYPES = [
+    {
+        "name": "default",
+        "label": _("蓝鲸用户"),
+        "description": textwrap.dedent(
+            """
+            面向蓝鲸用户:
+            - 用户通过登录蓝鲸平台，可获取蓝鲸票据 bk_token
+            """
+        ).strip(),
+        "description_en": textwrap.dedent(
+            """
+            For BK User:
+            - Users can log in to the BlueKing platform and get bk_token from cookies that indicates them
+            """
+        ).strip(),
+        "login_ticket": {
+            "autoload": True,
+            "key_to_cookie_name": [
+                ("bk_token", "bk_token"),
+            ],
+            "description": _("用户通过登录蓝鲸平台，可获取蓝鲸票据 bk_token"),
+        },
+    },
+]

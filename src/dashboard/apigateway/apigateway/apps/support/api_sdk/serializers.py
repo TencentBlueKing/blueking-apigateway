@@ -28,7 +28,7 @@ from apigateway.utils.time import now_datetime
 class APISDKGenerateSLZ(serializers.Serializer):
     api = serializers.HiddenField(default=CurrentGatewayDefault())
     resource_version_id = serializers.IntegerField(required=True)
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
     include_private_resources = serializers.BooleanField(label="包含非公开资源")
     is_public = serializers.BooleanField(label="是否为公开", default=None)
     version = serializers.CharField(
@@ -66,7 +66,7 @@ class APISDKGenerateSLZ(serializers.Serializer):
 
 
 class APISDKQuerySLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.choices(), required=False)
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), required=False)
     version_number = serializers.CharField(required=False, allow_blank=True)
     resource_version_id = serializers.IntegerField(allow_null=True, required=False)
 

@@ -16,26 +16,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
-from .views import AlarmRecordViewSet, AlarmStrategyViewSet
+from .views import LogDetailListApi, LogLinkRetrieveApi, LogTimeChartRetrieveApi, SearchLogListApi
 
 urlpatterns = [
-    # alarm-strategy
-    path("alarm/strategies/", AlarmStrategyViewSet.as_view({"get": "list", "post": "create"}), name="monitor.stages"),
+    path("", SearchLogListApi.as_view(), name="access_log.logs"),
+    path("timechart/", LogTimeChartRetrieveApi.as_view(), name="access_log.logs.time_chart"),
     path(
-        "alarm/strategies/<int:id>/",
-        AlarmStrategyViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"}),
-        name="monitor.alarm_strategies.detail",
-    ),
-    path(
-        "alarm/strategies/<int:id>/status/",
-        AlarmStrategyViewSet.as_view({"put": "update_status"}),
-        name="monitor.alarm_strategies.update_status",
-    ),
-    # alarm-record
-    path("alarm/records/", AlarmRecordViewSet.as_view({"get": "list"}), name="monitor.alarm_records"),
-    path(
-        "alarm/records/<int:id>/", AlarmRecordViewSet.as_view({"get": "retrieve"}), name="monitor.alarm_records.detail"
+        "<slug:request_id>/",
+        include(
+            [
+                path("", LogDetailListApi.as_view(), name="access_log.logs.detail"),
+                path("link/", LogLinkRetrieveApi.as_view(), name="access_log.logs.link"),
+            ]
+        ),
     ),
 ]

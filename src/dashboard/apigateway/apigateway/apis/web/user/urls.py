@@ -18,9 +18,9 @@
 #
 from django.urls import path
 
-from apigateway.apps.user import views
+from .views import UserAuthTypeListApi, UserTokenGetApi
 
 urlpatterns = [
-    path("token/", views.UserAPIView.as_view(), name="user.token"),
-    path("user_auth_types/", views.UserAuthTypeViewSet.as_view({"get": "list"}), name="user.user_auth_types"),
+    path("token/", UserTokenGetApi.as_view(), name="user.token"),
+    path("user_auth_types/", UserAuthTypeListApi.as_view(), name="user.user_auth_types"),
 ]
