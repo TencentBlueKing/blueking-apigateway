@@ -66,40 +66,26 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/plugins/", include("apigateway.apps.plugin.urls")),
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     path("backend/esb/", include("apigateway.apps.esb.urls")),
-
-    # FIXME: change this to a new url in future
-    # switch language
-    path("backend/i18n/setlang/", set_language, name="set_language"),
     # api-support backend/docs urls -- begin
     path("backend/docs/apigateway/", include("apigateway.apps.docs.gateway.urls")),
     path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
     path("backend/docs/feature/", include("apigateway.apps.docs.feature.urls")),
     path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
     # refactoring begin ------
-    path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
-    path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
-    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
-    path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
-    # delete it later after frontend changed the url
-    path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
-    path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    # switch language
+    path("backend/i18n/setlang/", set_language, name="set_language"),
     path("backend/users/", include("apigateway.apis.web.user.urls")),
     path("backend/feature/", include("apigateway.apis.web.feature.urls")),
-    path("backend/apis/<int:gateway_id>/metrics/", include("apigateway.apis.web.metrics.urls")),
+    path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
+    path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
+    path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     path("backend/gateways/<int:gateway_id>/metrics/", include("apigateway.apis.web.metrics.urls")),
-    # monitors
-    path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
     path("backend/gateways/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
-    # todo 不应该放在顶层, 后续要想办法挪到下层
-    path(
-        "backend/apis/monitors/alarm/records/summary/",
-        AlarmRecordSummaryListApi.as_view(),
-        name="monitors.alamr_records.summary",
-    ),
+    # todo 不应该放在顶层，后续要想办法挪到下层
     path(
         "backend/gateways/monitors/alarm/records/summary/",
         AlarmRecordSummaryListApi.as_view(),
-        name="monitors.alamr_records.summary",
+        name="monitors.alarm_records.summary",
     ),
     # refactoring end ------
 ]
