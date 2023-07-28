@@ -51,7 +51,7 @@ import esb from './modules/esb'
 import sdkDoc from './modules/sdk-doc'
 import docs from './modules/docs'
 import http from '@/api'
-import { unifyObjectStyle, json2Query } from '@/common/util'
+import { unifyObjectStyle } from '@/common/util'
 import MarkdownIt from 'markdown-it'
 import cookie from 'cookie'
 
@@ -184,7 +184,7 @@ const store = new Vuex.Store({
     },
 
     getBkAppCodes (context, { apigwId, pageParams }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/app-permissions/bk-app-codes/?${json2Query(pageParams)}`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/permissions/app-${pageParams.dimension === 'api' ? 'gateway' : 'resource'}-permissions/bk-app-codes/`
       return http.get(url, config)
     },
 
