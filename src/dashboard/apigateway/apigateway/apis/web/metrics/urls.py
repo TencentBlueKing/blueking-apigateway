@@ -16,19 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import arrow
-from celery import shared_task
+from django.urls import path
 
-from .statistics import StatisticsHandler
+from .views import QueryRangeApi
 
-
-@shared_task(name="apigateway.apps.metrics.tasks.statistics_request_by_day")
-def statistics_request_by_day():
-    """
-    统计前一天的请求数据，按天统计
-    """
-    start, end = arrow.utcnow().shift(days=-1).span("day")
-    step = "1d"
-
-    handler = StatisticsHandler()
-    handler.stats(start.int_timestamp, end.int_timestamp, step)
+urlpatterns = [
+    path("query_range/", QueryRangeApi.as_view(), name="metrics.query_range"),
+]

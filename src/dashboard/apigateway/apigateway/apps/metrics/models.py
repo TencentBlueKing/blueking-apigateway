@@ -19,8 +19,9 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apigateway.apps.metrics.managers import StatisticsAPIRequestManager, StatisticsAppRequestManager
 from apigateway.common.mixins.models import TimestampedModelMixin
+
+from .managers import StatisticsAPIRequestManager, StatisticsAppRequestManager
 
 
 class StatisticsModelMixin(models.Model):
@@ -72,8 +73,8 @@ class StatisticsAppRequest(StatisticsModelMixin, TimestampedModelMixin):
 # class StatisticsAppRequestByHour(StatisticsAppRequest):
 
 #     class Meta:
-#         verbose_name = '应用请求统计(按小时)'
-#         verbose_name_plural = '应用请求统计(按小时)'
+#         verbose_name = '应用请求统计 (按小时)'
+#         verbose_name_plural = '应用请求统计 (按小时)'
 #         db_table = 'metrics_stats_app_request_by_hour'
 
 

@@ -16,8 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from abc import ABC, abstractmethod
-from typing import ClassVar, Dict, List, Optional, Tuple, Type
+from abc import abstractmethod
+from typing import ClassVar, Dict, Optional, Type
 
 from django.conf import settings
 
@@ -25,15 +25,7 @@ from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.prometheus import prometheus_component
 
-
-class BasePrometheusMetrics(ABC):
-    default_labels = getattr(settings, "PROMETHEUS_DEFAULT_LABELS", [])
-    metric_name_prefix = getattr(settings, "PROMETHEUS_METRIC_NAME_PREFIX", "")
-
-    def _get_labels_expression(self, labels: List[Tuple[str, str, Optional[str]]]) -> str:
-        return ", ".join(
-            [f'{label}{expression}"{value}"' for label, expression, value in labels if value not in [None, ""]]
-        )
+from .base import BasePrometheusMetrics
 
 
 class BaseDimensionMetrics(BasePrometheusMetrics):

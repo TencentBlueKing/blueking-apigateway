@@ -20,14 +20,15 @@ import logging
 from collections import defaultdict
 from typing import Optional
 
-from apigateway.apps.metrics.models import StatisticsAPIRequestByDay, StatisticsAppRequestByDay
-from apigateway.apps.metrics.stats_metrics import (
+from apigateway.core.models import Gateway, Resource
+from apigateway.utils.time import utctime
+
+from .models import StatisticsAPIRequestByDay, StatisticsAppRequestByDay
+from .prometheus.statistics import (
     StatisticsAPIRequestDurationMetrics,
     StatisticsAPIRequestMetrics,
     StatisticsAppRequestMetrics,
 )
-from apigateway.core.models import Gateway, Resource
-from apigateway.utils.time import utctime
 
 logger = logging.getLogger(__name__)
 

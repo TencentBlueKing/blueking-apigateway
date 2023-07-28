@@ -18,7 +18,7 @@
 #
 from django.test import TestCase
 
-from apigateway.apps.metrics import serializers
+from apigateway.apis.web.metrics import serializers
 
 
 class TestMetricsQuerySLZ(TestCase):
@@ -46,6 +46,6 @@ class TestMetricsQuerySLZ(TestCase):
             },
         ]
         for test in data:
-            slz = serializers.MetricsQuerySLZ(data=test["data"])
+            slz = serializers.MetricsQueryInputSLZ(data=test["data"])
             slz.is_valid()
             self.assertEqual(slz.validated_data, test["expected"])

@@ -20,8 +20,9 @@ from abc import abstractmethod
 
 from django.conf import settings
 
-from apigateway.apps.metrics.dimension_metrics import BasePrometheusMetrics
 from apigateway.components.prometheus import prometheus_component
+
+from .base import BasePrometheusMetrics
 
 
 class BaseStatisticsMetrics(BasePrometheusMetrics):

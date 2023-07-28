@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,19 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import arrow
-from celery import shared_task
-
-from .statistics import StatisticsHandler
-
-
-@shared_task(name="apigateway.apps.metrics.tasks.statistics_request_by_day")
-def statistics_request_by_day():
-    """
-    统计前一天的请求数据，按天统计
-    """
-    start, end = arrow.utcnow().shift(days=-1).span("day")
-    step = "1d"
-
-    handler = StatisticsHandler()
-    handler.stats(start.int_timestamp, end.int_timestamp, step)

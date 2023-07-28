@@ -16,19 +16,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import arrow
-from celery import shared_task
+from abc import ABC
+from typing import List, Optional, Tuple
 
-from .statistics import StatisticsHandler
+from django.conf import settings
 
 
-@shared_task(name="apigateway.apps.metrics.tasks.statistics_request_by_day")
-def statistics_request_by_day():
-    """
-    统计前一天的请求数据，按天统计
-    """
-    start, end = arrow.utcnow().shift(days=-1).span("day")
-    step = "1d"
+class BasePrometheusMetrics(ABC):
+    default_labels = getattr(settings, "PROMETHEUS_DEFAULT_LABELS", [])
+    metric_name_prefix = getattr(settings, "PROMETHEUS_METRIC_NAME_PREFIX", "")
 
-    handler = StatisticsHandler()
-    handler.stats(start.int_timestamp, end.int_timestamp, step)
+    def _get_labels_expression(self, labels: List[Tuple[str, str, Optional[str]]]) -> str:
+        return ", ".join(
+            [f'{label}{expression}"{value}"' for label, expression, value in labels if value not in [None, ""]]
+        )
