@@ -86,8 +86,8 @@ class AppGatewayPermissionFilter(filters.FilterSet):
 
 
 class AppPermissionRecordFilter(filters.FilterSet):
-    time_start = filters.NumberFilter(method="time_start_filter")
-    time_end = filters.NumberFilter(method="time_end_filter")
+    time_start = filters.DateTimeFilter(method="time_start_filter")
+    time_end = filters.DateTimeFilter(method="time_end_filter")
     bk_app_code = filters.CharFilter()
     grant_dimension = filters.OrderingFilter(choices=GrantDimensionEnum.get_choices())
 
