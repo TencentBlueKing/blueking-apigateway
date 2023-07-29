@@ -45,7 +45,7 @@ sync_bk_esb() {
     python manage.py sync_apigw_config --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
     python manage.py sync_apigw_stage --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
     python manage.py update_esb_gateway_config
-    python manage.py sync_to_gateway_and_release --async
+    python manage.py sync_to_gateway_and_release
     python manage.py grant_apigw_permissions --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
     python manage.py fetch_apigw_public_key --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend
     echo "API gateway bk-esb sync definition end"

@@ -67,6 +67,8 @@ def sync_and_release_esb_components(api_id: int, username: str, access_token: st
         else:
             message = str(err)
         releaser.mark_release_fail(message)
+
+        raise
     else:
         releaser.mark_release_success()
     finally:
