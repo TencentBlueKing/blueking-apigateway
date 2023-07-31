@@ -37,6 +37,8 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="apigateway.apps.esb.tasks.sync_and_release_esb_components", ignore_result=True)
 def sync_and_release_esb_components(api_id: int, username: str, access_token: str, lock_blocking: bool):
+    logger.info("sync_and_release_esb_components task start")
+
     release_lock = get_release_lock()
     # 用户页面操作，采用非阻塞模式，用户并发发布，让其中一个失败
     # 项目发布时，采用阻塞模式，保证当前的组件能够发布
