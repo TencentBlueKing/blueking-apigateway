@@ -73,6 +73,7 @@ opentelemetry-instrumentation-requests = "0.26b1"
 opentelemetry-instrumentation-celery = "0.26b1"
 opentelemetry-instrumentation-logging = "0.26b1"
 opentelemetry-exporter-jaeger = "1.7.1"
+django-filter = "2.4.0"
 
 [tool.poetry.group.dev.dependencies]
 nose = "1.3.7"

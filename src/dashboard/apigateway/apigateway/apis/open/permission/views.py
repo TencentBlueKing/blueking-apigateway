@@ -26,16 +26,20 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
 
-from apigateway.apis.open.permission.helpers import AppPermissionBuilder, ResourcePermissionBuilder
+from apigateway.apis.open.permission.helpers import (
+    AppPermissionBuilder,
+    AppPermissionHelper,
+    ResourcePermissionBuilder,
+)
 from apigateway.apps.permission.constants import (
     ApplyStatusEnum,
     GrantDimensionEnum,
     GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
 )
-from apigateway.apps.permission.helpers import AppPermissionHelper, PermissionDimensionManager
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord, AppResourcePermission
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.permissions import GatewayRelatedAppPermission
@@ -81,7 +85,6 @@ class ResourceViewSet(viewsets.ViewSet):
 
 
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
-
     api_permission_exempt = True
 
     def allow_apply_by_gateway(self, request, *args, **kwargs):
@@ -235,10 +238,10 @@ class RevokeAppPermissionViewSet(viewsets.ViewSet):
         data = slz.validated_data
 
         permission_model = AppPermissionHelper().get_permission_model(data["grant_dimension"])
-        permission_model.objects.delete_permission(
-            gateway=request.gateway,
-            bk_app_codes=data["target_app_codes"],
-        )
+        permission_model.objects.filter(
+            api=request.gateway,
+            bk_app_code__in=data["target_app_codes"],
+        ).delete()
 
         return OKJsonResponse("OK")
 
@@ -270,7 +273,7 @@ class AppPermissionRenewAPIView(APIView):
                 resource_ids=resource_ids,
             )
 
-            AppResourcePermission.objects.renew_permission(
+            AppResourcePermission.objects.renew_by_resource_ids(
                 gateway=gateway,
                 bk_app_code=data["target_app_code"],
                 resource_ids=resource_ids,
@@ -311,7 +314,6 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
             status=data.get("apply_status"),
             query=data.get("query"),
             order_by="-id",
-            fuzzy=False,
         )
 
         page = self.paginate_queryset(queryset)

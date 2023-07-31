@@ -30,8 +30,8 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
     PermissionStatusEnum,
 )
-from apigateway.apps.permission.helpers import PermissionDimensionManager
 from apigateway.apps.permission.models import AppPermissionRecord
+from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.common.fields import TimestampField
 from apigateway.core.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.utils import time

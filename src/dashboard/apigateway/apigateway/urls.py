@@ -60,12 +60,14 @@ urlpatterns = [
     path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     # apps: normal
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
-    path("backend/apis/<int:gateway_id>/permissions/", include("apigateway.apps.permission.urls")),
     path("backend/apis/<int:gateway_id>/support/", include("apigateway.apps.support.urls")),
     path("backend/apis/<int:gateway_id>/access_strategies/", include("apigateway.apps.access_strategy.urls")),
     path("backend/apis/<int:gateway_id>/plugins/", include("apigateway.apps.plugin.urls")),
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     path("backend/esb/", include("apigateway.apps.esb.urls")),
+    # FIXME: change this to a new url in future
+    # switch language
+    path("backend/i18n/setlang/", set_language, name="set_language"),
     # api-support backend/docs urls -- begin
     path("backend/docs/apigateway/", include("apigateway.apps.docs.gateway.urls")),
     path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
@@ -74,6 +76,14 @@ urlpatterns = [
     # refactoring begin ------
     # switch language
     path("backend/i18n/setlang/", set_language, name="set_language"),
+    path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
+    path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
+    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
+    path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
+    # delete it later after frontend changed the url
+    path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    path("backend/gateways/<int:gateway_id>/permissions/", include("apigateway.apis.web.permission.urls")),
     path("backend/users/", include("apigateway.apis.web.user.urls")),
     path("backend/feature/", include("apigateway.apis.web.feature.urls")),
     path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),

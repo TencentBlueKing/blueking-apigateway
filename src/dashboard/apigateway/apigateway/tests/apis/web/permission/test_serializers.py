@@ -21,17 +21,18 @@ from django.test import TestCase
 from django_dynamic_fixture import G
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apps.permission import models, serializers
+from apigateway.apis.web.permission import serializers
+from apigateway.apps.permission import models
 from apigateway.core.models import Gateway, Resource
 from apigateway.tests.utils.testing import create_request, dummy_time
 
 pytestmark = pytest.mark.django_db
 
 
-class TestAppPermissionCreateSLZ:
+class TestAppPermissionInputSLZ:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self, mocker):
-        mocker.patch("apigateway.apps.permission.serializers.BKAppCodeValidator.__call__")
+        mocker.patch("apigateway.apis.web.permission.serializers.BKAppCodeValidator.__call__")
 
     def test_to_internal_value(self, fake_resource):
         data = [
@@ -39,38 +40,32 @@ class TestAppPermissionCreateSLZ:
                 "bk_app_code": "apigw-test",
                 "expire_days": 180,
                 "resource_ids": [fake_resource.id],
-                "dimension": "resource",
             },
             {
                 "bk_app_code": "apigw-test",
                 "expire_days": None,
                 "resource_ids": [fake_resource.id],
-                "dimension": "resource",
             },
             {
                 "bk_app_code": "apigw-test",
                 "expire_days": 180,
                 "resource_ids": None,
-                "dimension": "api",
             },
             {
                 "bk_app_code": "apigw-test",
                 "expire_days": 180,
                 "resource_ids": None,
-                "dimension": "",
-                "will_error": True,
             },
             {
                 "bk_app_code": "apigw-test",
                 "expire_days": 180,
                 "resource_ids": [],
-                "dimension": "api",
                 "will_error": True,
             },
         ]
 
         for test in data:
-            slz = serializers.AppPermissionCreateSLZ(data=test, context={"api": fake_resource.api})
+            slz = serializers.AppPermissionInputSLZ(data=test, context={"api": fake_resource.api})
 
             if not test.get("will_error"):
                 slz.is_valid(raise_exception=True)
@@ -81,23 +76,7 @@ class TestAppPermissionCreateSLZ:
                 slz.is_valid(raise_exception=True)
 
 
-class TestAppPermissionQuerySLZ(TestCase):
-    def test_to_internal_value(self):
-        data = [
-            {"dimension": "api", "bk_app_code": "", "grant_type": ""},
-            {
-                "dimension": "resource",
-                "bk_app_code": "test",
-                "grant_type": "apply",
-            },
-        ]
-        for test in data:
-            slz = serializers.AppPermissionQuerySLZ(data=test)
-            slz.is_valid()
-            self.assertEqual(slz.validated_data, test)
-
-
-class TestAppPermissionListSLZ(TestCase):
+class TestAppGatewayPermissionOutputSLZ(TestCase):
     def test_to_representation(self):
         gateway = G(Gateway)
         resource = G(Resource, api=gateway, path="/echo/", method="GET")
@@ -151,11 +130,11 @@ class TestAppPermissionListSLZ(TestCase):
         ]
 
         for test in data:
-            slz = serializers.AppPermissionListSLZ(instance=test["instance"])
+            slz = serializers.AppGatewayPermissionOutputSLZ(instance=test["instance"])
             self.assertEqual(slz.data, test["expected"])
 
 
-class TestAppPermissionBatchSLZ(TestCase):
+class TestAppPermissionIDsSLZ(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.gateway = G(Gateway, created_by="admin")
@@ -166,99 +145,17 @@ class TestAppPermissionBatchSLZ(TestCase):
     def test_to_internal_value(self):
         data = [
             {
-                "dimension": "api",
                 "ids": [1, 2],
             },
-            {"dimension": "resource", "ids": [1, 2, 3]},
+            {"ids": [1, 2, 3]},
         ]
         for test in data:
-            slz = serializers.AppPermissionBatchSLZ(data=test)
+            slz = serializers.AppPermissionIDsSLZ(data=test)
             slz.is_valid()
             self.assertEqual(slz.validated_data, test)
 
 
-class TestAppPermissionApplyQuerySLZ(TestCase):
-    def test_to_internal_value(self):
-        data = [
-            {
-                "bk_app_code": "test",
-                "applied_by": "admin",
-                "grant_dimension": "api",
-            },
-            {
-                "bk_app_code": "",
-                "applied_by": "",
-                "grant_dimension": "resource",
-            },
-        ]
-        for test in data:
-            slz = serializers.AppPermissionApplyQuerySLZ(data=test)
-            slz.is_valid()
-            self.assertEqual(slz.validated_data, test)
-
-
-class TestAppPermissionApplySLZ:
-    def test_to_internal_value(self, mocker):
-        mocker.patch("apigateway.apps.permission.serializers.BKAppCodeValidator.__call__", return_value=None)
-
-        data = [
-            {
-                "bk_app_code": "test",
-                "resource_ids": [1, 2, 3],
-            },
-            {
-                "bk_app_code": "test",
-                "resource_ids": [],
-            },
-        ]
-        for test in data:
-            slz = serializers.AppPermissionApplySLZ(data=test)
-            slz.is_valid()
-            if test.get("will_error"):
-                assert slz.errors
-            else:
-                assert slz.validated_data == test
-
-    def test_to_representation(self):
-        gateway = G(Gateway)
-        apply = G(
-            models.AppPermissionApply,
-            api=gateway,
-            bk_app_code="test",
-            applied_by="admin",
-            _resource_ids="1;2;3",
-            status="pending",
-            created_time=dummy_time.time,
-            reason="test",
-            expire_days=180,
-            grant_dimension="resource",
-        )
-
-        data = [
-            {
-                "instance": apply,
-                "expected": {
-                    "id": apply.id,
-                    "bk_app_code": "test",
-                    "applied_by": "admin",
-                    "status": "pending",
-                    "resource_ids": [1, 2, 3],
-                    "created_time": dummy_time.str,
-                    "reason": "test",
-                    "expire_days": 180,
-                    "grant_dimension": "resource",
-                    "expire_days_display": "6个月",
-                    "grant_dimension_display": "按资源",
-                },
-            }
-        ]
-
-        for test in data:
-            slz = serializers.AppPermissionApplySLZ(instance=test["instance"])
-            assert slz.data == test["expected"]
-
-
-class TestAppPermissionApplyBatchSLZ(TestCase):
+class TestAppPermissionApplyApprovalInputSLZ(TestCase):
     def test_validate(self):
         data = [
             {
@@ -317,7 +214,7 @@ class TestAppPermissionApplyBatchSLZ(TestCase):
         ]
 
         for test in data:
-            slz = serializers.AppPermissionApplyBatchSLZ(data=test["params"])
+            slz = serializers.AppPermissionApplyApprovalInputSLZ(data=test["params"])
             slz.is_valid()
             if test.get("will_error"):
                 self.assertTrue(slz.errors)

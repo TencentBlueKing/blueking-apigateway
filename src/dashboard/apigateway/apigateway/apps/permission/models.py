@@ -165,8 +165,6 @@ class AppPermissionApply(TimestampedModelMixin):
     status = models.CharField(max_length=16, choices=ApplyStatusEnum.get_choices(), db_index=True)
     apply_record_id = models.IntegerField(null=True, blank=True)
 
-    objects = managers.AppPermissionApplyManager()
-
     def __str__(self):
         return f"<AppPermissionApply: {self.id}>"
 

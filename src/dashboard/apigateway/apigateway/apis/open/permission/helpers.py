@@ -31,6 +31,15 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ReleasedResource, Resource
 
 
+class AppPermissionHelper:
+    def get_permission_model(self, dimension: str):
+        if dimension == GrantDimensionEnum.API.value:
+            return AppAPIPermission
+        elif dimension == GrantDimensionEnum.RESOURCE.value:
+            return AppResourcePermission
+        raise ValueError(f"unsupported dimension: {dimension}")
+
+
 class ResourcePermission(BaseModel):
     class Config:
         arbitrary_types_allowed = True
@@ -142,16 +151,16 @@ class ResourcePermissionBuilder:
         return [perm.as_dict() for perm in resource_permissions]
 
     def _get_api_permission(self):
-        return AppAPIPermission.objects.filter_permission(
-            gateway=self.gateway,
+        return AppAPIPermission.objects.filter(
+            api=self.gateway,
             bk_app_code=self.target_app_code,
         ).first()
 
     def _get_resource_permission_map(self):
         return {
             perm.resource_id: perm
-            for perm in AppResourcePermission.objects.filter_permission(
-                gateway=self.gateway,
+            for perm in AppResourcePermission.objects.filter(
+                api=self.gateway,
                 bk_app_code=self.target_app_code,
             )
         }
