@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.db.models import QuerySet
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
@@ -27,60 +28,13 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
-from apigateway.common.fields import TimestampField
 from apigateway.core.constants import ExportTypeEnum
+from apigateway.core.models import Resource
 from apigateway.core.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
 
-class AppPermissionCreateSLZ(serializers.Serializer):
-    bk_app_code = serializers.CharField(label="", max_length=32, required=True, validators=[BKAppCodeValidator()])
-    expire_days = serializers.IntegerField(allow_null=True, required=True)
-    resource_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        validators=[ResourceIDValidator()],
-        required=True,
-        allow_empty=False,
-        allow_null=True,
-    )
-    dimension = serializers.ChoiceField(choices=GrantDimensionEnum.get_choices())
-
-
-class AppPermissionQuerySLZ(serializers.Serializer):
-    dimension = serializers.ChoiceField(choices=GrantDimensionEnum.get_choices())
-    bk_app_code = serializers.CharField(allow_blank=True, required=False)
-    resource_id = serializers.IntegerField(allow_null=True, required=False)
-    query = serializers.CharField(allow_blank=True, required=False)
-    grant_type = serializers.ChoiceField(choices=GrantTypeEnum.choices(), allow_blank=True, required=False)
-    order_by = serializers.ChoiceField(
-        choices=["bk_app_code", "-bk_app_code", "expires", "-expires"],
-        allow_blank=True,
-        required=False,
-    )
-
-
-class PermissionExportConditionSLZ(AppPermissionQuerySLZ):
-    export_type = serializers.ChoiceField(
-        choices=ExportTypeEnum.choices(),
-        help_text=(
-            "值为 all，不需其它参数；值为 filtered，支持 dimension/bk_app_code/resource_name/query 参数；"
-            "值为 selected，支持 permission_ids 参数"
-        ),
-    )
-    permission_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        allow_empty=True,
-        required=False,
-        help_text='export_type 值为已选资源 "selected" 时，此项必填',
-    )
-
-    def validate(self, data):
-        if data["export_type"] == ExportTypeEnum.SELECTED.value and not data.get("permission_ids"):
-            raise serializers.ValidationError(_("导出已选中权限时，已选中权限不能为空。"))
-        return data
-
-
-class AppPermissionListSLZ(serializers.Serializer):
+class AppGatewayPermissionOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     bk_app_code = serializers.CharField(max_length=32, required=True)
     resource_id = serializers.SerializerMethodField()
@@ -111,22 +65,53 @@ class AppPermissionListSLZ(serializers.Serializer):
         return bool(obj.expires and obj.expires < to_datetime_from_now(days=RENEWABLE_EXPIRE_DAYS))
 
 
-class AppPermissionBatchSLZ(serializers.Serializer):
-    dimension = serializers.ChoiceField(choices=GrantDimensionEnum.get_choices())
-    ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False, required=True)
-
-
-class AppPermissionApplyQuerySLZ(serializers.Serializer):
-    bk_app_code = serializers.CharField(allow_blank=True)
-    applied_by = serializers.CharField(allow_blank=True)
-    grant_dimension = serializers.ChoiceField(
-        choices=GrantDimensionEnum.get_choices(),
-        allow_blank=True,
-        required=False,
+class AppPermissionInputSLZ(serializers.Serializer):
+    bk_app_code = serializers.CharField(label="", max_length=32, required=True, validators=[BKAppCodeValidator()])
+    expire_days = serializers.IntegerField(allow_null=True, required=True)
+    resource_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        validators=[ResourceIDValidator()],
+        required=True,
+        allow_empty=False,
+        allow_null=True,
     )
 
 
-class AppPermissionApplySLZ(serializers.ModelSerializer):
+class AppPermissionExportInputSLZ(serializers.Serializer):
+    bk_app_code = serializers.CharField(allow_blank=True, required=False)
+    resource_id = serializers.IntegerField(allow_null=True, required=False)
+    query = serializers.CharField(allow_blank=True, required=False)
+    grant_type = serializers.ChoiceField(choices=GrantTypeEnum.choices(), allow_blank=True, required=False)
+    order_by = serializers.ChoiceField(
+        choices=["bk_app_code", "-bk_app_code", "expires", "-expires"],
+        allow_blank=True,
+        required=False,
+    )
+    export_type = serializers.ChoiceField(
+        choices=ExportTypeEnum.choices(),
+        help_text=(
+            "值为 all，不需其它参数；值为 filtered，支持 dimension/bk_app_code/resource_name/query 参数；"
+            "值为 selected，支持 permission_ids 参数"
+        ),
+    )
+    permission_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=True,
+        required=False,
+        help_text='export_type 值为已选资源 "selected" 时，此项必填',
+    )
+
+    def validate(self, data):
+        if data["export_type"] == ExportTypeEnum.SELECTED.value and not data.get("permission_ids"):
+            raise serializers.ValidationError(_("导出已选中权限时，已选中权限不能为空。"))
+        return data
+
+
+class AppPermissionIDsSLZ(serializers.Serializer):
+    ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False, required=True)
+
+
+class AppPermissionApplyOutputSLZ(serializers.ModelSerializer):
     bk_app_code = serializers.CharField(label="", max_length=32, validators=[BKAppCodeValidator()])
     resource_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
     expire_days_display = serializers.SerializerMethodField()
@@ -157,36 +142,21 @@ class AppPermissionApplySLZ(serializers.ModelSerializer):
         return GrantDimensionEnum.get_choice_label(obj.grant_dimension)
 
 
-class AppPermissionApplyBatchSLZ(serializers.Serializer):
-    ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
-    part_resource_ids = serializers.DictField(
-        label="部分审批资源ID",
-        child=serializers.ListField(child=serializers.IntegerField(), allow_empty=False),
-        allow_empty=True,
-        required=False,
-    )
-    status = serializers.ChoiceField(
-        choices=[
-            ApplyStatusEnum.PARTIAL_APPROVED.value,
-            ApplyStatusEnum.APPROVED.value,
-            ApplyStatusEnum.REJECTED.value,
-        ]
-    )
-    comment = serializers.CharField(allow_blank=True, max_length=512)
+class AppResourcePermissionOutputSLZ(serializers.Serializer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # 填充resource
+        if isinstance(self.instance, (QuerySet, list)) and self.instance:
+            resources = Resource.objects.filter(id__in=[perm.resource_id for perm in self.instance])
+            resources_map = {resource.id: resource for resource in resources}
+            for perm in self.instance:
+                resource = resources_map.get(perm.resource_id)
+                if resource:
+                    perm.resource = resource
 
 
-class AppPermissionRecordQuerySLZ(serializers.Serializer):
-    time_start = TimestampField(allow_null=True, required=False)
-    time_end = TimestampField(allow_null=True, required=False)
-    bk_app_code = serializers.CharField(allow_blank=True)
-    grant_dimension = serializers.ChoiceField(
-        choices=GrantDimensionEnum.get_choices(),
-        allow_blank=True,
-        required=False,
-    )
-
-
-class AppPermissionRecordSLZ(serializers.ModelSerializer):
+class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):
     handled_resources = serializers.SerializerMethodField()
     expire_days_display = serializers.SerializerMethodField()
     grant_dimension_display = serializers.SerializerMethodField()
@@ -237,5 +207,19 @@ class AppPermissionRecordSLZ(serializers.ModelSerializer):
         return GrantDimensionEnum.get_choice_label(obj.grant_dimension)
 
 
-class PermissionAppQuerySLZ(serializers.Serializer):
-    dimension = serializers.ChoiceField(choices=GrantDimensionEnum.get_choices())
+class AppPermissionApplyApprovalInputSLZ(serializers.Serializer):
+    ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+    part_resource_ids = serializers.DictField(
+        label="部分审批资源ID",
+        child=serializers.ListField(child=serializers.IntegerField(), allow_empty=False),
+        allow_empty=True,
+        required=False,
+    )
+    status = serializers.ChoiceField(
+        choices=[
+            ApplyStatusEnum.PARTIAL_APPROVED.value,
+            ApplyStatusEnum.APPROVED.value,
+            ApplyStatusEnum.REJECTED.value,
+        ]
+    )
+    comment = serializers.CharField(allow_blank=True, max_length=512)

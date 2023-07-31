@@ -22,8 +22,8 @@ import pytest
 from ddf import G
 
 from apigateway.apis.open.permission import views
+from apigateway.apis.open.permission.helpers import AppPermissionHelper
 from apigateway.apps.permission import models
-from apigateway.apps.permission.helpers import AppPermissionHelper
 from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db

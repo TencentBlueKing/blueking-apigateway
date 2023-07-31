@@ -19,6 +19,7 @@
 import base64
 import datetime
 import logging
+import os
 from collections import defaultdict
 
 from celery import shared_task
@@ -28,18 +29,20 @@ from django.utils import timezone
 
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.apps.permission.constants import (
-    APIGW_LOGO_PATH,
     ApplyStatusEnum,
     GrantDimensionEnum,
     GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
 )
-from apigateway.apps.permission.helpers import PermissionDimensionManager
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord, AppResourcePermission
+from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.components.cmsi import cmsi_component
 from apigateway.utils.file import read_file
 
 logger = logging.getLogger(__name__)
+
+
+APIGW_LOGO_PATH = os.path.join(settings.BASE_DIR, "static/img/api_gateway.png")
 
 
 @shared_task(name="apigateway.apps.permission.tasks.send_mail_for_perm_apply", ignore_result=True)

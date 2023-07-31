@@ -16,10 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import os
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.common.constants import ChoiceEnum
@@ -87,7 +85,3 @@ class GrantDimensionEnum(StructuredEnum):
 DEFAULT_PERMISSION_EXPIRE_DAYS = 180
 # 可续期的过期天数，权限有效期小于此值，允许续期，否则，不允许
 RENEWABLE_EXPIRE_DAYS = 30
-
-PERMISSION_MAIL_NOTIFY_COUNTDOWN_SECONDS = 10
-
-APIGW_LOGO_PATH = os.path.join(settings.BASE_DIR, "static/img/api_gateway.png")
