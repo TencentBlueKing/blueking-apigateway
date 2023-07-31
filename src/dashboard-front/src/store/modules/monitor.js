@@ -30,42 +30,42 @@ export default {
   },
   actions: {
     getApigwAlarmStrategies (context, { apigwId, params = {} }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/monitors/alarm/strategies/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/monitors/alarm/strategies/`
       return http.get(url, { params })
     },
 
     getApigwAlarmStrategy (context, { apigwId, id }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/monitors/alarm/strategies/${id}/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/monitors/alarm/strategies/${id}/`
       return http.get(url, {})
     },
 
     addApigwAlarmStrategy (context, { apigwId, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/monitors/alarm/strategies/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/monitors/alarm/strategies/`
       return http.post(url, data, config)
     },
 
     updateApigwAlarmStrategy (context, { apigwId, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/monitors/alarm/strategies/${data.id}/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/monitors/alarm/strategies/${data.id}/`
       return http.put(url, data, config)
     },
 
     updateApigwAlarmStrategyStatus (context, { apigwId, id, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/monitors/alarm/strategies/${id}/status/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/monitors/alarm/strategies/${id}/status/`
       return http.put(url, data, config)
     },
 
     deleteApigwAlarmStrategy (context, { apigwId, id }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/monitors/alarm/strategies/${id}/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/monitors/alarm/strategies/${id}/`
       return http.delete(url, {}, config)
     },
 
     getApigwAlarms (context, { apigwId, params }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/monitors/alarm/records/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/monitors/alarm/records/`
       return http.get(url, { params })
     },
 
     getAlarmList (context, { params }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/monitors/alarm/records/summary/`
+      const url = `${DASHBOARD_URL}/gateways/monitors/alarm/records/summary/`
       return http.get(url, { params })
     }
   }

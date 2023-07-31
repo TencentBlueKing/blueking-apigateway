@@ -30,7 +30,7 @@ export default {
   },
   actions: {
     postApigwAPITest (context, { apigwId, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/tests/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/tests/`
       return http.post(url, data, config)
     }
   }

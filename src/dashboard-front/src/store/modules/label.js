@@ -31,22 +31,22 @@ export default {
   },
   actions: {
     getApigwLabels (context, { apigwId, pageParams }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/labels/?${json2Query(pageParams)}`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/labels/?${json2Query(pageParams)}`
       return http.get(url, {}, config)
     },
 
     addApigwLabel (context, { apigwId, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/labels/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/labels/`
       return http.post(url, data, config)
     },
 
     updateApigwLabel (context, { apigwId, labelId, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/labels/${labelId}/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/labels/${labelId}/`
       return http.put(url, data, config)
     },
 
     deleteApigwLabel (context, { apigwId, labelId }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/labels/${labelId}/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/labels/${labelId}/`
       return http.delete(url, {}, config)
     },
         

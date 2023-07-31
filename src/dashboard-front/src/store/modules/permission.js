@@ -38,12 +38,12 @@ export default {
   },
   actions: {
     getApigwPermissionList (context, { apigwId, pageParams }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/app-permissions/?${json2Query(pageParams)}`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/permissions/app-${pageParams.dimension === 'api' ? 'gateway' : 'resource'}-permissions/?${json2Query(pageParams)}`
       return http.get(url, {}, config)
     },
 
     getApigwPermissionApplyList (context, { apigwId, pageParams }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/app-permission-apply/?${json2Query(pageParams)}`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/permissions/app-permission-apply/?${json2Query(pageParams)}`
       return http.get(url, {}, config).then((res) => {
         context.commit('updatePermissionApplyList', res.data)
         return res
@@ -51,42 +51,32 @@ export default {
     },
 
     getApigwPermissionRecordList (context, { apigwId, pageParams }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/app-permission-records/?${json2Query(pageParams)}`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/permissions/app-permission-records/?${json2Query(pageParams)}`
       return http.get(url, {}, config)
     },
 
     addApigwPermissionApply (context, { apigwId, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/app-permissions/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/permissions/app-${data.dimension === 'api' ? 'gateway' : 'resource'}-permissions/`
       return http.post(url, data, config)
-    },
-
-    updateApigwPermissionApply (context, { apigwId, id, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/${id}/`
-      return http.put(url, data, config)
     },
 
     updateApigwPermissionStatus (context, { apigwId, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/app-permission-apply/batch/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/permissions/app-permission-apply/approval/`
       return http.post(url, data, config)
     },
 
-    deleteApigwPermissionApply (context, { apigwId, id }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/${id}/`
-      return http.delete(url, {}, config)
-    },
-
     batchUpdateApigwPermission (context, { apigwId, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/app-permissions/batch/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/permissions/app-${data.dimension === 'api' ? 'gateway' : 'resource'}-permissions/renew/`
       return http.post(url, data, config)
     },
 
     deleteApigwPermission (context, { apigwId, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/app-permissions/delete/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/permissions/app-${data.dimension === 'api' ? 'gateway' : 'resource'}-permissions/delete/`
       return http.post(url, data, config)
     },
 
     exportApigwPermission (context, { apigwId, data }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/permissions/app-permissions/export/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/permissions/app-${data.dimension === 'api' ? 'gateway' : 'resource'}-permissions/export/`
       const CSRFToken = cookie.parse(document.cookie)[DASHBOARD_CSRF_COOKIE_NAME || `${window.PROJECT_CONFIG.BKPAAS_APP_ID}_csrftoken`]
       return fetch(url, {
         credentials: 'include',

@@ -30,7 +30,7 @@ export default {
   },
   actions: {
     getApigwMetrics (context, { apigwId, params = {} }, config = {}) {
-      const url = `${DASHBOARD_URL}/apis/${apigwId}/metrics/query_range/`
+      const url = `${DASHBOARD_URL}/gateways/${apigwId}/metrics/query_range/`
       return http.get(url, { params })
     }
   }
