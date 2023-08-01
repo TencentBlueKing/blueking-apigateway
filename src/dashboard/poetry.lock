@@ -42,17 +42,17 @@ reference = "tencent"
 
 [[package]]
 name = "apigw-manager"
-version = "1.1.7"
+version = "2.0.0"
 description = ""
 category = "main"
 optional = false
 python-versions = ">=3.6.1,<4.0.0"
 files = [
-    {file = "apigw_manager-1.1.7-py3-none-any.whl", hash = "sha256:f16895fa0a93fd9257f3b9c5650a2bba15753e304d4d4167353af5f9d590ecf1"},
+    {file = "apigw_manager-2.0.0-py3-none-any.whl", hash = "sha256:fdfd899a5935dbd66ef489ebbcd5ec53c61d926a118e081d4d19621f495ce664"},
 ]
 
 [package.dependencies]
-bkapi-bk-apigateway = ">=1.0.6,<2.0.0"
+bkapi-bk-apigateway = ">=1.0.11,<2.0.0"
 bkapi-client-core = ">=1.1.3"
 future = "0.18.2"
 packaging = ">=21.0"
@@ -272,13 +272,13 @@ reference = "tencent"
 
 [[package]]
 name = "bkapi-bk-apigateway"
-version = "1.0.8"
+version = "1.0.11"
 description = "蓝鲸API网关"
 category = "main"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,<4.0,>=2.7"
 files = [
-    {file = "bkapi-bk-apigateway-1.0.8.tar.gz", hash = "sha256:92c1734ece581c48ca3814078958058fa6e94ad046c144be022aba6aaccdcdfc"},
+    {file = "bkapi-bk-apigateway-1.0.11.tar.gz", hash = "sha256:45a193b978b692af8faceee7768a6da2f4ac5a319cc893ccea3ffeb2f5f0ab21"},
 ]
 
 [package.dependencies]
@@ -4770,4 +4770,4 @@ reference = "tencent"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.6.6 || ~3.7"
-content-hash = "4e63fea966a2735173c3f6fe60c18bb8af10a34b6eccd39093047182e5f783fd"
+content-hash = "e65ae57420dccf2547d4f4d9ea7ea9c328cbab150ab426fd72359f5403faa04c"
