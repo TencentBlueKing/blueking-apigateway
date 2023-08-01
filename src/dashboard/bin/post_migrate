@@ -75,3 +75,8 @@ sync_bk_apigateway
 sync_bk_esb
 sync_bk_esb_buffet
 sync_bk_apigateway_inner
+
+# 迁移插件配置, 需要在1.14删除
+echo "migrate header rewrite start ..."
+python manage.py migrate_header_rewrite
+echo "migrate header rewrite end"
