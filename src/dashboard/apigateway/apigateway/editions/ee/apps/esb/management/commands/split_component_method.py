@@ -18,7 +18,6 @@
 #
 import copy
 import itertools
-import logging
 import operator
 
 from django.core.management.base import BaseCommand
@@ -26,10 +25,10 @@ from django.db import transaction
 
 from apigateway.apps.esb.bkcore.models import AppComponentPermission, ESBChannel
 
-logger = logging.getLogger(__name__)
-
 
 class Command(BaseCommand):
+    """拆分 ESB 组件中的 method"""
+
     def add_arguments(self, parser):
         parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False)
 
@@ -38,6 +37,8 @@ class Command(BaseCommand):
         self._split_component_method(dry_run)
 
     def _split_component_method(self, dry_run: bool):  # noqa
+        print("split esb components method start")
+
         components = list(ESBChannel.objects.values("id", "method", "path"))
 
         components = sorted(components, key=operator.itemgetter("path"))
@@ -56,9 +57,10 @@ class Command(BaseCommand):
             if "GET" in method_to_component and "POST" in method_to_component:
                 # method=GET、POST 均已存在，method="" 实际未使用，请求确认删除
                 if dry_run:
-                    logger.warning(
+                    self.stdout.write(
                         f"组件路径 [{path}] 下，存在请求方法：{current_methods}，"
-                        f"其中请求方法为 '' [id={empty_method_component_id}] 的组件实际未使用，将删除该组件"
+                        f"其中请求方法为 '' [id={empty_method_component_id}] 的组件实际未使用，将删除该组件",
+                        self.style.WARNING,
                     )
                     continue
 
@@ -74,7 +76,7 @@ class Command(BaseCommand):
                 if not dry_run:
                     empty_method_component.method = "POST"
                     empty_method_component.save(update_fields=["method"])
-                logger.info(
+                self.stdout.write(
                     f"组件路径 [{path}] 下，存在请求方法：['', 'GET']，将组件 [id={empty_method_component_id}] 的请求方法由 '' 改为 POST"
                 )
 
@@ -83,16 +85,17 @@ class Command(BaseCommand):
                 if not dry_run:
                     empty_method_component.method = "GET"
                     empty_method_component.save(update_fields=["method"])
-                logger.info(
+                self.stdout.write(
                     f"组件路径 [{path}] 下，存在请求方法：['',  POST]，将组件 [id={empty_method_component_id}] 的请求方法由 '' 改为 GET"
                 )
 
             elif "GET" not in method_to_component and "POST" not in method_to_component:
                 # GET、POST 均不存在，则将 "" 改为 suggest_method，并新建另一个 method 的组件
                 if dry_run:
-                    logger.warning(
+                    self.stdout.write(
                         f"组件路径 [{path}] 下，存在请求方法：{current_methods}，"
-                        f"需将请求方法为 '' 的组件 [id={empty_method_component_id}] 拆分为请求方法分别为 GET、POST 的两个组件"
+                        f"需将请求方法为 '' 的组件 [id={empty_method_component_id}] 拆分为请求方法分别为 GET、POST 的两个组件",
+                        self.style.WARNING,
                     )
                     continue
 
@@ -124,6 +127,8 @@ class Command(BaseCommand):
                             empty_method_component.save(update_fields=["method"])
                             another_component = self._create_component_with_another_method(empty_method_component)
                             self._copy_component_permission(empty_method_component.id, another_component.id)
+
+        print("split esb components method done")
 
     def _create_component_with_another_method(self, src_component: ESBChannel) -> ESBChannel:
         dst_component = copy.deepcopy(src_component)

@@ -44,7 +44,7 @@ pytestmark = pytest.mark.django_db
                     },
                 }
             ],
-            [None],
+            None,
         ),
         (
             [
@@ -63,7 +63,7 @@ pytestmark = pytest.mark.django_db
                     },
                 }
             ],
-            [ComponentReleaseError("test")],
+            ComponentReleaseError("test"),
         ),
     ],
 )
@@ -99,7 +99,11 @@ def test_sync_and_release_esb_components(mocker, fake_gateway, updated_resources
         side_effect=release_side_effect,
     )
 
-    sync_and_release_esb_components(fake_gateway.id, "admin", "access_token", False)
+    if release_side_effect:
+        with pytest.raises(ComponentReleaseError):
+            sync_and_release_esb_components(fake_gateway.id, "admin", "access_token", False)
+    else:
+        sync_and_release_esb_components(fake_gateway.id, "admin", "access_token", False)
 
     mock_sync_to_resources.asset_called_once_with(fake_gateway, username="admin")
     mock_create_resource_version.assert_called_once_with()
@@ -125,7 +129,8 @@ def test_test_sync_and_release_esb_components_error(mocker, fake_gateway):
 
     mock_mark_release_fail = mocker.patch("apigateway.apps.esb.component.tasks.ComponentReleaser.mark_release_fail")
 
-    sync_and_release_esb_components(fake_gateway.id, "admin", "access_token", False)
+    with pytest.raises(Exception):
+        sync_and_release_esb_components(fake_gateway.id, "admin", "access_token", False)
 
     mock_mark_release_fail.assert_called_once()
     mock_release_lock_release.assert_called_once_with()
