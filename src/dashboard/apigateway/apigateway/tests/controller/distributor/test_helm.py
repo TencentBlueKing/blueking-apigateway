@@ -42,10 +42,7 @@ class TestHelmDistributor:
         )
 
         bcs_info = MicroGatewayBcsInfo.from_micro_gateway_config(micro_gateway.config)
-        assert distributor.distribute(
-            release=edge_release,
-            micro_gateway=micro_gateway,
-        )
+        assert distributor.distribute(release=edge_release, micro_gateway=micro_gateway)
 
         self.chart_helper.get_project_repo_info.assert_called_once_with(bcs_info.project_name)
 
@@ -73,10 +70,7 @@ class TestHelmDistributor:
         )
 
         bcs_info = MicroGatewayBcsInfo.from_micro_gateway_config(micro_gateway.config)
-        assert distributor.distribute(
-            release=edge_release,
-            micro_gateway=micro_gateway,
-        )
+        assert distributor.distribute(release=edge_release, micro_gateway=micro_gateway)
 
         self.chart_helper.push_chart.assert_not_called()
 

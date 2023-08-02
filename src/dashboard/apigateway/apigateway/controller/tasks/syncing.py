@@ -60,6 +60,7 @@ def rolling_update_release(gateway_id, publish_id: Optional[int] = None):
             stage=release.stage,
             micro_gateway=shared_gateway,
             release_task_id=release_task_id,
+            publish_id=publish_id,
         )
 
         stage = release.stage
@@ -71,9 +72,7 @@ def rolling_update_release(gateway_id, publish_id: Optional[int] = None):
             continue
 
         procedure_logger.info("distribute begin")
-        if not distributor.distribute(
-            release, micro_gateway=shared_gateway, release_task_id=release_task_id, release_history_id=publish_id
-        ):
+        if not distributor.distribute(release, micro_gateway=shared_gateway, release_task_id=release_task_id):
             procedure_logger.info("distribute failed")
             has_failure = True
         else:
