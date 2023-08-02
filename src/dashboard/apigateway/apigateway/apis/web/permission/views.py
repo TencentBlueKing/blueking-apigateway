@@ -139,7 +139,7 @@ class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generic
             queryset = self.get_queryset().filter(id__in=data["permission_ids"])
 
         slz = AppResourcePermissionOutputSLZ(queryset, many=True)
-        content = self._get_csv_content(data["dimension"], slz.data)
+        content = self._get_csv_content(slz.data)
 
         response = DownloadableResponse(content, filename=f"{self.request.gateway.name}-permissions.csv")
         # FIXME: change to export excel directly, while the exported csv file copy from mac to windows is not ok now!
@@ -297,7 +297,7 @@ class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.
             queryset = self.get_queryset().filter(id__in=data["permission_ids"])
 
         slz = AppGatewayPermissionOutputSLZ(queryset, many=True)
-        content = self._get_csv_content(data["dimension"], slz.data)
+        content = self._get_csv_content(slz.data)
 
         response = DownloadableResponse(content, filename=f"{self.request.gateway.name}-permissions.csv")
         # FIXME: change to export excel directly, while the exported csv file copy from mac to windows is not ok now!
