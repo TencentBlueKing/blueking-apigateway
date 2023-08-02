@@ -30,11 +30,11 @@
           return
         }
         this.iframeSrc = url
-        const iframeWidth = data.width
+        const iframeWidth = data.width || 390
         if (iframeWidth) {
           this.iframeWidth = iframeWidth
         }
-        const iframeHeight = data.height
+        const iframeHeight = data.height || 390
         if (iframeHeight) {
           this.iframeHeight = iframeHeight
         }
