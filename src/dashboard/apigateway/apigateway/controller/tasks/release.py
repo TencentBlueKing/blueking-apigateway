@@ -100,7 +100,7 @@ def _release_gateway(
             release=release,
             micro_gateway=micro_gateway,
             release_task_id=procedure_logger.release_task_id,
-            release_history_id=latest_micro_gateway_release_history.release_history_id,
+            publish_id=latest_micro_gateway_release_history.release_history_id,
         ):
             release_history_qs.update(status=ReleaseStatusEnum.SUCCESS.value)
         else:

@@ -26,7 +26,7 @@ class BaseDistributor:
         release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[int] = None,
+        publish_id: Optional[int] = None,
     ) -> bool:
         """发布到微网关"""
         raise NotImplementedError()
