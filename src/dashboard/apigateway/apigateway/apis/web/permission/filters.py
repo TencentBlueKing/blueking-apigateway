@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from datetime import datetime
+
 from django_filters import rest_framework as filters
 
 from apigateway.apps.permission.constants import GrantDimensionEnum, GrantTypeEnum
@@ -53,7 +55,7 @@ class AppResourcePermissionFilter(filters.FilterSet):
 class AppPermissionApplyFilter(filters.FilterSet):
     bk_app_code = filters.CharFilter(lookup_expr="icontains")
     applied_by = filters.CharFilter()
-    grant_dimension = filters.OrderingFilter(choices=GrantDimensionEnum.get_choices())
+    grant_dimension = filters.ChoiceFilter(choices=GrantDimensionEnum.get_choices())
 
     class Meta:
         model = AppPermissionApply
@@ -86,10 +88,10 @@ class AppGatewayPermissionFilter(filters.FilterSet):
 
 
 class AppPermissionRecordFilter(filters.FilterSet):
-    time_start = filters.DateTimeFilter(method="time_start_filter")
-    time_end = filters.DateTimeFilter(method="time_end_filter")
+    time_start = filters.NumberFilter(method="time_start_filter")
+    time_end = filters.NumberFilter(method="time_end_filter")
     bk_app_code = filters.CharFilter()
-    grant_dimension = filters.OrderingFilter(choices=GrantDimensionEnum.get_choices())
+    grant_dimension = filters.ChoiceFilter(choices=GrantDimensionEnum.get_choices())
 
     class Meta:
         model = AppPermissionRecord
@@ -101,7 +103,7 @@ class AppPermissionRecordFilter(filters.FilterSet):
         ]
 
     def time_start_filter(self, queryset, name, value):
-        return queryset.filter(handled_time__gte=value)
+        return queryset.filter(handled_time__gte=datetime.fromtimestamp(value))
 
     def time_end_filter(self, queryset, name, value):
-        return queryset.filter(handled_time__lt=value)
+        return queryset.filter(handled_time__lt=datetime.fromtimestamp(value))
