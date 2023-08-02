@@ -60,6 +60,7 @@ def rolling_update_release(gateway_id, publish_id: Optional[int] = None):
             stage=release.stage,
             micro_gateway=shared_gateway,
             release_task_id=release_task_id,
+            publish_id=publish_id,
         )
 
         stage = release.stage
