@@ -20,9 +20,9 @@ import logging
 from django.core.management.base import BaseCommand
 from django.core.paginator import Paginator
 
-from apigateway.apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
+from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
 from apigateway.core.models import Context, Proxy, Stage
 
 logger = logging.getLogger(__name__)
