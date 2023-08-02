@@ -142,7 +142,7 @@ class AppPermissionApplyOutputSLZ(serializers.ModelSerializer):
         return GrantDimensionEnum.get_choice_label(obj.grant_dimension)
 
 
-class AppResourcePermissionOutputSLZ(serializers.Serializer):
+class AppResourcePermissionOutputSLZ(AppGatewayPermissionOutputSLZ):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
