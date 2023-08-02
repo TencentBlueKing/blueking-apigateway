@@ -18,6 +18,7 @@
 #
 import json
 import logging
+import re
 import warnings
 from typing import Any, Dict
 
@@ -178,7 +179,10 @@ class BKLogESClient(BaseESClient):
                 body=body,
             )
         except (RemoteRequestError, RemoteAPIResultError) as err:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(message=str(err))
+            # 去除err敏感信息
+            err_raw_msg = str(err)
+            err_msg = re.sub(r'\\"bk_app_secret\\":\s*\\".*?\\"', r'\\"bk_app_secret\\": \\"******\\"', err_raw_msg)
+            raise error_codes.REMOTE_REQUEST_ERROR.format(message=err_msg)
 
 
 class ESClientFactory:
