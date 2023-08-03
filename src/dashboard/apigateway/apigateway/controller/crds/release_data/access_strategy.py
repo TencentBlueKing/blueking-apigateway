@@ -108,6 +108,9 @@ class IpAccessControlASC(AccessStrategyConvertor):
         ip_content_list = [group._ips for group in IPGroup.objects.filter(id__in=config["ip_group_list"])]
         ip_list = self._parse_ip_content_list(ip_content_list)
 
+        if not ip_list:
+            raise ValueError("访问策略中有效 IP 为空，请添加至少一个有效 IP。")
+
         # the access strategy will be remove soon, so use `allow` and `deny` here directly
         if config["type"] == "allow":
             return {"whitelist": ip_list}
