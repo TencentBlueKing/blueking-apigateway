@@ -108,23 +108,6 @@ class RateLimitYamlConvertor(BasePluginYamlConvertor):
         return yaml_dumps(result)
 
 
-class CorsYamlConvertor(BasePluginYamlConvertor):
-    def to_internal_value(self, payload: str) -> str:
-        loaded_data = yaml_loads(payload)
-
-        # 前端表单不支持不设置字段值，为使数据满足 schema 校验条件，删除一些空数据
-
-        # allow_origins 要求必须满足正则条件，不能为空字符串
-        if not loaded_data.get("allow_origins"):
-            loaded_data.pop("allow_origins", None)
-
-        # allow_origins_by_regex 要求数组最小长度为 1
-        if not loaded_data.get("allow_origins_by_regex"):
-            loaded_data.pop("allow_origins_by_regex", None)
-
-        return yaml_dumps(loaded_data)
-
-
 class IPRestrictionYamlConvertor(BasePluginYamlConvertor):
     def to_representation(self, payload: str) -> str:
         """this is a compatibility method, for old data, convert to new format"""
@@ -145,7 +128,6 @@ class IPRestrictionYamlConvertor(BasePluginYamlConvertor):
 class PluginConfigYamlConvertor:
     type_code_to_convertor: ClassVar[Dict[str, BasePluginYamlConvertor]] = {
         PluginTypeCodeEnum.BK_RATE_LIMIT.value: RateLimitYamlConvertor(),
-        PluginTypeCodeEnum.BK_CORS.value: CorsYamlConvertor(),
         PluginTypeCodeEnum.BK_IP_RESTRICTION.value: IPRestrictionYamlConvertor(),
     }
 

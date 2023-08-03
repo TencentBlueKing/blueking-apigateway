@@ -137,6 +137,9 @@ class CorsASC(AccessStrategyConvertor):
         config = access_strategy.config
         allow_origins, allow_origins_by_regex = self._convert_allowed_origins(config["allowed_origins"])
         plugin_config = {
+            # 在 plugin BkCorsConvertor 中，统一处理 allow_origins, allow_origins_by_regex 空数据
+            "allow_origins": allow_origins,
+            "allow_origins_by_regex": allow_origins_by_regex,
             "allow_methods": self._convert_allowed_methods(config["allowed_methods"]),
             "allow_headers": self._convert_allowed_headers(config["allowed_headers"]),
             "expose_headers": self._convert_expose_headers(config.get("exposed_headers", [])),
@@ -144,26 +147,19 @@ class CorsASC(AccessStrategyConvertor):
             "allow_credential": config.get("allow_credentials") or False,
         }
 
-        if allow_origins:
-            plugin_config["allow_origins"] = allow_origins
-
-        if allow_origins_by_regex:
-            plugin_config["allow_origins_by_regex"] = allow_origins_by_regex
-
         return plugin_config
 
-    def _convert_allowed_origins(self, allowed_origins: List[str]) -> Tuple[Optional[str], Optional[List]]:
+    def _convert_allowed_origins(self, allowed_origins: List[str]) -> Tuple[str, List]:
         # 存在 "*"，即支持所有域名
         allow_all_origins = "*" in allowed_origins
         if allow_all_origins:
-            return "**", None
+            return "**", []
 
         # 域名中包含类似 http://*.example.com 的情况，则所有域名均应转换为正则模式，
-        # apisix 新版本不允许同时使用 allow_origin, allow_origins_by_regex
+        # apisix 3.2.2 版本不会同时使用 allow_origin, allow_origins_by_regex
         should_use_regex = bool([origin for origin in allowed_origins if "*" in origin])
         if not should_use_regex:
-            # allow_origins 不能为空字符串，为空时将其设置为 null
-            return ",".join(allowed_origins) or "null", None
+            return ",".join(allowed_origins), []
 
         allow_origins_by_regex = []
         for origin in allowed_origins:
@@ -179,8 +175,7 @@ class CorsASC(AccessStrategyConvertor):
             )
             allow_origins_by_regex.append(origin_by_regex)
 
-        # allow_origins 不存在时，apisix 检查 schema 时，会将其设置为默认值 *，此时如果 allow_credential=true, 则检查会失败
-        return "null", allow_origins_by_regex or None
+        return "", allow_origins_by_regex
 
     def _convert_allowed_methods(self, allowed_methods: List[str]) -> str:
         return ",".join(map(str.upper, allowed_methods))

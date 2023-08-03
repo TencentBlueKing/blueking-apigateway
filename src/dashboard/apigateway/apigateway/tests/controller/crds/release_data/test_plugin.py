@@ -165,6 +165,18 @@ class TestBkCorsConvertor:
                 {"allow_origins": "foo"},
                 {"allow_origins": "foo"},
             ),
+            (
+                {"allow_origins_by_regex": []},
+                {"allow_origins": "null"},
+            ),
+            (
+                {"allow_origins_by_regex": None},
+                {"allow_origins": "null"},
+            ),
+            (
+                {"allow_origins_by_regex": ["^http://.*\\.example\\.com$"]},
+                {"allow_origins": "null", "allow_origins_by_regex": ["^http://.*\\.example\\.com$"]},
+            ),
         ],
     )
     def test_convert(self, data, expected):
