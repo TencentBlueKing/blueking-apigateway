@@ -104,24 +104,18 @@ class IpAccessControlASC(AccessStrategyConvertor):
         convert to:
             whitelist: [] / blacklist: []
         """
-        whitelist: List[str] = []
-        blacklist: List[str] = []
-
         config = access_strategy.config
         ip_content_list = [group._ips for group in IPGroup.objects.filter(id__in=config["ip_group_list"])]
         ip_list = self._parse_ip_content_list(ip_content_list)
 
         # the access strategy will be remove soon, so use `allow` and `deny` here directly
         if config["type"] == "allow":
-            whitelist = ip_list
+            return {"whitelist": ip_list}
         elif config["type"] == "deny":
-            blacklist = ip_list
+            return {"blacklist": ip_list}
         # do nothing if type is wrong
 
-        return {
-            "whitelist": whitelist,
-            "blacklist": blacklist,
-        }
+        return {}
 
 
 class CorsASC(AccessStrategyConvertor):

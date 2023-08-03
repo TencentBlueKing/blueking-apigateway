@@ -58,19 +58,19 @@ class TestIpAccessControlASC:
         [
             (
                 {"type": "allow", "ip_group_list": [1]},
-                {"whitelist": ["127.0.0.1"], "blacklist": []},
+                {"whitelist": ["127.0.0.1"]},
             ),
             (
                 {"type": "deny", "ip_group_list": [1]},
-                {"whitelist": [], "blacklist": ["127.0.0.1"]},
+                {"blacklist": ["127.0.0.1"]},
             ),
             (
                 {"type": "allow", "ip_group_list": [2]},
-                {"whitelist": ["127.0.0.1"], "blacklist": []},
+                {"whitelist": ["127.0.0.1"]},
             ),
             (
                 {"type": "allow", "ip_group_list": [1, 2]},
-                {"whitelist": ["127.0.0.1"], "blacklist": []},
+                {"whitelist": ["127.0.0.1"]},
             ),
         ],
     )
