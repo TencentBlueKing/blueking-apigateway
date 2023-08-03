@@ -3,6 +3,16 @@
 # sync apigateway and release new resource-version
 set -e
 
+sync_esb_components_to_gateway=false
+
+while getopts ":s" opt; do
+    case ${opt} in
+        s)
+            sync_esb_components_to_gateway=true
+            ;;
+    esac
+done
+
 envfile="${BK_HOME}/etc/bk_apigateway/bk_apigateway.env"
 
 if [ -f "${envfile}" ]; then
@@ -45,7 +55,13 @@ sync_bk_esb() {
     python manage.py sync_apigw_config --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
     python manage.py sync_apigw_stage --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
     python manage.py update_esb_gateway_config
-    python manage.py sync_to_gateway_and_release
+
+    if [ "$sync_esb_components_to_gateway" = true ]; then
+        python manage.py sync_to_gateway_and_release
+    else
+        echo "The parameter -s is not specified, it will not synchronize esb components to gateway bk-esb."
+    fi
+
     python manage.py grant_apigw_permissions --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
     python manage.py fetch_apigw_public_key --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend
     echo "API gateway bk-esb sync definition end"
