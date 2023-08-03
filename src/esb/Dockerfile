@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apt-get clean && \
     apt-get update && \
     apt-get install --no-install-recommends -y libssl-dev default-libmysqlclient-dev \
-    libffi-dev libc6-dev build-essential && \
+    libffi-dev libc6-dev build-essential vim procps && \
     apt-get autoremove -y && \
     apt-get clean -y && \
     rm -rf \
