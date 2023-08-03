@@ -91,12 +91,30 @@ class IPRestrictionConvertor(PluginConvertor):
         raise ValueError("either one of whitelist or blacklist attribute must be specified for bk-ip-restriction")
 
 
+class BkCorsConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[str] = PluginTypeCodeEnum.BK_CORS.value
+
+    def convert(self, plugin_config: PluginConfig) -> Dict[str, Any]:
+        config = plugin_config.config
+
+        # allow_origins 要求必须满足正则条件，不能为空字符串，且其不存在时，在 apisix 默认值为 *，
+        # 若 allow_credential=true，apisix schema 校验会失败，因此为空时，将其设置为 "null"
+        config["allow_origins"] = config.get("allow_origins") or "null"
+
+        # allow_origins_by_regex 要求数组最小长度为 1
+        if not config.get("allow_origins_by_regex"):
+            config.pop("allow_origins_by_regex", None)
+
+        return config
+
+
 class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c  # type: ignore
         for c in [
             HeaderWriteConvertor(),
             IPRestrictionConvertor(),
+            BkCorsConvertor(),
         ]
     }
 

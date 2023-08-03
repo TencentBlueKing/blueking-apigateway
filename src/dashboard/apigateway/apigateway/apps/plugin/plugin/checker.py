@@ -71,7 +71,7 @@ class BkCorsChecker(BaseChecker):
     def _check_headers(self, headers: str, key: str):
         self._check_duplicate_items(headers.split(","), key)
 
-    def _check_allow_origins_by_regex(self, allow_origins_by_regex: Optional[str]):
+    def _check_allow_origins_by_regex(self, allow_origins_by_regex: List[str]):
         if not allow_origins_by_regex:
             return
 

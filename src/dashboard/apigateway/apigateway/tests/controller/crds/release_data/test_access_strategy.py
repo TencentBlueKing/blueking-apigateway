@@ -102,6 +102,7 @@ class TestCorsASC:
                 },
                 {
                     "allow_origins": "http://demo.example.com",
+                    "allow_origins_by_regex": [],
                     "allow_methods": "GET,POST,OPTIONS",
                     "allow_headers": "X-Token,X-Requested-With",
                     "expose_headers": "X-Token,X-Foo",
@@ -119,6 +120,7 @@ class TestCorsASC:
                     "allow_credentials": False,
                 },
                 {
+                    "allow_origins": "",
                     "allow_origins_by_regex": [r"^http://demo\.example\.com$", r"^http://.*\.example\.com$"],
                     "allow_methods": "GET",
                     "allow_headers": "X-Token",
@@ -140,47 +142,47 @@ class TestCorsASC:
             (
                 ["*"],
                 "**",
-                None,
+                [],
             ),
             (
                 ["http://demo.example.com", "*"],
                 "**",
-                None,
+                [],
             ),
             (
                 ["http://foo.example.com", "http://bar.example.com"],
                 "http://foo.example.com,http://bar.example.com",
-                None,
+                [],
             ),
             (
                 ["http://*.foo.com", "http://*.bar.com"],
-                None,
+                "",
                 [r"^http://.*\.foo\.com$", r"^http://.*\.bar\.com$"],
             ),
             (
                 ["http://demo.example.com", "http://*.foo.com"],
-                None,
+                "",
                 [r"^http://demo\.example\.com$", r"^http://.*\.foo\.com$"],
             ),
             (
                 ["http://*.demo-example.com"],
-                None,
+                "",
                 [r"^http://.*\.demo\-example\.com$"],
             ),
             (
                 ["http://[2001:db8:3333:4444:5555:6666:7777:8888]:8000"],
                 "http://[2001:db8:3333:4444:5555:6666:7777:8888]:8000",
-                None,
+                [],
             ),
             (
                 ["http://[2001:db8:3333:4444:5555:6666:7777:8888]:*"],
-                None,
+                "",
                 [r"^http://\[2001:db8:3333:4444:5555:6666:7777:8888\]:.*$"],
             ),
             (
                 [],
-                "null",
-                None,
+                "",
+                [],
             ),
         ],
     )
