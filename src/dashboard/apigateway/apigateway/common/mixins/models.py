@@ -58,7 +58,7 @@ class ConfigFieldModelMixin(models.Model):
 
     @config.setter
     def config(self, data):
-        # should be valid json string
+        # should be valid JSON string
         if isinstance(data, str):
             data = json.loads(data)
 
