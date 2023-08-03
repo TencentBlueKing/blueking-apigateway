@@ -102,7 +102,6 @@ class TestCorsASC:
                 },
                 {
                     "allow_origins": "http://demo.example.com",
-                    "allow_origins_by_regex": [],
                     "allow_methods": "GET,POST,OPTIONS",
                     "allow_headers": "X-Token,X-Requested-With",
                     "expose_headers": "X-Token,X-Foo",
@@ -120,7 +119,7 @@ class TestCorsASC:
                     "allow_credentials": False,
                 },
                 {
-                    "allow_origins": "",
+                    "allow_origins": "null",
                     "allow_origins_by_regex": [r"^http://demo\.example\.com$", r"^http://.*\.example\.com$"],
                     "allow_methods": "GET",
                     "allow_headers": "X-Token",

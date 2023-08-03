@@ -137,15 +137,19 @@ class CorsASC(AccessStrategyConvertor):
         config = access_strategy.config
         allow_origins, allow_origins_by_regex = self._convert_allowed_origins(config["allowed_origins"])
         plugin_config = {
-            # 在 plugin BkCorsConvertor 中，统一处理 allow_origins, allow_origins_by_regex 空数据
-            "allow_origins": allow_origins,
-            "allow_origins_by_regex": allow_origins_by_regex,
+            # allow_origins 要求必须满足正则条件，不能为空字符串，且其不存在时，在 apisix 默认值为 *，
+            # 若 allow_credential=true，apisix schema 校验会失败，因此为空时，将其设置为 "null"
+            "allow_origins": allow_origins or "null",
             "allow_methods": self._convert_allowed_methods(config["allowed_methods"]),
             "allow_headers": self._convert_allowed_headers(config["allowed_headers"]),
             "expose_headers": self._convert_expose_headers(config.get("exposed_headers", [])),
             "max_age": config.get("max_age", 5),
             "allow_credential": config.get("allow_credentials") or False,
         }
+
+        if allow_origins_by_regex:
+            # allow_origins_by_regex 要求数组最小长度为 1
+            plugin_config["allow_origins_by_regex"] = allow_origins_by_regex
 
         return plugin_config
 
