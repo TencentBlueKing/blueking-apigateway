@@ -113,7 +113,7 @@
       :mask-close="true"
       @cancel="deleteDialog.isShow = false"
       @confirm="handleConfirmDelete">
-      <p class="tc p10"> {{ $t('策略删除后，将不再接收相关通知（提示语待补充）') }} </p>
+      <p class="tc p10"> {{ $t('策略删除后，将不再接收相关通知') }} </p>
     </bk-dialog>
   </div>
 </template>

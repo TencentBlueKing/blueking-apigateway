@@ -576,7 +576,7 @@ export default {
     "通知对象、其他通知对象至少设置一个": "At least one of recipients and other recipients is valid",
     "编辑成功！": "Updated!",
     "请输入告警策略名称，按Enter搜索": "Please enter the name of the alarm policy and press Enter to search",
-    "策略删除后，将不再接收相关通知（提示语待补充）": "After the policy is deleted, you will no longer receive relevant notifications (prompts to be added)",
+    "策略删除后，将不再接收相关通知": "After the policy is deleted, you will no longer receive relevant notifications",
     "编辑告警策略": "Update Alarm Strategy",
     "新建告警策略": "Create Alarm Strategy",
     "请求": "Request",
@@ -1213,5 +1213,5 @@ export default {
     "服务异常": "Service exception",
     "访问后端服务出现错误，请稍后再试。": "Access backend service error, please try again later.",
     "未知错误": "Unknown error",
-    "次": "times"
+    "次": "request(s)"
 }
