@@ -113,9 +113,8 @@ class IpAccessControlASC(AccessStrategyConvertor):
             return {"whitelist": ip_list}
         elif config["type"] == "deny":
             return {"blacklist": ip_list}
-        # do nothing if type is wrong
 
-        return {}
+        raise ValueError("type should be either one of allow or deny for access strategy ip-control")
 
 
 class CorsASC(AccessStrategyConvertor):
