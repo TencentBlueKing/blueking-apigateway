@@ -154,7 +154,7 @@ class CorsASC(AccessStrategyConvertor):
 
     def _convert_allowed_origins(self, allowed_origins: List[str]) -> Tuple[Optional[str], Optional[List]]:
         # 存在 "*"，即支持所有域名
-        allow_all_origins = True if "*" in allowed_origins else False
+        allow_all_origins = "*" in allowed_origins
         if allow_all_origins:
             return "**", None
 
@@ -179,7 +179,8 @@ class CorsASC(AccessStrategyConvertor):
             )
             allow_origins_by_regex.append(origin_by_regex)
 
-        return None, allow_origins_by_regex
+        # allow_origins 不存在时，apisix 检查 schema 时，会将其设置为默认值 *，此时如果 allow_credential=true, 则检查会失败
+        return "null", allow_origins_by_regex or None
 
     def _convert_allowed_methods(self, allowed_methods: List[str]) -> str:
         return ",".join(map(str.upper, allowed_methods))

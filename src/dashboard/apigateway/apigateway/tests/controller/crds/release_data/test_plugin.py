@@ -21,6 +21,7 @@ from ddf import G
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginConfig
 from apigateway.controller.crds.release_data.plugin import (
+    BkCorsConvertor,
     DefaultPluginConvertor,
     HeaderWriteConvertor,
     IPRestrictionConvertor,
@@ -77,7 +78,6 @@ class TestIPRestrictionConvertor:
         ],
     )
     def test_parse_config_to_ips(self, item, expected):
-
         ips = self.convertor._parse_config_to_ips(item)
         assert sorted(ips) == sorted(expected)
 
@@ -135,6 +135,44 @@ class TestHeaderWriteConvertor:
 
         config = self.convertor.convert(PluginConfig.objects.get(id=1))
         assert config == expected
+
+
+class TestBkCorsConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {},
+                {"allow_origins": "null"},
+            ),
+            (
+                {"foo": "bar"},
+                {"foo": "bar", "allow_origins": "null"},
+            ),
+            (
+                {"allow_origins": None},
+                {"allow_origins": None},
+            ),
+            (
+                {"allow_origins": ""},
+                {"allow_origins": ""},
+            ),
+            (
+                {"allow_origins": "null"},
+                {"allow_origins": "null"},
+            ),
+            (
+                {"allow_origins": "foo"},
+                {"allow_origins": "foo"},
+            ),
+        ],
+    )
+    def test_convert(self, data, expected):
+        plugin_config = G(PluginConfig, yaml=yaml_dumps(data))
+
+        convertor = BkCorsConvertor()
+        result = convertor.convert(plugin_config)
+        assert result == expected
 
 
 class TestPluginConvertorFactory:

@@ -119,6 +119,7 @@ class TestCorsASC:
                     "allow_credentials": False,
                 },
                 {
+                    "allow_origins": "null",
                     "allow_origins_by_regex": [r"^http://demo\.example\.com$", r"^http://.*\.example\.com$"],
                     "allow_methods": "GET",
                     "allow_headers": "X-Token",
@@ -154,17 +155,17 @@ class TestCorsASC:
             ),
             (
                 ["http://*.foo.com", "http://*.bar.com"],
-                None,
+                "null",
                 [r"^http://.*\.foo\.com$", r"^http://.*\.bar\.com$"],
             ),
             (
                 ["http://demo.example.com", "http://*.foo.com"],
-                None,
+                "null",
                 [r"^http://demo\.example\.com$", r"^http://.*\.foo\.com$"],
             ),
             (
                 ["http://*.demo-example.com"],
-                None,
+                "null",
                 [r"^http://.*\.demo\-example\.com$"],
             ),
             (
@@ -174,7 +175,7 @@ class TestCorsASC:
             ),
             (
                 ["http://[2001:db8:3333:4444:5555:6666:7777:8888]:*"],
-                None,
+                "null",
                 [r"^http://\[2001:db8:3333:4444:5555:6666:7777:8888\]:.*$"],
             ),
             (
