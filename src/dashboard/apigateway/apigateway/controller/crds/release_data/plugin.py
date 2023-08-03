@@ -99,7 +99,7 @@ class BkCorsConvertor(PluginConvertor):
 
         # allow_origins_by_regex 非空时，allow_origins 不存在（apisix 中默认值为 *），
         # 此时如果 allow_credential=true，则 apisix schema 校验会失败
-        config.setdefault("allow_origins", "null")
+        config["allow_origins"] = config.get("allow_origins") or "null"
 
         return config
 

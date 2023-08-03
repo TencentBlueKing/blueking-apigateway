@@ -151,11 +151,11 @@ class TestBkCorsConvertor:
             ),
             (
                 {"allow_origins": None},
-                {"allow_origins": None},
+                {"allow_origins": "null"},
             ),
             (
                 {"allow_origins": ""},
-                {"allow_origins": ""},
+                {"allow_origins": "null"},
             ),
             (
                 {"allow_origins": "null"},
