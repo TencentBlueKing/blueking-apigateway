@@ -104,24 +104,17 @@ class IpAccessControlASC(AccessStrategyConvertor):
         convert to:
             whitelist: [] / blacklist: []
         """
-        whitelist: List[str] = []
-        blacklist: List[str] = []
-
         config = access_strategy.config
         ip_content_list = [group._ips for group in IPGroup.objects.filter(id__in=config["ip_group_list"])]
         ip_list = self._parse_ip_content_list(ip_content_list)
 
         # the access strategy will be remove soon, so use `allow` and `deny` here directly
         if config["type"] == "allow":
-            whitelist = ip_list
+            return {"whitelist": ip_list}
         elif config["type"] == "deny":
-            blacklist = ip_list
-        # do nothing if type is wrong
+            return {"blacklist": ip_list}
 
-        return {
-            "whitelist": whitelist,
-            "blacklist": blacklist,
-        }
+        raise ValueError("type should be either one of allow or deny for access strategy ip-control")
 
 
 class CorsASC(AccessStrategyConvertor):
@@ -137,6 +130,9 @@ class CorsASC(AccessStrategyConvertor):
         config = access_strategy.config
         allow_origins, allow_origins_by_regex = self._convert_allowed_origins(config["allowed_origins"])
         plugin_config = {
+            # allow_origins 要求必须满足正则条件，不能为空字符串，且其不存在时，在 apisix 默认值为 *，
+            # 若 allow_credential=true，apisix schema 校验会失败，因此为空时，将其设置为 "null"
+            "allow_origins": allow_origins or "null",
             "allow_methods": self._convert_allowed_methods(config["allowed_methods"]),
             "allow_headers": self._convert_allowed_headers(config["allowed_headers"]),
             "expose_headers": self._convert_expose_headers(config.get("exposed_headers", [])),
@@ -144,26 +140,23 @@ class CorsASC(AccessStrategyConvertor):
             "allow_credential": config.get("allow_credentials") or False,
         }
 
-        if allow_origins:
-            plugin_config["allow_origins"] = allow_origins
-
         if allow_origins_by_regex:
+            # allow_origins_by_regex 要求数组最小长度为 1
             plugin_config["allow_origins_by_regex"] = allow_origins_by_regex
 
         return plugin_config
 
-    def _convert_allowed_origins(self, allowed_origins: List[str]) -> Tuple[Optional[str], Optional[List]]:
+    def _convert_allowed_origins(self, allowed_origins: List[str]) -> Tuple[str, List]:
         # 存在 "*"，即支持所有域名
-        allow_all_origins = True if "*" in allowed_origins else False
+        allow_all_origins = "*" in allowed_origins
         if allow_all_origins:
-            return "**", None
+            return "**", []
 
         # 域名中包含类似 http://*.example.com 的情况，则所有域名均应转换为正则模式，
-        # apisix 新版本不允许同时使用 allow_origin, allow_origins_by_regex
+        # apisix 3.2.2 版本不会同时使用 allow_origin, allow_origins_by_regex
         should_use_regex = bool([origin for origin in allowed_origins if "*" in origin])
         if not should_use_regex:
-            # allow_origins 不能为空字符串，为空时将其设置为 null
-            return ",".join(allowed_origins) or "null", None
+            return ",".join(allowed_origins), []
 
         allow_origins_by_regex = []
         for origin in allowed_origins:
@@ -179,7 +172,7 @@ class CorsASC(AccessStrategyConvertor):
             )
             allow_origins_by_regex.append(origin_by_regex)
 
-        return None, allow_origins_by_regex
+        return "", allow_origins_by_regex
 
     def _convert_allowed_methods(self, allowed_methods: List[str]) -> str:
         return ",".join(map(str.upper, allowed_methods))

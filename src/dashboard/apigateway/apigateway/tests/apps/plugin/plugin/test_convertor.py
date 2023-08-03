@@ -19,7 +19,6 @@ import pytest
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.plugin.plugin.convertor import (
-    CorsYamlConvertor,
     IPRestrictionYamlConvertor,
     PluginConfigYamlConvertor,
     RateLimitYamlConvertor,
@@ -111,60 +110,6 @@ class TestRateLimitYamlConvertor:
         assert yaml_loads(result) == expected
 
 
-class TestCorsYamlConvertor:
-    @pytest.mark.parametrize(
-        "data, expected",
-        [
-            (
-                {},
-                {},
-            ),
-            (
-                {
-                    "allow_origins": "",
-                    "allow_origins_by_regex": [],
-                    "allow_methods": "**",
-                    "allow_headers": "**",
-                    "expose_headers": "",
-                    "max_age": 100,
-                    "allow_credential": False,
-                },
-                {
-                    "allow_methods": "**",
-                    "allow_headers": "**",
-                    "expose_headers": "",
-                    "max_age": 100,
-                    "allow_credential": False,
-                },
-            ),
-            (
-                {
-                    "allow_origins": "**",
-                    "allow_origins_by_regex": ["^http://.*\\.example\\.com$"],
-                    "allow_methods": "**",
-                    "allow_headers": "**",
-                    "expose_headers": "",
-                    "max_age": 100,
-                    "allow_credential": True,
-                },
-                {
-                    "allow_origins": "**",
-                    "allow_origins_by_regex": ["^http://.*\\.example\\.com$"],
-                    "allow_methods": "**",
-                    "allow_headers": "**",
-                    "expose_headers": "",
-                    "max_age": 100,
-                    "allow_credential": True,
-                },
-            ),
-        ],
-    )
-    def test_to_internal_value(self, data, expected):
-        convertor = CorsYamlConvertor()
-        result = convertor.to_internal_value(yaml_dumps(data))
-        assert yaml_loads(result) == expected
-
-
 class TestIPRestrictionYamlConvertor:
     @pytest.mark.parametrize(
         "data, expected",
@@ -218,26 +163,6 @@ class TestPluginConfigYamlConvertor:
                     "rates": {
                         "__default": [{"period": 1, "tokens": 10}],
                     }
-                },
-            ),
-            (
-                "bk-cors",
-                {
-                    "allow_origins": "",
-                    "allow_origins_by_regex": ["^http://.*\\.example\\.com$"],
-                    "allow_methods": "**",
-                    "allow_headers": "**",
-                    "expose_headers": "",
-                    "max_age": 100,
-                    "allow_credential": True,
-                },
-                {
-                    "allow_origins_by_regex": ["^http://.*\\.example\\.com$"],
-                    "allow_methods": "**",
-                    "allow_headers": "**",
-                    "expose_headers": "",
-                    "max_age": 100,
-                    "allow_credential": True,
                 },
             ),
         ],

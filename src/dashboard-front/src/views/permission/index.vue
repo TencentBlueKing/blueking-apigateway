@@ -623,9 +623,7 @@
 
         const data = {
           export_type: 'filtered',
-          dimension: this.searchParams.dimension,
-          bk_app_code: this.keyword,
-          grant_type: this.searchParams.grant_type
+          ...this.searchParams
         }
 
         this.exportDownload(data)

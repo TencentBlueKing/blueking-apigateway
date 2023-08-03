@@ -59,8 +59,8 @@
         display: inline-block;
         background: #fff;
         border: 0;
-        width: 700px;
-        height: 510px;
+        width: 390px;
+        height: 390px;
         padding-right: 5px;
         margin: -225px auto auto -225px;
         top: 50%;
@@ -68,10 +68,11 @@
         position: relative;
         z-index: 10002;
         border-radius: 4px;
+        overflow: hidden;
         iframe {
             text-align: center;
-            margin-left: 0;
-            margin-top: -5px;
+            margin-left: -30px;
+            margin-top: -30px;
             border: none;
         }
     }

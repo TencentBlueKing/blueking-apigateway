@@ -58,19 +58,19 @@ class TestIpAccessControlASC:
         [
             (
                 {"type": "allow", "ip_group_list": [1]},
-                {"whitelist": ["127.0.0.1"], "blacklist": []},
+                {"whitelist": ["127.0.0.1"]},
             ),
             (
                 {"type": "deny", "ip_group_list": [1]},
-                {"whitelist": [], "blacklist": ["127.0.0.1"]},
+                {"blacklist": ["127.0.0.1"]},
             ),
             (
                 {"type": "allow", "ip_group_list": [2]},
-                {"whitelist": ["127.0.0.1"], "blacklist": []},
+                {"whitelist": ["127.0.0.1"]},
             ),
             (
                 {"type": "allow", "ip_group_list": [1, 2]},
-                {"whitelist": ["127.0.0.1"], "blacklist": []},
+                {"whitelist": ["127.0.0.1"]},
             ),
         ],
     )
@@ -119,6 +119,7 @@ class TestCorsASC:
                     "allow_credentials": False,
                 },
                 {
+                    "allow_origins": "null",
                     "allow_origins_by_regex": [r"^http://demo\.example\.com$", r"^http://.*\.example\.com$"],
                     "allow_methods": "GET",
                     "allow_headers": "X-Token",
@@ -140,47 +141,47 @@ class TestCorsASC:
             (
                 ["*"],
                 "**",
-                None,
+                [],
             ),
             (
                 ["http://demo.example.com", "*"],
                 "**",
-                None,
+                [],
             ),
             (
                 ["http://foo.example.com", "http://bar.example.com"],
                 "http://foo.example.com,http://bar.example.com",
-                None,
+                [],
             ),
             (
                 ["http://*.foo.com", "http://*.bar.com"],
-                None,
+                "",
                 [r"^http://.*\.foo\.com$", r"^http://.*\.bar\.com$"],
             ),
             (
                 ["http://demo.example.com", "http://*.foo.com"],
-                None,
+                "",
                 [r"^http://demo\.example\.com$", r"^http://.*\.foo\.com$"],
             ),
             (
                 ["http://*.demo-example.com"],
-                None,
+                "",
                 [r"^http://.*\.demo\-example\.com$"],
             ),
             (
                 ["http://[2001:db8:3333:4444:5555:6666:7777:8888]:8000"],
                 "http://[2001:db8:3333:4444:5555:6666:7777:8888]:8000",
-                None,
+                [],
             ),
             (
                 ["http://[2001:db8:3333:4444:5555:6666:7777:8888]:*"],
-                None,
+                "",
                 [r"^http://\[2001:db8:3333:4444:5555:6666:7777:8888\]:.*$"],
             ),
             (
                 [],
-                "null",
-                None,
+                "",
+                [],
             ),
         ],
     )
