@@ -2,7 +2,8 @@ ARG IMAGE=python
 ARG TAG=3.6.15-slim-buster
 FROM ${IMAGE}:${TAG}
 
-RUN apt-get update && apt-get install -y libssl-dev default-libmysqlclient-dev libffi-dev libc6-dev build-essential vim procps
+RUN apt-get update && apt-get install -y libssl-dev default-libmysqlclient-dev libffi-dev \
+    libc6-dev build-essential vim procps
 
 ADD build /app
 WORKDIR /app
