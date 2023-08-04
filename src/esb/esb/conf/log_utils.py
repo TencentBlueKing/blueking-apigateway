@@ -20,7 +20,7 @@ import os
 
 LOG_MAX_BYTES = 500 * 1024 * 1024
 LOG_BACKUP_COUNT = 3
-LOG_CLASS = "cloghandler.ConcurrentRotatingFileHandler"
+LOG_CLASS = "concurrent_log_handler.ConcurrentRotatingFileHandler"
 
 
 def get_logging_config(log_level: str, log_dir: str, log_to_file: bool = False, log_api_log_to_file: bool = True):
