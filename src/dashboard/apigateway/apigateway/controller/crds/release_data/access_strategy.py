@@ -108,6 +108,12 @@ class IpAccessControlASC(AccessStrategyConvertor):
         ip_content_list = [group._ips for group in IPGroup.objects.filter(id__in=config["ip_group_list"])]
         ip_list = self._parse_ip_content_list(ip_content_list)
 
+        # NOTE: incase the 404 after upgrade(the apisix required at least 1 item, otherwise load fail)
+        # we add a no-possible ip here
+        # FIXME: generate the plugin data in 1.13, if got an empty ip list, unbind the plugin!!!!!!
+        if not ip_list:
+            ip_list = ["255.255.255.255"]
+
         # the access strategy will be remove soon, so use `allow` and `deny` here directly
         if config["type"] == "allow":
             return {"whitelist": ip_list}
