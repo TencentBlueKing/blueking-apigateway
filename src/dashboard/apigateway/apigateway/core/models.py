@@ -642,7 +642,7 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
         verbose_name_plural = "PublishEvent"
         db_table = "core_publish_event"
         index_together = ("gateway_id", "publish_id")
-        unique_together = ("gateway_id", "publish_id", "step", "status")
+        unique_together = ("gateway_id", "publish_id", "stage_id", "step", "status")
 
 
 # ============================================ auth ============================================

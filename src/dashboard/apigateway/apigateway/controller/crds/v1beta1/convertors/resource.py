@@ -110,7 +110,7 @@ class HttpResourceConvertor(BaseConvertor):
         )
 
     def _get_release_version_route_resource(self) -> dict:
-        uri = "/_version"
+        uri = "/__apigw_version"
         name = "apigw_builtin__mock_release_version"
         mock_config = {
             "code": 200,
