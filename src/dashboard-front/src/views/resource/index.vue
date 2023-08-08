@@ -184,7 +184,7 @@
                   <p v-else>--</p>
                 </template>
               </bk-table-column>
-              <bk-table-column width="90" :label="$t('操作')" class-name="sub-operation">
+              <bk-table-column width="90" :label="$t('操作')" :class-name="`${!isSubOperation ? 'sub-operation' : '' }`">
                 <template slot-scope="resourceItem">
                   <bk-button :disabled="!resourceItem.row.stage_release_status" :text="true" @click="handleShowReleaseResource(resourceItem, resourceItem.row)"> {{ $t('查看资源') }} </bk-button>
                 </template>
@@ -413,7 +413,12 @@
             @click.stop="handleEditResource(props.row)">
             {{ $t('编辑') }}
           </bk-button>
-          <bk-dropdown-menu ref="dropdown" align="right" position-fixed>
+          <bk-dropdown-menu
+            ref="dropdown"
+            align="right"
+            position-fixed
+            @show="isSubOperation = true"
+            @hide="isSubOperation = false">
             <i class="bk-icon icon-more ag-more-btn ml10 icon-more-hover" slot="dropdown-trigger"></i>
             <ul class="bk-dropdown-list" slot="dropdown-content" style="width: 80px; ">
               <!-- <li>
@@ -924,7 +929,8 @@
           keyword: '',
           isAbnormal: false
         },
-        isEnter: false
+        isEnter: false,
+        isSubOperation: false
       }
     },
     computed: {
@@ -2444,8 +2450,5 @@
 }
 .ag-expand-table .sub-operation{
     z-index: 99;
-}
-.ag-resources-table .ag-expand-table .is-last {
-    position: unset;
 }
 </style>
