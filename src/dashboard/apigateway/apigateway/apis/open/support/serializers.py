@@ -26,7 +26,7 @@ from apigateway.core.models import Gateway
 class APISDKQueryV1SLZ(serializers.Serializer):
     api_name = serializers.CharField(allow_null=True, default=None)
     api_id = serializers.IntegerField(allow_null=True, default=None)
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
     def validate_api_id(self, value):
         if value:
@@ -46,7 +46,7 @@ class APISDKQueryV1SLZ(serializers.Serializer):
 class SDKGenerateV1SLZ(serializers.Serializer):
     resource_version = serializers.CharField(max_length=128, help_text="资源版本")
     languages = serializers.ListField(
-        child=serializers.ChoiceField(choices=ProgrammingLanguageEnum.choices()),
+        child=serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices()),
         help_text="需要生成SDK的语言列表",
         default=[ProgrammingLanguageEnum.PYTHON.value],
     )
