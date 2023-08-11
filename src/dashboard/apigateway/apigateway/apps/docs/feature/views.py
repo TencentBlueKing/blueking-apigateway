@@ -20,7 +20,7 @@ from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from .constants import EditionFeatureFlag
 
@@ -34,7 +34,7 @@ class FeatureFlagViewSet(viewsets.GenericViewSet):
     )
     def list(self, request, *args, **kwargs):
         """获取特性开关列表"""
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data=EditionFeatureFlag.from_config(settings.DEFAULT_FEATURE_FLAG).get_default_flags(),
         )

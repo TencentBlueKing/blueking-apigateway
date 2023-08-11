@@ -23,3 +23,6 @@ class StageSLZ(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     description = serializers.CharField()
+
+    class Meta:
+        ref_name = "apps.docs.gateway.stage"

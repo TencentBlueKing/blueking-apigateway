@@ -22,7 +22,7 @@ from rest_framework import status, viewsets
 from apigateway.apps.docs.esb.constants import COMPONENT_SEARCH_LIMIT
 from apigateway.apps.docs.esb.decorators import check_board_exist
 from apigateway.apps.esb.bkcore.models import ESBChannel
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from .serializers import ComponentSearchResultSLZ, ComponentSearchSLZ, ComponentSLZ
 
@@ -46,7 +46,7 @@ class ComponentViewSet(viewsets.GenericViewSet):
         )
 
         slz = ComponentSearchResultSLZ(qs[:COMPONENT_SEARCH_LIMIT], many=True)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ComponentSLZ(many=True)},
@@ -57,4 +57,4 @@ class ComponentViewSet(viewsets.GenericViewSet):
         """查询系统下组件API列表"""
         qs = ESBChannel.objects.filter_public_components(board, system_name=system_name, order_by=("name",))
         slz = ComponentSLZ(qs, many=True)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

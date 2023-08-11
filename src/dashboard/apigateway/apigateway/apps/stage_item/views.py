@@ -24,7 +24,7 @@ from rest_framework import status, viewsets
 from apigateway.apps.stage_item import serializers
 from apigateway.common.exceptions import InstanceDeleteError
 from apigateway.core.models import Stage, StageItem, StageItemConfig
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 
 
 class StageItemViewSet(viewsets.ModelViewSet):
@@ -57,7 +57,7 @@ class StageItemViewSet(viewsets.ModelViewSet):
             },
         )
 
-        return OKJsonResponse(data=slz.data)
+        return V1OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(tags=["StageItem"])
     def retrieve(self, request, *args, **kwargs):
@@ -70,7 +70,7 @@ class StageItemViewSet(viewsets.ModelViewSet):
                 "stage_item_configs": stage_item_configs,
             },
         )
-        return OKJsonResponse(data=slz.data)
+        return V1OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -86,7 +86,7 @@ class StageItemViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse(data={"id": slz.instance.id})
+        return V1OKJsonResponse(data={"id": slz.instance.id})
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -100,7 +100,7 @@ class StageItemViewSet(viewsets.ModelViewSet):
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["StageItem"])
     @transaction.atomic
@@ -110,9 +110,9 @@ class StageItemViewSet(viewsets.ModelViewSet):
         try:
             StageItem.objects.delete_stage_item(instance.id)
         except InstanceDeleteError as err:
-            return FailJsonResponse(str(err))
+            return V1FailJsonResponse(str(err))
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
 
 
 class StageItemForStageViewSet(viewsets.ModelViewSet):
@@ -138,4 +138,4 @@ class StageItemForStageViewSet(viewsets.ModelViewSet):
             },
         )
 
-        return OKJsonResponse(data=slz.data)
+        return V1OKJsonResponse(data=slz.data)

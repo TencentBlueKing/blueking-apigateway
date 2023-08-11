@@ -65,7 +65,13 @@ class ErrorCode:
         self.status_code = status_code
 
     def as_json(self):
-        return {"result": False, "code": self.code, "message": self.message, "data": None}
+        # return {"result": False, "code": self.code, "message": self.message, "data": None}
+        return {
+            "error": {
+                "code": self.code_name,
+                "message": self.message,
+            }
+        }
 
 
 class ErrorCodeCollection:
@@ -89,14 +95,17 @@ class ErrorCodeCollection:
 error_codes = ErrorCodeCollection()
 error_codes.add_codes(
     [
+        # TODO:
+        # - remove all the `code`;
+        # - 细化 validate_error
         # 通用错误
         ErrorCode("COMMON_ERROR", 40000, _("请求失败")),
-        ErrorCode("VALIDATE_ERROR", 40002, _("校验失败")),
+        ErrorCode("VALIDATE_ERROR", 40002, _("校验失败"), status_code=status.HTTP_400_BAD_REQUEST),
         ErrorCode("COMPONENT_ERROR", 40003, _("请求第三方接口失败")),
         ErrorCode("REMOTE_REQUEST_ERROR", 40003, _("请求第三方接口错误")),
-        ErrorCode("JSON_FORMAT_ERROR", 40004, _("Json格式错误")),
-        ErrorCode("METHOD_NOT_ALLOWED", 40005, _("不支持当前的请求方法")),
-        ErrorCode("INVALID_ARGS", 40006, _("参数错误")),
+        ErrorCode("JSON_FORMAT_ERROR", 40004, _("Json格式错误"), status_code=status.HTTP_400_BAD_REQUEST),
+        ErrorCode("METHOD_NOT_ALLOWED", 40005, _("不支持当前的请求方法"), status_code=status.HTTP_405_METHOD_NOT_ALLOWED),
+        ErrorCode("INVALID_ARGS", 40006, _("参数错误"), status_code=status.HTTP_400_BAD_REQUEST),
         ErrorCode("SDK_ERROR", 50100, _("网关SDK生成或上传失败")),
         ErrorCode("RESOURCE_DOC_EXPORT_ERROR", 50101, _("网关文档导出失败")),
         ErrorCode("RESOURCE_DOC_IMPORT_ERROR", 50102, _("资源文档导入失败")),
@@ -108,7 +117,7 @@ error_codes.add_codes(
         ErrorCode("COMPONENT_METHOD_INVALID", 50204, _("组件请求方法配置错误")),
         # 未登录
         ErrorCode("UNAUTHORIZED", 40101, _("用户未登录或登录态失效，请使用登录链接重新登录"), status_code=status.HTTP_401_UNAUTHORIZED),
-        ErrorCode("FORBIDDEN", 40403, _("没有访问权限")),
+        ErrorCode("FORBIDDEN", 40403, _("没有访问权限"), status_code=status.HTTP_403_FORBIDDEN),
         ErrorCode("NOT_FOUND_ERROR", 40404, _("数据不存在"), status_code=status.HTTP_404_NOT_FOUND),
         # Elasticsearch错误
         ErrorCode("ES_HOST_EMPTY_ERROR", 40501, _("系统未配置 Elasticsearch 地址")),

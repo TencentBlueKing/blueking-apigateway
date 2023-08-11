@@ -29,7 +29,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ReleasedResource
 from apigateway.utils.paginator import LimitOffsetPaginator
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -57,7 +57,7 @@ class ReleasedResourceViewSet(viewsets.ModelViewSet):
             raise Http404
 
         slz = serializers.ReleasedResourceSLZ(resource)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -82,7 +82,7 @@ class ReleasedResourceViewSet(viewsets.ModelViewSet):
                 "resource_labels": ResourceLabel.objects.get_labels(resource_ids),
             },
         )
-        return OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -105,7 +105,7 @@ class ReleasedResourceViewSet(viewsets.ModelViewSet):
                 "stage_name": stage_name,
             },
         )
-        return OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
 
     def get_permissions(self):
         if self.action == "list_by_gateway_name":

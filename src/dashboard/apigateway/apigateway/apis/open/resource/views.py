@@ -26,7 +26,7 @@ from apigateway.apps.resource.views import ResourceViewSet
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Resource
 from apigateway.utils.paginator import LimitOffsetPaginator
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -44,7 +44,7 @@ class ResourceV1ViewSet(ResourceViewSet):
         paginator = LimitOffsetPaginator(count=resource_count, offset=0, limit=resource_count)
 
         slz = serializers.ResourceListV1SLZ(resources, many=True)
-        return OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.ResourceListV1SLZ()},
@@ -53,7 +53,7 @@ class ResourceV1ViewSet(ResourceViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = serializers.ResourceListV1SLZ(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class ResourceSyncV1ViewSet(ResourceViewSet):
@@ -87,7 +87,7 @@ class ResourceSyncV1ViewSet(ResourceViewSet):
             elif resource.get("_is_updated"):
                 updated_resources.append({"id": resource["id"]})
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "added": added_resources,

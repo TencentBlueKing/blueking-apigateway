@@ -22,7 +22,7 @@ from rest_framework import status, viewsets
 from apigateway.apps.docs.gateway.resource_doc.helpers import ResourceDocHelper
 from apigateway.apps.docs.helper import support_helper
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from .serializers import ResourceDocSLZ
 
@@ -52,4 +52,4 @@ class ResourceDocViewSet(viewsets.GenericViewSet):
             raise error_codes.NOT_FOUND_ERROR
 
         slz = ResourceDocSLZ(doc)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

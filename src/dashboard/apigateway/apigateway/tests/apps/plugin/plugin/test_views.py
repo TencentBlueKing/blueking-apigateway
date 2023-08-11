@@ -23,9 +23,9 @@ class TestPluginViewSet:
     @pytest.mark.parametrize(
         "config_tmpl, code",
         [
-            ["{config}", 0],  # success
-            ["", 40002],  # config is None
-            ["foo: bar", 40002],  # config validate failure by schema
+            ["{config}", 201],  # success
+            ["", 400],  # config is None
+            ["foo: bar", 400],  # config validate failure by schema
         ],
     )
     def test_create(self, request_view, fake_gateway, echo_plugin, echo_plugin_type, config_tmpl, code):
@@ -44,8 +44,9 @@ class TestPluginViewSet:
             },
         )
 
-        result = response.json()
-        assert result["code"] == code
+        # result = response.json()
+        # assert result["code"] == code
+        assert response.status_code == code
 
     def test_list(self, request_view, fake_gateway, echo_plugin):
         response = request_view(
@@ -68,9 +69,9 @@ class TestPluginViewSet:
     @pytest.mark.parametrize(
         "config_tmpl, code",
         [
-            ["{config}", 0],  # success
-            ["", 40002],  # config is None
-            ["foo: bar", 40002],  # config validate failure by schema
+            ["{config}", 200],  # success
+            ["", 400],  # config is None
+            ["foo: bar", 400],  # config validate failure by schema
         ],
     )
     def test_update(self, request_view, fake_gateway, echo_plugin, echo_plugin_type, config_tmpl, code):
@@ -90,8 +91,9 @@ class TestPluginViewSet:
             },
         )
 
-        result = response.json()
-        assert result["code"] == code
+        # result = response.json()
+        # assert result["code"] == code
+        assert response.status_code == code
 
     def test_retrieve(self, request_view, fake_gateway, echo_plugin):
         response = request_view(

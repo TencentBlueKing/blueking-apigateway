@@ -62,7 +62,8 @@ class TestSystemViewSet:
         response = view(request, board, system_name)
         result = get_response_json(response)
 
-        assert result["code"] == 0
+        # assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == expected
 
         mocked_get_by_name.assert_called_once_with(board, system_name)

@@ -242,6 +242,7 @@ class ResourceSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     )
 
     class Meta:
+        ref_name = "apps.resource"
         model = Resource
         fields = [
             "api",

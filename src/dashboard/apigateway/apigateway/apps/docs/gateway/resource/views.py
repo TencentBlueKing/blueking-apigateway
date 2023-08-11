@@ -21,7 +21,7 @@ from rest_framework import status, viewsets
 
 from apigateway.apps.docs.helper import support_helper
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .serializers import ResourceSLZ
@@ -42,4 +42,4 @@ class ResourceViewSet(viewsets.GenericViewSet):
         data = support_helper.get_released_resources(api["id"], stage_name)
         slz = ResourceSLZ(sorted(data["results"], key=lambda x: x["name"]), many=True)
         data["results"] = slz.data
-        return OKJsonResponse("OK", data=data)
+        return V1OKJsonResponse("OK", data=data)

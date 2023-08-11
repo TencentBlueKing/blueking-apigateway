@@ -116,8 +116,9 @@ class TestResourceViewSet(TestCase):
             view = ResourceViewSet.as_view({"post": "create"})
             response = view(request, gateway_id=self.gateway.id)
 
-            result = get_response_json(response)
-            self.assertEqual(result["code"], 0)
+            # result = get_response_json(response)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
 
             # check resource
             resource = Resource.objects.get(api=self.gateway, method=test["method"], path=test["path"])
@@ -180,7 +181,8 @@ class TestResourceViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
             self.assertEqual(len(result["data"]["results"]), test["expected"])
 
     def test_retrieve(self):
@@ -225,7 +227,8 @@ class TestResourceViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id, id=resource.id)
 
         result = get_response_json(response)
-        self.assertEqual(result["code"], 0, result)
+        # self.assertEqual(result["code"], 0, result)
+        self.assertEqual(response.status_code, 200, result)
         self.assertEqual(result["data"]["proxy_configs"], data["proxy_configs"])
 
     def test_update(self):
@@ -301,10 +304,12 @@ class TestResourceViewSet(TestCase):
             result = get_response_json(response)
 
             if test.get("will_error"):
-                self.assertNotEqual(result["code"], 0, result)
+                # self.assertNotEqual(result["code"], 0, result)
+                self.assertNotEqual(response.status_code, 200, "")
                 continue
 
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
 
             # check resource
             resource = Resource.objects.get(api=self.gateway, method=test["method"], path=test["path"])
@@ -363,7 +368,8 @@ class TestResourceViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id, id=resource.id)
 
         result = get_response_json(response)
-        self.assertEqual(result["code"], 0)
+        # self.assertEqual(result["code"], 0)
+        self.assertEqual(response.status_code, 200)
         self.assertFalse(Resource.objects.filter(id=resource.id).exists())
 
 
@@ -395,7 +401,8 @@ class TestResourceBatchViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
 
             for resource in Resource.objects.filter(id__in=test["ids"]):
                 for attr, value in test["expected"].items():
@@ -417,7 +424,8 @@ class TestResourceBatchViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
 
             self.assertFalse(Resource.objects.filter(id__in=test["ids"]).exists())
 
@@ -504,9 +512,11 @@ class TestProxyPathViewSet(TestCase):
             result = get_response_json(response)
 
             if test["will_error"]:
-                self.assertNotEqual(result["code"], 0, result)
+                # self.assertNotEqual(result["code"], 0, result)
+                self.assertNotEqual(response.status_code, 200, "")
             else:
-                self.assertEqual(result["code"], 0, result)
+                # self.assertEqual(result["code"], 0, result)
+                self.assertEqual(response.status_code, 200, result)
 
 
 class TestResourceImportExportViewSet:

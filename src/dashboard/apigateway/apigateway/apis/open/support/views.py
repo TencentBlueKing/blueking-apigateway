@@ -38,7 +38,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Gateway, Release, ResourceVersion
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class APISDKV1ViewSet(viewsets.ModelViewSet):
                 ),
             },
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class ResourceDocImportViewSet(viewsets.ViewSet):
@@ -106,7 +106,7 @@ class ResourceDocImportViewSet(viewsets.ViewSet):
             )
         except ResourceDocJinja2TemplateError as err:
             raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @transaction.atomic
     @swagger_auto_schema(
@@ -132,7 +132,7 @@ class ResourceDocImportViewSet(viewsets.ViewSet):
         except GenerateMarkdownError:
             raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class SDKGenerateViewSet(viewsets.ViewSet):
@@ -187,4 +187,4 @@ class SDKGenerateViewSet(viewsets.ViewSet):
                     )
                     raise error_codes.SDK_ERROR.format(_("网关 SDK 创建失败, 请联系管理员。"), replace=True)
 
-        return OKJsonResponse("OK", data=results)
+        return V1OKJsonResponse("OK", data=results)

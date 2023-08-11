@@ -209,5 +209,6 @@ class TestAPIRelatedAppViewSet:
             side_effect=ValidationError(),
         )
         response = view(request, gateway_name=request.gateway.name)
-        result = get_response_json(response)
-        assert result["code"] != 0
+        # result = get_response_json(response)
+        # assert result["code"] != 0
+        assert response.status_code != 200

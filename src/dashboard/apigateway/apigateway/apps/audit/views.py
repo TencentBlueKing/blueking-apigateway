@@ -21,7 +21,7 @@ from rest_framework import status, viewsets
 
 from apigateway.apps.audit import serializers
 from apigateway.apps.audit.models import AuditEventLog
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -57,4 +57,4 @@ class AuditEventLogViewSet(viewsets.ModelViewSet):
 
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))

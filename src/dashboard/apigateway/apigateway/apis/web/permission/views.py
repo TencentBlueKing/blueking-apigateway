@@ -38,7 +38,7 @@ from apigateway.apps.permission.tasks import send_mail_for_perm_handle
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.core.constants import ExportTypeEnum
 from apigateway.core.models import Resource
-from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .filters import (
@@ -87,7 +87,7 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
         page = self.paginate_queryset(queryset)
 
         serializer = AppResourcePermissionOutputSLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -111,7 +111,7 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
             grant_type=GrantTypeEnum.INITIALIZE.value,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generics.CreateAPIView):
@@ -185,7 +185,7 @@ class AppResourcePermissionAppCodeListApi(generics.ListAPIView):
             .distinct()
             .values_list("bk_app_code", flat=True)
         )
-        return OKJsonResponse("OK", data=app_codes)
+        return V1OKJsonResponse("OK", data=app_codes)
 
 
 class AppResourcePermissionRenewApi(generics.CreateAPIView):
@@ -205,7 +205,7 @@ class AppResourcePermissionRenewApi(generics.CreateAPIView):
             ids=data["ids"],
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generics.CreateAPIView):
@@ -220,7 +220,7 @@ class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generic
         data = slz.validated_data
 
         self.get_queryset().filter(id__in=data["ids"]).delete()
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppGatewayPermissionQuerySetMixin:
@@ -245,7 +245,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
         page = self.paginate_queryset(queryset)
 
         serializer = AppGatewayPermissionOutputSLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -269,7 +269,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
             grant_type=GrantTypeEnum.INITIALIZE.value,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.CreateAPIView):
@@ -340,7 +340,7 @@ class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
             .distinct()
             .values_list("bk_app_code", flat=True)
         )
-        return OKJsonResponse("OK", data=app_codes)
+        return V1OKJsonResponse("OK", data=app_codes)
 
 
 class AppGatewayPermissionRenewApi(generics.CreateAPIView):
@@ -360,7 +360,7 @@ class AppGatewayPermissionRenewApi(generics.CreateAPIView):
             ids=data["ids"],
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.CreateAPIView):
@@ -375,7 +375,7 @@ class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.
         data = slz.validated_data
 
         self.get_queryset().filter(id__in=data["ids"]).delete()
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppPermissionApplyQuerySetMixin:
@@ -401,7 +401,7 @@ class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAP
         page = self.paginate_queryset(queryset)
 
         serializer = AppPermissionApplyOutputSLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
 
 class AppPermissionApplyRetrieveApi(AppPermissionApplyQuerySetMixin, generics.RetrieveAPIView):
@@ -411,7 +411,7 @@ class AppPermissionApplyRetrieveApi(AppPermissionApplyQuerySetMixin, generics.Re
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = AppPermissionApplyOutputSLZ(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class AppPermissionRecordListApi(generics.ListAPIView):
@@ -440,7 +440,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
                 "resource_id_map": Resource.objects.filter_id_object_map(request.gateway.id),
             },
         )
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
 
 class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
@@ -458,7 +458,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
                 "resource_id_map": Resource.objects.filter_id_object_map(request.gateway.id),
             },
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.CreateAPIView):
@@ -497,4 +497,4 @@ class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.Cr
         # 删除申请单
         queryset.delete()
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")

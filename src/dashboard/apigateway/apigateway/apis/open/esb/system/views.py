@@ -23,7 +23,7 @@ from rest_framework import status, viewsets
 
 from apigateway.apis.open.esb.system import serializers
 from apigateway.apps.esb.bkcore.models import ComponentSystem, ESBChannel
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 
 class SystemViewSet(viewsets.GenericViewSet):
@@ -52,4 +52,4 @@ class SystemViewSet(viewsets.GenericViewSet):
         queryset = self._filter_active_and_public_systems(boards=slz.validated_data["boards"])
 
         slz = serializers.SystemV1SLZ(queryset.order_by("board", "name"), many=True)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

@@ -65,7 +65,8 @@ class TestResourceVersionViewSet(TestCase):
         response = view(request, gateway_id=gateway.id)
 
         result = get_response_json(response)
-        self.assertEqual(result["code"], 0, result)
+        # self.assertEqual(result["code"], 0, result)
+        self.assertEqual(response.status_code, 200, result)
 
         self.assertTrue(ResourceVersion.objects.filter(api=gateway).count() > 0)
 
@@ -89,7 +90,8 @@ class TestResourceVersionViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id)
 
         result = get_response_json(response)
-        self.assertEqual(result["code"], 0)
+        # self.assertEqual(result["code"], 0)
+        self.assertEqual(response.status_code, 200)
 
         results = result["data"]["results"]
 
@@ -154,7 +156,8 @@ class TestResourceVersionViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id, id=resource_version.id)
 
         result = get_response_json(response)
-        self.assertEqual(result["code"], 0)
+        # self.assertEqual(result["code"], 0)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(
             result["data"],
             {
@@ -197,7 +200,8 @@ class TestResourceVersionViewSet(TestCase):
             response = view(request, gateway_id=gateway.id, id=rv.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
 
             rv = ResourceVersion.objects.get(id=rv.id)
             self.assertEqual(rv.title, test["title"])
@@ -282,7 +286,8 @@ class TestResourceVersionViewSet(TestCase):
                 self.assertNotEqual(result["code"], 0)
                 continue
 
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
             self.assertEqual(result["data"], test["expected"])
 
 
