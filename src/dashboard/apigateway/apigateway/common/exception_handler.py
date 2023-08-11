@@ -54,38 +54,44 @@ def one_line_error(error: ValidationError):
 
 
 def custom_exception_handler(exc, context):
+    is_legacy = False
+    request = context.get("request")
+    if request:
+        if "/backend/api/v1/" in request.path or "backend/api/v1/edge-controller/" in request.path:
+            is_legacy = True
+
     if isinstance(exc, (NotAuthenticated, AuthenticationFailed)):
         error = error_codes.UNAUTHORIZED
-        return Response(error.code.as_json(), status=error.code.status_code, headers={})
+        return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
     elif isinstance(exc, ValidationError):
         set_rollback()
         error = error_codes.VALIDATE_ERROR.format(message=one_line_error(exc))
-        return Response(error.code.as_json(), status=error.code.status_code, headers={})
+        return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
     elif isinstance(exc, APIError):
         set_rollback()
-        return Response(exc.code.as_json(), status=exc.code.status_code, headers={})
+        return Response(exc.code.as_json(is_legacy), status=exc.code.status_code, headers={})
 
     elif isinstance(exc, MethodNotAllowed):
         set_rollback()
         error = error_codes.METHOD_NOT_ALLOWED.format(message=exc.detail)
-        return Response(error.code.as_json(), status=error.code.status_code, headers={})
+        return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
     elif isinstance(exc, PermissionDenied):
         set_rollback()
         error = error_codes.FORBIDDEN.format(message=exc.detail, replace=True)
-        return Response(error.code.as_json(), status=error.code.status_code, headers={})
+        return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
     # Call REST framework's default exception handler to get the standard error response.
     response = exception_handler(exc, context)
     # Use a default error code
     if response is not None:
         error = error_codes.COMMON_ERROR.format(message=one_line_error(APIException(response.data)), replace=True)
-        return Response(error.code.as_json(), status=response.status_code, headers={})
+        return Response(error.code.as_json(is_legacy), status=response.status_code, headers={})
 
     logger.exception("unhandled error occurred")
 
     set_rollback()
     error = error_codes.COMMON_ERROR.format(message=str(exc))
-    return Response(error.code.as_json(), status=error.code.status_code, headers={})
+    return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})

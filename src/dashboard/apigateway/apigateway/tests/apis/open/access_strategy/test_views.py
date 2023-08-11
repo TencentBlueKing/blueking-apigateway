@@ -97,7 +97,7 @@ class TestIPGroupV1ViewSet(TestCase):
             response = view(request, gateway_id=gateway.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(result["code"], 0, result)
             self.assertEqual(response.status_code, 200, result)
             self.assertEqual(result["data"]["created"], test["expected"]["created"])
 
@@ -169,7 +169,7 @@ class TestAccessStrategyAddIPGroupsV1APIView(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(result["code"], 0, result)
             self.assertEqual(response.status_code, 200, result)
 
             strategy = AccessStrategy.objects.get(id=strategy.id)

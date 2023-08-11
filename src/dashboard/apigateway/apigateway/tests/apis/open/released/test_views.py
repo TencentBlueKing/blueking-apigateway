@@ -99,7 +99,7 @@ class TestReleasedResourceViewSet:
             return_value=mocked_resource,
         )
 
-        request = request_factory.get("/")
+        request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
         stage_name = "prod"
         resource_name = mocked_resource and mocked_resource["name"]
@@ -110,7 +110,7 @@ class TestReleasedResourceViewSet:
 
         if will_error:
             response.status_code == 404
-            # assert result["code"] == 40000
+            assert result["code"] == 40000
             return
 
         assert result["code"] == 0
@@ -207,7 +207,7 @@ class TestReleasedResourceViewSet:
             return_value=mocked_labels,
         )
 
-        request = request_factory.get("/")
+        request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
 
         view = views.ReleasedResourceViewSet.as_view({"get": "list"})
@@ -302,7 +302,7 @@ class TestReleasedResourceViewSet:
             return_value=mocked_resources,
         )
 
-        request = request_factory.get("")
+        request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
 
         response = request_to_view(

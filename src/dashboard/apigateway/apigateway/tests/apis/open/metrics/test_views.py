@@ -64,7 +64,7 @@ class TestStatisticsV1ViewSet(TestCase):
             response = view(request)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0, json.dumps(result))
+            self.assertEqual(result["code"], 0, json.dumps(result))
             self.assertEqual(response.status_code, 200, json.dumps(result))
             self.assertEqual(
                 result["data"],

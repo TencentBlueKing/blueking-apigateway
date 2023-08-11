@@ -64,8 +64,10 @@ class ErrorCode:
         self.message = message
         self.status_code = status_code
 
-    def as_json(self):
-        # return {"result": False, "code": self.code, "message": self.message, "data": None}
+    def as_json(self, is_legacy=False):
+        if is_legacy:
+            return {"result": False, "code": self.code, "message": self.message, "data": None}
+
         return {
             "error": {
                 "code": self.code_name,
