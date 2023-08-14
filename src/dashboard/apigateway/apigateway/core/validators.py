@@ -69,7 +69,7 @@ class ResourceIDValidator(GetGatewayFromContextMixin):
             raise serializers.ValidationError(_("网关【id={api_id}】下指定的部分资源ID不存在。").format(api_id=gateway.id))
 
 
-class ReservedAPINameValidator:
+class ReservedGatewayNameValidator:
     """保留的网关名校验，开源版网关名不能以 'bk-' 开头"""
 
     def __call__(self, value: str):

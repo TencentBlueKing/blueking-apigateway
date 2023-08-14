@@ -39,8 +39,8 @@ from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     STAGE_VAR_PATTERN,
     APIHostingTypeEnum,
-    APIStatusEnum,
     BackendConfigTypeEnum,
+    GatewayStatusEnum,
     ProxyTypeEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusTypeEnum,
@@ -95,7 +95,7 @@ class GatewayManager(models.Manager):
 
     def filter_micro_and_active_queryset(self):
         """获取托管类型为微网关，且已启用的网关，用于获取可发布到共享微网关实例的网关"""
-        return self.filter(hosting_type=APIHostingTypeEnum.MICRO.value, status=APIStatusEnum.ACTIVE.value)
+        return self.filter(hosting_type=APIHostingTypeEnum.MICRO.value, status=GatewayStatusEnum.ACTIVE.value)
 
     def query_micro_and_active_ids(self, ids: Union[List[int], None] = None) -> List[int]:
         """获取托管类型为微网关，且已启用的网关 ID 列表；如果给定了网关 ID 列表，则返回其中符合条件的 ID 列表"""
@@ -148,7 +148,7 @@ class StageManager(models.Manager):
 
 
 class ResourceManager(models.Manager):
-    def get_api_resource_count(self, gateway_ids):
+    def get_resource_count(self, gateway_ids):
         """
         获取网关资源数量
         """

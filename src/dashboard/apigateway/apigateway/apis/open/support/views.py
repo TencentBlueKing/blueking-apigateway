@@ -33,7 +33,7 @@ from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import APISDK
 from apigateway.apps.support.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.apps.support.resource_doc.import_doc.managers import ArchiveImportDocManager, SwaggerImportDocManager
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.permissions import GatewayRelatedAppPermission
@@ -69,7 +69,7 @@ class APISDKV1ViewSet(viewsets.ModelViewSet):
             many=True,
             context={
                 "api_id_map": Gateway.objects.filter_id_object_map(),
-                "api_id_config_map": APIAuthContext().filter_scope_id_config_map(),
+                "api_id_config_map": GatewayAuthContext().filter_scope_id_config_map(),
                 "released_stages": Release.objects.get_released_stages(resource_version_ids=resource_version_ids),
                 "resource_versions": ResourceVersion.objects.get_id_to_fields_map(
                     resource_version_ids=resource_version_ids,

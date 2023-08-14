@@ -23,7 +23,7 @@ from ddf import G
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.core.models import Gateway
 
 UserModel = get_user_model()
@@ -61,6 +61,6 @@ def fake_gateway(faker):
         hosting_type=0,
     )
 
-    APIAuthContext().save(gateway.pk, {})
+    GatewayAuthContext().save(gateway.pk, {})
 
     return gateway

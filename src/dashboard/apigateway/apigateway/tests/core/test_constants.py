@@ -98,9 +98,9 @@ class TestConstants:
     )
     def test_api_name_pattern(self, value, match):
         if match:
-            assert constants.API_NAME_PATTERN.match(value)
+            assert constants.GATEWAY_NAME_PATTERN.match(value)
         else:
-            assert not constants.API_NAME_PATTERN.match(value)
+            assert not constants.GATEWAY_NAME_PATTERN.match(value)
 
     @pytest.mark.parametrize(
         "value, match",
