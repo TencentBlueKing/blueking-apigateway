@@ -23,7 +23,7 @@ from rest_framework import status, viewsets
 from apigateway.apps.backend_service import serializers
 from apigateway.common.exceptions import InstanceDeleteError
 from apigateway.core.models import BackendService
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -54,13 +54,13 @@ class BackendServiceViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
 
         slz = serializers.ListBackendServiceSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
 
     @swagger_auto_schema(tags=["BackendService"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
-        return OKJsonResponse(data=slz.data)
+        return V1OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -77,7 +77,7 @@ class BackendServiceViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse(data={"id": slz.instance.id})
+        return V1OKJsonResponse(data={"id": slz.instance.id})
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -92,7 +92,7 @@ class BackendServiceViewSet(viewsets.ModelViewSet):
 
         slz.save(updated_by=request.user.username)
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["BackendService"])
     @transaction.atomic
@@ -102,6 +102,6 @@ class BackendServiceViewSet(viewsets.ModelViewSet):
         try:
             BackendService.objects.delete_backend_service(instance.id)
         except InstanceDeleteError as err:
-            return FailJsonResponse(str(err))
+            return V1FailJsonResponse(str(err))
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()

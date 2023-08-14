@@ -30,7 +30,7 @@ from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import APISDK
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
-from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -62,7 +62,7 @@ class APISDKViewSet(viewsets.ModelViewSet):
 
         sdks = [SDKFactory.create(model=i) for i in page]
         slz = self.get_serializer(sdks, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""}, request_body=serializers.APISDKGenerateSLZ, tags=["Support"]
@@ -116,4 +116,4 @@ class APISDKViewSet(viewsets.ModelViewSet):
                 return DownloadableResponse(open(file_path, "rb"), filename=file_name)
 
         slz = self.get_serializer(SDKFactory.create(info.sdk))
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

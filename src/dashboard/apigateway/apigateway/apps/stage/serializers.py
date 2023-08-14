@@ -142,6 +142,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     )
 
     class Meta:
+        ref_name = "apps.stage"
         model = Stage
         fields = (
             "api",

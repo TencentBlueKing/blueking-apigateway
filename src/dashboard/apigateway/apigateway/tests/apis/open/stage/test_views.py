@@ -42,6 +42,7 @@ class TestStageViewSet:
         result = get_response_json(response)
 
         assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == [
             {
                 "id": s1.id,
@@ -64,6 +65,7 @@ class TestStageViewSet:
         result = get_response_json(response)
 
         assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == [
             {
                 "id": s1.id,
@@ -85,6 +87,7 @@ class TestStageViewSet:
         result = get_response_json(response)
 
         assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == [
             {
                 "id": stage.id,

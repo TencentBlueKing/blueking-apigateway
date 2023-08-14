@@ -23,7 +23,7 @@ from tencent_apigateway_common.django.translation import get_current_language_co
 
 from apigateway.apps.docs.helper import support_helper
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from .helpers import DummyResourceForSDK, ReleasedResourceForSDK
 from .serializers import GatewaySDKSLZ, SDKDocConditionSLZ, SDKQuerySLZ, SDKUsageExampleConditionSLZ, StageSDKSLZ
@@ -42,7 +42,7 @@ class SDKViewSet(viewsets.GenericViewSet):
 
         data = support_helper.get_latest_sdks(language=slz.validated_data["language"])
         slz = GatewaySDKSLZ(sorted(data or [], key=lambda x: x["api_name"]), many=True)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         query_serializer=SDKQuerySLZ,
@@ -63,7 +63,7 @@ class SDKViewSet(viewsets.GenericViewSet):
             language=slz.validated_data["language"],
         )
         slz = StageSDKSLZ(sorted(sdks or [], key=lambda x: x["stage_name"]), many=True)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         query_serializer=SDKUsageExampleConditionSLZ,
@@ -96,7 +96,7 @@ class SDKViewSet(viewsets.GenericViewSet):
                 context=resource.as_dict(),
             )
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "content": content,
@@ -115,7 +115,7 @@ class SDKViewSet(viewsets.GenericViewSet):
 
         programming_language = slz.validated_data["language"]
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "content": render_to_string(

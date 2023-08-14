@@ -24,7 +24,7 @@ from tencent_apigateway_common.django.translation import get_current_language_co
 
 from apigateway.apps.docs.esb.decorators import check_board_exist
 from apigateway.apps.docs.esb.sdk_helpers import DocTemplates, DummyComponentForSDK, NormalComponentForSDK, SDKFactory
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 
 from .serializers import SDKSLZ, SDKDocConditionSLZ, SDKQuerySLZ, SDKUsageExampleConditionSLZ
 
@@ -50,7 +50,7 @@ class SDKViewSet(viewsets.GenericViewSet):
 
         # TODO: 不同语言SDK配置，可能需要不同的 serializer
         slz = SDKSLZ(sorted(sdks, key=lambda x: x.sdk_name), many=True)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         query_serializer=SDKQuerySLZ,
@@ -65,10 +65,10 @@ class SDKViewSet(viewsets.GenericViewSet):
 
         sdk = SDKFactory.get_sdk(board, slz.validated_data["language"])
         if not sdk:
-            return FailJsonResponse("SDK 获取失败，请稍后重试")
+            return V1FailJsonResponse("SDK 获取失败，请稍后重试")
 
         slz = SDKSLZ(sdk)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         query_serializer=SDKUsageExampleConditionSLZ,
@@ -91,7 +91,7 @@ class SDKViewSet(viewsets.GenericViewSet):
             language_code=get_current_language_code(),
             programming_language=slz.validated_data["language"],
         )
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "content": render_to_string(
@@ -118,7 +118,7 @@ class SDKViewSet(viewsets.GenericViewSet):
             programming_language=slz.validated_data["language"],
         )
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "content": render_to_string(

@@ -24,7 +24,7 @@ from rest_framework import generics, status
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
 from apigateway.biz.monitor import ResourceMonitorHandler
 from apigateway.common.factories import SchemaFactory
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 from apigateway.utils.time import now_datetime
 
@@ -65,7 +65,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
         # 存储关联的标签
         slz.instance.api_labels.set(api_label_ids)
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -88,7 +88,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
 
         page = self.paginate_queryset(queryset)
         serializer = AlarmStrategyListOutputSLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
 
 class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
@@ -116,13 +116,13 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
 
         slz.instance.api_labels.set(api_label_ids)
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(tags=["AlarmStrategy"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -131,7 +131,7 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
@@ -157,7 +157,7 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
             updated_time=now_datetime(),
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AlarmRecordListApi(generics.ListAPIView):
@@ -180,7 +180,7 @@ class AlarmRecordListApi(generics.ListAPIView):
         page = self.paginate_queryset(queryset)
 
         serializer = self.get_serializer(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
 
 class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
@@ -196,7 +196,7 @@ class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class AlarmRecordSummaryListApi(generics.ListAPIView):
@@ -221,4 +221,4 @@ class AlarmRecordSummaryListApi(generics.ListAPIView):
             time_end=data.get("time_end"),
         )
 
-        return OKJsonResponse("OK", data=results)
+        return V1OKJsonResponse("OK", data=results)

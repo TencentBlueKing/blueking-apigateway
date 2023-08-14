@@ -16,12 +16,45 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
+from typing import Any, Dict, List, Union
+
 from django.http import FileResponse, JsonResponse
 from rest_framework import status
 from rest_framework.renderers import JSONRenderer
 
 
 class FailJsonResponse(JsonResponse):
+    def __init__(
+        self,
+        status: int,
+        code: str,
+        message: str,
+        details: Union[List[Dict[str, Any]], None] = None,
+        data: Union[Dict, List, None] = None,
+    ):
+        body = {
+            "error": {
+                "code": code,
+                "message": message,
+                "details": details or [],
+                "data": data or {},
+            }
+        }
+
+        super(FailJsonResponse, self).__init__(body, status=status)
+
+
+class OKJsonResponse(JsonResponse):
+    def __init__(self, status: int = status.HTTP_200_OK, data: Union[Dict, List, None] = None):
+        body = {"data": data}
+
+        super(OKJsonResponse, self).__init__(body, status=status)
+
+
+class V1FailJsonResponse(JsonResponse):
+    """for legacy open api only!!!"""
+
     def __init__(self, message, **kwargs):
         data = {}
         if kwargs:
@@ -38,10 +71,12 @@ class FailJsonResponse(JsonResponse):
             }
         )
 
-        super(FailJsonResponse, self).__init__(data, status=status.HTTP_400_BAD_REQUEST)
+        super(V1FailJsonResponse, self).__init__(data, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OKJsonResponse(JsonResponse):
+class V1OKJsonResponse(JsonResponse):
+    """for legacy open api only!!!"""
+
     def __init__(self, message="OK", **kwargs):
         data = {}
         if kwargs:
@@ -58,7 +93,7 @@ class OKJsonResponse(JsonResponse):
             }
         )
 
-        super(OKJsonResponse, self).__init__(data)
+        super(V1OKJsonResponse, self).__init__(data)
 
 
 class DownloadableResponse(FileResponse):

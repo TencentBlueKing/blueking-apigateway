@@ -106,19 +106,21 @@ class TestDocCategoryViewSet:
         # official, delete fail
         doc_category = G(DocCategory, data_type=DataTypeEnum.OFFICIAL_PUBLIC.value)
         response = view(request, id=doc_category.id)
-        result = get_response_json(response)
+        # result = get_response_json(response)
+        _ = get_response_json(response)
 
-        assert response.status_code == 400
-        assert result["code"] == 40403
+        assert response.status_code == 403
+        # assert result["code"] == 40403
         assert DocCategory.objects.filter(id=doc_category.id).exists()
 
         # system-doc-category exists, delete fail
         doc_category = G(DocCategory, data_type=DataTypeEnum.CUSTOM.value)
         G(SystemDocCategory, doc_category=doc_category)
         response = view(request, id=doc_category.id)
-        result = get_response_json(response)
+        # result = get_response_json(response)
+        _ = get_response_json(response)
 
-        assert response.status_code == 400
-        assert result["code"] == 40403
+        assert response.status_code == 403
+        # assert result["code"] == 40403
         assert DocCategory.objects.filter(id=doc_category.id).exists()
         assert SystemDocCategory.objects.filter(doc_category_id=doc_category.id).exists()

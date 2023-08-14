@@ -26,7 +26,7 @@ from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Release, Stage
 from apigateway.utils.django import get_object_or_None
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 
 class StageViewSet(viewsets.ModelViewSet):
@@ -52,7 +52,7 @@ class StageViewSet(viewsets.ModelViewSet):
         )
 
         slz = self.get_serializer(queryset, many=True)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.StageV1SLZ(many=True)},
@@ -81,7 +81,7 @@ class StageV1ViewSet(viewsets.ViewSet):
         slz = serializers.StageWithResourceVersionV1SLZ(
             queryset, many=True, context={"stage_release": Release.objects.get_stage_release(gateway=request.gateway)}
         )
-        return OKJsonResponse(data=slz.data)
+        return V1OKJsonResponse(data=slz.data)
 
 
 class StageSyncViewSet(viewsets.ViewSet):
@@ -104,7 +104,7 @@ class StageSyncViewSet(viewsets.ViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "id": slz.instance.id,

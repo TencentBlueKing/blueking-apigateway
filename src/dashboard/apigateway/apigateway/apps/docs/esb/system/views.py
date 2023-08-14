@@ -23,7 +23,7 @@ from apigateway.apps.docs.esb.decorators import check_board_exist
 from apigateway.apps.docs.esb.system.utils import get_system_doc_categories
 from apigateway.apps.esb.bkcore.models import ComponentSystem
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from .serializers import ComponentSystemSLZ
 
@@ -36,7 +36,7 @@ class SystemViewSet(viewsets.GenericViewSet):
     def list(self, request, *args, **kwargs):
         """获取系统列表"""
         system_categories = get_system_doc_categories()
-        return OKJsonResponse("OK", data=system_categories)
+        return V1OKJsonResponse("OK", data=system_categories)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ComponentSystemSLZ},
@@ -50,4 +50,4 @@ class SystemViewSet(viewsets.GenericViewSet):
             raise error_codes.NOT_FOUND_ERROR
 
         slz = ComponentSystemSLZ(system)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

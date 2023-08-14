@@ -25,7 +25,7 @@ from rest_framework import generics, status
 from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
 from apigateway.apps.metrics.prometheus.dimension import DimensionMetricsFactory
 from apigateway.core.models import Resource, Stage
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.time import SmartTimeRange
 
 from .serializers import MetricsQueryInputSLZ
@@ -114,4 +114,4 @@ class QueryRangeApi(generics.ListAPIView):
             step=step,
         )
 
-        return OKJsonResponse("OK", data=data)
+        return V1OKJsonResponse("OK", data=data)

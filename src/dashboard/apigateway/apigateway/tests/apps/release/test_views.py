@@ -91,11 +91,13 @@ class TestReleaseBatchViewSet:
 
         if not succeeded:
             assert history_qs[0].status == ReleaseStatusEnum.FAILURE.value
-            assert result["code"] != 0, result
+            # assert result["code"] != 0, result
+            assert response.status_code != 200, result
         else:
             # The request finished successfully
             assert history_qs[0].status == ReleaseStatusEnum.SUCCESS.value
-            assert result["code"] == 0, result
+            # assert result["code"] == 0, result
+            assert response.status_code == 200, result
 
             for stage_id in data["stage_ids"]:
                 release = Release.objects.get(stage__id=stage_id)

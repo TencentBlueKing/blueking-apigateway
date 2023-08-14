@@ -19,7 +19,7 @@
 from django.conf import settings
 from rest_framework import generics
 
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from .constants import USER_AUTH_TYPES
 from .serializers import UserAuthTypeInputSLZ
@@ -28,7 +28,7 @@ from .serializers import UserAuthTypeInputSLZ
 class UserTokenGetApi(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         # TODO: 此接口待删除
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data=self._get_ticket_from(settings.BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME),
         )
@@ -40,7 +40,7 @@ class UserTokenGetApi(generics.RetrieveAPIView):
 class UserAuthTypeListApi(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         slz = UserAuthTypeInputSLZ(USER_AUTH_TYPES, many=True)
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data=slz.data,
         )

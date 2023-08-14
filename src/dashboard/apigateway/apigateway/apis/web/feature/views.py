@@ -23,7 +23,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.feature.models import UserFeatureFlag
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 
 class FeatureFlagListApi(generics.ListAPIView):
@@ -44,4 +44,4 @@ class FeatureFlagListApi(generics.ListAPIView):
         user_feature_flags = UserFeatureFlag.objects.get_feature_flags(request.user.username)
         feature_flags.update(user_feature_flags)
 
-        return OKJsonResponse("OK", data=feature_flags)
+        return V1OKJsonResponse("OK", data=feature_flags)

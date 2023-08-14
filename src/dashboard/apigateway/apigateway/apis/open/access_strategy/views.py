@@ -28,7 +28,7 @@ from apigateway.apps.access_strategy.constants import AccessStrategyTypeEnum
 from apigateway.apps.access_strategy.models import AccessStrategy, IPGroup
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.utils.django import get_object_or_None
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 
 class IPGroupV1ViewSet(viewsets.ModelViewSet):
@@ -62,7 +62,7 @@ class IPGroupV1ViewSet(viewsets.ModelViewSet):
             obj.updated_by = request.user.username
             obj.save(update_fields=["_ips", "comment", "updated_by", "updated_time"])
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "id": obj.id,
@@ -116,7 +116,7 @@ class AccessStrategyAddIPGroupsV1APIView(APIView):
             strategy.add_ip_group_list(data["ip_group_list"])
             strategy.save(update_fields=["_config", "updated_time"])
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AccessStrategyBindingsV1ViewSet(AccessStrategyBindingBatchViewSet):
@@ -167,7 +167,7 @@ class AccessStrategySyncViewSet(viewsets.ViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "id": slz.instance.id,

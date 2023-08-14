@@ -236,7 +236,8 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
 
             perm_record = models.AppResourcePermission.objects.filter(
                 api=self.gateway,
@@ -274,7 +275,8 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
 
             permission_model = models.AppResourcePermission
             self.assertFalse(
@@ -315,7 +317,8 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
 
             permission_model = models.AppAPIPermission
             perm_record = permission_model.objects.filter(
@@ -352,7 +355,8 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
 
             permission_model = models.AppAPIPermission
             self.assertFalse(
@@ -498,7 +502,8 @@ class TestAppPermissionRecordViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
             self.assertEqual(result["data"]["count"], test["expected"]["count"])
 
     def test_retrieve(self):
@@ -522,4 +527,5 @@ class TestAppPermissionRecordViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id, id=record.id)
 
         result = get_response_json(response)
-        self.assertEqual(result["code"], 0, result)
+        # self.assertEqual(result["code"], 0, result)
+        self.assertEqual(response.status_code, 200, result)

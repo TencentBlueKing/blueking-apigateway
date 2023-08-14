@@ -180,7 +180,7 @@ class TestAPISyncViewSet:
 class TestAPIRelatedAppViewSet:
     def test_add_related_apps_ok(self, mocker, request_factory, disable_app_permission):
         request = request_factory.post(
-            "/related-apps/",
+            "/backend/api/v1/demo/related-apps/",
             data={"target_app_codes": ["test1", "test2"]},
         )
         request.gateway = G(Gateway)
@@ -198,7 +198,7 @@ class TestAPIRelatedAppViewSet:
 
     def test_add_related_apps_error(self, mocker, request_factory, disable_app_permission):
         request = request_factory.post(
-            "/related-apps/",
+            "/backend/api/v1/demo/related-apps/",
             data={"target_app_codes": ["test1", "test2"]},
         )
         request.gateway = G(Gateway)
@@ -211,3 +211,4 @@ class TestAPIRelatedAppViewSet:
         response = view(request, gateway_name=request.gateway.name)
         result = get_response_json(response)
         assert result["code"] != 0
+        assert response.status_code != 200

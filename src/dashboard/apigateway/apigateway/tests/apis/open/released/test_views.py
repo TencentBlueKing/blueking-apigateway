@@ -99,7 +99,7 @@ class TestReleasedResourceViewSet:
             return_value=mocked_resource,
         )
 
-        request = request_factory.get("/")
+        request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
         stage_name = "prod"
         resource_name = mocked_resource and mocked_resource["name"]
@@ -207,7 +207,7 @@ class TestReleasedResourceViewSet:
             return_value=mocked_labels,
         )
 
-        request = request_factory.get("/")
+        request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
 
         view = views.ReleasedResourceViewSet.as_view({"get": "list"})
@@ -302,7 +302,7 @@ class TestReleasedResourceViewSet:
             return_value=mocked_resources,
         )
 
-        request = request_factory.get("")
+        request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
 
         response = request_to_view(

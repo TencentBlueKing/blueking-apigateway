@@ -21,7 +21,7 @@ from rest_framework import status, viewsets
 
 from apigateway.apps.metrics.models import StatisticsAPIRequestByDay, StatisticsAppRequestByDay
 from apigateway.core.models import Gateway
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from . import serializers
 
@@ -67,4 +67,4 @@ class StatisticsV1ViewSet(viewsets.ModelViewSet):
             },
         )
 
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
