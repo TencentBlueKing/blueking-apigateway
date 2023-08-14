@@ -57,7 +57,7 @@ def custom_exception_handler(exc, context):
     is_legacy = False
     request = context.get("request")
     if request:
-        if "/backend/api/v1/" in request.path or "backend/api/v1/edge-controller/" in request.path:
+        if "/backend/api/v1/" in request.path:
             is_legacy = True
 
     if isinstance(exc, (NotAuthenticated, AuthenticationFailed)):
