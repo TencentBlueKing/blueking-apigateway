@@ -75,7 +75,7 @@ class TestHttpResourceConvertor:
     ):
         G(
             PluginBinding,
-            api=edge_gateway,
+            gateway=edge_gateway,
             config=echo_plugin,
             scope_type=PluginBindingScopeEnum.RESOURCE.value,
             scope_id=edge_resource_inherit_stage.id,

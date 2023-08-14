@@ -19,13 +19,11 @@
 from typing import Any, Dict
 
 from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy
 from jsonschema import ValidationError as SchemaValidationError
 from jsonschema import validate
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
-from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
@@ -36,7 +34,7 @@ from apigateway.controller.crds.release_data.plugin import PluginConvertorFactor
 
 
 class PluginConfigSLZ(serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all())
     type_code = serializers.CharField(source="type.code", read_only=True)
     type_name = serializers.CharField(source="type.name_i18n", read_only=True)
@@ -46,7 +44,7 @@ class PluginConfigSLZ(serializers.ModelSerializer):
         model = PluginConfig
         fields = [
             "id",
-            "api",
+            "gateway",
             "name",
             "description",
             "yaml",
@@ -66,13 +64,6 @@ class PluginConfigSLZ(serializers.ModelSerializer):
             "type_name",
         ]
         lookup_field = "id"
-        validators = [
-            UniqueTogetherValidator(
-                queryset=PluginConfig.objects.all(),
-                fields=("api", "name", "type_id"),
-                message=gettext_lazy("网关下插件名称+类型已经存在，请检查。"),
-            )
-        ]
 
     def to_internal_value(self, data):
         internal_data = super().to_internal_value(data)
@@ -122,7 +113,7 @@ class PluginConfigSLZ(serializers.ModelSerializer):
             raise ValidationError(_("此插件类型未公开，不能用于启用插件。"))
 
         return self._update_plugin(
-            PluginConfig(api=validated_data["api"], type=validated_data["type_id"]), validated_data
+            PluginConfig(gateway=validated_data["gateway"], type=validated_data["type_id"]), validated_data
         )
 
     def update(self, instance, validated_data):

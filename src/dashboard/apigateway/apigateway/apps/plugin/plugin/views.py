@@ -80,7 +80,7 @@ class PluginConfigViewSet(viewsets.ModelViewSet):
     ordering_fields = ["name", "-name", "type", "-type", "updated_time", "-updated_time"]
 
     def get_queryset(self):
-        return PluginConfig.objects.prefetch_related("type").filter(api=self.request.gateway)
+        return PluginConfig.objects.prefetch_related("type").filter(gateway=self.request.gateway)
 
     def perform_create(self, serializer):
         super().perform_create(serializer)
@@ -144,7 +144,7 @@ class PluginTypeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """默认展示所有公开插件；针对非公开插件，假如当前请求的网关已启用插件，则展示"""
-        related_type_ids = PluginConfig.objects.filter(api=self.request.gateway, type__isnull=False).values_list(
+        related_type_ids = PluginConfig.objects.filter(gateway=self.request.gateway, type__isnull=False).values_list(
             "type__id", flat=True
         )
 

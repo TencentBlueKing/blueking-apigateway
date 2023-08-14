@@ -29,39 +29,39 @@ pytestmark = pytest.mark.django_db
 
 class TestPluginBindingManager:
     def test_bulk_update_or_create(self, fake_gateway, fake_plugin_config):
-        binding1 = PluginBinding(api=fake_gateway, scope_type="resource", scope_id=1, config=fake_plugin_config)
-        binding2 = G(PluginBinding, api=fake_gateway, config=None, scope_id=2)
+        binding1 = PluginBinding(gateway=fake_gateway, scope_type="resource", scope_id=1, config=fake_plugin_config)
+        binding2 = G(PluginBinding, gateway=fake_gateway, config=None, scope_id=2)
         binding2.config = fake_plugin_config
         binding2.scope_id = 3
 
         PluginBinding.objects.bulk_update_or_create([binding1, binding2], fields=["config", "scope_type"])
 
-        assert PluginBinding.objects.filter(api=fake_gateway).count() == 2
+        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 2
 
         binding2 = PluginBinding.objects.get(pk=binding2.pk)
         assert binding2.config == fake_plugin_config
         assert binding2.scope_id == 2
 
     def test_create_or_update_bindings(self, fake_gateway):
-        config = G(PluginConfig, api=fake_gateway)
+        config = G(PluginConfig, gateway=fake_gateway)
         r1 = G(Resource, api=fake_gateway)
         r2 = G(Resource, api=fake_gateway)
-        G(PluginBinding, api=fake_gateway, scope_id=r1.id, scope_type="resource")
+        G(PluginBinding, gateway=fake_gateway, scope_id=r1.id, scope_type="resource")
 
         PluginBinding.objects.create_or_update_bindings(
-            fake_gateway,
+            gateway=fake_gateway,
             config=config,
             scope_type="resource",
             scope_ids=[r1.id, r2.id],
             username="admin",
         )
-        assert PluginBinding.objects.filter(api=fake_gateway).count() == 2
+        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 2
 
     def test_delete_unspecified_bindings(self, fake_gateway, echo_plugin):
         r1 = G(Resource, api=fake_gateway)
         r2 = G(Resource, api=fake_gateway)
-        G(PluginBinding, api=fake_gateway, config=echo_plugin, scope_type="resource", scope_id=r1.id)
-        G(PluginBinding, api=fake_gateway, config=echo_plugin, scope_type="resource", scope_id=r2.id)
+        G(PluginBinding, gateway=fake_gateway, config=echo_plugin, scope_type="resource", scope_id=r1.id)
+        G(PluginBinding, gateway=fake_gateway, config=echo_plugin, scope_type="resource", scope_id=r2.id)
 
         PluginBinding.objects.delete_unspecified_bindings(
             fake_gateway,
@@ -69,27 +69,27 @@ class TestPluginBindingManager:
             scope_type="resource",
             scope_ids=[r1.id],
         )
-        assert PluginBinding.objects.filter(api=fake_gateway).count() == 1
-        assert PluginBinding.objects.filter(api=fake_gateway, scope_id=r1.id).count() == 1
+        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 1
+        assert PluginBinding.objects.filter(gateway=fake_gateway, scope_id=r1.id).count() == 1
 
     def test_delete_bindings(self, fake_gateway):
-        plugin_1 = G(PluginConfig, api=fake_gateway)
-        plugin_2 = G(PluginConfig, api=fake_gateway)
-        G(PluginBinding, api=fake_gateway, config=plugin_1, scope_type="resource", scope_id=1)
-        G(PluginBinding, api=fake_gateway, config=plugin_2, scope_type="resource", scope_id=2)
+        plugin_1 = G(PluginConfig, gateway=fake_gateway)
+        plugin_2 = G(PluginConfig, gateway=fake_gateway)
+        G(PluginBinding, gateway=fake_gateway, config=plugin_1, scope_type="resource", scope_id=1)
+        G(PluginBinding, gateway=fake_gateway, config=plugin_2, scope_type="resource", scope_id=2)
 
         PluginBinding.objects.delete_bindings(fake_gateway.id, config_ids=[plugin_1.id])
-        assert PluginBinding.objects.filter(api=fake_gateway).count() == 1
+        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 1
 
         PluginBinding.objects.delete_bindings(fake_gateway.id)
-        assert PluginBinding.objects.filter(api=fake_gateway).count() == 0
+        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 0
 
     def test_delete_by_scopes(self, fake_gateway):
         stage = G(Stage, api=fake_gateway)
-        G(PluginBinding, api=fake_gateway, scope_type="stage", scope_id=stage.id)
+        G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=stage.id)
 
         PluginBinding.objects.delete_by_scopes("stage", scope_ids=[stage.id])
-        assert PluginBinding.objects.filter(api=fake_gateway).count() == 0
+        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 0
 
     def test_get_valid_scope_ids(self, fake_gateway):
         r = G(Resource, api=fake_gateway)
@@ -106,10 +106,10 @@ class TestPluginBindingManager:
         assert result == [s.id]
 
     def test_query_scope_id_to_bindings(self, fake_gateway, fake_plugin_config):
-        binding1 = G(PluginBinding, api=fake_gateway, scope_type="resource", scope_id=1, config=fake_plugin_config)
-        binding2 = G(PluginBinding, api=fake_gateway, scope_type="resource", scope_id=2, config=fake_plugin_config)
-        binding3 = G(PluginBinding, api=fake_gateway, scope_type="stage", scope_id=1, config=fake_plugin_config)
-        binding4 = G(PluginBinding, api=fake_gateway, scope_type="stage", scope_id=1, config=fake_plugin_config)
+        binding1 = G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=1, config=fake_plugin_config)
+        binding2 = G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=2, config=fake_plugin_config)
+        binding3 = G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=1, config=fake_plugin_config)
+        binding4 = G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=1, config=fake_plugin_config)
 
         result = PluginBinding.objects.query_scope_id_to_bindings(
             fake_gateway.id, scope_type=PluginBindingScopeEnum.STAGE

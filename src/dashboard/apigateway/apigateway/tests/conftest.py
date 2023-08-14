@@ -702,7 +702,7 @@ def echo_plugin_en_form(echo_plugin_type):
 def echo_plugin(echo_plugin_type, fake_gateway, faker):
     return G(
         PluginConfig,
-        api=fake_gateway,
+        gateway=fake_gateway,
         name="echo-plugin",
         type=echo_plugin_type,
         yaml=json.dumps(
@@ -717,7 +717,7 @@ def echo_plugin(echo_plugin_type, fake_gateway, faker):
 def echo_plugin_stage_binding(echo_plugin, fake_stage):
     return G(
         PluginBinding,
-        api=echo_plugin.api,
+        gateway=echo_plugin.gateway,
         config=echo_plugin,
         scope_type=PluginBindingScopeEnum.STAGE.value,
         scope_id=fake_stage.pk,
@@ -728,7 +728,7 @@ def echo_plugin_stage_binding(echo_plugin, fake_stage):
 def echo_plugin_resource_binding(echo_plugin, fake_resource):
     return G(
         PluginBinding,
-        api=echo_plugin.api,
+        gateway=echo_plugin.gateway,
         config=echo_plugin,
         scope_type=PluginBindingScopeEnum.RESOURCE.value,
         scope_id=fake_resource.pk,

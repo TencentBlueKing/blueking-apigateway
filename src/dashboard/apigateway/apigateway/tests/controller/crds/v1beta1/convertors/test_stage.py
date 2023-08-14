@@ -141,7 +141,7 @@ class TestStageConvertor:
     ):
         G(
             PluginBinding,
-            api=edge_gateway,
+            gateway=edge_gateway,
             config=echo_plugin,
             scope_type=PluginBindingScopeEnum.STAGE.value,
             scope_id=edge_gateway_stage.id,

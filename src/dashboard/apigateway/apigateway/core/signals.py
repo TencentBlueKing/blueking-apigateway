@@ -70,14 +70,24 @@ def _on_gateway_related_updated(sender, instance, created: bool, **kwargs):
     if created:
         return
 
-    gateway_update_signal.send(sender, gateway_id=instance.api_id)
+    if hasattr(instance, "gateway_id"):
+        gateway_id = instance.gateway_id
+    else:
+        gateway_id = instance.api_id
+
+    gateway_update_signal.send(sender, gateway_id=gateway_id)
 
 
 @receiver(post_delete, sender=PluginConfig)
 @receiver(post_delete, sender=PluginBinding)
 @receiver(post_delete, sender=AccessStrategy)
 def _on_gateway_related_delete(sender, instance, **kwargs):
-    gateway_update_signal.send(sender, gateway_id=instance.api_id)
+    if hasattr(instance, "gateway_id"):
+        gateway_id = instance.gateway_id
+    else:
+        gateway_id = instance.api_id
+
+    gateway_update_signal.send(sender, gateway_id=gateway_id)
 
 
 @receiver([post_save, post_delete], sender=AccessStrategyBinding)

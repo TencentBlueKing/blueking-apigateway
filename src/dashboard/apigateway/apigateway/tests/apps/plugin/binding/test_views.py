@@ -149,7 +149,7 @@ class TestPluginBindingBatchViewSet:
             return_value=AccessStrategyTypeEnum("rate_limit"),
         )
         snapshot_qs = (
-            PluginBinding.objects.filter(api=self.gateway)
+            PluginBinding.objects.filter(gateway=self.gateway)
             .order_by("pk")
             .values_list("pk", "config_id", "updated_time")
         )

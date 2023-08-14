@@ -31,7 +31,7 @@ class PluginConfigManager(models.Manager):
 
 class PluginBindingManager(models.Manager):
     def delete_by_gateway_id(self, gateway_id):
-        self.filter(api_id=gateway_id).delete()
+        self.filter(gateway_id=gateway_id).delete()
 
     def bulk_delete(self, objs):
         return self.filter(id__in=[i.pk for i in objs]).delete()
@@ -65,7 +65,7 @@ class PluginBindingManager(models.Manager):
         """将插件 plugin 绑定到指定 scopes"""
         for scope_id in scope_ids:
             binding, created = self.get_or_create(
-                api=gateway,
+                gateway=gateway,
                 scope_type=scope_type,
                 scope_id=scope_id,
                 type=type_,
@@ -90,7 +90,7 @@ class PluginBindingManager(models.Manager):
         config=None,
         type_=None,
     ) -> None:
-        qs = self.filter(api=gateway, scope_type=scope_type).exclude(scope_id__in=scope_ids)
+        qs = self.filter(gateway=gateway, scope_type=scope_type).exclude(scope_id__in=scope_ids)
 
         if plugin:
             qs = qs.filter(plugin=plugin, type=type_)
@@ -103,7 +103,7 @@ class PluginBindingManager(models.Manager):
     def delete_bindings(
         self, gateway_id: int, plugin_ids: Union[List[int], None] = None, config_ids: Union[List[int], None] = None
     ):
-        queryset = self.filter(api_id=gateway_id)
+        queryset = self.filter(gateway_id=gateway_id)
         if plugin_ids is not None:
             queryset = queryset.filter(plugin_id__in=plugin_ids)
         if config_ids is not None:
@@ -129,7 +129,7 @@ class PluginBindingManager(models.Manager):
         scope_type: PluginBindingScopeEnum,
         scope_ids: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
-        qs = self.filter(api_id=gateway_id, scope_type=scope_type.value)
+        qs = self.filter(gateway_id=gateway_id, scope_type=scope_type.value)
         if scope_ids is not None:
             qs = qs.filter(scope_id__in=scope_ids)
 

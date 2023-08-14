@@ -23,10 +23,10 @@ from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginTyp
 
 class TestPluginBindingPlan:
     def test_update(self, fake_gateway, fake_plugin_type):
-        config1 = G(PluginConfig, api=fake_gateway, type=fake_plugin_type)
-        config2 = G(PluginConfig, api=fake_gateway, type=fake_plugin_type)
-        G(PluginBinding, api=fake_gateway, scope_type="resource", scope_id=2, config=config2)
-        G(PluginBinding, api=fake_gateway, scope_type="resource", scope_id=3, config=config1)
+        config1 = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type)
+        config2 = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type)
+        G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=2, config=config2)
+        G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=3, config=config1)
 
         plan = PluginBindingPlan(config=config1)
         requested_bindings = plan._make_requested_bindings(
@@ -36,7 +36,7 @@ class TestPluginBindingPlan:
             # 1 create, 2 override, 3 delete
             scope_ids=[1, 2],
         )
-        queryset = PluginBinding.objects.filter(api=fake_gateway, scope_type="resource")
+        queryset = PluginBinding.objects.filter(gateway=fake_gateway, scope_type="resource")
 
         # not handle bind/unbind
         plan.handle_bind = False
@@ -59,15 +59,15 @@ class TestPluginBindingPlan:
         assert plan.overwrites[0].scope_id == 2
 
     def test_update_for_bind(self, fake_gateway, fake_plugin_type):
-        config1 = G(PluginConfig, api=fake_gateway, type=fake_plugin_type)
-        config2 = G(PluginConfig, api=fake_gateway, type=fake_plugin_type)
-        G(PluginBinding, api=fake_gateway, scope_type="resource", scope_id=2, config=config2)
-        G(PluginBinding, api=fake_gateway, scope_type="resource", scope_id=3, config=config1)
-        G(PluginBinding, api=fake_gateway, scope_type="stage", scope_id=2, config=config2)
-        G(PluginBinding, api=fake_gateway, scope_type="stage", scope_id=3, config=config1)
+        config1 = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type)
+        config2 = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type)
+        G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=2, config=config2)
+        G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=3, config=config1)
+        G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=2, config=config2)
+        G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=3, config=config1)
 
         plan = PluginBindingPlan(config=config1)
-        queryset = PluginBinding.objects.filter(api=fake_gateway)
+        queryset = PluginBinding.objects.filter(gateway=fake_gateway)
         plan.update_for_bind(queryset, scope_type="resource", scope_ids=[1, 2])
 
         assert len(plan.binds) == 2
@@ -84,18 +84,18 @@ class TestPluginBindingPlan:
     def test_update_for_unbind(self, fake_gateway):
         type1 = G(PluginType)
         type2 = G(PluginType)
-        config1 = G(PluginConfig, api=fake_gateway, type=type1)
-        config2 = G(PluginConfig, api=fake_gateway, type=type2)
+        config1 = G(PluginConfig, gateway=fake_gateway, type=type1)
+        config2 = G(PluginConfig, gateway=fake_gateway, type=type2)
 
-        G(PluginBinding, api=fake_gateway, scope_type="resource", scope_id=1, config=config1)
-        G(PluginBinding, api=fake_gateway, scope_type="resource", scope_id=2, config=config1)
-        G(PluginBinding, api=fake_gateway, scope_type="resource", scope_id=2, config=config2)
-        G(PluginBinding, api=fake_gateway, scope_type="resource", scope_id=1, config=config2)
-        G(PluginBinding, api=fake_gateway, scope_type="stage", scope_id=1, config=config1)
-        G(PluginBinding, api=fake_gateway, scope_type="stage", scope_id=1, config=config2)
+        G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=1, config=config1)
+        G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=2, config=config1)
+        G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=2, config=config2)
+        G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=1, config=config2)
+        G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=1, config=config1)
+        G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=1, config=config2)
 
         plan = PluginBindingPlan(config=config2)
-        queryset = PluginBinding.objects.filter(api=fake_gateway)
+        queryset = PluginBinding.objects.filter(gateway=fake_gateway)
         plan.update_for_unbind(queryset, scope_type="resource", scope_ids=[1, 2])
 
         assert len(plan.binds) == 0

@@ -18,32 +18,12 @@
 import json
 
 import pytest
-from ddf import G
 from jsonschema import validate
 
-from apigateway.apps.plugin.models import Plugin, PluginConfig
+from apigateway.apps.plugin.models import PluginConfig
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
 from apigateway.schema.models import Schema
 from apigateway.utils.yaml import yaml_dumps
-
-
-@pytest.fixture()
-def legacy_plugin(fake_gateway, echo_plugin, echo_plugin_type):
-    return G(
-        Plugin,
-        api=fake_gateway,
-        name=echo_plugin.name,
-        type=echo_plugin_type.code,
-        _config=json.dumps(echo_plugin.config),
-    )
-
-
-@pytest.fixture()
-def related_model_not_exist(legacy_plugin, echo_plugin, echo_plugin_type, echo_plugin_stage_binding):
-    echo_plugin_stage_binding.delete()
-    echo_plugin.delete()
-    echo_plugin_type.delete()
-    legacy_plugin.target = None
 
 
 class TestPluginConfig:

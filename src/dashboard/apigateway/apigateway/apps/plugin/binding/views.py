@@ -68,7 +68,7 @@ class PluginBindingViewSet(viewsets.ModelViewSet):
     ordering_fields = ["scope_id"]
 
     def get_queryset(self):
-        return PluginBinding.objects.filter(api=self.request.gateway)
+        return PluginBinding.objects.filter(gateway=self.request.gateway)
 
     def perform_destroy(self, instance):
         record_audit_log(
@@ -94,10 +94,10 @@ class PluginBindingBatchViewSet(viewsets.GenericViewSet):
     ordering_fields = ["scope_id"]
 
     def get_queryset(self):
-        return PluginBinding.objects.filter(api=self.request.gateway)
+        return PluginBinding.objects.filter(gateway=self.request.gateway)
 
     def _get_plugin_config(self):
-        return get_object_or_404(PluginConfig, api=self.request.gateway, pk=self.kwargs["config_id"])
+        return get_object_or_404(PluginConfig, gateway=self.request.gateway, pk=self.kwargs["config_id"])
 
     def _execute_plan(self, plan: PluginBindingPlan):
         plugin = plan.config
@@ -115,7 +115,7 @@ class PluginBindingBatchViewSet(viewsets.GenericViewSet):
         if plan.binds:
             PluginBinding.objects.bulk_update_or_create(plan.binds, plan.update_fields)
             # 批量创建、更新，未触发更新信号，因此主动触发信号，以便及时更新到网关服务
-            gateway_update_signal.send(PluginBinding, gateway_id=plugin.api.pk)
+            gateway_update_signal.send(PluginBinding, gateway_id=plugin.gateway.pk)
 
         if plan.unbinds:
             PluginBinding.objects.bulk_delete(plan.unbinds)

@@ -60,7 +60,7 @@ class TestReleaseData:
 
         G(
             PluginBinding,
-            api=edge_gateway,
+            gateway=edge_gateway,
             scope_type=PluginBindingScopeEnum.STAGE.value,
             scope_id=edge_gateway_stage.pk,
             config=edge_plugin_config,
@@ -93,7 +93,7 @@ class TestReleaseData:
 
         G(
             PluginBinding,
-            api=edge_gateway,
+            gateway=edge_gateway,
             scope_type=PluginBindingScopeEnum.RESOURCE.value,
             scope_id=edge_resource_overwrite_stage.pk,
             config=edge_plugin_config,
@@ -125,7 +125,7 @@ class TestReleaseData:
 
         G(
             PluginBinding,
-            api=edge_gateway,
+            gateway=edge_gateway,
             scope_type=PluginBindingScopeEnum.RESOURCE.value,
             scope_id=edge_resource_overwrite_stage.pk,
             config=edge_plugin_config,

@@ -124,7 +124,7 @@ class PluginForm(models.Model):
 class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
     """网关开启的插件及其配置"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     name = models.CharField(max_length=64, db_index=True)
     type = models.ForeignKey(PluginType, null=True, on_delete=models.PROTECT)
     description_i18n = I18nProperty(models.TextField(default=None, blank=True, null=True))
@@ -138,7 +138,6 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
         db_table = "plugin_config"
         verbose_name = _("插件配置")
         verbose_name_plural = _("插件配置")
-        unique_together = ("api", "name", "type")
 
     @property
     def config(self) -> Dict[str, Any]:
@@ -154,9 +153,12 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
         self.yaml = yaml_
 
     def __str__(self) -> str:
-        return f"<PluginConfig {self.name}({self.pk})>"
+        return f"<PluginConfig {self.type.code}({self.pk})>"
 
 
+# ====================================================
+
+# FIXME: delete it in 1.14
 class Plugin(ConfigModelMixin):
     """废弃模型，保留是为了迁移数据"""
 
@@ -179,13 +181,16 @@ class Plugin(ConfigModelMixin):
         unique_together = ("api", "name", "type")
 
 
+# ====================================================
+
+
 class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
     """插件绑定
 
     同一个插件，只能绑定到一个同类型的对象，比如环境、资源
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     scope_type = models.CharField(
         max_length=32,
         choices=PluginBindingScopeEnum.get_choices(),
@@ -194,7 +199,7 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
     scope_id = models.IntegerField(db_index=True)
     config = models.ForeignKey(PluginConfig, on_delete=models.PROTECT, null=True)
 
-    # TODO: 删除旧模型后可直接删除下面两个废弃字段
+    # FIXME: remove in 1.14
     type = models.CharField(max_length=32, choices=PluginTypeEnum.get_choices(), null=True)
     plugin = models.ForeignKey(Plugin, on_delete=models.SET_NULL, null=True)
 

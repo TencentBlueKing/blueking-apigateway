@@ -81,7 +81,7 @@ class PluginBindingPlan:
         self.update_fields.update(kwargs.keys())
         self.update_fields.update(
             [
-                "api",
+                "gateway",
                 "plugin",
                 "scope_type",
                 "scope_id",
@@ -91,7 +91,7 @@ class PluginBindingPlan:
         )
         return {
             i: PluginBinding(
-                api=gateway,
+                gateway=gateway,
                 config=config,
                 scope_type=scope_type,
                 scope_id=i,
@@ -107,14 +107,14 @@ class PluginBindingPlan:
         scope_ids: List[int],
         **kwargs,
     ):
-        gateway = self.config.api
+        gateway = self.config.gateway
         config = self.config
         # 有相同插件配置绑定的（分析增加和删除）
         q_bindings_with_same_config = Q(config=config)
         # 指定对象已绑定相同类型的（分析覆盖）
         q_related_bindings_to_overwrites = Q(config__type_id=config.type_id, scope_id__in=scope_ids)
         self._update(
-            queryset.filter(api=gateway, scope_type=scope_type).filter(
+            queryset.filter(gateway=gateway, scope_type=scope_type).filter(
                 q_bindings_with_same_config | q_related_bindings_to_overwrites
             ),
             self._make_requested_bindings(
@@ -135,9 +135,9 @@ class PluginBindingPlan:
         scope_ids: List[int],
         **kwargs,
     ):
-        gateway = self.config.api
+        gateway = self.config.gateway
         self._update(
-            queryset.filter(api=gateway, config=self.config, scope_type=scope_type, scope_id__in=scope_ids),
+            queryset.filter(gateway=gateway, config=self.config, scope_type=scope_type, scope_id__in=scope_ids),
             {},
         )
 
