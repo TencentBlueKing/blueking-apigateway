@@ -36,6 +36,7 @@ from apigateway.core.constants import (
     APIHostingTypeEnum,
     APIStatusEnum,
     BackendConfigTypeEnum,
+    BackendTypeEnum,
     BackendUpstreamTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
@@ -350,6 +351,7 @@ class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_stage_resource_disabled"
 
 
+# TODO delete it 1.14
 class StageItem(TimestampedModelMixin, OperatorModelMixin):
     """Stage 配置项"""
 
@@ -364,6 +366,7 @@ class StageItem(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_stage_item"
 
 
+# TODO delete it 1.14
 class StageItemConfig(TimestampedModelMixin, OperatorModelMixin):
     """Stage 配置项数据"""
 
@@ -377,6 +380,37 @@ class StageItemConfig(TimestampedModelMixin, OperatorModelMixin):
     class Meta:
         unique_together = ("api", "stage", "stage_item")
         db_table = "core_stage_item_config"
+
+
+# ============================================ backend ============================================
+
+
+class Backend(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    type = models.CharField(
+        max_length=20,
+        choices=BackendTypeEnum.get_choices(),
+        default=BackendTypeEnum.HTTP.value,
+        blank=False,
+        null=False,
+    )
+    name = models.CharField(max_length=64)
+    description = models.CharField(max_length=512)
+
+    class Meta:
+        unique_together = ("gateway", "name")
+        db_table = "core_backend"
+
+
+class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    backend = models.ForeignKey(Backend, on_delete=models.PROTECT)
+    stage = models.ForeignKey(Stage, on_delete=models.PROTECT)
+    config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
+
+    class Meta:
+        unique_together = ("gateway", "backend", "stage")
+        db_table = "core_backend_config"
 
 
 # ============================================ context ============================================
@@ -759,6 +793,7 @@ class MicroGatewayReleaseHistory(models.Model):
         db_table = "core_micro_gateway_release_history"
 
 
+# TODO delete it 1.14
 class BackendService(TimestampedModelMixin, OperatorModelMixin):
     """网关后端服务"""
 

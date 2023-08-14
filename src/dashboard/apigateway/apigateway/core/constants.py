@@ -98,6 +98,7 @@ class BackendConfigTypeEnum(StructuredEnum):
     EXISTED = EnumField("existed", _("已存在的后端服务"))
 
 
+# TODO delete it 1.14
 class StageItemTypeEnum(StructuredEnum):
     """环境配置项类型"""
 
@@ -105,6 +106,7 @@ class StageItemTypeEnum(StructuredEnum):
     SERVICE_DISCOVERY = EnumField(BackendUpstreamTypeEnum.SERVICE_DISCOVERY.value, _("服务发现注册中心"))
 
 
+# TODO delete it 1.14
 class StageItemConfigStatusEnum(StructuredEnum):
     """环境配置项状态"""
 
@@ -118,6 +120,7 @@ class ServiceDiscoveryTypeEnum(StructuredEnum):
     GO_MICRO_ETCD = EnumField("go_micro_etcd", "Go Micro - Etcd")
 
 
+# TODO delete it 1.14
 class PassHostEnum(StructuredEnum):
     """请求发给上游时的 host 设置选型"""
 
@@ -126,6 +129,7 @@ class PassHostEnum(StructuredEnum):
     REWRITE = EnumField("rewrite", _("自定义 Host 请求头"))
 
 
+# TODO delete it 1.14
 class SchemeEnum(StructuredEnum):
     """与后端服务通信时使用的 scheme"""
 
@@ -303,6 +307,11 @@ class ExportTypeEnum(ChoiceEnumMixin, Enum):
 class SwaggerFormatEnum(StructuredEnum):
     YAML = EnumField("yaml", label="YAML")
     JSON = EnumField("json", label="JSON")
+
+
+class BackendTypeEnum(StructuredEnum):
+    HTTP = EnumField("http", label="HTTP")
+    GRPC = EnumField("grpc", label="GRPC")
 
 
 # 每个资源允许关联的最大标签个数
