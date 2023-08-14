@@ -20,7 +20,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apps.docs.esb.decorators import check_board_exist
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from .helpers import ComponentDocFactory
 from .serializers import ComponentDocSLZ
@@ -36,4 +36,4 @@ class DocViewSet(viewsets.GenericViewSet):
         """获取组件API文档"""
         factory = ComponentDocFactory(board, system_name, component_name)
         slz = ComponentDocSLZ(factory.get_doc())
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

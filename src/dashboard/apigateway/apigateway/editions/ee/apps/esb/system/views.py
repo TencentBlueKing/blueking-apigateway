@@ -28,7 +28,7 @@ from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.esb.permissions import UserAccessESBPermission
 from apigateway.apps.esb.system import serializers
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class SystemViewSet(viewsets.ModelViewSet):
             },
         )
 
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         response_serializer=serializers.SystemSLZ,
@@ -72,7 +72,7 @@ class SystemViewSet(viewsets.ModelViewSet):
                 ),
             },
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         request_body=serializers.SystemSLZ,
@@ -101,7 +101,7 @@ class SystemViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK", data={"id": slz.instance.id})
+        return V1OKJsonResponse("OK", data={"id": slz.instance.id})
 
     @swagger_auto_schema(
         request_body=serializers.SystemSLZ,
@@ -127,7 +127,7 @@ class SystemViewSet(viewsets.ModelViewSet):
                 updated_by=request.user.username,
             )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(tags=["ESB.System"])
     @transaction.atomic
@@ -140,4 +140,4 @@ class SystemViewSet(viewsets.ModelViewSet):
 
         ComponentSystem.objects.delete_custom_systems([instance.id])
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")

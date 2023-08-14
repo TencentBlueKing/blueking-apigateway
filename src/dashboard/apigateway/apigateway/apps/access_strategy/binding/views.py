@@ -27,7 +27,7 @@ from apigateway.apps.access_strategy.models import AccessStrategy, AccessStrateg
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Resource, Stage
 from apigateway.core.signals import reversion_update_signal
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -98,7 +98,7 @@ class AccessStrategyBindingBatchViewSet(viewsets.ModelViewSet):
 
         reversion_update_signal.send(sender=AccessStrategyBinding, instance_id=None, action="bind")
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -127,7 +127,7 @@ class AccessStrategyBindingBatchViewSet(viewsets.ModelViewSet):
 
         reversion_update_signal.send(sender=AccessStrategyBinding, instance_id=None, action="unbind")
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -149,7 +149,7 @@ class AccessStrategyBindingBatchViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
 
         serializer = serializers.AccessStrategyBindingListSLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(
         query_serializer=serializers.AccessStrategyBindingDiffQuerySLZ,
@@ -167,7 +167,7 @@ class AccessStrategyBindingBatchViewSet(viewsets.ModelViewSet):
         diff_data = self._diff_bindings(access_strategy, data["scope_type"], data["scope_ids"], data["type"])
 
         serializer = serializers.AccessStrategyBindingDiffDataSLZ({"data": diff_data})
-        return OKJsonResponse("OK", data=serializer.data["data"])
+        return V1OKJsonResponse("OK", data=serializer.data["data"])
 
     def _diff_bindings(self, access_strategy, scope_type, scope_ids, _type):
         # 普通绑定，绑定对象原来未和其他策略绑定，可直接绑定

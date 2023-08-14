@@ -36,7 +36,7 @@ from apigateway.biz.resource_url import ResourceURLHandler
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.models import Proxy, ReleasedResource, Resource, ResourceVersion, Stage, StageResourceDisabled
 from apigateway.core.utils import get_resource_url
-from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 from apigateway.utils.time import now_datetime
 
@@ -91,7 +91,7 @@ class ResourceViewSet(BaseResourceViewSet, CreateResourceMixin, UpdateResourceMi
                 ),
             },
         )
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=serializers.ResourceSLZ, tags=["Resource"])
     @transaction.atomic
@@ -105,13 +105,13 @@ class ResourceViewSet(BaseResourceViewSet, CreateResourceMixin, UpdateResourceMi
             username=request.user.username,
         )
 
-        return OKJsonResponse("OK", data={"id": instance.id})
+        return V1OKJsonResponse("OK", data={"id": instance.id})
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.ResourceSLZ()}, tags=["Resource"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=serializers.ResourceSLZ, tags=["Resource"])
     @transaction.atomic
@@ -125,7 +125,7 @@ class ResourceViewSet(BaseResourceViewSet, CreateResourceMixin, UpdateResourceMi
             username=request.user.username,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["Resource"])
     @transaction.atomic
@@ -146,7 +146,7 @@ class ResourceViewSet(BaseResourceViewSet, CreateResourceMixin, UpdateResourceMi
             comment=_("删除资源"),
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class ResourceImportExportViewSet(ResourceViewSet):
@@ -172,7 +172,7 @@ class ResourceImportExportViewSet(ResourceViewSet):
             resource_doc_language=request.data.get("resource_doc_language", ""),
         )
 
-        return OKJsonResponse("OK", data=sorted(importer.imported_resources, key=lambda x: x["path"]))
+        return V1OKJsonResponse("OK", data=sorted(importer.imported_resources, key=lambda x: x["path"]))
 
     @swagger_auto_schema(
         request_body=serializers.ResourceImportSLZ, responses={status.HTTP_200_OK: ""}, tags=["Resource"]
@@ -191,7 +191,7 @@ class ResourceImportExportViewSet(ResourceViewSet):
         importer.set_selected_resources(slz.validated_data.get("selected_resources"))
         importer.import_resources()
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         request_body=serializers.ResourceExportConditionSLZ,
@@ -258,7 +258,7 @@ class ResourceBatchViewSet(BaseResourceViewSet):
             comment=_("批量更新资源"),
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""}, request_body=serializers.BatchDestroyResourceSLZ, tags=["Resource"]
@@ -286,7 +286,7 @@ class ResourceBatchViewSet(BaseResourceViewSet):
             comment=_("批量删除资源"),
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class ResourceURLViewSet(BaseResourceViewSet):
@@ -314,7 +314,7 @@ class ResourceURLViewSet(BaseResourceViewSet):
                 }
             )
 
-        return OKJsonResponse("OK", data=urls)
+        return V1OKJsonResponse("OK", data=urls)
 
 
 class ResourceReleaseStageViewSet(BaseResourceViewSet):
@@ -342,7 +342,7 @@ class ResourceReleaseStageViewSet(BaseResourceViewSet):
             many=True,
         )
 
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class ProxyPathViewSet(BaseResourceViewSet):
@@ -359,7 +359,7 @@ class ProxyPathViewSet(BaseResourceViewSet):
         """
         slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class ResourceLabelViewSet(BaseResourceViewSet):
@@ -379,7 +379,7 @@ class ResourceLabelViewSet(BaseResourceViewSet):
             delete_unspecified=True,
         )
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
 
 
 class ResourceWithVerifiedUserRequiredViewSet(BaseResourceViewSet):
@@ -396,4 +396,4 @@ class ResourceWithVerifiedUserRequiredViewSet(BaseResourceViewSet):
             if resource_id_to_auth_config.get(resource["id"], {}).get("auth_verified_required")
         ]
 
-        return OKJsonResponse(data=sorted(verified_user_required_resources, key=operator.itemgetter("name")))
+        return V1OKJsonResponse(data=sorted(verified_user_required_resources, key=operator.itemgetter("name")))

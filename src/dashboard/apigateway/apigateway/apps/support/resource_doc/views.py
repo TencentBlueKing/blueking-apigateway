@@ -36,7 +36,7 @@ from apigateway.apps.support.utils import ArchiveFileFactory
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.models import Resource
-from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, V1OKJsonResponse
 
 
 class DeprecatedResourceDocViewSet(viewsets.ModelViewSet):
@@ -55,7 +55,7 @@ class DeprecatedResourceDocViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = ResourceDoc.objects.filter(api_id=request.gateway.id, resource_id=kwargs["resource_id"]).first()
         if not instance:
-            return OKJsonResponse(
+            return V1OKJsonResponse(
                 "OK",
                 data={
                     "id": None,
@@ -68,7 +68,7 @@ class DeprecatedResourceDocViewSet(viewsets.ModelViewSet):
 
         instance.resource_doc_link = get_resource_doc_link(request.gateway, kwargs["resource_id"])
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=serializers.ResourceDocSLZ, tags=["Support"])
     def update(self, request, gateway_id: int, resource_id: int, *args, **kwargs):
@@ -93,7 +93,7 @@ class DeprecatedResourceDocViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class ResourceDocViewSet(viewsets.ModelViewSet):
@@ -132,7 +132,7 @@ class ResourceDocViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK", data={"id": slz.instance.id})
+        return V1OKJsonResponse("OK", data={"id": slz.instance.id})
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=serializers.ResourceDocSLZ, tags=["Support"])
     def update(self, request, gateway_id: int, resource_id: int, id: int, *args, **kwargs):
@@ -156,7 +156,7 @@ class ResourceDocViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -170,7 +170,7 @@ class ResourceDocViewSet(viewsets.ModelViewSet):
 
         instance.delete()
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.ResourceDocSLZ(many=True)},
@@ -193,7 +193,7 @@ class ResourceDocViewSet(viewsets.ModelViewSet):
             )
 
         slz = self.get_serializer(language_to_doc.values(), many=True)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class ArchiveDocParseViewSet(viewsets.ViewSet):
@@ -224,7 +224,7 @@ class ArchiveDocParseViewSet(viewsets.ViewSet):
                 "resource_id_to_object": Resource.objects.filter_id_object_map(request.gateway.id),
             },
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class ResourceDocImportExportViewSet(viewsets.ViewSet):
@@ -261,7 +261,7 @@ class ResourceDocImportExportViewSet(viewsets.ViewSet):
             )
         except ResourceDocJinja2TemplateError as err:
             raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         request_body=serializers.ImportResourceDocsBySwaggerSLZ,
@@ -294,7 +294,7 @@ class ResourceDocImportExportViewSet(viewsets.ViewSet):
         except GenerateMarkdownError:
             raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         request_body=serializers.ResourceDocExportConditionSLZ,

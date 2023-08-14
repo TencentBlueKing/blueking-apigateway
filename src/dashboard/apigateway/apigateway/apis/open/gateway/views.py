@@ -32,7 +32,7 @@ from apigateway.common.contexts import APIAuthContext
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import APIStatusEnum
 from apigateway.core.models import JWT, APIRelatedApp, Gateway, Release
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 
 class GatewayViewSet(viewsets.ModelViewSet):
@@ -111,13 +111,13 @@ class GatewayViewSet(viewsets.ModelViewSet):
                 "api_auth_contexts": APIAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
             },
         )
-        return OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("name")))
+        return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("name")))
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.GatewayV1DetailSLZ()}, tags=["OpenAPI.Gateway"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = serializers.GatewayV1DetailSLZ(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class GatewayPublicKeyViewSet(viewsets.ViewSet):
@@ -127,7 +127,7 @@ class GatewayPublicKeyViewSet(viewsets.ViewSet):
     @swagger_auto_schema(tags=["OpenAPI.Gateway"])
     def get_public_key(self, request, gateway_name: str, *args, **kwargs):
         jwt = JWT.objects.get(api=request.gateway)
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "issuer": getattr(settings, "JWT_ISSUER", ""),
@@ -158,7 +158,7 @@ class GatewaySyncViewSet(viewsets.ViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "id": slz.instance.id,
@@ -176,7 +176,7 @@ class GatewayUpdateStatusViewSet(viewsets.ViewSet):
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
 
 
 class GatewayRelatedAppViewSet(viewsets.ViewSet):
@@ -192,4 +192,4 @@ class GatewayRelatedAppViewSet(viewsets.ViewSet):
             if not APIRelatedApp.objects.filter(api_id=request.gateway.id, bk_app_code=bk_app_code).exists():
                 APIRelatedApp.objects.add_related_app(request.gateway.id, bk_app_code)
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")

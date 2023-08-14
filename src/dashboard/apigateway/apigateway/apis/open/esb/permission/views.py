@@ -37,7 +37,7 @@ from apigateway.apps.esb.permission.serializers import AppPermissionApplyRecordD
 from apigateway.apps.permission.constants import ApplyStatusEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class ComponentViewSet(viewsets.GenericViewSet):
             sorted(component_permissions, key=operator.itemgetter("permission_level", "name")),
             many=True,
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
@@ -120,7 +120,7 @@ class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
             except Exception:
                 logger.exception("send mail to api manager fail. apply_record_id=%s", instance.id)
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppPermissionRenewAPIView(viewsets.GenericViewSet):
@@ -140,7 +140,7 @@ class AppPermissionRenewAPIView(viewsets.GenericViewSet):
             data["expire_days"],
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppPermissionViewSet(viewsets.ViewSet):
@@ -167,7 +167,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
         ).build(components)
 
         slz = serializers.AppPermissionComponentSLZ(component_permissions, many=True)
-        return OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("system_name", "name")))
+        return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("system_name", "name")))
 
 
 class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
@@ -191,7 +191,7 @@ class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
 
         page = self.paginate_queryset(queryset)
         slz = serializers.AppPermissionApplyRecordV1SLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
 
     def retrieve(self, request, record_id: int, *args, **kwargs):
         slz = serializers.AppPermissionApplyRecordQuerySLZ(data=request.query_params)
@@ -205,4 +205,4 @@ class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
             raise error_codes.NOT_FOUND_ERROR
 
         slz = AppPermissionApplyRecordDetailSLZ(record)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

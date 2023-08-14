@@ -87,10 +87,11 @@ class TestStageViewSet:
 
         if will_error:
             assert response.status_code == 404
-            assert result["code"] == 40404
+            # assert result["code"] == 40404
             return
 
-        assert result["code"] == 0
+        # assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == expected
 
         mocked_get_gateway_by_name.assert_called_once_with(api_name)

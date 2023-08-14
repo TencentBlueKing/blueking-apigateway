@@ -44,3 +44,6 @@ class SDKSLZ(serializers.Serializer):
     sdk_version_number = serializers.CharField()
     sdk_download_url = serializers.CharField()
     sdk_install_command = serializers.CharField()
+
+    class Meta:
+        ref_name = "apps.docs.esb.sdk"

@@ -26,7 +26,7 @@ from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.esb.doc_category import serializers
 from apigateway.apps.esb.permissions import UserAccessESBPermission
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 
 class DocCategoryViewSet(viewsets.ModelViewSet):
@@ -48,7 +48,7 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
             context={"system_counts": SystemDocCategory.objects.calculate_system_count_per_doc_category()},
         )
 
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         response_serializer=serializers.DocCategorySLZ,
@@ -57,7 +57,7 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         request_body=serializers.DocCategorySLZ,
@@ -73,7 +73,7 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK", data={"id": slz.instance.id})
+        return V1OKJsonResponse("OK", data={"id": slz.instance.id})
 
     @swagger_auto_schema(
         request_body=serializers.DocCategorySLZ,
@@ -88,7 +88,7 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(tags=["ESB.DocCategory"])
     @transaction.atomic
@@ -101,4 +101,4 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
 
         DocCategory.objects.delete_custom_doc_category(instance.id)
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")

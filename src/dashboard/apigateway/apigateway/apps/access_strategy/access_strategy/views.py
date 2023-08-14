@@ -24,7 +24,7 @@ from apigateway.apps.access_strategy.models import AccessStrategy
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.core.signals import reversion_update_signal
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -47,7 +47,7 @@ class AccessStrategyViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -71,7 +71,7 @@ class AccessStrategyViewSet(viewsets.ModelViewSet):
 
         page = self.paginate_queryset(queryset)
         serializer = serializers.AccessStrategyListSLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["AccessStrategy"])
     def update(self, request, *args, **kwargs):
@@ -83,13 +83,13 @@ class AccessStrategyViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(tags=["AccessStrategy"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=serializer.data)
+        return V1OKJsonResponse("OK", data=serializer.data)
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["AccessStrategy"])
     def destroy(self, request, gateway_id, *args, **kwargs):
@@ -113,4 +113,4 @@ class AccessStrategyViewSet(viewsets.ModelViewSet):
             comment="删除访问策略",
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")

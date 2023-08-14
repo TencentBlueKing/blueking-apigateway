@@ -92,3 +92,6 @@ class SDKSLZ(serializers.Serializer):
         data = super().to_representation(instance)
         data.update(instance.config)
         return data
+
+    class Meta:
+        ref_name = "apps.support.api_sdk"

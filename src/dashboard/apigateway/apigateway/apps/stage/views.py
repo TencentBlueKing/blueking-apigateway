@@ -31,7 +31,7 @@ from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Release, Stage
 from apigateway.core.signals import reversion_update_signal
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -54,7 +54,7 @@ class StageViewSet(viewsets.ModelViewSet):
             status=StageStatusEnum.INACTIVE.value,
         )
 
-        return OKJsonResponse("OK", data={"id": slz.instance.id})
+        return V1OKJsonResponse("OK", data={"id": slz.instance.id})
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -95,7 +95,7 @@ class StageViewSet(viewsets.ModelViewSet):
                 "stage_id_to_micro_gateway_fields": StageHandler().get_id_to_micro_gateway_fields(request.gateway.id),
             },
         )
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(
         query_serializer=serializers.QueryStageReleaseSLZ,
@@ -120,7 +120,7 @@ class StageViewSet(viewsets.ModelViewSet):
             },
         )
 
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -142,7 +142,7 @@ class StageViewSet(viewsets.ModelViewSet):
             },
         )
 
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["Stage"])
     @transaction.atomic
@@ -154,13 +154,13 @@ class StageViewSet(viewsets.ModelViewSet):
 
         slz.save(updated_by=request.user.username)
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(tags=["Stage"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["Stage"])
     @transaction.atomic
@@ -169,7 +169,7 @@ class StageViewSet(viewsets.ModelViewSet):
         instance_id = instance.id
 
         if instance.is_active:
-            return FailJsonResponse(_("请先下线环境，然后再删除。"))
+            return V1FailJsonResponse(_("请先下线环境，然后再删除。"))
 
         StageHandler().delete_stages(request.gateway.id, [instance_id])
 
@@ -184,7 +184,7 @@ class StageViewSet(viewsets.ModelViewSet):
             comment=_("删除环境"),
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""}, request_body=serializers.UpdateStageStatusSLZ, tags=["Stage"]
@@ -216,4 +216,4 @@ class StageViewSet(viewsets.ModelViewSet):
             comment=_("环境下线"),
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")

@@ -23,7 +23,7 @@ from rest_framework import generics, status
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import APILabel
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 from apigateway.utils.time import now_datetime
 
@@ -79,7 +79,7 @@ class APILabelListCreateApi(generics.ListCreateAPIView):
         # paginate
         page = self.paginate_queryset(queryset)
         serializer = APILabelOutputSLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=APILabelInputSLZ, tags=["APILabels"])
     def create(self, request, gateway_id):
@@ -102,7 +102,7 @@ class APILabelListCreateApi(generics.ListCreateAPIView):
             instance_name=slz.instance.name,
         )
 
-        return OKJsonResponse("OK", data={"id": slz.instance.id})
+        return V1OKJsonResponse("OK", data={"id": slz.instance.id})
 
 
 class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
@@ -117,7 +117,7 @@ class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
         slz = APILabelOutputSLZ(instance)
         # slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=APILabelInputSLZ, tags=["APILabels"])
     def update(self, request, *args, **kwargs):
@@ -138,7 +138,7 @@ class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             instance_name=slz.instance.name,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["APILabels"])
     def destroy(self, request, *args, **kwargs):
@@ -155,4 +155,4 @@ class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             instance_name=instance_name,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")

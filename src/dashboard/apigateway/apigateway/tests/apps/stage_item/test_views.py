@@ -110,8 +110,9 @@ class TestStageItemViewSet:
             path_params={"gateway_id": fake_stage_item.api.id, "id": fake_stage_item.id},
         )
 
-        result = get_response_json(response)
-        assert result["code"] != 0
+        # result = get_response_json(response)
+        # assert result["code"] != 0
+        assert response.status_code != 200
 
         assert StageItem.objects.filter(api=fake_stage_item.api).exists()
 

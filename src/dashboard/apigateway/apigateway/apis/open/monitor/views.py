@@ -22,7 +22,7 @@ from apigateway.apis.open.monitor import serializers
 from apigateway.apps.monitor.constants import AlarmTypeEnum
 from apigateway.apps.monitor.tasks import monitor_app_request, monitor_nginx_error, monitor_resource_backend
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 
 class AlarmCallbackViewSet(viewsets.ViewSet):
@@ -39,4 +39,4 @@ class AlarmCallbackViewSet(viewsets.ViewSet):
         else:
             raise error_codes.INVALID_ARGS.format(f"不支持告警类型 {alarm_type}")
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")

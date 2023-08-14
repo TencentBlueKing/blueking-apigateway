@@ -26,9 +26,10 @@ from apigateway.utils.serializers import CustomFieldsSerializer
 
 
 class ResponseSerializer(CustomFieldsSerializer):
-    code = drf_serializers.IntegerField()
-    result = drf_serializers.BooleanField()
-    message = drf_serializers.CharField()
+    pass
+    # code = drf_serializers.IntegerField()
+    # result = drf_serializers.BooleanField()
+    # message = drf_serializers.CharField()
 
 
 class PaginatedDataSerializer(CustomFieldsSerializer):
@@ -70,9 +71,9 @@ class GenericResponseSwaggerAutoSchema(SwaggerAutoSchema):
                     type=openapi.TYPE_OBJECT,
                     properties=OrderedDict(
                         (
-                            ("code", openapi.Schema(type=openapi.TYPE_INTEGER, description="响应码")),
-                            ("result", openapi.Schema(type=openapi.TYPE_BOOLEAN, description="是否包含结果")),
-                            ("message", openapi.Schema(type=openapi.TYPE_STRING, description="消息")),
+                            # ("code", openapi.Schema(type=openapi.TYPE_INTEGER, description="响应码")),
+                            # ("result", openapi.Schema(type=openapi.TYPE_BOOLEAN, description="是否包含结果")),
+                            # ("message", openapi.Schema(type=openapi.TYPE_STRING, description="消息")),
                             ("data", self._get_data_schema(response)),
                         )
                     ),
@@ -99,7 +100,7 @@ class PaginatedResponseSwaggerAutoSchema(GenericResponseSwaggerAutoSchema):
                     ("count", openapi.Schema(type=openapi.TYPE_INTEGER)),
                     ("has_next", openapi.Schema(type=openapi.TYPE_BOOLEAN)),
                     ("has_previous", openapi.Schema(type=openapi.TYPE_BOOLEAN)),
-                    ("results", response["schema"]),
+                    ("results", response.get("schema")),
                 )
             ),
         )

@@ -29,3 +29,6 @@ class ResourceSLZ(serializers.Serializer):
     resource_perm_required = serializers.BooleanField()
     user_verified_required = serializers.BooleanField()
     labels = serializers.ListField()
+
+    class Meta:
+        ref_name = "apps.docs.gateway.resource"

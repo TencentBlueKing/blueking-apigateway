@@ -44,7 +44,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Gateway, Resource
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.time import now_datetime
 
 from . import serializers
@@ -62,7 +62,7 @@ class ResourceViewSet(viewsets.ViewSet):
     )
     def list(self, request, *args, **kwargs):
         if not request.gateway.is_active_and_public:
-            return OKJsonResponse("OK", data=[])
+            return V1OKJsonResponse("OK", data=[])
 
         slz = serializers.AppPermissionResourceQuerySLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -81,7 +81,7 @@ class ResourceViewSet(viewsets.ViewSet):
             sorted(resource_permissions, key=operator.itemgetter("permission_level", "name")),
             many=True,
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
@@ -95,7 +95,7 @@ class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
             request.gateway.id, slz.validated_data["target_app_code"]
         )
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "allow_apply_by_api": allow,
@@ -162,7 +162,7 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
         except Exception:
             logger.exception("send mail to api manager fail. apply_record_id=%s", instance.id)
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "record_id": record.id,
@@ -223,7 +223,7 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
             grant_type=GrantTypeEnum.INITIALIZE.value,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class RevokeAppPermissionViewSet(viewsets.ViewSet):
@@ -243,7 +243,7 @@ class RevokeAppPermissionViewSet(viewsets.ViewSet):
             bk_app_code__in=data["target_app_codes"],
         ).delete()
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppPermissionRenewAPIView(APIView):
@@ -281,7 +281,7 @@ class AppPermissionRenewAPIView(APIView):
                 expire_days=data["expire_days"],
             )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppPermissionViewSet(viewsets.ViewSet):
@@ -294,7 +294,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
 
         permissions = AppPermissionBuilder(data["target_app_code"]).build()
         slz = serializers.AppPermissionResourceSLZ(permissions, many=True)
-        return OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("api_name", "name")))
+        return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("api_name", "name")))
 
 
 class AppPermissionRecordViewSet(viewsets.GenericViewSet):
@@ -318,7 +318,7 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
 
         page = self.paginate_queryset(queryset)
         slz = serializers.AppPermissionRecordSLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
 
     def retrieve(self, request, record_id: int, *args, **kwargs):
         slz = serializers.AppPermissionRecordQuerySLZ(data=request.query_params)
@@ -337,4 +337,4 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
                 "resource_id_map": Resource.objects.filter_id_object_map(record.api.id),
             },
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

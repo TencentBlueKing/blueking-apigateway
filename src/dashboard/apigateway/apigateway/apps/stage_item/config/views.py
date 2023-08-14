@@ -24,7 +24,7 @@ from rest_framework import status, viewsets
 from apigateway.apps.stage_item.config import serializers
 from apigateway.core.models import Stage, StageItem, StageItemConfig
 from apigateway.utils.django import get_object_or_None
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 
 class StageItemConfigViewSet(viewsets.ModelViewSet):
@@ -44,7 +44,7 @@ class StageItemConfigViewSet(viewsets.ModelViewSet):
         stage_item.config = instance and instance.config or {}
 
         slz = self.get_serializer(stage_item)
-        return OKJsonResponse(data=slz.data)
+        return V1OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -67,7 +67,7 @@ class StageItemConfigViewSet(viewsets.ModelViewSet):
 
         slz.save(created_by=request.user.username, updated_by=request.user.username)
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["StageItem"])
     @transaction.atomic
@@ -78,4 +78,4 @@ class StageItemConfigViewSet(viewsets.ModelViewSet):
         # 直接清空环境中，配置项的配置内容，该清空操作不能直接生效到云 API 服务
         StageItemConfig.objects.filter(api=self.request.gateway, stage=stage, stage_item_id=stage_item.id).delete()
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
