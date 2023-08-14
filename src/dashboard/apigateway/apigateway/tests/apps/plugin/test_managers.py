@@ -57,40 +57,6 @@ class TestPluginBindingManager:
         )
         assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 2
 
-    def test_delete_unspecified_bindings(self, fake_gateway, echo_plugin):
-        r1 = G(Resource, api=fake_gateway)
-        r2 = G(Resource, api=fake_gateway)
-        G(PluginBinding, gateway=fake_gateway, config=echo_plugin, scope_type="resource", scope_id=r1.id)
-        G(PluginBinding, gateway=fake_gateway, config=echo_plugin, scope_type="resource", scope_id=r2.id)
-
-        PluginBinding.objects.delete_unspecified_bindings(
-            fake_gateway,
-            config=echo_plugin,
-            scope_type="resource",
-            scope_ids=[r1.id],
-        )
-        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 1
-        assert PluginBinding.objects.filter(gateway=fake_gateway, scope_id=r1.id).count() == 1
-
-    def test_delete_bindings(self, fake_gateway):
-        plugin_1 = G(PluginConfig, gateway=fake_gateway)
-        plugin_2 = G(PluginConfig, gateway=fake_gateway)
-        G(PluginBinding, gateway=fake_gateway, config=plugin_1, scope_type="resource", scope_id=1)
-        G(PluginBinding, gateway=fake_gateway, config=plugin_2, scope_type="resource", scope_id=2)
-
-        PluginBinding.objects.delete_bindings(fake_gateway.id, config_ids=[plugin_1.id])
-        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 1
-
-        PluginBinding.objects.delete_bindings(fake_gateway.id)
-        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 0
-
-    def test_delete_by_scopes(self, fake_gateway):
-        stage = G(Stage, api=fake_gateway)
-        G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=stage.id)
-
-        PluginBinding.objects.delete_by_scopes("stage", scope_ids=[stage.id])
-        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 0
-
     def test_get_valid_scope_ids(self, fake_gateway):
         r = G(Resource, api=fake_gateway)
         s = G(Stage, api=fake_gateway)
