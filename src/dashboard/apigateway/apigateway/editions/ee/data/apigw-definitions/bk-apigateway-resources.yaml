@@ -31,31 +31,6 @@ paths:
           userVerifiedRequired: false
         disabledStages: []
         descriptionEn:
-  /api/v1/apis/{api_name}/access_strategies/sync/:
-    post:
-      operationId: sync_access_strategy
-      description: 同步策略
-      tags: []
-      responses:
-        default:
-          description: ''
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: post
-          path: /backend/api/v1/apis/{api_name}/access_strategies/sync/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-          resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
   /api/v1/apis/{api_name}/permissions/apply/:
     post:
       operationId: apply_permissions

@@ -22,8 +22,6 @@ from typing import Any, Dict, Optional
 from django.conf import settings
 from django.utils.translation import gettext as _
 
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
-from apigateway.apps.access_strategy.models import AccessStrategyBinding
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
@@ -55,13 +53,6 @@ class StageHandler:
         # 2. delete release
 
         Release.objects.delete_by_stage_ids(stage_ids)
-
-        # 3. delete access-strategy-binding
-
-        AccessStrategyBinding.objects.delete_by_scope_ids(
-            scope_type=AccessStrategyBindScopeEnum.STAGE.value,
-            scope_ids=stage_ids,
-        )
 
         # 4. delete stages
         Stage.objects.filter(id__in=stage_ids).delete()

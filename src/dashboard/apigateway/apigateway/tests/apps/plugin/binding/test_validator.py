@@ -15,15 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
+# import pytest
 
-from apigateway.apps.access_strategy.constants import AccessStrategyTypeEnum
 from apigateway.apps.plugin.binding.validator import PluginBindingValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 
 
 class TestPluginBindingValidator:
-    def test_validate(self, fake_gateway, fake_stage, rate_limit_access_strategy_stage_binding):
+    def test_validate(self, fake_gateway, fake_stage):
         validator = PluginBindingValidator(
             gateway=fake_gateway,
             scope_type=PluginBindingScopeEnum.STAGE,
@@ -40,32 +39,11 @@ class TestPluginBindingValidator:
         )
         assert validator.validate() is None
 
-        validator = PluginBindingValidator(
-            gateway=fake_gateway,
-            scope_type=PluginBindingScopeEnum.STAGE,
-            scope_ids=[fake_stage.id],
-            plugin_type_code="bk-rate-limit",
-        )
-        with pytest.raises(ValueError):
-            validator.validate()
-
-    @pytest.mark.parametrize(
-        "type_code, strategy_type",
-        [
-            ("bk-rate-limit", "rate_limit"),
-            ("bk-verified-user-exempted-apps", "user_verified_unrequired_apps"),
-            ("bk-status-rewrite", "error_status_code_200"),
-            ("bk-cors", "cors"),
-            ("bk-ip-restriction", "ip_access_control"),
-        ],
-    )
-    def test_get_access_strategy_type(self, fake_gateway, type_code, strategy_type):
-        validator = PluginBindingValidator(
-            gateway=fake_gateway,
-            scope_type=PluginBindingScopeEnum.STAGE,
-            scope_ids=[1],
-            plugin_type_code="foo",
-        )
-
-        result = validator._get_access_strategy_type(type_code)
-        assert result == (strategy_type and AccessStrategyTypeEnum(strategy_type))
+        # validator = PluginBindingValidator(
+        #     gateway=fake_gateway,
+        #     scope_type=PluginBindingScopeEnum.STAGE,
+        #     scope_ids=[fake_stage.id],
+        #     plugin_type_code="bk-rate-limit",
+        # )
+        # with pytest.raises(ValueError):
+        #     validator.validate()

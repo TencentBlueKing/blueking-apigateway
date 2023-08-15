@@ -19,7 +19,6 @@
 import pytest
 from django.core.exceptions import ObjectDoesNotExist
 
-from apigateway.apps.access_strategy.constants import AccessStrategyTypeEnum
 from apigateway.apps.plugin.models import PluginBinding
 
 
@@ -144,10 +143,6 @@ class TestPluginBindingBatchViewSet:
         overwrites,
         mocker,
     ):
-        mocker.patch(
-            "apigateway.apps.plugin.binding.views.PluginBindingValidator._get_access_strategy_type",
-            return_value=AccessStrategyTypeEnum("rate_limit"),
-        )
         snapshot_qs = (
             PluginBinding.objects.filter(gateway=self.gateway)
             .order_by("pk")

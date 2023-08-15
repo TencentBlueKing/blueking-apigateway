@@ -40,7 +40,6 @@ urlpatterns = [
     path("", include("apigateway.apis.open.stage.urls")),
     path("", include("apigateway.apis.open.resource.urls")),
     path("", include("apigateway.apis.open.resource_version.urls")),
-    path("", include("apigateway.apis.open.access_strategy.urls")),
     path("", include("apigateway.apis.open.monitor.urls")),
 ]
 

@@ -29,7 +29,6 @@ from apigateway.core.constants import APIHostingTypeEnum
             APIHostingTypeEnum.DEFAULT,
             {
                 "MICRO_GATEWAY_ENABLED": False,
-                "ACCESS_STRATEGY_ENABLED": False,
                 "PLUGIN_ENABLED": False,
             },
         ),
@@ -37,7 +36,6 @@ from apigateway.core.constants import APIHostingTypeEnum
             APIHostingTypeEnum.MICRO,
             {
                 "MICRO_GATEWAY_ENABLED": True,
-                "ACCESS_STRATEGY_ENABLED": False,
                 "PLUGIN_ENABLED": True,
             },
         ),
@@ -47,7 +45,6 @@ def test_get_gateway_feature_flags(settings, hosting_type, expected):
     settings.GLOBAL_GATEWAY_FEATURE_FLAG = {
         "MICRO_GATEWAY_ENABLED": True,
         "PLUGIN_ENABLED": True,
-        "ACCESS_STRATEGY_ENABLED": False,
     }
     result = get_gateway_feature_flags(hosting_type)
     for key, expected_flag in expected.items():

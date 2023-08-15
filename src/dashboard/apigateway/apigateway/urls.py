@@ -61,7 +61,6 @@ urlpatterns = [
     # apps: normal
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
     path("backend/apis/<int:gateway_id>/support/", include("apigateway.apps.support.urls")),
-    path("backend/apis/<int:gateway_id>/access_strategies/", include("apigateway.apps.access_strategy.urls")),
     path("backend/apis/<int:gateway_id>/plugins/", include("apigateway.apps.plugin.urls")),
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     path("backend/esb/", include("apigateway.apps.esb.urls")),

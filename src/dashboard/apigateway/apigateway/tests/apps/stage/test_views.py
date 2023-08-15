@@ -22,7 +22,6 @@ from unittest.mock import patch
 from django.test import TestCase
 from django_dynamic_fixture import G
 
-from apigateway.apps.access_strategy.models import AccessStrategy, AccessStrategyBinding
 from apigateway.apps.stage.views import StageViewSet
 from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
 from apigateway.core import constants
@@ -124,15 +123,6 @@ class TestStageViewSet(TestCase):
         resource_version = G(ResourceVersion, api=self.gateway, name="test-01", title="test", version="1.0.1")
         G(Release, api=self.gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)
 
-        access_strategy = G(AccessStrategy, api=self.gateway)
-        G(
-            AccessStrategyBinding,
-            scope_type="stage",
-            scope_id=stage_test.id,
-            type="ip_access_control",
-            access_strategy=access_strategy,
-        )
-
         data = [
             {
                 "order_by": "-name",
@@ -149,12 +139,6 @@ class TestStageViewSet(TestCase):
                         "resource_version_name": "",
                         "resource_version_title": "",
                         "resource_version_display": "",
-                        "access_strategies": [
-                            {
-                                "access_strategy_id": access_strategy.id,
-                                "access_strategy_name": access_strategy.name,
-                            }
-                        ],
                         "plugins": [],
                         "micro_gateway_id": None,
                         "micro_gateway_name": "",
@@ -171,7 +155,6 @@ class TestStageViewSet(TestCase):
                         "resource_version_name": "test-01",
                         "resource_version_title": "test",
                         "resource_version_display": "1.0.1(test)",
-                        "access_strategies": [],
                         "plugins": [],
                         "micro_gateway_id": None,
                         "micro_gateway_name": "",
@@ -193,7 +176,6 @@ class TestStageViewSet(TestCase):
                         "resource_version_name": "test-01",
                         "resource_version_title": "test",
                         "resource_version_display": "1.0.1(test)",
-                        "access_strategies": [],
                         "plugins": [],
                         "micro_gateway_id": None,
                         "micro_gateway_name": "",

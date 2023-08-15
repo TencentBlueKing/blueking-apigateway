@@ -17,7 +17,6 @@
 #
 from django.utils.translation import gettext as _
 
-from apigateway.apps.access_strategy.constants import AccessStrategyTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import ProxyTypeEnum
 from apigateway.schema import instances
@@ -52,27 +51,6 @@ class SchemaFactory:
 
     def get_context_api_feature_flag_schema(self):
         return self._get_schema_instance(instances.ContextAPIFeatureFlag())
-
-    def get_access_strategy_schema(self, access_strategy_type):
-        if access_strategy_type == AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value:
-            return self._get_schema_instance(instances.AccessStrategyIPAccessControl())
-
-        elif access_strategy_type == AccessStrategyTypeEnum.RATE_LIMIT.value:
-            return self._get_schema_instance(instances.AccessStrategyRateLimit())
-
-        elif access_strategy_type == AccessStrategyTypeEnum.USER_VERIFIED_UNREQUIRED_APPS.value:
-            return self._get_schema_instance(instances.AccessStrategyUserVerifiedUnrequiredApps())
-
-        elif access_strategy_type == AccessStrategyTypeEnum.ERROR_STATUS_CODE_200.value:
-            return self._get_schema_instance(instances.AccessStrategyErrorStatusCode200())
-
-        elif access_strategy_type == AccessStrategyTypeEnum.CORS.value:
-            return self._get_schema_instance(instances.AccessStrategyCORS())
-
-        elif access_strategy_type == AccessStrategyTypeEnum.CIRCUIT_BREAKER.value:
-            return self._get_schema_instance(instances.AccessStrategyCircuitBreaker())
-
-        raise error_codes.INVALID_ARGS.format(f"unsupported access_strategy_type: {access_strategy_type}")
 
     def get_monitor_alarm_strategy_schema(self):
         return self._get_schema_instance(instances.MonitorAlarmStrategy())

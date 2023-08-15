@@ -95,7 +95,7 @@ class PluginBindingManager(models.Manager):
         gateway_id: int,
         scope_type: PluginBindingScopeEnum,
         scope_ids: Optional[List[int]] = None,
-    ) -> Dict[str, Any]:
+    ) -> Dict[int, Any]:
         qs = self.filter(gateway_id=gateway_id, scope_type=scope_type.value)
         if scope_ids is not None:
             qs = qs.filter(scope_id__in=scope_ids)

@@ -21,8 +21,6 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
-from apigateway.apps.access_strategy.models import AccessStrategyBinding
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.stage import serializers
@@ -85,11 +83,8 @@ class StageViewSet(viewsets.ModelViewSet):
                 # 状态为 active 的环境，Release 中存在记录，则为已发布，否则为未发布
                 "stage_release": Release.objects.get_stage_release(gateway=request.gateway, stage_ids=stage_ids),
                 # 环境绑定策略
-                "scope_bindings": AccessStrategyBinding.objects.query_scope_binding(
-                    api=request.gateway,
-                    scope_type=AccessStrategyBindScopeEnum.STAGE,
-                    scope_ids=stage_ids,
-                ),
+                # FIXME:已经不存在访问策略
+                "scope_bindings": [],
                 # 网关插件不适合放在环境列表中展示，应该放入详情中，保留此字段为了兼容前端逻辑
                 "scope_bound_plugins": [],
                 "stage_id_to_micro_gateway_fields": StageHandler().get_id_to_micro_gateway_fields(request.gateway.id),

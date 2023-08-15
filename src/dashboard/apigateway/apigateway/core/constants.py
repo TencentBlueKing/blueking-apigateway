@@ -53,7 +53,6 @@ class DefaultGatewayFeatureFlag(GatewayFeatureFlag):
     """共享网关（普通网关）的特性集"""
 
     MICRO_GATEWAY_ENABLED = FeatureFlagField("MICRO_GATEWAY_ENABLED", "微网关实例", False)
-    ACCESS_STRATEGY_ENABLED = FeatureFlagField("ACCESS_STRATEGY_ENABLED", "访问策略", True)
     PLUGIN_ENABLED = FeatureFlagField("PLUGIN_ENABLED", "插件", False)
     STAGE_RATE_LIMIT_ENABLED = FeatureFlagField("STAGE_RATE_LIMIT_ENABLED", "环境流量控制", True)
     RESOURCE_DISABLE_STAGE_ENABLED = FeatureFlagField("RESOURCE_DISABLE_STAGE_ENABLED", "资源禁用环境", True)
@@ -64,7 +63,6 @@ class MicroGatewayFeatureFlag(GatewayFeatureFlag):
     """专享网关（微网关）的特性集"""
 
     MICRO_GATEWAY_ENABLED = FeatureFlagField("MICRO_GATEWAY_ENABLED", "微网关实例", True)
-    ACCESS_STRATEGY_ENABLED = FeatureFlagField("ACCESS_STRATEGY_ENABLED", "访问策略", True)
     PLUGIN_ENABLED = FeatureFlagField("PLUGIN_ENABLED", "插件", True)
     STAGE_RATE_LIMIT_ENABLED = FeatureFlagField("STAGE_RATE_LIMIT_ENABLED", "环境流量控制", False)
     RESOURCE_DISABLE_STAGE_ENABLED = FeatureFlagField("RESOURCE_DISABLE_STAGE_ENABLED", "资源禁用环境", False)

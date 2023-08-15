@@ -75,12 +75,12 @@ class TestPluginBindingManager:
         binding1 = G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=1, config=fake_plugin_config)
         binding2 = G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=2, config=fake_plugin_config)
         binding3 = G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=1, config=fake_plugin_config)
-        binding4 = G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=1, config=fake_plugin_config)
+        binding4 = G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=2, config=fake_plugin_config)
 
         result = PluginBinding.objects.query_scope_id_to_bindings(
             fake_gateway.id, scope_type=PluginBindingScopeEnum.STAGE
         )
-        assert result == {1: [binding3, binding4]}
+        assert result == {1: [binding3], 2: [binding4]}
 
         result = PluginBinding.objects.query_scope_id_to_bindings(
             fake_gateway.id, scope_type=PluginBindingScopeEnum.RESOURCE

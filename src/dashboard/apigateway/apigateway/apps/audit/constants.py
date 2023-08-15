@@ -57,7 +57,6 @@ class OpObjectTypeEnum(ChoiceEnum):
     RESOURCE = "resource"
     RESOURCE_VERSION = "resource_version"
     RELEASE = "release"
-    ACCESS_STRATEGY = "access_strategy"
     IP_GROUP = "ip_group"
     API_LABEL = "api_label"
     MICRO_GATEWAY = "micro_gateway"

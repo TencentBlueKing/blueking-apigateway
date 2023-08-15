@@ -209,6 +209,7 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
         verbose_name = _("插件绑定")
         verbose_name_plural = _("插件绑定")
         db_table = "plugin_binding"
+        unique_together = ("scope_id", "scope_type", "config")
 
     def get_config(self):
         return self.config.config

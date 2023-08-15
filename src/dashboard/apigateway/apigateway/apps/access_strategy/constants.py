@@ -16,18 +16,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import re
 from typing import Dict
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 
 from apigateway.common.constants import ChoiceEnum
 from apigateway.core.constants import ScopeTypeEnum
-
-
-class IPAccessControlTypeEnum(ChoiceEnum):
-    ALLOW = "allow"
-    DENY = "deny"
 
 
 class AccessStrategyTypeEnum(StructuredEnum):
@@ -55,18 +49,3 @@ PLUGIN_TYPE_TO_STRATEGY_TYPE: Dict[str, str] = {value: key for key, value in STR
 class AccessStrategyBindScopeEnum(ChoiceEnum):
     STAGE = ScopeTypeEnum.STAGE.value
     RESOURCE = ScopeTypeEnum.RESOURCE.value
-
-
-class CircuitBreakerStrategyTypeEnum(ChoiceEnum):
-    # CONSECUTIVE_FAIL = "consecutive_fail"
-    THRESHOLD = "threshold"
-    # FAILURES_RATE = "failures_rate"
-
-
-class CircuitBreakerBackOffTypeEnum(ChoiceEnum):
-    FIXED = "fixed"
-    # EXPONENTIAL = "exponential"
-
-
-# `:[]` 用于支持 ipv6
-ALLOWED_ORIGIN_PATTERN = re.compile(r"^\*$|^http(s)?://[-a-zA-Z0-9:\[\]\*\.]+(:(\d+|\*))?$")

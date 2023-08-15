@@ -15,13 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 
 import pytest
 from ddf import G
 
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
-from apigateway.apps.access_strategy.models import AccessStrategy, AccessStrategyBinding
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 
@@ -44,20 +41,6 @@ class TestReleaseData:
         assert self.release_data.stage_rate_limit_config == edge_gateway_stage_context_stage_rate_limit.config
 
     def test_get_stage_plugins(self, edge_gateway, edge_gateway_stage, edge_plugin_config, edge_plugin_type):
-        strategy = G(
-            AccessStrategy,
-            api=edge_gateway,
-            type="rate_limit",
-            _config=json.dumps({"rates": {"__default": [{"period": 1, "tokens": 10}]}}),
-        )
-        G(
-            AccessStrategyBinding,
-            access_strategy=strategy,
-            scope_type=AccessStrategyBindScopeEnum.STAGE.value,
-            scope_id=edge_gateway_stage.pk,
-            type="rate_limit",
-        )
-
         G(
             PluginBinding,
             gateway=edge_gateway,
@@ -67,7 +50,7 @@ class TestReleaseData:
         )
 
         plugins = self.release_data.get_stage_plugins()
-        assert len(plugins) == 2
+        assert len(plugins) == 1
 
         # 环境同时绑定了频率控制访问策略和插件
         edge_plugin_type.code = "bk-rate-limit"
@@ -77,20 +60,6 @@ class TestReleaseData:
         assert plugins[0].config == {"rates": {"__default": [{"period": 60, "tokens": 100}]}}
 
     def test_get_resource_plugins(self, edge_gateway, edge_resource_overwrite_stage, edge_plugin_config):
-        strategy = G(
-            AccessStrategy,
-            api=edge_gateway,
-            type="rate_limit",
-            _config=json.dumps({"rates": {"__default": [{"period": 1, "tokens": 10}]}}),
-        )
-        G(
-            AccessStrategyBinding,
-            access_strategy=strategy,
-            scope_type=AccessStrategyBindScopeEnum.RESOURCE.value,
-            scope_id=edge_resource_overwrite_stage.pk,
-            type="rate_limit",
-        )
-
         G(
             PluginBinding,
             gateway=edge_gateway,
@@ -100,7 +69,7 @@ class TestReleaseData:
         )
 
         plugins = self.release_data.get_resource_plugins(edge_resource_overwrite_stage.pk)
-        assert len(plugins) == 2
+        assert len(plugins) == 1
 
     def test_get_resource_plugins__duplicate(
         self, edge_gateway, edge_resource_overwrite_stage, edge_plugin_config, edge_plugin_type
@@ -108,20 +77,6 @@ class TestReleaseData:
         # 资源同时绑定了频率控制访问策略和插件
         edge_plugin_type.code = "bk-rate-limit"
         edge_plugin_type.save()
-
-        strategy = G(
-            AccessStrategy,
-            api=edge_gateway,
-            type="rate_limit",
-            _config=json.dumps({"rates": {"__default": [{"period": 1, "tokens": 10}]}}),
-        )
-        G(
-            AccessStrategyBinding,
-            access_strategy=strategy,
-            scope_type=AccessStrategyBindScopeEnum.RESOURCE.value,
-            scope_id=edge_resource_overwrite_stage.pk,
-            type="rate_limit",
-        )
 
         G(
             PluginBinding,

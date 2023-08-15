@@ -268,7 +268,6 @@ class ListStageSLZ(serializers.ModelSerializer):
     resource_version_name = serializers.SerializerMethodField()
     resource_version_title = serializers.SerializerMethodField()
     resource_version_display = serializers.SerializerMethodField()
-    access_strategies = serializers.SerializerMethodField()
     plugins = serializers.SerializerMethodField()
     micro_gateway_id = serializers.SerializerMethodField()
     micro_gateway_name = serializers.SerializerMethodField()
@@ -290,7 +289,6 @@ class ListStageSLZ(serializers.ModelSerializer):
             "resource_version_name",
             "resource_version_title",
             "resource_version_display",
-            "access_strategies",
             "plugins",
             "micro_gateway_id",
             "micro_gateway_name",
@@ -311,9 +309,6 @@ class ListStageSLZ(serializers.ModelSerializer):
 
     def get_resource_version_display(self, obj):
         return self.context["stage_release"].get(obj.id, {}).get("resource_version_display", "")
-
-    def get_access_strategies(self, obj):
-        return self.context["scope_bindings"].get(obj.id, [])
 
     def get_plugins(self, obj):
         return []

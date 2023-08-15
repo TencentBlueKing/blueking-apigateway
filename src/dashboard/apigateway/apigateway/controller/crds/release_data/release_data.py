@@ -18,17 +18,14 @@
 import json
 import logging
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 
 from attr import define
 from django.utils.functional import cached_property
 
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum, AccessStrategyTypeEnum
-from apigateway.apps.access_strategy.models import AccessStrategyBinding
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.common.contexts import APIAuthContext
-from apigateway.controller.crds.release_data.access_strategy import AccessStrategyConvertorFactory
 from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
@@ -89,16 +86,6 @@ class ReleaseData:
     def get_stage_plugins(self) -> List[PluginData]:
         plugins: List[PluginData] = []
 
-        # 访问策略
-        stage_id_to_strategy_bindings = AccessStrategyBinding.objects.query_scope_id_to_bindings(
-            gateway_id=self.gateway.pk,
-            scope_type=AccessStrategyBindScopeEnum.STAGE,
-            scope_ids=[self.stage.pk],
-        )
-        plugins.extend(
-            self._convert_access_strategies_to_plugin_data(stage_id_to_strategy_bindings.get(self.stage.pk, []))
-        )
-
         # 插件
         stage_id_to_plugin_bindings = PluginBinding.objects.query_scope_id_to_bindings(
             gateway_id=self.gateway.pk,
@@ -131,14 +118,6 @@ class ReleaseData:
     def _resources_plugins(self) -> Dict[int, List[PluginData]]:
         resource_id_to_plugins: Dict[int, List[PluginData]] = defaultdict(list)
 
-        # 访问策略
-        resource_id_to_strategy_bindings = AccessStrategyBinding.objects.query_scope_id_to_bindings(
-            gateway_id=self.gateway.pk,
-            scope_type=AccessStrategyBindScopeEnum.RESOURCE,
-        )
-        for resource_id, bindings in resource_id_to_strategy_bindings.items():
-            resource_id_to_plugins[resource_id].extend(self._convert_access_strategies_to_plugin_data(bindings))
-
         # 插件
         resource_id_to_plugin_bindings = PluginBinding.objects.query_scope_id_to_bindings(
             gateway_id=self.gateway.pk,
@@ -157,18 +136,3 @@ class ReleaseData:
             )
 
         return resource_id_to_plugins
-
-    def _convert_access_strategies_to_plugin_data(
-        self, bindings: Iterable[AccessStrategyBinding]
-    ) -> Iterable[PluginData]:
-        for binding in bindings:
-            strategy = binding.access_strategy
-            strategy_type = AccessStrategyTypeEnum(strategy.type)
-            convertor = AccessStrategyConvertorFactory.get_convertor(strategy_type)
-            if not convertor:
-                logger.warning(
-                    "no convertor for access_strategy [id=%d], strategy_type=%s", strategy.pk, strategy.type
-                )
-                continue
-
-            yield convertor.to_plugin_data(AccessStrategyBindScopeEnum(binding.scope_type), strategy)

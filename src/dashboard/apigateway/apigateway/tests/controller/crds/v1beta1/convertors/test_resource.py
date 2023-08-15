@@ -44,25 +44,6 @@ class TestHttpResourceConvertor:
         assert plugin.config["bk_resource_id"] == edge_resource_inherit_stage_snapshot["id"]
         assert plugin.config["bk_resource_name"] == edge_resource_inherit_stage_snapshot["name"]
 
-    def test_convert_http_resource_plugin_bk_ratelimit(
-        self,
-        rate_limit_access_strategy,
-        rate_limit_access_strategy_resource_binding,
-        edge_resource_inherit_stage,
-        edge_resource_inherit_stage_snapshot,
-        fake_http_resource_convertor,
-    ):
-        rate_limit_access_strategy_resource_binding.scope_id = edge_resource_inherit_stage.id
-        rate_limit_access_strategy_resource_binding.save()
-
-        plugin = self.get_resource_plugin_by_name(
-            fake_http_resource_convertor,
-            edge_resource_inherit_stage_snapshot,
-            "bk-resource-rate-limit",
-        )
-        assert plugin is not None
-        assert plugin.config == rate_limit_access_strategy.config
-
     def test_convert_http_resource_plugin(
         self,
         faker,
