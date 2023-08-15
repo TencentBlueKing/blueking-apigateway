@@ -37,6 +37,6 @@ class AlarmCallbackViewSet(viewsets.ViewSet):
         elif alarm_type == AlarmTypeEnum.NGINX_ERROR.value:
             monitor_nginx_error.apply_async(args=(request.data,))
         else:
-            raise error_codes.INVALID_ARGS.format(f"不支持告警类型 {alarm_type}")
+            raise error_codes.INVALID_ARGUMENT.format(f"不支持告警类型 {alarm_type}")
 
         return V1OKJsonResponse("OK")

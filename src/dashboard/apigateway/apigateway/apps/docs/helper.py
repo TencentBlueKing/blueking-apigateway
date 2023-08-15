@@ -51,7 +51,7 @@ class SupportHelper:
         gateway = Gateway.objects.get(id=id)
 
         if not gateway.is_active_and_public:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("网关非启用或未公开。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("网关非启用或未公开。"))
 
         return gateway
 
@@ -164,12 +164,12 @@ class SupportHelper:
 
         resource_version_id = Release.objects.get_released_resource_version_id(gateway.id, stage_name)
         if not resource_version_id:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("资源未发布。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("资源未发布。"))
 
         resource = ReleasedResource.objects.get_released_resource(gateway.id, resource_version_id, resource_name)
         # 资源在已发布版本中不存在，或者资源未公开
         if not resource or not resource["is_public"]:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("资源在已发布版本中不存在，或者资源未公开。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("资源在已发布版本中不存在，或者资源未公开。"))
 
         return resource
 
@@ -185,12 +185,12 @@ class SupportHelper:
 
         resource_version_id = Release.objects.get_released_resource_version_id(gateway_id, stage_name)
         if not resource_version_id:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("资源未发布。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("资源未发布。"))
 
         resource = ReleasedResource.objects.get_released_resource(gateway_id, resource_version_id, resource_name)
         # 资源在已发布版本中不存在，或者资源未公开
         if not resource or not resource["is_public"] or stage_name in resource["disabled_stages"]:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("资源在已发布版本中不存在，或者资源未公开。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("资源在已发布版本中不存在，或者资源未公开。"))
 
         doc = ReleasedResourceDoc.objects.get_released_resource_doc(
             gateway_id,

@@ -212,7 +212,7 @@ class ArchiveDocParseViewSet(viewsets.ViewSet):
         try:
             docs = manager.parse_doc_file(gateway_id, slz.validated_data["file"])
         except NoResourceDocError:
-            raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(
+            raise error_codes.INTERNAL.format(
                 _("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"),
                 replace=True,
             )
@@ -256,11 +256,9 @@ class ResourceDocImportExportViewSet(viewsets.ViewSet):
                 archive_file=data["file"],
             )
         except NoResourceDocError:
-            raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(
-                _("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True
-            )
+            raise error_codes.INTERNAL.format(_("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True)
         except ResourceDocJinja2TemplateError as err:
-            raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
+            raise error_codes.INTERNAL.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
         return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
@@ -290,9 +288,9 @@ class ResourceDocImportExportViewSet(viewsets.ViewSet):
                 swagger=data["swagger"],
             )
         except (ExpandSwaggerError, SchemaValidationError):
-            raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(_("swagger 描述内容不符合规范。"))
+            raise error_codes.INTERNAL.format(_("swagger 描述内容不符合规范。"))
         except GenerateMarkdownError:
-            raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))
+            raise error_codes.INTERNAL.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))
 
         return V1OKJsonResponse("OK")
 
@@ -325,6 +323,6 @@ class ResourceDocImportExportViewSet(viewsets.ViewSet):
                 files = DocArchiveGenerator().generate(output_dir, gateway_id, resource_ids)
                 archive_path = archivefile.archive(output_dir, archive_name, files)
             except NoResourceDocError:
-                raise error_codes.RESOURCE_DOC_EXPORT_ERROR.format(_("选中的资源未创建文档。"))
+                raise error_codes.INTERNAL.format(_("选中的资源未创建文档。"))
 
             return DownloadableResponse(open(archive_path, "rb"), filename=archive_name)

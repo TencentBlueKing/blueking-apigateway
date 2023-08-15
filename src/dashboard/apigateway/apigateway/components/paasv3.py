@@ -42,7 +42,7 @@ class PaaSV3Component:
 
     def _parse_response(self, response: Optional[Response]) -> Any:
         if response is None:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("请求 bkpaas3 获取应用信息失败，请联系系统负责人处理或稍后重试。"), replace=True)
+            raise error_codes.INTERNAL.format(_("请求 bkpaas3 获取应用信息失败，请联系系统负责人处理或稍后重试。"), replace=True)
 
         try:
             result = response.json()
@@ -50,13 +50,13 @@ class PaaSV3Component:
             logger.warning(
                 "request bkpaas3 error, request: %s, response: %s", to_curl(response.request), response.text
             )
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("请求 bkpaas3 获取应用信息失败，接口响应数据非 JSON 格式。"), replace=True)
+            raise error_codes.INTERNAL.format(_("请求 bkpaas3 获取应用信息失败，接口响应数据非 JSON 格式。"), replace=True)
 
         if not result["result"]:
             logger.warning(
                 "request bkpaas3 error, request: %s, response: %s", to_curl(response.request), response.text
             )
-            raise error_codes.REMOTE_REQUEST_ERROR.format(
+            raise error_codes.INTERNAL.format(
                 _("请求 bkpaas3 获取应用信息失败，{code_slug}，{message}。").format(
                     code_slug=result.get("code_slug", "Error"),
                     message=result.get("message"),

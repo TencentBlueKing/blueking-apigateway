@@ -97,7 +97,7 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
 
         allow, message = DocCategory.objects.allow_delete([instance.id])
         if not allow:
-            raise error_codes.FORBIDDEN.format(message=message, replace=True)
+            raise error_codes.FAILED_PRECONDITION.format(message=message, replace=True)
 
         DocCategory.objects.delete_custom_doc_category(instance.id)
 
