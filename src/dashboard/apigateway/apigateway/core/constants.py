@@ -221,11 +221,11 @@ class ContextScopeTypeEnum(StructuredEnum):
 
 
 class ContextTypeEnum(StructuredEnum):
-    GATEWAY_AUTH = "api_auth"
-    RESOURCE_AUTH = "resource_auth"
-    STAGE_PROXY_HTTP = "stage_proxy_http"
-    STAGE_RATE_LIMIT = "stage_rate_limit"
-    GATEWAY_FEATURE_FLAG = "api_feature_flag"
+    GATEWAY_AUTH = EnumField("api_auth")
+    RESOURCE_AUTH = EnumField("resource_auth")
+    STAGE_PROXY_HTTP = EnumField("stage_proxy_http")
+    STAGE_RATE_LIMIT = EnumField("stage_rate_limit")
+    GATEWAY_FEATURE_FLAG = EnumField("api_feature_flag")
 
 
 class LoadBalanceTypeEnum(StructuredEnum):
