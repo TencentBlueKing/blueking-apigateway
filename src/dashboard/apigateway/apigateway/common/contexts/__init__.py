@@ -16,9 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from .context import (  # noqa
-    GatewayAuthContext,
     GatewayFeatureFlagContext,
     ResourceAuthContext,
     StageProxyHTTPContext,
     StageRateLimitContext,
 )
+from .gateway_auth import GatewayAuthContext, GatewayAuthConfig  # noqa

@@ -18,8 +18,6 @@
 #
 
 import copy
-import itertools
-import operator
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
@@ -31,6 +29,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
+from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.iam import IAMHandler
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
@@ -45,27 +44,36 @@ from .stage import StageHandler
 
 class GatewayHandler:
     @staticmethod
-    def search_gateway_stages(gateway_ids: List[int]):
+    def get_stages_with_release_status(gateway_ids: List[int]) -> Dict[int, list]:
         """
-        查询网关环境
+        查询网关环境，并添加环境发布状态
+
+        :return: e.g.
+        {
+            1: [
+                {
+                    "id": 10,
+                    "name": "prod",
+                    "released": True,
+                }
+            ]
+        }
         """
-        stages = Stage.objects.filter(api_id__in=gateway_ids).values("id", "name", "api_id").order_by("api_id")
-        stage_ids = [stage["id"] for stage in stages]
+        stages = Stage.objects.filter(api_id__in=gateway_ids).values("id", "name", "api_id")
+        released_stage_ids = Release.objects.get_released_stage_ids(gateway_ids)
+        stage_release_status = dict.fromkeys(released_stage_ids, True)
 
-        stage_release_status = Release.objects.get_stage_release_status(stage_ids)
+        gateway_id_to_stages = defaultdict(list)
+        for stage in stages:
+            gateway_id_to_stages[stage["api_id"]].append(
+                {
+                    "id": stage["id"],
+                    "name": stage["name"],
+                    "released": stage_release_status.get(stage["id"], False),
+                }
+            )
 
-        api_stage_groups = itertools.groupby(stages, key=operator.itemgetter("api_id"))
-        api_stages = defaultdict(list)
-        for api_id, group in api_stage_groups:
-            for stage in group:
-                api_stages[api_id].append(
-                    {
-                        "stage_id": stage["id"],
-                        "stage_name": stage["name"],
-                        "stage_release_status": stage_release_status.get(stage["id"], False),
-                    }
-                )
-        return api_stages
+        return gateway_id_to_stages
 
     @staticmethod
     def get_current_gateway_auth_config(gateway_id: int) -> dict:
@@ -171,7 +179,7 @@ class GatewayHandler:
         # 1. delete api context
 
         Context.objects.delete_by_scope_ids(
-            scope_type=ContextScopeTypeEnum.API.value,
+            scope_type=ContextScopeTypeEnum.GATEWAY.value,
             scope_ids=[gateway_id],
         )
 
@@ -207,32 +215,6 @@ class GatewayHandler:
         Gateway.objects.filter(id=gateway_id).delete()
 
     @staticmethod
-    def add_create_audit_log(gateway: Gateway, username: str):
-        record_audit_log(
-            username=username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway.id,
-            op_object_type=OpObjectTypeEnum.API.value,
-            op_object_id=gateway.id,
-            op_object=gateway.name,
-            comment=_("创建网关"),
-        )
-
-    @staticmethod
-    def add_update_audit_log(gateway: Gateway, username: str):
-        record_audit_log(
-            username=username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway.id,
-            op_object_type=OpObjectTypeEnum.API.value,
-            op_object_id=gateway.id,
-            op_object=gateway.name,
-            comment=_("更新网关"),
-        )
-
-    @staticmethod
     def record_audit_log_success(username: str, instance: Gateway, op_type: OpTypeEnum):
         comment = {
             OpTypeEnum.CREATE: _("创建网关"),
@@ -256,3 +238,14 @@ class GatewayHandler:
         feature_flags = copy.deepcopy(settings.GLOBAL_GATEWAY_FEATURE_FLAG)
         feature_flags.update(GatewayFeatureFlagContext().get_config(gateway_id, {}))
         return feature_flags
+
+    @staticmethod
+    def get_docs_url(gateway: Gateway) -> str:
+        # 如果无可展示的资源文档，则不提供文档地址
+        if ReleasedResourceDoc.objects.filter(api=gateway).exists():
+            return settings.API_DOCS_URL_TMPL.format(api_name=gateway.name)
+        return ""
+
+    @staticmethod
+    def get_domain(gateway: Gateway) -> str:
+        return settings.BK_API_URL_TMPL.format(api_name=gateway.name)

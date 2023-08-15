@@ -804,6 +804,20 @@ class TestStageResourceDisabledManager(TestCase):
 
 
 class TestReleaseManager:
+    def test_get_released_stage_ids(self, fake_gateway):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+
+        stage_1 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        G(Stage, api=fake_gateway, status=StageStatusEnum.INACTIVE.value)
+        G(Release, api=fake_gateway, stage=stage_1)
+
+        assert Release.objects.get_released_stage_ids([fake_gateway.id]) == [stage_1.id]
+
+        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
+        fake_gateway.save()
+        assert Release.objects.get_released_stage_ids([fake_gateway.id]) == []
+
     def test_get_stage_release_status(self):
         gateway = G(Gateway)
 

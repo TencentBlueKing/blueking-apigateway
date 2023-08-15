@@ -81,12 +81,12 @@ class BaseContext(metaclass=ABCMeta):
 
 
 class GatewayFeatureFlagContext(BaseContext):
-    scope_type = ContextScopeTypeEnum.API.value
-    type = ContextTypeEnum.API_FEATURE_FLAG.value
+    scope_type = ContextScopeTypeEnum.GATEWAY.value
+    type = ContextTypeEnum.GATEWAY_FEATURE_FLAG.value
 
     @cached_property
     def schema(self):
-        return SchemaFactory().get_context_api_feature_flag_schema()
+        return SchemaFactory().get_context_gateway_feature_flag_schema()
 
 
 class StageRateLimitContext(BaseContext):
@@ -128,12 +128,3 @@ class ResourceAuthContext(BaseContext):
     @cached_property
     def schema(self):
         return SchemaFactory().get_context_resource_bkauth_schema()
-
-
-class GatewayAuthContext(BaseContext):
-    scope_type = ContextScopeTypeEnum.API.value
-    type = ContextTypeEnum.API_AUTH.value
-
-    @cached_property
-    def schema(self):
-        return SchemaFactory().get_context_api_bkauth_schema()

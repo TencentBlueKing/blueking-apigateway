@@ -23,6 +23,7 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
@@ -143,7 +144,7 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
 
         # 3. record audit log
-        GatewayHandler().add_create_audit_log(instance, validated_data.get("created_by", ""))
+        GatewayHandler.record_audit_log_success(validated_data.get("created_by", ""), instance, OpTypeEnum.CREATE)
 
         return instance
 
@@ -168,7 +169,7 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
 
         # 3. 记录操作日志
-        GatewayHandler().add_update_audit_log(instance, validated_data.get("updated_by", ""))
+        GatewayHandler.record_audit_log_success(validated_data.get("updated_by", ""), instance, OpTypeEnum.MODIFY)
 
         return instance
 
