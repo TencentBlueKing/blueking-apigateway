@@ -36,7 +36,7 @@ class LoadBalanceTypeEnum(StructuredEnum):
     WRR = EnumField("weighted-roundrobin", "Weighted-RR")
 
 
-class BackendConfigSchemaEnum(StructuredEnum):
+class BackendConfigSchemeEnum(StructuredEnum):
     # for http type backend
     HTTP = EnumField("http", label="HTTP")
     HTTPS = EnumField("https", label="HTTPS")
@@ -46,6 +46,6 @@ class BackendConfigSchemaEnum(StructuredEnum):
 
 
 BACKEND_CONFIG_SCHEMA_MAP = {
-    BackendTypeEnum.HTTP.value: [BackendConfigSchemaEnum.HTTP.value, BackendConfigSchemaEnum.HTTPS.value],
-    BackendTypeEnum.GRPC.value: [BackendConfigSchemaEnum.GRPC.value, BackendConfigSchemaEnum.GRPCS.value],
+    BackendTypeEnum.HTTP.value: [BackendConfigSchemeEnum.HTTP.value, BackendConfigSchemeEnum.HTTPS.value],
+    BackendTypeEnum.GRPC.value: [BackendConfigSchemeEnum.GRPC.value, BackendConfigSchemeEnum.GRPCS.value],
 }

@@ -27,7 +27,7 @@ from .serializers import BackendInputSLZ
 
 class BackendCreateApi(generics.ListCreateAPIView):
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_201_CREATED: ""},
         request_body=BackendInputSLZ,
         tags=["Backend"],
     )

@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.utils.translation import gettext_lazy
+from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -27,14 +27,14 @@ from apigateway.core.models import Backend, Stage
 from .constants import (
     BACKEND_CONFIG_SCHEMA_MAP,
     BACKEND_NAME_PATTERN,
-    BackendConfigSchemaEnum,
+    BackendConfigSchemeEnum,
     BackendConfigTypeEnum,
     LoadBalanceTypeEnum,
 )
 
 
 class HostSLZ(serializers.Serializer):
-    schema = serializers.ChoiceField(choices=BackendConfigSchemaEnum.get_choices())
+    scheme = serializers.ChoiceField(choices=BackendConfigSchemeEnum.get_choices())
     host = serializers.RegexField(HOST_WITHOUT_SCHEME_PATTERN)
     weight = serializers.IntegerField(min_value=1, required=False)
 
@@ -60,7 +60,7 @@ class BackendInputSLZ(serializers.Serializer):
         UniqueTogetherValidator(
             queryset=Backend.objects.all(),
             fields=["gateway", "name"],
-            message=gettext_lazy("网关下后端服务名称已经存在。"),
+            message=_("网关下后端服务名称已经存在。"),
         ),
     ]
 
@@ -72,7 +72,7 @@ class BackendInputSLZ(serializers.Serializer):
         for backend_config in attrs["configs"]:
             if backend_config["stage_id"] not in stage_id_name:
                 raise serializers.ValidationError(
-                    gettext_lazy("网关【{gateway}】下不存在id为【{stage_id}】的环境。").format(
+                    _("网关【{gateway}】下不存在id为【{stage_id}】的环境。").format(
                         gateway=attrs["gateway"].name, stage_id=backend_config["stage_id"]
                     )
                 )
@@ -81,7 +81,7 @@ class BackendInputSLZ(serializers.Serializer):
         for stage in stages:
             if stage.id not in config_stage_id:
                 raise serializers.ValidationError(
-                    gettext_lazy("后端服务缺少网关【{gateway}】下【{stage_name}】环境配置。").format(
+                    _("后端服务缺少网关【{gateway}】下【{stage_name}】环境配置。").format(
                         gateway=attrs["gateway"].name, stage_name=stage.name
                     )
                 )
@@ -89,10 +89,10 @@ class BackendInputSLZ(serializers.Serializer):
         # 校验backend下类型选择的关联性
         for backend_config in attrs["configs"]:
             for host in backend_config["hosts"]:
-                if host["schema"] not in BACKEND_CONFIG_SCHEMA_MAP[attrs["type"]]:
+                if host["scheme"] not in BACKEND_CONFIG_SCHEMA_MAP[attrs["type"]]:
                     raise serializers.ValidationError(
-                        gettext_lazy("环境【{stage_name}】的配置Schema【{schema}】不合法。").format(
-                            stage_name=stage_id_name[backend_config["stage_id"]], schema=host["schema"]
+                        _("环境【{stage_name}】的配置Scheme【{scheme}】不合法。").format(
+                            stage_name=stage_id_name[backend_config["stage_id"]], scheme=host["scheme"]
                         )
                     )
         return attrs

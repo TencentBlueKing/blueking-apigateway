@@ -24,29 +24,29 @@ from apigateway.core.models import Backend, BackendConfig
 
 class BackendHandler:
     @staticmethod
+    @transaction.atomic
     def create(data: Dict[str, Any], created_by: str):
         """创建后端服务"""
-        with transaction.atomic():
-            backend = Backend(
+        backend = Backend(
+            gateway=data["gateway"],
+            type=data["type"],
+            name=data["name"],
+            description=data["description"],
+            created_by=created_by,
+            updated_by=created_by,
+        )
+        backend.save()
+
+        backend_configs = []
+        for config in data["configs"]:
+            backend_config = BackendConfig(
                 gateway=data["gateway"],
-                type=data["type"],
-                name=data["name"],
-                description=data["description"],
+                backend_id=backend.id,
+                stage_id=config["stage_id"],
+                config={key: value for key, value in config.items() if key != "stage_id"},
                 created_by=created_by,
                 updated_by=created_by,
             )
-            backend.save()
+            backend_configs.append(backend_config)
 
-            backend_configs = []
-            for config in data["configs"]:
-                backend_config = BackendConfig(
-                    gateway=data["gateway"],
-                    backend_id=backend.id,
-                    stage_id=config["stage_id"],
-                    config={key: value for key, value in config.items() if key != "stage_id"},
-                    created_by=created_by,
-                    updated_by=created_by,
-                )
-                backend_configs.append(backend_config)
-
-            BackendConfig.objects.bulk_create(backend_configs)
+        BackendConfig.objects.bulk_create(backend_configs)
