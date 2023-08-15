@@ -48,7 +48,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
         return AlarmStrategy.objects.filter(api=self.request.gateway)
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_201_CREATED: ""},
         tags=["AlarmStrategy"],
     )
     def create(self, request, *args, **kwargs):
@@ -99,7 +99,7 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
         return AlarmStrategy.objects.filter(api=self.request.gateway)
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["AlarmStrategy"],
     )
     def update(self, request, *args, **kwargs):
@@ -125,7 +125,7 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
         return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["AlarmStrategy"],
     )
     def destroy(self, request, *args, **kwargs):
@@ -143,7 +143,7 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
         return AlarmStrategy.objects.filter(api=self.request.gateway)
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=AlarmStrategyUpdateStatusInputSLZ,
         tags=["AlarmStrategy"],
     )

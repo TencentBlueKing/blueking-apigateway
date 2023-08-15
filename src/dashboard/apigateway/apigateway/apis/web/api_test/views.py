@@ -30,7 +30,7 @@ from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.released_resource import get_released_resource_data
 from apigateway.core.models import Stage
 from apigateway.utils.curlify import to_curl
-from apigateway.utils.responses import OKJsonResponse, V1FailJsonResponse
+from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.time import convert_second_to_epoch_millis
 
 from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
@@ -96,7 +96,11 @@ class APITestApi(generics.CreateAPIView):
                 verify=False,
             )
         except Exception as err:
-            return V1FailJsonResponse(_("请求网关资源失败，错误消息：{err}。").format(err=err))
+            return FailJsonResponse(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                code="UNKNOWN",
+                message=_("请求网关资源失败，错误消息：{err}。").format(err=err),
+            )
 
         return OKJsonResponse(
             data=self._get_response_data(response, prepared_request_headers.headers_without_sensitive, verify=False),

@@ -90,7 +90,7 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
         return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_201_CREATED: ""},
         request_body=AppPermissionInputSLZ,
         tags=["Permission"],
     )
@@ -189,7 +189,9 @@ class AppResourcePermissionAppCodeListApi(generics.ListAPIView):
 
 
 class AppResourcePermissionRenewApi(generics.CreateAPIView):
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"])
+    @swagger_auto_schema(
+        responses={status.HTTP_201_CREATED: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"]
+    )
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
@@ -212,7 +214,9 @@ class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generic
     queryset = AppResourcePermission.objects.order_by("-id")
 
     # FIXME: DELETE ?ids=1,2,3
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"])
+    @swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"]
+    )
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
         slz = AppPermissionIDsSLZ(data=request.query_params)
@@ -249,7 +253,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
         return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_201_CREATED: ""},
         request_body=AppPermissionInputSLZ,
         tags=["Permission"],
     )
@@ -345,7 +349,9 @@ class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
 
 
 class AppGatewayPermissionRenewApi(generics.CreateAPIView):
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"])
+    @swagger_auto_schema(
+        responses={status.HTTP_201_CREATED: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"]
+    )
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
@@ -466,7 +472,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
 class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.CreateAPIView):
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=AppPermissionApplyApprovalInputSLZ, tags=["Permission"]
+        responses={status.HTTP_201_CREATED: ""}, request_body=AppPermissionApplyApprovalInputSLZ, tags=["Permission"]
     )
     @transaction.atomic
     def create(self, request, *args, **kwargs):
