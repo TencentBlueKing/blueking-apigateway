@@ -58,7 +58,7 @@ class TestAPISDKV1ViewSet:
             },
         )
         mocker.patch(
-            "apigateway.apis.open.support.views.APIAuthContext.filter_scope_id_config_map",
+            "apigateway.apis.open.support.views.GatewayAuthContext.filter_scope_id_config_map",
             return_value={
                 fake_gateway.id: {
                     "user_auth_type": "test",

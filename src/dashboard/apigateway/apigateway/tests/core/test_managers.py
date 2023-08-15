@@ -32,7 +32,7 @@ from apigateway.common.mcryptography import AESCipherManager
 from apigateway.core import constants
 from apigateway.core.constants import (
     APIHostingTypeEnum,
-    APIStatusEnum,
+    GatewayStatusEnum,
     SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
@@ -105,10 +105,10 @@ class TestGatewayManager:
             assert result[1] == test["expected"][1]
 
     def test_query_micro_and_active_ids(self):
-        g1 = G(Gateway, hosting_type=APIHostingTypeEnum.DEFAULT.value, status=APIStatusEnum.ACTIVE.value)
-        g2 = G(Gateway, hosting_type=APIHostingTypeEnum.DEFAULT.value, status=APIStatusEnum.INACTIVE.value)
-        g3 = G(Gateway, hosting_type=APIHostingTypeEnum.MICRO.value, status=APIStatusEnum.ACTIVE.value)
-        g4 = G(Gateway, hosting_type=APIHostingTypeEnum.MICRO.value, status=APIStatusEnum.INACTIVE.value)
+        g1 = G(Gateway, hosting_type=APIHostingTypeEnum.DEFAULT.value, status=GatewayStatusEnum.ACTIVE.value)
+        g2 = G(Gateway, hosting_type=APIHostingTypeEnum.DEFAULT.value, status=GatewayStatusEnum.INACTIVE.value)
+        g3 = G(Gateway, hosting_type=APIHostingTypeEnum.MICRO.value, status=GatewayStatusEnum.ACTIVE.value)
+        g4 = G(Gateway, hosting_type=APIHostingTypeEnum.MICRO.value, status=GatewayStatusEnum.INACTIVE.value)
 
         result = Gateway.objects.query_micro_and_active_ids()
         assert g3.id in result
@@ -215,7 +215,7 @@ class TestResourceManager:
     def setup_fixtures(self):
         self.gateway = G(Gateway)
 
-    def test_get_api_resource_count(self):
+    def test_get_resource_count(self):
         gateway_1 = G(Gateway)
         gateway_2 = G(Gateway)
         gateway_3 = G(Gateway)
@@ -242,7 +242,7 @@ class TestResourceManager:
         ]
 
         for test in data:
-            result = Resource.objects.get_api_resource_count(test["gateway_ids"])
+            result = Resource.objects.get_resource_count(test["gateway_ids"])
             assert result == test["expected"]
 
     def test_filter_valid_ids(self):

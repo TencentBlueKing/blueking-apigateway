@@ -21,7 +21,7 @@ from ddf import G
 from django.core.management.base import CommandError
 
 from apigateway.apps.esb.management.commands.update_esb_gateway_config import Command
-from apigateway.core.constants import APITypeEnum
+from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -70,7 +70,7 @@ class TestCommand:
         command.handle()
         mock_set_auth_config.assert_called_once_with(
             fake_gateway.id,
-            api_type=APITypeEnum.SUPER_OFFICIAL_API,
+            api_type=GatewayTypeEnum.SUPER_OFFICIAL_API,
             allow_update_api_auth=False,
         )
 
@@ -94,7 +94,7 @@ class TestCommand:
                     "allow_update_api_auth": True,
                 },
                 {
-                    "api_type": APITypeEnum.CLOUDS_API,
+                    "api_type": GatewayTypeEnum.CLOUDS_API,
                     "allow_update_api_auth": True,
                 },
                 False,
@@ -116,7 +116,7 @@ class TestCommand:
                     "allow_update_api_auth": True,
                 },
                 {
-                    "api_type": APITypeEnum.OFFICIAL_API,
+                    "api_type": GatewayTypeEnum.OFFICIAL_API,
                     "allow_update_api_auth": False,
                 },
                 True,
