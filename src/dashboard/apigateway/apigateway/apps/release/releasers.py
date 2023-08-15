@@ -113,15 +113,21 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
         # 环境、部署信息校验
         # 普通参数校验失败，不需要记录发布日志，环境参数校验失败，需记录发布日志
         # 因此，将普通参数校验，环境参数校验分开处理
+
         try:
             self._validate()
         except (ValidationError, ReleaseValidationError, NonRelatedMicroGatewayError) as err:
             message = err.detail[0] if isinstance(err, ValidationError) else str(err)
-            self._save_release_history(status=ReleaseStatusEnum.FAILURE, message=message)
+            release_history = self._save_release_history(status=ReleaseStatusEnum.FAILURE, message=message)
+            # 上报发布校验失败事件: todo: 支持批量
+            PublishEventReporter.report_config_validate_fail_event(release_history, release_history.stage, message)
             raise ReleaseError(message) from err
 
         # save release history
         history = self._save_ok_release_history()
+
+        PublishEventReporter.report_config_validate_success_event(history, history.stage)
+
         release_instances = []
 
         # save release
