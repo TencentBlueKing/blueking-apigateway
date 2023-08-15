@@ -25,7 +25,7 @@ from django.conf import settings
 
 from apigateway.controller.distributor.combine import CombineDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
-from apigateway.core.constants import APIHostingTypeEnum, APIStatusEnum, StageStatusEnum
+from apigateway.core.constants import APIHostingTypeEnum, GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, MicroGateway, Release, Stage
 from apigateway.utils.redis_utils import get_default_redis_client, get_redis_key
 
@@ -42,7 +42,7 @@ def rolling_update_release(gateway_id, publish_id: Optional[int] = None):
         logger.info("rolling_update_release: gateway(id=%d) not exist or is not a micro-gateway, skip", gateway_id)
         return False
 
-    if gateway.status != APIStatusEnum.ACTIVE.value:
+    if gateway.status != GatewayStatusEnum.ACTIVE.value:
         logger.info("rolling_update_release: gateway(id=%d) is not active, skip", gateway_id)
         return False
 

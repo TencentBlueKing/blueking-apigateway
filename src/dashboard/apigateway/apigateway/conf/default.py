@@ -800,8 +800,7 @@ DEFAULT_USER_FEATURE_FLAG = {
     "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
 }
 
-# 具体网关默认功能开关，将与 core.constants 中共享网关、专享网关等功能开关配置合并，
-# 支持不同类型的网关，有不同的功能特性集
+# 网关功能开关
 GLOBAL_GATEWAY_FEATURE_FLAG = {
     "OFFICIAL_API_TIPS_ENABLED": env.bool("OFFICIAL_API_TIPS_ENABLED", True),
     "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),

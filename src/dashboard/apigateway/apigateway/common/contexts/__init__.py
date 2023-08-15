@@ -16,8 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from .context import (  # noqa
-    APIAuthContext,
-    APIFeatureFlagContext,
+    GatewayAuthContext,
+    GatewayFeatureFlagContext,
     ResourceAuthContext,
     StageProxyHTTPContext,
     StageRateLimitContext,

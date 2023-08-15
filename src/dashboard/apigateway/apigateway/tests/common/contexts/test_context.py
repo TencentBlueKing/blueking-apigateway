@@ -20,7 +20,7 @@ from django.test import TestCase
 from django_dynamic_fixture import G
 
 from apigateway.common.contexts import (
-    APIAuthContext,
+    GatewayAuthContext,
     ResourceAuthContext,
     StageProxyHTTPContext,
     StageRateLimitContext,
@@ -28,10 +28,10 @@ from apigateway.common.contexts import (
 from apigateway.core.models import Context, Gateway
 
 
-class TestAPIAuthContext(TestCase):
+class TestGatewayAuthContext(TestCase):
     @pytest.fixture(autouse=True)
     def context_fixture(self, meta_schemas):
-        self.context = APIAuthContext()
+        self.context = GatewayAuthContext()
 
     def test_property(self):
         self.assertEqual(self.context.scope_type, "api")

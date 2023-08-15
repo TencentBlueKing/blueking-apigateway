@@ -25,7 +25,7 @@ from django.utils.functional import cached_property
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
@@ -81,7 +81,7 @@ class ReleaseData:
 
     @cached_property
     def api_auth_config(self) -> Dict[str, Any]:
-        return APIAuthContext().get_config(self.gateway.pk)
+        return GatewayAuthContext().get_config(self.gateway.pk)
 
     def get_stage_plugins(self) -> List[PluginData]:
         plugins: List[PluginData] = []

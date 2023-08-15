@@ -20,26 +20,9 @@ from typing import Dict
 
 from django.conf import settings
 
-from apigateway.core.constants import APIHostingTypeEnum, DefaultGatewayFeatureFlag, MicroGatewayFeatureFlag
+from apigateway.core.constants import APIHostingTypeEnum
 
 
 def get_gateway_feature_flags(hosting_type: APIHostingTypeEnum) -> Dict[str, bool]:
     """获取网关功能特性开关"""
-    if hosting_type == APIHostingTypeEnum.DEFAULT:
-        gateway_feature_flags = DefaultGatewayFeatureFlag
-    elif hosting_type == APIHostingTypeEnum.MICRO:
-        gateway_feature_flags = MicroGatewayFeatureFlag
-    else:
-        raise ValueError(f"unsupported hosting_type={hosting_type.value}")
-
-    feature_flags = gateway_feature_flags.get_default_flags()
-
-    # 合并全局的网关特性开关
-    for key, flag in settings.GLOBAL_GATEWAY_FEATURE_FLAG.items():
-        feature_flags.setdefault(key, flag)
-
-        # 若全局开关未开启，则网关特性开关也不开启
-        if flag is False:
-            feature_flags[key] = False
-
-    return feature_flags
+    return settings.GLOBAL_GATEWAY_FEATURE_FLAG.copy()

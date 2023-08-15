@@ -23,19 +23,19 @@ from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.gateway.utils import get_gateway_feature_flags
-from apigateway.common.contexts import APIAuthContext, APIFeatureFlagContext
-from apigateway.core.constants import API_NAME_PATTERN, APIHostingTypeEnum, APITypeEnum, UserAuthTypeEnum
+from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
+from apigateway.core.constants import GATEWAY_NAME_PATTERN, APIHostingTypeEnum, GatewayTypeEnum, UserAuthTypeEnum
 from apigateway.core.models import Gateway
-from apigateway.core.validators import ReservedAPINameValidator
+from apigateway.core.validators import ReservedGatewayNameValidator
 from apigateway.utils.crypto import calculate_fingerprint
 
 
 class GatewayCreateSLZ(serializers.ModelSerializer):
     name = serializers.RegexField(
-        API_NAME_PATTERN,
+        GATEWAY_NAME_PATTERN,
         label="网关名称",
         max_length=64,
-        validators=[ReservedAPINameValidator()],
+        validators=[ReservedGatewayNameValidator()],
     )
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     user_auth_type = serializers.ChoiceField(
@@ -177,7 +177,7 @@ class GatewayDetailSLZ(serializers.ModelSerializer):
 
     def get_is_official(self, obj):
         api_type = self.context["auth_config"]["api_type"]
-        return APITypeEnum.is_official(api_type)
+        return GatewayTypeEnum.is_official(api_type)
 
     @classmethod
     def from_instance(cls, instance: Gateway):
@@ -185,8 +185,8 @@ class GatewayDetailSLZ(serializers.ModelSerializer):
         return cls(
             instance,
             context={
-                "auth_config": APIAuthContext().get_config(instance.pk),
-                "feature_flags": APIFeatureFlagContext().get_config(instance.pk, {}),
+                "auth_config": GatewayAuthContext().get_config(instance.pk),
+                "feature_flags": GatewayFeatureFlagContext().get_config(instance.pk, {}),
             },
         )
 
@@ -248,7 +248,7 @@ class GatewayListSLZ(serializers.ModelSerializer):
             return False
 
         api_type = self.context["api_auth_contexts"][obj.id]["api_type"]
-        return APITypeEnum.is_official(api_type)
+        return GatewayTypeEnum.is_official(api_type)
 
     def get_hosting_type(self, obj):
         micro_gateway_count = self.context["micro_gateway_count"].get(obj.id, 0)

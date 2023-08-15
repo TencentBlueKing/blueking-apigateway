@@ -35,7 +35,7 @@ from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginFor
 from apigateway.apps.support.models import APISDK
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.core.constants import APIHostingTypeEnum, ProxyTypeEnum
 from apigateway.core.models import (
     Gateway,
@@ -140,7 +140,7 @@ def fake_gateway(faker):
         hosting_type=0,
     )
 
-    APIAuthContext().save(gateway.pk, {})
+    GatewayAuthContext().save(gateway.pk, {})
 
     return gateway
 

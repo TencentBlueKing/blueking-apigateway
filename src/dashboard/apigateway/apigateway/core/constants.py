@@ -31,9 +31,9 @@ class UserAuthTypeEnum(ChoiceEnumMixin, Enum):
     DEFAULT = "default"
 
 
-class APIStatusEnum(ChoiceEnumMixin, Enum):
-    INACTIVE = 0
-    ACTIVE = 1
+class GatewayStatusEnum(StructuredEnum):
+    INACTIVE = EnumField(0, "已停用")
+    ACTIVE = EnumField(1, "启用中")
 
 
 class APIHostingTypeEnum(StructuredEnum):
@@ -47,26 +47,6 @@ class GatewayFeatureFlag(FeatureFlag):
     """通用网关特性开关"""
 
     ENABLE_I18N_SUPPORT = FeatureFlagField("ENABLE_I18N_SUPPORT", "是否启用国际化支持", False)
-
-
-class DefaultGatewayFeatureFlag(GatewayFeatureFlag):
-    """共享网关（普通网关）的特性集"""
-
-    MICRO_GATEWAY_ENABLED = FeatureFlagField("MICRO_GATEWAY_ENABLED", "微网关实例", False)
-    PLUGIN_ENABLED = FeatureFlagField("PLUGIN_ENABLED", "插件", False)
-    STAGE_RATE_LIMIT_ENABLED = FeatureFlagField("STAGE_RATE_LIMIT_ENABLED", "环境流量控制", True)
-    RESOURCE_DISABLE_STAGE_ENABLED = FeatureFlagField("RESOURCE_DISABLE_STAGE_ENABLED", "资源禁用环境", True)
-    RESOURCE_WITH_MOCK_ENABLED = FeatureFlagField("RESOURCE_WITH_MOCK_ENABLED", "资源后端类型为Mock", True)
-
-
-class MicroGatewayFeatureFlag(GatewayFeatureFlag):
-    """专享网关（微网关）的特性集"""
-
-    MICRO_GATEWAY_ENABLED = FeatureFlagField("MICRO_GATEWAY_ENABLED", "微网关实例", True)
-    PLUGIN_ENABLED = FeatureFlagField("PLUGIN_ENABLED", "插件", True)
-    STAGE_RATE_LIMIT_ENABLED = FeatureFlagField("STAGE_RATE_LIMIT_ENABLED", "环境流量控制", False)
-    RESOURCE_DISABLE_STAGE_ENABLED = FeatureFlagField("RESOURCE_DISABLE_STAGE_ENABLED", "资源禁用环境", False)
-    RESOURCE_WITH_MOCK_ENABLED = FeatureFlagField("RESOURCE_WITH_MOCK_ENABLED", "资源后端类型为Mock", True)
 
 
 class MicroGatewayStatusEnum(StructuredEnum):
@@ -156,13 +136,10 @@ class SSLCertificateBindingScopeTypeEnum(StructuredEnum):
     BACKEND_SERVICE_DISCOVERY_CONFIG = EnumField("backend_service_discovery_config", _("后端服务发现配置"))
 
 
-class APITypeEnum(ChoiceEnumMixin, Enum):
-    # 超级官方API
-    SUPER_OFFICIAL_API = 0
-    # 官方云API
-    OFFICIAL_API = 1
-    # 云API
-    CLOUDS_API = 10
+class GatewayTypeEnum(StructuredEnum):
+    SUPER_OFFICIAL_API = EnumField(0, "超级官方API")
+    OFFICIAL_API = EnumField(1, "官方云API")
+    CLOUDS_API = EnumField(10, "云API")
 
     @classmethod
     def is_official(cls, value: int) -> bool:
@@ -310,7 +287,7 @@ DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100
 
 # 网关名
-API_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
+GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
 
 # Stage
 STAGE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,19}$")
