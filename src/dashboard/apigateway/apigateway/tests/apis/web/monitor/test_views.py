@@ -75,6 +75,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
+
             self.assertEqual(response.status_code, 201, result)
 
             strategy = AlarmStrategy.objects.get(api=self.gateway, name="test")

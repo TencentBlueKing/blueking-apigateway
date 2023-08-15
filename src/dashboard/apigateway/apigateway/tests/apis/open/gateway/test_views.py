@@ -23,7 +23,7 @@ from django_dynamic_fixture import G
 from rest_framework.serializers import ValidationError
 
 from apigateway.apis.open.gateway import views
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.core.models import JWT, APIRelatedApp, Gateway, Release, Stage
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, get_response_json
 
@@ -42,7 +42,7 @@ class TestAPIViewSet:
     @pytest.fixture(autouse=True)
     def setup_fixture(self, meta_schemas):
         self.factory = APIRequestFactory()
-        self.api_auth_context = APIAuthContext()
+        self.api_auth_context = GatewayAuthContext()
 
     def test_list(self):
         gateway_1 = create_gateway(name="api_1", status=1, is_public=True)

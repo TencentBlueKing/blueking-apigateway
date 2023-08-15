@@ -30,7 +30,7 @@ from apigateway.apps.support.constants import DocArchiveTypeEnum
 from apigateway.apps.support.resource_doc.exceptions import NoResourceDocError
 from apigateway.apps.support.resource_doc.export_doc.generators import DocArchiveGenerator
 from apigateway.apps.support.utils import ArchiveFileFactory
-from apigateway.core.constants import APIStatusEnum
+from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Resource
 
 
@@ -80,7 +80,7 @@ class Command(BaseCommand):
 
     def _get_export_gateways(self, gateway_names: List[str]) -> Dict[str, int]:
         gateway_name_to_id = dict(
-            Gateway.objects.filter(status=APIStatusEnum.ACTIVE.value, is_public=True).values_list("name", "id")
+            Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True).values_list("name", "id")
         )
 
         if not gateway_names:

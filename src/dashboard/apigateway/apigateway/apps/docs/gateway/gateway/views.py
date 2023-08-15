@@ -21,7 +21,7 @@ from rest_framework import status, viewsets
 
 from apigateway.apps.docs.helper import support_helper
 from apigateway.common.error_codes import error_codes
-from apigateway.core.constants import APITypeEnum
+from apigateway.core.constants import GatewayTypeEnum
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
@@ -50,7 +50,7 @@ class GatewayViewSet(viewsets.GenericViewSet):
         )
         paginator = LimitOffsetPaginator(count=len(apis), offset=0, limit=len(apis))
         slz = GatewaySLZ(
-            sorted(apis, key=lambda x: (APITypeEnum(x["api_type"]).sort_key, x["name"])),
+            sorted(apis, key=lambda x: (GatewayTypeEnum(x["api_type"]).sort_key, x["name"])),
             many=True,
         )
 

@@ -80,7 +80,7 @@ class BaseContext(metaclass=ABCMeta):
         ).delete()
 
 
-class APIFeatureFlagContext(BaseContext):
+class GatewayFeatureFlagContext(BaseContext):
     scope_type = ContextScopeTypeEnum.API.value
     type = ContextTypeEnum.API_FEATURE_FLAG.value
 
@@ -130,7 +130,7 @@ class ResourceAuthContext(BaseContext):
         return SchemaFactory().get_context_resource_bkauth_schema()
 
 
-class APIAuthContext(BaseContext):
+class GatewayAuthContext(BaseContext):
     scope_type = ContextScopeTypeEnum.API.value
     type = ContextTypeEnum.API_AUTH.value
 

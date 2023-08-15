@@ -41,6 +41,7 @@ class TestAPILabelListCreateApi(TestCase):
         response = view(request, gateway_id=self.gateway.id)
 
         result = get_response_json(response)
+
         self.assertEqual(response.status_code, 201, result)
         self.assertEqual(APILabel.objects.filter(api=self.gateway, name=data["name"]).count(), 1)
 
@@ -122,5 +123,6 @@ class TestAPILabelViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id, id=api_label.id)
 
         _ = get_response_json(response)
+
         self.assertEqual(response.status_code, 204)
         self.assertFalse(APILabel.objects.filter(id=api_label.id).exists())

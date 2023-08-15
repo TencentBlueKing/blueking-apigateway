@@ -21,7 +21,7 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.docs.gateway.constants_ext import UserAuthTypeEnum
-from apigateway.core.constants import APITypeEnum
+from apigateway.core.constants import GatewayTypeEnum
 
 
 class GatewayQuerySLZ(serializers.Serializer):
@@ -40,7 +40,7 @@ class GatewaySLZ(serializers.Serializer):
     api_url = serializers.SerializerMethodField()
 
     def get_name_prefix(self, obj):
-        if obj["api_type"] in [APITypeEnum.SUPER_OFFICIAL_API.value, APITypeEnum.OFFICIAL_API.value]:
+        if obj["api_type"] in [GatewayTypeEnum.SUPER_OFFICIAL_API.value, GatewayTypeEnum.OFFICIAL_API.value]:
             return _("[官方]")
         return ""
 

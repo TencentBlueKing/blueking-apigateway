@@ -26,7 +26,7 @@ from django_dynamic_fixture import G
 from rest_framework.response import Response
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
-from apigateway.core.constants import APIStatusEnum
+from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 
 UserModel = get_user_model()
@@ -48,7 +48,7 @@ def create_gateway(**defaults):
     data = {
         "created_by": user.username,
         "_maintainers": user.username,
-        "status": APIStatusEnum.ACTIVE.value,
+        "status": GatewayStatusEnum.ACTIVE.value,
         "is_public": True,
     }
     data.update(defaults)

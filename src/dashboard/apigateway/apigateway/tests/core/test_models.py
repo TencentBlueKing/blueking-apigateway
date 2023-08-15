@@ -22,7 +22,7 @@ from django_dynamic_fixture import G
 
 from apigateway.biz.resource import ResourceHandler
 from apigateway.core import models
-from apigateway.core.constants import APIHostingTypeEnum, APIStatusEnum
+from apigateway.core.constants import APIHostingTypeEnum, GatewayStatusEnum
 
 pytestmark = pytest.mark.django_db
 
@@ -31,10 +31,10 @@ class TestAPI:
     @pytest.mark.parametrize(
         "status, is_public, expected",
         [
-            (APIStatusEnum.ACTIVE.value, True, True),
-            (APIStatusEnum.INACTIVE.value, True, False),
-            (APIStatusEnum.ACTIVE.value, False, False),
-            (APIStatusEnum.INACTIVE.value, False, False),
+            (GatewayStatusEnum.ACTIVE.value, True, True),
+            (GatewayStatusEnum.INACTIVE.value, True, False),
+            (GatewayStatusEnum.ACTIVE.value, False, False),
+            (GatewayStatusEnum.INACTIVE.value, False, False),
         ],
     )
     def test_is_active_and_public(self, status, is_public, expected):
