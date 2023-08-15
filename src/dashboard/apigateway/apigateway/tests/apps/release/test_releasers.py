@@ -248,11 +248,6 @@ class TestMicroGatewayReleaser:
             self.api, get_release_data(self.api), access_token="access_token"
         )
 
-    def test_save_ok_release_history(self):
-        self.releaser._save_ok_release_history()
-
-        assert ReleaseHistory.objects.filter(api=self.api, status=ReleaseStatusEnum.PENDING.value).count() == 1
-
     def test_do_release_edge_gateway(
         self,
         mocker,

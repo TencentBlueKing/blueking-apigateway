@@ -16,18 +16,32 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.core.constants import PublishSourceEnum
-from apigateway.core.models import ReleaseHistory
+from apigateway.core.models import Release, ReleaseHistory
 
 
 class ReleaseHandler:
     @staticmethod
-    def save_release_history(release: ReleaseHistory, source: PublishSourceEnum, author: str) -> ReleaseHistory:
+    def save_release_history(release: Release, source: PublishSourceEnum, author: str) -> ReleaseHistory:
         """保存发布历史"""
         release_history = ReleaseHistory.objects.create(
             gateway=release.gateway,
             stage=release.stage,
             source=source.value,
             resource_version=release.resource_version,
+            created_by=author,
+        )
+        return release_history
+
+    @staticmethod
+    def save_release_history_with_id(
+        gateway_id: int, stage_id: int, resource_version_id: int, source: PublishSourceEnum, author: str
+    ) -> ReleaseHistory:
+        """保存发布历史"""
+        release_history = ReleaseHistory.objects.create(
+            gateway_id=gateway_id,
+            stage_id=stage_id,
+            source=source.value,
+            resource_version_id=resource_version_id,
             created_by=author,
         )
         return release_history
