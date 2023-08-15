@@ -50,3 +50,26 @@ class BackendHandler:
             backend_configs.append(backend_config)
 
         BackendConfig.objects.bulk_create(backend_configs)
+
+    @staticmethod
+    @transaction.atomic
+    def update(backend: Backend, data: Dict[str, Any], updated_by: str):
+        """更新后端服务"""
+        backend.type = data["type"]
+        backend.name = data["name"]
+        backend.description = data["description"]
+        backend.updated_by = updated_by
+        backend.save()
+
+        backend_configs = BackendConfig.objects.filter(backend_id=backend.id)
+        stage_configs = {config.stage_id: config for config in backend_configs}
+
+        backend_configs = []
+        for config in data["configs"]:
+            backend_config = stage_configs[config["stage_id"]]
+            backend_config.config = {key: value for key, value in config.items() if key != "stage_id"}
+            backend_config.updated_by = updated_by
+
+            backend_configs.append(backend_config)
+
+        BackendConfig.objects.bulk_update(backend_configs, fields=["config", "updated_by"])

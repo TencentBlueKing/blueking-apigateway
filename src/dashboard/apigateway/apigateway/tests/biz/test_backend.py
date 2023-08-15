@@ -35,7 +35,7 @@ class TestBackendHandler:
                         "type": "node",
                         "timeout": 1,
                         "loadbalance": "roundrobin",
-                        "hosts": [{"schema": "http", "host": "www.example.com", "weight": 1}],
+                        "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                     }
                 ],
             },
@@ -52,5 +52,59 @@ class TestBackendHandler:
             "type": "node",
             "timeout": 1,
             "loadbalance": "roundrobin",
-            "hosts": [{"schema": "http", "host": "www.example.com", "weight": 1}],
+            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+        }
+
+    def test_update(self, fake_stage):
+        BackendHandler.create(
+            {
+                "gateway": fake_stage.api,
+                "name": "backend-test",
+                "description": "test",
+                "type": "http",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 1,
+                        "loadbalance": "roundrobin",
+                        "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                    }
+                ],
+            },
+            "admin",
+        )
+
+        backend = Backend.objects.filter(gateway=fake_stage.api, name="backend-test").first()
+        assert backend
+
+        BackendHandler.update(
+            backend,
+            {
+                "gateway": fake_stage.api,
+                "name": "backend-update",
+                "description": "update",
+                "type": "http",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 10,
+                        "loadbalance": "roundrobin",
+                        "hosts": [{"scheme": "https", "host": "www.example.com", "weight": 1}],
+                    }
+                ],
+            },
+            "admin",
+        )
+
+        assert backend.name == "backend-update"
+        assert backend.description == "update"
+
+        backend_config = BackendConfig.objects.get(backend=backend)
+        assert backend_config.config == {
+            "type": "node",
+            "timeout": 10,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "https", "host": "www.example.com", "weight": 1}],
         }

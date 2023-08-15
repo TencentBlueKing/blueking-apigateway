@@ -16,16 +16,46 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.biz.backend import BackendHandler
+from apigateway.core.models import Backend, BackendConfig
 from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
-from .serializers import BackendInputSLZ
+from .filters import BackendFilter
+from .serializers import BackendInputSLZ, BackendListOutputSLZ, BackendRetrieveOutputSLZ, StageBackendOutputSLZ
 
 
-class BackendCreateApi(generics.ListCreateAPIView):
+class BackendQuerySetMixin:
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.filter(gateway=self.request.gateway)
+
+
+class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
+    queryset = Backend.objects.order_by("-id")
+    serializer_class = BackendListOutputSLZ
+    filterset_class = BackendFilter
+
+    @swagger_auto_schema(
+        auto_schema=PaginatedResponseSwaggerAutoSchema,
+        responses={status.HTTP_200_OK: BackendListOutputSLZ(many=True)},
+        tags=["Backend"],
+    )
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return OKJsonResponse(data=serializer.data)
+
     @swagger_auto_schema(
         responses={status.HTTP_201_CREATED: ""},
         request_body=BackendInputSLZ,
@@ -43,3 +73,66 @@ class BackendCreateApi(generics.ListCreateAPIView):
         BackendHandler.create(data, request.user.username)
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
+
+
+class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+    lookup_field = "id"
+    queryset = Backend.objects.all()
+
+    @swagger_auto_schema(
+        responses={status.HTTP_200_OK: BackendRetrieveOutputSLZ()},
+        tags=["Backend"],
+    )
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = BackendRetrieveOutputSLZ(instance)
+        return OKJsonResponse(data=serializer.data)
+
+    @swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
+        request_body=BackendInputSLZ,
+        tags=["Backend"],
+    )
+    def update(self, request, *args, **kwargs):
+        slz = BackendInputSLZ(data=request.data, context={"api": request.gateway})
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        instance = self.get_object()
+
+        BackendHandler.update(instance, data, request.user.username)
+
+        return OKJsonResponse()
+
+    @swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["Backend"],
+    )
+    @transaction.atomic
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # TODO 通过stage/resource关联数据校验是否能删除
+
+        BackendConfig.objects.filter(backend=instance).delete()
+        instance.delete()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+class StageBackendListApi(generics.ListAPIView):
+    lookup_field = "stage_id"
+    queryset = BackendConfig.objects.order_by("backend__id").prefetch_related("backend")
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.filter(gateway=self.request.gateway, stage_id=self.kwargs["stage_id"])
+
+    @swagger_auto_schema(
+        responses={status.HTTP_200_OK: StageBackendOutputSLZ(many=True)},
+        tags=["Backend"],
+    )
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = StageBackendOutputSLZ(queryset, many=True)
+        return OKJsonResponse(data=serializer.data)

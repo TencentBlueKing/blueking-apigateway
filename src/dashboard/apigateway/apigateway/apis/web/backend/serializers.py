@@ -22,10 +22,10 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, MAX_BACKEND_TIMEOUT_IN_SECOND, BackendTypeEnum
-from apigateway.core.models import Backend, Stage
+from apigateway.core.models import Backend, BackendConfig, Stage
 
 from .constants import (
-    BACKEND_CONFIG_SCHEMA_MAP,
+    BACKEND_CONFIG_SCHEME_MAP,
     BACKEND_NAME_PATTERN,
     BackendConfigSchemeEnum,
     BackendConfigTypeEnum,
@@ -89,10 +89,66 @@ class BackendInputSLZ(serializers.Serializer):
         # 校验backend下类型选择的关联性
         for backend_config in attrs["configs"]:
             for host in backend_config["hosts"]:
-                if host["scheme"] not in BACKEND_CONFIG_SCHEMA_MAP[attrs["type"]]:
+                if host["scheme"] not in BACKEND_CONFIG_SCHEME_MAP[attrs["type"]]:
                     raise serializers.ValidationError(
                         _("环境【{stage_name}】的配置Scheme【{scheme}】不合法。").format(
                             stage_name=stage_id_name[backend_config["stage_id"]], scheme=host["scheme"]
                         )
                     )
         return attrs
+
+
+class BackendListOutputSLZ(serializers.ModelSerializer):
+    resource_count = serializers.SerializerMethodField()
+    deletable = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Backend
+        fields = ["id", "name", "description", "resource_count", "deletable", "updated_time"]
+
+    def get_resource_count(self, obj):
+        # TODO 从resource关联的backend来算数量
+        return 0
+
+    def get_deletable(self, obj):
+        # 提一个方法判断Backend是否可删除
+        # TODO 查询Resource关联是否存在
+        # TODO 查询Stage关联是否存在
+        return True
+
+
+class BackendRetrieveOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    description = serializers.CharField()
+    configs = serializers.SerializerMethodField()
+
+    def get_configs(self, obj):
+        backend_configs = BackendConfig.objects.filter(backend=obj).prefetch_related("stage")
+
+        data = []
+        for backend_config in backend_configs:
+            config = backend_config.config
+            config["stage"] = {
+                "id": backend_config.stage.id,
+                "name": backend_config.stage.name,
+            }
+
+            data.append(config)
+
+        return data
+
+
+class StageBackendOutputSLZ(serializers.Serializer):
+    id = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    config = serializers.SerializerMethodField()
+
+    def get_id(self, obj):
+        return obj.backend.id
+
+    def get_name(self, obj):
+        return obj.backend.name
+
+    def get_config(self, obj):
+        return obj.config

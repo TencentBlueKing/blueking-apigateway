@@ -45,7 +45,7 @@ class BackendConfigSchemeEnum(StructuredEnum):
     GRPCS = EnumField("grpcs", label="GRPCS")
 
 
-BACKEND_CONFIG_SCHEMA_MAP = {
+BACKEND_CONFIG_SCHEME_MAP = {
     BackendTypeEnum.HTTP.value: [BackendConfigSchemeEnum.HTTP.value, BackendConfigSchemeEnum.HTTPS.value],
     BackendTypeEnum.GRPC.value: [BackendConfigSchemeEnum.GRPC.value, BackendConfigSchemeEnum.GRPCS.value],
 }

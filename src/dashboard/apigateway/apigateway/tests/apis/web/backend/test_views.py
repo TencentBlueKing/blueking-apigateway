@@ -16,42 +16,132 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
-import pytest
-
-from apigateway.tests.utils.testing import dummy_time
-
-pytestmark = pytest.mark.django_db
+from apigateway.core.models import Backend
 
 
-class TestBackendCreateApi:
-    def test_create(self, mocker, request_view, fake_stage):
-        mocker.patch("apigateway.biz.backend.BackendHandler.create", return_value=dummy_time.time)
+def _create(request_view, fake_stage):
+    fake_gateway = fake_stage.api
+    data = {
+        "name": "backend-test",
+        "description": "test",
+        "type": "http",
+        "configs": [
+            {
+                "stage_id": fake_stage.id,
+                "type": "node",
+                "timeout": 1,
+                "loadbalance": "roundrobin",
+                "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+            }
+        ],
+    }
+
+    response = request_view(
+        "POST",
+        "backend.list-create",
+        path_params={"gateway_id": fake_gateway.id},
+        gateway=fake_gateway,
+        data=data,
+    )
+    assert response.status_code == 201
+
+
+class TestBackendApi:
+    def test_create(self, request_view, fake_stage):
+        _create(request_view, fake_stage)
+        backend = Backend.objects.filter(gateway=fake_stage.api).first()
+        assert backend
+
+    def test_list(self, request_view, fake_stage):
         fake_gateway = fake_stage.api
 
-        data = [
-            {
-                "name": "backend-test",
-                "description": "test",
-                "type": "http",
-                "configs": [
-                    {
-                        "stage_id": fake_stage.id,
-                        "type": "node",
-                        "timeout": 1,
-                        "loadbalance": "roundrobin",
-                        "hosts": [{"schema": "http", "host": "www.example.com", "weight": 1}],
-                    }
-                ],
-            }
-        ]
+        _create(request_view, fake_stage)
 
-        for test in data:
-            response = request_view(
-                "POST",
-                "backend.list-create",
-                path_params={"gateway_id": fake_gateway.id},
-                gateway=fake_gateway,
-                data=test,
-            )
-            assert response.status_code == 201
+        response = request_view(
+            "GET",
+            "backend.list-create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 1
+
+    def test_retrieve(self, request_view, fake_stage):
+        fake_gateway = fake_stage.api
+
+        _create(request_view, fake_stage)
+        backend = Backend.objects.filter(gateway=fake_stage.api).first()
+        assert backend
+
+        response = request_view(
+            "GET",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": backend.id},
+            gateway=fake_gateway,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["data"]["id"] == backend.id
+        assert len(data["data"]["configs"]) == 1
+
+    def test_update(self, request_view, fake_stage):
+        fake_gateway = fake_stage.api
+
+        _create(request_view, fake_stage)
+        backend = Backend.objects.filter(gateway=fake_stage.api).first()
+        assert backend
+
+        data = {
+            "name": "backend-update",
+            "description": "update",
+            "type": "http",
+            "configs": [
+                {
+                    "stage_id": fake_stage.id,
+                    "type": "node",
+                    "timeout": 1,
+                    "loadbalance": "roundrobin",
+                    "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                }
+            ],
+        }
+
+        response = request_view(
+            "PUT",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": backend.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+        assert response.status_code == 200
+
+    def test_delete(self, request_view, fake_stage):
+        fake_gateway = fake_stage.api
+
+        _create(request_view, fake_stage)
+        backend = Backend.objects.filter(gateway=fake_stage.api).first()
+        assert backend
+
+        response = request_view(
+            "DELETE",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": backend.id},
+            gateway=fake_gateway,
+        )
+        assert response.status_code == 204
+
+    def test_stage_list(self, request_view, fake_stage):
+        fake_gateway = fake_stage.api
+
+        _create(request_view, fake_stage)
+
+        response = request_view(
+            "GET",
+            "backend.stage-list",
+            path_params={"gateway_id": fake_gateway.id, "stage_id": fake_stage.id},
+            gateway=fake_gateway,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) == 1

@@ -16,20 +16,19 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django_filters import rest_framework as filters
 
-from . import views
+from apigateway.core.constants import BackendTypeEnum
+from apigateway.core.models import Backend
 
-urlpatterns = [
-    path("", views.BackendListCreateApi.as_view(), name="backend.list-create"),
-    path(
-        "<int:id>/",
-        views.BackendRetrieveUpdateDestroyApi.as_view(),
-        name="backend.retrieve-update-destroy",
-    ),
-    path(
-        "stages/<int:stage_id>/",
-        views.StageBackendListApi.as_view(),
-        name="backend.stage-list",
-    ),
-]
+
+class BackendFilter(filters.FilterSet):
+    name = filters.CharFilter()
+    type = filters.ChoiceFilter(choices=BackendTypeEnum.get_choices())
+
+    class Meta:
+        model = Backend
+        fields = [
+            "name",
+            "type",
+        ]
