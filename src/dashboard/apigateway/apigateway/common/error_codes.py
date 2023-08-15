@@ -106,6 +106,7 @@ error_codes.add_codes(
         ErrorCode("COMPONENT_ERROR", 40003, _("请求第三方接口失败")),
         ErrorCode("REMOTE_REQUEST_ERROR", 40003, _("请求第三方接口错误")),
         ErrorCode("JSON_FORMAT_ERROR", 40004, _("Json格式错误"), status_code=status.HTTP_400_BAD_REQUEST),
+        ErrorCode("FAILED_PRECONDITION", 40403, _("请求无法在当前系统状态下执行"), status_code=status.HTTP_400_BAD_REQUEST),
         ErrorCode("METHOD_NOT_ALLOWED", 40005, _("不支持当前的请求方法"), status_code=status.HTTP_405_METHOD_NOT_ALLOWED),
         ErrorCode("INVALID_ARGS", 40006, _("参数错误"), status_code=status.HTTP_400_BAD_REQUEST),
         ErrorCode("SDK_ERROR", 50100, _("网关SDK生成或上传失败")),
@@ -114,8 +115,6 @@ error_codes.add_codes(
         ErrorCode(
             "SDK_INTERNAL_ERROR", 50103, _("处理 SDK 请求时发生内部错误"), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         ),
-        # 网关
-        ErrorCode("GATEWAY_IS_ACTIVE", 40200, _("网关启用中"), status_code=status.HTTP_400_BAD_REQUEST),
         # ESB 对应的网关不存在
         ErrorCode("COMPONENT_GATEWAY_NOT_FOUND", 50203, _("组件对应的网关 [name={api_name}] 不存在")),
         ErrorCode("COMPONENT_METHOD_INVALID", 50204, _("组件请求方法配置错误")),

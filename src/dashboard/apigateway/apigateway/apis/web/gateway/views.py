@@ -138,7 +138,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         # 网关为“停用”状态，才可以删除
         if instance.is_active:
-            raise error_codes.GATEWAY_IS_ACTIVE.format(_("请先停用网关，然后再删除。"), replace=True)
+            raise error_codes.FAILED_PRECONDITION.format(_("请先停用网关，然后再删除。"), replace=True)
 
         GatewayHandler.delete_gateway(instance.pk)
 
