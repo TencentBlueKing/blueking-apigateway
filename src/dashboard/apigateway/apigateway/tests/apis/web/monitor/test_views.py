@@ -75,7 +75,6 @@ class TestAlarmStrategyListCreateApi(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0, result)
             self.assertEqual(response.status_code, 201, result)
 
             strategy = AlarmStrategy.objects.get(api=self.gateway, name="test")
@@ -154,7 +153,6 @@ class TestAlarmStrategyListCreateApi(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(result["data"]["results"], test["expected"])
 
@@ -198,7 +196,6 @@ class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
         response = view(request, gateway_id=self.gateway.id, id=alarm_strategy.id)
 
         result = get_response_json(response)
-        # self.assertEqual(result["code"], 0, result)
         self.assertEqual(response.status_code, 200, result)
 
     def test_update(self):
@@ -348,7 +345,6 @@ class TestAlarmRecordListApi(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(len(result["data"]["results"]), test["expected"]["count"])
 
@@ -370,7 +366,6 @@ class TestAlarmRecordRetrieveApi(TestCase):
         response = view(request, gateway_id=self.gateway.id, id=alarm_record.id)
 
         result = get_response_json(response)
-        # self.assertEqual(result["code"], 0, result)
         self.assertEqual(response.status_code, 200, result)
 
 
@@ -460,6 +455,5 @@ class TestAlarmRecordSummaryListApi(TestCase):
             response = view(request)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0, result)
             self.assertEqual(response.status_code, 200, result)
             self.assertEqual(result["data"], test["expected"])

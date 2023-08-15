@@ -109,8 +109,7 @@ class TestDocCategoryViewSet:
         # result = get_response_json(response)
         _ = get_response_json(response)
 
-        assert response.status_code == 403
-        # assert result["code"] == 40403
+        assert response.status_code == 400
         assert DocCategory.objects.filter(id=doc_category.id).exists()
 
         # system-doc-category exists, delete fail
@@ -120,7 +119,6 @@ class TestDocCategoryViewSet:
         # result = get_response_json(response)
         _ = get_response_json(response)
 
-        assert response.status_code == 403
-        # assert result["code"] == 40403
+        assert response.status_code == 400
         assert DocCategory.objects.filter(id=doc_category.id).exists()
         assert SystemDocCategory.objects.filter(doc_category_id=doc_category.id).exists()
