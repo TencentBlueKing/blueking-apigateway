@@ -80,14 +80,14 @@ class CombineDistributor(BaseDistributor):
 
         def do_distribute(distributor: BaseDistributor, gateway: MicroGateway):
             nonlocal is_success, err_msg
-            is_success, err_msg = distributor.distribute(release, gateway, release_task_id, publish_id)
+            is_success, err_msg = distributor.distribute(release, gateway, release_task_id, publish_id=publish_id)
 
         self.foreach_distributor(release.stage, micro_gateway, do_distribute)
         return is_success, err_msg
 
     def revoke(
         self,
-        stage: Stage,
+        release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
@@ -97,7 +97,7 @@ class CombineDistributor(BaseDistributor):
 
         def do_revoke(distributor: BaseDistributor, gateway: MicroGateway):
             nonlocal is_success, err_msg
-            is_success, err_msg = distributor.revoke(stage, gateway, release_task_id)
+            is_success, err_msg = distributor.revoke(release, gateway, release_task_id, publish_id=publish_id)
 
-        self.foreach_distributor(stage, micro_gateway, do_revoke)
+        self.foreach_distributor(release.stage, micro_gateway, do_revoke)
         return is_success, err_msg

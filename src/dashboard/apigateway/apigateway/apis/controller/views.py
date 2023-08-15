@@ -45,7 +45,7 @@ from apigateway.controller.constants import MicroGatewayStatusCodeEnum
 from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
 from apigateway.core.models import Gateway, MicroGateway, Release, Stage
 from apigateway.utils.redis_utils import get_default_redis_client, get_redis_key
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import GenericResponseSwaggerAutoSchema
 
 logger = logging.getLogger(__name__)
@@ -166,7 +166,7 @@ class MicroGatewayStatusViewSet(BaseMicroGatewayViewSet):
             )
         )
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
 
 
 class MicroGatewayPermissionViewSet(BaseMicroGatewayViewSet):
@@ -184,7 +184,7 @@ class MicroGatewayPermissionViewSet(BaseMicroGatewayViewSet):
         """根据 Resource Version 来获取真实生效的资源名称"""
         resource_permissions: List[Dict[str, Any]] = []
 
-        release = Release.objects.filter(api=api_gateway, stage=stage).last()
+        release = Release.objects.filter(gateway=api_gateway, stage=stage).last()
         if not release:
             return resource_permissions
 
@@ -298,14 +298,14 @@ class MicroGatewayPermissionViewSet(BaseMicroGatewayViewSet):
 
         cached, _ = self._get_permissions_from_cache(redis_client, cache_key)
         if cached is not None:
-            return OKJsonResponse(data=cached)
+            return V1OKJsonResponse(data=cached)
 
         queried = self._get_permissions_from_db(api_gateway, stage, app_code_list)
         # 考虑到微网关一般都是多副本的，权限查询请求容易有热点
         # 因此将权限查询结果缓存到 redis 一分钟，优化查询速度
         self._set_permissions_into_cache(redis_client, cache_key, queried, PERMISSION_CACHE_DURATION)
 
-        return OKJsonResponse(data=queried)
+        return V1OKJsonResponse(data=queried)
 
 
 class MicroGatewayNewestPermissionViewSet(BaseMicroGatewayViewSet):
@@ -378,7 +378,7 @@ class MicroGatewayNewestPermissionViewSet(BaseMicroGatewayViewSet):
             },
         )
 
-        return OKJsonResponse(data=result_slz.data)
+        return V1OKJsonResponse(data=result_slz.data)
 
     @swagger_auto_schema(
         operation_description="获取微网关的新添加资源维度权限信息",
@@ -413,7 +413,7 @@ class MicroGatewayNewestPermissionViewSet(BaseMicroGatewayViewSet):
             },
         )
 
-        return OKJsonResponse(data=result_slz.data)
+        return V1OKJsonResponse(data=result_slz.data)
 
 
 post_save.connect(
@@ -452,4 +452,4 @@ class MicroGatewayInfoViewSet(BaseMicroGatewayViewSet):
             }
         )
 
-        return OKJsonResponse(data=slz.data)
+        return V1OKJsonResponse(data=slz.data)

@@ -44,4 +44,4 @@ class FeatureFlagListApi(generics.ListAPIView):
         user_feature_flags = UserFeatureFlag.objects.get_feature_flags(request.user.username)
         feature_flags.update(user_feature_flags)
 
-        return OKJsonResponse("OK", data=feature_flags)
+        return OKJsonResponse(data=feature_flags)

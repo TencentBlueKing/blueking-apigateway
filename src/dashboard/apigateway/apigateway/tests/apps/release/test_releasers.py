@@ -37,7 +37,7 @@ pytestmark = pytest.mark.django_db(transaction=True)
 
 def get_release_data(api):
     stage = G(Stage, api=api)
-    resource_version = G(ResourceVersion, api=api, name=f"{api.id}-{stage.id}")
+    resource_version = G(ResourceVersion, gateway=api, name=f"{api.id}-{stage.id}")
 
     return {
         "stage_ids": [stage.id],
@@ -85,7 +85,7 @@ class TestDefaultGatewayReleaser:
         mocker.patch.object(releaser, "_validate", side_effect=ReleaseValidationError)
         with pytest.raises(ReleaseError):
             releaser.release_batch()
-        ReleaseHistory.objects.filter(api=fake_gateway, status=ReleaseStatusEnum.FAILURE.value).exists()
+        ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.FAILURE.value).exists()
 
         # 校验成功
         mocker.patch.object(releaser, "_validate", return_value=None)
@@ -105,7 +105,7 @@ class TestDefaultGatewayReleaser:
         )
         assert len(resource_version_ids) == 1
         assert resource_version_ids[0] == release_data["resource_version_id"]
-        assert ReleaseHistory.objects.filter(api=fake_gateway, status=ReleaseStatusEnum.SUCCESS.value).exists()
+        assert ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.SUCCESS.value).exists()
         assert Stage.objects.filter(id__in=release_data["stage_ids"], status=1).count() == len(
             release_data["stage_ids"]
         )

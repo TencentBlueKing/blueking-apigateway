@@ -28,7 +28,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ResourceVersion, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -52,7 +52,7 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
                 data=ResourceDocVersion.objects.make_version(request.gateway.id),
             )
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "id": instance.id,
@@ -77,7 +77,7 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
         )
         page = self.paginate_queryset(versions)
         slz = serializers.ListResourceVersionV1SLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
 
     @swagger_auto_schema(tags=["OpenAPI.ResourceVersion"])
     @transaction.atomic
@@ -91,12 +91,12 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
 
         # 如果环境已发布某版本，则不重复发布，且计入此次已发布环境
         data["stage_ids"] = Release.objects.get_stage_ids_unreleased_the_version(
-            gateway_id=data["api"].id,
+            gateway_id=data["gateway"].id,
             stage_ids=stage_ids,
             resource_version_id=data["resource_version_id"],
         )
         if not data["stage_ids"]:
-            return OKJsonResponse(
+            return V1OKJsonResponse(
                 "OK",
                 data={
                     "version": resource_version["version"],
@@ -111,9 +111,9 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
             manager.release_batch(request.gateway, data, request.user.username)
         except ReleaseError as err:
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
-            return FailJsonResponse(str(err))
+            return V1FailJsonResponse(str(err))
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "version": resource_version["version"],
@@ -128,9 +128,9 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
         resource_version = ResourceVersion.objects.get_latest_version(request.gateway.id)
 
         if not resource_version:
-            return OKJsonResponse("OK", data={})
+            return V1OKJsonResponse("OK", data={})
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "version": resource_version.version,

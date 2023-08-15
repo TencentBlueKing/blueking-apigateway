@@ -93,26 +93,41 @@ class EtcdDistributor(BaseDistributor):
 
     def revoke(
         self,
-        stage: Stage,
+        release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
     ) -> Tuple[bool, str]:
         """撤销已发布到 micro-gateway 对应的 registry 中的配置"""
-        registry = self._get_registry(stage.api, stage, micro_gateway)
+        registry = self._get_registry(release.gateway, release.stage, micro_gateway)
         procedure_logger = ReleaseProcedureLogger(
             "gateway-revoking",
             logger=logger,
-            gateway=stage.api,
-            stage=stage,
+            gateway=release.gateway,
+            stage=release.stage,
             micro_gateway=micro_gateway,
             release_task_id=release_task_id,
             publish_id=publish_id,
         )
 
+        convertor = CustomResourceConvertor(
+            release=release,
+            publish_id=publish_id,
+            micro_gateway=micro_gateway,
+            revoke_flag=True,
+        )
+
         try:
             with procedure_logger.step(f"delete resources from etcd by key_prefix({registry.key_prefix})"):
                 registry.delete_resources_by_key_prefix()
+
+                # 删除资源后需要同步虚拟路由到etcd
+                convertor.convert()
+                resources = list(convertor.get_kubernetes_resources())
+                with procedure_logger.step(f"sync version resources(count={len(resources)}) to etcd"):
+                    fail_resources = registry.sync_resources_by_key_prefix(resources)
+                    if fail_resources:
+                        raise SyncFail(fail_resources)
         except Exception as e:
             fail_msg = f"revoke resources from etcd failed: {type(e).__name__}: {str(e)}"
             procedure_logger.exception(fail_msg)

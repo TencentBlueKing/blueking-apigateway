@@ -17,7 +17,7 @@
 #
 from typing import Optional, Tuple
 
-from apigateway.core.models import MicroGateway, Release, Stage
+from apigateway.core.models import MicroGateway, Release
 
 
 class BaseDistributor:
@@ -33,7 +33,7 @@ class BaseDistributor:
 
     def revoke(
         self,
-        stage: Stage,
+        release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,

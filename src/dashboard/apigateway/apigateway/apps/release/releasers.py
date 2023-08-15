@@ -254,7 +254,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             return
 
         history = MicroGatewayReleaseHistory.objects.create(
-            api=release.gateway,
+            gateway=release.gateway,
             stage=release.stage,
             micro_gateway=shared_gateway,
             release_history=release_history,
@@ -274,7 +274,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             return
 
         history = MicroGatewayReleaseHistory.objects.create(
-            api=release.gateway,
+            gateway=release.gateway,
             stage=stage,
             micro_gateway=micro_gateway,
             release_history=release_history,

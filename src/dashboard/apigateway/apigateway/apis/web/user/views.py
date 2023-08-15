@@ -29,7 +29,6 @@ class UserTokenGetApi(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         # TODO: 此接口待删除
         return OKJsonResponse(
-            "OK",
             data=self._get_ticket_from(settings.BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME),
         )
 
@@ -41,6 +40,5 @@ class UserAuthTypeListApi(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         slz = UserAuthTypeInputSLZ(USER_AUTH_TYPES, many=True)
         return OKJsonResponse(
-            "OK",
             data=slz.data,
         )

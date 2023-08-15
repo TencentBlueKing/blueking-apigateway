@@ -26,7 +26,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.common.error_codes import error_codes
 from apigateway.core.signals import reversion_update_signal
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 from apigateway.utils.time import now_datetime
 
@@ -63,7 +63,7 @@ class IPGroupViewSet(viewsets.ModelViewSet):
             comment="创建IP分组",
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -85,7 +85,7 @@ class IPGroupViewSet(viewsets.ModelViewSet):
 
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["AccessStrategy"])
     def update(self, request, *args, **kwargs):
@@ -113,13 +113,13 @@ class IPGroupViewSet(viewsets.ModelViewSet):
             comment="更新IP分组",
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(tags=["AccessStrategy"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=serializer.data)
+        return V1OKJsonResponse("OK", data=serializer.data)
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["AccessStrategy"])
     def destroy(self, request, *args, **kwargs):
@@ -145,7 +145,7 @@ class IPGroupViewSet(viewsets.ModelViewSet):
             comment="删除IP分组",
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     def _check_ipgroup_can_be_deleted(self, api, ip_group_id):
         strategy_queryset = AccessStrategy.objects.filter_strategy(

@@ -426,7 +426,7 @@ class TestAPIListSLZ(TestCase):
             gateways,
             many=True,
             context={
-                "api_resource_count": Resource.objects.get_api_resource_count(gateway_ids),
+                "api_resource_count": Resource.objects.get_resource_count(gateway_ids),
                 "api_stages": GatewayHandler().search_gateway_stages(gateway_ids),
                 "api_auth_contexts": {},
                 "micro_gateway_count": MicroGateway.objects.get_count_by_gateway(gateway_ids),

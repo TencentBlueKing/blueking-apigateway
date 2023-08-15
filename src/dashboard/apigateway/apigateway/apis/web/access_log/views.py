@@ -69,7 +69,7 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
             time_range=data.get("time_range"),
         )
         slz = TimeChartOutputSLZ(instance=client.get_time_chart())
-        return OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
 
 class SearchLogListApi(generics.ListAPIView):
@@ -112,7 +112,7 @@ class SearchLogListApi(generics.ListAPIView):
         results = paginator.get_paginated_data(logs)
         results["fields"] = ES_LOG_FIELDS
 
-        return OKJsonResponse("OK", data=results)
+        return OKJsonResponse(data=results)
 
     def _add_extend_fields(self, logs: List[Dict]):
         """为日志添加扩展字段"""
@@ -154,7 +154,7 @@ class LogDetailListApi(generics.ListAPIView):
         results = paginator.get_paginated_data(logs)
         results["fields"] = ES_LOG_FIELDS
 
-        return OKJsonResponse("OK", data=results)
+        return OKJsonResponse(data=results)
 
 
 class LogLinkRetrieveApi(generics.RetrieveAPIView):
@@ -171,7 +171,7 @@ class LogLinkRetrieveApi(generics.RetrieveAPIView):
         shared_link_path = LOG_LINK_SHARED_PATH.format(gateway_id=request.gateway.id, request_id=request_id)
         query_string = self._get_query_string(request.user.username, request.gateway.id, request_id)
         slz = LogLinkOutputSLZ(instance={"link": f"{settings.DASHBOARD_FE_URL}{shared_link_path}?{query_string}"})
-        return OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     def _get_query_string(self, username: str, gateway_id: int, request_id: str):
         params = {

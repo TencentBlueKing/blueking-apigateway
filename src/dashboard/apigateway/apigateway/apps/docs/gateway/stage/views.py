@@ -21,7 +21,7 @@ from rest_framework import status, viewsets
 
 from apigateway.apps.docs.helper import support_helper
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from .serializers import StageSLZ
 
@@ -39,4 +39,4 @@ class StageViewSet(viewsets.GenericViewSet):
 
         stages = support_helper.get_stages(api["id"])
         slz = StageSLZ(sorted(stages or [], key=lambda x: x["name"]), many=True)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

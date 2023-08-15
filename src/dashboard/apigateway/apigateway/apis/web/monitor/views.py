@@ -48,7 +48,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
         return AlarmStrategy.objects.filter(api=self.request.gateway)
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_201_CREATED: ""},
         tags=["AlarmStrategy"],
     )
     def create(self, request, *args, **kwargs):
@@ -65,7 +65,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
         # 存储关联的标签
         slz.instance.api_labels.set(api_label_ids)
 
-        return OKJsonResponse("OK")
+        return OKJsonResponse(status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -88,7 +88,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
 
         page = self.paginate_queryset(queryset)
         serializer = AlarmStrategyListOutputSLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
 
 
 class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
@@ -99,7 +99,7 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
         return AlarmStrategy.objects.filter(api=self.request.gateway)
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["AlarmStrategy"],
     )
     def update(self, request, *args, **kwargs):
@@ -116,22 +116,22 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
 
         slz.instance.api_labels.set(api_label_ids)
 
-        return OKJsonResponse("OK")
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     @swagger_auto_schema(tags=["AlarmStrategy"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["AlarmStrategy"],
     )
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
-        return OKJsonResponse("OK")
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
@@ -143,7 +143,7 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
         return AlarmStrategy.objects.filter(api=self.request.gateway)
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=AlarmStrategyUpdateStatusInputSLZ,
         tags=["AlarmStrategy"],
     )
@@ -157,7 +157,7 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
             updated_time=now_datetime(),
         )
 
-        return OKJsonResponse("OK")
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class AlarmRecordListApi(generics.ListAPIView):
@@ -180,7 +180,7 @@ class AlarmRecordListApi(generics.ListAPIView):
         page = self.paginate_queryset(queryset)
 
         serializer = self.get_serializer(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
 
 
 class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
@@ -196,7 +196,7 @@ class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
 
 class AlarmRecordSummaryListApi(generics.ListAPIView):
@@ -221,4 +221,4 @@ class AlarmRecordSummaryListApi(generics.ListAPIView):
             time_end=data.get("time_end"),
         )
 
-        return OKJsonResponse("OK", data=results)
+        return OKJsonResponse(data=results)

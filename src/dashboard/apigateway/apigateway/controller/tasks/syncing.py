@@ -27,7 +27,7 @@ from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.constants import NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.combine import CombineDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
-from apigateway.core.constants import APIStatusEnum, PublishSourceEnum, StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import Gateway, MicroGateway, Release, ReleaseHistory, Stage
 
 logger = logging.getLogger(__name__)
@@ -134,7 +134,7 @@ def _check_release_gateway(gateway_id: Optional[int] = None, release: Optional[R
             msg = f"rolling_update_release: gateway(id={gateway_id}) not exist or is not a micro-gateway, skip"
             return False, msg
 
-        if gateway.status != APIStatusEnum.ACTIVE.value:
+        if gateway.status != GatewayStatusEnum.ACTIVE.value:
             msg = f"rolling_update_release: gateway(id={gateway_id}) is not active, skip"
             return False, msg
 
@@ -158,7 +158,7 @@ def _trigger_rolling_publish(
 ):
     """触发网关滚动更新"""
 
-    for release in Release.objects.filter(api_id=gateway_id).prefetch_related("stage"):
+    for release in Release.objects.filter(gateway_id=gateway_id).prefetch_related("stage"):
         # 如果是环境变量发布，需要过滤对应stage
         if stage_id and release.stage.pk != stage_id:
             continue

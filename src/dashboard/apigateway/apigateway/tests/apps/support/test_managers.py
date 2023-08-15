@@ -111,12 +111,12 @@ class TestAPISDKManager:
     def test_filter_resource_version_ids_has_sdk(self):
         gateway = create_gateway()
 
-        rv_1 = G(ResourceVersion, api=gateway)
-        rv_2 = G(ResourceVersion, api=gateway)
-        rv_3 = G(ResourceVersion, api=gateway)
+        rv_1 = G(ResourceVersion, gateway=gateway)
+        rv_2 = G(ResourceVersion, gateway=gateway)
+        rv_3 = G(ResourceVersion, gateway=gateway)
 
-        G(APISDK, api=gateway, resource_version=rv_1)
-        G(APISDK, api=gateway, resource_version=rv_3)
+        G(APISDK, gateway=gateway, resource_version=rv_1)
+        G(APISDK, gateway=gateway, resource_version=rv_3)
 
         data = [
             {
@@ -142,41 +142,41 @@ class TestAPISDKManager:
     def test_filter_resource_version_public_latest_sdk(self):
         gateway = create_gateway()
 
-        rv_1 = G(ResourceVersion, api=gateway)
-        rv_2 = G(ResourceVersion, api=gateway)
-        rv_3 = G(ResourceVersion, api=gateway)
+        rv_1 = G(ResourceVersion, gateway=gateway)
+        rv_2 = G(ResourceVersion, gateway=gateway)
+        rv_3 = G(ResourceVersion, gateway=gateway)
 
         G(
             APISDK,
-            api=gateway,
+            gateway=gateway,
             resource_version=rv_1,
             language="python",
             is_public=True,
         )
         G(
             APISDK,
-            api=gateway,
+            gateway=gateway,
             resource_version=rv_1,
             language="python",
             is_public=False,
         )
         sdk3 = G(
             APISDK,
-            api=gateway,
+            gateway=gateway,
             resource_version=rv_1,
             language="python",
             is_public=True,
         )
         G(
             APISDK,
-            api=gateway,
+            gateway=gateway,
             resource_version=rv_2,
             language="python",
             is_public=False,
         )
         sdk5 = G(
             APISDK,
-            api=gateway,
+            gateway=gateway,
             resource_version=rv_3,
             language="python",
             is_public=True,
@@ -195,7 +195,7 @@ class TestAPISDKManager:
 class TestReleasedResourceDocManager:
     def test_get_released_resource_doc(self, fake_gateway):
         # doc exist
-        G(ReleasedResourceDoc, api=fake_gateway, resource_version_id=1, resource_id=1, data={"content": "test"})
+        G(ReleasedResourceDoc, gateway=fake_gateway, resource_version_id=1, resource_id=1, data={"content": "test"})
         result = ReleasedResourceDoc.objects.get_released_resource_doc(fake_gateway.id, 1, 1)
         assert result == {"content": "test"}
 
@@ -207,7 +207,7 @@ class TestReleasedResourceDocManager:
         fake_gateway = fake_resource_version.api
         G(
             ReleasedResourceDoc,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version_id=fake_resource_version.id,
             resource_id=fake_resource1.id,
             language="zh",
@@ -225,12 +225,12 @@ class TestReleasedResourceDocManager:
 class TestResourceDocVersionManager:
     def test_get_doc_data_by_rv_or_new(self, fake_gateway):
         resource = G(Resource, api=fake_gateway)
-        rv = G(ResourceVersion, api=fake_gateway)
+        rv = G(ResourceVersion, gateway=fake_gateway)
 
-        G(ResourceDoc, api=fake_gateway, resource_id=resource.id)
+        G(ResourceDoc, gateway=fake_gateway, resource_id=resource.id)
         G(
             ResourceDocVersion,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version=rv,
             _data=json.dumps([{"resource_id": 1, "language": "zh", "content": "test"}]),
         )
@@ -248,10 +248,10 @@ class TestResourceDocVersionManager:
         assert result == [{"resource_id": 1, "language": "zh", "content": "test"}]
 
     def test_get_doc_updated_time(self, fake_gateway):
-        rv = G(ResourceVersion, api=fake_gateway)
+        rv = G(ResourceVersion, gateway=fake_gateway)
         G(
             ResourceDocVersion,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version=rv,
             _data=json.dumps(
                 [{"resource_id": 1, "language": "zh", "content": "test", "updated_time": "1970-10-10 12:10:20"}]

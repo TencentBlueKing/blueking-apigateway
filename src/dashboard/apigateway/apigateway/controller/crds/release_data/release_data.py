@@ -27,7 +27,7 @@ from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnu
 from apigateway.apps.access_strategy.models import AccessStrategyBinding
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.controller.crds.release_data.access_strategy import AccessStrategyConvertorFactory
 from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
@@ -84,7 +84,7 @@ class ReleaseData:
 
     @cached_property
     def api_auth_config(self) -> Dict[str, Any]:
-        return APIAuthContext().get_config(self.gateway.pk)
+        return GatewayAuthContext().get_config(self.gateway.pk)
 
     def get_stage_plugins(self) -> List[PluginData]:
         plugins: List[PluginData] = []

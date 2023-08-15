@@ -102,12 +102,14 @@ class TestStageViewSet(TestCase):
             view = StageViewSet.as_view({"post": "create"})
             response = view(request, gateway_id=self.gateway.id)
 
-            result = get_response_json(response)
+            # result = get_response_json(response)
 
             if test.get("will_error"):
-                self.assertNotEqual(result["code"], 0, response.content)
+                # self.assertNotEqual(result["code"], 0, response.content)
+                self.assertNotEqual(response.status_code, 200, "")
             else:
-                self.assertEqual(result["code"], 0, result)
+                # self.assertEqual(result["code"], 0, result)
+                self.assertEqual(response.status_code, 200, "")
 
                 # check stage
                 stage = Stage.objects.get(api=self.gateway, name=test["name"])
@@ -119,7 +121,7 @@ class TestStageViewSet(TestCase):
         stage_prod = G(Stage, api=self.gateway, name="prod-01", status=1)
         stage_test = G(Stage, api=self.gateway, name="test-01", status=1)
 
-        resource_version = G(ResourceVersion, api=self.gateway, name="test-01", title="test", version="1.0.1")
+        resource_version = G(ResourceVersion, gateway=self.gateway, name="test-01", title="test", version="1.0.1")
         G(Release, api=self.gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)
 
         access_strategy = G(AccessStrategy, api=self.gateway)
@@ -206,7 +208,8 @@ class TestStageViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
             self.assertEqual(result["data"]["results"], test["expected"])
 
     def test_list_release(self):
@@ -214,8 +217,8 @@ class TestStageViewSet(TestCase):
         stage_prod = G(Stage, api=gateway, name="prod-01", status=1)
         stage_test = G(Stage, api=gateway, name="test-01", status=1)
 
-        resource_version = G(ResourceVersion, api=gateway, name="test-01", title="test", version="1.0.2")
-        G(Release, api=gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)
+        resource_version = G(ResourceVersion, gateway=gateway, name="test-01", title="test", version="1.0.2")
+        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)
 
         data = [
             {
@@ -266,7 +269,8 @@ class TestStageViewSet(TestCase):
             response = view(request, gateway_id=gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
             self.assertEqual(result["data"], test["expected"])
 
     def test_list_basic(self):
@@ -328,7 +332,8 @@ class TestStageViewSet(TestCase):
             response = view(request, gateway_id=gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
             self.assertEqual(result["data"]["results"], test["expected"])
 
     @patch("apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.alter_plugin", mock_alter_plugin)
@@ -401,8 +406,9 @@ class TestStageViewSet(TestCase):
             view = StageViewSet.as_view({"put": "update"})
             response = view(request, gateway_id=self.gateway.id, id=stage.id)
 
-            result = get_response_json(response)
-            self.assertEqual(result["code"], 0)
+            # result = get_response_json(response)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
 
             self.assertTrue(Stage.objects.filter(api=self.gateway, name="test-03").exists())
 
@@ -486,7 +492,8 @@ class TestStageViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id, id=stage.id)
 
         result = get_response_json(response)
-        self.assertEqual(result["code"], 0)
+        # self.assertEqual(result["code"], 0)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(
             result["data"],
             {
@@ -531,8 +538,9 @@ class TestStageViewSet(TestCase):
         view = StageViewSet.as_view({"delete": "destroy"})
         response = view(request, gateway_id=self.gateway.id, id=stage.id)
 
-        result = get_response_json(response)
-        self.assertEqual(result["code"], 0)
+        # result = get_response_json(response)
+        # self.assertEqual(result["code"], 0)
+        self.assertEqual(response.status_code, 200)
         self.assertFalse(Stage.objects.filter(api=self.gateway, name=stage.name).exists())
 
     def test_update_status(self):
@@ -553,8 +561,10 @@ class TestStageViewSet(TestCase):
             view = StageViewSet.as_view({"put": "update_status"})
             response = view(request, gateway_id=self.gateway.id, id=stage.id)
 
-            result = get_response_json(response)
-            self.assertEqual(result["code"], 0, result)
+            # result = get_response_json(response)
+            # self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
 
             stage = Stage.objects.get(api=self.gateway, name="prod")
             self.assertEqual(stage.status, 1)

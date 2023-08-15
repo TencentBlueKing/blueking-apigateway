@@ -149,8 +149,8 @@ class TestAPIViewSetCase(TestCase):
         cls.gateway = create_gateway(name="api-viewset-test")
         cls.stage_prod = G(Stage, api=cls.gateway, name="prod")
         cls.resource = G(Resource, api=cls.gateway)
-        cls.resource_version = G(ResourceVersion, api=cls.gateway)
-        cls.release = G(Release, api=cls.gateway, stage=cls.stage_prod, resource_version=cls.resource_version)
+        cls.resource_version = G(ResourceVersion, gateway=cls.gateway)
+        cls.release = G(Release, gateway=cls.gateway, stage=cls.stage_prod, resource_version=cls.resource_version)
         cls.stage_test = G(Stage, api=cls.gateway, name="test")
 
         G(Gateway, name="api-viewset-test-2", created_by="test")
@@ -180,7 +180,8 @@ class TestAPIViewSetCase(TestCase):
             response = view(request, id=gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
 
             self.assertFalse(Gateway.objects.filter(name=test["name"]).exists())
 
@@ -209,7 +210,8 @@ class TestAPIViewSetCase(TestCase):
             slz = GatewayDetailSLZ.from_instance(gateway)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
             self.assertEqual(result["data"], slz.data)
 
     def test_destroy(self):
@@ -234,13 +236,15 @@ class TestAPIViewSetCase(TestCase):
             view = GatewayViewSet.as_view({"delete": "destroy"})
             response = view(request, id=gateway.id)
 
-            result = get_response_json(response)
+            # result = get_response_json(response)
 
             if test["will_error"]:
-                self.assertNotEqual(result["code"], 0)
+                # self.assertNotEqual(result["code"], 0)
+                self.assertNotEqual(response.status_code, 200, "")
                 self.assertTrue(Gateway.objects.filter(name=test["name"]).exists())
             else:
-                self.assertEqual(result["code"], 0)
+                # self.assertEqual(result["code"], 0)
+                self.assertEqual(response.status_code, 200)
                 self.assertFalse(Gateway.objects.filter(name=test["name"]).exists())
 
     def test_update_status(self):
@@ -267,7 +271,8 @@ class TestAPIViewSetCase(TestCase):
             response = view(request, id=gateway.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0)
+            # self.assertEqual(result["code"], 0)
+            self.assertEqual(response.status_code, 200)
 
             self.assertFalse(Gateway.objects.filter(name=test["name"]).exists())
 

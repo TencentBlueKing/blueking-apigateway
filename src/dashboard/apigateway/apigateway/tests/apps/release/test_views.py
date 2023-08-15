@@ -51,8 +51,8 @@ class TestReleaseBatchViewSet:
 
         stage_1 = G(Stage, api=fake_gateway, name="prod", status=0)
         stage_2 = G(Stage, api=fake_gateway, name="test", status=0)
-        resource_version = G(ResourceVersion, api=fake_gateway, _data=json.dumps([]))
-        G(Release, api=fake_gateway, stage=stage_1, resource_version=resource_version)
+        resource_version = G(ResourceVersion, gateway=fake_gateway, _data=json.dumps([]))
+        G(Release, gateway=fake_gateway, stage=stage_1, resource_version=resource_version)
 
         if configure_hosts:
             # Config a valid hosts config for each stages
@@ -91,11 +91,13 @@ class TestReleaseBatchViewSet:
 
         if not succeeded:
             assert history_qs[0].status == ReleaseStatusEnum.FAILURE.value
-            assert result["code"] != 0, result
+            # assert result["code"] != 0, result
+            assert response.status_code != 200, result
         else:
             # The request finished successfully
             assert history_qs[0].status == ReleaseStatusEnum.SUCCESS.value
-            assert result["code"] == 0, result
+            # assert result["code"] == 0, result
+            assert response.status_code == 200, result
 
             for stage_id in data["stage_ids"]:
                 release = Release.objects.get(stage__id=stage_id)
@@ -111,13 +113,13 @@ class TestReleaseHistoryViewSet:
         stage_1 = G(Stage, api=self.gateway, name="test-01")
         stage_2 = G(Stage, api=self.gateway)
 
-        resource_version = G(ResourceVersion, api=self.gateway)
+        resource_version = G(ResourceVersion, gateway=self.gateway)
 
-        history = G(ReleaseHistory, api=self.gateway, stage=stage_1, resource_version=resource_version)
+        history = G(ReleaseHistory, gateway=self.gateway, stage=stage_1, resource_version=resource_version)
         history.stages.add(stage_1)
 
         history = G(
-            ReleaseHistory, api=self.gateway, stage=stage_2, resource_version=resource_version, created_by="admin"
+            ReleaseHistory, gateway=self.gateway, stage=stage_2, resource_version=resource_version, created_by="admin"
         )
         history.stages.add(stage_2)
 
@@ -154,11 +156,11 @@ class TestReleaseHistoryViewSet:
     def test_retrieve_latest(self, request_factory):
         gateway = create_gateway()
         stage = G(Stage, api=gateway)
-        resource_version = G(ResourceVersion, api=gateway)
-        G(ReleaseHistory, api=gateway, created_time=dummy_time.time)
+        resource_version = G(ResourceVersion, gateway=gateway)
+        G(ReleaseHistory, gateway=gateway, created_time=dummy_time.time)
         history = G(
             ReleaseHistory,
-            api=gateway,
+            gateway=gateway,
             stage=stage,
             resource_version=resource_version,
             created_time=dummy_time.time,

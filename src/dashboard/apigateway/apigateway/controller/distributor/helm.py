@@ -45,7 +45,7 @@ from apigateway.controller.procedure_logger.release_logger import ReleaseProcedu
 from apigateway.controller.registry.base import Registry
 from apigateway.controller.registry.dict import DictRegistry
 from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
-from apigateway.core.models import MicroGateway, Release, ResourceVersion, Stage
+from apigateway.core.models import MicroGateway, Release, ResourceVersion
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +233,7 @@ class HelmDistributor(BaseDistributor):
 
     def revoke(
         self,
-        stage: Stage,
+        release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,

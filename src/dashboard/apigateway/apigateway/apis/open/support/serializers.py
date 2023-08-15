@@ -24,19 +24,19 @@ from apigateway.core.models import Gateway
 
 
 class APISDKQueryV1SLZ(serializers.Serializer):
-    api_name = serializers.CharField(allow_null=True, default=None)
-    api_id = serializers.IntegerField(allow_null=True, default=None)
+    gateway_name = serializers.CharField(allow_null=True, default=None)
+    gateway_id = serializers.IntegerField(allow_null=True, default=None)
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
     def validate_api_id(self, value):
         if value:
             return value
 
-        api_name = self.initial_data.get("api_name")
-        if not api_name:
+        gateway_name = self.initial_data.get("gateway_name")
+        if not gateway_name:
             return value
 
-        gateway = Gateway.objects.filter(name=api_name).last()
+        gateway = Gateway.objects.filter(name=gateway_name).last()
         if not gateway:
             return value
 
@@ -55,8 +55,8 @@ class SDKGenerateV1SLZ(serializers.Serializer):
 
 
 class APISDKV1SLZ(serializers.Serializer):
-    api_id = serializers.IntegerField(source="instance.api_id")
-    api_name = serializers.SerializerMethodField()
+    gateway_id = serializers.IntegerField(source="instance.gateway_id")
+    gateway_name = serializers.SerializerMethodField()
     api_description = serializers.SerializerMethodField()
     user_auth_type = serializers.SerializerMethodField()
     language = serializers.CharField(read_only=True, source="language.value")
@@ -76,14 +76,14 @@ class APISDKV1SLZ(serializers.Serializer):
     resource_version_display = serializers.SerializerMethodField()
     released_stages = serializers.SerializerMethodField()
 
-    def get_api_name(self, obj):
-        return self.context["api_id_map"][obj.instance.api_id].name
+    def get_gateway_name(self, obj):
+        return self.context["api_id_map"][obj.instance.gateway_id].name
 
     def get_api_description(self, obj):
-        return self.context["api_id_map"][obj.instance.api_id].description
+        return self.context["api_id_map"][obj.instance.gateway_id].description
 
     def get_user_auth_type(self, obj):
-        return self.context["api_id_config_map"][obj.instance.api_id]["user_auth_type"]
+        return self.context["api_id_config_map"][obj.instance.gateway_id]["user_auth_type"]
 
     def get_resource_version_name(self, obj):
         return self.context["resource_versions"][obj.instance.resource_version_id]["name"]

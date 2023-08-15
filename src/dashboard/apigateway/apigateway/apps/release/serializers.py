@@ -46,7 +46,7 @@ class ReleaseBatchSLZ(serializers.ModelSerializer):
         return value
 
     def validate_resource_version_id(self, value):
-        if not ResourceVersion.objects.filter(api=self.context["api"], id=value).exists():
+        if not ResourceVersion.objects.filter(gateway=self.context["api"], id=value).exists():
             raise Http404
 
         return value

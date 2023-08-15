@@ -21,9 +21,9 @@ from rest_framework import status, viewsets
 
 from apigateway.apps.docs.helper import support_helper
 from apigateway.common.error_codes import error_codes
-from apigateway.core.constants import APITypeEnum
+from apigateway.core.constants import GatewayTypeEnum
 from apigateway.utils.paginator import LimitOffsetPaginator
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .serializers import GatewayQuerySLZ, GatewaySLZ
@@ -50,11 +50,11 @@ class GatewayViewSet(viewsets.GenericViewSet):
         )
         paginator = LimitOffsetPaginator(count=len(apis), offset=0, limit=len(apis))
         slz = GatewaySLZ(
-            sorted(apis, key=lambda x: (APITypeEnum(x["api_type"]).sort_key, x["name"])),
+            sorted(apis, key=lambda x: (GatewayTypeEnum(x["api_type"]).sort_key, x["name"])),
             many=True,
         )
 
-        return OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: GatewaySLZ},
@@ -67,4 +67,4 @@ class GatewayViewSet(viewsets.GenericViewSet):
             raise error_codes.NOT_FOUND_ERROR
 
         slz = GatewaySLZ(api)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

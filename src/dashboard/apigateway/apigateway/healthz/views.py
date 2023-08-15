@@ -25,7 +25,7 @@ from django.views.generic import View
 from requests.exceptions import HTTPError, RequestException
 
 from apigateway.utils.redis_utils import get_redis_pool
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 
 
 class CheckError(Exception):
@@ -53,11 +53,11 @@ class HealthzView(View):
             try:
                 checker()
             except CheckError as err:
-                return FailJsonResponse(f"Error: {err}")
+                return V1FailJsonResponse(f"Error: {err}")
             except CheckWarning as err:
-                return OKJsonResponse(f"Warning: some checks fail and do not affect core functions. {err}")
+                return V1OKJsonResponse(f"Warning: some checks fail and do not affect core functions. {err}")
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     def _check_settings(self):
         """检查 django settings 配置"""

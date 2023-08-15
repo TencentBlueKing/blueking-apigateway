@@ -34,11 +34,11 @@ from apigateway.core.constants import (
     PATH_TO_NAME_PATTERN,
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
-    APIStatusEnum,
     BackendConfigTypeEnum,
     BackendUpstreamTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
+    GatewayStatusEnum,
     LoadBalanceTypeEnum,
     MicroGatewayStatusEnum,
     PassHostEnum,
@@ -80,7 +80,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     _maintainers = models.CharField(db_column="maintainers", max_length=1024, default="")
 
     # status
-    status = models.IntegerField(choices=APIStatusEnum.choices())
+    status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
 
     is_public = models.BooleanField(default=False)
     # 不同的托管类型决定特性集
@@ -117,7 +117,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     @property
     def is_active(self):
-        return self.status == APIStatusEnum.ACTIVE.value
+        return self.status == GatewayStatusEnum.ACTIVE.value
 
     @property
     def is_active_and_public(self):
@@ -565,7 +565,7 @@ class ReleasedResource(TimestampedModelMixin):
     class Meta:
         verbose_name = "ReleasedResource"
         verbose_name_plural = "ReleasedResource"
-        unique_together = ("api", "resource_version_id", "resource_id")
+        unique_together = ("gateway", "resource_version_id", "resource_id")
         db_table = "core_released_resource"
 
 
@@ -708,7 +708,7 @@ class MicroGateway(ConfigModelMixin):
 
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
 
     name = models.CharField(max_length=256, blank=False, null=False, db_index=True)
     description_i18n = I18nProperty(models.TextField(blank=True, null=True, default=None))
@@ -750,12 +750,14 @@ class MicroGateway(ConfigModelMixin):
 class MicroGatewayReleaseHistory(models.Model):
     """微网关资源发布历史，不同于 ReleaseHistory，这里关注的是单个实例"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     # 因为实例和环境的绑定关系可能会修改，所以这里不能是强关联
     stage = models.ForeignKey(Stage, null=True, on_delete=models.SET_NULL)
     micro_gateway = models.ForeignKey(MicroGateway, on_delete=models.CASCADE)
     release_history = models.ForeignKey(ReleaseHistory, on_delete=models.CASCADE)
     message = models.TextField(blank=True, null=True, default="")
+
+    # todo: 废弃：1.14删除
     status = models.CharField(
         _("发布状态"),
         max_length=16,

@@ -96,10 +96,13 @@ class APITestApi(generics.CreateAPIView):
                 verify=False,
             )
         except Exception as err:
-            return FailJsonResponse(_("请求网关资源失败，错误消息：{err}。").format(err=err))
+            return FailJsonResponse(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                code="UNKNOWN",
+                message=_("请求网关资源失败，错误消息：{err}。").format(err=err),
+            )
 
         return OKJsonResponse(
-            "OK",
             data=self._get_response_data(response, prepared_request_headers.headers_without_sensitive, verify=False),
         )
 

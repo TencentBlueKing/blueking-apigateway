@@ -33,7 +33,6 @@ from apigateway.apps.plugin.binding.plan import PluginBindingPlan
 from apigateway.apps.plugin.binding.validator import PluginBindingValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
-from apigateway.core.signals import gateway_update_signal
 from apigateway.utils.filterset import SerializerFilterBackend
 from apigateway.utils.responses import ResponseRender
 
@@ -115,7 +114,8 @@ class PluginBindingBatchViewSet(viewsets.GenericViewSet):
         if plan.binds:
             PluginBinding.objects.bulk_update_or_create(plan.binds, plan.update_fields)
             # 批量创建、更新，未触发更新信号，因此主动触发信号，以便及时更新到网关服务
-            gateway_update_signal.send(PluginBinding, gateway_id=plugin.api.pk)
+            # FIXMe: 触发发布
+            # gateway_update_signal.send(PluginBinding, gateway_id=plugin.api.pk)
 
         if plan.unbinds:
             PluginBinding.objects.bulk_delete(plan.unbinds)

@@ -67,13 +67,13 @@ class ReleasedResourceData:
 
 def get_released_resource_data(gateway: Gateway, stage: Stage, resource_id: int) -> Optional[ReleasedResourceData]:
     resource_version_id = (
-        Release.objects.filter(api=gateway, stage=stage).values_list("resource_version_id", flat=True).first()
+        Release.objects.filter(gateway=gateway, stage=stage).values_list("resource_version_id", flat=True).first()
     )
     if not resource_version_id:
         return None
 
     released_resource = ReleasedResource.objects.filter(
-        api=gateway,
+        gateway=gateway,
         resource_version_id=resource_version_id,
         resource_id=resource_id,
     ).first()

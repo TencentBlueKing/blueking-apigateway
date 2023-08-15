@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import copy
 import itertools
 import operator
 from collections import defaultdict
@@ -31,9 +32,9 @@ from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.biz.iam import IAMHandler
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
-from apigateway.core.constants import APITypeEnum, ContextScopeTypeEnum
+from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, SslCertificate, Stage
 from apigateway.utils.dict import deep_update
 
@@ -73,7 +74,7 @@ class GatewayHandler:
         """
 
         try:
-            return APIAuthContext().get_config(gateway_id)
+            return GatewayAuthContext().get_config(gateway_id)
         except Context.DoesNotExist:
             return {}
 
@@ -82,7 +83,7 @@ class GatewayHandler:
         gateway_id: int,
         user_auth_type: Optional[str] = None,
         user_conf: Optional[dict] = None,
-        api_type: Optional[APITypeEnum] = None,
+        api_type: Optional[GatewayTypeEnum] = None,
         allow_update_api_auth: Optional[bool] = None,
         unfiltered_sensitive_keys: Optional[List[str]] = None,
     ):
@@ -121,7 +122,7 @@ class GatewayHandler:
         # 因用户配置为 dict，参数 user_conf 仅传递了部分用户配置，因此需合并当前配置与传入配置
         api_auth_config = APIAuthConfig.parse_obj(deep_update(current_config, new_config))
 
-        return APIAuthContext().save(gateway_id, api_auth_config.config)
+        return GatewayAuthContext().save(gateway_id, api_auth_config.config)
 
     @staticmethod
     def save_related_data(
@@ -131,7 +132,7 @@ class GatewayHandler:
         related_app_code: Optional[str] = None,
         user_config: Optional[dict] = None,
         unfiltered_sensitive_keys: Optional[List[str]] = None,
-        api_type: Optional[APITypeEnum] = None,
+        api_type: Optional[GatewayTypeEnum] = None,
     ):
         # 1. save api auth_config
         GatewayHandler().save_auth_config(
@@ -230,3 +231,28 @@ class GatewayHandler:
             op_object=gateway.name,
             comment=_("更新网关"),
         )
+
+    @staticmethod
+    def record_audit_log_success(username: str, instance: Gateway, op_type: OpTypeEnum):
+        comment = {
+            OpTypeEnum.CREATE: _("创建网关"),
+            OpTypeEnum.MODIFY: _("更新网关"),
+            OpTypeEnum.DELETE: _("删除网关"),
+        }.get(op_type, "-")
+
+        record_audit_log(
+            username=username,
+            op_type=op_type.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=instance.pk,
+            op_object_type=OpObjectTypeEnum.API.value,
+            op_object_id=instance.pk,
+            op_object=instance.name,
+            comment=comment,
+        )
+
+    @staticmethod
+    def get_feature_flag(gateway_id: int) -> Dict[str, bool]:
+        feature_flags = copy.deepcopy(settings.GLOBAL_GATEWAY_FEATURE_FLAG)
+        feature_flags.update(GatewayFeatureFlagContext().get_config(gateway_id, {}))
+        return feature_flags

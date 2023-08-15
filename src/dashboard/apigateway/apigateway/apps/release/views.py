@@ -29,7 +29,7 @@ from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.core.models import PublishEvent, Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -38,7 +38,7 @@ class ReleaseViewSet(viewsets.GenericViewSet):
     lookup_field = "stage_id"
 
     def get_queryset(self):
-        return Release.objects.filter(api=self.request.gateway)
+        return Release.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(tags=["Release"])
     def get_available_resources(self, request, *args, **kwargs):
@@ -48,7 +48,7 @@ class ReleaseViewSet(viewsets.GenericViewSet):
         try:
             instance = self.get_object()
         except Http404:
-            return OKJsonResponse(_("当前选择环境未发布版本，请先发布版本到该环境。"), data=[])
+            return V1OKJsonResponse(_("当前选择环境未发布版本，请先发布版本到该环境。"), data=[])
 
         stage_name = instance.stage.name
         data = defaultdict(list)
@@ -69,8 +69,8 @@ class ReleaseViewSet(viewsets.GenericViewSet):
             )
 
         if data:
-            return OKJsonResponse("OK", data=data)
-        return OKJsonResponse(_("当前选择环境的发布版本中资源为空，请发布新版本到该环境。"), data=data)
+            return V1OKJsonResponse("OK", data=data)
+        return V1OKJsonResponse(_("当前选择环境的发布版本中资源为空，请发布新版本到该环境。"), data=data)
 
     @swagger_auto_schema(tags=["Release"])
     def get_released_resource(self, request, resource_version_id: int, resource_id: int, *args, **kwargs):
@@ -92,7 +92,7 @@ class ReleaseViewSet(viewsets.GenericViewSet):
             )
         )
 
-        return OKJsonResponse("OK", data=resource_data)
+        return V1OKJsonResponse("OK", data=resource_data)
 
 
 class ReleaseBatchViewSet(viewsets.ModelViewSet):
@@ -100,7 +100,7 @@ class ReleaseBatchViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
 
     def get_queryset(self):
-        return Release.objects.filter(api=self.request.gateway)
+        return Release.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
         request_body=serializers.ReleaseBatchSLZ,
@@ -114,17 +114,17 @@ class ReleaseBatchViewSet(viewsets.ModelViewSet):
             history = manager.release_batch(request.gateway, request.data, request.user.username)
         except ReleaseError as err:
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
-            return FailJsonResponse(str(err))
+            return V1FailJsonResponse(str(err))
 
         slz = serializers.ReleaseHistorySLZ(history)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class ReleaseHistoryViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReleaseHistorySLZ
 
     def get_queryset(self):
-        return ReleaseHistory.objects.filter(api=self.request.gateway)
+        return ReleaseHistory.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -166,15 +166,15 @@ class ReleaseHistoryViewSet(viewsets.ModelViewSet):
                 history.message = f"{event.name}:{event.status}"
 
         serializer = self.get_serializer(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.ReleaseHistorySLZ}, tags=["Release"])
     def retrieve_latest(self, request, *args, **kwargs):
         try:
             # created_time 在极端情况下可能重复，因此，添加字段 id
-            instance = ReleaseHistory.objects.filter(api=request.gateway).latest("created_time", "id")
+            instance = ReleaseHistory.objects.filter(gateway=request.gateway).latest("created_time", "id")
         except ReleaseHistory.DoesNotExist:
-            return OKJsonResponse("OK", data={})
+            return V1OKJsonResponse("OK", data={})
 
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

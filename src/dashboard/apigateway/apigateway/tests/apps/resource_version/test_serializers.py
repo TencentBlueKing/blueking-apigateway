@@ -36,7 +36,7 @@ class TestResourceVersionSLZ:
         assert result.startswith(f"test_{time_str}_")
 
     def test_validate_version_unique(self, fake_gateway):
-        resource_version = G(ResourceVersion, api=fake_gateway, version="1.0.0")
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
 
         with pytest.raises(ValidationError):
             slz = serializers.ResourceVersionSLZ()
@@ -130,13 +130,13 @@ class TestResourceVersionListSLZ:
         gateway = G(Gateway)
         resource_version = G(
             ResourceVersion,
-            api=gateway,
+            gateway=gateway,
             version="1.0.1",
             title="test",
             created_time=arrow.get("2019-01-01 12:30:00").datetime,
         )
 
-        queryset = ResourceVersion.objects.filter(api=gateway).values(
+        queryset = ResourceVersion.objects.filter(gateway=gateway).values(
             "id", "version", "name", "title", "comment", "created_time"
         )
 

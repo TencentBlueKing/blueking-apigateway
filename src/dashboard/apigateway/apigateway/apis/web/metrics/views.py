@@ -114,4 +114,4 @@ class QueryRangeApi(generics.ListAPIView):
             step=step,
         )
 
-        return OKJsonResponse("OK", data=data)
+        return OKJsonResponse(data=data)

@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from blue_krill.async_utils.django_utils import delay_on_commit
 from django.db import transaction
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -26,13 +25,12 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.gateway import serializers
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
-from apigateway.controller.tasks import revoke_release, rolling_update_release
 from apigateway.core.models import Gateway, MicroGateway, Resource
 from apigateway.core.signals import reversion_update_signal
 from apigateway.utils.paginator import LimitOffsetPaginator
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 from apigateway.utils.time import now_datetime
 
@@ -72,7 +70,7 @@ class GatewayViewSet(BaseGatewayViewSet):
         # 3. record audit log
         GatewayHandler().add_create_audit_log(slz.instance, request.user.username)
 
-        return OKJsonResponse("OK", data={"id": slz.instance.id})
+        return V1OKJsonResponse("OK", data={"id": slz.instance.id})
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -98,13 +96,13 @@ class GatewayViewSet(BaseGatewayViewSet):
             gateways,
             many=True,
             context={
-                "api_resource_count": Resource.objects.get_api_resource_count(gateway_ids),
+                "api_resource_count": Resource.objects.get_resource_count(gateway_ids),
                 "api_stages": GatewayHandler().search_gateway_stages(gateway_ids),
-                "api_auth_contexts": APIAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
+                "api_auth_contexts": GatewayAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
                 "micro_gateway_count": MicroGateway.objects.get_count_by_gateway(gateway_ids),
             },
         )
-        return OKJsonResponse("OK", data=paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse("OK", data=paginator.get_paginated_data(serializer.data))
 
     @swagger_auto_schema(
         request_body=serializers.GatewayUpdateSLZ, responses={status.HTTP_200_OK: ""}, tags=["Gateway"]
@@ -120,13 +118,13 @@ class GatewayViewSet(BaseGatewayViewSet):
 
         GatewayHandler().add_update_audit_log(slz.instance, request.user.username)
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.GatewayDetailSLZ()}, tags=["Gateway"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = serializers.GatewayDetailSLZ.from_instance(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["Gateway"])
     @transaction.atomic
@@ -136,7 +134,7 @@ class GatewayViewSet(BaseGatewayViewSet):
 
         # 网关为"停用"状态，才可以删除
         if instance.is_active:
-            return FailJsonResponse(_("请先停用网关，然后再删除。"))
+            return V1FailJsonResponse(_("请先停用网关，然后再删除。"))
 
         GatewayHandler().delete_gateway(instance_id)
 
@@ -154,16 +152,16 @@ class GatewayViewSet(BaseGatewayViewSet):
             comment=_("删除网关"),
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     def _update_micro_gateway_release(self, instance: Gateway):
         if not instance.is_micro_gateway:
             return
 
-        if instance.is_active:
-            delay_on_commit(rolling_update_release, gateway_id=instance.pk)
-        else:
-            delay_on_commit(revoke_release, gateway_id=instance.pk)
+        # if instance.is_active:
+        #     # delay_on_commit(rolling_update_release, gateway_id=instance.pk)
+        # else:
+        #     # delay_on_commit(revoke_release, gateway_id=instance.pk)
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["Gateway"])
     def update_status(self, request, *args, **kwargs):
@@ -191,4 +189,4 @@ class GatewayViewSet(BaseGatewayViewSet):
             comment=_("更新网关状态"),
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")

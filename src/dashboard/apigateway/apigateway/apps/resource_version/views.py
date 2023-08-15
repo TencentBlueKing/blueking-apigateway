@@ -29,7 +29,7 @@ from apigateway.apps.resource_version.diff_helpers import ResourceDiffer
 from apigateway.apps.support.models import APISDK, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Release, Resource, ResourceVersion
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -38,7 +38,7 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
 
     def get_queryset(self):
-        return ResourceVersion.objects.filter(api=self.request.gateway).order_by("-id")
+        return ResourceVersion.objects.filter(gateway=self.request.gateway).order_by("-id")
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""}, request_body=serializers.ResourceVersionSLZ, tags=["ResourceVersion"]
@@ -54,19 +54,19 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
         # 创建文档版本
         if ResourceDoc.objects.doc_exists(request.gateway.id):
             ResourceDocVersion.objects.create(
-                api=self.request.gateway,
+                gateway=self.request.gateway,
                 resource_version=instance,
                 data=ResourceDocVersion.objects.make_version(request.gateway.id),
             )
 
-        return OKJsonResponse("OK", data={"id": instance.id})
+        return V1OKJsonResponse("OK", data={"id": instance.id})
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: serializers.ResourceVersionListSLZ(many=True)},
         tags=["ResourceVersion"],
     )
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwaÏrgs):
         data = (
             ResourceVersion.objects.filter(api=request.gateway)
             .values("id", "version", "name", "title", "comment", "created_time")
@@ -87,7 +87,7 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
                 ),
             },
         )
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
 
     @swagger_auto_schema(tags=["ResourceVersion"])
     def retrieve(self, request, *args, **kwargs):
@@ -101,7 +101,7 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
         for item in data["data"]:
             item["doc_updated_time"] = resource_doc_updated_time.get(item["id"], {})
 
-        return OKJsonResponse("OK", data=data)
+        return V1OKJsonResponse("OK", data=data)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""}, request_body=serializers.ResourceVersionUpdateSLZ, tags=["ResourceVersion"]
@@ -124,17 +124,17 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
             comment=_("更新版本"),
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.NeedNewVersionSLZ}, tags=["ResourceVersion"])
     def need_new_version(self, request, *args, **kwargs):
-        resource_version_exist = ResourceVersion.objects.filter(api_id=request.gateway.id).exists()
+        resource_version_exist = ResourceVersion.objects.filter(gateway_id=request.gateway.id).exists()
         resource_exist = Resource.objects.filter(api_id=request.gateway.id).exists()
         if not (resource_version_exist or resource_exist):
-            return FailJsonResponse(_("请先创建资源，然后再发布版本。"))
+            return V1FailJsonResponse(_("请先创建资源，然后再发布版本。"))
 
         if ResourceVersionHandler().need_new_version(request.gateway.id):
-            return OKJsonResponse(
+            return V1OKJsonResponse(
                 _("资源有更新，需生成新版本并发布到指定环境，才能生效。"),
                 data={
                     "need_new_version": True,
@@ -142,14 +142,14 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
             )
 
         if ResourceDocVersion.objects.need_new_version(request.gateway.id):
-            return OKJsonResponse(
+            return V1OKJsonResponse(
                 _("资源文档有更新，需生成新版本并发布到任一环境，才能生效。"),
                 data={
                     "need_new_version": True,
                 },
             )
 
-        return OKJsonResponse("OK", data={"need_new_version": False})
+        return V1OKJsonResponse("OK", data={"need_new_version": False})
 
 
 class ResourceVersionDiffViewSet(ResourceVersionViewSet):
@@ -177,7 +177,7 @@ class ResourceVersionDiffViewSet(ResourceVersionViewSet):
         except ResourceVersion.DoesNotExist:
             raise Http404
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data=self._diff_resource_version_data(
                 source_resource_data,

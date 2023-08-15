@@ -23,7 +23,8 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.core.constants import APITypeEnum, ContextScopeTypeEnum, ContextTypeEnum
+from apigateway.common.contexts.context import GatewayFeatureFlagContext
+from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayTypeEnum
 from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, ResourceVersion, Stage
 
 
@@ -79,7 +80,7 @@ class TestGatewayHandler:
                 None,
                 {
                     "user_auth_type": "default",
-                    "api_type": APITypeEnum.CLOUDS_API.value,
+                    "api_type": GatewayTypeEnum.CLOUDS_API.value,
                     "allow_update_api_auth": True,
                     "user_conf": {
                         "user_type": "default",
@@ -92,12 +93,12 @@ class TestGatewayHandler:
             # update api_type
             (
                 None,
-                APITypeEnum.OFFICIAL_API,
+                GatewayTypeEnum.OFFICIAL_API,
                 None,
                 None,
                 {
                     "user_auth_type": "default",
-                    "api_type": APITypeEnum.OFFICIAL_API.value,
+                    "api_type": GatewayTypeEnum.OFFICIAL_API.value,
                     "allow_update_api_auth": True,
                     "user_conf": {
                         "user_type": "default",
@@ -115,7 +116,7 @@ class TestGatewayHandler:
                 None,
                 {
                     "user_auth_type": "default",
-                    "api_type": APITypeEnum.CLOUDS_API.value,
+                    "api_type": GatewayTypeEnum.CLOUDS_API.value,
                     "allow_update_api_auth": False,
                     "user_conf": {
                         "user_type": "default",
@@ -130,12 +131,12 @@ class TestGatewayHandler:
                     "from_username": False,
                     "not_exist_field": True,
                 },
-                APITypeEnum.OFFICIAL_API,
+                GatewayTypeEnum.OFFICIAL_API,
                 False,
                 None,
                 {
                     "user_auth_type": "default",
-                    "api_type": APITypeEnum.OFFICIAL_API.value,
+                    "api_type": GatewayTypeEnum.OFFICIAL_API.value,
                     "allow_update_api_auth": False,
                     "user_conf": {
                         "user_type": "default",
@@ -153,7 +154,7 @@ class TestGatewayHandler:
                 ["bk_token", "bk_app_secret"],
                 {
                     "user_auth_type": "default",
-                    "api_type": APITypeEnum.CLOUDS_API.value,
+                    "api_type": GatewayTypeEnum.CLOUDS_API.value,
                     "allow_update_api_auth": True,
                     "user_conf": {
                         "user_type": "default",
@@ -172,7 +173,7 @@ class TestGatewayHandler:
             "apigateway.biz.gateway.GatewayHandler.get_current_gateway_auth_config",
             return_value={
                 "user_auth_type": "default",
-                "api_type": APITypeEnum.CLOUDS_API.value,
+                "api_type": GatewayTypeEnum.CLOUDS_API.value,
                 "unfiltered_sensitive_keys": [],
                 "allow_update_api_auth": True,
                 "user_conf": {
@@ -202,7 +203,7 @@ class TestGatewayHandler:
             new_callable=mock.PropertyMock(
                 return_value={
                     "user_auth_type": "default",
-                    "api_type": APITypeEnum.CLOUDS_API.value,
+                    "api_type": GatewayTypeEnum.CLOUDS_API.value,
                     "unfiltered_sensitive_keys": [],
                     "allow_update_api_auth": True,
                     "user_conf": {
@@ -256,3 +257,10 @@ class TestGatewayHandler:
         ]:
             with pytest.raises(ObjectDoesNotExist):
                 model.refresh_from_db()
+
+    def test_get_feature_flag(self, settings, fake_gateway):
+        settings.GLOBAL_GATEWAY_FEATURE_FLAG = {"FOO": False, "BAR": True}
+        GatewayFeatureFlagContext().save(fake_gateway.id, {"FOO": True})
+
+        feature_flag = GatewayHandler.get_feature_flag(fake_gateway.id)
+        assert feature_flag == {"FOO": True, "BAR": True}

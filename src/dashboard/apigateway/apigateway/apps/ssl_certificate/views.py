@@ -27,7 +27,7 @@ from apigateway.apps.ssl_certificate import serializers
 from apigateway.core.models import SslCertificate, SslCertificateBinding
 from apigateway.core.signals import reversion_update_signal
 from apigateway.utils.crypto import CertificateChecker
-from apigateway.utils.responses import OKJsonResponse, ResponseRender
+from apigateway.utils.responses import ResponseRender, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -94,7 +94,7 @@ class SSLCertificateViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
 
         slz = serializers.ListSSLCertificateSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user.username, updated_by=self.request.user.username)
@@ -143,7 +143,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
 
         reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="bind")
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -165,7 +165,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
 
         reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="unbind")
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -189,7 +189,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
 
         serializer = serializers.ListSSLCertificateBindingSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return V1OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
 
 
 class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
@@ -230,7 +230,7 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
 
         reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="bind")
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -254,7 +254,7 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
 
         reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="unbind")
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
 
 
 class CheckCertViewSet(viewsets.ViewSet):
@@ -268,4 +268,4 @@ class CheckCertViewSet(viewsets.ViewSet):
         slz.is_valid(raise_exception=True)
 
         checker = CertificateChecker(**slz.validated_data)
-        return OKJsonResponse(data=checker.check())
+        return V1OKJsonResponse(data=checker.check())

@@ -90,21 +90,28 @@ class ProxyAdmin(admin.ModelAdmin):
 
 
 class ResourceVersionAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "title", "api", "created_by", "created_time"]
+    list_display = ["id", "name", "title", "gateway", "created_by", "created_time"]
     search_fields = ["name"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
     exclude = ["_data"]
 
 
 class ReleaseAdmin(admin.ModelAdmin):
-    list_display = ["api", "stage", "resource_version"]
-    list_filter = ["api"]
+    list_display = ["gateway", "stage", "resource_version"]
+    list_filter = ["gateway"]
     raw_id_fields = ["resource_version"]
 
 
 class ReleasedResourceAdmin(admin.ModelAdmin):
-    list_display = ["api", "resource_version_id", "resource_id", "resource_name", "resource_method", "resource_path"]
-    list_filter = ["api"]
+    list_display = [
+        "gateway",
+        "resource_version_id",
+        "resource_id",
+        "resource_name",
+        "resource_method",
+        "resource_path",
+    ]
+    list_filter = ["gateway"]
     search_fields = ["resource_version_id", "resource_id", "resource_name"]
 
 
@@ -140,12 +147,12 @@ class APIRelatedAppAdmin(admin.ModelAdmin):
 
 
 class MicroGatewayAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "name", "is_shared", "status", "updated_time"]
+    list_display = ["id", "gateway", "name", "is_shared", "status", "updated_time"]
 
 
 class MicroGatewayReleaseHistoryAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "stage", "micro_gateway", "status"]
-    list_filter = ["api"]
+    list_display = ["id", "gateway", "stage", "micro_gateway", "status"]
+    list_filter = ["gateway"]
     raw_id_fields = ["release_history"]
 
 

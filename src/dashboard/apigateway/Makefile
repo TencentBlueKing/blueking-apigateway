@@ -4,6 +4,10 @@
 test:
 	cd .. && make test
 
+.PHONY: test-cov
+test-cov:
+	cd .. && make test-cov
+
 .PHONY: test-pdb
 test-pdb:
 	cd .. && make test-pdb

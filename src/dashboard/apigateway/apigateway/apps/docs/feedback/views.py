@@ -19,7 +19,7 @@
 from django.db import transaction
 from rest_framework import viewsets
 
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from .factories import FeedbackRelatedObjectFactory
 from .serializers import FeedbackCreateSLZ
@@ -49,6 +49,6 @@ class FeedbackViewSet(viewsets.GenericViewSet):
         # 3. 发送通知
         # 反馈文档有帮助，不发送通知
         if slz.validated_data.get("positive"):
-            return OKJsonResponse("OK", data={})
+            return V1OKJsonResponse("OK", data={})
 
-        return OKJsonResponse("OK", data={})
+        return V1OKJsonResponse("OK", data={})

@@ -38,6 +38,16 @@ update: VERSION requirements
 test:
 	cd apigateway && . apigateway/conf/unittest_env && pytest \
 		--ds apigateway.settings \
+		--reuse-db \
+		-n auto \
+		--dist loadscope \
+		apigateway/tests
+	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
+
+.PHONY: test-cov
+test-cov:
+	cd apigateway && . apigateway/conf/unittest_env && pytest \
+		--ds apigateway.settings \
 		--cov=. \
 		--reuse-db \
 		--maxfail 1 \

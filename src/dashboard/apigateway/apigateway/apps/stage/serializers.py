@@ -142,6 +142,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     )
 
     class Meta:
+        ref_name = "apps.stage"
         model = Stage
         fields = (
             "api",
@@ -233,7 +234,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             return None
 
         gateway = self.context["request"].gateway
-        if not MicroGateway.objects.filter(api=gateway, id=value).exists():
+        if not MicroGateway.objects.filter(gateway=gateway, id=value).exists():
             raise serializers.ValidationError(_("微网关实例不存在，id={value}。").format(value=value))
 
         return value

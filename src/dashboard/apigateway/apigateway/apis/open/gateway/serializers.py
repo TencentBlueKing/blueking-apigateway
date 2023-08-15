@@ -26,10 +26,10 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
-    API_NAME_PATTERN,
+    GATEWAY_NAME_PATTERN,
     APIHostingTypeEnum,
-    APIStatusEnum,
-    APITypeEnum,
+    GatewayStatusEnum,
+    GatewayTypeEnum,
     UserAuthTypeEnum,
 )
 from apigateway.core.models import Gateway, ReleaseHistory
@@ -78,12 +78,12 @@ class UserConfigSLZ(serializers.Serializer):
 
 
 class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
-    name = serializers.RegexField(API_NAME_PATTERN, label="网关名称", max_length=64)
+    name = serializers.RegexField(GATEWAY_NAME_PATTERN, label="网关名称", max_length=64)
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
-    status = serializers.ChoiceField(choices=APIStatusEnum.choices(), default=APIStatusEnum.ACTIVE.value)
+    status = serializers.ChoiceField(choices=GatewayStatusEnum.get_choices(), default=GatewayStatusEnum.ACTIVE.value)
     # 只允许指定为普通网关或官方网关，不能指定为超级官方网关，超级官方网关会传递敏感参数到后端接口
     api_type = serializers.ChoiceField(
-        choices=[APITypeEnum.OFFICIAL_API.value, APITypeEnum.CLOUDS_API.value], required=False
+        choices=[GatewayTypeEnum.OFFICIAL_API.value, GatewayTypeEnum.CLOUDS_API.value], required=False
     )
     user_auth_type = serializers.ChoiceField(
         choices=UserAuthTypeEnum.choices(),
@@ -139,7 +139,7 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             related_app_code=self.context.get("bk_app_code"),
             user_config=validated_data.get("user_config"),
             unfiltered_sensitive_keys=self._get_api_unfiltered_sensitive_keys(instance.name),
-            api_type=None if api_type is None else APITypeEnum(api_type),
+            api_type=None if api_type is None else GatewayTypeEnum(api_type),
         )
 
         # 3. record audit log
@@ -164,7 +164,7 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             user_auth_type=validated_data["user_auth_type"],
             user_conf=validated_data.get("user_config"),
             unfiltered_sensitive_keys=self._get_api_unfiltered_sensitive_keys(instance.name),
-            api_type=None if api_type is None else APITypeEnum(api_type),
+            api_type=None if api_type is None else GatewayTypeEnum(api_type),
         )
 
         # 3. 记录操作日志
@@ -180,7 +180,7 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         return api_auth_configs[gateway_name].get("unfiltered_sensitive_keys")
 
     def _validate_api_type(self, name: str, api_type: Optional[int]):
-        if not (api_type is not None and api_type != APITypeEnum.CLOUDS_API.value):
+        if not (api_type is not None and api_type != GatewayTypeEnum.CLOUDS_API.value):
             return
 
         for prefix in settings.OFFICIAL_GATEWAY_NAME_PREFIXES:
@@ -205,7 +205,7 @@ class AddRelatedAppsSLZ(serializers.Serializer):
 
 
 class GatewayUpdateStatusSLZ(serializers.ModelSerializer):
-    status = serializers.ChoiceField(choices=APIStatusEnum.choices())
+    status = serializers.ChoiceField(choices=GatewayStatusEnum.get_choices())
 
     class Meta:
         model = Gateway

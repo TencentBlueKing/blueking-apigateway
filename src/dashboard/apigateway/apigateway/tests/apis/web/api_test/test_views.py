@@ -55,7 +55,7 @@ class TestAPITestAPIView:
         )
 
         result = response.json()
-        assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"]["headers"] == {
             "Content-Type": "text/plain",
             "x-token": "test",

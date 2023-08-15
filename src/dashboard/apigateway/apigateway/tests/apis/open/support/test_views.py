@@ -40,10 +40,10 @@ def has_related_app_permission(mocker):
 class TestAPISDKV1ViewSet:
     def test_list_latest_sdk(self, mocker, request_factory, faker):
         fake_gateway = G(Gateway, is_public=True, status=1)
-        resource_version = G(ResourceVersion, api=fake_gateway)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
         sdk = G(
             APISDK,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
             is_recommended=True,
@@ -58,7 +58,7 @@ class TestAPISDKV1ViewSet:
             },
         )
         mocker.patch(
-            "apigateway.apis.open.support.views.APIAuthContext.filter_scope_id_config_map",
+            "apigateway.apis.open.support.views.GatewayAuthContext.filter_scope_id_config_map",
             return_value={
                 fake_gateway.id: {
                     "user_auth_type": "test",
@@ -104,8 +104,8 @@ class TestAPISDKV1ViewSet:
 
         result = result["data"][0]
         assert result == {
-            "api_id": fake_gateway.id,
-            "api_name": fake_gateway.name,
+            "gateway_id": fake_gateway.id,
+            "gateway_name": fake_gateway.name,
             "api_description": fake_gateway.description,
             "user_auth_type": "test",
             "language": "python",

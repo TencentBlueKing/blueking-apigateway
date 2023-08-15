@@ -43,7 +43,7 @@ class TestReleaseBatchSLZ:
         gateway = G(Gateway)
         stage_3 = G(Stage, api=gateway)
 
-        resource_version = G(ResourceVersion, api=self.gateway)
+        resource_version = G(ResourceVersion, gateway=self.gateway)
 
         data = [
             {
@@ -77,10 +77,10 @@ class TestReleaseBatchSLZ:
 
     def test_validate_resource_version_id(self, mocker):
         gateway = create_gateway()
-        resource_version_1 = G(ResourceVersion, api=gateway)
+        resource_version_1 = G(ResourceVersion, gateway=gateway)
 
         stage = G(Stage, api=self.gateway)
-        resource_version_2 = G(ResourceVersion, api=self.gateway)
+        resource_version_2 = G(ResourceVersion, gateway=self.gateway)
 
         data = [
             # ok
@@ -158,10 +158,10 @@ class TestReleaseHistorySLZ:
     def test_to_representation(self):
         gateway = G(Gateway)
         stage = G(Stage, api=gateway)
-        resource_version = G(ResourceVersion, api=gateway, name="t1", version="1.0.0", title="测试", comment="test1")
+        resource_version = G(ResourceVersion, gateway=gateway, name="t1", version="1.0.0", title="测试", comment="test1")
         release_history = G(
             ReleaseHistory,
-            api=gateway,
+            gatewaty=gateway,
             stage=stage,
             resource_version=resource_version,
             created_time=dummy_time.time,

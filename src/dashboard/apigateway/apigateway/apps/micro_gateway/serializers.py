@@ -58,7 +58,7 @@ class MicroGatewaySLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         choices=MicroGatewayCreateWayEnum.get_choices(), label="创建方式", write_only=True
     )
     id = serializers.UUIDField(read_only=True)
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(MICRO_GATEWAY_NAME_PATTERN, required=True)
     bcs_info = BcsInfoSLZ()
     http_info = HttpInfoSLZ()
@@ -70,7 +70,7 @@ class MicroGatewaySLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         non_model_fields = ["create_way", "bcs_info", "http_info", "jwt_auth_info"]
         fields = [
             "id",
-            "api",
+            "gateway",
             "name",
             "description",
             "bk_apigateway_api_url",
@@ -79,7 +79,9 @@ class MicroGatewaySLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         validators = [
             UniqueTogetherValidator(
-                queryset=MicroGateway.objects.all(), fields=["api", "name"], message=gettext_lazy("该网关下，同名微网关实例已存在。")
+                queryset=MicroGateway.objects.all(),
+                fields=["gateway", "name"],
+                message=gettext_lazy("该网关下，同名微网关实例已存在。"),
             )
         ]
 
@@ -121,7 +123,7 @@ class MicroGatewaySLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
 
 class UpdateMicroGatewaySLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(MICRO_GATEWAY_NAME_PATTERN, required=True)
     need_deploy = serializers.BooleanField(default=True)
     http_info = HttpInfoSLZ()
@@ -130,7 +132,7 @@ class UpdateMicroGatewaySLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         model = MicroGateway
         non_model_fields = ["http_info", "need_deploy"]
         fields = [
-            "api",
+            "gateway",
             "name",
             "description",
         ] + non_model_fields
@@ -138,7 +140,9 @@ class UpdateMicroGatewaySLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         validators = [
             UniqueTogetherValidator(
-                queryset=MicroGateway.objects.all(), fields=["api", "name"], message=gettext_lazy("该网关下，同名微网关实例已存在。")
+                queryset=MicroGateway.objects.all(),
+                fields=["gateway", "name"],
+                message=gettext_lazy("该网关下，同名微网关实例已存在。"),
             )
         ]
 

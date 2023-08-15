@@ -25,7 +25,7 @@ from django.conf import settings
 from django.db import models
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.core.constants import APIStatusEnum
+from apigateway.core.constants import GatewayStatusEnum
 
 
 class ResourceDocManager(models.Manager):
@@ -239,7 +239,7 @@ class APISDKManager(models.Manager):
         return queryset
 
     def get_latest_sdk(self, gateway_id, language):
-        return self.filter(api_id=gateway_id, language=language).order_by("-id").first()
+        return self.filter(gateway_id=gateway_id, language=language).order_by("-id").first()
 
     def get_resource_version_sdk_count(self, resource_version_id, language):
         return self.filter(resource_version_id=resource_version_id, language=language).count()
@@ -251,7 +251,7 @@ class APISDKManager(models.Manager):
         if not is_uploaded_to_pypi:
             return False
 
-        public_latest_sdk = self.filter(is_recommended=True, api_id=gateway_id).first()
+        public_latest_sdk = self.filter(is_recommended=True, gateway_id=gateway_id).first()
         # 最新 SDK 的版本比当前版本更新，则当前SDK非最新SDK
         if (
             public_latest_sdk
@@ -269,18 +269,18 @@ class APISDKManager(models.Manager):
         queryset = self.filter(
             is_recommended=True,
             language=language,
-            api__is_public=True,
-            api__status=APIStatusEnum.ACTIVE.value,
+            gateway__is_public=True,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
         )
         if gateway_id is not None:
-            queryset = queryset.filter(api_id=gateway_id)
+            queryset = queryset.filter(gateway_id=gateway_id)
 
         return queryset
 
     def filter_resource_version_ids_has_sdk(self, gateway_id: int, resource_version_ids: List[int]) -> List[int]:
         """过滤出有SDK的资源版本ID"""
         return list(
-            self.filter(api_id=gateway_id, resource_version_id__in=resource_version_ids)
+            self.filter(gateway_id=gateway_id, resource_version_id__in=resource_version_ids)
             .order_by("resource_version_id")
             .distinct()
             .values_list("resource_version_id", flat=True)
@@ -289,7 +289,7 @@ class APISDKManager(models.Manager):
     def filter_resource_version_public_latest_sdk(self, gateway_id: int, resource_version_ids: List[int]) -> dict:
         """过滤出指定的资源版本公开且最新的SDK(一个版本可能生成多个SDK，取其中最新且公开的SDK)"""
         queryset = self.filter(
-            api_id=gateway_id,
+            gateway_id=gateway_id,
             resource_version_id__in=resource_version_ids,
             is_public=True,
         ).order_by("id")

@@ -65,9 +65,10 @@ class TestResourceVersionViewSet(TestCase):
         response = view(request, gateway_id=gateway.id)
 
         result = get_response_json(response)
-        self.assertEqual(result["code"], 0, result)
+        # self.assertEqual(result["code"], 0, result)
+        self.assertEqual(response.status_code, 200, result)
 
-        self.assertTrue(ResourceVersion.objects.filter(api=gateway).count() > 0)
+        self.assertTrue(ResourceVersion.objects.filter(gateway=gateway).count() > 0)
 
     def test_list(self):
         resource_version = G(
@@ -79,9 +80,9 @@ class TestResourceVersionViewSet(TestCase):
         )
         stage_prod = G(Stage, api=self.gateway, status=1)
         stage_test = G(Stage, api=self.gateway, status=1)
-        G(Release, api=self.gateway, stage=stage_prod, resource_version=resource_version)
-        G(Release, api=self.gateway, stage=stage_test, resource_version=resource_version)
-        G(APISDK, api=self.gateway, resource_version=resource_version)
+        G(Release, gateway=self.gateway, stage=stage_prod, resource_version=resource_version)
+        G(Release, gateway=self.gateway, stage=stage_test, resource_version=resource_version)
+        G(APISDK, gateway=self.gateway, resource_version=resource_version)
 
         request = self.factory.get(f"/apis/{self.gateway.id}/resource_versions/")
 
@@ -89,7 +90,8 @@ class TestResourceVersionViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id)
 
         result = get_response_json(response)
-        self.assertEqual(result["code"], 0)
+        # self.assertEqual(result["code"], 0)
+        self.assertEqual(response.status_code, 200)
 
         results = result["data"]["results"]
 
@@ -154,7 +156,8 @@ class TestResourceVersionViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id, id=resource_version.id)
 
         result = get_response_json(response)
-        self.assertEqual(result["code"], 0)
+        # self.assertEqual(result["code"], 0)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(
             result["data"],
             {
@@ -182,7 +185,7 @@ class TestResourceVersionViewSet(TestCase):
     def test_update(self):
         gateway = create_gateway()
 
-        rv = G(ResourceVersion, api=gateway)
+        rv = G(ResourceVersion, gateway=gateway)
 
         data = [
             {
@@ -197,7 +200,8 @@ class TestResourceVersionViewSet(TestCase):
             response = view(request, gateway_id=gateway.id, id=rv.id)
 
             result = get_response_json(response)
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
 
             rv = ResourceVersion.objects.get(id=rv.id)
             self.assertEqual(rv.title, test["title"])
@@ -211,13 +215,13 @@ class TestResourceVersionViewSet(TestCase):
 
         gateway_3 = create_gateway()
         G(Resource, api=gateway_3, updated_time=dummy_time.time + datetime.timedelta(seconds=10))
-        G(ResourceVersion, api=gateway_3, created_time=dummy_time.time)
+        G(ResourceVersion, gateway=gateway_3, created_time=dummy_time.time)
 
         gateway_4 = create_gateway()
         G(Resource, api=gateway_4, updated_time=dummy_time.time)
         G(
             ResourceVersion,
-            api=gateway_4,
+            gateway=gateway_4,
             created_time=dummy_time.time + datetime.timedelta(seconds=10),
             _data=json.dumps([{"id": 1}]),
         )
@@ -226,7 +230,7 @@ class TestResourceVersionViewSet(TestCase):
         G(Resource, api=gateway_5, updated_time=dummy_time.time)
         G(
             ResourceVersion,
-            api=gateway_5,
+            gateway=gateway_5,
             created_time=dummy_time.time + datetime.timedelta(seconds=10),
             _data=json.dumps([{"id": 1}]),
         )
@@ -282,7 +286,8 @@ class TestResourceVersionViewSet(TestCase):
                 self.assertNotEqual(result["code"], 0)
                 continue
 
-            self.assertEqual(result["code"], 0, result)
+            # self.assertEqual(result["code"], 0, result)
+            self.assertEqual(response.status_code, 200, result)
             self.assertEqual(result["data"], test["expected"])
 
 
