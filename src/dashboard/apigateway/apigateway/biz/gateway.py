@@ -247,5 +247,5 @@ class GatewayHandler:
         return ""
 
     @staticmethod
-    def get_domain(gateway: Gateway) -> str:
+    def get_api_domain(gateway: Gateway) -> str:
         return settings.BK_API_URL_TMPL.format(api_name=gateway.name)

@@ -114,6 +114,8 @@ error_codes.add_codes(
         ErrorCode(
             "SDK_INTERNAL_ERROR", 50103, _("处理 SDK 请求时发生内部错误"), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         ),
+        # 网关
+        ErrorCode("GATEWAY_IS_ACTIVE", 40200, _("网关启用中"), status_code=status.HTTP_400_BAD_REQUEST),
         # ESB 对应的网关不存在
         ErrorCode("COMPONENT_GATEWAY_NOT_FOUND", 50203, _("组件对应的网关 [name={api_name}] 不存在")),
         ErrorCode("COMPONENT_METHOD_INVALID", 50204, _("组件请求方法配置错误")),

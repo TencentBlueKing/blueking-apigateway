@@ -26,9 +26,10 @@ from rest_framework import generics, status
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.contexts import GatewayAuthContext
+from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, UserAuthTypeEnum
 from apigateway.core.models import Gateway, Resource
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
     GatewayCreateInputSLZ,
@@ -69,7 +70,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
     @swagger_auto_schema(responses={status.HTTP_201_CREATED: ""}, tags=["Gateway"])
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        slz = GatewayCreateInputSLZ(data=request.data, context={"username": request.user.username})
+        slz = GatewayCreateInputSLZ(data=request.data, context={"created_by": request.user.username})
         slz.is_valid(raise_exception=True)
 
         # 1. save gateway
@@ -137,11 +138,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         # 网关为“停用”状态，才可以删除
         if instance.is_active:
-            return FailJsonResponse(
-                status=status.HTTP_400_BAD_REQUEST,
-                code="GATEWAY_IS_ACTIVE",
-                message=_("请先停用网关，然后再删除。"),
-            )
+            raise error_codes.GATEWAY_IS_ACTIVE.format(_("请先停用网关，然后再删除。"), replace=True)
 
         GatewayHandler.delete_gateway(instance.pk)
 

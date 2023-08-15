@@ -89,8 +89,8 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
     def _add_creator_to_maintainers(self, data):
         # 创建者无网关权限，仅作为标记，维护人员有权限
         # 因此，如果创建者不在维护人中，默认添加到维护人中
-        if self.context["username"] not in data["maintainers"]:
-            data["maintainers"].append(self.context["username"])
+        if self.context["created_by"] not in data["maintainers"]:
+            data["maintainers"].append(self.context["created_by"])
         return data
 
     def to_internal_value(self, data):
@@ -103,7 +103,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     public_key = serializers.CharField(label="网关公钥", source="jwt.public_key")
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, allow_null=True)
     is_official = serializers.SerializerMethodField()
-    domain = serializers.SerializerMethodField()
+    api_domain = serializers.SerializerMethodField()
     docs_url = serializers.SerializerMethodField()
     public_key_fingerprint = serializers.SerializerMethodField()
     feature_flags = serializers.SerializerMethodField()
@@ -123,7 +123,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "public_key",
             "is_official",
             "allow_update_gateway_auth",
-            "domain",
+            "api_domain",
             "docs_url",
             "public_key_fingerprint",
             "feature_flags",
@@ -131,8 +131,8 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
         read_only_fields = fields
         lookup_field = "id"
 
-    def get_domain(self, obj):
-        return GatewayHandler.get_domain(obj)
+    def get_api_domain(self, obj):
+        return GatewayHandler.get_api_domain(obj)
 
     def get_docs_url(self, obj):
         return GatewayHandler.get_docs_url(obj)

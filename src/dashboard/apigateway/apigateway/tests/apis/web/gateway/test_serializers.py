@@ -182,7 +182,7 @@ class TestGatewayCreateInputSLZ:
         settings.CHECK_RESERVED_GATEWAY_NAME = check_reserved_gateway_name
 
         G(Gateway, name="create-test-exists")
-        slz = GatewayCreateInputSLZ(data=data, context={"username": "admin"})
+        slz = GatewayCreateInputSLZ(data=data, context={"created_by": "admin"})
         slz.is_valid()
         if expected is None:
             assert slz.errors
@@ -194,7 +194,8 @@ class TestGatewayCreateInputSLZ:
 class TestGatewayRetrieveOutputSLZ:
     def test_to_representation(self, fake_gateway, mocker):
         mocker.patch(
-            "apigateway.apis.web.gateway.serializers.GatewayHandler.get_domain", return_value="http://bkapi.demo.com"
+            "apigateway.apis.web.gateway.serializers.GatewayHandler.get_api_domain",
+            return_value="http://bkapi.demo.com",
         )
         mocker.patch(
             "apigateway.apis.web.gateway.serializers.GatewayHandler.get_docs_url",
@@ -224,7 +225,7 @@ class TestGatewayRetrieveOutputSLZ:
             "created_time": DateTimeField().to_representation(fake_gateway.created_time),
             "public_key": jwt.public_key,
             "allow_update_gateway_auth": True,
-            "domain": "http://bkapi.demo.com",
+            "api_domain": "http://bkapi.demo.com",
             "docs_url": "http://apigw.demo.com/docs/",
             "public_key_fingerprint": calculate_fingerprint(jwt.public_key),
             "feature_flags": {"FOO": True},
