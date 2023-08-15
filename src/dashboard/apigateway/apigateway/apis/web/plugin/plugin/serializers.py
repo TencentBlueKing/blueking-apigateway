@@ -26,9 +26,9 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
+from apigateway.apis.web.plugin.plugin.checker import PluginConfigYamlChecker
+from apigateway.apis.web.plugin.plugin.convertor import PluginConfigYamlConvertor
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
-from apigateway.apps.plugin.plugin.checker import PluginConfigYamlChecker
-from apigateway.apps.plugin.plugin.convertor import PluginConfigYamlConvertor
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
 

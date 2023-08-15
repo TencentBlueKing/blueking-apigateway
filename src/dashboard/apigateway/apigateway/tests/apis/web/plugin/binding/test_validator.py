@@ -17,7 +17,7 @@
 #
 # import pytest
 
-from apigateway.apps.plugin.binding.validator import PluginBindingValidator
+from apigateway.apis.web.plugin.binding.validator import PluginBindingValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 
 

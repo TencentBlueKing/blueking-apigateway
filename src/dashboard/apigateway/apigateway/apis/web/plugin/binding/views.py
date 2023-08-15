@@ -26,11 +26,11 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 
+from apigateway.apis.web.plugin.binding import serializers
+from apigateway.apis.web.plugin.binding.plan import PluginBindingPlan
+from apigateway.apis.web.plugin.binding.validator import PluginBindingValidator
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.plugin.binding import serializers
-from apigateway.apps.plugin.binding.plan import PluginBindingPlan
-from apigateway.apps.plugin.binding.validator import PluginBindingValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.core.signals import gateway_update_signal

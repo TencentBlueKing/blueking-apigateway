@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,3 +15,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import pytest
+from ddf import G
+
+from apigateway.apps.plugin.models import PluginConfig, PluginType
+
+
+@pytest.fixture
+def fake_plugin_type():
+    return G(PluginType, schema=None)
+
+
+@pytest.fixture
+def fake_plugin_config(fake_gateway, fake_plugin_type):
+    return G(
+        PluginConfig,
+        gateway=fake_gateway,
+        type=fake_plugin_type,
+    )

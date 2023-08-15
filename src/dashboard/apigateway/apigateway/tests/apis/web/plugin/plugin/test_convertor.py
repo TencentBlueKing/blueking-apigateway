@@ -18,7 +18,7 @@
 import pytest
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apps.plugin.plugin.convertor import (
+from apigateway.apis.web.plugin.plugin.convertor import (
     IPRestrictionYamlConvertor,
     PluginConfigYamlConvertor,
     RateLimitYamlConvertor,

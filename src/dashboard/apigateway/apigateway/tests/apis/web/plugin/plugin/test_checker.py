@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.apps.plugin.plugin.checker import (
+from apigateway.apis.web.plugin.plugin.checker import (
     BkCorsChecker,
     BkIPRestrictionChecker,
     HeaderRewriteChecker,

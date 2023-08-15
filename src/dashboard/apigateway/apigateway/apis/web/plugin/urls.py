@@ -18,8 +18,8 @@
 #
 from django.urls import path
 
-from apigateway.apps.plugin.binding.views import PluginBindingBatchViewSet, PluginBindingViewSet
-from apigateway.apps.plugin.plugin.views import PluginConfigViewSet, PluginFormViewSet, PluginTypeViewSet
+from apigateway.apis.web.plugin.binding.views import PluginBindingBatchViewSet, PluginBindingViewSet
+from apigateway.apis.web.plugin.plugin.views import PluginConfigViewSet, PluginFormViewSet, PluginTypeViewSet
 
 urlpatterns = [
     # plugin

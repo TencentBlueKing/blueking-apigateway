@@ -25,10 +25,10 @@ from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.renderers import BrowsableAPIRenderer
 
+from apigateway.apis.web.plugin.plugin import serializers
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
-from apigateway.apps.plugin.plugin import serializers
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.filterset import SerializerFilterBackend
 from apigateway.utils.responses import ResponseRender

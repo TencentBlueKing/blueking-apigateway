@@ -17,7 +17,7 @@
 #
 from ddf import G
 
-from apigateway.apps.plugin.binding.plan import PluginBindingPlan
+from apigateway.apis.web.plugin.binding.plan import PluginBindingPlan
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
 
 

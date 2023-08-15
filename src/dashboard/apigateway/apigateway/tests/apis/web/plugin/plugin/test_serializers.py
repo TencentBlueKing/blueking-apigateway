@@ -19,8 +19,8 @@ import pytest
 from ddf import G
 from rest_framework.exceptions import ValidationError
 
+from apigateway.apis.web.plugin.plugin.serializers import PluginConfigSLZ
 from apigateway.apps.plugin.models import PluginType
-from apigateway.apps.plugin.plugin.serializers import PluginConfigSLZ
 from apigateway.utils.yaml import yaml_dumps
 
 pytestmark = pytest.mark.django_db
