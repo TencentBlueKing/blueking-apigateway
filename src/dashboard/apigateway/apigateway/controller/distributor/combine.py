@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Callable, Optional, Type
+from typing import Callable, Optional, Tuple, Type
 
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
@@ -74,31 +74,30 @@ class CombineDistributor(BaseDistributor):
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
-    ) -> bool:
-        has_failure = False
+    ) -> Tuple[bool, str]:
+        is_success = True
+        err_msg = ""
 
         def do_distribute(distributor: BaseDistributor, gateway: MicroGateway):
-            if not distributor.distribute(release, gateway, release_task_id, publish_id):
-                nonlocal has_failure
-                has_failure = True
+            nonlocal is_success, err_msg
+            is_success, err_msg = distributor.distribute(release, gateway, release_task_id, publish_id)
 
         self.foreach_distributor(release.stage, micro_gateway, do_distribute)
-        return not has_failure
+        return is_success, err_msg
 
     def revoke(
         self,
         stage: Stage,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[int] = None,
-    ) -> bool:
-        has_failure = False
+        publish_id: Optional[int] = None,
+    ) -> Tuple[bool, str]:
+        is_success = True
+        err_msg = ""
 
         def do_revoke(distributor: BaseDistributor, gateway: MicroGateway):
-            if not distributor.revoke(stage, gateway, release_task_id):
-                nonlocal has_failure
-                has_failure = True
+            nonlocal is_success, err_msg
+            is_success, err_msg = distributor.revoke(stage, gateway, release_task_id)
 
         self.foreach_distributor(stage, micro_gateway, do_revoke)
-
-        return not has_failure
+        return is_success, err_msg

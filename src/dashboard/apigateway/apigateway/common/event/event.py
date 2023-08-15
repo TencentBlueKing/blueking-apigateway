@@ -25,12 +25,54 @@ class PublishEventReporter:
     """
 
     @classmethod
+    def report_config_validate_doing_event(cls, publish: ReleaseHistory, stage: Stage):
+        """
+        dashboard 配置参数校验事件上报
+        """
+        PublishEvent.objects.add_event(
+            gateway=publish.gateway,
+            stage=stage,
+            publish=publish,
+            name=PublishEventNameTypeEnum.ValidateConfiguration,
+            status=PublishEventStatusTypeEnum.DOING,
+        )
+
+    @classmethod
+    def report_config_validate_success_event(cls, publish: ReleaseHistory, stage: Stage):
+        """
+        dashboard 配置参数校验成功事件上报
+        """
+        PublishEvent.objects.add_event(
+            gateway=publish.gateway,
+            stage=stage,
+            publish=publish,
+            name=PublishEventNameTypeEnum.ValidateConfiguration,
+            status=PublishEventStatusTypeEnum.DOING,
+        )
+
+    @classmethod
+    def report_config_validate_fail_event(cls, publish: ReleaseHistory, stage: Stage, msg: str):
+        """
+        dashboard 配置参数校验失败事件上报
+        """
+        PublishEvent.objects.add_event(
+            gateway=publish.gateway,
+            stage=stage,
+            publish=publish,
+            name=PublishEventNameTypeEnum.ValidateConfiguration,
+            status=PublishEventStatusTypeEnum.DOING,
+            detail={
+                "err_msg": msg,
+            },
+        )
+
+    @classmethod
     def report_create_publish_task_doing_event(cls, publish: ReleaseHistory, stage: Stage):
         """
         dashboard创建发布任务事件上报
         """
         PublishEvent.objects.add_event(
-            gateway=publish.api,
+            gateway=publish.gateway,
             stage=stage,
             publish=publish,
             name=PublishEventNameTypeEnum.GenerateTask,
@@ -43,7 +85,7 @@ class PublishEventReporter:
         dashboard创建发布任务成功事件上报
         """
         PublishEvent.objects.add_event(
-            gateway=publish.api,
+            gateway=publish.gateway,
             stage=stage,
             publish=publish,
             name=PublishEventNameTypeEnum.GenerateTask,
@@ -56,7 +98,7 @@ class PublishEventReporter:
         dashboard下发配置执行事件上报
         """
         PublishEvent.objects.add_event(
-            gateway=publish.api,
+            gateway=publish.gateway,
             stage=stage,
             publish=publish,
             name=PublishEventNameTypeEnum.DistributeConfiguration,
@@ -79,15 +121,16 @@ class PublishEventReporter:
         )
 
     @classmethod
-    def report_distribute_configuration_failure_event(cls, publish: ReleaseHistory, stage_id: int):
+    def report_distribute_configuration_failure_event(cls, publish: ReleaseHistory, stage_id: int, fail_msg: str):
         """
         dashboard下发配置失败事件上报
         """
         stage = Stage.objects.get(id=stage_id)
         PublishEvent.objects.add_event(
-            gateway=publish.api,
+            gateway=publish.gateway,
             stage=stage,
             publish=publish,
             name=PublishEventNameTypeEnum.DistributeConfiguration,
             status=PublishEventStatusTypeEnum.FAILURE,
+            detail={"err_msg": fail_msg},
         )

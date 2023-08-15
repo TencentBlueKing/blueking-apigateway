@@ -45,6 +45,7 @@ from apigateway.core.constants import (
     ProxyTypeEnum,
     PublishEventEnum,
     PublishEventStatusEnum,
+    PublishSourceEnum,
     ReleaseStatusEnum,
     SchemeEnum,
     SSLCertificateBindingScopeTypeEnum,
@@ -467,7 +468,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     Resource version
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
     name = models.CharField(_("[Deprecated] 版本名"), max_length=128, unique=True)
     title = models.CharField(max_length=128, blank=True, default="", null=True)
@@ -512,7 +513,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
         return f"{self.version}({self.title})"
 
     def __str__(self):
-        return f"<ResourceVersion: {self.api}/{self.version}>"
+        return f"<ResourceVersion: {self.gateway}/{self.version}>"
 
     class Meta:
         verbose_name = "ResourceVersion"
@@ -526,7 +527,7 @@ class Release(TimestampedModelMixin, OperatorModelMixin):
     only one activate resource_version per stage
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
 
     # only one stage-resource_version
     stage = models.OneToOneField(Stage, on_delete=models.PROTECT)
@@ -537,7 +538,7 @@ class Release(TimestampedModelMixin, OperatorModelMixin):
     objects = managers.ReleaseManager()
 
     def __str__(self):
-        return f"<Release: {self.api}/{self.stage}/{self.resource_version}>"
+        return f"<Release: {self.gateway}/{self.stage}/{self.resource_version}>"
 
     class Meta:
         verbose_name = "Release"
@@ -548,7 +549,7 @@ class Release(TimestampedModelMixin, OperatorModelMixin):
 class ReleasedResource(TimestampedModelMixin):
     """当前已发布版本中的资源信息"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_version_id = models.IntegerField(blank=False, null=False, db_index=True)
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
     resource_name = models.CharField(max_length=256, default="", blank=True, null=False)
@@ -574,7 +575,7 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     Store the release history records
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
 
     # only one stage-resource_version
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
@@ -582,18 +583,26 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
     comment = models.CharField(max_length=512, blank=True, null=True)
 
+    # 发布来源
+    source = models.CharField(
+        max_length=64,
+        choices=PublishSourceEnum.get_choices(),
+        default=PublishSourceEnum.RESOURCE_PUBLISH,
+    )
+    # 该字段废弃，由publish_event来决定最终状态
     status = models.CharField(
         _("发布状态"),
         max_length=16,
         choices=ReleaseStatusEnum.choices(),
         default=ReleaseStatusEnum.PENDING.value,
     )
+    # 废弃同上
     message = models.TextField(blank=True, default="")
 
     objects = managers.ReleaseHistoryManager()
 
     def __str__(self):
-        return f"<Release: {self.api}/{self.stage}/{self.resource_version}>"
+        return f"<Release: {self.gateway}/{self.stage}/{self.resource_version}>"
 
     class Meta:
         verbose_name = "ReleaseHistory"

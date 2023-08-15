@@ -17,14 +17,10 @@
 #
 from apigateway.controller.tasks.micro_gateway import deploy_micro_gateway
 from apigateway.controller.tasks.release import (
-    mark_release_history_failure,
-    mark_release_history_status,
     release_gateway_by_helm,
     release_gateway_by_registry,
 )
 from apigateway.controller.tasks.syncing import (
-    release_updated_check,
-    revoke_release,
     revoke_release_by_stage,
     rolling_update_release,
 )
@@ -32,11 +28,7 @@ from apigateway.controller.tasks.syncing import (
 __all__ = [
     "deploy_micro_gateway",
     "release_gateway_by_helm",
-    "mark_release_history_status",
-    "mark_release_history_failure",
     "release_gateway_by_registry",
     "rolling_update_release",
-    "release_updated_check",
     "revoke_release_by_stage",
-    "revoke_release",
 ]

@@ -56,7 +56,7 @@ class SDKManagerMixin:
         )
 
     def get_context(self, resource_version: ResourceVersion) -> SDKContext:
-        api_name = resource_version.api.name
+        api_name = resource_version.gateway.name
 
         return SDKContext(
             name=f"bkapi-{ shortcuts.to_lower_dash_case(api_name) }",

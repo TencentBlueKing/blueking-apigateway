@@ -35,8 +35,6 @@ from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersi
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.tasks import (
-    mark_release_history_failure,
-    mark_release_history_status,
     release_gateway_by_helm,
     release_gateway_by_registry,
 )
@@ -259,7 +257,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             return
 
         history = MicroGatewayReleaseHistory.objects.create(
-            api=release.api,
+            api=release.gateway,
             stage=release.stage,
             micro_gateway=shared_gateway,
             release_history=release_history,
@@ -279,7 +277,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             return
 
         history = MicroGatewayReleaseHistory.objects.create(
-            api=release.api,
+            api=release.gateway,
             stage=stage,
             micro_gateway=micro_gateway,
             release_history=release_history,
@@ -295,9 +293,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
     def _create_release_task(self, release: Release, release_history: ReleaseHistory):
         # create publish event
-        if self._shared_micro_gateway:
-            PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
-
+        PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
         # NOTE: 发布专享网关时，不再将资源同时发布到共享网关
         micro_gateway = release.stage.micro_gateway
         if not micro_gateway or micro_gateway.is_shared:
@@ -307,25 +303,13 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
     def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
         tasks = []
-        release_success_callback = mark_release_history_status.si(
-            release_history_id=release_history.pk,
-            status=ReleaseStatusEnum.SUCCESS.value,
-            message="configuration released success",
-            stage_ids=[release.stage.id for release in releases],
-        )  # type: ignore
-        # => now we use en instead(no lang in celery, won't be translated)
-        # FIXME: the release status should be set to release_event.type + result
-        release_failure_callback = mark_release_history_failure.s(
-            release_history_id=release_history.pk, stage_ids=[release.stage.id for release in releases]
-        )  # type: ignore
-
         for release in releases:
             task = self._create_release_task(release, release_history)
             # 任意一个任务失败都表示发布失败
-            tasks.append(task.on_error(release_failure_callback))
+            tasks.append(task)
 
         # 使用 celery 的编排能力，并发发布多个微网关，并且在发布完成后，更新微网关发布历史的状态
-        delay_on_commit(group(*tasks) | release_success_callback)
+        delay_on_commit(group(*tasks))
 
 
 @define(slots=False)

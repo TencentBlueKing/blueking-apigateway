@@ -109,8 +109,8 @@ class ReleasedResourceAdmin(admin.ModelAdmin):
 
 
 class ReleaseHistoryAdmin(admin.ModelAdmin):
-    list_display = ["api", "resource_version", "status", "created_by", "created_time"]
-    list_filter = ["api", "created_time"]
+    list_display = ["gateway", "resource_version", "status", "created_by", "created_time"]
+    list_filter = ["gateway", "created_time"]
     filter_horizontal = ["stages"]
     raw_id_fields = ["resource_version"]
 

@@ -191,6 +191,7 @@ class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
 
 class PublishEventEnum(StructuredEnum):
     # dashboard
+    ValidateConfiguration = EnumField("check_configuration", "check configuration")
     GenerateTask = EnumField("generate_release_task", "generate release task")
     DistributeConfiguration = EnumField("distribute_configuration", "distribute configuration")
     # operator
@@ -201,6 +202,7 @@ class PublishEventEnum(StructuredEnum):
 
 
 class PublishEventNameTypeEnum(ChoiceEnumMixin, Enum):
+    ValidateConfiguration = PublishEventEnum.ValidateConfiguration.value
     GenerateTask = PublishEventEnum.GenerateTask.value
     DistributeConfiguration = PublishEventEnum.DistributeConfiguration.value
     ParseConfiguration = PublishEventEnum.ParseConfiguration.value
@@ -210,7 +212,7 @@ class PublishEventNameTypeEnum(ChoiceEnumMixin, Enum):
     @classmethod
     def get_event_step(cls, name: str) -> int:
         # 获取事件所属的step，如：name="load configuration"==>5
-        return [i.value for i in cls].index(name) + 1
+        return [i.value for i in cls].index(name)
 
 
 class PublishEventStatusEnum(StructuredEnum):
@@ -225,6 +227,28 @@ class PublishEventStatusTypeEnum(ChoiceEnumMixin, Enum):
     FAILURE = PublishEventStatusEnum.FAILURE.value
     PENDING = PublishEventStatusEnum.PENDING.value
     DOING = PublishEventStatusEnum.DOING.value
+
+
+class PublishSourceEnum(StructuredEnum):
+    # gateway
+    GATEWAY_ENABLE = EnumField("gateway_enable", "网关启用")
+    GATEWAY_DISABLE = EnumField("gateway_disable", "网关停用")
+
+    # resource
+    RESOURCE_PUBLISH = EnumField("resource_publish", "资源发布")
+
+    # plugin
+    PLUGIN_UPDATE = EnumField("plugin_update", "插件更新")
+
+    # stage
+    STAGE_DISABLE = EnumField("stage_disable", "环境下架")
+    STAGE_ENV_UPDATE = EnumField("stage_env_update", "变量更新")
+
+    # backend
+    BACKEND_UPDATE = EnumField("backend_update", "服务更新")
+
+    # cli
+    CLI_SYNC = EnumField("cli_sync", "命令行同步")
 
 
 class ProxyTypeEnum(StructuredEnum):

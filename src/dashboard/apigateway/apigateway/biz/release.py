@@ -15,28 +15,19 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Optional, Tuple
+from apigateway.core.constants import PublishSourceEnum
+from apigateway.core.models import ReleaseHistory
 
-from apigateway.core.models import MicroGateway, Release, Stage
 
-
-class BaseDistributor:
-    def distribute(
-        self,
-        release: Release,
-        micro_gateway: MicroGateway,
-        release_task_id: Optional[str] = None,
-        publish_id: Optional[int] = None,
-    ) -> Tuple[bool, str]:
-        """发布到微网关"""
-        raise NotImplementedError()
-
-    def revoke(
-        self,
-        stage: Stage,
-        micro_gateway: MicroGateway,
-        release_task_id: Optional[str] = None,
-        publish_id: Optional[int] = None,
-    ) -> Tuple[bool, str]:
-        """撤销微网关已发布内容"""
-        raise NotImplementedError()
+class ReleaseHandler:
+    @staticmethod
+    def save_release_history(release: ReleaseHistory, source: PublishSourceEnum, author: str) -> ReleaseHistory:
+        """保存发布历史"""
+        release_history = ReleaseHistory.objects.create(
+            gateway=release.gateway,
+            stage=release.stage,
+            source=source.value,
+            resource_version=release.resource_version,
+            created_by=author,
+        )
+        return release_history

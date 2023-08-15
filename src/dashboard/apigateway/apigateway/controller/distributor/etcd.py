@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 
 from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
 from apigateway.controller.distributor.base import BaseDistributor
@@ -52,7 +52,7 @@ class EtcdDistributor(BaseDistributor):
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
-    ) -> bool:
+    ) -> Tuple[bool, str]:
         """将 release 发布到 micro-gateway 对应的 registry 中"""
         convertor = CustomResourceConvertor(
             release=release,
@@ -61,11 +61,11 @@ class EtcdDistributor(BaseDistributor):
             include_config=self.include_gateway_global_config,
             include_plugin_metadata=self.include_gateway_global_config,
         )
-        registry = self._get_registry(release.api, release.stage, micro_gateway)
+        registry = self._get_registry(release.gateway, release.stage, micro_gateway)
         procedure_logger = ReleaseProcedureLogger(
             "gateway-distributing",
             logger=logger,
-            gateway=release.api,
+            gateway=release.gateway,
             stage=release.stage,
             micro_gateway=micro_gateway,
             release_task_id=release_task_id,
@@ -84,11 +84,12 @@ class EtcdDistributor(BaseDistributor):
                 fail_resources = registry.sync_resources_by_key_prefix(resources)
                 if fail_resources:
                     raise SyncFail(fail_resources)
-        except Exception:
-            procedure_logger.exception("distribute to etcd failed")
-            return False
+        except Exception as e:
+            fail_msg = f"distribute to etcd failed: {type(e).__name__}: {str(e)}"
+            procedure_logger.exception(fail_msg)
+            return False, fail_msg
 
-        return True
+        return True, ""
 
     def revoke(
         self,
@@ -96,7 +97,7 @@ class EtcdDistributor(BaseDistributor):
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
-    ) -> bool:
+    ) -> Tuple[bool, str]:
         """撤销已发布到 micro-gateway 对应的 registry 中的配置"""
         registry = self._get_registry(stage.api, stage, micro_gateway)
         procedure_logger = ReleaseProcedureLogger(
@@ -112,12 +113,13 @@ class EtcdDistributor(BaseDistributor):
         try:
             with procedure_logger.step(f"delete resources from etcd by key_prefix({registry.key_prefix})"):
                 registry.delete_resources_by_key_prefix()
-        except Exception:
-            procedure_logger.exception("revoke resources from etcd failed")
-            return False
+        except Exception as e:
+            fail_msg = f"revoke resources from etcd failed: {type(e).__name__}: {str(e)}"
+            procedure_logger.exception(fail_msg)
+            return False, fail_msg
 
         procedure_logger.info("revoke resources from etcd succeeded")
-        return True
+        return True, ""
 
     def _get_registry(self, gateway: Gateway, stage: Stage, micro_gateway: MicroGateway) -> EtcdRegistry:
         key_prefix = KeyPrefixHandler().get_release_key_prefix(micro_gateway.name, gateway.name, stage.name)

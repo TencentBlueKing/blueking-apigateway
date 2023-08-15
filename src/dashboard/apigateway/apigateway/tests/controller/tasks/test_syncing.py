@@ -18,7 +18,7 @@
 import pytest
 from ddf import G
 
-from apigateway.controller.tasks.syncing import release_updated_check, revoke_release_by_stage, rolling_update_release
+from apigateway.controller.tasks.syncing import revoke_release_by_stage, rolling_update_release
 from apigateway.core.constants import APIHostingTypeEnum
 from apigateway.core.models import MicroGateway
 from apigateway.utils.redis_utils import get_redis_key
@@ -71,34 +71,6 @@ class TestRollingUpdateRelease:
         assert rolling_update_release(edge_gateway.pk)
 
         self.distributor.distribute.assert_called()
-
-
-class TestReleaseUpdatedChecker:
-    @pytest.fixture(autouse=True)
-    def setup(self, mocker):
-        self.rolling_update_release = mocker.patch("apigateway.controller.tasks.syncing.rolling_update_release")
-
-    def test_when_key_not_exists(self, default_redis):
-        assert not release_updated_check()
-
-    def test_for_default_hosting_type(self, fake_gateway, default_redis, revision_update_key):
-        fake_gateway.hosting_type = APIHostingTypeEnum.DEFAULT.value
-        fake_gateway.save()
-
-        default_redis.sadd(revision_update_key, fake_gateway.pk)
-
-        assert not release_updated_check()
-
-    def test_api_not_exists(self, default_redis, revision_update_key):
-        default_redis.sadd(revision_update_key, 0)
-
-        assert not release_updated_check()
-
-    def test_dispatch_task(self, edge_gateway, default_redis, revision_update_key):
-        default_redis.sadd(revision_update_key, edge_gateway.pk)
-
-        assert release_updated_check()
-        self.rolling_update_release.apply_async.assert_any_call(args=(edge_gateway.pk,), ignore_result=True, kwargs={})
 
 
 class TestRevokeRelease:

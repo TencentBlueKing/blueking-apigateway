@@ -591,6 +591,12 @@ class ReleaseManager(models.Manager):
     def delete_by_stage_ids(self, stage_ids):
         self.filter(stage_id__in=stage_ids).delete()
 
+    def get_release_by_stage_id(self, stage_id):
+        return self.filter(stage_id=stage_id).all()
+
+    def get_release_by_gateway_id(self, gateway_id):
+        return self.filter(api_id=gateway_id).all()
+
     def filter_released_gateway_ids(self, gateway_ids):
         return set(self.filter(api_id__in=gateway_ids).values_list("api_id", flat=True))
 

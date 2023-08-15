@@ -22,9 +22,7 @@ from typing import List, Optional
 from django.core.management.base import BaseCommand, CommandError
 
 import apigateway.controller.tasks.syncing as syncing
-from apigateway.controller.management.commands.sync_releases_to_shared_micro_gateway import (
-    NO_NEED_REPORT_EVENT_PUBLISH_ID,
-)
+from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Gateway
 
 logger = logging.getLogger(__name__)
@@ -39,8 +37,7 @@ def sync_gateway(gateway):
     connection.close()
 
     print(f"syncing release for gateway {gateway.name} ...")
-    # publish_id=-1 标识cli同步网关发布操作，方便operator过滤不上报
-    ok = syncing.rolling_update_release(gateway.id, publish_id=NO_NEED_REPORT_EVENT_PUBLISH_ID)
+    ok = syncing.trigger_gateway_publish(PublishSourceEnum.CLI_SYNC, gateway_id=gateway.id, is_sync=True)
     if not ok:
         print(f"[ERROR] syncing release for gateway {gateway.name} failed")
         return gateway.name
