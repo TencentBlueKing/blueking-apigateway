@@ -61,12 +61,12 @@ def custom_exception_handler(exc, context):
             is_legacy = True
 
     if isinstance(exc, (NotAuthenticated, AuthenticationFailed)):
-        error = error_codes.UNAUTHORIZED
+        error = error_codes.UNAUTHENTICATED
         return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
     elif isinstance(exc, ValidationError):
         set_rollback()
-        error = error_codes.VALIDATE_ERROR.format(message=one_line_error(exc))
+        error = error_codes.INVALID_ARGUMENT.format(message=one_line_error(exc))
         return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
     elif isinstance(exc, APIError):
@@ -80,18 +80,18 @@ def custom_exception_handler(exc, context):
 
     elif isinstance(exc, PermissionDenied):
         set_rollback()
-        error = error_codes.FORBIDDEN.format(message=exc.detail, replace=True)
+        error = error_codes.IAM_NO_PERMISSION.format(message=exc.detail, replace=True)
         return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
     # Call REST framework's default exception handler to get the standard error response.
     response = exception_handler(exc, context)
     # Use a default error code
     if response is not None:
-        error = error_codes.COMMON_ERROR.format(message=one_line_error(APIException(response.data)), replace=True)
+        error = error_codes.UNKNOWN.format(message=one_line_error(APIException(response.data)), replace=True)
         return Response(error.code.as_json(is_legacy), status=response.status_code, headers={})
 
     logger.exception("unhandled error occurred")
 
     set_rollback()
-    error = error_codes.COMMON_ERROR.format(message=str(exc))
+    error = error_codes.UNKNOWN.format(message=str(exc))
     return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})

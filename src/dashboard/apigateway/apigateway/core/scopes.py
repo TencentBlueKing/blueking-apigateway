@@ -32,7 +32,7 @@ class ScopeManager(metaclass=ABCMeta):
         if scope_type == ScopeTypeEnum.STAGE.value:
             return StageScopeManager()
 
-        raise error_codes.INVALID_ARGS.format(f"unsupported scope_type: {scope_type}")
+        raise error_codes.INVALID_ARGUMENT.format(f"unsupported scope_type: {scope_type}")
 
     @abstractmethod
     def get_scope_ids(self, gateway_id: int, scopes: Optional[list]) -> List[int]:

@@ -119,6 +119,5 @@ class TestSystemViewSet:
         request = self.factory.delete("/")
         response = view(request, id=system.id)
 
-        # assert response.status_code == 400
-        assert response.status_code == 403
+        assert response.status_code == 400
         assert ComponentSystem.objects.filter(id=system.id).exists()

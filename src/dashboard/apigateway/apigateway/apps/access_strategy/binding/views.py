@@ -50,7 +50,7 @@ class AccessStrategyBindingBatchViewSet(viewsets.ModelViewSet):
         elif scope_type == AccessStrategyBindScopeEnum.RESOURCE.value:
             queryset = Resource.objects.filter(api=self.request.gateway)
         else:
-            raise error_codes.INVALID_ARGS.format(f"scope_type 不支持 {scope_type}")
+            raise error_codes.INVALID_ARGUMENT.format(f"scope_type 不支持 {scope_type}")
 
         return queryset.filter(id__in=scope_ids)
 

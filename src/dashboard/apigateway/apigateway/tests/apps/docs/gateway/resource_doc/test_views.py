@@ -120,7 +120,6 @@ class TestResourceDocViewSet:
         result = get_response_json(response)
 
         if will_error:
-            # assert result["code"] != 0
             assert response.status_code != 200
             return
 

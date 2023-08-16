@@ -301,7 +301,6 @@ class TestMicroGatewayReleaser:
             release_history=fake_release_history,
         )
 
-        # assert qs.filter(micro_gateway=fake_shared_gateway).exists()
         assert qs.filter(micro_gateway=fake_edge_gateway).exists()
 
     def test_do_release_shared_gateway(

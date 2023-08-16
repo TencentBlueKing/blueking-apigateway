@@ -39,7 +39,7 @@ class BaseGatewayViewSet(viewsets.ModelViewSet):
     def get_object(self):
         obj = super().get_object()
         if not obj.has_permission(self.request.user.username):
-            raise error_codes.FORBIDDEN.format(_("当前用户无访问网关权限。"), replace=True)
+            raise error_codes.IAM_NO_PERMISSION.format(_("当前用户无访问网关权限。"), replace=True)
         return obj
 
 
