@@ -111,7 +111,6 @@ class TestStageItemViewSet:
         )
 
         # result = get_response_json(response)
-        # assert result["code"] != 0
         assert response.status_code != 200
 
         assert StageItem.objects.filter(api=fake_stage_item.api).exists()

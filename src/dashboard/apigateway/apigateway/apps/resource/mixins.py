@@ -73,7 +73,7 @@ class CreateResourceMixin:
     def _check_gateway_resource_limit(self, gateway: Gateway):
         max_resource_per_gateway = gateway.max_resource_count
         if Resource.objects.filter(api_id=gateway.id).count() >= max_resource_per_gateway:
-            raise error_codes.VALIDATE_ERROR.format(
+            raise error_codes.INVALID_ARGUMENT.format(
                 f"The gateway [{gateway.name}] exceeds the limit of the number of resources that can be created."
                 + f" The maximum limit is {max_resource_per_gateway}."
             )

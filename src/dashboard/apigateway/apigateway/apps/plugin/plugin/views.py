@@ -99,7 +99,7 @@ class PluginConfigViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         if instance.pluginbinding_set.exists():
-            raise error_codes.VALIDATE_ERROR.format(_("插件已绑定环境或资源，请解除绑定后再删除插件。"))
+            raise error_codes.INVALID_ARGUMENT.format(_("插件已绑定环境或资源，请解除绑定后再删除插件。"))
 
         super().perform_destroy(instance)
         request = self.request

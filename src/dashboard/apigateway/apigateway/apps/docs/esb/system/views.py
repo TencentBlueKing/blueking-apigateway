@@ -47,7 +47,7 @@ class SystemViewSet(viewsets.GenericViewSet):
         """获取系统信息"""
         system = ComponentSystem.objects.get_by_name(board, system_name)
         if not system:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         slz = ComponentSystemSLZ(system)
         return V1OKJsonResponse("OK", data=slz.data)
