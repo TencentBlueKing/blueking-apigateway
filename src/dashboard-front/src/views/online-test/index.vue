@@ -91,6 +91,7 @@
           <bk-form-item label="Body">
             <bk-input
               class="ag-textarea"
+              ext-cls="body-textarea"
               type="textarea"
               :placeholder="$t('请输入')"
               v-model="params.body">
@@ -974,5 +975,9 @@
     }
     .online-test /deep/ .panel-content .request-panel[data-v-c1d2eab6] .kv-wrapper .values .biz-key-item {
       align-items: unset;
+    }
+
+    .body-textarea /deep/ .bk-textarea-wrapper {
+      width: 100%;
     }
 </style>
