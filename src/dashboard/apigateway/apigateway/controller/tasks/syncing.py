@@ -41,7 +41,7 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     release = Release.objects.get(id=release_id)
 
     release_history = None if is_cli_sync else ReleaseHistory.objects.get(id=release_id)
-    if not is_cli_sync:
+    if release_history:
         PublishEventReporter.report_create_publish_task_success_event(release_history, release.stage)
 
     logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
@@ -61,7 +61,7 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
         publish_id=publish_id,
     )
 
-    if not is_cli_sync:
+    if release_history:
         PublishEventReporter.report_distribute_configuration_doing_event(release_history, release.stage)
 
     procedure_logger.info("distribute begin")
@@ -79,7 +79,7 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
             )
         procedure_logger.info(msg)
     else:
-        if not is_cli_sync:
+        if release_history:
             PublishEventReporter.report_distribute_configuration_success_event(release_history, release.stage)
         procedure_logger.info("distribute succeeded")
 
