@@ -114,7 +114,7 @@ class TestGatewayRetrieveUpdateDestroyApi:
             path_params={"gateway_id": fake_gateway.id},
         )
 
-        assert resp.status_code == 200
+        assert resp.status_code == 204
         assert fake_gateway.id is not None
         assert not Gateway.objects.filter(id=fake_gateway.id).exists()
 

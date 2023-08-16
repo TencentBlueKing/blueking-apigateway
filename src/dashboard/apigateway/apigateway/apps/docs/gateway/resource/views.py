@@ -37,7 +37,7 @@ class ResourceViewSet(viewsets.GenericViewSet):
         """获取网关环境下的资源列表"""
         api = support_helper.get_gateway_by_name(gateway_name)
         if not api:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         data = support_helper.get_released_resources(api["id"], stage_name)
         slz = ResourceSLZ(sorted(data["results"], key=lambda x: x["name"]), many=True)

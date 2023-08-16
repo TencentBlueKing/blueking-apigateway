@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,19 +15,27 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import functools
+from ddf import G
 
-from django.conf import settings
+from apigateway.biz.release import ReleaseHandler
+from apigateway.core.constants import (
+    GatewayStatusEnum,
+    StageStatusEnum,
+)
+from apigateway.core.models import Release, Stage
 
-from apigateway.common.error_codes import error_codes
 
+class TestReleaseHandler:
+    def test_get_released_stage_ids(self, fake_gateway):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
 
-def check_board_exist(func):
-    @functools.wraps(func)
-    def wrapper(self, request, board, *args, **kwargs):
-        if board not in settings.ESB_BOARD_CONFIGS:
-            raise error_codes.NOT_FOUND
+        stage_1 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        G(Stage, api=fake_gateway, status=StageStatusEnum.INACTIVE.value)
+        G(Release, api=fake_gateway, stage=stage_1)
 
-        return func(self, request, board, *args, **kwargs)
+        assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == [stage_1.id]
 
-    return wrapper
+        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
+        fake_gateway.save()
+        assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == []

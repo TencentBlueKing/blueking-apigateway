@@ -62,6 +62,5 @@ class TestAuditEventLogViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(result["data"]["count"], test["expected"]["count"])

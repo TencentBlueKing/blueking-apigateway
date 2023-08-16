@@ -89,7 +89,7 @@ class TestGatewayListOutputSLZ:
             gateways,
             many=True,
             context={
-                "resource_count": Resource.objects.get_resource_count(gateway_ids),
+                "resource_count": GatewayHandler.get_resource_count(gateway_ids),
                 "stages": GatewayHandler.get_stages_with_release_status(gateway_ids),
                 "gateway_auth_configs": {
                     gateway_1.id: GatewayAuthConfig(GatewayTypeEnum.OFFICIAL_API.value),

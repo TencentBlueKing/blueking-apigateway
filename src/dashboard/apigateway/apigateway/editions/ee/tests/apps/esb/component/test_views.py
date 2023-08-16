@@ -136,8 +136,7 @@ class TestESBChannelViewSet:
         request = self.factory.delete("/")
         response = view(request, id=channel.id)
 
-        # assert response.status_code == 400
-        assert response.status_code == 403
+        assert response.status_code == 400
         assert ESBChannel.objects.filter(id=channel.id).exists()
 
 
@@ -163,8 +162,7 @@ class TestESBChannelBatchViewSet:
         request = self.factory.delete("/", data={"ids": [channel.id]})
         response = view(request)
 
-        # assert response.status_code == 400
-        assert response.status_code == 403
+        assert response.status_code == 400
         assert ESBChannel.objects.filter(id=channel.id).exists()
 
 

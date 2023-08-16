@@ -21,14 +21,15 @@ from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway_type import GatewayTypeHandler
 from apigateway.core.constants import (
     GATEWAY_NAME_PATTERN,
     GatewayStatusEnum,
-    GatewayTypeEnum,
 )
 from apigateway.core.models import Gateway
-from apigateway.core.validators import ReservedGatewayNameValidator
 from apigateway.utils.crypto import calculate_fingerprint
+
+from .validators import ReservedGatewayNameValidator
 
 
 class GatewayListOutputSLZ(serializers.Serializer):
@@ -48,7 +49,7 @@ class GatewayListOutputSLZ(serializers.Serializer):
         if obj.id not in self.context["gateway_auth_configs"]:
             return False
 
-        return GatewayTypeEnum.is_official(self.context["gateway_auth_configs"][obj.id].gateway_type)
+        return GatewayTypeHandler.is_official(self.context["gateway_auth_configs"][obj.id].gateway_type)
 
     def get_resource_count(self, obj):
         return self.context["resource_count"].get(obj.id, 0)
@@ -147,7 +148,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
         return self.context["feature_flags"]
 
     def get_is_official(self, obj):
-        return GatewayTypeEnum.is_official(self.context["auth_config"].gateway_type)
+        return GatewayTypeHandler.is_official(self.context["auth_config"].gateway_type)
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):

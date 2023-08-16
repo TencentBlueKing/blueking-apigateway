@@ -215,36 +215,6 @@ class TestResourceManager:
     def setup_fixtures(self):
         self.gateway = G(Gateway)
 
-    def test_get_resource_count(self):
-        gateway_1 = G(Gateway)
-        gateway_2 = G(Gateway)
-        gateway_3 = G(Gateway)
-
-        G(Resource, api=gateway_1)
-        G(Resource, api=gateway_1)
-        G(Resource, api=gateway_2)
-
-        data = [
-            {
-                "gateway_ids": [gateway_1.id, gateway_2.id, gateway_3.id],
-                "expected": {
-                    gateway_1.id: 2,
-                    gateway_2.id: 1,
-                },
-            },
-            {
-                "gateway_ids": [gateway_1.id, gateway_2.id],
-                "expected": {
-                    gateway_1.id: 2,
-                    gateway_2.id: 1,
-                },
-            },
-        ]
-
-        for test in data:
-            result = Resource.objects.get_resource_count(test["gateway_ids"])
-            assert result == test["expected"]
-
     def test_filter_valid_ids(self):
         gateway = G(Gateway)
         resource = G(Resource, api=gateway)
@@ -804,20 +774,6 @@ class TestStageResourceDisabledManager(TestCase):
 
 
 class TestReleaseManager:
-    def test_get_released_stage_ids(self, fake_gateway):
-        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.save()
-
-        stage_1 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
-        G(Stage, api=fake_gateway, status=StageStatusEnum.INACTIVE.value)
-        G(Release, api=fake_gateway, stage=stage_1)
-
-        assert Release.objects.get_released_stage_ids([fake_gateway.id]) == [stage_1.id]
-
-        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
-        fake_gateway.save()
-        assert Release.objects.get_released_stage_ids([fake_gateway.id]) == []
-
     def test_get_stage_release_status(self):
         gateway = G(Gateway)
 

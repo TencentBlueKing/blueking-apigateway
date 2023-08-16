@@ -113,7 +113,7 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
 
         allow, message = ESBChannel.objects.allow_delete([instance.id])
         if not allow:
-            raise error_codes.FORBIDDEN.format(message, replace=True)
+            raise error_codes.FAILED_PRECONDITION.format(message, replace=True)
 
         ESBChannel.objects.delete_custom_channels([instance.id])
 
@@ -134,7 +134,7 @@ class ESBChannelBatchViewSet(viewsets.ModelViewSet):
 
         allow, message = ESBChannel.objects.allow_delete(slz.validated_data["ids"])
         if not allow:
-            raise error_codes.FORBIDDEN.format(message, replace=True)
+            raise error_codes.FAILED_PRECONDITION.format(message, replace=True)
 
         ESBChannel.objects.delete_custom_channels(slz.validated_data["ids"])
 
@@ -209,7 +209,7 @@ class ComponentSyncViewSet(viewsets.ViewSet):
     def _get_esb_gateway(self) -> Gateway:
         gateway = get_object_or_None(Gateway, name=settings.BK_ESB_GATEWAY_NAME)
         if not gateway:
-            raise error_codes.COMPONENT_GATEWAY_NOT_FOUND.format(api_name=settings.BK_ESB_GATEWAY_NAME)
+            raise error_codes.INTERNAL.format(api_name=settings.BK_ESB_GATEWAY_NAME)
         return gateway
 
 

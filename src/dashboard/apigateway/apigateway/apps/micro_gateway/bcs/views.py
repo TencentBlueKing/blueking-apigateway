@@ -41,7 +41,7 @@ class BcsViewSet(viewsets.ViewSet):
         try:
             projects = BcsHelper(access_token=get_user_access_token_from_request(request)).get_projects()
         except BcsApiGatewayApiRequestError as err:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(str(err), replace=True)
+            raise error_codes.INTERNAL.format(str(err), replace=True)
 
         slz = serializers.BcsProjectSLZ(projects, many=True)
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("project_name")))
@@ -60,7 +60,7 @@ class BcsViewSet(viewsets.ViewSet):
                 project_id=query_slz.validated_data["project_id"]
             )
         except BcsApiGatewayApiRequestError as err:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(str(err), replace=True)
+            raise error_codes.INTERNAL.format(str(err), replace=True)
 
         slz = serializers.BcsClusterSLZ(clusters, many=True)
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("cluster_id")))
@@ -82,7 +82,7 @@ class BcsViewSet(viewsets.ViewSet):
                 cluster_id=data["cluster_id"],
             )
         except BcsApiGatewayApiRequestError as err:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(str(err), replace=True)
+            raise error_codes.INTERNAL.format(str(err), replace=True)
 
         slz = serializers.BcsNamespaceSLZ(namespaces, many=True)
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("namespace")))
@@ -105,7 +105,7 @@ class BcsViewSet(viewsets.ViewSet):
                 namespace=data["namespace"],
             )
         except BcsApiGatewayApiRequestError as err:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(str(err), replace=True)
+            raise error_codes.INTERNAL.format(str(err), replace=True)
 
         # 根据 chart 名称，过滤出微网关实例
         matched_releases = filter(lambda x: x.chart_name == settings.BCS_MICRO_GATEWAY_CHART_NAME, releases)

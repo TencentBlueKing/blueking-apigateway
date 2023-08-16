@@ -51,7 +51,7 @@ class SignatureValidator(SignatureGenerator):
             self.error = None
 
         if self.error and raise_exception:
-            raise error_codes.INVALID_ARGS.format(self.error)
+            raise error_codes.INVALID_ARGUMENT.format(self.error)
 
         return not bool(self.error)
 

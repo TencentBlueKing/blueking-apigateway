@@ -28,7 +28,7 @@ from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, UserAuthTypeEnum
-from apigateway.core.models import Gateway, Resource
+from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -53,7 +53,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             gateways,
             many=True,
             context={
-                "resource_count": Resource.objects.get_resource_count(gateway_ids),
+                "resource_count": GatewayHandler.get_resource_count(gateway_ids),
                 "stages": GatewayHandler.get_stages_with_release_status(gateway_ids),
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids),
             },
@@ -144,7 +144,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         GatewayHandler.record_audit_log_success(request.user.username, instance, OpTypeEnum.DELETE)
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class GatewayUpdateStatusApi(generics.UpdateAPIView):

@@ -148,11 +148,6 @@ class StageManager(models.Manager):
 
 
 class ResourceManager(models.Manager):
-    def get_resource_count(self, gateway_ids: List[int]) -> Dict[int, int]:
-        """获取网关资源数量"""
-        resource_count = self.filter(api_id__in=gateway_ids).values("api_id").annotate(count=Count("api_id"))
-        return {i["api_id"]: i["count"] for i in resource_count}
-
     def filter_by_ids(self, gateway, ids):
         if not ids:
             return self.none()
@@ -471,15 +466,6 @@ class ResourceVersionManager(models.Manager):
 
 
 class ReleaseManager(models.Manager):
-    def get_released_stage_ids(self, gateway_ids: List[int]) -> List[int]:
-        return list(
-            self.filter(
-                api_id__in=gateway_ids,
-                api__status=GatewayStatusEnum.ACTIVE.value,
-                stage__status=StageStatusEnum.ACTIVE.value,
-            ).values_list("stage_id", flat=True)
-        )
-
     def get_stage_release_status(self, stage_ids):
         """
         获取环境部署状态
@@ -1005,7 +991,7 @@ class JWTManager(models.Manager):
         try:
             return self.get(api=gateway)
         except Exception:
-            raise error_codes.NOT_FOUND_ERROR.format(_("网关密钥不存在。"), replace=True)
+            raise error_codes.NOT_FOUND.format(_("网关密钥不存在。"), replace=True)
 
     def is_jwt_key_changed(self, gateway, private_key: bytes, public_key: bytes) -> bool:
         cipher = AESCipherManager.create_jwt_cipher()
@@ -1034,7 +1020,7 @@ class APIRelatedAppManager(models.Manager):
             bk_app_code, settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app"]
         )
         if self.filter(bk_app_code=bk_app_code).count() >= max_gateway_per_app:
-            raise error_codes.VALIDATE_ERROR.format(
+            raise error_codes.INVALID_ARGUMENT.format(
                 f"The app [{bk_app_code}] exceeds the limit of the number of gateways that can be related."
                 + f" The maximum limit is {max_gateway_per_app}."
             )
@@ -1141,7 +1127,7 @@ class SslCertificateBindingManager(models.Manager):
 
             return Stage.objects.filter(api_id=gateway_id, id__in=scope_ids)
 
-        raise error_codes.INVALID_ARGS.format(f"unsupported scope_type: {scope_type}")
+        raise error_codes.INVALID_ARGUMENT.format(f"unsupported scope_type: {scope_type}")
 
     def get_valid_scope_ids(self, gateway_id: int, scope_type: str, scope_ids: List[int]) -> List[int]:
         scope_objects = self.get_scope_objects(gateway_id, scope_type, scope_ids)

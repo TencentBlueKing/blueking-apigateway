@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,19 +15,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import functools
-
 from django.conf import settings
+from django.utils.translation import gettext as _
+from rest_framework import serializers
 
-from apigateway.common.error_codes import error_codes
 
+class ReservedGatewayNameValidator:
+    """保留的网关名校验，开源版网关名不能以 'bk-' 开头"""
 
-def check_board_exist(func):
-    @functools.wraps(func)
-    def wrapper(self, request, board, *args, **kwargs):
-        if board not in settings.ESB_BOARD_CONFIGS:
-            raise error_codes.NOT_FOUND
+    def __call__(self, value: str):
+        if not (
+            getattr(settings, "CHECK_RESERVED_GATEWAY_NAME", False)
+            and getattr(settings, "RESERVED_GATEWAY_NAME_PREFIXES", None)
+        ):
+            return
 
-        return func(self, request, board, *args, **kwargs)
-
-    return wrapper
+        for prefix in settings.RESERVED_GATEWAY_NAME_PREFIXES:
+            if value.startswith(prefix):
+                raise serializers.ValidationError(_("网关名不能以【{prefix}】开头，其为官方保留字。").format(prefix=prefix))

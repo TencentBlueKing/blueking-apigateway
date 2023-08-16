@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,19 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import functools
+from typing import List
 
-from django.conf import settings
+from apigateway.core.constants import (
+    GatewayStatusEnum,
+    StageStatusEnum,
+)
+from apigateway.core.models import Release
 
-from apigateway.common.error_codes import error_codes
 
-
-def check_board_exist(func):
-    @functools.wraps(func)
-    def wrapper(self, request, board, *args, **kwargs):
-        if board not in settings.ESB_BOARD_CONFIGS:
-            raise error_codes.NOT_FOUND
-
-        return func(self, request, board, *args, **kwargs)
-
-    return wrapper
+class ReleaseHandler:
+    @staticmethod
+    def get_released_stage_ids(gateway_ids: List[int]) -> List[int]:
+        return list(
+            Release.objects.filter(
+                api_id__in=gateway_ids,
+                api__status=GatewayStatusEnum.ACTIVE.value,
+                stage__status=StageStatusEnum.ACTIVE.value,
+            ).values_list("stage_id", flat=True)
+        )
