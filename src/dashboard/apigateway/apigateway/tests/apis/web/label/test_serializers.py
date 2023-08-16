@@ -20,13 +20,13 @@ import arrow
 from django.test import TestCase
 from django_dynamic_fixture import G
 
-from apigateway.apis.web.label.serializers import APILabelInputSLZ, APILabelOutputSLZ
+from apigateway.apis.web.label.serializers import GatewayLabelInputSLZ, GatewayLabelOutputSLZ
 from apigateway.apps.label.models import APILabel
 from apigateway.core.models import Gateway
 from apigateway.tests.utils.testing import create_request
 
 
-class TestAPILabelOutputSLZ(TestCase):
+class TestGatewayLabelOutputSLZ(TestCase):
     def test_to_representation(self):
         gateway = G(Gateway)
         updated_time = arrow.get("2019-01-01 12:30:00").datetime
@@ -38,11 +38,11 @@ class TestAPILabelOutputSLZ(TestCase):
             "updated_time": "2019-01-01 20:30:00",
         }
 
-        slz = APILabelOutputSLZ(instance=api_label)
+        slz = GatewayLabelOutputSLZ(instance=api_label)
         self.assertEqual(slz.data, expected)
 
 
-class TestAPILabelInputSLZ(TestCase):
+class TestGatewayLabelInputSLZ(TestCase):
     def test_to_internal_value(self):
         gateway = G(Gateway)
         api_label = G(APILabel, api=gateway, name="test")
@@ -97,7 +97,7 @@ class TestAPILabelInputSLZ(TestCase):
         ]
 
         for test in data:
-            slz = APILabelInputSLZ(instance=test["instance"], data=test, context={"request": request})
+            slz = GatewayLabelInputSLZ(instance=test["instance"], data=test, context={"request": request})
             slz.is_valid()
             if test["will_error"]:
                 self.assertTrue(slz.errors)

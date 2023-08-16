@@ -20,12 +20,12 @@ import arrow
 from django.test import TestCase
 from django_dynamic_fixture import G
 
-from apigateway.apis.web.label.views import APILabelListCreateApi, APILabelRetrieveUpdateDestroyApi
+from apigateway.apis.web.label.views import GatewayLabelListCreateApi, GatewayLabelRetrieveUpdateDestroyApi
 from apigateway.apps.label.models import APILabel
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, get_response_json
 
 
-class TestAPILabelListCreateApi(TestCase):
+class TestGatewayLabelListCreateApi(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
@@ -37,7 +37,7 @@ class TestAPILabelListCreateApi(TestCase):
         }
         request = self.factory.post(f"/gateways/{self.gateway.id}/labels/", data=data)
 
-        view = APILabelListCreateApi.as_view()
+        view = GatewayLabelListCreateApi.as_view()
         response = view(request, gateway_id=self.gateway.id)
 
         result = get_response_json(response)
@@ -66,7 +66,7 @@ class TestAPILabelListCreateApi(TestCase):
         for test in data:
             request = self.factory.get(f"/gateways/{self.gateway.id}/labels/", data=test)
 
-            view = APILabelListCreateApi.as_view()
+            view = GatewayLabelListCreateApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
@@ -86,7 +86,7 @@ class TestAPILabelViewSet(TestCase):
 
         request = self.factory.get(f"/gateways/{self.gateway.id}/labels/{api_label.id}/")
 
-        view = APILabelRetrieveUpdateDestroyApi.as_view()
+        view = GatewayLabelRetrieveUpdateDestroyApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=api_label.id)
 
         result = get_response_json(response)
@@ -106,7 +106,7 @@ class TestAPILabelViewSet(TestCase):
 
         request = self.factory.put(f"/gateways/{self.gateway.id}/labels/{api_label.id}/", data=data)
 
-        view = APILabelRetrieveUpdateDestroyApi.as_view()
+        view = GatewayLabelRetrieveUpdateDestroyApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=api_label.id)
 
         self.assertEqual(response.status_code, 204)
@@ -119,7 +119,7 @@ class TestAPILabelViewSet(TestCase):
 
         request = self.factory.delete(f"/gateways/{self.gateway.id}/labels/{api_label.id}/")
 
-        view = APILabelRetrieveUpdateDestroyApi.as_view()
+        view = GatewayLabelRetrieveUpdateDestroyApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=api_label.id)
 
         _ = get_response_json(response)

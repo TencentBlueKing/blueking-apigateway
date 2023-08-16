@@ -24,13 +24,12 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.validators import MaxCountPerGatewayValidator
 
 
-class APILabelOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    updated_time = serializers.DateTimeField()
+class GatewayLabelOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
 
 
-class APILabelInputSLZ(serializers.ModelSerializer):
+class GatewayLabelInputSLZ(serializers.ModelSerializer):
     api = serializers.HiddenField(default=CurrentGatewayDefault())
 
     class Meta:
@@ -53,12 +52,3 @@ class APILabelInputSLZ(serializers.ModelSerializer):
                 message=gettext_lazy("每个网关最多创建 {max_count} 个标签。"),
             ),
         ]
-
-
-class APILabelListQueryInputSLZ(serializers.Serializer):
-    name = serializers.CharField(allow_blank=True, required=False)
-    order_by = serializers.ChoiceField(
-        choices=["name", "-name", "updated_time", "-updated_time"],
-        allow_blank=True,
-        required=False,
-    )
