@@ -217,7 +217,9 @@ class GatewayHandler:
         Gateway.objects.filter(id=gateway_id).delete()
 
     @staticmethod
-    def record_audit_log_success(username: str, instance: Gateway, op_type: OpTypeEnum):
+    def record_audit_log_success(
+        username: str, gateway_id: int, op_type: OpTypeEnum, instance_id: int, instance_name: str
+    ):
         comment = {
             OpTypeEnum.CREATE: _("创建网关"),
             OpTypeEnum.MODIFY: _("更新网关"),
@@ -228,10 +230,10 @@ class GatewayHandler:
             username=username,
             op_type=op_type.value,
             op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=instance.pk,
+            op_object_group=gateway_id,
             op_object_type=OpObjectTypeEnum.API.value,
-            op_object_id=instance.pk,
-            op_object=instance.name,
+            op_object_id=instance_id,
+            op_object=instance_name,
             comment=comment,
         )
 
