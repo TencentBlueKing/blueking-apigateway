@@ -29,7 +29,6 @@ from apigateway.core.validators import (
     BKAppCodeListValidator,
     BKAppCodeValidator,
     MaxCountPerGatewayValidator,
-    ReservedGatewayNameValidator,
     ResourceIDValidator,
 )
 from apigateway.tests.utils.testing import create_request
@@ -232,33 +231,3 @@ class TestResourceIDValidator:
                 assert slz.errors
             else:
                 assert not slz.errors
-
-
-class TestReservedGatewayNameValidator:
-    class APISLZ(serializers.Serializer):
-        name = serializers.CharField(validators=[ReservedGatewayNameValidator()])
-
-    @pytest.mark.parametrize(
-        "check_reserved_gateway_name, reserved_gateway_name_prefixes, api_name, will_error",
-        [
-            (False, ["bk-"], "api-test", False),
-            (False, ["bk-"], "bk-api-test", False),
-            (True, ["bk-"], "api-test", False),
-            (True, ["bk-"], "bk-api-test", True),
-            (True, ["bk_", "bk-"], "bk-api-test", True),
-            (True, [], "test", False),
-        ],
-    )
-    def test_validate(
-        self, settings, check_reserved_gateway_name, reserved_gateway_name_prefixes, api_name, will_error
-    ):
-        settings.CHECK_RESERVED_GATEWAY_NAME = check_reserved_gateway_name
-        settings.RESERVED_GATEWAY_NAME_PREFIXES = reserved_gateway_name_prefixes
-
-        slz = self.APISLZ(data={"name": api_name})
-        slz.is_valid()
-
-        if will_error:
-            assert slz.errors
-        else:
-            assert not slz.errors

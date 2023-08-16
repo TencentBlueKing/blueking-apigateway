@@ -22,6 +22,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
+from django.db.models import Count
 from django.utils.translation import gettext as _
 
 from apigateway.apps.access_strategy.models import AccessStrategy
@@ -31,10 +32,11 @@ from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.iam import IAMHandler
+from apigateway.biz.release import ReleaseHandler
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
-from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, SslCertificate, Stage
+from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, Resource, SslCertificate, Stage
 from apigateway.utils.dict import deep_update
 
 from .resource import ResourceHandler
@@ -60,7 +62,7 @@ class GatewayHandler:
         }
         """
         stages = Stage.objects.filter(api_id__in=gateway_ids).values("id", "name", "api_id")
-        released_stage_ids = Release.objects.get_released_stage_ids(gateway_ids)
+        released_stage_ids = ReleaseHandler.get_released_stage_ids(gateway_ids)
         stage_release_status = dict.fromkeys(released_stage_ids, True)
 
         gateway_id_to_stages = defaultdict(list)
@@ -249,3 +251,11 @@ class GatewayHandler:
     @staticmethod
     def get_api_domain(gateway: Gateway) -> str:
         return settings.BK_API_URL_TMPL.format(api_name=gateway.name)
+
+    @staticmethod
+    def get_resource_count(gateway_ids: List[int]) -> Dict[int, int]:
+        """获取网关资源数量"""
+        resource_count = (
+            Resource.objects.filter(api_id__in=gateway_ids).values("api_id").annotate(count=Count("api_id"))
+        )
+        return {i["api_id"]: i["count"] for i in resource_count}

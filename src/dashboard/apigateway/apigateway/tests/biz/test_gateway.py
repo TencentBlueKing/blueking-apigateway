@@ -32,7 +32,7 @@ from apigateway.core.constants import (
     GatewayTypeEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, Stage
+from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, Resource, Stage
 
 
 class TestGatewayHandler:
@@ -273,3 +273,33 @@ class TestGatewayHandler:
         G(ReleasedResourceDoc, api=fake_gateway)
         result = GatewayHandler.get_docs_url(fake_gateway)
         assert result == f"http://apigw.example.com/docs/{fake_gateway.name}"
+
+    def test_get_resource_count(self):
+        gateway_1 = G(Gateway)
+        gateway_2 = G(Gateway)
+        gateway_3 = G(Gateway)
+
+        G(Resource, api=gateway_1)
+        G(Resource, api=gateway_1)
+        G(Resource, api=gateway_2)
+
+        data = [
+            {
+                "gateway_ids": [gateway_1.id, gateway_2.id, gateway_3.id],
+                "expected": {
+                    gateway_1.id: 2,
+                    gateway_2.id: 1,
+                },
+            },
+            {
+                "gateway_ids": [gateway_1.id, gateway_2.id],
+                "expected": {
+                    gateway_1.id: 2,
+                    gateway_2.id: 1,
+                },
+            },
+        ]
+
+        for test in data:
+            result = GatewayHandler.get_resource_count(test["gateway_ids"])
+            assert result == test["expected"]

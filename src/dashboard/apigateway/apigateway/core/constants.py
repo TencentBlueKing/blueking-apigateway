@@ -142,16 +142,6 @@ class GatewayTypeEnum(StructuredEnum):
     OFFICIAL_API = EnumField(1, "官方云API")
     CLOUDS_API = EnumField(10, "云API")
 
-    @classmethod
-    def is_official(cls, value: int) -> bool:
-        return value in [cls.SUPER_OFFICIAL_API.value, cls.OFFICIAL_API.value]
-
-    @property
-    def sort_key(self):
-        if self._value_ in [self.SUPER_OFFICIAL_API.value, self.OFFICIAL_API.value]:
-            return "a"
-        return "b"
-
 
 class StageStatusEnum(ChoiceEnumMixin, Enum):
     INACTIVE = 0

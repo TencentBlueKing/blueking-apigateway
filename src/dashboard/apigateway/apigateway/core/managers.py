@@ -148,11 +148,6 @@ class StageManager(models.Manager):
 
 
 class ResourceManager(models.Manager):
-    def get_resource_count(self, gateway_ids: List[int]) -> Dict[int, int]:
-        """获取网关资源数量"""
-        resource_count = self.filter(api_id__in=gateway_ids).values("api_id").annotate(count=Count("api_id"))
-        return {i["api_id"]: i["count"] for i in resource_count}
-
     def filter_by_ids(self, gateway, ids):
         if not ids:
             return self.none()
@@ -471,15 +466,6 @@ class ResourceVersionManager(models.Manager):
 
 
 class ReleaseManager(models.Manager):
-    def get_released_stage_ids(self, gateway_ids: List[int]) -> List[int]:
-        return list(
-            self.filter(
-                api_id__in=gateway_ids,
-                api__status=GatewayStatusEnum.ACTIVE.value,
-                stage__status=StageStatusEnum.ACTIVE.value,
-            ).values_list("stage_id", flat=True)
-        )
-
     def get_stage_release_status(self, stage_ids):
         """
         获取环境部署状态
