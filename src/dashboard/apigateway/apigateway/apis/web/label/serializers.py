@@ -20,8 +20,8 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apps.label.models import APILabel
+from apigateway.biz.slz_validators import MaxCountPerGatewayValidator
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.validators import MaxCountPerGatewayValidator
 
 
 class GatewayLabelOutputSLZ(serializers.Serializer):

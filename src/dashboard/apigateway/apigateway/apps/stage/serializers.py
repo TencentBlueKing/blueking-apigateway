@@ -27,6 +27,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.stage.validators import StageVarsValidator
+from apigateway.biz.slz_validators import MaxCountPerGatewayValidator
 from apigateway.biz.stage import StageHandler
 from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
 from apigateway.common.fields import CurrentGatewayDefault
@@ -41,7 +42,6 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import MicroGateway, Stage
 from apigateway.core.signals import reversion_update_signal
-from apigateway.core.validators import MaxCountPerGatewayValidator
 
 
 class HostSLZ(serializers.Serializer):

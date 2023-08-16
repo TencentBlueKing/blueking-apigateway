@@ -1,39 +1,18 @@
-# -*- coding: utf-8 -*-
-#
-# TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
-# Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the "License"); you may not use this file except
-# in compliance with the License. You may obtain a copy of the License at
-#
-#     http://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software distributed under
-# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-# either express or implied. See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# We undertake not to change the open source license (MIT license) applicable
-# to the current version of the project delivered to anyone in the future.
-#
 from unittest import mock
 
-import pytest
 from ddf import G
 from django.test import TestCase
 from rest_framework import serializers
 
-from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.models import Gateway, Resource, Stage
-from apigateway.core.validators import (
+from apigateway.biz.slz_validators import (
     BKAppCodeListValidator,
     BKAppCodeValidator,
     MaxCountPerGatewayValidator,
     ResourceIDValidator,
 )
+from apigateway.common.fields import CurrentGatewayDefault
+from apigateway.core.models import Gateway, Resource, Stage
 from apigateway.tests.utils.testing import create_request
-
-pytestmark = pytest.mark.django_db
 
 
 class TestMaxCountPerAPIValidator(TestCase):
@@ -85,81 +64,6 @@ class TestMaxCountPerAPIValidator(TestCase):
                 data=test["params"],
                 context={"request": request},
             )
-            slz.is_valid()
-            if test.get("will_error"):
-                self.assertTrue(slz.errors)
-            else:
-                self.assertFalse(slz.errors)
-
-
-class TestBKAppCodeValidator(TestCase):
-    class RecordSLZ(serializers.Serializer):
-        bk_app_code = serializers.CharField(validators=[BKAppCodeValidator()], allow_blank=True)
-
-    def test_validate(self):
-        data = [
-            # ok, bk_app_code is blank
-            {
-                "params": {
-                    "bk_app_code": "",
-                },
-                "will_error": False,
-            },
-            # ok, valid bk_app_code
-            {
-                "params": {
-                    "bk_app_code": "exist-app",
-                },
-                "will_error": False,
-            },
-            # invalid bk_app_code
-            {
-                "params": {
-                    "bk_app_code": "invalid#",
-                },
-                "will_error": True,
-            },
-        ]
-        for test in data:
-            slz = TestBKAppCodeValidator.RecordSLZ(data=test["params"])
-            slz.is_valid()
-            if test.get("will_error"):
-                self.assertTrue(slz.errors)
-            else:
-                self.assertFalse(slz.errors)
-
-
-class TestBKAppCodeListValidator(TestCase):
-    class RecordSLZ(serializers.Serializer):
-        bk_app_code_list = serializers.ListField(child=serializers.CharField(), validators=[BKAppCodeListValidator()])
-
-    def test_validate(self):
-        data = [
-            # ok, empty data
-            {
-                "params": {
-                    "bk_app_code_list": [],
-                },
-                "will_error": False,
-            },
-            # ok, valid
-            {
-                "params": {
-                    "bk_app_code_list": ["exist-app"],
-                },
-                "will_error": False,
-            },
-            # invalid app_code
-            {
-                "params": {
-                    "bk_app_code_list": ["invalid#"],
-                },
-                "mock": {},
-                "will_error": True,
-            },
-        ]
-        for test in data:
-            slz = TestBKAppCodeListValidator.RecordSLZ(data=test["params"])
             slz.is_valid()
             if test.get("will_error"):
                 self.assertTrue(slz.errors)
@@ -231,3 +135,78 @@ class TestResourceIDValidator:
                 assert slz.errors
             else:
                 assert not slz.errors
+
+
+class TestBKAppCodeListValidator(TestCase):
+    class RecordSLZ(serializers.Serializer):
+        bk_app_code_list = serializers.ListField(child=serializers.CharField(), validators=[BKAppCodeListValidator()])
+
+    def test_validate(self):
+        data = [
+            # ok, empty data
+            {
+                "params": {
+                    "bk_app_code_list": [],
+                },
+                "will_error": False,
+            },
+            # ok, valid
+            {
+                "params": {
+                    "bk_app_code_list": ["exist-app"],
+                },
+                "will_error": False,
+            },
+            # invalid app_code
+            {
+                "params": {
+                    "bk_app_code_list": ["invalid#"],
+                },
+                "mock": {},
+                "will_error": True,
+            },
+        ]
+        for test in data:
+            slz = TestBKAppCodeListValidator.RecordSLZ(data=test["params"])
+            slz.is_valid()
+            if test.get("will_error"):
+                self.assertTrue(slz.errors)
+            else:
+                self.assertFalse(slz.errors)
+
+
+class TestBKAppCodeValidator(TestCase):
+    class RecordSLZ(serializers.Serializer):
+        bk_app_code = serializers.CharField(validators=[BKAppCodeValidator()], allow_blank=True)
+
+    def test_validate(self):
+        data = [
+            # ok, bk_app_code is blank
+            {
+                "params": {
+                    "bk_app_code": "",
+                },
+                "will_error": False,
+            },
+            # ok, valid bk_app_code
+            {
+                "params": {
+                    "bk_app_code": "exist-app",
+                },
+                "will_error": False,
+            },
+            # invalid bk_app_code
+            {
+                "params": {
+                    "bk_app_code": "invalid#",
+                },
+                "will_error": True,
+            },
+        ]
+        for test in data:
+            slz = TestBKAppCodeValidator.RecordSLZ(data=test["params"])
+            slz.is_valid()
+            if test.get("will_error"):
+                self.assertTrue(slz.errors)
+            else:
+                self.assertFalse(slz.errors)

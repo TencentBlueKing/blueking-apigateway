@@ -32,8 +32,8 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.slz_validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.common.fields import TimestampField
-from apigateway.core.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.utils import time
 
 

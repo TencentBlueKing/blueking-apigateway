@@ -31,8 +31,8 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
     PermissionStatusEnum,
 )
+from apigateway.biz.slz_validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
-from apigateway.core.validators import BKAppCodeValidator
 from apigateway.utils import time
 
 

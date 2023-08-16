@@ -28,9 +28,9 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
+from apigateway.biz.slz_validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.core.constants import ExportTypeEnum
 from apigateway.core.models import Resource
-from apigateway.core.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
 
