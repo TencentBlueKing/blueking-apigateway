@@ -386,7 +386,7 @@ class ResourceVersionManager(models.Manager):
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_LONG.value))
     def has_used_stage_upstreams(self, gateway_id: int, id: int) -> bool:
         """资源 Hosts 是否存在使用默认配置"""
-        resoruce_version = self.filter(api_id=gateway_id, id=id).first()
+        resoruce_version = self.filter(gateway_id=gateway_id, id=id).first()
         for resource in resoruce_version.data:
             if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
                 continue
@@ -442,7 +442,7 @@ class ResourceVersionManager(models.Manager):
 
     def get_id_by_name(self, gateway, name: str) -> Optional[int]:
         # 版本中 data 数据量较大，查询时不查询 data 数据
-        ids = self.filter(api=gateway, name=name).values_list("id", flat=True)
+        ids = self.filter(gateway=gateway, name=name).values_list("id", flat=True)
         if not ids:
             return None
         return ids[0]
@@ -1053,8 +1053,8 @@ class MicroGatewayManager(models.Manager):
         if not gateway_ids:
             return {}
 
-        count = self.filter(api_id__in=gateway_ids).values("api_id").annotate(count=Count("api_id"))
-        return {i["api_id"]: i["count"] for i in count}
+        count = self.filter(gateway_id__in=gateway_ids).values("gateway_id").annotate(count=Count("gateway_id"))
+        return {i["gateway_id"]: i["count"] for i in count}
 
 
 class BackendServiceManager(models.Manager):

@@ -84,16 +84,16 @@ class ResourceDocVersionManager(models.Manager):
         return [d.snapshot(as_dict=True) for d in docs]
 
     def get_by_resource_version_id(self, gateway_id: int, resource_version_id: int):
-        return self.filter(api_id=gateway_id, resource_version_id=resource_version_id).first()
+        return self.filter(gateway_id=gateway_id, resource_version_id=resource_version_id).first()
 
     def get_latest_version(self, gateway_id):
-        return self.filter(api_id=gateway_id).order_by("-id").first()
+        return self.filter(gateway_id=gateway_id).order_by("-id").first()
 
     def get_doc_data_by_rv_or_new(self, gateway_id: int, resource_version_id: Optional[int]) -> List[Any]:
         """获取版本中文档内容"""
         if resource_version_id:
             try:
-                return self.get(api_id=gateway_id, resource_version_id=resource_version_id).data
+                return self.get(gateway_id=gateway_id, resource_version_id=resource_version_id).data
             except self.model.DoesNotExist:
                 return []
 
@@ -158,7 +158,7 @@ class ReleasedResourceDocManager(models.Manager):
 
         resource_doc_to_add = [
             self.model(
-                api_id=resource_doc_version.api_id,
+                gateway_id=resource_doc_version.api_id,
                 resource_version_id=resource_doc_version.resource_version_id,
                 resource_id=doc["resource_id"],
                 language=doc.get("language", DocLanguageEnum.ZH.value),
@@ -173,7 +173,7 @@ class ReleasedResourceDocManager(models.Manager):
         from apigateway.core.models import Release
 
         resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
-        self.filter(api_id=gateway_id).exclude(resource_version_id__in=resource_version_ids).delete()
+        self.filter(gateway_id=gateway_id).exclude(resource_version_id__in=resource_version_ids).delete()
 
     def get_latest_released_resource_doc(self, gateway_id: int, resource_id: int) -> dict:
         """获取最新的已发布资源文档"""
@@ -197,7 +197,7 @@ class ReleasedResourceDocManager(models.Manager):
         language=DocLanguageEnum.ZH.value,
     ) -> Optional[dict]:
         doc = self.filter(
-            api_id=gateway_id,
+            gateway_id=gateway_id,
             resource_version_id=resource_version_id,
             resource_id=resource_id,
             language=language,
@@ -205,7 +205,7 @@ class ReleasedResourceDocManager(models.Manager):
         return doc.data if doc else {}
 
     def get_doc_updated_time(self, gateway_id: int, resource_version_id: int, resource_id: int) -> Dict[str, str]:
-        qs = self.filter(api_id=gateway_id, resource_version_id=resource_version_id, resource_id=resource_id)
+        qs = self.filter(gateway_id=gateway_id, resource_version_id=resource_version_id, resource_id=resource_id)
         return {doc.language: doc.data["updated_time"] for doc in qs}
 
 
@@ -219,7 +219,7 @@ class APISDKManager(models.Manager):
         resource_version_id=None,
         fuzzy=False,
     ):
-        queryset = self.filter(api=gateway)
+        queryset = self.filter(gateway=gateway)
 
         if language:
             queryset = queryset.filter(language=language)

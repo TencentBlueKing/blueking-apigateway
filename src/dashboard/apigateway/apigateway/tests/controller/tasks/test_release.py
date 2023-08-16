@@ -56,7 +56,7 @@ class TestReleaseGaterwayByHelm:
         )
 
     def test_success(self, mocker, edge_release, micro_gateway, micro_gateway_release_history):
-        self.distributor.distribute.return_value = True
+        self.distributor.distribute.return_value = True, ""
 
         username = "user"
         access_token = "access_token"
@@ -75,11 +75,13 @@ class TestReleaseGaterwayByHelm:
         micro_gateway_release_history.status = ReleaseStatusEnum.SUCCESS.value
 
     def test_fail(self, mocker, edge_release, micro_gateway, micro_gateway_release_history):
-        self.distributor.distribute.return_value = False
+        self.distributor.distribute.return_value = False, "Fail"
 
         username = "user"
         access_token = "access_token"
-        assert tasks.release_gateway_by_helm(access_token, username, edge_release.id, micro_gateway_release_history.id)
+        assert not tasks.release_gateway_by_helm(
+            access_token, username, edge_release.id, micro_gateway_release_history.id
+        )
 
         micro_gateway_release_history.refresh_from_db()
         micro_gateway_release_history.status = ReleaseStatusEnum.FAILURE.value
@@ -97,7 +99,7 @@ class TestReleaseGatewayByRegistry:
         edge_release.gateway = G(Gateway)
         edge_release.save()
 
-        self.distributor.distribute.return_value = True
+        self.distributor.distribute.return_value = True, ""
 
         assert tasks.release_gateway_by_registry(micro_gateway.id, edge_release.id, micro_gateway_release_history.id)
 
@@ -107,10 +109,10 @@ class TestReleaseGatewayByRegistry:
         micro_gateway_release_history.status = ReleaseStatusEnum.SUCCESS.value
 
     def test_success_for_owned_gateway(self, mocker, edge_release, micro_gateway, micro_gateway_release_history):
-        edge_release.gateway = micro_gateway.api
+        edge_release.gateway = micro_gateway.gateway
         edge_release.save()
 
-        self.distributor.distribute.return_value = True
+        self.distributor.distribute.return_value = True, ""
 
         assert tasks.release_gateway_by_registry(micro_gateway.id, edge_release.id, micro_gateway_release_history.id)
 
@@ -120,9 +122,11 @@ class TestReleaseGatewayByRegistry:
         micro_gateway_release_history.status = ReleaseStatusEnum.SUCCESS.value
 
     def test_fail(self, mocker, edge_release, micro_gateway, micro_gateway_release_history):
-        self.distributor.distribute.return_value = False
+        self.distributor.distribute.return_value = False, "Fail"
 
-        assert tasks.release_gateway_by_registry(micro_gateway.id, edge_release.id, micro_gateway_release_history.id)
+        assert not tasks.release_gateway_by_registry(
+            micro_gateway.id, edge_release.id, micro_gateway_release_history.id
+        )
 
         micro_gateway_release_history.refresh_from_db()
         micro_gateway_release_history.status = ReleaseStatusEnum.FAILURE.value

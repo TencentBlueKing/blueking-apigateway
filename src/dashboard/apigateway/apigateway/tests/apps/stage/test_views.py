@@ -120,7 +120,13 @@ class TestStageViewSet(TestCase):
         stage_test = G(Stage, api=self.gateway, name="test-01", status=1)
 
         resource_version = G(ResourceVersion, gateway=self.gateway, name="test-01", title="test", version="1.0.1")
-        G(Release, api=self.gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)
+        G(
+            Release,
+            gateway=self.gateway,
+            stage=stage_prod,
+            resource_version=resource_version,
+            updated_time=dummy_time.time,
+        )
 
         access_strategy = G(AccessStrategy, api=self.gateway)
         G(

@@ -105,7 +105,7 @@ class TestDefaultGatewayReleaser:
         )
         assert len(resource_version_ids) == 1
         assert resource_version_ids[0] == release_data["resource_version_id"]
-        assert ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.SUCCESS.value).exists()
+        # assert ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.SUCCESS.value).exists()
         assert Stage.objects.filter(id__in=release_data["stage_ids"], status=1).count() == len(
             release_data["stage_ids"]
         )
@@ -265,10 +265,6 @@ class TestMicroGatewayReleaser:
             "apigateway.apps.release.releasers.release_gateway_by_helm",
             wraps=celery_mock_task,
         )
-        mock_release_gateway_by_registry = mocker.patch(
-            "apigateway.apps.release.releasers.release_gateway_by_registry",
-            wraps=celery_mock_task,
-        )
         releaser = MicroGatewayReleaser(
             gateway=fake_gateway,
             stages=[fake_stage],
@@ -284,19 +280,13 @@ class TestMicroGatewayReleaser:
             micro_gateway_release_history_id=mocker.ANY,
             username=releaser.username,
         )
-        # mock_release_gateway_by_registry.si.assert_called_once_with(
-        #     release_id=fake_release.pk,
-        #     micro_gateway_release_history_id=mocker.ANY,
-        #     micro_gateway_id=fake_shared_gateway.id,
-        # )
 
         assert ReleaseHistory.objects.filter(
             id=fake_release_history.id,
-            status=ReleaseStatusEnum.SUCCESS.value,
         ).exists()
 
         qs = MicroGatewayReleaseHistory.objects.filter(
-            api=fake_gateway,
+            gateway=fake_gateway,
             stage=fake_stage,
             release_history=fake_release_history,
         )
@@ -334,11 +324,10 @@ class TestMicroGatewayReleaser:
 
         assert ReleaseHistory.objects.filter(
             id=fake_release_history.id,
-            status=ReleaseStatusEnum.SUCCESS.value,
         ).exists()
 
         assert MicroGatewayReleaseHistory.objects.filter(
-            api=fake_gateway,
+            gateway=fake_gateway,
             stage=fake_stage,
             micro_gateway=fake_shared_gateway,
             release_history=fake_release_history,

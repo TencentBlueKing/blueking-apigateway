@@ -181,7 +181,7 @@ class APISDK(ConfigModelMixin):
         # 清理之前的标记
         APISDK.objects.filter(
             is_recommended=True,
-            api=self.gateway,
+            gateway=self.gateway,
         ).update(is_public_latest=False, is_recommended=False)
 
         self.is_public_latest = True

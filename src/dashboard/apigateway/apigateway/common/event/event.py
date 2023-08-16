@@ -106,14 +106,12 @@ class PublishEventReporter:
         )
 
     @classmethod
-    def report_distribute_configuration_success_event(cls, publish_id: int, stage_id: int):
+    def report_distribute_configuration_success_event(cls, publish: ReleaseHistory, stage: Stage):
         """
         dashboard下发配置成功事件上报
         """
-        stage = Stage.objects.get(id=stage_id)
-        publish = ReleaseHistory.objects.get(id=publish_id)
         PublishEvent.objects.add_event(
-            gateway=publish.api,
+            gateway=publish.gateway,
             stage=stage,
             publish=publish,
             name=PublishEventNameTypeEnum.DistributeConfiguration,
@@ -121,11 +119,10 @@ class PublishEventReporter:
         )
 
     @classmethod
-    def report_distribute_configuration_failure_event(cls, publish: ReleaseHistory, stage_id: int, fail_msg: str):
+    def report_distribute_configuration_failure_event(cls, publish: ReleaseHistory, stage: Stage, fail_msg: str):
         """
         dashboard下发配置失败事件上报
         """
-        stage = Stage.objects.get(id=stage_id)
         PublishEvent.objects.add_event(
             gateway=publish.gateway,
             stage=stage,

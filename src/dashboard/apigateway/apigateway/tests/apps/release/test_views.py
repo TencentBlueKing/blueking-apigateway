@@ -23,7 +23,6 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.release.views import ReleaseHistoryViewSet
 from apigateway.common.contexts import StageProxyHTTPContext
-from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time, get_response_json
 
@@ -67,7 +66,7 @@ class TestReleaseBatchViewSet:
                 )
 
         data = {
-            "api_id": fake_gateway.id,
+            "gateway_id": fake_gateway.id,
             "stage_ids": [stage_1.id, stage_2.id],
             "resource_version_id": resource_version.id,
         }
@@ -90,11 +89,11 @@ class TestReleaseBatchViewSet:
         assert history_qs.count() == 1
 
         if not succeeded:
-            assert history_qs[0].status == ReleaseStatusEnum.FAILURE.value
+            # assert history_qs[0].status == ReleaseStatusEnum.FAILURE.value
             assert response.status_code != 200, result
         else:
             # The request finished successfully
-            assert history_qs[0].status == ReleaseStatusEnum.SUCCESS.value
+            # assert history_qs[0].status == ReleaseStatusEnum.SUCCESS.value
             assert response.status_code == 200, result
 
             for stage_id in data["stage_ids"]:

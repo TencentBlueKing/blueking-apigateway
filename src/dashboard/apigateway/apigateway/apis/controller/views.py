@@ -65,7 +65,7 @@ class BaseMicroGatewayViewSet(GenericViewSet):
         if micro_gateway.is_shared and bk_gateway_name:
             qs = qs.filter(name=bk_gateway_name)
         else:
-            qs = qs.filter(id=micro_gateway.api_id)
+            qs = qs.filter(id=micro_gateway.gateway_id)
 
         return get_object_or_404(qs)
 

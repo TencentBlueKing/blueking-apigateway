@@ -72,7 +72,7 @@ class TestResourceVersionViewSet(TestCase):
     def test_list(self):
         resource_version = G(
             ResourceVersion,
-            api=self.gateway,
+            gateway=self.gateway,
             version="1.0.1",
             title="test",
             created_time=dummy_time.time,
@@ -131,7 +131,7 @@ class TestResourceVersionViewSet(TestCase):
     def test_retrieve(self):
         resource_version = G(
             ResourceVersion,
-            api=self.gateway,
+            gateway=self.gateway,
             version="1.0.1",
             title="test",
             created_time=dummy_time.time,
@@ -233,7 +233,7 @@ class TestResourceVersionViewSet(TestCase):
         G(ResourceDoc, api=gateway_5, updated_time=dummy_time.time + datetime.timedelta(seconds=20))
         G(
             ResourceDocVersion,
-            api=gateway_5,
+            gateway=gateway_5,
             created_time=dummy_time.time + datetime.timedelta(seconds=10),
             _data=json.dumps([{"id": 1}]),
         )

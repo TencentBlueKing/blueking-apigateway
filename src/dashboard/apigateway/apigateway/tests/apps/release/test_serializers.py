@@ -51,7 +51,7 @@ class TestReleaseBatchSLZ:
                 "resource_version_id": resource_version.id,
                 "comment": "test",
                 "expected": {
-                    "api": self.gateway,
+                    "gateway": self.gateway,
                     "stage_ids": [stage_1.id, stage_2.id],
                     "resource_version_id": resource_version.id,
                     "comment": "test",
@@ -89,7 +89,7 @@ class TestReleaseBatchSLZ:
                 "resource_version_id": resource_version_2.id,
                 "comment": "test",
                 "expected": {
-                    "api": self.gateway,
+                    "gateway": self.gateway,
                     "stage_ids": [stage.id],
                     "resource_version_id": resource_version_2.id,
                     "comment": "test",
@@ -161,7 +161,7 @@ class TestReleaseHistorySLZ:
         resource_version = G(ResourceVersion, gateway=gateway, name="t1", version="1.0.0", title="测试", comment="test1")
         release_history = G(
             ReleaseHistory,
-            gatewaty=gateway,
+            gateway=gateway,
             stage=stage,
             resource_version=resource_version,
             created_time=dummy_time.time,

@@ -126,10 +126,10 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
                 source=PublishSourceEnum.RESOURCE_PUBLISH,
                 author=self.username,
             )
+            release_history.stages.set(self.stages)
             # 上报发布校验失败事件: todo: 支持批量环境发布
             PublishEventReporter.report_config_validate_fail_event(release_history, release_history.stage, message)
             raise ReleaseError(message) from err
-
         # save release history
         history = ReleaseHandler.save_release_history_with_id(
             gateway_id=self.gateway.id,
@@ -138,6 +138,7 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
             source=PublishSourceEnum.RESOURCE_PUBLISH,
             author=self.username,
         )
+        history.stages.set(self.stages)
 
         PublishEventReporter.report_config_validate_success_event(history, history.stage)
 

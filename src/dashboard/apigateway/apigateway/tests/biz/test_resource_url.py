@@ -42,7 +42,7 @@ class TestResourceURLHandler:
         gateway.save()
 
         micro_gateway = G(
-            MicroGateway, api=gateway, _config=json.dumps({"http": {"http_url": "http://myapi.example.com"}})
+            MicroGateway, gateway=gateway, _config=json.dumps({"http": {"http_url": "http://myapi.example.com"}})
         )
         stage.micro_gateway = micro_gateway
         stage.save()

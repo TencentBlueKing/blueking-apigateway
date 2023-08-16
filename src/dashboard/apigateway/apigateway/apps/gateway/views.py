@@ -176,7 +176,7 @@ class GatewayViewSet(BaseGatewayViewSet):
         reversion_update_signal.send(sender=Gateway, instance_id=instance.pk, action="update status")
 
         # 3. revoke micro_gateway instance released resources
-        self._update_micro_gateway_release(instance)
+        # self._update_micro_gateway_release(instance)
 
         record_audit_log(
             username=request.user.username,

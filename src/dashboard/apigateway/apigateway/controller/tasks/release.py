@@ -62,19 +62,20 @@ def _release_gateway(
         )
         if is_success:
             PublishEventReporter.report_distribute_configuration_success_event(
-                latest_micro_gateway_release_history.release_history, release.stage.id
+                latest_micro_gateway_release_history.release_history, release.stage
             )
 
         else:
             PublishEventReporter.report_distribute_configuration_failure_event(
-                latest_micro_gateway_release_history.release_history, release.stage.id, fail_msg
+                latest_micro_gateway_release_history.release_history, release.stage, fail_msg
             )
+            return False
     except Exception as err:
         # 记录失败原因
         procedure_logger.exception("release failed")
         # 上报失败事件
         PublishEventReporter.report_distribute_configuration_failure_event(
-            latest_micro_gateway_release_history.release_history, release.stage.id, f"error: {err}"
+            latest_micro_gateway_release_history.release_history, release.stage, f"error: {err}"
         )
         # 异常抛出，让 celery 停止编排
         raise
@@ -96,7 +97,7 @@ def release_gateway_by_helm(access_token: str, username, release_id, micro_gatew
     procedure_logger = ReleaseProcedureLogger(
         "release_gateway_by_helm",
         logger=logger,
-        gateway=release.api,
+        gateway=release.gateway,
         stage=stage,
         micro_gateway=micro_gateway,
     )
@@ -134,11 +135,11 @@ def release_gateway_by_registry(
     release = Release.objects.prefetch_related("stage", "gateway", "resource_version").get(id=release_id)
     micro_gateway = MicroGateway.objects.get(id=micro_gateway_id, is_shared=True)
     # 如果是共享实例对应的网关发布，同时将对应的实例资源下发
-    include_gateway_global_config = release.api_id == micro_gateway.api_id
+    include_gateway_global_config = release.gateway_id == micro_gateway.gateway_id
     procedure_logger = ReleaseProcedureLogger(
         "release_gateway_by_etcd",
         logger=logger,
-        gateway=release.api,
+        gateway=release.gateway,
         stage=release.stage,
         micro_gateway=micro_gateway,
         release_task_id=micro_gateway_release_history_id,

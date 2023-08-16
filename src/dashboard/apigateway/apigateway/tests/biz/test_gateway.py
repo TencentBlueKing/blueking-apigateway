@@ -40,8 +40,8 @@ class TestGatewayHandler:
         stage_prod = G(Stage, api=gateway, name="prod", status=1)
         stage_test = G(Stage, api=gateway, name="test", status=1)
 
-        resource_version = G(ResourceVersion, api=gateway)
-        G(Release, api=gateway, stage=stage_prod, resource_version=resource_version)
+        resource_version = G(ResourceVersion, gateway=gateway)
+        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version)
 
         data = [
             {

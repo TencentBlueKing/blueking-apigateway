@@ -95,7 +95,7 @@ class SDKHelper:
         now = time_utils.now_datetime()
         # `instance` is a `APISDK` object.
         instance = APISDK.objects.create(
-            api=context.resource_version.gateway,
+            gateway=context.resource_version.gateway,
             resource_version=context.resource_version,
             language=context.language.value,
             version_number=context.version,

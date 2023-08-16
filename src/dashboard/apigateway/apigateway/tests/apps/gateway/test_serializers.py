@@ -374,7 +374,7 @@ class TestAPIListSLZ(TestCase):
         stage_test = G(Stage, api=gateway_1, name="test")
         G(Resource, api=gateway_1)
         G(Resource, api=gateway_1)
-        G(MicroGateway, api=gateway_1)
+        G(MicroGateway, gateway=gateway_1)
 
         expected = [
             {

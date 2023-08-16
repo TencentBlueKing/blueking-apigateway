@@ -35,7 +35,7 @@ class TestAPISDKViewSet:
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
         sdk_1 = G(
             APISDK,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
             name="bkapigw-test",
@@ -49,7 +49,7 @@ class TestAPISDKViewSet:
 
         sdk_2 = G(
             APISDK,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
             name="bkapigw-test",
@@ -62,7 +62,7 @@ class TestAPISDKViewSet:
 
         data = [
             {
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "params": {
                     "language": "python",
                     "resource_version_id": resource_version.id,
@@ -144,7 +144,7 @@ class TestAPISDKViewSet:
 
         data = [
             {
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "params": {
                     "resource_version_id": resource_version.id,
                     "language": "python",

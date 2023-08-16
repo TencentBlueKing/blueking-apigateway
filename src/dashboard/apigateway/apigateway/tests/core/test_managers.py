@@ -176,7 +176,7 @@ class TestStageManager:
     def test_get_micro_gateway_id_to_fields(self):
         gateway = G(Gateway)
 
-        micro_gateway = G(MicroGateway, api=gateway)
+        micro_gateway = G(MicroGateway, gateway=gateway)
 
         G(Stage, api=gateway)
         s2 = G(Stage, api=gateway, micro_gateway=micro_gateway)
@@ -503,7 +503,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=gateway,
+                    gateway=gateway,
                     _data=json.dumps(
                         [
                             {
@@ -523,7 +523,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=gateway,
+                    gateway=gateway,
                     _data=json.dumps(
                         [
                             {
@@ -553,7 +553,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=gateway,
+                    gateway=gateway,
                     _data=json.dumps(
                         [
                             {
@@ -619,7 +619,7 @@ class TestResourceVersionManager:
         result = ResourceVersion.objects.get_id_by_name(gateway, unique_id)
         assert result is None
 
-        resource_version = G(ResourceVersion, api=gateway, name=unique_id)
+        resource_version = G(ResourceVersion, gateway=gateway, name=unique_id)
         result = ResourceVersion.objects.get_id_by_name(gateway, unique_id)
         assert result == resource_version.id
 
@@ -639,7 +639,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=fake_gateway,
+                    gateway=fake_gateway,
                     _data=json.dumps(
                         [
                             {
@@ -656,7 +656,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=fake_gateway,
+                    gateway=fake_gateway,
                     _data=json.dumps(
                         [
                             {
@@ -683,7 +683,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=fake_gateway,
+                    gateway=fake_gateway,
                     _data=json.dumps(
                         [
                             {
@@ -735,7 +735,7 @@ class TestResourceVersionManager:
         assert (
             list(
                 ResourceVersion.objects.filter_objects_fields(
-                    fake_resource_version.api.id,
+                    fake_resource_version.gateway.id,
                     version=fake_resource_version.version,
                 )
             )

@@ -229,7 +229,7 @@ def fake_resource2(faker, fake_resource):
 def fake_micro_gateway(fake_gateway_for_micro_gateway, faker):
     gateway = G(
         MicroGateway,
-        api=fake_gateway_for_micro_gateway,
+        gateway=fake_gateway_for_micro_gateway,
         name=faker.color_name(),
         is_shared=False,
         _config=json.dumps(
@@ -268,7 +268,7 @@ def fake_shared_gateway(fake_micro_gateway, settings):
     """共享网关"""
     gateway = G(
         MicroGateway,
-        api=fake_micro_gateway.api,
+        gateway=fake_micro_gateway.gateway,
         name=fake_micro_gateway.name,
         is_shared=True,
         _config=fake_micro_gateway._config,

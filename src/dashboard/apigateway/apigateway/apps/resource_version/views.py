@@ -68,7 +68,7 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwaÏrgs):
         data = (
-            ResourceVersion.objects.filter(api=request.gateway)
+            ResourceVersion.objects.filter(gateway=request.gateway)
             .values("id", "version", "name", "title", "comment", "created_time")
             .order_by("-id")
         )

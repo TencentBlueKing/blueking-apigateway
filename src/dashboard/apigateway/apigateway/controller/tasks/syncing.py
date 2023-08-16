@@ -81,7 +81,7 @@ def rolling_update_release(
         procedure_logger.info(msg)
     else:
         if not is_cli_sync:
-            PublishEventReporter.report_distribute_configuration_success_event(release_history.id, release.stage.id)
+            PublishEventReporter.report_distribute_configuration_success_event(release_history, release.stage.id)
         procedure_logger.info("distribute succeeded")
 
     return is_success
@@ -113,13 +113,11 @@ def revoke_release_by_stage(stage_id: int, release_history: ReleaseHistory):
     if not is_success:
         msg = f"revoke failed: {err_msg}"
         PublishEventReporter.report_distribute_configuration_failure_event(
-            release_history, release_history.stage.pk, err_msg
+            release_history, release_history.stage, err_msg
         )
         procedure_logger.info(msg)
     else:
-        PublishEventReporter.report_distribute_configuration_success_event(
-            release_history.pk, release_history.stage.pk
-        )
+        PublishEventReporter.report_distribute_configuration_success_event(release_history, release_history.stage)
         procedure_logger.info("revoke succeeded")
     return is_success
 

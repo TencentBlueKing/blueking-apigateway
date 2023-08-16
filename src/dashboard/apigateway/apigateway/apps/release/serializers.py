@@ -24,14 +24,14 @@ from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Sta
 
 
 class ReleaseBatchSLZ(serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     stage_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
     resource_version_id = serializers.IntegerField(required=True)
 
     class Meta:
         model = Release
         fields = [
-            "api",
+            "gateway",
             "stage_ids",
             "resource_version_id",
             "comment",

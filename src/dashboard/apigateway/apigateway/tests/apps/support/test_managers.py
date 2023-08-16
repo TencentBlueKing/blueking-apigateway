@@ -204,7 +204,7 @@ class TestReleasedResourceDocManager:
         assert result == {}
 
     def test_get_doc_updated_time(self, fake_resource_version, fake_resource1):
-        fake_gateway = fake_resource_version.api
+        fake_gateway = fake_resource_version.gateway
         G(
             ReleasedResourceDoc,
             gateway=fake_gateway,
@@ -227,7 +227,7 @@ class TestResourceDocVersionManager:
         resource = G(Resource, api=fake_gateway)
         rv = G(ResourceVersion, gateway=fake_gateway)
 
-        G(ResourceDoc, gateway=fake_gateway, resource_id=resource.id)
+        G(ResourceDoc, api=fake_gateway, resource_id=resource.id)
         G(
             ResourceDocVersion,
             gateway=fake_gateway,

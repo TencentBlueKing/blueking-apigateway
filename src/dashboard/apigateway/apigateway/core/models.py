@@ -589,7 +589,7 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         choices=PublishSourceEnum.get_choices(),
         default=PublishSourceEnum.RESOURCE_PUBLISH,
     )
-    # 该字段废弃，由publish_event来决定最终状态
+    # todo:1.14删掉该字段废弃，由publish_event来决定最终状态
     status = models.CharField(
         _("发布状态"),
         max_length=16,
@@ -740,7 +740,7 @@ class MicroGateway(ConfigModelMixin):
 
     def query_related_api_gateways(self):
         if not self.is_shared:
-            return Gateway.objects.filter(id=self.api_id)
+            return Gateway.objects.filter(id=self.gateway_id)
 
         return Gateway.objects.filter(
             hosting_type=APIHostingTypeEnum.MICRO.value,

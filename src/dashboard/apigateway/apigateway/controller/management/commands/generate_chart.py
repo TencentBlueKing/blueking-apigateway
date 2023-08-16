@@ -88,7 +88,7 @@ class Command(BaseCommand):
                 with open(os.path.join(output_dir, values_file), "w") as fp:
                     fp.write(yaml_dumps(values))
 
-                return MagicMock()
+                return True, MagicMock()
 
         release_helper = FakeReleaseHelper()
         chart_helper = FakeChartHelper()
@@ -99,4 +99,6 @@ class Command(BaseCommand):
             release_callback=None,
         )
 
-        assert distributor.distribute(release, micro_gateway)
+        is_success, err_msg = distributor.distribute(release, micro_gateway)
+        assert is_success
+        assert err_msg == ""
