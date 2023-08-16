@@ -100,13 +100,13 @@ class ResourceImportValidator:
 
             # 资源ID不存在
             if resource_id not in self._existed_resource_id_to_fields:
-                raise error_codes.VALIDATE_ERROR.format(
+                raise error_codes.INVALID_ARGUMENT.format(
                     message=_("资源ID【id={resource_id}】不存在。").format(resource_id=resource_id)
                 )
 
             # 资源ID有重复
             if resource_id in resource_id_set:
-                raise error_codes.VALIDATE_ERROR.format(
+                raise error_codes.INVALID_ARGUMENT.format(
                     message=_("资源ID【id={resource_id}】重复，资源信息【method={method}, path={path}】。").format(
                         resource_id=resource_id,
                         method=resource["method"],
@@ -133,7 +133,7 @@ class ResourceImportValidator:
 
             key = f"{resource['method']}:{resource['path']}"
             if key in key_to_id:
-                raise error_codes.VALIDATE_ERROR.format(
+                raise error_codes.INVALID_ARGUMENT.format(
                     message=_("资源【method={method}, path={path}】重复。").format(
                         method=resource["method"], path=resource["path"]
                     )
@@ -157,7 +157,7 @@ class ResourceImportValidator:
             # Check if there are any existing resources using the same name.
             existed_res = existed_name_res_map.get(name)
             if existed_res and existed_res["id"] != resource.get("id"):
-                raise error_codes.VALIDATE_ERROR.format(
+                raise error_codes.INVALID_ARGUMENT.format(
                     _(
                         "资源（{input_method} {input_path}）的名称【name={name}】重复，该名字已被现有资源"
                         "（{method} {path}）占用，需调整资源名或维持相同的请求方法和路径。"
@@ -172,7 +172,7 @@ class ResourceImportValidator:
 
             # Check if the name is duplicated
             if name in seen_names:
-                raise error_codes.VALIDATE_ERROR.format(
+                raise error_codes.INVALID_ARGUMENT.format(
                     _("资源名称【name={name}】重复，该名字在当前配置数据中被多次使用。").format(name=name),
                 )
             else:
@@ -182,7 +182,7 @@ class ResourceImportValidator:
         new_resources = [resource for resource in self._importing_resources if not resource.get("id")]
         count = len(self._existed_resource_id_to_fields) + len(new_resources)
         if count > self.gateway.max_resource_count:
-            raise error_codes.VALIDATE_ERROR.format(
+            raise error_codes.INVALID_ARGUMENT.format(
                 message=_("每个网关最多创建 {count} 个资源。").format(count=self.gateway.max_resource_count)
             )
 
@@ -256,12 +256,12 @@ class ResourcesImporter(CreateResourceMixin, UpdateResourceMixin):
         try:
             importer = ResourceSwaggerImporter(content)
         except Exception as err:
-            raise error_codes.VALIDATE_ERROR.format(_("导入内容为无效的 json/yaml 数据，{err}。").format(err=err))
+            raise error_codes.INVALID_ARGUMENT.format(_("导入内容为无效的 json/yaml 数据，{err}。").format(err=err))
 
         try:
             importer.validate()
         except SchemaValidationError as err:
-            raise error_codes.VALIDATE_ERROR.format(_("导入内容不符合 swagger 2.0 协议，{err}。").format(err=err))
+            raise error_codes.INVALID_ARGUMENT.format(_("导入内容不符合 swagger 2.0 协议，{err}。").format(err=err))
 
         self._resource_doc_language = resource_doc_language
         self.set_importing_resources(importer.get_resources())

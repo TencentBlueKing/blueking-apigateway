@@ -154,4 +154,6 @@ class IPGroupViewSet(viewsets.ModelViewSet):
         )
         for strategy in strategy_queryset:
             if ip_group_id in strategy.config["ip_group_list"]:
-                raise error_codes.FORBIDDEN.format(f'请先将IP分组从访问策略"{strategy.name}"中去除，再删除该IP分组', replace=True)
+                raise error_codes.FAILED_PRECONDITION.format(
+                    f'请先将IP分组从访问策略"{strategy.name}"中去除，再删除该IP分组', replace=True
+                )

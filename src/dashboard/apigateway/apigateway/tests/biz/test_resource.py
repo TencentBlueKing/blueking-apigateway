@@ -355,4 +355,3 @@ class TestResourceHandler:
 
         snapshot = ResourceHandler().snapshot(resource, as_dict=True)
         assert snapshot["disabled_stages"] == ["prod", "test"]
-        # self.assertTrue(, )

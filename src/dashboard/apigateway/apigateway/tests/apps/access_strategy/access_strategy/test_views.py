@@ -76,7 +76,6 @@ class TestAccessStrategyViewSetWithPytest:
         response = view(request, gateway_id=fake_gateway.id)
         # result = get_response_json(response)
 
-        # assert result["code"] == 0
         assert response.status_code == 200
 
         access_strategy = AccessStrategy.objects.get(
@@ -91,9 +90,7 @@ class TestAccessStrategyViewSetWithPytest:
         request = request_factory.post(f"/apis/{fake_gateway.id}/access_strategies/", data=params)
         view = AccessStrategyViewSet.as_view({"post": "create"})
         response = view(request, gateway_id=fake_gateway.id)
-        # result = get_response_json(response)
 
-        # assert result["code"] != 0
         assert response.status_code != 200
 
 
@@ -127,7 +124,6 @@ class TestAccessStrategyViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0, result)
             assert response.status_code == 200
             self.assertEqual(result["data"]["count"], test["expected"]["count"])
 
@@ -200,10 +196,8 @@ class TestAccessStrategyViewSet(TestCase):
             result = get_response_json(response)
 
             if test.get("will_error"):
-                # self.assertNotEqual(result["code"], 0, result)
                 self.assertNotEqual(response.status_code, 200, "")
             else:
-                # self.assertEqual(result["code"], 0, result)
                 self.assertEqual(response.status_code, 200, result)
 
                 strategy = AccessStrategy.objects.get(api=self.gateway, name=test["name"], type=test["type"])
@@ -273,7 +267,6 @@ class TestAccessStrategyViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id, id=instance.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0)
             self.assertEqual(response.status_code, 200)
 
             test["expected"].update(
@@ -296,8 +289,6 @@ class TestAccessStrategyViewSet(TestCase):
         view = AccessStrategyViewSet.as_view({"delete": "destroy"})
         response = view(request, gateway_id=self.gateway.id, id=access_strategy.id)
 
-        # result = get_response_json(response)
-        # self.assertEqual(result["code"], 0)
         self.assertEqual(response.status_code, 200)
         self.assertFalse(AccessStrategy.objects.filter(id=access_strategy.id).exists())
         self.assertFalse(AccessStrategyBinding.objects.filter(id=binding.id).exists())

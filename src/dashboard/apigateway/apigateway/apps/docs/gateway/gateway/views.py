@@ -63,7 +63,7 @@ class GatewayViewSet(viewsets.GenericViewSet):
         """根据网关名称，获取网关详情"""
         api = support_helper.get_gateway_by_name(gateway_name)
         if not api:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         slz = GatewaySLZ(api)
         return V1OKJsonResponse("OK", data=slz.data)

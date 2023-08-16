@@ -329,7 +329,7 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
         try:
             record = AppPermissionRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
         except AppPermissionRecord.DoesNotExist:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         slz = serializers.AppPermissionRecordDetailSLZ(
             record,

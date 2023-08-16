@@ -144,7 +144,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         GatewayHandler.record_audit_log_success(request.user.username, instance, OpTypeEnum.DELETE)
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class GatewayUpdateStatusApi(generics.UpdateAPIView):

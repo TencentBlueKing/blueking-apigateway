@@ -991,7 +991,7 @@ class JWTManager(models.Manager):
         try:
             return self.get(api=gateway)
         except Exception:
-            raise error_codes.NOT_FOUND_ERROR.format(_("网关密钥不存在。"), replace=True)
+            raise error_codes.NOT_FOUND.format(_("网关密钥不存在。"), replace=True)
 
     def is_jwt_key_changed(self, gateway, private_key: bytes, public_key: bytes) -> bool:
         cipher = AESCipherManager.create_jwt_cipher()
@@ -1020,7 +1020,7 @@ class APIRelatedAppManager(models.Manager):
             bk_app_code, settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app"]
         )
         if self.filter(bk_app_code=bk_app_code).count() >= max_gateway_per_app:
-            raise error_codes.VALIDATE_ERROR.format(
+            raise error_codes.INVALID_ARGUMENT.format(
                 f"The app [{bk_app_code}] exceeds the limit of the number of gateways that can be related."
                 + f" The maximum limit is {max_gateway_per_app}."
             )
@@ -1127,7 +1127,7 @@ class SslCertificateBindingManager(models.Manager):
 
             return Stage.objects.filter(api_id=gateway_id, id__in=scope_ids)
 
-        raise error_codes.INVALID_ARGS.format(f"unsupported scope_type: {scope_type}")
+        raise error_codes.INVALID_ARGUMENT.format(f"unsupported scope_type: {scope_type}")
 
     def get_valid_scope_ids(self, gateway_id: int, scope_type: str, scope_ids: List[int]) -> List[int]:
         scope_objects = self.get_scope_objects(gateway_id, scope_type, scope_ids)

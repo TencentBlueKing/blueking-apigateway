@@ -36,7 +36,7 @@ class ResourceDocViewSet(viewsets.GenericViewSet):
         """获取网关资源的文档"""
         api = support_helper.get_gateway_by_name(gateway_name)
         if not api:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         data = support_helper.get_resource_doc(api["id"], stage_name, resource_name)
         helper = ResourceDocHelper(
@@ -49,7 +49,7 @@ class ResourceDocViewSet(viewsets.GenericViewSet):
 
         doc = helper.get_doc()
         if not doc:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         slz = ResourceDocSLZ(doc)
         return V1OKJsonResponse("OK", data=slz.data)

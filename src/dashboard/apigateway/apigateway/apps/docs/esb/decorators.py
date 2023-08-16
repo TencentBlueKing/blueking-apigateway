@@ -27,7 +27,7 @@ def check_board_exist(func):
     @functools.wraps(func)
     def wrapper(self, request, board, *args, **kwargs):
         if board not in settings.ESB_BOARD_CONFIGS:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         return func(self, request, board, *args, **kwargs)
 

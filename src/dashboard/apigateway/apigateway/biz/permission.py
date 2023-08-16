@@ -66,7 +66,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         elif grant_dimension == GrantDimensionEnum.RESOURCE.value:
             return ResourcePermissionDimensionManager()
 
-        raise error_codes.INVALID_ARGS.format(f"unsupported grant_dimension: {grant_dimension}")
+        raise error_codes.INVALID_ARGUMENT.format(f"unsupported grant_dimension: {grant_dimension}")
 
     @abstractmethod
     def handle_permission_apply(

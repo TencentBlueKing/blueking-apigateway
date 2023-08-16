@@ -136,7 +136,7 @@ class SystemViewSet(viewsets.ModelViewSet):
 
         allow, message = ComponentSystem.objects.allow_delete([instance.id])
         if not allow:
-            raise error_codes.FORBIDDEN.format(message=message, replace=True)
+            raise error_codes.FAILED_PRECONDITION.format(message=message, replace=True)
 
         ComponentSystem.objects.delete_custom_systems([instance.id])
 
