@@ -22,10 +22,17 @@ from django.core.exceptions import ObjectDoesNotExist
 from django_dynamic_fixture import G
 
 from apigateway.apps.monitor.models import AlarmStrategy
+from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.contexts.context import GatewayFeatureFlagContext
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayTypeEnum
-from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, ResourceVersion, Stage
+from apigateway.core.constants import (
+    ContextScopeTypeEnum,
+    ContextTypeEnum,
+    GatewayStatusEnum,
+    GatewayTypeEnum,
+    StageStatusEnum,
+)
+from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, Resource, Stage
 
 
 class TestGatewayHandler:
@@ -33,39 +40,29 @@ class TestGatewayHandler:
     def setup_fixtures(self):
         self.gateway = G(Gateway, created_by="admin")
 
-    # FIXME: move to tests/biz/test_gateway.py
-    def test_search_api_stages(self):
-        gateway = G(Gateway)
+    def test_get_stages_with_release_status(self, fake_gateway):
+        Gateway.objects.filter(id=fake_gateway.id).update(status=GatewayStatusEnum.ACTIVE.value)
+        stage_1 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        stage_2 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
 
-        stage_prod = G(Stage, api=gateway, name="prod", status=1)
-        stage_test = G(Stage, api=gateway, name="test", status=1)
-
-        resource_version = G(ResourceVersion, gateway=gateway)
-        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version)
-
-        data = [
-            {
-                "gateway_ids": [gateway.id],
-                "expected": {
-                    gateway.id: [
-                        {
-                            "stage_id": stage_prod.id,
-                            "stage_name": "prod",
-                            "stage_release_status": True,
-                        },
-                        {
-                            "stage_id": stage_test.id,
-                            "stage_name": "test",
-                            "stage_release_status": False,
-                        },
-                    ]
+        G(Release, gateway=fake_gateway, stage=stage_1)
+        expected = {
+            fake_gateway.id: [
+                {
+                    "id": stage_1.id,
+                    "name": stage_1.name,
+                    "released": True,
                 },
-            }
-        ]
+                {
+                    "id": stage_2.id,
+                    "name": stage_2.name,
+                    "released": False,
+                },
+            ]
+        }
 
-        for test in data:
-            result = GatewayHandler().search_gateway_stages(test["gateway_ids"])
-            assert result == test["expected"]
+        result = GatewayHandler().get_stages_with_release_status([fake_gateway.id])
+        assert result == expected
 
     @pytest.mark.parametrize(
         "user_conf, api_type, allow_update_api_auth, unfiltered_sensitive_keys, expected",
@@ -192,8 +189,8 @@ class TestGatewayHandler:
             allow_update_api_auth=allow_update_api_auth,
             unfiltered_sensitive_keys=unfiltered_sensitive_keys,
         )
-        assert result.scope_type == ContextScopeTypeEnum.API.value
-        assert result.type == ContextTypeEnum.API_AUTH.value
+        assert result.scope_type == ContextScopeTypeEnum.GATEWAY.value
+        assert result.type == ContextTypeEnum.GATEWAY_AUTH.value
         assert result.scope_id == fake_gateway.id
         assert result.config == expected
 
@@ -217,7 +214,9 @@ class TestGatewayHandler:
         GatewayHandler().save_related_data(fake_gateway, "default", "admin", "test")
 
         assert Context.objects.filter(
-            scope_type=ContextScopeTypeEnum.API.value, type=ContextTypeEnum.API_AUTH.value, scope_id=fake_gateway.id
+            scope_type=ContextScopeTypeEnum.GATEWAY.value,
+            type=ContextTypeEnum.GATEWAY_AUTH.value,
+            scope_id=fake_gateway.id,
         ).exists()
 
         assert JWT.objects.filter(api=fake_gateway).exists()
@@ -264,3 +263,42 @@ class TestGatewayHandler:
 
         feature_flag = GatewayHandler.get_feature_flag(fake_gateway.id)
         assert feature_flag == {"FOO": True, "BAR": True}
+
+    def test_get_docs_url(self, settings, fake_gateway):
+        settings.API_DOCS_URL_TMPL = "http://apigw.example.com/docs/{api_name}"
+        result = GatewayHandler.get_docs_url(fake_gateway)
+        assert result == ""
+
+        G(ReleasedResourceDoc, gateway=fake_gateway)
+        result = GatewayHandler.get_docs_url(fake_gateway)
+        assert result == f"http://apigw.example.com/docs/{fake_gateway.name}"
+
+    def test_get_resource_count(self):
+        gateway_1 = G(Gateway)
+        gateway_2 = G(Gateway)
+        gateway_3 = G(Gateway)
+
+        G(Resource, api=gateway_1)
+        G(Resource, api=gateway_1)
+        G(Resource, api=gateway_2)
+
+        data = [
+            {
+                "gateway_ids": [gateway_1.id, gateway_2.id, gateway_3.id],
+                "expected": {
+                    gateway_1.id: 2,
+                    gateway_2.id: 1,
+                },
+            },
+            {
+                "gateway_ids": [gateway_1.id, gateway_2.id],
+                "expected": {
+                    gateway_1.id: 2,
+                    gateway_2.id: 1,
+                },
+            },
+        ]
+
+        for test in data:
+            result = GatewayHandler.get_resource_count(test["gateway_ids"])
+            assert result == test["expected"]

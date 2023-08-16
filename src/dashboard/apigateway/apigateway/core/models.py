@@ -392,13 +392,13 @@ class Context(ConfigModelMixin):
 
     scope_type = models.CharField(
         max_length=32,
-        choices=ContextScopeTypeEnum.choices(),
+        choices=ContextScopeTypeEnum.get_choices(),
         blank=False,
         null=False,
         db_index=True,
     )
     scope_id = models.IntegerField(blank=False, null=False, db_index=True)
-    type = models.CharField(max_length=32, choices=ContextTypeEnum.choices(), blank=False, null=False)
+    type = models.CharField(max_length=32, choices=ContextTypeEnum.get_choices(), blank=False, null=False)
 
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
     # config = from ConfigModelMixin
@@ -442,7 +442,7 @@ class Context(ConfigModelMixin):
         return json.dumps(data)
 
     def save(self, *args, **kwargs):
-        if self.type not in dict(ContextTypeEnum.choices()):
+        if self.type not in dict(ContextTypeEnum.get_choices()):
             raise ValueError("type should be one of ContextTypeEnum")
 
         # check the config value
@@ -459,7 +459,7 @@ class Context(ConfigModelMixin):
         NOTE: for resource context, is static, will be online after release be published
         but the context of api/stage, is dynamic, will be online after the settings be saved
         """
-        return self.scope_type in (ContextScopeTypeEnum.API.value, ContextScopeTypeEnum.STAGE.value)
+        return self.scope_type in (ContextScopeTypeEnum.GATEWAY.value, ContextScopeTypeEnum.STAGE.value)
 
 
 # ============================================ version and release ============================================

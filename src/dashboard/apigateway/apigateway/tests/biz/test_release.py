@@ -15,10 +15,27 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .context import (  # noqa
-    GatewayFeatureFlagContext,
-    ResourceAuthContext,
-    StageProxyHTTPContext,
-    StageRateLimitContext,
+from ddf import G
+
+from apigateway.biz.release import ReleaseHandler
+from apigateway.core.constants import (
+    GatewayStatusEnum,
+    StageStatusEnum,
 )
-from .gateway_auth import GatewayAuthContext, GatewayAuthConfig  # noqa
+from apigateway.core.models import Release, Stage
+
+
+class TestReleaseHandler:
+    def test_get_released_stage_ids(self, fake_gateway):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+
+        stage_1 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        G(Stage, api=fake_gateway, status=StageStatusEnum.INACTIVE.value)
+        G(Release, gateway=fake_gateway, stage=stage_1)
+
+        assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == [stage_1.id]
+
+        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
+        fake_gateway.save()
+        assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == []

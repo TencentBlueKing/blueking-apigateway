@@ -15,11 +15,27 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.core.constants import PublishSourceEnum
+from typing import List
+
+from apigateway.core.constants import (
+    GatewayStatusEnum,
+    PublishSourceEnum,
+    StageStatusEnum,
+)
 from apigateway.core.models import Release, ReleaseHistory
 
 
 class ReleaseHandler:
+    @staticmethod
+    def get_released_stage_ids(gateway_ids: List[int]) -> List[int]:
+        return list(
+            Release.objects.filter(
+                gateway_id__in=gateway_ids,
+                gateway__status=GatewayStatusEnum.ACTIVE.value,
+                stage__status=StageStatusEnum.ACTIVE.value,
+            ).values_list("stage_id", flat=True)
+        )
+
     @staticmethod
     def save_release_history(release: Release, source: PublishSourceEnum, author: str) -> ReleaseHistory:
         """保存发布历史"""

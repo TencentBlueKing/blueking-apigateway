@@ -15,10 +15,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .context import (  # noqa
-    GatewayFeatureFlagContext,
-    ResourceAuthContext,
-    StageProxyHTTPContext,
-    StageRateLimitContext,
-)
-from .gateway_auth import GatewayAuthContext, GatewayAuthConfig  # noqa
+from django.conf import settings
+from django.utils.translation import gettext as _
+from rest_framework import serializers
+
+
+class ReservedGatewayNameValidator:
+    """保留的网关名校验，开源版网关名不能以 'bk-' 开头"""
+
+    def __call__(self, value: str):
+        if not (
+            getattr(settings, "CHECK_RESERVED_GATEWAY_NAME", False)
+            and getattr(settings, "RESERVED_GATEWAY_NAME_PREFIXES", None)
+        ):
+            return
+
+        for prefix in settings.RESERVED_GATEWAY_NAME_PREFIXES:
+            if value.startswith(prefix):
+                raise serializers.ValidationError(_("网关名不能以【{prefix}】开头，其为官方保留字。").format(prefix=prefix))

@@ -21,7 +21,7 @@ from apigateway.controller.tasks.release import (
     release_gateway_by_registry,
 )
 from apigateway.controller.tasks.syncing import (
-    revoke_release_by_stage,
+    revoke_release,
     rolling_update_release,
 )
 
@@ -30,5 +30,5 @@ __all__ = [
     "release_gateway_by_helm",
     "release_gateway_by_registry",
     "rolling_update_release",
-    "revoke_release_by_stage",
+    "revoke_release",
 ]

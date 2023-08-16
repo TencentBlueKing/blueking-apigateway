@@ -148,13 +148,6 @@ class StageManager(models.Manager):
 
 
 class ResourceManager(models.Manager):
-    def get_resource_count(self, gateway_ids):
-        """
-        获取网关资源数量
-        """
-        api_resource_count = self.filter(api_id__in=gateway_ids).values("api_id").annotate(count=Count("api_id"))
-        return {i["api_id"]: i["count"] for i in api_resource_count}
-
     def filter_by_ids(self, gateway, ids):
         if not ids:
             return self.none()

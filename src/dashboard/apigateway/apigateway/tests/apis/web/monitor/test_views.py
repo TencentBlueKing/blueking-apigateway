@@ -236,8 +236,7 @@ class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
             view = AlarmStrategyRetrieveUpdateDestroyApi.as_view()
             response = view(request, gateway_id=self.gateway.id, id=alarm_strategy.id)
 
-            result = get_response_json(response)
-            self.assertEqual(response.status_code, 204, result)
+            self.assertEqual(response.status_code, 204)
 
     def test_destroy(self):
         alarm_strategy = G(AlarmStrategy, api=self.gateway)
@@ -296,8 +295,7 @@ class TestAlarmStrategyUpdateStatusApi(TestCase):
         view = AlarmStrategyUpdateStatusApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=alarm_strategy.id)
 
-        result = get_response_json(response)
-        self.assertEqual(response.status_code, 204, result)
+        self.assertEqual(response.status_code, 204)
 
 
 class TestAlarmRecordListApi(TestCase):

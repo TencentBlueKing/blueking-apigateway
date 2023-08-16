@@ -28,20 +28,19 @@ from apigateway.controller.constants import NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.combine import CombineDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
-from apigateway.core.models import Gateway, MicroGateway, Release, ReleaseHistory, Stage
+from apigateway.core.models import Gateway, MicroGateway, Release, ReleaseHistory
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(ignore_result=True)
-def rolling_update_release(
-    gateway_id: int,
-    publish_id: int,
-    release: Release,
-    release_history,
-):
+def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     """滚动同步微网关配置，不会生成新的版本"""
     is_cli_sync = publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID
+
+    release = Release.objects.get(id=release_id)
+
+    release_history = None if is_cli_sync else ReleaseHistory.objects.get(id=release_id)
     if not is_cli_sync:
         PublishEventReporter.report_create_publish_task_success_event(release_history, release.stage)
 
@@ -81,34 +80,38 @@ def rolling_update_release(
         procedure_logger.info(msg)
     else:
         if not is_cli_sync:
-            PublishEventReporter.report_distribute_configuration_success_event(release_history, release.stage.id)
+            PublishEventReporter.report_distribute_configuration_success_event(release_history, release.stage)
         procedure_logger.info("distribute succeeded")
 
     return is_success
 
 
 @shared_task(ignore_result=True)
-def revoke_release_by_stage(stage_id: int, release_history: ReleaseHistory):
+def revoke_release(release_id: int, publish_id: int):
     """删除环境的已发布的资源"""
-    PublishEventReporter.report_create_publish_task_success_event(release_history, release_history.stage)
 
-    stage = Stage.objects.get(pk=stage_id)
+    release = Release.objects.get(id=release_id)
+
+    release_history = ReleaseHistory.objects.get(id=publish_id)
+
+    PublishEventReporter.report_create_publish_task_success_event(release_history, release.stage)
+
     shared_gateway = MicroGateway.objects.get_default_shared_gateway()
     procedure_logger = ReleaseProcedureLogger(
         "revoke_release",
         logger=logger,
-        gateway=stage.api,
-        stage=stage,
+        gateway=release.gateway,
+        stage=release.stage,
         micro_gateway=shared_gateway,
         publish_id=release_history.pk,
     )
-    PublishEventReporter.report_distribute_configuration_doing_event(release_history, release_history.stage)
+    PublishEventReporter.report_distribute_configuration_doing_event(release_history, release.stage)
     distributor = CombineDistributor()
 
     procedure_logger.info("revoke begin")
 
     is_success, err_msg = distributor.revoke(
-        stage, shared_gateway, procedure_logger.release_task_id, publish_id=release_history.pk
+        release, shared_gateway, procedure_logger.release_task_id, publish_id=release_history.pk
     )
     if not is_success:
         msg = f"revoke failed: {err_msg}"
@@ -179,21 +182,18 @@ def _trigger_rolling_publish(
         else:
             if not is_cli_sync:
                 PublishEventReporter.report_config_validate_success_event(release_history, release.stage)
-        if is_cli_sync:
+        if not is_cli_sync:
             PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
 
         # 开始发布
         if is_sync:
-            return rolling_update_release(
-                gateway_id=gateway_id, publish_id=publish_id, release=release, release_history=release_history
-            )
+            return rolling_update_release(gateway_id=gateway_id, publish_id=publish_id, release_id=release.pk)
         else:
             delay_on_commit(
                 rolling_update_release,
                 gateway_id=gateway_id,
                 publish_id=publish_id,
-                release=release,
-                release_history=release_history,
+                release_id=release.pk,
             )
 
 
@@ -230,10 +230,10 @@ def _trigger_revoke_publish(
 
         # 开始发布
         if is_sync:
-            return revoke_release_by_stage(stage_id=release.stage.pk, release=release, author=author, source=source)
+            return revoke_release(release_id=release.id, publish_id=release_history.id, author=author, source=source)
         else:
             delay_on_commit(
-                revoke_release_by_stage, stage_id=release.stage.pk, release=release, author=author, source=source
+                revoke_release, release_id=release.id, publish_id=release_history.id, author=author, source=source
             )
 
 
