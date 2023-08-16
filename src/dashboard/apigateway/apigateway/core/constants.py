@@ -76,46 +76,10 @@ class BackendConfigTypeEnum(StructuredEnum):
     EXISTED = EnumField("existed", _("已存在的后端服务"))
 
 
-# TODO delete it 1.14
-class StageItemTypeEnum(StructuredEnum):
-    """环境配置项类型"""
-
-    NODE = EnumField(BackendUpstreamTypeEnum.NODE.value, _("节点"))
-    SERVICE_DISCOVERY = EnumField(BackendUpstreamTypeEnum.SERVICE_DISCOVERY.value, _("服务发现注册中心"))
-
-
-# TODO delete it 1.14
-class StageItemConfigStatusEnum(StructuredEnum):
-    """环境配置项状态"""
-
-    CONFIGURED = EnumField("configured", _("已配置"))
-    NOT_CONFIGURED = EnumField("not_configured", _("待配置"))
-
-
 class ServiceDiscoveryTypeEnum(StructuredEnum):
     """服务发现注册中心类型"""
 
     GO_MICRO_ETCD = EnumField("go_micro_etcd", "Go Micro - Etcd")
-
-
-# TODO delete it 1.14
-class PassHostEnum(StructuredEnum):
-    """请求发给上游时的 host 设置选型"""
-
-    PASS = EnumField("pass", _("保持与客户端请求一致的主机名"))
-    NODE = EnumField("node", _("使用目标节点列表中的主机名或 IP"))
-    REWRITE = EnumField("rewrite", _("自定义 Host 请求头"))
-
-
-# TODO delete it 1.14
-class SchemeEnum(StructuredEnum):
-    """与后端服务通信时使用的 scheme"""
-
-    # 7 层代理
-    HTTP = EnumField("http", "HTTP")
-    HTTPS = EnumField("https", "HTTPs")
-    GRPC = EnumField("grpc", "gRPC")
-    GRPCS = EnumField("grpcs", "gRPCs")
 
 
 class EtcdSecureTypeEnum(StructuredEnum):

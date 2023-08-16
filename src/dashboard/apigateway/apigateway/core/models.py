@@ -42,15 +42,12 @@ from apigateway.core.constants import (
     GatewayStatusEnum,
     LoadBalanceTypeEnum,
     MicroGatewayStatusEnum,
-    PassHostEnum,
     ProxyTypeEnum,
     PublishEventEnum,
     PublishEventStatusEnum,
     ReleaseStatusEnum,
-    SchemeEnum,
     SSLCertificateBindingScopeTypeEnum,
     SSLCertificateTypeEnum,
-    StageItemTypeEnum,
     StageStatusEnum,
 )
 from apigateway.core.utils import get_path_display
@@ -356,7 +353,7 @@ class StageItem(TimestampedModelMixin, OperatorModelMixin):
     """Stage 配置项"""
 
     api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
-    type = models.CharField(max_length=64, choices=StageItemTypeEnum.get_choices())
+    type = models.CharField(max_length=64)
     name = models.CharField(max_length=128)
     description = models.TextField(blank=True, default="")
 
@@ -811,9 +808,9 @@ class BackendService(TimestampedModelMixin, OperatorModelMixin):
     upstream_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     upstream_extra_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
 
-    pass_host = models.CharField(max_length=32, default=PassHostEnum.PASS.value)
+    pass_host = models.CharField(max_length=32, default="pass")
     upstream_host = models.CharField(max_length=512, default="")
-    scheme = models.CharField(max_length=32, default=SchemeEnum.HTTP.value)
+    scheme = models.CharField(max_length=32, default="http")
     timeout = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     ssl_enabled = models.BooleanField(default=False)
 
