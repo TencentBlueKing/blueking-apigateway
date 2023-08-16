@@ -88,7 +88,13 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         )
 
         # 3. record audit log
-        GatewayHandler.record_audit_log_success(request.user.username, slz.instance, op_type=OpTypeEnum.CREATE)
+        GatewayHandler.record_audit_log_success(
+            username=request.user.username,
+            gateway_id=slz.instance.id,
+            op_type=OpTypeEnum.CREATE,
+            instance_id=slz.instance.id,
+            instance_name=slz.instance.name,
+        )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED, data={"id": slz.instance.id})
 
@@ -124,7 +130,13 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         slz.save(updated_by=request.user.username)
 
-        GatewayHandler.record_audit_log_success(request.user.username, instance, op_type=OpTypeEnum.MODIFY)
+        GatewayHandler.record_audit_log_success(
+            username=request.user.username,
+            gateway_id=instance.id,
+            op_type=OpTypeEnum.MODIFY,
+            instance_id=instance.id,
+            instance_name=instance.name,
+        )
 
         return OKJsonResponse()
 
@@ -135,14 +147,21 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        instance_id = instance.id
 
         # 网关为“停用”状态，才可以删除
         if instance.is_active:
             raise error_codes.FAILED_PRECONDITION.format(_("请先停用网关，然后再删除。"), replace=True)
 
-        GatewayHandler.delete_gateway(instance.pk)
+        GatewayHandler.delete_gateway(instance_id)
 
-        GatewayHandler.record_audit_log_success(request.user.username, instance, OpTypeEnum.DELETE)
+        GatewayHandler.record_audit_log_success(
+            username=request.user.username,
+            gateway_id=instance_id,
+            op_type=OpTypeEnum.DELETE,
+            instance_id=instance_id,
+            instance_name=instance.name,
+        )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
@@ -166,6 +185,12 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
         # FIXME: 添加触发发布微网关的逻辑
 
-        GatewayHandler.record_audit_log_success(request.user.username, instance, op_type=OpTypeEnum.MODIFY)
+        GatewayHandler.record_audit_log_success(
+            username=request.user.username,
+            gateway_id=instance.id,
+            op_type=OpTypeEnum.MODIFY,
+            instance_id=instance.id,
+            instance_name=instance.name,
+        )
 
         return OKJsonResponse()

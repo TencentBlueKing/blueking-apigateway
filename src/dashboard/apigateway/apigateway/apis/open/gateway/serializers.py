@@ -144,7 +144,13 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
 
         # 3. record audit log
-        GatewayHandler.record_audit_log_success(validated_data.get("created_by", ""), instance, OpTypeEnum.CREATE)
+        GatewayHandler.record_audit_log_success(
+            username=validated_data.get("created_by", ""),
+            gateway_id=instance.id,
+            op_type=OpTypeEnum.CREATE,
+            instance_id=instance.id,
+            instance_name=instance.name,
+        )
 
         return instance
 
@@ -169,7 +175,13 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
 
         # 3. 记录操作日志
-        GatewayHandler.record_audit_log_success(validated_data.get("updated_by", ""), instance, OpTypeEnum.MODIFY)
+        GatewayHandler.record_audit_log_success(
+            username=validated_data.get("updated_by", ""),
+            gateway_id=instance.id,
+            op_type=OpTypeEnum.MODIFY,
+            instance_id=instance.id,
+            instance_name=instance.name,
+        )
 
         return instance
 
