@@ -121,7 +121,7 @@ class ComponentConvertor:
         result = client.esb.get_synchronized_components()
         if not result["result"]:
             logger.error("failed to fetch components from esb, message=%s", result["message"])
-            raise error_codes.COMPONENT_ERROR.format(message=_("拉取待同步组件列表失败，请稍后重试。"), replace=True)
+            raise error_codes.INTERNAL.format(message=_("拉取待同步组件列表失败，请稍后重试。"), replace=True)
         return result["data"]
 
     def _parse_components(self, components: List[Dict[str, Any]]) -> List[Component]:
@@ -132,7 +132,7 @@ class ComponentConvertor:
                 parsed_components.append(Component.parse_obj(component))
             except ValidationError:
                 logger.exception(f"component configuration error, please check: {json.dumps(component)}")
-                raise error_codes.COMPONENT_ERROR.format(message=_("组件配置错误，请进行检查。"))
+                raise error_codes.INTERNAL.format(message=_("组件配置错误，请进行检查。"))
         return parsed_components
 
     def _validate_components(self, components: List[Dict[str, Any]]):
@@ -144,7 +144,7 @@ class ComponentConvertor:
 
             # method = "" 为 GET/POST 方法
             if "" in method_to_component:
-                raise error_codes.COMPONENT_METHOD_INVALID.format(
+                raise error_codes.INVALID_ARGUMENT.format(
                     _("同一组件路径下，请求方法包含 'GET/POST' 及其它请求方法，请将请求方法为 'GET/POST' 的组件，拆分为请求方法分别为 GET、POST 的两个组件。"),
                 )
 

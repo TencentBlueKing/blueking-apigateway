@@ -28,7 +28,7 @@ from django.core.management.base import BaseCommand, CommandError
 from apigateway.apps.esb.exceptions import EsbGatewayNotFound
 from apigateway.apps.esb.utils import get_esb_gateway
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.core.constants import APITypeEnum
+from apigateway.core.constants import GatewayTypeEnum
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class Command(BaseCommand):
             raise CommandError(str(err))
 
         esb_gateway_auth_config = {
-            "api_type": APITypeEnum.SUPER_OFFICIAL_API,
+            "api_type": GatewayTypeEnum.SUPER_OFFICIAL_API,
             "allow_update_api_auth": False,
         }
 

@@ -28,9 +28,9 @@ from rest_framework import status, viewsets
 
 from apigateway.apis.open.gateway import serializers
 from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayRelatedAppPermission
-from apigateway.core.constants import APIStatusEnum
+from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import JWT, APIRelatedApp, Gateway, Release
 from apigateway.utils.responses import V1OKJsonResponse
 
@@ -68,7 +68,7 @@ class GatewayViewSet(viewsets.ModelViewSet):
         gateway_ids = list(queryset.values_list("id", flat=True))
         # 过滤出用户类型为指定类型的网关
         if user_auth_type:
-            scope_id_config_map = APIAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids)
+            scope_id_config_map = GatewayAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids)
             gateway_ids = [
                 scope_id
                 for scope_id, config in scope_id_config_map.items()
@@ -92,7 +92,7 @@ class GatewayViewSet(viewsets.ModelViewSet):
 
         queryset = self.get_queryset()
         # 过滤出状态为 active，且公开的网关
-        queryset = queryset.filter(status=APIStatusEnum.ACTIVE.value, is_public=True)
+        queryset = queryset.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
 
         gateway_queryset = self._filter_available_gateways(
             queryset,
@@ -108,7 +108,7 @@ class GatewayViewSet(viewsets.ModelViewSet):
             gateway_queryset,
             many=True,
             context={
-                "api_auth_contexts": APIAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
+                "api_auth_contexts": GatewayAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
             },
         )
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("name")))

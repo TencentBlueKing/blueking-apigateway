@@ -25,7 +25,7 @@ from django.conf import settings
 from django.db import models
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.core.constants import APIStatusEnum
+from apigateway.core.constants import GatewayStatusEnum
 
 
 class ResourceDocManager(models.Manager):
@@ -270,7 +270,7 @@ class APISDKManager(models.Manager):
             is_recommended=True,
             language=language,
             api__is_public=True,
-            api__status=APIStatusEnum.ACTIVE.value,
+            api__status=GatewayStatusEnum.ACTIVE.value,
         )
         if gateway_id is not None:
             queryset = queryset.filter(api_id=gateway_id)

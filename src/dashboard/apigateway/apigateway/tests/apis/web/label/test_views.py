@@ -41,8 +41,8 @@ class TestAPILabelListCreateApi(TestCase):
         response = view(request, gateway_id=self.gateway.id)
 
         result = get_response_json(response)
-        # self.assertEqual(result["code"], 0, result)
-        self.assertEqual(response.status_code, 200, result)
+
+        self.assertEqual(response.status_code, 201, result)
         self.assertEqual(APILabel.objects.filter(api=self.gateway, name=data["name"]).count(), 1)
 
     def test_list(self):
@@ -70,7 +70,6 @@ class TestAPILabelListCreateApi(TestCase):
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(len(result["data"]["results"]), test["expected"])
 
@@ -91,7 +90,6 @@ class TestAPILabelViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id, id=api_label.id)
 
         result = get_response_json(response)
-        # self.assertEqual(result["code"], 0)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             result["data"],
@@ -111,9 +109,7 @@ class TestAPILabelViewSet(TestCase):
         view = APILabelRetrieveUpdateDestroyApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=api_label.id)
 
-        # result = get_response_json(response)
-        # self.assertEqual(result["code"], 0)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
         self.assertFalse(APILabel.objects.filter(api=self.gateway, name="test-01").exists())
         self.assertTrue(APILabel.objects.filter(api=self.gateway, name="test-02").exists())
@@ -126,6 +122,5 @@ class TestAPILabelViewSet(TestCase):
         view = APILabelRetrieveUpdateDestroyApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=api_label.id)
 
-        result = get_response_json(response)
-        self.assertEqual(result["code"], 0)
+        self.assertEqual(response.status_code, 204)
         self.assertFalse(APILabel.objects.filter(id=api_label.id).exists())

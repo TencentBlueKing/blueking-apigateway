@@ -52,7 +52,7 @@ class TestLogTimeChartRetrieveApi:
             },
         )
         result = response.json()
-        assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == {
             "series": [7, 7],
             "timeline": [1579054140, 1579054200],
@@ -83,7 +83,7 @@ class TestSearchLogListApi:
         )
         result = response.json()
 
-        assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"]["count"] == 3
         assert len(result["data"]["results"]) == 3
         assert not result["data"]["has_next"]
@@ -112,7 +112,7 @@ class TestLogDetailListApi:
         )
         result = response.json()
 
-        assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["fields"] == ES_LOG_FIELDS
 
@@ -130,5 +130,5 @@ class TestLogLinkRetrieveApi:
         )
         result = response.json()
 
-        assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"]["link"]

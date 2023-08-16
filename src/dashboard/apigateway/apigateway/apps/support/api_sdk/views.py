@@ -95,16 +95,16 @@ class APISDKViewSet(viewsets.ModelViewSet):
                 )
             except exceptions.ResourcesIsEmpty:
                 if include_private_resources:
-                    raise error_codes.SDK_ERROR.format(_("网关下无资源（请求方法非 ANY），无法生成 SDK。"), replace=True)
-                raise error_codes.SDK_ERROR.format(_("网关下无资源（公开，且请求方法非 ANY），无法生成 SDK。"), replace=True)
+                    raise error_codes.INTERNAL.format(_("网关下无资源（请求方法非 ANY），无法生成 SDK。"), replace=True)
+                raise error_codes.INTERNAL.format(_("网关下无资源（公开，且请求方法非 ANY），无法生成 SDK。"), replace=True)
             except exceptions.GenerateError:
-                raise error_codes.SDK_INTERNAL_ERROR.format(_("网关 SDK 生成失败。"), replace=True)
+                raise error_codes.INTERNAL.format(_("网关 SDK 生成失败。"), replace=True)
             except exceptions.PackError:
-                raise error_codes.SDK_INTERNAL_ERROR.format(_("网关 SDK 打包失败。"), replace=True)
+                raise error_codes.INTERNAL.format(_("网关 SDK 打包失败。"), replace=True)
             except exceptions.DistributeError:
-                raise error_codes.SDK_INTERNAL_ERROR.format(_("网关 SDK 发布失败。"), replace=True)
+                raise error_codes.INTERNAL.format(_("网关 SDK 发布失败。"), replace=True)
             except exceptions.TooManySDKVersion as err:
-                raise error_codes.SDK_ERROR.format(
+                raise error_codes.INTERNAL.format(
                     _("同一资源版本，最多只能生成 {count} 个 SDK。").format(count=err.max_count),
                     replace=True,
                 )

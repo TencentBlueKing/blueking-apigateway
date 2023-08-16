@@ -34,12 +34,12 @@ from apigateway.core.constants import (
     PATH_TO_NAME_PATTERN,
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
-    APIStatusEnum,
     BackendConfigTypeEnum,
     BackendTypeEnum,
     BackendUpstreamTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
+    GatewayStatusEnum,
     LoadBalanceTypeEnum,
     MicroGatewayStatusEnum,
     PassHostEnum,
@@ -80,7 +80,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     _maintainers = models.CharField(db_column="maintainers", max_length=1024, default="")
 
     # status
-    status = models.IntegerField(choices=APIStatusEnum.choices())
+    status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
 
     is_public = models.BooleanField(default=False)
     # 不同的托管类型决定特性集
@@ -117,7 +117,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     @property
     def is_active(self):
-        return self.status == APIStatusEnum.ACTIVE.value
+        return self.status == GatewayStatusEnum.ACTIVE.value
 
     @property
     def is_active_and_public(self):

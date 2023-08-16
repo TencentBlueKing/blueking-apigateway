@@ -26,7 +26,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.gateway import serializers
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.controller.tasks import revoke_release, rolling_update_release
 from apigateway.core.models import Gateway, MicroGateway, Resource
@@ -41,7 +41,7 @@ class BaseGatewayViewSet(viewsets.ModelViewSet):
     def get_object(self):
         obj = super().get_object()
         if not obj.has_permission(self.request.user.username):
-            raise error_codes.FORBIDDEN.format(_("当前用户无访问网关权限。"), replace=True)
+            raise error_codes.IAM_NO_PERMISSION.format(_("当前用户无访问网关权限。"), replace=True)
         return obj
 
 
@@ -98,9 +98,9 @@ class GatewayViewSet(BaseGatewayViewSet):
             gateways,
             many=True,
             context={
-                "api_resource_count": Resource.objects.get_api_resource_count(gateway_ids),
+                "api_resource_count": Resource.objects.get_resource_count(gateway_ids),
                 "api_stages": GatewayHandler().search_gateway_stages(gateway_ids),
-                "api_auth_contexts": APIAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
+                "api_auth_contexts": GatewayAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
                 "micro_gateway_count": MicroGateway.objects.get_count_by_gateway(gateway_ids),
             },
         )

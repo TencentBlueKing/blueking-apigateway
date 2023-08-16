@@ -56,13 +56,13 @@ class ElasticsearchGetter:
 
     def _get_elasticsearch(self) -> Elasticsearch:
         if not self._hosts:
-            raise error_codes.ES_HOST_EMPTY_ERROR.format(message=_("项目配置 ELASTICSEARCH_HOSTS 不能为空。"))
+            raise error_codes.INTERNAL.format(message=_("项目配置 ELASTICSEARCH_HOSTS 不能为空。"))
 
         try:
             return Elasticsearch(self._hosts, timeout=self._get_es_search_timeout(), max_retries=0)
         except Exception as err:
             logger.exception("failed to connect elasticsearch.")
-            raise error_codes.ES_CONNECTION_ERROR.format(es_hosts_display=self._get_es_hosts_display(), err=err)
+            raise error_codes.INTERNAL.format(es_hosts_display=self._get_es_hosts_display(), err=err)
 
     def _get_es_hosts_display(self) -> str:
         return ",".join(getattr(settings, "ELASTICSEARCH_HOSTS_WITHOUT_AUTH", None) or [])
@@ -90,7 +90,7 @@ class DslESClient(ElasticsearchGetter, BaseESClient):
             response = s.execute()
         except ConnectionError as err:
             logger.exception("failed to connect elasticsearch.")
-            raise error_codes.ES_CONNECTION_ERROR.format(es_hosts_display=self._get_es_hosts_display(), err=err)
+            raise error_codes.INTERNAL.format(es_hosts_display=self._get_es_hosts_display(), err=err)
         except (ConnectionTimeout, ConnectTimeoutError):
             logger.error(
                 "connect to elasticsearch timeout. timeout=%s, index=%s, body=%s",
@@ -98,27 +98,27 @@ class DslESClient(ElasticsearchGetter, BaseESClient):
                 self._get_es_index(),
                 json.dumps(s.to_dict()),
             )
-            raise error_codes.ES_CONNECTION_TIMEOUT.format(
+            raise error_codes.INTERNAL.format(
                 es_hosts_display=self._get_es_hosts_display(), timeout=self._get_es_search_timeout()
             )
         except NotFoundError:
             logger.error("elasticsearch index not found. index=%s", self._get_es_index())
-            raise error_codes.ES_INDEX_NOT_FOUND.format(
+            raise error_codes.INTERNAL.format(
                 es_hosts_display=self._get_es_hosts_display(), index=self._get_es_index()
             )
         except AuthenticationException:
-            raise error_codes.ES_AUTHENTICATION_ERROR.format(es_hosts_display=self._get_es_hosts_display())
+            raise error_codes.INTERNAL.format(es_hosts_display=self._get_es_hosts_display())
         except Exception as err:
             logger.exception(
                 "request elasticsearch error. index=%s, body=%s",
                 self._get_es_index(),
                 json.dumps(s.to_dict()),
             )
-            raise error_codes.ES_SEARCH_ERROR.format(es_hosts_display=self._get_es_hosts_display(), err=err)
+            raise error_codes.INTERNAL.format(es_hosts_display=self._get_es_hosts_display(), err=err)
 
         if not response.success():
             logger.error("request elasticsearch fail. body=%s, response=%s", json.dumps(s.to_dict()), response)
-            raise error_codes.ES_SEARCH_ERROR.format(
+            raise error_codes.INTERNAL.format(
                 es_hosts_display=self._get_es_hosts_display(),
                 err="response check fail, total and successful are not equal.",
             )
@@ -142,7 +142,7 @@ class RawESClient(ElasticsearchGetter, BaseESClient):
             return self._to_compatible_result(result)
         except ConnectionError as err:
             logger.exception("failed to connect elasticsearch.")
-            raise error_codes.ES_CONNECTION_ERROR.format(es_hosts_display=self._get_es_hosts_display(), err=err)
+            raise error_codes.INTERNAL.format(es_hosts_display=self._get_es_hosts_display(), err=err)
         except (ConnectionTimeout, ConnectTimeoutError):
             logger.error(
                 "connect to elasticsearch timeout. timeout=%s, index=%s, body=%s",
@@ -150,19 +150,19 @@ class RawESClient(ElasticsearchGetter, BaseESClient):
                 self._get_es_index(),
                 json.dumps(body),
             )
-            raise error_codes.ES_CONNECTION_TIMEOUT.format(
+            raise error_codes.INTERNAL.format(
                 es_hosts_display=self._get_es_hosts_display(), timeout=self._get_es_search_timeout()
             )
         except NotFoundError:
             logger.error("elasticsearch index not found. index=%s", self._get_es_index())
-            raise error_codes.ES_INDEX_NOT_FOUND.format(
+            raise error_codes.INTERNAL.format(
                 es_hosts_display=self._get_es_hosts_display(), index=self._get_es_index()
             )
         except AuthenticationException:
-            raise error_codes.ES_AUTHENTICATION_ERROR.format(es_hosts_display=self._get_es_hosts_display())
+            raise error_codes.INTERNAL.format(es_hosts_display=self._get_es_hosts_display())
         except Exception as err:
             logger.exception("request elasticsearch error. index=%s, body=%s", self._get_es_index(), json.dumps(body))
-            raise error_codes.ES_SEARCH_ERROR.format(es_hosts_display=self._get_es_hosts_display(), err=err)
+            raise error_codes.INTERNAL.format(es_hosts_display=self._get_es_hosts_display(), err=err)
 
     def _to_compatible_result(self, result: Dict[str, Any]) -> Dict[str, Any]:
         # 修改结果中 count，使其与 bklog 保持一致
@@ -182,7 +182,7 @@ class BKLogESClient(BaseESClient):
             # 去除err敏感信息
             err_raw_msg = str(err)
             err_msg = re.sub(r'\\"bk_app_secret\\":\s*\\".*?\\"', r'\\"bk_app_secret\\": \\"******\\"', err_raw_msg)
-            raise error_codes.REMOTE_REQUEST_ERROR.format(message=err_msg)
+            raise error_codes.INTERNAL.format(message=err_msg)
 
 
 class ESClientFactory:

@@ -29,7 +29,7 @@ from apigateway.core.validators import (
     BKAppCodeListValidator,
     BKAppCodeValidator,
     MaxCountPerGatewayValidator,
-    ReservedAPINameValidator,
+    ReservedGatewayNameValidator,
     ResourceIDValidator,
 )
 from apigateway.tests.utils.testing import create_request
@@ -234,9 +234,9 @@ class TestResourceIDValidator:
                 assert not slz.errors
 
 
-class TestReservedAPINameValidator:
+class TestReservedGatewayNameValidator:
     class APISLZ(serializers.Serializer):
-        name = serializers.CharField(validators=[ReservedAPINameValidator()])
+        name = serializers.CharField(validators=[ReservedGatewayNameValidator()])
 
     @pytest.mark.parametrize(
         "check_reserved_gateway_name, reserved_gateway_name_prefixes, api_name, will_error",

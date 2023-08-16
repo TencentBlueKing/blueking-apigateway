@@ -65,7 +65,6 @@ class TestQueryRangeApi:
         )
         result = response.json()
         assert response.status_code == 200
-        assert result["result"] is True
         assert result["data"] == {"foo": "bar"}
 
         # stage not found

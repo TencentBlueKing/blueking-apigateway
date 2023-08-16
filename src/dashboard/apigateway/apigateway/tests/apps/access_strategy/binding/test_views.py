@@ -130,7 +130,6 @@ class TestAccessStrategyBindingBatchViewSet(TestCase):
             response = view(request, gateway_id=gateway.id, access_strategy_id=access_strategy.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0, result)
             self.assertEqual(response.status_code, 200, result)
 
             self.assertEqual(
@@ -169,7 +168,6 @@ class TestAccessStrategyBindingBatchViewSet(TestCase):
         response = view(request, gateway_id=self.gateway.id, access_strategy_id=access_strategy.id)
 
         result = get_response_json(response)
-        # self.assertEqual(result["code"], 0)
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(
@@ -207,8 +205,6 @@ class TestAccessStrategyBindingBatchViewSet(TestCase):
         view = AccessStrategyBindingBatchViewSet.as_view({"delete": "unbind"})
         response = view(request, gateway_id=self.gateway.id, access_strategy_id=access_strategy.id)
 
-        result = get_response_json(response)
-        # self.assertEqual(result["code"], 0)
         self.assertEqual(response.status_code, 200)
 
         self.assertFalse(AccessStrategyBinding.objects.filter(id=binding.id).exists())
@@ -362,6 +358,5 @@ class TestAccessStrategyBindingBatchViewSet(TestCase):
             response = view(request, gateway_id=self.gateway.id, access_strategy_id=access_strategy_1.id)
 
             result = get_response_json(response)
-            # self.assertEqual(result["code"], 0)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(result["data"], test["expected"])

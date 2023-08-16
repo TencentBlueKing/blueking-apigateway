@@ -120,10 +120,8 @@ class TestMicroGatewayViewSet:
         result = get_response_json(response)
 
         if will_error:
-            # assert result["code"] != 0, result
             assert response.status_code != 200, result
         else:
-            # assert result["code"] == 0, result
             assert response.status_code == 200, result
 
         if need_deploy:

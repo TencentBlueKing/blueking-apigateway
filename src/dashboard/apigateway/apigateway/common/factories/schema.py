@@ -29,14 +29,14 @@ class SchemaFactory:
         try:
             return Schema.objects.get(name=obj.name, type=obj.type, version=obj.version)
         except Schema.DoesNotExist:
-            raise error_codes.COMMON_ERROR.format(_("Schema 不存在。"), replace=True)
+            raise error_codes.INTERNAL.format(_("Schema 不存在。"), replace=True)
 
     def get_proxy_schema(self, proxy_type):
         if proxy_type == ProxyTypeEnum.HTTP.value:
             return self._get_schema_instance(instances.ProxyHTTP())
         elif proxy_type == ProxyTypeEnum.MOCK.value:
             return self._get_schema_instance(instances.ProxyMock())
-        raise error_codes.INVALID_ARGS.format(f"unsupported proxy_type: {proxy_type}")
+        raise error_codes.INVALID_ARGUMENT.format(f"unsupported proxy_type: {proxy_type}")
 
     def get_context_api_bkauth_schema(self):
         return self._get_schema_instance(instances.ContextAPIBKAuth())
@@ -72,7 +72,7 @@ class SchemaFactory:
         elif access_strategy_type == AccessStrategyTypeEnum.CIRCUIT_BREAKER.value:
             return self._get_schema_instance(instances.AccessStrategyCircuitBreaker())
 
-        raise error_codes.INVALID_ARGS.format(f"unsupported access_strategy_type: {access_strategy_type}")
+        raise error_codes.INVALID_ARGUMENT.format(f"unsupported access_strategy_type: {access_strategy_type}")
 
     def get_monitor_alarm_strategy_schema(self):
         return self._get_schema_instance(instances.MonitorAlarmStrategy())

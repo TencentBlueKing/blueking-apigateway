@@ -44,8 +44,6 @@ class TestPluginViewSet:
             },
         )
 
-        # result = response.json()
-        # assert result["code"] == code
         assert response.status_code == code
 
     def test_list(self, request_view, fake_gateway, echo_plugin):
@@ -91,8 +89,6 @@ class TestPluginViewSet:
             },
         )
 
-        # result = response.json()
-        # assert result["code"] == code
         assert response.status_code == code
 
     def test_retrieve(self, request_view, fake_gateway, echo_plugin):

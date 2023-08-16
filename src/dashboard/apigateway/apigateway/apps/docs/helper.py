@@ -35,10 +35,10 @@ from apigateway.apps.support.utils import get_doc_language
 from apigateway.biz.resource_url import ResourceURLHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.common.funcs import get_resource_version_display
-from apigateway.core.constants import APIStatusEnum, StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Stage
 from apigateway.core.utils import get_path_display, get_resource_url
 from apigateway.utils.paginator import LimitOffsetPaginator
@@ -51,7 +51,7 @@ class SupportHelper:
         gateway = Gateway.objects.get(id=id)
 
         if not gateway.is_active_and_public:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("网关非启用或未公开。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("网关非启用或未公开。"))
 
         return gateway
 
@@ -68,7 +68,7 @@ class SupportHelper:
         # return self._parse_response(response)
         # FIXME: duplicate with /api/v1/apis view
         # 过滤出状态为 active，且公开的网关
-        queryset = Gateway.objects.filter(status=APIStatusEnum.ACTIVE.value, is_public=True)
+        queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
         if name:
             if fuzzy:
                 # 模糊匹配，查询名称中包含 name 的网关
@@ -83,7 +83,7 @@ class SupportHelper:
         gateway_ids = list(queryset.values_list("id", flat=True))
         # 过滤出用户类型为指定类型的网关
         if user_auth_type:
-            scope_id_config_map = APIAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids)
+            scope_id_config_map = GatewayAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids)
             gateway_ids = [
                 scope_id
                 for scope_id, config in scope_id_config_map.items()
@@ -99,7 +99,7 @@ class SupportHelper:
             gateway_queryset,
             many=True,
             context={
-                "api_auth_contexts": APIAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
+                "api_auth_contexts": GatewayAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
             },
         )
         return sorted(slz.data, key=operator.itemgetter("name"))
@@ -164,12 +164,12 @@ class SupportHelper:
 
         resource_version_id = Release.objects.get_released_resource_version_id(gateway.id, stage_name)
         if not resource_version_id:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("资源未发布。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("资源未发布。"))
 
         resource = ReleasedResource.objects.get_released_resource(gateway.id, resource_version_id, resource_name)
         # 资源在已发布版本中不存在，或者资源未公开
         if not resource or not resource["is_public"]:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("资源在已发布版本中不存在，或者资源未公开。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("资源在已发布版本中不存在，或者资源未公开。"))
 
         return resource
 
@@ -185,12 +185,12 @@ class SupportHelper:
 
         resource_version_id = Release.objects.get_released_resource_version_id(gateway_id, stage_name)
         if not resource_version_id:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("资源未发布。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("资源未发布。"))
 
         resource = ReleasedResource.objects.get_released_resource(gateway_id, resource_version_id, resource_name)
         # 资源在已发布版本中不存在，或者资源未公开
         if not resource or not resource["is_public"] or stage_name in resource["disabled_stages"]:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("资源在已发布版本中不存在，或者资源未公开。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("资源在已发布版本中不存在，或者资源未公开。"))
 
         doc = ReleasedResourceDoc.objects.get_released_resource_doc(
             gateway_id,
@@ -242,7 +242,7 @@ class SupportHelper:
             many=True,
             context={
                 "api_id_map": Gateway.objects.filter_id_object_map(),
-                "api_id_config_map": APIAuthContext().filter_scope_id_config_map(),
+                "api_id_config_map": GatewayAuthContext().filter_scope_id_config_map(),
                 "released_stages": Release.objects.get_released_stages(resource_version_ids=resource_version_ids),
                 "resource_versions": ResourceVersion.objects.get_id_to_fields_map(
                     resource_version_ids=resource_version_ids,

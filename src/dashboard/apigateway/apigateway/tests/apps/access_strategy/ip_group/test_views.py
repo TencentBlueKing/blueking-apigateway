@@ -137,6 +137,5 @@ class TestIPGroupViewSet:
             # result = get_response_json(response)
             _ = get_response_json(response)
 
-            # assert result["code"] == test["expected"]["code"]
             # TODO: fix the assert according to the response here!!!!
             assert IPGroup.objects.filter(id=ip_group_id).exists() == test["expected"]["exists"]
