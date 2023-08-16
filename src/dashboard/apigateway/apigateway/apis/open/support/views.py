@@ -101,11 +101,9 @@ class ResourceDocImportViewSet(viewsets.ViewSet):
                 archive_file=data["file"],
             )
         except NoResourceDocError:
-            raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(
-                _("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True
-            )
+            raise error_codes.INTERNAL.format(_("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True)
         except ResourceDocJinja2TemplateError as err:
-            raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
+            raise error_codes.INTERNAL.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
         return V1OKJsonResponse("OK")
 
     @transaction.atomic
@@ -128,9 +126,9 @@ class ResourceDocImportViewSet(viewsets.ViewSet):
                 swagger=data["swagger"],
             )
         except (ExpandSwaggerError, SchemaValidationError):
-            raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(_("swagger 描述内容不符合规范。"))
+            raise error_codes.INTERNAL.format(_("swagger 描述内容不符合规范。"))
         except GenerateMarkdownError:
-            raise error_codes.RESOURCE_DOC_IMPORT_ERROR.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))
+            raise error_codes.INTERNAL.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))
 
         return V1OKJsonResponse("OK")
 
@@ -170,21 +168,21 @@ class SDKGenerateViewSet(viewsets.ViewSet):
                         }
                     )
                 except exceptions.ResourcesIsEmpty:
-                    raise error_codes.SDK_ERROR.format(_("网关下无资源，无法生成 SDK。"), replace=True)
+                    raise error_codes.INTERNAL.format(_("网关下无资源，无法生成 SDK。"), replace=True)
                 except exceptions.GenerateError:
-                    raise error_codes.SDK_ERROR.format(_("网关 SDK 生成失败，请联系管理员。"), replace=True)
+                    raise error_codes.INTERNAL.format(_("网关 SDK 生成失败，请联系管理员。"), replace=True)
                 except exceptions.PackError:
-                    raise error_codes.SDK_ERROR.format(_("网关 SDK 打包失败，请联系管理员。"), replace=True)
+                    raise error_codes.INTERNAL.format(_("网关 SDK 打包失败，请联系管理员。"), replace=True)
                 except exceptions.DistributeError:
-                    raise error_codes.SDK_ERROR.format(_("网关 SDK 发布失败，请联系管理员。"), replace=True)
+                    raise error_codes.INTERNAL.format(_("网关 SDK 发布失败，请联系管理员。"), replace=True)
                 except exceptions.TooManySDKVersion as err:
-                    raise error_codes.SDK_ERROR.format(
+                    raise error_codes.INTERNAL.format(
                         _("同一资源版本，最多只能生成 {count} 个 SDK。").format(count=err.max_count), replace=True
                     )
                 except Exception:
                     logger.exception(
                         "create sdk failed for gateway %s, release %s", gateway_name, resource_version.version
                     )
-                    raise error_codes.SDK_ERROR.format(_("网关 SDK 创建失败, 请联系管理员。"), replace=True)
+                    raise error_codes.INTERNAL.format(_("网关 SDK 创建失败, 请联系管理员。"), replace=True)
 
         return V1OKJsonResponse("OK", data=results)

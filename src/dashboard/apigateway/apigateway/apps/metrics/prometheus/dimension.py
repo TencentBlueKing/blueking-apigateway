@@ -225,7 +225,9 @@ class DimensionMetricsFactory:
     def create_dimension_metrics(cls, dimension: DimensionEnum, metrics: MetricsEnum) -> BaseDimensionMetrics:
         _class = cls._registry.get(dimension, {}).get(metrics)
         if not _class:
-            raise error_codes.INVALID_ARGS.format(f"unsupported dimension={dimension.value}, metrics={metrics.value}")
+            raise error_codes.INVALID_ARGUMENT.format(
+                f"unsupported dimension={dimension.value}, metrics={metrics.value}"
+            )
         return _class()
 
     @classmethod

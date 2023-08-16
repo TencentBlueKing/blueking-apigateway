@@ -44,7 +44,6 @@ class TestStageConvertor:
         spec = stage.spec
         assert spec.description == edge_gateway_stage.description
         assert spec.vars["stage_name"] == edge_gateway_stage.name
-        # assert stage.domain == micro_gateway_http_domain
         assert spec.domain == ""
         assert spec.path_prefix == micro_gateway_http_path
         assert spec.rewrite.enabled

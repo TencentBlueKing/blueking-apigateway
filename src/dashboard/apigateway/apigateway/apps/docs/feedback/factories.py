@@ -33,7 +33,7 @@ class FeedbackRelatedObjectFactory:
         elif doc_type == DocTypeEnum.APIGATEWAY.value:
             return RelatedAPIGateway()
 
-        raise error_codes.INVALID_ARGS.format(f"unsupported doc_type: {doc_type}")
+        raise error_codes.INVALID_ARGUMENT.format(f"unsupported doc_type: {doc_type}")
 
 
 class FeedbackRelatedObject(metaclass=ABCMeta):

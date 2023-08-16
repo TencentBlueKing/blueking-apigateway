@@ -56,7 +56,7 @@ class SDKViewSet(viewsets.GenericViewSet):
 
         api = support_helper.get_gateway_by_name(gateway_name)
         if not api:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         sdks = support_helper.get_stage_sdks(
             api["id"],

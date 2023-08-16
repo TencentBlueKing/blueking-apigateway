@@ -76,7 +76,7 @@ class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
         try:
             system = ComponentSystem.objects.get(id=system_id)
         except ComponentSystem.DoesNotExist:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         slz = serializers.AppPermissionApplySLZ(
             data=request.data,
@@ -202,7 +202,7 @@ class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
         try:
             record = AppPermissionApplyRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
         except AppPermissionApplyRecord.DoesNotExist:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         slz = AppPermissionApplyRecordDetailSLZ(record)
         return V1OKJsonResponse("OK", data=slz.data)
