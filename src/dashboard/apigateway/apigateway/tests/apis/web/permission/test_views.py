@@ -272,8 +272,7 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
             view = views.AppResourcePermissionDeleteApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
-            result = get_response_json(response)
-            self.assertEqual(response.status_code, 204, result)
+            self.assertEqual(response.status_code, 204)
 
             permission_model = models.AppResourcePermission
             self.assertFalse(
@@ -349,8 +348,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
             view = views.AppGatewayPermissionDeleteApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
-            result = get_response_json(response)
-            self.assertEqual(response.status_code, 204, result)
+            self.assertEqual(response.status_code, 204)
 
             permission_model = models.AppAPIPermission
             self.assertFalse(
