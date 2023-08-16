@@ -25,11 +25,11 @@ from apigateway.schema.constants import SchemaTypeEnum
 from apigateway.schema.models import Schema
 from apigateway.utils.singleton import Singleton
 
-SCHEMA_NAME_CONTEXT_API_BKAUTH = "ContextAPIBKAuth"
+SCHEMA_NAME_CONTEXT_GATEWAY_BKAUTH = "ContextAPIBKAuth"
 SCHEMA_NAME_CONTEXT_RESOURCE_BKAUTH = "ContextResourceBKAuth"
 SCHEMA_NAME_CONTEXT_STAGE_PROXY_HTTP = "ContextStageProxyHTTP"
 SCHEMA_NAME_CONTEXT_STAGE_RATE_LIMIT = "ContextStageRateLimit"
-SCHEMA_NAME_CONTEXT_API_FEATURE_FLAG = "ContextAPIFeatureFlag"
+SCHEMA_NAME_CONTEXT_GATEWAY_FEATURE_FLAG = "ContextAPIFeatureFlag"
 SCHEMA_NAME_PROXY_HTTP = "ProxyHTTP"
 SCHEMA_NAME_PROXY_MOCK = "ProxyMock"
 SCHEMA_NAME_ACCESS_STRATEGY_IP_ACCESS_CONTROL = "AccessStrategyIPAccessControl"
@@ -70,7 +70,7 @@ class NewMetaSchemaMixin:
 
 
 # =============== CONTEXT ===============
-class ContextAPIBKAuth(NewMetaSchemaMixin, metaclass=Singleton):
+class ContextGatewayBKAuth(NewMetaSchemaMixin, metaclass=Singleton):
     version = "1"
     schema = """
 {
@@ -180,9 +180,9 @@ class ContextAPIBKAuth(NewMetaSchemaMixin, metaclass=Singleton):
     }
 }
     """
-    name = SCHEMA_NAME_CONTEXT_API_BKAUTH
+    name = SCHEMA_NAME_CONTEXT_GATEWAY_BKAUTH
     type = SchemaTypeEnum.CONTEXT.value
-    description = "api bkauth property schema"
+    description = "Gateway auth property schema"
 
 
 class ContextResourceBKAuth(NewMetaSchemaMixin, metaclass=Singleton):
@@ -370,7 +370,7 @@ class ContextStageRateLimit(NewMetaSchemaMixin, metaclass=Singleton):
     description = "RateLimit for stage global"
 
 
-class ContextAPIFeatureFlag(NewMetaSchemaMixin, metaclass=Singleton):
+class ContextGatewayFeatureFlag(NewMetaSchemaMixin, metaclass=Singleton):
     version = "1"
     schema = """
 {
@@ -385,9 +385,9 @@ class ContextAPIFeatureFlag(NewMetaSchemaMixin, metaclass=Singleton):
 }
     """
     example = """{"MY_FEATURE": true}"""
-    name = SCHEMA_NAME_CONTEXT_API_FEATURE_FLAG
+    name = SCHEMA_NAME_CONTEXT_GATEWAY_FEATURE_FLAG
     type = SchemaTypeEnum.CONTEXT.value
-    description = "API feature flags"
+    description = "Gateway feature flags"
 
 
 # =============== PROXY ===============

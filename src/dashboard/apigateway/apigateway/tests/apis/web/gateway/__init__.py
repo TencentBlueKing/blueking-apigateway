@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,20 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
-
-from .views import GatewayViewSet
-
-urlpatterns = [
-    path("", GatewayViewSet.as_view({"get": "list", "post": "create"}), name="apigateway.apps.gateway"),
-    path(
-        "<int:id>/",
-        GatewayViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"}),
-        name="apigateway.apps.gateway.detail",
-    ),
-    path(
-        "<int:id>/status/",
-        GatewayViewSet.as_view({"put": "update_status"}),
-        name="apigateway.apps.gateway.update_status",
-    ),
-]
