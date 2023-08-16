@@ -122,7 +122,5 @@ class TestAPILabelViewSet(TestCase):
         view = GatewayLabelRetrieveUpdateDestroyApi.as_view()
         response = view(request, gateway_id=self.gateway.id, id=api_label.id)
 
-        _ = get_response_json(response)
-
         self.assertEqual(response.status_code, 204)
         self.assertFalse(APILabel.objects.filter(id=api_label.id).exists())
