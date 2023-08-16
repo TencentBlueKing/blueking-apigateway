@@ -56,13 +56,14 @@ class BackendInputSLZ(serializers.Serializer):
     type = serializers.ChoiceField(choices=BackendTypeEnum.get_choices(), default=BackendTypeEnum.HTTP.value)
     configs = serializers.ListField(child=BackendConfigSLZ(), allow_empty=False)
 
-    validators = [
-        UniqueTogetherValidator(
-            queryset=Backend.objects.all(),
-            fields=["gateway", "name"],
-            message=_("网关下后端服务名称已经存在。"),
-        ),
-    ]
+    class Meta:
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Backend.objects.all(),
+                fields=["gateway", "name"],
+                message=_("网关下后端服务名称已经存在。"),
+            ),
+        ]
 
     def validate(self, attrs):
         # 校验网关下所有的stage的配置都提交了
