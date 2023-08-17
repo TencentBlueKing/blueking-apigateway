@@ -353,7 +353,6 @@
         this.curResource = resource
         this.curComponentName = resource.name
 
-        this.$store.commit('setMainContentLoading', true)
         this.$router.push({
           name: 'apigwAPIDetailDoc',
           params: {
