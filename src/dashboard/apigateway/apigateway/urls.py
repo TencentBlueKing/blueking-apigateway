@@ -51,7 +51,7 @@ urlpatterns = [
     path("backend/api/iam/", include("apigateway.apis.iam.urls")),
     # apps: core
     path("backend/apis/", include("apigateway.apps.gateway.urls")),
-    path("backend/apis/<int:gateway_id>/stages/", include("apigateway.apps.stage.urls")),
+    path("backend/apis/<int:gateway_id>/stages/", include("apigateway.apis.web.stage.urls")),
     path("backend/apis/<int:gateway_id>/resources/", include("apigateway.apps.resource.urls")),
     path("backend/apis/<int:gateway_id>/resource_versions/", include("apigateway.apps.resource_version.urls")),
     path("backend/apis/<int:gateway_id>/releases/", include("apigateway.apps.release.urls")),

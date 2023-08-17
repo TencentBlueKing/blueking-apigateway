@@ -39,14 +39,17 @@ class HostSLZ(serializers.Serializer):
     weight = serializers.IntegerField(min_value=1, required=False)
 
 
-class BackendConfigSLZ(serializers.Serializer):
-    stage_id = serializers.IntegerField()
+class BaseBackendConfigSLZ(serializers.Serializer):
     type = serializers.ChoiceField(
         choices=BackendConfigTypeEnum.get_choices(), default=BackendConfigTypeEnum.NODE.value
     )
     timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices())
     hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
+
+
+class BackendConfigSLZ(BaseBackendConfigSLZ):
+    stage_id = serializers.IntegerField()
 
 
 class BackendInputSLZ(serializers.Serializer):
@@ -138,18 +141,3 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
             data.append(config)
 
         return data
-
-
-class StageBackendOutputSLZ(serializers.Serializer):
-    id = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
-    config = serializers.SerializerMethodField()
-
-    def get_id(self, obj):
-        return obj.backend.id
-
-    def get_name(self, obj):
-        return obj.backend.name
-
-    def get_config(self, obj):
-        return obj.config

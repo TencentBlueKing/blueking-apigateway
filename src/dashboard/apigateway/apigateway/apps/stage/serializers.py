@@ -26,7 +26,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
-from apigateway.apps.stage.validators import StageVarsValidator
+from apigateway.apis.web.stage.validators import StageVarsValidator
 from apigateway.biz.stage import StageHandler
 from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
 from apigateway.common.fields import CurrentGatewayDefault
@@ -194,14 +194,14 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         instance = super().create(validated_data)
 
         # 2. save related data
-        StageHandler().save_related_data(
-            instance,
-            validated_data["proxy_http"],
-            validated_data.get("rate_limit") or settings.DEFAULT_STAGE_RATE_LIMIT_CONFIG,
-        )
+        # StageHandler().save_related_data(
+        #     instance,
+        #     validated_data["proxy_http"],
+        #     validated_data.get("rate_limit") or settings.DEFAULT_STAGE_RATE_LIMIT_CONFIG,
+        # )
 
         # 3. record audit log
-        StageHandler().add_create_audit_log(validated_data["api"], instance, validated_data.get("created_by", ""))
+        # StageHandler().add_create_audit_log(validated_data["api"], instance, validated_data.get("created_by", ""))
 
         return instance
 

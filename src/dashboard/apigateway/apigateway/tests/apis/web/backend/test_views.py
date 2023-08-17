@@ -131,17 +131,3 @@ class TestBackendApi:
         )
         assert response.status_code == 204
 
-    def test_stage_list(self, request_view, fake_stage):
-        fake_gateway = fake_stage.api
-
-        _create(request_view, fake_stage)
-
-        response = request_view(
-            "GET",
-            "backend.stage-list",
-            path_params={"gateway_id": fake_gateway.id, "stage_id": fake_stage.id},
-            gateway=fake_gateway,
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["data"]) == 1

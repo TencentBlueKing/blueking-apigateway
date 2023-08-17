@@ -164,9 +164,9 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     # 环境对应的微网关实例，不同环境允许使用不同网关实例，提供隔离能力
     micro_gateway = models.ForeignKey("MicroGateway", on_delete=models.SET_NULL, null=True, default=None, blank=True)
 
-    _vars = models.TextField(db_column="vars")
+    _vars = models.TextField(db_column="vars", default="{}")
 
-    status = models.IntegerField(choices=StageStatusEnum.choices(), default=StageStatusEnum.INACTIVE.value)
+    status = models.IntegerField(choices=StageStatusEnum.get_choices(), default=StageStatusEnum.INACTIVE.value)
 
     is_public = models.BooleanField(default=True)
 
@@ -392,7 +392,7 @@ class Backend(TimestampedModelMixin, OperatorModelMixin):
         null=False,
     )
     name = models.CharField(max_length=64)
-    description = models.CharField(max_length=512)
+    description = models.CharField(max_length=512, default="")
 
     class Meta:
         unique_together = ("gateway", "name")

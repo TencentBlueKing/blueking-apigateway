@@ -18,18 +18,33 @@
 #
 from django.urls import path
 
-from .views import StageViewSet
+from . import views
 
 urlpatterns = [
-    path("", StageViewSet.as_view({"get": "list", "post": "create"}), name="apigateway.apps.stage"),
-    path("releases/", StageViewSet.as_view({"post": "list_release"}), name="apigateway.apps.stage.releases"),
-    path("basic/", StageViewSet.as_view({"get": "list_basic"}), name="apigateway.apps.stage.list_basic"),
+    path("", views.StageListCreateApi.as_view(), name="stage.list-create"),
     path(
         "<int:id>/",
-        StageViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"}),
-        name="apigateway.apps.stage.detail",
+        views.StageRetrieveUpdateDestroyApi.as_view(),
+        name="stage.retrieve-update-destroy",
     ),
     path(
-        "<int:id>/status/", StageViewSet.as_view({"put": "update_status"}), name="apigateway.apps.stage.update_status"
+        "<int:id>/vars/",
+        views.StageVarsRetrieveUpdateApi.as_view(),
+        name="stage.vars-retrieve-update",
+    ),
+    path(
+        "<int:id>/backends/",
+        views.StageBackendListApi.as_view(),
+        name="stage.backend-list",
+    ),
+    path(
+        "<int:id>/backends/<int:backend_id>/",
+        views.StageBackendRetrieveUpdateApi.as_view(),
+        name="stage.backend-retrieve-update",
+    ),
+    path(
+        "<int:id>/status/",
+        views.StageStatusUpdateApi.as_view(),
+        name="stage.status-update",
     ),
 ]

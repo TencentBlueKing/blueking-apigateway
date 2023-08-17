@@ -20,7 +20,7 @@ import pytest
 from ddf import G
 from rest_framework import serializers
 
-from apigateway.apps.stage.validators import StageVarsValidator
+from apigateway.apis.web.stage.validators import StageVarsValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.models import Gateway, Release, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_request
@@ -170,7 +170,7 @@ class TestStageVarsValidator:
         for test in data:
             slz = self.StageSLZ(instance=stage, data={"vars": test["vars"]}, context={"request": self.request})
             mocker.patch(
-                "apigateway.apps.stage.validators.ResourceVersion.objects.get_used_stage_vars",
+                "apigateway.apis.web.stage.validators.ResourceVersion.objects.get_used_stage_vars",
                 return_value=test["mock_used_stage_vars"],
             )
 

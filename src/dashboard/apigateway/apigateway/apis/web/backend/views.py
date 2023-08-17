@@ -26,7 +26,7 @@ from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .filters import BackendFilter
-from .serializers import BackendInputSLZ, BackendListOutputSLZ, BackendRetrieveOutputSLZ, StageBackendOutputSLZ
+from .serializers import BackendInputSLZ, BackendListOutputSLZ, BackendRetrieveOutputSLZ
 
 
 class BackendQuerySetMixin:
@@ -118,21 +118,3 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
         BackendConfig.objects.filter(backend=instance).delete()
         instance.delete()
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
-
-
-class StageBackendListApi(generics.ListAPIView):
-    lookup_field = "stage_id"
-    queryset = BackendConfig.objects.order_by("backend__id").prefetch_related("backend")
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        return queryset.filter(gateway=self.request.gateway, stage_id=self.kwargs["stage_id"])
-
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: StageBackendOutputSLZ(many=True)},
-        tags=["Backend"],
-    )
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = StageBackendOutputSLZ(queryset, many=True)
-        return OKJsonResponse(data=serializer.data)

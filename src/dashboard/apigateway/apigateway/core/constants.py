@@ -120,9 +120,9 @@ class GatewayTypeEnum(StructuredEnum):
         return "b"
 
 
-class StageStatusEnum(ChoiceEnumMixin, Enum):
-    INACTIVE = 0
-    ACTIVE = 1
+class StageStatusEnum(StructuredEnum):
+    INACTIVE = EnumField(0, "INACTIVE")
+    ACTIVE = EnumField(1, "ACTIVE")
 
 
 class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
@@ -258,6 +258,7 @@ MAX_LABEL_COUNT_PER_RESOURCE = 10
 
 DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100
+DEFAULT_BACKEND_NAME = "default"
 
 # 网关名
 GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")

@@ -16,15 +16,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
-
-from . import views
-
-urlpatterns = [
-    path("", views.BackendListCreateApi.as_view(), name="backend.list-create"),
-    path(
-        "<int:id>/",
-        views.BackendRetrieveUpdateDestroyApi.as_view(),
-        name="backend.retrieve-update-destroy",
-    ),
-]

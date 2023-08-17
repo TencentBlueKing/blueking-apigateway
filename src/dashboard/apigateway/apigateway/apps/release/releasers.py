@@ -27,10 +27,10 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
+from apigateway.apis.web.stage.validators import StageVarsValuesValidator
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.release.serializers import ReleaseBatchSLZ
-from apigateway.apps.stage.validators import StageVarsValuesValidator
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
