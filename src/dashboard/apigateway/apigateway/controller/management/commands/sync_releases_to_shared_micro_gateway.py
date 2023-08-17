@@ -42,7 +42,9 @@ class Command(BaseCommand):
         for gateway in gateways:
             print(f"syncing release for gateway {gateway.name} ...")
             # publish_id=-1 标识cli同步网关发布操作，方便operator过滤不上报
-            ok = syncing.trigger_gateway_publish(PublishSourceEnum.CLI_SYNC, gateway_id=gateway.id, is_sync=True)
+            ok = syncing.trigger_gateway_publish(
+                PublishSourceEnum.CLI_SYNC, author="cli", gateway_id=gateway.id, is_sync=True
+            )
             if not ok:
                 print(f"[ERROR] syncing release for gateway {gateway.name} failed")
                 failed_gateway_names.append(gateway.name)

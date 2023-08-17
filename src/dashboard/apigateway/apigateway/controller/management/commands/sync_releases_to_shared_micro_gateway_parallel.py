@@ -37,7 +37,7 @@ def sync_gateway(gateway):
     connection.close()
 
     print(f"syncing release for gateway {gateway.name} ...")
-    ok = syncing.trigger_gateway_publish(PublishSourceEnum.CLI_SYNC, gateway_id=gateway.id, is_sync=True)
+    ok = syncing.trigger_gateway_publish(PublishSourceEnum.CLI_SYNC, author="cli", gateway_id=gateway.id, is_sync=True)
     if not ok:
         print(f"[ERROR] syncing release for gateway {gateway.name} failed")
         return gateway.name
