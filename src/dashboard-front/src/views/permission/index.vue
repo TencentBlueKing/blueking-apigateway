@@ -80,6 +80,8 @@
             :data="searchParams.dimension === 'resource' ? searchResourceCondition : searchApiCondition"
             :show-condition="false"
             v-model="searchFilters"
+            :readonly="searchReadonly"
+            @menu-select="handleMenuSelect"
             @change="formatFilterData">
           </bk-search-select>
         </bk-form-item>
@@ -437,7 +439,8 @@
         tableEmptyConf: {
           keyword: '',
           isAbnormal: false
-        }
+        },
+        searchReadonly: false
       }
     },
     computed: {
@@ -646,13 +649,13 @@
         this.getApigwPermissionList(newPage)
       },
 
-      handleCancel () {
-        // this.clearPermissionForm()
-      },
-
       async exportDownload (data) {
         const apigwId = this.apigwId
         this.isDataLoading = true
+
+        if (!data.resource_id) {
+          delete data.resource_id
+        }
 
         try {
           const res = await this.$store.dispatch('permission/exportApigwPermission', { apigwId, data })
@@ -951,6 +954,10 @@
 
       async handleBeforeClose () {
         return this.$isSidebarClosed(JSON.stringify(this.curApply))
+      },
+
+      handleMenuSelect (data) {
+        this.searchReadonly = data.id === 'resource_id'
       }
     }
   }

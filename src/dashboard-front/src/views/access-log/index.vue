@@ -539,11 +539,8 @@
       },
       updateTableEmptyConfig () {
         const time = this.dateTimeRange.some(Boolean)
-        if (this.keyword || this.shortcutSelectedIndex !== 1) {
+        if (this.keyword || this.searchParams.stage_id || time) {
           this.tableEmptyConf.keyword = 'placeholder'
-          return
-        } else if (this.searchParams.stage_id || time) {
-          this.tableEmptyConf.keyword = '$CONSTANT'
           return
         }
         this.tableEmptyConf.keyword = ''
