@@ -40,7 +40,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
 
-    @swagger_auto_schema(tags=["Release"])
+    @swagger_auto_schema(tags=["WebAPI.Release"])
     def list(self, request, *args, **kwargs):
         """
         用于在线调试时，获取环境下可用的资源列表
@@ -80,7 +80,7 @@ class ReleasedResourceGetApi(generics.RetrieveAPIView):
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
 
-    @swagger_auto_schema(tags=["Release"])
+    @swagger_auto_schema(tags=["WebAPI.Release"])
     def get(self, request, resource_version_id: int, resource_id: int, *args, **kwargs):
         try:
             released_resource = ReleasedResource.objects.get(
@@ -112,7 +112,7 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
     @swagger_auto_schema(
         request_body=serializers.ReleaseBatchInputSLZ,
         responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ()},
-        tags=["Release"],
+        tags=["Web.Release"],
     )
     def create(self, request, *args, **kwargs):
         manager = ReleaseBatchManager(access_token=get_user_access_token_from_request(request))
@@ -137,7 +137,7 @@ class ReleaseHistoryListViewSet(generics.ListAPIView):
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.ReleaseHistoryQueryInputSLZ(),
         responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ(many=True)},
-        tags=["Release"],
+        tags=["Web.Release"],
     )
     def list(self, request, *args, **kwargs):
         slz = serializers.ReleaseHistoryQueryInputSLZ(data=request.query_params)
@@ -182,7 +182,9 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
     def get_queryset(self):
         return ReleaseHistory.objects.filter(gateway=self.request.gateway)
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ()}, tags=["Release"])
+    @swagger_auto_schema(
+        responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ()}, tags=["WebAPI.Release"]
+    )
     def retrieve(self, request, *args, **kwargs):
         try:
             # created_time 在极端情况下可能重复，因此，添加字段 id
