@@ -51,7 +51,6 @@ urlpatterns = [
     path("backend/api/iam/", include("apigateway.apis.iam.urls")),
     # apps: core
     path("backend/apis/", include("apigateway.apps.gateway.urls")),
-    path("backend/apis/<int:gateway_id>/stages/", include("apigateway.apis.web.stage.urls")),
     path("backend/apis/<int:gateway_id>/resources/", include("apigateway.apps.resource.urls")),
     path("backend/apis/<int:gateway_id>/resource_versions/", include("apigateway.apps.resource_version.urls")),
     path("backend/apis/<int:gateway_id>/releases/", include("apigateway.apps.release.urls")),
@@ -81,6 +80,7 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
     path("backend/gateways/<int:gateway_id>/permissions/", include("apigateway.apis.web.permission.urls")),
     path("backend/gateways/<int:gateway_id>/backends/", include("apigateway.apis.web.backend.urls")),
+    path("backend/gateways/<int:gateway_id>/stages/", include("apigateway.apis.web.stage.urls")),
     # todo 不应该放在顶层，后续要想办法挪到下层
     path(
         "backend/gateways/monitors/alarm/records/summary/",
