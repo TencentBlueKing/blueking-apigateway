@@ -24,7 +24,7 @@ from django.db import transaction
 from django.utils.translation import gettext as _
 
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
-from apigateway.apps.release.releasers import ReleaseBatchManager
+from apigateway.biz.releasers import ReleaseBatchManager
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Gateway, ResourceVersion, Stage

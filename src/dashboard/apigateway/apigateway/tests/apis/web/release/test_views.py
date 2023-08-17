@@ -21,7 +21,7 @@ import json
 import pytest
 from django_dynamic_fixture import G
 
-from apigateway.apps.release.views import ReleaseHistoryViewSet
+from apigateway.apis.web.release.views import ReleaseHistoryListViewSet, ReleaseHistoryRetrieveApi
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time, get_response_json
@@ -29,7 +29,7 @@ from apigateway.tests.utils.testing import create_gateway, dummy_time, get_respo
 pytestmark = pytest.mark.django_db
 
 
-class TestReleaseBatchViewSet:
+class TestReleaseBatchCreateApi:
     @pytest.fixture(autouse=True)
     def setup_fixture(self, request_factory):
         self.factory = request_factory
@@ -44,7 +44,7 @@ class TestReleaseBatchViewSet:
     def test_release_with_hosts(self, configure_hosts, succeeded, fake_admin_user, request_view, mocker, fake_gateway):
         """Test release API with different hosts config of stage objects."""
         mocker.patch(
-            "apigateway.apps.release.releasers.reversion_update_signal.send",
+            "apigateway.biz.releasers.reversion_update_signal.send",
             return_value=None,
         )
 
@@ -71,11 +71,11 @@ class TestReleaseBatchViewSet:
             "resource_version_id": resource_version.id,
         }
 
-        self.factory.post(f"/apis/{fake_gateway.id}/releases/batch/", data=data)
+        self.factory.post(f"/gateways/{fake_gateway.id}/releases/batch/", data=data)
 
         response = request_view(
             "POST",
-            "apigateway.apps.releases.batch",
+            "gateway.releases.create",
             gateway=fake_gateway,
             path_params={"gateway_id": fake_gateway.id},
             data=data,
@@ -101,7 +101,7 @@ class TestReleaseBatchViewSet:
                 assert release.resource_version == resource_version
 
 
-class TestReleaseHistoryViewSet:
+class TestReleaseHistoryListViewSet:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
         self.gateway = create_gateway()
@@ -141,14 +141,20 @@ class TestReleaseHistoryViewSet:
             },
         ]
         for test in data:
-            request = request_factory.get(f"/apis/{self.gateway.id}/releases/histories/", data=test)
+            request = request_factory.get(f"/gateways/{self.gateway.id}/releases/histories/", data=test)
 
-            view = ReleaseHistoryViewSet.as_view({"get": "list"})
+            view = ReleaseHistoryListViewSet.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
             assert result["code"] == 0
             assert result["data"]["count"] == test["expected"]["count"]
+
+
+class TestReleaseHistoryRetrieveApi:
+    @pytest.fixture(autouse=True)
+    def setup_fixtures(self):
+        self.gateway = create_gateway()
 
     def test_retrieve_latest(self, request_factory):
         gateway = create_gateway()
@@ -168,7 +174,7 @@ class TestReleaseHistoryViewSet:
 
         data = [
             {
-                "api": gateway,
+                "gateway": gateway,
                 "expected": {
                     "stage_names": [stage.name],
                     "created_time": dummy_time.str,
@@ -183,15 +189,15 @@ class TestReleaseHistoryViewSet:
                 },
             },
             {
-                "api": gateway_2,
+                "gateway": gateway_2,
                 "expected": {},
             },
         ]
         for test in data:
-            gateway = test["api"]
-            request = request_factory.get(f"/apis/{gateway.id}/releases/histories/latest/")
+            gateway = test["gateway"]
+            request = request_factory.get(f"/gateways/{gateway.id}/releases/histories/latest/")
 
-            view = ReleaseHistoryViewSet.as_view({"get": "retrieve_latest"})
+            view = ReleaseHistoryRetrieveApi.as_view()
             response = view(request, gateway_id=gateway.id)
 
             result = get_response_json(response)

@@ -66,7 +66,7 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
         responses={status.HTTP_200_OK: serializers.ResourceVersionListSLZ(many=True)},
         tags=["ResourceVersion"],
     )
-    def list(self, request, *args, **kwaÏrgs):
+    def list(self, request, *args, **kwargs):
         data = (
             ResourceVersion.objects.filter(gateway=request.gateway)
             .values("id", "version", "name", "title", "comment", "created_time")

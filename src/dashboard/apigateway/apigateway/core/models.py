@@ -738,7 +738,7 @@ class MicroGateway(ConfigModelMixin):
         """微网关实例 ID"""
         return str(self.pk)
 
-    def query_related_api_gateways(self):
+    def query_related_gateways(self):
         if not self.is_shared:
             return Gateway.objects.filter(id=self.gateway_id)
 

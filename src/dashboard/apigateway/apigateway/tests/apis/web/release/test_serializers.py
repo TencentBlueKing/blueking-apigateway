@@ -24,12 +24,12 @@ from django.http import Http404
 from django.test import TestCase
 from django_dynamic_fixture import G
 
-from apigateway.apps.release import serializers
+from apigateway.apis.web.release import serializers
 from apigateway.core.models import Gateway, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, create_request, dummy_time
 
 
-class TestReleaseBatchSLZ:
+class ReleaseBatchInputSLZ:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
         self.gateway = G(Gateway)
@@ -66,7 +66,7 @@ class TestReleaseBatchSLZ:
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchSLZ(data=test, context={"api": self.gateway})
+            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"api": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()
@@ -104,7 +104,7 @@ class TestReleaseBatchSLZ:
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchSLZ(data=test, context={"api": self.gateway})
+            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"api": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()
@@ -114,7 +114,7 @@ class TestReleaseBatchSLZ:
                 assert slz.validated_data == test["expected"]
 
 
-class TestReleaseHistoryQuerySLZ(TestCase):
+class TestReleaseHistoryQueryInputSLZ(TestCase):
     def test_to_internal_value(self):
         data = [
             {
@@ -148,13 +148,13 @@ class TestReleaseHistoryQuerySLZ(TestCase):
         ]
 
         for test in data:
-            slz = serializers.ReleaseHistoryQuerySLZ(data=test)
+            slz = serializers.ReleaseHistoryQueryInputSLZ(data=test)
             slz.is_valid()
             self.assertFalse(slz.errors, slz.errors)
             self.assertEqual(slz.validated_data, test["expected"], slz.validated_data)
 
 
-class TestReleaseHistorySLZ:
+class TestReleaseHistoryOutputSLZ:
     def test_to_representation(self):
         gateway = G(Gateway)
         stage = G(Stage, api=gateway)
@@ -168,7 +168,7 @@ class TestReleaseHistorySLZ:
         )
         release_history.stages.add(stage)
 
-        slz = serializers.ReleaseHistorySLZ(instance=release_history)
+        slz = serializers.ReleaseHistoryOutputSLZ(instance=release_history)
         assert slz.data == {
             "stage_names": [stage.name],
             "created_time": dummy_time.str,

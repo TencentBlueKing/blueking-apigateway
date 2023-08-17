@@ -21,9 +21,9 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.resource_version import serializers
-from apigateway.apps.release.releasers import ReleaseBatchManager, ReleaseError
 from apigateway.apps.resource_version.serializers import ResourceVersionSLZ
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
+from apigateway.biz.releasers import ReleaseBatchManager, ReleaseError
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ResourceVersion, Stage

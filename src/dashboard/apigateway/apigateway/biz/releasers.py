@@ -27,9 +27,9 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
+from apigateway.apis.web.release.serializers import ReleaseBatchInputSLZ
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.release.serializers import ReleaseBatchSLZ
 from apigateway.apps.stage.validators import StageVarsValuesValidator
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.release import ReleaseHandler
@@ -98,7 +98,7 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
             - resource_version_id：待发布版本
             - comment：发布备注
         """
-        slz = slz = ReleaseBatchSLZ(data=data, context={"api": gateway})
+        slz = slz = ReleaseBatchInputSLZ(data=data, context={"api": gateway})
         slz.is_valid(raise_exception=True)
 
         return cls(
@@ -119,16 +119,16 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
             self._validate()
         except (ValidationError, ReleaseValidationError, NonRelatedMicroGatewayError) as err:
             message = err.detail[0] if isinstance(err, ValidationError) else str(err)
-            release_history = ReleaseHandler.save_release_history_with_id(
+            history = ReleaseHandler.save_release_history_with_id(
                 gateway_id=self.gateway.id,
                 stage_id=self.stages[0].id,
                 resource_version_id=self.resource_version.id,
                 source=PublishSourceEnum.RESOURCE_PUBLISH,
                 author=self.username,
             )
-            release_history.stages.set(self.stages)
+            history.stages.set(self.stages)
             # 上报发布校验失败事件: todo: 支持批量环境发布
-            PublishEventReporter.report_config_validate_fail_event(release_history, release_history.stage, message)
+            PublishEventReporter.report_config_validate_fail_event(history, history.stage, message)
             raise ReleaseError(message) from err
         # save release history
         history = ReleaseHandler.save_release_history_with_id(
