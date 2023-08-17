@@ -4,7 +4,7 @@ release:
 apigateway:
   description: "蓝鲸 ESB 编码组件"
   description_en: "BlueKing ESB component"
-  is_public: true
+  is_public: false
   maintainers:
     - "admin"
 
