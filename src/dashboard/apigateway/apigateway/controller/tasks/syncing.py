@@ -237,7 +237,6 @@ def _trigger_revoke_publish(
             )
 
 
-@shared_task(ignore_result=True)
 def trigger_gateway_publish(
     source: PublishSourceEnum,
     author: str,
