@@ -113,6 +113,11 @@ class StageProxyHTTPConfigSLZ(serializers.Serializer):
     transform_headers = TransformHeadersSLZ(required=False, default=dict)
 
 
+class RateSLZ(serializers.Serializer):
+    tokens = serializers.IntegerField(min_value=0)
+    period = serializers.IntegerField(min_value=1)
+
+
 class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     api = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(STAGE_NAME_PATTERN)
