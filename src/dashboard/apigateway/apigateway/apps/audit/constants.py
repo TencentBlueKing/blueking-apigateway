@@ -51,14 +51,14 @@ OP_STATUS_CHOICES = (
 
 
 class OpObjectTypeEnum(StructuredEnum):
-    GATEWAY = EnumField("api")
+    GATEWAY = EnumField("gateway")
     STAGE = EnumField("stage")
     RESOURCE = EnumField("resource")
     RESOURCE_VERSION = EnumField("resource_version")
     RELEASE = EnumField("release")
     ACCESS_STRATEGY = EnumField("access_strategy")
     IP_GROUP = EnumField("ip_group")
-    GATEWAY_LABEL = EnumField("api_label")
+    GATEWAY_LABEL = EnumField("gateway_label")
     MICRO_GATEWAY = EnumField("micro_gateway")
     PLUGIN = EnumField("plugin")
 

@@ -3,7 +3,7 @@ from ddf import G
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from apigateway.biz.slz_validators import (
+from apigateway.biz.validators import (
     BKAppCodeListValidator,
     BKAppCodeValidator,
     MaxCountPerGatewayValidator,

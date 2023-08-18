@@ -20,7 +20,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apps.label.models import APILabel
-from apigateway.biz.slz_validators import MaxCountPerGatewayValidator
+from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.fields import CurrentGatewayDefault
 
 

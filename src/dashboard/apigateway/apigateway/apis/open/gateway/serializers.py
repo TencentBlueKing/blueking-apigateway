@@ -25,7 +25,7 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.slz_validators import BKAppCodeListValidator
+from apigateway.biz.validators import BKAppCodeListValidator
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
     GATEWAY_NAME_PATTERN,
