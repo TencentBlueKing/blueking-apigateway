@@ -123,12 +123,12 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
         tags=["Stage"],
     )
     def update(self, request, *args, **kwargs):
-        slz = StageInputSLZ(data=request.data, context={"api": request.gateway})
+        instance = self.get_object()
+
+        slz = StageInputSLZ(instance=instance, data=request.data, context={"api": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-
-        instance = self.get_object()
 
         stage = StageHandler.update(instance, data, request.user.username)
 

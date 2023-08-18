@@ -90,13 +90,6 @@ class StageHandler:
 
             Release.objects.delete_by_stage_ids([stage.id])
 
-            # 3. delete access-strategy-binding
-
-            AccessStrategyBinding.objects.delete_by_scope_ids(
-                scope_type=AccessStrategyBindScopeEnum.STAGE.value,
-                scope_ids=[stage.id],
-            )
-
             # 4. delete stages
             stage.delete()
 

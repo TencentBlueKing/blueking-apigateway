@@ -17,9 +17,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.db import transaction
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.utils import record_audit_log
 from apigateway.biz.backend import BackendHandler
 from apigateway.core.models import Backend, BackendConfig
 from apigateway.utils.responses import OKJsonResponse
@@ -70,7 +73,18 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
 
         data = slz.validated_data
 
-        BackendHandler.create(data, request.user.username)
+        backend = BackendHandler.create(data, request.user.username)
+
+        record_audit_log(
+            username=request.user.username,
+            op_type=OpTypeEnum.CREATE.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=request.gateway.id,
+            op_object_type=OpObjectTypeEnum.BACKEND.value,
+            op_object_id=backend.id,
+            op_object=backend.name,
+            comment=_("创建后端服务"),
+        )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
@@ -94,14 +108,25 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
         tags=["Backend"],
     )
     def update(self, request, *args, **kwargs):
-        slz = BackendInputSLZ(data=request.data, context={"api": request.gateway})
+        instance = self.get_object()
+
+        slz = BackendInputSLZ(instance=instance, data=request.data, context={"api": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
 
-        instance = self.get_object()
+        backend = BackendHandler.update(instance, data, request.user.username)
 
-        BackendHandler.update(instance, data, request.user.username)
+        record_audit_log(
+            username=request.user.username,
+            op_type=OpTypeEnum.MODIFY.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=request.gateway.id,
+            op_object_type=OpObjectTypeEnum.BACKEND.value,
+            op_object_id=backend.id,
+            op_object=backend.name,
+            comment=_("更新后端服务"),
+        )
 
         return OKJsonResponse()
 
@@ -117,4 +142,16 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
 
         BackendConfig.objects.filter(backend=instance).delete()
         instance.delete()
+
+        record_audit_log(
+            username=request.user.username,
+            op_type=OpTypeEnum.DELETE.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=request.gateway.id,
+            op_object_type=OpObjectTypeEnum.BACKEND.value,
+            op_object_id=instance.id,
+            op_object=instance.name,
+            comment=_("删除后端服务"),
+        )
+
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

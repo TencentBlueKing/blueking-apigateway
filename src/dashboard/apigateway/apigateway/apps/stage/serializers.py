@@ -19,7 +19,6 @@
 import uuid
 from typing import Optional
 
-from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
@@ -27,11 +26,13 @@ from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.stage.validators import StageVarsValidator
-from apigateway.biz.stage import StageHandler
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
+from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 from apigateway.core.constants import (
+    DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     DOMAIN_PATTERN,
     HEADER_KEY_PATTERN,
@@ -39,8 +40,7 @@ from apigateway.core.constants import (
     STAGE_NAME_PATTERN,
     LoadBalanceTypeEnum,
 )
-from apigateway.core.models import MicroGateway, Stage
-from apigateway.core.signals import reversion_update_signal
+from apigateway.core.models import Backend, BackendConfig, MicroGateway, Stage
 from apigateway.core.validators import MaxCountPerGatewayValidator
 
 
@@ -113,19 +113,6 @@ class StageProxyHTTPConfigSLZ(serializers.Serializer):
     transform_headers = TransformHeadersSLZ(required=False, default=dict)
 
 
-class RateSLZ(serializers.Serializer):
-    tokens = serializers.IntegerField(min_value=0)
-    period = serializers.IntegerField(min_value=1)
-
-
-class RateLimitSLZ(serializers.Serializer):
-    enabled = serializers.BooleanField()
-    rate = RateSLZ(required=False)
-
-    def to_internal_value(self, data):
-        return super().to_internal_value({k: v for k, v in data.items() if v not in ({},)})
-
-
 class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     api = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(STAGE_NAME_PATTERN)
@@ -135,7 +122,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         default=dict,
     )
     proxy_http = StageProxyHTTPConfigSLZ()
-    rate_limit = RateLimitSLZ(required=False)
     micro_gateway_id = serializers.UUIDField(allow_null=True, required=False)
     description = SerializerTranslatedField(
         default_field="description_i18n", allow_blank=True, allow_null=True, max_length=512, required=False
@@ -153,7 +139,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "vars",
             "status",
             "proxy_http",
-            "rate_limit",
             "micro_gateway_id",
         )
         extra_kwargs = {
@@ -193,39 +178,38 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         # 1. save stage
         instance = super().create(validated_data)
 
-        # 2. save related data
-        # StageHandler().save_related_data(
-        #     instance,
-        #     validated_data["proxy_http"],
-        #     validated_data.get("rate_limit") or settings.DEFAULT_STAGE_RATE_LIMIT_CONFIG,
-        # )
+        proxy_http_config = validated_data["proxy_http"]
 
-        # 3. record audit log
-        # StageHandler().add_create_audit_log(validated_data["api"], instance, validated_data.get("created_by", ""))
-
-        return instance
-
-    def update(self, instance, validated_data):
-        validated_data.pop("name", None)
-        # 仅能通过发布更新 status，不允许直接更新 status
-        validated_data.pop("status", None)
-        validated_data.pop("created_by", None)
-
-        # 1. 更新数据
-        instance = super().update(instance, validated_data)
-
-        # 2. save related data
-        StageHandler().save_related_data(
-            instance,
-            validated_data["proxy_http"],
-            validated_data.get("rate_limit"),
+        # 2. create default backend
+        backend = Backend.objects.create(
+            gateway=instance.api,
+            name=DEFAULT_BACKEND_NAME,
         )
 
-        # 3. send signal
-        reversion_update_signal.send(sender=Stage, instance_id=instance.id, action="update")
+        hosts = []
+        for host in proxy_http_config["upstreams"]["hosts"]:
+            scheme, _host = host.split("://")
+            hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
 
-        # 4. 记录更新日志
-        StageHandler().add_update_audit_log(validated_data["api"], instance, validated_data.get("updated_by", ""))
+        backend_config = BackendConfig(
+            gateway=instance.api,
+            backend=backend,
+            stage=instance,
+            config={
+                "type": "node",
+                "timeout": proxy_http_config["timeout"],
+                "loadbalance": proxy_http_config["upstreams"]["loadbalance"],
+                "hosts": hosts,
+            },
+        )
+        backend_config.save()
+
+        # 3. create or update header rewrite plugin config
+        stage_transform_headers = proxy_http_config.get("transform_headers") or {}
+        stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
+        HeaderRewriteConvertor.alter_plugin(
+            instance.api_id, PluginBindingScopeEnum.STAGE.value, instance.id, stage_config
+        )
 
         return instance
 
@@ -250,150 +234,3 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         if queryset.exists():
             raise serializers.ValidationError(_("微网关实例已绑定到其它环境。"))
-
-
-class QueryStageSLZ(serializers.Serializer):
-    name = serializers.CharField(allow_blank=True, required=False)
-    order_by = serializers.ChoiceField(
-        choices=["name", "-name", "updated_time", "-updated_time"],
-        allow_blank=True,
-        required=False,
-    )
-
-
-class ListStageSLZ(serializers.ModelSerializer):
-    deletable = serializers.BooleanField()
-    release_status = serializers.SerializerMethodField()
-    release_time = serializers.SerializerMethodField()
-    resource_version_name = serializers.SerializerMethodField()
-    resource_version_title = serializers.SerializerMethodField()
-    resource_version_display = serializers.SerializerMethodField()
-    access_strategies = serializers.SerializerMethodField()
-    plugins = serializers.SerializerMethodField()
-    micro_gateway_id = serializers.SerializerMethodField()
-    micro_gateway_name = serializers.SerializerMethodField()
-    description = SerializerTranslatedField(
-        default_field="description_i18n", allow_blank=True, allow_null=True, max_length=512, required=False
-    )
-
-    class Meta:
-        model = Stage
-        fields = (
-            "id",
-            "name",
-            "description",
-            "description_en",
-            "status",
-            "deletable",
-            "release_status",
-            "release_time",
-            "resource_version_name",
-            "resource_version_title",
-            "resource_version_display",
-            "access_strategies",
-            "plugins",
-            "micro_gateway_id",
-            "micro_gateway_name",
-        )
-
-    def get_release_status(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("release_status", False)
-
-    def get_release_time(self, obj):
-        release_time = self.context["stage_release"].get(obj.id, {}).get("release_time", "")
-        return serializers.DateTimeField(allow_null=True, required=False).to_representation(release_time)
-
-    def get_resource_version_name(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("resource_version_name", "")
-
-    def get_resource_version_title(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("resource_version_title", "")
-
-    def get_resource_version_display(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("resource_version_display", "")
-
-    def get_access_strategies(self, obj):
-        return self.context["scope_bindings"].get(obj.id, [])
-
-    def get_plugins(self, obj):
-        return []
-
-    def get_micro_gateway_id(self, obj) -> Optional[uuid.UUID]:
-        fields = self.context["stage_id_to_micro_gateway_fields"].get(obj.id) or {}
-        return fields.get("id")
-
-    def get_micro_gateway_name(self, obj) -> str:
-        fields = self.context["stage_id_to_micro_gateway_fields"].get(obj.id) or {}
-        return fields.get("name", "")
-
-
-class QueryStageReleaseSLZ(serializers.Serializer):
-    ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
-
-
-class ListStageReleaseSLZ(serializers.ModelSerializer):
-    release_status = serializers.SerializerMethodField()
-    release_time = serializers.SerializerMethodField()
-    resource_version_id = serializers.SerializerMethodField()
-    resource_version_name = serializers.SerializerMethodField()
-    resource_version_title = serializers.SerializerMethodField()
-    resource_version_display = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Stage
-        fields = [
-            "id",
-            "name",
-            "release_status",
-            "release_time",
-            "resource_version_id",
-            "resource_version_name",
-            "resource_version_title",
-            "resource_version_display",
-        ]
-
-    def get_release_status(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("release_status", False)
-
-    def get_release_time(self, obj):
-        release_time = self.context["stage_release"].get(obj.id, {}).get("release_time", "")
-        return serializers.DateTimeField(allow_null=True, required=False).to_representation(release_time)
-
-    def get_resource_version_id(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("resource_version_id", None)
-
-    def get_resource_version_name(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("resource_version_name", "")
-
-    def get_resource_version_title(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("resource_version_title", "")
-
-    def get_resource_version_display(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("resource_version_display", "")
-
-
-class ListStageBasicSLZ(serializers.ModelSerializer):
-    proxy_http = serializers.SerializerMethodField()
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
-
-    class Meta:
-        model = Stage
-        fields = [
-            "id",
-            "name",
-            "description",
-            "description_en",
-            "status",
-            "vars",
-            "proxy_http",
-        ]
-
-    def get_proxy_http(self, obj):
-        return self.context["proxy_http_id_config_map"][obj.id]
-
-
-class UpdateStageStatusSLZ(serializers.ModelSerializer):
-    class Meta:
-        model = Stage
-        fields = ("status",)
-        lookup_field = "id"

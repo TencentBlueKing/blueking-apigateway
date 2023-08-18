@@ -25,7 +25,7 @@ from apigateway.core.models import Backend, BackendConfig
 class BackendHandler:
     @staticmethod
     @transaction.atomic
-    def create(data: Dict[str, Any], created_by: str):
+    def create(data: Dict[str, Any], created_by: str) -> Backend:
         """创建后端服务"""
         backend = Backend(
             gateway=data["gateway"],
@@ -51,9 +51,11 @@ class BackendHandler:
 
         BackendConfig.objects.bulk_create(backend_configs)
 
+        return backend
+
     @staticmethod
     @transaction.atomic
-    def update(backend: Backend, data: Dict[str, Any], updated_by: str):
+    def update(backend: Backend, data: Dict[str, Any], updated_by: str) -> Backend:
         """更新后端服务"""
         backend.type = data["type"]
         backend.name = data["name"]
@@ -73,3 +75,5 @@ class BackendHandler:
             backend_configs.append(backend_config)
 
         BackendConfig.objects.bulk_update(backend_configs, fields=["config", "updated_by"])
+
+        return backend

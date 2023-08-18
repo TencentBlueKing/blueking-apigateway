@@ -54,6 +54,7 @@ OP_STATUS_CHOICES = (
 class OpObjectTypeEnum(ChoiceEnum):
     API = "api"
     STAGE = "stage"
+    BACKEND = "backend"
     RESOURCE = "resource"
     RESOURCE_VERSION = "resource_version"
     RELEASE = "release"

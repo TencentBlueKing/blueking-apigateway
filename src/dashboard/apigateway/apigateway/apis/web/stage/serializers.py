@@ -24,7 +24,7 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 from apigateway.apis.web.backend.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.backend.serializers import BaseBackendConfigSLZ
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import STAGE_NAME_PATTERN, StageStatusEnum
+from apigateway.core.constants import STAGE_NAME_PATTERN
 from apigateway.core.models import Backend, Stage
 from apigateway.core.validators import MaxCountPerGatewayValidator
 
@@ -96,17 +96,10 @@ class BackendSLZ(serializers.Serializer):
 class StageInputSLZ(serializers.Serializer):
     api = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(STAGE_NAME_PATTERN)
-    description = SerializerTranslatedField(
-        default_field="description_i18n", allow_blank=True, allow_null=True, max_length=512, required=False
-    )
+    description = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, required=False)
     backends = serializers.ListField(child=BackendSLZ(), allow_empty=False)
 
     class Meta:
-        extra_kwargs = {
-            "description_en": {
-                "required": False,
-            }
-        }
         validators = [
             UniqueTogetherValidator(
                 queryset=Stage.objects.all(),
@@ -197,4 +190,4 @@ class StagePartialInputSLZ(serializers.Serializer):
 
 
 class StageStatusInputSLZ(serializers.Serializer):
-    status = serializers.ChoiceField(choices=StageStatusEnum.get_choices())
+    status = serializers.ChoiceField(choices=[(0, "INACTIVE")])
