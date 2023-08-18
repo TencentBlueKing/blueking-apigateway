@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
@@ -67,21 +66,6 @@ class ResourceIDValidator(GetGatewayFromContextMixin):
         count = Resource.objects.filter(api_id=gateway.id, id__in=resource_ids).count()
         if count != len(set(resource_ids)):
             raise serializers.ValidationError(_("网关【id={api_id}】下指定的部分资源ID不存在。").format(api_id=gateway.id))
-
-
-class ReservedGatewayNameValidator:
-    """保留的网关名校验，开源版网关名不能以 'bk-' 开头"""
-
-    def __call__(self, value: str):
-        if not (
-            getattr(settings, "CHECK_RESERVED_GATEWAY_NAME", False)
-            and getattr(settings, "RESERVED_GATEWAY_NAME_PREFIXES", None)
-        ):
-            return
-
-        for prefix in settings.RESERVED_GATEWAY_NAME_PREFIXES:
-            if value.startswith(prefix):
-                raise serializers.ValidationError(_("网关名不能以【{prefix}】开头，其为官方保留字。").format(prefix=prefix))
 
 
 class BKAppCodeValidator:
