@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.core.models import Stage, BackendConfig
+from apigateway.core.models import BackendConfig, Stage
 
 
 class TestStageApi:
@@ -241,9 +241,7 @@ class TestStageBackendApi:
 
 class TestStageStatusUpdateApi:
     def test_update(self, request_view, fake_stage):
-        data = {
-            "status": 0
-        }
+        data = {"status": 0}
 
         response = request_view(
             "PUT",

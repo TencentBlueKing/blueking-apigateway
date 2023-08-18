@@ -193,7 +193,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         hosts = []
         for host in proxy_http_config["upstreams"]["hosts"]:
-            scheme, _host = host.split("://")
+            scheme, _host = host["host"].split("://")
             hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
 
         backend_config = BackendConfig(

@@ -31,18 +31,3 @@ try:
     from .local_settings import *  # noqa
 except ImportError:
     pass
-
-
-DATABASES = {
-    "default": {
-        "ENGINE": env.str("BK_APIGW_DATABASE_ENGINE", "django.db.backends.mysql"),
-        "NAME": "bkapigateway",
-        "USER": "root",
-        "PASSWORD": "root",
-        "HOST": env.str("BK_APIGW_DATABASE_HOST", "localhost"),
-        "PORT": env.int("BK_APIGW_DATABASE_PORT", 3306),
-        "OPTIONS": {
-            "isolation_level": env.str("BK_APIGW_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
-        },
-    }
-}

@@ -130,4 +130,3 @@ class TestBackendApi:
             gateway=fake_gateway,
         )
         assert response.status_code == 204
-

@@ -41,6 +41,8 @@ from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import APIHostingTypeEnum, ProxyTypeEnum
 from apigateway.core.models import (
+    Backend,
+    BackendConfig,
     Gateway,
     MicroGateway,
     Release,
@@ -54,8 +56,6 @@ from apigateway.core.models import (
     Stage,
     StageItem,
     StageItemConfig,
-    Backend,
-    BackendConfig,
 )
 from apigateway.schema import instances
 from apigateway.schema.data.meta_schema import init_meta_schemas

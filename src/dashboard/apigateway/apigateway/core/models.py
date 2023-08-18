@@ -166,7 +166,7 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
 
     _vars = models.TextField(db_column="vars", default="{}")
 
-    status = models.IntegerField(choices=StageStatusEnum.get_choices(), default=StageStatusEnum.ACTIVE.value)
+    status = models.IntegerField(choices=StageStatusEnum.get_choices(), default=StageStatusEnum.INACTIVE.value)
 
     is_public = models.BooleanField(default=True)
 

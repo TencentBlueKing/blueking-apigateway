@@ -19,13 +19,10 @@
 
 from typing import Any, Dict, Optional
 
-from django.utils.translation import gettext as _
 from django.db import transaction
 
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
-from apigateway.apps.access_strategy.models import AccessStrategyBinding
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, DEFAULT_STAGE_NAME, StageStatusEnum
-from apigateway.core.models import Backend, MicroGateway, Release, ReleaseHistory, Stage, BackendConfig
+from apigateway.core.models import Backend, BackendConfig, MicroGateway, Release, ReleaseHistory, Stage
 from apigateway.utils.time import now_datetime
 
 
