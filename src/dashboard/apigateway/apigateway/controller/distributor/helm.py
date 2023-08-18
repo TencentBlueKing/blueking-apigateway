@@ -226,7 +226,7 @@ class HelmDistributor(BaseDistributor):
             if not found:
                 return (
                     False,
-                    f"release chart[chart_name:{context.chart_name},chart_version:{context.chart_version} not found ]",
+                    f"release chart[chart_name:{context.chart_name},chart_version:{context.chart_version}]  not found ",
                 )
 
         return True, ""

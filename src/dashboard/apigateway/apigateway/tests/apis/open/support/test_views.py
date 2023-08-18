@@ -106,7 +106,7 @@ class TestAPISDKV1ViewSet:
         assert result == {
             "gateway_id": fake_gateway.id,
             "gateway_name": fake_gateway.name,
-            "api_description": fake_gateway.description,
+            "gateway_description": fake_gateway.description,
             "user_auth_type": "test",
             "language": "python",
             "version_number": sdk.version_number,

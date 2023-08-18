@@ -42,5 +42,5 @@ class TestReleaseHandler:
         assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == []
 
     def test_save_release_history(self, fake_release):
-        ReleaseHandler.save_release_history(fake_release, PublishSourceEnum.RESOURCE_PUBLISH, "test")
+        ReleaseHandler.save_release_history(fake_release, PublishSourceEnum.VERSION_PUBLISH, "test")
         assert ReleaseHistory.objects.filter(gateway=fake_release.gateway, stage=fake_release.stage).count() == 1

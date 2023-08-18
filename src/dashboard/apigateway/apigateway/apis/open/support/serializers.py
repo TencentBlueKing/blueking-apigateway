@@ -57,7 +57,7 @@ class SDKGenerateV1SLZ(serializers.Serializer):
 class APISDKV1SLZ(serializers.Serializer):
     gateway_id = serializers.IntegerField(source="instance.gateway_id")
     gateway_name = serializers.SerializerMethodField()
-    api_description = serializers.SerializerMethodField()
+    gateway_description = serializers.SerializerMethodField()
     user_auth_type = serializers.SerializerMethodField()
     language = serializers.CharField(read_only=True, source="language.value")
 
@@ -77,13 +77,13 @@ class APISDKV1SLZ(serializers.Serializer):
     released_stages = serializers.SerializerMethodField()
 
     def get_gateway_name(self, obj):
-        return self.context["api_id_map"][obj.instance.gateway_id].name
+        return self.context["gateway_id_map"][obj.instance.gateway_id].name
 
-    def get_api_description(self, obj):
-        return self.context["api_id_map"][obj.instance.gateway_id].description
+    def get_gateway_description(self, obj):
+        return self.context["gateway_id_map"][obj.instance.gateway_id].description
 
     def get_user_auth_type(self, obj):
-        return self.context["api_id_config_map"][obj.instance.gateway_id]["user_auth_type"]
+        return self.context["gateway_id_config_map"][obj.instance.gateway_id]["user_auth_type"]
 
     def get_resource_version_name(self, obj):
         return self.context["resource_versions"][obj.instance.resource_version_id]["name"]

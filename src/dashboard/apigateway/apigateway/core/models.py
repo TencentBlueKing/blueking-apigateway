@@ -587,7 +587,7 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     source = models.CharField(
         max_length=64,
         choices=PublishSourceEnum.get_choices(),
-        default=PublishSourceEnum.RESOURCE_PUBLISH,
+        default=PublishSourceEnum.VERSION_PUBLISH.value,
     )
     # todo:1.14删掉该字段废弃，由publish_event来决定最终状态
     status = models.CharField(

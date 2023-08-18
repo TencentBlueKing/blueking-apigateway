@@ -245,7 +245,7 @@ def trigger_gateway_publish(
     is_sync: Optional[bool] = False,
 ):
     """触发网关发布"""
-    """'
+    """
       source: 发布来源
       author: 发布者
       gateway_id: 网关id
@@ -256,7 +256,7 @@ def trigger_gateway_publish(
     # 网关启用/环境变量更新/插件更新/后端服务更新/命令行同步(不产生publish_id)：滚动更新网关进行发布
     if source in [
         PublishSourceEnum.GATEWAY_ENABLE,
-        PublishSourceEnum.STAGE_ENV_UPDATE,
+        PublishSourceEnum.STAGE_UPDATE,
         PublishSourceEnum.PLUGIN_UPDATE,
         PublishSourceEnum.BACKEND_UPDATE,
         PublishSourceEnum.CLI_SYNC,

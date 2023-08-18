@@ -123,7 +123,7 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
                 gateway_id=self.gateway.id,
                 stage_id=self.stages[0].id,
                 resource_version_id=self.resource_version.id,
-                source=PublishSourceEnum.RESOURCE_PUBLISH,
+                source=PublishSourceEnum.VERSION_PUBLISH,
                 author=self.username,
             )
             history.stages.set(self.stages)
@@ -135,7 +135,7 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
             gateway_id=self.gateway.id,
             stage_id=self.stages[0].id,
             resource_version_id=self.resource_version.id,
-            source=PublishSourceEnum.RESOURCE_PUBLISH,
+            source=PublishSourceEnum.VERSION_PUBLISH,
             author=self.username,
         )
         history.stages.set(self.stages)

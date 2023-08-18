@@ -157,23 +157,23 @@ class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
 
 class PublishEventEnum(StructuredEnum):
     # dashboard
-    ValidateConfiguration = EnumField("check_configuration", "check configuration")
-    GenerateTask = EnumField("generate_release_task", "generate release task")
-    DistributeConfiguration = EnumField("distribute_configuration", "distribute configuration")
+    VALIDATE_CONFIGURATION = EnumField("validata_configuration", "check configuration")
+    GENERATE_TASK = EnumField("generate_release_task", "generate release task")
+    DISTRIBUTE_CONFIGURATION = EnumField("distribute_configuration", "distribute configuration")
     # operator
-    ParseConfiguration = EnumField("parse_configuration", "parse configuration")
-    ApplyConfiguration = EnumField("apply_configuration", "apply configuration")
+    PARSE_CONFIGURATION = EnumField("parse_configuration", "parse configuration")
+    APPLY_CONFIGURATION = EnumField("apply_configuration", "apply configuration")
     # apisix
-    LoadConfiguration = EnumField("load_configuration", "load configuration")
+    LOAD_CONFIGURATION = EnumField("load_configuration", "load configuration")
 
 
 class PublishEventNameTypeEnum(ChoiceEnumMixin, Enum):
-    ValidateConfiguration = PublishEventEnum.ValidateConfiguration.value
-    GenerateTask = PublishEventEnum.GenerateTask.value
-    DistributeConfiguration = PublishEventEnum.DistributeConfiguration.value
-    ParseConfiguration = PublishEventEnum.ParseConfiguration.value
-    ApplyConfiguration = PublishEventEnum.ApplyConfiguration.value
-    LoadConfiguration = PublishEventEnum.LoadConfiguration.value
+    ValidateConfiguration = PublishEventEnum.VALIDATE_CONFIGURATION.value
+    GenerateTask = PublishEventEnum.GENERATE_TASK.value
+    DistributeConfiguration = PublishEventEnum.DISTRIBUTE_CONFIGURATION.value
+    ParseConfiguration = PublishEventEnum.PARSE_CONFIGURATION.value
+    ApplyConfiguration = PublishEventEnum.APPLY_CONFIGURATION.value
+    LoadConfiguration = PublishEventEnum.LOAD_CONFIGURATION.value
 
     @classmethod
     def get_event_step(cls, name: str) -> int:
@@ -200,15 +200,15 @@ class PublishSourceEnum(StructuredEnum):
     GATEWAY_ENABLE = EnumField("gateway_enable", "网关启用")
     GATEWAY_DISABLE = EnumField("gateway_disable", "网关停用")
 
-    # resource
-    RESOURCE_PUBLISH = EnumField("resource_publish", "资源发布")
+    # version
+    VERSION_PUBLISH = EnumField("version_publish", "版本发布")
 
     # plugin
     PLUGIN_UPDATE = EnumField("plugin_update", "插件更新")
 
     # stage
     STAGE_DISABLE = EnumField("stage_disable", "环境下架")
-    STAGE_ENV_UPDATE = EnumField("stage_env_update", "变量更新")
+    STAGE_UPDATE = EnumField("stage_env_update", "环境更新")
 
     # backend
     BACKEND_UPDATE = EnumField("backend_update", "服务更新")

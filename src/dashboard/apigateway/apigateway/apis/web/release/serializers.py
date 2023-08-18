@@ -51,16 +51,16 @@ class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
 
 
 class ReleaseHistoryOutputSLZ(serializers.Serializer):
-    stage_names = serializers.SerializerMethodField()
-    resource_version_name = serializers.SerializerMethodField()
-    resource_version_title = serializers.SerializerMethodField()
-    resource_version_comment = serializers.SerializerMethodField()
-    resource_version_display = serializers.SerializerMethodField()
+    stage_names = serializers.SerializerMethodField(read_only=True)
+    resource_version_name = serializers.SerializerMethodField(read_only=True)
+    resource_version_title = serializers.SerializerMethodField(read_only=True)
+    resource_version_comment = serializers.SerializerMethodField(read_only=True)
+    resource_version_display = serializers.SerializerMethodField(read_only=True)
     created_time = serializers.DateTimeField()
-    comment = serializers.CharField()
-    created_by = serializers.CharField()
-    status = serializers.CharField()
-    message = serializers.CharField()
+    comment = serializers.CharField(read_only=True)
+    created_by = serializers.CharField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    message = serializers.CharField(read_only=True)
 
     def get_stage_name(self, obj):
         return obj.stage.name
