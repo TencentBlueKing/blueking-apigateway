@@ -35,7 +35,7 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: GatewayLabelOutputSLZ(many=True)},
-        tags=["GatewayLabel"],
+        tags=["WebAPI.GatewayLabel"],
     )
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -43,7 +43,7 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
         return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""}, request_body=GatewayLabelInputSLZ, tags=["GatewayLabel"]
+        responses={status.HTTP_201_CREATED: ""}, request_body=GatewayLabelInputSLZ, tags=["WebAPI.GatewayLabel"]
     )
     def create(self, request, gateway_id):
         slz = self.get_serializer(data=request.data)
@@ -72,14 +72,14 @@ class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView
     def get_queryset(self):
         return APILabel.objects.filter(api=self.request.gateway)
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: GatewayLabelOutputSLZ()}, tags=["GatewayLabel"])
+    @swagger_auto_schema(responses={status.HTTP_200_OK: GatewayLabelOutputSLZ()}, tags=["WebAPI.GatewayLabel"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = GatewayLabelOutputSLZ(instance)
         return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=GatewayLabelInputSLZ, tags=["GatewayLabel"]
+        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=GatewayLabelInputSLZ, tags=["WebAPI.GatewayLabel"]
     )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -100,7 +100,7 @@ class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["GatewayLabel"])
+    @swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.GatewayLabel"])
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance_id = instance.id

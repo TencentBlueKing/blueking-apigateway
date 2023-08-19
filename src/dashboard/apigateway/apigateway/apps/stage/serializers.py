@@ -27,8 +27,8 @@ from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.stage.validators import StageVarsValidator
-from apigateway.biz.slz_validators import MaxCountPerGatewayValidator
 from apigateway.biz.stage import StageHandler
+from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin

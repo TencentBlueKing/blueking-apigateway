@@ -31,7 +31,7 @@ from apigateway.apps.resource.validators import PathVarsValidator, ProxyPathVars
 from apigateway.apps.stage.serializers import HostSLZ, TransformHeadersSLZ, UpstreamsSLZ
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_url import ResourceURLHandler
-from apigateway.biz.slz_validators import MaxCountPerGatewayValidator
+from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
