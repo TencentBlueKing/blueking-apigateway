@@ -28,6 +28,7 @@ class TestResourceDocImportByArchiveApi:
                 "file": fake_tgz_file,
             },
             format="multipart",
+            gateway=fake_gateway,
         )
         result = resp.json()
 
@@ -48,6 +49,7 @@ class TestResourceDocImportBySwaggerApi:
                 "swagger": faker.pystr(),
                 "language": "zh",
             },
+            gateway=fake_gateway,
         )
         result = resp.json()
 

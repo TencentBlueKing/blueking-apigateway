@@ -46,7 +46,7 @@ class ResourceDocJinja2TemplateSyntaxError(ResourceDocJinja2TemplateError):
     _error_message = _("Jinja2 模板语法错误")
 
     def __init__(self, base_path: str, filename: str, raw_err: TemplateSyntaxError):
-        self.base_path = base_path
+        self.base_path = base_path.rstrip("/") + "/"
         self.filename = filename
         self.raw_err: TemplateSyntaxError = raw_err
 
@@ -55,10 +55,11 @@ class ResourceDocJinja2TemplateSyntaxError(ResourceDocJinja2TemplateError):
             # 实际出错的可能是模板中 include 的其它模板，因此不能使用 err.lineno 获取行号
             return super().__str__()
 
+        self.raw_err.filename = self._get_err_filename()
         return '{message}, File: "{filename}", error file: {err_file}, line: {lineno}, Error: {err}'.format(
             message=self._error_message,
             filename=self.filename,
-            err_file=self._get_err_filename(),
+            err_file=self.raw_err.filename,
             lineno=self.raw_err.lineno,
             err=self.raw_err,
         )
@@ -67,5 +68,5 @@ class ResourceDocJinja2TemplateSyntaxError(ResourceDocJinja2TemplateError):
         # 如果异常中 filename 前缀为 base_path，则去除 base_path 部分，使错误消息更加友好
         err_filename = self.raw_err.filename
         if err_filename.startswith(self.base_path):
-            err_filename = err_filename[len(self.base_path) :].lstrip("/")
+            err_filename = err_filename[len(self.base_path) :]
         return err_filename

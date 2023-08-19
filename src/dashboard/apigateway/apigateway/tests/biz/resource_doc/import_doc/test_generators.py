@@ -68,7 +68,7 @@ class TestJinja2ToMarkdownGenerator:
             write_to_file("{% include '_common.md.j2 %}, get_user", filepath)
             with pytest.raises(ResourceDocJinja2TemplateSyntaxError) as err:
                 generator._render_jinja2_template()
-            assert output_dir not in str(err)
+            assert output_dir not in str(err.value)
 
             write_to_file("{% include '_not_found.md.j2' %}, get_user", filepath)
             with pytest.raises(ResourceDocJinja2TemplateNotFound):

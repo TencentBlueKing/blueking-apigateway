@@ -326,6 +326,6 @@ class ResourceHandler:
 
         if condition.get("query"):
             query = condition.get("query")
-            queryset = queryset.filter(Q(path__icontains=query | Q(name__icontains=query)))
+            queryset = queryset.filter(Q(path__icontains=query) | Q(name__icontains=query))
 
         return queryset

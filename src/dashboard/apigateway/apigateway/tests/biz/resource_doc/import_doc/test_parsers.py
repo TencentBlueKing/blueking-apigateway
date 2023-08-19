@@ -82,25 +82,29 @@ class TestArchiveParser:
                         language=DocLanguageEnum("zh"),
                         resource_name="get_user",
                         filename="zh/get_user.md",
-                        resource_doc_path="/path/to/zh/get_user.md",
+                        content="",
                     ),
                     ArchiveDoc(
                         language=DocLanguageEnum("en"),
                         resource_name="get_user",
                         filename="en/get_user.md",
-                        resource_doc_path="/path/to/en/get_user.md",
+                        content="",
                     ),
                     ArchiveDoc(
                         language=DocLanguageEnum("zh"),
                         resource_name="create_user",
                         filename="zh/create_user.md.j2",
-                        resource_doc_path="/path/to/zh/create_user.md.j2",
+                        content="",
                     ),
                 ],
             )
         ],
     )
-    def test_parse(self, files, expected):
+    def test_parse(self, mocker, files, expected):
+        mocker.patch(
+            "apigateway.biz.resource_doc.import_doc.parsers.Jinja2ToMarkdownGenerator.generate_doc_content",
+            return_value="",
+        )
         result = ArchiveParser(1)._parse(files)
         assert result == expected
 

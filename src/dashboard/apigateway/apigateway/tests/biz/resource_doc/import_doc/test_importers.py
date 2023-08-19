@@ -27,32 +27,32 @@ from apigateway.core.models import Resource
 
 class TestResourceDocImporter:
     def test_import_docs(self, fake_resource_doc, faker):
-        fake_gateway = fake_resource_doc
+        fake_gateway = fake_resource_doc.api
         fake_resource = Resource.objects.get(id=fake_resource_doc.resource_id)
         resource_2 = G(Resource, api=fake_gateway)
 
         docs = [
             ArchiveDoc(
                 resource_name=fake_resource.name,
-                language=fake_resource_doc.language,
+                language=DocLanguageEnum(fake_resource_doc.language),
                 content=faker.pystr(),
                 resource=fake_resource,
                 resource_doc=fake_resource_doc,
             ),
             ArchiveDoc(
                 resource_name=resource_2.name,
-                language="zh",
+                language=DocLanguageEnum.ZH,
                 content=faker.pystr(),
                 resource=resource_2,
             ),
             ArchiveDoc(
                 resource_name=resource_2.name,
-                language="zh",
+                language=DocLanguageEnum.ZH,
                 content=faker.pystr(),
             ),
         ]
 
-        importer = ResourceDocImporter(fake_gateway, None)
+        importer = ResourceDocImporter(fake_gateway.id, None)
         importer.import_docs(docs)
 
         assert ResourceDoc.objects.filter(api=fake_gateway).count() == 2
@@ -129,7 +129,7 @@ class TestResourceDocImporter:
     def test_filter_selected_docs(self, faker, docs, selected_resource_docs, expected):
         importer = ResourceDocImporter(1, selected_resource_docs=selected_resource_docs)
 
-        docs = [ArchiveDoc(**docs, content=faker.pystr())]
+        docs = [ArchiveDoc(content=faker.pystr(), **doc) for doc in docs]
         docs = importer._filter_selected_docs(docs)
 
         assert len(docs) == expected

@@ -83,7 +83,7 @@ class ResourceDocImporter:
         if update_resource_docs:
             ResourceDoc.objects.bulk_update(
                 update_resource_docs,
-                bulk_update=["type", "source", "content"],
+                fields=["type", "source", "content"],
                 batch_size=100,
             )
 
@@ -92,4 +92,4 @@ class ResourceDocImporter:
         if self.selected_resource_docs is None:
             return None
 
-        return {f"{doc['language']:doc['resource_name']}" for doc in self.selected_resource_docs}
+        return {f"{doc['language']}:{doc['resource_name']}" for doc in self.selected_resource_docs}

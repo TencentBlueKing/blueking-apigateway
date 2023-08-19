@@ -119,8 +119,8 @@ class TestResourceDocArchiveParseOutputSLZ:
         if doc["resource_doc"]:
             doc["resource_doc"] = ResourceDoc(**doc["resource_doc"])
 
-        slz = ResourceDocArchiveParseOutputSLZ(instance=doc, many=True)
-        assert slz.data == [expected]
+        slz = ResourceDocArchiveParseOutputSLZ(instance=doc)
+        assert slz.data == expected
 
 
 class TestResourceDocImportByArchiveInputSLZ:
@@ -143,12 +143,12 @@ class TestResourceDocImportByArchiveInputSLZ:
             )
         ],
     )
-    def test_validate_selected_resource_docs(self, fake_tgz_file, selected_resource_docs, expected):
+    def test_validate_selected_resource_docs(self, mocker, faker, selected_resource_docs, expected):
         slz = ResourceDocImportByArchiveInputSLZ(
             data={
-                "file": fake_tgz_file,
+                "file": mocker.MagicMock(name=faker.pystr(min_chars=1), size=faker.pyint(min_value=1)),
                 "selected_resource_docs": json.dumps(selected_resource_docs),
-            }
+            },
         )
         slz.is_valid(raise_exception=True)
         assert slz.validated_data["selected_resource_docs"] == expected

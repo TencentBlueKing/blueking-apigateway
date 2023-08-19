@@ -126,6 +126,7 @@ class ResourceDocListCreateApi(generics.ListCreateAPIView):
 
 class ResourceDocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
     serializer_class = ResourceDocInputSLZ
+    lookup_field = "id"
 
     def get_queryset(self):
         return ResourceDoc.objects.filter(api=self.request.gateway, resource_id=self.kwargs["resource_id"])
@@ -140,7 +141,14 @@ class ResourceDocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIVie
         instance = self.get_object()
         resource = self._get_resource()
 
-        slz = self.get_serializer(instance, data=request.data)
+        slz = self.get_serializer(
+            instance,
+            data=request.data,
+            context={
+                "gateway_id": request.gateway.id,
+                "resource_id": resource.id,
+            },
+        )
         slz.is_valid(raise_exception=True)
 
         slz.save(

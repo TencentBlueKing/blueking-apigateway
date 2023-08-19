@@ -35,7 +35,7 @@ class ResourceDocInputSLZ(serializers.ModelSerializer):
         resource_id = self.context["resource_id"]
         queryset = ResourceDoc.objects.filter(api_id=gateway_id, resource_id=resource_id, language=value)
         if self.instance is not None:
-            return queryset.exclude(pk=self.instance.pk)
+            queryset = queryset.exclude(pk=self.instance.pk)
 
         if queryset.exists():
             raise serializers.ValidationError(_("该资源语言 {value} 的文档已存在。").format(value=value))
