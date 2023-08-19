@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,11 +15,27 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
-from apigateway.apps.support.api_sdk.views import APISDKViewSet
+from . import views
 
 urlpatterns = [
-    # 资源 SDK
-    path("sdks/", APISDKViewSet.as_view({"get": "list", "post": "generate"}), name="support.api_sdk"),
+    # for apigw-manager
+    path(
+        "apis/<slug:gateway_name>/resource-docs/import/",
+        include(
+            [
+                path(
+                    "by-archive/",
+                    views.ResourceDocImportByArchiveApi.as_view(),
+                    name="openapi.resource_doc.import.by_archive",
+                ),
+                path(
+                    "by-swagger/",
+                    views.ResourceDocImportBySwaggerApi.as_view(),
+                    name="openapi.resource_doc.import.by_swagger",
+                ),
+            ]
+        ),
+    )
 ]

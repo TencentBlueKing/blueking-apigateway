@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,11 +15,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from rest_framework import serializers
 
-from apigateway.apps.support.api_sdk.views import APISDKViewSet
+from apigateway.apps.support.constants import DocLanguageEnum
 
-urlpatterns = [
-    # 资源 SDK
-    path("sdks/", APISDKViewSet.as_view({"get": "list", "post": "generate"}), name="support.api_sdk"),
-]
+
+class ResourceDocImportByArchiveInputV1SLZ(serializers.Serializer):
+    file = serializers.FileField(required=True, help_text="导入的归档文档文件")
+
+
+class ResourceDocImportBySwaggerInputV1SLZ(serializers.Serializer):
+    language = serializers.ChoiceField(choices=DocLanguageEnum.get_choices())
+    swagger = serializers.CharField()

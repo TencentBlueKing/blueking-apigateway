@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,11 +15,23 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+import pytest
 
-from apigateway.apps.support.api_sdk.views import APISDKViewSet
+from apigateway.biz.resource_doc.exceptions import NoResourceDocError
+from apigateway.biz.resource_doc.export_doc.generators import DocArchiveGenerator
+from apigateway.core.models import Resource
 
-urlpatterns = [
-    # 资源 SDK
-    path("sdks/", APISDKViewSet.as_view({"get": "list", "post": "generate"}), name="support.api_sdk"),
-]
+
+class TestDocArchiveGenerator:
+    def test_generate(self, mocker, faker, fake_resource_doc):
+        mocker.patch("apigateway.biz.resource_doc.export_doc.generators.write_to_file", return_value=None)
+
+        fake_gateway = fake_resource_doc.api
+        resource = Resource.objects.get(id=fake_resource_doc.resource_id)
+
+        generator = DocArchiveGenerator()
+        result = generator.generate("/tmp", fake_gateway.id, [fake_resource_doc.resource_id])
+        assert result == [f"{fake_resource_doc.language}/{resource.name}.md"]
+
+        with pytest.raises(NoResourceDocError):
+            generator.generate("/tmp", fake_gateway.id, [0])

@@ -61,6 +61,7 @@ class OpObjectTypeEnum(StructuredEnum):
     GATEWAY_LABEL = EnumField("api_label")
     MICRO_GATEWAY = EnumField("micro_gateway")
     PLUGIN = EnumField("plugin")
+    RESOURCE_DOC = EnumField("resource_doc")
 
 
 AUDIT_SYSTEM = "apigateway-dashboard"
