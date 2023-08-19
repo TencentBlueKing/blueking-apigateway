@@ -32,6 +32,7 @@ from apigateway.apps.stage.serializers import HostSLZ, TransformHeadersSLZ, Upst
 from apigateway.apps.support.resource_doc.utils import get_resource_doc_key
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_url import ResourceURLHandler
+from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
@@ -51,7 +52,6 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Resource, StageResourceDisabled
 from apigateway.core.utils import get_path_display, get_resource_url
-from apigateway.core.validators import MaxCountPerGatewayValidator
 
 
 class ResourceHostSLZ(HostSLZ):

@@ -231,7 +231,7 @@ class GatewayHandler:
             op_type=op_type.value,
             op_status=OpStatusEnum.SUCCESS.value,
             op_object_group=gateway_id,
-            op_object_type=OpObjectTypeEnum.API.value,
+            op_object_type=OpObjectTypeEnum.GATEWAY.value,
             op_object_id=instance_id,
             op_object=instance_name,
             comment=comment,

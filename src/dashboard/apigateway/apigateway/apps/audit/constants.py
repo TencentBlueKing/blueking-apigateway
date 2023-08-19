@@ -18,9 +18,8 @@
 #
 from enum import Enum
 
+from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
-
-from apigateway.common.constants import ChoiceEnum
 
 
 class OpTypeEnum(Enum):
@@ -51,17 +50,17 @@ OP_STATUS_CHOICES = (
 )
 
 
-class OpObjectTypeEnum(ChoiceEnum):
-    API = "api"
-    STAGE = "stage"
-    RESOURCE = "resource"
-    RESOURCE_VERSION = "resource_version"
-    RELEASE = "release"
-    ACCESS_STRATEGY = "access_strategy"
-    IP_GROUP = "ip_group"
-    API_LABEL = "api_label"
-    MICRO_GATEWAY = "micro_gateway"
-    PLUGIN = "plugin"
+class OpObjectTypeEnum(StructuredEnum):
+    GATEWAY = EnumField("gateway")
+    STAGE = EnumField("stage")
+    RESOURCE = EnumField("resource")
+    RESOURCE_VERSION = EnumField("resource_version")
+    RELEASE = EnumField("release")
+    ACCESS_STRATEGY = EnumField("access_strategy")
+    IP_GROUP = EnumField("ip_group")
+    GATEWAY_LABEL = EnumField("gateway_label")
+    MICRO_GATEWAY = EnumField("micro_gateway")
+    PLUGIN = EnumField("plugin")
 
 
 AUDIT_SYSTEM = "apigateway-dashboard"
