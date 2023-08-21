@@ -31,7 +31,7 @@ from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource_import.swagger.swagger import ResourceSwaggerExporter
+from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
 from apigateway.biz.resource_url import ResourceURLHandler
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.models import Proxy, ReleasedResource, Resource, ResourceVersion, Stage, StageResourceDisabled

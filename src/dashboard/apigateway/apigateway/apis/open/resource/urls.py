@@ -24,12 +24,12 @@ from apigateway.apis.open.resource import views
 urlpatterns = [
     path(
         "apis/<int:gateway_id>/resources/",
-        views.ResourceV1ViewSet.as_view({"get": "list", "post": "create"}),
+        views.ResourceV1ViewSet.as_view({"get": "list"}),
         name="openapi.resources",
     ),
     path(
         "apis/<int:gateway_id>/resources/<int:id>/",
-        views.ResourceV1ViewSet.as_view({"delete": "destroy", "get": "retrieve"}),
+        views.ResourceV1ViewSet.as_view({"get": "retrieve"}),
         name="openapi.resources.detail",
     ),
     path(

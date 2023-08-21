@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional
 
 import jsonschema
 
-from apigateway.biz.resource_import.swagger.helpers import (
+from apigateway.biz.resource.importer.helpers import (
     AuthConfigConverter,
     format_jsonschema_error,
     load_swagger_schema,

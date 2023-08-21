@@ -27,7 +27,7 @@ from apigateway.apis.web.resource.mixins import CreateResourceMixin, UpdateResou
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource_import.swagger.swagger import ResourceSwaggerImporter
+from apigateway.biz.resource.importer.swagger import ResourceSwaggerImporter
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.models import Gateway, Resource, Stage

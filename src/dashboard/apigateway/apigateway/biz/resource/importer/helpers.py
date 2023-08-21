@@ -24,7 +24,7 @@ def load_swagger_schema():
     """
     https://github.com/OAI/OpenAPI-Specification/blob/master/schemas/v2.0/schema.json
     """
-    data = pkgutil.get_data("apigateway.biz.resource_import.swagger", "schema.json")
+    data = pkgutil.get_data("apigateway.biz.resource.importer", "schema.json")
     return json.loads(data.decode("utf-8"))
 
 

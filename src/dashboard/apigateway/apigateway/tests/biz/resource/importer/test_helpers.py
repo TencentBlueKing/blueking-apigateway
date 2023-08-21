@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.biz.resource_import.swagger.helpers import AuthConfigConverter
+from apigateway.biz.resource.importer.helpers import AuthConfigConverter
 
 
 class TestAuthConfigConverter:

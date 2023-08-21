@@ -18,11 +18,10 @@
 #
 from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
+from rest_framework import status, viewsets
 
 from apigateway.apis.open.resource import serializers
 from apigateway.apis.web.resource.importer import ResourcesImporter
-from apigateway.apis.web.resource.views import ResourceViewSet
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Resource
 from apigateway.utils.paginator import LimitOffsetPaginator
@@ -30,8 +29,12 @@ from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
-class ResourceV1ViewSet(ResourceViewSet):
+class ResourceV1ViewSet(viewsets.ModelViewSet):
     api_permission_exempt = True
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return Resource.objects.filter(api=self.request.gateway)
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -56,8 +59,12 @@ class ResourceV1ViewSet(ResourceViewSet):
         return V1OKJsonResponse("OK", data=slz.data)
 
 
-class ResourceSyncV1ViewSet(ResourceViewSet):
+class ResourceSyncV1ViewSet(viewsets.ModelViewSet):
     permission_classes = [GatewayRelatedAppPermission]
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return Resource.objects.filter(api=self.request.gateway)
 
     @transaction.atomic
     def sync(self, request, *args, **kwargs):

@@ -21,7 +21,7 @@ import json
 import pytest
 from django.test import TestCase
 
-from apigateway.biz.resource_import.swagger.swagger import (
+from apigateway.biz.resource.importer.swagger import (
     ResourceSwaggerExporter,
     ResourceSwaggerImporter,
     SwaggerManager,
