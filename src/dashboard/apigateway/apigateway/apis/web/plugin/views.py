@@ -36,6 +36,7 @@ from .serializers import (
     PluginConfigCreateInputSLZ,
     PluginConfigRetrieveUpdateInputSLZ,
     PluginFormSLZ,
+    PluginTypeQuerySLZ,
     PluginTypeSLZ,
     ScopePluginConfigListOutputSLZ,
 )
@@ -44,6 +45,7 @@ from .serializers import (
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        query_serializer=PluginTypeQuerySLZ,
         tags=["WebAPI.Plugin"],
         operation_description="list the available plugin types",
     ),
@@ -52,19 +54,41 @@ class PluginTypeListApi(generics.ListAPIView):
     serializer_class = PluginTypeSLZ
     renderer_classes = [ResponseRender]
 
+    def get_serializer_context(self):
+        # 需要返回描述，描述在 plugin_form 中
+        plugin_type_notes = {i["type_id"]: i["notes"] for i in PluginForm.objects.values("type_id", "notes")}
+
+        # 需要返回每个 pluginType 对应绑定的环境数量/资源数量
+        type_related_scope_count = {}
+        gateway = self.request.gateway
+        for binding in PluginBinding.objects.filter(gateway=gateway).prefetch_related("config", "config__type").all():
+            key = binding.config.type.id
+            if key not in type_related_scope_count:
+                type_related_scope_count[key] = {
+                    "stage": 0,
+                    "resource": 0,
+                }
+
+            # all
+            scope_type = binding.scope_type
+            count = type_related_scope_count[key].get(scope_type, 0)
+            type_related_scope_count[key][scope_type] = count + 1
+
+        return {
+            "plugin_type_notes": plugin_type_notes,
+            "type_related_scope_count": type_related_scope_count,
+        }
+
     def get_queryset(self):
-        """默认展示所有公开插件；针对非公开插件，假如当前请求的网关已启用插件，则展示"""
-        related_type_ids = PluginConfig.objects.filter(gateway=self.request.gateway, type__isnull=False).values_list(
-            "type__id", flat=True
-        )
+        """默认展示所有公开插件；不展示非公开插件"""
+        # 支持 keyword=abc 搜索
+        condition = Q()
+        keyword = self.request.query_params.get("keyword")
+        if keyword:
+            condition = Q(name__icontains=keyword) | Q(code__icontains=keyword)
 
         # FIXME: 需要区分 stage 和 resource 的插件类型
-
-        # 大多数情况，related_type_ids 为空，单独处理更简洁，效率更高
-        if not related_type_ids:
-            return PluginType.objects.filter(is_public=True).order_by("code")
-
-        return PluginType.objects.filter(Q(is_public=True) | Q(id__in=related_type_ids)).order_by("code")
+        return PluginType.objects.filter(is_public=True).filter(condition).order_by("code")
 
 
 @method_decorator(
@@ -139,11 +163,23 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
     def perform_create(self, serializer):
         self.validate_scope()
         self.validate_code()
+        scope_type = self.kwargs["scope_type"]
+        scope_id = self.kwargs["scope_id"]
+
+        duplicated = PluginBinding.objects.filter(
+            gateway=self.request.gateway,
+            scope_type=scope_type,
+            scope_id=scope_id,
+            config__type__code=self.kwargs["code"],
+        ).exists()
+        if duplicated:
+            raise error_codes.FAILED_PRECONDITION.format(
+                f"{scope_type} {scope_id} already bind to {self.kwargs['code']}"
+            )
+
         super().perform_create(serializer)
 
         # binding
-        scope_type = self.kwargs["scope_type"]
-        scope_id = self.kwargs["scope_id"]
         PluginBinding(
             gateway=self.request.gateway,
             scope_type=scope_type,

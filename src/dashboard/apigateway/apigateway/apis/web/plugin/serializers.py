@@ -36,6 +36,9 @@ from apigateway.controller.crds.release_data.plugin import PluginConvertorFactor
 class PluginTypeSLZ(serializers.ModelSerializer):
     name = serializers.CharField(source="name_i18n")
 
+    notes = serializers.SerializerMethodField()
+    related_scope_count = serializers.SerializerMethodField()
+
     class Meta:
         model = PluginType
         fields = (
@@ -43,7 +46,21 @@ class PluginTypeSLZ(serializers.ModelSerializer):
             "name",
             "code",
             "is_public",
+            "notes",
+            "related_scope_count",
         )
+
+    def get_notes(self, obj):
+        notes = self.context.get("plugin_type_notes", {})
+        return notes.get(obj.id, "")
+
+    def get_related_scope_count(self, obj):
+        related_scope_count = self.context.get("type_related_scope_count", {})
+        return related_scope_count.get(obj.id, {"stage": 0, "resource": 0})
+
+
+class PluginTypeQuerySLZ(serializers.Serializer):
+    keyword = serializers.CharField(required=False)
 
 
 class PluginFormSLZ(serializers.ModelSerializer):
@@ -69,33 +86,33 @@ class PluginFormSLZ(serializers.ModelSerializer):
 class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all())
-    type_code = serializers.CharField(source="type.code", read_only=True)
-    type_name = serializers.CharField(source="type.name_i18n", read_only=True)
+    # type_code = serializers.CharField(source="type.code", read_only=True)
+    # type_me = serializers.CharField(source="type.name_i18n", read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
 
     class Meta:
         model = PluginConfig
         fields = [
-            "id",
+            # "id",
             "gateway",
             "name",
             "description",
             "yaml",
             "type_id",
-            "updated_by",
-            "created_time",
-            "updated_time",
-            "type_code",
-            "type_name",
+            # "updated_by",
+            # "created_time",
+            # "updated_time",
+            # "type_code",
+            # "type_name",
         ]
-        read_only_fields = [
-            "id",
-            "updated_by",
-            "created_time",
-            "updated_time",
-            "type_code",
-            "type_name",
-        ]
+        # read_only_fields = [
+        #     "id",
+        #     "updated_by",
+        #     "created_time",
+        #     "updated_time",
+        #     "type_code",
+        #     "type_name",
+        # ]
         lookup_field = "id"
 
     def to_internal_value(self, data):
@@ -153,7 +170,7 @@ class PluginConfigCreateInputSLZ(PluginConfigBaseInputSLZ):
     def create(self, validated_data):
         plugin_type = validated_data["type_id"]
         if not plugin_type.is_public:
-            raise ValidationError(_("此插件类型未公开，不能用于启用插件。"))
+            raise ValidationError(_("此插件类型未公开，不能用于绑定插件。"))
 
         return self._update_plugin(
             PluginConfig(gateway=validated_data["gateway"], type=validated_data["type_id"]), validated_data
@@ -168,21 +185,3 @@ class PluginBindingListOutputSLZ(serializers.Serializer):
 class ScopePluginConfigListOutputSLZ(serializers.Serializer):
     name = serializers.CharField()
     config = serializers.DictField()
-
-
-# from django.utils.translation import gettext as _
-# class PluginConfigFilterSLZ(serializers.Serializer):
-#     type_code = serializers.ListField(
-#         child=serializers.CharField(),
-#         source="type__code__in",
-#         required=False,
-#         allow_empty=True,
-#         help_text="类型代号",
-#     )
-#     type = serializers.ListField(
-#         child=serializers.IntegerField(),
-#         source="type_id__in",
-#         required=False,
-#         allow_empty=True,
-#         help_text="类型 ID",
-#     )

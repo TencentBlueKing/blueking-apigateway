@@ -31,6 +31,7 @@ urlpatterns = [
     # plugins
     # list plugin types (global)
     path("", PluginTypeListApi.as_view(), name="plugins.type"),
+    # list plugin configs (by stage or resource)
     path("<str:scope_type>/<int:scope_id>/", ScopePluginConfigListApi.as_view(), name="plugins.config"),
     # create a binding (by stage or resource)
     path(
