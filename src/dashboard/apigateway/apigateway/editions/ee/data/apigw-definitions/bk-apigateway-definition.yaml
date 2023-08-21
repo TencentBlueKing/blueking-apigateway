@@ -4,8 +4,8 @@ release:
   comment: 更新网关 API 文档
 
 apigateway:
-  description: 蓝鲸API网关，官方内置网关，请勿修改
-  description_en: BlueKing API Gateway, official built-in gateway, do not modify
+  description: 蓝鲸 API 网关（BlueKing API Gateway）是一种高性能、高可用的 API 托管服务。网关提供了该服务的基础通用接口，包含网关、资源、环境、版本发布、权限等相关接口。(官方内置网关, 请勿修改!)
+  description_en: BlueKing API Gateway is a high-performance and highly available API hosting service. The gateway provides basic common interfaces for this service, including gateway, resource, stage, version release, permission, and other related interfaces. (Official built-in gateway, do not modify!)
   is_public: true
   api_type: 1
 

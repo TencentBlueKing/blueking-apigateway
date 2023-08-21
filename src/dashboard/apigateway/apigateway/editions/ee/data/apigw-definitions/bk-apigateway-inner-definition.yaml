@@ -4,8 +4,8 @@ release:
   comment: 提供权限申请、资源文档接口
 
 apigateway:
-  description: 蓝鲸API网关内部私有接口，官方内置网关，请勿修改
-  description_en: BlueKing API Gateway internal private interface, official built-in gateway, do not modify
+  description: 蓝鲸 API 网关（BlueKing API Gateway）内部接口，为蓝鲸开发者中心提供云 API 权限申请相关的接口。(官方内置网关, 请勿修改!)
+  description_en: BlueKing API Gateway internal interface, which provices cloud API permission application interfaces for the BlueKing developer center. (Official built-in gateway, do not modify!)
   is_public: false
   api_type: 1
   user_config:
