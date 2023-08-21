@@ -20,9 +20,9 @@ from typing import Any, Dict
 
 from django.utils.translation import gettext as _
 
+from apigateway.apis.web.resource import serializers
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.resource import serializers
 from apigateway.biz.resource import ResourceHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, Resource

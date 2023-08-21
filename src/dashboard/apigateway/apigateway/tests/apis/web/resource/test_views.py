@@ -22,14 +22,14 @@ import pytest
 from django.test import TestCase
 from django_dynamic_fixture import G
 
-from apigateway.apps.label.models import APILabel, ResourceLabel
-from apigateway.apps.resource.views import (
+from apigateway.apis.web.resource.views import (
     ProxyPathViewSet,
     ResourceBatchViewSet,
     ResourceImportExportViewSet,
     ResourceURLViewSet,
     ResourceViewSet,
 )
+from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
 from apigateway.core import constants
 from apigateway.core.models import Context, Proxy, Resource, Stage, StageResourceDisabled

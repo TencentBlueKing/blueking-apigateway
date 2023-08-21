@@ -20,7 +20,7 @@ import pytest
 from ddf import G
 from django.conf import settings
 
-from apigateway.apps.resource.mixins import CreateResourceMixin, UpdateResourceMixin
+from apigateway.apis.web.resource.mixins import CreateResourceMixin, UpdateResourceMixin
 from apigateway.biz.resource import ResourceHandler
 from apigateway.common.error_codes import APIError
 from apigateway.core import constants

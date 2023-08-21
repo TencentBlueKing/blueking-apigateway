@@ -52,7 +52,6 @@ urlpatterns = [
     # apps: core
     path("backend/apis/<int:gateway_id>/", include("apigateway.apps.stage_item.urls")),
     path("backend/apis/<int:gateway_id>/stages/", include("apigateway.apps.stage.urls")),
-    path("backend/apis/<int:gateway_id>/resources/", include("apigateway.apps.resource.urls")),
     path("backend/apis/<int:gateway_id>/resource_versions/", include("apigateway.apps.resource_version.urls")),
     path("backend/apis/<int:gateway_id>/releases/", include("apigateway.apps.release.urls")),
     path("backend/apis/<int:gateway_id>/backend-services/", include("apigateway.apps.backend_service.urls")),
@@ -78,6 +77,7 @@ urlpatterns = [
     path("backend/gateways/", include("apigateway.apis.web.gateway.urls")),
     path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
     path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
+    path("backend/gateways/<int:gateway_id>/resources/", include("apigateway.apis.web.resource.urls")),
     path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     path("backend/gateways/<int:gateway_id>/metrics/", include("apigateway.apis.web.metrics.urls")),
     path("backend/gateways/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),

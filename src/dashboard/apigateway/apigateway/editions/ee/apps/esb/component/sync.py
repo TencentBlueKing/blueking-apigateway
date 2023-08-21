@@ -21,9 +21,9 @@ from typing import Any, Dict, List
 from attrs import define
 from django.db import transaction
 
+from apigateway.apis.web.resource.importer import ResourcesImporter
 from apigateway.apps.esb.bkcore.models import ComponentResourceBinding
 from apigateway.apps.esb.component.convertor import ComponentConvertor
-from apigateway.apps.resource.importer import ResourcesImporter
 from apigateway.core.models import Gateway
 
 

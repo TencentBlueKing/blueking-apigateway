@@ -22,12 +22,12 @@ from typing import Any, Dict, List, Optional
 
 from django.utils.translation import gettext as _
 
+from apigateway.apis.web.resource import serializers
+from apigateway.apis.web.resource.mixins import CreateResourceMixin, UpdateResourceMixin
 from apigateway.apps.label.models import APILabel
-from apigateway.apps.resource import serializers
-from apigateway.apps.resource.mixins import CreateResourceMixin, UpdateResourceMixin
-from apigateway.apps.resource.swagger.swagger import ResourceSwaggerImporter
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource_import.swagger.swagger import ResourceSwaggerImporter
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.models import Gateway, Resource, Stage

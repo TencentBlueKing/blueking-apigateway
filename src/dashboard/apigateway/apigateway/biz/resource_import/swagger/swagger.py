@@ -24,7 +24,11 @@ from typing import Any, Dict, Optional
 
 import jsonschema
 
-from apigateway.apps.resource.swagger.helpers import AuthConfigConverter, format_jsonschema_error, load_swagger_schema
+from apigateway.biz.resource_import.swagger.helpers import (
+    AuthConfigConverter,
+    format_jsonschema_error,
+    load_swagger_schema,
+)
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.constants import (
     HTTP_METHOD_ANY,

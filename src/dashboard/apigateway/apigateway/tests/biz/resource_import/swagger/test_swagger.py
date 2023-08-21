@@ -21,7 +21,11 @@ import json
 import pytest
 from django.test import TestCase
 
-from apigateway.apps.resource.swagger.swagger import ResourceSwaggerExporter, ResourceSwaggerImporter, SwaggerManager
+from apigateway.biz.resource_import.swagger.swagger import (
+    ResourceSwaggerExporter,
+    ResourceSwaggerImporter,
+    SwaggerManager,
+)
 from apigateway.core.constants import SwaggerFormatEnum
 
 

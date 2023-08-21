@@ -25,9 +25,9 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
+from apigateway.apis.web.resource.validators import PathVarsValidator, ProxyPathVarsValidator
 from apigateway.apps.backend_service.serializers import TimeoutSLZ
 from apigateway.apps.label.models import ResourceLabel
-from apigateway.apps.resource.validators import PathVarsValidator, ProxyPathVarsValidator
 from apigateway.apps.stage.serializers import HostSLZ, TransformHeadersSLZ, UpstreamsSLZ
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_url import ResourceURLHandler

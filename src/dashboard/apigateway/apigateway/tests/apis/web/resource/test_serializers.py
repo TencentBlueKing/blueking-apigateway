@@ -25,8 +25,8 @@ from ddf import G
 from rest_framework import serializers as drf_serializers
 from rest_framework.exceptions import ValidationError
 
+from apigateway.apis.web.resource import serializers
 from apigateway.apps.label.models import APILabel, ResourceLabel
-from apigateway.apps.resource import serializers
 from apigateway.core import constants
 from apigateway.core.models import Context, Gateway, Proxy, Resource, ResourceVersion, Stage, StageResourceDisabled
 from apigateway.tests.utils.testing import create_request, dummy_time

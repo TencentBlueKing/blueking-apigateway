@@ -18,7 +18,7 @@
 #
 from django.test import TestCase
 
-from apigateway.apps.resource.validators import PathVarsValidator
+from apigateway.apis.web.resource.validators import PathVarsValidator
 
 
 class TestPathVarsValidator(TestCase):

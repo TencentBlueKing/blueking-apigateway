@@ -26,6 +26,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 
+from apigateway.apis.web.resource.importer import ResourcesImporter
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory, ESBChannel
 from apigateway.apps.esb.component import serializers
 from apigateway.apps.esb.component.constants import ESB_RELEASE_TASK_EXPIRES
@@ -34,7 +35,6 @@ from apigateway.apps.esb.component.sync import ComponentSynchronizer
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
 from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.esb.permissions import UserAccessESBPermission
-from apigateway.apps.resource.importer import ResourcesImporter
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.access_token import get_user_access_token_from_request

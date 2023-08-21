@@ -24,7 +24,7 @@ from typing import Dict, List
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from apigateway.apps.resource.swagger.swagger import ResourceSwaggerExporter
+from apigateway.biz.resource_import.swagger.swagger import ResourceSwaggerExporter
 from apigateway.core.constants import SwaggerFormatEnum
 from apigateway.legacy_esb import models as legacy_models
 from apigateway.utils.file import write_to_file

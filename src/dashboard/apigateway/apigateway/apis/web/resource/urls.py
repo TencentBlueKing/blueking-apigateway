@@ -18,7 +18,7 @@
 #
 from django.urls import path
 
-from .views import (
+from apigateway.apis.web.resource.views import (
     ProxyPathViewSet,
     ResourceBatchViewSet,
     ResourceImportExportViewSet,
