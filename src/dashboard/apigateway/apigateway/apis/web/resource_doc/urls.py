@@ -20,25 +20,23 @@ from django.urls import include, path
 from . import views
 
 urlpatterns = [
+    path("archive/parse/", views.DocArchiveParseApi.as_view(), name="resource_doc.archive.parse"),
     path(
-        path("archive/parse/", views.DocArchiveParseApi.as_view(), name="resource_doc.archive.parse"),
-        path(
-            "import/",
-            include(
-                [
-                    path(
-                        "by-archive/",
-                        views.DocImportByArchiveApi.as_view(),
-                        name="resource_doc.import.by_archive",
-                    ),
-                    path(
-                        "by-swagger/",
-                        views.DocImportBySwaggerApi.as_view(),
-                        name="resource_doc.import.by_swagger",
-                    ),
-                ]
-            ),
+        "import/",
+        include(
+            [
+                path(
+                    "by-archive/",
+                    views.DocImportByArchiveApi.as_view(),
+                    name="resource_doc.import.by_archive",
+                ),
+                path(
+                    "by-swagger/",
+                    views.DocImportBySwaggerApi.as_view(),
+                    name="resource_doc.import.by_swagger",
+                ),
+            ]
         ),
-        path("export/", views.DocExportApi.as_view(), name="resource_doc.export"),
     ),
+    path("export/", views.DocExportApi.as_view(), name="resource_doc.export"),
 ]
