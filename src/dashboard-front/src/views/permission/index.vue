@@ -74,6 +74,8 @@
                 </bk-form-item> -->
         <bk-form-item label="" class="search-select-wrapper" style="flex: 1;">
           <bk-search-select
+            ref="searchSelectRef"
+            ext-cls="permissions-search-cls"
             :placeholder="$t('搜索')"
             :show-popover-tag-change="true"
             :clearable="true"
@@ -81,6 +83,9 @@
             :show-condition="false"
             v-model="searchFilters"
             :readonly="searchReadonly"
+            @menu-child-select="changeContenteditable"
+            @input-click-outside="changeContenteditable"
+            @clear="changeContenteditable"
             @menu-select="handleMenuSelect"
             @change="formatFilterData">
           </bk-search-select>
@@ -440,7 +445,8 @@
           keyword: '',
           isAbnormal: false
         },
-        searchReadonly: false
+        searchReadonly: false,
+        searchElement: null
       }
     },
     computed: {
@@ -957,7 +963,29 @@
       },
 
       handleMenuSelect (data) {
-        this.searchReadonly = data.id === 'resource_id'
+        const isSearchDisabled = data.id === 'resource_id'
+        this.searchReadonly = isSearchDisabled
+        // 资源名称禁止手动输入
+        if (isSearchDisabled) {
+          this.searchElement = document.querySelector('.permissions-search-cls .search-input-input .div-input')
+          // readonly状态，禁止中文输入
+          this.searchElement && this.searchElement.setAttribute('contenteditable', 'false')
+          // 禁用状态，Backspace键退格bug处理
+          this.searchElement && this.searchElement.addEventListener('keydown', this.clearAllMenu)
+          return
+        }
+        // 移除事件
+        this.searchElement && this.searchElement.removeEventListener('keydown', this.clearAllMenu)
+      },
+      clearAllMenu (e) {
+        if (e.code === 'Backspace' && this.searchFilters.length === 0) {
+          this.$refs.searchSelectRef.handleClearAll()
+        }
+      },
+      
+      changeContenteditable () {
+        // 可编辑
+        this.searchElement && this.searchElement.setAttribute('contenteditable', 'true')
       }
     }
   }
