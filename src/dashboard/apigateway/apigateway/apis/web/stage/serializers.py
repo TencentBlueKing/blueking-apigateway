@@ -23,10 +23,10 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.backend.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.backend.serializers import BaseBackendConfigSLZ
+from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import STAGE_NAME_PATTERN
 from apigateway.core.models import Backend, Stage
-from apigateway.core.validators import MaxCountPerGatewayValidator
 
 from .validators import StageVarsValidator
 
