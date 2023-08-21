@@ -2,8 +2,8 @@ release:
   comment: "蓝鲸 ESB 编码组件数据同步"
 
 apigateway:
-  description: "蓝鲸 ESB 编码组件"
-  description_en: "BlueKing ESB component"
+  description: "蓝鲸 ESB 编码组件。(官方内置网关, 请勿修改!)"
+  description_en: "BlueKing ESB component. (Official built-in gateway, do not modify!)"
   is_public: true
   maintainers:
     - "admin"
