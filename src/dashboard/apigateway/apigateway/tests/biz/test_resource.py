@@ -355,3 +355,28 @@ class TestResourceHandler:
 
         snapshot = ResourceHandler().snapshot(resource, as_dict=True)
         assert snapshot["disabled_stages"] == ["prod", "test"]
+
+    def test_filter_by_resource_filter_condition(self, fake_gateway):
+        resource_1 = G(Resource, api=fake_gateway, name="test1", method="GET", path="/test")
+        resource_2 = G(Resource, api=fake_gateway, name="test2", method="POST", path="/test")
+        resource_3 = G(Resource, api=fake_gateway, name="color", method="PUT", path="/green")
+        label = G(APILabel, api=fake_gateway)
+        G(ResourceLabel, api_label=label, resource=resource_1)
+
+        result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"name": "test1"})
+        assert list(result) == [resource_1]
+
+        result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"path": "/green"})
+        assert list(result) == [resource_3]
+
+        result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"method": "POST"})
+        assert list(result) == [resource_2]
+
+        result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"label_ids": [label.id]})
+        assert list(result) == [resource_1]
+
+        result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"query": "Test"})
+        assert result.count() == 2
+
+        result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {})
+        assert result.count() == 3

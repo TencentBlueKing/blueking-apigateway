@@ -23,16 +23,6 @@ from . import views
 urlpatterns = [
     # for apigw-manager
     path(
-        "apis/<slug:gateway_name>/resource-docs/import/by-archive/",
-        views.ResourceDocImportViewSet.as_view({"post": "import_by_archive"}),
-        name="openapi.support.resource_doc.import_by_archive",
-    ),
-    path(
-        "apis/<slug:gateway_name>/resource-docs/import/by-swagger/",
-        views.ResourceDocImportViewSet.as_view({"post": "import_by_swagger"}),
-        name="openapi.support.resource_doc.import_by_swagger",
-    ),
-    path(
         "apis/<slug:gateway_name>/sdk/",
         views.SDKGenerateViewSet.as_view({"post": "generate"}),
         name="openapi.support.sdk.generate",

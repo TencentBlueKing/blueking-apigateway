@@ -1498,14 +1498,14 @@ class TestJWTManager:
 
 
 class TestAPIRelatedApp:
-    def test_allow_app_manage_api(self, unique_id):
+    def test_allow_app_manage_gateway(self, unique_id):
         gateway = G(Gateway)
 
-        result = APIRelatedApp.objects.allow_app_manage_api(gateway.id, unique_id)
+        result = APIRelatedApp.objects.allow_app_manage_gateway(gateway.id, unique_id)
         assert result is False
 
         G(APIRelatedApp, api=gateway, bk_app_code=unique_id)
-        result = APIRelatedApp.objects.allow_app_manage_api(gateway.id, unique_id)
+        result = APIRelatedApp.objects.allow_app_manage_gateway(gateway.id, unique_id)
         assert result is True
 
     def test_add_related_app(self):

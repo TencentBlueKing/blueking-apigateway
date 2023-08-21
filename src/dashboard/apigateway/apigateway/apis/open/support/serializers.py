@@ -18,7 +18,7 @@
 #
 from rest_framework import serializers
 
-from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
+from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.common.funcs import get_resource_version_display
 from apigateway.core.models import Gateway
 
@@ -97,12 +97,3 @@ class APISDKV1SLZ(serializers.Serializer):
 
     def get_released_stages(self, obj):
         return self.context["released_stages"].get(obj.instance.resource_version_id, [])
-
-
-class ImportResourceDocsByArchiveV1SLZ(serializers.Serializer):
-    file = serializers.FileField(required=True, help_text="导入的归档文档文件")
-
-
-class ImportResourceDocsBySwaggerV1SLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=DocLanguageEnum.get_django_choices())
-    swagger = serializers.CharField()
