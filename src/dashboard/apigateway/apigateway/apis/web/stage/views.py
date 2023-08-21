@@ -49,7 +49,7 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: StageOutputSLZ(many=True)},
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -71,7 +71,7 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_201_CREATED: ""},
         request_body=StageInputSLZ,
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def create(self, request, *args, **kwargs):
         slz = StageInputSLZ(data=request.data, context={"api": request.gateway})
@@ -101,7 +101,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: StageOutputSLZ()},
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -120,7 +120,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=StageInputSLZ,
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -147,7 +147,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 
     @swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -174,7 +174,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=StagePartialInputSLZ,
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def partial_update(self, request, *args, **kwargs):
         slz = StagePartialInputSLZ(data=request.data)
@@ -195,7 +195,7 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: StageOutputSLZ()},
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -207,7 +207,7 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=StageVarsSLZ,
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def update(self, request, *args, **kwargs):
         slz = StageVarsSLZ(data=request.data, context={"api": request.gateway})
@@ -233,7 +233,7 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: StageBackendOutputSLZ(many=True)},
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -246,7 +246,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: StageBackendOutputSLZ()},
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def retrieve(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend__id=self.kwargs["backend_id"])
@@ -257,7 +257,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=BackendConfigInputSLZ,
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def update(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend__id=self.kwargs["backend_id"])
@@ -279,7 +279,7 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=StageStatusInputSLZ,
-        tags=["Stage"],
+        tags=["WebAPI.Stage"],
     )
     def update(self, request, *args, **kwargs):
         slz = StageStatusInputSLZ(data=request.data)

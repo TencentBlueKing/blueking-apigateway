@@ -46,7 +46,7 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: BackendListOutputSLZ(many=True)},
-        tags=["Backend"],
+        tags=["WebAPI.Backend"],
     )
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -62,7 +62,7 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_201_CREATED: ""},
         request_body=BackendInputSLZ,
-        tags=["Backend"],
+        tags=["WebAPI.Backend"],
     )
     def create(self, request, *args, **kwargs):
         """
@@ -95,7 +95,7 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: BackendRetrieveOutputSLZ()},
-        tags=["Backend"],
+        tags=["WebAPI.Backend"],
     )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -105,7 +105,7 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=BackendInputSLZ,
-        tags=["Backend"],
+        tags=["WebAPI.Backend"],
     )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -132,7 +132,7 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
 
     @swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["Backend"],
+        tags=["WebAPI.Backend"],
     )
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
