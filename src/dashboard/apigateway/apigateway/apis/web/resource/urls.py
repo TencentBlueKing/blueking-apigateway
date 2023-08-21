@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
 from apigateway.apis.web.resource.views import (
     ProxyPathViewSet,
@@ -69,4 +69,5 @@ urlpatterns = [
         ResourceWithVerifiedUserRequiredViewSet.as_view({"get": "list"}),
         name="apigateway.apps.resource.with.verified_user_required",
     ),
+    path("<int:resource_id>/docs/", include("apigateway.apis.web.resource.doc.urls")),
 ]
