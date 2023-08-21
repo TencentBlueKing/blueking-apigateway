@@ -21,7 +21,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.resource import serializers
-from apigateway.apis.web.resource.importer import ResourcesImporter
+from apigateway.biz.resource.importer.importer import ResourcesImporter
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Resource
 from apigateway.utils.paginator import LimitOffsetPaginator

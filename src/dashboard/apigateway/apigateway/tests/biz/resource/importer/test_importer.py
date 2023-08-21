@@ -20,7 +20,7 @@ import json
 
 import pytest
 
-from apigateway.apis.web.resource.importer import ResourceImportValidator, ResourcesImporter
+from apigateway.biz.resource.importer.importer import ResourceImportValidator, ResourcesImporter
 from apigateway.common.error_codes import APIError
 
 pytestmark = pytest.mark.django_db
