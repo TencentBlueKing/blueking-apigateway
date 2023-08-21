@@ -21,7 +21,7 @@ from django.urls import include, path
 from .views import (
     ReleaseAvailableResourceListApi,
     ReleaseBatchCreateApi,
-    ReleasedResourceGetApi,
+    ReleasedResourceRetrieveApi,
     ReleaseHistoryListApi,
     ReleaseHistoryRetrieveApi,
 )
@@ -44,7 +44,7 @@ urlpatterns = [
     ),
     path(
         "resource-versions/<int:resource_version_id>/resources/<int:resource_id>/",
-        ReleasedResourceGetApi.as_view(),
+        ReleasedResourceRetrieveApi.as_view(),
         name="gateway.releases.released-resource.detail",
     ),
 ]

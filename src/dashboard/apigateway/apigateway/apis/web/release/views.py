@@ -27,7 +27,7 @@ from rest_framework import generics, status
 from apigateway.apis.web.release import serializers
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.biz.releasers import ReleaseBatchManager, ReleaseError
+from apigateway.biz.releaser import ReleaseBatchManager, ReleaseError
 from apigateway.core.models import PublishEvent, Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
@@ -81,7 +81,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(tags=["WebAPI.Release"]),
 )
-class ReleasedResourceGetApi(generics.RetrieveAPIView):
+class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
     lookup_field = "stage_id"
 
     def get_queryset(self):

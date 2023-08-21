@@ -20,7 +20,7 @@ import pytest
 from ddf import G
 from django.http import Http404
 
-from apigateway.biz.releasers import (
+from apigateway.biz.releaser import (
     DefaultGatewayReleaser,
     GatewayReleaserFactory,
     MicroGatewayReleaseHistory,
@@ -215,7 +215,7 @@ class TestDefaultGatewayReleaser:
         mocker,
     ):
         with mocker.patch(
-            "apigateway.biz.releasers.StageProxyHTTPContext.contain_hosts",
+            "apigateway.biz.releaser.StageProxyHTTPContext.contain_hosts",
             return_value=contain_hosts_ret,
         ):
             releaser = DefaultGatewayReleaser(
@@ -262,7 +262,7 @@ class TestMicroGatewayReleaser:
         celery_mock_task,
     ):
         mock_release_gateway_by_helm = mocker.patch(
-            "apigateway.biz.releasers.release_gateway_by_helm",
+            "apigateway.biz.releaser.release_gateway_by_helm",
             wraps=celery_mock_task,
         )
         releaser = MicroGatewayReleaser(
@@ -306,7 +306,7 @@ class TestMicroGatewayReleaser:
         celery_mock_task,
     ):
         mock_release_gateway_by_registry = mocker.patch(
-            "apigateway.biz.releasers.release_gateway_by_registry",
+            "apigateway.biz.releaser.release_gateway_by_registry",
             wraps=celery_mock_task,
         )
         releaser = MicroGatewayReleaser(
@@ -336,7 +336,7 @@ class TestMicroGatewayReleaser:
 
 class TestReleaseBatchManager:
     def test_release_batch(self, mocker, fake_gateway):
-        mock_release_batch = mocker.patch("apigateway.biz.releasers.DefaultGatewayReleaser.release_batch")
+        mock_release_batch = mocker.patch("apigateway.biz.releaser.DefaultGatewayReleaser.release_batch")
 
         ReleaseBatchManager(access_token="access_token").release_batch(fake_gateway, get_release_data(fake_gateway))
         mock_release_batch.assert_called_once_with()

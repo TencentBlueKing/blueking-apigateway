@@ -24,8 +24,8 @@ from apigateway.core.models import Gateway
 
 
 class APISDKQueryV1SLZ(serializers.Serializer):
-    gateway_name = serializers.CharField(allow_null=True, default=None)
-    gateway_id = serializers.IntegerField(allow_null=True, default=None)
+    api_name = serializers.CharField(allow_null=True, default=None)
+    api_id = serializers.IntegerField(allow_null=True, default=None)
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
     def validate_api_id(self, value):
@@ -55,9 +55,9 @@ class SDKGenerateV1SLZ(serializers.Serializer):
 
 
 class APISDKV1SLZ(serializers.Serializer):
-    gateway_id = serializers.IntegerField(source="instance.gateway_id")
-    gateway_name = serializers.SerializerMethodField()
-    gateway_description = serializers.SerializerMethodField()
+    api_id = serializers.IntegerField(source="instance.gateway_id")
+    api_name = serializers.SerializerMethodField()
+    api_description = serializers.SerializerMethodField()
     user_auth_type = serializers.SerializerMethodField()
     language = serializers.CharField(read_only=True, source="language.value")
 
@@ -76,10 +76,10 @@ class APISDKV1SLZ(serializers.Serializer):
     resource_version_display = serializers.SerializerMethodField()
     released_stages = serializers.SerializerMethodField()
 
-    def get_gateway_name(self, obj):
+    def get_api_name(self, obj):
         return self.context["gateway_id_map"][obj.instance.gateway_id].name
 
-    def get_gateway_description(self, obj):
+    def get_api_description(self, obj):
         return self.context["gateway_id_map"][obj.instance.gateway_id].description
 
     def get_user_auth_type(self, obj):

@@ -59,7 +59,7 @@ class APISDKV1ViewSet(viewsets.ModelViewSet):
 
         queryset = APISDK.objects.filter_recommended_sdks(
             data["language"],
-            gateway_id=data.get("gateway_id"),
+            gateway_id=data.get("api_id"),
         )
 
         resource_version_ids = list(set(queryset.values_list("resource_version_id", flat=True)))

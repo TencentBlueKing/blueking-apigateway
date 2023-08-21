@@ -23,7 +23,7 @@ from rest_framework import status, viewsets
 from apigateway.apis.open.resource_version import serializers
 from apigateway.apps.resource_version.serializers import ResourceVersionSLZ
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
-from apigateway.biz.releasers import ReleaseBatchManager, ReleaseError
+from apigateway.biz.releaser import ReleaseBatchManager, ReleaseError
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ResourceVersion, Stage
@@ -47,7 +47,7 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
         # 创建文档版本
         if ResourceDoc.objects.doc_exists(request.gateway.id):
             ResourceDocVersion.objects.create(
-                api=request.gateway,
+                gateway=request.gateway,
                 resource_version=instance,
                 data=ResourceDocVersion.objects.make_version(request.gateway.id),
             )

@@ -44,7 +44,7 @@ class TestReleaseBatchCreateApi:
     def test_release_with_hosts(self, configure_hosts, succeeded, fake_admin_user, request_view, mocker, fake_gateway):
         """Test release API with different hosts config of stage objects."""
         mocker.patch(
-            "apigateway.biz.releasers.reversion_update_signal.send",
+            "apigateway.biz.releaser.reversion_update_signal.send",
             return_value=None,
         )
 
