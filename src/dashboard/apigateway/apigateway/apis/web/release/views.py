@@ -34,6 +34,10 @@ from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(tags=["WebAPI.Release"]),
+)
 class ReleaseAvailableResourceListApi(generics.ListAPIView):
     serializer_class = None
     lookup_field = "stage_id"
@@ -41,10 +45,6 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
 
-    @method_decorator(
-        name="GET",
-        decorator=swagger_auto_schema(tags=["WebAPI.Release"]),
-    )
     def list(self, request, *args, **kwargs):
         """
         用于在线调试时，获取环境下可用的资源列表
@@ -77,13 +77,16 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         return V1OKJsonResponse(_("当前选择环境的发布版本中资源为空，请发布新版本到该环境。"), data=data)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(tags=["WebAPI.Release"]),
+)
 class ReleasedResourceGetApi(generics.RetrieveAPIView):
     lookup_field = "stage_id"
 
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
 
-    @swagger_auto_schema(tags=["WebAPI.Release"])
     def get(self, request, resource_version_id: int, resource_id: int, *args, **kwargs):
         try:
             released_resource = ReleasedResource.objects.get(
@@ -105,6 +108,14 @@ class ReleasedResourceGetApi(generics.RetrieveAPIView):
         return V1OKJsonResponse("OK", data=resource_data)
 
 
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        request_body=serializers.ReleaseBatchInputSLZ,
+        responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ()},
+        tags=["WebAPI.Release"],
+    ),
+)
 class ReleaseBatchCreateApi(generics.CreateAPIView):
     serializer_class = serializers.ReleaseBatchInputSLZ
     lookup_field = "id"
@@ -112,14 +123,6 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
 
-    @method_decorator(
-        name="POST",
-        decorator=swagger_auto_schema(
-            request_body=serializers.ReleaseBatchInputSLZ,
-            responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ()},
-            tags=["Web.Release"],
-        ),
-    )
     def create(self, request, *args, **kwargs):
         manager = ReleaseBatchManager(access_token=get_user_access_token_from_request(request))
 
@@ -133,21 +136,21 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
         return V1OKJsonResponse("OK", data=slz.data)
 
 
-class ReleaseHistoryListViewSet(generics.ListAPIView):
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        auto_schema=PaginatedResponseSwaggerAutoSchema,
+        query_serializer=serializers.ReleaseHistoryQueryInputSLZ(),
+        responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ(many=True)},
+        tags=["WebAPI.Release"],
+    ),
+)
+class ReleaseHistoryListApi(generics.ListAPIView):
     serializer_class = serializers.ReleaseHistoryOutputSLZ
 
     def get_queryset(self):
         return ReleaseHistory.objects.filter(gateway=self.request.gateway)
 
-    @method_decorator(
-        name="GET",
-        decorator=swagger_auto_schema(
-            auto_schema=PaginatedResponseSwaggerAutoSchema,
-            query_serializer=serializers.ReleaseHistoryQueryInputSLZ(),
-            responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ(many=True)},
-            tags=["Web.Release"],
-        ),
-    )
     def list(self, request, *args, **kwargs):
         slz = serializers.ReleaseHistoryQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -185,18 +188,18 @@ class ReleaseHistoryListViewSet(generics.ListAPIView):
         return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ()}, tags=["WebAPI.Release"]
+    ),
+)
 class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
     serializer_class = serializers.ReleaseHistoryOutputSLZ
 
     def get_queryset(self):
         return ReleaseHistory.objects.filter(gateway=self.request.gateway)
 
-    @method_decorator(
-        name="GET",
-        decorator=swagger_auto_schema(
-            responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ()}, tags=["WebAPI.Release"]
-        ),
-    )
     def retrieve(self, request, *args, **kwargs):
         try:
             # created_time 在极端情况下可能重复，因此，添加字段 id

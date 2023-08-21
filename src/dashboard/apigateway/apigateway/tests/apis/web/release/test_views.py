@@ -21,7 +21,7 @@ import json
 import pytest
 from django_dynamic_fixture import G
 
-from apigateway.apis.web.release.views import ReleaseHistoryListViewSet, ReleaseHistoryRetrieveApi
+from apigateway.apis.web.release.views import ReleaseHistoryListApi, ReleaseHistoryRetrieveApi
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time, get_response_json
@@ -143,7 +143,7 @@ class TestReleaseHistoryListViewSet:
         for test in data:
             request = request_factory.get(f"/gateways/{self.gateway.id}/releases/histories/", data=test)
 
-            view = ReleaseHistoryListViewSet.as_view()
+            view = ReleaseHistoryListApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)

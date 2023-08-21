@@ -22,7 +22,7 @@ from .views import (
     ReleaseAvailableResourceListApi,
     ReleaseBatchCreateApi,
     ReleasedResourceGetApi,
-    ReleaseHistoryListViewSet,
+    ReleaseHistoryListApi,
     ReleaseHistoryRetrieveApi,
 )
 
@@ -37,7 +37,7 @@ urlpatterns = [
         "histories/",
         include(
             [
-                path("", ReleaseHistoryListViewSet.as_view, name="gateway.release_histories"),
+                path("", ReleaseHistoryListApi.as_view(), name="gateway.release_histories.list"),
                 path("latest/", ReleaseHistoryRetrieveApi.as_view(), name="gateway.release_histories.retrieve_latest"),
             ]
         ),
