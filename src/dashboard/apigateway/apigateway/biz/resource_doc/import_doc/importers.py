@@ -61,6 +61,7 @@ class ResourceDocImporter:
         update_resource_docs = []
         for doc in docs:
             if doc.resource_doc is None:
+                assert doc.resource
                 add_resource_docs.append(
                     ResourceDoc(
                         api_id=self.gateway_id,

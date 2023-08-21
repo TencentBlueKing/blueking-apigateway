@@ -18,7 +18,7 @@
 import hashlib
 import os
 from tempfile import TemporaryDirectory
-from typing import IO, AnyStr, Dict, List, Optional
+from typing import IO, AnyStr, Dict, List, Optional, Union
 
 from bkapi_client_generator import expand_swagger
 from django.utils.translation import gettext as _
@@ -33,14 +33,14 @@ from apigateway.core.models import Resource
 from apigateway.utils.file import read_file, write_to_file
 
 from .generators import Jinja2ToMarkdownGenerator, SwaggerToMarkdownGenerator
-from .models import ArchiveDoc, BaseDoc, SwaggerDoc
+from .models import ArchiveDoc, SwaggerDoc
 
 
 class BaseParser:
     def __init__(self, gateway_id: int):
         self.gateway_id = gateway_id
 
-    def _enrich_docs(self, docs: List[BaseDoc]):
+    def _enrich_docs(self, docs: Union[List[ArchiveDoc], List[SwaggerDoc]]):
         """
         丰富文档数据
         - 补全解析文档对应的资源、资源文档对象
