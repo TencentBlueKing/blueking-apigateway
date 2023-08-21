@@ -27,21 +27,18 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.stage.validators import StageVarsValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
+from apigateway.biz.validators import MaxCountPerGatewayValidator
+from apigateway.common.contexts import (StageProxyHTTPContext,
+                                        StageRateLimitContext)
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.core.constants import (
-    DEFAULT_BACKEND_NAME,
-    DEFAULT_LB_HOST_WEIGHT,
-    DOMAIN_PATTERN,
-    HEADER_KEY_PATTERN,
-    MAX_BACKEND_TIMEOUT_IN_SECOND,
-    STAGE_NAME_PATTERN,
-    LoadBalanceTypeEnum,
-)
+from apigateway.core.constants import (DEFAULT_BACKEND_NAME,
+                                       DEFAULT_LB_HOST_WEIGHT, DOMAIN_PATTERN,
+                                       HEADER_KEY_PATTERN,
+                                       MAX_BACKEND_TIMEOUT_IN_SECOND,
+                                       STAGE_NAME_PATTERN, LoadBalanceTypeEnum)
 from apigateway.core.models import Backend, BackendConfig, MicroGateway, Stage
-from apigateway.core.validators import MaxCountPerGatewayValidator
 
 
 class HostSLZ(serializers.Serializer):

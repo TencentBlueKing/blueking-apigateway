@@ -25,7 +25,7 @@ from .managers import APILabelManager, ResourceLabelManager
 
 class APILabel(TimestampedModelMixin, OperatorModelMixin):
     """
-    API labels, a label set
+    Gateway labels, a label set
     """
 
     api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
@@ -38,7 +38,7 @@ class APILabel(TimestampedModelMixin, OperatorModelMixin):
         db_table = "label_api"
 
     def __str__(self):
-        return f"<APILabel: {self.id}/{self.name}>"
+        return f"<GatewayLabel: {self.id}/{self.name}>"
 
 
 class ResourceLabel(TimestampedModelMixin):

@@ -68,17 +68,6 @@ class ResourceIDValidator(GetGatewayFromContextMixin):
             raise serializers.ValidationError(_("网关【id={api_id}】下指定的部分资源ID不存在。").format(api_id=gateway.id))
 
 
-class BKAppCodeValidator:
-    def __call__(self, value):
-        if not value:
-            return
-
-        assert isinstance(value, str)
-
-        if not APP_CODE_PATTERN.match(value):
-            raise serializers.ValidationError(_("蓝鲸应用【{value}】不匹配要求的模式。").format(value=value))
-
-
 class BKAppCodeListValidator:
     def __call__(self, value):
         if not value:
@@ -91,3 +80,14 @@ class BKAppCodeListValidator:
             raise serializers.ValidationError(
                 _("蓝鲸应用【{app_codes}】不匹配要求的模式。").format(app_codes=", ".join(sorted(invalid_app_codes)))
             )
+
+
+class BKAppCodeValidator:
+    def __call__(self, value):
+        if not value:
+            return
+
+        assert isinstance(value, str)
+
+        if not APP_CODE_PATTERN.match(value):
+            raise serializers.ValidationError(_("蓝鲸应用【{value}】不匹配要求的模式。").format(value=value))
