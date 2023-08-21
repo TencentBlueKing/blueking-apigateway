@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
+from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -51,18 +53,27 @@ def _record_label_audit_success(
     )
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        auto_schema=PaginatedResponseSwaggerAutoSchema,
+        query_serializer=APILabelListQueryInputSLZ,
+        responses={status.HTTP_200_OK: APILabelOutputSLZ(many=True)},
+        tags=["WebAPI.APILabels"],
+    ),
+)
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_201_CREATED: ""}, request_body=APILabelInputSLZ, tags=["WebAPI.APILabels"]
+    ),
+)
 class APILabelListCreateApi(generics.ListCreateAPIView):
     serializer_class = APILabelInputSLZ
 
     def get_queryset(self):
         return APILabel.objects.filter(api=self.request.gateway)
 
-    @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=APILabelListQueryInputSLZ,
-        responses={status.HTTP_200_OK: APILabelOutputSLZ(many=True)},
-        tags=["APILabels"],
-    )
     def list(self, request, *args, **kwargs):
         slz = APILabelListQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -81,7 +92,6 @@ class APILabelListCreateApi(generics.ListCreateAPIView):
         serializer = APILabelOutputSLZ(page, many=True)
         return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
 
-    @swagger_auto_schema(responses={status.HTTP_201_CREATED: ""}, request_body=APILabelInputSLZ, tags=["APILabels"])
     def create(self, request, gateway_id):
         # the label is simple enough, so we can use the ModelSerializer
         slz = self.get_serializer(data=request.data)
@@ -105,6 +115,22 @@ class APILabelListCreateApi(generics.ListCreateAPIView):
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(),
+)
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(),
+)
+@method_decorator(
+    name="patch",
+    decorator=swagger_auto_schema(),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(),
+)
 class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = APILabelInputSLZ
     lookup_field = "id"
@@ -112,13 +138,15 @@ class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return APILabel.objects.filter(api=self.request.gateway)
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: APILabelOutputSLZ()}, tags=["APILabels"])
+    @swagger_auto_schema(responses={status.HTTP_200_OK: APILabelOutputSLZ()}, tags=["WebAPI.APILabels"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = APILabelOutputSLZ(instance)
         return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, request_body=APILabelInputSLZ, tags=["APILabels"])
+    @swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=APILabelInputSLZ, tags=["WebAPI.APILabels"]
+    )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance, data=request.data)
@@ -139,7 +167,7 @@ class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["APILabels"])
+    @swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.APILabels"])
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance_id = instance.id

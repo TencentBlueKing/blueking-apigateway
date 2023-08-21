@@ -21,13 +21,12 @@ from django.db.models import Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
-from rest_framework.renderers import BrowsableAPIRenderer
 
 from apigateway.apps.ssl_certificate import serializers
 from apigateway.core.models import SslCertificate, SslCertificateBinding
 from apigateway.core.signals import reversion_update_signal
 from apigateway.utils.crypto import CertificateChecker
-from apigateway.utils.responses import ResponseRender, V1OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -67,7 +66,6 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 )
 class SSLCertificateViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
-    renderer_classes = [ResponseRender, BrowsableAPIRenderer]
     serializer_class = serializers.SSLCertificateSLZ
 
     def get_queryset(self):

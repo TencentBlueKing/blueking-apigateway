@@ -18,33 +18,32 @@
 #
 from django.urls import path
 
-from apigateway.apis.web.plugin.binding.views import PluginBindingBatchViewSet, PluginBindingViewSet
-from apigateway.apis.web.plugin.plugin.views import PluginConfigViewSet, PluginFormViewSet, PluginTypeViewSet
+from .views import (
+    PluginBindingRetrieveApi,
+    PluginConfigCreateApi,
+    PluginConfigRetrieveUpdateDestroyApi,
+    PluginFormRetrieveApi,
+    PluginTypeListApi,
+    ScopePluginConfigListApi,
+)
 
 urlpatterns = [
-    # plugin
-    path("configs/", PluginConfigViewSet.as_view({"get": "list", "post": "create"}), name="plugins.config"),
+    # plugins
+    # list plugin types (global)
+    path("", PluginTypeListApi.as_view(), name="plugins.type"),
+    path("<str:scope_type>/<int:scope_id>/", ScopePluginConfigListApi.as_view(), name="plugins.config"),
+    # create a binding (by stage or resource)
     path(
-        "configs/<int:id>/",
-        PluginConfigViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"}),
+        "<str:scope_type>/<int:scope_id>/<str:code>/configs/",
+        PluginConfigCreateApi.as_view(),
+        name="plugins.config.create",
+    ),
+    # get, update or delete a plugin config (delete equals delete bindings)
+    path(
+        "<str:scope_type>/<int:scope_id>/<str:code>/configs/<int:id>/",
+        PluginConfigRetrieveUpdateDestroyApi.as_view(),
         name="plugins.config.details",
     ),
-    path("types/", PluginTypeViewSet.as_view({"get": "list"}), name="plugins.types"),
-    path("forms/<int:type_id>/", PluginFormViewSet.as_view({"get": "retrieve"}), name="plugins.forms"),
-    # plugin binding
-    path(
-        "configs/<int:config_id>/bindings/",
-        PluginBindingBatchViewSet.as_view({"get": "list", "post": "bind", "delete": "unbind"}),
-        name="plugins.config.bindings",
-    ),
-    path(
-        "bindings/",
-        PluginBindingViewSet.as_view({"get": "list"}),
-        name="plugins.bindings",
-    ),
-    path(
-        "bindings/<int:pk>/",
-        PluginBindingViewSet.as_view({"get": "retrieve", "delete": "destroy"}),
-        name="plugins.bindings.details",
-    ),
+    path("<str:code>/forms/", PluginFormRetrieveApi.as_view(), name="plugins.forms"),
+    path("<str:code>/bindings/", PluginBindingRetrieveApi.as_view(), name="plugin.bindings"),
 ]

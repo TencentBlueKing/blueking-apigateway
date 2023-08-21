@@ -108,17 +108,17 @@ class PluginForm(models.Model):
     def natural_key(self):
         return (self.language, self.type.code)
 
-    @classmethod
-    def fake_object(cls, type: PluginType):
-        return cls(
-            pk=None,
-            language="",
-            type=type,
-            notes="",
-            style=PluginStyleEnum.RAW.value,
-            default_value="",
-            config={},
-        )
+    # @classmethod
+    # def fake_object(cls, type: PluginType):
+    #     return cls(
+    #         pk=None,
+    #         language="",
+    #         type=type,
+    #         notes="",
+    #         style=PluginStyleEnum.RAW.value,
+    #         default_value="",
+    #         config={},
+    #     )
 
 
 class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
