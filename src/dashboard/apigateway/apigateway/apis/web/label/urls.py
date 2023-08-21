@@ -18,13 +18,13 @@
 #
 from django.urls import path
 
-from .views import APILabelListCreateApi, APILabelRetrieveUpdateDestroyApi
+from . import views
 
 urlpatterns = [
-    path("", APILabelListCreateApi.as_view(), name="label.list_create"),
+    path("", views.GatewayLabelListCreateApi.as_view(), name="label.list_create"),
     path(
         "<int:id>/",
-        APILabelRetrieveUpdateDestroyApi.as_view(),
+        views.GatewayLabelRetrieveUpdateDestroyApi.as_view(),
         name="label.retrieve_update_destroy",
     ),
 ]

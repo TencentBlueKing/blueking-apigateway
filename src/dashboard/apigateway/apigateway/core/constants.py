@@ -36,6 +36,7 @@ class GatewayStatusEnum(StructuredEnum):
     ACTIVE = EnumField(1, "启用中")
 
 
+# TODO: delete it
 class APIHostingTypeEnum(StructuredEnum):
     """网关托管类型，影响特性集"""
 
@@ -141,16 +142,6 @@ class GatewayTypeEnum(StructuredEnum):
     OFFICIAL_API = EnumField(1, "官方云API")
     CLOUDS_API = EnumField(10, "云API")
 
-    @classmethod
-    def is_official(cls, value: int) -> bool:
-        return value in [cls.SUPER_OFFICIAL_API.value, cls.OFFICIAL_API.value]
-
-    @property
-    def sort_key(self):
-        if self._value_ in [self.SUPER_OFFICIAL_API.value, self.OFFICIAL_API.value]:
-            return "a"
-        return "b"
-
 
 class StageStatusEnum(ChoiceEnumMixin, Enum):
     INACTIVE = 0
@@ -208,23 +199,23 @@ class ProxyTypeEnum(StructuredEnum):
 
 
 class ScopeTypeEnum(StructuredEnum):
-    API = EnumField("api", _("网关"))
+    GATEWAY = EnumField("api", _("网关"))
     STAGE = EnumField("stage", _("环境"))
     RESOURCE = EnumField("resource", _("资源"))
 
 
-class ContextScopeTypeEnum(ChoiceEnumMixin, Enum):
-    API = ScopeTypeEnum.API.value
-    STAGE = ScopeTypeEnum.STAGE.value
-    RESOURCE = ScopeTypeEnum.RESOURCE.value
+class ContextScopeTypeEnum(StructuredEnum):
+    GATEWAY = EnumField(ScopeTypeEnum.GATEWAY.value)
+    STAGE = EnumField(ScopeTypeEnum.STAGE.value)
+    RESOURCE = EnumField(ScopeTypeEnum.RESOURCE.value)
 
 
-class ContextTypeEnum(ChoiceEnumMixin, Enum):
-    API_AUTH = "api_auth"
-    RESOURCE_AUTH = "resource_auth"
-    STAGE_PROXY_HTTP = "stage_proxy_http"
-    STAGE_RATE_LIMIT = "stage_rate_limit"
-    API_FEATURE_FLAG = "api_feature_flag"
+class ContextTypeEnum(StructuredEnum):
+    GATEWAY_AUTH = EnumField("api_auth")
+    RESOURCE_AUTH = EnumField("resource_auth")
+    STAGE_PROXY_HTTP = EnumField("stage_proxy_http")
+    STAGE_RATE_LIMIT = EnumField("stage_rate_limit")
+    GATEWAY_FEATURE_FLAG = EnumField("api_feature_flag")
 
 
 class LoadBalanceTypeEnum(StructuredEnum):

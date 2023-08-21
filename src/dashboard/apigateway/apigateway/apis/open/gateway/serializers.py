@@ -23,7 +23,9 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.validators import BKAppCodeListValidator
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
     GATEWAY_NAME_PATTERN,
@@ -33,7 +35,6 @@ from apigateway.core.constants import (
     UserAuthTypeEnum,
 )
 from apigateway.core.models import Gateway, ReleaseHistory
-from apigateway.core.validators import BKAppCodeListValidator
 
 
 class GatewayQueryV1SLZ(serializers.Serializer):
@@ -143,7 +144,13 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
 
         # 3. record audit log
-        GatewayHandler().add_create_audit_log(instance, validated_data.get("created_by", ""))
+        GatewayHandler.record_audit_log_success(
+            username=validated_data.get("created_by", ""),
+            gateway_id=instance.id,
+            op_type=OpTypeEnum.CREATE,
+            instance_id=instance.id,
+            instance_name=instance.name,
+        )
 
         return instance
 
@@ -168,7 +175,13 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
 
         # 3. 记录操作日志
-        GatewayHandler().add_update_audit_log(instance, validated_data.get("updated_by", ""))
+        GatewayHandler.record_audit_log_success(
+            username=validated_data.get("updated_by", ""),
+            gateway_id=instance.id,
+            op_type=OpTypeEnum.MODIFY,
+            instance_id=instance.id,
+            instance_name=instance.name,
+        )
 
         return instance
 

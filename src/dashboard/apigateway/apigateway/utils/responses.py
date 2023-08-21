@@ -19,7 +19,7 @@
 
 from typing import Any, Dict, List, Union
 
-from django.http import FileResponse, JsonResponse
+from django.http import FileResponse, HttpResponse, JsonResponse
 from rest_framework import status
 from rest_framework.renderers import JSONRenderer
 
@@ -45,11 +45,12 @@ class FailJsonResponse(JsonResponse):
         super(FailJsonResponse, self).__init__(body, status=status)
 
 
-class OKJsonResponse(JsonResponse):
-    def __init__(self, status: int = status.HTTP_200_OK, data: Union[Dict, List, None] = None):
-        body = {"data": data}
+def OKJsonResponse(status: int = status.HTTP_200_OK, data: Union[Dict, List, None] = None):
+    if status == 204:
+        return HttpResponse(status=204)
 
-        super(OKJsonResponse, self).__init__(body, status=status)
+    body = {"data": data}
+    return JsonResponse(body, status=status)
 
 
 class V1FailJsonResponse(JsonResponse):

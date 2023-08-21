@@ -17,94 +17,45 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.label.models import APILabel
+from apigateway.biz.gateway_label import GatewayLabelHandler
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
-from apigateway.utils.time import now_datetime
 
-from .serializers import APILabelInputSLZ, APILabelListQueryInputSLZ, APILabelOutputSLZ
+from .serializers import GatewayLabelInputSLZ, GatewayLabelOutputSLZ
 
 
-def _record_label_audit_success(
-    username: str, gateway_id: int, op_type: OpTypeEnum, instance_id: int, instance_name: str
-) -> None:
-    comment = {
-        OpTypeEnum.CREATE: _("创建网关标签"),
-        OpTypeEnum.MODIFY: _("更新网关标签"),
-        OpTypeEnum.DELETE: _("删除网关标签"),
-    }.get(op_type, "-")
-
-    record_audit_log(
-        username=username,
-        op_type=op_type.value,
-        op_status=OpStatusEnum.SUCCESS.value,
-        op_object_group=gateway_id,
-        op_object_type=OpObjectTypeEnum.API_LABEL.value,
-        op_object_id=instance_id,
-        op_object=instance_name,
-        comment=comment,
-    )
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=APILabelListQueryInputSLZ,
-        responses={status.HTTP_200_OK: APILabelOutputSLZ(many=True)},
-        tags=["WebAPI.APILabels"],
-    ),
-)
-@method_decorator(
-    name="post",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""}, request_body=APILabelInputSLZ, tags=["WebAPI.APILabels"]
-    ),
-)
-class APILabelListCreateApi(generics.ListCreateAPIView):
-    serializer_class = APILabelInputSLZ
+class GatewayLabelListCreateApi(generics.ListCreateAPIView):
+    serializer_class = GatewayLabelInputSLZ
 
     def get_queryset(self):
         return APILabel.objects.filter(api=self.request.gateway)
 
+    @swagger_auto_schema(
+        responses={status.HTTP_200_OK: GatewayLabelOutputSLZ(many=True)},
+        tags=["WebAPI.GatewayLabel"],
+    )
     def list(self, request, *args, **kwargs):
-        slz = APILabelListQueryInputSLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-
-        # build the queryset
         queryset = self.get_queryset()
-        if data.get("name"):
-            queryset = queryset.filter(name__contains=data["name"])
-        # order
-        queryset = queryset.order_by(data.get("order_by") or "-id")
+        slz = GatewayLabelOutputSLZ(queryset, many=True)
+        return OKJsonResponse(data=slz.data)
 
-        # paginate
-        page = self.paginate_queryset(queryset)
-        serializer = APILabelOutputSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
-
+    @swagger_auto_schema(
+        responses={status.HTTP_201_CREATED: ""}, request_body=GatewayLabelInputSLZ, tags=["WebAPI.GatewayLabel"]
+    )
     def create(self, request, gateway_id):
-        # the label is simple enough, so we can use the ModelSerializer
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
         slz.save(
             created_by=request.user.username,
             updated_by=request.user.username,
-            created_time=now_datetime(),
-            updated_time=now_datetime(),
         )
 
-        _record_label_audit_success(
+        GatewayLabelHandler.record_audit_log_success(
             username=request.user.username,
             gateway_id=request.gateway.id,
             op_type=OpTypeEnum.CREATE,
@@ -115,37 +66,21 @@ class APILabelListCreateApi(generics.ListCreateAPIView):
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(),
-)
-@method_decorator(
-    name="put",
-    decorator=swagger_auto_schema(),
-)
-@method_decorator(
-    name="patch",
-    decorator=swagger_auto_schema(),
-)
-@method_decorator(
-    name="delete",
-    decorator=swagger_auto_schema(),
-)
-class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = APILabelInputSLZ
+class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = GatewayLabelInputSLZ
     lookup_field = "id"
 
     def get_queryset(self):
         return APILabel.objects.filter(api=self.request.gateway)
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: APILabelOutputSLZ()}, tags=["WebAPI.APILabels"])
+    @swagger_auto_schema(responses={status.HTTP_200_OK: GatewayLabelOutputSLZ()}, tags=["WebAPI.GatewayLabel"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = APILabelOutputSLZ(instance)
+        slz = GatewayLabelOutputSLZ(instance)
         return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=APILabelInputSLZ, tags=["WebAPI.APILabels"]
+        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=GatewayLabelInputSLZ, tags=["WebAPI.GatewayLabel"]
     )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -154,10 +89,9 @@ class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         slz.save(
             updated_by=request.user.username,
-            updated_time=now_datetime(),
         )
 
-        _record_label_audit_success(
+        GatewayLabelHandler.record_audit_log_success(
             username=request.user.username,
             gateway_id=request.gateway.id,
             op_type=OpTypeEnum.MODIFY,
@@ -171,15 +105,15 @@ class APILabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance_id = instance.id
-        instance_name = instance.name
+
         instance.delete()
 
-        _record_label_audit_success(
+        GatewayLabelHandler.record_audit_log_success(
             username=request.user.username,
             gateway_id=request.gateway.id,
             op_type=OpTypeEnum.DELETE,
             instance_id=instance_id,
-            instance_name=instance_name,
+            instance_name=instance.name,
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

@@ -16,113 +16,74 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import arrow
-from django.test import TestCase
-from django_dynamic_fixture import G
+from ddf import G
 
-from apigateway.apis.web.label.views import APILabelListCreateApi, APILabelRetrieveUpdateDestroyApi
 from apigateway.apps.label.models import APILabel
-from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, get_response_json
 
 
-class TestAPILabelListCreateApi(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.factory = APIRequestFactory()
-        cls.gateway = create_gateway()
+class TestGatewayLabelListCreateApi:
+    def test_list(self, request_view, fake_gateway):
+        G(APILabel, api=fake_gateway)
+        G(APILabel, api=fake_gateway)
 
-    def test_create(self):
-        data = {
-            "name": "api-label-create-test",
-        }
-        request = self.factory.post(f"/gateways/{self.gateway.id}/labels/", data=data)
+        resp = request_view(
+            method="GET",
+            view_name="label.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+        )
+        result = resp.json()
 
-        view = APILabelListCreateApi.as_view()
-        response = view(request, gateway_id=self.gateway.id)
+        assert resp.status_code == 200
+        assert len(result["data"]) == 2
 
-        result = get_response_json(response)
-
-        self.assertEqual(response.status_code, 201, result)
-        self.assertEqual(APILabel.objects.filter(api=self.gateway, name=data["name"]).count(), 1)
-
-    def test_list(self):
-        G(APILabel, api=self.gateway, name="list-01")
-        G(APILabel, api=self.gateway, name="test-01")
-
-        data = [
-            {
-                "expected": 2,
-            },
-            {
-                "name": "list",
-                "expected": 1,
-            },
-            {
-                "name": "not-exist",
-                "expected": 0,
-            },
-        ]
-
-        for test in data:
-            request = self.factory.get(f"/gateways/{self.gateway.id}/labels/", data=test)
-
-            view = APILabelListCreateApi.as_view()
-            response = view(request, gateway_id=self.gateway.id)
-
-            result = get_response_json(response)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(len(result["data"]["results"]), test["expected"])
-
-
-class TestAPILabelViewSet(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.factory = APIRequestFactory()
-        cls.gateway = create_gateway()
-
-    def test_retrieve(self):
-        updated_time = arrow.get("2019-01-01 12:30:00").datetime
-        api_label = G(APILabel, api=self.gateway, name="test", updated_time=updated_time)
-
-        request = self.factory.get(f"/gateways/{self.gateway.id}/labels/{api_label.id}/")
-
-        view = APILabelRetrieveUpdateDestroyApi.as_view()
-        response = view(request, gateway_id=self.gateway.id, id=api_label.id)
-
-        result = get_response_json(response)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            result["data"],
-            {
-                "id": api_label.id,
-                "name": "test",
-                "updated_time": "2019-01-01 20:30:00",
-            },
+    def test_create(self, request_view, faker, fake_gateway):
+        resp = request_view(
+            method="POST",
+            view_name="label.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"name": faker.pystr(min_chars=3)},
         )
 
-    def test_update(self):
-        api_label = G(APILabel, api=self.gateway, name="test-01")
-        data = {"name": "test-02"}
+        assert resp.status_code == 201
 
-        request = self.factory.put(f"/gateways/{self.gateway.id}/labels/{api_label.id}/", data=data)
 
-        view = APILabelRetrieveUpdateDestroyApi.as_view()
-        response = view(request, gateway_id=self.gateway.id, id=api_label.id)
+class GatewayLabelRetrieveUpdateDestroyApi:
+    def test_retrieve(self, request_view, fake_gateway):
+        label = G(APILabel, api=fake_gateway)
 
-        self.assertEqual(response.status_code, 204)
+        resp = request_view(
+            method="GET",
+            view_name="label.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": label.id},
+        )
+        result = resp.json()
 
-        self.assertFalse(APILabel.objects.filter(api=self.gateway, name="test-01").exists())
-        self.assertTrue(APILabel.objects.filter(api=self.gateway, name="test-02").exists())
+        assert resp.status_code == 200
+        assert result["data"]["id"] == label.id
 
-    def test_destroy(self):
-        api_label = G(APILabel, api=self.gateway)
+    def test_update(self, request_view, faker, fake_gateway):
+        label = G(APILabel, api=fake_gateway)
 
-        request = self.factory.delete(f"/gateways/{self.gateway.id}/labels/{api_label.id}/")
+        new_name = faker.pystr(min_chars=3)
 
-        view = APILabelRetrieveUpdateDestroyApi.as_view()
-        response = view(request, gateway_id=self.gateway.id, id=api_label.id)
+        resp = request_view(
+            method="PUT",
+            view_name="label.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": label.id},
+            data={"name": new_name},
+        )
 
-        _ = get_response_json(response)
+        assert resp.status_code == 204
+        assert APILabel.objects.filter(api=fake_gateway, name=new_name).exists()
 
-        self.assertEqual(response.status_code, 204)
-        self.assertFalse(APILabel.objects.filter(id=api_label.id).exists())
+    def test_destroy(self, request_view, fake_gateway):
+        label = G(APILabel, api=fake_gateway)
+
+        resp = request_view(
+            method="DELETE",
+            view_name="label.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": label.id},
+        )
+
+        assert resp.status_code == 204
+        assert not APILabel.objects.filter(api=fake_gateway).exists()

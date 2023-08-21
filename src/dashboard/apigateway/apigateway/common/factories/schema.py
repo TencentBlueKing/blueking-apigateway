@@ -37,8 +37,8 @@ class SchemaFactory:
             return self._get_schema_instance(instances.ProxyMock())
         raise error_codes.INVALID_ARGUMENT.format(f"unsupported proxy_type: {proxy_type}")
 
-    def get_context_api_bkauth_schema(self):
-        return self._get_schema_instance(instances.ContextAPIBKAuth())
+    def get_context_gateway_bkauth_schema(self):
+        return self._get_schema_instance(instances.ContextGatewayBKAuth())
 
     def get_context_resource_bkauth_schema(self):
         return self._get_schema_instance(instances.ContextResourceBKAuth())
@@ -49,8 +49,8 @@ class SchemaFactory:
     def get_context_stage_rate_limit_schema(self):
         return self._get_schema_instance(instances.ContextStageRateLimit())
 
-    def get_context_api_feature_flag_schema(self):
-        return self._get_schema_instance(instances.ContextAPIFeatureFlag())
+    def get_context_gateway_feature_flag_schema(self):
+        return self._get_schema_instance(instances.ContextGatewayFeatureFlag())
 
     def get_monitor_alarm_strategy_schema(self):
         return self._get_schema_instance(instances.MonitorAlarmStrategy())

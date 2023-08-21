@@ -50,7 +50,6 @@ urlpatterns = [
     # iam provider
     path("backend/api/iam/", include("apigateway.apis.iam.urls")),
     # apps: core
-    path("backend/apis/", include("apigateway.apps.gateway.urls")),
     path("backend/apis/<int:gateway_id>/", include("apigateway.apps.stage_item.urls")),
     path("backend/apis/<int:gateway_id>/stages/", include("apigateway.apps.stage.urls")),
     path("backend/apis/<int:gateway_id>/resources/", include("apigateway.apps.resource.urls")),
@@ -74,6 +73,7 @@ urlpatterns = [
     path("backend/i18n/setlang/", set_language, name="set_language"),
     path("backend/users/", include("apigateway.apis.web.user.urls")),
     path("backend/feature/", include("apigateway.apis.web.feature.urls")),
+    path("backend/gateways/", include("apigateway.apis.web.gateway.urls")),
     path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
     path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
     path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),

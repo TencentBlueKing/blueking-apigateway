@@ -19,8 +19,8 @@
 
 from apigateway.schema.instances import (
     APISDK,
-    ContextAPIBKAuth,
-    ContextAPIFeatureFlag,
+    ContextGatewayBKAuth,
+    ContextGatewayFeatureFlag,
     ContextResourceBKAuth,
     ContextStageProxyHTTP,
     ContextStageRateLimit,
@@ -36,11 +36,11 @@ from apigateway.schema.instances import (
 
 def init_meta_schemas():
     meta_schema_instances = [
-        ContextAPIBKAuth(),
+        ContextGatewayBKAuth(),
         ContextResourceBKAuth(),
         ContextStageProxyHTTP(),
         ContextStageRateLimit(),
-        ContextAPIFeatureFlag(),
+        ContextGatewayFeatureFlag(),
         ProxyHTTP(),
         ProxyMock(),
         MonitorAlarmFilter(),

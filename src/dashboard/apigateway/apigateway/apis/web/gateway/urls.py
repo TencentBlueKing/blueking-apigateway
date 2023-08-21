@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,13 +15,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict
+from django.urls import include, path
 
-from django.conf import settings
+from . import views
 
-from apigateway.core.constants import APIHostingTypeEnum
-
-
-def get_gateway_feature_flags(hosting_type: APIHostingTypeEnum) -> Dict[str, bool]:
-    """获取网关功能特性开关"""
-    return settings.GLOBAL_GATEWAY_FEATURE_FLAG.copy()
+urlpatterns = [
+    path("", views.GatewayListCreateApi.as_view(), name="gateways.list_create"),
+    path(
+        # 使用 gateway_id，复用 GatewayPermission 的权限校验
+        "<int:gateway_id>/",
+        include(
+            [
+                path("", views.GatewayRetrieveUpdateDestroyApi.as_view(), name="gateways.retrieve_update_destroy"),
+                path("status/", views.GatewayUpdateStatusApi.as_view(), name="gateways.update_status"),
+            ]
+        ),
+    ),
+]
