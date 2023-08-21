@@ -18,76 +18,10 @@
 import json
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.resource_doc.import_doc.models import ArchiveDoc
+from apigateway.biz.resource_doc.importer.models import ArchiveDoc
 
 
-class TestResourceDocListCreateApi:
-    def test_list(self, request_view, fake_resource_doc):
-        fake_gateway = fake_resource_doc.api
-
-        resp = request_view(
-            method="GET",
-            view_name="resource_doc.list_create",
-            path_params={"gateway_id": fake_gateway.id, "resource_id": fake_resource_doc.resource_id},
-        )
-        result = resp.json()
-
-        assert resp.status_code == 200
-        assert len(result["data"]) == 2
-
-    def test_create(self, request_view, fake_resource, faker):
-        fake_gateway = fake_resource.api
-
-        resp = request_view(
-            method="POST",
-            view_name="resource_doc.list_create",
-            path_params={"gateway_id": fake_gateway.id, "resource_id": fake_resource.id},
-            data={
-                "language": "zh",
-                "content": faker.pystr(),
-            },
-        )
-        result = resp.json()
-
-        assert resp.status_code == 201
-        assert result["data"]["id"] != 0
-
-
-class TestResourceDocUpdateDestroyApi:
-    def test_update(self, request_view, fake_resource_doc, faker):
-        fake_gateway = fake_resource_doc.api
-
-        resp = request_view(
-            method="PUT",
-            view_name="resource_doc.update_destroy",
-            path_params={
-                "gateway_id": fake_gateway.id,
-                "resource_id": fake_resource_doc.resource_id,
-                "id": fake_resource_doc.id,
-            },
-            data={
-                "language": "zh",
-                "content": faker.pystr(),
-            },
-        )
-        assert resp.status_code == 200
-
-    def test_destroy(self, request_view, fake_resource_doc):
-        fake_gateway = fake_resource_doc.api
-
-        resp = request_view(
-            method="DELETE",
-            view_name="resource_doc.update_destroy",
-            path_params={
-                "gateway_id": fake_gateway.id,
-                "resource_id": fake_resource_doc.resource_id,
-                "id": fake_resource_doc.id,
-            },
-        )
-        assert resp.status_code == 204
-
-
-class TestResourceDocArchiveParseApi:
+class TestDocArchiveParseApi:
     def test_post(self, request_view, fake_gateway, mocker, faker, fake_tgz_file):
         mocker.patch(
             "apigateway.apis.web.resource_doc.views.ArchiveParser.parse",
@@ -115,10 +49,10 @@ class TestResourceDocArchiveParseApi:
         assert resp.status_code == 200
 
 
-class TestResourceDocImportByArchiveApi:
+class TestDocImportByArchiveApi:
     def post(self, request_view, fake_gateway, mocker, faker, fake_tgz_file):
         mocker.patch("apigateway.apis.web.resource_doc.views.ArchiveParser.parse", return_value=[])
-        mocker.patch("apigateway.apis.web.resource_doc.views.ResourceDocImporter.import_docs")
+        mocker.patch("apigateway.apis.web.resource_doc.views.DocImporter.import_docs")
 
         resp = request_view(
             method="POST",
@@ -141,10 +75,10 @@ class TestResourceDocImportByArchiveApi:
         assert resp.status_code == 200
 
 
-class TestResourceDocImportBySwaggerApi:
+class TestDocImportBySwaggerApi:
     def test_post(self, request_view, fake_gateway, mocker, faker):
         mocker.patch("apigateway.apis.web.resource_doc.views.SwaggerParser.parse", return_value=[])
-        mocker.patch("apigateway.apis.web.resource_doc.views.ResourceDocImporter.import_docs")
+        mocker.patch("apigateway.apis.web.resource_doc.views.DocImporter.import_docs")
 
         resp = request_view(
             method="POST",
@@ -165,7 +99,7 @@ class TestResourceDocImportBySwaggerApi:
         assert resp.status_code == 200
 
 
-class TestResourceDocExportApi:
+class TestDocExportApi:
     def test_post(self, request_view, fake_resource_doc):
         fake_gateway = fake_resource_doc.api
 

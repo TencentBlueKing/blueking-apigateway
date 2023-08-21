@@ -18,13 +18,13 @@
 import pytest
 
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
-from apigateway.biz.resource_doc.export_doc.generators import DocArchiveGenerator
+from apigateway.biz.resource_doc.exporter.generators import DocArchiveGenerator
 from apigateway.core.models import Resource
 
 
 class TestDocArchiveGenerator:
     def test_generate(self, mocker, faker, fake_resource_doc):
-        mocker.patch("apigateway.biz.resource_doc.export_doc.generators.write_to_file", return_value=None)
+        mocker.patch("apigateway.biz.resource_doc.exportor.generators.write_to_file", return_value=None)
 
         fake_gateway = fake_resource_doc.api
         resource = Resource.objects.get(id=fake_resource_doc.resource_id)

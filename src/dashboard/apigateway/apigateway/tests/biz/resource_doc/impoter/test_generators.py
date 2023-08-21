@@ -25,7 +25,7 @@ from apigateway.biz.resource_doc.exceptions import (
     ResourceDocJinja2TemplateNotFound,
     ResourceDocJinja2TemplateSyntaxError,
 )
-from apigateway.biz.resource_doc.import_doc.generators import Jinja2ToMarkdownGenerator
+from apigateway.biz.resource_doc.importer.generators import Jinja2ToMarkdownGenerator
 from apigateway.utils.file import write_to_file
 
 
@@ -75,7 +75,7 @@ class TestJinja2ToMarkdownGenerator:
                 generator._render_jinja2_template()
 
             mocker.patch(
-                "apigateway.biz.resource_doc.import_doc.generators.SandboxedEnvironment.get_template",
+                "apigateway.biz.resource_doc.importer.generators.SandboxedEnvironment.get_template",
                 side_effect=ValueError(),
             )
             write_to_file("{% include '_common.md.j2' %}, get_user", filepath)

@@ -20,21 +20,17 @@ from typing import Any, Dict, List
 
 from bkapi_client_generator import ExpandSwaggerError, GenerateMarkdownError
 from django.db import transaction
-from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.support.constants import DocLanguageEnum, DocSourceEnum, DocTypeEnum
-from apigateway.apps.support.models import ResourceDoc
+from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
-from apigateway.biz.resource_doc.export_doc.generators import DocArchiveGenerator
-from apigateway.biz.resource_doc.import_doc.importers import ResourceDocImporter
-from apigateway.biz.resource_doc.import_doc.parsers import ArchiveParser, SwaggerParser
-from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_doc.exporter.generators import DocArchiveGenerator
+from apigateway.biz.resource_doc.importer.importers import DocImporter
+from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, SwaggerParser
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.constants import ExportTypeEnum
@@ -42,158 +38,22 @@ from apigateway.core.models import Resource
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from .serializers import (
-    ResourceDocArchiveParseInputSLZ,
-    ResourceDocArchiveParseOutputSLZ,
-    ResourceDocExportInputSLZ,
-    ResourceDocImportByArchiveInputSLZ,
-    ResourceDocImportBySwaggerInputSLZ,
-    ResourceDocInputSLZ,
-    ResourceDocOutputSLZ,
+    DocArchiveParseInputSLZ,
+    DocArchiveParseOutputSLZ,
+    DocExportInputSLZ,
+    DocImportByArchiveInputSLZ,
+    DocImportBySwaggerInputSLZ,
 )
 
 
-class ResourceDocListCreateApi(generics.ListCreateAPIView):
-    serializer_class = ResourceDocInputSLZ
-
-    def get_queryset(self):
-        return ResourceDoc.objects.filter(api=self.request.gateway)
-
-    def _get_resource(self):
-        return get_object_or_404(Resource, api=self.request.gateway, id=self.kwargs["resource_id"])
-
+class DocArchiveParseApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ResourceDocOutputSLZ(many=True)},
-        tags=["WebAPI.ResourceDoc"],
-    )
-    def list(self, request, gateway_id: int, resource_id: int, *args, **kwargs):
-        """获取指定资源的资源文档"""
-        queryset = self.get_queryset().filter(resource_id=resource_id)
-
-        docs = [doc for doc in queryset]
-        existed_languages = [doc.language for doc in docs]
-        missing_languages = set(DocLanguageEnum.get_values()) - set(existed_languages)
-
-        if missing_languages:
-            # 如果语言对应文档不存在，则给出模版文档
-            docs.extend(
-                [
-                    ResourceDoc(
-                        language=language,
-                        content=ResourceDocHandler.get_resource_doc_tmpl(request.gateway.name, language),
-                    )
-                    for language in missing_languages
-                ]
-            )
-
-        slz = ResourceDocOutputSLZ(docs, many=True)
-        return OKJsonResponse(data=slz.data)
-
-    @swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""}, request_body=ResourceDocInputSLZ, tags=["WebAPI.ResourceDoc"]
-    )
-    def create(self, request, *args, **kwargs):
-        """创建资源文档"""
-        resource = self._get_resource()
-
-        slz = self.get_serializer(
-            data=request.data,
-            context={
-                "gateway_id": request.gateway.id,
-                "resource_id": resource.id,
-            },
-        )
-        slz.is_valid(raise_exception=True)
-
-        slz.save(
-            api=request.gateway,
-            resource_id=resource.id,
-            type=DocTypeEnum.MARKDOWN.value,
-            source=DocSourceEnum.CUSTOM.value,
-            created_by=request.user.username,
-            updated_by=request.user.username,
-        )
-
-        ResourceDocHandler.record_audit_log_success(
-            username=request.user.username,
-            gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.CREATE,
-            instance_id=slz.instance.id,
-            instance_name=f"{slz.instance.language}:{resource.name}",
-        )
-
-        return OKJsonResponse(status=status.HTTP_201_CREATED, data={"id": slz.instance.id})
-
-
-class ResourceDocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
-    serializer_class = ResourceDocInputSLZ
-    lookup_field = "id"
-
-    def get_queryset(self):
-        return ResourceDoc.objects.filter(api=self.request.gateway, resource_id=self.kwargs["resource_id"])
-
-    def _get_resource(self):
-        return get_object_or_404(Resource, api=self.request.gateway, id=self.kwargs["resource_id"])
-
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=ResourceDocInputSLZ, tags=["WebAPI.ResourceDoc"]
-    )
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        resource = self._get_resource()
-
-        slz = self.get_serializer(
-            instance,
-            data=request.data,
-            context={
-                "gateway_id": request.gateway.id,
-                "resource_id": resource.id,
-            },
-        )
-        slz.is_valid(raise_exception=True)
-
-        slz.save(
-            type=DocTypeEnum.MARKDOWN.value,
-            source=DocSourceEnum.CUSTOM.value,
-            updated_by=request.user.username,
-        )
-
-        ResourceDocHandler.record_audit_log_success(
-            username=request.user.username,
-            gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.MODIFY,
-            instance_id=slz.instance.id,
-            instance_name=f"{slz.instance.language}:{resource.name}",
-        )
-
-        return OKJsonResponse()
-
-    @swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.ResourceDoc"])
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance_id = instance.id
-        resource = self._get_resource()
-
-        instance.delete()
-
-        ResourceDocHandler.record_audit_log_success(
-            username=request.user.username,
-            gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.DELETE,
-            instance_id=instance_id,
-            instance_name=f"{instance.language}:{resource.name}",
-        )
-
-        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
-
-
-class ResourceDocArchiveParseApi(generics.CreateAPIView):
-    @swagger_auto_schema(
-        request_body=ResourceDocArchiveParseInputSLZ,
-        responses={status.HTTP_200_OK: ResourceDocArchiveParseOutputSLZ},
+        request_body=DocArchiveParseInputSLZ,
+        responses={status.HTTP_200_OK: DocArchiveParseOutputSLZ},
         tags=["WebAPI.ResourceDoc"],
     )
     def post(self, request, *args, **kwargs):
-        slz = ResourceDocArchiveParseInputSLZ(data=request.data)
+        slz = DocArchiveParseInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         parser = ArchiveParser(gateway_id=request.gateway.id)
@@ -202,20 +62,20 @@ class ResourceDocArchiveParseApi(generics.CreateAPIView):
         except NoResourceDocError:
             raise error_codes.INVALID_ARGUMENT.format(_("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True)
 
-        slz = ResourceDocArchiveParseOutputSLZ(docs, many=True)
+        slz = DocArchiveParseOutputSLZ(docs, many=True)
         return OKJsonResponse(data=slz.data)
 
 
-class ResourceDocImportByArchiveApi(generics.CreateAPIView):
+class DocImportByArchiveApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        request_body=ResourceDocImportByArchiveInputSLZ,
+        request_body=DocImportByArchiveInputSLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.ResourceDoc"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         """根据 tgz/zip 归档文件，导入资源文档"""
-        slz = ResourceDocImportByArchiveInputSLZ(data=request.data)
+        slz = DocImportByArchiveInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         parser = ArchiveParser(gateway_id=request.gateway.id)
@@ -226,7 +86,7 @@ class ResourceDocImportByArchiveApi(generics.CreateAPIView):
         except ResourceDocJinja2TemplateError as err:
             raise error_codes.INTERNAL.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
 
-        importer = ResourceDocImporter(
+        importer = DocImporter(
             gateway_id=request.gateway.id,
             selected_resource_docs=slz.validated_data["selected_resource_docs"],
         )
@@ -235,16 +95,16 @@ class ResourceDocImportByArchiveApi(generics.CreateAPIView):
         return OKJsonResponse()
 
 
-class ResourceDocImportBySwaggerApi(generics.CreateAPIView):
+class DocImportBySwaggerApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        request_body=ResourceDocImportBySwaggerInputSLZ,
+        request_body=DocImportBySwaggerInputSLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.ResourceDoc"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         """根据 swagger 描述文件，导入资源文档"""
-        slz = ResourceDocImportBySwaggerInputSLZ(data=request.data)
+        slz = DocImportBySwaggerInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         parser = SwaggerParser(gateway_id=request.gateway.id)
@@ -258,7 +118,7 @@ class ResourceDocImportBySwaggerApi(generics.CreateAPIView):
         except GenerateMarkdownError:
             raise error_codes.INTERNAL.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))
 
-        importer = ResourceDocImporter(
+        importer = DocImporter(
             gateway_id=request.gateway.id,
             selected_resource_docs=slz.validated_data["selected_resource_docs"],
         )
@@ -267,15 +127,15 @@ class ResourceDocImportBySwaggerApi(generics.CreateAPIView):
         return OKJsonResponse()
 
 
-class ResourceDocExportApi(generics.CreateAPIView):
+class DocExportApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        request_body=ResourceDocExportInputSLZ,
+        request_body=DocExportInputSLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.ResourceDoc"],
     )
     def post(self, request, *args, **kwargs):
         """导出资源文档"""
-        slz = ResourceDocExportInputSLZ(data=request.data)
+        slz = DocExportInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         selected_resource_queryset = self._filter_selected_resources(

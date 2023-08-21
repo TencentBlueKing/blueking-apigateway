@@ -20,10 +20,10 @@ from rest_framework import serializers
 from apigateway.apps.support.constants import DocLanguageEnum
 
 
-class ResourceDocImportByArchiveInputV1SLZ(serializers.Serializer):
+class DocImportByArchiveInputV1SLZ(serializers.Serializer):
     file = serializers.FileField(required=True, help_text="导入的归档文档文件")
 
 
-class ResourceDocImportBySwaggerInputV1SLZ(serializers.Serializer):
+class DocImportBySwaggerInputV1SLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=DocLanguageEnum.get_choices())
     swagger = serializers.CharField()

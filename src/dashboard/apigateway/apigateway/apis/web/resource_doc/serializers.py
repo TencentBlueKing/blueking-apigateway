@@ -15,46 +15,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.support.constants import DocArchiveTypeEnum, DocLanguageEnum
-from apigateway.apps.support.models import ResourceDoc
 from apigateway.core.constants import ExportTypeEnum
 
 
-class ResourceDocInputSLZ(serializers.ModelSerializer):
-    language = serializers.ChoiceField(choices=DocLanguageEnum.get_choices())
-
-    class Meta:
-        model = ResourceDoc
-        fields = ["language", "content"]
-
-    def validate_language(self, value):
-        gateway_id = self.context["gateway_id"]
-        resource_id = self.context["resource_id"]
-        queryset = ResourceDoc.objects.filter(api_id=gateway_id, resource_id=resource_id, language=value)
-        if self.instance is not None:
-            queryset = queryset.exclude(pk=self.instance.pk)
-
-        if queryset.exists():
-            raise serializers.ValidationError(_("该资源语言 {value} 的文档已存在。").format(value=value))
-
-        return value
-
-
-class ResourceDocOutputSLZ(serializers.ModelSerializer):
-    class Meta:
-        model = ResourceDoc
-        fields = [
-            "id",
-            "language",
-            "content",
-        ]
-        read_only_fields = fields
-
-
-class ResourceDocArchiveParseInputSLZ(serializers.Serializer):
+class DocArchiveParseInputSLZ(serializers.Serializer):
     file = serializers.FileField(required=True, help_text="导入的归档文档文件")
 
 
@@ -71,7 +38,7 @@ class ArchiveParseOutputResourceDocSLZ(serializers.Serializer):
     language = serializers.CharField(read_only=True)
 
 
-class ResourceDocArchiveParseOutputSLZ(serializers.Serializer):
+class DocArchiveParseOutputSLZ(serializers.Serializer):
     filename = serializers.CharField(read_only=True)
     language = serializers.CharField(source="language.value", read_only=True)
     content_changed = serializers.BooleanField(read_only=True)
@@ -84,7 +51,7 @@ class SelectedResourceDocSLZ(serializers.Serializer):
     resource_name = serializers.CharField()
 
 
-class ResourceDocImportByArchiveInputSLZ(serializers.Serializer):
+class DocImportByArchiveInputSLZ(serializers.Serializer):
     selected_resource_docs = serializers.JSONField(binary=True)
     file = serializers.FileField(required=True, help_text="导入的归档文档文件")
 
@@ -94,7 +61,7 @@ class ResourceDocImportByArchiveInputSLZ(serializers.Serializer):
         return slz.validated_data
 
 
-class ResourceDocImportBySwaggerInputSLZ(serializers.Serializer):
+class DocImportBySwaggerInputSLZ(serializers.Serializer):
     selected_resource_docs = serializers.ListField(child=SelectedResourceDocSLZ(), allow_empty=False)
     language = serializers.ChoiceField(choices=DocLanguageEnum.get_choices())
     swagger = serializers.CharField()
@@ -110,7 +77,7 @@ class ResourceFilterConditionSLZ(serializers.Serializer):
     query = serializers.CharField(allow_blank=True, required=False)
 
 
-class ResourceDocExportInputSLZ(serializers.Serializer):
+class DocExportInputSLZ(serializers.Serializer):
     export_type = serializers.ChoiceField(
         choices=ExportTypeEnum.get_choices(),
         help_text="值为 all，不需其它参数；值为 filtered，支持 query/path/method/label_name 参数；值为 selected，支持 resource_ids 参数",

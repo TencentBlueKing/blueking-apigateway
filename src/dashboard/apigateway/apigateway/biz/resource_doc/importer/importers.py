@@ -23,7 +23,7 @@ from apigateway.apps.support.models import ResourceDoc
 from .models import BaseDoc
 
 
-class ResourceDocImporter:
+class DocImporter:
     def __init__(
         self,
         gateway_id: int,

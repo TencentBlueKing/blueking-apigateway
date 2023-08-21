@@ -27,12 +27,12 @@ urlpatterns = [
             [
                 path(
                     "by-archive/",
-                    views.ResourceDocImportByArchiveApi.as_view(),
+                    views.DocImportByArchiveApi.as_view(),
                     name="openapi.resource_doc.import.by_archive",
                 ),
                 path(
                     "by-swagger/",
-                    views.ResourceDocImportBySwaggerApi.as_view(),
+                    views.DocImportBySwaggerApi.as_view(),
                     name="openapi.resource_doc.import.by_swagger",
                 ),
             ]

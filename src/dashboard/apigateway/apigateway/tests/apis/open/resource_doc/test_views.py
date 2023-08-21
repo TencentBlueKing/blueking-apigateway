@@ -15,10 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-class TestResourceDocImportByArchiveApi:
+class TestDocImportByArchiveApi:
     def test_post(self, request_view, mocker, fake_tgz_file, ignore_related_app_permission, fake_gateway):
         mocker.patch("apigateway.apis.open.resource_doc.views.ArchiveParser.parse", return_value=[])
-        mocker.patch("apigateway.apis.open.resource_doc.views.ResourceDocImporter.import_docs")
+        mocker.patch("apigateway.apis.open.resource_doc.views.DocImporter.import_docs")
 
         resp = request_view(
             method="POST",
@@ -36,10 +36,10 @@ class TestResourceDocImportByArchiveApi:
         assert result["code"] == 0
 
 
-class TestResourceDocImportBySwaggerApi:
+class TestDocImportBySwaggerApi:
     def test_post(self, request_view, mocker, faker, ignore_related_app_permission, fake_gateway):
         mocker.patch("apigateway.apis.web.resource_doc.views.SwaggerParser.parse", return_value=[])
-        mocker.patch("apigateway.apis.web.resource_doc.views.ResourceDocImporter.import_docs")
+        mocker.patch("apigateway.apis.web.resource_doc.views.DocImporter.import_docs")
 
         resp = request_view(
             method="POST",
