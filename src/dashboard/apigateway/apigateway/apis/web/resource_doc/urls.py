@@ -20,39 +20,23 @@ from django.urls import include, path
 from . import views
 
 urlpatterns = [
+    path("archive/parse/", views.DocArchiveParseApi.as_view(), name="resource_doc.archive.parse"),
     path(
-        "resources/<int:resource_id>/resource-docs/",
+        "import/",
         include(
             [
-                path("", views.ResourceDocListCreateApi.as_view(), name="resource_doc.list_create"),
-                path("<int:id>/", views.ResourceDocUpdateDestroyApi.as_view(), name="resource_doc.update_destroy"),
-            ]
-        ),
-    ),
-    path(
-        "resource-docs/",
-        include(
-            [
-                path("archive/parse/", views.ResourceDocArchiveParseApi.as_view(), name="resource_doc.archive.parse"),
                 path(
-                    "resource-docs/import/",
-                    include(
-                        [
-                            path(
-                                "by-archive/",
-                                views.ResourceDocImportByArchiveApi.as_view(),
-                                name="resource_doc.import.by_archive",
-                            ),
-                            path(
-                                "by-swagger/",
-                                views.ResourceDocImportBySwaggerApi.as_view(),
-                                name="resource_doc.import.by_swagger",
-                            ),
-                        ]
-                    ),
+                    "by-archive/",
+                    views.DocImportByArchiveApi.as_view(),
+                    name="resource_doc.import.by_archive",
                 ),
-                path("export/", views.ResourceDocExportApi.as_view(), name="resource_doc.export"),
+                path(
+                    "by-swagger/",
+                    views.DocImportBySwaggerApi.as_view(),
+                    name="resource_doc.import.by_swagger",
+                ),
             ]
         ),
     ),
+    path("export/", views.DocExportApi.as_view(), name="resource_doc.export"),
 ]

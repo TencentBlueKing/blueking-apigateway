@@ -18,45 +18,17 @@
 import json
 
 import pytest
-from ddf import G
-from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.resource_doc.serializers import (
-    ResourceDocArchiveParseOutputSLZ,
-    ResourceDocImportByArchiveInputSLZ,
-    ResourceDocInputSLZ,
+    DocArchiveParseOutputSLZ,
+    DocImportByArchiveInputSLZ,
 )
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.core.models import Resource
 
 
-class TestResourceDocInputSLZ:
-    def test_validate_language(self, faker, fake_gateway):
-        resource_id = faker.pyint(min_value=1)
-        resource_doc = G(ResourceDoc, api=fake_gateway, resource_id=resource_id, language="zh")
-
-        # create
-        slz = ResourceDocInputSLZ(data={}, context={"gateway_id": fake_gateway.id, "resource_id": resource_id})
-        assert slz.validate_language("en") == "en"
-
-        # create, failed
-        with pytest.raises(ValidationError):
-            assert slz.validate_language("zh") == "zh"
-
-        # update
-        G(ResourceDoc, api=fake_gateway, resource_id=resource_id, language="en")
-        slz = ResourceDocInputSLZ(
-            instance=resource_doc, data={}, context={"gateway_id": fake_gateway.id, "resource_id": resource_id}
-        )
-        assert slz.validate_language("zh") == "zh"
-
-        # update, failed
-        with pytest.raises(ValidationError):
-            assert slz.validate_language("en")
-
-
-class TestResourceDocArchiveParseOutputSLZ:
+class TestDocArchiveParseOutputSLZ:
     @pytest.mark.parametrize(
         "doc, expected",
         [
@@ -119,11 +91,11 @@ class TestResourceDocArchiveParseOutputSLZ:
         if doc["resource_doc"]:
             doc["resource_doc"] = ResourceDoc(**doc["resource_doc"])
 
-        slz = ResourceDocArchiveParseOutputSLZ(instance=doc)
+        slz = DocArchiveParseOutputSLZ(instance=doc)
         assert slz.data == expected
 
 
-class TestResourceDocImportByArchiveInputSLZ:
+class TestDocImportByArchiveInputSLZ:
     @pytest.mark.parametrize(
         "selected_resource_docs, expected",
         [
@@ -144,7 +116,7 @@ class TestResourceDocImportByArchiveInputSLZ:
         ],
     )
     def test_validate_selected_resource_docs(self, mocker, faker, selected_resource_docs, expected):
-        slz = ResourceDocImportByArchiveInputSLZ(
+        slz = DocImportByArchiveInputSLZ(
             data={
                 "file": mocker.MagicMock(name=faker.pystr(min_chars=1), size=faker.pyint(min_value=1)),
                 "selected_resource_docs": json.dumps(selected_resource_docs),

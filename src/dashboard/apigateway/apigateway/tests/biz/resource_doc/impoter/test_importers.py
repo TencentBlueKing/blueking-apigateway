@@ -20,12 +20,12 @@ from ddf import G
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.biz.resource_doc.import_doc.importers import ResourceDocImporter
-from apigateway.biz.resource_doc.import_doc.models import ArchiveDoc
+from apigateway.biz.resource_doc.importer.importers import DocImporter
+from apigateway.biz.resource_doc.importer.models import ArchiveDoc
 from apigateway.core.models import Resource
 
 
-class TestResourceDocImporter:
+class TestDocImporter:
     def test_import_docs(self, fake_resource_doc, faker):
         fake_gateway = fake_resource_doc.api
         fake_resource = Resource.objects.get(id=fake_resource_doc.resource_id)
@@ -52,13 +52,13 @@ class TestResourceDocImporter:
             ),
         ]
 
-        importer = ResourceDocImporter(fake_gateway.id, None)
+        importer = DocImporter(fake_gateway.id, None)
         importer.import_docs(docs)
 
         assert ResourceDoc.objects.filter(api=fake_gateway).count() == 2
 
     def test_filter_valid_docs(self, faker, fake_resource):
-        importer = ResourceDocImporter(1, None)
+        importer = DocImporter(1, None)
 
         docs = [
             ArchiveDoc(
@@ -127,7 +127,7 @@ class TestResourceDocImporter:
         ],
     )
     def test_filter_selected_docs(self, faker, docs, selected_resource_docs, expected):
-        importer = ResourceDocImporter(1, selected_resource_docs=selected_resource_docs)
+        importer = DocImporter(1, selected_resource_docs=selected_resource_docs)
 
         docs = [ArchiveDoc(content=faker.pystr(), **doc) for doc in docs]
         docs = importer._filter_selected_docs(docs)
@@ -155,7 +155,7 @@ class TestResourceDocImporter:
             ),
         ]
 
-        importer = ResourceDocImporter(fake_gateway.id, None)
+        importer = DocImporter(fake_gateway.id, None)
         importer._save_docs(docs)
 
         assert ResourceDoc.objects.filter(api=fake_gateway).count() == 2
@@ -183,6 +183,6 @@ class TestResourceDocImporter:
         ],
     )
     def test_get_selected_resource_doc_keys(self, selected_resource_docs, expected):
-        importer = ResourceDocImporter(1, selected_resource_docs=selected_resource_docs)
+        importer = DocImporter(1, selected_resource_docs=selected_resource_docs)
         result = importer._get_selected_resource_doc_keys()
         assert result == expected

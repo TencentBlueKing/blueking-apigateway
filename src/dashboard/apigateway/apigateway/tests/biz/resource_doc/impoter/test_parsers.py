@@ -19,8 +19,8 @@ import pytest
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
-from apigateway.biz.resource_doc.import_doc.models import ArchiveDoc
-from apigateway.biz.resource_doc.import_doc.parsers import ArchiveParser, BaseParser, SwaggerParser
+from apigateway.biz.resource_doc.importer.models import ArchiveDoc
+from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, BaseParser, SwaggerParser
 from apigateway.core.models import Resource
 
 
@@ -102,7 +102,7 @@ class TestArchiveParser:
     )
     def test_parse(self, mocker, files, expected):
         mocker.patch(
-            "apigateway.biz.resource_doc.import_doc.parsers.Jinja2ToMarkdownGenerator.generate_doc_content",
+            "apigateway.biz.resource_doc.importer.parsers.Jinja2ToMarkdownGenerator.generate_doc_content",
             return_value="",
         )
         result = ArchiveParser(1)._parse(files)
@@ -140,9 +140,9 @@ class TestArchiveParser:
 
 class TestSwagger:
     def test_parse(self, mocker):
-        mocker.patch("apigateway.biz.resource_doc.import_doc.parsers.SwaggerParser._expand_swagger", return_value="")
+        mocker.patch("apigateway.biz.resource_doc.importer.parsers.SwaggerParser._expand_swagger", return_value="")
         mocker.patch(
-            "apigateway.biz.resource_doc.import_doc.parsers.SwaggerManager.load_from_swagger",
+            "apigateway.biz.resource_doc.importer.parsers.SwaggerManager.load_from_swagger",
             return_value=mocker.MagicMock(
                 **{
                     "validate.return_value": None,

@@ -15,27 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import include, path
+from django.urls import path
 
 from . import views
 
 urlpatterns = [
-    # for apigw-manager
-    path(
-        "apis/<slug:gateway_name>/resource-docs/import/",
-        include(
-            [
-                path(
-                    "by-archive/",
-                    views.DocImportByArchiveApi.as_view(),
-                    name="openapi.resource_doc.import.by_archive",
-                ),
-                path(
-                    "by-swagger/",
-                    views.DocImportBySwaggerApi.as_view(),
-                    name="openapi.resource_doc.import.by_swagger",
-                ),
-            ]
-        ),
-    )
+    path("", views.DocListCreateApi.as_view(), name="resource_doc.list_create"),
+    path("<int:id>/", views.DocUpdateDestroyApi.as_view(), name="resource_doc.update_destroy"),
 ]

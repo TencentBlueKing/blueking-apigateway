@@ -24,31 +24,31 @@ from rest_framework import generics, status
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
-from apigateway.biz.resource_doc.import_doc.importers import ResourceDocImporter
-from apigateway.biz.resource_doc.import_doc.parsers import ArchiveParser, SwaggerParser
+from apigateway.biz.resource_doc.importer.importers import DocImporter
+from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, SwaggerParser
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.utils.responses import V1OKJsonResponse
 
 from .serializers import (
-    ResourceDocImportByArchiveInputV1SLZ,
-    ResourceDocImportBySwaggerInputV1SLZ,
+    DocImportByArchiveInputV1SLZ,
+    DocImportBySwaggerInputV1SLZ,
 )
 
 
-class ResourceDocImportByArchiveApi(generics.CreateAPIView):
+class DocImportByArchiveApi(generics.CreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
 
     @swagger_auto_schema(
-        request_body=ResourceDocImportByArchiveInputV1SLZ,
+        request_body=DocImportByArchiveInputV1SLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["OpenAPI.ResourceDoc"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         """根据 tgz/zip 归档文件，导入资源文档"""
-        slz = ResourceDocImportByArchiveInputV1SLZ(data=request.data)
+        slz = DocImportByArchiveInputV1SLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         parser = ArchiveParser(gateway_id=request.gateway.id)
@@ -59,24 +59,24 @@ class ResourceDocImportByArchiveApi(generics.CreateAPIView):
         except ResourceDocJinja2TemplateError as err:
             raise error_codes.INTERNAL.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
 
-        importer = ResourceDocImporter(gateway_id=request.gateway.id, selected_resource_docs=None)
+        importer = DocImporter(gateway_id=request.gateway.id, selected_resource_docs=None)
         importer.import_docs(docs=docs)
 
         return V1OKJsonResponse()
 
 
-class ResourceDocImportBySwaggerApi(generics.CreateAPIView):
+class DocImportBySwaggerApi(generics.CreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
 
     @swagger_auto_schema(
-        request_body=ResourceDocImportBySwaggerInputV1SLZ,
+        request_body=DocImportBySwaggerInputV1SLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["OpenAPI.ResourceDoc"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         """根据 swagger 描述文件，导入资源文档"""
-        slz = ResourceDocImportBySwaggerInputV1SLZ(data=request.data)
+        slz = DocImportBySwaggerInputV1SLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         parser = SwaggerParser(gateway_id=request.gateway.id)
@@ -90,7 +90,7 @@ class ResourceDocImportBySwaggerApi(generics.CreateAPIView):
         except GenerateMarkdownError:
             raise error_codes.INTERNAL.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))
 
-        importer = ResourceDocImporter(gateway_id=request.gateway.id, selected_resource_docs=None)
+        importer = DocImporter(gateway_id=request.gateway.id, selected_resource_docs=None)
         importer.import_docs(docs=docs)
 
         return V1OKJsonResponse()
