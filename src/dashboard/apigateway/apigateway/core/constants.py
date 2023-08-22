@@ -157,7 +157,7 @@ class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
 
 class PublishEventEnum(StructuredEnum):
     # dashboard
-    VALIDATE_CONFIGURATION = EnumField("validata_configuration", "check configuration")
+    VALIDATE_CONFIGURATION = EnumField("validata_configuration", "validate configuration")
     GENERATE_TASK = EnumField("generate_release_task", "generate release task")
     DISTRIBUTE_CONFIGURATION = EnumField("distribute_configuration", "distribute configuration")
     # operator

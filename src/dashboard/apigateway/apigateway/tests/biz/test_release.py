@@ -20,10 +20,12 @@ from ddf import G
 from apigateway.biz.release import ReleaseHandler
 from apigateway.core.constants import (
     GatewayStatusEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusTypeEnum,
     PublishSourceEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import Release, ReleaseHistory, Stage
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, Stage
 
 
 class TestReleaseHandler:
@@ -44,3 +46,27 @@ class TestReleaseHandler:
     def test_save_release_history(self, fake_release):
         ReleaseHandler.save_release_history(fake_release, PublishSourceEnum.VERSION_PUBLISH, "test")
         assert ReleaseHistory.objects.filter(gateway=fake_release.gateway, stage=fake_release.stage).count() == 1
+
+    def test_get_latest_publish_event_by_release_history_ids(self):
+        release_history = G(ReleaseHistory)
+        event_1 = G(
+            PublishEvent,
+            publish=release_history,
+            name=PublishEventNameTypeEnum.ValidateConfiguration.value,
+            status=PublishEventStatusTypeEnum.DOING.value,
+        )
+        assert (
+            ReleaseHandler.get_latest_publish_event_by_release_history_ids([release_history.id])[release_history.id]
+            == event_1
+        )
+
+        event_2 = G(
+            PublishEvent,
+            publish=release_history,
+            name=PublishEventNameTypeEnum.ValidateConfiguration.value,
+            status=PublishEventStatusTypeEnum.SUCCESS.value,
+        )
+        assert (
+            ReleaseHandler.get_latest_publish_event_by_release_history_ids([release_history.id])[release_history.id]
+            == event_2
+        )

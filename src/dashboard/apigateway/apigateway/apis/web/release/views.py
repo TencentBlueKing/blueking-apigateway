@@ -26,11 +26,12 @@ from rest_framework import generics, status
 
 from apigateway.apis.web.release import serializers
 from apigateway.apps.support.models import ReleasedResourceDoc
+from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.biz.releaser import ReleaseBatchManager, ReleaseError
-from apigateway.core.models import PublishEvent, Release, ReleasedResource, ReleaseHistory
+from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
-from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
+from apigateway.utils.responses import FailJsonResponse, OKJsonResponse, V1FailJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -52,8 +53,11 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         try:
             instance = self.get_object()
         except Http404:
-            return V1OKJsonResponse(_("当前选择环境未发布版本，请先发布版本到该环境。"), data=[])
-
+            return FailJsonResponse(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                code="UNKNOWN",
+                message=_("当前选择环境未发布版本，请先发布版本到该环境。"),
+            )
         stage_name = instance.stage.name
         data = defaultdict(list)
         for resource in instance.resource_version.data:
@@ -73,8 +77,12 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
             )
 
         if data:
-            return V1OKJsonResponse("OK", data=data)
-        return V1OKJsonResponse(_("当前选择环境的发布版本中资源为空，请发布新版本到该环境。"), data=data)
+            return OKJsonResponse(data=data)
+        return FailJsonResponse(
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            code="UNKNOWN",
+            message=_("当前选择环境的发布版本中资源为空，请发布新版本到该环境"),
+        )
 
 
 @method_decorator(
@@ -105,7 +113,7 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
                 resource_id=resource_id,
             )
         )
-        return V1OKJsonResponse("OK", data=resource_data)
+        return OKJsonResponse(data=resource_data)
 
 
 @method_decorator(
@@ -132,8 +140,13 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
             return V1FailJsonResponse(str(err))
 
-        slz = serializers.ReleaseHistoryOutputSLZ(history)
-        return V1OKJsonResponse("OK", data=slz.data)
+        slz = serializers.ReleaseHistoryOutputSLZ(
+            history,
+            context={
+                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids([history.id]),
+            },
+        )
+        return OKJsonResponse(data=slz.data)
 
 
 @method_decorator(
@@ -169,23 +182,17 @@ class ReleaseHistoryListApi(generics.ListAPIView):
         )
         page = self.paginate_queryset(queryset)
 
-        # 查询发布事件,填充message为最后一个发布事件的状态信息
-        publish_ids = [release_history.id for release_history in page]
-
-        # 发布事件dict：key：publish_id,value: 最后一个事件
-        # 需要按照 "publish_id", "step", "status" 升序(django默认 ASC)排列,正确排列每个事件节点的不同状态事件
-        publish_events = PublishEvent.objects.filter(publish_id__in=publish_ids).order_by(
-            "publish_id", "step", "status"
+        slz_class = self.get_serializer_class()
+        slz = slz_class(
+            page,
+            many=True,
+            context={
+                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids(
+                    [release_history.id for release_history in page]
+                ),
+            },
         )
-        publish_last_event = dict((event.publish_id, event) for event in publish_events)
-
-        for history in page:
-            event = publish_last_event.get(history.id)
-            if event:
-                history.message = f"{event.name}:{event.status}"
-
-        serializer = self.get_serializer(page, many=True)
-        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
 
 
 @method_decorator(
@@ -205,7 +212,13 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
             # created_time 在极端情况下可能重复，因此，添加字段 id
             instance = ReleaseHistory.objects.filter(gateway=request.gateway).latest("created_time", "id")
         except ReleaseHistory.DoesNotExist:
-            return V1OKJsonResponse("OK", data={})
+            return OKJsonResponse(data={})
 
-        slz = self.get_serializer(instance)
-        return V1OKJsonResponse("OK", data=slz.data)
+        slz_class = self.get_serializer_class()
+        slz = slz_class(
+            instance,
+            context={
+                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids([instance.id]),
+            },
+        )
+        return OKJsonResponse(data=slz.data)

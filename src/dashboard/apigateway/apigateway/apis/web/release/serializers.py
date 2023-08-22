@@ -20,6 +20,7 @@ from django.http import Http404
 from rest_framework import serializers
 
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
+from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusEnum, ReleaseStatusEnum
 from apigateway.core.models import ResourceVersion, Stage
 
 
@@ -52,30 +53,53 @@ class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
 
 class ReleaseHistoryOutputSLZ(serializers.Serializer):
     stage_names = serializers.SerializerMethodField(read_only=True)
-    resource_version_name = serializers.SerializerMethodField(read_only=True)
-    resource_version_title = serializers.SerializerMethodField(read_only=True)
-    resource_version_comment = serializers.SerializerMethodField(read_only=True)
     resource_version_display = serializers.SerializerMethodField(read_only=True)
     created_time = serializers.DateTimeField()
-    comment = serializers.CharField(read_only=True)
     created_by = serializers.CharField(read_only=True)
-    status = serializers.CharField(read_only=True)
-    message = serializers.CharField(read_only=True)
+    # 发布来源
+    source = serializers.CharField(read_only=True)
+    # 发布耗时
+    cost = serializers.SerializerMethodField(read_only=True)
+    # 发布状态
+    status = serializers.SerializerMethodField(read_only=True)
 
-    def get_stage_name(self, obj):
-        return obj.stage.name
+    # 是否正在发布(用户前端显示加载图标)
+    is_running = serializers.SerializerMethodField(read_only=True)
 
     def get_stage_names(self, obj):
         return list(obj.stages.order_by("name").values_list("name", flat=True))
 
-    def get_resource_version_name(self, obj):
-        return obj.resource_version.name
-
-    def get_resource_version_title(self, obj):
-        return obj.resource_version.title
-
-    def get_resource_version_comment(self, obj):
-        return obj.resource_version.comment
-
     def get_resource_version_display(self, obj):
         return obj.resource_version.object_display
+
+    def get_status(self, obj):
+        event = self.context["publish_events_map"].get(obj.id, None)
+        if event:
+            return f"{event.name} {event.status}"
+
+        # 兼容历史数据
+        return obj.message
+
+    def get_cost(self, obj):
+        # 获取最新事件
+        event = self.context["publish_events_map"].get(obj.id, None)
+        if not event:
+            return 0
+        # 如果失败，返回event的创建时间和release_history创建时间之差
+        if event.status == PublishEventStatusEnum.FAILURE.value or (
+            event.status != PublishEventStatusEnum.DOING.value
+            and event.name == PublishEventNameTypeEnum.LoadConfiguration.value
+        ):
+            return (event.created_time - obj.created_time).total_seconds()
+        # 0代表还没到达终态
+        return 0
+
+    def get_is_running(self, obj):
+        # 获取最新事件
+        event = self.context["publish_events_map"].get(obj.id, None)
+        if not event:
+            # 兼容老数据
+            return obj.status not in [ReleaseStatusEnum.SUCCESS.value, ReleaseStatusEnum.FAILURE.value]
+        else:
+            # 最新事件是否是doing
+            return event.status == PublishEventStatusEnum.DOING.value

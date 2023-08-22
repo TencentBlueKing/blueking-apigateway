@@ -15,14 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List
+from typing import Dict, List
 
 from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishSourceEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import Release, ReleaseHistory
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory
 
 
 class ReleaseHandler:
@@ -61,3 +61,13 @@ class ReleaseHandler:
             created_by=author,
         )
         return release_history
+
+    @staticmethod
+    def get_latest_publish_event_by_release_history_ids(release_history_ids: List[int]) -> Dict[int, PublishEvent]:
+        """通过release_history_ids查询最新的发布一个发布事件"""
+
+        # 需要按照 "publish_id", "step", "status" 升序(django默认 ASC)排列,正确排列每个事件节点的不同状态事件
+        publish_events = PublishEvent.objects.filter(publish_id__in=release_history_ids).order_by(
+            "publish_id", "step", "status"
+        )
+        return dict((event.publish_id, event) for event in publish_events)

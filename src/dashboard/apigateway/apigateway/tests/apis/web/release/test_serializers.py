@@ -25,7 +25,10 @@ from django.test import TestCase
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.release import serializers
-from apigateway.core.models import Gateway, ReleaseHistory, ResourceVersion, Stage
+from apigateway.apis.web.release.serializers import ReleaseHistoryOutputSLZ
+from apigateway.biz.release import ReleaseHandler
+from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
+from apigateway.core.models import Gateway, PublishEvent, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, create_request, dummy_time
 
 
@@ -163,21 +166,34 @@ class TestReleaseHistoryOutputSLZ:
             ReleaseHistory,
             gateway=gateway,
             stage=stage,
+            source="test",
             resource_version=resource_version,
             created_time=dummy_time.time,
         )
         release_history.stages.add(stage)
+        event_1 = G(
+            PublishEvent,
+            publish=release_history,
+            name=PublishEventNameTypeEnum.ValidateConfiguration.value,
+            status=PublishEventStatusTypeEnum.FAILURE.value,
+            created_time=dummy_time.time + datetime.timedelta(seconds=10),
+        )
 
-        slz = serializers.ReleaseHistoryOutputSLZ(instance=release_history)
+        slz = ReleaseHistoryOutputSLZ(
+            release_history,
+            context={
+                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids(
+                    [release_history.id]
+                ),
+            },
+        )
         assert slz.data == {
             "stage_names": [stage.name],
             "created_time": dummy_time.str,
-            "comment": release_history.comment,
             "created_by": release_history.created_by,
-            "resource_version_name": resource_version.name,
-            "resource_version_title": resource_version.title,
-            "resource_version_comment": resource_version.comment,
             "resource_version_display": "1.0.0(测试)",
-            "status": release_history.status,
-            "message": release_history.message,
+            "status": f"{event_1.name} {event_1.status}",
+            "source": release_history.source,
+            "cost": (event_1.created_time - release_history.created_time).total_seconds(),
+            "is_running": False,
         }
