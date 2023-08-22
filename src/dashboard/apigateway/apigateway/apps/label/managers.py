@@ -57,7 +57,7 @@ class APILabelManager(models.Manager):
                     op_type=OpTypeEnum.CREATE.value,
                     op_status=OpStatusEnum.SUCCESS.value,
                     op_object_group=gateway.id,
-                    op_object_type=OpObjectTypeEnum.API_LABEL.value,
+                    op_object_type=OpObjectTypeEnum.GATEWAY_LABEL.value,
                     op_object_id=obj.id,
                     op_object=obj.name,
                     comment=_("导入资源时创建网关标签"),

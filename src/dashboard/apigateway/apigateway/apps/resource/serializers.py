@@ -29,9 +29,9 @@ from apigateway.apps.backend_service.serializers import TimeoutSLZ
 from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.resource.validators import PathVarsValidator, ProxyPathVarsValidator
 from apigateway.apps.stage.serializers import HostSLZ, TransformHeadersSLZ, UpstreamsSLZ
-from apigateway.apps.support.resource_doc.utils import get_resource_doc_key
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_url import ResourceURLHandler
+from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
@@ -51,7 +51,6 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Resource, StageResourceDisabled
 from apigateway.core.utils import get_path_display, get_resource_url
-from apigateway.core.validators import MaxCountPerGatewayValidator
 
 
 class ResourceHostSLZ(HostSLZ):
@@ -566,7 +565,7 @@ class CheckImportResourceSLZ(serializers.ModelSerializer):
         if not (resource_id and resource_doc_language):
             return None
 
-        resource_doc_key = get_resource_doc_key(resource_id, resource_doc_language)
+        resource_doc_key = f"{resource_id}:{resource_doc_language}"
         return self.context["resource_doc_key_to_id"].get(resource_doc_key)
 
     def validate_labels(self, value):
@@ -583,7 +582,7 @@ class CheckImportResourceSLZ(serializers.ModelSerializer):
 
 class ResourceExportConditionSLZ(QueryResourceSLZ):
     export_type = serializers.ChoiceField(
-        choices=ExportTypeEnum.choices(),
+        choices=ExportTypeEnum.get_choices(),
         help_text="值为 all，不需其它参数；值为 filtered，支持 query/path/method/label_name 参数；值为 selected，支持 resource_ids 参数",
     )
     resource_ids = serializers.ListField(

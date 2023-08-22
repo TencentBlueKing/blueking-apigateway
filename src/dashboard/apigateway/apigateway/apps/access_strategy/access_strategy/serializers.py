@@ -33,12 +33,12 @@ from apigateway.apps.access_strategy.models import AccessStrategy
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.stage.serializers import RateSLZ
+from apigateway.biz.validators import BKAppCodeListValidator
 from apigateway.common.factories import SchemaFactory
 from apigateway.common.fields import CurrentGatewayDefault, DurationInSecondField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import HTTP_METHOD_CHOICES
 from apigateway.core.signals import reversion_update_signal
-from apigateway.core.validators import BKAppCodeListValidator
 
 
 class AccessStrategyQuerySLZ(serializers.Serializer):

@@ -16,90 +16,102 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import arrow
-from django.test import TestCase
-from django_dynamic_fixture import G
+import pytest
+from ddf import G
 
-from apigateway.apis.web.label.serializers import APILabelInputSLZ, APILabelOutputSLZ
+from apigateway.apis.web.label.serializers import GatewayLabelInputSLZ, GatewayLabelOutputSLZ
 from apigateway.apps.label.models import APILabel
-from apigateway.core.models import Gateway
-from apigateway.tests.utils.testing import create_request
 
 
-class TestAPILabelOutputSLZ(TestCase):
+class TestGatewayLabelOutputSLZ:
     def test_to_representation(self):
-        gateway = G(Gateway)
-        updated_time = arrow.get("2019-01-01 12:30:00").datetime
-        api_label = G(APILabel, api=gateway, name="test", updated_time=updated_time)
+        label = G(APILabel)
 
         expected = {
-            "id": api_label.id,
-            "name": "test",
-            "updated_time": "2019-01-01 20:30:00",
+            "id": label.id,
+            "name": label.name,
         }
 
-        slz = APILabelOutputSLZ(instance=api_label)
-        self.assertEqual(slz.data, expected)
+        slz = GatewayLabelOutputSLZ(instance=label)
+        assert slz.data == expected
 
 
-class TestAPILabelInputSLZ(TestCase):
-    def test_to_internal_value(self):
-        gateway = G(Gateway)
-        api_label = G(APILabel, api=gateway, name="test")
-        G(APILabel, api=gateway, name="exist")
-
-        request = create_request()
-        request.gateway = gateway
-
-        data = [
-            # ok, create
-            {
-                "instance": None,
-                "name": "new",
-                "will_error": False,
-                "expected": {
-                    "api": gateway,
-                    "name": "new",
+class TestGatewayLabelInputSLZ:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            # ok
+            (
+                {
+                    "id": 1,
+                    "name": "foo",
                 },
-            },
-            # fail, create
-            {
-                "instance": None,
-                "name": "exist",
-                "will_error": True,
-            },
-            # ok, update
-            {
-                "instance": api_label,
-                "name": "update-name",
-                "will_error": False,
-                "expected": {
-                    "api": gateway,
-                    "name": "update-name",
+                {
+                    "name": "foo",
                 },
-            },
+            ),
+            # fail, name exists
+            (
+                {
+                    "name": "exist",
+                },
+                None,
+            ),
+        ],
+    )
+    def test_validate(self, fake_gateway, data, expected):
+        G(APILabel, api=fake_gateway, name="exist")
+
+        slz = GatewayLabelInputSLZ(data=data, context={"api": fake_gateway})
+        slz.is_valid()
+
+        if expected is None:
+            assert slz.errors
+            return
+
+        expected["api"] = fake_gateway
+        assert slz.validated_data == expected
+
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            # ok
+            (
+                {
+                    "name": "foo",
+                },
+                {
+                    "name": "foo",
+                },
+            ),
             # ok, update with old-name
-            {
-                "instance": api_label,
-                "name": "update-name",
-                "will_error": False,
-                "expected": {
-                    "api": gateway,
-                    "name": "update-name",
+            (
+                {
+                    "name": "exist",
                 },
-            },
-            # error, update with exist-name
-            {
-                "instance": api_label,
-                "name": "exist",
-                "will_error": True,
-            },
-        ]
+                {
+                    "name": "exist",
+                },
+            ),
+            # error, update with other-exist
+            (
+                {
+                    "name": "other-exist",
+                },
+                None,
+            ),
+        ],
+    )
+    def test_validate_update(self, fake_gateway, data, expected):
+        instance = G(APILabel, api=fake_gateway, name="exist")
+        G(APILabel, api=fake_gateway, name="other-exist")
 
-        for test in data:
-            slz = APILabelInputSLZ(instance=test["instance"], data=test, context={"request": request})
-            slz.is_valid()
-            if test["will_error"]:
-                self.assertTrue(slz.errors)
-            else:
-                self.assertEqual(slz.validated_data, test["expected"])
+        slz = GatewayLabelInputSLZ(instance=instance, data=data, context={"api": fake_gateway})
+        slz.is_valid()
+
+        if expected is None:
+            assert slz.errors
+            return
+
+        expected["api"] = fake_gateway
+        assert slz.validated_data == expected

@@ -40,15 +40,15 @@ from apigateway.utils import time
 class ResourceDoc(TimestampedModelMixin, OperatorModelMixin):
     api = models.ForeignKey(Gateway, on_delete=models.CASCADE, null=True)
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
-    type = models.CharField(max_length=32, choices=DocTypeEnum.choices())
+    type = models.CharField(max_length=32, choices=DocTypeEnum.get_choices())
     language = models.CharField(
         max_length=32,
-        choices=DocLanguageEnum.get_django_choices(),
+        choices=DocLanguageEnum.get_choices(),
         default=DocLanguageEnum.ZH.value,
         db_index=True,
     )
     source = models.CharField(
-        max_length=32, choices=DocSourceEnum.get_django_choices(), default=DocSourceEnum.CUSTOM.value, db_index=True
+        max_length=32, choices=DocSourceEnum.get_choices(), default=DocSourceEnum.CUSTOM.value, db_index=True
     )
     content = models.TextField(blank=True, null=True, default="")
 
@@ -77,6 +77,7 @@ class ResourceDoc(TimestampedModelMixin, OperatorModelMixin):
         return json.dumps(data)
 
 
+# TODO: 1.14 删除此表
 class ResourceDocSwagger(TimestampedModelMixin):
     """资源文档扩展数据，若资源文档通过 Swagger 导入，可存储资源的 Swagger 描述"""
 
@@ -128,7 +129,7 @@ class ReleasedResourceDoc(TimestampedModelMixin):
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
     language = models.CharField(
         max_length=32,
-        choices=DocLanguageEnum.get_django_choices(),
+        choices=DocLanguageEnum.get_choices(),
         default=DocLanguageEnum.ZH.value,
         db_index=True,
     )

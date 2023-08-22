@@ -28,9 +28,9 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
+from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.core.constants import ExportTypeEnum
 from apigateway.core.models import Resource
-from apigateway.core.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
 
@@ -88,7 +88,7 @@ class AppPermissionExportInputSLZ(serializers.Serializer):
         required=False,
     )
     export_type = serializers.ChoiceField(
-        choices=ExportTypeEnum.choices(),
+        choices=ExportTypeEnum.get_choices(),
         help_text=(
             "值为 all，不需其它参数；值为 filtered，支持 dimension/bk_app_code/resource_name/query 参数；"
             "值为 selected，支持 permission_ids 参数"

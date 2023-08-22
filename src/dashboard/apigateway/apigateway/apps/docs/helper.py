@@ -30,11 +30,11 @@ from apigateway.apis.open.stage.serializers import StageV1SLZ
 from apigateway.apis.open.support.serializers import APISDKV1SLZ
 from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.support.api_sdk.models import SDKFactory
+from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import APISDK, ReleasedResourceDoc, ResourceVersion
-from apigateway.apps.support.utils import get_doc_language
 from apigateway.biz.resource_url import ResourceURLHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
+from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel, LanguageCodeEnum
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.common.funcs import get_resource_version_display
@@ -44,6 +44,14 @@ from apigateway.core.utils import get_path_display, get_resource_url
 from apigateway.utils.paginator import LimitOffsetPaginator
 
 # TODO: 去slz
+
+
+def get_doc_language(language_code: str) -> str:
+    language_code_to_doc_language = {
+        LanguageCodeEnum.ZH_HANS.value: DocLanguageEnum.ZH.value,
+        LanguageCodeEnum.EN.value: DocLanguageEnum.EN.value,
+    }
+    return language_code_to_doc_language.get(language_code, DocLanguageEnum.ZH.value)
 
 
 class SupportHelper:

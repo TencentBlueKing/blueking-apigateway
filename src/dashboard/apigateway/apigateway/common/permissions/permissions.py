@@ -86,7 +86,7 @@ class GatewayRelatedAppPermission(permissions.BasePermission):
         if getattr(view, "api_permission_exempt", False):
             return True
 
-        return APIRelatedApp.objects.allow_app_manage_api(request.gateway.id, request.app.app_code)
+        return APIRelatedApp.objects.allow_app_manage_gateway(request.gateway.id, request.app.app_code)
 
     def get_gateway_object(self, view):
         """

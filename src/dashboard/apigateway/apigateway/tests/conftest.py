@@ -34,7 +34,7 @@ from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnu
 from apigateway.apps.access_strategy.models import AccessStrategy, AccessStrategyBinding, IPGroup
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import APISDK, ResourceDoc
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import GatewayAuthContext
@@ -890,3 +890,15 @@ def mock_board(settings):
     }
 
     return "open"
+
+
+@pytest.fixture
+def fake_resource_doc(faker, fake_resource):
+    return G(
+        ResourceDoc,
+        api=fake_resource.api,
+        resource_id=fake_resource.id,
+        language=faker.random_element(
+            ["en", "zh"],
+        ),
+    )

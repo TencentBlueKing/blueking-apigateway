@@ -31,12 +31,12 @@ class TestAuditEventLogViewSet(TestCase):
         cls.gateway = create_gateway()
 
     def test_list(self):
-        G(AuditEventLog, op_object_group=str(self.gateway.id), op_object_type="api", op_type="create")
+        G(AuditEventLog, op_object_group=str(self.gateway.id), op_object_type="gateway", op_type="create")
         G(AuditEventLog, op_object_group=str(self.gateway.id), op_object_type="resource", op_type="modify")
 
         data = [
             {
-                "op_object_type": "api",
+                "op_object_type": "gateway",
                 "expected": {
                     "count": 1,
                 },

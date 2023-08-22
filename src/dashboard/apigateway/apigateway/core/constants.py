@@ -281,13 +281,13 @@ VALID_METHOD_IN_SWAGGER_PATHITEM = [
 ]
 
 
-class ExportTypeEnum(ChoiceEnumMixin, Enum):
+class ExportTypeEnum(StructuredEnum):
     # 全部资源
-    ALL = "all"
+    ALL = EnumField("all")
     # 已筛选资源
-    FILTERED = "filtered"
+    FILTERED = EnumField("filtered")
     # 已选资源
-    SELECTED = "selected"
+    SELECTED = EnumField("selected")
 
 
 class SwaggerFormatEnum(StructuredEnum):

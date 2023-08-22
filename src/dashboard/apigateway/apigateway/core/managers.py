@@ -1009,7 +1009,7 @@ class JWTManager(models.Manager):
 
 
 class APIRelatedAppManager(models.Manager):
-    def allow_app_manage_api(self, gateway_id: int, bk_app_code: str) -> bool:
+    def allow_app_manage_gateway(self, gateway_id: int, bk_app_code: str) -> bool:
         """是否允许应用管理网关"""
         return self.filter(api_id=gateway_id, bk_app_code=bk_app_code).exists()
 
