@@ -41,6 +41,8 @@ from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import APIHostingTypeEnum, ProxyTypeEnum
 from apigateway.core.models import (
+    Backend,
+    BackendConfig,
     Gateway,
     MicroGateway,
     Release,
@@ -159,6 +161,30 @@ def fake_gateway_for_micro_gateway(fake_gateway):
 @pytest.fixture
 def fake_stage(fake_gateway, faker):
     return G(Stage, api=fake_gateway, status=1, name=faker.pystr(), description=faker.bothify("????????"))
+
+
+@pytest.fixture
+def fake_backend(fake_gateway, fake_stage, faker):
+    backend = G(
+        Backend,
+        gateway=fake_gateway,
+        name=faker.pystr(),
+    )
+
+    G(
+        BackendConfig,
+        gateway=fake_gateway,
+        stage=fake_stage,
+        backend=backend,
+        config={
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+        },
+    )
+
+    return backend
 
 
 @pytest.fixture

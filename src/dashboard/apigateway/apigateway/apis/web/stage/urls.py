@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,3 +16,35 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    path("", views.StageListCreateApi.as_view(), name="stage.list-create"),
+    path(
+        "<int:id>/",
+        views.StageRetrieveUpdateDestroyApi.as_view(),
+        name="stage.retrieve-update-destroy",
+    ),
+    path(
+        "<int:id>/vars/",
+        views.StageVarsRetrieveUpdateApi.as_view(),
+        name="stage.vars-retrieve-update",
+    ),
+    path(
+        "<int:id>/backends/",
+        views.StageBackendListApi.as_view(),
+        name="stage.backend-list",
+    ),
+    path(
+        "<int:id>/backends/<int:backend_id>/",
+        views.StageBackendRetrieveUpdateApi.as_view(),
+        name="stage.backend-retrieve-update",
+    ),
+    path(
+        "<int:id>/status/",
+        views.StageStatusUpdateApi.as_view(),
+        name="stage.status-update",
+    ),
+]

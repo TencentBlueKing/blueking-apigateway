@@ -53,6 +53,7 @@ OP_STATUS_CHOICES = (
 class OpObjectTypeEnum(StructuredEnum):
     GATEWAY = EnumField("gateway")
     STAGE = EnumField("stage")
+    BACKEND = EnumField("backend")
     RESOURCE = EnumField("resource")
     RESOURCE_VERSION = EnumField("resource_version")
     RELEASE = EnumField("release")
