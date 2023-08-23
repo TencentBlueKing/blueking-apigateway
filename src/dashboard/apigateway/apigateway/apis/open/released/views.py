@@ -39,7 +39,7 @@ class ReleasedResourceViewSet(viewsets.ModelViewSet):
     api_permission_exempt = True
 
     def get_queryset(self):
-        return ReleasedResource.objects.filter(api=self.request.gateway)
+        return ReleasedResource.objects.filter(gateway=self.request.gateway)
 
     def retrieve(self, request, gateway_id: int, stage_name: str, resource_name: str, *args, **kwargs):
         if not request.gateway.is_active_and_public:

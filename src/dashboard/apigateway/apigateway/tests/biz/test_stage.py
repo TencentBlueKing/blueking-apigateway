@@ -32,7 +32,7 @@ class TestStageHandler:
     def test_get_id_to_micro_gateway_id(self):
         gateway = G(Gateway)
 
-        micro_gateway = G(MicroGateway, api=gateway)
+        micro_gateway = G(MicroGateway, gateway=gateway)
 
         s1 = G(Stage, api=gateway)
         s2 = G(Stage, api=gateway, micro_gateway=micro_gateway)
@@ -46,7 +46,7 @@ class TestStageHandler:
     def test_get_id_to_micro_gateway_fields(self):
         gateway = G(Gateway)
 
-        micro_gateway = G(MicroGateway, api=gateway)
+        micro_gateway = G(MicroGateway, gateway=gateway)
 
         s1 = G(Stage, api=gateway)
         s2 = G(Stage, api=gateway, micro_gateway=micro_gateway)

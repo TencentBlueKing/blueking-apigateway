@@ -40,10 +40,10 @@ def has_related_app_permission(mocker):
 class TestAPISDKV1ViewSet:
     def test_list_latest_sdk(self, mocker, request_factory, faker):
         fake_gateway = G(Gateway, is_public=True, status=1)
-        resource_version = G(ResourceVersion, api=fake_gateway)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
         sdk = G(
             APISDK,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
             is_recommended=True,

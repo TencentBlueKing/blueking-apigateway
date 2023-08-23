@@ -96,7 +96,7 @@ class TestResourceVersionHandler:
         )
 
         ResourceVersionHandler().create_resource_version(gateway, {"comment": "test"}, "admin")
-        assert ResourceVersion.objects.filter(api=gateway).count() == 1
+        assert ResourceVersion.objects.filter(gateway=gateway).count() == 1
 
     @pytest.mark.parametrize(
         "api_id, stage_name, mocked_released_resource_version_ids, mocked_resources, expected",

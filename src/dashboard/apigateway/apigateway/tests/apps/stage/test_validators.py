@@ -104,8 +104,8 @@ class TestStageVarsValidator:
 
     def test_validate_vars_values(self, mocker):
         stage = G(Stage, api=self.gateway, status=1)
-        resource_version = G(ResourceVersion, api=self.gateway)
-        G(Release, api=self.gateway, stage=stage, resource_version=resource_version)
+        resource_version = G(ResourceVersion, gateway=self.gateway)
+        G(Release, gateway=self.gateway, stage=stage, resource_version=resource_version)
 
         data = [
             # ok

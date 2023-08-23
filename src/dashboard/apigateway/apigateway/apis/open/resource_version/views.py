@@ -21,9 +21,9 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.resource_version import serializers
-from apigateway.apps.release.releasers import ReleaseBatchManager, ReleaseError
 from apigateway.apps.resource_version.serializers import ResourceVersionSLZ
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
+from apigateway.biz.releaser import ReleaseBatchManager, ReleaseError
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ResourceVersion, Stage
@@ -47,7 +47,7 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
         # 创建文档版本
         if ResourceDoc.objects.doc_exists(request.gateway.id):
             ResourceDocVersion.objects.create(
-                api=request.gateway,
+                gateway=request.gateway,
                 resource_version=instance,
                 data=ResourceDocVersion.objects.make_version(request.gateway.id),
             )
@@ -91,7 +91,7 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
 
         # 如果环境已发布某版本，则不重复发布，且计入此次已发布环境
         data["stage_ids"] = Release.objects.get_stage_ids_unreleased_the_version(
-            gateway_id=data["api"].id,
+            gateway_id=data["gateway"].id,
             stage_ids=stage_ids,
             resource_version_id=data["resource_version_id"],
         )

@@ -32,10 +32,10 @@ from apigateway.tests.utils.testing import dummy_time, get_response_json
 class TestAPISDKViewSet:
     def test_list(self, request_factory, fake_gateway, settings):
 
-        resource_version = G(ResourceVersion, api=fake_gateway, version="1.0.1", title="test")
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
         sdk_1 = G(
             APISDK,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
             name="bkapigw-test",
@@ -49,7 +49,7 @@ class TestAPISDKViewSet:
 
         sdk_2 = G(
             APISDK,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
             name="bkapigw-test",
@@ -62,7 +62,7 @@ class TestAPISDKViewSet:
 
         data = [
             {
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "params": {
                     "language": "python",
                     "resource_version_id": resource_version.id,
@@ -125,7 +125,7 @@ class TestAPISDKViewSet:
             assert result["data"] == test["expected"]
 
     def test_generate(self, request_factory, fake_gateway, mocker):
-        resource_version = G(ResourceVersion, api=fake_gateway, version="1.0.1", title="test")
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
 
         mocker.patch(
             "apigateway.apps.support.api_sdk.managers.python.SDKManager.handle",
@@ -144,7 +144,7 @@ class TestAPISDKViewSet:
 
         data = [
             {
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "params": {
                     "resource_version_id": resource_version.id,
                     "language": "python",

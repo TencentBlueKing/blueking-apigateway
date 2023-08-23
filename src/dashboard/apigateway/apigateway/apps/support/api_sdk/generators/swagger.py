@@ -56,8 +56,8 @@ class SwaggerTemplateGenerator(Generator):
     def generate(self, output_dir: str, resources: List[Dict[str, Any]]):
         exporter = ResourceSwaggerExporter(
             api_version=self.context.version,
-            title=self.context.resource_version.api.name,
-            description=self.context.resource_version.api.description,
+            title=self.context.resource_version.gateway.name,
+            description=self.context.resource_version.gateway.description,
             include_bk_apigateway_resource=False,
         )
 

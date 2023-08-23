@@ -16,26 +16,35 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
-from .views import ReleaseBatchViewSet, ReleaseHistoryViewSet, ReleaseViewSet
+from .views import (
+    ReleaseAvailableResourceListApi,
+    ReleaseBatchCreateApi,
+    ReleasedResourceRetrieveApi,
+    ReleaseHistoryListApi,
+    ReleaseHistoryRetrieveApi,
+)
 
 urlpatterns = [
-    path("batch/", ReleaseBatchViewSet.as_view({"post": "release"}), name="apigateway.apps.releases.batch"),
+    path("batch/", ReleaseBatchCreateApi.as_view(), name="gateway.releases.create"),
     path(
         "stages/<int:stage_id>/available_resources/",
-        ReleaseViewSet.as_view({"get": "get_available_resources"}),
-        name="apigateway.apps.releases.available_resources",
+        ReleaseAvailableResourceListApi.as_view(),
+        name="gateway.releases.available_resources",
     ),
-    path("histories/", ReleaseHistoryViewSet.as_view({"get": "list"}), name="apigateway.apps.release_histories"),
     path(
-        "histories/latest/",
-        ReleaseHistoryViewSet.as_view({"get": "retrieve_latest"}),
-        name="apigateway.apps.release_histories.retrieve_latest",
+        "histories/",
+        include(
+            [
+                path("", ReleaseHistoryListApi.as_view(), name="gateway.release_histories.list"),
+                path("latest/", ReleaseHistoryRetrieveApi.as_view(), name="gateway.release_histories.retrieve_latest"),
+            ]
+        ),
     ),
     path(
         "resource-versions/<int:resource_version_id>/resources/<int:resource_id>/",
-        ReleaseViewSet.as_view({"get": "get_released_resource"}),
-        name="apigateway.apps.releases.released-resource.detail",
+        ReleasedResourceRetrieveApi.as_view(),
+        name="gateway.releases.released-resource.detail",
     ),
 ]

@@ -18,17 +18,11 @@
 import pytest
 from ddf import G
 
-from apigateway.controller.tasks.syncing import release_updated_check, revoke_release_by_stage, rolling_update_release
-from apigateway.core.constants import APIHostingTypeEnum
+from apigateway.controller.constants import NO_NEED_REPORT_EVENT_PUBLISH_ID
+from apigateway.controller.tasks.syncing import revoke_release, rolling_update_release
 from apigateway.core.models import MicroGateway
-from apigateway.utils.redis_utils import get_redis_key
 
 pytestmark = pytest.mark.django_db(transaction=True)
-
-
-@pytest.fixture()
-def revision_update_key(settings):
-    return get_redis_key(settings.APIGW_REVERSION_UPDATE_SET_KEY)
 
 
 class TestRollingUpdateRelease:
@@ -37,20 +31,14 @@ class TestRollingUpdateRelease:
         self.distributor = mocker.MagicMock()
         mocker.patch("apigateway.controller.tasks.syncing.CombineDistributor", return_value=self.distributor)
 
-    def test_for_default_hosting_type(self, edge_gateway, edge_release):
-        edge_gateway.hosting_type = APIHostingTypeEnum.DEFAULT.value
-        edge_gateway.save()
-
-        assert not rolling_update_release(edge_gateway.pk)
-
-        self.distributor.distribute.assert_not_called()
-
     def test_for_edge_gateway(self, edge_gateway, edge_release, micro_gateway):
         edge_micro_gateway = G(MicroGateway, is_shared=False)
         edge_release.stage.micro_gateway = edge_micro_gateway
         edge_release.stage.save()
 
-        assert rolling_update_release(edge_gateway.pk)
+        self.distributor.distribute.return_value = True, ""
+
+        assert rolling_update_release(edge_gateway.pk, NO_NEED_REPORT_EVENT_PUBLISH_ID, edge_release.pk)
 
         self.distributor.distribute.assert_called()
 
@@ -58,57 +46,36 @@ class TestRollingUpdateRelease:
         edge_release.stage.micro_gateway = None
         edge_release.stage.save()
 
-        assert rolling_update_release(edge_gateway.pk)
+        self.distributor.distribute.return_value = True, ""
+
+        assert rolling_update_release(edge_gateway.pk, NO_NEED_REPORT_EVENT_PUBLISH_ID, edge_release.pk)
 
         self.distributor.distribute.assert_called()
 
     def test_for_managed_shared_gateway(self, edge_gateway, edge_release, micro_gateway):
         assert micro_gateway.is_shared
 
+        self.distributor.distribute.return_value = True, ""
+
         edge_release.stage.micro_gateway = micro_gateway
         edge_release.stage.save()
 
-        assert rolling_update_release(edge_gateway.pk)
+        assert rolling_update_release(edge_gateway.pk, NO_NEED_REPORT_EVENT_PUBLISH_ID, edge_release.pk)
 
         self.distributor.distribute.assert_called()
 
 
-class TestReleaseUpdatedChecker:
-    @pytest.fixture(autouse=True)
-    def setup(self, mocker):
-        self.rolling_update_release = mocker.patch("apigateway.controller.tasks.syncing.rolling_update_release")
-
-    def test_when_key_not_exists(self, default_redis):
-        assert not release_updated_check()
-
-    def test_for_default_hosting_type(self, fake_gateway, default_redis, revision_update_key):
-        fake_gateway.hosting_type = APIHostingTypeEnum.DEFAULT.value
-        fake_gateway.save()
-
-        default_redis.sadd(revision_update_key, fake_gateway.pk)
-
-        assert not release_updated_check()
-
-    def test_api_not_exists(self, default_redis, revision_update_key):
-        default_redis.sadd(revision_update_key, 0)
-
-        assert not release_updated_check()
-
-    def test_dispatch_task(self, edge_gateway, default_redis, revision_update_key):
-        default_redis.sadd(revision_update_key, edge_gateway.pk)
-
-        assert release_updated_check()
-        self.rolling_update_release.apply_async.assert_any_call(args=(edge_gateway.pk,), ignore_result=True, kwargs={})
-
-
 class TestRevokeRelease:
-    def test_revoke(self, mocker, fake_stage, micro_gateway):
+    def test_revoke(self, mocker, fake_release, fake_release_history, micro_gateway):
         self.distributor = mocker.MagicMock()
+        self.distributor.revoke.return_value = True, ""
         mocker.patch("apigateway.controller.tasks.syncing.CombineDistributor", return_value=self.distributor)
         mocker.patch(
             "apigateway.controller.tasks.syncing.ReleaseProcedureLogger",
             return_value=mocker.MagicMock(release_task_id="12345abcdef"),
         )
 
-        revoke_release_by_stage(fake_stage.pk)
-        self.distributor.revoke.assert_called_once_with(fake_stage, micro_gateway, "12345abcdef")
+        revoke_release(fake_release.pk, fake_release_history.pk)
+        self.distributor.revoke.assert_called_once_with(
+            fake_release, micro_gateway, "12345abcdef", publish_id=fake_release_history.pk
+        )

@@ -20,7 +20,7 @@ import os
 import tempfile
 import time
 from collections import OrderedDict
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from blue_krill.cubing_case import shortcuts
 from django.conf import settings
@@ -45,7 +45,7 @@ from apigateway.controller.procedure_logger.release_logger import ReleaseProcedu
 from apigateway.controller.registry.base import Registry
 from apigateway.controller.registry.dict import DictRegistry
 from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
-from apigateway.core.models import MicroGateway, Release, ResourceVersion, Stage
+from apigateway.core.models import MicroGateway, Release, ResourceVersion
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +160,7 @@ class HelmDistributor(BaseDistributor):
 
         # 将目标 registry 转换成适合 helm 生成的结构
         return HelmReleaseContext(
-            chart_name=shortcuts.to_lower_dash_case(f"bkapi-release-{release.api.name}-{release.stage.name}"),
+            chart_name=shortcuts.to_lower_dash_case(f"bkapi-release-{release.gateway.name}-{release.stage.name}"),
             chart_version=release.resource_version.version or "0.0.0-auto",
         ).restore(registry)
 
@@ -184,7 +184,7 @@ class HelmDistributor(BaseDistributor):
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
-    ) -> bool:
+    ) -> Tuple[bool, str]:
         """将 release 通过 bcs helm manager 发布"""
         bcs_info = MicroGatewayBcsInfo.from_micro_gateway_config(micro_gateway.config)
         context: HelmReleaseContext = self._convert_release_context(release, micro_gateway)
@@ -193,7 +193,7 @@ class HelmDistributor(BaseDistributor):
         procedure_logger = ReleaseProcedureLogger(
             "edge-gateway-releasing",
             logger=logger,
-            gateway=release.api,
+            gateway=release.gateway,
             stage=release.stage,
             micro_gateway=micro_gateway,
             release_task_id=release_task_id,
@@ -212,7 +212,7 @@ class HelmDistributor(BaseDistributor):
 
         with procedure_logger.step("chart-deploying"):
             # 发布
-            result = self.release_helper.ensure_release(
+            found, result = self.release_helper.ensure_release(
                 chart_name=context.chart_name,
                 chart_version=context.chart_version,
                 release_name=f"{context.chart_name}-release",
@@ -223,19 +223,21 @@ class HelmDistributor(BaseDistributor):
                 repository=bcs_info.project_name,
                 operator=self.operator,
             )
+            if not found:
+                return (
+                    False,
+                    f"release chart[chart_name:{context.chart_name},chart_version:{context.chart_version}]  not found ",
+                )
 
-        if self.release_callback:
-            return self.release_callback(release, micro_gateway, result)
-
-        return True
+        return True, ""
 
     def revoke(
         self,
-        stage: Stage,
+        release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[int] = None,
-    ) -> bool:
+        publish_id: Optional[int] = None,
+    ) -> Tuple[bool, str]:
         """卸载对应的 helm release"""
         # TODO: Implement me
-        return False
+        return False, ""

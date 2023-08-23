@@ -24,12 +24,12 @@ from django.http import Http404
 from django.test import TestCase
 from django_dynamic_fixture import G
 
-from apigateway.apps.release import serializers
+from apigateway.apis.web.release import serializers
 from apigateway.core.models import Gateway, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, create_request, dummy_time
 
 
-class TestReleaseBatchSLZ:
+class ReleaseBatchInputSLZ:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
         self.gateway = G(Gateway)
@@ -43,7 +43,7 @@ class TestReleaseBatchSLZ:
         gateway = G(Gateway)
         stage_3 = G(Stage, api=gateway)
 
-        resource_version = G(ResourceVersion, api=self.gateway)
+        resource_version = G(ResourceVersion, gateway=self.gateway)
 
         data = [
             {
@@ -51,7 +51,7 @@ class TestReleaseBatchSLZ:
                 "resource_version_id": resource_version.id,
                 "comment": "test",
                 "expected": {
-                    "api": self.gateway,
+                    "gateway": self.gateway,
                     "stage_ids": [stage_1.id, stage_2.id],
                     "resource_version_id": resource_version.id,
                     "comment": "test",
@@ -66,7 +66,7 @@ class TestReleaseBatchSLZ:
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchSLZ(data=test, context={"api": self.gateway})
+            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"api": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()
@@ -77,10 +77,10 @@ class TestReleaseBatchSLZ:
 
     def test_validate_resource_version_id(self, mocker):
         gateway = create_gateway()
-        resource_version_1 = G(ResourceVersion, api=gateway)
+        resource_version_1 = G(ResourceVersion, gateway=gateway)
 
         stage = G(Stage, api=self.gateway)
-        resource_version_2 = G(ResourceVersion, api=self.gateway)
+        resource_version_2 = G(ResourceVersion, gateway=self.gateway)
 
         data = [
             # ok
@@ -89,7 +89,7 @@ class TestReleaseBatchSLZ:
                 "resource_version_id": resource_version_2.id,
                 "comment": "test",
                 "expected": {
-                    "api": self.gateway,
+                    "gateway": self.gateway,
                     "stage_ids": [stage.id],
                     "resource_version_id": resource_version_2.id,
                     "comment": "test",
@@ -104,7 +104,7 @@ class TestReleaseBatchSLZ:
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchSLZ(data=test, context={"api": self.gateway})
+            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"api": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()
@@ -114,7 +114,7 @@ class TestReleaseBatchSLZ:
                 assert slz.validated_data == test["expected"]
 
 
-class TestReleaseHistoryQuerySLZ(TestCase):
+class TestReleaseHistoryQueryInputSLZ(TestCase):
     def test_to_internal_value(self):
         data = [
             {
@@ -148,27 +148,27 @@ class TestReleaseHistoryQuerySLZ(TestCase):
         ]
 
         for test in data:
-            slz = serializers.ReleaseHistoryQuerySLZ(data=test)
+            slz = serializers.ReleaseHistoryQueryInputSLZ(data=test)
             slz.is_valid()
             self.assertFalse(slz.errors, slz.errors)
             self.assertEqual(slz.validated_data, test["expected"], slz.validated_data)
 
 
-class TestReleaseHistorySLZ:
+class TestReleaseHistoryOutputSLZ:
     def test_to_representation(self):
         gateway = G(Gateway)
         stage = G(Stage, api=gateway)
-        resource_version = G(ResourceVersion, api=gateway, name="t1", version="1.0.0", title="测试", comment="test1")
+        resource_version = G(ResourceVersion, gateway=gateway, name="t1", version="1.0.0", title="测试", comment="test1")
         release_history = G(
             ReleaseHistory,
-            api=gateway,
+            gateway=gateway,
             stage=stage,
             resource_version=resource_version,
             created_time=dummy_time.time,
         )
         release_history.stages.add(stage)
 
-        slz = serializers.ReleaseHistorySLZ(instance=release_history)
+        slz = serializers.ReleaseHistoryOutputSLZ(instance=release_history)
         assert slz.data == {
             "stage_names": [stage.name],
             "created_time": dummy_time.str,
