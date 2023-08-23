@@ -25,7 +25,7 @@ from pytest import fixture
 from apigateway.apps.plugin.models import PluginConfig, PluginType
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
+from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.controller.crds.base import KubernetesResource
 from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
@@ -152,22 +152,6 @@ def edge_gateway_stage_context_proxy_http(faker, edge_gateway_stage, backend_ser
                 "delete": [
                     "X-Del-By-Stage",
                 ],
-            },
-        },
-    )
-    return instance
-
-
-@fixture
-def edge_gateway_stage_context_stage_rate_limit(faker, edge_gateway_stage, backend_service_http_host):
-    context = StageRateLimitContext()
-    instance, _ = context.save(
-        edge_gateway_stage.id,
-        {
-            "enabled": True,
-            "rate": {
-                "period": 60,
-                "tokens": 100,
             },
         },
     )

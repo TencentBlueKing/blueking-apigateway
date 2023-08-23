@@ -40,9 +40,6 @@ class TestReleaseData:
     def test_stage_proxy_config(self, edge_gateway_stage_context_proxy_http):
         assert self.release_data.stage_proxy_config == edge_gateway_stage_context_proxy_http.config
 
-    def test_stage_rate_limit_config(self, edge_gateway_stage_context_stage_rate_limit):
-        assert self.release_data.stage_rate_limit_config == edge_gateway_stage_context_stage_rate_limit.config
-
     def test_get_stage_plugins(self, edge_gateway, edge_gateway_stage, edge_plugin_config, edge_plugin_type):
         strategy = G(
             AccessStrategy,

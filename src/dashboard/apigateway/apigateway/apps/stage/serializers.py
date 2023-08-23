@@ -28,7 +28,6 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 from apigateway.apis.web.stage.validators import StageVarsValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.validators import MaxCountPerGatewayValidator
-from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
@@ -172,12 +171,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     def validate(self, data):
         self._validate_micro_gateway_stage_unique(data.get("micro_gateway_id"))
         return data
-
-    def to_representation(self, instance):
-        instance.proxy_http = StageProxyHTTPContext().get_config(instance.id)
-        instance.rate_limit = StageRateLimitContext().get_config(instance.id)
-
-        return super().to_representation(instance)
 
     def create(self, validated_data):
         # 1. save stage

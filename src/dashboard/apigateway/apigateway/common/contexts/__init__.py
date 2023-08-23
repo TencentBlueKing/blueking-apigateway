@@ -19,6 +19,5 @@ from .context import (  # noqa
     GatewayFeatureFlagContext,
     ResourceAuthContext,
     StageProxyHTTPContext,
-    StageRateLimitContext,
 )
 from .gateway_auth import GatewayAuthContext, GatewayAuthConfig  # noqa
