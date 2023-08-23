@@ -97,8 +97,10 @@ class TestResourceImportValidator:
             fake_gateway, importing_resources, resource_doc_language=resource_doc_language
         )
 
-        mocker.patch("apigateway.apis.web.resource.importer.Stage.objects.get_names", return_value=["prod"])
-        mocker.patch("apigateway.apis.web.resource.importer.ResourceDoc.objects.get_doc_key_to_id", return_value={})
+        mocker.patch("apigateway.biz.resource.importer.importer.Stage.objects.get_names", return_value=["prod"])
+        mocker.patch(
+            "apigateway.biz.resource.importer.importer.ResourceDoc.objects.get_doc_key_to_id", return_value={}
+        )
 
         result = validator.validate()
 
@@ -196,7 +198,7 @@ class TestResourceImportValidator:
     )
     def test_validate_resource_id(self, mocker, fake_gateway, importing_resources, mock_resource_id_to_fields):
         mocker.patch(
-            "apigateway.apis.web.resource.importer.Resource.objects.filter_id_to_fields",
+            "apigateway.biz.resource.importer.importer.Resource.objects.filter_id_to_fields",
             return_value=mock_resource_id_to_fields,
         )
         validator = ResourceImportValidator(fake_gateway, importing_resources)
@@ -226,7 +228,7 @@ class TestResourceImportValidator:
     )
     def test_validate_resource_id_error(self, mocker, fake_gateway, importing_resources, mock_resource_id_to_fields):
         mocker.patch(
-            "apigateway.apis.web.resource.importer.Resource.objects.filter_id_to_fields",
+            "apigateway.biz.resource.importer.importer.Resource.objects.filter_id_to_fields",
             return_value=mock_resource_id_to_fields,
         )
         validator = ResourceImportValidator(fake_gateway, importing_resources)
@@ -293,7 +295,7 @@ class TestResourceImportValidator:
         self, mocker, fake_gateway, mock_resource_id_to_fields, importing_resources, expected_error
     ):
         mocker.patch(
-            "apigateway.apis.web.resource.importer.Resource.objects.filter_id_to_fields",
+            "apigateway.biz.resource.importer.importer.Resource.objects.filter_id_to_fields",
             return_value=mock_resource_id_to_fields,
         )
         validator = ResourceImportValidator(fake_gateway, importing_resources)
@@ -365,7 +367,7 @@ class TestResourceImportValidator:
         self, mocker, fake_gateway, mock_resource_id_to_fields, importing_resources, expected_error
     ):
         mocker.patch(
-            "apigateway.apis.web.resource.importer.Resource.objects.filter_id_to_fields",
+            "apigateway.biz.resource.importer.importer.Resource.objects.filter_id_to_fields",
             return_value=mock_resource_id_to_fields,
         )
         validator = ResourceImportValidator(fake_gateway, importing_resources)
@@ -418,7 +420,7 @@ class TestResourceImportValidator:
     ):
         settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"] = max_resource_count
         mocker.patch(
-            "apigateway.apis.web.resource.importer.Resource.objects.filter_id_to_fields",
+            "apigateway.biz.resource.importer.importer.Resource.objects.filter_id_to_fields",
             return_value=mock_resource_id_to_fields,
         )
         validator = ResourceImportValidator(fake_gateway, importing_resources)
@@ -474,7 +476,7 @@ class TestResourcesImporter:
         mocker.patch.object(self.importer, "_create_resource", return_value=mocker.MagicMock(id=1))
         mocker.patch.object(self.importer, "_update_resource", return_value=None)
         mocker.patch(
-            "apigateway.apis.web.resource.importer.Resource.objects.get",
+            "apigateway.biz.resource.importer.importer.Resource.objects.get",
             return_value=mocker.MagicMock(),
         )
 
@@ -661,7 +663,7 @@ class TestResourcesImporter:
     def test_delete_unspecified_resources(self, mocker, mock_unspecified_resources, unspecified_resource_id, expected):
         mocker.patch.object(self.importer, "get_unspecified_resources", return_value=mock_unspecified_resources)
         mock_delete_resources = mocker.patch(
-            "apigateway.apis.web.resource.importer.ResourceHandler.delete_resources",
+            "apigateway.biz.resource.importer.importer.ResourceHandler.delete_resources",
             return_value=None,
         )
 
@@ -693,7 +695,7 @@ class TestResourcesImporter:
             self.importer, "imported_resources", new_callable=mocker.PropertyMock(return_value=imported_resources)
         )
         mock_get_unspecified_resource_fields = mocker.patch(
-            "apigateway.apis.web.resource.importer.Resource.objects.get_unspecified_resource_fields",
+            "apigateway.biz.resource.importer.importer.Resource.objects.get_unspecified_resource_fields",
             return_value=[{"id": 10}],
         )
 
@@ -756,7 +758,7 @@ class TestResourcesImporter:
     )
     def test_create_exist_labels(self, mocker, imported_resources, expected):
         mock_save_labels = mocker.patch(
-            "apigateway.apis.web.resource.importer.APILabel.objects.save_labels",
+            "apigateway.biz.resource.importer.importer.APILabel.objects.save_labels",
             return_value=None,
         )
 
@@ -790,11 +792,11 @@ class TestResourcesImporter:
         self, mocker, mock_label_name_to_id, mock_stage_name_to_id, imported_resources, expected
     ):
         mocker.patch(
-            "apigateway.apis.web.resource.importer.APILabel.objects.get_name_id_map",
+            "apigateway.biz.resource.importer.importer.APILabel.objects.get_name_id_map",
             return_value=mock_label_name_to_id,
         )
         mocker.patch(
-            "apigateway.apis.web.resource.importer.Stage.objects.get_name_id_map",
+            "apigateway.biz.resource.importer.importer.Stage.objects.get_name_id_map",
             return_value=mock_stage_name_to_id,
         )
 
