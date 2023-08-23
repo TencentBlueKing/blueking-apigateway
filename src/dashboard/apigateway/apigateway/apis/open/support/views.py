@@ -18,7 +18,6 @@
 #
 import logging
 
-from bkapi_client_generator import ExpandSwaggerError, GenerateMarkdownError
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
@@ -29,13 +28,9 @@ from apigateway.apis.open.support import serializers
 from apigateway.apps.support.api_sdk import exceptions
 from apigateway.apps.support.api_sdk.helper import SDKHelper
 from apigateway.apps.support.api_sdk.models import SDKFactory
-from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import APISDK
-from apigateway.apps.support.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
-from apigateway.apps.support.resource_doc.import_doc.managers import ArchiveImportDocManager, SwaggerImportDocManager
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
-from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Gateway, Release, ResourceVersion
 from apigateway.utils.responses import V1OKJsonResponse
@@ -68,8 +63,8 @@ class APISDKV1ViewSet(viewsets.ModelViewSet):
             [SDKFactory.create(i) for i in queryset],
             many=True,
             context={
-                "api_id_map": Gateway.objects.filter_id_object_map(),
-                "api_id_config_map": GatewayAuthContext().filter_scope_id_config_map(),
+                "gateway_id_map": Gateway.objects.filter_id_object_map(),
+                "gateway_id_config_map": GatewayAuthContext().filter_scope_id_config_map(),
                 "released_stages": Release.objects.get_released_stages(resource_version_ids=resource_version_ids),
                 "resource_versions": ResourceVersion.objects.get_id_to_fields_map(
                     resource_version_ids=resource_version_ids,
@@ -77,60 +72,6 @@ class APISDKV1ViewSet(viewsets.ModelViewSet):
             },
         )
         return V1OKJsonResponse("OK", data=slz.data)
-
-
-class ResourceDocImportViewSet(viewsets.ViewSet):
-    permission_classes = [GatewayRelatedAppPermission]
-
-    @transaction.atomic
-    @swagger_auto_schema(
-        tags=["OpenAPI.Support"],
-    )
-    def import_by_archive(self, request, gateway_name: str, *args, **kwargs):
-        """根据 tgz/zip 归档文件，导入资源文档"""
-        slz = serializers.ImportResourceDocsByArchiveV1SLZ(data=request.data)
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-
-        manager = ArchiveImportDocManager()
-        try:
-            manager.import_docs(
-                gateway_id=request.gateway.id,
-                selected_resource_docs=None,
-                archive_file=data["file"],
-            )
-        except NoResourceDocError:
-            raise error_codes.INTERNAL.format(_("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True)
-        except ResourceDocJinja2TemplateError as err:
-            raise error_codes.INTERNAL.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
-        return V1OKJsonResponse("OK")
-
-    @transaction.atomic
-    @swagger_auto_schema(
-        tags=["OpenAPI.Support"],
-    )
-    def import_by_swagger(self, request, gateway_name: str, *args, **kwargs):
-        """根据 swagger 描述文件，导入资源文档"""
-        slz = serializers.ImportResourceDocsBySwaggerV1SLZ(data=request.data)
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-
-        manager = SwaggerImportDocManager()
-        try:
-            manager.import_docs(
-                gateway_id=request.gateway.id,
-                selected_language=DocLanguageEnum(data["language"]),
-                selected_resource_docs=None,
-                swagger=data["swagger"],
-            )
-        except (ExpandSwaggerError, SchemaValidationError):
-            raise error_codes.INTERNAL.format(_("swagger 描述内容不符合规范。"))
-        except GenerateMarkdownError:
-            raise error_codes.INTERNAL.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))
-
-        return V1OKJsonResponse("OK")
 
 
 class SDKGenerateViewSet(viewsets.ViewSet):
@@ -147,7 +88,7 @@ class SDKGenerateViewSet(viewsets.ViewSet):
         slz.is_valid(raise_exception=True)
 
         resource_version = get_object_or_404(
-            ResourceVersion, api=request.gateway, version=slz.data["resource_version"]
+            ResourceVersion, gateway=request.gateway, version=slz.data["resource_version"]
         )
         results = []
         with SDKHelper(resource_version=resource_version) as helper:

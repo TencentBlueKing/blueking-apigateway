@@ -36,6 +36,7 @@ urlpatterns = [
     ),
     path("", include("apigateway.apis.open.released.urls")),
     path("", include("apigateway.apis.open.support.urls")),
+    path("", include("apigateway.apis.open.resource_doc.urls")),
     path("", include("apigateway.apis.open.permission.urls")),
     path("", include("apigateway.apis.open.stage.urls")),
     path("", include("apigateway.apis.open.resource.urls")),

@@ -15,9 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Optional
+from typing import Optional, Tuple
 
-from apigateway.core.models import MicroGateway, Release, Stage
+from apigateway.core.models import MicroGateway, Release
 
 
 class BaseDistributor:
@@ -27,16 +27,16 @@ class BaseDistributor:
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
-    ) -> bool:
+    ) -> Tuple[bool, str]:
         """发布到微网关"""
         raise NotImplementedError()
 
     def revoke(
         self,
-        stage: Stage,
+        release: Release,
         micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
-        release_history_id: Optional[int] = None,
-    ) -> bool:
+        publish_id: Optional[int] = None,
+    ) -> Tuple[bool, str]:
         """撤销微网关已发布内容"""
         raise NotImplementedError()

@@ -27,9 +27,9 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.apps.support.constants import DocArchiveTypeEnum
-from apigateway.apps.support.resource_doc.exceptions import NoResourceDocError
-from apigateway.apps.support.resource_doc.export_doc.generators import DocArchiveGenerator
-from apigateway.apps.support.utils import ArchiveFileFactory
+from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
+from apigateway.biz.resource_doc.exceptions import NoResourceDocError
+from apigateway.biz.resource_doc.exporter.generators import DocArchiveGenerator
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Resource
 

@@ -27,22 +27,22 @@ class ResourceDocAdmin(admin.ModelAdmin):
 
 
 class ResourceDocVersionAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "resource_version"]
-    list_filter = ["api"]
+    list_display = ["id", "gateway", "resource_version"]
+    list_filter = ["gateway"]
     exclude = ["_data"]
     raw_id_fields = ["resource_version"]
 
 
 class ReleasedResourceDocAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "resource_version_id", "resource_id", "language"]
-    list_filter = ["api", "language"]
+    list_display = ["id", "gateway", "resource_version_id", "resource_id", "language"]
+    list_filter = ["gateway", "language"]
     search_fields = ["resource_id"]
 
 
 class APISDKAdmin(admin.ModelAdmin):
     list_display = [
         "id",
-        "api",
+        "gateway",
         "resource_version_id",
         "name",
         "language",
@@ -51,7 +51,7 @@ class APISDKAdmin(admin.ModelAdmin):
         "is_public",
         "created_time",
     ]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
     search_fields = ["version_number"]
     raw_id_fields = ["resource_version"]
 

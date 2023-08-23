@@ -30,14 +30,14 @@ from apigateway.utils.string import random_string
 
 
 class ResourceVersionSLZ(serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     # TODO: 待开源版中，同步资源版本的服务全部切换为 version 后，此字段才能指定为必填: required=True
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=False)
 
     class Meta:
         model = ResourceVersion
         fields = [
-            "api",
+            "gateway",
             "id",
             "version",
             "name",
@@ -51,8 +51,8 @@ class ResourceVersionSLZ(serializers.ModelSerializer):
         lookup_field = "id"
 
     def validate(self, data):
-        self._validate_resource_count(data["api"])
-        self._validate_version_unique(gateway=data["api"], version=data.get("version", ""))
+        self._validate_resource_count(data["gateway"])
+        self._validate_version_unique(gateway=data["gateway"], version=data.get("version", ""))
         return data
 
     def _validate_version_unique(self, gateway: Gateway, version: str):
@@ -61,7 +61,7 @@ class ResourceVersionSLZ(serializers.ModelSerializer):
             return
 
         # ResourceVersion 中数据量较大，因此，不使用 UniqueTogetherValidator
-        queryset = ResourceVersion.objects.filter(api=gateway, version=version)
+        queryset = ResourceVersion.objects.filter(gateway=gateway, version=version)
         if self.instance is not None:
             queryset = queryset.exclude(pk=self.instance.pk)
 
@@ -85,7 +85,7 @@ class ResourceVersionSLZ(serializers.ModelSerializer):
         return result
 
     def create(self, validated_data):
-        gateway = validated_data["api"]
+        gateway = validated_data["gateway"]
         now = time_utils.now_datetime()
 
         # created_time：与版本名中时间保持一致，方便SDK使用此时间作为版本号

@@ -26,7 +26,7 @@ from apigateway.utils.time import now_datetime
 
 
 class APISDKGenerateSLZ(serializers.Serializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     resource_version_id = serializers.IntegerField(required=True)
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
     include_private_resources = serializers.BooleanField(label="包含非公开资源")
@@ -42,13 +42,13 @@ class APISDKGenerateSLZ(serializers.Serializer):
         # 用户指定版本号的情况下，需要检查一下版本是否存在
         if data["version"]:
             if APISDK.objects.filter_sdk(
-                gateway=data["api"],
+                gateway=data["gateway"],
                 language=data["language"],
                 version_number=data["version"],
             ).exists():
                 raise serializers.ValidationError(_("版本已存在。"))
 
-        latest_sdk = APISDK.objects.get_latest_sdk(gateway_id=data["api"].id, language=data["language"])
+        latest_sdk = APISDK.objects.get_latest_sdk(gateway_id=data["gateway"].id, language=data["language"])
         if latest_sdk:
             self._validate_generate_too_soon(latest_sdk)
         return data

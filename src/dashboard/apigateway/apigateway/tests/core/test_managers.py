@@ -73,8 +73,8 @@ class TestGatewayManager:
         stage_test = G(Stage, api=gateway, name="test")
 
         G(Resource, api=gateway)
-        resource_version = G(ResourceVersion, api=gateway)
-        G(Release, api=gateway, stage=stage_prod, resource_version=resource_version)
+        resource_version = G(ResourceVersion, gateway=gateway)
+        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version)
 
         gateway.resource_count = 1
         gateway.stages = [
@@ -176,7 +176,7 @@ class TestStageManager:
     def test_get_micro_gateway_id_to_fields(self):
         gateway = G(Gateway)
 
-        micro_gateway = G(MicroGateway, api=gateway)
+        micro_gateway = G(MicroGateway, gateway=gateway)
 
         G(Stage, api=gateway)
         s2 = G(Stage, api=gateway, micro_gateway=micro_gateway)
@@ -473,7 +473,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=gateway,
+                    gateway=gateway,
                     _data=json.dumps(
                         [
                             {
@@ -493,7 +493,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=gateway,
+                    gateway=gateway,
                     _data=json.dumps(
                         [
                             {
@@ -523,7 +523,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=gateway,
+                    gateway=gateway,
                     _data=json.dumps(
                         [
                             {
@@ -555,8 +555,8 @@ class TestResourceVersionManager:
 
     def test_get_id_to_fields_map(self):
         gateway = G(Gateway)
-        rv1 = G(ResourceVersion, api=gateway, name="rv1", title="rv1", version="1.0.1")
-        rv2 = G(ResourceVersion, api=gateway, name="rv2", title="rv2", version="1.0.2")
+        rv1 = G(ResourceVersion, gateway=gateway, name="rv1", title="rv1", version="1.0.1")
+        rv2 = G(ResourceVersion, gateway=gateway, name="rv2", title="rv2", version="1.0.2")
 
         data = [
             {
@@ -589,7 +589,7 @@ class TestResourceVersionManager:
         result = ResourceVersion.objects.get_id_by_name(gateway, unique_id)
         assert result is None
 
-        resource_version = G(ResourceVersion, api=gateway, name=unique_id)
+        resource_version = G(ResourceVersion, gateway=gateway, name=unique_id)
         result = ResourceVersion.objects.get_id_by_name(gateway, unique_id)
         assert result == resource_version.id
 
@@ -599,7 +599,7 @@ class TestResourceVersionManager:
         result = ResourceVersion.objects.get_id_by_version(gateway, unique_id)
         assert result is None
 
-        resource_version = G(ResourceVersion, api=gateway, version=unique_id)
+        resource_version = G(ResourceVersion, gateway=gateway, version=unique_id)
         result = ResourceVersion.objects.get_id_by_version(gateway, unique_id)
         assert result == resource_version.id
 
@@ -609,7 +609,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=fake_gateway,
+                    gateway=fake_gateway,
                     _data=json.dumps(
                         [
                             {
@@ -626,7 +626,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=fake_gateway,
+                    gateway=fake_gateway,
                     _data=json.dumps(
                         [
                             {
@@ -653,7 +653,7 @@ class TestResourceVersionManager:
             {
                 "resource_version": G(
                     ResourceVersion,
-                    api=fake_gateway,
+                    gateway=fake_gateway,
                     _data=json.dumps(
                         [
                             {
@@ -705,7 +705,7 @@ class TestResourceVersionManager:
         assert (
             list(
                 ResourceVersion.objects.filter_objects_fields(
-                    fake_resource_version.api.id,
+                    fake_resource_version.gateway.id,
                     version=fake_resource_version.version,
                 )
             )
@@ -780,8 +780,8 @@ class TestReleaseManager:
         stage_prod = G(Stage, api=gateway, name="prod", status=1)
         stage_test = G(Stage, api=gateway, name="test", status=1)
 
-        resource_version = G(ResourceVersion, api=gateway)
-        G(Release, api=gateway, stage=stage_prod, resource_version=resource_version)
+        resource_version = G(ResourceVersion, gateway=gateway)
+        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version)
 
         data = [
             {
@@ -801,8 +801,8 @@ class TestReleaseManager:
         stage_prod = G(Stage, api=gateway, name="prod", status=1)
         stage_test = G(Stage, api=gateway, name="test", status=1)
 
-        resource_version = G(ResourceVersion, api=gateway, name="test-01", title="test", version="1.0.1")
-        G(Release, api=gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)
+        resource_version = G(ResourceVersion, gateway=gateway, name="test-01", title="test", version="1.0.1")
+        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)
 
         data = [
             {
@@ -831,11 +831,11 @@ class TestReleaseManager:
         stage_prod = G(Stage, api=gateway, name="prod", status=1)
         stage_test = G(Stage, api=gateway, name="test", status=1)
         stage_dev = G(Stage, api=gateway, name="dev", status=1)
-        resource_version_1 = G(ResourceVersion, api=gateway)
-        resource_version_2 = G(ResourceVersion, api=gateway)
-        G(Release, api=gateway, stage=stage_prod, resource_version=resource_version_1)
-        G(Release, api=gateway, stage=stage_dev, resource_version=resource_version_2)
-        G(Release, api=gateway, stage=stage_test, resource_version=resource_version_1)
+        resource_version_1 = G(ResourceVersion, gateway=gateway)
+        resource_version_2 = G(ResourceVersion, gateway=gateway)
+        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version_1)
+        G(Release, gateway=gateway, stage=stage_dev, resource_version=resource_version_2)
+        G(Release, gateway=gateway, stage=stage_test, resource_version=resource_version_1)
 
         data = [
             {
@@ -903,8 +903,8 @@ class TestReleaseManager:
         gateway = G(Gateway)
         stage_1 = G(Stage, api=gateway)
         stage_2 = G(Stage, api=gateway)
-        resource_version = G(ResourceVersion, api=gateway)
-        G(Release, api=gateway, stage=stage_1, resource_version=resource_version)
+        resource_version = G(ResourceVersion, gateway=gateway)
+        G(Release, gateway=gateway, stage=stage_1, resource_version=resource_version)
 
         data = [
             {
@@ -933,11 +933,11 @@ class TestReleaseManager:
         s1 = G(Stage, api=gateway, name="prod")
         s2 = G(Stage, api=gateway, name="test")
 
-        rv1 = G(ResourceVersion, api=gateway)
-        rv2 = G(ResourceVersion, api=gateway)
+        rv1 = G(ResourceVersion, gateway=gateway)
+        rv2 = G(ResourceVersion, gateway=gateway)
 
-        G(Release, api=gateway, resource_version=rv1, stage=s1)
-        G(Release, api=gateway, resource_version=rv2, stage=s2)
+        G(Release, gateway=gateway, resource_version=rv1, stage=s1)
+        G(Release, gateway=gateway, resource_version=rv2, stage=s2)
 
         result = Release.objects.get_released_resource_version_ids(gateway.id)
         assert result == [rv1.id, rv2.id]
@@ -951,11 +951,11 @@ class TestReleaseManager:
         s1 = G(Stage, api=gateway, name="prod")
         s2 = G(Stage, api=gateway, name="test")
 
-        rv1 = G(ResourceVersion, api=gateway)
-        rv2 = G(ResourceVersion, api=gateway)
+        rv1 = G(ResourceVersion, gateway=gateway)
+        rv2 = G(ResourceVersion, gateway=gateway)
 
-        G(Release, api=gateway, resource_version=rv1, stage=s1)
-        G(Release, api=gateway, resource_version=rv2, stage=s2)
+        G(Release, gateway=gateway, resource_version=rv1, stage=s1)
+        G(Release, gateway=gateway, resource_version=rv2, stage=s2)
 
         result = Release.objects.get_released_stage_names(gateway.id)
         assert result == ["prod", "test"]
@@ -966,12 +966,12 @@ class TestReleaseManager:
         s2 = G(Stage, api=gateway)
         s3 = G(Stage, api=gateway)
 
-        rv1 = G(ResourceVersion, api=gateway)
-        rv2 = G(ResourceVersion, api=gateway)
+        rv1 = G(ResourceVersion, gateway=gateway)
+        rv2 = G(ResourceVersion, gateway=gateway)
 
-        G(Release, api=gateway, resource_version=rv1, stage=s1)
-        G(Release, api=gateway, resource_version=rv2, stage=s2)
-        G(Release, api=gateway, resource_version=rv1, stage=s3)
+        G(Release, gateway=gateway, resource_version=rv1, stage=s1)
+        G(Release, gateway=gateway, resource_version=rv2, stage=s2)
+        G(Release, gateway=gateway, resource_version=rv1, stage=s3)
 
         data = [
             {
@@ -1002,12 +1002,12 @@ class TestReleaseManager:
         s2 = G(Stage, api=gateway)
         s3 = G(Stage, api=gateway)
 
-        rv1 = G(ResourceVersion, api=gateway)
-        rv2 = G(ResourceVersion, api=gateway)
+        rv1 = G(ResourceVersion, gateway=gateway)
+        rv2 = G(ResourceVersion, gateway=gateway)
 
-        G(Release, api=gateway, resource_version=rv1, stage=s1)
-        G(Release, api=gateway, resource_version=rv2, stage=s2)
-        G(Release, api=gateway, resource_version=rv1, stage=s3)
+        G(Release, gateway=gateway, resource_version=rv1, stage=s1)
+        G(Release, gateway=gateway, resource_version=rv2, stage=s2)
+        G(Release, gateway=gateway, resource_version=rv1, stage=s3)
 
         data = [
             {
@@ -1056,8 +1056,8 @@ class TestReleaseManager:
         s1 = G(Stage, api=gateway)
         s2 = G(Stage, api=gateway)
 
-        resource_version = G(ResourceVersion, api=gateway)
-        G(Release, api=gateway, stage=s1, resource_version=resource_version)
+        resource_version = G(ResourceVersion, gateway=gateway)
+        G(Release, gateway=gateway, stage=s1, resource_version=resource_version)
 
         result = Release.objects.get_stage_ids_unreleased_the_version(gateway.id, [s1.id, s2.id], resource_version.id)
         assert result == [s2.id]
@@ -1072,13 +1072,13 @@ class TestReleasedResourceManager:
 
         s1 = G(Stage, api=gateway)
 
-        rv1 = G(ResourceVersion, api=gateway)
-        rv2 = G(ResourceVersion, api=gateway)
+        rv1 = G(ResourceVersion, gateway=gateway)
+        rv2 = G(ResourceVersion, gateway=gateway)
 
-        G(Release, api=gateway, stage=s1, resource_version=rv1)
+        G(Release, gateway=gateway, stage=s1, resource_version=rv1)
 
-        G(ReleasedResource, api=gateway, resource_version_id=rv1.id, data={})
-        G(ReleasedResource, api=gateway, resource_version_id=rv2.id, data={})
+        G(ReleasedResource, gateway=gateway, resource_version_id=rv1.id, data={})
+        G(ReleasedResource, gateway=gateway, resource_version_id=rv2.id, data={})
 
         ReleasedResource.objects.clear_unreleased_resource(gateway.id)
 
@@ -1094,15 +1094,15 @@ class TestReleasedResourceManager:
         r1 = G(Resource, api=gateway)
         r2 = G(Resource, api=gateway)
 
-        rv1 = G(ResourceVersion, api=gateway)
-        rv2 = G(ResourceVersion, api=gateway)
+        rv1 = G(ResourceVersion, gateway=gateway)
+        rv2 = G(ResourceVersion, gateway=gateway)
 
-        G(Release, api=gateway, stage=s1, resource_version=rv1)
-        G(Release, api=gateway, stage=s2, resource_version=rv2)
+        G(Release, gateway=gateway, stage=s1, resource_version=rv1)
+        G(Release, gateway=gateway, stage=s2, resource_version=rv2)
 
-        G(ReleasedResource, api=gateway, resource_version_id=rv1.id, resource_id=r1.id, data={})
-        G(ReleasedResource, api=gateway, resource_version_id=rv1.id, resource_id=r2.id, data={})
-        G(ReleasedResource, api=gateway, resource_version_id=rv2.id, resource_id=r2.id, data={})
+        G(ReleasedResource, gateway=gateway, resource_version_id=rv1.id, resource_id=r1.id, data={})
+        G(ReleasedResource, gateway=gateway, resource_version_id=rv1.id, resource_id=r2.id, data={})
+        G(ReleasedResource, gateway=gateway, resource_version_id=rv2.id, resource_id=r2.id, data={})
 
         result = ReleasedResource.objects.get_resource_released_stage_count(
             gateway_id=gateway.id,
@@ -1117,14 +1117,14 @@ class TestReleasedResourceManager:
         gateway = G(Gateway)
         resource = G(Resource, api=gateway)
 
-        rv_1 = G(ResourceVersion, api=gateway)
-        G(ResourceVersion, api=gateway)
-        rv_3 = G(ResourceVersion, api=gateway)
+        rv_1 = G(ResourceVersion, gateway=gateway)
+        G(ResourceVersion, gateway=gateway)
+        rv_3 = G(ResourceVersion, gateway=gateway)
 
-        G(ReleasedResource, api=gateway, resource_id=resource.id, resource_version_id=rv_1.id, data={})
+        G(ReleasedResource, gateway=gateway, resource_id=resource.id, resource_version_id=rv_1.id, data={})
         G(
             ReleasedResource,
-            api=gateway,
+            gateway=gateway,
             resource_id=resource.id,
             resource_version_id=rv_3.id,
             data={
@@ -1175,7 +1175,7 @@ class TestReleasedResourceManager:
             ReleasedResource,
             resource_id=r1.id,
             resource_version_id=1,
-            api=fake_gateway,
+            gateway=fake_gateway,
             data={
                 "id": r1.id,
                 "name": "test1-1",
@@ -1199,7 +1199,7 @@ class TestReleasedResourceManager:
             ReleasedResource,
             resource_id=r1.id,
             resource_version_id=2,
-            api=fake_gateway,
+            gateway=fake_gateway,
             data={
                 "id": r1.id,
                 "name": "test1-2",
@@ -1223,7 +1223,7 @@ class TestReleasedResourceManager:
             ReleasedResource,
             resource_id=r2.id,
             resource_version_id=2,
-            api=fake_gateway,
+            gateway=fake_gateway,
             data={
                 "id": r2.id,
                 "name": "test2-1",
@@ -1271,20 +1271,20 @@ class TestReleasedResourceManager:
         r3 = G(Resource, api=fake_gateway, name="test3")
         r4 = G(Resource, api=fake_gateway, name="test4")
 
-        rv1 = G(ResourceVersion, api=fake_gateway)
-        rv2 = G(ResourceVersion, api=fake_gateway)
+        rv1 = G(ResourceVersion, gateway=fake_gateway)
+        rv2 = G(ResourceVersion, gateway=fake_gateway)
 
-        G(Release, api=fake_gateway, resource_version=rv1, stage=s1)
-        G(Release, api=fake_gateway, resource_version=rv1, stage=s2)
-        G(Release, api=fake_gateway, resource_version=rv2, stage=s3)
+        G(Release, gateway=fake_gateway, resource_version=rv1, stage=s1)
+        G(Release, gateway=fake_gateway, resource_version=rv1, stage=s2)
+        G(Release, gateway=fake_gateway, resource_version=rv2, stage=s3)
 
-        G(ReleasedResource, api=fake_gateway, resource_version_id=rv1.id, resource_id=r1.id, resource_name=r1.name)
-        G(ReleasedResource, api=fake_gateway, resource_version_id=rv1.id, resource_id=r2.id, resource_name=r2.name)
-        G(ReleasedResource, api=fake_gateway, resource_version_id=rv2.id, resource_id=r1.id, resource_name=r1.name)
-        G(ReleasedResource, api=fake_gateway, resource_version_id=rv2.id, resource_id=r3.id, resource_name=r3.name)
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r1.id, resource_name=r1.name)
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r2.id, resource_name=r2.name)
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv2.id, resource_id=r1.id, resource_name=r1.name)
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv2.id, resource_id=r3.id, resource_name=r3.name)
         G(
             ReleasedResource,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version_id=rv1.id,
             resource_id=r4.id,
             resource_name=r4.name,
@@ -1306,11 +1306,11 @@ class TestReleasedResourceManager:
         r1 = G(Resource, api=fake_gateway)
         r2 = G(Resource, api=fake_gateway)
 
-        rv1 = G(ResourceVersion, api=fake_gateway)
-        rv2 = G(ResourceVersion, api=fake_gateway)
+        rv1 = G(ResourceVersion, gateway=fake_gateway)
+        rv2 = G(ResourceVersion, gateway=fake_gateway)
 
-        G(ReleasedResource, api=fake_gateway, resource_version_id=rv1.id, resource_id=r1.id)
-        G(ReleasedResource, api=fake_gateway, resource_version_id=rv1.id, resource_id=r2.id)
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r1.id)
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r2.id)
 
         result = ReleasedResource.objects._filter_resource_version_ids([r1.id, r2.id])
         assert result == [rv1.id]
@@ -1350,27 +1350,27 @@ class TestReleaseHistoryManager(TestCase):
         gateway = G(Gateway)
         stage_prod = G(Stage, api=gateway, name="prod")
         stage_test = G(Stage, api=gateway, name="test")
-        resource_version_1 = G(ResourceVersion, api=gateway, name="test-20191225-aaaaa")
-        resource_version_2 = G(ResourceVersion, api=gateway, name="test-20191225-bbbbb")
+        resource_version_1 = G(ResourceVersion, gateway=gateway, name="test-20191225-aaaaa")
+        resource_version_2 = G(ResourceVersion, gateway=gateway, name="test-20191225-bbbbb")
 
-        history = G(ReleaseHistory, api=gateway, stage=stage_prod, resource_version=resource_version_1)
+        history = G(ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1)
         history.stages.add(stage_prod)
 
         history = G(
-            ReleaseHistory, api=gateway, stage=stage_prod, resource_version=resource_version_1, created_by="admin"
+            ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1, created_by="admin"
         )
         history.stages.add(stage_prod)
 
         history = G(
             ReleaseHistory,
-            api=gateway,
+            gateway=gateway,
             stage=stage_prod,
             resource_version=resource_version_1,
             created_time=dummy_time.time,
         )
         history.stages.add(stage_prod)
 
-        history = G(ReleaseHistory, api=gateway, stage=stage_test, resource_version=resource_version_2)
+        history = G(ReleaseHistory, gateway=gateway, stage=stage_test, resource_version=resource_version_2)
         history.stages.add(stage_test)
 
         data = [
@@ -1429,8 +1429,8 @@ class TestReleaseHistoryManager(TestCase):
         stage_1 = G(Stage, api=gateway)
         stage_2 = G(Stage, api=gateway)
 
-        history_1 = G(ReleaseHistory, api=gateway, stage=stage_1)
-        history_2 = G(ReleaseHistory, api=gateway, stage=stage_2)
+        history_1 = G(ReleaseHistory, gateway=gateway, stage=stage_1)
+        history_2 = G(ReleaseHistory, gateway=gateway, stage=stage_2)
         history_2.stages.add(stage_2)
 
         ReleaseHistory.objects.delete_without_stage_related(gateway.id)
@@ -1498,14 +1498,14 @@ class TestJWTManager:
 
 
 class TestAPIRelatedApp:
-    def test_allow_app_manage_api(self, unique_id):
+    def test_allow_app_manage_gateway(self, unique_id):
         gateway = G(Gateway)
 
-        result = APIRelatedApp.objects.allow_app_manage_api(gateway.id, unique_id)
+        result = APIRelatedApp.objects.allow_app_manage_gateway(gateway.id, unique_id)
         assert result is False
 
         G(APIRelatedApp, api=gateway, bk_app_code=unique_id)
-        result = APIRelatedApp.objects.allow_app_manage_api(gateway.id, unique_id)
+        result = APIRelatedApp.objects.allow_app_manage_gateway(gateway.id, unique_id)
         assert result is True
 
     def test_add_related_app(self):
@@ -1673,8 +1673,8 @@ class TestStageItemConfigManager:
 
 class TestMicroGatewayManager:
     def test_get_count_by_gateway(self, fake_gateway):
-        G(MicroGateway, api=fake_gateway)
-        G(MicroGateway, api=fake_gateway)
+        G(MicroGateway, gateway=fake_gateway)
+        G(MicroGateway, gateway=fake_gateway)
 
         result = MicroGateway.objects.get_count_by_gateway([fake_gateway.id])
         assert result == {fake_gateway.id: 2}

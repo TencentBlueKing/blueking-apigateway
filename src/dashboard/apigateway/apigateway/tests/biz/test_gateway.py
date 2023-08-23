@@ -45,8 +45,7 @@ class TestGatewayHandler:
         stage_1 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
         stage_2 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
 
-        G(Release, api=fake_gateway, stage=stage_1)
-
+        G(Release, gateway=fake_gateway, stage=stage_1)
         expected = {
             fake_gateway.id: [
                 {
@@ -270,7 +269,7 @@ class TestGatewayHandler:
         result = GatewayHandler.get_docs_url(fake_gateway)
         assert result == ""
 
-        G(ReleasedResourceDoc, api=fake_gateway)
+        G(ReleasedResourceDoc, gateway=fake_gateway)
         result = GatewayHandler.get_docs_url(fake_gateway)
         assert result == f"http://apigw.example.com/docs/{fake_gateway.name}"
 

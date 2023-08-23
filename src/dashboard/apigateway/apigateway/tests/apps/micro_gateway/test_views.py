@@ -134,7 +134,7 @@ class TestMicroGatewayViewSet:
     def test_list(self, mock_micro_gateway_config):
         micro_gateway = G(
             MicroGateway,
-            api=self.gateway,
+            gateway=self.gateway,
             _config=json.dumps(mock_micro_gateway_config),
             schema=SchemaFactory().get_micro_gateway_schema(),
         )
@@ -150,7 +150,7 @@ class TestMicroGatewayViewSet:
     def test_update(self, request_view, fake_gateway, fake_admin_user, mock_micro_gateway_config, faker):
         micro_gateway = G(
             MicroGateway,
-            api=self.gateway,
+            gateway=self.gateway,
             _config=json.dumps(mock_micro_gateway_config),
             schema=SchemaFactory().get_micro_gateway_schema(),
         )
@@ -199,7 +199,7 @@ class TestMicroGatewayViewSet:
     def test_retrieve(self, mock_micro_gateway_config):
         micro_gateway = G(
             MicroGateway,
-            api=self.gateway,
+            gateway=self.gateway,
             _config=json.dumps(mock_micro_gateway_config),
             schema=SchemaFactory().get_micro_gateway_schema(),
         )
@@ -212,7 +212,7 @@ class TestMicroGatewayViewSet:
         assert result["code"] == 0
 
     def test_destroy(self):
-        micro_gateway = G(MicroGateway, api=self.gateway)
+        micro_gateway = G(MicroGateway, gateway=self.gateway)
         micro_gateway_id = micro_gateway.id
 
         request = self.factory.delete("")

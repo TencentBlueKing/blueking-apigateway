@@ -55,8 +55,8 @@ class TestAPIViewSet:
         s1 = G(Stage, api=gateway_1, status=1)
         s2 = G(Stage, api=gateway_2, status=1)
 
-        G(Release, api=gateway_1, stage=s1)
-        G(Release, api=gateway_2, stage=s2)
+        G(Release, gateway=gateway_1, stage=s1)
+        G(Release, gateway=gateway_2, stage=s2)
 
         data = [
             {

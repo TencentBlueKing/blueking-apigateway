@@ -16,13 +16,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import include, path
+from django.urls import path
 
 from apigateway.apps.support.api_sdk.views import APISDKViewSet
 
 urlpatterns = [
-    # 资源文档新接口
-    path("", include("apigateway.apps.support.resource_doc.urls")),
     # 资源 SDK
     path("sdks/", APISDKViewSet.as_view({"get": "list", "post": "generate"}), name="support.api_sdk"),
 ]

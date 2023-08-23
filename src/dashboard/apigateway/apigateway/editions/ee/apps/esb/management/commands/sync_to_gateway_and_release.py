@@ -85,4 +85,4 @@ class Command(BaseCommand):
             return async_
 
         # 未指定时，如果网关未发布，采用同步方式，以确保同步后接口即可访问
-        return Release.objects.filter(api=gateway).exists()
+        return Release.objects.filter(gateway=gateway).exists()

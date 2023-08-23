@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from celery import shared_task
 
@@ -28,51 +28,9 @@ from apigateway.controller.helm.chart import ChartHelper
 from apigateway.controller.helm.release import ReleaseHelper
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
 from apigateway.core.constants import ReleaseStatusEnum
-from apigateway.core.models import MicroGateway, MicroGatewayReleaseHistory, Release, ReleaseHistory
+from apigateway.core.models import MicroGateway, MicroGatewayReleaseHistory, Release
 
 logger = logging.getLogger(__name__)
-
-
-@shared_task(ignore_result=True)
-def mark_release_history_status(release_history_id, status: str, message: str, stage_ids: List[int]):
-    """更新 release history 的状态"""
-    logger.debug(
-        "mark release history status: %s, release_history_id: %s",
-        status,
-        release_history_id,
-    )
-    ReleaseHistory.objects.filter(id=release_history_id).update(status=status, message=message)
-    # add  success event(only for success)
-    if status == ReleaseStatusEnum.SUCCESS.value:
-        for stage_id in stage_ids:
-            PublishEventReporter.report_distribute_configuration_success_event(release_history_id, stage_id)
-
-
-@shared_task(ignore_result=True)
-def mark_release_history_failure(
-    stage_ids: List[int], request=None, exc=None, traceback=None, release_history_id=None, *args, **kwargs
-):
-    """更新 release history 的状态为失败，并记录失败原因"""
-
-    logger.error(
-        "release to micro-gateway failed, release_history_id: %s",
-        release_history_id,
-        exc_info=exc,
-    )
-
-    if release_history_id is None:
-        raise ValueError("release_history_id is None")
-
-    history = ReleaseHistory.objects.get(id=release_history_id)
-    stage_values = history.microgatewayreleasehistory_set.filter(status=ReleaseStatusEnum.FAILURE.value).values_list(
-        "stage__name", flat=True
-    )
-    history.message = f"环境[{','.join(stage_values)}]发布失败，请联系管理员"
-    history.status = ReleaseStatusEnum.FAILURE.value
-    history.save()
-    # add publish failure event
-    for stage_id in stage_ids:
-        PublishEventReporter.report_distribute_configuration_failure_event(history, stage_id)
 
 
 def _release_gateway(
@@ -96,25 +54,28 @@ def _release_gateway(
         latest_micro_gateway_release_history.release_history, release.stage
     )
     try:
-        if distributor.distribute(
+        is_success, fail_msg = distributor.distribute(
             release=release,
             micro_gateway=micro_gateway,
             release_task_id=procedure_logger.release_task_id,
             publish_id=latest_micro_gateway_release_history.release_history_id,
-        ):
-            release_history_qs.update(status=ReleaseStatusEnum.SUCCESS.value)
-        else:
-            release_history_qs.update(
-                status=ReleaseStatusEnum.FAILURE.value,
-                details={"message": "distribute failed"},
+        )
+        if is_success:
+            PublishEventReporter.report_distribute_configuration_success_event(
+                latest_micro_gateway_release_history.release_history, release.stage
             )
+
+        else:
+            PublishEventReporter.report_distribute_configuration_failure_event(
+                latest_micro_gateway_release_history.release_history, release.stage, fail_msg
+            )
+            return False
     except Exception as err:
         # 记录失败原因
         procedure_logger.exception("release failed")
-        # 更新失败状态
-        release_history_qs.update(
-            status=ReleaseStatusEnum.FAILURE.value,
-            details={"message": f"error: {err}"},
+        # 上报失败事件
+        PublishEventReporter.report_distribute_configuration_failure_event(
+            latest_micro_gateway_release_history.release_history, release.stage, f"error: {err}"
         )
         # 异常抛出，让 celery 停止编排
         raise
@@ -130,13 +91,13 @@ def release_gateway_by_helm(access_token: str, username, release_id, micro_gatew
         release_id,
         micro_gateway_release_history_id,
     )
-    release = Release.objects.prefetch_related("stage", "api", "resource_version").get(id=release_id)
+    release = Release.objects.prefetch_related("stage", "gateway", "resource_version").get(id=release_id)
     stage = release.stage
     micro_gateway = stage.micro_gateway
     procedure_logger = ReleaseProcedureLogger(
         "release_gateway_by_helm",
         logger=logger,
-        gateway=release.api,
+        gateway=release.gateway,
         stage=stage,
         micro_gateway=micro_gateway,
     )
@@ -171,14 +132,14 @@ def release_gateway_by_registry(
         micro_gateway_id,
         micro_gateway_release_history_id,
     )
-    release = Release.objects.prefetch_related("stage", "api", "resource_version").get(id=release_id)
+    release = Release.objects.prefetch_related("stage", "gateway", "resource_version").get(id=release_id)
     micro_gateway = MicroGateway.objects.get(id=micro_gateway_id, is_shared=True)
     # 如果是共享实例对应的网关发布，同时将对应的实例资源下发
-    include_gateway_global_config = release.api_id == micro_gateway.api_id
+    include_gateway_global_config = release.gateway_id == micro_gateway.gateway_id
     procedure_logger = ReleaseProcedureLogger(
         "release_gateway_by_etcd",
         logger=logger,
-        gateway=release.api,
+        gateway=release.gateway,
         stage=release.stage,
         micro_gateway=micro_gateway,
         release_task_id=micro_gateway_release_history_id,
