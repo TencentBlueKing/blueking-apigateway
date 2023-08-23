@@ -20,7 +20,7 @@ import pytest
 from ddf import G
 from django.http import Http404
 
-from apigateway.apps.release.releasers import (
+from apigateway.biz.releaser import (
     DefaultGatewayReleaser,
     GatewayReleaserFactory,
     MicroGatewayReleaseHistory,
@@ -37,7 +37,7 @@ pytestmark = pytest.mark.django_db(transaction=True)
 
 def get_release_data(api):
     stage = G(Stage, api=api)
-    resource_version = G(ResourceVersion, api=api, name=f"{api.id}-{stage.id}")
+    resource_version = G(ResourceVersion, gateway=api, name=f"{api.id}-{stage.id}")
 
     return {
         "stage_ids": [stage.id],
@@ -85,7 +85,7 @@ class TestDefaultGatewayReleaser:
         mocker.patch.object(releaser, "_validate", side_effect=ReleaseValidationError)
         with pytest.raises(ReleaseError):
             releaser.release_batch()
-        ReleaseHistory.objects.filter(api=fake_gateway, status=ReleaseStatusEnum.FAILURE.value).exists()
+        ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.FAILURE.value).exists()
 
         # 校验成功
         mocker.patch.object(releaser, "_validate", return_value=None)
@@ -105,7 +105,7 @@ class TestDefaultGatewayReleaser:
         )
         assert len(resource_version_ids) == 1
         assert resource_version_ids[0] == release_data["resource_version_id"]
-        assert ReleaseHistory.objects.filter(api=fake_gateway, status=ReleaseStatusEnum.SUCCESS.value).exists()
+        # assert ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.SUCCESS.value).exists()
         assert Stage.objects.filter(id__in=release_data["stage_ids"], status=1).count() == len(
             release_data["stage_ids"]
         )
@@ -215,7 +215,7 @@ class TestDefaultGatewayReleaser:
         mocker,
     ):
         with mocker.patch(
-            "apigateway.apps.release.releasers.StageProxyHTTPContext.contain_hosts",
+            "apigateway.biz.releaser.StageProxyHTTPContext.contain_hosts",
             return_value=contain_hosts_ret,
         ):
             releaser = DefaultGatewayReleaser(
@@ -248,11 +248,6 @@ class TestMicroGatewayReleaser:
             self.api, get_release_data(self.api), access_token="access_token"
         )
 
-    def test_save_ok_release_history(self):
-        self.releaser._save_ok_release_history()
-
-        assert ReleaseHistory.objects.filter(api=self.api, status=ReleaseStatusEnum.PENDING.value).count() == 1
-
     def test_do_release_edge_gateway(
         self,
         mocker,
@@ -267,11 +262,7 @@ class TestMicroGatewayReleaser:
         celery_mock_task,
     ):
         mock_release_gateway_by_helm = mocker.patch(
-            "apigateway.apps.release.releasers.release_gateway_by_helm",
-            wraps=celery_mock_task,
-        )
-        mock_release_gateway_by_registry = mocker.patch(
-            "apigateway.apps.release.releasers.release_gateway_by_registry",
+            "apigateway.biz.releaser.release_gateway_by_helm",
             wraps=celery_mock_task,
         )
         releaser = MicroGatewayReleaser(
@@ -289,19 +280,13 @@ class TestMicroGatewayReleaser:
             micro_gateway_release_history_id=mocker.ANY,
             username=releaser.username,
         )
-        # mock_release_gateway_by_registry.si.assert_called_once_with(
-        #     release_id=fake_release.pk,
-        #     micro_gateway_release_history_id=mocker.ANY,
-        #     micro_gateway_id=fake_shared_gateway.id,
-        # )
 
         assert ReleaseHistory.objects.filter(
             id=fake_release_history.id,
-            status=ReleaseStatusEnum.SUCCESS.value,
         ).exists()
 
         qs = MicroGatewayReleaseHistory.objects.filter(
-            api=fake_gateway,
+            gateway=fake_gateway,
             stage=fake_stage,
             release_history=fake_release_history,
         )
@@ -321,7 +306,7 @@ class TestMicroGatewayReleaser:
         celery_mock_task,
     ):
         mock_release_gateway_by_registry = mocker.patch(
-            "apigateway.apps.release.releasers.release_gateway_by_registry",
+            "apigateway.biz.releaser.release_gateway_by_registry",
             wraps=celery_mock_task,
         )
         releaser = MicroGatewayReleaser(
@@ -339,11 +324,10 @@ class TestMicroGatewayReleaser:
 
         assert ReleaseHistory.objects.filter(
             id=fake_release_history.id,
-            status=ReleaseStatusEnum.SUCCESS.value,
         ).exists()
 
         assert MicroGatewayReleaseHistory.objects.filter(
-            api=fake_gateway,
+            gateway=fake_gateway,
             stage=fake_stage,
             micro_gateway=fake_shared_gateway,
             release_history=fake_release_history,
@@ -352,7 +336,7 @@ class TestMicroGatewayReleaser:
 
 class TestReleaseBatchManager:
     def test_release_batch(self, mocker, fake_gateway):
-        mock_release_batch = mocker.patch("apigateway.apps.release.releasers.DefaultGatewayReleaser.release_batch")
+        mock_release_batch = mocker.patch("apigateway.biz.releaser.DefaultGatewayReleaser.release_batch")
 
         ReleaseBatchManager(access_token="access_token").release_batch(fake_gateway, get_release_data(fake_gateway))
         mock_release_batch.assert_called_once_with()

@@ -343,13 +343,13 @@ class ResourceVersionManager(models.Manager):
         """
         网关最新的版本
         """
-        return self.filter(api_id=gateway_id).last()
+        return self.filter(gateway_id=gateway_id).last()
 
     # TODO: 缓存优化：可使用 django cache(with database backend) or dogpile 缓存
     # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_LONG.value))
     def get_used_stage_vars(self, gateway_id, id):
-        resoruce_version = self.filter(api_id=gateway_id, id=id).first()
+        resoruce_version = self.filter(gateway_id=gateway_id, id=id).first()
         if not resoruce_version:
             return None
 
@@ -379,7 +379,7 @@ class ResourceVersionManager(models.Manager):
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_LONG.value))
     def has_used_stage_upstreams(self, gateway_id: int, id: int) -> bool:
         """资源 Hosts 是否存在使用默认配置"""
-        resoruce_version = self.filter(api_id=gateway_id, id=id).first()
+        resoruce_version = self.filter(gateway_id=gateway_id, id=id).first()
         for resource in resoruce_version.data:
             if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
                 continue
@@ -393,7 +393,7 @@ class ResourceVersionManager(models.Manager):
 
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_LONG.value))
     def get_resources(self, gateway_id: int, id: int) -> Dict[int, dict]:
-        resource_version = self.filter(api_id=gateway_id, id=id).first()
+        resource_version = self.filter(gateway_id=gateway_id, id=id).first()
         if not resource_version:
             return {}
 
@@ -426,7 +426,7 @@ class ResourceVersionManager(models.Manager):
         queryset = self.all()
 
         if gateway_id is not None:
-            queryset = queryset.filter(api_id=gateway_id)
+            queryset = queryset.filter(gateway_id=gateway_id)
 
         if resource_version_ids is not None:
             queryset = queryset.filter(id__in=resource_version_ids)
@@ -435,7 +435,7 @@ class ResourceVersionManager(models.Manager):
 
     def get_id_by_name(self, gateway, name: str) -> Optional[int]:
         # 版本中 data 数据量较大，查询时不查询 data 数据
-        ids = self.filter(api=gateway, name=name).values_list("id", flat=True)
+        ids = self.filter(gateway=gateway, name=name).values_list("id", flat=True)
         if not ids:
             return None
         return ids[0]
@@ -444,7 +444,7 @@ class ResourceVersionManager(models.Manager):
         if not version:
             return None
 
-        ids = self.filter(api_id=gateway_id, version=version).values_list("id", flat=True)
+        ids = self.filter(gateway_id=gateway_id, version=version).values_list("id", flat=True)
         if not ids:
             return None
         return ids[0]
@@ -454,10 +454,10 @@ class ResourceVersionManager(models.Manager):
         return self.filter(id=id_).values("id", "name", "title", "version").first() or {}
 
     def check_version_exists(self, gateway_id: int, version: str) -> bool:
-        return self.filter(api_id=gateway_id, version=version).exists()
+        return self.filter(gateway_id=gateway_id, version=version).exists()
 
     def filter_objects_fields(self, gateway_id: int, version: Optional[str]):
-        qs = self.filter(api_id=gateway_id)
+        qs = self.filter(gateway_id=gateway_id)
 
         if version:
             qs = qs.filter(version=version)
@@ -479,7 +479,7 @@ class ReleaseManager(models.Manager):
         """
         获取环境部署信息
         """
-        queryset = self.filter(api_id=gateway.id, stage__status=StageStatusEnum.ACTIVE.value)
+        queryset = self.filter(gateway_id=gateway.id, stage__status=StageStatusEnum.ACTIVE.value)
         if stage_ids is not None:
             queryset = queryset.filter(stage_id__in=stage_ids)
 
@@ -518,7 +518,7 @@ class ReleaseManager(models.Manager):
         queryset = self.filter(stage__status=StageStatusEnum.ACTIVE.value)
 
         if gateway is not None:
-            queryset = self.filter(api_id=gateway.id)
+            queryset = self.filter(gateway_id=gateway.id)
 
         if resource_version_ids is not None:
             queryset = queryset.filter(resource_version_id__in=resource_version_ids)
@@ -558,7 +558,7 @@ class ReleaseManager(models.Manager):
 
     def save_release(self, gateway, stage, resource_version, comment, username):
         obj, created = self.get_or_create(
-            api=gateway,
+            gateway=gateway,
             stage=stage,
             defaults={
                 "resource_version": resource_version,
@@ -579,16 +579,22 @@ class ReleaseManager(models.Manager):
         return obj
 
     def delete_by_gateway_id(self, gateway_id):
-        self.filter(api_id=gateway_id).delete()
+        self.filter(gateway_id=gateway_id).delete()
 
     def delete_by_stage_ids(self, stage_ids):
         self.filter(stage_id__in=stage_ids).delete()
 
+    def get_release_by_stage_id(self, stage_id):
+        return self.filter(stage_id=stage_id).all()
+
+    def get_release_by_gateway_id(self, gateway_id):
+        return self.filter(gateway_id=gateway_id).all()
+
     def filter_released_gateway_ids(self, gateway_ids):
-        return set(self.filter(api_id__in=gateway_ids).values_list("api_id", flat=True))
+        return set(self.filter(gateway_id__in=gateway_ids).values_list("gateway_id", flat=True))
 
     def get_released_resource_version_ids(self, gateway_id: int, stage_name: Optional[str] = None) -> List[int]:
-        qs = self.filter(api_id=gateway_id)
+        qs = self.filter(gateway_id=gateway_id)
 
         if stage_name:
             qs = qs.filter(stage__name=stage_name)
@@ -602,7 +608,7 @@ class ReleaseManager(models.Manager):
         return ids[0]
 
     def get_released_stage_names(self, gateway_id: int) -> List[str]:
-        return list(self.filter(api_id=gateway_id).values_list("stage__name", flat=True))
+        return list(self.filter(gateway_id=gateway_id).values_list("stage__name", flat=True))
 
     def get_released_stage_count(self, resource_version_ids: List[int]) -> Dict[int, int]:
         """获取资源版本已发布的环境数量"""
@@ -619,7 +625,7 @@ class ReleaseManager(models.Manager):
         resource_version_ids: Optional[List[int]] = None,
     ) -> Dict[int, dict]:
         """获取已发布环境的信息"""
-        queryset = self.filter(api_id=gateway_id)
+        queryset = self.filter(gateway_id=gateway_id)
         if resource_version_ids is not None:
             queryset = queryset.filter(resource_version_id__in=resource_version_ids)
 
@@ -633,7 +639,7 @@ class ReleaseManager(models.Manager):
     ) -> List[int]:
         """获取未发布此版本的环境列表"""
         released_stage_ids = self.filter(
-            api_id=gateway_id,
+            gateway_id=gateway_id,
             resource_version_id=resource_version_id,
         ).values_list("stage_id", flat=True)
         return list(set(stage_ids) - set(released_stage_ids))
@@ -653,7 +659,7 @@ class ReleasedResourceManager(models.Manager):
 
         resource_to_add = [
             self.model(
-                api_id=resource_version.api_id,
+                gateway_id=resource_version.gateway_id,
                 resource_version_id=resource_version.id,
                 resource_id=resource["id"],
                 resource_name=resource["name"],
@@ -671,13 +677,13 @@ class ReleasedResourceManager(models.Manager):
         from apigateway.core.models import Release
 
         resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
-        self.filter(api_id=gateway_id).exclude(resource_version_id__in=resource_version_ids).delete()
+        self.filter(gateway_id=gateway_id).exclude(resource_version_id__in=resource_version_ids).delete()
 
     def get_resource_version_id_to_obj_map(self, gateway_id: int, resource_id: int):
         """获取已发布资源版本ID对应的发布资源"""
         return {
             resource.resource_version_id: resource
-            for resource in self.filter(api_id=gateway_id, resource_id=resource_id)
+            for resource in self.filter(gateway_id=gateway_id, resource_id=resource_id)
         }
 
     # FIXME: move to biz/released_resource ReleasedResource
@@ -690,7 +696,7 @@ class ReleasedResourceManager(models.Manager):
 
         resource_released_stage_count: dict = defaultdict(int)
 
-        queryset = self.filter(api_id=gateway_id, resource_id__in=resource_ids).values(
+        queryset = self.filter(gateway_id=gateway_id, resource_id__in=resource_ids).values(
             "resource_id", "resource_version_id"
         )
         for resource in queryset:
@@ -732,7 +738,7 @@ class ReleasedResourceManager(models.Manager):
 
     def get_released_resource(self, gateway_id: int, resource_version_id: int, resource_name: str) -> Optional[dict]:
         released_resource = self.filter(
-            api_id=gateway_id,
+            gateway_id=gateway_id,
             resource_version_id=resource_version_id,
             resource_name=resource_name,
         ).first()
@@ -744,7 +750,7 @@ class ReleasedResourceManager(models.Manager):
     def get_latest_released_resource(self, gateway_id: int, resource_id: int) -> dict:
         """获取资源最新的发布配置"""
         released_resource = (
-            self.filter(api_id=gateway_id, resource_id=resource_id).order_by("-resource_version_id").first()
+            self.filter(gateway_id=gateway_id, resource_id=resource_id).order_by("-resource_version_id").first()
         )
         if not released_resource:
             return {}
@@ -797,7 +803,7 @@ class ReleasedResourceManager(models.Manager):
                 continue
 
             doc_links[resource.resource_id] = get_resource_doc_link(
-                resource.api.name,
+                resource.gateway.name,
                 recommeded_stage,
                 resource.resource_name,
             )
@@ -846,7 +852,7 @@ class ReleaseHistoryManager(models.Manager):
         order_by=None,
         fuzzy=False,
     ):
-        queryset = self.filter(api=gateway)
+        queryset = self.filter(gateway=gateway)
 
         # query 不是模型字段，仅支持模糊匹配，如需精确匹配，可使用具体字段
         if query and fuzzy:
@@ -888,10 +894,10 @@ class ReleaseHistoryManager(models.Manager):
 
         stage_ids = Stage.objects.get_ids(gateway_id)
 
-        self.filter(api_id=gateway_id).exclude(stages__id__in=stage_ids).delete()
+        self.filter(gateway_id=gateway_id).exclude(stages__id__in=stage_ids).delete()
 
     def get_recent_releasers(self, gateway_id: int) -> List[str]:
-        qs = self.filter(api_id=gateway_id).order_by("-id")[:10]
+        qs = self.filter(gateway_id=gateway_id).order_by("-id")[:10]
         return list(set(qs.values_list("created_by", flat=True)))
 
 
@@ -1040,8 +1046,8 @@ class MicroGatewayManager(models.Manager):
         if not gateway_ids:
             return {}
 
-        count = self.filter(api_id__in=gateway_ids).values("api_id").annotate(count=Count("api_id"))
-        return {i["api_id"]: i["count"] for i in count}
+        count = self.filter(gateway_id__in=gateway_ids).values("gateway_id").annotate(count=Count("gateway_id"))
+        return {i["gateway_id"]: i["count"] for i in count}
 
 
 class BackendServiceManager(models.Manager):

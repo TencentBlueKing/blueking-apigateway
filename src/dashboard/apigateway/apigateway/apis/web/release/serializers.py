@@ -20,23 +20,13 @@ from django.http import Http404
 from rest_framework import serializers
 
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
-from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
+from apigateway.core.models import ResourceVersion, Stage
 
 
-class ReleaseBatchSLZ(serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+class ReleaseBatchInputSLZ(serializers.Serializer):
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     stage_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
     resource_version_id = serializers.IntegerField(required=True)
-
-    class Meta:
-        model = Release
-        fields = [
-            "api",
-            "stage_ids",
-            "resource_version_id",
-            "comment",
-        ]
-        lookup_field = "id"
 
     def validate_stage_ids(self, value):
         count = Stage.objects.filter(api=self.context["api"], id__in=value).count()
@@ -46,13 +36,13 @@ class ReleaseBatchSLZ(serializers.ModelSerializer):
         return value
 
     def validate_resource_version_id(self, value):
-        if not ResourceVersion.objects.filter(api=self.context["api"], id=value).exists():
+        if not ResourceVersion.objects.filter(gateway=self.context["api"], id=value).exists():
             raise Http404
 
         return value
 
 
-class ReleaseHistoryQuerySLZ(serializers.Serializer):
+class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
     query = serializers.CharField(allow_blank=True, required=False)
     stage_id = serializers.IntegerField(allow_null=True, required=False)
     created_by = serializers.CharField(allow_blank=True, required=False)
@@ -60,27 +50,17 @@ class ReleaseHistoryQuerySLZ(serializers.Serializer):
     time_end = TimestampField(allow_null=True, required=False)
 
 
-class ReleaseHistorySLZ(serializers.ModelSerializer):
-    stage_names = serializers.SerializerMethodField()
-    resource_version_name = serializers.SerializerMethodField()
-    resource_version_title = serializers.SerializerMethodField()
-    resource_version_comment = serializers.SerializerMethodField()
-    resource_version_display = serializers.SerializerMethodField()
-
-    class Meta:
-        model = ReleaseHistory
-        fields = (
-            "stage_names",
-            "created_time",
-            "comment",
-            "resource_version_name",
-            "resource_version_title",
-            "resource_version_comment",
-            "resource_version_display",
-            "created_by",
-            "status",
-            "message",
-        )
+class ReleaseHistoryOutputSLZ(serializers.Serializer):
+    stage_names = serializers.SerializerMethodField(read_only=True)
+    resource_version_name = serializers.SerializerMethodField(read_only=True)
+    resource_version_title = serializers.SerializerMethodField(read_only=True)
+    resource_version_comment = serializers.SerializerMethodField(read_only=True)
+    resource_version_display = serializers.SerializerMethodField(read_only=True)
+    created_time = serializers.DateTimeField()
+    comment = serializers.CharField(read_only=True)
+    created_by = serializers.CharField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    message = serializers.CharField(read_only=True)
 
     def get_stage_name(self, obj):
         return obj.stage.name

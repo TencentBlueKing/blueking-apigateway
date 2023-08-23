@@ -246,7 +246,7 @@ class GatewayHandler:
     @staticmethod
     def get_docs_url(gateway: Gateway) -> str:
         # 如果无可展示的资源文档，则不提供文档地址
-        if ReleasedResourceDoc.objects.filter(api=gateway).exists():
+        if ReleasedResourceDoc.objects.filter(gateway=gateway).exists():
             return settings.API_DOCS_URL_TMPL.format(api_name=gateway.name)
         return ""
 

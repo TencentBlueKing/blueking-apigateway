@@ -46,10 +46,12 @@ class HttpResourceConvertor(BaseConvertor):
         micro_gateway: MicroGateway,
         gateway_service: List[BkGatewayService],
         publish_id: Union[int, None] = None,
+        revoke_flag: Union[bool, None] = False,
     ):
         super().__init__(release_data, micro_gateway)
         self._gateway_services = gateway_service
         self._publish_id = publish_id
+        self._revoke_flag = revoke_flag
 
     @cached_property
     def _default_stage_service_key(self) -> str:
@@ -62,10 +64,11 @@ class HttpResourceConvertor(BaseConvertor):
 
     def convert(self) -> List[BkGatewayResource]:
         resources: List[BkGatewayResource] = []
-        for resource in self._release_data.resource_version.data:
-            crd = self._convert_http_resource(resource)
-            if crd:
-                resources.append(crd)
+        if not self._revoke_flag:
+            for resource in self._release_data.resource_version.data:
+                crd = self._convert_http_resource(resource)
+                if crd:
+                    resources.append(crd)
         # 如果是版本发布需要加上版本路由，版本发布需要新增一个版本路由，方便查询发布结果探测
         if self._publish_id:
             version_route_crd = self._convert_http_resource(self._get_release_version_route_resource())

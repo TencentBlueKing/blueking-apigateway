@@ -27,20 +27,19 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
+from apigateway.apis.web.release.serializers import ReleaseBatchInputSLZ
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.release.serializers import ReleaseBatchSLZ
 from apigateway.apps.stage.validators import StageVarsValuesValidator
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
+from apigateway.biz.release import ReleaseHandler
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.tasks import (
-    mark_release_history_failure,
-    mark_release_history_status,
     release_gateway_by_helm,
     release_gateway_by_registry,
 )
-from apigateway.core.constants import ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.constants import PublishSourceEnum, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import (
     Gateway,
     MicroGateway,
@@ -99,7 +98,7 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
             - resource_version_id：待发布版本
             - comment：发布备注
         """
-        slz = slz = ReleaseBatchSLZ(data=data, context={"api": gateway})
+        slz = slz = ReleaseBatchInputSLZ(data=data, context={"api": gateway})
         slz.is_valid(raise_exception=True)
 
         return cls(
@@ -115,15 +114,34 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
         # 环境、部署信息校验
         # 普通参数校验失败，不需要记录发布日志，环境参数校验失败，需记录发布日志
         # 因此，将普通参数校验，环境参数校验分开处理
+
         try:
             self._validate()
         except (ValidationError, ReleaseValidationError, NonRelatedMicroGatewayError) as err:
             message = err.detail[0] if isinstance(err, ValidationError) else str(err)
-            self._save_release_history(status=ReleaseStatusEnum.FAILURE, message=message)
+            history = ReleaseHandler.save_release_history_with_id(
+                gateway_id=self.gateway.id,
+                stage_id=self.stages[0].id,
+                resource_version_id=self.resource_version.id,
+                source=PublishSourceEnum.VERSION_PUBLISH,
+                author=self.username,
+            )
+            history.stages.set(self.stages)
+            # 上报发布校验失败事件: todo: 支持批量环境发布
+            PublishEventReporter.report_config_validate_fail_event(history, history.stage, message)
             raise ReleaseError(message) from err
-
         # save release history
-        history = self._save_ok_release_history()
+        history = ReleaseHandler.save_release_history_with_id(
+            gateway_id=self.gateway.id,
+            stage_id=self.stages[0].id,
+            resource_version_id=self.resource_version.id,
+            source=PublishSourceEnum.VERSION_PUBLISH,
+            author=self.username,
+        )
+        history.stages.set(self.stages)
+
+        PublishEventReporter.report_config_validate_success_event(history, history.stage)
+
         release_instances = []
 
         # save release
@@ -197,25 +215,6 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
     def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
         """发布资源版本"""
 
-    def _save_release_history(self, status: ReleaseStatusEnum, message: str) -> ReleaseHistory:
-        """保存发布历史"""
-        history = ReleaseHistory.objects.create(
-            api=self.gateway,
-            stage=self.stages[0],
-            resource_version=self.resource_version,
-            comment=self.comment,
-            status=status.value,
-            message=message,
-            created_by=self.username,
-        )
-        history.stages.set(self.stages)
-
-        return history
-
-    def _save_ok_release_history(self) -> ReleaseHistory:
-        """保存正常的发布历史"""
-        return self._save_release_history(status=ReleaseStatusEnum.SUCCESS, message=_("发布成功"))
-
     def _activate_stages(self):
         stage_ids = [stage.id for stage in self.stages]
         Stage.objects.filter(id__in=stage_ids).update(status=StageStatusEnum.ACTIVE.value)
@@ -250,16 +249,13 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         except MicroGateway.DoesNotExist:
             raise SharedMicroGatewayNotFound(_("共享微网关实例不存在。"))
 
-    def _save_ok_release_history(self) -> ReleaseHistory:
-        return self._save_release_history(status=ReleaseStatusEnum.PENDING, message=_("发布中"))
-
     def _create_release_task_for_shared_gateway(self, release: Release, release_history: ReleaseHistory):
         shared_gateway = self._shared_micro_gateway
         if not shared_gateway:
             return
 
         history = MicroGatewayReleaseHistory.objects.create(
-            api=release.api,
+            gateway=release.gateway,
             stage=release.stage,
             micro_gateway=shared_gateway,
             release_history=release_history,
@@ -279,7 +275,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             return
 
         history = MicroGatewayReleaseHistory.objects.create(
-            api=release.api,
+            gateway=release.gateway,
             stage=stage,
             micro_gateway=micro_gateway,
             release_history=release_history,
@@ -295,9 +291,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
     def _create_release_task(self, release: Release, release_history: ReleaseHistory):
         # create publish event
-        if self._shared_micro_gateway:
-            PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
-
+        PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
         # NOTE: 发布专享网关时，不再将资源同时发布到共享网关
         micro_gateway = release.stage.micro_gateway
         if not micro_gateway or micro_gateway.is_shared:
@@ -307,25 +301,13 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
     def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
         tasks = []
-        release_success_callback = mark_release_history_status.si(
-            release_history_id=release_history.pk,
-            status=ReleaseStatusEnum.SUCCESS.value,
-            message="configuration released success",
-            stage_ids=[release.stage.id for release in releases],
-        )  # type: ignore
-        # => now we use en instead(no lang in celery, won't be translated)
-        # FIXME: the release status should be set to release_event.type + result
-        release_failure_callback = mark_release_history_failure.s(
-            release_history_id=release_history.pk, stage_ids=[release.stage.id for release in releases]
-        )  # type: ignore
-
         for release in releases:
             task = self._create_release_task(release, release_history)
             # 任意一个任务失败都表示发布失败
-            tasks.append(task.on_error(release_failure_callback))
+            tasks.append(task)
 
         # 使用 celery 的编排能力，并发发布多个微网关，并且在发布完成后，更新微网关发布历史的状态
-        delay_on_commit(group(*tasks) | release_success_callback)
+        delay_on_commit(group(*tasks))
 
 
 @define(slots=False)

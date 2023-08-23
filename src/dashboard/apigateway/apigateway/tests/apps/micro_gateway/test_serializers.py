@@ -166,7 +166,7 @@ class TestMicroGatewaySLZ:
             return
 
         slz.is_valid(raise_exception=True)
-        expected["api"] = request.gateway
+        expected["gateway"] = request.gateway
         assert slz.validated_data == expected
 
     def test_to_representation(self, faker, settings):
@@ -175,7 +175,7 @@ class TestMicroGatewaySLZ:
         gateway = G(Gateway)
         instance = G(
             MicroGateway,
-            api=gateway,
+            gateway=gateway,
             name=faker.color_name(),
             _config=json.dumps(
                 {
@@ -364,7 +364,7 @@ class TestUpdateMicroGatewaySLZ:
             return
 
         slz.is_valid(raise_exception=True)
-        expected["api"] = request.gateway
+        expected["gateway"] = request.gateway
         assert slz.validated_data == expected
 
     @pytest.mark.parametrize(
@@ -439,7 +439,7 @@ class TestListMicroGatewaySLZ:
         instance = G(
             MicroGateway,
             id=unique_id,
-            api=gateway,
+            gateway=gateway,
             name=faker.color_name(),
             _config=json.dumps(
                 {

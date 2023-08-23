@@ -93,7 +93,7 @@ class ResourceVersionHandler:
         根据版本ID获取Data，或者获取当前资源列表中的版本数据
         """
         if resource_version_id:
-            return ResourceVersion.objects.get(api=gateway, id=resource_version_id).data
+            return ResourceVersion.objects.get(gateway=gateway, id=resource_version_id).data
 
         return ResourceVersionHandler().make_version(gateway)
 
@@ -104,7 +104,7 @@ class ResourceVersionHandler:
         Release.objects.delete_by_gateway_id(gateway_id)
 
         # delete resource version
-        ResourceVersion.objects.filter(api_id=gateway_id).delete()
+        ResourceVersion.objects.filter(gateway_id=gateway_id).delete()
 
     @staticmethod
     def create_resource_version(gateway: Gateway, data: Dict[str, Any], username: str = "") -> ResourceVersion:

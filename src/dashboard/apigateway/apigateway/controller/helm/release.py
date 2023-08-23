@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from attrs import define, field
 from bkapi.bcs_api_gateway.client import Client as BcsApiGatewayClient
@@ -218,7 +218,7 @@ class ReleaseHelper:
         namespace: str,
         values: dict,
         operator: str,
-    ) -> ReleaseInfo:
+    ) -> Tuple[bool, ReleaseInfo]:
         """Ensure release upgrade with the given parameters."""
 
         try:
@@ -228,7 +228,7 @@ class ReleaseHelper:
             found = False
 
         if found:
-            return self.upgrade_release(
+            return True, self.upgrade_release(
                 cluster_id=cluster_id,
                 project_id=project_id,
                 repository=repository,
@@ -240,7 +240,7 @@ class ReleaseHelper:
                 operator=operator,
             )
 
-        return self.install_release(
+        return False, self.install_release(
             cluster_id=cluster_id,
             project_id=project_id,
             repository=repository,

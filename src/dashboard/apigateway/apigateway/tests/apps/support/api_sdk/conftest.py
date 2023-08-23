@@ -84,7 +84,7 @@ def resource_version(api, resource_version_data, faker):
         ResourceVersion,
         G(
             ResourceVersion,
-            api=api,
+            gateway=api,
             name=faker.pystr(),
             title=faker.pystr(),
             comment=faker.pystr(),

@@ -329,7 +329,7 @@ class TestStageSLZ:
 
     def test_to_representation(self):
         unique_id = uuid.uuid4()
-        micro_gateway = G(MicroGateway, api=self.gateway, id=unique_id)
+        micro_gateway = G(MicroGateway, gateway=self.gateway, id=unique_id)
         stage = G(Stage, _vars='{"test": "123"}', status=0, micro_gateway=micro_gateway, api=self.gateway)
         G(
             Context,
@@ -405,8 +405,8 @@ class TestStageSLZ:
 
     def test_validate_vars(self, mocker):
         stage = G(Stage, api=self.gateway, status=1)
-        resource_version = G(ResourceVersion, api=self.gateway)
-        G(Release, api=self.gateway, stage=stage, resource_version=resource_version)
+        resource_version = G(ResourceVersion, gateway=self.gateway)
+        G(Release, gateway=self.gateway, stage=stage, resource_version=resource_version)
 
         stage_data = {
             "name": "prod",
@@ -545,7 +545,7 @@ class TestStageSLZ:
         )
 
         fake_request.gateway = fake_gateway
-        micro_gateway = G(MicroGateway, api=fake_gateway)
+        micro_gateway = G(MicroGateway, gateway=fake_gateway)
         data["api"] = fake_gateway
         data["micro_gateway_id"] = micro_gateway.id
         slz = serializers.StageSLZ(data=data, context={"request": fake_request})
@@ -633,7 +633,7 @@ class TestStageSLZ:
             return_value=True,
         )
 
-        micro_gateway = G(MicroGateway, api=fake_gateway)
+        micro_gateway = G(MicroGateway, gateway=fake_gateway)
         stage = G(
             Stage, api=fake_gateway, name="test-03", status=0, description="t1", _vars=json.dumps({"test": "123"})
         )
@@ -665,7 +665,7 @@ class TestStageSLZ:
         unique_id = uuid.uuid4()
         fake_request.gateway = fake_gateway
 
-        micro_gateway = G(MicroGateway, api=fake_gateway)
+        micro_gateway = G(MicroGateway, gateway=fake_gateway)
 
         slz = serializers.StageSLZ({}, context={"request": fake_request})
         assert slz.validate_micro_gateway_id(None) is None
@@ -677,7 +677,7 @@ class TestStageSLZ:
     def test_validate_micro_gateway_stage_unique(self, fake_gateway, fake_request):
         fake_request.gateway = fake_gateway
 
-        micro_gateway = G(MicroGateway, api=fake_gateway)
+        micro_gateway = G(MicroGateway, gateway=fake_gateway)
         s1 = G(Stage, api=fake_gateway, micro_gateway=micro_gateway)
         s2 = G(Stage, api=fake_gateway)
 
@@ -732,7 +732,7 @@ class TestUpdateStageStatusSLZ(TestCase):
 
 class TestListStageSLZ:
     def test_to_representation(self, fake_gateway):
-        micro_gateway = G(MicroGateway, api=fake_gateway)
+        micro_gateway = G(MicroGateway, gateway=fake_gateway)
 
         stage_prod = G(Stage, api=fake_gateway, name="prod", status=0)
         stage_test = G(Stage, api=fake_gateway, name="test", status=0, micro_gateway=micro_gateway)

@@ -37,7 +37,7 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
 
     def get_queryset(self):
-        return MicroGateway.objects.filter(api=self.request.gateway)
+        return MicroGateway.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""}, request_body=serializers.MicroGatewaySLZ, tags=["MicroGateway"]

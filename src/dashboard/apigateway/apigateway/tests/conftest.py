@@ -229,7 +229,7 @@ def fake_resource2(faker, fake_resource):
 def fake_micro_gateway(fake_gateway_for_micro_gateway, faker):
     gateway = G(
         MicroGateway,
-        api=fake_gateway_for_micro_gateway,
+        gateway=fake_gateway_for_micro_gateway,
         name=faker.color_name(),
         is_shared=False,
         _config=json.dumps(
@@ -268,7 +268,7 @@ def fake_shared_gateway(fake_micro_gateway, settings):
     """共享网关"""
     gateway = G(
         MicroGateway,
-        api=fake_micro_gateway.api,
+        gateway=fake_micro_gateway.gateway,
         name=fake_micro_gateway.name,
         is_shared=True,
         _config=fake_micro_gateway._config,
@@ -280,7 +280,7 @@ def fake_shared_gateway(fake_micro_gateway, settings):
 
 @pytest.fixture
 def fake_resource_version(faker, fake_gateway, fake_resource1, fake_resource2):
-    resource_version = G(ResourceVersion, api=fake_gateway, name=faker.pystr(), version=faker.pystr())
+    resource_version = G(ResourceVersion, gateway=fake_gateway, name=faker.pystr(), version=faker.pystr())
     resource_version.data = ResourceVersionHandler().make_version(fake_gateway)
     resource_version.save()
     return resource_version
@@ -288,12 +288,12 @@ def fake_resource_version(faker, fake_gateway, fake_resource1, fake_resource2):
 
 @pytest.fixture
 def fake_release(fake_gateway, fake_stage, fake_resource_version):
-    return G(Release, api=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+    return G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
 
 @pytest.fixture
 def fake_release_history(fake_gateway, fake_stage, fake_resource_version):
-    return G(ReleaseHistory, api=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+    return G(ReleaseHistory, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
 
 @pytest.fixture
@@ -301,7 +301,7 @@ def fake_released_resource(fake_gateway, fake_resource1, fake_resource_version, 
     resource_id_to_data = {item["id"]: item for item in fake_resource_version.data}
     return G(
         ReleasedResource,
-        api=fake_gateway,
+        gateway=fake_gateway,
         resource_version_id=fake_resource_version.id,
         resource_id=fake_resource1.id,
         resource_name=fake_resource1.name,
@@ -385,7 +385,7 @@ def celery_task_eager_mode(settings):
 def fake_sdk(fake_gateway, fake_resource_version):
     return G(
         APISDK,
-        api=fake_gateway,
+        gateway=fake_gateway,
         resource_version=fake_resource_version,
         language="magic",
         is_recommended=True,
