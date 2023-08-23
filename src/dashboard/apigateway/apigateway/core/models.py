@@ -35,22 +35,20 @@ from apigateway.core.constants import (
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
     BackendConfigTypeEnum,
+    BackendTypeEnum,
     BackendUpstreamTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
     GatewayStatusEnum,
     LoadBalanceTypeEnum,
     MicroGatewayStatusEnum,
-    PassHostEnum,
     ProxyTypeEnum,
     PublishEventEnum,
     PublishEventStatusEnum,
     PublishSourceEnum,
     ReleaseStatusEnum,
-    SchemeEnum,
     SSLCertificateBindingScopeTypeEnum,
     SSLCertificateTypeEnum,
-    StageItemTypeEnum,
     StageStatusEnum,
 )
 from apigateway.core.utils import get_path_display
@@ -167,9 +165,9 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     # 环境对应的微网关实例，不同环境允许使用不同网关实例，提供隔离能力
     micro_gateway = models.ForeignKey("MicroGateway", on_delete=models.SET_NULL, null=True, default=None, blank=True)
 
-    _vars = models.TextField(db_column="vars")
+    _vars = models.TextField(db_column="vars", default="{}")
 
-    status = models.IntegerField(choices=StageStatusEnum.choices(), default=StageStatusEnum.INACTIVE.value)
+    status = models.IntegerField(choices=StageStatusEnum.get_choices(), default=StageStatusEnum.INACTIVE.value)
 
     is_public = models.BooleanField(default=True)
 
@@ -351,11 +349,12 @@ class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_stage_resource_disabled"
 
 
+# TODO delete it 1.14
 class StageItem(TimestampedModelMixin, OperatorModelMixin):
     """Stage 配置项"""
 
     api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
-    type = models.CharField(max_length=64, choices=StageItemTypeEnum.get_choices())
+    type = models.CharField(max_length=64)
     name = models.CharField(max_length=128)
     description = models.TextField(blank=True, default="")
 
@@ -365,6 +364,7 @@ class StageItem(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_stage_item"
 
 
+# TODO delete it 1.14
 class StageItemConfig(TimestampedModelMixin, OperatorModelMixin):
     """Stage 配置项数据"""
 
@@ -378,6 +378,37 @@ class StageItemConfig(TimestampedModelMixin, OperatorModelMixin):
     class Meta:
         unique_together = ("api", "stage", "stage_item")
         db_table = "core_stage_item_config"
+
+
+# ============================================ backend ============================================
+
+
+class Backend(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    type = models.CharField(
+        max_length=20,
+        choices=BackendTypeEnum.get_choices(),
+        default=BackendTypeEnum.HTTP.value,
+        blank=False,
+        null=False,
+    )
+    name = models.CharField(max_length=64)
+    description = models.CharField(max_length=512, default="")
+
+    class Meta:
+        unique_together = ("gateway", "name")
+        db_table = "core_backend"
+
+
+class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    backend = models.ForeignKey(Backend, on_delete=models.PROTECT)
+    stage = models.ForeignKey(Stage, on_delete=models.PROTECT)
+    config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
+
+    class Meta:
+        unique_together = ("gateway", "backend", "stage")
+        db_table = "core_backend_config"
 
 
 # ============================================ context ============================================
@@ -770,6 +801,7 @@ class MicroGatewayReleaseHistory(models.Model):
         db_table = "core_micro_gateway_release_history"
 
 
+# TODO delete it 1.14
 class BackendService(TimestampedModelMixin, OperatorModelMixin):
     """网关后端服务"""
 
@@ -787,9 +819,9 @@ class BackendService(TimestampedModelMixin, OperatorModelMixin):
     upstream_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     upstream_extra_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
 
-    pass_host = models.CharField(max_length=32, default=PassHostEnum.PASS.value)
+    pass_host = models.CharField(max_length=32, default="pass")
     upstream_host = models.CharField(max_length=512, default="")
-    scheme = models.CharField(max_length=32, default=SchemeEnum.HTTP.value)
+    scheme = models.CharField(max_length=32, default="http")
     timeout = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     ssl_enabled = models.BooleanField(default=False)
 
