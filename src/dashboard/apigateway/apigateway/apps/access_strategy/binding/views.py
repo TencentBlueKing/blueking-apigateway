@@ -46,7 +46,7 @@ class AccessStrategyBindingBatchViewSet(viewsets.ModelViewSet):
 
     def _get_scope_queryset(self, scope_type, scope_ids):
         if scope_type == AccessStrategyBindScopeEnum.STAGE.value:
-            queryset = Stage.objects.filter(api=self.request.gateway)
+            queryset = Stage.objects.filter(gateway=self.request.gateway)
         elif scope_type == AccessStrategyBindScopeEnum.RESOURCE.value:
             queryset = Resource.objects.filter(api=self.request.gateway)
         else:

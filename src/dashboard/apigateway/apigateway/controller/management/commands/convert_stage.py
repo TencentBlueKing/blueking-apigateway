@@ -52,7 +52,7 @@ class Command(BaseCommand):
 
     def _get_stage(self, gateway: Gateway, stage_name: str) -> Stage:
         try:
-            return Stage.objects.get(api=gateway, name=stage_name)
+            return Stage.objects.get(gateway=gateway, name=stage_name)
         except Stage.DoesNotExist:
             raise CommandError(f"网关【name={gateway.name}】 下环境【name={stage_name}】不存在")
 

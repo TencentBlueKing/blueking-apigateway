@@ -26,7 +26,7 @@ class TestStageInputSLZ:
     def test_to_internal_value(self, fake_gateway, fake_backend):
         data = [
             {
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "name": "stage-test",
                 "description": "test",
                 "backends": [
@@ -42,7 +42,7 @@ class TestStageInputSLZ:
                 ],
             },
             {
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "name": "stage-test",
                 "description": "test",
                 "backends": [
@@ -59,14 +59,14 @@ class TestStageInputSLZ:
                 "will_error": True,
             },
             {
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "name": "stage-test",
                 "description": "test",
                 "backends": [],
                 "will_error": True,
             },
             {
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "name": "stage-test",
                 "description": "test",
                 "backends": [

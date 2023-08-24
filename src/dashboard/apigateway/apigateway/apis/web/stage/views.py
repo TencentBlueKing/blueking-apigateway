@@ -41,7 +41,7 @@ from .serializers import (
 class StageQuerySetMixin:
     def get_queryset(self):
         queryset = super().get_queryset()
-        return queryset.filter(api=self.request.gateway)
+        return queryset.filter(gateway=self.request.gateway)
 
 
 class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):

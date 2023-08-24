@@ -43,7 +43,7 @@ class TestResourceViewSet(TestCase):
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
         cls.gateway = create_gateway()
-        cls.stage = G(Stage, api=cls.gateway)
+        cls.stage = G(Stage, gateway=cls.gateway)
         cls.label = G(APILabel, api=cls.gateway)
 
     def test_create(self):
@@ -422,8 +422,8 @@ class TestResourceURLViewSet:
     def test_get(self, request_factory, fake_gateway, settings):
         settings.API_RESOURCE_URL_TMPL = "http://bking.com/{stage_name}/{resource_path}"
 
-        G(Stage, api=fake_gateway, name="prod")
-        G(Stage, api=fake_gateway, name="test")
+        G(Stage, gateway=fake_gateway, name="prod")
+        G(Stage, gateway=fake_gateway, name="test")
         resource = G(Resource, api=fake_gateway, path="/echo/")
 
         request = request_factory.get(f"/apis/{fake_gateway.id}/resource/{resource.id}/urls/")
@@ -452,7 +452,7 @@ class TestProxyPathViewSet(TestCase):
         cls.gateway = create_gateway()
 
     def test_get(self):
-        G(Stage, api=self.gateway, name="prod", _vars='{"k1": "v1"}')
+        G(Stage, gateway=self.gateway, name="prod", _vars='{"k1": "v1"}')
 
         data = [
             # ok, no vars
@@ -808,7 +808,7 @@ class TestResourceImportExportViewSet:
             return_value=True,
         )
 
-        stage = G(Stage, api=self.gateway, name="prod")
+        stage = G(Stage, gateway=self.gateway, name="prod")
         resource1 = G(Resource, api=self.gateway, path="/echo/", method="GET", name="get_echo", description="desc")
         resource2 = G(Resource, api=self.gateway, path="/echo/2/", method="ANY", name="any_echo", description="desc")
         resource3 = G(

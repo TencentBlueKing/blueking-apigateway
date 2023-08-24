@@ -52,8 +52,8 @@ class TestAPIViewSet:
         self.api_auth_context.save(gateway_1.id, {"user_auth_type": "ieod", "api_type": 10})
         self.api_auth_context.save(gateway_2.id, {"user_auth_type": "ieod", "api_type": 10})
 
-        s1 = G(Stage, api=gateway_1, status=1)
-        s2 = G(Stage, api=gateway_2, status=1)
+        s1 = G(Stage, gateway=gateway_1, status=1)
+        s2 = G(Stage, gateway=gateway_2, status=1)
 
         G(Release, gateway=gateway_1, stage=s1)
         G(Release, gateway=gateway_2, stage=s2)

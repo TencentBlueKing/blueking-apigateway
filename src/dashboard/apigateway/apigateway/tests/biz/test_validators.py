@@ -51,8 +51,8 @@ class TestMaxCountPerGatewayValidator:
             ]
 
     def test_validate(self, fake_gateway):
-        stage = G(Stage, api=fake_gateway)
-        G(Stage, api=fake_gateway)
+        stage = G(Stage, gateway=fake_gateway)
+        G(Stage, gateway=fake_gateway)
 
         # 修改
         slz = self.StageSLZ(instance=stage, data={"name": "prod"}, context={"api": fake_gateway})

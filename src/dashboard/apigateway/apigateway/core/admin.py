@@ -15,12 +15,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import List
+
 from django.contrib import admin
 
 from apigateway.core.models import (
     JWT,
     APIRelatedApp,
-    BackendService,
+    Backend,
+    BackendConfig,
     Context,
     Gateway,
     MicroGateway,
@@ -35,8 +38,6 @@ from apigateway.core.models import (
     SslCertificate,
     SslCertificateBinding,
     Stage,
-    StageItem,
-    StageItemConfig,
     StageResourceDisabled,
 )
 
@@ -56,21 +57,9 @@ class GatewayAdmin(admin.ModelAdmin):
 
 
 class StageAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "api", "status", "created_by", "updated_by", "created_time", "updated_time"]
+    list_display = ["id", "name", "gateway", "status", "created_by", "updated_by", "created_time", "updated_time"]
     search_fields = ["id", "name"]
-    list_filter = ["api"]
-
-
-class StageItemAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "api", "type", "updated_time"]
-    search_fields = ["id", "name"]
-    list_filter = ["api"]
-
-
-class StageItemConfigAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "stage", "stage_item"]
-    search_fields = ["id"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
 
 
 class ResourceAdmin(admin.ModelAdmin):
@@ -156,10 +145,16 @@ class MicroGatewayReleaseHistoryAdmin(admin.ModelAdmin):
     raw_id_fields = ["release_history"]
 
 
-class BackendServiceAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "api", "upstream_type", "updated_time"]
+class BackendAdmin(admin.ModelAdmin):
+    list_display = ["id", "gateway", "type", "name", "description"]
     search_fields = ["name"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
+
+
+class BackendConfigAdmin(admin.ModelAdmin):
+    list_display = ["id", "gateway", "backend", "stage", "config"]
+    search_fields: List[str] = []
+    list_filter = ["gateway", "backend", "stage"]
 
 
 class SslCertificateAdmin(admin.ModelAdmin):
@@ -176,8 +171,6 @@ class SslCertificateBindingAdmin(admin.ModelAdmin):
 
 admin.site.register(Gateway, GatewayAdmin)
 admin.site.register(Stage, StageAdmin)
-admin.site.register(StageItem, StageItemAdmin)
-admin.site.register(StageItemConfig, StageItemConfigAdmin)
 admin.site.register(Resource, ResourceAdmin)
 admin.site.register(StageResourceDisabled, StageResourceDisabledAdmin)
 admin.site.register(Proxy, ProxyAdmin)
@@ -191,6 +184,7 @@ admin.site.register(JWT, JWTAdmin)
 admin.site.register(APIRelatedApp, APIRelatedAppAdmin)
 admin.site.register(MicroGateway, MicroGatewayAdmin)
 admin.site.register(MicroGatewayReleaseHistory, MicroGatewayReleaseHistoryAdmin)
-admin.site.register(BackendService, BackendServiceAdmin)
+admin.site.register(Backend, BackendAdmin)
+admin.site.register(BackendConfig, BackendConfigAdmin)
 admin.site.register(SslCertificate, SslCertificateAdmin)
 admin.site.register(SslCertificateBinding, SslCertificateBindingAdmin)

@@ -20,7 +20,7 @@ from apigateway.core.models import Backend
 
 
 def _create(request_view, fake_stage):
-    fake_gateway = fake_stage.api
+    fake_gateway = fake_stage.gateway
     data = {
         "name": "backend-test",
         "description": "test",
@@ -49,11 +49,11 @@ def _create(request_view, fake_stage):
 class TestBackendApi:
     def test_create(self, request_view, fake_stage):
         _create(request_view, fake_stage)
-        backend = Backend.objects.filter(gateway=fake_stage.api).first()
+        backend = Backend.objects.filter(gateway=fake_stage.gateway).first()
         assert backend
 
     def test_list(self, request_view, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         _create(request_view, fake_stage)
 
@@ -68,10 +68,10 @@ class TestBackendApi:
         assert data["count"] == 1
 
     def test_retrieve(self, request_view, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         _create(request_view, fake_stage)
-        backend = Backend.objects.filter(gateway=fake_stage.api).first()
+        backend = Backend.objects.filter(gateway=fake_stage.gateway).first()
         assert backend
 
         response = request_view(
@@ -86,10 +86,10 @@ class TestBackendApi:
         assert len(data["data"]["configs"]) == 1
 
     def test_update(self, request_view, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         _create(request_view, fake_stage)
-        backend = Backend.objects.filter(gateway=fake_stage.api).first()
+        backend = Backend.objects.filter(gateway=fake_stage.gateway).first()
         assert backend
 
         data = {
@@ -117,10 +117,10 @@ class TestBackendApi:
         assert response.status_code == 200
 
     def test_delete(self, request_view, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         _create(request_view, fake_stage)
-        backend = Backend.objects.filter(gateway=fake_stage.api).first()
+        backend = Backend.objects.filter(gateway=fake_stage.gateway).first()
         assert backend
 
         response = request_view(

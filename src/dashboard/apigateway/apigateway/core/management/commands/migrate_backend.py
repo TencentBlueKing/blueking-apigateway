@@ -54,7 +54,7 @@ class Command(BaseCommand):
         )
 
         # 迁移stage的proxy配置
-        stages = list(Stage.objects.filter(api=gateway))
+        stages = list(Stage.objects.filter(gateway=gateway))
         # 记录stage配置的timeout, 用户后续resource的数据迁移
         stage_timeout: Dict[int, int] = {}
         for stage in stages:

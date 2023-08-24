@@ -36,7 +36,7 @@ pytestmark = pytest.mark.django_db(transaction=True)
 
 
 def get_release_data(api):
-    stage = G(Stage, api=api)
+    stage = G(Stage, gateway=api)
     resource_version = G(ResourceVersion, gateway=api, name=f"{api.id}-{stage.id}")
 
     return {
@@ -231,8 +231,8 @@ class TestDefaultGatewayReleaser:
                 )
 
     def test_activate_stages(self, fake_gateway):
-        s1 = G(Stage, api=fake_gateway, status=0)
-        s2 = G(Stage, api=fake_gateway, status=1)
+        s1 = G(Stage, gateway=fake_gateway, status=0)
+        s2 = G(Stage, gateway=fake_gateway, status=1)
 
         releaser = DefaultGatewayReleaser(gateway=fake_gateway, stages=[s1, s2], resource_version=None)
         releaser._activate_stages()

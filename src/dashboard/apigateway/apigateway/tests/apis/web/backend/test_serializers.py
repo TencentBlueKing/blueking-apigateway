@@ -26,7 +26,7 @@ class TestBackendInputSLZ:
     def test_to_internal_value(self, fake_stage):
         data = [
             {
-                "gateway": fake_stage.api,
+                "gateway": fake_stage.gateway,
                 "name": "backend-test",
                 "description": "test",
                 "type": "http",
@@ -41,7 +41,7 @@ class TestBackendInputSLZ:
                 ],
             },
             {
-                "gateway": fake_stage.api,
+                "gateway": fake_stage.gateway,
                 "name": "backend-test",
                 "description": "test",
                 "type": "http",
@@ -57,7 +57,7 @@ class TestBackendInputSLZ:
                 "will_error": True,
             },
             {
-                "gateway": fake_stage.api,
+                "gateway": fake_stage.gateway,
                 "name": "backend-test",
                 "description": "test",
                 "type": "http",
@@ -73,7 +73,7 @@ class TestBackendInputSLZ:
                 "will_error": True,
             },
             {
-                "gateway": fake_stage.api,
+                "gateway": fake_stage.gateway,
                 "name": "backend-test",
                 "description": "test",
                 "type": "http",
@@ -98,7 +98,7 @@ class TestBackendInputSLZ:
         ]
 
         for test in data:
-            slz = serializers.BackendInputSLZ(data=test, context={"api": fake_stage.api})
+            slz = serializers.BackendInputSLZ(data=test, context={"api": fake_stage.gateway})
 
             if not test.get("will_error"):
                 slz.is_valid(raise_exception=True)

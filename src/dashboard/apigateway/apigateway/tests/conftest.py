@@ -54,8 +54,6 @@ from apigateway.core.models import (
     SslCertificate,
     SslCertificateBinding,
     Stage,
-    StageItem,
-    StageItemConfig,
 )
 from apigateway.schema import instances
 from apigateway.schema.data.meta_schema import init_meta_schemas
@@ -160,7 +158,7 @@ def fake_gateway_for_micro_gateway(fake_gateway):
 
 @pytest.fixture
 def fake_stage(fake_gateway, faker):
-    return G(Stage, api=fake_gateway, status=1, name=faker.pystr(), description=faker.bothify("????????"))
+    return G(Stage, gateway=fake_gateway, status=1, name=faker.pystr(), description=faker.bothify("????????"))
 
 
 @pytest.fixture
@@ -629,30 +627,13 @@ def fake_node_data(unique_stage_item_name):
 
 
 @pytest.fixture
-def fake_stage_item(fake_gateway):
-    return G(StageItem, api=fake_gateway)
-
-
-@pytest.fixture
-def fake_stage_item_config(fake_stage_item):
-    stage = G(Stage, api=fake_stage_item.api)
-    return G(
-        StageItemConfig,
-        api=fake_stage_item.api,
-        stage=stage,
-        stage_item=fake_stage_item,
-        config={"nodes": [{"host": "1.0.0.1", "weight": 100}]},
-    )
-
-
-@pytest.fixture
 def fake_ssl_certificate(fake_gateway):
     return G(SslCertificate, api=fake_gateway)
 
 
 @pytest.fixture
 def fake_ssl_certificate_binding(fake_ssl_certificate):
-    stage = G(Stage, api=fake_ssl_certificate.api)
+    stage = G(Stage, gateway=fake_ssl_certificate.api)
     return G(
         SslCertificateBinding,
         api=fake_ssl_certificate.api,

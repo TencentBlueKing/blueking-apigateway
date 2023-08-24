@@ -51,7 +51,7 @@ class APITestApi(generics.CreateAPIView):
         data = slz.validated_data
 
         # 获取资源
-        stage = generics.get_object_or_404(Stage, api=request.gateway, id=data["stage_id"])
+        stage = generics.get_object_or_404(Stage, gateway=request.gateway, id=data["stage_id"])
         released_resource = get_released_resource_data(request.gateway, stage, data["resource_id"])
         if not released_resource:
             raise Http404

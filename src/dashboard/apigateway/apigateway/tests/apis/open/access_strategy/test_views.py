@@ -182,7 +182,7 @@ class TestAccessStrategySyncViewSet:
             "apigateway.apis.open.access_strategy.views.GatewayRelatedAppPermission.has_permission",
             return_value=True,
         )
-        stage = G(Stage, api=fake_gateway, name="prod")
+        stage = G(Stage, gateway=fake_gateway, name="prod")
 
         request = request_factory.post(
             f"/api/v1/apis/{fake_gateway.name}/access_strategies/sync/",

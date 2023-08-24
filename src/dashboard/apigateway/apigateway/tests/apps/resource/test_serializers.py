@@ -766,7 +766,7 @@ class TestResourceSLZ:
     def test_to_representation(self):
         gateway = G(Gateway)
         resource = G(Resource, api=gateway)
-        stage_prod = G(Stage, api=gateway, name="prod")
+        stage_prod = G(Stage, gateway=gateway, name="prod")
         label = G(APILabel, api=gateway, name="label")
 
         G(
@@ -893,7 +893,7 @@ class TestCheckProxyPathSLZ:
         gateway = G(Gateway)
         G(
             Stage,
-            api=gateway,
+            gateway=gateway,
             name="prod",
             _vars=json.dumps(
                 {

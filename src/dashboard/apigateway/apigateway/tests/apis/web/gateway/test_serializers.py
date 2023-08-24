@@ -38,8 +38,8 @@ class TestGatewayListOutputSLZ:
         gateway_1 = G(Gateway, created_by="admin", status=1, is_public=True)
         gateway_2 = G(Gateway, created_by="admin", status=0, is_public=False)
 
-        stage_1 = G(Stage, api=gateway_1, name="prod")
-        stage_2 = G(Stage, api=gateway_1, name="test")
+        stage_1 = G(Stage, gateway=gateway_1, name="prod")
+        stage_2 = G(Stage, gateway=gateway_1, name="test")
 
         G(Resource, api=gateway_1)
         G(Resource, api=gateway_1)

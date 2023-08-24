@@ -33,9 +33,9 @@ class TestAccessStrategyBindingBatchViewSet(TestCase):
 
     def test_bind(self):
         gateway = create_gateway()
-        stage_1 = G(Stage, api=gateway)
-        stage_2 = G(Stage, api=gateway)
-        stage_3 = G(Stage, api=gateway)
+        stage_1 = G(Stage, gateway=gateway)
+        stage_2 = G(Stage, gateway=gateway)
+        stage_3 = G(Stage, gateway=gateway)
         access_strategy_1 = G(AccessStrategy, api=gateway, type="ip_access_control")
         access_strategy_2 = G(AccessStrategy, api=gateway, type="ip_access_control")
 
@@ -147,7 +147,7 @@ class TestAccessStrategyBindingBatchViewSet(TestCase):
 
     def test_list(self):
         access_strategy = G(AccessStrategy, api=self.gateway, type="ip_access_control")
-        stage = G(Stage, api=self.gateway)
+        stage = G(Stage, gateway=self.gateway)
         G(
             AccessStrategyBinding,
             scope_type="stage",
@@ -183,7 +183,7 @@ class TestAccessStrategyBindingBatchViewSet(TestCase):
 
     def test_unbind(self):
         access_strategy = G(AccessStrategy, api=self.gateway, type="ip_access_control")
-        stage = G(Stage, api=self.gateway)
+        stage = G(Stage, gateway=self.gateway)
         binding = G(
             AccessStrategyBinding,
             scope_type="stage",
@@ -213,9 +213,9 @@ class TestAccessStrategyBindingBatchViewSet(TestCase):
         access_strategy_1 = G(AccessStrategy, api=self.gateway, type="ip_access_control")
         access_strategy_2 = G(AccessStrategy, api=self.gateway, type="ip_access_control")
 
-        stage_1 = G(Stage, api=self.gateway)
-        stage_2 = G(Stage, api=self.gateway)
-        stage_3 = G(Stage, api=self.gateway)
+        stage_1 = G(Stage, gateway=self.gateway)
+        stage_2 = G(Stage, gateway=self.gateway)
+        stage_3 = G(Stage, gateway=self.gateway)
 
         G(
             AccessStrategyBinding,

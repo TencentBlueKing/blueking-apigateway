@@ -85,7 +85,7 @@ class TestPluginBindingManager:
         assert PluginBinding.objects.filter(api=fake_gateway).count() == 0
 
     def test_delete_by_scopes(self, fake_gateway):
-        stage = G(Stage, api=fake_gateway)
+        stage = G(Stage, gateway=fake_gateway)
         G(PluginBinding, api=fake_gateway, scope_type="stage", scope_id=stage.id)
 
         PluginBinding.objects.delete_by_scopes("stage", scope_ids=[stage.id])
@@ -93,7 +93,7 @@ class TestPluginBindingManager:
 
     def test_get_valid_scope_ids(self, fake_gateway):
         r = G(Resource, api=fake_gateway)
-        s = G(Stage, api=fake_gateway)
+        s = G(Stage, gateway=fake_gateway)
 
         result = PluginBinding.objects.get_valid_scope_ids(
             fake_gateway.id, scope_type="resource", scope_ids=[r.id, r.id + 1]

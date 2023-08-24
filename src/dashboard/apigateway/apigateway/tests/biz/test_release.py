@@ -31,8 +31,8 @@ class TestReleaseHandler:
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.save()
 
-        stage_1 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
-        G(Stage, api=fake_gateway, status=StageStatusEnum.INACTIVE.value)
+        stage_1 = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        G(Stage, gateway=fake_gateway, status=StageStatusEnum.INACTIVE.value)
         G(Release, gateway=fake_gateway, stage=stage_1)
 
         assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == [stage_1.id]

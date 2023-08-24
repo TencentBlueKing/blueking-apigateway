@@ -29,7 +29,7 @@ class ReleaseBatchInputSLZ(serializers.Serializer):
     resource_version_id = serializers.IntegerField(required=True)
 
     def validate_stage_ids(self, value):
-        count = Stage.objects.filter(api=self.context["api"], id__in=value).count()
+        count = Stage.objects.filter(gateway=self.context["api"], id__in=value).count()
         if len(value) != count:
             raise Http404
 
