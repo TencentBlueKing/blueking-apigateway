@@ -55,11 +55,11 @@ class TestMaxCountPerGatewayValidator:
         G(Stage, gateway=fake_gateway)
 
         # 修改
-        slz = self.StageSLZ(instance=stage, data={"name": "prod"}, context={"api": fake_gateway})
+        slz = self.StageSLZ(instance=stage, data={"name": "prod"}, context={"gateway": fake_gateway})
         slz.is_valid(raise_exception=True)
 
         # 新增
-        slz = self.StageSLZ(data={"name": "prod"}, context={"api": fake_gateway})
+        slz = self.StageSLZ(data={"name": "prod"}, context={"gateway": fake_gateway})
         with pytest.raises(ValidationError):
             slz.is_valid(raise_exception=True)
 
@@ -82,21 +82,21 @@ class TestResourceIDValidator:
         r3 = G(Resource, api=G(Gateway))
 
         # 单个资源
-        slz = self.ResourceIDSLZ(data={"resource_id": r1.id}, context={"api": fake_gateway})
+        slz = self.ResourceIDSLZ(data={"resource_id": r1.id}, context={"gateway": fake_gateway})
         slz.is_valid(raise_exception=True)
 
-        slz = self.ResourceIDSLZ(data={"resource_id": r3.id}, context={"api": fake_gateway})
+        slz = self.ResourceIDSLZ(data={"resource_id": r3.id}, context={"gateway": fake_gateway})
         with pytest.raises(ValidationError):
             slz.is_valid(raise_exception=True)
 
         # 多个资源
-        slz = self.ResourceIDsSLZ(data={}, context={"api": fake_gateway})
+        slz = self.ResourceIDsSLZ(data={}, context={"gateway": fake_gateway})
         slz.is_valid(raise_exception=True)
 
-        slz = self.ResourceIDsSLZ(data={"resource_ids": [r1.id, r2.id]}, context={"api": fake_gateway})
+        slz = self.ResourceIDsSLZ(data={"resource_ids": [r1.id, r2.id]}, context={"gateway": fake_gateway})
         slz.is_valid(raise_exception=True)
 
-        slz = self.ResourceIDsSLZ(data={"resource_ids": [r1.id, r3.id]}, context={"api": fake_gateway})
+        slz = self.ResourceIDsSLZ(data={"resource_ids": [r1.id, r3.id]}, context={"gateway": fake_gateway})
         with pytest.raises(ValidationError):
             slz.is_valid(raise_exception=True)
 

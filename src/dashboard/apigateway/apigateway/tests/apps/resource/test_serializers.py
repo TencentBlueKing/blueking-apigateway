@@ -753,7 +753,7 @@ class TestResourceSLZ:
         ],
     )
     def test_validate(self, fake_gateway, data, expected, expected_valid):
-        slz = serializers.ResourceSLZ(data=data, context={"api": fake_gateway})
+        slz = serializers.ResourceSLZ(data=data, context={"gateway": fake_gateway})
 
         assert slz.is_valid() is expected_valid
 

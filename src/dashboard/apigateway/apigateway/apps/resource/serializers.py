@@ -604,7 +604,7 @@ class ResourceExportConditionSLZ(QueryResourceSLZ):
     def get_exported_resource(self):
         """获取被导出的资源"""
         data = self.validated_data
-        gateway = self.context["api"]
+        gateway = self.context["gateway"]
 
         if data["export_type"] == ExportTypeEnum.ALL.value:
             return ResourceHandler().filter_resource(gateway=gateway)

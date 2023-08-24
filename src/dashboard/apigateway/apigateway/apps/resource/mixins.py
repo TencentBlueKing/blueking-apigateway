@@ -30,7 +30,7 @@ from apigateway.core.models import Gateway, Resource
 
 class CreateResourceMixin:
     def _create_resource(self, gateway: Gateway, data: Dict[str, Any], username: str) -> Resource:
-        slz = serializers.ResourceSLZ(data=data, context={"api": gateway})
+        slz = serializers.ResourceSLZ(data=data, context={"gateway": gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -81,7 +81,7 @@ class CreateResourceMixin:
 
 class UpdateResourceMixin:
     def _update_resource(self, gateway: Gateway, instance: Resource, data: Dict[str, Any], username: str):
-        slz = serializers.ResourceSLZ(instance, data=data, context={"api": gateway})
+        slz = serializers.ResourceSLZ(instance, data=data, context={"gateway": gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data

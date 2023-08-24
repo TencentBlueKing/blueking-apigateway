@@ -68,7 +68,7 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
         """
         创建后端服务
         """
-        slz = BackendInputSLZ(data=request.data, context={"api": request.gateway})
+        slz = BackendInputSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -110,7 +110,7 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        slz = BackendInputSLZ(instance=instance, data=request.data, context={"api": request.gateway})
+        slz = BackendInputSLZ(instance=instance, data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data

@@ -85,7 +85,7 @@ class TestStageInputSLZ:
         ]
 
         for test in data:
-            slz = serializers.StageInputSLZ(data=test, context={"api": fake_gateway})
+            slz = serializers.StageInputSLZ(data=test, context={"gateway": fake_gateway})
 
             if not test.get("will_error"):
                 slz.is_valid(raise_exception=True)

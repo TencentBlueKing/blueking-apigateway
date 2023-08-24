@@ -66,7 +66,7 @@ class ReleaseBatchInputSLZ:
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"api": self.gateway})
+            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"gateway": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()
@@ -104,7 +104,7 @@ class ReleaseBatchInputSLZ:
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"api": self.gateway})
+            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"gateway": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()

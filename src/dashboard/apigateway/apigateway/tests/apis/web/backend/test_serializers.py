@@ -98,7 +98,7 @@ class TestBackendInputSLZ:
         ]
 
         for test in data:
-            slz = serializers.BackendInputSLZ(data=test, context={"api": fake_stage.gateway})
+            slz = serializers.BackendInputSLZ(data=test, context={"gateway": fake_stage.gateway})
 
             if not test.get("will_error"):
                 slz.is_valid(raise_exception=True)

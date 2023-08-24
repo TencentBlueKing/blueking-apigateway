@@ -199,7 +199,7 @@ class ResourceImportExportViewSet(ResourceViewSet):
         tags=["Resource"],
     )
     def export_resources(self, request, *args, **kwargs):
-        slz = serializers.ResourceExportConditionSLZ(data=request.data, context={"api": request.gateway})
+        slz = serializers.ResourceExportConditionSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
