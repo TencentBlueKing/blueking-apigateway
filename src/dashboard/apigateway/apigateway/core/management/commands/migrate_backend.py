@@ -17,7 +17,7 @@
 #
 import logging
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from django.core.management.base import BaseCommand
 from django.core.paginator import Paginator
@@ -56,7 +56,7 @@ class Command(BaseCommand):
         # 迁移stage的proxy配置
         stages = list(Stage.objects.filter(api=gateway))
         # 记录stage配置的timeout, 用户后续resource的数据迁移
-        stage_timeout = {}
+        stage_timeout: Dict[int, int] = {}
         for stage in stages:
             context = Context.objects.filter(
                 scope_type=ContextScopeTypeEnum.STAGE.value,
@@ -73,7 +73,7 @@ class Command(BaseCommand):
             stage_timeout[stage.id] = config["timeout"]
 
         # config 与已创建 backend 映射
-        config_backend = {}
+        config_backend: Dict[Tuple, Backend] = {}
 
         # 迁移resource的proxy请求头
         qs = Proxy.objects.filter(resource__api=gateway).prefetch_related("resource").all()
