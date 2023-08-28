@@ -17,71 +17,31 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.db import transaction
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status
+from rest_framework import generics
 
-from apigateway.apis.open.resource import serializers
 from apigateway.apis.web.resource.serializers import ResourceImportInputSLZ
 from apigateway.biz.resource.importer.importers import ResourcesImporter
 from apigateway.common.permissions import GatewayRelatedAppPermission
-from apigateway.core.models import Resource
-from apigateway.utils.paginator import LimitOffsetPaginator
+from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import V1OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
-
-from .serializers import ResourceListOutputV1SLZ
 
 
-class ResourceQuerySetMixin:
+class ResourceSyncApi(generics.CreateAPIView):
+    permission_classes = [GatewayRelatedAppPermission]
+
     def get_queryset(self):
         return Resource.objects.filter(api=self.request.gateway)
 
-
-class ResourceListApi(ResourceQuerySetMixin, generics.ListAPIView):
-    api_permission_exempt = True
-    lookup_field = "id"
-
-    @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
-        responses={status.HTTP_200_OK: ResourceListOutputV1SLZ(many=True)},
-        tags=["OpenAPI.Resource"],
-    )
-    def list(self, request, *args, **kwargs):
-        resources = Resource.objects.filter(api_id=request.gateway.id)
-        resource_count = resources.count()
-        paginator = LimitOffsetPaginator(count=resource_count, offset=0, limit=resource_count)
-
-        slz = ResourceListOutputV1SLZ(resources, many=True)
-        return V1OKJsonResponse(data=paginator.get_paginated_data(slz.data))
-
-
-class ResourceRetrieveApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
-    api_permission_exempt = True
-    lookup_field = "id"
-
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.ResourceListV1SLZ()},
-        tags=["OpenAPI.Resource"],
-    )
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        slz = serializers.ResourceListV1SLZ(instance)
-        return V1OKJsonResponse(data=slz.data)
-
-
-class ResourceSyncApi(ResourceQuerySetMixin, generics.CreateAPIView):
-    permission_classes = [GatewayRelatedAppPermission]
-    lookup_field = "id"
-
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        slz = ResourceImportInputSLZ(data=request.data)
+        slz = ResourceImportInputSLZ(data=request.data, context={"stages": Stage.objects.filter(api=request.gateway)})
         slz.is_valid(raise_exception=True)
 
         importer = ResourcesImporter.from_resources(
             gateway=request.gateway,
             resources=slz.validated_data["resources"],
-            selected_resources=slz.validated_data.get("selected_resources"),
+            # 同步全部资源
+            selected_resources=None,
             need_delete_unspecified_resources=slz.validated_data.get("delete", False),
             username=request.user.username,
         )

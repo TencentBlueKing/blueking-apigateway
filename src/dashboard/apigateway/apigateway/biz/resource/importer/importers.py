@@ -216,7 +216,7 @@ class ResourceImportValidator:
 
     def _validate_method(self):
         """
-        校验方法
+        校验请求方法
         - 同一路径下，请求方法不能重复
         - 统一路径下，如果存在 ANY 请求方法，则不能存在其它请求方法
         """
@@ -281,6 +281,13 @@ class ResourcesImporter:
         need_delete_unspecified_resources: bool = False,
         username: str = "",
     ):
+        """
+        资源导入
+
+        :param resource_data_list: 资源数据列表
+        :param selected_resources: 已选择的资源，为 None 表示不过滤；仅导入 resource_data_list 中，符合 selected_resources 过滤规则的资源
+        :param need_delete_unspecified_resources: 是否删除未指定的资源；未指定的资源，指已创建的资源中，未被选中的资源
+        """
         selected_resource_data_list = self._filter_selected_resource_data_list(selected_resources, resource_data_list)
         validator = ResourceImportValidator(
             gateway=gateway,
@@ -305,6 +312,9 @@ class ResourcesImporter:
         need_delete_unspecified_resources: bool = False,
         username: str = "",
     ):
+        """
+        :param resources: 资源数据，可由 swagger yaml 解析而来或自主构造；此方法中，将其转换为 ResourceData
+        """
         resource_data_list = ResourceDataConvertor(gateway, resources).convert()
         return cls(
             gateway=gateway,
@@ -315,7 +325,7 @@ class ResourcesImporter:
         )
 
     def import_resources(self):
-        # 1. 删除未指定资源
+        # 1. 删除未指定资源，即已创建的资源中，未被选中的资源
         if self.need_delete_unspecified_resources:
             self._deleted_resources = self._delete_unspecified_resources()
 
@@ -335,6 +345,7 @@ class ResourcesImporter:
         return self._deleted_resources
 
     def get_unspecified_resources(self) -> List[Dict[str, Any]]:
+        """获取未指定的资源。未指定的资源，指已创建的资源中，未被选中的资源"""
         resource_ids = [
             resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource
         ]
@@ -356,14 +367,7 @@ class ResourcesImporter:
 
     def _delete_unspecified_resources(self) -> List[Dict[str, Any]]:
         """删除未指定的资源"""
-        resource_ids = [
-            resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource
-        ]
-        unspecified_resources = (
-            Resource.objects.filter(api=self.gateway)
-            .exclude(id__in=resource_ids)
-            .values("id", "name", "method", "path")
-        )
+        unspecified_resources = self.get_unspecified_resources()
         if not unspecified_resources:
             return []
 

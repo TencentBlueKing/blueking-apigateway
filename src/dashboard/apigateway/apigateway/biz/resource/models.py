@@ -56,6 +56,9 @@ class ResourceData(BaseModel):
     # 扩展数据
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
+    class Config:
+        arbitrary_types_allowed = True
+
     @property
     def basic_data(self):
         return self.dict(include=self.basic_field_names)

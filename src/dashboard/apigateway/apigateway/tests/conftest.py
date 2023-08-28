@@ -928,3 +928,40 @@ def fake_resource_doc(faker, fake_resource):
             ["en", "zh"],
         ),
     )
+
+
+@pytest.fixture
+def fake_resource_swagger():
+    return json.dumps(
+        {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {
+                "version": "1.0.0",
+                "title": "API Gateway Swagger",
+            },
+            "schemes": ["http"],
+            "paths": {
+                "/http/get/mapping/{userId}": {
+                    "get": {
+                        "operationId": "http_get_mapping_user_id",
+                        "description": "test",
+                        "tags": ["pet"],
+                        "schemes": ["http"],
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "allowApplyPermission": True,
+                            "matchSubpath": True,
+                            "backend": {
+                                "name": "default",
+                                "path": "/hello/",
+                                "method": "get",
+                                "matchSubpath": True,
+                                "timeout": 30,
+                            },
+                        },
+                    },
+                }
+            },
+        }
+    )

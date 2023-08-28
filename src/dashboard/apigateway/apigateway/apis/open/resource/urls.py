@@ -16,23 +16,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import include, path
+from django.urls import path
 
 from apigateway.apis.open.resource import views
 
 urlpatterns = [
     path(
-        "apis/<int:gateway_id>/resources/",
-        include(
-            [
-                path("", views.ResourceListApi.as_view(), name="openapi.resource.list"),
-                path("<int:id>/", views.ResourceRetrieveApi.as_view(), name="openapi.resource.retrieve"),
-            ]
-        ),
-    ),
-    path(
         "apis/<slug:gateway_name>/resources/sync/",
         views.ResourceSyncApi.as_view(),
-        name="openapi.resources.sync",
+        name="openapi.resource.sync",
     ),
 ]

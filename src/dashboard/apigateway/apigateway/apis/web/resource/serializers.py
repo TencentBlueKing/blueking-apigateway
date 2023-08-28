@@ -41,7 +41,7 @@ from apigateway.core.constants import (
     ExportTypeEnum,
     SwaggerFormatEnum,
 )
-from apigateway.core.models import Backend, Gateway, Resource, Stage
+from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
 
 
@@ -264,16 +264,14 @@ class ResourceLabelUpdateInputSLZ(serializers.Serializer):
 
 
 class ResourceDataSLZ(serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True)
     path = serializers.RegexField(PATH_PATTERN, max_length=2048)
     auth_config = ResourceAuthConfigSLZ()
-    backend_id = serializers.IntegerField()
+    backend_name = serializers.CharField()
     backend_config = HttpBackendConfigSLZ()
     labels = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, required=False, max_length=MAX_LABEL_COUNT_PER_RESOURCE
     )
-    proxy_configs = serializers.DictField(required=False)
 
     class Meta:
         model = Resource
@@ -290,12 +288,10 @@ class ResourceDataSLZ(serializers.ModelSerializer):
             # 认证配置
             "auth_config",
             # 后端配置
-            "backend_id",
+            "backend_name",
             "backend_config",
             # 标签
             "labels",
-            # 兼容旧版数据
-            "proxy_configs",
         ]
 
         validators = [
@@ -343,8 +339,7 @@ class ResourceImportInputSLZ(serializers.Serializer):
             data=importer.get_resources(),
             many=True,
             context={
-                "api": self.context["api"],
-                "stages": Stage.objects.filter(api=self.context["api"]),
+                "stages": self.context["stages"],
             },
         )
         slz.is_valid(raise_exception=True)
