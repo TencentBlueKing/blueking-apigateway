@@ -35,21 +35,20 @@ from apigateway.core.constants import (
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
     BackendConfigTypeEnum,
+    BackendTypeEnum,
     BackendUpstreamTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
     GatewayStatusEnum,
     LoadBalanceTypeEnum,
     MicroGatewayStatusEnum,
-    PassHostEnum,
     ProxyTypeEnum,
     PublishEventEnum,
     PublishEventStatusEnum,
+    PublishSourceEnum,
     ReleaseStatusEnum,
-    SchemeEnum,
     SSLCertificateBindingScopeTypeEnum,
     SSLCertificateTypeEnum,
-    StageItemTypeEnum,
     StageStatusEnum,
 )
 from apigateway.core.utils import get_path_display
@@ -166,9 +165,9 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     # 环境对应的微网关实例，不同环境允许使用不同网关实例，提供隔离能力
     micro_gateway = models.ForeignKey("MicroGateway", on_delete=models.SET_NULL, null=True, default=None, blank=True)
 
-    _vars = models.TextField(db_column="vars")
+    _vars = models.TextField(db_column="vars", default="{}")
 
-    status = models.IntegerField(choices=StageStatusEnum.choices(), default=StageStatusEnum.INACTIVE.value)
+    status = models.IntegerField(choices=StageStatusEnum.get_choices(), default=StageStatusEnum.INACTIVE.value)
 
     is_public = models.BooleanField(default=True)
 
@@ -350,11 +349,12 @@ class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_stage_resource_disabled"
 
 
+# TODO delete it 1.14
 class StageItem(TimestampedModelMixin, OperatorModelMixin):
     """Stage 配置项"""
 
     api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
-    type = models.CharField(max_length=64, choices=StageItemTypeEnum.get_choices())
+    type = models.CharField(max_length=64)
     name = models.CharField(max_length=128)
     description = models.TextField(blank=True, default="")
 
@@ -364,6 +364,7 @@ class StageItem(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_stage_item"
 
 
+# TODO delete it 1.14
 class StageItemConfig(TimestampedModelMixin, OperatorModelMixin):
     """Stage 配置项数据"""
 
@@ -377,6 +378,37 @@ class StageItemConfig(TimestampedModelMixin, OperatorModelMixin):
     class Meta:
         unique_together = ("api", "stage", "stage_item")
         db_table = "core_stage_item_config"
+
+
+# ============================================ backend ============================================
+
+
+class Backend(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    type = models.CharField(
+        max_length=20,
+        choices=BackendTypeEnum.get_choices(),
+        default=BackendTypeEnum.HTTP.value,
+        blank=False,
+        null=False,
+    )
+    name = models.CharField(max_length=64)
+    description = models.CharField(max_length=512, default="")
+
+    class Meta:
+        unique_together = ("gateway", "name")
+        db_table = "core_backend"
+
+
+class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    backend = models.ForeignKey(Backend, on_delete=models.PROTECT)
+    stage = models.ForeignKey(Stage, on_delete=models.PROTECT)
+    config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
+
+    class Meta:
+        unique_together = ("gateway", "backend", "stage")
+        db_table = "core_backend_config"
 
 
 # ============================================ context ============================================
@@ -467,7 +499,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     Resource version
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
     name = models.CharField(_("[Deprecated] 版本名"), max_length=128, unique=True)
     title = models.CharField(max_length=128, blank=True, default="", null=True)
@@ -512,7 +544,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
         return f"{self.version}({self.title})"
 
     def __str__(self):
-        return f"<ResourceVersion: {self.api}/{self.version}>"
+        return f"<ResourceVersion: {self.gateway}/{self.version}>"
 
     class Meta:
         verbose_name = "ResourceVersion"
@@ -526,7 +558,7 @@ class Release(TimestampedModelMixin, OperatorModelMixin):
     only one activate resource_version per stage
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
 
     # only one stage-resource_version
     stage = models.OneToOneField(Stage, on_delete=models.PROTECT)
@@ -537,7 +569,7 @@ class Release(TimestampedModelMixin, OperatorModelMixin):
     objects = managers.ReleaseManager()
 
     def __str__(self):
-        return f"<Release: {self.api}/{self.stage}/{self.resource_version}>"
+        return f"<Release: {self.gateway}/{self.stage}/{self.resource_version}>"
 
     class Meta:
         verbose_name = "Release"
@@ -548,7 +580,7 @@ class Release(TimestampedModelMixin, OperatorModelMixin):
 class ReleasedResource(TimestampedModelMixin):
     """当前已发布版本中的资源信息"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_version_id = models.IntegerField(blank=False, null=False, db_index=True)
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
     resource_name = models.CharField(max_length=256, default="", blank=True, null=False)
@@ -564,7 +596,7 @@ class ReleasedResource(TimestampedModelMixin):
     class Meta:
         verbose_name = "ReleasedResource"
         verbose_name_plural = "ReleasedResource"
-        unique_together = ("api", "resource_version_id", "resource_id")
+        unique_together = ("gateway", "resource_version_id", "resource_id")
         db_table = "core_released_resource"
 
 
@@ -574,7 +606,7 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     Store the release history records
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
 
     # only one stage-resource_version
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
@@ -582,18 +614,26 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
     comment = models.CharField(max_length=512, blank=True, null=True)
 
+    # 发布来源
+    source = models.CharField(
+        max_length=64,
+        choices=PublishSourceEnum.get_choices(),
+        default=PublishSourceEnum.VERSION_PUBLISH.value,
+    )
+    # todo:1.14删掉该字段废弃，由publish_event来决定最终状态
     status = models.CharField(
         _("发布状态"),
         max_length=16,
         choices=ReleaseStatusEnum.choices(),
         default=ReleaseStatusEnum.PENDING.value,
     )
+    # 废弃同上
     message = models.TextField(blank=True, default="")
 
     objects = managers.ReleaseHistoryManager()
 
     def __str__(self):
-        return f"<Release: {self.api}/{self.stage}/{self.resource_version}>"
+        return f"<Release: {self.gateway}/{self.stage}/{self.resource_version}>"
 
     class Meta:
         verbose_name = "ReleaseHistory"
@@ -699,7 +739,7 @@ class MicroGateway(ConfigModelMixin):
 
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
 
     name = models.CharField(max_length=256, blank=False, null=False, db_index=True)
     description_i18n = I18nProperty(models.TextField(blank=True, null=True, default=None))
@@ -729,9 +769,9 @@ class MicroGateway(ConfigModelMixin):
         """微网关实例 ID"""
         return str(self.pk)
 
-    def query_related_api_gateways(self):
+    def query_related_gateways(self):
         if not self.is_shared:
-            return Gateway.objects.filter(id=self.api_id)
+            return Gateway.objects.filter(id=self.gateway_id)
 
         return Gateway.objects.filter(
             hosting_type=APIHostingTypeEnum.MICRO.value,
@@ -741,12 +781,14 @@ class MicroGateway(ConfigModelMixin):
 class MicroGatewayReleaseHistory(models.Model):
     """微网关资源发布历史，不同于 ReleaseHistory，这里关注的是单个实例"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     # 因为实例和环境的绑定关系可能会修改，所以这里不能是强关联
     stage = models.ForeignKey(Stage, null=True, on_delete=models.SET_NULL)
     micro_gateway = models.ForeignKey(MicroGateway, on_delete=models.CASCADE)
     release_history = models.ForeignKey(ReleaseHistory, on_delete=models.CASCADE)
     message = models.TextField(blank=True, null=True, default="")
+
+    # todo: 废弃：1.14删除
     status = models.CharField(
         _("发布状态"),
         max_length=16,
@@ -759,6 +801,7 @@ class MicroGatewayReleaseHistory(models.Model):
         db_table = "core_micro_gateway_release_history"
 
 
+# TODO delete it 1.14
 class BackendService(TimestampedModelMixin, OperatorModelMixin):
     """网关后端服务"""
 
@@ -776,9 +819,9 @@ class BackendService(TimestampedModelMixin, OperatorModelMixin):
     upstream_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     upstream_extra_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
 
-    pass_host = models.CharField(max_length=32, default=PassHostEnum.PASS.value)
+    pass_host = models.CharField(max_length=32, default="pass")
     upstream_host = models.CharField(max_length=512, default="")
-    scheme = models.CharField(max_length=32, default=SchemeEnum.HTTP.value)
+    scheme = models.CharField(max_length=32, default="http")
     timeout = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     ssl_enabled = models.BooleanField(default=False)
 

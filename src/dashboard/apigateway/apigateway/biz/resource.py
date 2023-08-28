@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from django.db.models import Q
 
@@ -293,3 +293,30 @@ class ResourceHandler:
             return data
 
         return json.dumps(data)
+
+    @staticmethod
+    def filter_by_resource_filter_condition(gateway_id: int, condition: Dict[str, Any]):
+        """根据前端资源列表筛选条件，筛选出符合条件的资源"""
+        queryset = Resource.objects.filter(api_id=gateway_id)
+
+        if condition.get("name"):
+            queryset = queryset.filter(name=condition["name"])
+
+        if condition.get("path"):
+            queryset = queryset.filter(path=condition["path"])
+
+        if condition.get("method"):
+            queryset = queryset.filter(method=condition["method"])
+
+        if condition.get("label_ids"):
+            labels = APILabel.objects.filter(api_id=gateway_id, id__in=condition["label_ids"])
+            resource_ids = (
+                ResourceLabel.objects.filter(api_label__in=labels).values_list("resource_id", flat=True).distinct()
+            )
+            queryset = queryset.filter(id__in=resource_ids)
+
+        if condition.get("query"):
+            query = condition.get("query")
+            queryset = queryset.filter(Q(path__icontains=query) | Q(name__icontains=query))
+
+        return queryset

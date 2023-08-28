@@ -19,9 +19,10 @@ from typing import List
 
 from apigateway.core.constants import (
     GatewayStatusEnum,
+    PublishSourceEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import Release
+from apigateway.core.models import Release, ReleaseHistory
 
 
 class ReleaseHandler:
@@ -29,8 +30,34 @@ class ReleaseHandler:
     def get_released_stage_ids(gateway_ids: List[int]) -> List[int]:
         return list(
             Release.objects.filter(
-                api_id__in=gateway_ids,
-                api__status=GatewayStatusEnum.ACTIVE.value,
+                gateway_id__in=gateway_ids,
+                gateway__status=GatewayStatusEnum.ACTIVE.value,
                 stage__status=StageStatusEnum.ACTIVE.value,
             ).values_list("stage_id", flat=True)
         )
+
+    @staticmethod
+    def save_release_history(release: Release, source: PublishSourceEnum, author: str) -> ReleaseHistory:
+        """保存发布历史"""
+        release_history = ReleaseHistory.objects.create(
+            gateway=release.gateway,
+            stage=release.stage,
+            source=source.value,
+            resource_version=release.resource_version,
+            created_by=author,
+        )
+        return release_history
+
+    @staticmethod
+    def save_release_history_with_id(
+        gateway_id: int, stage_id: int, resource_version_id: int, source: PublishSourceEnum, author: str
+    ) -> ReleaseHistory:
+        """保存发布历史"""
+        release_history = ReleaseHistory.objects.create(
+            gateway_id=gateway_id,
+            stage_id=stage_id,
+            source=source.value,
+            resource_version_id=resource_version_id,
+            created_by=author,
+        )
+        return release_history

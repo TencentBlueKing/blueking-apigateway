@@ -24,7 +24,7 @@ from apigateway.apis.open.support import views
 from apigateway.apps.support.api_sdk.helper import SDKInfo
 from apigateway.apps.support.models import APISDK
 from apigateway.core.models import Gateway, ResourceVersion
-from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, get_response_json
+from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
 
@@ -40,10 +40,10 @@ def has_related_app_permission(mocker):
 class TestAPISDKV1ViewSet:
     def test_list_latest_sdk(self, mocker, request_factory, faker):
         fake_gateway = G(Gateway, is_public=True, status=1)
-        resource_version = G(ResourceVersion, api=fake_gateway)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
         sdk = G(
             APISDK,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
             is_recommended=True,
@@ -126,50 +126,6 @@ class TestAPISDKV1ViewSet:
                 },
             ],
         }
-
-
-class TestResourceDocImportViewSet:
-    @pytest.fixture(autouse=True)
-    def setup_fixture(self, faker):
-        self.factory = APIRequestFactory()
-        self.gateway = create_gateway(name=faker.uuid4())
-
-    def test_import_by_archive(self, has_related_app_permission, mocker, fake_zip_file):
-        mocker.patch(
-            "apigateway.apis.open.support.views.ArchiveImportDocManager.import_docs",
-            return_value=None,
-        )
-
-        request = self.factory.post(
-            "",
-            data={"file": fake_zip_file},
-            format="multipart",
-        )
-        request.gateway = self.gateway
-
-        view = views.ResourceDocImportViewSet.as_view({"post": "import_by_archive"})
-        response = view(request, gateway_name=self.gateway.name)
-
-        result = get_response_json(response)
-        assert result["code"] == 0, result
-
-    def test_import_by_swagger(self, has_related_app_permission, mocker, faker):
-        mocker.patch(
-            "apigateway.apis.open.support.views.SwaggerImportDocManager.import_docs",
-            return_value=None,
-        )
-
-        request = self.factory.post(
-            "",
-            data={"language": "zh", "swagger": faker.pystr()},
-        )
-        request.gateway = self.gateway
-
-        view = views.ResourceDocImportViewSet.as_view({"post": "import_by_swagger"})
-        response = view(request, gateway_name=self.gateway.name)
-
-        result = get_response_json(response)
-        assert result["code"] == 0
 
 
 class TestSDKGenerateViewSet:

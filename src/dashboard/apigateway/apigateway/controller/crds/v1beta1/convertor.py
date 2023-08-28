@@ -53,6 +53,8 @@ class CustomResourceConvertor:
     release: Release
     micro_gateway: MicroGateway
     publish_id: Optional[int] = field(default=None)
+    # 是否是撤销资源
+    revoke_flag: Optional[bool] = field(default=False)
     # 包含哪些资源的开关
     include_config: bool = field(default=True)
     # 默认包含stage资源，调用方不需要传

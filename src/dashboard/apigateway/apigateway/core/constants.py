@@ -77,42 +77,10 @@ class BackendConfigTypeEnum(StructuredEnum):
     EXISTED = EnumField("existed", _("已存在的后端服务"))
 
 
-class StageItemTypeEnum(StructuredEnum):
-    """环境配置项类型"""
-
-    NODE = EnumField(BackendUpstreamTypeEnum.NODE.value, _("节点"))
-    SERVICE_DISCOVERY = EnumField(BackendUpstreamTypeEnum.SERVICE_DISCOVERY.value, _("服务发现注册中心"))
-
-
-class StageItemConfigStatusEnum(StructuredEnum):
-    """环境配置项状态"""
-
-    CONFIGURED = EnumField("configured", _("已配置"))
-    NOT_CONFIGURED = EnumField("not_configured", _("待配置"))
-
-
 class ServiceDiscoveryTypeEnum(StructuredEnum):
     """服务发现注册中心类型"""
 
     GO_MICRO_ETCD = EnumField("go_micro_etcd", "Go Micro - Etcd")
-
-
-class PassHostEnum(StructuredEnum):
-    """请求发给上游时的 host 设置选型"""
-
-    PASS = EnumField("pass", _("保持与客户端请求一致的主机名"))
-    NODE = EnumField("node", _("使用目标节点列表中的主机名或 IP"))
-    REWRITE = EnumField("rewrite", _("自定义 Host 请求头"))
-
-
-class SchemeEnum(StructuredEnum):
-    """与后端服务通信时使用的 scheme"""
-
-    # 7 层代理
-    HTTP = EnumField("http", "HTTP")
-    HTTPS = EnumField("https", "HTTPs")
-    GRPC = EnumField("grpc", "gRPC")
-    GRPCS = EnumField("grpcs", "gRPCs")
 
 
 class EtcdSecureTypeEnum(StructuredEnum):
@@ -143,9 +111,9 @@ class GatewayTypeEnum(StructuredEnum):
     CLOUDS_API = EnumField(10, "云API")
 
 
-class StageStatusEnum(ChoiceEnumMixin, Enum):
-    INACTIVE = 0
-    ACTIVE = 1
+class StageStatusEnum(StructuredEnum):
+    INACTIVE = EnumField(0, "INACTIVE")
+    ACTIVE = EnumField(1, "ACTIVE")
 
 
 class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
@@ -157,26 +125,28 @@ class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
 
 class PublishEventEnum(StructuredEnum):
     # dashboard
-    GenerateTask = EnumField("generate_release_task", "generate release task")
-    DistributeConfiguration = EnumField("distribute_configuration", "distribute configuration")
+    VALIDATE_CONFIGURATION = EnumField("validata_configuration", "check configuration")
+    GENERATE_TASK = EnumField("generate_release_task", "generate release task")
+    DISTRIBUTE_CONFIGURATION = EnumField("distribute_configuration", "distribute configuration")
     # operator
-    ParseConfiguration = EnumField("parse_configuration", "parse configuration")
-    ApplyConfiguration = EnumField("apply_configuration", "apply configuration")
+    PARSE_CONFIGURATION = EnumField("parse_configuration", "parse configuration")
+    APPLY_CONFIGURATION = EnumField("apply_configuration", "apply configuration")
     # apisix
-    LoadConfiguration = EnumField("load_configuration", "load configuration")
+    LOAD_CONFIGURATION = EnumField("load_configuration", "load configuration")
 
 
 class PublishEventNameTypeEnum(ChoiceEnumMixin, Enum):
-    GenerateTask = PublishEventEnum.GenerateTask.value
-    DistributeConfiguration = PublishEventEnum.DistributeConfiguration.value
-    ParseConfiguration = PublishEventEnum.ParseConfiguration.value
-    ApplyConfiguration = PublishEventEnum.ApplyConfiguration.value
-    LoadConfiguration = PublishEventEnum.LoadConfiguration.value
+    ValidateConfiguration = PublishEventEnum.VALIDATE_CONFIGURATION.value
+    GenerateTask = PublishEventEnum.GENERATE_TASK.value
+    DistributeConfiguration = PublishEventEnum.DISTRIBUTE_CONFIGURATION.value
+    ParseConfiguration = PublishEventEnum.PARSE_CONFIGURATION.value
+    ApplyConfiguration = PublishEventEnum.APPLY_CONFIGURATION.value
+    LoadConfiguration = PublishEventEnum.LOAD_CONFIGURATION.value
 
     @classmethod
     def get_event_step(cls, name: str) -> int:
         # 获取事件所属的step，如：name="load configuration"==>5
-        return [i.value for i in cls].index(name) + 1
+        return [i.value for i in cls].index(name)
 
 
 class PublishEventStatusEnum(StructuredEnum):
@@ -191,6 +161,28 @@ class PublishEventStatusTypeEnum(ChoiceEnumMixin, Enum):
     FAILURE = PublishEventStatusEnum.FAILURE.value
     PENDING = PublishEventStatusEnum.PENDING.value
     DOING = PublishEventStatusEnum.DOING.value
+
+
+class PublishSourceEnum(StructuredEnum):
+    # gateway
+    GATEWAY_ENABLE = EnumField("gateway_enable", "网关启用")
+    GATEWAY_DISABLE = EnumField("gateway_disable", "网关停用")
+
+    # version
+    VERSION_PUBLISH = EnumField("version_publish", "版本发布")
+
+    # plugin
+    PLUGIN_UPDATE = EnumField("plugin_update", "插件更新")
+
+    # stage
+    STAGE_DISABLE = EnumField("stage_disable", "环境下架")
+    STAGE_UPDATE = EnumField("stage_env_update", "环境更新")
+
+    # backend
+    BACKEND_UPDATE = EnumField("backend_update", "服务更新")
+
+    # cli
+    CLI_SYNC = EnumField("cli_sync", "命令行同步")
 
 
 class ProxyTypeEnum(StructuredEnum):
@@ -257,13 +249,13 @@ VALID_METHOD_IN_SWAGGER_PATHITEM = [
 ]
 
 
-class ExportTypeEnum(ChoiceEnumMixin, Enum):
+class ExportTypeEnum(StructuredEnum):
     # 全部资源
-    ALL = "all"
+    ALL = EnumField("all")
     # 已筛选资源
-    FILTERED = "filtered"
+    FILTERED = EnumField("filtered")
     # 已选资源
-    SELECTED = "selected"
+    SELECTED = EnumField("selected")
 
 
 class SwaggerFormatEnum(StructuredEnum):
@@ -271,11 +263,17 @@ class SwaggerFormatEnum(StructuredEnum):
     JSON = EnumField("json", label="JSON")
 
 
+class BackendTypeEnum(StructuredEnum):
+    HTTP = EnumField("http", label="HTTP")
+    GRPC = EnumField("grpc", label="GRPC")
+
+
 # 每个资源允许关联的最大标签个数
 MAX_LABEL_COUNT_PER_RESOURCE = 10
 
 DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100
+DEFAULT_BACKEND_NAME = "default"
 
 # 网关名
 GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")

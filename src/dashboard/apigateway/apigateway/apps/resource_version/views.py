@@ -38,7 +38,7 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
 
     def get_queryset(self):
-        return ResourceVersion.objects.filter(api=self.request.gateway).order_by("-id")
+        return ResourceVersion.objects.filter(gateway=self.request.gateway).order_by("-id")
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""}, request_body=serializers.ResourceVersionSLZ, tags=["ResourceVersion"]
@@ -54,7 +54,7 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
         # 创建文档版本
         if ResourceDoc.objects.doc_exists(request.gateway.id):
             ResourceDocVersion.objects.create(
-                api=self.request.gateway,
+                gateway=self.request.gateway,
                 resource_version=instance,
                 data=ResourceDocVersion.objects.make_version(request.gateway.id),
             )
@@ -68,7 +68,7 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         data = (
-            ResourceVersion.objects.filter(api=request.gateway)
+            ResourceVersion.objects.filter(gateway=request.gateway)
             .values("id", "version", "name", "title", "comment", "created_time")
             .order_by("-id")
         )
@@ -128,7 +128,7 @@ class ResourceVersionViewSet(viewsets.ModelViewSet):
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.NeedNewVersionSLZ}, tags=["ResourceVersion"])
     def need_new_version(self, request, *args, **kwargs):
-        resource_version_exist = ResourceVersion.objects.filter(api_id=request.gateway.id).exists()
+        resource_version_exist = ResourceVersion.objects.filter(gateway_id=request.gateway.id).exists()
         resource_exist = Resource.objects.filter(api_id=request.gateway.id).exists()
         if not (resource_version_exist or resource_exist):
             return V1FailJsonResponse(_("请先创建资源，然后再发布版本。"))

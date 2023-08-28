@@ -53,6 +53,7 @@ OP_STATUS_CHOICES = (
 class OpObjectTypeEnum(StructuredEnum):
     GATEWAY = EnumField("gateway")
     STAGE = EnumField("stage")
+    BACKEND = EnumField("backend")
     RESOURCE = EnumField("resource")
     RESOURCE_VERSION = EnumField("resource_version")
     RELEASE = EnumField("release")
@@ -61,6 +62,7 @@ class OpObjectTypeEnum(StructuredEnum):
     GATEWAY_LABEL = EnumField("gateway_label")
     MICRO_GATEWAY = EnumField("micro_gateway")
     PLUGIN = EnumField("plugin")
+    RESOURCE_DOC = EnumField("resource_doc")
 
 
 AUDIT_SYSTEM = "apigateway-dashboard"

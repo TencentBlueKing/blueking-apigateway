@@ -18,75 +18,15 @@
 #
 import logging
 
-from blue_krill.async_utils.django_utils import delay_on_commit
-from django.conf import settings
-from django.db.models.signals import post_delete, post_save
 from django.dispatch import Signal, receiver
 
-from apigateway.apps.plugin.models import PluginBinding, PluginConfig
-from apigateway.controller.tasks.syncing import revoke_release_by_stage
-from apigateway.core import models
 from apigateway.utils.redis_publisher import RedisPublisher
-from apigateway.utils.redis_utils import get_default_redis_client, get_redis_key
 
 logger = logging.getLogger(__name__)
 
 reversion_update_signal = Signal(providing_args=["instance_id", "action"])
-gateway_update_signal = Signal(providing_args=["gateway_id"])
 
 
 @receiver(reversion_update_signal, dispatch_uid="reversion_update")
 def _notify_reversion_update(sender, instance_id, action, *args, **kwargs):
     RedisPublisher().publish(f"{sender.__name__}[id={instance_id}] {action}")
-
-
-@receiver(gateway_update_signal)
-def _mark_gateway_updated(sender, gateway_id, *args, **kwargs):
-    client = get_default_redis_client()
-    client.sadd(get_redis_key(settings.APIGW_REVERSION_UPDATE_SET_KEY), gateway_id)
-
-
-@receiver(post_save, sender=models.Gateway)
-def _on_gateway_updated(sender, instance: models.Gateway, created: bool, **kwargs):
-    if created:
-        return
-
-    if not instance.is_micro_gateway:
-        return
-
-    gateway_update_signal.send(sender, gateway_id=instance.pk)
-
-
-@receiver(post_save, sender=PluginConfig)
-@receiver(post_save, sender=PluginBinding)
-@receiver(post_save, sender=models.JWT)
-@receiver(post_save, sender=models.Stage)
-@receiver(post_save, sender=models.MicroGateway)
-@receiver(post_save, sender=models.StageItemConfig)
-@receiver(post_save, sender=models.SslCertificate)
-def _on_gateway_related_updated(sender, instance, created: bool, **kwargs):
-    if created:
-        return
-
-    if hasattr(instance, "gateway_id"):
-        gateway_id = instance.gateway_id
-    else:
-        gateway_id = instance.api_id
-
-    gateway_update_signal.send(sender, gateway_id=gateway_id)
-
-
-@receiver(post_delete, sender=PluginConfig)
-@receiver(post_delete, sender=PluginBinding)
-def _on_gateway_related_delete(sender, instance, **kwargs):
-    if hasattr(instance, "gateway_id"):
-        gateway_id = instance.gateway_id
-    else:
-        gateway_id = instance.api_id
-
-    gateway_update_signal.send(sender, gateway_id=gateway_id)
-
-
-@receiver([post_delete], sender=models.Release)
-def _on_release_deleted(sender, instance: models.Release, **kwargs):
-    delay_on_commit(revoke_release_by_stage, instance.stage_id)  # type: ignore

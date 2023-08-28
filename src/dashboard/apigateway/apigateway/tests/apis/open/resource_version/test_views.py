@@ -63,7 +63,7 @@ class TestResourceVersionViewSet:
         [[], [1, 2]],
     )
     def test_release(self, faker, request_view, fake_admin_user, fake_gateway, mocker, unreleased_stage_ids):
-        G(ResourceVersion, api=fake_gateway)
+        G(ResourceVersion, gateway=fake_gateway)
         mocker.patch(
             "apigateway.apis.open.resource_version.views.ReleaseBatchManager.release_batch",
             return_value=None,
@@ -71,7 +71,7 @@ class TestResourceVersionViewSet:
         mocker.patch(
             "apigateway.apis.open.resource_version.serializers.ReleaseV1SLZ.to_internal_value",
             return_value={
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "stage_ids": [1, 2],
                 "resource_version_id": 1,
                 "comment": "",
@@ -109,7 +109,7 @@ class TestResourceVersionViewSet:
         assert result["code"] == 0
 
     def test_list(self, fake_resource_version, request_view):
-        fake_gateway = fake_resource_version.api
+        fake_gateway = fake_resource_version.gateway
 
         response = request_view(
             "GET",

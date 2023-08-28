@@ -83,5 +83,5 @@ class TestComponentReleaser:
     def test_get_resource_version_id(self):
         assert self.releaser._get_resource_version_id() == 0
 
-        self.releaser.resource_version = G(ResourceVersion, api=self.releaser.gateway)
+        self.releaser.resource_version = G(ResourceVersion, gateway=self.releaser.gateway)
         assert self.releaser._get_resource_version_id() > 0

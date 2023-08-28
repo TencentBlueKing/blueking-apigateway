@@ -60,7 +60,7 @@ class Command(BaseCommand):
         gateway = self._get_gateway(gateway_name)
         stage = self._get_stage(gateway, stage_name)
         try:
-            return Release.objects.get(api=gateway, stage=stage)
+            return Release.objects.get(gateway=gateway, stage=stage)
         except Release.DoesNotExist:
             raise CommandError(f"网关【name={gateway.name}】下环境【name={stage.name}】未发布")
 

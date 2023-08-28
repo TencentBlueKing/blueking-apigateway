@@ -20,9 +20,10 @@ from ddf import G
 from apigateway.biz.release import ReleaseHandler
 from apigateway.core.constants import (
     GatewayStatusEnum,
+    PublishSourceEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import Release, Stage
+from apigateway.core.models import Release, ReleaseHistory, Stage
 
 
 class TestReleaseHandler:
@@ -32,10 +33,14 @@ class TestReleaseHandler:
 
         stage_1 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
         G(Stage, api=fake_gateway, status=StageStatusEnum.INACTIVE.value)
-        G(Release, api=fake_gateway, stage=stage_1)
+        G(Release, gateway=fake_gateway, stage=stage_1)
 
         assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == [stage_1.id]
 
         fake_gateway.status = GatewayStatusEnum.INACTIVE.value
         fake_gateway.save()
         assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == []
+
+    def test_save_release_history(self, fake_release):
+        ReleaseHandler.save_release_history(fake_release, PublishSourceEnum.VERSION_PUBLISH, "test")
+        assert ReleaseHistory.objects.filter(gateway=fake_release.gateway, stage=fake_release.stage).count() == 1

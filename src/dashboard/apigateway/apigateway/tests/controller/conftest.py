@@ -252,7 +252,7 @@ def edge_resource_version(faker, edge_gateway, edge_resources):
         ResourceVersion,
         name=faker.color_name(),
         title=faker.numerify("v!.!.%"),
-        api=edge_gateway,
+        gateway=edge_gateway,
         _data=json.dumps(ResourceVersionHandler().make_version(edge_gateway)),
     )
 

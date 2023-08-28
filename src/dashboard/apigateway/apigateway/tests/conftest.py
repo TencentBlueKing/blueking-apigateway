@@ -32,12 +32,14 @@ from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import APISDK, ResourceDoc
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.core.constants import APIHostingTypeEnum, ProxyTypeEnum
 from apigateway.core.models import (
+    Backend,
+    BackendConfig,
     Gateway,
     MicroGateway,
     Release,
@@ -159,6 +161,30 @@ def fake_stage(fake_gateway, faker):
 
 
 @pytest.fixture
+def fake_backend(fake_gateway, fake_stage, faker):
+    backend = G(
+        Backend,
+        gateway=fake_gateway,
+        name=faker.pystr(),
+    )
+
+    G(
+        BackendConfig,
+        gateway=fake_gateway,
+        stage=fake_stage,
+        backend=backend,
+        config={
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+        },
+    )
+
+    return backend
+
+
+@pytest.fixture
 def fake_resource(faker, fake_gateway):
     resource = G(
         Resource,
@@ -226,7 +252,7 @@ def fake_resource2(faker, fake_resource):
 def fake_micro_gateway(fake_gateway_for_micro_gateway, faker):
     gateway = G(
         MicroGateway,
-        api=fake_gateway_for_micro_gateway,
+        gateway=fake_gateway_for_micro_gateway,
         name=faker.color_name(),
         is_shared=False,
         _config=json.dumps(
@@ -265,7 +291,7 @@ def fake_shared_gateway(fake_micro_gateway, settings):
     """共享网关"""
     gateway = G(
         MicroGateway,
-        api=fake_micro_gateway.api,
+        gateway=fake_micro_gateway.gateway,
         name=fake_micro_gateway.name,
         is_shared=True,
         _config=fake_micro_gateway._config,
@@ -277,7 +303,7 @@ def fake_shared_gateway(fake_micro_gateway, settings):
 
 @pytest.fixture
 def fake_resource_version(faker, fake_gateway, fake_resource1, fake_resource2):
-    resource_version = G(ResourceVersion, api=fake_gateway, name=faker.pystr(), version=faker.pystr())
+    resource_version = G(ResourceVersion, gateway=fake_gateway, name=faker.pystr(), version=faker.pystr())
     resource_version.data = ResourceVersionHandler().make_version(fake_gateway)
     resource_version.save()
     return resource_version
@@ -285,12 +311,12 @@ def fake_resource_version(faker, fake_gateway, fake_resource1, fake_resource2):
 
 @pytest.fixture
 def fake_release(fake_gateway, fake_stage, fake_resource_version):
-    return G(Release, api=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+    return G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
 
 @pytest.fixture
 def fake_release_history(fake_gateway, fake_stage, fake_resource_version):
-    return G(ReleaseHistory, api=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+    return G(ReleaseHistory, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
 
 @pytest.fixture
@@ -298,7 +324,7 @@ def fake_released_resource(fake_gateway, fake_resource1, fake_resource_version, 
     resource_id_to_data = {item["id"]: item for item in fake_resource_version.data}
     return G(
         ReleasedResource,
-        api=fake_gateway,
+        gateway=fake_gateway,
         resource_version_id=fake_resource_version.id,
         resource_id=fake_resource1.id,
         resource_name=fake_resource1.name,
@@ -382,7 +408,7 @@ def celery_task_eager_mode(settings):
 def fake_sdk(fake_gateway, fake_resource_version):
     return G(
         APISDK,
-        api=fake_gateway,
+        gateway=fake_gateway,
         resource_version=fake_resource_version,
         language="magic",
         is_recommended=True,
@@ -790,3 +816,15 @@ def mock_board(settings):
     }
 
     return "open"
+
+
+@pytest.fixture
+def fake_resource_doc(faker, fake_resource):
+    return G(
+        ResourceDoc,
+        api=fake_resource.api,
+        resource_id=fake_resource.id,
+        language=faker.random_element(
+            ["en", "zh"],
+        ),
+    )

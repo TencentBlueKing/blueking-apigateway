@@ -64,7 +64,7 @@ class Command(BaseCommand):
 
     def _get_released_resource_version_ids(self, gateway_ids: List[int]) -> List[int]:
         return list(
-            Release.objects.filter(api_id__in=gateway_ids)
+            Release.objects.filter(gateway_id__in=gateway_ids)
             .order_by("resource_version_id")
             .distinct()
             .values_list("resource_version_id", flat=True)

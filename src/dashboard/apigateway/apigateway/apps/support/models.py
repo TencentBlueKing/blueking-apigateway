@@ -40,15 +40,15 @@ from apigateway.utils import time
 class ResourceDoc(TimestampedModelMixin, OperatorModelMixin):
     api = models.ForeignKey(Gateway, on_delete=models.CASCADE, null=True)
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
-    type = models.CharField(max_length=32, choices=DocTypeEnum.choices())
+    type = models.CharField(max_length=32, choices=DocTypeEnum.get_choices())
     language = models.CharField(
         max_length=32,
-        choices=DocLanguageEnum.get_django_choices(),
+        choices=DocLanguageEnum.get_choices(),
         default=DocLanguageEnum.ZH.value,
         db_index=True,
     )
     source = models.CharField(
-        max_length=32, choices=DocSourceEnum.get_django_choices(), default=DocSourceEnum.CUSTOM.value, db_index=True
+        max_length=32, choices=DocSourceEnum.get_choices(), default=DocSourceEnum.CUSTOM.value, db_index=True
     )
     content = models.TextField(blank=True, null=True, default="")
 
@@ -77,6 +77,7 @@ class ResourceDoc(TimestampedModelMixin, OperatorModelMixin):
         return json.dumps(data)
 
 
+# TODO: 1.14 删除此表
 class ResourceDocSwagger(TimestampedModelMixin):
     """资源文档扩展数据，若资源文档通过 Swagger 导入，可存储资源的 Swagger 描述"""
 
@@ -96,20 +97,20 @@ class ResourceDocSwagger(TimestampedModelMixin):
 
 
 class ResourceDocVersion(TimestampedModelMixin, OperatorModelMixin):
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
     _data = models.TextField(db_column="data")
 
     objects = ResourceDocVersionManager()
 
     def __str__(self):
-        return f"<ResourceDocVersion: {self.api}/{self.resource_version}>"
+        return f"<ResourceDocVersion: {self.gateway}/{self.resource_version}>"
 
     class Meta:
         verbose_name = "ResourceDocVersion"
         verbose_name_plural = "ResourceDocVersion"
         db_table = "support_resource_doc_version"
-        unique_together = ("api", "resource_version")
+        unique_together = ("gateway", "resource_version")
 
     @property
     def data(self) -> list:
@@ -123,12 +124,12 @@ class ResourceDocVersion(TimestampedModelMixin, OperatorModelMixin):
 class ReleasedResourceDoc(TimestampedModelMixin):
     """资源已发布的资源文档"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_version_id = models.IntegerField(blank=False, null=False, db_index=True)
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
     language = models.CharField(
         max_length=32,
-        choices=DocLanguageEnum.get_django_choices(),
+        choices=DocLanguageEnum.get_choices(),
         default=DocLanguageEnum.ZH.value,
         db_index=True,
     )
@@ -142,12 +143,12 @@ class ReleasedResourceDoc(TimestampedModelMixin):
     class Meta:
         verbose_name = "ReleasedResourceDoc"
         verbose_name_plural = "ReleasedResourceDoc"
-        unique_together = ("api", "resource_version_id", "resource_id", "language")
+        unique_together = ("gateway", "resource_version_id", "resource_id", "language")
         db_table = "support_released_resource_doc"
 
 
 class APISDK(ConfigModelMixin):
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=128, blank=True, default="", help_text=_("SDK 名称"))
     url = models.TextField(blank=True, default="", help_text=_("下载地址"))
@@ -168,20 +169,20 @@ class APISDK(ConfigModelMixin):
     objects = APISDKManager()
 
     def __self__(self):
-        return f"<APISDK: {self.api}>"
+        return f"<APISDK: {self.gateway}>"
 
     class Meta:
         verbose_name = _("网关SDK")
         verbose_name_plural = _("网关SDK")
         db_table = "support_api_sdk"
-        unique_together = ("api", "language", "version_number")
+        unique_together = ("gateway", "language", "version_number")
 
     @atomic
     def mark_is_recommended(self):
         # 清理之前的标记
         APISDK.objects.filter(
             is_recommended=True,
-            api=self.api,
+            gateway=self.gateway,
         ).update(is_public_latest=False, is_recommended=False)
 
         self.is_public_latest = True

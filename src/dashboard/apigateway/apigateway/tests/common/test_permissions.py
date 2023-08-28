@@ -60,7 +60,7 @@ class TestGatewayRelatedAppPermission:
 
         mocker.patch.object(permission, "get_gateway_object", return_value=fake_gateway if mock_api else None)
         mocker.patch(
-            "apigateway.common.permissions.permissions.APIRelatedApp.objects.allow_app_manage_api",
+            "apigateway.common.permissions.permissions.APIRelatedApp.objects.allow_app_manage_gateway",
             return_value=mock_allow_manage,
         )
         fake_request.app = mock.MagicMock(app_code="test")

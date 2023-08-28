@@ -56,11 +56,11 @@ class SDKManagerMixin:
         )
 
     def get_context(self, resource_version: ResourceVersion) -> SDKContext:
-        api_name = resource_version.api.name
+        gateway_name = resource_version.gateway.name
 
         return SDKContext(
-            name=f"bkapi-{ shortcuts.to_lower_dash_case(api_name) }",
-            package=api_name,
+            name=f"bkapi-{ shortcuts.to_lower_dash_case(gateway_name) }",
+            package=gateway_name,
             resource_version=resource_version,
             language=self.language,
             is_public=self.is_public,

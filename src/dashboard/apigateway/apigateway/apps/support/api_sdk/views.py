@@ -81,7 +81,7 @@ class APISDKViewSet(viewsets.ModelViewSet):
         slz.is_valid(raise_exception=True)
 
         data = cast(Dict[str, Any], slz.validated_data)
-        resource_version = get_object_or_404(ResourceVersion, api=request.gateway, id=data["resource_version_id"])
+        resource_version = get_object_or_404(ResourceVersion, gateway=request.gateway, id=data["resource_version_id"])
         include_private_resources = data["include_private_resources"]
 
         with SDKHelper(resource_version=resource_version) as helper:

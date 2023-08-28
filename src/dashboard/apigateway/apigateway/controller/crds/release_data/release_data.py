@@ -40,7 +40,7 @@ class ReleaseData:
 
     @cached_property
     def gateway(self) -> Gateway:
-        return self._release.api
+        return self._release.gateway
 
     @cached_property
     def stage(self) -> Stage:
