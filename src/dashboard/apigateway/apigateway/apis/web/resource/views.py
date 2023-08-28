@@ -110,7 +110,13 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
     )
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        slz = ResourceInputSLZ(data=request.data, context={"api": request.gateway})
+        slz = ResourceInputSLZ(
+            data=request.data,
+            context={
+                "api": request.gateway,
+                "stages": Stage.objects.filter(api=request.gateway),
+            },
+        )
         slz.is_valid(raise_exception=True)
 
         saver = ResourcesSaver.from_resources(
@@ -153,7 +159,14 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        slz = ResourceInputSLZ(instance, data=request.data, context={"api": request.gateway})
+        slz = ResourceInputSLZ(
+            instance,
+            data=request.data,
+            context={
+                "api": request.gateway,
+                "stages": Stage.objects.filter(api=request.gateway),
+            },
+        )
         slz.is_valid(raise_exception=True)
 
         saver = ResourcesSaver.from_resources(
@@ -404,7 +417,13 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
     )
     def get(self, request, *args, **kwargs):
         """校验后端配置中的请求路径"""
-        slz = self.get_serializer(data=request.query_params)
+        slz = self.get_serializer(
+            data=request.query_params,
+            context={
+                "api": request.gateway,
+                "stages": Stage.objects.filter(api=request.gateway),
+            },
+        )
         slz.is_valid(raise_exception=True)
 
         backend_id = slz.validated_data.get("backend_id")

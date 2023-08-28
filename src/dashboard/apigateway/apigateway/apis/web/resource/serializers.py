@@ -41,7 +41,7 @@ from apigateway.core.constants import (
     ExportTypeEnum,
     SwaggerFormatEnum,
 )
-from apigateway.core.models import Backend, Gateway, Resource
+from apigateway.core.models import Backend, Gateway, Resource, Stage
 from apigateway.core.utils import get_path_display
 
 
@@ -344,6 +344,7 @@ class ResourceImportInputSLZ(serializers.Serializer):
             many=True,
             context={
                 "api": self.context["api"],
+                "stages": Stage.objects.filter(api=self.context["api"]),
             },
         )
         slz.is_valid(raise_exception=True)

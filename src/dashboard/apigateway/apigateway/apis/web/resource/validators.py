@@ -21,13 +21,12 @@ from typing import List, Tuple
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 from apigateway.core.constants import (
     NORMAL_PATH_VAR_NAME_PATTERN,
     PATH_VAR_PATTERN,
     STAGE_PATH_VAR_NAME_PATTERN,
 )
-from apigateway.core.models import Gateway, Stage
+from apigateway.core.models import Stage
 from apigateway.utils.list import get_duplicate_items
 
 
@@ -56,7 +55,7 @@ class PathVarsValidator:
             )
 
 
-class BackendPathVarsValidator(GetGatewayFromContextMixin):
+class BackendPathVarsValidator:
     requires_context = True
 
     def __init__(self, check_stage_vars_exist: bool = False):
@@ -68,10 +67,10 @@ class BackendPathVarsValidator(GetGatewayFromContextMixin):
         if not backend_path:
             return
 
-        gateway = self._get_gateway(serializer)
+        stages = serializer.context["stages"]
         normal_path_vars, stage_path_vars = self._parse_backend_path(backend_path)
         self._validate_normal_path_vars(backend_path, normal_path_vars, path)
-        self._validate_stage_path_vars(backend_path, stage_path_vars, gateway)
+        self._validate_stage_path_vars(backend_path, stage_path_vars, stages)
 
     def _parse_backend_path(self, backend_path: str) -> Tuple[List[str], List[str]]:
         """解析后端路径，并将其中的路径变量分为普通路径变量，环境路径变量两类"""
@@ -108,11 +107,11 @@ class BackendPathVarsValidator(GetGatewayFromContextMixin):
                 ),
             )
 
-    def _validate_stage_path_vars(self, backend_path: str, stage_path_vars: List[str], gateway: Gateway):
+    def _validate_stage_path_vars(self, backend_path: str, stage_path_vars: List[str], stages: List[Stage]):
         if not (self.check_stage_vars_exist and stage_path_vars):
             return
 
-        for stage in Stage.objects.filter(api=gateway):
+        for stage in stages:
             # 后端路径中路径变量 {env.var_name}，在各网关环境中需存在
             not_exist_vars = list(set(stage_path_vars) - set(stage.vars.keys()))
             if not_exist_vars:

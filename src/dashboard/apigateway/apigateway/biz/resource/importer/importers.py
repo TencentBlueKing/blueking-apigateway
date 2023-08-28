@@ -102,6 +102,7 @@ class ResourceDataConvertor:
                     auth_config=ResourceAuthConfig.parse_obj(resource.get("auth_config", {})),
                     backend=backend,
                     backend_config=BackendConfig.parse_obj(resource["backend_config"]),
+                    # 在导入时，根据 metadata 中的 labels 创建 GatewayLabel，并补全 label_ids 数据
                     label_ids=[],
                     metadata=metadata,
                 )
