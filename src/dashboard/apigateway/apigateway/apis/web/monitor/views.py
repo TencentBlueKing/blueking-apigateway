@@ -18,6 +18,7 @@
 #
 
 
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -41,16 +42,28 @@ from .serializers import (
 )
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        auto_schema=PaginatedResponseSwaggerAutoSchema,
+        query_serializer=AlarmStrategyQueryInputSLZ,
+        responses={status.HTTP_200_OK: AlarmStrategyListOutputSLZ(many=True)},
+        tags=["WebAPI.Monitor"],
+    ),
+)
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_201_CREATED: ""},
+        tags=["WebAPI.Monitor"],
+    ),
+)
 class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
     serializer_class = AlarmStrategyInputSLZ
 
     def get_queryset(self):
         return AlarmStrategy.objects.filter(api=self.request.gateway)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""},
-        tags=["AlarmStrategy"],
-    )
     def create(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
@@ -67,12 +80,6 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=AlarmStrategyQueryInputSLZ,
-        responses={status.HTTP_200_OK: AlarmStrategyListOutputSLZ(many=True)},
-        tags=["AlarmStrategy"],
-    )
     def list(self, request, *args, **kwargs):
         slz = AlarmStrategyQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -91,6 +98,33 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
         return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        tags=["webapi.monitor"],
+    ),
+)
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Monitor"],
+    ),
+)
+@method_decorator(
+    name="patch",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Monitor"],
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Monitor"],
+    ),
+)
 class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AlarmStrategyInputSLZ
     lookup_field = "id"
@@ -98,10 +132,6 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
     def get_queryset(self):
         return AlarmStrategy.objects.filter(api=self.request.gateway)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["AlarmStrategy"],
-    )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -118,22 +148,33 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(tags=["AlarmStrategy"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
         return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["AlarmStrategy"],
-    )
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        request_body=AlarmStrategyUpdateStatusInputSLZ,
+        tags=["webapi.monitor"],
+    ),
+)
+@method_decorator(
+    name="patch",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        request_body=AlarmStrategyUpdateStatusInputSLZ,
+        tags=["webapi.monitor"],
+    ),
+)
 class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
     lookup_field = "id"
 
@@ -142,11 +183,6 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
     def get_queryset(self):
         return AlarmStrategy.objects.filter(api=self.request.gateway)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=AlarmStrategyUpdateStatusInputSLZ,
-        tags=["AlarmStrategy"],
-    )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance, data=request.data)
@@ -160,6 +196,15 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        auto_schema=PaginatedResponseSwaggerAutoSchema,
+        query_serializer=AlarmRecordQueryInputSLZ,
+        responses={status.HTTP_200_OK: AlarmRecordQueryOutputSLZ(many=True)},
+        tags=["WebAPI.Monitor"],
+    ),
+)
 class AlarmRecordListApi(generics.ListAPIView):
     serializer_class = AlarmRecordQueryOutputSLZ
     filter_backends = [filters.AlarmRecordFilterBackend]
@@ -167,12 +212,6 @@ class AlarmRecordListApi(generics.ListAPIView):
     def get_queryset(self):
         return AlarmRecord.objects.all()
 
-    @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=AlarmRecordQueryInputSLZ,
-        responses={status.HTTP_200_OK: AlarmRecordQueryOutputSLZ(many=True)},
-        tags=["AlarmStrategy"],
-    )
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         queryset = queryset.order_by("-id")
@@ -183,6 +222,13 @@ class AlarmRecordListApi(generics.ListAPIView):
         return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: AlarmRecordQueryOutputSLZ()},
+        tags=["WebAPI.Monitor"],
+    ),
+)
 class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
     serializer_class = AlarmRecordQueryOutputSLZ
     filter_backends = [filters.AlarmRecordFilterBackend]
@@ -192,22 +238,24 @@ class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
     def get_queryset(self):
         return AlarmRecord.objects.all()
 
-    @swagger_auto_schema(tags=["AlarmStrategy"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
         return OKJsonResponse(data=slz.data)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=AlarmRecordSummaryQueryInputSLZ,
+        responses={status.HTTP_200_OK: AlarmRecordSummaryQueryOutputSLZ(many=True)},
+        tags=["WebAPI.Monitor"],
+    ),
+)
 class AlarmRecordSummaryListApi(generics.ListAPIView):
     def get_queryset(self):
         return AlarmRecord.objects.all()
 
-    @swagger_auto_schema(
-        query_serializer=AlarmRecordSummaryQueryInputSLZ,
-        responses={status.HTTP_200_OK: AlarmRecordSummaryQueryOutputSLZ(many=True)},
-        tags=["AlarmStrategy"],
-    )
     def list(self, request, *args, **kwargs):
         slz = AlarmRecordSummaryQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)

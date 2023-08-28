@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from django.db import models
 from django.utils.translation import get_language
@@ -25,13 +25,12 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 
 
 class PluginConfigManager(models.Manager):
-    def with_type(self, code: str):
-        return self.filter(type__code=code)
+    pass
 
 
 class PluginBindingManager(models.Manager):
     def delete_by_gateway_id(self, gateway_id):
-        self.filter(api_id=gateway_id).delete()
+        self.filter(gateway_id=gateway_id).delete()
 
     def bulk_delete(self, objs):
         return self.filter(id__in=[i.pk for i in objs]).delete()
@@ -65,7 +64,7 @@ class PluginBindingManager(models.Manager):
         """将插件 plugin 绑定到指定 scopes"""
         for scope_id in scope_ids:
             binding, created = self.get_or_create(
-                api=gateway,
+                gateway=gateway,
                 scope_type=scope_type,
                 scope_id=scope_id,
                 type=type_,
@@ -80,38 +79,6 @@ class PluginBindingManager(models.Manager):
                 binding.plugin = plugin
                 binding.updated_by = username
                 binding.save()
-
-    def delete_unspecified_bindings(
-        self,
-        gateway,
-        scope_type: str,
-        scope_ids: List[int],
-        plugin=None,
-        config=None,
-        type_=None,
-    ) -> None:
-        qs = self.filter(api=gateway, scope_type=scope_type).exclude(scope_id__in=scope_ids)
-
-        if plugin:
-            qs = qs.filter(plugin=plugin, type=type_)
-
-        if config:
-            qs = qs.filter(config=config)
-
-        qs.delete()
-
-    def delete_bindings(
-        self, gateway_id: int, plugin_ids: Union[List[int], None] = None, config_ids: Union[List[int], None] = None
-    ):
-        queryset = self.filter(api_id=gateway_id)
-        if plugin_ids is not None:
-            queryset = queryset.filter(plugin_id__in=plugin_ids)
-        if config_ids is not None:
-            queryset = queryset.filter(config_id__in=config_ids)
-        queryset.delete()
-
-    def delete_by_scopes(self, scope_type: str, scope_ids: List[int]):
-        self.filter(scope_type=scope_type, scope_id__in=scope_ids).delete()
 
     def get_valid_scope_ids(self, gateway_id: int, scope_type: str, scope_ids: List[int]) -> List[int]:
         from apigateway.core.models import Resource, Stage
@@ -128,8 +95,8 @@ class PluginBindingManager(models.Manager):
         gateway_id: int,
         scope_type: PluginBindingScopeEnum,
         scope_ids: Optional[List[int]] = None,
-    ) -> Dict[str, Any]:
-        qs = self.filter(api_id=gateway_id, scope_type=scope_type.value)
+    ) -> Dict[int, Any]:
+        qs = self.filter(gateway_id=gateway_id, scope_type=scope_type.value)
         if scope_ids is not None:
             qs = qs.filter(scope_id__in=scope_ids)
 
@@ -155,10 +122,11 @@ class PluginFormManager(models.Manager):
         # sorting the query results by language make the default language(the blank string) always at the end
         return self.filter(q).order_by("-language")
 
-    def get_by_natural_key(self, language: str, type_code: str):
-        return self.get(language=language, type__code=type_code)
+    # def get_by_natural_key(self, language: str, type_code: str):
+    #     return self.get(language=language, type__code=type_code)
 
 
 class PluginTypeManager(models.Manager):
-    def get_by_natural_key(self, code: str):
-        return self.get(code=code)
+    pass
+    # def get_by_natural_key(self, code: str):
+    #     return self.get(code=code)

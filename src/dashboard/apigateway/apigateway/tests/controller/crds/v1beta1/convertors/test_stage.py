@@ -73,37 +73,6 @@ class TestStageConvertor:
         assert plugin is not None
         assert plugin.name == name
 
-    def test_stage_rate_limit_plugin(
-        self, rate_limit_access_strategy, rate_limit_access_strategy_stage_binding, fake_stage_convertor
-    ):
-        plugin = self.get_stage_plugin_by_name(fake_stage_convertor, "bk-stage-rate-limit")
-        assert plugin is not None
-        assert plugin.config == rate_limit_access_strategy.config
-
-    def test_convert_ip_restriction_plugin(
-        self,
-        ip_group,
-        ip_access_control_access_strategy,
-        ip_access_control_access_strategy_stage_binding,
-        fake_stage_convertor,
-    ):
-        plugin = self.get_stage_plugin_by_name(
-            fake_stage_convertor,
-            "bk-ip-restriction",
-        )
-
-        assert plugin is not None
-
-        access_strategy_config = ip_access_control_access_strategy.config
-
-        # allow to whitelist: [ip]
-        assert access_strategy_config["type"] == "allow"
-
-        groups = plugin.config["whitelist"]
-        assert len(groups) == 1
-
-        assert groups[0] == ip_group._ips
-
     def test_stage_plugin(
         self,
         faker,
@@ -114,7 +83,7 @@ class TestStageConvertor:
     ):
         G(
             PluginBinding,
-            api=edge_gateway,
+            gateway=edge_gateway,
             config=echo_plugin,
             scope_type=PluginBindingScopeEnum.STAGE.value,
             scope_id=edge_gateway_stage.id,

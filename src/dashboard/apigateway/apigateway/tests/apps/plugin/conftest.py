@@ -30,6 +30,6 @@ def fake_plugin_type():
 def fake_plugin_config(fake_gateway, fake_plugin_type):
     return G(
         PluginConfig,
-        api=fake_gateway,
+        gateway=fake_gateway,
         type=fake_plugin_type,
     )

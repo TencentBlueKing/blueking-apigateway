@@ -77,7 +77,7 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: AppResourcePermissionOutputSLZ(many=True)},
-        tags=["Permission"],
+        tags=["WebAPI.Permission"],
     )
     def list(self, request, *args, **kwargs):
         """
@@ -92,7 +92,7 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
     @swagger_auto_schema(
         responses={status.HTTP_201_CREATED: ""},
         request_body=AppPermissionInputSLZ,
-        tags=["Permission"],
+        tags=["WebAPI.Permission"],
     )
     def create(self, request, *args, **kwargs):
         """
@@ -120,7 +120,7 @@ class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generic
     @swagger_auto_schema(
         request_body=AppPermissionExportInputSLZ,
         responses={status.HTTP_200_OK: ""},
-        tags=["Permission"],
+        tags=["WebAPI.Permission"],
     )
     def create(self, request, *args, **kwargs):
         """
@@ -174,7 +174,7 @@ class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generic
 class AppResourcePermissionAppCodeListApi(generics.ListAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        tags=["Permission"],
+        tags=["WebAPI.Permission"],
     )
     def list(self, request, *args, **kwargs):
         """获取有权限的应用列表"""
@@ -190,7 +190,7 @@ class AppResourcePermissionAppCodeListApi(generics.ListAPIView):
 
 class AppResourcePermissionRenewApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"]
+        responses={status.HTTP_201_CREATED: ""}, request_body=AppPermissionIDsSLZ, tags=["WebAPI.Permission"]
     )
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -215,7 +215,7 @@ class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generic
 
     # FIXME: DELETE ?ids=1,2,3
     @swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"]
+        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=AppPermissionIDsSLZ, tags=["WebAPI.Permission"]
     )
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
@@ -240,7 +240,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: AppGatewayPermissionOutputSLZ(many=True)},
-        tags=["Permission"],
+        tags=["WebAPI.Permission"],
     )
     def list(self, request, *args, **kwargs):
         """
@@ -255,7 +255,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
     @swagger_auto_schema(
         responses={status.HTTP_201_CREATED: ""},
         request_body=AppPermissionInputSLZ,
-        tags=["Permission"],
+        tags=["WebAPI.Permission"],
     )
     def create(self, request, *args, **kwargs):
         """
@@ -283,7 +283,7 @@ class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.
     @swagger_auto_schema(
         request_body=AppPermissionExportInputSLZ,
         responses={status.HTTP_200_OK: ""},
-        tags=["Permission"],
+        tags=["WebAPI.Permission"],
     )
     def create(self, request, *args, **kwargs):
         """
@@ -334,7 +334,7 @@ class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.
 class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        tags=["Permission"],
+        tags=["WebAPI.Permission"],
     )
     def list(self, request, *args, **kwargs):
         """获取有权限的应用列表"""
@@ -350,7 +350,7 @@ class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
 
 class AppGatewayPermissionRenewApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"]
+        responses={status.HTTP_201_CREATED: ""}, request_body=AppPermissionIDsSLZ, tags=["WebAPI.Permission"]
     )
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -374,7 +374,7 @@ class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.
     queryset = AppAPIPermission.objects.order_by("-id")
 
     @swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=AppPermissionIDsSLZ, tags=["Permission"]
+        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=AppPermissionIDsSLZ, tags=["WebAPI.Permission"]
     )
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
@@ -398,7 +398,7 @@ class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAP
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: AppPermissionApplyOutputSLZ(many=True)},
-        tags=["Permission"],
+        tags=["WebAPI.Permission"],
     )
     def list(self, request, *args, **kwargs):
         """
@@ -416,7 +416,7 @@ class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAP
 class AppPermissionApplyRetrieveApi(AppPermissionApplyQuerySetMixin, generics.RetrieveAPIView):
     lookup_field = "id"
 
-    @swagger_auto_schema(tags=["Permission"])
+    @swagger_auto_schema(tags=["WebAPI.Permission"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = AppPermissionApplyOutputSLZ(instance)
@@ -436,7 +436,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: AppPermissionRecordOutputSLZ(many=True)},
-        tags=["Permission"],
+        tags=["WebAPI.Permission"],
     )
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -458,7 +458,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
     def get_queryset(self):
         return AppPermissionRecord.objects.filter(api=self.request.gateway).order_by("-handled_time")
 
-    @swagger_auto_schema(tags=["Permission"])
+    @swagger_auto_schema(tags=["WebAPI.Permission"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = AppPermissionRecordOutputSLZ(
@@ -472,7 +472,9 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
 class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.CreateAPIView):
     @swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""}, request_body=AppPermissionApplyApprovalInputSLZ, tags=["Permission"]
+        responses={status.HTTP_201_CREATED: ""},
+        request_body=AppPermissionApplyApprovalInputSLZ,
+        tags=["WebAPI.Permission"],
     )
     @transaction.atomic
     def create(self, request, *args, **kwargs):

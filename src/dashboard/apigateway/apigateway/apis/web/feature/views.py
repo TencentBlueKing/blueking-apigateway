@@ -29,7 +29,7 @@ from apigateway.utils.responses import OKJsonResponse
 class FeatureFlagListApi(generics.ListAPIView):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        tags=["Feature"],
+        tags=["WebAPI.Feature"],
     )
     def list(self, request, *args, **kwargs):
         """获取特性开关列表"""

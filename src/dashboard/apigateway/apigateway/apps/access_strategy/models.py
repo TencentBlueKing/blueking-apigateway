@@ -23,11 +23,6 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum, AccessStrategyTypeEnum
-from apigateway.apps.access_strategy.managers import (
-    AccessStrategyBindingManager,
-    AccessStrategyManager,
-    IPGroupManager,
-)
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway
 from apigateway.schema.models import Schema
@@ -42,6 +37,7 @@ from apigateway.schema.models import Schema
 logger = logging.getLogger(__name__)
 
 
+# FIXME: remove in 1.14
 class IPGroup(TimestampedModelMixin, OperatorModelMixin):
     """
     IPGroup, manager the ip list
@@ -52,8 +48,6 @@ class IPGroup(TimestampedModelMixin, OperatorModelMixin):
     name = models.CharField(max_length=64, blank=False, null=False)
     _ips = models.TextField(db_column="ips")
     comment = models.CharField(max_length=512, blank=True, default="")
-
-    objects = IPGroupManager()
 
     def __str__(self):
         return f"<IPGroup: {self.api}/{self.name}>"
@@ -79,6 +73,7 @@ class IPGroup(TimestampedModelMixin, OperatorModelMixin):
         self._ips = data
 
 
+# FIXME: remove in 1.14
 class AccessStrategy(ConfigModelMixin):
     """
     access strategy
@@ -92,8 +87,6 @@ class AccessStrategy(ConfigModelMixin):
     # config from ConfigModelMixin
 
     comment = models.CharField(max_length=512, blank=True, default="")
-
-    objects = AccessStrategyManager()
 
     def __str__(self):
         return f"<AccessStrategy: {self.api}/{self.name}/{self.type}>"
@@ -128,6 +121,7 @@ class AccessStrategy(ConfigModelMixin):
         self.config = config
 
 
+# FIXME: remove in 1.14
 class AccessStrategyBinding(TimestampedModelMixin, OperatorModelMixin):
     """
     strategy binding
@@ -150,8 +144,6 @@ class AccessStrategyBinding(TimestampedModelMixin, OperatorModelMixin):
     type = models.CharField(max_length=32, choices=AccessStrategyTypeEnum.get_choices(), blank=False, null=False)
 
     access_strategy = models.ForeignKey(AccessStrategy, on_delete=models.PROTECT)
-
-    objects = AccessStrategyBindingManager()
 
     def __str__(self):
         return f"<AccessStrategyBinding: {self.scope_type}/{self.scope_id}/{self.type}>"

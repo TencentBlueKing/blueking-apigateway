@@ -158,7 +158,7 @@ class TestGatewayResourceProvider:
 
 class TestGatewayPluginConfigProvider:
     def test_list_instance(self, echo_plugin):
-        fake_gateway = echo_plugin.api
+        fake_gateway = echo_plugin.gateway
 
         result = GatewayPluginConfigProvider().list_instance(
             FancyDict(parent={"id": str(fake_gateway.id), "type": "gateway"}), Page(limit=10, offset=0)
@@ -167,7 +167,7 @@ class TestGatewayPluginConfigProvider:
         assert result.results[0]["id"] == str(echo_plugin.id)
 
     def test_fetch_instance_info(self, echo_plugin, mocker):
-        fake_gateway = echo_plugin.api
+        fake_gateway = echo_plugin.gateway
 
         provider = GatewayPluginConfigProvider()
         mocker.patch.object(provider, "_fetch_gateway_approvers", return_value={})
@@ -179,7 +179,7 @@ class TestGatewayPluginConfigProvider:
         assert result.results[0]["id"] == str(echo_plugin.id)
 
     def test_search_instance(self, echo_plugin):
-        fake_gateway = echo_plugin.api
+        fake_gateway = echo_plugin.gateway
 
         result = GatewayPluginConfigProvider().search_instance(
             FancyDict(keyword="", parent={"id": str(fake_gateway.id), "type": "gateway"}),

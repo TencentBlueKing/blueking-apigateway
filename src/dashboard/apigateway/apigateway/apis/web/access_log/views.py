@@ -49,7 +49,7 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
     @swagger_auto_schema(
         query_serializer=RequestLogQueryInputSLZ,
         responses={status.HTTP_200_OK: TimeChartOutputSLZ()},
-        tags=["AccessLog"],
+        tags=["WebAPI.Log"],
     )
     def retrieve(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
@@ -77,7 +77,7 @@ class SearchLogListApi(generics.ListAPIView):
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=RequestLogQueryInputSLZ,
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
-        tags=["AccessLog"],
+        tags=["WebAPI.Log"],
     )
     def list(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
@@ -133,7 +133,7 @@ class LogDetailListApi(generics.ListAPIView):
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=LogDetailQueryInputSLZ,
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
-        tags=["AccessLog"],
+        tags=["WebAPI.Log"],
     )
     def list(self, request, request_id, *args, **kwargs):
         """
@@ -162,7 +162,7 @@ class LogLinkRetrieveApi(generics.RetrieveAPIView):
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: LogLinkOutputSLZ()},
-        tags=["AccessLog"],
+        tags=["WebAPI.Log"],
     )
     def retrieve(self, request, request_id, *args, **kwargs):
         """

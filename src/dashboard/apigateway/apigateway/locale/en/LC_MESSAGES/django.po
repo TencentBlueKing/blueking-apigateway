@@ -22,27 +22,6 @@ msgstr ""
 msgid "当前微网关实例无权限调用"
 msgstr "No permission to access the microgateway instance"
 
-#: apigateway/apis/open/access_strategy/serializers.py:55
-#, python-brace-format
-msgid "包含非IP数据【{line}】。"
-msgstr "Contain non-IP: [{line}]."
-
-#: apigateway/apis/open/access_strategy/serializers.py:73
-msgid "包含非网关下的IP访问控制策略。"
-msgstr "Some access strategies do not exist."
-
-#: apigateway/apis/open/access_strategy/serializers.py:82
-msgid "包含非网关下的IP分组。"
-msgstr "Some ip groups do not exist."
-
-#: apigateway/apis/open/access_strategy/serializers.py:99
-msgid "策略绑定类型与策略类型不一致，请检查。"
-msgstr "The binding type does not match the strategy type, please check."
-
-#: apigateway/apis/open/access_strategy/serializers.py:117
-msgid "指定的部分对象不存在。"
-msgstr "Some specified objects do not exist."
-
 #: apigateway/apis/open/gateway/serializers.py:190
 #, python-brace-format
 msgid "api_type 为 {api_type} 时，网关名 name 需以 {prefix} 开头。"
@@ -254,21 +233,6 @@ msgid "网关已请求后端接口，并将其响应原样返回。"
 msgstr ""
 "The gateway has requested the backend interface and returned its response as "
 "is."
-
-#: apigateway/apps/access_strategy/models.py:62
-#: apigateway/apps/access_strategy/models.py:63
-msgid "IP分组"
-msgstr "IP Group"
-
-#: apigateway/apps/access_strategy/models.py:102
-#: apigateway/apps/access_strategy/models.py:103
-msgid "访问策略"
-msgstr "Access Strategy"
-
-#: apigateway/apps/access_strategy/models.py:160
-#: apigateway/apps/access_strategy/models.py:161
-msgid "访问策略绑定"
-msgstr "Access Strategy Binding"
 
 #: apigateway/apps/api_test/prepared_request.py:70
 msgid "Header X-Bkapi-Authorization 不是一个有效的 Json 格式字符串。"

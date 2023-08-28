@@ -343,7 +343,7 @@ def edge_plugin_type():
 def edge_plugin_config(edge_gateway, edge_plugin_type):
     return G(
         PluginConfig,
-        api=edge_gateway,
+        gateway=edge_gateway,
         type=edge_plugin_type,
         yaml=yaml_dumps({"rates": {"__default": [{"period": 60, "tokens": 100}]}}),
     )

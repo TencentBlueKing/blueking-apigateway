@@ -76,7 +76,6 @@ sync_bk_esb
 sync_bk_esb_buffet
 sync_bk_apigateway_inner
 
-# 迁移插件配置, 需要在1.14删除
-echo "migrate header rewrite start ..."
-python manage.py migrate_header_rewrite
-echo "migrate header rewrite end"
+# 1.13 同步所有网关数据, 确保数据最新; 这个需要在1.14中删除
+python manage.py sync_releases_to_shared_micro_gateway_parallel
+# 1.13 同步所有网关数据, 确保数据最新; 这个需要在1.14中删除

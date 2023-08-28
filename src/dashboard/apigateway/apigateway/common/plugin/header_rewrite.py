@@ -76,7 +76,7 @@ class HeaderRewriteConvertor:
             )
             config.save()
             binding = PluginBinding(
-                api_id=gateway_id,
+                gateway_id=gateway_id,
                 scope_type=scope_type,
                 scope_id=scope_id,
                 config=config,

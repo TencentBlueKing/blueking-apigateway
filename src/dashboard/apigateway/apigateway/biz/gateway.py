@@ -25,7 +25,6 @@ from django.conf import settings
 from django.db.models import Count
 from django.utils.translation import gettext as _
 
-from apigateway.apps.access_strategy.models import AccessStrategy
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.monitor.models import AlarmStrategy
@@ -200,10 +199,6 @@ class GatewayHandler:
         # 5. delete resource-version
 
         ResourceVersionHandler().delete_by_gateway_id(gateway_id)
-
-        # 6. delete access_strategy
-
-        AccessStrategy.objects.delete_by_gateway_id(gateway_id)
 
         # plugin bindings
 
