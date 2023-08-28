@@ -111,35 +111,18 @@ class DownloadableResponse(FileResponse):
         self["Access-Control-Expose-Headers"] = "Content-Type,Content-Disposition"
 
 
+# TODO: change drf default render
 class ResponseRender(JSONRenderer):
     """将 DRF 返回的结构进行标准化转换，兼容 error handler 处理结果"""
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         response = renderer_context["response"]
-        if response.status_code == status.HTTP_204_NO_CONTENT:
-            # status 204 no-content，如果设置了 content-length，可能导致客户端卡死，
-            # 并且，现在采用的接口规范，所有请求都返回一个 json 格式消息: {"code": 0, "message": ""}
-            response.status_code = status.HTTP_200_OK
 
-        result = {
-            "message": "",
-            "data": None,
-        }
+        if response.status_code == status.HTTP_200_OK or response.status_code == status.HTTP_201_CREATED:
+            result = {
+                "data": data,
+            }
 
-        if response.status_code < 400:
-            # ok response from drf or django views
-
-            result["code"] = 0
-            result["result"] = True
-            result["data"] = data
-
-        elif "code" in data:
-            # custom error handler wrapped response
-            result = data
-
+            return super().render(result, accepted_media_type, renderer_context)
         else:
-            # failure response
-            result["code"] = response.status_code * 100
-            result["result"] = False
-
-        return super().render(result, accepted_media_type, renderer_context)
+            return super().render(data, accepted_media_type, renderer_context)

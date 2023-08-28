@@ -334,7 +334,7 @@
     code: bk-header-rewrite
     name: Header 转换
     name_en: Header transformation
-    is_public: false
+    is_public: true
     schema:
     - bk-header-rewrite
     - plugin

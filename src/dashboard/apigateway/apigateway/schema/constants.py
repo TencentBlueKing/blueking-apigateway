@@ -22,7 +22,6 @@ from apigateway.common.constants import ChoiceEnum
 class SchemaTypeEnum(ChoiceEnum):
     CONTEXT = "context"
     PROXY = "proxy"
-    ACCESS_STRATEGY = "access_strategy"
     PLUGIN = "plugin"
     MONITOR = "monitor"
     APISDK = "apisdk"

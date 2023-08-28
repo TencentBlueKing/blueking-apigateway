@@ -238,7 +238,7 @@ class GatewayPluginConfigProvider(BaseResourceProvider):
 
     @fetch_gateway_id_in_filter
     def list_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        queryset = PluginConfig.objects.filter(api_id=self.gateway_id_in_filter).values("id", "name")
+        queryset = PluginConfig.objects.filter(gateway_id=self.gateway_id_in_filter).values("id", "name")
         results = [
             {
                 "id": str(plugin["id"]),
@@ -255,7 +255,7 @@ class GatewayPluginConfigProvider(BaseResourceProvider):
         approvers = self._fetch_gateway_approvers([self.gateway_id_in_filter])
         iam_approver = approvers.get(self.gateway_id_in_filter) or []
 
-        queryset = PluginConfig.objects.filter(api_id=self.gateway_id_in_filter, id__in=map(int, ids)).values(
+        queryset = PluginConfig.objects.filter(gateway_id=self.gateway_id_in_filter, id__in=map(int, ids)).values(
             "id", "name"
         )
         results = [
@@ -272,7 +272,7 @@ class GatewayPluginConfigProvider(BaseResourceProvider):
     @fetch_gateway_id_in_filter
     def search_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
         """支持模糊搜索插件配置名"""
-        queryset = PluginConfig.objects.filter(api_id=self.gateway_id_in_filter)
+        queryset = PluginConfig.objects.filter(gateway_id=self.gateway_id_in_filter)
         if filter_obj.keyword:
             queryset = queryset.filter(name__icontains=filter_obj.keyword)
 

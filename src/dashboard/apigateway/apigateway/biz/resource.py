@@ -21,8 +21,6 @@ from typing import Any, Dict, List, Optional
 
 from django.db.models import Q
 
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
-from apigateway.apps.access_strategy.models import AccessStrategyBinding
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.support.models import ResourceDoc
@@ -198,13 +196,6 @@ class ResourceHandler:
         # 2. delete proxy
 
         Proxy.objects.delete_by_resource_ids(resource_ids)
-
-        # 3. delete access-strategy binding
-
-        AccessStrategyBinding.objects.delete_by_scope_ids(
-            scope_type=AccessStrategyBindScopeEnum.RESOURCE.value,
-            scope_ids=resource_ids,
-        )
 
         # 4. delete resource doc
 

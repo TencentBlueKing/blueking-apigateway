@@ -17,7 +17,7 @@
 #
 from django.contrib import admin
 
-from apigateway.apps.plugin.models import Plugin, PluginBinding, PluginConfig, PluginForm, PluginType
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 
 
 class PluginTypeAdmin(admin.ModelAdmin):
@@ -33,24 +33,17 @@ class PluginFormAdmin(admin.ModelAdmin):
 
 
 class PluginConfigAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "type", "api"]
-    search_fields = ["name"]
-    list_filter = ["type", "api"]
+    list_display = ["id", "type", "gateway"]
+    search_fields = ["type"]
+    list_filter = ["type", "gateway"]
 
 
 class PluginBindingAdmin(admin.ModelAdmin):
-    list_display = ["id", "scope_type", "scope_id", "config", "api"]
+    list_display = ["id", "scope_type", "scope_id", "config", "gateway"]
     search_fields = ["scope_id"]
-    list_filter = ["scope_type", "api"]
+    list_filter = ["scope_type", "gateway"]
 
 
-class LegacyPluginAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "type", "api"]
-    search_fields = ["name"]
-    list_filter = ["type", "api"]
-
-
-admin.site.register(Plugin, LegacyPluginAdmin)
 admin.site.register(PluginType, PluginTypeAdmin)
 admin.site.register(PluginForm, PluginFormAdmin)
 admin.site.register(PluginConfig, PluginConfigAdmin)
