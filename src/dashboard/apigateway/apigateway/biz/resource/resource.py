@@ -20,76 +20,23 @@ import json
 from typing import Any, Dict, List, Optional
 
 from django.db.models import Q
+from django.utils.translation import gettext as _
 
 from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
 from apigateway.apps.access_strategy.models import AccessStrategyBinding
+from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.common.contexts import ResourceAuthContext
-from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 from apigateway.core.constants import BackendConfigTypeEnum, ContextScopeTypeEnum
-from apigateway.core.models import Context, Proxy, Resource, Stage, StageResourceDisabled
+from apigateway.core.models import Context, Gateway, Proxy, Resource, Stage, StageResourceDisabled
 from apigateway.utils import time
 
 
 class ResourceHandler:
-    @staticmethod
-    def save_related_data(
-        gateway,
-        resource,
-        proxy_type,
-        proxy_config,
-        auth_config,
-        label_ids,
-        disabled_stage_ids,
-        backend_config_type: str = BackendConfigTypeEnum.DEFAULT.value,
-        backend_service_id: Optional[int] = None,
-    ):
-        # 1. save proxy, and set resource proxy_id
-        ResourceHandler().save_proxy_config(
-            resource,
-            proxy_type,
-            proxy_config,
-            backend_config_type=backend_config_type,
-            backend_service_id=backend_service_id,
-        )
-
-        # 2. save auth config
-        ResourceHandler().save_auth_config(resource.id, auth_config)
-
-        # 3. save labels
-        ResourceHandler().save_labels(gateway, resource, label_ids, delete_unspecified=True)
-
-        # 4. save disabled stags
-        ResourceHandler().save_disabled_stages(gateway, resource, disabled_stage_ids, delete_unspecified=True)
-
-        # 5. create or update resource header rewrite plugin config
-        resource_transform_headers = proxy_config.get("transform_headers") or {}
-        resource_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(resource_transform_headers)
-
-        HeaderRewriteConvertor.alter_plugin(
-            resource.api_id, PluginBindingScopeEnum.RESOURCE.value, resource.id, resource_config
-        )
-
-    @staticmethod
-    def save_labels(gateway, resource, label_ids, delete_unspecified=False):
-        """
-        存储标签
-        :param bool delete_unspecified: 是否删除未指定的标签，资源下非本次提供的即为未指定标签
-        """
-        # 筛选出在 ResourceLabel 中不存在的 label_ids 进行添加
-        exist_label_ids = ResourceLabel.objects.filter(resource=resource, api_label__id__in=label_ids).values_list(
-            "api_label__id", flat=True
-        )
-        labels_to_add = APILabel.objects.filter(api=gateway, id__in=list(set(label_ids) - set(exist_label_ids)))
-        for label in labels_to_add:
-            ResourceLabel.objects.update_or_create(resource=resource, api_label=label)
-
-        if delete_unspecified:
-            # 清理非本次添加的标签
-            ResourceLabel.objects.filter(resource=resource).exclude(api_label__id__in=label_ids).delete()
-
     @staticmethod
     def save_disabled_stages(gateway, resource, disabled_stage_ids, delete_unspecified=False):
         """
@@ -180,35 +127,36 @@ class ResourceHandler:
         ResourceHandler().delete_resources(resource_ids)
 
     @staticmethod
-    def delete_resources(resource_ids: List[int], api=None):
+    def delete_resources(resource_ids: List[int], gateway: Gateway = None):
         if not resource_ids:
             return
 
-        if api is not None:
+        if gateway is not None:
             # 指定网关时，二次确认资源属于该网关，防止误删除
-            resource_ids = Resource.objects.filter_by_ids(api, resource_ids)
+            resource_ids = list(Resource.objects.filter(api=gateway, id__in=resource_ids).values_list("id", flat=True))
             assert resource_ids
 
         # 1. delete auth config context
-        Context.objects.delete_by_scope_ids(
-            scope_type=ContextScopeTypeEnum.RESOURCE.value,
-            scope_ids=resource_ids,
-        )
+        Context.objects.filter(scope_type=ContextScopeTypeEnum.RESOURCE.value, scope_id__in=resource_ids).delete()
 
         # 2. delete proxy
+        Proxy.objects.filter(resource_id__in=resource_ids).delete()
 
-        Proxy.objects.delete_by_resource_ids(resource_ids)
+        # 3. delete plugin binding
+        PluginBinding.objects.filter(
+            scope_type=PluginBindingScopeEnum.RESOURCE.value,
+            scope_id__in=resource_ids,
+        ).delete()
 
-        # 3. delete access-strategy binding
-
-        AccessStrategyBinding.objects.delete_by_scope_ids(
+        # 3.1 delete access-strategy binding
+        # TODO: 待 access-strategy 全部迁移到 plugin 后，删除此代码
+        AccessStrategyBinding.objects.filter(
             scope_type=AccessStrategyBindScopeEnum.RESOURCE.value,
-            scope_ids=resource_ids,
-        )
+            scope_id__in=resource_ids,
+        ).delete()
 
         # 4. delete resource doc
-
-        ResourceDoc.objects.delete_by_resource_ids(resource_ids)
+        ResourceDoc.objects.filter(resource_id__in=resource_ids).delete()
 
         # 5. delete resource
         Resource.objects.filter(id__in=resource_ids).delete()
@@ -328,4 +276,32 @@ class ResourceHandler:
             query = condition.get("query")
             queryset = queryset.filter(Q(path__icontains=query) | Q(name__icontains=query))
 
+        if condition.get("order_by"):
+            queryset = queryset.order_by(condition["order_by"])
+
         return queryset
+
+    @staticmethod
+    def record_audit_log_success(
+        username: str,
+        gateway_id: int,
+        op_type: OpTypeEnum,
+        instance_id: int,
+        instance_name: str,
+    ):
+        comment = {
+            OpTypeEnum.CREATE: _("创建资源"),
+            OpTypeEnum.MODIFY: _("更新资源"),
+            OpTypeEnum.DELETE: _("删除资源"),
+        }.get(op_type, "-")
+
+        record_audit_log(
+            username=username,
+            op_type=op_type.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=gateway_id,
+            op_object_type=OpObjectTypeEnum.RESOURCE.value,
+            op_object_id=instance_id,
+            op_object=instance_name,
+            comment=comment,
+        )

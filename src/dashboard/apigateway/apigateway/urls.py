@@ -50,7 +50,6 @@ urlpatterns = [
     # iam provider
     path("backend/api/iam/", include("apigateway.apis.iam.urls")),
     # apps: core
-    path("backend/apis/<int:gateway_id>/resources/", include("apigateway.apps.resource.urls")),
     path("backend/apis/<int:gateway_id>/resource_versions/", include("apigateway.apps.resource_version.urls")),
     path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     # apps: normal

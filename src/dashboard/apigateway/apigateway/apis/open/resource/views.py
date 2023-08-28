@@ -18,27 +18,32 @@
 #
 from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
+from rest_framework import generics, status
 
 from apigateway.apis.open.resource import serializers
-from apigateway.biz.resource.importer.importer import ResourcesImporter
+from apigateway.apis.web.resource.serializers import ResourceImportInputSLZ
+from apigateway.biz.resource.importer.importers import ResourcesImporter
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Resource
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
+from .serializers import ResourceListOutputV1SLZ
 
-class ResourceV1ViewSet(viewsets.ModelViewSet):
-    api_permission_exempt = True
-    lookup_field = "id"
 
+class ResourceQuerySetMixin:
     def get_queryset(self):
         return Resource.objects.filter(api=self.request.gateway)
 
+
+class ResourceListApi(ResourceQuerySetMixin, generics.ListAPIView):
+    api_permission_exempt = True
+    lookup_field = "id"
+
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        responses={status.HTTP_200_OK: serializers.ResourceListV1SLZ(many=True)},
+        responses={status.HTTP_200_OK: ResourceListOutputV1SLZ(many=True)},
         tags=["OpenAPI.Resource"],
     )
     def list(self, request, *args, **kwargs):
@@ -46,8 +51,13 @@ class ResourceV1ViewSet(viewsets.ModelViewSet):
         resource_count = resources.count()
         paginator = LimitOffsetPaginator(count=resource_count, offset=0, limit=resource_count)
 
-        slz = serializers.ResourceListV1SLZ(resources, many=True)
-        return V1OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
+        slz = ResourceListOutputV1SLZ(resources, many=True)
+        return V1OKJsonResponse(data=paginator.get_paginated_data(slz.data))
+
+
+class ResourceRetrieveApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
+    api_permission_exempt = True
+    lookup_field = "id"
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.ResourceListV1SLZ()},
@@ -56,46 +66,37 @@ class ResourceV1ViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = serializers.ResourceListV1SLZ(instance)
-        return V1OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse(data=slz.data)
 
 
-class ResourceSyncV1ViewSet(viewsets.ModelViewSet):
+class ResourceSyncApi(ResourceQuerySetMixin, generics.CreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
     lookup_field = "id"
 
-    def get_queryset(self):
-        return Resource.objects.filter(api=self.request.gateway)
-
     @transaction.atomic
-    def sync(self, request, *args, **kwargs):
-        slz = serializers.ResourceSyncSLZ(data=request.data)
+    def post(self, request, *args, **kwargs):
+        slz = ResourceImportInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        data = slz.validated_data
-
-        # 1. 获取导入的资源配置
-        importer = ResourcesImporter(
+        importer = ResourcesImporter.from_resources(
             gateway=request.gateway,
-            allow_overwrite=True,
-            need_delete_unspecified_resources=data["delete"],
+            resources=slz.validated_data["resources"],
+            selected_resources=slz.validated_data.get("selected_resources"),
+            need_delete_unspecified_resources=slz.validated_data.get("delete", False),
             username=request.user.username,
         )
-        importer.load_importing_resources_by_swagger(content=data["content"])
-
-        # 2. 导入资源
         importer.import_resources()
 
-        # 3. 分析出已创建或更新的资源
+        # 分析出已创建或更新的资源
         added_resources = []
         updated_resources = []
-        for resource in importer.imported_resources:
-            if resource.get("_is_created"):
-                added_resources.append({"id": resource["id"]})
-            elif resource.get("_is_updated"):
-                updated_resources.append({"id": resource["id"]})
+        for resource_data in importer.get_selected_resource_data_list():
+            if resource_data.metadata.get("is_created"):
+                added_resources.append({"id": resource_data.resource.id})
+            else:
+                updated_resources.append({"id": resource_data.resource.id})
 
         return V1OKJsonResponse(
-            "OK",
             data={
                 "added": added_resources,
                 "updated": updated_resources,

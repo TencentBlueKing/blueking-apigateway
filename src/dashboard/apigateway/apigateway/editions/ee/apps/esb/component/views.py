@@ -34,7 +34,7 @@ from apigateway.apps.esb.component.sync import ComponentSynchronizer
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
 from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.esb.permissions import UserAccessESBPermission
-from apigateway.biz.resource.importer.importer import ResourcesImporter
+from apigateway.biz.resource.importer.importers import ResourcesImporter
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.access_token import get_user_access_token_from_request
@@ -176,16 +176,18 @@ class ComponentSyncViewSet(viewsets.ViewSet):
         synchronizer = ComponentSynchronizer()
         importing_resources = synchronizer.get_importing_resources()
 
-        resources_importer = ResourcesImporter(
+        resources_importer = ResourcesImporter.from_resources(
             gateway=esb_gateway,
-            allow_overwrite=True,
+            resources=importing_resources,
+            selected_resources=None,
             need_delete_unspecified_resources=True,
             username=request.user.username,
         )
-        resources_importer.set_importing_resources(importing_resources)
         unspecified_resources = resources_importer.get_unspecified_resources()
+        resource_data_list = resources_importer.get_selected_resource_data_list()
 
-        slz = serializers.ComponentResourceBindingSLZ(unspecified_resources + importing_resources, many=True)
+        resources = unspecified_resources + [resource_data.snapshot() for resource_data in resource_data_list]
+        slz = serializers.ComponentResourceBindingSLZ(resources, many=True)
         return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(tags=["ESB.Component"])

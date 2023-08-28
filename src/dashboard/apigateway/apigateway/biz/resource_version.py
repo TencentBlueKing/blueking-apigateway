@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
+import datetime
 from typing import Any, Dict, List, Optional
 
 from django.utils.translation import gettext as _
@@ -99,7 +99,6 @@ class ResourceVersionHandler:
 
     @staticmethod
     def delete_by_gateway_id(gateway_id: int):
-
         # delete api release
         Release.objects.delete_by_gateway_id(gateway_id)
 
@@ -175,3 +174,7 @@ class ResourceVersionHandler:
             return True
 
         return False
+
+    @staticmethod
+    def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:
+        return ResourceVersion.objects.filter(gateway_id=gateway_id).values_list("created_time", flat=True).last()

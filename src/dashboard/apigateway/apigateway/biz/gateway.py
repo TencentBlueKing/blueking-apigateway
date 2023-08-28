@@ -261,3 +261,9 @@ class GatewayHandler:
             Resource.objects.filter(api_id__in=gateway_ids).values("api_id").annotate(count=Count("api_id"))
         )
         return {i["api_id"]: i["count"] for i in resource_count}
+
+    @staticmethod
+    def get_max_resource_count(gateway_name: str):
+        return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
+            gateway_name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
+        )

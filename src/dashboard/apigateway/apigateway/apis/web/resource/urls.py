@@ -19,55 +19,46 @@
 from django.urls import include, path
 
 from apigateway.apis.web.resource.views import (
-    ProxyPathViewSet,
-    ResourceBatchViewSet,
-    ResourceImportExportViewSet,
-    ResourceLabelViewSet,
-    ResourceReleaseStageViewSet,
-    ResourceURLViewSet,
-    ResourceViewSet,
-    ResourceWithVerifiedUserRequiredViewSet,
+    BackendPathCheckApi,
+    ResourceBatchUpdateDestroyApi,
+    ResourceExportApi,
+    ResourceImportApi,
+    ResourceImportCheckApi,
+    ResourceLabelUpdateApi,
+    ResourceListCreateApi,
+    ResourceRetrieveUpdateDestroyApi,
+    ResourcesWithVerifiedUserRequiredApi,
 )
 
 urlpatterns = [
-    path("", ResourceViewSet.as_view({"get": "list", "post": "create"}), name="apigateway.apps.resource"),
+    path("", ResourceListCreateApi.as_view(), name="resource.list_create"),
+    path("<int:id>/", ResourceRetrieveUpdateDestroyApi.as_view(), name="resource.retrieve_update_destroy"),
+    path("batch/", ResourceBatchUpdateDestroyApi.as_view(), name="resource.batch.update_destroy"),
     path(
-        "<int:id>/",
-        ResourceViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"}),
-        name="apigateway.apps.resource.detail",
-    ),
-    path(
-        "<int:id>/labels/",
-        ResourceLabelViewSet.as_view({"put": "update"}),
-        name="apigateway.apps.resource.update.labels",
-    ),
-    path(
-        "batch/",
-        ResourceBatchViewSet.as_view({"put": "update", "delete": "destroy"}),
-        name="apigateway.apps.resource.batch",
-    ),
-    path("<int:id>/urls/", ResourceURLViewSet.as_view({"get": "get"})),
-    path("<int:id>/stages/", ResourceReleaseStageViewSet.as_view({"get": "get"})),
-    path("proxy_paths/", ProxyPathViewSet.as_view({"get": "check"})),
-    path(
-        "import/check/",
-        ResourceImportExportViewSet.as_view({"post": "import_resources_check"}),
-        name="apigateway.apps.resource.import_check",
+        "<int:resource_id>/",
+        include(
+            [
+                path("labels/", ResourceLabelUpdateApi.as_view(), name="resource.label.update"),
+                path("docs/", include("apigateway.apis.web.resource.doc.urls")),
+            ]
+        ),
     ),
     path(
         "import/",
-        ResourceImportExportViewSet.as_view({"post": "import_resources"}),
-        name="apigateway.apps.resource.import",
+        include(
+            [
+                path("check/", ResourceImportCheckApi.as_view(), name="resource.import.check"),
+                path("", ResourceImportApi.as_view(), name="resource.import"),
+            ]
+        ),
     ),
+    path("export/", ResourceExportApi.as_view(), name="resource.export"),
+    # 资源后端路径校验
+    path("backend-path/check/", BackendPathCheckApi.as_view(), name="resource.backend_path.check"),
+    # 用于 ”免用户认证应用白名单“ 插件过滤资源
     path(
-        "export/",
-        ResourceImportExportViewSet.as_view({"post": "export_resources"}),
-        name="apigateway.apps.resource.export",
+        "with/verified-user-required/",
+        ResourcesWithVerifiedUserRequiredApi.as_view(),
+        name="resource.list_with_verified_user_required",
     ),
-    path(
-        "verified-user-required/",
-        ResourceWithVerifiedUserRequiredViewSet.as_view({"get": "list"}),
-        name="apigateway.apps.resource.with.verified_user_required",
-    ),
-    path("<int:resource_id>/docs/", include("apigateway.apis.web.resource.doc.urls")),
 ]

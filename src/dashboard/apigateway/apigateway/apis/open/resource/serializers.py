@@ -20,7 +20,7 @@ from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
-class ResourceListV1SLZ(serializers.Serializer):
+class ResourceListOutputV1SLZ(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     description = SerializerTranslatedField(
@@ -29,8 +29,3 @@ class ResourceListV1SLZ(serializers.Serializer):
     description_en = serializers.CharField(default=None, required=False, write_only=True)
     method = serializers.CharField()
     path = serializers.CharField()
-
-
-class ResourceSyncSLZ(serializers.Serializer):
-    content = serializers.CharField()
-    delete = serializers.BooleanField(required=False, default=False)

@@ -31,7 +31,7 @@ from apigateway.apps.esb.bkcore.models import ComponentResourceBinding
 from apigateway.apps.permission.constants import PermissionLevelEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.esb_components import get_client_by_username
-from apigateway.core.constants import HTTP_METHOD_ANY, ProxyTypeEnum
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY
 
 logger = logging.getLogger(__name__)
 
@@ -59,16 +59,12 @@ class Component(BaseModel):
             "name": self.binding_resource_name,
             "description": self.description,
             "is_public": self.is_public,
-            "proxy_type": ProxyTypeEnum.HTTP.value,
-            "proxy_configs": {
-                ProxyTypeEnum.HTTP.value: {
-                    "method": self.resource_method,
-                    "path": self.full_path,
-                    "match_subpath": False,
-                    "timeout": 0,
-                    "upstreams": {},
-                    "transform_headers": {},
-                }
+            "backend_name": DEFAULT_BACKEND_NAME,
+            "backend_config": {
+                "method": self.resource_method,
+                "path": self.full_path,
+                "match_subpath": False,
+                "timeout": 0,
             },
             "auth_config": {
                 # 不需要权限校验的组件，在网关层也不需要认证应用，而是将应用认证结果传递给 ESB，由 ESB 处理
@@ -78,8 +74,7 @@ class Component(BaseModel):
             },
             "allow_apply_permission": self.is_public,
             "labels": [self.system_name],
-            "disabled_stages": [],
-            "extend_data": {
+            "metadata": {
                 "system_name": self.system_name,
                 "component_id": self.id,
                 "component_name": self.name,

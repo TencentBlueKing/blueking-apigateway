@@ -18,17 +18,13 @@
 #
 import json
 import logging
+import pkgutil
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
 import jsonschema
 
-from apigateway.biz.resource.importer.helpers import (
-    AuthConfigConverter,
-    format_jsonschema_error,
-    load_swagger_schema,
-)
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.constants import (
     HTTP_METHOD_ANY,
@@ -40,6 +36,63 @@ from apigateway.core.constants import (
 from apigateway.utils.yaml import yaml_dumps, yaml_loads
 
 logger = logging.getLogger(__name__)
+
+
+def load_swagger_schema():
+    """
+    https://github.com/OAI/OpenAPI-Specification/blob/master/schemas/v2.0/schema.json
+    """
+    data = pkgutil.get_data("apigateway.biz.resource.importer", "schema.json")
+    return json.loads(data.decode("utf-8"))
+
+
+def format_as_index(indices):
+    """
+    Construct a single string containing indexing operations for the indices.
+
+    For example, [1, 2, "foo"] -> [1][2]["foo"]
+    """
+    if not indices:
+        return ""
+    return "[%s]" % "][".join(repr(index) for index in indices)
+
+
+def format_jsonschema_error(error):
+    return f"{format_as_index(error.absolute_path)}: {error.message}"
+
+
+class AuthConfigConverter:
+    """
+    资源认证配置，Yaml 与内部数据的转换
+    """
+
+    @classmethod
+    def to_yaml(cls, auth_config: dict):
+        _config = {
+            "userVerifiedRequired": auth_config.get("auth_verified_required", True),
+        }
+
+        if auth_config.get("app_verified_required") is False:
+            _config["appVerifiedRequired"] = False
+
+        if auth_config.get("resource_perm_required") is False:
+            _config["resourcePermissionRequired"] = False
+
+        return _config
+
+    @classmethod
+    def to_inner(cls, auth_config: dict):
+        _config = {
+            "auth_verified_required": auth_config.get("userVerifiedRequired", True),
+        }
+
+        if "appVerifiedRequired" in auth_config:
+            _config["app_verified_required"] = auth_config["appVerifiedRequired"]
+
+        if "resourcePermissionRequired" in auth_config:
+            _config["resource_perm_required"] = auth_config["resourcePermissionRequired"]
+
+        return _config
 
 
 @dataclass

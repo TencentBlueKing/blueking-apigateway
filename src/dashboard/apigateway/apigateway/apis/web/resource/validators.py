@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import List, Tuple
+
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
@@ -24,9 +26,9 @@ from apigateway.core.constants import (
     NORMAL_PATH_VAR_NAME_PATTERN,
     PATH_VAR_PATTERN,
     STAGE_PATH_VAR_NAME_PATTERN,
-    ProxyTypeEnum,
 )
-from apigateway.core.models import Stage
+from apigateway.core.models import Gateway, Stage
+from apigateway.utils.list import get_duplicate_items
 
 
 class PathVarsValidator:
@@ -36,83 +38,88 @@ class PathVarsValidator:
             return
 
         var_names = PATH_VAR_PATTERN.findall(path)
-        var_name_set = set()
+        if not var_names:
+            return
 
+        # 校验变量名是否满足正则
         for var_name in var_names:
             if not NORMAL_PATH_VAR_NAME_PATTERN.match(var_name):
                 raise serializers.ValidationError(
-                    _("资源请求路径包含的路径变量【{var_name}】非法，应由字母、数字、下划线（_）组成，首字符必须是字母，长度小于30个字符。").format(var_name=var_name),
+                    _("前端请求路径 {path} 中的路径变量 {var_name} 不符合规则。").format(path=path, var_name=var_name),
                 )
 
-            # 校验路径是否包含重复的变量名
-            if var_name in var_name_set:
-                raise serializers.ValidationError(_("资源请求路径包含的路径变量【{var_name}】重复。").format(var_name=var_name))
-            var_name_set.add(var_name)
+        # 校验变量名是否重复
+        duplicate_names = get_duplicate_items(var_names)
+        if duplicate_names:
+            raise serializers.ValidationError(
+                _("前端请求路径 {path} 中的路径变量 {var_name} 重复。").format(path=path, var_name=", ".join(duplicate_names))
+            )
 
 
-class ProxyPathVarsValidator(GetGatewayFromContextMixin):
+class BackendPathVarsValidator(GetGatewayFromContextMixin):
     requires_context = True
 
-    def __init__(self, check_stage_vars_exist=False):
+    def __init__(self, check_stage_vars_exist: bool = False):
         self.check_stage_vars_exist = check_stage_vars_exist
 
     def __call__(self, attrs, serializer):
-        proxy_path = attrs["proxy_configs"].get("http", {}).get("path", "")
-        if not (attrs["proxy_type"] == ProxyTypeEnum.HTTP.value and proxy_path):
-            return
-
-        proxy_path_vars = PATH_VAR_PATTERN.findall(proxy_path)
-        if not proxy_path_vars:
+        path = attrs.get("path", "")
+        backend_path = attrs.get("backend_config", {}).get("path", "")
+        if not backend_path:
             return
 
         gateway = self._get_gateway(serializer)
-        normal_proxy_path_vars, stage_proxy_path_vars = self._parse_proxy_path_vars(proxy_path_vars)
-        self._validate_normal_proxy_path_vars(attrs["path"], normal_proxy_path_vars)
-        self._validate_stage_proxy_path_vars(stage_proxy_path_vars, gateway)
+        normal_path_vars, stage_path_vars = self._parse_backend_path(backend_path)
+        self._validate_normal_path_vars(backend_path, normal_path_vars, path)
+        self._validate_stage_path_vars(backend_path, stage_path_vars, gateway)
 
-    def _parse_proxy_path_vars(self, proxy_path_vars):
-        """
-        解析路径变量，将其拆分为普通路径变量，环境路径变量两类
-        """
-        normal_proxy_path_vars = []
-        stage_proxy_path_vars = []
-        for var_name in proxy_path_vars:
+    def _parse_backend_path(self, backend_path: str) -> Tuple[List[str], List[str]]:
+        """解析后端路径，并将其中的路径变量分为普通路径变量，环境路径变量两类"""
+        path_vars = PATH_VAR_PATTERN.findall(backend_path)
+        if not path_vars:
+            return [], []
+
+        normal_path_vars = []
+        stage_path_vars = []
+        for var_name in path_vars:
             if NORMAL_PATH_VAR_NAME_PATTERN.match(var_name):
-                normal_proxy_path_vars.append(var_name)
+                normal_path_vars.append(var_name)
                 continue
 
             match = STAGE_PATH_VAR_NAME_PATTERN.match(var_name)
             if match:
-                stage_proxy_path_vars.append(match.group(1))
+                stage_path_vars.append(match.group(1))
                 continue
 
-            raise serializers.ValidationError(_("后端系统接口路径包含的路径变量【{var_name}】非法。").format(var_name=var_name))
-        return normal_proxy_path_vars, stage_proxy_path_vars
+            raise serializers.ValidationError(_("后端请求路径中的路径变量 {var_name} 不符合规则。").format(var_name=var_name))
 
-    def _validate_normal_proxy_path_vars(self, path, normal_proxy_path_vars):
-        if not normal_proxy_path_vars:
+        return normal_path_vars, stage_path_vars
+
+    def _validate_normal_path_vars(self, backend_path: str, normal_path_vars: List[str], path: str):
+        if not normal_path_vars:
             return
 
-        path_vars = PATH_VAR_PATTERN.findall(path)
-        not_exist_vars = self._get_not_exist_vars(normal_proxy_path_vars, path_vars)
+        # 后端请求地址中的路径变量，在前端请求地址中必须存在
+        not_exist_vars = list(set(normal_path_vars) - set(PATH_VAR_PATTERN.findall(path)))
         if not_exist_vars:
             raise serializers.ValidationError(
-                _("后端系统接口路径中的路径变量【{var_name}】在资源请求路径中不存在。").format(var_name=not_exist_vars[0]),
+                _("后端请求路径 {backend_path} 中的路径变量 {var_name} 在前端请求路径 {path} 中不存在。").format(
+                    backend_path=backend_path, var_name=", ".join(not_exist_vars), path=path
+                ),
             )
 
-    def _validate_stage_proxy_path_vars(self, stage_proxy_path_vars, gateway):
-        if not (self.check_stage_vars_exist and stage_proxy_path_vars):
+    def _validate_stage_path_vars(self, backend_path: str, stage_path_vars: List[str], gateway: Gateway):
+        if not (self.check_stage_vars_exist and stage_path_vars):
             return
 
-        for stage in Stage.objects.filter(api_id=gateway.id):
-            not_exist_vars = self._get_not_exist_vars(stage_proxy_path_vars, stage.vars.keys())
+        for stage in Stage.objects.filter(api=gateway):
+            # 后端路径中路径变量 {env.var_name}，在各网关环境中需存在
+            not_exist_vars = list(set(stage_path_vars) - set(stage.vars.keys()))
             if not_exist_vars:
                 raise serializers.ValidationError(
-                    _("后端系统接口路径中的环境变量【{var_name}】在环境【{stage_name}】中不存在。").format(
-                        var_name=not_exist_vars[0],
+                    _("后端请求路径 {backend_path} 中的路径变量 {var_name} 在网关环境 {stage_name} 中不存在。").format(
+                        backend_path=backend_path,
+                        var_name=", ".join(not_exist_vars),
                         stage_name=stage.name,
                     )
                 )
-
-    def _get_not_exist_vars(self, checked_vars, source_vars):
-        return list(set(checked_vars) - set(source_vars))

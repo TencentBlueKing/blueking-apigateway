@@ -21,9 +21,9 @@ from typing import Any, Dict, List
 from attrs import define
 from django.db import transaction
 
-from apigateway.apps.esb.bkcore.models import ComponentResourceBinding
 from apigateway.apps.esb.component.convertor import ComponentConvertor
-from apigateway.biz.resource.importer.importer import ResourcesImporter
+from apigateway.biz.esb.component_resource_binding import ComponentResourceBindingHandler
+from apigateway.biz.resource.importer.importers import ResourcesImporter
 from apigateway.core.models import Gateway
 
 
@@ -41,17 +41,19 @@ class ComponentSynchronizer:
         importing_resources = self.get_importing_resources()
 
         # 导入资源
-        resources_importer = ResourcesImporter(
+        resources_importer = ResourcesImporter.from_resources(
             gateway=gateway,
-            allow_overwrite=True,
+            resources=importing_resources,
+            selected_resources=None,
             need_delete_unspecified_resources=True,
             username=username,
         )
-        resources_importer.set_importing_resources(importing_resources)
-        unspecified_resources = resources_importer.get_unspecified_resources()
         resources_importer.import_resources()
 
-        # 同步组件 - 资源绑定关系
-        ComponentResourceBinding.objects.sync(resources_importer.imported_resources)
+        deleted_resources = resources_importer.get_deleted_resources()
+        resource_data_list = resources_importer.get_selected_resource_data_list()
 
-        return unspecified_resources + importing_resources
+        # 同步组件 - 资源绑定关系
+        ComponentResourceBindingHandler.sync(resource_data_list)
+
+        return deleted_resources + [resource_data.snapshot() for resource_data in resource_data_list]

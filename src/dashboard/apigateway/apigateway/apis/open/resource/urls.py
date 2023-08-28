@@ -16,31 +16,23 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
-from apigateway.apis.open.released.views import ReleasedResourceViewSet
 from apigateway.apis.open.resource import views
 
 urlpatterns = [
     path(
         "apis/<int:gateway_id>/resources/",
-        views.ResourceV1ViewSet.as_view({"get": "list"}),
-        name="openapi.resources",
-    ),
-    path(
-        "apis/<int:gateway_id>/resources/<int:id>/",
-        views.ResourceV1ViewSet.as_view({"get": "retrieve"}),
-        name="openapi.resources.detail",
+        include(
+            [
+                path("", views.ResourceListApi.as_view(), name="openapi.resource.list"),
+                path("<int:id>/", views.ResourceRetrieveApi.as_view(), name="openapi.resource.retrieve"),
+            ]
+        ),
     ),
     path(
         "apis/<slug:gateway_name>/resources/sync/",
-        views.ResourceSyncV1ViewSet.as_view({"post": "sync"}),
+        views.ResourceSyncApi.as_view(),
         name="openapi.resources.sync",
-    ),
-    # TODO: 待API帮助中心更新后，需删除此接口
-    path(
-        "apis/<int:gateway_id>/resources/released/",
-        ReleasedResourceViewSet.as_view({"get": "list"}),
-        name="openapi.resources.list_released",
     ),
 ]

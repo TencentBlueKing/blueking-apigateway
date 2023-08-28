@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from abc import ABCMeta
-from typing import Text
+from typing import Dict, List, Text
 
 from django.utils.functional import cached_property
 
@@ -128,3 +128,6 @@ class ResourceAuthContext(BaseContext):
     @cached_property
     def schema(self):
         return SchemaFactory().get_context_resource_bkauth_schema()
+
+    def get_resource_id_to_auth_config(self, resource_ids: List[int]) -> Dict[int, dict]:
+        return {context.scope_id: context.config for context in self.filter_contexts(resource_ids)}

@@ -17,234 +17,198 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import operator
+import re
+from typing import Any, Dict, List, Optional
+from urllib.parse import urljoin
 
 from django.db import transaction
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
+from rest_framework import generics, status
 
 from apigateway.apis.web.resource import serializers
-from apigateway.apis.web.resource.mixins import CreateResourceMixin, UpdateResourceMixin
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.label.models import ResourceLabel
-from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.importer.importer import ResourcesImporter
+from apigateway.biz.resource.importer.importers import (
+    ResourceDataConvertor,
+    ResourceImportValidator,
+    ResourcesImporter,
+)
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
-from apigateway.biz.resource_url import ResourceURLHandler
+from apigateway.biz.resource.savers import ResourcesSaver
+from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_label import ResourceLabelHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import ResourceAuthContext
-from apigateway.core.models import Proxy, ReleasedResource, Resource, ResourceVersion, Stage, StageResourceDisabled
-from apigateway.core.utils import get_resource_url
-from apigateway.utils.responses import DownloadableResponse, V1OKJsonResponse
+from apigateway.core.constants import STAGE_VAR_PATTERN, ExportTypeEnum
+from apigateway.core.models import (
+    Backend,
+    BackendConfig,
+    Proxy,
+    Resource,
+    Stage,
+)
+from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
-from apigateway.utils.time import now_datetime
+
+from .serializers import (
+    BackendPathCheckInputSLZ,
+    BackendPathCheckOutputSLZ,
+    ResourceBatchDestroyInputSLZ,
+    ResourceBatchUpdateInputSLZ,
+    ResourceExportInputSLZ,
+    ResourceImportCheckInputSLZ,
+    ResourceImportCheckOutputSLZ,
+    ResourceImportInputSLZ,
+    ResourceInputSLZ,
+    ResourceLabelUpdateInputSLZ,
+    ResourceListOutputSLZ,
+    ResourceOutputSLZ,
+    ResourceQueryInputSLZ,
+    ResourceWithVerifiedUserRequiredOutputSLZ,
+)
 
 
-class BaseResourceViewSet(viewsets.ModelViewSet):
-    lookup_field = "id"
-
+class ResourceQuerySetMixin:
     def get_queryset(self):
         return Resource.objects.filter(api=self.request.gateway)
 
 
-class ResourceViewSet(BaseResourceViewSet, CreateResourceMixin, UpdateResourceMixin):
-    serializer_class = serializers.ResourceSLZ
-
+class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=serializers.QueryResourceSLZ,
-        responses={status.HTTP_200_OK: serializers.ListResourceSLZ(many=True)},
-        tags=["Resource"],
+        query_serializer=ResourceQueryInputSLZ,
+        responses={status.HTTP_200_OK: ResourceListOutputSLZ(many=True)},
+        tags=["WebAPI.Resource"],
     )
     def list(self, request, *args, **kwargs):
-        slz = serializers.QueryResourceSLZ(data=request.query_params)
+        slz = ResourceQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        data = slz.validated_data
-
-        queryset = ResourceHandler().filter_resource(
-            gateway=request.gateway,
-            query=data.get("query"),
-            path=data.get("path"),
-            method=data.get("method"),
-            label_name=data.get("label_name"),
-            order_by=data.get("order_by") or "-id",
-            fuzzy=True,
+        queryset = ResourceHandler.filter_by_resource_filter_condition(
+            gateway_id=request.gateway.id,
+            condition=slz.validated_data,
         )
-        page = self.paginate_queryset(queryset)
 
+        page = self.paginate_queryset(queryset)
         resource_ids = [resource.id for resource in page]
 
-        serializer = serializers.ListResourceSLZ(
+        slz = ResourceListOutputSLZ(
             page,
             many=True,
             context={
-                "resource_labels": ResourceLabel.objects.get_labels(resource_ids),
-                "latest_resource_version": ResourceVersion.objects.get_latest_version(request.gateway.id),
-                "resource_released_stage_count": ReleasedResource.objects.get_resource_released_stage_count(
-                    request.gateway.id, resource_ids
-                ),
-                "stage_count": Stage.objects.filter(api_id=request.gateway.id).count(),
-                "doc_languages_of_resources": ResourceDoc.objects.get_doc_languages_of_resources(
-                    gateway_id=request.gateway.id, resource_ids=resource_ids
-                ),
+                "labels": ResourceLabelHandler.get_labels(resource_ids),
+                "docs": ResourceDocHandler.get_docs(resource_ids),
+                "latest_version_created_time": ResourceVersionHandler.get_latest_created_time(request.gateway.id),
             },
         )
-        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=serializers.ResourceSLZ, tags=["Resource"])
+    @swagger_auto_schema(
+        responses={status.HTTP_201_CREATED: ""}, request_body=ResourceInputSLZ, tags=["WebAPI.Resource"]
+    )
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        # 检查网关资源是否超限
-        self._check_gateway_resource_limit(request.gateway)
+        slz = ResourceInputSLZ(data=request.data, context={"api": request.gateway})
+        slz.is_valid(raise_exception=True)
 
-        instance = self._create_resource(
+        saver = ResourcesSaver.from_resources(
             gateway=request.gateway,
-            data=request.data,
+            resources=[slz.validated_data],
             username=request.user.username,
         )
+        resources = saver.save()
+        instance = resources[0]
 
-        return V1OKJsonResponse("OK", data={"id": instance.id})
+        ResourceHandler.record_audit_log_success(
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            op_type=OpTypeEnum.CREATE,
+            instance_id=instance.id,
+            instance_name=instance.identity,
+        )
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.ResourceSLZ()}, tags=["Resource"])
+        return OKJsonResponse(status=status.HTTP_201_CREATED)
+
+
+class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+    lookup_field = "id"
+
+    @swagger_auto_schema(responses={status.HTTP_200_OK: ResourceOutputSLZ()}, tags=["WebAPI.Resource"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = self.get_serializer(instance)
-        return V1OKJsonResponse("OK", data=slz.data)
+        slz = ResourceOutputSLZ(
+            instance,
+            context={
+                "auth_config": ResourceAuthContext().get_config(instance.id),
+                "labels": ResourceLabelHandler.get_labels([instance.id]),
+                "proxy": Proxy.objects.get(resource_id=instance.id),
+            },
+        )
+        return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=serializers.ResourceSLZ, tags=["Resource"])
+    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=ResourceInputSLZ, tags=["WebAPI.Resource"])
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        self._update_resource(
+        slz = ResourceInputSLZ(instance, data=request.data, context={"api": request.gateway})
+        slz.is_valid(raise_exception=True)
+
+        saver = ResourcesSaver.from_resources(
             gateway=request.gateway,
-            instance=instance,
-            data=request.data,
+            resources=[slz.validated_data],
             username=request.user.username,
         )
+        resources = saver.save()
+        instance = resources[0]
 
-        return V1OKJsonResponse("OK")
+        ResourceHandler.record_audit_log_success(
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            op_type=OpTypeEnum.MODIFY,
+            instance_id=instance.id,
+            instance_name=instance.identity,
+        )
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["Resource"])
+        return OKJsonResponse()
+
+    @swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.Resource"])
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance_id = instance.id
 
-        ResourceHandler().delete_resources([instance_id])
+        ResourceHandler.delete_resources([instance_id])
 
-        record_audit_log(
+        ResourceHandler.record_audit_log_success(
             username=request.user.username,
-            op_type=OpTypeEnum.DELETE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.RESOURCE.value,
-            op_object_id=instance_id,
-            op_object=instance.identity,
-            comment=_("删除资源"),
+            gateway_id=request.gateway.id,
+            op_type=OpTypeEnum.DELETE,
+            instance_id=instance_id,
+            instance_name=instance.identity,
         )
 
-        return V1OKJsonResponse("OK")
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
-class ResourceImportExportViewSet(ResourceViewSet):
+class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIView, generics.DestroyAPIView):
     @swagger_auto_schema(
-        request_body=serializers.ResourceImportSLZ,
-        responses={status.HTTP_200_OK: serializers.CheckImportResourceSLZ(many=True)},
-        tags=["Resource"],
-    )
-    def import_resources_check(self, request, *args, **kwargs):
-        """
-        导入资源检查，检查导入配置
-        """
-        slz = serializers.ResourceImportSLZ(data=request.data)
-        slz.is_valid(raise_exception=True)
-
-        importer = ResourcesImporter(
-            gateway=request.gateway,
-            allow_overwrite=True,
-            username=request.user.username,
-        )
-        importer.load_importing_resources_by_swagger(
-            content=slz.validated_data["content"],
-            resource_doc_language=request.data.get("resource_doc_language", ""),
-        )
-
-        return V1OKJsonResponse("OK", data=sorted(importer.imported_resources, key=lambda x: x["path"]))
-
-    @swagger_auto_schema(
-        request_body=serializers.ResourceImportSLZ, responses={status.HTTP_200_OK: ""}, tags=["Resource"]
-    )
-    @transaction.atomic
-    def import_resources(self, request, *args, **kwargs):
-        slz = serializers.ResourceImportSLZ(data=request.data)
-        slz.is_valid(raise_exception=True)
-
-        importer = ResourcesImporter(
-            gateway=request.gateway,
-            allow_overwrite=True,
-            username=request.user.username,
-        )
-        importer.load_importing_resources_by_swagger(content=slz.validated_data["content"])
-        importer.set_selected_resources(slz.validated_data.get("selected_resources"))
-        importer.import_resources()
-
-        return V1OKJsonResponse("OK")
-
-    @swagger_auto_schema(
-        request_body=serializers.ResourceExportConditionSLZ,
         responses={status.HTTP_200_OK: ""},
-        tags=["Resource"],
-    )
-    def export_resources(self, request, *args, **kwargs):
-        slz = serializers.ResourceExportConditionSLZ(data=request.data, context={"api": request.gateway})
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-        queryset = slz.get_exported_resource()
-
-        resource_ids = list(queryset.values_list("id", flat=True))
-        queryset = queryset.order_by("path", "method")
-
-        slz = serializers.ExportResourceSLZ(
-            instance=queryset,
-            many=True,
-            context={
-                "proxies": Proxy.objects.filter_proxies(resource_ids),
-                "disabled_stages": StageResourceDisabled.objects.filter_disabled_stages_by_gateway(request.gateway),
-                "resource_labels": ResourceLabel.objects.filter_labels_by_gateway(request.gateway),
-                "resource_auth_configs": ResourceAuthContext().filter_scope_id_config_map(resource_ids),
-            },
-        )
-
-        file_type = data["file_type"]
-        exporter = ResourceSwaggerExporter()
-        content = exporter.to_swagger(slz.data, file_type=file_type)
-
-        # 导出的文件名，需满足规范：bk_产品名_功能名_文件名.后缀
-        export_filename = f"bk_apigw_resources_{self.request.gateway.name}.{file_type}"
-
-        return DownloadableResponse(content, filename=export_filename)
-
-
-class ResourceBatchViewSet(BaseResourceViewSet):
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=serializers.BatchUpdateResourceSLZ, tags=["Resource"]
+        request_body=ResourceBatchUpdateInputSLZ,
+        tags=["WebAPI.Resource"],
     )
     @transaction.atomic
     def update(self, request, *args, **kwargs):
-        slz = serializers.BatchUpdateResourceSLZ(data=request.data)
+        slz = ResourceBatchUpdateInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        resource_ids = slz.validated_data.pop("ids")
-        queryset = self.get_queryset()
-        queryset = queryset.filter(id__in=resource_ids)
+        queryset = self.get_queryset().filter(id__in=slz.validated_data["ids"])
         queryset.update(
+            is_public=slz.validated_data["is_public"],
+            allow_apply_permission=slz.validated_data["allow_apply_permission"],
             updated_by=request.user.username,
-            updated_time=now_datetime(),
-            **slz.validated_data,
         )
 
         record_audit_log(
@@ -258,22 +222,24 @@ class ResourceBatchViewSet(BaseResourceViewSet):
             comment=_("批量更新资源"),
         )
 
-        return V1OKJsonResponse("OK")
+        return OKJsonResponse()
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=serializers.BatchDestroyResourceSLZ, tags=["Resource"]
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        request_body=ResourceBatchDestroyInputSLZ,
+        tags=["WebAPI.Resource"],
     )
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
-        slz = serializers.BatchDestroyResourceSLZ(data=request.data)
+        slz = ResourceBatchDestroyInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         queryset = self.get_queryset().filter(id__in=slz.validated_data["ids"])
 
-        resource_ids = list(queryset.values_list("id", flat=True))
+        resource_ids = [resource.id for resource in queryset]
         resource_identities = [resource.identity for resource in queryset]
 
-        ResourceHandler().delete_resources(resource_ids)
+        ResourceHandler.delete_resources(resource_ids)
 
         record_audit_log(
             username=request.user.username,
@@ -286,114 +252,217 @@ class ResourceBatchViewSet(BaseResourceViewSet):
             comment=_("批量删除资源"),
         )
 
-        return V1OKJsonResponse("OK")
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
-class ResourceURLViewSet(BaseResourceViewSet):
-    """
-    资源访问链接地址
-    """
-
-    @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.ResourceURLSLZ(many=True)}, tags=["Resource"])
-    def get(self, request, *args, **kwargs):
-        # TODO: 目前，资源地址可编辑，展示资源地址列表时，应该展示已发布到环境的资源地址?
-
-        instance = self.get_object()
-
-        urls = []
-        for stage_name in Stage.objects.filter(api=request.gateway).values_list("name", flat=True):
-            urls.append(
-                {
-                    "stage_name": stage_name,
-                    "url": get_resource_url(
-                        resource_url_tmpl=ResourceURLHandler.get_resource_url_tmpl(request.gateway.name, stage_name),
-                        gateway_name=request.gateway.name,
-                        stage_name=stage_name,
-                        resource_path=instance.path,
-                    ),
-                }
-            )
-
-        return V1OKJsonResponse("OK", data=urls)
-
-
-class ResourceReleaseStageViewSet(BaseResourceViewSet):
-    """
-    获取资源在各环境的发布信息
-    """
+class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
+    lookup_url_kwarg = "resource_id"
+    lookup_field = "id"
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.ResourceReleaseStageSLZ(many=True)},
-        tags=["Resource"],
-    )
-    def get(self, request, *args, **kwargs):
-        instance = self.get_object()
-
-        stages = Stage.objects.filter(api=request.gateway).order_by("name")
-        slz = serializers.ResourceReleaseStageSLZ(
-            stages,
-            context={
-                "api_name": request.gateway.name,
-                "resource_released_stages": ReleasedResource.objects.get_resource_released_stages(
-                    request.gateway.id,
-                    instance.id,
-                ),
-            },
-            many=True,
-        )
-
-        return V1OKJsonResponse("OK", data=slz.data)
-
-
-class ProxyPathViewSet(BaseResourceViewSet):
-    """
-    检查 proxy-path 是否正确
-    """
-
-    serializer_class = serializers.CheckProxyPathSLZ
-
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["Resource"])
-    def check(self, request, *args, **kwargs):
-        """
-        校验后端配置中 HTTP 类型的 path
-        """
-        slz = self.get_serializer(data=request.query_params)
-        slz.is_valid(raise_exception=True)
-        return V1OKJsonResponse("OK")
-
-
-class ResourceLabelViewSet(BaseResourceViewSet):
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=serializers.UpdateResourceLabelsSLZ, tags=["Resource"]
+        responses={status.HTTP_200_OK: ""},
+        request_body=ResourceLabelUpdateInputSLZ,
+        tags=["WebAPI.Resource"],
     )
     @transaction.atomic
     def update(self, request, *args, **kwargs):
-        slz = serializers.UpdateResourceLabelsSLZ(data=request.data)
+        slz = ResourceLabelUpdateInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         instance = self.get_object()
-        ResourceHandler().save_labels(
+        ResourceLabelHandler.save_labels(
             gateway=request.gateway,
             resource=instance,
             label_ids=slz.validated_data["label_ids"],
-            delete_unspecified=True,
         )
 
-        return V1OKJsonResponse()
+        return OKJsonResponse()
 
 
-class ResourceWithVerifiedUserRequiredViewSet(BaseResourceViewSet):
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["Resource"])
+class ResourceImportCheckApi(generics.CreateAPIView):
+    @swagger_auto_schema(
+        request_body=ResourceImportCheckInputSLZ,
+        responses={status.HTTP_200_OK: ResourceImportCheckOutputSLZ(many=True)},
+        tags=["WebAPI.Resource"],
+    )
+    def post(self, request, *args, **kwargs):
+        """导入资源检查"""
+        slz = ResourceImportCheckInputSLZ(data=request.data, context={"api": request.gateway})
+        slz.is_valid(raise_exception=True)
+
+        resource_data_list = ResourceDataConvertor(request.gateway, slz.validated_data["resources"]).convert()
+
+        validator = ResourceImportValidator(
+            gateway=request.gateway,
+            resource_data_list=resource_data_list,
+            need_delete_unspecified_resources=False,
+        )
+        validator.validate()
+
+        doc_language = slz.validated_data.get("doc_language", "")
+        resource_ids = [resource_data.resource.id for resource_data in resource_data_list if resource_data.resource]
+        slz = ResourceImportCheckOutputSLZ(
+            resource_data_list,
+            many=True,
+            context={
+                "doc_language": doc_language,
+                "docs": ResourceDocHandler.get_docs_by_language(resource_ids, doc_language),
+            },
+        )
+
+        return OKJsonResponse(data=slz.data)
+
+
+class ResourceImportApi(generics.CreateAPIView):
+    @swagger_auto_schema(
+        request_body=ResourceImportInputSLZ, responses={status.HTTP_200_OK: ""}, tags=["WebAPI.Resource"]
+    )
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        slz = ResourceImportInputSLZ(data=request.data, context={"api": request.gateway})
+        slz.is_valid(raise_exception=True)
+
+        importer = ResourcesImporter.from_resources(
+            gateway=request.gateway,
+            resources=slz.validated_data["resources"],
+            selected_resources=slz.validated_data.get("selected_resources"),
+            need_delete_unspecified_resources=False,
+            username=request.user.username,
+        )
+        importer.import_resources()
+
+        return OKJsonResponse()
+
+
+class ResourceExportApi(generics.CreateAPIView):
+    @swagger_auto_schema(
+        request_body=ResourceExportInputSLZ,
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.Resource"],
+    )
+    def post(self, request, *args, **kwargs):
+        slz = ResourceExportInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        selected_resource_queryset = self._filter_selected_resources(
+            export_type=slz.validated_data["export_type"],
+            gateway_id=request.gateway.id,
+            resource_filter_condition=slz.validated_data.get("resource_filter_condition", {}),
+            resource_ids=slz.validated_data.get("resource_ids", []),
+        )
+        selected_resource_ids = list(selected_resource_queryset.values_list("id", flat=True))
+
+        slz = serializers.ResourceExportOutputSLZ(
+            selected_resource_queryset,
+            many=True,
+            context={
+                "labels": ResourceLabelHandler.get_labels_by_gateway(request.gateway.id),
+                "backends": dict(Backend.objects.filter(gateway=request.gateway).values_list("id", "name")),
+                "proxies": {
+                    proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=selected_resource_ids)
+                },
+                "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(selected_resource_ids),
+            },
+        )
+
+        file_type = slz.validated_data["file_type"]
+        exporter = ResourceSwaggerExporter()
+        content = exporter.to_swagger(slz.data, file_type=file_type)
+
+        # 导出的文件名，需满足规范：bk_产品名_功能名_文件名.后缀
+        export_filename = f"bk_apigw_resources_{self.request.gateway.name}.{file_type}"
+
+        return DownloadableResponse(content, filename=export_filename)
+
+    def _filter_selected_resources(
+        self,
+        export_type: str,
+        gateway_id: int,
+        resource_filter_condition: Dict[str, Any],
+        resource_ids: List[int],
+    ):
+        """获取待导出的资源"""
+        if export_type == ExportTypeEnum.ALL.value:
+            return Resource.objects.filter(api_id=gateway_id)
+
+        elif export_type == ExportTypeEnum.FILTERED.value:
+            return ResourceHandler.filter_by_resource_filter_condition(gateway_id, resource_filter_condition or {})
+
+        elif export_type == ExportTypeEnum.SELECTED.value:
+            return Resource.objects.filter(api_id=gateway_id, id__in=resource_ids)
+
+        return Resource.objects.none()
+
+
+class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
+    serializer_class = BackendPathCheckInputSLZ
+
+    @swagger_auto_schema(
+        query_serializer=BackendPathCheckInputSLZ,
+        responses={status.HTTP_200_OK: BackendPathCheckOutputSLZ(many=True)},
+        tags=["WebAPI.Resource"],
+    )
+    def get(self, request, *args, **kwargs):
+        """校验后端配置中的请求路径"""
+        slz = self.get_serializer(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        backend_id = slz.validated_data.get("backend_id")
+        backend_path = slz.validated_data.get("backend_config", {}).get("backend_path", "")
+        backend_hosts = self._get_backend_hosts(backend_id)
+
+        result = []
+        for stage in Stage.objects.filter(api=request.gateway):
+            stage_vars = stage.vars
+            result.append(
+                {
+                    "stage": {"id": stage.id, "name": stage.name},
+                    "backend_urls": [
+                        self._get_backend_url(host, backend_path, stage_vars)
+                        # 如果没有指定后端服务，提供一个默认的后端地址字符串
+                        for host in backend_hosts.get(stage.id, ["http://{backend-host}"])
+                    ],
+                }
+            )
+
+        slz = BackendPathCheckOutputSLZ(result, many=True)
+        return OKJsonResponse(data=slz.data)
+
+    def _get_backend_hosts(self, backend_id: Optional[int]) -> Dict[int, List[str]]:
+        if not backend_id:
+            return {}
+
+        backend_configs = BackendConfig.objects.filter(gateway=self.request.gateway, backend_id=backend_id)
+        return {
+            backend_config.stage_id: [f"{host['scheme']}://{host['host']}" for host in backend_config["hosts"]]
+            for backend_config in backend_configs
+        }
+
+    def _get_backend_url(self, host: str, path: str, vars: Dict[str, Any]) -> str:
+        url = urljoin(host, path)
+
+        def replace(matched):
+            return vars.get(matched.group(1), matched.group(0))
+
+        return re.sub(STAGE_VAR_PATTERN, replace, url)
+
+
+class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListAPIView):
+    lookup_field = "id"
+
+    @swagger_auto_schema(
+        responses={status.HTTP_200_OK: ResourceWithVerifiedUserRequiredOutputSLZ(many=True)},
+        tags=["WebAPI.Resource"],
+    )
     def list(self, request, *args, **kwargs):
         """过滤出需要认证用户的资源列表"""
         resources = list(self.get_queryset().values("id", "name"))
         resource_ids = list(map(operator.itemgetter("id"), resources))
-        resource_id_to_auth_config = ResourceAuthContext().filter_scope_id_config_map(resource_ids)
+        auth_configs = ResourceAuthContext().get_resource_id_to_auth_config(resource_ids)
 
-        verified_user_required_resources = [
-            resource
-            for resource in resources
-            if resource_id_to_auth_config.get(resource["id"], {}).get("auth_verified_required")
+        matched_resources = [
+            resource for resource in resources if auth_configs.get(resource["id"], {}).get("auth_verified_required")
         ]
+        slz = ResourceWithVerifiedUserRequiredOutputSLZ(matched_resources, many=True)
 
-        return V1OKJsonResponse(data=sorted(verified_user_required_resources, key=operator.itemgetter("name")))
+        return OKJsonResponse(data=slz.data)
