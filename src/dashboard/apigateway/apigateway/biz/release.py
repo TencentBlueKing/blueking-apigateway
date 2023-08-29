@@ -17,6 +17,8 @@
 #
 from typing import Dict, List
 
+from django.db.models import Max
+
 from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishEventNameTypeEnum,
@@ -85,29 +87,39 @@ class ReleaseHandler:
         return [event for event in publish_events]
 
     @staticmethod
-    def get_stage_release_status(stage_id: int) -> str:
-        """查询stage的当前状态"""
+    def batch_get_stage_release_status(stage_ids: List[int]):
+        """批量查询stage的当前状态(发布状态+publish_id)"""
+        """return {"stage_id":{"status"/"publish_id"}}"""
 
-        # 查询当前stage最新的发布历史
-        release_history = ReleaseHistory.objects.filter(stage_id=stage_id).order_by("-created_time").first()
+        # 获取多个 stage_id 对应的最新的 ReleaseHistory 记录的 id
+        latest_release_history_ids = (
+            ReleaseHistory.objects.filter(stage_id__in=stage_ids)
+            .annotate(latest_created_time=Max("created_time"))
+            .values_list("id", flat=True)
+        )
 
-        if not release_history:
-            return ""
+        # 查询最新的 ReleaseHistory 记录
+        latest_release_histories = ReleaseHistory.objects.filter(id__in=latest_release_history_ids)
 
-        # 查询当前release的最新发布事件
-        release_event_map = ReleaseHandler.get_latest_publish_event_by_release_history_ids([release_history.id])
-        if release_history.id not in release_event_map:
-            return ""
+        # 查询发布历史对应的最新发布事件
+        release_event_map = ReleaseHandler.get_latest_publish_event_by_release_history_ids(latest_release_history_ids)
 
-        latest_event = release_event_map[release_history.id]
-        if not latest_event:
-            return ""
-
-        # 如果最新事件状态是成功，但不是最后一个节点，返回发布中
-        if (
-            latest_event.status == PublishEventStatusEnum.SUCCESS.value
-            and latest_event.name != PublishEventNameTypeEnum.LoadConfiguration.value
-        ):
-            return PublishEventStatusEnum.DOING.value
-
-        return latest_event.status
+        # 遍历结果集
+        stage_publish_status = {}
+        for release_history in latest_release_histories:
+            stage_publish_status[release_history.stage.id] = {"publish_id": release_history.id}
+            # 如果没有查到任何发布事件
+            if release_history.id not in release_event_map:
+                # 兼容以前，使用以前的状态
+                stage_publish_status[release_history.stage.id]["status"] = release_history.status
+            else:
+                # 如果最新事件状态是成功，但不是最后一个节点，返回发布中
+                latest_event = release_event_map[release_history.id]
+                if (
+                    latest_event.status == PublishEventStatusEnum.SUCCESS.value
+                    and latest_event.name != PublishEventNameTypeEnum.LoadConfiguration.value
+                ):
+                    stage_publish_status[release_history.stage.id]["status"] = PublishEventStatusEnum.DOING.value
+                else:
+                    stage_publish_status[release_history.stage.id]["status"] = latest_event.status
+        return stage_publish_status

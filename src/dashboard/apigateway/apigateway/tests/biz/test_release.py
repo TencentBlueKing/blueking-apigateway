@@ -69,19 +69,31 @@ class TestReleaseHandler:
         )
 
     def test_get_stage_release_status(self, fake_stage, fake_release_history, fake_publish_event):
-        assert ReleaseHandler.get_stage_release_status(fake_stage.id) == PublishEventStatusTypeEnum.DOING.value
+        assert (
+            ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
+            == PublishEventStatusTypeEnum.DOING.value
+        )
         fake_publish_event.status = PublishEventStatusTypeEnum.FAILURE.value
         fake_publish_event.save()
 
-        assert ReleaseHandler.get_stage_release_status(fake_stage.id) == PublishEventStatusTypeEnum.FAILURE.value
+        assert (
+            ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
+            == PublishEventStatusTypeEnum.FAILURE.value
+        )
 
         fake_publish_event.status = PublishEventStatusTypeEnum.SUCCESS.value
         fake_publish_event.save()
 
-        assert ReleaseHandler.get_stage_release_status(fake_stage.id) == PublishEventStatusTypeEnum.DOING.value
+        assert (
+            ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
+            == PublishEventStatusTypeEnum.DOING.value
+        )
 
         fake_publish_event.name = PublishEventNameTypeEnum.LoadConfiguration.value
         fake_publish_event.status = PublishEventStatusTypeEnum.SUCCESS.value
         fake_publish_event.save()
 
-        assert ReleaseHandler.get_stage_release_status(fake_stage.id) == PublishEventStatusTypeEnum.SUCCESS.value
+        assert (
+            ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
+            == PublishEventStatusTypeEnum.SUCCESS.value
+        )
