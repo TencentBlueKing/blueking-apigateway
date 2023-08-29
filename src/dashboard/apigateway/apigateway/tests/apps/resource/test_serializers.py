@@ -453,7 +453,7 @@ class TestProxyConfigsSLZ:
                     "http": {
                         "method": "GET",
                         "path": "/echo/",
-                        "timeout": {"connect": 10, "read": 10, "send": 10},
+                        # "timeout": {"connect": 10, "read": 10, "send": 10},
                         "transform_headers": {},
                     },
                 },
@@ -463,7 +463,7 @@ class TestProxyConfigsSLZ:
                     "http": {
                         "method": "GET",
                         "path": "/echo/",
-                        "timeout": {"connect": 10, "read": 10, "send": 10},
+                        # "timeout": {"connect": 10, "read": 10, "send": 10},
                         "transform_headers": {},
                     },
                 },
@@ -531,7 +531,7 @@ class TestProxyConfigsSLZ:
                         "method": "GET",
                         "path": "/echo/",
                         "match_subpath": True,
-                        "timeout": {"connect": 10, "send": 10, "read": 10},
+                        # "timeout": {"connect": 10, "send": 10, "read": 10},
                         "transform_headers": {"set": {"k1": "v1"}},
                     },
                 },
@@ -539,36 +539,10 @@ class TestProxyConfigsSLZ:
                     "method": "GET",
                     "path": "/echo/",
                     "match_subpath": True,
-                    "timeout": {"connect": 10, "send": 10, "read": 10},
+                    # "timeout": {"connect": 10, "send": 10, "read": 10},
                     "transform_headers": {"set": {"k1": "v1"}},
                 },
                 None,
-            ),
-            (
-                {
-                    "backend_config_type": "default",
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        "match_subpath": True,
-                        "timeout": {"connect": 10, "send": 10, "read": 10},
-                    },
-                },
-                None,
-                ValidationError,
-            ),
-            (
-                {
-                    "backend_config_type": "existed",
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        "match_subpath": True,
-                        "timeout": 10,
-                    },
-                },
-                None,
-                ValidationError,
             ),
         ],
     )

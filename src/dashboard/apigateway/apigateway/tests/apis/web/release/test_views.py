@@ -172,6 +172,7 @@ class TestReleaseHistoryRetrieveApi:
             {
                 "gateway": fake_gateway,
                 "expected": {
+                    "publish_id": history.id,
                     "stage_names": [stage.name],
                     "created_time": dummy_time.str,
                     "resource_version_display": resource_version.object_display,
@@ -197,3 +198,35 @@ class TestReleaseHistoryRetrieveApi:
 
             result = resp.json()
             assert result["data"] == test["expected"]
+
+
+class TestPublishEventsRetrieveAPI:
+    def test_retrieve(self, request_view, fake_gateway):
+        stage = G(Stage, api=fake_gateway)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        G(ReleaseHistory, gateway=fake_gateway, created_time=dummy_time.time)
+        history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=stage,
+            resource_version=resource_version,
+            created_time=dummy_time.time,
+        )
+        history.stages.add(stage)
+
+        event_1 = G(
+            PublishEvent,
+            publish=history,
+            name=PublishEventNameTypeEnum.ValidateConfiguration.value,
+            status=PublishEventStatusTypeEnum.FAILURE.value,
+            created_time=dummy_time.time + datetime.timedelta(seconds=10),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.releases.publish_events",
+            path_params={"gateway_id": fake_gateway.id, "publish_id": history.id},
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert len(result["data"]) >= 1

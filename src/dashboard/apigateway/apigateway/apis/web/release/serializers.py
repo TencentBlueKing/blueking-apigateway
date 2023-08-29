@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 from django.http import Http404
 from rest_framework import serializers
 
@@ -52,19 +54,23 @@ class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
 
 
 class ReleaseHistoryOutputSLZ(serializers.Serializer):
-    stage_names = serializers.SerializerMethodField(read_only=True)
-    resource_version_display = serializers.SerializerMethodField(read_only=True)
-    created_time = serializers.DateTimeField()
-    created_by = serializers.CharField(read_only=True)
+    publish_id = serializers.SerializerMethodField(read_only=True, help_text="发布历史id")
+    stage_names = serializers.SerializerMethodField(read_only=True, help_text="发布环境列表")
+    resource_version_display = serializers.SerializerMethodField(read_only=True, help_text="发布资源版本")
+    created_time = serializers.DateTimeField(read_only=True, help_text="发布创建事件")
+    created_by = serializers.CharField(read_only=True, help_text="发布人")
     # 发布来源
-    source = serializers.CharField(read_only=True)
+    source = serializers.CharField(read_only=True, help_text="发布来源")
     # 发布耗时
-    cost = serializers.SerializerMethodField(read_only=True)
+    cost = serializers.SerializerMethodField(read_only=True, help_text="发布耗时")
     # 发布状态
-    status = serializers.SerializerMethodField(read_only=True)
+    status = serializers.SerializerMethodField(read_only=True, help_text="发布状态")
 
     # 是否正在发布(用户前端显示加载图标)
-    is_running = serializers.SerializerMethodField(read_only=True)
+    is_running = serializers.SerializerMethodField(read_only=True, help_text="是否正在发布")
+
+    def get_publish_id(self, obj):
+        return obj.id
 
     def get_stage_names(self, obj):
         return list(obj.stages.order_by("name").values_list("name", flat=True))
@@ -103,3 +109,29 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
         else:
             # 最新事件是否是doing
             return event.status == PublishEventStatusEnum.DOING.value
+
+
+class PublishEventInfoSLZ(serializers.Serializer):
+    event_id = serializers.SerializerMethodField(read_only=True, help_text="发布事件id")
+    publish_id = serializers.IntegerField(allow_null=False, help_text="发布历史id")
+    name = serializers.CharField(read_only=True, help_text="发布事件节点名称")
+    step = serializers.IntegerField(read_only=True, help_text="发布事件节点所属步骤")
+    status = serializers.CharField(read_only=True, help_text="发布事件状态")
+    created_time = serializers.DateTimeField(read_only=True, help_text="发布节点耗时")
+    msg = serializers.SerializerMethodField(read_only=True, help_text="发布日志")
+
+    def get_event_id(self, obj):
+        return obj.id
+
+    def get_msg(self, obj):
+        return json.dumps(obj.detail)
+
+
+class PublishEventQueryOutputSLZ(ReleaseHistoryOutputSLZ):
+    events = serializers.ListField(child=PublishEventInfoSLZ(), allow_empty=True, help_text="发布事件列表")
+
+    def to_representation(self, obj):
+        events_data = self.context["publish_events"]
+        obj.events = events_data
+        representation = super().to_representation(obj)
+        return representation

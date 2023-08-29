@@ -77,42 +77,10 @@ class BackendConfigTypeEnum(StructuredEnum):
     EXISTED = EnumField("existed", _("已存在的后端服务"))
 
 
-class StageItemTypeEnum(StructuredEnum):
-    """环境配置项类型"""
-
-    NODE = EnumField(BackendUpstreamTypeEnum.NODE.value, _("节点"))
-    SERVICE_DISCOVERY = EnumField(BackendUpstreamTypeEnum.SERVICE_DISCOVERY.value, _("服务发现注册中心"))
-
-
-class StageItemConfigStatusEnum(StructuredEnum):
-    """环境配置项状态"""
-
-    CONFIGURED = EnumField("configured", _("已配置"))
-    NOT_CONFIGURED = EnumField("not_configured", _("待配置"))
-
-
 class ServiceDiscoveryTypeEnum(StructuredEnum):
     """服务发现注册中心类型"""
 
     GO_MICRO_ETCD = EnumField("go_micro_etcd", "Go Micro - Etcd")
-
-
-class PassHostEnum(StructuredEnum):
-    """请求发给上游时的 host 设置选型"""
-
-    PASS = EnumField("pass", _("保持与客户端请求一致的主机名"))
-    NODE = EnumField("node", _("使用目标节点列表中的主机名或 IP"))
-    REWRITE = EnumField("rewrite", _("自定义 Host 请求头"))
-
-
-class SchemeEnum(StructuredEnum):
-    """与后端服务通信时使用的 scheme"""
-
-    # 7 层代理
-    HTTP = EnumField("http", "HTTP")
-    HTTPS = EnumField("https", "HTTPs")
-    GRPC = EnumField("grpc", "gRPC")
-    GRPCS = EnumField("grpcs", "gRPCs")
 
 
 class EtcdSecureTypeEnum(StructuredEnum):
@@ -143,9 +111,9 @@ class GatewayTypeEnum(StructuredEnum):
     CLOUDS_API = EnumField(10, "云API")
 
 
-class StageStatusEnum(ChoiceEnumMixin, Enum):
-    INACTIVE = 0
-    ACTIVE = 1
+class StageStatusEnum(StructuredEnum):
+    INACTIVE = EnumField(0, "INACTIVE")
+    ACTIVE = EnumField(1, "ACTIVE")
 
 
 class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
@@ -295,11 +263,17 @@ class SwaggerFormatEnum(StructuredEnum):
     JSON = EnumField("json", label="JSON")
 
 
+class BackendTypeEnum(StructuredEnum):
+    HTTP = EnumField("http", label="HTTP")
+    GRPC = EnumField("grpc", label="GRPC")
+
+
 # 每个资源允许关联的最大标签个数
 MAX_LABEL_COUNT_PER_RESOURCE = 10
 
 DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100
+DEFAULT_BACKEND_NAME = "default"
 
 # 网关名
 GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")

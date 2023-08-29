@@ -31,7 +31,7 @@ from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.biz.releaser import ReleaseBatchManager, ReleaseError
 from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse, V1FailJsonResponse
+from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -54,7 +54,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
             instance = self.get_object()
         except Http404:
             return FailJsonResponse(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=status.HTTP_404_NOT_FOUND,
                 code="UNKNOWN",
                 message=_("当前选择环境未发布版本，请先发布版本到该环境。"),
             )
@@ -79,7 +79,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         if data:
             return OKJsonResponse(data=data)
         return FailJsonResponse(
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status=status.HTTP_404_NOT_FOUND,
             code="UNKNOWN",
             message=_("当前选择环境的发布版本中资源为空，请发布新版本到该环境"),
         )
@@ -95,8 +95,10 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
 
-    def get(self, request, resource_version_id: int, resource_id: int, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         try:
+            resource_version_id = request.query_params.get("resource_version_id")
+            resource_id = request.query_params.get("resource_id")
             released_resource = ReleasedResource.objects.get(
                 gateway_id=request.gateway.id,
                 resource_version_id=resource_version_id,
@@ -138,7 +140,7 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
             history = manager.release_batch(request.gateway, request.data, request.user.username)
         except ReleaseError as err:
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
-            return V1FailJsonResponse(str(err))
+            return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
 
         slz = serializers.ReleaseHistoryOutputSLZ(
             history,
@@ -219,6 +221,36 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
             instance,
             context={
                 "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids([instance.id]),
+            },
+        )
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="查询发布事件(日志)",
+        responses={status.HTTP_200_OK: serializers.PublishEventQueryOutputSLZ()},
+        tags=["WebAPI.Release"],
+    ),
+)
+class PublishEventsRetrieveAPI(generics.RetrieveAPIView):
+    serializer_class = serializers.PublishEventQueryOutputSLZ
+    lookup_url_kwarg = "publish_id"
+
+    def get_queryset(self):
+        return ReleaseHistory.objects.filter(gateway=self.request.gateway)
+
+    def retrieve(self, request, *args, **kwargs):
+        release_history = self.get_object()
+        slz_class = self.get_serializer_class()
+        slz = slz_class(
+            release_history,
+            context={
+                "publish_events": ReleaseHandler.get_publish_events_by_release_history_id(release_history.id),
+                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids(
+                    [release_history.id]
+                ),
             },
         )
         return OKJsonResponse(data=slz.data)

@@ -28,17 +28,14 @@ from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.release.serializers import ReleaseBatchInputSLZ
+from apigateway.apis.web.stage.validators import StageVarsValuesValidator
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.stage.validators import StageVarsValuesValidator
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
-from apigateway.controller.tasks import (
-    release_gateway_by_helm,
-    release_gateway_by_registry,
-)
+from apigateway.controller.tasks import release_gateway_by_helm, release_gateway_by_registry
 from apigateway.core.constants import PublishSourceEnum, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import (
     Gateway,

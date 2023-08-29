@@ -19,6 +19,8 @@ from typing import Dict, List
 
 from apigateway.core.constants import (
     GatewayStatusEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusEnum,
     PublishSourceEnum,
     StageStatusEnum,
 )
@@ -71,3 +73,47 @@ class ReleaseHandler:
             "publish_id", "step", "status"
         )
         return dict((event.publish_id, event) for event in publish_events)
+
+    @staticmethod
+    def get_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:
+        """通过release_history_id查询所有发布事件"""
+        # 需要按照 "publish_id", "step", "status" 升序(django默认 ASC)排列,正确排列每个事件节点的不同状态事件
+        publish_events = PublishEvent.objects.filter(publish_id=release_history_id).order_by(
+            "publish_id", "step", "status"
+        )
+
+        return [event for event in publish_events]
+
+    @staticmethod
+    def get_stage_release_status(stage_id: int) -> str:
+        """查询stage的当前状态"""
+
+        # 查询当前stage最新的发布历史
+        release_history = (
+            ReleaseHistory.objects.filter(
+                stage_id=stage_id,
+            )
+            .order_by("-created_time")
+            .first()
+        )
+
+        if not release_history:
+            return ""
+
+        # 查询当前release的最新发布事件
+        release_event_map = ReleaseHandler.get_latest_publish_event_by_release_history_ids([release_history.id])
+        if release_history.id not in release_event_map:
+            return ""
+
+        latest_event = release_event_map[release_history.id]
+        if not latest_event:
+            return ""
+
+        # 如果最新事件状态是成功，但不是最后一个节点，返回发布中
+        if (
+            latest_event.status == PublishEventStatusEnum.SUCCESS.value
+            and latest_event.name != PublishEventNameTypeEnum.LoadConfiguration.value
+        ):
+            return PublishEventStatusEnum.DOING.value
+
+        return latest_event.status

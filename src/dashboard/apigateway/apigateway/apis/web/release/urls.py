@@ -19,6 +19,7 @@
 from django.urls import include, path
 
 from .views import (
+    PublishEventsRetrieveAPI,
     ReleaseAvailableResourceListApi,
     ReleaseBatchCreateApi,
     ReleasedResourceRetrieveApi,
@@ -46,5 +47,8 @@ urlpatterns = [
         "resource-versions/<int:resource_version_id>/resources/<int:resource_id>/",
         ReleasedResourceRetrieveApi.as_view(),
         name="gateway.releases.released-resource.detail",
+    ),
+    path(
+        "publish_events/<int:publish_id>", PublishEventsRetrieveAPI.as_view(), name="gateway.releases.publish_events"
     ),
 ]

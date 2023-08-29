@@ -47,26 +47,41 @@ class TestReleaseHandler:
         ReleaseHandler.save_release_history(fake_release, PublishSourceEnum.VERSION_PUBLISH, "test")
         assert ReleaseHistory.objects.filter(gateway=fake_release.gateway, stage=fake_release.stage).count() == 1
 
-    def test_get_latest_publish_event_by_release_history_ids(self):
-        release_history = G(ReleaseHistory)
-        event_1 = G(
-            PublishEvent,
-            publish=release_history,
-            name=PublishEventNameTypeEnum.ValidateConfiguration.value,
-            status=PublishEventStatusTypeEnum.DOING.value,
-        )
+    def test_get_latest_publish_event_by_release_history_ids(self, fake_release_history, fake_publish_event):
         assert (
-            ReleaseHandler.get_latest_publish_event_by_release_history_ids([release_history.id])[release_history.id]
-            == event_1
+            ReleaseHandler.get_latest_publish_event_by_release_history_ids([fake_release_history.id])[
+                fake_release_history.id
+            ]
+            == fake_publish_event
         )
 
         event_2 = G(
             PublishEvent,
-            publish=release_history,
+            publish=fake_release_history,
             name=PublishEventNameTypeEnum.ValidateConfiguration.value,
             status=PublishEventStatusTypeEnum.SUCCESS.value,
         )
         assert (
-            ReleaseHandler.get_latest_publish_event_by_release_history_ids([release_history.id])[release_history.id]
+            ReleaseHandler.get_latest_publish_event_by_release_history_ids([fake_release_history.id])[
+                fake_release_history.id
+            ]
             == event_2
         )
+
+    def test_get_stage_release_status(self, fake_stage, fake_release_history, fake_publish_event):
+        assert ReleaseHandler.get_stage_release_status(fake_stage.id) == PublishEventStatusTypeEnum.DOING.value
+        fake_publish_event.status = PublishEventStatusTypeEnum.FAILURE.value
+        fake_publish_event.save()
+
+        assert ReleaseHandler.get_stage_release_status(fake_stage.id) == PublishEventStatusTypeEnum.FAILURE.value
+
+        fake_publish_event.status = PublishEventStatusTypeEnum.SUCCESS.value
+        fake_publish_event.save()
+
+        assert ReleaseHandler.get_stage_release_status(fake_stage.id) == PublishEventStatusTypeEnum.DOING.value
+
+        fake_publish_event.name = PublishEventNameTypeEnum.LoadConfiguration.value
+        fake_publish_event.status = PublishEventStatusTypeEnum.SUCCESS.value
+        fake_publish_event.save()
+
+        assert ReleaseHandler.get_stage_release_status(fake_stage.id) == PublishEventStatusTypeEnum.SUCCESS.value
