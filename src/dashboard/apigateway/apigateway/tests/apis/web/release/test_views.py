@@ -227,6 +227,7 @@ class TestPublishEventsRetrieveAPI:
             view_name="gateway.releases.publish_events",
             path_params={"gateway_id": fake_gateway.id, "publish_id": history.id},
         )
+
         result = resp.json()
         assert resp.status_code == 200
         assert len(result["data"]) >= 1
