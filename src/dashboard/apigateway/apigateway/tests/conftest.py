@@ -30,15 +30,12 @@ from django.contrib.auth import get_user_model
 from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum, AccessStrategyTypeEnum
-from apigateway.apps.access_strategy.models import AccessStrategy, AccessStrategyBinding, IPGroup
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.apps.support.models import APISDK, ResourceDoc
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import GatewayAuthContext
-from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import (
     APIHostingTypeEnum,
     ProxyTypeEnum,
@@ -527,103 +524,6 @@ def mock_rest_framework_settings(settings):
     settings.REST_FRAMEWORK.update({"DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S"})
 
 
-@pytest.fixture()
-def rate_limit_access_strategy(fake_gateway, faker):
-    return G(
-        AccessStrategy,
-        api=fake_gateway,
-        type=AccessStrategyTypeEnum.RATE_LIMIT.value,
-        schema=SchemaFactory().get_access_strategy_schema(AccessStrategyTypeEnum.RATE_LIMIT.value),
-        _config=json.dumps(
-            {
-                "rates": {
-                    "__default": {
-                        "tokens": faker.pyint(),
-                        "period": faker.pyint(),
-                    },
-                    "app": {
-                        "tokens": faker.pyint(),
-                        "period": faker.pyint(),
-                    },
-                }
-            }
-        ),
-    )
-
-
-@pytest.fixture()
-def rate_limit_access_strategy_stage_binding(fake_stage, rate_limit_access_strategy):
-    return G(
-        AccessStrategyBinding,
-        type=rate_limit_access_strategy.type,
-        access_strategy=rate_limit_access_strategy,
-        scope_type=AccessStrategyBindScopeEnum.STAGE.value,
-        scope_id=fake_stage.pk,
-    )
-
-
-@pytest.fixture()
-def rate_limit_access_strategy_resource_binding(fake_resource, rate_limit_access_strategy):
-    return G(
-        AccessStrategyBinding,
-        type=rate_limit_access_strategy.type,
-        access_strategy=rate_limit_access_strategy,
-        scope_type=AccessStrategyBindScopeEnum.RESOURCE.value,
-        scope_id=fake_resource.pk,
-    )
-
-
-@pytest.fixture()
-def ip_group(fake_gateway, faker):
-    return G(
-        IPGroup,
-        api=fake_gateway,
-        _ips=faker.ipv4(),
-    )
-
-
-@pytest.fixture()
-def ip_access_control_access_strategy(fake_gateway, ip_group):
-    return G(
-        AccessStrategy,
-        api=fake_gateway,
-        type=AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value,
-        schema=SchemaFactory().get_access_strategy_schema(AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value),
-        _config=json.dumps({"type": "allow", "ip_group_list": [ip_group.pk]}),
-    )
-
-
-@pytest.fixture()
-def ip_access_control_access_strategy_stage_binding(fake_stage, ip_access_control_access_strategy):
-    return G(
-        AccessStrategyBinding,
-        type=ip_access_control_access_strategy.type,
-        access_strategy=ip_access_control_access_strategy,
-        scope_type=AccessStrategyBindScopeEnum.STAGE.value,
-        scope_id=fake_stage.pk,
-    )
-
-
-@pytest.fixture()
-def cors_access_strategy(fake_gateway):
-    return G(
-        AccessStrategy,
-        api=fake_gateway,
-        type=AccessStrategyTypeEnum.CORS.value,
-        schema=SchemaFactory().get_access_strategy_schema(AccessStrategyTypeEnum.CORS.value),
-        _config=json.dumps(
-            {
-                "allowed_origins": ["http://demo.example.com"],
-                "allowed_methods": ["GET", "POST", "OPTIONS"],
-                "allowed_headers": ["X-Token"],
-                "exposed_headers": ["X-Token"],
-                "max_age": 0,
-                "allow_credentials": True,
-            }
-        ),
-    )
-
-
 @shared_task(name="testing.mock")
 def celery_mock_task_for_testing(celery_task_mocker=None, *args, **kwargs):
     if celery_task_mocker:
@@ -752,7 +652,7 @@ def echo_plugin_en_form(echo_plugin_type):
 def echo_plugin(echo_plugin_type, fake_gateway, faker):
     return G(
         PluginConfig,
-        api=fake_gateway,
+        gateway=fake_gateway,
         name="echo-plugin",
         type=echo_plugin_type,
         yaml=json.dumps(
@@ -767,7 +667,7 @@ def echo_plugin(echo_plugin_type, fake_gateway, faker):
 def echo_plugin_stage_binding(echo_plugin, fake_stage):
     return G(
         PluginBinding,
-        api=echo_plugin.api,
+        gateway=echo_plugin.gateway,
         config=echo_plugin,
         scope_type=PluginBindingScopeEnum.STAGE.value,
         scope_id=fake_stage.pk,
@@ -778,7 +678,7 @@ def echo_plugin_stage_binding(echo_plugin, fake_stage):
 def echo_plugin_resource_binding(echo_plugin, fake_resource):
     return G(
         PluginBinding,
-        api=echo_plugin.api,
+        gateway=echo_plugin.gateway,
         config=echo_plugin,
         scope_type=PluginBindingScopeEnum.RESOURCE.value,
         scope_id=fake_resource.pk,

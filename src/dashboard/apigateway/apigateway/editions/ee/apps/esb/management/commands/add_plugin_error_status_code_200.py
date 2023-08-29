@@ -50,14 +50,14 @@ class Command(BaseCommand):
     def _create_plugin_when_not_exist(self, esb_gateway: Gateway):
         plugin_type = self._get_plugin_type()
         plugin_config = PluginConfig.objects.filter(
-            api=esb_gateway,
+            gateway=esb_gateway,
             type=plugin_type,
         )
         if plugin_config.exists():
             return
 
         plugin_config = PluginConfig.objects.create(
-            api=esb_gateway,
+            gateway=esb_gateway,
             name=self.default_plugin_name,
             type=plugin_type,
             description="网关错误使用HTTP状态码200(不推荐)。比如，网关中的访问频率超限、蓝鲸应用认证失败、网关请求后端接口异常等出错情况，网关返回的响应将使用状态码 200。",
@@ -72,7 +72,7 @@ class Command(BaseCommand):
         )
         for stage_id in Stage.objects.get_ids(esb_gateway.id):
             PluginBinding.objects.get_or_create(
-                api=esb_gateway,
+                gateway=esb_gateway,
                 scope_type=PluginBindingScopeEnum.STAGE.value,
                 scope_id=stage_id,
                 config__type=plugin_type,

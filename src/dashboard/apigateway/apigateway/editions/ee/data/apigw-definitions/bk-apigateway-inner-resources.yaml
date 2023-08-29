@@ -166,66 +166,6 @@ paths:
         authConfig:
           userVerifiedRequired: false
         disabledStages: []
-  /api/v1/apis/{api_id}/access_strategies/add-ip-groups-to-strategies/:
-    post:
-      operationId: add_ip_groups_to_strategies
-      description: 添加IP分组到IP访问策略
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: post
-          path: /backend/api/v1/apis/{api_id}/access_strategies/add-ip-groups-to-strategies/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/access_strategies/ip-groups/:
-    post:
-      operationId: update_ip_group
-      description: 更新IP分组的IP列表
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: post
-          path: /backend/api/v1/apis/{api_id}/access_strategies/ip-groups/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/access_strategies/{access_strategy_id}/bindings/:
-    post:
-      operationId: bind_access_strategies
-      description: 绑定策略
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: true
-        allowApplyPermission: true
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: post
-          path: /backend/api/v1/apis/{api_id}/access_strategies/{access_strategy_id}/bindings/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
   /api/v1/apis/{api_id}/permissions/allow-apply-by-api/:
     get:
       operationId: allow_apply_by_api_2

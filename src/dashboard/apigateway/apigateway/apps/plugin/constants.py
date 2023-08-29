@@ -25,7 +25,7 @@ class PluginTypeEnum(StructuredEnum):
     IP_RESTRICTION = EnumField("ip-restriction", label=_("IP访问控制"))
     RATE_LIMIT = EnumField("rate_limit", label=_("频率控制"))
     CORS = EnumField("cors", label="CORS")
-    CIRCUIT_BREAKER = EnumField("circuit_breaker", label=_("断路器"))
+    # CIRCUIT_BREAKER = EnumField("circuit_breaker", label=_("断路器"))
     VERIFIED_USER_EXEMPTED_APPS = EnumField("bk-verified-user-exempted-apps", label=_("免用户认证应用白名单"))
 
 
@@ -39,11 +39,6 @@ class PluginTypeCodeEnum(StructuredEnum):
 class PluginBindingScopeEnum(StructuredEnum):
     STAGE = EnumField(ScopeTypeEnum.STAGE.value, label=_("环境"))
     RESOURCE = EnumField(ScopeTypeEnum.RESOURCE.value, label=_("资源"))
-
-
-class DimensionEnum(StructuredEnum):
-    API = EnumField("api", label=_("全量资源"))
-    RESOURCE = EnumField("resource", label=_("具体资源"))
 
 
 class PluginStyleEnum(StructuredEnum):
