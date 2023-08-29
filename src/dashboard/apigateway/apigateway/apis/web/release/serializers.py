@@ -91,12 +91,14 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
         event = self.context["publish_events_map"].get(obj.id, None)
         if not event:
             return 0
+
         # 如果失败，返回event的创建时间和release_history创建时间之差
         if event.status == PublishEventStatusEnum.FAILURE.value or (
             event.status != PublishEventStatusEnum.DOING.value
             and event.name == PublishEventNameTypeEnum.LoadConfiguration.value
         ):
             return (event.created_time - obj.created_time).total_seconds()
+
         # 0代表还没到达终态
         return 0
 
@@ -106,9 +108,9 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
         if not event:
             # 兼容老数据
             return obj.status not in [ReleaseStatusEnum.SUCCESS.value, ReleaseStatusEnum.FAILURE.value]
-        else:
-            # 最新事件是否是doing
-            return event.status == PublishEventStatusEnum.DOING.value
+
+        # 最新事件是否是doing
+        return event.status == PublishEventStatusEnum.DOING.value
 
 
 class PublishEventInfoSLZ(serializers.Serializer):
@@ -117,7 +119,7 @@ class PublishEventInfoSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True, help_text="发布事件节点名称")
     step = serializers.IntegerField(read_only=True, help_text="发布事件节点所属步骤")
     status = serializers.CharField(read_only=True, help_text="发布事件状态")
-    created_time = serializers.DateTimeField(read_only=True, help_text="发布节点耗时")
+    created_time = serializers.DateTimeField(read_only=True, help_text="发布节点事件创建时间")
     msg = serializers.SerializerMethodField(read_only=True, help_text="发布日志")
 
     def get_event_id(self, obj):

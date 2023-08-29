@@ -78,6 +78,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
 
         if data:
             return OKJsonResponse(data=data)
+
         return FailJsonResponse(
             status=status.HTTP_404_NOT_FOUND,
             code="UNKNOWN",
