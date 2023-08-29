@@ -68,7 +68,7 @@ class TestReleaseHandler:
             == event_2
         )
 
-    def test_get_stage_release_status(self, fake_stage, fake_release_history, fake_publish_event):
+    def test_batch_get_stage_release_status(self, fake_stage, fake_release_history, fake_publish_event):
         assert (
             ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
             == PublishEventStatusTypeEnum.DOING.value
