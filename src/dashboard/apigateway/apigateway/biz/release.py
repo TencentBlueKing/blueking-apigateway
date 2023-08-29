@@ -66,7 +66,7 @@ class ReleaseHandler:
 
     @staticmethod
     def get_latest_publish_event_by_release_history_ids(release_history_ids: List[int]) -> Dict[int, PublishEvent]:
-        """通过release_history_ids查询最新的发布一个发布事件"""
+        """通过release_history_ids查询最新的一个发布事件"""
 
         # 需要按照 "publish_id", "step", "status" 升序(django默认 ASC)排列,正确排列每个事件节点的不同状态事件
         publish_events = PublishEvent.objects.filter(publish_id__in=release_history_ids).order_by(
@@ -89,13 +89,7 @@ class ReleaseHandler:
         """查询stage的当前状态"""
 
         # 查询当前stage最新的发布历史
-        release_history = (
-            ReleaseHistory.objects.filter(
-                stage_id=stage_id,
-            )
-            .order_by("-created_time")
-            .first()
-        )
+        release_history = ReleaseHistory.objects.filter(stage_id=stage_id).order_by("-created_time").first()
 
         if not release_history:
             return ""
