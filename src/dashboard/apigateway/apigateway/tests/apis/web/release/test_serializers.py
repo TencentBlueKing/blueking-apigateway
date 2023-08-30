@@ -223,7 +223,7 @@ class TestPublishEventQueryOutputSLZ:
                     "step": fake_publish_event.step,
                     "status": fake_publish_event.status,
                     "created_time": dummy_time.str,
-                    "msg": "{}",
+                    "detail": "{}",
                 }
             ],
         }

@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict, List
+from typing import List
 
 from django.db.models import Max
 
@@ -67,22 +67,26 @@ class ReleaseHandler:
         return release_history
 
     @staticmethod
-    def get_latest_publish_event_by_release_history_ids(release_history_ids: List[int]) -> Dict[int, PublishEvent]:
-        """通过release_history_ids查询最新的一个发布事件"""
-
+    def batch_get_publish_event_by_release_history_ids(release_history_ids: List[int]) -> List[PublishEvent]:
         # 需要按照 "publish_id", "step", "status" 升序(django默认 ASC)排列,正确排列每个事件节点的不同状态事件
         publish_events = PublishEvent.objects.filter(publish_id__in=release_history_ids).order_by(
             "publish_id", "step", "status"
         )
+        return publish_events
+
+    @staticmethod
+    def get_latest_publish_event_by_release_history_ids(release_history_ids: List[int]):
+        """通过release_history_ids查询最新的一个发布事件"""
+
+        publish_events = ReleaseHandler.batch_get_publish_event_by_release_history_ids(release_history_ids)
+
         return dict((event.publish_id, event) for event in publish_events)
 
     @staticmethod
     def get_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:
         """通过release_history_id查询所有发布事件"""
-        # 需要按照 "publish_id", "step", "status" 升序(django默认 ASC)排列,正确排列每个事件节点的不同状态事件
-        publish_events = PublishEvent.objects.filter(publish_id=release_history_id).order_by(
-            "publish_id", "step", "status"
-        )
+
+        publish_events = ReleaseHandler.batch_get_publish_event_by_release_history_ids([release_history_id])
 
         return [event for event in publish_events]
 

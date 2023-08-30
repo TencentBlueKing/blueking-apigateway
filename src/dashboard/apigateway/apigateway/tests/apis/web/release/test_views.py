@@ -224,7 +224,7 @@ class TestPublishEventsRetrieveAPI:
 
         resp = request_view(
             method="GET",
-            view_name="gateway.releases.publish_events",
+            view_name="gateway.publish.events",
             path_params={"gateway_id": fake_gateway.id, "publish_id": history.id},
         )
 

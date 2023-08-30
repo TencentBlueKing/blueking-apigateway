@@ -54,7 +54,7 @@ class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
 
 
 class ReleaseHistoryOutputSLZ(serializers.Serializer):
-    publish_id = serializers.SerializerMethodField(read_only=True, help_text="发布历史id")
+    publish_id = serializers.IntegerField(source="id", read_only=True, help_text="发布历史id")
     stage_names = serializers.SerializerMethodField(read_only=True, help_text="发布环境列表")
     resource_version_display = serializers.SerializerMethodField(read_only=True, help_text="发布资源版本")
     created_time = serializers.DateTimeField(read_only=True, help_text="发布创建事件")
@@ -68,9 +68,6 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
 
     # 是否正在发布(用户前端显示加载图标)
     is_running = serializers.SerializerMethodField(read_only=True, help_text="是否正在发布")
-
-    def get_publish_id(self, obj):
-        return obj.id
 
     def get_stage_names(self, obj):
         return list(obj.stages.order_by("name").values_list("name", flat=True))
@@ -114,18 +111,15 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
 
 
 class PublishEventInfoSLZ(serializers.Serializer):
-    event_id = serializers.SerializerMethodField(read_only=True, help_text="发布事件id")
+    event_id = serializers.IntegerField(source="id", read_only=True, help_text="发布事件id")
     publish_id = serializers.IntegerField(allow_null=False, help_text="发布历史id")
     name = serializers.CharField(read_only=True, help_text="发布事件节点名称")
     step = serializers.IntegerField(read_only=True, help_text="发布事件节点所属步骤")
     status = serializers.CharField(read_only=True, help_text="发布事件状态")
     created_time = serializers.DateTimeField(read_only=True, help_text="发布节点事件创建时间")
-    msg = serializers.SerializerMethodField(read_only=True, help_text="发布日志")
+    detail = serializers.SerializerMethodField(read_only=True, help_text="发布日志")
 
-    def get_event_id(self, obj):
-        return obj.id
-
-    def get_msg(self, obj):
+    def get_detail(self, obj):
         return json.dumps(obj.detail)
 
 
