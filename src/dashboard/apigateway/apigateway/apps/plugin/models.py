@@ -108,24 +108,12 @@ class PluginForm(models.Model):
     def natural_key(self):
         return (self.language, self.type.code)
 
-    # @classmethod
-    # def fake_object(cls, type: PluginType):
-    #     return cls(
-    #         pk=None,
-    #         language="",
-    #         type=type,
-    #         notes="",
-    #         style=PluginStyleEnum.RAW.value,
-    #         default_value="",
-    #         config={},
-    #     )
-
 
 class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
     """网关开启的插件及其配置"""
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    name = models.CharField(max_length=64, db_index=True)
+    name = models.CharField(max_length=64, blank=True, null=True)
     type = models.ForeignKey(PluginType, null=True, on_delete=models.PROTECT)
     description_i18n = I18nProperty(models.TextField(default=None, blank=True, null=True))
     description = description_i18n.default_field()
@@ -194,9 +182,8 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
     scope_type = models.CharField(
         max_length=32,
         choices=PluginBindingScopeEnum.get_choices(),
-        db_index=True,
     )
-    scope_id = models.IntegerField(db_index=True)
+    scope_id = models.IntegerField()
     config = models.ForeignKey(PluginConfig, on_delete=models.PROTECT, null=True)
 
     # FIXME: remove in 1.14

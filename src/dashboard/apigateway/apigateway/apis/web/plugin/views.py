@@ -166,6 +166,8 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
 
+        # FIXME: type_id in serializer.data should match `code` in url
+
         duplicated = PluginBinding.objects.filter(
             gateway=self.request.gateway,
             scope_type=scope_type,
@@ -243,6 +245,9 @@ class PluginConfigRetrieveUpdateDestroyApi(
     def perform_update(self, serializer):
         self.validate_scope()
         self.validate_code()
+
+        # FIXME: type_id in serializer.data should match `code` in url
+
         super().perform_update(serializer)
         request = self.request
 
@@ -282,7 +287,7 @@ class PluginConfigRetrieveUpdateDestroyApi(
         )
 
 
-class PluginBindingRetrieveApi(generics.RetrieveAPIView, PluginTypeCodeValidationMixin):
+class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: PluginBindingListOutputSLZ()},
         tags=["WebAPI.Plugin"],

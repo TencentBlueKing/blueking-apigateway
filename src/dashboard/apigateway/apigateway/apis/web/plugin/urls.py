@@ -19,7 +19,7 @@
 from django.urls import path
 
 from .views import (
-    PluginBindingRetrieveApi,
+    PluginBindingListApi,
     PluginConfigCreateApi,
     PluginConfigRetrieveUpdateDestroyApi,
     PluginFormRetrieveApi,
@@ -30,9 +30,9 @@ from .views import (
 urlpatterns = [
     # plugins
     # list plugin types (global)
-    path("", PluginTypeListApi.as_view(), name="plugins.type"),
+    path("", PluginTypeListApi.as_view(), name="plugins.types"),
     # list plugin configs (by stage or resource)
-    path("<str:scope_type>/<int:scope_id>/", ScopePluginConfigListApi.as_view(), name="plugins.config"),
+    path("<str:scope_type>/<int:scope_id>/", ScopePluginConfigListApi.as_view(), name="plugins.config.scope"),
     # create a binding (by stage or resource)
     path(
         "<str:scope_type>/<int:scope_id>/<str:code>/configs/",
@@ -46,5 +46,5 @@ urlpatterns = [
         name="plugins.config.details",
     ),
     path("<str:code>/forms/", PluginFormRetrieveApi.as_view(), name="plugins.forms"),
-    path("<str:code>/bindings/", PluginBindingRetrieveApi.as_view(), name="plugin.bindings"),
+    path("<str:code>/bindings/", PluginBindingListApi.as_view(), name="plugins.bindings"),
 ]

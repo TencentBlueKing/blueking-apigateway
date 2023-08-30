@@ -87,13 +87,13 @@ class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all())
     # type_code = serializers.CharField(source="type.code", read_only=True)
-    # type_me = serializers.CharField(source="type.name_i18n", read_only=True)
+    # type_name = serializers.CharField(source="type.name_i18n", read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
 
     class Meta:
         model = PluginConfig
         fields = [
-            # "id",
+            "id",
             "gateway",
             "name",
             "description",
@@ -105,14 +105,14 @@ class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
             # "type_code",
             # "type_name",
         ]
-        # read_only_fields = [
-        #     "id",
-        #     "updated_by",
-        #     "created_time",
-        #     "updated_time",
-        #     "type_code",
-        #     "type_name",
-        # ]
+        read_only_fields = [
+            "id",
+            #     "updated_by",
+            #     "created_time",
+            #     "updated_time",
+            #     "type_code",
+            #     "type_name",
+        ]
         lookup_field = "id"
 
     def to_internal_value(self, data):

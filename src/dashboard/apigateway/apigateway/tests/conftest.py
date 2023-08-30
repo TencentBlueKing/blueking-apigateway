@@ -597,6 +597,7 @@ def echo_plugin_type(echo_plugin_type_schema):
     return G(
         PluginType,
         code="echo",
+        name="echo",
         schema=echo_plugin_type_schema,
         is_public=True,
     )
