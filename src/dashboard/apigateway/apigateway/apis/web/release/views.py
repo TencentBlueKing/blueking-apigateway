@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from collections import defaultdict
 
 from django.http import Http404
@@ -33,6 +34,8 @@ from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
+
+logger = logging.getLogger(__name__)
 
 
 @method_decorator(
@@ -140,6 +143,7 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
         try:
             history = manager.release_batch(request.gateway, request.data, request.user.username)
         except ReleaseError as err:
+            logger.exception("release got exception : %s", str(err))
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
 
