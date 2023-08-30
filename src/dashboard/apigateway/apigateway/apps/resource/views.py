@@ -31,10 +31,11 @@ from apigateway.apps.resource.importer import ResourcesImporter
 from apigateway.apps.resource.mixins import CreateResourceMixin, UpdateResourceMixin
 from apigateway.apps.resource.swagger.swagger import ResourceSwaggerExporter
 from apigateway.apps.support.models import ResourceDoc
+from apigateway.biz.released_resource import get_resource_released_stage_count, get_resource_released_stages
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_url import ResourceURLHandler
 from apigateway.common.contexts import ResourceAuthContext
-from apigateway.core.models import Proxy, ReleasedResource, Resource, ResourceVersion, Stage, StageResourceDisabled
+from apigateway.core.models import Proxy, Resource, ResourceVersion, Stage, StageResourceDisabled
 from apigateway.core.utils import get_resource_url
 from apigateway.utils.responses import DownloadableResponse, V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
@@ -82,9 +83,7 @@ class ResourceViewSet(BaseResourceViewSet, CreateResourceMixin, UpdateResourceMi
             context={
                 "resource_labels": ResourceLabel.objects.get_labels(resource_ids),
                 "latest_resource_version": ResourceVersion.objects.get_latest_version(request.gateway.id),
-                "resource_released_stage_count": ReleasedResource.objects.get_resource_released_stage_count(
-                    request.gateway.id, resource_ids
-                ),
+                "resource_released_stage_count": get_resource_released_stage_count(request.gateway.id, resource_ids),
                 "stage_count": Stage.objects.filter(api_id=request.gateway.id).count(),
                 "doc_languages_of_resources": ResourceDoc.objects.get_doc_languages_of_resources(
                     gateway_id=request.gateway.id, resource_ids=resource_ids
@@ -334,7 +333,7 @@ class ResourceReleaseStageViewSet(BaseResourceViewSet):
             stages,
             context={
                 "api_name": request.gateway.name,
-                "resource_released_stages": ReleasedResource.objects.get_resource_released_stages(
+                "resource_released_stages": get_resource_released_stages(
                     request.gateway.id,
                     instance.id,
                 ),

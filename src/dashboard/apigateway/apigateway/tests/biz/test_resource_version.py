@@ -179,3 +179,28 @@ class TestResourceVersionHandler:
 
         get_released_resource_version_ids_mock.assert_called_once_with(api_id, stage_name)
         get_resources_mock.assert_called()
+
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "version": "1.0.0",
+                    "name": "n1",
+                    "title": "t1",
+                },
+                "1.0.0(t1)",
+            ),
+            (
+                {
+                    "version": "",
+                    "name": "n2",
+                    "title": "t2",
+                },
+                "n2(t2)",
+            ),
+        ],
+    )
+    def test_get_resource_version_display(self, data, expected):
+        result = ResourceVersionHandler().get_resource_version_display(data)
+        assert result == expected

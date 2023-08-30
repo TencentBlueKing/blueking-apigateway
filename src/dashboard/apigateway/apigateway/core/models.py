@@ -47,6 +47,7 @@ from apigateway.core.constants import (
     PublishEventStatusEnum,
     PublishSourceEnum,
     ReleaseStatusEnum,
+    ResourceVersionSchemaEnum,
     SSLCertificateBindingScopeTypeEnum,
     SSLCertificateTypeEnum,
     StageStatusEnum,
@@ -502,9 +503,17 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
     name = models.CharField(_("[Deprecated] 版本名"), max_length=128, unique=True)
+    # todo: 1.14删除
     title = models.CharField(max_length=128, blank=True, default="", null=True)
     comment = models.CharField(max_length=512, blank=True, null=True)
     _data = models.TextField(db_column="data")
+    # 用于不同数据格式解析版本数据兼容历史数据
+    scheme_version = models.CharField(
+        max_length=32,
+        choices=ResourceVersionSchemaEnum.get_choices(),
+        default=ResourceVersionSchemaEnum.OldVersion.value,
+    )
+
     created_time = models.DateTimeField(null=True, blank=True)
 
     objects = managers.ResourceVersionManager()

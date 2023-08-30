@@ -25,7 +25,7 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.utils.time import now_datetime
 
 
-class APISDKGenerateSLZ(serializers.Serializer):
+class APISDKGenerateInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     resource_version_id = serializers.IntegerField(required=True)
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
@@ -65,13 +65,13 @@ class APISDKGenerateSLZ(serializers.Serializer):
         return value
 
 
-class APISDKQuerySLZ(serializers.Serializer):
+class APISDKQueryInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), required=False)
     version_number = serializers.CharField(required=False, allow_blank=True)
     resource_version_id = serializers.IntegerField(allow_null=True, required=False)
 
 
-class SDKSLZ(serializers.Serializer):
+class SDKListOutputSLZ(serializers.Serializer):
     download_url = serializers.CharField(source="instance.url")
     id = serializers.IntegerField(source="instance.id")
     resource_version_id = serializers.IntegerField(source="instance.resource_version.id")

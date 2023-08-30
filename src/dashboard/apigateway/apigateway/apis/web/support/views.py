@@ -20,33 +20,45 @@ from typing import Any, Dict, cast
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
+from rest_framework import generics, status
 
-from apigateway.apps.support.api_sdk import exceptions, serializers
+from apigateway.apis.web.support import serializers
+from apigateway.apps.support.api_sdk import exceptions
 from apigateway.apps.support.api_sdk.helper import SDKHelper
 from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import APISDK
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
-from apigateway.utils.responses import DownloadableResponse, V1OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
-class APISDKViewSet(viewsets.ModelViewSet):
-    serializer_class = serializers.SDKSLZ
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        auto_schema=PaginatedResponseSwaggerAutoSchema,
+        query_serializer=serializers.APISDKQueryInputSLZ(),
+        responses={status.HTTP_200_OK: serializers.SDKListOutputSLZ(many=True)},
+        tags=["WebAPI.Support"],
+    ),
+)
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""}, request_body=serializers.APISDKGenerateInputSLZ, tags=["WebAPI.Support"]
+    ),
+)
+class APISDKListCreateApi(generics.ListCreateAPIView):
+    serializer_class = serializers.SDKListOutputSLZ
     lookup_field = "id"
     queryset = APISDK.objects.all()
 
-    @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=serializers.APISDKQuerySLZ,
-        responses={status.HTTP_200_OK: serializers.SDKSLZ(many=True)},
-        tags=["Support"],
-    )
+    @swagger_auto_schema()
     def list(self, request, *args, **kwargs):
-        slz = serializers.APISDKQuerySLZ(data=request.query_params, context={"request": request})
+        slz = serializers.APISDKQueryInputSLZ(data=request.query_params, context={"request": request})
         slz.is_valid(raise_exception=True)
 
         queryset = APISDK.objects.filter_sdk(
@@ -62,17 +74,17 @@ class APISDKViewSet(viewsets.ModelViewSet):
 
         sdks = [SDKFactory.create(model=i) for i in page]
         slz = self.get_serializer(sdks, many=True)
-        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
+        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
 
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=serializers.APISDKGenerateSLZ, tags=["Support"]
+        responses={status.HTTP_200_OK: ""}, request_body=serializers.APISDKGenerateInputSLZ, tags=["Support"]
     )
     @transaction.atomic
-    def generate(self, request, gateway_id):
+    def create(self, request, gateway_id):
         """
         生成 SDK
         """
-        slz = serializers.APISDKGenerateSLZ(
+        slz = serializers.APISDKGenerateInputSLZ(
             data=request.data,
             context={
                 "request": request,
@@ -116,4 +128,4 @@ class APISDKViewSet(viewsets.ModelViewSet):
                 return DownloadableResponse(open(file_path, "rb"), filename=file_name)
 
         slz = self.get_serializer(SDKFactory.create(info.sdk))
-        return V1OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)

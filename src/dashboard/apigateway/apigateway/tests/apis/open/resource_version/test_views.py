@@ -40,7 +40,7 @@ class TestResourceVersionViewSet:
             return_value=[{"name": "test"}],
         )
         mocker.patch(
-            "apigateway.apps.resource_version.serializers.ResourceVersionSLZ._validate_resource_count",
+            "apigateway.apis.web.resource_version.serializers.ResourceVersionInfoSLZ._validate_resource_count",
             return_value=None,
         )
 

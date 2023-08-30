@@ -20,8 +20,15 @@ import json
 import pytest
 from ddf import G
 
-from apigateway.biz.released_resource import ReleasedResourceData, get_released_resource_data
-from apigateway.core.models import Gateway
+from apigateway.biz.released_resource import (
+    ReleasedResourceData,
+    clear_unreleased_resource,
+    get_released_resource_data,
+    get_resource_released_stage_count,
+    get_stage_release,
+)
+from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
+from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
 
@@ -97,3 +104,75 @@ def test_get_released_resource_data(fake_gateway, fake_stage, fake_resource1, fa
     # released_resource is None
     result = get_released_resource_data(fake_gateway, fake_stage, 0)
     assert result is None
+
+
+def test_clear_unreleased_resource(fake_gateway, fake_stage):
+    rv1 = G(ResourceVersion, gateway=fake_gateway)
+    rv2 = G(ResourceVersion, gateway=fake_gateway)
+
+    G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv1)
+
+    G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, data={})
+    G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv2.id, data={})
+
+    clear_unreleased_resource(fake_gateway.id)
+
+    assert ReleasedResource.objects.filter(resource_version_id=rv1.id).exists()
+    assert not ReleasedResource.objects.filter(resource_version_id=rv2.id).exists()
+
+
+def test_get_resource_released_stage_count(fake_gateway):
+    s1 = G(Stage, api=fake_gateway)
+    s2 = G(Stage, api=fake_gateway)
+
+    r1 = G(Resource, api=fake_gateway)
+    r2 = G(Resource, api=fake_gateway)
+
+    rv1 = G(ResourceVersion, gateway=fake_gateway)
+    rv2 = G(ResourceVersion, gateway=fake_gateway)
+
+    G(Release, gateway=fake_gateway, stage=s1, resource_version=rv1)
+    G(Release, gateway=fake_gateway, stage=s2, resource_version=rv2)
+
+    G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r1.id, data={})
+    G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r2.id, data={})
+    G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv2.id, resource_id=r2.id, data={})
+
+    result = get_resource_released_stage_count(
+        gateway_id=fake_gateway.id,
+        resource_ids=[r1.id, r2.id],
+    )
+    assert result == {
+        r1.id: 1,
+        r2.id: 2,
+    }
+
+
+def test_get_stage_release(fake_gateway):
+    stage_prod = G(Stage, api=fake_gateway, name="prod", status=1)
+    stage_test = G(Stage, api=fake_gateway, name="test", status=1)
+
+    resource_version = G(ResourceVersion, gateway=fake_gateway, name="test-01", title="test", version="1.0.1")
+    G(Release, gateway=fake_gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)
+
+    data = [
+        {
+            "stage_ids": [stage_prod.id, stage_test.id],
+            "expected": {
+                stage_prod.id: {
+                    "release_status": True,
+                    "release_time": dummy_time.time,
+                    "resource_version_id": resource_version.id,
+                    "resource_version_name": "test-01",
+                    "resource_version_title": "test",
+                    "resource_version_display": "1.0.1(test)",
+                    "resource_version": {
+                        "version": "1.0.1",
+                    },
+                },
+            },
+        }
+    ]
+    for test in data:
+        result = get_stage_release(fake_gateway, test["stage_ids"])
+        assert result == test["expected"]

@@ -109,9 +109,9 @@ class ResourceVersionHandler:
     @staticmethod
     def create_resource_version(gateway: Gateway, data: Dict[str, Any], username: str = "") -> ResourceVersion:
         # FIXME: 从manager迁移过来的, 但是为什么这里依赖于上层的slz? => 应该去掉!
-        from apigateway.apps.resource_version.serializers import ResourceVersionSLZ
+        from apigateway.apis.web.resource_version.serializers import ResourceVersionInfoSLZ
 
-        slz = ResourceVersionSLZ(data=data, context={"api": gateway})
+        slz = ResourceVersionInfoSLZ(data=data, context={"api": gateway})
         slz.is_valid(raise_exception=True)
 
         slz.save(
@@ -175,3 +175,10 @@ class ResourceVersionHandler:
             return True
 
         return False
+
+    @staticmethod
+    def get_resource_version_display(data: Dict[str, Any]) -> str:
+        if not data["version"]:
+            return f"{data['name']}({data['title']})"
+
+        return f"{data['version']}({data['title']})"

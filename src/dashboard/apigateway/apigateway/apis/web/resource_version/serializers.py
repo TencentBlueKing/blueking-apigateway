@@ -21,15 +21,15 @@ import datetime
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.common.funcs import get_resource_version_display
 from apigateway.core.constants import SEMVER_PATTERN
 from apigateway.core.models import Gateway, Resource, ResourceVersion
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import random_string
 
 
-class ResourceVersionSLZ(serializers.ModelSerializer):
+class ResourceVersionInfoSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     # TODO: 待开源版中，同步资源版本的服务全部切换为 version 后，此字段才能指定为必填: required=True
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=False)
@@ -110,20 +110,7 @@ class ResourceVersionSLZ(serializers.ModelSerializer):
         )
 
 
-class ResourceVersionUpdateSLZ(serializers.ModelSerializer):
-    title = serializers.CharField(label="版本名称", max_length=128, required=True)
-    comment = serializers.CharField(label="版本说明", max_length=512, allow_blank=True, required=False)
-
-    class Meta:
-        model = ResourceVersion
-        fields = [
-            "title",
-            "comment",
-        ]
-        lookup_field = "id"
-
-
-class ResourceVersionListSLZ(serializers.ModelSerializer):
+class ResourceVersionListOutputSLZ(serializers.ModelSerializer):
     released_stages = serializers.SerializerMethodField()
     has_sdk = serializers.SerializerMethodField()
     resource_version_display = serializers.SerializerMethodField()
@@ -155,14 +142,14 @@ class ResourceVersionListSLZ(serializers.ModelSerializer):
         return obj.get("version") or obj.get("name", "")
 
     def get_resource_version_display(self, obj):
-        return get_resource_version_display(obj)
+        return ResourceVersionHandler().get_resource_version_display(obj)
 
 
-class NeedNewVersionSLZ(serializers.Serializer):
+class NeedNewVersionOutputSLZ(serializers.Serializer):
     need_new_version = serializers.BooleanField()
 
 
-class ResourceVersionDiffQuerySLZ(serializers.Serializer):
+class ResourceVersionDiffQueryInputSLZ(serializers.Serializer):
     source_resource_version_id = serializers.IntegerField(allow_null=True)
     target_resource_version_id = serializers.IntegerField(allow_null=True)
 
@@ -175,7 +162,7 @@ class ResourceVersionResourceSLZ(serializers.Serializer):
     diff = serializers.DictField(allow_null=True)
 
 
-class ResourceVersionDiffSLZ(serializers.Serializer):
+class ResourceVersionDiffOutputSLZ(serializers.Serializer):
     add = ResourceVersionResourceSLZ()
     delete = ResourceVersionResourceSLZ()
     update = serializers.DictField(child=ResourceVersionResourceSLZ())

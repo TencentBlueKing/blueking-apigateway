@@ -35,8 +35,8 @@ from apigateway.apps.esb.constants import (
 )
 from apigateway.apps.esb.helpers import get_component_doc_link
 from apigateway.apps.esb.mixins import OfficialWriteFields
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.fields import TimestampField
-from apigateway.common.funcs import get_resource_version_display
 
 
 class ESBChannelSLZ(OfficialWriteFields, serializers.ModelSerializer):
@@ -228,4 +228,6 @@ class ComponentReleaseHistorySLZ(serializers.Serializer):
         if resource_version_id not in self.context["resource_version_id_to_fields"]:
             return ""
 
-        return get_resource_version_display(self.context["resource_version_id_to_fields"][resource_version_id])
+        return ResourceVersionHandler().get_resource_version_display(
+            self.context["resource_version_id_to_fields"][resource_version_id]
+        )

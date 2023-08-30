@@ -116,7 +116,7 @@ class ResourceContexts(BaseModel, DiffMixin):
         return self.resource_auth.diff(target.resource_auth)
 
 
-class ResourceDiffer(BaseModel, DiffMixin):
+class ResourceDifferHandler(BaseModel, DiffMixin):
     id: int
     name: Text
     description: Text = ""
@@ -137,3 +137,67 @@ class ResourceDiffer(BaseModel, DiffMixin):
 
     def diff_contexts(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
         return self.contexts.diff(target.contexts)
+
+    @staticmethod
+    def diff_resource_version_data(
+        source_data: list,
+        target_data: list,
+        source_resource_doc_updated_time: dict,
+        target_resource_doc_updated_time: dict,
+    ) -> dict:
+        source_data_map = {}
+        target_data_map = {}
+        for item in source_data:
+            resource_id = item["id"]
+            # 添加文档更新时间
+            item["doc_updated_time"] = source_resource_doc_updated_time.get(resource_id, {})
+            source_data_map[resource_id] = item
+        for item in target_data:
+            resource_id = item["id"]
+            # 添加文档更新时间
+            item["doc_updated_time"] = target_resource_doc_updated_time.get(resource_id, {})
+            target_data_map[resource_id] = item
+
+        resource_add = []
+        resource_delete = []
+        resource_update = []
+
+        for resource_id, source_resource_data in source_data_map.items():
+            source_resource_differ = ResourceDifferHandler.parse_obj(source_resource_data)
+            target_resource_data = target_data_map.pop(resource_id, None)
+
+            # 目标版本中资源不存在，资源被删除
+            if not target_resource_data:
+                resource_delete.append(source_resource_differ.dict())
+                continue
+
+            target_resource_differ = ResourceDifferHandler.parse_obj(target_resource_data)
+            source_diff_value, target_diff_value = source_resource_differ.diff(target_resource_differ)
+
+            # 资源无变化，忽略此资源
+            if not source_diff_value and not target_diff_value:
+                continue
+
+            # 资源有变化，记录资源差异
+            source_resource_data = source_resource_differ.dict()
+            target_resource_data = target_resource_differ.dict()
+            source_resource_data["diff"] = source_diff_value
+            target_resource_data["diff"] = target_diff_value
+            resource_update.append(
+                {
+                    "source": source_resource_data,
+                    "target": target_resource_data,
+                }
+            )
+
+        # 目标版本中，新增的资源
+        if target_data_map:
+            for target_resource_data in target_data_map.values():
+                target_resource_differ = ResourceDifferHandler.parse_obj(target_resource_data)
+                resource_add.append(target_resource_differ.dict())
+
+        return {
+            "add": sorted(resource_add, key=lambda x: x["path"]),
+            "delete": sorted(resource_delete, key=lambda x: x["path"]),
+            "update": sorted(resource_update, key=lambda x: x["target"]["path"]),
+        }

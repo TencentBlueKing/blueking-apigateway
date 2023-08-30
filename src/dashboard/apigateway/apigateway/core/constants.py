@@ -185,6 +185,11 @@ class PublishSourceEnum(StructuredEnum):
     CLI_SYNC = EnumField("cli_sync", "命令行同步")
 
 
+class ResourceVersionSchemaEnum(StructuredEnum):
+    OldVersion = EnumField("1.0", "旧模型版本")
+    NewVersion = EnumField("2.0", "新模型版本")
+
+
 class ProxyTypeEnum(StructuredEnum):
     HTTP = EnumField("http", "http")
     MOCK = EnumField("mock", "mock")

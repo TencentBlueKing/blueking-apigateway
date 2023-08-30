@@ -21,16 +21,15 @@ import json
 from django_dynamic_fixture import G
 
 from apigateway.apps.support.api_sdk.models import SDKContext
-from apigateway.apps.support.api_sdk.views import APISDKViewSet
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.apps.support.models import APISDK
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
-from apigateway.tests.utils.testing import dummy_time, get_response_json
+from apigateway.tests.utils.testing import dummy_time
 
 
-class TestAPISDKViewSet:
-    def test_list(self, request_factory, fake_gateway, settings):
+class TestAPISDKListCreateApi:
+    def test_list(self, request_view, fake_gateway, settings):
 
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
         sdk_1 = G(
@@ -114,17 +113,19 @@ class TestAPISDKViewSet:
         ]
 
         for test in data:
-            request = request_factory.get(f"/apis/{fake_gateway.id}/support/sdks/", data=test["params"])
+            resp = request_view(
+                method="GET",
+                view_name="support.api_sdk.list_create",
+                gateway=fake_gateway,
+                path_params={"gateway_id": fake_gateway.id},
+                data=test["params"],
+            )
 
-            view = APISDKViewSet.as_view({"get": "list"})
-            response = view(request, gateway_id=fake_gateway.id)
+            result = resp.json()
 
-            result = get_response_json(response)
-
-            assert result["code"] == 0
             assert result["data"] == test["expected"]
 
-    def test_generate(self, request_factory, fake_gateway, mocker):
+    def test_create(self, request_view, fake_gateway, mocker):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
 
         mocker.patch(
@@ -165,13 +166,15 @@ class TestAPISDKViewSet:
             },
         ]
         for test in data:
-            request = request_factory.post(f"/apis/{fake_gateway.id}/support/sdks/", data=test["params"])
+            resp = request_view(
+                method="POST",
+                view_name="support.api_sdk.list_create",
+                gateway=fake_gateway,
+                path_params={"gateway_id": fake_gateway.id},
+                data=test["params"],
+            )
 
-            view = APISDKViewSet.as_view({"post": "generate"})
-            response = view(request, gateway_id=fake_gateway.id)
-
-            result = get_response_json(response)
-            assert result["code"] == 0
+            result = resp.json()
             assert result["data"]["name"] == test["expected"]["name"]
             assert result["data"]["include_private_resources"] == test["expected"]["include_private_resources"]
             assert result["data"]["is_uploaded_to_pypi"] == test["expected"]["is_uploaded_to_pypi"]

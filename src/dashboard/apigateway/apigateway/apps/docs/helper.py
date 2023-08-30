@@ -37,7 +37,6 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel, LanguageCodeEnum
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
-from apigateway.common.funcs import get_resource_version_display
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Stage
 from apigateway.core.utils import get_path_display, get_resource_url
@@ -305,7 +304,7 @@ class SupportHelper:
                     "resource_version_id": release["resource_version__id"],
                     "resource_version_name": release["resource_version__name"],
                     "resource_version_title": release["resource_version__title"],
-                    "resource_version_display": get_resource_version_display(
+                    "resource_version_display": ResourceVersionHandler().get_resource_version_display(
                         {
                             "version": release["resource_version__version"],
                             "name": release["resource_version__name"],
