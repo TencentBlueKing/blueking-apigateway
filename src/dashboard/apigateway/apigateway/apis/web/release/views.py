@@ -143,7 +143,7 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
         try:
             history = manager.release_batch(request.gateway, request.data, request.user.username)
         except ReleaseError as err:
-            logger.exception("release got exception : %s", str(err))
+            logger.exception("release got exception")
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
 
