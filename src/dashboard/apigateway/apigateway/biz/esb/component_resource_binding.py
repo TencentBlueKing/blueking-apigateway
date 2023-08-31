@@ -31,8 +31,8 @@ class ComponentResourceBindingHandler:
 
         bindings = {binding.resource_id: binding for binding in ComponentResourceBinding.objects.all()}
 
-        add_binding = []
-        update_binding = []
+        add_bindings = []
+        update_bindings = []
         for resource_data in resource_data_list:
             assert resource_data.resource
 
@@ -43,9 +43,9 @@ class ComponentResourceBindingHandler:
                     component_method=resource_data.metadata["component_method"],
                     component_path=resource_data.metadata["component_path"],
                 )
-                update_binding.append(binding)
+                update_bindings.append(binding)
             else:
-                add_binding.append(
+                add_bindings.append(
                     ComponentResourceBinding(
                         resource_id=resource_data.resource.id,
                         component_id=resource_data.metadata.get("component_id") or 0,
@@ -54,10 +54,10 @@ class ComponentResourceBindingHandler:
                     )
                 )
 
-        if add_binding:
-            ComponentResourceBinding.objects.bulk_create(add_binding, batch_size=100)
+        if add_bindings:
+            ComponentResourceBinding.objects.bulk_create(add_bindings, batch_size=100)
 
-        if update_binding:
+        if update_bindings:
             ComponentResourceBinding.objects.bulk_update(
-                update_binding, fields=["component_id", "component_method", "component_path"], batch_size=100
+                update_bindings, fields=["component_id", "component_method", "component_path"], batch_size=100
             )
