@@ -33,7 +33,7 @@ class PublishEventReporter:
             gateway=publish.gateway,
             stage=stage,
             publish=publish,
-            name=PublishEventNameTypeEnum.ValidateConfiguration,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION,
             status=PublishEventStatusTypeEnum.DOING,
         )
 
@@ -46,7 +46,7 @@ class PublishEventReporter:
             gateway=publish.gateway,
             stage=stage,
             publish=publish,
-            name=PublishEventNameTypeEnum.ValidateConfiguration,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION,
             status=PublishEventStatusTypeEnum.DOING,
         )
 
@@ -59,7 +59,7 @@ class PublishEventReporter:
             gateway=publish.gateway,
             stage=stage,
             publish=publish,
-            name=PublishEventNameTypeEnum.ValidateConfiguration,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION,
             status=PublishEventStatusTypeEnum.DOING,
             detail={
                 "err_msg": msg,
@@ -75,7 +75,7 @@ class PublishEventReporter:
             gateway=publish.gateway,
             stage=stage,
             publish=publish,
-            name=PublishEventNameTypeEnum.GenerateTask,
+            name=PublishEventNameTypeEnum.GENERATE_TASK,
             status=PublishEventStatusTypeEnum.DOING,
         )
 
@@ -88,7 +88,7 @@ class PublishEventReporter:
             gateway=publish.gateway,
             stage=stage,
             publish=publish,
-            name=PublishEventNameTypeEnum.GenerateTask,
+            name=PublishEventNameTypeEnum.GENERATE_TASK,
             status=PublishEventStatusTypeEnum.SUCCESS,
         )
 
@@ -101,7 +101,7 @@ class PublishEventReporter:
             gateway=publish.gateway,
             stage=stage,
             publish=publish,
-            name=PublishEventNameTypeEnum.DistributeConfiguration,
+            name=PublishEventNameTypeEnum.DISTRIBUTE_CONFIGURATION,
             status=PublishEventStatusTypeEnum.DOING,
         )
 
@@ -114,7 +114,7 @@ class PublishEventReporter:
             gateway=publish.gateway,
             stage=stage,
             publish=publish,
-            name=PublishEventNameTypeEnum.DistributeConfiguration,
+            name=PublishEventNameTypeEnum.DISTRIBUTE_CONFIGURATION,
             status=PublishEventStatusTypeEnum.SUCCESS,
         )
 
@@ -127,7 +127,7 @@ class PublishEventReporter:
             gateway=publish.gateway,
             stage=stage,
             publish=publish,
-            name=PublishEventNameTypeEnum.DistributeConfiguration,
+            name=PublishEventNameTypeEnum.DISTRIBUTE_CONFIGURATION,
             status=PublishEventStatusTypeEnum.FAILURE,
             detail={"err_msg": fail_msg},
         )

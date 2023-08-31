@@ -90,7 +90,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     objects = managers.GatewayManager()
 
     def __str__(self):
-        return f"<API: {self.pk}/{self.name}>"
+        return f"<Gateway: {self.pk}/{self.name}>"
 
     class Meta:
         verbose_name = "API"
@@ -668,7 +668,9 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
 
     @property
     def detail(self):
-        return json.loads(self._detail)
+        if self._detail:
+            return json.loads(self._detail)
+        return {}
 
     @detail.setter
     def detail(self, detail: dict):

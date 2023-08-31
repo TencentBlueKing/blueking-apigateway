@@ -36,12 +36,18 @@ from apigateway.apps.support.models import APISDK, ResourceDoc
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import GatewayAuthContext
-from apigateway.core.constants import APIHostingTypeEnum, ProxyTypeEnum
+from apigateway.core.constants import (
+    APIHostingTypeEnum,
+    ProxyTypeEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusTypeEnum,
+)
 from apigateway.core.models import (
     Backend,
     BackendConfig,
     Gateway,
     MicroGateway,
+    PublishEvent,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -54,12 +60,13 @@ from apigateway.core.models import (
 )
 from apigateway.schema import instances
 from apigateway.schema.data.meta_schema import init_meta_schemas
-from apigateway.tests.utils.testing import get_response_json
+from apigateway.tests.utils.testing import dummy_time, get_response_json
 from apigateway.utils.redis_utils import REDIS_CLIENTS, get_default_redis_client
 
 UserModel = get_user_model()
 
 FAKE_USERNAME = "admin"
+
 
 # pytest fixtures
 
@@ -314,7 +321,24 @@ def fake_release(fake_gateway, fake_stage, fake_resource_version):
 
 @pytest.fixture
 def fake_release_history(fake_gateway, fake_stage, fake_resource_version):
-    return G(ReleaseHistory, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+    return G(
+        ReleaseHistory,
+        gateway=fake_gateway,
+        stage=fake_stage,
+        resource_version=fake_resource_version,
+        created_time=dummy_time.time,
+    )
+
+
+@pytest.fixture
+def fake_publish_event(fake_release_history):
+    return G(
+        PublishEvent,
+        publish=fake_release_history,
+        name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
+        status=PublishEventStatusTypeEnum.DOING.value,
+        created_time=dummy_time.time,
+    )
 
 
 @pytest.fixture
@@ -578,6 +602,7 @@ def echo_plugin_type(echo_plugin_type_schema):
     return G(
         PluginType,
         code="echo",
+        name="echo",
         schema=echo_plugin_type_schema,
         is_public=True,
     )
