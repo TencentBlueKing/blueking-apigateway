@@ -30,6 +30,7 @@ from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.biz.releaser import ReleaseBatchManager, ReleaseError
+from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
@@ -58,7 +59,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         except Http404:
             return FailJsonResponse(
                 status=status.HTTP_404_NOT_FOUND,
-                code="UNKNOWN",
+                code=error_codes.NOT_FOUND,
                 message=_("当前选择环境未发布版本，请先发布版本到该环境。"),
             )
         stage_name = instance.stage.name
@@ -89,16 +90,16 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         )
 
 
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(tags=["WebAPI.Release"]),
-)
 class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
     lookup_field = "stage_id"
 
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
 
+    @method_decorator(
+        name="get",
+        decorator=swagger_auto_schema(tags=["WebAPI.Release"]),
+    )
     def get(self, request, *args, **kwargs):
         try:
             resource_version_id = request.query_params.get("resource_version_id")

@@ -16,9 +16,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
 from django.db import transaction
 from django.http import Http404
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -26,6 +28,7 @@ from apigateway.apis.web.resource_version import serializers
 from apigateway.apps.support.models import APISDK, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
+from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
@@ -94,10 +97,6 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         return OKJsonResponse(data={"id": instance.id})
 
 
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(tags=["WebAPI.ResourceVersion"]),
-)
 class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
     serializer_class = serializers.ResourceVersionInfoSLZ
     lookup_field = "id"
@@ -105,6 +104,10 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
     def get_queryset(self):
         return ResourceVersion.objects.filter(gateway=self.request.gateway).order_by("-id")
 
+    @method_decorator(
+        name="get",
+        decorator=swagger_auto_schema(tags=["WebAPI.ResourceVersion"]),
+    )
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
@@ -119,47 +122,49 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse(data=data)
 
 
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.NeedNewVersionOutputSLZ()}, tags=["WebAPI.ResourceVersion"]
-    ),
-)
 class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
     def get_queryset(self):
         return ResourceVersion.objects.filter(gateway=self.request.gateway).order_by("-id")
 
+    @method_decorator(
+        name="get",
+        decorator=swagger_auto_schema(
+            responses={status.HTTP_200_OK: serializers.NeedNewVersionOutputSLZ()}, tags=["WebAPI.ResourceVersion"]
+        ),
+    )
     def get(self, request, *args, **kwargs):
         resource_version_exist = ResourceVersion.objects.filter(gateway_id=request.gateway.id).exists()
         resource_exist = Resource.objects.filter(api_id=request.gateway.id).exists()
         if not (resource_version_exist or resource_exist):
-            return FailJsonResponse(status=status.HTTP_404_NOT_FOUND, code="UNKNOWN", message="请先创建资源，然后再发布版本。")
+            return FailJsonResponse(
+                status=status.HTTP_404_NOT_FOUND, code=error_codes.NOT_FOUND, message=_("请先创建资源，然后再发布版本。")
+            )
 
         if ResourceVersionHandler().need_new_version(request.gateway.id):
             return OKJsonResponse(
-                data={"need_new_version": True, "msg": "资源有更新，需生成新版本并发布到指定环境，才能生效。"},
+                data={"need_new_version": True, "msg": _("资源有更新，需生成新版本并发布到指定环境，才能生效。")},
             )
 
         if ResourceDocVersion.objects.need_new_version(request.gateway.id):
             return OKJsonResponse(
-                data={"need_new_version": True, "msg": "资源文档有更新，需生成新版本并发布到任一环境，才能生效。"},
+                data={"need_new_version": True, "msg": _("资源文档有更新，需生成新版本并发布到任一环境，才能生效。")},
             )
 
         return OKJsonResponse(data={"need_new_version": False})
 
 
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.ResourceVersionDiffQueryInputSLZ(),
-        responses={status.HTTP_200_OK: serializers.ResourceVersionDiffOutputSLZ()},
-        tags=["WebAPI.ResourceVersion"],
-    ),
-)
 class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
     def get_queryset(self):
         return ResourceVersion.objects.filter(gateway=self.request.gateway).order_by("-id")
 
+    @method_decorator(
+        name="get",
+        decorator=swagger_auto_schema(
+            query_serializer=serializers.ResourceVersionDiffQueryInputSLZ(),
+            responses={status.HTTP_200_OK: serializers.ResourceVersionDiffOutputSLZ()},
+            tags=["WebAPI.ResourceVersion"],
+        ),
+    )
     def get(self, request, *args, **kwargs):
         """
         版本对比

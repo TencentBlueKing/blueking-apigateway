@@ -18,6 +18,7 @@
 #
 import json
 from typing import Dict, List, Optional, Text, Tuple
+from unittest.mock import patch
 
 import pytest
 from pydantic import BaseModel
@@ -305,52 +306,47 @@ class ResourceProxyHTTPConfig:
         assert result == expected
 
 
-#
-# class TestResourceDifferHandler:
-#     @pytest.fixture(autouse=True)
-#     def setup_fixtures(self, fake_gateway):
-#         patcher = mock.patch("apigateway.biz.resource_version_diff.ResourceDifferHandler")
-#         self.ResourceDifferHandler = patcher.start()
-#
-#         class ResourceDifferMock(BaseModel, DiffMixin):
-#             id: int
-#             name: str
-#             method: str
-#             path: str
-#
-#         self.ResourceDifferHandler.parse_obj.side_effect = lambda x: ResourceDifferMock.parse_obj(x)
-#
-#     def test_diff_resource_version_data(self):
-#         source_data = [
-#             {"id": 1, "name": "n1", "method": "GET", "path": "/p1"},
-#             {"id": 3, "name": "n3", "method": "POST", "path": "/p3"},
-#         ]
-#         target_data = [
-#             {"id": 2, "name": "n2", "method": "POST", "path": "/p2"},
-#             {"id": 3, "name": "nn", "method": "GET", "path": "/p3"},
-#         ]
-#
-#         result = ResourceDifferHandler().diff_resource_version_data(source_data, target_data, {}, {})
-#
-#         assert result == {
-#             "add": [{"id": 2, "name": "n2", "method": "POST", "path": "/p2"}],
-#             "delete": [{"id": 1, "name": "n1", "method": "GET", "path": "/p1"}],
-#             "update": [
-#                 {
-#                     "source": {
-#                         "id": 3,
-#                         "name": "n3",
-#                         "method": "POST",
-#                         "path": "/p3",
-#                         "diff": {"name": "n3", "method": "POST"},
-#                     },
-#                     "target": {
-#                         "id": 3,
-#                         "name": "nn",
-#                         "method": "GET",
-#                         "path": "/p3",
-#                         "diff": {"name": "nn", "method": "GET"},
-#                     },
-#                 }
-#             ],
-#         }
+class TestResourceDifferHandler:
+    @patch("apigateway.biz.resource_version_diff.ResourceDifferHandler.parse_obj")
+    def test_diff_resource_version_data(self, mock_parse_obj):
+        class ResourceDifferMock(BaseModel, DiffMixin):
+            id: int
+            name: str
+            method: str
+            path: str
+
+        mock_parse_obj.side_effect = lambda x: ResourceDifferMock.parse_obj(x)
+
+        source_data = [
+            {"id": 1, "name": "n1", "method": "GET", "path": "/p1"},
+            {"id": 3, "name": "n3", "method": "POST", "path": "/p3"},
+        ]
+        target_data = [
+            {"id": 2, "name": "n2", "method": "POST", "path": "/p2"},
+            {"id": 3, "name": "nn", "method": "GET", "path": "/p3"},
+        ]
+
+        result = ResourceDifferHandler.diff_resource_version_data(source_data, target_data, {}, {})
+
+        assert result == {
+            "add": [{"id": 2, "name": "n2", "method": "POST", "path": "/p2"}],
+            "delete": [{"id": 1, "name": "n1", "method": "GET", "path": "/p1"}],
+            "update": [
+                {
+                    "source": {
+                        "id": 3,
+                        "name": "n3",
+                        "method": "POST",
+                        "path": "/p3",
+                        "diff": {"name": "n3", "method": "POST"},
+                    },
+                    "target": {
+                        "id": 3,
+                        "name": "nn",
+                        "method": "GET",
+                        "path": "/p3",
+                        "diff": {"name": "nn", "method": "GET"},
+                    },
+                }
+            ],
+        }

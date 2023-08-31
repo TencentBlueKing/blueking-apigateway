@@ -86,6 +86,7 @@ def get_released_resource_data(gateway: Gateway, stage: Stage, resource_id: int)
     return ReleasedResourceData.from_data(released_resource.data)
 
 
+# TODO 待重构
 def clear_unreleased_resource(gateway_id: int) -> None:
     """清理未发布的资源，如已发布版本被新版本替换的情况"""
     resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
@@ -94,6 +95,7 @@ def clear_unreleased_resource(gateway_id: int) -> None:
     ).delete()
 
 
+# TODO 待重构
 def get_resource_released_stage_count(gateway_id: int, resource_ids: List[int]) -> Dict[int, int]:
     """获取资源已发布环境的数量"""
     resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
@@ -112,6 +114,7 @@ def get_resource_released_stage_count(gateway_id: int, resource_ids: List[int]) 
     return resource_released_stage_count
 
 
+# TODO 待重构
 def get_resource_released_stages(gateway_id: int, resource_id: int) -> Dict[int, dict]:
     """获取资源已发布的环境信息"""
 
@@ -143,6 +146,7 @@ def get_resource_released_stages(gateway_id: int, resource_id: int) -> Dict[int,
     return resource_released_stages
 
 
+# TODO 待重构
 def get_stage_release(gateway, stage_ids=None):
     """
     获取环境部署信息

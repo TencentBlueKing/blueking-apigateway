@@ -44,6 +44,7 @@ from apigateway.core.constants import (
     MicroGatewayStatusEnum,
     ProxyTypeEnum,
     PublishEventEnum,
+    PublishEventNameTypeEnum,
     PublishEventStatusEnum,
     PublishSourceEnum,
     ReleaseStatusEnum,
@@ -684,6 +685,13 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
     @detail.setter
     def detail(self, detail: dict):
         self._detail = json.dumps(detail)
+
+    @property
+    def is_running(self):
+        return self.status == PublishEventStatusEnum.DOING.value or (
+            self.status == PublishEventStatusEnum.SUCCESS.value
+            and self.name != PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
+        )
 
     def __str__(self):
         return f"<PublishEvent: {self.gateway_id}/{self.stage_id}/{self.publish_id}/{self.name}>/{self.status}"

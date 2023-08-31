@@ -28,12 +28,6 @@ from apigateway.utils import time as time_utils
 
 
 class TestResourceVersionInfoSLZ:
-    def test_generate_version_name(self):
-        slz = serializers.ResourceVersionInfoSLZ(data=None)
-        result = slz._generate_version_name("test", dummy_time.time)
-        time_str = time_utils.format(dummy_time.time, fmt="YYYYMMDDHHmmss")
-        assert result.startswith(f"test_{time_str}_")
-
     def test_validate_version_unique(self, fake_gateway):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
 

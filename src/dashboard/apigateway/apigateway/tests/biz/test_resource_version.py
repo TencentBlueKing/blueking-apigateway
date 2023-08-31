@@ -26,6 +26,7 @@ from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
+from apigateway.utils import time as time_utils
 
 
 class TestResourceVersionHandler:
@@ -204,3 +205,8 @@ class TestResourceVersionHandler:
     def test_get_resource_version_display(self, data, expected):
         result = ResourceVersionHandler().get_resource_version_display(data)
         assert result == expected
+
+    def test_generate_version_name(self):
+        result = ResourceVersionHandler().generate_version_name("test", dummy_time.time)
+        time_str = time_utils.format(dummy_time.time, fmt="YYYYMMDDHHmmss")
+        assert result.startswith(f"test_{time_str}_")

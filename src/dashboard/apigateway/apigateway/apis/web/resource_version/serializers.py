@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
@@ -26,7 +25,6 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import SEMVER_PATTERN
 from apigateway.core.models import Gateway, Resource, ResourceVersion
 from apigateway.utils import time as time_utils
-from apigateway.utils.string import random_string
 
 
 class ResourceVersionInfoSLZ(serializers.ModelSerializer):
@@ -68,11 +66,11 @@ class ResourceVersionInfoSLZ(serializers.ModelSerializer):
         if queryset.exists():
             raise serializers.ValidationError(_("版本 {version} 已存在。").format(version=version))
 
-    def _validate_resource_count(self, api):
+    def _validate_resource_count(self, gateway):
         """
         校验网关下资源数量，网关下资源数量为0时，不允许创建网关版本
         """
-        if not Resource.objects.filter(api_id=api.id).exists():
+        if not Resource.objects.filter(api_id=gateway.id).exists():
             raise serializers.ValidationError(_("请先创建资源，然后再生成版本。"))
 
     def to_representation(self, instance):
@@ -89,7 +87,7 @@ class ResourceVersionInfoSLZ(serializers.ModelSerializer):
         now = time_utils.now_datetime()
 
         # created_time：与版本名中时间保持一致，方便SDK使用此时间作为版本号
-        name = self._generate_version_name(gateway.name, now)
+        name = ResourceVersionHandler().generate_version_name(gateway.name, now)
         validated_data.update(
             {
                 "name": name,
@@ -100,14 +98,6 @@ class ResourceVersionInfoSLZ(serializers.ModelSerializer):
         )
 
         return super().create(validated_data)
-
-    def _generate_version_name(self, gateway_name: str, now: datetime.datetime) -> str:
-        """生成新的版本名称"""
-        return "{gateway_name}_{now_str}_{random_str}".format(
-            gateway_name=gateway_name,
-            now_str=time_utils.format(now, fmt="YYYYMMDDHHmmss"),
-            random_str=random_string(5),
-        )
 
 
 class ResourceVersionListOutputSLZ(serializers.ModelSerializer):
