@@ -133,7 +133,7 @@ class GatewayStageProvider(BaseResourceProvider):
 
     @fetch_gateway_id_in_filter
     def list_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        queryset = Stage.objects.filter(api_id=self.gateway_id_in_filter).values("id", "name")
+        queryset = Stage.objects.filter(gateway_id=self.gateway_id_in_filter).values("id", "name")
         results = [
             {
                 "id": str(stage["id"]),
@@ -150,7 +150,9 @@ class GatewayStageProvider(BaseResourceProvider):
         approvers = self._fetch_gateway_approvers([self.gateway_id_in_filter])
         iam_approver = approvers.get(self.gateway_id_in_filter) or []
 
-        queryset = Stage.objects.filter(api_id=self.gateway_id_in_filter, id__in=map(int, ids)).values("id", "name")
+        queryset = Stage.objects.filter(gateway_id=self.gateway_id_in_filter, id__in=map(int, ids)).values(
+            "id", "name"
+        )
         results = [
             {
                 "id": str(stage["id"]),
@@ -165,7 +167,7 @@ class GatewayStageProvider(BaseResourceProvider):
     @fetch_gateway_id_in_filter
     def search_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
         """支持模糊搜索环境名"""
-        queryset = Stage.objects.filter(api_id=self.gateway_id_in_filter)
+        queryset = Stage.objects.filter(gateway_id=self.gateway_id_in_filter)
         if filter_obj.keyword:
             queryset = queryset.filter(name__icontains=filter_obj.keyword)
 

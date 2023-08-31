@@ -39,11 +39,11 @@ class TestReleaseBatchInputSLZ:
         self.request.gateway = self.gateway
 
     def test_validate_stage_ids(self, mocker):
-        stage_1 = G(Stage, api=self.gateway)
-        stage_2 = G(Stage, api=self.gateway)
+        stage_1 = G(Stage, gateway=self.gateway)
+        stage_2 = G(Stage, gateway=self.gateway)
 
         gateway = G(Gateway)
-        stage_3 = G(Stage, api=gateway)
+        stage_3 = G(Stage, gateway=gateway)
 
         resource_version = G(ResourceVersion, gateway=self.gateway)
 
@@ -65,7 +65,7 @@ class TestReleaseBatchInputSLZ:
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"api": self.gateway})
+            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"gateway": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()
@@ -78,7 +78,7 @@ class TestReleaseBatchInputSLZ:
         gateway = create_gateway()
         resource_version_1 = G(ResourceVersion, gateway=gateway)
 
-        stage = G(Stage, api=self.gateway)
+        stage = G(Stage, gateway=self.gateway)
         resource_version_2 = G(ResourceVersion, gateway=self.gateway)
 
         data = [
@@ -100,7 +100,7 @@ class TestReleaseBatchInputSLZ:
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"api": self.gateway})
+            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"gateway": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()
@@ -153,7 +153,7 @@ class TestReleaseHistoryQueryInputSLZ:
 class TestReleaseHistoryOutputSLZ:
     def test_to_representation(self):
         gateway = G(Gateway)
-        stage = G(Stage, api=gateway)
+        stage = G(Stage, gateway=gateway)
         resource_version = G(ResourceVersion, gateway=gateway, name="t1", version="1.0.0", title="测试", comment="test1")
         release_history = G(
             ReleaseHistory,

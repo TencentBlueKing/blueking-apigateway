@@ -77,8 +77,8 @@ class TestResourceVersionViewSet(TestCase):
             title="test",
             created_time=dummy_time.time,
         )
-        stage_prod = G(Stage, api=self.gateway, status=1)
-        stage_test = G(Stage, api=self.gateway, status=1)
+        stage_prod = G(Stage, gateway=self.gateway, status=1)
+        stage_test = G(Stage, gateway=self.gateway, status=1)
         G(Release, gateway=self.gateway, stage=stage_prod, resource_version=resource_version)
         G(Release, gateway=self.gateway, stage=stage_test, resource_version=resource_version)
         G(APISDK, gateway=self.gateway, resource_version=resource_version)

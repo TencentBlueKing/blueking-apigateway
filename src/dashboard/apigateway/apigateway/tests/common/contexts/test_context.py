@@ -23,7 +23,6 @@ from apigateway.common.contexts import (
     GatewayAuthContext,
     ResourceAuthContext,
     StageProxyHTTPContext,
-    StageRateLimitContext,
 )
 from apigateway.core.models import Context, Gateway
 
@@ -123,13 +122,3 @@ class TestStageProxyHTTPContext:
             },
         )
         assert context.contain_hosts(fake_stage.id) is expected
-
-
-class TestStageRateLimitContext(TestCase):
-    @pytest.fixture(autouse=True)
-    def context_fixture(self, meta_schemas):
-        self.context = StageRateLimitContext()
-
-    def test_property(self):
-        self.assertEqual(self.context.scope_type, "stage")
-        self.assertEqual(self.context.type, "stage_rate_limit")

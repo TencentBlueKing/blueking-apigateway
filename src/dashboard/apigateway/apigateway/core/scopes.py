@@ -50,4 +50,4 @@ class StageScopeManager(ScopeManager):
             return Stage.objects.get_ids(gateway_id)
 
         stage_names = [scope["name"] for scope in scopes]
-        return list(Stage.objects.filter(api_id=gateway_id, name__in=stage_names).values_list("id", flat=True))
+        return list(Stage.objects.filter(gateway_id=gateway_id, name__in=stage_names).values_list("id", flat=True))

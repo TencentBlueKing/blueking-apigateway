@@ -37,7 +37,7 @@ class TestPluginConfigCreateInputSLZ:
             "description": faker.pystr(),
             "yaml": "{}",
         }
-        slz = PluginConfigCreateInputSLZ(data=params, context={"api": fake_gateway})
+        slz = PluginConfigCreateInputSLZ(data=params, context={"gateway": fake_gateway})
         slz.is_valid(raise_exception=True)
 
         with pytest.raises(ValidationError):
@@ -56,7 +56,7 @@ class TestPluginConfigRetrieveUpdateInputSLZ:
             "yaml": "{}",
         }
         slz = PluginConfigRetrieveUpdateInputSLZ(
-            data=params, instance=fake_plugin_config, context={"api": fake_gateway}
+            data=params, instance=fake_plugin_config, context={"gateway": fake_gateway}
         )
         slz.is_valid(raise_exception=True)
 

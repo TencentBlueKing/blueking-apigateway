@@ -38,7 +38,7 @@ class TestLogTimeChartRetrieveApi:
             return_value=mocked_time_chart,
         )
 
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         response = request_view(
             "GET",
@@ -66,7 +66,7 @@ class TestSearchLogListApi:
             return_value=(3, [{"a": 1}, {"a": 2}, {"a": 3}]),
         )
 
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         response = request_view(
             "GET",

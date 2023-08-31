@@ -34,7 +34,7 @@ class TestResourceHandler:
     def test_save_related_data(self):
         gateway = G(Gateway)
         resource = G(Resource)
-        stage_prod = G(Stage, api=gateway, name="prod")
+        stage_prod = G(Stage, gateway=gateway, name="prod")
         label = G(APILabel, api=gateway)
 
         data = {
@@ -155,8 +155,8 @@ class TestResourceHandler:
     def test_save_disabled_stages(self):
         gateway = G(Gateway)
         resource = G(Resource, api=gateway)
-        stage = G(Stage, api=gateway)
-        invalid_stage = G(Stage, api=gateway)
+        stage = G(Stage, gateway=gateway)
+        invalid_stage = G(Stage, gateway=gateway)
         G(StageResourceDisabled, resource=resource, stage=invalid_stage)
 
         # test save disabled stages
@@ -311,8 +311,8 @@ class TestResourceHandler:
             path="/echo/",
         )
 
-        stage_prod = G(Stage, api=gateway, name="prod")
-        stage_test = G(Stage, api=gateway, name="test")
+        stage_prod = G(Stage, gateway=gateway, name="prod")
+        stage_test = G(Stage, gateway=gateway, name="test")
 
         data = {
             "proxy_type": "http",

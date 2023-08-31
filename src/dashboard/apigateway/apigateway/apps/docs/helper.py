@@ -128,7 +128,7 @@ class SupportHelper:
 
         # queryset = self.get_queryset()
         queryset = Stage.objects.filter(
-            api=gateway,
+            gateway=gateway,
             status=StageStatusEnum.ACTIVE.value,
             is_public=True,
         )

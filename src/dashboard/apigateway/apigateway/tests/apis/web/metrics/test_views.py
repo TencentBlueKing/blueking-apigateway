@@ -54,7 +54,7 @@ class TestQueryRangeApi:
             "GET",
             "metrics.query_range",
             path_params={
-                "gateway_id": fake_stage.api.id,
+                "gateway_id": fake_stage.gateway.id,
             },
             data={
                 "stage_id": fake_stage.id,
@@ -72,7 +72,7 @@ class TestQueryRangeApi:
             "GET",
             "metrics.query_range",
             path_params={
-                "gateway_id": fake_stage.api.id,
+                "gateway_id": fake_stage.gateway.id,
             },
             data={
                 "stage_id": 0,

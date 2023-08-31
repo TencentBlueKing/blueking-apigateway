@@ -38,7 +38,7 @@ class TestSSLCertificateSLZ:
                 "ca_cert": fake_tls_cacert,
             },
             context={
-                "api": fake_gateway,
+                "gateway": fake_gateway,
             },
         )
         slz.is_valid(raise_exception=True)

@@ -32,7 +32,7 @@ class TestResourceURLHandler:
         # 共享网关
         gateway = G(Gateway, name=unique_id, hosting_type=APIHostingTypeEnum.DEFAULT.value)
 
-        stage = G(Stage, api=gateway, name="prod")
+        stage = G(Stage, gateway=gateway, name="prod")
 
         url = ResourceURLHandler.get_resource_url_tmpl(gateway.name, stage.name)
         assert url == "http://bkapi.example.com/api/{api_name}/{stage_name}/{resource_path}"

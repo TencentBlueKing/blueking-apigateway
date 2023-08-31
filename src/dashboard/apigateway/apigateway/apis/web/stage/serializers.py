@@ -94,7 +94,7 @@ class BackendSLZ(serializers.Serializer):
 
 
 class StageInputSLZ(serializers.Serializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(STAGE_NAME_PATTERN)
     description = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, required=False)
     backends = serializers.ListField(child=BackendSLZ(), allow_empty=False)
@@ -103,7 +103,7 @@ class StageInputSLZ(serializers.Serializer):
         validators = [
             UniqueTogetherValidator(
                 queryset=Stage.objects.all(),
-                fields=["api", "name"],
+                fields=["gateway", "name"],
                 message=gettext_lazy("网关下环境名称已经存在。"),
             ),
             MaxCountPerGatewayValidator(
@@ -115,7 +115,7 @@ class StageInputSLZ(serializers.Serializer):
 
     def validate(self, attrs):
         # 查询网关下所有的backend
-        backends = Backend.objects.filter(gateway=attrs["api"])
+        backends = Backend.objects.filter(gateway=attrs["gateway"])
         backend_dict = {backend.id: backend for backend in backends}
 
         # 校验后端服务数据是否完整
@@ -148,7 +148,7 @@ def check_backend_host_scheme(backend, host):
 
 
 class StageVarsSLZ(serializers.Serializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     vars = serializers.DictField(
         label="环境变量",
         child=serializers.CharField(allow_blank=True, required=True),

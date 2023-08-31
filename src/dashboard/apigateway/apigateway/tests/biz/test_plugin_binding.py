@@ -24,8 +24,8 @@ from apigateway.core.models import Resource, Stage
 
 class TestPluginBindingHandler:
     def test_get_scopes(self, fake_gateway):
-        s1 = G(Stage, api=fake_gateway)
-        s2 = G(Stage, api=fake_gateway)
+        s1 = G(Stage, gateway=fake_gateway)
+        s2 = G(Stage, gateway=fake_gateway)
 
         r1 = G(Resource, api=fake_gateway)
         r2 = G(Resource, api=fake_gateway)

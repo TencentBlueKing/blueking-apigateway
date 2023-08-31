@@ -59,7 +59,7 @@ class TestPluginBindingManager:
 
     def test_get_valid_scope_ids(self, fake_gateway):
         r = G(Resource, api=fake_gateway)
-        s = G(Stage, api=fake_gateway)
+        s = G(Stage, gateway=fake_gateway)
 
         result = PluginBinding.objects.get_valid_scope_ids(
             fake_gateway.id, scope_type="resource", scope_ids=[r.id, r.id + 1]

@@ -273,7 +273,7 @@ class MicroGatewayPermissionViewSet(BaseMicroGatewayViewSet):
             logger.exception("abort set permissions into cache %s, error: %s", cache_key)
 
     def _get_stage_by_name(self, gateway: Gateway, stage_name: str) -> Stage:
-        return get_object_or_404(Stage, api=gateway, name=stage_name)
+        return get_object_or_404(Stage, gateway=gateway, name=stage_name)
 
     @swagger_auto_schema(
         operation_description="获取微网关的所有权限信息",
