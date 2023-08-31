@@ -61,7 +61,7 @@ class PluginType(models.Model):
     objects = PluginTypeManager()
 
     def __str__(self) -> str:
-        return f"<PluginType {self.name}({self.pk})>"
+        return f"<PluginType {self.pk}/{self.name}>"
 
     def natural_key(self):
         return (self.code,)
@@ -103,7 +103,7 @@ class PluginForm(models.Model):
         unique_together = ("language", "type")
 
     def __str__(self) -> str:
-        return f"<PluginForm {self.type.name}({self.pk})>"
+        return f"<PluginForm {self.pk}/{self.type.name}>"
 
     def natural_key(self):
         return (self.language, self.type.code)
@@ -141,7 +141,7 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
         self.yaml = yaml_
 
     def __str__(self) -> str:
-        return f"<PluginConfig {self.type.code}({self.pk})>"
+        return f"<PluginConfig {self.pk}/{self.type.code}>"
 
 
 # ====================================================
@@ -203,3 +203,6 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
 
     def get_type(self):
         return self.config.type.code
+
+    def __str__(self) -> str:
+        return f"<PluginBinding {self.pk}/{self.scope_type}/{self.scope_id}/{self.config.type}>"
