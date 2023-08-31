@@ -113,7 +113,7 @@ class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
 
 class PublishEventEnum(StructuredEnum):
     # dashboard
-    VALIDATE_CONFIGURATION = EnumField("validata_configuration", "check configuration")
+    VALIDATE_CONFIGURATION = EnumField("validata_configuration", "validate configuration")
     GENERATE_TASK = EnumField("generate_release_task", "generate release task")
     DISTRIBUTE_CONFIGURATION = EnumField("distribute_configuration", "distribute configuration")
     # operator
@@ -124,12 +124,12 @@ class PublishEventEnum(StructuredEnum):
 
 
 class PublishEventNameTypeEnum(ChoiceEnumMixin, Enum):
-    ValidateConfiguration = PublishEventEnum.VALIDATE_CONFIGURATION.value
-    GenerateTask = PublishEventEnum.GENERATE_TASK.value
-    DistributeConfiguration = PublishEventEnum.DISTRIBUTE_CONFIGURATION.value
-    ParseConfiguration = PublishEventEnum.PARSE_CONFIGURATION.value
-    ApplyConfiguration = PublishEventEnum.APPLY_CONFIGURATION.value
-    LoadConfiguration = PublishEventEnum.LOAD_CONFIGURATION.value
+    VALIDATE_CONFIGURATION = PublishEventEnum.VALIDATE_CONFIGURATION.value
+    GENERATE_TASK = PublishEventEnum.GENERATE_TASK.value
+    DISTRIBUTE_CONFIGURATION = PublishEventEnum.DISTRIBUTE_CONFIGURATION.value
+    PARSE_CONFIGURATION = PublishEventEnum.PARSE_CONFIGURATION.value
+    APPLY_CONFIGURATION = PublishEventEnum.APPLY_CONFIGURATION.value
+    LOAD_CONFIGURATION = PublishEventEnum.LOAD_CONFIGURATION.value
 
     @classmethod
     def get_event_step(cls, name: str) -> int:

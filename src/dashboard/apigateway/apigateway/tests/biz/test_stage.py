@@ -34,8 +34,8 @@ class TestStageHandler:
 
         micro_gateway = G(MicroGateway, gateway=gateway)
 
-        s1 = G(Stage, api=gateway)
-        s2 = G(Stage, api=gateway, micro_gateway=micro_gateway)
+        s1 = G(Stage, gateway=gateway)
+        s2 = G(Stage, gateway=gateway, micro_gateway=micro_gateway)
 
         result = StageHandler().get_id_to_micro_gateway_id(gateway.id)
         assert result == {
@@ -48,8 +48,8 @@ class TestStageHandler:
 
         micro_gateway = G(MicroGateway, gateway=gateway)
 
-        s1 = G(Stage, api=gateway)
-        s2 = G(Stage, api=gateway, micro_gateway=micro_gateway)
+        s1 = G(Stage, gateway=gateway)
+        s2 = G(Stage, gateway=gateway, micro_gateway=micro_gateway)
 
         result = StageHandler().get_id_to_micro_gateway_fields(gateway.id)
         assert result == {

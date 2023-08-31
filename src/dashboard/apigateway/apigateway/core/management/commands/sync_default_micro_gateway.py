@@ -78,7 +78,7 @@ class Command(BaseCommand):
             },
         )
 
-        stage = Stage.objects.get(api=gateway, name=stage_name)
+        stage = Stage.objects.get(gateway=gateway, name=stage_name)
         stage.micro_gateway = micro_gateway
         stage.save(update_fields=["micro_gateway"])
 

@@ -98,7 +98,7 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
         """
         主动授权
         """
-        slz = AppPermissionInputSLZ(data=request.data, context={"api": request.gateway})
+        slz = AppPermissionInputSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -261,7 +261,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
         """
         主动授权
         """
-        slz = AppPermissionInputSLZ(data=request.data, context={"api": request.gateway})
+        slz = AppPermissionInputSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data

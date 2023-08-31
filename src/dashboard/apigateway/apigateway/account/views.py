@@ -18,7 +18,7 @@
 #
 from rest_framework.views import APIView
 
-from apigateway.utils.responses import V1OKJsonResponse
+from apigateway.utils.responses import OKJsonResponse
 
 from .utils import get_user_avatar
 
@@ -36,4 +36,4 @@ class UserAPIView(APIView):
             "avatar_url": user.avatar_url if getattr(user, "avatar_url", "") else get_user_avatar(user.username),
             "username": user.username,
         }
-        return V1OKJsonResponse("OK", data=data)
+        return OKJsonResponse(data=data)

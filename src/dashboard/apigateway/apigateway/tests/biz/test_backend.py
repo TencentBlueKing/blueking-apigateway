@@ -25,7 +25,7 @@ class TestBackendHandler:
     def test_create(self, fake_stage):
         BackendHandler.create(
             {
-                "gateway": fake_stage.api,
+                "gateway": fake_stage.gateway,
                 "name": "backend-test",
                 "description": "test",
                 "type": "http",
@@ -42,12 +42,12 @@ class TestBackendHandler:
             "admin",
         )
 
-        backend = Backend.objects.filter(gateway=fake_stage.api, name="backend-test").first()
+        backend = Backend.objects.filter(gateway=fake_stage.gateway, name="backend-test").first()
         assert backend
 
         backend_config = BackendConfig.objects.get(backend=backend)
         assert backend_config.stage_id == fake_stage.id
-        assert backend_config.gateway_id == fake_stage.api.id
+        assert backend_config.gateway_id == fake_stage.gateway.id
         assert backend_config.config == {
             "type": "node",
             "timeout": 1,
@@ -58,7 +58,7 @@ class TestBackendHandler:
     def test_update(self, fake_stage):
         BackendHandler.create(
             {
-                "gateway": fake_stage.api,
+                "gateway": fake_stage.gateway,
                 "name": "backend-test",
                 "description": "test",
                 "type": "http",
@@ -75,13 +75,13 @@ class TestBackendHandler:
             "admin",
         )
 
-        backend = Backend.objects.filter(gateway=fake_stage.api, name="backend-test").first()
+        backend = Backend.objects.filter(gateway=fake_stage.gateway, name="backend-test").first()
         assert backend
 
         BackendHandler.update(
             backend,
             {
-                "gateway": fake_stage.api,
+                "gateway": fake_stage.gateway,
                 "name": "backend-update",
                 "description": "update",
                 "type": "http",

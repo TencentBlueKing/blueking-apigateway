@@ -25,7 +25,7 @@ class PluginBindingHandler:
     @staticmethod
     def get_scopes(gateway_id: int, scope_type: PluginBindingScopeEnum, scope_ids: List[int]) -> List[Dict[str, Any]]:
         if scope_type == PluginBindingScopeEnum.STAGE:
-            return list(Stage.objects.filter(api_id=gateway_id, id__in=scope_ids).values("id", "name"))
+            return list(Stage.objects.filter(gateway_id=gateway_id, id__in=scope_ids).values("id", "name"))
 
         elif scope_type == PluginBindingScopeEnum.RESOURCE:
             return list(Resource.objects.filter(api_id=gateway_id, id__in=scope_ids).values("id", "name"))

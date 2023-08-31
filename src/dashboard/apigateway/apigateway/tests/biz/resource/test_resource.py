@@ -103,8 +103,8 @@ class TestResourceHandler:
     def test_save_disabled_stages(self):
         gateway = G(Gateway)
         resource = G(Resource, api=gateway)
-        stage = G(Stage, api=gateway)
-        invalid_stage = G(Stage, api=gateway)
+        stage = G(Stage, gateway=gateway)
+        invalid_stage = G(Stage, gateway=gateway)
         G(StageResourceDisabled, resource=resource, stage=invalid_stage)
 
         # test save disabled stages

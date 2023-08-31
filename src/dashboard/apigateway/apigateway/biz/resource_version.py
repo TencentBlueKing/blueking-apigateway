@@ -110,7 +110,7 @@ class ResourceVersionHandler:
         # FIXME: 从manager迁移过来的, 但是为什么这里依赖于上层的slz? => 应该去掉!
         from apigateway.apps.resource_version.serializers import ResourceVersionSLZ
 
-        slz = ResourceVersionSLZ(data=data, context={"api": gateway})
+        slz = ResourceVersionSLZ(data=data, context={"gateway": gateway})
         slz.is_valid(raise_exception=True)
 
         slz.save(

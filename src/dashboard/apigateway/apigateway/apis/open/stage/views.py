@@ -38,7 +38,7 @@ class StageViewSet(viewsets.ModelViewSet):
     api_permission_exempt = True
 
     def get_queryset(self):
-        return Stage.objects.filter(api=self.request.gateway)
+        return Stage.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.StageV1SLZ(many=True)},
@@ -80,7 +80,7 @@ class StageV1ViewSet(viewsets.ViewSet):
         tags=["OpenAPI.Stage"],
     )
     def list_stages_with_resource_version(self, request, gateway_name: str, *args, **kwargs):
-        queryset = Stage.objects.filter(api=self.request.gateway)
+        queryset = Stage.objects.filter(gateway=self.request.gateway)
         slz = serializers.StageWithResourceVersionV1SLZ(
             queryset, many=True, context={"stage_release": Release.objects.get_stage_release(gateway=request.gateway)}
         )
@@ -92,7 +92,7 @@ class StageSyncViewSet(viewsets.ViewSet):
 
     @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.Stage"])
     def sync(self, request, gateway_name: str, *args, **kwargs):
-        instance = get_object_or_None(Stage, api=request.gateway, name=request.data.get("name", ""))
+        instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))
         slz = StageSLZ(
             instance,
             data=request.data,

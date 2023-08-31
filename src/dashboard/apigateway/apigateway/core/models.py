@@ -90,7 +90,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     objects = managers.GatewayManager()
 
     def __str__(self):
-        return f"<API: {self.pk}/{self.name}>"
+        return f"<Gateway: {self.pk}/{self.name}>"
 
     class Meta:
         verbose_name = "API"
@@ -146,7 +146,7 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     e.g. prod/stage
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT, db_column="api_id")
     name = models.CharField(max_length=64)
     description_i18n = I18nProperty(models.CharField(max_length=512, blank=True, null=True))
     description = description_i18n.default_field()
@@ -169,7 +169,7 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     class Meta:
         verbose_name = "Stage"
         verbose_name_plural = "Stage"
-        unique_together = ("api", "name")
+        unique_together = ("gateway", "name")
         db_table = "core_stage"
 
     @property
@@ -660,7 +660,9 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
 
     @property
     def detail(self):
-        return json.loads(self._detail)
+        if self._detail:
+            return json.loads(self._detail)
+        return {}
 
     @detail.setter
     def detail(self, detail: dict):

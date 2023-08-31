@@ -42,7 +42,7 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, api_name: str, name: str, **options):
         gateway = Gateway.objects.get(name=api_name)
-        stage = get_object_or_None(Stage, api=gateway, name=name)
+        stage = get_object_or_None(Stage, gateway=gateway, name=name)
 
         if stage:
             print(f"Stage [name={name}] exists and ignore")

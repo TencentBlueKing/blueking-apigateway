@@ -24,8 +24,8 @@ from apigateway.core.models import Resource, Stage
 
 class TestPluginBindingHandler:
     def test_get_scopes(self, fake_gateway):
-        s1 = G(Stage, api=fake_gateway)
-        s2 = G(Stage, api=fake_gateway)
+        s1 = G(Stage, gateway=fake_gateway)
+        s2 = G(Stage, gateway=fake_gateway)
 
         r1 = G(Resource, api=fake_gateway)
         r2 = G(Resource, api=fake_gateway)
@@ -33,9 +33,11 @@ class TestPluginBindingHandler:
         result = PluginBindingHandler.get_scopes(
             gateway_id=fake_gateway.id, scope_type=PluginBindingScopeEnum.STAGE, scope_ids=[s1.id, s2.id]
         )
+        result.sort(key=lambda x: x["id"])
         assert result == [{"id": s1.id, "name": s1.name}, {"id": s2.id, "name": s2.name}]
 
         result = PluginBindingHandler.get_scopes(
             gateway_id=fake_gateway.id, scope_type=PluginBindingScopeEnum.RESOURCE, scope_ids=[r1.id, r2.id]
         )
+        result.sort(key=lambda x: x["id"])
         assert result == [{"id": r1.id, "name": r1.name}, {"id": r2.id, "name": r2.name}]

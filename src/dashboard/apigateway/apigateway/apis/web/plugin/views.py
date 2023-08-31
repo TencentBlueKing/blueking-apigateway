@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -25,7 +26,7 @@ from rest_framework.generics import get_object_or_404
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.plugin.constants import PluginStyleEnum
+from apigateway.apps.plugin.constants import PluginStyleEnum, PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Resource, Stage
@@ -46,6 +47,7 @@ from .serializers import (
     name="get",
     decorator=swagger_auto_schema(
         query_serializer=PluginTypeQuerySLZ,
+        responses={status.HTTP_200_OK: PluginTypeSLZ(many=True)},
         tags=["WebAPI.Plugin"],
         operation_description="list the available plugin types",
     ),
@@ -81,19 +83,31 @@ class PluginTypeListApi(generics.ListAPIView):
 
     def get_queryset(self):
         """默认展示所有公开插件；不展示非公开插件"""
-        # 支持 keyword=abc 搜索
-        condition = Q()
-        keyword = self.request.query_params.get("keyword")
-        if keyword:
-            condition = Q(name__icontains=keyword) | Q(code__icontains=keyword)
 
-        # FIXME: 需要区分 stage 和 resource 的插件类型
-        return PluginType.objects.filter(is_public=True).filter(condition).order_by("code")
+        slz = PluginTypeQuerySLZ(data=self.request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        scope = data.get("scope")
+        if scope in (PluginTypeScopeEnum.STAGE.value, PluginTypeScopeEnum.RESOURCE.value):
+            condition = Q(scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value) | Q(scope=scope)
+        else:
+            condition = Q(scope=scope)
+
+        queryset = PluginType.objects.filter(is_public=True).filter(condition)
+
+        # 支持 keyword=abc 搜索
+        keyword = data.get("keyword")
+        if keyword:
+            queryset = queryset.filter(Q(name__icontains=keyword) | Q(code__icontains=keyword))
+
+        return queryset.order_by("code")
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: PluginFormSLZ()},
         tags=["WebAPI.Plugin"],
         operation_description="retrieve the plugin form data by plugin type",
     ),
@@ -130,7 +144,7 @@ class ScopeValidationMixin:
         scope_id = self.kwargs["scope_id"]
 
         if scope_type == "stage":
-            if not Stage.objects.filter(api=gateway, id=scope_id).exists():
+            if not Stage.objects.filter(gateway=gateway, id=scope_id).exists():
                 raise error_codes.INVALID_ARGUMENT.format(f"scope_type {scope_type}, scope_id {scope_id} is invalid")
         elif scope_type == "resource":
             if not Resource.objects.filter(api=gateway, id=scope_id).exists():
@@ -140,15 +154,25 @@ class ScopeValidationMixin:
 
 
 class PluginTypeCodeValidationMixin:
-    def validate_code(self):
+    def validate_code(self, type_id=0):
         code = self.kwargs["code"]
-        if not PluginType.objects.filter(code=code).exists():
+
+        plugin_type = PluginType.objects.filter(code=code).first()
+        if not plugin_type:
             raise error_codes.INVALID_ARGUMENT.format(f"code {code} is invalid")
+
+        if type_id:
+            if plugin_type != type_id:
+                raise error_codes.INVALID_ARGUMENT.format(
+                    f"code {code} in query_string is not matched the type_id={type_id.id}(code={type_id.code}) in body"
+                )
 
 
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
+        responses={status.HTTP_201_CREATED: ""},
+        request_body=PluginConfigCreateInputSLZ,
         tags=["WebAPI.Plugin"],
         operation_description="create the plugin config, and bind to the scope_type/scope_id",
     ),
@@ -160,9 +184,10 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
     def get_queryset(self):
         return PluginConfig.objects.prefetch_related("type").filter(gateway=self.request.gateway)
 
+    @transaction.atomic
     def perform_create(self, serializer):
         self.validate_scope()
-        self.validate_code()
+        self.validate_code(type_id=serializer.validated_data["type_id"])
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
 
@@ -204,24 +229,28 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: PluginConfigRetrieveUpdateInputSLZ()},
         tags=["WebAPI.Plugin"],
     ),
 )
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: PluginConfigRetrieveUpdateInputSLZ()},
         tags=["WebAPI.Plugin"],
     ),
 )
 @method_decorator(
     name="patch",
     decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: PluginConfigRetrieveUpdateInputSLZ()},
         tags=["WebAPI.Plugin"],
     ),
 )
 @method_decorator(
     name="delete",
     decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Plugin"],
     ),
 )
@@ -242,7 +271,8 @@ class PluginConfigRetrieveUpdateDestroyApi(
 
     def perform_update(self, serializer):
         self.validate_scope()
-        self.validate_code()
+        self.validate_code(type_id=serializer.validated_data["type_id"])
+
         super().perform_update(serializer)
         request = self.request
 
@@ -257,6 +287,7 @@ class PluginConfigRetrieveUpdateDestroyApi(
             comment=_("更新插件"),
         )
 
+    @transaction.atomic
     def perform_destroy(self, instance):
         self.validate_scope()
         self.validate_code()
@@ -282,7 +313,7 @@ class PluginConfigRetrieveUpdateDestroyApi(
         )
 
 
-class PluginBindingRetrieveApi(generics.RetrieveAPIView, PluginTypeCodeValidationMixin):
+class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: PluginBindingListOutputSLZ()},
         tags=["WebAPI.Plugin"],
@@ -305,7 +336,7 @@ class PluginBindingRetrieveApi(generics.RetrieveAPIView, PluginTypeCodeValidatio
             elif binding.scope_type == "resource":
                 resource_ids.append(binding.scope_id)
 
-        stage_names = Stage.objects.filter(api=gateway, id__in=stage_ids).values_list("name", flat=True)
+        stage_names = Stage.objects.filter(gateway=gateway, id__in=stage_ids).values_list("name", flat=True)
         resource_names = Resource.objects.filter(api=gateway, id__in=resource_ids).values_list("name", flat=True)
         data = {
             "stages": stage_names,

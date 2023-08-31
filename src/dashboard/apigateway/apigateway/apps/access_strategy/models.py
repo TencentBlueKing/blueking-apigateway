@@ -89,7 +89,7 @@ class AccessStrategy(ConfigModelMixin):
     comment = models.CharField(max_length=512, blank=True, default="")
 
     def __str__(self):
-        return f"<AccessStrategy: {self.api}/{self.name}/{self.type}>"
+        return f"<AccessStrategy: {self.pk}/{self.api}/{self.name}/{self.type}>"
 
     class Meta:
         verbose_name = _("访问策略")

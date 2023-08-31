@@ -108,24 +108,24 @@ class GatewayManager(models.Manager):
 
 class StageManager(models.Manager):
     def get_names(self, gateway_id):
-        return list(self.filter(api_id=gateway_id).values_list("name", flat=True))
+        return list(self.filter(gateway_id=gateway_id).values_list("name", flat=True))
 
     def get_ids(self, gateway_id):
-        return list(self.filter(api_id=gateway_id).values_list("id", flat=True))
+        return list(self.filter(gateway_id=gateway_id).values_list("id", flat=True))
 
     def get_name_id_map(self, gateway):
-        return dict(self.filter(api_id=gateway.id).values_list("name", "id"))
+        return dict(self.filter(gateway_id=gateway.id).values_list("name", "id"))
 
     def get_id_to_fields(self, gateway_id: int, fields: List[str]) -> Dict[int, Dict[str, Any]]:
-        return {stage["id"]: stage for stage in self.filter(api_id=gateway_id).values(*fields)}
+        return {stage["id"]: stage for stage in self.filter(gateway_id=gateway_id).values(*fields)}
 
     def filter_valid_ids(self, gateway, ids):
-        return list(self.filter(api_id=gateway.id, id__in=ids).values_list("id", flat=True))
+        return list(self.filter(gateway_id=gateway.id, id__in=ids).values_list("id", flat=True))
 
     def get_micro_gateway_id_to_fields(self, gateway_id: int) -> Dict[str, Dict[str, Any]]:
         return {
             item["micro_gateway_id"]: item
-            for item in self.filter(api_id=gateway_id).values("id", "name", "micro_gateway_id")
+            for item in self.filter(gateway_id=gateway_id).values("id", "name", "micro_gateway_id")
             if item["micro_gateway_id"]
         }
 
@@ -133,18 +133,18 @@ class StageManager(models.Manager):
         gateway_id_to_name = {g.id: g.name for g in gateways}
 
         gateway_name_to_stage_names = defaultdict(list)
-        stages = self.filter(api_id__in=gateway_id_to_name.keys(), status=StageStatusEnum.ACTIVE.value).values(
-            "api_id", "name"
+        stages = self.filter(gateway_id__in=gateway_id_to_name.keys(), status=StageStatusEnum.ACTIVE.value).values(
+            "gateway_id", "name"
         )
         for stage in stages:
-            gateway_id = stage["api_id"]
+            gateway_id = stage["gateway_id"]
             gateway_name = gateway_id_to_name[gateway_id]
             gateway_name_to_stage_names[gateway_name].append(stage["name"])
 
         return gateway_name_to_stage_names
 
     def get_name(self, gateway_id: int, id_: int) -> Optional[str]:
-        return self.filter(api_id=gateway_id, id=id_).values_list("name", flat=True).first()
+        return self.filter(gateway_id=gateway_id, id=id_).values_list("name", flat=True).first()
 
 
 class ResourceManager(models.Manager):
@@ -1131,7 +1131,7 @@ class SslCertificateBindingManager(models.Manager):
         if scope_type == SSLCertificateBindingScopeTypeEnum.STAGE.value:
             from apigateway.core.models import Stage
 
-            return Stage.objects.filter(api_id=gateway_id, id__in=scope_ids)
+            return Stage.objects.filter(gateway_id=gateway_id, id__in=scope_ids)
 
         raise error_codes.INVALID_ARGUMENT.format(f"unsupported scope_type: {scope_type}")
 

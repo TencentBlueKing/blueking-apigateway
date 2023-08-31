@@ -38,13 +38,19 @@ from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendCo
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.factories import SchemaFactory
-from apigateway.core.constants import APIHostingTypeEnum, ProxyTypeEnum
+from apigateway.core.constants import (
+    APIHostingTypeEnum,
+    ProxyTypeEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusTypeEnum,
+)
 from apigateway.core.models import (
     Backend,
     BackendConfig,
     Gateway,
     MicroGateway,
     Proxy,
+    PublishEvent,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -54,17 +60,16 @@ from apigateway.core.models import (
     SslCertificate,
     SslCertificateBinding,
     Stage,
-    StageItem,
-    StageItemConfig,
 )
 from apigateway.schema import instances
 from apigateway.schema.data.meta_schema import init_meta_schemas
-from apigateway.tests.utils.testing import get_response_json
+from apigateway.tests.utils.testing import dummy_time, get_response_json
 from apigateway.utils.redis_utils import REDIS_CLIENTS, get_default_redis_client
 
 UserModel = get_user_model()
 
 FAKE_USERNAME = "admin"
+
 
 # pytest fixtures
 
@@ -160,7 +165,7 @@ def fake_gateway_for_micro_gateway(fake_gateway):
 
 @pytest.fixture
 def fake_stage(fake_gateway, faker):
-    return G(Stage, api=fake_gateway, status=1, name=faker.pystr(), description=faker.bothify("????????"))
+    return G(Stage, gateway=fake_gateway, status=1, name=faker.pystr(), description=faker.bothify("????????"))
 
 
 @pytest.fixture
@@ -334,7 +339,24 @@ def fake_release(fake_gateway, fake_stage, fake_resource_version):
 
 @pytest.fixture
 def fake_release_history(fake_gateway, fake_stage, fake_resource_version):
-    return G(ReleaseHistory, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+    return G(
+        ReleaseHistory,
+        gateway=fake_gateway,
+        stage=fake_stage,
+        resource_version=fake_resource_version,
+        created_time=dummy_time.time,
+    )
+
+
+@pytest.fixture
+def fake_publish_event(fake_release_history):
+    return G(
+        PublishEvent,
+        publish=fake_release_history,
+        name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
+        status=PublishEventStatusTypeEnum.DOING.value,
+        created_time=dummy_time.time,
+    )
 
 
 @pytest.fixture
@@ -547,30 +569,13 @@ def fake_node_data(unique_stage_item_name):
 
 
 @pytest.fixture
-def fake_stage_item(fake_gateway):
-    return G(StageItem, api=fake_gateway)
-
-
-@pytest.fixture
-def fake_stage_item_config(fake_stage_item):
-    stage = G(Stage, api=fake_stage_item.api)
-    return G(
-        StageItemConfig,
-        api=fake_stage_item.api,
-        stage=stage,
-        stage_item=fake_stage_item,
-        config={"nodes": [{"host": "1.0.0.1", "weight": 100}]},
-    )
-
-
-@pytest.fixture
 def fake_ssl_certificate(fake_gateway):
     return G(SslCertificate, api=fake_gateway)
 
 
 @pytest.fixture
 def fake_ssl_certificate_binding(fake_ssl_certificate):
-    stage = G(Stage, api=fake_ssl_certificate.api)
+    stage = G(Stage, gateway=fake_ssl_certificate.api)
     return G(
         SslCertificateBinding,
         api=fake_ssl_certificate.api,
@@ -615,6 +620,7 @@ def echo_plugin_type(echo_plugin_type_schema):
     return G(
         PluginType,
         code="echo",
+        name="echo",
         schema=echo_plugin_type_schema,
         is_public=True,
     )

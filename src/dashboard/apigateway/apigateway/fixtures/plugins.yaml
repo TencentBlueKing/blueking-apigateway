@@ -99,6 +99,7 @@
     name: 跨域资源共享（CORS）
     name_en: Cross-Origin Resource Sharing (CORS)
     is_public: true
+    scope: stage_and_resource
     schema:
     - bk-cors
     - plugin
@@ -335,6 +336,7 @@
     name: Header 转换
     name_en: Header transformation
     is_public: true
+    scope: stage_and_resource
     schema:
     - bk-header-rewrite
     - plugin
@@ -636,6 +638,7 @@
     name: IP 访问保护
     name_en: IP restriction
     is_public: true
+    scope: stage_and_resource
     schema:
     - bk-ip-restriction
     - plugin
@@ -839,6 +842,7 @@
     name: 频率控制
     name_en: Rate Limit
     is_public: true
+    scope: stage_and_resource
     schema:
     - bk-rate-limit
     - plugin

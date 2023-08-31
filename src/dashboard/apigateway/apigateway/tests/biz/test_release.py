@@ -20,10 +20,12 @@ from ddf import G
 from apigateway.biz.release import ReleaseHandler
 from apigateway.core.constants import (
     GatewayStatusEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusTypeEnum,
     PublishSourceEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import Release, ReleaseHistory, Stage
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, Stage
 
 
 class TestReleaseHandler:
@@ -31,8 +33,8 @@ class TestReleaseHandler:
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.save()
 
-        stage_1 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
-        G(Stage, api=fake_gateway, status=StageStatusEnum.INACTIVE.value)
+        stage_1 = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        G(Stage, gateway=fake_gateway, status=StageStatusEnum.INACTIVE.value)
         G(Release, gateway=fake_gateway, stage=stage_1)
 
         assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == [stage_1.id]
@@ -44,3 +46,54 @@ class TestReleaseHandler:
     def test_save_release_history(self, fake_release):
         ReleaseHandler.save_release_history(fake_release, PublishSourceEnum.VERSION_PUBLISH, "test")
         assert ReleaseHistory.objects.filter(gateway=fake_release.gateway, stage=fake_release.stage).count() == 1
+
+    def test_get_latest_publish_event_by_release_history_ids(self, fake_release_history, fake_publish_event):
+        assert (
+            ReleaseHandler.get_latest_publish_event_by_release_history_ids([fake_release_history.id])[
+                fake_release_history.id
+            ]
+            == fake_publish_event
+        )
+
+        event_2 = G(
+            PublishEvent,
+            publish=fake_release_history,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
+            status=PublishEventStatusTypeEnum.SUCCESS.value,
+        )
+        assert (
+            ReleaseHandler.get_latest_publish_event_by_release_history_ids([fake_release_history.id])[
+                fake_release_history.id
+            ]
+            == event_2
+        )
+
+    def test_batch_get_stage_release_status(self, fake_stage, fake_release_history, fake_publish_event):
+        assert (
+            ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
+            == PublishEventStatusTypeEnum.DOING.value
+        )
+        fake_publish_event.status = PublishEventStatusTypeEnum.FAILURE.value
+        fake_publish_event.save()
+
+        assert (
+            ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
+            == PublishEventStatusTypeEnum.FAILURE.value
+        )
+
+        fake_publish_event.status = PublishEventStatusTypeEnum.SUCCESS.value
+        fake_publish_event.save()
+
+        assert (
+            ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
+            == PublishEventStatusTypeEnum.DOING.value
+        )
+
+        fake_publish_event.name = PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
+        fake_publish_event.status = PublishEventStatusTypeEnum.SUCCESS.value
+        fake_publish_event.save()
+
+        assert (
+            ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
+            == PublishEventStatusTypeEnum.SUCCESS.value
+        )

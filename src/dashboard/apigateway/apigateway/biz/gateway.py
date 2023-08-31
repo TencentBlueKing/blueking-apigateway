@@ -71,13 +71,13 @@ class GatewayHandler:
             ]
         }
         """
-        stages = Stage.objects.filter(api_id__in=gateway_ids).values("id", "name", "api_id")
+        stages = Stage.objects.filter(gateway_id__in=gateway_ids).values("id", "name", "gateway_id")
         released_stage_ids = ReleaseHandler.get_released_stage_ids(gateway_ids)
         stage_release_status = dict.fromkeys(released_stage_ids, True)
 
         gateway_id_to_stages = defaultdict(list)
         for stage in stages:
-            gateway_id_to_stages[stage["api_id"]].append(
+            gateway_id_to_stages[stage["gateway_id"]].append(
                 {
                     "id": stage["id"],
                     "name": stage["name"],

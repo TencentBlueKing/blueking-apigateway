@@ -30,13 +30,13 @@ class TestIAMResourceAPIView:
             {
                 "resource_type": "stage",
             },
-            fake_stage.api,
+            fake_stage.gateway,
             data={
                 "method": "list_instance",
                 "type": "stage",
                 "filter": {
                     "parent": {
-                        "id": str(fake_stage.api.id),
+                        "id": str(fake_stage.gateway.id),
                         "type": "gateway",
                     },
                 },

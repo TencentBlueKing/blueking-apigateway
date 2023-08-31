@@ -47,7 +47,7 @@ class ResourceHandler:
             resource=resource, stage__id__in=disabled_stage_ids
         ).values_list("stage__id", flat=True)
         disabled_stages_to_add = Stage.objects.filter(
-            api=gateway, id__in=list(set(disabled_stage_ids) - set(exist_disabled_stage_ids))
+            gateway=gateway, id__in=list(set(disabled_stage_ids) - set(exist_disabled_stage_ids))
         )
         for stage in disabled_stages_to_add:
             StageResourceDisabled.objects.update_or_create(stage=stage, resource=resource)

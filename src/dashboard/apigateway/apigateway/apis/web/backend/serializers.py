@@ -70,7 +70,7 @@ class BackendInputSLZ(serializers.Serializer):
 
     def validate(self, attrs):
         # 校验网关下所有的stage的配置都提交了
-        stages = Stage.objects.filter(api=attrs["gateway"]).only("id", "name")
+        stages = Stage.objects.filter(gateway=attrs["gateway"]).only("id", "name")
         stage_id_name = {stage.id: stage.name for stage in stages}
 
         for backend_config in attrs["configs"]:

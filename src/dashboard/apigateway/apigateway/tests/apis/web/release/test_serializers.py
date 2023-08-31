@@ -21,15 +21,17 @@ import datetime
 import pytest
 from dateutil.tz import tzutc
 from django.http import Http404
-from django.test import TestCase
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.release import serializers
-from apigateway.core.models import Gateway, ReleaseHistory, ResourceVersion, Stage
+from apigateway.apis.web.release.serializers import PublishEventQueryOutputSLZ, ReleaseHistoryOutputSLZ
+from apigateway.biz.release import ReleaseHandler
+from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
+from apigateway.core.models import Gateway, PublishEvent, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, create_request, dummy_time
 
 
-class ReleaseBatchInputSLZ:
+class TestReleaseBatchInputSLZ:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
         self.gateway = G(Gateway)
@@ -37,11 +39,11 @@ class ReleaseBatchInputSLZ:
         self.request.gateway = self.gateway
 
     def test_validate_stage_ids(self, mocker):
-        stage_1 = G(Stage, api=self.gateway)
-        stage_2 = G(Stage, api=self.gateway)
+        stage_1 = G(Stage, gateway=self.gateway)
+        stage_2 = G(Stage, gateway=self.gateway)
 
         gateway = G(Gateway)
-        stage_3 = G(Stage, api=gateway)
+        stage_3 = G(Stage, gateway=gateway)
 
         resource_version = G(ResourceVersion, gateway=self.gateway)
 
@@ -49,24 +51,21 @@ class ReleaseBatchInputSLZ:
             {
                 "stage_ids": [stage_1.id, stage_2.id],
                 "resource_version_id": resource_version.id,
-                "comment": "test",
                 "expected": {
                     "gateway": self.gateway,
                     "stage_ids": [stage_1.id, stage_2.id],
                     "resource_version_id": resource_version.id,
-                    "comment": "test",
                 },
             },
             # error, stage_3 not belong to api
             {
                 "stage_ids": [stage_3.id, stage_1.id],
                 "resource_version_id": resource_version.id,
-                "comment": "test",
                 "will_error": True,
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"api": self.gateway})
+            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"gateway": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()
@@ -79,7 +78,7 @@ class ReleaseBatchInputSLZ:
         gateway = create_gateway()
         resource_version_1 = G(ResourceVersion, gateway=gateway)
 
-        stage = G(Stage, api=self.gateway)
+        stage = G(Stage, gateway=self.gateway)
         resource_version_2 = G(ResourceVersion, gateway=self.gateway)
 
         data = [
@@ -87,24 +86,21 @@ class ReleaseBatchInputSLZ:
             {
                 "stage_ids": [stage.id],
                 "resource_version_id": resource_version_2.id,
-                "comment": "test",
                 "expected": {
                     "gateway": self.gateway,
                     "stage_ids": [stage.id],
                     "resource_version_id": resource_version_2.id,
-                    "comment": "test",
                 },
             },
             # error, resoruce_version not belong to self.gateway
             {
                 "stage_ids": [stage.id],
                 "resource_version_id": resource_version_1.id,
-                "comment": "test",
                 "will_error": True,
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"api": self.gateway})
+            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"gateway": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()
@@ -114,7 +110,7 @@ class ReleaseBatchInputSLZ:
                 assert slz.validated_data == test["expected"]
 
 
-class TestReleaseHistoryQueryInputSLZ(TestCase):
+class TestReleaseHistoryQueryInputSLZ:
     def test_to_internal_value(self):
         data = [
             {
@@ -150,34 +146,84 @@ class TestReleaseHistoryQueryInputSLZ(TestCase):
         for test in data:
             slz = serializers.ReleaseHistoryQueryInputSLZ(data=test)
             slz.is_valid()
-            self.assertFalse(slz.errors, slz.errors)
-            self.assertEqual(slz.validated_data, test["expected"], slz.validated_data)
+            assert not slz.errors
+            assert slz.validated_data == test["expected"]
 
 
 class TestReleaseHistoryOutputSLZ:
     def test_to_representation(self):
         gateway = G(Gateway)
-        stage = G(Stage, api=gateway)
+        stage = G(Stage, gateway=gateway)
         resource_version = G(ResourceVersion, gateway=gateway, name="t1", version="1.0.0", title="测试", comment="test1")
         release_history = G(
             ReleaseHistory,
             gateway=gateway,
             stage=stage,
+            source="test",
             resource_version=resource_version,
             created_time=dummy_time.time,
         )
         release_history.stages.add(stage)
+        event_1 = G(
+            PublishEvent,
+            publish=release_history,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
+            status=PublishEventStatusTypeEnum.FAILURE.value,
+            created_time=dummy_time.time + datetime.timedelta(seconds=10),
+        )
 
-        slz = serializers.ReleaseHistoryOutputSLZ(instance=release_history)
+        slz = ReleaseHistoryOutputSLZ(
+            release_history,
+            context={
+                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids(
+                    [release_history.id]
+                ),
+            },
+        )
         assert slz.data == {
+            "publish_id": release_history.id,
             "stage_names": [stage.name],
             "created_time": dummy_time.str,
-            "comment": release_history.comment,
             "created_by": release_history.created_by,
-            "resource_version_name": resource_version.name,
-            "resource_version_title": resource_version.title,
-            "resource_version_comment": resource_version.comment,
             "resource_version_display": "1.0.0(测试)",
-            "status": release_history.status,
-            "message": release_history.message,
+            "status": f"{event_1.name} {event_1.status}",
+            "source": release_history.source,
+            "cost": (event_1.created_time - release_history.created_time).total_seconds(),
+            "is_running": False,
+        }
+
+
+class TestPublishEventQueryOutputSLZ:
+    def test_to_representation(self, fake_stage, fake_release_history, fake_publish_event):
+        fake_release_history.stages.add(fake_stage)
+        slz = PublishEventQueryOutputSLZ(
+            fake_release_history,
+            context={
+                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids(
+                    [fake_release_history.id]
+                ),
+                "publish_events": ReleaseHandler.get_publish_events_by_release_history_id(fake_release_history.id),
+            },
+        )
+        assert slz.data == {
+            "publish_id": fake_release_history.id,
+            "stage_names": [fake_stage.name],
+            "resource_version_display": fake_release_history.resource_version.object_display,
+            "created_time": dummy_time.str,
+            "created_by": fake_release_history.created_by,
+            "source": fake_release_history.source,
+            "cost": 0,
+            "status": f"{fake_publish_event.name} {fake_publish_event.status}",
+            "is_running": True,
+            "events": [
+                {
+                    "event_id": fake_publish_event.id,
+                    "publish_id": fake_release_history.id,
+                    "name": fake_publish_event.name,
+                    "step": fake_publish_event.step,
+                    "status": fake_publish_event.status,
+                    "created_time": dummy_time.str,
+                    "detail": "{}",
+                }
+            ],
         }

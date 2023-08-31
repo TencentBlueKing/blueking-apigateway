@@ -42,8 +42,8 @@ class TestGatewayHandler:
 
     def test_get_stages_with_release_status(self, fake_gateway):
         Gateway.objects.filter(id=fake_gateway.id).update(status=GatewayStatusEnum.ACTIVE.value)
-        stage_1 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
-        stage_2 = G(Stage, api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        stage_1 = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        stage_2 = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
 
         G(Release, gateway=fake_gateway, stage=stage_1)
         expected = {
@@ -221,7 +221,7 @@ class TestGatewayHandler:
         ).exists()
 
         assert JWT.objects.filter(api=fake_gateway).exists()
-        assert Stage.objects.filter(api=fake_gateway).exists()
+        assert Stage.objects.filter(gateway=fake_gateway).exists()
         assert AlarmStrategy.objects.filter(api=fake_gateway).exists()
         assert APIRelatedApp.objects.filter(api=fake_gateway, bk_app_code="test").exists()
 
