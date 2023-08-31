@@ -92,7 +92,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
 
 
 class ResourceAuthConfigSLZ(serializers.Serializer):
-    auth_verified_required = serializers.BooleanField()
+    auth_verified_required = serializers.BooleanField(required=False)
     app_verified_required = serializers.BooleanField(required=False)
     resource_perm_required = serializers.BooleanField(required=False)
 
@@ -350,7 +350,10 @@ class ResourceImportInputSLZ(serializers.Serializer):
         for resource in resources:
             label_names.update(resource.get("labels", []))
 
-        if len(label_names) > settings.MAX_LABEL_COUNT_PER_GATEWAY:
+        if not label_names:
+            return
+
+        if len(label_names | set(self.context["exist_label_names"])) > settings.MAX_LABEL_COUNT_PER_GATEWAY:
             raise serializers.ValidationError(
                 _("每个网关最多创建 {max_count} 个标签。").format(max_count=settings.MAX_LABEL_COUNT_PER_GATEWAY)
             )
@@ -404,12 +407,8 @@ class ResourceExportOutputSLZ(serializers.Serializer):
 
     labels = serializers.SerializerMethodField()
     backend_name = serializers.SerializerMethodField()
-    Backend_config = serializers.SerializerMethodField()
+    backend_config = serializers.SerializerMethodField()
     auth_config = serializers.SerializerMethodField()
-
-    # 兼容旧版 yaml 逻辑，保留几个小版本，在某一大版本可删除
-    proxy_type = serializers.SerializerMethodField()
-    proxy_configs = serializers.SerializerMethodField()
 
     def get_labels(self, obj):
         labels = self.context["labels"].get(obj.id, [])
@@ -417,7 +416,7 @@ class ResourceExportOutputSLZ(serializers.Serializer):
 
     def get_backend_name(self, obj):
         proxy = self.context["proxies"][obj.id]
-        return self.context["backends"].get(proxy.backend_id, "")
+        return self.context["backends"][proxy.backend_id]
 
     def get_backend_config(self, obj):
         proxy = self.context["proxies"][obj.id]
@@ -426,16 +425,8 @@ class ResourceExportOutputSLZ(serializers.Serializer):
     def get_auth_config(self, obj):
         return self.context["auth_configs"][obj.id]
 
-    def get_proxy_type(self, obj):
-        proxy = self.context["proxies"][obj.id]
-        return proxy.type
-
-    def get_proxy_configs(self, obj):
-        return self.get_backend_config(obj)
-
 
 class BackendPathCheckInputSLZ(serializers.Serializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
     path = serializers.RegexField(
         PATH_PATTERN,
         label="请求路径",
@@ -445,7 +436,7 @@ class BackendPathCheckInputSLZ(serializers.Serializer):
             "invalid": gettext_lazy("斜线(/)开头的合法URL路径，不包含http(s)开头的域名。"),
         },
     )
-    backend_id = serializers.IntegerField(required=False)
+    backend_id = serializers.IntegerField(allow_null=True, required=False)
     backend_path = serializers.RegexField(
         PATH_PATTERN,
         label="Path",
@@ -461,12 +452,8 @@ class BackendPathCheckInputSLZ(serializers.Serializer):
 
     def to_internal_value(self, data):
         data = super().to_internal_value(data)
-        return {
-            "path": data.get("path", ""),
-            "backend_config": {
-                "path": data["backend_path"],
-            },
-        }
+        data["backend_config"] = {"path": data["backend_path"]}
+        return data
 
 
 class BackendPathCheckOutputSLZ(serializers.Serializer):

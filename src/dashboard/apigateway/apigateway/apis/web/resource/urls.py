@@ -33,7 +33,7 @@ from apigateway.apis.web.resource.views import (
 urlpatterns = [
     path("", ResourceListCreateApi.as_view(), name="resource.list_create"),
     path("<int:id>/", ResourceRetrieveUpdateDestroyApi.as_view(), name="resource.retrieve_update_destroy"),
-    path("batch/", ResourceBatchUpdateDestroyApi.as_view(), name="resource.batch.update_destroy"),
+    path("batch/", ResourceBatchUpdateDestroyApi.as_view(), name="resource.batch_update_destroy"),
     path(
         "<int:resource_id>/",
         include(

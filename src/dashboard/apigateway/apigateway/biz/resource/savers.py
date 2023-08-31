@@ -18,10 +18,12 @@
 import json
 from typing import Any, Dict, List
 
+from django.db.models import Count
 from django.utils.translation import gettext as _
 from pydantic import parse_obj_as
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
+from apigateway.biz.resource import ResourceHandler
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ProxyTypeEnum
 from apigateway.core.models import Context, Gateway, Proxy, Resource
@@ -29,6 +31,10 @@ from apigateway.core.models import Context, Gateway, Proxy, Resource
 from .models import ResourceData
 
 BULK_BATCH_SIZE = 100
+
+
+class ResourceProxyDuplicateError(Exception):
+    """资源存在多个后端配置"""
 
 
 class ResourcesSaver:
@@ -43,16 +49,23 @@ class ResourcesSaver:
         return cls(gateway, resource_data_list, username)
 
     def save(self) -> List[Resource]:
+        self._check_proxies(
+            [resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource]
+        )
+
         has_created = self._save_resources()
         if has_created:
             self._complete_with_resource()
 
-        resource_ids = [resource_data.resource.id for resource_data in self.resource_data_list]
+        # 添加 if 条件，为通过 lint 校验
+        resource_ids = [
+            resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource
+        ]
         self._save_proxies(resource_ids)
         self._save_auth_configs(resource_ids)
         self._save_resource_labels(resource_ids)
 
-        return [resource_data.resource for resource_data in self.resource_data_list]
+        return [resource_data.resource for resource_data in self.resource_data_list if resource_data.resource]
 
     def _save_resources(self) -> bool:
         add_resources = []
@@ -70,7 +83,7 @@ class ResourcesSaver:
                     proxy_id=0,
                     **resource_data.basic_data,
                 )
-                add_resources.append(resource_data)
+                add_resources.append(resource)
 
         if add_resources:
             Resource.objects.bulk_create(add_resources, batch_size=BULK_BATCH_SIZE)
@@ -88,6 +101,7 @@ class ResourcesSaver:
             if resource_data.resource:
                 continue
 
+            # 资源中，不应该存在同名资源，但由于 DB 中无约束规则，为防止意外，添加此校验
             resource = resources[resource_data.name]
             if resource_data.method != resource.method or resource_data.path != resource.path:
                 raise ValueError(
@@ -98,6 +112,23 @@ class ResourcesSaver:
 
             resource_data.resource = resource
 
+    def _check_proxies(self, resource_ids: List[int]):
+        if not resource_ids:
+            return
+
+        proxy_count = (
+            Proxy.objects.filter(resource_id__in=resource_ids)
+            .values("resource_id")
+            .annotate(count=Count("resource_id"))
+        )
+        duplicate_resource_id = [item["resource_id"] for item in proxy_count if item["count"] > 1]
+        if duplicate_resource_id:
+            raise ResourceProxyDuplicateError(
+                _("网关资源 (id={resource_ids}) 存在多个后端配置，请联系网关管理员检查。").format(
+                    resource_ids=", ".join(map(str, duplicate_resource_id))
+                )
+            )
+
     def _save_proxies(self, resource_ids: List[int]):
         proxies = {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)}
         schema = SchemaFactory().get_proxy_schema(ProxyTypeEnum.HTTP.value)
@@ -105,6 +136,8 @@ class ResourcesSaver:
         add_proxies = []
         update_proxies = []
         for resource_data in self.resource_data_list:
+            assert resource_data.resource
+
             proxy = proxies.get(resource_data.resource.id)
             if proxy:
                 proxy.__dict__.update(
@@ -119,6 +152,7 @@ class ResourcesSaver:
                     resource=resource_data.resource,
                     type=ProxyTypeEnum.HTTP.value,
                     backend=resource_data.backend,
+                    # TODO: 1.13 后续 issue 统一去除 schema
                     schema=schema,
                     _config=resource_data.backend_config.json(),
                 )
@@ -128,7 +162,9 @@ class ResourcesSaver:
             Proxy.objects.bulk_create(add_proxies, batch_size=BULK_BATCH_SIZE)
 
         if update_proxies:
-            Proxy.objects.bulk_update(update_proxies, fields=["_config"], batch_size=BULK_BATCH_SIZE)
+            Proxy.objects.bulk_update(
+                update_proxies, fields=["type", "backend", "schema", "_config"], batch_size=BULK_BATCH_SIZE
+            )
 
     def _save_auth_configs(self, resource_ids: List[int]):
         contexts = {
@@ -144,11 +180,14 @@ class ResourcesSaver:
         add_contexts = []
         update_contexts = []
         for resource_data in self.resource_data_list:
-            context = contexts[resource_data.resource.id]
-            auth_config = context.config
-            auth_config.update(resource_data.auth_config)
+            assert resource_data.resource
+
+            context = contexts.get(resource_data.resource.id)
+
+            auth_config = (context and context.config) or ResourceHandler.get_default_auth_config()
+            auth_config.update(resource_data.auth_config.dict())
+
             if context:
-                # merge context config
                 context.__dict__.update(_config=json.dumps(auth_config))
                 update_contexts.append(context)
             else:
@@ -177,6 +216,8 @@ class ResourcesSaver:
 
         add_resource_labels = []
         for resource_data in self.resource_data_list:
+            assert resource_data.resource
+
             for label_id in resource_data.label_ids:
                 key = f"{resource_data.resource.id}:{label_id}"
                 if key in remaining_resource_labels:

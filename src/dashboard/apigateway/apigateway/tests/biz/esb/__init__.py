@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,39 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
-
-from apigateway.utils.list import chunk_list, get_duplicate_items
-
-
-@pytest.mark.parametrize(
-    "lst, n, expected",
-    [
-        ([], 2, []),
-        ([1], 2, [[1]]),
-        ([1, 2], 2, [[1, 2]]),
-        ([1, 2, 3], 2, [[1, 2], [3]]),
-        ([1, 2, 3, 4], 2, [[1, 2], [3, 4]]),
-    ],
-)
-def test_chunk_list(lst, n, expected):
-    result = list(chunk_list(lst, n))
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    "items, expected",
-    [
-        (
-            ["foo", "bar", "foo"],
-            ["foo"],
-        ),
-        (
-            [1, 2, 3, 2],
-            [2],
-        ),
-    ],
-)
-def test_get_duplicate_items(items, expected):
-    result = get_duplicate_items(items)
-    assert result == expected

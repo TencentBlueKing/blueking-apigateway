@@ -28,7 +28,7 @@ class ResourceAuthConfig(BaseModel):
     resource_perm_required: bool = Field(default=True)
 
 
-class BackendConfig(BaseModel):
+class ResourceBackendConfig(BaseModel):
     method: str
     path: str
     match_subpath: bool = Field(default=False)
@@ -50,7 +50,7 @@ class ResourceData(BaseModel):
     auth_config: ResourceAuthConfig = Field(...)
     # backend
     backend: Optional[Backend] = Field(default=None)
-    backend_config: BackendConfig = Field(...)
+    backend_config: ResourceBackendConfig = Field(...)
     # label
     label_ids: List[int] = Field(default_factory=list)
     # 扩展数据
@@ -60,11 +60,11 @@ class ResourceData(BaseModel):
         arbitrary_types_allowed = True
 
     @property
-    def basic_data(self):
-        return self.dict(include=self.basic_field_names)
+    def basic_data(self) -> Dict[str, Any]:
+        return self.dict(include=set(self.basic_field_names()))
 
     @staticmethod
-    def basic_field_names():
+    def basic_field_names() -> List[str]:
         return [
             "name",
             "description",
@@ -76,7 +76,10 @@ class ResourceData(BaseModel):
             "allow_apply_permission",
         ]
 
-    def snapshot(self):
+    def snapshot(self) -> Dict[str, Any]:
+        assert self.resource
+        assert self.backend
+
         return {
             "id": self.resource.id,
             "name": self.name,
@@ -88,6 +91,6 @@ class ResourceData(BaseModel):
             "allow_apply_permission": self.allow_apply_permission,
             "auth_config": self.auth_config.dict(),
             "backend_id": self.backend.id,
-            "backend_config": self.backend.dict(),
+            "backend_config": self.backend_config.dict(),
             "metadata": self.metadata,
         }

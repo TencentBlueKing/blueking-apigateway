@@ -20,6 +20,7 @@ from django.db import transaction
 from rest_framework import generics
 
 from apigateway.apis.web.resource.serializers import ResourceImportInputSLZ
+from apigateway.apps.label.models import APILabel
 from apigateway.biz.resource.importer.importers import ResourcesImporter
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Resource, Stage
@@ -34,7 +35,13 @@ class ResourceSyncApi(generics.CreateAPIView):
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        slz = ResourceImportInputSLZ(data=request.data, context={"stages": Stage.objects.filter(api=request.gateway)})
+        slz = ResourceImportInputSLZ(
+            data=request.data,
+            context={
+                "stages": Stage.objects.filter(api=request.gateway),
+                "exist_label_names": list(APILabel.objects.filter(api=request.gateway).values_list("name", flat=True)),
+            },
+        )
         slz.is_valid(raise_exception=True)
 
         importer = ResourcesImporter.from_resources(
@@ -42,7 +49,7 @@ class ResourceSyncApi(generics.CreateAPIView):
             resources=slz.validated_data["resources"],
             # 同步全部资源
             selected_resources=None,
-            need_delete_unspecified_resources=slz.validated_data.get("delete", False),
+            need_delete_unspecified_resources=slz.validated_data["delete"],
             username=request.user.username,
         )
         importer.import_resources()

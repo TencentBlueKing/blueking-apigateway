@@ -25,11 +25,10 @@ from apigateway.apps.label.models import APILabel
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_label import GatewayLabelHandler
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.models import BackendConfig, ResourceAuthConfig, ResourceData
+from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY
 from apigateway.core.models import Backend, Gateway, Resource
-from apigateway.utils.list import get_duplicate_items
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +100,7 @@ class ResourceDataConvertor:
                     allow_apply_permission=resource.get("allow_apply_permission", True),
                     auth_config=ResourceAuthConfig.parse_obj(resource.get("auth_config", {})),
                     backend=backend,
-                    backend_config=BackendConfig.parse_obj(resource["backend_config"]),
+                    backend_config=ResourceBackendConfig.parse_obj(resource["backend_config"]),
                     # 在导入时，根据 metadata 中的 labels 创建 GatewayLabel，并补全 label_ids 数据
                     label_ids=[],
                     metadata=metadata,
@@ -116,7 +115,7 @@ class ResourceDataConvertor:
         resource_id_to_resource_obj: Dict[int, Resource],
         resource_key_to_resource_obj: Dict[str, Resource],
     ) -> Optional[Resource]:
-        if resource.get("id"):
+        if resource.get("id") is not None:
             if resource["id"] not in resource_id_to_resource_obj:
                 raise ValueError("资源 (id={id}) 不存在。".format(id=resource["id"]))
 
@@ -144,6 +143,14 @@ class ResourceImportValidator:
         self.need_delete_unspecified_resources = need_delete_unspecified_resources
         self._unchanged_resources = self._get_unchanged_resources()
 
+    def validate(self):
+        self._validate_resources()
+        self._validate_method_path()
+        self._validate_method()
+        self._validate_name()
+        self._validate_match_subpath()
+        self._validate_resource_count()
+
     def _get_unchanged_resources(self) -> List[Dict[str, Any]]:
         """
         获取不会发生变化的资源，便于校验数据；不会发生变化的资源 + resource_data_list 中资源，即为最终的全量资源
@@ -153,22 +160,18 @@ class ResourceImportValidator:
         if self.need_delete_unspecified_resources:
             return []
 
+        return self.get_unspecified_resources()
+
+    def get_unspecified_resources(self) -> List[Dict[str, Any]]:
+        """获取未指定的资源。未指定的资源，指已创建的资源中，未被选中的资源"""
         specified_resource_ids = [
             resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource
         ]
-        return (
+        return list(
             Resource.objects.filter(api=self.gateway)
             .exclude(id__in=specified_resource_ids)
             .values("id", "name", "method", "path")
         )
-
-    def validate(self):
-        self._validate_resources()
-        self._validate_method_path()
-        self._validate_method()
-        self._validate_name()
-        self._validate_match_subpath()
-        self._validate_resource_count()
 
     def _validate_resources(self):
         """校验资源数据列表中，是否存在重复的资源"""
@@ -217,8 +220,7 @@ class ResourceImportValidator:
     def _validate_method(self):
         """
         校验请求方法
-        - 同一路径下，请求方法不能重复
-        - 统一路径下，如果存在 ANY 请求方法，则不能存在其它请求方法
+        - 同一路径下，如果存在 ANY 请求方法，则不能存在其它请求方法
         """
         path_to_methods = defaultdict(list)
         for resource in self._unchanged_resources:
@@ -227,14 +229,6 @@ class ResourceImportValidator:
             path_to_methods[resource_data.path].append(resource_data.method)
 
         for path, methods in path_to_methods.items():
-            duplicate_methods = get_duplicate_items(methods)
-            if duplicate_methods:
-                raise ValueError(
-                    _("当前配置数据及已有资源数据中，请求路径 {path} 下，请求方法 {method} 重复。").format(
-                        path=path, method=", ".join(duplicate_methods)
-                    )
-                )
-
             if HTTP_METHOD_ANY in methods and len(methods) > 1:
                 raise ValueError(
                     _("当前配置数据及已有资源数据中，请求路径 {path} 下，同时存在 {method_any} 及其它请求方法。").format(
@@ -344,17 +338,6 @@ class ResourcesImporter:
     def get_deleted_resources(self) -> List[Dict[str, Any]]:
         return self._deleted_resources
 
-    def get_unspecified_resources(self) -> List[Dict[str, Any]]:
-        """获取未指定的资源。未指定的资源，指已创建的资源中，未被选中的资源"""
-        resource_ids = [
-            resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource
-        ]
-        return list(
-            Resource.objects.filter(api=self.gateway)
-            .exclude(id__in=resource_ids)
-            .values("id", "name", "method", "path")
-        )
-
     def _filter_selected_resource_data_list(
         self, selected_resources: Optional[List[Dict[str, Any]]], resource_data_list: List[ResourceData]
     ) -> List[ResourceData]:
@@ -367,7 +350,14 @@ class ResourcesImporter:
 
     def _delete_unspecified_resources(self) -> List[Dict[str, Any]]:
         """删除未指定的资源"""
-        unspecified_resources = self.get_unspecified_resources()
+        resource_ids = [
+            resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource
+        ]
+        unspecified_resources = list(
+            Resource.objects.filter(api=self.gateway)
+            .exclude(id__in=resource_ids)
+            .values("id", "name", "method", "path")
+        )
         if not unspecified_resources:
             return []
 
@@ -380,7 +370,7 @@ class ResourcesImporter:
         """创建不存在的标签"""
         label_names = set()
         for resource_data in self.resource_data_list:
-            label_names.update(resource_data.metadata["labels"])
+            label_names.update(resource_data.metadata.get("labels", []))
 
         GatewayLabelHandler.save_labels(self.gateway, list(label_names), self.username)
 
@@ -388,9 +378,9 @@ class ResourcesImporter:
         """补全资源中的 label_ids 信息"""
         labels = dict(APILabel.objects.filter(api=self.gateway).values_list("name", "id"))
         for resource_data in self.resource_data_list:
-            resource_data.label_ids = [labels[name] for name in resource_data.metadata["labels"]]
+            resource_data.label_ids = [labels[name] for name in resource_data.metadata.get("labels", [])]
 
-    def _create_or_update_resources(self):
+    def _create_or_update_resources(self) -> List[Resource]:
         saver = ResourcesSaver(
             gateway=self.gateway,
             resource_data_list=self.resource_data_list,

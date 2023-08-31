@@ -16,46 +16,223 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.test import TestCase
+import pytest
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.web.resource.validators import PathVarsValidator
+from apigateway.apis.web.resource.validators import BackendPathVarsValidator, PathVarsValidator
 
 
-class TestPathVarsValidator(TestCase):
-    def test_validate(self):
-        data = [
-            # ok
-            {
-                "attrs": {
-                    "path": "/",
-                },
-                "will_error": False,
-            },
-            # ok
-            {
-                "attrs": {
-                    "path": "/hello/",
-                },
-                "will_error": False,
-            },
-            # error, path include invalid char
-            {
-                "attrs": {"path": "/hello/{username#=}"},
-                "will_error": True,
-            },
-            # error, path include 2 same var
-            {
-                "attrs": {
-                    "path": "/{username}/{username}/",
-                },
-                "will_error": True,
-            },
+class FakePathVarsSLZ(serializers.Serializer):
+    path = serializers.CharField(allow_blank=True)
+
+    class Meta:
+        validators = [
+            PathVarsValidator(),
         ]
 
-        for test in data:
-            validator = PathVarsValidator()
-            if test.get("will_error"):
-                with self.assertRaises(Exception):
-                    validator(test["attrs"])
-            else:
-                validator(test["attrs"])
+
+class FakeBackendPathVarsSLZ(serializers.Serializer):
+    path = serializers.CharField(allow_blank=True)
+    backend_config = serializers.DictField()
+
+    class Meta:
+        validators = [
+            BackendPathVarsValidator(),
+        ]
+
+
+class TestPathVarsValidator:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {"path": ""},
+                None,
+            ),
+            (
+                {"path": "/foo"},
+                None,
+            ),
+            (
+                {"path": "/color/{my-color}"},
+                ValidationError,
+            ),
+            (
+                {"path": "/color/{color}/{color}"},
+                ValidationError,
+            ),
+        ],
+    )
+    def test_validate(self, data, expected):
+        slz = FakePathVarsSLZ(data=data)
+
+        if expected is None:
+            slz.is_valid(raise_exception=True)
+            return
+
+        with pytest.raises(expected):
+            slz.is_valid(raise_exception=True)
+
+
+class TestBackendPathVarsValidator:
+    @pytest.mark.parametrize(
+        "check_stage_vars_exist, data, expected",
+        [
+            (
+                True,
+                {
+                    "path": "/foo",
+                    "backend_config": {"path": ""},
+                },
+                None,
+            ),
+            (
+                True,
+                {
+                    "path": "/color/{color}",
+                    "backend_config": {"path": "/color/{color}/{env.color}"},
+                },
+                None,
+            ),
+            (
+                True,
+                {
+                    "path": "/color/",
+                    "backend_config": {"path": "/color/{color}/"},
+                },
+                ValidationError,
+            ),
+            (
+                True,
+                {
+                    "path": "/color/",
+                    "backend_config": {"path": "/color/{env.not_exist}/"},
+                },
+                ValidationError,
+            ),
+            (
+                False,
+                {
+                    "path": "/color/",
+                    "backend_config": {"path": "/color/{env.not_exist}/"},
+                },
+                None,
+            ),
+        ],
+    )
+    def test_validate(self, fake_stage, check_stage_vars_exist, data, expected):
+        fake_stage.vars = {"color": "blue"}
+        fake_stage.save()
+
+        slz = FakeBackendPathVarsSLZ(data=data, context={"stages": [fake_stage]})
+        slz.Meta.validators[0].check_stage_vars_exist = check_stage_vars_exist
+
+        if expected is None:
+            slz.is_valid(raise_exception=True)
+            return
+
+        with pytest.raises(expected):
+            slz.is_valid(raise_exception=True)
+
+    @pytest.mark.parametrize(
+        "backend_path, expected, error",
+        [
+            (
+                "/color",
+                ([], []),
+                None,
+            ),
+            (
+                "/color/{color}",
+                (["color"], []),
+                None,
+            ),
+            (
+                "/color/{color1}/{color2}/{env.color3}/{env.color4}",
+                (["color1", "color2"], ["color3", "color4"]),
+                None,
+            ),
+            (
+                "/color/{color#}",
+                None,
+                ValidationError,
+            ),
+        ],
+    )
+    def test_parse_backend_path(self, backend_path, expected, error):
+        validator = BackendPathVarsValidator()
+
+        if not error:
+            assert validator._parse_backend_path(backend_path) == expected
+            return
+
+        with pytest.raises(error):
+            validator._parse_backend_path(backend_path)
+
+    @pytest.mark.parametrize(
+        "normal_path_vars, path, error",
+        [
+            (
+                [],
+                "/color",
+                None,
+            ),
+            (
+                ["color"],
+                "/color/{color}",
+                None,
+            ),
+            (
+                ["color"],
+                "/color",
+                ValidationError,
+            ),
+        ],
+    )
+    def test_validate_normal_path_vars(self, normal_path_vars, path, error):
+        validator = BackendPathVarsValidator()
+
+        if not error:
+            assert validator._validate_normal_path_vars("", normal_path_vars, path) is None
+            return
+
+        with pytest.raises(error):
+            validator._validate_normal_path_vars("", normal_path_vars, path)
+
+    @pytest.mark.parametrize(
+        "check_stage_vars_exist, stage_path_vars, error",
+        [
+            (
+                False,
+                ["not_exist"],
+                None,
+            ),
+            (
+                True,
+                [],
+                None,
+            ),
+            (
+                True,
+                ["color"],
+                None,
+            ),
+            (
+                True,
+                ["not_exist"],
+                ValidationError,
+            ),
+        ],
+    )
+    def test_validate_stage_path_vars(self, fake_stage, check_stage_vars_exist, stage_path_vars, error):
+        fake_stage.vars = {"color": "blue"}
+        fake_stage.save()
+
+        validator = BackendPathVarsValidator(check_stage_vars_exist)
+        if not error:
+            assert validator._validate_stage_path_vars("", stage_path_vars, [fake_stage]) is None
+            return
+
+        with pytest.raises(error):
+            validator._validate_stage_path_vars("", stage_path_vars, [fake_stage])

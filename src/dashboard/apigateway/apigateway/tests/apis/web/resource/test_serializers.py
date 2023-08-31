@@ -16,1269 +16,264 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import copy
 import datetime
 import json
 
 import pytest
+from dateutil.tz import tzutc
 from ddf import G
-from rest_framework import serializers as drf_serializers
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.web.resource import serializers
-from apigateway.apps.label.models import APILabel, ResourceLabel
-from apigateway.core import constants
-from apigateway.core.models import Context, Gateway, Proxy, Resource, ResourceVersion, Stage, StageResourceDisabled
-from apigateway.tests.utils.testing import create_request, dummy_time
-
-pytestmark = pytest.mark.django_db
-
-
-class TestQueryResourceSLZ:
-    def test_to_internal_value(self):
-        data = [
-            {
-                "query": "test",
-                "path": "/echo/",
-                "method": "POST",
-                "label_name": "test",
-                "expected": {
-                    "query": "test",
-                    "path": "/echo/",
-                    "method": "POST",
-                    "label_name": "test",
-                },
-            },
-            {
-                "query": "test",
-                "expected": {
-                    "query": "test",
-                },
-            },
-            {
-                "path": "/echo/",
-                "method": "GET",
-                "expected": {
-                    "path": "/echo/",
-                    "method": "GET",
-                },
-            },
-        ]
-        for test in data:
-            slz = serializers.QueryResourceSLZ(data=test)
-            slz.is_valid()
-            assert slz.validated_data == test["expected"]
+from apigateway.apis.web.resource.serializers import (
+    BackendPathCheckInputSLZ,
+    ResourceDataSLZ,
+    ResourceExportOutputSLZ,
+    ResourceImportInputSLZ,
+    ResourceInputSLZ,
+    ResourceListOutputSLZ,
+)
+from apigateway.core.models import (
+    Backend,
+    Proxy,
+    Resource,
+    Stage,
+)
 
 
-class TestListResourceSLZ:
-    def test_to_representation(self):
-        resource = G(
-            Resource,
-            name="test",
-            description="desc",
-            method="GET",
-            path="/echo/",
-            created_time=dummy_time.time,
-            updated_time=dummy_time.time,
-        )
-        resource_version = G(ResourceVersion, created_time=dummy_time.time + datetime.timedelta(seconds=10))
-
-        data = [
-            {
-                "resource": resource,
-                "resource_version": None,
-                "resource_labels": {
-                    resource.id: [
-                        {
-                            "id": 1,
-                            "name": "test",
-                        }
-                    ]
-                },
-                "doc_languages_of_resources": {
-                    resource.id: ["zh"],
-                },
-                "resource_released_stage_count": {
-                    resource.id: 1,
-                },
-                "stage_count": 2,
-                "expected": [
-                    {
-                        "id": resource.id,
-                        "name": "test",
-                        "description": "desc",
-                        "description_en": None,
-                        "method": "GET",
-                        "path": "/echo/",
-                        "updated_time": "2019-01-01 20:30:00",
-                        "is_created": True,
-                        "has_updated": True,
-                        "released_stage_count": 1,
-                        "unreleased_stage_count": 1,
-                        "labels": [
-                            {
-                                "id": 1,
-                                "name": "test",
-                            }
-                        ],
-                        "resource_doc_languages": ["zh"],
-                    }
-                ],
-            },
-            {
-                "resource": resource,
-                "resource_version": resource_version,
-                "resource_labels": {},
-                "resource_released_stage_count": {
-                    resource.id: 2,
-                },
-                "stage_count": 2,
-                "doc_languages_of_resources": {},
-                "expected": [
-                    {
-                        "id": resource.id,
-                        "name": "test",
-                        "description": "desc",
-                        "description_en": None,
-                        "method": "GET",
-                        "path": "/echo/",
-                        "updated_time": "2019-01-01 20:30:00",
-                        "is_created": False,
-                        "has_updated": False,
-                        "released_stage_count": 2,
-                        "unreleased_stage_count": 0,
-                        "labels": [],
-                        "resource_doc_languages": [],
-                    }
-                ],
-            },
-        ]
-
-        for test in data:
-            slz = serializers.ListResourceSLZ(
-                [test["resource"]],
-                many=True,
-                context={
-                    "resource_labels": test["resource_labels"],
-                    "latest_resource_version": test["resource_version"],
-                    "resource_released_stage_count": test["resource_released_stage_count"],
-                    "stage_count": test["stage_count"],
-                    "doc_languages_of_resources": test["doc_languages_of_resources"],
-                },
-            )
-            assert slz.data == test["expected"]
-
-
-class TestDefaultProxyHTTPConfigSLZ:
-    def test_to_internal_value(self):
-        data = [
-            # ok
-            {
-                "method": "GET",
-                "path": "/echo/",
-                "timeout": 30,
-                "upstreams": {
-                    "loadbalance": "roundrobin",
-                    "hosts": [
-                        {
-                            "host": "http://www.a.com",
-                            "weight": 100,
-                        }
-                    ],
-                },
-                "transform_headers": {
-                    "set": {"k1": "v1"},
-                },
-            },
-            # ok, upstreams is empty
-            {
-                "method": "GET",
-                "path": "/echo/",
-                "timeout": 30,
-                "upstreams": {},
-                "transform_headers": {
-                    "set": {"k1": "v1"},
-                },
-            },
-            # host include stage var {env.domainv2}
-            {
-                "method": "GET",
-                "path": "/echo/",
-                "timeout": 30,
-                "upstreams": {
-                    "loadbalance": "roundrobin",
-                    "hosts": [
-                        {
-                            "host": "http://{env.domainv2}",
-                            "weight": 100,
-                        }
-                    ],
-                },
-                "transform_headers": {
-                    "set": {"k1": "v1"},
-                },
-            },
-            # transform_headers is empty, ok
-            {
-                "method": "GET",
-                "path": "/echo/",
-                "timeout": 30,
-                "upstreams": {
-                    "loadbalance": "roundrobin",
-                    "hosts": [
-                        {
-                            "host": "http://www.a.com",
-                            "weight": 100,
-                        }
-                    ],
-                },
-                "transform_headers": {},
-            },
-            # timeout, error
-            {
-                "method": "GET",
-                "path": "/echo/",
-                "timeout": -1,
-                "upstreams": {
-                    "loadbalance": "roundrobin",
-                    "hosts": [
-                        {
-                            "host": "http://www.a.com",
-                        }
-                    ],
-                },
-                "will_error": True,
-            },
-        ]
-        for test in data:
-            slz = serializers.DefaultProxyHTTPConfigSLZ(data=test)
-            slz.is_valid()
-            if test.get("will_error"):
-                assert slz.errors
-            else:
-                assert slz.validated_data == test
-
-
-class TestResourceProxyMockConfigSLZ:
-    def test_to_internal_value(self):
-        data = [
-            # ok
-            {
-                "code": 200,
-                "body": "test",
-                "headers": {"k1": "v1"},
-            },
-            # body is empty, ok
-            {
-                "code": 200,
-                "body": "",
-                "headers": {"k1": "v1"},
-            },
-            # headers is empty, ok
-            {
-                "code": 200,
-                "body": "test",
-                "headers": {},
-            },
-        ]
-        for test in data:
-            slz = serializers.ResourceProxyMockConfigSLZ(data=test)
-            slz.is_valid()
-            if test.get("will_error"):
-                assert slz.errors
-            else:
-                assert slz.validated_data == test
-
-
-class TestAuthConfigSLZ:
-    def test_to_internal_value(self):
-        data = [
-            # ok
-            {
-                "skip_auth_verification": True,
-                "auth_verified_required": True,
-                "app_verified_required": True,
-                "resource_perm_required": True,
-                "expected": {
-                    "auth_verified_required": True,
-                    "app_verified_required": True,
-                    "resource_perm_required": True,
-                },
-            },
-            # skip_auth_verification not exist, ok
-            {
-                "auth_verified_required": False,
-                "app_verified_required": True,
-                "resource_perm_required": True,
-                "expected": {
-                    "auth_verified_required": False,
-                    "app_verified_required": True,
-                    "resource_perm_required": True,
-                },
-            },
-            {
-                "auth_verified_required": False,
-                "expected": {
-                    "auth_verified_required": False,
-                },
-            },
-            {
-                "auth_verified_required": True,
-                "expected": {
-                    "auth_verified_required": True,
-                },
-            },
-        ]
-        for test in data:
-            slz = serializers.AuthConfigSLZ(data=test)
-            slz.is_valid()
-            assert slz.validated_data == test["expected"]
-
-
-class TestProxyConfigsSLZ:
+class TestResourceListOutputSLZ:
     @pytest.mark.parametrize(
-        "data, expected",
-        [
-            # ok
-            (
-                {
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        "timeout": 30,
-                        "upstreams": {
-                            "loadbalance": "roundrobin",
-                            "hosts": [
-                                {
-                                    "host": "http://www.a.com",
-                                    "weight": 100,
-                                }
-                            ],
-                        },
-                        "transform_headers": {},
-                    },
-                    "mock": {
-                        "code": 200,
-                        "body": "test",
-                        "headers": {},
-                    },
-                },
-                {
-                    "backend_config_type": "default",
-                    "backend_service_id": None,
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        "timeout": 30,
-                        "upstreams": {
-                            "loadbalance": "roundrobin",
-                            "hosts": [
-                                {
-                                    "host": "http://www.a.com",
-                                    "weight": 100,
-                                }
-                            ],
-                        },
-                        "transform_headers": {},
-                    },
-                    "mock": {
-                        "code": 200,
-                        "body": "test",
-                        "headers": {},
-                    },
-                },
-            ),
-            # http not exist, ok
-            (
-                {
-                    "mock": {
-                        "code": 200,
-                        "body": "test",
-                        "headers": {},
-                    },
-                },
-                {
-                    "backend_config_type": "default",
-                    "backend_service_id": None,
-                    "mock": {
-                        "code": 200,
-                        "body": "test",
-                        "headers": {},
-                    },
-                },
-            ),
-            # mock not exist, ok
-            (
-                {
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        "timeout": 30,
-                        "upstreams": {
-                            "loadbalance": "roundrobin",
-                            "hosts": [
-                                {
-                                    "host": "http://www.a.com",
-                                    "weight": 100,
-                                }
-                            ],
-                        },
-                        "transform_headers": {},
-                    },
-                },
-                {
-                    "backend_config_type": "default",
-                    "backend_service_id": None,
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        "timeout": 30,
-                        "upstreams": {
-                            "loadbalance": "roundrobin",
-                            "hosts": [
-                                {
-                                    "host": "http://www.a.com",
-                                    "weight": 100,
-                                }
-                            ],
-                        },
-                        "transform_headers": {},
-                    },
-                },
-            ),
-            (
-                {
-                    "backend_config_type": "existed",
-                    "backend_service_id": 1,
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        # "timeout": {"connect": 10, "read": 10, "send": 10},
-                        "transform_headers": {},
-                    },
-                },
-                {
-                    "backend_config_type": "existed",
-                    "backend_service_id": 1,
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        # "timeout": {"connect": 10, "read": 10, "send": 10},
-                        "transform_headers": {},
-                    },
-                },
-            ),
-        ],
-    )
-    def test_validate(self, data, expected):
-        slz = serializers.ProxyConfigsSLZ(data=data)
-        assert slz.is_valid() is True
-        assert slz.validated_data == expected
-
-    @pytest.mark.parametrize(
-        "data, expected, expected_error",
+        "context, expected",
         [
             (
-                {
-                    "backend_config_type": "default",
-                    "http": None,
-                },
-                {},
-                None,
-            ),
-            (
-                {
-                    "backend_config_type": "default",
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        "match_subpath": True,
-                        "timeout": 30,
-                        "upstreams": {
-                            "loadbalance": "roundrobin",
-                            "hosts": [
-                                {
-                                    "host": "http://www.a.com",
-                                    "weight": 100,
-                                }
-                            ],
-                        },
-                        "transform_headers": {"set": {"k1": "v1"}},
-                    },
-                },
-                {
-                    "method": "GET",
-                    "path": "/echo/",
-                    "match_subpath": True,
-                    "timeout": 30,
-                    "upstreams": {
-                        "loadbalance": "roundrobin",
-                        "hosts": [
-                            {
-                                "host": "http://www.a.com",
-                                "weight": 100,
-                            }
-                        ],
-                    },
-                    "transform_headers": {"set": {"k1": "v1"}},
-                },
-                None,
-            ),
-            (
-                {
-                    "backend_config_type": "existed",
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        "match_subpath": True,
-                        # "timeout": {"connect": 10, "send": 10, "read": 10},
-                        "transform_headers": {"set": {"k1": "v1"}},
-                    },
-                },
-                {
-                    "method": "GET",
-                    "path": "/echo/",
-                    "match_subpath": True,
-                    # "timeout": {"connect": 10, "send": 10, "read": 10},
-                    "transform_headers": {"set": {"k1": "v1"}},
-                },
-                None,
-            ),
-        ],
-    )
-    def test_validate_http(self, data, expected, expected_error):
-        slz = serializers.ProxyConfigsSLZ(data=data)
-
-        if expected_error:
-            with pytest.raises(expected_error):
-                slz._validate_http(**data)
-            return
-
-        assert slz._validate_http(**data) == expected
-
-    @pytest.mark.parametrize(
-        "data, expected, expected_error",
-        [
-            (
-                {
-                    "backend_config_type": "default",
-                    "backend_service_id": None,
-                },
-                None,
-                None,
-            ),
-            (
-                {
-                    "backend_config_type": "default",
-                    "backend_service_id": 1,
-                },
-                None,
-                None,
-            ),
-            (
-                {
-                    "backend_config_type": "existed",
-                    "backend_service_id": 1,
-                },
-                1,
-                None,
-            ),
-            (
-                {
-                    "backend_config_type": "existed",
-                    "backend_service_id": None,
-                },
-                None,
-                ValidationError,
-            ),
-        ],
-    )
-    def test_validate_backend_service_id(self, data, expected, expected_error):
-        slz = serializers.ProxyConfigsSLZ(data=data)
-
-        if expected_error:
-            with pytest.raises(expected_error):
-                slz._validate_backend_service_id(**data)
-            return
-
-        assert slz._validate_backend_service_id(**data) == expected
-
-
-class TestResourceSLZ:
-    @pytest.mark.parametrize(
-        "data, expected, expected_valid",
-        [
-            (
-                {
-                    "name": "post_echo",
-                    "description": "",
-                    "is_public": True,
-                    "method": "POST",
-                    "path": "/echo/",
-                    "label_ids": [],
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "http": {
-                            "method": "GET",
-                            "path": "/echo/",
-                            "timeout": 30,
-                            "upstreams": {
-                                "loadbalance": "roundrobin",
-                                "hosts": [
-                                    {
-                                        "host": "http://www.a.com",
-                                        "weight": 100,
-                                    }
-                                ],
-                            },
-                            "transform_headers": {},
-                        }
-                    },
-                    "auth_config": {
-                        "auth_verified_required": False,
-                        "app_verified_required": True,
-                        "resource_perm_required": True,
-                    },
-                },
-                {
-                    "name": "post_echo",
-                    "description": "",
-                    "is_public": True,
-                    "method": "POST",
-                    "path": "/echo/",
-                    "label_ids": [],
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "backend_config_type": "default",
-                        "backend_service_id": None,
-                        "http": {
-                            "method": "GET",
-                            "path": "/echo/",
-                            "timeout": 30,
-                            "upstreams": {
-                                "loadbalance": "roundrobin",
-                                "hosts": [
-                                    {
-                                        "host": "http://www.a.com",
-                                        "weight": 100,
-                                    }
-                                ],
-                            },
-                            "transform_headers": {},
-                        },
-                    },
-                    "auth_config": {
-                        "auth_verified_required": False,
-                        "app_verified_required": True,
-                        "resource_perm_required": True,
-                    },
-                },
-                True,
-            ),
-            # ok, proxy_configs timeout/upstreams/transform_headers is null
-            (
-                {
-                    "name": "post_echo_2",
-                    "description": "",
-                    "is_public": True,
-                    "method": "POST",
-                    "path": "/echo/",
-                    "label_ids": [],
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "http": {
-                            "method": "GET",
-                            "path": "/echo/",
-                            "timeout": 0,
-                            "upstreams": {},
-                            "transform_headers": {},
-                        }
-                    },
-                    "auth_config": {
-                        "auth_verified_required": False,
-                        "app_verified_required": True,
-                        "resource_perm_required": True,
-                    },
-                    "disabled_stage_ids": [],
-                },
-                {
-                    "name": "post_echo_2",
-                    "description": "",
-                    "is_public": True,
-                    "method": "POST",
-                    "path": "/echo/",
-                    "label_ids": [],
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "backend_config_type": "default",
-                        "backend_service_id": None,
-                        "http": {
-                            "method": "GET",
-                            "path": "/echo/",
-                            "timeout": 0,
-                            "upstreams": {},
-                            "transform_headers": {},
-                        },
-                    },
-                    "auth_config": {
-                        "auth_verified_required": False,
-                        "app_verified_required": True,
-                        "resource_perm_required": True,
-                    },
-                    "disabled_stage_ids": [],
-                },
+                {"latest_version_created_time": None},
                 True,
             ),
             (
-                # error, proxy_configs.http is empty
-                {
-                    "name": "post_echo_3",
-                    "description": "",
-                    "is_public": True,
-                    "method": "POST",
-                    "path": "/echo/",
-                    "label_ids": [],
-                    "proxy_type": "http",
-                    "proxy_configs": {},
-                    "auth_config": {
-                        "auth_verified_required": False,
-                        "app_verified_required": True,
-                        "resource_perm_required": True,
-                    },
-                    "disabled_stage_ids": [],
-                },
-                None,
+                {"latest_version_created_time": datetime.datetime(2020, 1, 1, tzinfo=tzutc())},
+                True,
+            ),
+            (
+                {"latest_version_created_time": datetime.datetime(2220, 1, 1, tzinfo=tzutc())},
                 False,
             ),
         ],
     )
-    def test_validate(self, fake_gateway, data, expected, expected_valid):
-        slz = serializers.ResourceSLZ(data=data, context={"api": fake_gateway})
+    def test_has_updated(self, fake_resource, context, expected):
+        slz = ResourceListOutputSLZ(fake_resource, context=context)
+        assert slz.get_has_updated(fake_resource) is expected
 
-        assert slz.is_valid() is expected_valid
 
-        if not expected_valid:
-            return
+class TestResourceInputSLZ:
+    @pytest.mark.parametrize(
+        "description_en, expected",
+        [
+            ("test", "test"),
+            ("", None),
+            (None, None),
+        ],
+    )
+    def test_validate_description_en(self, description_en, expected):
+        slz = ResourceInputSLZ()
+        result = slz.validate_description_en(description_en)
+        assert result == expected
 
-        expected["api"] = fake_gateway
-        assert slz.validated_data == expected
-
-    def test_to_representation(self):
-        gateway = G(Gateway)
-        resource = G(Resource, api=gateway)
-        stage_prod = G(Stage, api=gateway, name="prod")
-        label = G(APILabel, api=gateway, name="label")
-
-        G(
-            Context,
-            scope_type=constants.ContextScopeTypeEnum.RESOURCE.value,
-            scope_id=resource.id,
-            type=constants.ContextTypeEnum.RESOURCE_AUTH.value,
-            _config=json.dumps(
-                {
-                    "skip_auth_verification": False,
-                    "auth_verified_required": False,
-                    "app_verified_required": True,
-                    "resource_perm_required": True,
-                }
-            ),
-        )
-
-        proxy_http = G(
-            Proxy,
-            resource=resource,
-            type="http",
-            _config=json.dumps(
-                {
-                    "method": "GET",
-                    "path": "/echo/",
-                    "match_subpath": False,
-                    "timeout": 30,
-                    "upstreams": {
-                        "loadbalance": "roundrobin",
-                        "hosts": [
-                            {
-                                "host": "http://www.a.com",
-                            }
-                        ],
-                    },
-                    "transform_headers": {},
-                }
-            ),
-        )
-        G(
-            Proxy,
-            resource=resource,
-            type="mock",
-            _config=json.dumps(
-                {
-                    "code": 200,
-                    "body": "test",
-                    "headers": {},
-                }
-            ),
-        )
-        resource.proxy_id = proxy_http.id
-        resource.save()
-
-        G(ResourceLabel, resource=resource, api_label=label)
-        G(StageResourceDisabled, resource=resource, stage=stage_prod)
-
-        slz = serializers.ResourceSLZ(instance=resource)
-
-        assert slz.data == {
-            "id": resource.id,
-            "name": resource.name,
-            "description": resource.description,
-            "description_en": resource.description_en,
-            "is_public": resource.is_public,
-            "allow_apply_permission": resource.allow_apply_permission,
-            "label_ids": [label.id],
-            "method": resource.method,
-            "path": resource.path,
-            "match_subpath": resource.match_subpath,
-            "proxy_type": "http",
-            "proxy_configs": {
-                "backend_config_type": "default",
-                "backend_service_id": None,
-                "http": {
-                    "method": "GET",
-                    "path": "/echo/",
-                    "match_subpath": False,
-                    "timeout": 30,
-                    "upstreams": {"loadbalance": "roundrobin", "hosts": [{"host": "http://www.a.com"}]},
-                    "transform_headers": {},
-                },
-                "mock": {"code": 200, "body": "test", "headers": {}},
-            },
+    def test_validate(self, fake_resource, faker):
+        fake_gateway = fake_resource.api
+        backend = G(Backend, gateway=fake_gateway)
+        data = {
+            "name": "test",
+            "description": faker.pystr(),
+            "method": "GET",
+            "path": "/test/",
+            "match_subpath": False,
+            "is_public": True,
+            "allow_apply_permission": True,
             "auth_config": {
-                "auth_verified_required": False,
+                "auth_verified_required": True,
                 "app_verified_required": True,
                 "resource_perm_required": True,
             },
-            "disabled_stage_ids": [stage_prod.id],
+            "backend_config": {
+                "method": "GET",
+                "path": "/test",
+                "match_subpath": False,
+                "timeout": 0,
+            },
+            "backend_id": backend.id,
+            "label_ids": [],
         }
 
-    def test_validate_method(self):
-        gateway = G(Gateway)
-        G(Resource, api=gateway, path="/echo/any-exists/", method="ANY")
-        G(Resource, api=gateway, path="/echo/get-exists/", method="GET")
-
-        data = [
-            {
-                "path": "/echo/any-exists/",
-                "method": "GET",
-                "will_error": True,
+        slz = ResourceInputSLZ(
+            data=data,
+            context={
+                "api": fake_gateway,
+                "stages": Stage.objects.filter(api=fake_gateway),
             },
-            {
-                "path": "/echo/get-exists/",
-                "method": "ANY",
-                "will_error": True,
-            },
-        ]
-
-        for test in data:
-            slz = serializers.ResourceSLZ(data=test)
-
-            if test.get("will_error"):
-                with pytest.raises(Exception):
-                    slz._validate_method(gateway, test["path"], test["method"])
-                return
-
-            slz._validate_method(gateway, test["path"], test["method"])
-
-
-class TestCheckProxyPathSLZ:
-    def test_validate(self):
-        gateway = G(Gateway)
-        G(
-            Stage,
-            api=gateway,
-            name="prod",
-            _vars=json.dumps(
-                {
-                    "region": "sz",
-                }
-            ),
         )
+        slz.is_valid(raise_exception=True)
 
-        request = create_request()
-        request.gateway = gateway
+        assert slz.validated_data["backend"] == backend
+        assert slz.validated_data["resource"] is None
 
-        data = [
-            # ok
-            {
-                "path": "/echo/",
-                "proxy_path": "/echo/",
+        slz = ResourceInputSLZ(
+            fake_resource,
+            data=data,
+            context={
+                "api": fake_gateway,
+                "stages": Stage.objects.filter(api=fake_gateway),
             },
-            # ok, has path-vars
-            {
-                "path": "/echo/{username}/",
-                "proxy_path": "/echo/{username}/",
-            },
-            # ok, has stage vars
-            {
-                "path": "/echo/{username}/",
-                "proxy_path": "/echo/{username}/{env.region}/",
-            },
-            # error, proxy_path has query-string
-            {
-                "path": "/echo/",
-                "proxy_path": "/echo/?a=b&c=d",
-                "will_error": True,
-            },
-            # error, stage vars not exist
-            {
-                "path": "/echo/{username}/",
-                "proxy_path": "/echo/{username}/{env.project}/",
-                "will_error": True,
-            },
-        ]
+        )
+        slz.is_valid(raise_exception=True)
+        assert slz.validated_data["resource"] == fake_resource
 
-        for test in data:
-            slz = serializers.CheckProxyPathSLZ(data=test, context={"request": request})
-            slz.is_valid()
+    def test_validate_method(self, fake_gateway):
+        r1 = G(Resource, api=fake_gateway, method="POST", path="/foo")
+        r2 = G(Resource, api=fake_gateway, method="ANY", path="/bar")
 
-            if test.get("will_error"):
-                assert slz.errors
-            else:
-                assert not slz.errors
+        with pytest.raises(ValidationError):
+            slz = ResourceInputSLZ()
+            slz._validate_method(fake_gateway, "/foo", "ANY")
 
+        with pytest.raises(ValidationError):
+            slz = ResourceInputSLZ()
+            slz._validate_method(fake_gateway, "/bar", "GET")
 
-class TestResourceImportSLZ:
+        slz = ResourceInputSLZ(r1)
+        slz._validate_method(fake_gateway, "/foo", "ANY")
+
+        slz = ResourceInputSLZ(r2)
+        slz._validate_method(fake_gateway, "/bar", "GET")
+
     @pytest.mark.parametrize(
-        "selected_resources, expected, will_error",
+        "data",
         [
-            (None, None, False),
-            ([{"name": "get_user"}], [{"name": "get_user"}], False),
-            ([], None, True),
+            {"match_subpath": True, "backend_config": {"match_subpath": False}},
+            {"match_subpath": False, "backend_config": {"match_subpath": True}},
         ],
     )
-    def test_selected_resources(self, mocker, faker, selected_resources, expected, will_error):
-        slz = serializers.ResourceImportSLZ(
-            data={
-                "content": faker.pystr(),
-                "selected_resources": selected_resources,
-            }
-        )
+    def test_validate_match_subpath__error(self, data):
+        slz = ResourceInputSLZ()
+        with pytest.raises(ValidationError):
+            slz._validate_match_subpath(data)
 
-        if will_error:
-            with pytest.raises(drf_serializers.ValidationError):
-                slz.is_valid(raise_exception=True)
+    def test_validate_backend_id(self, fake_gateway):
+        backend = G(Backend, gateway=fake_gateway)
+
+        slz = ResourceInputSLZ()
+        with pytest.raises(ValidationError):
+            slz._validate_backend_id(fake_gateway, 0)
+
+        result = slz._validate_backend_id(fake_gateway, backend.id)
+        assert result == backend
+
+
+class TestResourceDataSLZ:
+    @pytest.mark.parametrize(
+        "description_en, expected",
+        [
+            ("test", "test"),
+            ("", None),
+            (None, None),
+        ],
+    )
+    def validate_description_en(self, description_en, expected):
+        slz = ResourceDataSLZ()
+        result = slz.validate_description_en(description_en)
+        assert result == expected
+
+
+class TestResourceImportInputSLZ:
+    def test_validate(self, fake_stage, fake_resource_swagger):
+        fake_gateway = fake_stage.api
+
+        data = {
+            "content": fake_resource_swagger,
+            "selected_resources": [{"name": "foo"}],
+            "delete": True,
+        }
+        slz = ResourceImportInputSLZ(
+            data=data,
+            context={
+                "stages": [fake_stage],
+                "exist_label_names": [],
+            },
+        )
+        slz.is_valid(raise_exception=True)
+        assert len(slz.validated_data["resources"]) == 1
+
+    @pytest.mark.parametrize(
+        "content",
+        [
+            "foo",
+            json.dumps({"foo": "bar"}),
+        ],
+    )
+    def test_validate_content__error(self, content):
+        slz = ResourceImportInputSLZ()
+        with pytest.raises(ValidationError):
+            slz._validate_content(content)
+
+    @pytest.mark.parametrize(
+        "resources, context, expected",
+        [
+            (
+                [{"labels": ["foo", "bar"]}],
+                {"exist_label_names": ["green", "blue"]},
+                ValidationError,
+            ),
+            (
+                [{"labels": ["foo", "bar"]}, {"labels": []}],
+                {"exist_label_names": []},
+                ValidationError,
+            ),
+            (
+                [{"name": "test"}, {"labels": []}],
+                {"exist_label_names": ["green", "blue"]},
+                None,
+            ),
+        ],
+    )
+    def test_validate_label_count(self, settings, resources, context, expected):
+        settings.MAX_LABEL_COUNT_PER_GATEWAY = 1
+
+        slz = ResourceImportInputSLZ(context=context)
+
+        if expected is None:
+            slz._validate_label_count(resources)
             return
 
+        with pytest.raises(expected):
+            slz._validate_label_count(resources)
+
+
+class TestResourceExportOutputSLZ:
+    def test_to_representation(self, fake_resource):
+        proxies = {proxy.id: proxy for proxy in Proxy.objects.filter(resource__in=[fake_resource])}
+        backends = {backend.id: backend.name for backend in Backend.objects.filter(gateway=fake_resource.api)}
+
+        slz = ResourceExportOutputSLZ(
+            [fake_resource],
+            many=True,
+            context={
+                "labels": {fake_resource.id: [{"id": 1, "name": "foo"}]},
+                "proxies": proxies,
+                "backends": backends,
+                "auth_configs": {fake_resource.id: {"foo": True}},
+            },
+        )
+        assert len(slz.data) == 1
+
+
+class TestBackendPathCheckInputSLZ:
+    def test_validate(self):
+        data = {
+            "path": "/foo/{color}",
+            "backend_id": 1,
+            "backend_path": "/bar/{color}",
+        }
+
+        slz = BackendPathCheckInputSLZ(data=data, context={"stages": []})
         slz.is_valid(raise_exception=True)
-        assert slz.validated_data["selected_resources"] == expected
 
-
-class TestCheckImportResourceSLZ:
-    @pytest.fixture(autouse=True)
-    def setup_fixture(self):
-        self.gateway = G(Gateway)
-        self.request = create_request()
-        self.request.gateway = self.gateway
-        self.context = {
-            "request": self.request,
-            "stage_name_set": set(["prod", "test"]),
-            "resource_path_method_to_id": {
-                "/echo/": {
-                    "GET": 1,
-                    "POST": 2,
-                },
-                "/echo/any/": {
-                    "ANY": 3,
-                },
-            },
-            "resource_name_to_id": {
-                "get_echo": 1,
-                "post_echo": 2,
-                "any_echo": 3,
-            },
-            "resource_doc_language": "zh",
-            "resource_doc_key_to_id": {
-                "1:zh": 10,
-                "2:zh": 20,
-            },
-        }
-
-    def test_to_internal_value(self):
-        data = [
-            {
-                "resource": {
-                    "id": None,
-                    "name": "echo_2",
-                    "path": "/echo/2/",
-                    "method": "GET",
-                    "labels": [],
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "http": {
-                            "method": "GET",
-                            "path": "/echo/",
-                            "timeout": 0,
-                            "upstreams": {},
-                            "transform_headers": {},
-                        },
-                    },
-                    "auth_config": {
-                        "auth_verified_required": True,
-                    },
-                    "disabled_stages": ["prod"],
-                },
-                "expected": {
-                    "id": None,
-                    "name": "echo_2",
-                    "path": "/echo/2/",
-                    "method": "GET",
-                    "labels": [],
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "backend_config_type": "default",
-                        "backend_service_id": None,
-                        "http": {
-                            "method": "GET",
-                            "path": "/echo/",
-                            "timeout": 0,
-                            "upstreams": {},
-                            "transform_headers": {},
-                        },
-                    },
-                    "auth_config": {
-                        "auth_verified_required": True,
-                    },
-                    "disabled_stages": ["prod"],
-                    "resource_doc_id": None,
-                    "resource_doc_language": "zh",
-                },
-            },
-            {
-                "resource": {
-                    "id": 1,
-                    "name": "get_echo",
-                    "path": "/echo/",
-                    "method": "GET",
-                    "labels": [],
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "http": {
-                            "method": "GET",
-                            "path": "/echo/",
-                            "timeout": 0,
-                            "upstreams": {},
-                            "transform_headers": {},
-                        },
-                    },
-                    "auth_config": {
-                        "auth_verified_required": True,
-                    },
-                    "disabled_stages": ["prod"],
-                },
-                "expected": {
-                    "id": 1,
-                    "name": "get_echo",
-                    "path": "/echo/",
-                    "method": "GET",
-                    "labels": [],
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "backend_config_type": "default",
-                        "backend_service_id": None,
-                        "http": {
-                            "method": "GET",
-                            "path": "/echo/",
-                            "timeout": 0,
-                            "upstreams": {},
-                            "transform_headers": {},
-                        },
-                    },
-                    "auth_config": {
-                        "auth_verified_required": True,
-                    },
-                    "disabled_stages": ["prod"],
-                    "resource_doc_id": 10,
-                    "resource_doc_language": "zh",
-                },
-            },
-        ]
-        for test in data:
-            slz = serializers.CheckImportResourceSLZ(
-                data=test["resource"],
-                context=copy.deepcopy(self.context),
-            )
-            slz.is_valid(raise_exception=True)
-            assert dict(slz.validated_data) == test["expected"]
-
-    def test_validate_labels(self):
-        data = [
-            {
-                "resource": {
-                    "name": "get_echo",
-                    "path": "/echo/",
-                    "method": "GET",
-                    "labels": ["a"] * 11,
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "http": {
-                            "method": "GET",
-                            "path": "/echo/",
-                            "timeout": 0,
-                            "upstreams": {},
-                            "transform_headers": {},
-                        },
-                    },
-                    "auth_config": {
-                        "auth_verified_required": True,
-                    },
-                    "disabled_stages": ["prod"],
-                },
-            }
-        ]
-        for test in data:
-            slz = serializers.CheckImportResourceSLZ(
-                data=test["resource"],
-                context=copy.deepcopy(self.context),
-            )
-            slz.is_valid()
-            assert slz.errors
-
-    def test_validate_disabled_stages(self):
-        data = [
-            {
-                "resource": {
-                    "name": "disabled_stages",
-                    "path": "/disabled/stages/",
-                    "method": "GET",
-                    "labels": [],
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "http": {
-                            "method": "GET",
-                            "path": "/echo/",
-                            "timeout": 0,
-                            "upstreams": {},
-                            "transform_headers": {},
-                        },
-                    },
-                    "auth_config": {
-                        "auth_verified_required": True,
-                    },
-                    "disabled_stages": ["prod", "stag"],
-                },
-                "expected": {
-                    "disabled_stages": ["prod"],
-                },
-            }
-        ]
-        for test in data:
-            slz = serializers.CheckImportResourceSLZ(
-                data=test["resource"],
-                context=copy.deepcopy(self.context),
-            )
-            slz.is_valid(raise_exception=True)
-            assert slz.validated_data["disabled_stages"] == test["expected"]["disabled_stages"]
-
-    def test_validate_method(self):
-        resource = {
-            "labels": [],
-            "proxy_type": "http",
-            "proxy_configs": {
-                "http": {
-                    "method": "GET",
-                    "path": "/echo/",
-                    "timeout": 0,
-                    "upstreams": {},
-                    "transform_headers": {},
-                },
-            },
-            "auth_config": {
-                "auth_verified_required": True,
-            },
-            "disabled_stages": [],
-        }
-
-        data = [
-            # same path, other method exist
-            {
-                "resource": [
-                    {
-                        "name": "any_echo_1",
-                        "path": "/echo/",
-                        "method": "ANY",
-                    },
-                ],
-                "will_error": True,
-            },
-            # same path, any method exist
-            {
-                "resource": [
-                    {
-                        "name": "any_echo_2",
-                        "path": "/echo/any/",
-                        "method": "GET",
-                    }
-                ],
-                "will_error": True,
-            },
-            # same path, same method exist in config
-            {
-                "resource": [
-                    {
-                        "name": "echo_2",
-                        "path": "/echo/2/",
-                        "method": "GET",
-                    },
-                    {
-                        "name": "echo_3",
-                        "path": "/echo/2/",
-                        "method": "GET",
-                    },
-                ],
-                "will_error": True,
-            },
-            # same path, any method exist
-            {
-                "resource": [
-                    {
-                        "name": "echo_2",
-                        "path": "/echo/2/",
-                        "method": "ANY",
-                    },
-                    {
-                        "name": "echo_3",
-                        "path": "/echo/2/",
-                        "method": "GET",
-                    },
-                ],
-                "will_error": True,
-            },
-            # same path, any method, other method exist
-            {
-                "resource": [
-                    {
-                        "name": "echo_2",
-                        "path": "/echo/2/",
-                        "method": "GET",
-                    },
-                    {
-                        "name": "echo_3",
-                        "path": "/echo/2/",
-                        "method": "ANY",
-                    },
-                ],
-                "will_error": True,
-            },
-        ]
-        for test in data:
-            slz = serializers.CheckImportResourceSLZ(
-                data=test["resource"],
-                context=copy.deepcopy(self.context),
-                many=True,
-            )
-            for r in test["resource"]:
-                r.update(resource)
-
-            slz.is_valid()
-            if test.get("will_error"):
-                assert slz.errors
-            else:
-                assert not slz.errors
+        assert slz.validated_data["path"] == data["path"]
+        assert slz.validated_data["backend_config"]["path"] == data["backend_path"]

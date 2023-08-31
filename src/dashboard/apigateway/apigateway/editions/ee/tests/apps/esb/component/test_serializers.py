@@ -305,7 +305,7 @@ class TestComponentResourceBindingSLZ:
                 {
                     "id": 1,
                     "name": "echo",
-                    "extend_data": {
+                    "metadata": {
                         "system_name": "DEMO",
                         "component_id": 10,
                         "component_name": "component_echo",
@@ -329,7 +329,7 @@ class TestComponentResourceBindingSLZ:
                 {
                     "id": None,
                     "name": "echo",
-                    "extend_data": {
+                    "metadata": {
                         "system_name": "DEMO",
                         "component_id": None,
                         "component_name": "component_echo",

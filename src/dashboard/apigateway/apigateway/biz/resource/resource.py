@@ -127,7 +127,7 @@ class ResourceHandler:
         ResourceHandler().delete_resources(resource_ids)
 
     @staticmethod
-    def delete_resources(resource_ids: List[int], gateway: Gateway = None):
+    def delete_resources(resource_ids: List[int], gateway: Optional[Gateway] = None):
         if not resource_ids:
             return
 
@@ -219,9 +219,9 @@ class ResourceHandler:
         }
 
         if proxy_map is None:
-            data["proxy"] = Proxy.objects.get(id=resource.proxy_id).snapshot(as_dict=True)
+            data["proxy"] = Proxy.objects.get(resource_id=resource.id).snapshot(as_dict=True)
         else:
-            data["proxy"] = proxy_map[resource.proxy_id]
+            data["proxy"] = proxy_map[resource.id]
 
         if context_map is None:
             contexts = Context.objects.filter(
@@ -282,6 +282,16 @@ class ResourceHandler:
         return queryset
 
     @staticmethod
+    def get_default_auth_config():
+        return {
+            # 跳过用户认证逻辑，值为False时，不根据请求参数中的用户信息校验用户
+            "skip_auth_verification": False,
+            "auth_verified_required": True,
+            "app_verified_required": True,
+            "resource_perm_required": True,
+        }
+
+    @staticmethod
     def record_audit_log_success(
         username: str,
         gateway_id: int,
@@ -305,3 +315,31 @@ class ResourceHandler:
             op_object=instance_name,
             comment=comment,
         )
+
+    @staticmethod
+    def save_resource_labels(gateway: Gateway, resource: Resource, label_ids: List[int]):
+        """
+        存储资源标签
+        - 删除未指定的标签
+
+        :param label_ids: 网关标签 ID，忽略不存在的标签
+        """
+        # 资源当前已有的标签
+        remaining_resource_labels = {
+            label.api_label_id: label.id for label in ResourceLabel.objects.filter(resource=resource)
+        }
+
+        add_resource_labels = []
+        for gateway_label in APILabel.objects.filter(api=gateway, id__in=label_ids):
+            if gateway_label.id in remaining_resource_labels:
+                remaining_resource_labels.pop(gateway_label.id)
+                continue
+
+            add_resource_labels.append(ResourceLabel(resource=resource, api_label=gateway_label))
+
+        if add_resource_labels:
+            # resource label 最多 10 个，不需要指定 batch_size
+            ResourceLabel.objects.bulk_create(add_resource_labels)
+
+        if remaining_resource_labels:
+            ResourceLabel.objects.filter(id__in=remaining_resource_labels.values()).delete()

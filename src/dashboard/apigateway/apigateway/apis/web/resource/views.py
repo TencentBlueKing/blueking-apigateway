@@ -26,9 +26,9 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.resource import serializers
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
+from apigateway.apps.label.models import APILabel
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer.importers import (
     ResourceDataConvertor,
@@ -58,6 +58,7 @@ from .serializers import (
     ResourceBatchDestroyInputSLZ,
     ResourceBatchUpdateInputSLZ,
     ResourceExportInputSLZ,
+    ResourceExportOutputSLZ,
     ResourceImportCheckInputSLZ,
     ResourceImportCheckOutputSLZ,
     ResourceImportInputSLZ,
@@ -283,7 +284,7 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
         slz.is_valid(raise_exception=True)
 
         instance = self.get_object()
-        ResourceLabelHandler.save_labels(
+        ResourceHandler.save_resource_labels(
             gateway=request.gateway,
             resource=instance,
             label_ids=slz.validated_data["label_ids"],
@@ -300,7 +301,13 @@ class ResourceImportCheckApi(generics.CreateAPIView):
     )
     def post(self, request, *args, **kwargs):
         """导入资源检查"""
-        slz = ResourceImportCheckInputSLZ(data=request.data, context={"api": request.gateway})
+        slz = ResourceImportCheckInputSLZ(
+            data=request.data,
+            context={
+                "stages": Stage.objects.filter(api=request.gateway),
+                "exist_label_names": list(APILabel.objects.filter(api=request.gateway).values_list("name", flat=True)),
+            },
+        )
         slz.is_valid(raise_exception=True)
 
         resource_data_list = ResourceDataConvertor(request.gateway, slz.validated_data["resources"]).convert()
@@ -332,7 +339,13 @@ class ResourceImportApi(generics.CreateAPIView):
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        slz = ResourceImportInputSLZ(data=request.data, context={"api": request.gateway})
+        slz = ResourceImportInputSLZ(
+            data=request.data,
+            context={
+                "stages": Stage.objects.filter(api=request.gateway),
+                "exist_label_names": list(APILabel.objects.filter(api=request.gateway).values_list("name", flat=True)),
+            },
+        )
         slz.is_valid(raise_exception=True)
 
         importer = ResourcesImporter.from_resources(
@@ -365,7 +378,7 @@ class ResourceExportApi(generics.CreateAPIView):
         )
         selected_resource_ids = list(selected_resource_queryset.values_list("id", flat=True))
 
-        slz = serializers.ResourceExportOutputSLZ(
+        output_slz = ResourceExportOutputSLZ(
             selected_resource_queryset,
             many=True,
             context={
@@ -380,7 +393,7 @@ class ResourceExportApi(generics.CreateAPIView):
 
         file_type = slz.validated_data["file_type"]
         exporter = ResourceSwaggerExporter()
-        content = exporter.to_swagger(slz.data, file_type=file_type)
+        content = exporter.to_swagger(output_slz.data, file_type=file_type)
 
         # 导出的文件名，需满足规范：bk_产品名_功能名_文件名.后缀
         export_filename = f"bk_apigw_resources_{self.request.gateway.name}.{file_type}"
@@ -420,14 +433,13 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
         slz = self.get_serializer(
             data=request.query_params,
             context={
-                "api": request.gateway,
                 "stages": Stage.objects.filter(api=request.gateway),
             },
         )
         slz.is_valid(raise_exception=True)
 
         backend_id = slz.validated_data.get("backend_id")
-        backend_path = slz.validated_data.get("backend_config", {}).get("backend_path", "")
+        backend_path = slz.validated_data.get("backend_config", {}).get("path", "")
         backend_hosts = self._get_backend_hosts(backend_id)
 
         result = []
@@ -453,7 +465,7 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
 
         backend_configs = BackendConfig.objects.filter(gateway=self.request.gateway, backend_id=backend_id)
         return {
-            backend_config.stage_id: [f"{host['scheme']}://{host['host']}" for host in backend_config["hosts"]]
+            backend_config.stage_id: [f"{host['scheme']}://{host['host']}" for host in backend_config.config["hosts"]]
             for backend_config in backend_configs
         }
 
@@ -467,8 +479,6 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
 
 
 class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListAPIView):
-    lookup_field = "id"
-
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ResourceWithVerifiedUserRequiredOutputSLZ(many=True)},
         tags=["WebAPI.Resource"],

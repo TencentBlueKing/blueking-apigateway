@@ -18,8 +18,8 @@
 from collections import defaultdict
 from typing import Dict, List
 
-from apigateway.apps.label.models import APILabel, ResourceLabel
-from apigateway.core.models import Gateway, Resource
+from apigateway.apps.label.models import ResourceLabel
+from apigateway.core.models import Resource
 
 
 class ResourceLabelHandler:
@@ -44,31 +44,3 @@ class ResourceLabelHandler:
             )
 
         return resource_labels
-
-    @staticmethod
-    def save_labels(gateway: Gateway, resource: Resource, label_ids: List[int]):
-        """
-        存储资源标签
-        - 删除未指定的标签
-
-        :param label_ids: 网关标签 ID，忽略不存在的标签
-        """
-        # 资源当前已有的标签
-        remaining_resource_labels = {
-            label.api_label_id: label.id for label in ResourceLabel.objects.filter(resource=resource)
-        }
-
-        add_resource_labels = []
-        for gateway_label in APILabel.objects.filter(api=gateway, id__in=label_ids):
-            if gateway_label.id in remaining_resource_labels:
-                remaining_resource_labels.pop(gateway_label.id)
-                continue
-
-            add_resource_labels.append(ResourceLabel(resource=resource, api_label=gateway_label))
-
-        if add_resource_labels:
-            # resource label 最多 10 个，不需要指定 batch_size
-            ResourceLabel.objects.bulk_create(add_resource_labels)
-
-        if remaining_resource_labels:
-            ResourceLabel.objects.filter(id__in=remaining_resource_labels.values()).delete()

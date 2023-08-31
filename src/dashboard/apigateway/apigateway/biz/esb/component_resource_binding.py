@@ -24,7 +24,8 @@ from apigateway.biz.resource.models import ResourceData
 class ComponentResourceBindingHandler:
     @staticmethod
     def sync(resource_data_list: List[ResourceData]):
-        resource_ids = [resource_data.resource.id for resource_data in resource_data_list]
+        # 添加 if 条件，为通过 lint 校验
+        resource_ids = [resource_data.resource.id for resource_data in resource_data_list if resource_data.resource]
 
         ComponentResourceBinding.objects.exclude(resource_id__in=resource_ids).delete()
 
@@ -33,6 +34,8 @@ class ComponentResourceBindingHandler:
         add_binding = []
         update_binding = []
         for resource_data in resource_data_list:
+            assert resource_data.resource
+
             if resource_data.resource.id in bindings:
                 binding = bindings[resource_data.resource.id]
                 binding.__dict__.update(
