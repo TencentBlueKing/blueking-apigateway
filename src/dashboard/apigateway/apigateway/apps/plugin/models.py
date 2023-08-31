@@ -22,7 +22,12 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from tencent_apigateway_common.i18n.field import I18nProperty
 
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeEnum
+from apigateway.apps.plugin.constants import (
+    PluginBindingScopeEnum,
+    PluginStyleEnum,
+    PluginTypeEnum,
+    PluginTypeScopeEnum,
+)
 from apigateway.apps.plugin.managers import (
     PluginBindingManager,
     PluginConfigManager,
@@ -57,11 +62,17 @@ class PluginType(models.Model):
         help_text="plugin config json schema",
         on_delete=models.SET_NULL,
     )
+    # stage/resource/stage_and_resource
+    scope = models.CharField(
+        max_length=32,
+        choices=PluginTypeScopeEnum.get_choices(),
+        default=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value,
+    )
 
     objects = PluginTypeManager()
 
     def __str__(self) -> str:
-        return f"<PluginType {self.name}({self.pk})>"
+        return f"<PluginType {self.pk}/{self.name}>"
 
     def natural_key(self):
         return (self.code,)
@@ -103,29 +114,17 @@ class PluginForm(models.Model):
         unique_together = ("language", "type")
 
     def __str__(self) -> str:
-        return f"<PluginForm {self.type.name}({self.pk})>"
+        return f"<PluginForm {self.pk}/{self.type.name}>"
 
     def natural_key(self):
         return (self.language, self.type.code)
-
-    # @classmethod
-    # def fake_object(cls, type: PluginType):
-    #     return cls(
-    #         pk=None,
-    #         language="",
-    #         type=type,
-    #         notes="",
-    #         style=PluginStyleEnum.RAW.value,
-    #         default_value="",
-    #         config={},
-    #     )
 
 
 class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
     """网关开启的插件及其配置"""
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    name = models.CharField(max_length=64, db_index=True)
+    name = models.CharField(max_length=64, blank=True, null=True)
     type = models.ForeignKey(PluginType, null=True, on_delete=models.PROTECT)
     description_i18n = I18nProperty(models.TextField(default=None, blank=True, null=True))
     description = description_i18n.default_field()
@@ -153,7 +152,7 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
         self.yaml = yaml_
 
     def __str__(self) -> str:
-        return f"<PluginConfig {self.type.code}({self.pk})>"
+        return f"<PluginConfig {self.pk}/{self.type.code}>"
 
 
 # ====================================================
@@ -194,9 +193,8 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
     scope_type = models.CharField(
         max_length=32,
         choices=PluginBindingScopeEnum.get_choices(),
-        db_index=True,
     )
-    scope_id = models.IntegerField(db_index=True)
+    scope_id = models.IntegerField()
     config = models.ForeignKey(PluginConfig, on_delete=models.PROTECT, null=True)
 
     # FIXME: remove in 1.14
@@ -216,3 +214,6 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
 
     def get_type(self):
         return self.config.type.code
+
+    def __str__(self) -> str:
+        return f"<PluginBinding {self.pk}/{self.scope_type}/{self.scope_id}/{self.config.type}>"

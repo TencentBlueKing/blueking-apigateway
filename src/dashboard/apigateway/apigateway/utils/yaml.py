@@ -19,6 +19,7 @@
 from collections import OrderedDict
 from enum import Enum
 
+import ruamel
 from ruamel.yaml import YAML, Dumper
 from ruamel.yaml import resolver as yaml_resolver
 from ruamel.yaml.compat import StringIO
@@ -32,6 +33,7 @@ def _mapping_representer(dumper, data):
 _yaml = YAML()
 _yaml.width = 10000  # 超过这个宽度会折行，这个特性会在渲染 Chart 的时候导致模板报错，必须设置很大的值
 _yaml.representer.add_representer(OrderedDict, _mapping_representer)
+
 
 # https://yaml.org/type/bool.html
 _yaml_10_boolean_values = {
@@ -93,6 +95,10 @@ def yaml_dumps(data):
     stream = StringIO()
     _yaml.dump(data, stream=stream)
     return stream.getvalue()
+
+
+def yaml_dumps_multiline_string(data):
+    return ruamel.yaml.dump(data, default_style="|")
 
 
 class YamlRepresenterHookMixin:
