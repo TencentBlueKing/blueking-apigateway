@@ -337,9 +337,6 @@ MICRO_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,19}$")
 # 后端服务名称
 BACKEND_SERVICE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
 
-# 单位为秒的持续时间
-DURATION_IN_SECOND_PATTERN = re.compile(r"^(\d+)s$")
-
 # 超时时间设置
 MAX_BACKEND_TIMEOUT_IN_SECOND = 600
 MAX_CONNECT_TIMEOUT_IN_SECOND = 600
