@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from contextlib import nullcontext as does_not_raise
+
 import pytest
 
 from apigateway.apis.web.plugin.checker import (
@@ -70,10 +72,10 @@ class TestBkCorsChecker:
                 "allow_headers": "*",
                 "expose_headers": "*",
                 "max_age": 100,
-                "allow_credential": True,
+                "allow_credential": True,  # 当 'allow_credential' 为 True 时，allow_origins 不能为 '*'
             },
             {
-                "allow_origins_by_regex": ["\\"],
+                "allow_origins_by_regex": ["\\"],  # invalid regex
                 "allow_methods": "*",
                 "allow_headers": "*",
                 "expose_headers": "*",
@@ -82,7 +84,7 @@ class TestBkCorsChecker:
             },
             {
                 "allow_origins": "*",
-                "allow_origins_by_regex": "http://.*.example.com",
+                "allow_origins_by_regex": "http://.*.example.com",  # should be a list
                 "allow_methods": "*",
                 "allow_headers": "*",
                 "expose_headers": "*",
@@ -91,7 +93,7 @@ class TestBkCorsChecker:
             },
             {
                 "allow_origins": "",
-                "allow_origins_by_regex": [],
+                "allow_origins_by_regex": [],  # allow_origins, allow_origins_by_regex 不能同时为空
                 "allow_methods": "**",
                 "allow_headers": "**",
                 "expose_headers": "**",
@@ -100,7 +102,7 @@ class TestBkCorsChecker:
             },
             {
                 "allow_origins": "http://foo.com",
-                "allow_methods": "GET,POST,PUT,GET",
+                "allow_methods": "GET,POST,PUT,GET",  # duplicated, invalid
                 "allow_headers": "**",
                 "expose_headers": "**",
                 "max_age": 100,
@@ -109,7 +111,7 @@ class TestBkCorsChecker:
             {
                 "allow_origins": "http://foo.com",
                 "allow_methods": "**",
-                "allow_headers": "x-token,x-token",
+                "allow_headers": "x-token,x-token",  # duplicated, invalid
                 "expose_headers": "",
                 "max_age": 100,
                 "allow_credential": False,
@@ -138,7 +140,7 @@ class TestBkCorsChecker:
     @pytest.mark.parametrize(
         "allow_methods",
         [
-            "GET,POST,GET",
+            "GET,POST,GET",  # duplicate GET
         ],
     )
     def test_check_allow_methods__error(self, allow_methods):
@@ -161,7 +163,7 @@ class TestBkCorsChecker:
     @pytest.mark.parametrize(
         "headers",
         [
-            "Bk-Token,Bk-Token",
+            "Bk-Token,Bk-Token",  # duplicate
         ],
     )
     def test_check_headers__error(self, headers):
@@ -277,39 +279,35 @@ class TestPluginConfigYamlChecker:
 
 class TestHeaderRewriteChecker:
     @pytest.mark.parametrize(
-        "data, raise_error",
+        "data, ctx",
         [
             (
                 {"set": [{"key": "key1", "value": "value1"}, {"key": "key2", "value": "value2"}], "remove": []},
-                False,
+                does_not_raise(),
             ),
             (
                 {"set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}], "remove": []},
-                True,
+                pytest.raises(ValueError),
             ),
         ],
     )
-    def test_check(self, data, raise_error):
+    def test_check(self, data, ctx):
         checker = HeaderRewriteChecker()
-        try:
+        with ctx:
             checker.check(yaml_dumps(data))
-            raise_checker = False
-        except ValueError:
-            raise_checker = True
-        assert raise_checker == raise_error
 
     @pytest.mark.parametrize(
-        "type_code, data, raise_error",
+        "type_code, data, ctx",
         [
             (
                 "bk-header-rewrite",  # set key 无重复
                 {"set": [{"key": "key1", "value": "value1"}, {"key": "key2", "value": "value2"}], "remove": []},
-                False,
+                does_not_raise(),
             ),
             (
                 "bk-header-rewrite",  # set key 重复
                 {"set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}], "remove": []},
-                True,
+                pytest.raises(ValueError),
             ),
             (
                 "bk-header-rewrite",  # remove key 无重复
@@ -317,7 +315,7 @@ class TestHeaderRewriteChecker:
                     "set": [],
                     "remove": [{"key": "key1"}, {"key": "key2"}],
                 },
-                False,
+                does_not_raise(),
             ),
             (
                 "bk-header-rewrite",  # remove key 重复
@@ -325,15 +323,12 @@ class TestHeaderRewriteChecker:
                     "set": [],
                     "remove": [{"key": "key1"}, {"key": "key1"}],
                 },
-                True,
+                pytest.raises(ValueError),
             ),
         ],
     )
-    def test_check_plugin(self, type_code, data, raise_error):
+    def test_check_plugin(self, type_code, data, ctx):
         checker = PluginConfigYamlChecker(type_code)
-        try:
+
+        with ctx:
             checker.check(yaml_dumps(data))
-            raise_checker = False
-        except ValueError:
-            raise_checker = True
-        assert raise_checker == raise_error
