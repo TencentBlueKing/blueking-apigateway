@@ -22,7 +22,12 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from tencent_apigateway_common.i18n.field import I18nProperty
 
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeEnum
+from apigateway.apps.plugin.constants import (
+    PluginBindingScopeEnum,
+    PluginStyleEnum,
+    PluginTypeEnum,
+    PluginTypeScopeEnum,
+)
 from apigateway.apps.plugin.managers import (
     PluginBindingManager,
     PluginConfigManager,
@@ -56,6 +61,12 @@ class PluginType(models.Model):
         null=True,
         help_text="plugin config json schema",
         on_delete=models.SET_NULL,
+    )
+    # stage/resource/stage_and_resource
+    scope = models.CharField(
+        max_length=32,
+        choices=PluginTypeScopeEnum.get_choices(),
+        default=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value,
     )
 
     objects = PluginTypeManager()

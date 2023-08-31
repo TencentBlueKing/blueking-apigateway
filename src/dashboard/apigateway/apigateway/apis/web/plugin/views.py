@@ -26,7 +26,7 @@ from rest_framework.generics import get_object_or_404
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.plugin.constants import PluginStyleEnum
+from apigateway.apps.plugin.constants import PluginStyleEnum, PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Resource, Stage
@@ -83,14 +83,25 @@ class PluginTypeListApi(generics.ListAPIView):
 
     def get_queryset(self):
         """默认展示所有公开插件；不展示非公开插件"""
-        # 支持 keyword=abc 搜索
-        condition = Q()
-        keyword = self.request.query_params.get("keyword")
-        if keyword:
-            condition = Q(name__icontains=keyword) | Q(code__icontains=keyword)
 
-        # FIXME: 需要区分 stage 和 resource 的插件类型
-        return PluginType.objects.filter(is_public=True).filter(condition).order_by("code")
+        slz = PluginTypeQuerySLZ(data=self.request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        scope = data.get("scope")
+        if scope in (PluginTypeScopeEnum.STAGE.value, PluginTypeScopeEnum.RESOURCE.value):
+            condition = Q(scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value) | Q(scope=scope)
+        else:
+            condition = Q(scope=scope)
+
+        queryset = PluginType.objects.filter(is_public=True).filter(condition)
+
+        # 支持 keyword=abc 搜索
+        keyword = data.get("keyword")
+        if keyword:
+            queryset = queryset.filter(Q(name__icontains=keyword) | Q(code__icontains=keyword))
+
+        return queryset.order_by("code")
 
 
 @method_decorator(

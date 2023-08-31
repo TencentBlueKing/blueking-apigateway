@@ -28,6 +28,9 @@ class TestPluginTypeListApi:
             path_params={
                 "gateway_id": fake_gateway.id,
             },
+            data={
+                "scope": "stage_and_resource",
+            },
         )
 
         assert response.status_code == 200
@@ -45,6 +48,9 @@ class TestPluginTypeListApi:
             gateway=fake_gateway,
             path_params={
                 "gateway_id": fake_gateway.id,
+            },
+            data={
+                "scope": "stage_and_resource",
             },
         )
 

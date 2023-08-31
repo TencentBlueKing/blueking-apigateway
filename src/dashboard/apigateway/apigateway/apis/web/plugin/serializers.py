@@ -28,6 +28,7 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.plugin.checker import PluginConfigYamlChecker
 from apigateway.apis.web.plugin.convertor import PluginConfigYamlConvertor
+from apigateway.apps.plugin.constants import PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
@@ -61,6 +62,7 @@ class PluginTypeSLZ(serializers.ModelSerializer):
 
 class PluginTypeQuerySLZ(serializers.Serializer):
     keyword = serializers.CharField(required=False)
+    scope = serializers.ChoiceField(choices=PluginTypeScopeEnum.get_choices(), required=True)
 
 
 class PluginFormSLZ(serializers.ModelSerializer):
