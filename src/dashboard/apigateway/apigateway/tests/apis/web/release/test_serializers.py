@@ -167,7 +167,7 @@ class TestReleaseHistoryOutputSLZ:
         event_1 = G(
             PublishEvent,
             publish=release_history,
-            name=PublishEventNameTypeEnum.ValidateConfiguration.value,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
             status=PublishEventStatusTypeEnum.FAILURE.value,
             created_time=dummy_time.time + datetime.timedelta(seconds=10),
         )

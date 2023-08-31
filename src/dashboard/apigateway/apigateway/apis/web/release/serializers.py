@@ -59,14 +59,9 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
     resource_version_display = serializers.SerializerMethodField(read_only=True, help_text="发布资源版本")
     created_time = serializers.DateTimeField(read_only=True, help_text="发布创建事件")
     created_by = serializers.CharField(read_only=True, help_text="发布人")
-    # 发布来源
     source = serializers.CharField(read_only=True, help_text="发布来源")
-    # 发布耗时
     cost = serializers.SerializerMethodField(read_only=True, help_text="发布耗时")
-    # 发布状态
     status = serializers.SerializerMethodField(read_only=True, help_text="发布状态")
-
-    # 是否正在发布(用户前端显示加载图标)
     is_running = serializers.SerializerMethodField(read_only=True, help_text="是否正在发布")
 
     def get_stage_names(self, obj):
@@ -92,7 +87,7 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
         # 如果失败，返回event的创建时间和release_history创建时间之差
         if event.status == PublishEventStatusEnum.FAILURE.value or (
             event.status != PublishEventStatusEnum.DOING.value
-            and event.name == PublishEventNameTypeEnum.LoadConfiguration.value
+            and event.name == PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
         ):
             return (event.created_time - obj.created_time).total_seconds()
 
@@ -127,7 +122,5 @@ class PublishEventQueryOutputSLZ(ReleaseHistoryOutputSLZ):
     events = serializers.ListField(child=PublishEventInfoSLZ(), allow_empty=True, help_text="发布事件列表")
 
     def to_representation(self, obj):
-        events_data = self.context["publish_events"]
-        obj.events = events_data
-        representation = super().to_representation(obj)
-        return representation
+        obj.events = self.context["publish_events"]
+        return super().to_representation(obj)
