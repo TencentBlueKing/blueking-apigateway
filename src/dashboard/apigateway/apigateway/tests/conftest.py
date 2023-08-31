@@ -337,7 +337,7 @@ def fake_publish_event(fake_release_history):
     return G(
         PublishEvent,
         publish=fake_release_history,
-        name=PublishEventNameTypeEnum.ValidateConfiguration.value,
+        name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
         status=PublishEventStatusTypeEnum.DOING.value,
         created_time=dummy_time.time,
     )

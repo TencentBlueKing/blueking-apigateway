@@ -58,7 +58,7 @@ class TestReleaseHandler:
         event_2 = G(
             PublishEvent,
             publish=fake_release_history,
-            name=PublishEventNameTypeEnum.ValidateConfiguration.value,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
             status=PublishEventStatusTypeEnum.SUCCESS.value,
         )
         assert (
@@ -89,7 +89,7 @@ class TestReleaseHandler:
             == PublishEventStatusTypeEnum.DOING.value
         )
 
-        fake_publish_event.name = PublishEventNameTypeEnum.LoadConfiguration.value
+        fake_publish_event.name = PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
         fake_publish_event.status = PublishEventStatusTypeEnum.SUCCESS.value
         fake_publish_event.save()
 

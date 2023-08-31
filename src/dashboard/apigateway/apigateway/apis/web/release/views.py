@@ -143,7 +143,7 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
         try:
             history = manager.release_batch(request.gateway, request.data, request.user.username)
         except ReleaseError as err:
-            logger.exception("release got exception")
+            logger.exception("release failed.")
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
 
@@ -189,8 +189,7 @@ class ReleaseHistoryListApi(generics.ListAPIView):
         )
         page = self.paginate_queryset(queryset)
 
-        slz_class = self.get_serializer_class()
-        slz = slz_class(
+        slz = self.get_serializer(
             page,
             many=True,
             context={
@@ -248,8 +247,7 @@ class PublishEventsRetrieveAPI(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         release_history = self.get_object()
-        slz_class = self.get_serializer_class()
-        slz = slz_class(
+        slz = self.get_serializer(
             release_history,
             context={
                 "publish_events": ReleaseHandler.get_publish_events_by_release_history_id(release_history.id),

@@ -80,7 +80,7 @@ class ReleaseHandler:
 
         publish_events = ReleaseHandler.batch_get_publish_event_by_release_history_ids(release_history_ids)
 
-        return dict((event.publish_id, event) for event in publish_events)
+        return {event.publish_id: event for event in publish_events}
 
     @staticmethod
     def get_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:
@@ -88,7 +88,7 @@ class ReleaseHandler:
 
         publish_events = ReleaseHandler.batch_get_publish_event_by_release_history_ids([release_history_id])
 
-        return [event for event in publish_events]
+        return list(publish_events)
 
     @staticmethod
     def batch_get_stage_release_status(stage_ids: List[int]):
@@ -111,19 +111,19 @@ class ReleaseHandler:
         # 遍历结果集
         stage_publish_status = {}
         for release_history in latest_release_histories:
-            stage_publish_status[release_history.stage.id] = {"publish_id": release_history.id}
+            stage_publish_status[release_history.stage_id] = {"publish_id": release_history.id}
             # 如果没有查到任何发布事件
             if release_history.id not in release_event_map:
                 # 兼容以前，使用以前的状态
-                stage_publish_status[release_history.stage.id]["status"] = release_history.status
+                stage_publish_status[release_history.stage_id]["status"] = release_history.status
             else:
                 # 如果最新事件状态是成功，但不是最后一个节点，返回发布中
                 latest_event = release_event_map[release_history.id]
                 if (
                     latest_event.status == PublishEventStatusEnum.SUCCESS.value
-                    and latest_event.name != PublishEventNameTypeEnum.LoadConfiguration.value
+                    and latest_event.name != PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
                 ):
-                    stage_publish_status[release_history.stage.id]["status"] = PublishEventStatusEnum.DOING.value
+                    stage_publish_status[release_history.stage_id]["status"] = PublishEventStatusEnum.DOING.value
                 else:
-                    stage_publish_status[release_history.stage.id]["status"] = latest_event.status
+                    stage_publish_status[release_history.stage_id]["status"] = latest_event.status
         return stage_publish_status

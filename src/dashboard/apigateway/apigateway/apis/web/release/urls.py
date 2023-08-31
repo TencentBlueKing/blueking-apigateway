@@ -48,5 +48,5 @@ urlpatterns = [
         ReleasedResourceRetrieveApi.as_view(),
         name="gateway.releases.released-resource.detail",
     ),
-    path("publish/<int:publish_id>/events", PublishEventsRetrieveAPI.as_view(), name="gateway.publish.events"),
+    path("publish/<int:publish_id>/events/", PublishEventsRetrieveAPI.as_view(), name="gateway.publish.events"),
 ]
