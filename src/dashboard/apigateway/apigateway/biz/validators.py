@@ -20,7 +20,8 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
-from apigateway.core.constants import APP_CODE_PATTERN
+
+from .constants import APP_CODE_PATTERN
 
 
 class MaxCountPerGatewayValidator(GetGatewayFromContextMixin):

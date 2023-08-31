@@ -27,10 +27,11 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
-from apigateway.core.constants import GatewayStatusEnum, UserAuthTypeEnum
+from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
 
+from .constants import UserAuthTypeEnum
 from .serializers import (
     GatewayCreateInputSLZ,
     GatewayListOutputSLZ,

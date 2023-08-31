@@ -21,13 +21,10 @@ from typing import List, Tuple
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.core.constants import (
-    NORMAL_PATH_VAR_NAME_PATTERN,
-    PATH_VAR_PATTERN,
-    STAGE_PATH_VAR_NAME_PATTERN,
-)
 from apigateway.core.models import Stage
 from apigateway.utils.list import get_duplicate_items
+
+from .constants import NORMAL_PATH_VAR_NAME_PATTERN, PATH_VAR_PATTERN, STAGE_PATH_VAR_NAME_PATTERN
 
 
 class PathVarsValidator:

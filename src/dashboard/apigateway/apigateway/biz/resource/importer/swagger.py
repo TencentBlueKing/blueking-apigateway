@@ -25,16 +25,16 @@ from typing import Any, Dict, List, Optional
 import jsonschema
 from django.utils.translation import gettext as _
 
+from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     HTTP_METHOD_ANY,
-    VALID_METHOD_IN_SWAGGER_PATHITEM,
     ProxyTypeEnum,
-    SwaggerExtensionEnum,
-    SwaggerFormatEnum,
 )
 from apigateway.utils.yaml import yaml_dumps, yaml_loads
+
+from .constants import VALID_METHOD_IN_SWAGGER_PATHITEM, SwaggerExtensionEnum
 
 logger = logging.getLogger(__name__)
 

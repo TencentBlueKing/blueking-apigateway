@@ -23,12 +23,12 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
 from apigateway.core.constants import (
-    GATEWAY_NAME_PATTERN,
     GatewayStatusEnum,
 )
 from apigateway.core.models import Gateway
 from apigateway.utils.crypto import calculate_fingerprint
 
+from .constants import GATEWAY_NAME_PATTERN
 from .validators import ReservedGatewayNameValidator
 
 

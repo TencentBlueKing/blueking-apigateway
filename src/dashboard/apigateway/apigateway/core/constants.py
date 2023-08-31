@@ -19,16 +19,10 @@
 import re
 from enum import Enum
 
-from blue_krill.data_types.enum import EnumField, FeatureFlag, FeatureFlagField, StructuredEnum
+from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.common.constants import ChoiceEnumMixin
-
-
-class UserAuthTypeEnum(ChoiceEnumMixin, Enum):
-    IEOD = "ieod"
-    TENCENT = "tencent"
-    DEFAULT = "default"
 
 
 class GatewayStatusEnum(StructuredEnum):
@@ -42,12 +36,6 @@ class APIHostingTypeEnum(StructuredEnum):
 
     DEFAULT = EnumField(0, "apigateway-ng")
     MICRO = EnumField(1, _("微网关"))
-
-
-class GatewayFeatureFlag(FeatureFlag):
-    """通用网关特性开关"""
-
-    ENABLE_I18N_SUPPORT = FeatureFlagField("ENABLE_I18N_SUPPORT", "是否启用国际化支持", False)
 
 
 class MicroGatewayStatusEnum(StructuredEnum):
@@ -231,52 +219,15 @@ RESOURCE_METHOD_CHOICES = HTTP_METHOD_CHOICES + [
 ]
 
 
-# 资源导出 Swagger 配置中的扩展字段名
-class SwaggerExtensionEnum(ChoiceEnumMixin, Enum):
-    METHOD_ANY = "x-bk-apigateway-method-any"
-    RESOURCE = "x-bk-apigateway-resource"
-
-
-VALID_METHOD_IN_SWAGGER_PATHITEM = [
-    "get",
-    "put",
-    "post",
-    "delete",
-    "options",
-    "head",
-    "patch",
-    SwaggerExtensionEnum.METHOD_ANY.value,
-]
-
-
-class ExportTypeEnum(StructuredEnum):
-    # 全部资源
-    ALL = EnumField("all")
-    # 已筛选资源
-    FILTERED = EnumField("filtered")
-    # 已选资源
-    SELECTED = EnumField("selected")
-
-
-class SwaggerFormatEnum(StructuredEnum):
-    YAML = EnumField("yaml", label="YAML")
-    JSON = EnumField("json", label="JSON")
-
-
 class BackendTypeEnum(StructuredEnum):
     HTTP = EnumField("http", label="HTTP")
     GRPC = EnumField("grpc", label="GRPC")
 
 
-# 每个资源允许关联的最大标签个数
-MAX_LABEL_COUNT_PER_RESOURCE = 10
-
 DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100
 DEFAULT_BACKEND_NAME = "default"
 
-# 网关名
-GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
 
 # Stage
 STAGE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,19}$")
@@ -297,16 +248,6 @@ HOST_WITHOUT_SCHEME_PATTERN = re.compile(
 )
 STAGE_ITEM_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{0,49}$")
 
-# 路径变量正则
-PATH_PATTERN = re.compile(r"^/[\w{}/.-]*$")
-PATH_VAR_PATTERN = re.compile(r"\{(.*?)\}")
-# 通常的路径变量，如 {project_id}
-NORMAL_PATH_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,29}$")
-# 环境中包含环境变量，如 {env.prefix}
-STAGE_PATH_VAR_NAME_PATTERN = re.compile(r"^%s$" % STAGE_VAR_REFERENCE_PATTERN.pattern)
-
-# 资源正则
-RESOURCE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,255}$")
 # 资源路径转换为名称正则
 PATH_TO_NAME_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 
@@ -314,10 +255,6 @@ DOMAIN_PATTERN = re.compile(
     r"^(?=^.{3,255}$)http(s)?:\/\/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?\/?$"
     + "|"
     + DOMAIN_WITH_HTTP_AND_IPV6_PATTERN.pattern
-)
-RESOURCE_DOMAIN_PATTERN = re.compile(
-    r"%s|%s|^http(s)?:\/\/\{%s\}$"
-    % (DOMAIN_PATTERN.pattern, DOMAIN_WITH_HTTP_AND_IPV6_PATTERN.pattern, STAGE_VAR_REFERENCE_PATTERN.pattern)
 )
 
 HEADER_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9-]{1,100}$")
@@ -328,8 +265,6 @@ SEMVER_PATTERN = re.compile(
     r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
 )
 
-# bk app code
-APP_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
 
 # Micro gateway
 MICRO_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,19}$")

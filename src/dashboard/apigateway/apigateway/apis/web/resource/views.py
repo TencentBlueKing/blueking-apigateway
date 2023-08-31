@@ -26,6 +26,7 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import APILabel
@@ -41,7 +42,7 @@ from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import ResourceAuthContext
-from apigateway.core.constants import STAGE_VAR_PATTERN, ExportTypeEnum
+from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import (
     Backend,
     BackendConfig,

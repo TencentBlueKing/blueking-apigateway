@@ -20,12 +20,12 @@ import json
 
 import pytest
 
+from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.biz.resource.importer.swagger import (
     ResourceSwaggerExporter,
     ResourceSwaggerImporter,
     SwaggerManager,
 )
-from apigateway.core.constants import SwaggerFormatEnum
 from apigateway.utils.yaml import yaml_loads
 
 

@@ -26,8 +26,8 @@ from bkapi_client_generator import GenerateFailed, generate_client
 
 from apigateway.apps.support.api_sdk import exceptions
 from apigateway.apps.support.api_sdk.models import Generator
+from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
-from apigateway.core.constants import SwaggerFormatEnum
 from apigateway.utils.file import write_to_file
 
 logger = logging.getLogger(__name__)

@@ -22,7 +22,7 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 from apigateway.core.utils import get_path_display, get_resource_url
 
 
-class ResourceOutputV1SLZ(serializers.Serializer):
+class ResourceV1SLZ(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     description = SerializerTranslatedField(
@@ -40,7 +40,7 @@ class ReleasedResourceSLZ(serializers.Serializer):
     path = serializers.CharField(read_only=True)
 
 
-class ReleasedResourceListV1SLZ(ResourceOutputV1SLZ):
+class ReleasedResourceListV1SLZ(ResourceV1SLZ):
     app_verified_required = serializers.BooleanField()
     resource_perm_required = serializers.BooleanField()
     user_verified_required = serializers.BooleanField()
@@ -51,7 +51,7 @@ class ReleasedResourceListV1SLZ(ResourceOutputV1SLZ):
         return self.context["resource_labels"].get(obj["id"], [])
 
 
-class ListReleasedResourceV2SLZ(ResourceOutputV1SLZ):
+class ListReleasedResourceV2SLZ(ResourceV1SLZ):
     app_verified_required = serializers.BooleanField()
     resource_perm_required = serializers.BooleanField()
     user_verified_required = serializers.BooleanField()

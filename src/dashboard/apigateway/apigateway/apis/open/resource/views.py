@@ -17,7 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.db import transaction
-from rest_framework import generics
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import generics, status
 
 from apigateway.apis.web.resource.serializers import ResourceImportInputSLZ
 from apigateway.apps.label.models import APILabel
@@ -26,6 +27,8 @@ from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import V1OKJsonResponse
 
+from .serializers import ResourceSyncOutputSLZ
+
 
 class ResourceSyncApi(generics.CreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
@@ -33,6 +36,11 @@ class ResourceSyncApi(generics.CreateAPIView):
     def get_queryset(self):
         return Resource.objects.filter(api=self.request.gateway)
 
+    @swagger_auto_schema(
+        request_body=ResourceImportInputSLZ,
+        responses={status.HTTP_200_OK: ResourceSyncOutputSLZ},
+        tags=["OpenAPI.Resource"],
+    )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         slz = ResourceImportInputSLZ(
@@ -63,10 +71,12 @@ class ResourceSyncApi(generics.CreateAPIView):
             else:
                 updated_resources.append({"id": resource_data.resource.id})
 
-        return V1OKJsonResponse(
-            data={
+        slz = ResourceSyncOutputSLZ(
+            {
                 "added": added_resources,
                 "updated": updated_resources,
                 "deleted": importer.get_deleted_resources(),
-            },
+            }
         )
+
+        return V1OKJsonResponse(data=slz.data)

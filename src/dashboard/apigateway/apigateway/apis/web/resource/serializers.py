@@ -24,8 +24,10 @@ from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apis.web.resource.validators import BackendPathVarsValidator, PathVarsValidator
 from apigateway.apps.support.constants import DocLanguageEnum
+from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerImporter
 from apigateway.biz.validators import MaxCountPerGatewayValidator
@@ -34,15 +36,12 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import (
     HTTP_METHOD_ANY,
     MAX_BACKEND_TIMEOUT_IN_SECOND,
-    MAX_LABEL_COUNT_PER_RESOURCE,
-    PATH_PATTERN,
     RESOURCE_METHOD_CHOICES,
-    RESOURCE_NAME_PATTERN,
-    ExportTypeEnum,
-    SwaggerFormatEnum,
 )
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
+
+from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
 
 
 class ResourceQueryInputSLZ(serializers.Serializer):

@@ -61,7 +61,8 @@ class TestGatewayHandler:
             ]
         }
 
-        result = GatewayHandler().get_stages_with_release_status([fake_gateway.id])
+        result = GatewayHandler.get_stages_with_release_status([fake_gateway.id])
+        result[fake_gateway.id] = sorted(result[fake_gateway.id], key=lambda x: x["id"])
         assert result == expected
 
     @pytest.mark.parametrize(
