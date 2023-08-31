@@ -30,7 +30,7 @@ from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.exporter.generators import DocArchiveGenerator
-from apigateway.biz.resource_doc.importer.importers import DocImporter
+from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, SwaggerParser
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError

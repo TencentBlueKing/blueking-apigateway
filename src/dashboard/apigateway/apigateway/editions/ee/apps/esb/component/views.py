@@ -36,7 +36,7 @@ from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.esb.permissions import UserAccessESBPermission
 
 # FIXME: 将 views 挪到 apis.web 模块
-from apigateway.biz.resource.importer.importers import ResourceDataConvertor, ResourceImportValidator
+from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.access_token import get_user_access_token_from_request

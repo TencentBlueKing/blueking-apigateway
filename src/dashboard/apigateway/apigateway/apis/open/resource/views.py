@@ -22,7 +22,7 @@ from rest_framework import generics, status
 
 from apigateway.apis.web.resource.serializers import ResourceImportInputSLZ
 from apigateway.apps.label.models import APILabel
-from apigateway.biz.resource.importer.importers import ResourcesImporter
+from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import V1OKJsonResponse
@@ -63,18 +63,18 @@ class ResourceSyncApi(generics.CreateAPIView):
         importer.import_resources()
 
         # 分析出已创建或更新的资源
-        added_resources = []
-        updated_resources = []
+        added = []
+        updated = []
         for resource_data in importer.get_selected_resource_data_list():
             if resource_data.metadata.get("is_created"):
-                added_resources.append({"id": resource_data.resource.id})
+                added.append({"id": resource_data.resource.id})
             else:
-                updated_resources.append({"id": resource_data.resource.id})
+                updated.append({"id": resource_data.resource.id})
 
         slz = ResourceSyncOutputSLZ(
             {
-                "added": added_resources,
-                "updated": updated_resources,
+                "added": added,
+                "updated": updated,
                 "deleted": importer.get_deleted_resources(),
             }
         )

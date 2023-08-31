@@ -20,7 +20,7 @@ import pytest
 from ddf import G
 
 from apigateway.apps.label.models import APILabel
-from apigateway.biz.resource.importer.importers import (
+from apigateway.biz.resource.importer import (
     ResourceDataConvertor,
     ResourceImportValidator,
     ResourcesImporter,

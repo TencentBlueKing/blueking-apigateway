@@ -31,7 +31,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import APILabel
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.importer.importers import (
+from apigateway.biz.resource.importer import (
     ResourceDataConvertor,
     ResourceImportValidator,
     ResourcesImporter,
