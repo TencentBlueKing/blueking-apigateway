@@ -16,24 +16,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
 import json
 
 import pytest
 from django_dynamic_fixture import G
 
-from apigateway.apis.web.release.views import ReleaseHistoryListApi, ReleaseHistoryRetrieveApi
 from apigateway.common.contexts import StageProxyHTTPContext
-from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
-from apigateway.tests.utils.testing import create_gateway, dummy_time, get_response_json
+from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
+from apigateway.tests.utils.testing import create_gateway, dummy_time
 
 pytestmark = pytest.mark.django_db
 
 
 class TestReleaseBatchCreateApi:
-    @pytest.fixture(autouse=True)
-    def setup_fixture(self, request_factory):
-        self.factory = request_factory
-
     @pytest.mark.parametrize(
         "configure_hosts,succeeded",
         [
@@ -41,7 +38,7 @@ class TestReleaseBatchCreateApi:
             (False, False),
         ],
     )
-    def test_release_with_hosts(self, configure_hosts, succeeded, fake_admin_user, request_view, mocker, fake_gateway):
+    def test_release_with_hosts(self, request_view, configure_hosts, succeeded, fake_admin_user, mocker, fake_gateway):
         """Test release API with different hosts config of stage objects."""
         mocker.patch(
             "apigateway.biz.releaser.reversion_update_signal.send",
@@ -71,18 +68,16 @@ class TestReleaseBatchCreateApi:
             "resource_version_id": resource_version.id,
         }
 
-        self.factory.post(f"/gateways/{fake_gateway.id}/releases/batch/", data=data)
-
-        response = request_view(
-            "POST",
-            "gateway.releases.create",
+        resp = request_view(
+            method="POST",
+            view_name="gateway.releases.create",
             gateway=fake_gateway,
             path_params={"gateway_id": fake_gateway.id},
             data=data,
             user=fake_admin_user,
         )
 
-        result = get_response_json(response)
+        result = resp.json()
 
         # There should be one history record for both cases.
         history_qs = ReleaseHistory.objects.filter(stages__id__in=data["stage_ids"]).distinct()
@@ -90,34 +85,31 @@ class TestReleaseBatchCreateApi:
 
         if not succeeded:
             # assert history_qs[0].status == ReleaseStatusEnum.FAILURE.value
-            assert response.status_code != 200, result
+            assert resp.status_code != 200, result
         else:
             # The request finished successfully
             # assert history_qs[0].status == ReleaseStatusEnum.SUCCESS.value
-            assert response.status_code == 200, result
+            assert resp.status_code == 200, result
 
             for stage_id in data["stage_ids"]:
                 release = Release.objects.get(stage__id=stage_id)
                 assert release.resource_version == resource_version
 
 
-class TestReleaseHistoryListViewSet:
-    @pytest.fixture(autouse=True)
-    def setup_fixtures(self):
-        self.gateway = create_gateway()
+class TestReleaseHistoryListApi:
+    def test_list(self, request_view, fake_gateway, request_factory):
+        stage_1 = G(Stage, api=fake_gateway, name="test-01")
+        stage_2 = G(Stage, api=fake_gateway)
 
-    def test_list(self, request_factory):
-        stage_1 = G(Stage, api=self.gateway, name="test-01")
-        stage_2 = G(Stage, api=self.gateway)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
 
-        resource_version = G(ResourceVersion, gateway=self.gateway)
-
-        history = G(ReleaseHistory, gateway=self.gateway, stage=stage_1, resource_version=resource_version)
+        history = G(ReleaseHistory, gateway=fake_gateway, stage=stage_1, resource_version=resource_version)
         history.stages.add(stage_1)
 
         history = G(
-            ReleaseHistory, gateway=self.gateway, stage=stage_2, resource_version=resource_version, created_by="admin"
+            ReleaseHistory, gateway=fake_gateway, stage=stage_2, resource_version=resource_version, created_by="admin"
         )
+
         history.stages.add(stage_2)
 
         data = [
@@ -141,51 +133,54 @@ class TestReleaseHistoryListViewSet:
             },
         ]
         for test in data:
-            request = request_factory.get(f"/gateways/{self.gateway.id}/releases/histories/", data=test)
+            resp = request_view(
+                method="GET",
+                view_name="gateway.release_histories.list",
+                path_params={"gateway_id": fake_gateway.id},
+                data=test,
+            )
 
-            view = ReleaseHistoryListApi.as_view()
-            response = view(request, gateway_id=self.gateway.id)
-
-            result = get_response_json(response)
-            assert result["code"] == 0
+            result = resp.json()
             assert result["data"]["count"] == test["expected"]["count"]
 
 
 class TestReleaseHistoryRetrieveApi:
-    @pytest.fixture(autouse=True)
-    def setup_fixtures(self):
-        self.gateway = create_gateway()
-
-    def test_retrieve_latest(self, request_factory):
-        gateway = create_gateway()
-        stage = G(Stage, api=gateway)
-        resource_version = G(ResourceVersion, gateway=gateway)
-        G(ReleaseHistory, gateway=gateway, created_time=dummy_time.time)
+    def test_retrieve_latest(self, request_view, fake_gateway):
+        stage = G(Stage, api=fake_gateway)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        G(ReleaseHistory, gateway=fake_gateway, created_time=dummy_time.time)
         history = G(
             ReleaseHistory,
-            gateway=gateway,
+            gateway=fake_gateway,
             stage=stage,
             resource_version=resource_version,
             created_time=dummy_time.time,
         )
         history.stages.add(stage)
 
+        event_1 = G(
+            PublishEvent,
+            publish=history,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
+            status=PublishEventStatusTypeEnum.FAILURE.value,
+            created_time=dummy_time.time + datetime.timedelta(seconds=10),
+        )
+
         gateway_2 = create_gateway()
 
         data = [
             {
-                "gateway": gateway,
+                "gateway": fake_gateway,
                 "expected": {
+                    "publish_id": history.id,
                     "stage_names": [stage.name],
                     "created_time": dummy_time.str,
-                    "comment": history.comment,
-                    "resource_version_name": resource_version.name,
-                    "resource_version_title": resource_version.title,
-                    "resource_version_comment": resource_version.comment,
                     "resource_version_display": resource_version.object_display,
                     "created_by": history.created_by,
-                    "status": history.status,
-                    "message": history.message,
+                    "source": history.source,
+                    "status": f"{event_1.name} {event_1.status}",
+                    "cost": (event_1.created_time - history.created_time).total_seconds(),
+                    "is_running": False,
                 },
             },
             {
@@ -194,12 +189,45 @@ class TestReleaseHistoryRetrieveApi:
             },
         ]
         for test in data:
-            gateway = test["gateway"]
-            request = request_factory.get(f"/gateways/{gateway.id}/releases/histories/latest/")
+            resp = request_view(
+                method="GET",
+                view_name="gateway.release_histories.retrieve_latest",
+                path_params={"gateway_id": test["gateway"].id},
+                data=test,
+            )
 
-            view = ReleaseHistoryRetrieveApi.as_view()
-            response = view(request, gateway_id=gateway.id)
-
-            result = get_response_json(response)
-            assert result["code"] == 0, json.dumps(result)
+            result = resp.json()
             assert result["data"] == test["expected"]
+
+
+class TestPublishEventsRetrieveAPI:
+    def test_retrieve(self, request_view, fake_gateway):
+        stage = G(Stage, api=fake_gateway)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        G(ReleaseHistory, gateway=fake_gateway, created_time=dummy_time.time)
+        history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=stage,
+            resource_version=resource_version,
+            created_time=dummy_time.time,
+        )
+        history.stages.add(stage)
+
+        event_1 = G(
+            PublishEvent,
+            publish=history,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
+            status=PublishEventStatusTypeEnum.FAILURE.value,
+            created_time=dummy_time.time + datetime.timedelta(seconds=10),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.publish.events",
+            path_params={"gateway_id": fake_gateway.id, "publish_id": history.id},
+        )
+
+        result = resp.json()
+        assert resp.status_code == 200
+        assert len(result["data"]) >= 1

@@ -668,7 +668,9 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
 
     @property
     def detail(self):
-        return json.loads(self._detail)
+        if self._detail:
+            return json.loads(self._detail)
+        return {}
 
     @detail.setter
     def detail(self, detail: dict):

@@ -74,7 +74,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='publishevent',
             name='name',
-            field=models.CharField(blank=True, choices=[('validata_configuration', 'check configuration'), ('generate_release_task', 'generate release task'), ('distribute_configuration', 'distribute configuration'), ('parse_configuration', 'parse configuration'), ('apply_configuration', 'apply configuration'), ('load_configuration', 'load configuration')], max_length=64),
+            field=models.CharField(blank=True, choices=[('validata_configuration', 'validate configuration'), ('generate_release_task', 'generate release task'), ('distribute_configuration', 'distribute configuration'), ('parse_configuration', 'parse configuration'), ('apply_configuration', 'apply configuration'), ('load_configuration', 'load configuration')], max_length=64),
         ),
         migrations.AlterField(
             model_name='release',
