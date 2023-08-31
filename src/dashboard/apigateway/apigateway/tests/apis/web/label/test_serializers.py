@@ -62,7 +62,7 @@ class TestGatewayLabelInputSLZ:
     def test_validate(self, fake_gateway, data, expected):
         G(APILabel, api=fake_gateway, name="exist")
 
-        slz = GatewayLabelInputSLZ(data=data, context={"api": fake_gateway})
+        slz = GatewayLabelInputSLZ(data=data, context={"gateway": fake_gateway})
         slz.is_valid()
 
         if expected is None:
@@ -106,7 +106,7 @@ class TestGatewayLabelInputSLZ:
         instance = G(APILabel, api=fake_gateway, name="exist")
         G(APILabel, api=fake_gateway, name="other-exist")
 
-        slz = GatewayLabelInputSLZ(instance=instance, data=data, context={"api": fake_gateway})
+        slz = GatewayLabelInputSLZ(instance=instance, data=data, context={"gateway": fake_gateway})
         slz.is_valid()
 
         if expected is None:

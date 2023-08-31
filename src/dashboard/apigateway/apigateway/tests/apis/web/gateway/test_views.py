@@ -67,7 +67,7 @@ class TestGatewayListCreateApi:
 
         gateway = Gateway.objects.get(name=unique_gateway_name)
         assert result["data"]["id"] == gateway.id
-        assert Stage.objects.filter(api=gateway).exists()
+        assert Stage.objects.filter(gateway=gateway).exists()
         assert JWT.objects.filter(api=gateway).count() == 1
 
 

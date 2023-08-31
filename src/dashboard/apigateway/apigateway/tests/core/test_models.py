@@ -67,8 +67,8 @@ class TestResource(TestCase):
             path="/echo/",
         )
 
-        stage_prod = G(models.Stage, api=gateway, name="prod")
-        stage_test = G(models.Stage, api=gateway, name="test")
+        stage_prod = G(models.Stage, gateway=gateway, name="prod")
+        stage_test = G(models.Stage, gateway=gateway, name="test")
 
         data = {
             "proxy_type": "http",

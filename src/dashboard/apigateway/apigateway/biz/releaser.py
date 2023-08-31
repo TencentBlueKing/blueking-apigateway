@@ -96,7 +96,7 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
             - resource_version_id：待发布版本
             - comment：发布备注
         """
-        slz = slz = ReleaseBatchInputSLZ(data=data, context={"api": gateway})
+        slz = slz = ReleaseBatchInputSLZ(data=data, context={"gateway": gateway})
         slz.is_valid(raise_exception=True)
 
         return cls(

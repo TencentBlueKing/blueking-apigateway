@@ -28,7 +28,6 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 from apigateway.apis.web.stage.validators import StageVarsValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.validators import MaxCountPerGatewayValidator
-from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
@@ -119,7 +118,7 @@ class RateSLZ(serializers.Serializer):
 
 
 class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(STAGE_NAME_PATTERN)
     vars = serializers.DictField(
         label="环境变量",
@@ -136,7 +135,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         ref_name = "apps.stage"
         model = Stage
         fields = (
-            "api",
+            "gateway",
             "id",
             "name",
             "description",
@@ -158,7 +157,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         validators = [
             UniqueTogetherValidator(
                 queryset=Stage.objects.all(),
-                fields=["api", "name"],
+                fields=["gateway", "name"],
                 message=gettext_lazy("网关下环境名称已经存在。"),
             ),
             MaxCountPerGatewayValidator(
@@ -173,12 +172,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         self._validate_micro_gateway_stage_unique(data.get("micro_gateway_id"))
         return data
 
-    def to_representation(self, instance):
-        instance.proxy_http = StageProxyHTTPContext().get_config(instance.id)
-        instance.rate_limit = StageRateLimitContext().get_config(instance.id)
-
-        return super().to_representation(instance)
-
     def create(self, validated_data):
         # 1. save stage
         instance = super().create(validated_data)
@@ -187,7 +180,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         # 2. create default backend
         backend = Backend.objects.create(
-            gateway=instance.api,
+            gateway=instance.gateway,
             name=DEFAULT_BACKEND_NAME,
         )
 
@@ -197,7 +190,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
 
         backend_config = BackendConfig(
-            gateway=instance.api,
+            gateway=instance.gateway,
             backend=backend,
             stage=instance,
             config={
@@ -213,7 +206,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         stage_transform_headers = proxy_http_config.get("transform_headers") or {}
         stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
         HeaderRewriteConvertor.alter_plugin(
-            instance.api_id, PluginBindingScopeEnum.STAGE.value, instance.id, stage_config
+            instance.gateway_id, PluginBindingScopeEnum.STAGE.value, instance.id, stage_config
         )
 
         return instance

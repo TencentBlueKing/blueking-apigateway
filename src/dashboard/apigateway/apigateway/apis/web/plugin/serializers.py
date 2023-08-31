@@ -28,6 +28,7 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.plugin.checker import PluginConfigYamlChecker
 from apigateway.apis.web.plugin.convertor import PluginConfigYamlConvertor
+from apigateway.apps.plugin.constants import PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
@@ -61,6 +62,7 @@ class PluginTypeSLZ(serializers.ModelSerializer):
 
 class PluginTypeQuerySLZ(serializers.Serializer):
     keyword = serializers.CharField(required=False)
+    scope = serializers.ChoiceField(choices=PluginTypeScopeEnum.get_choices(), required=True)
 
 
 class PluginFormSLZ(serializers.ModelSerializer):
@@ -87,13 +89,13 @@ class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all())
     # type_code = serializers.CharField(source="type.code", read_only=True)
-    # type_me = serializers.CharField(source="type.name_i18n", read_only=True)
+    # type_name = serializers.CharField(source="type.name_i18n", read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
 
     class Meta:
         model = PluginConfig
         fields = [
-            # "id",
+            "id",
             "gateway",
             "name",
             "description",
@@ -105,14 +107,14 @@ class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
             # "type_code",
             # "type_name",
         ]
-        # read_only_fields = [
-        #     "id",
-        #     "updated_by",
-        #     "created_time",
-        #     "updated_time",
-        #     "type_code",
-        #     "type_name",
-        # ]
+        read_only_fields = [
+            "id",
+            #     "updated_by",
+            #     "created_time",
+            #     "updated_time",
+            #     "type_code",
+            #     "type_name",
+        ]
         lookup_field = "id"
 
     def to_internal_value(self, data):

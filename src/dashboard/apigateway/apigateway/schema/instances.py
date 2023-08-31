@@ -319,51 +319,6 @@ class ContextStageProxyHTTP(NewMetaSchemaMixin, metaclass=Singleton):
     description = "HTTP proxy schema"
 
 
-class ContextStageRateLimit(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["enabled", "rate"],
-  "properties": {
-    "enabled": {
-       "type": "boolean"
-    },
-    "rate": {
-      "type": "object",
-      "required": [
-        "tokens",
-        "period"
-      ],
-      "properties": {
-        "tokens": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "period": {
-          "type": "integer",
-          "minimum": 0
-        }
-      }
-    }
-  }
-}
-    """
-    example = """
-{
-    "enabled": true,
-    "rate": {
-       "tokens": 5000,
-       "period": 60,
-    }
-}
-    """
-    name = SCHEMA_NAME_CONTEXT_STAGE_RATE_LIMIT
-    type = SchemaTypeEnum.CONTEXT.value
-    description = "RateLimit for stage global"
-
-
 class ContextGatewayFeatureFlag(NewMetaSchemaMixin, metaclass=Singleton):
     version = "1"
     schema = """

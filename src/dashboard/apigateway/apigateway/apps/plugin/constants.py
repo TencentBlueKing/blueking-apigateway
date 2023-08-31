@@ -36,6 +36,13 @@ class PluginTypeCodeEnum(StructuredEnum):
     BK_IP_RESTRICTION = EnumField("bk-ip-restriction", label="ip-restriction")
 
 
+class PluginTypeScopeEnum(StructuredEnum):
+    STAGE = EnumField(ScopeTypeEnum.STAGE.value, label=_("环境"))
+    RESOURCE = EnumField(ScopeTypeEnum.RESOURCE.value, label=_("资源"))
+    STAGE_AND_RESOURCE = EnumField("stage_and_resource", label=_("环境和资源"))
+    # maybe more enum: gateway, all
+
+
 class PluginBindingScopeEnum(StructuredEnum):
     STAGE = EnumField(ScopeTypeEnum.STAGE.value, label=_("环境"))
     RESOURCE = EnumField(ScopeTypeEnum.RESOURCE.value, label=_("资源"))

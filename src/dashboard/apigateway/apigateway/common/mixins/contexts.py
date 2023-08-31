@@ -22,5 +22,4 @@ class GetGatewayFromContextMixin:
     def _get_gateway(self, serializer):
         if serializer.context.get("request"):
             return serializer.context["request"].gateway
-        # FIXME: change to gateway
-        return serializer.context["api"]
+        return serializer.context["gateway"]

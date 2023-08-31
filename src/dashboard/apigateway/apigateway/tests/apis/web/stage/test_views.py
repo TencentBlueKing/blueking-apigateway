@@ -21,7 +21,7 @@ from apigateway.core.models import BackendConfig, Stage
 
 class TestStageApi:
     def test_list(self, request_view, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         response = request_view(
             "GET",
@@ -58,7 +58,7 @@ class TestStageApi:
             data=data,
         )
         assert response.status_code == 201
-        stage = Stage.objects.filter(api=fake_gateway, name="stage-test").first()
+        stage = Stage.objects.filter(gateway=fake_gateway, name="stage-test").first()
         assert stage
         backend_config = BackendConfig.objects.filter(gateway=fake_gateway, backend=fake_backend, stage=stage).first()
         assert backend_config
@@ -73,8 +73,8 @@ class TestStageApi:
         response = request_view(
             "GET",
             "stage.retrieve-update-destroy",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
         )
         assert response.status_code == 200
         data = response.json()
@@ -100,8 +100,8 @@ class TestStageApi:
         response = request_view(
             "PUT",
             "stage.retrieve-update-destroy",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
             data=data,
         )
         assert response.status_code == 200
@@ -121,8 +121,8 @@ class TestStageApi:
         response = request_view(
             "PATCH",
             "stage.retrieve-update-destroy",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
             data=data,
         )
         assert response.status_code == 200
@@ -133,8 +133,8 @@ class TestStageApi:
         response = request_view(
             "DELETE",
             "stage.retrieve-update-destroy",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
         )
         assert response.status_code == 400
         fake_stage.status = 0
@@ -142,8 +142,8 @@ class TestStageApi:
         response = request_view(
             "DELETE",
             "stage.retrieve-update-destroy",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
         )
         assert response.status_code == 204
         assert not Stage.objects.filter(id=fake_stage.id).exists()
@@ -159,8 +159,8 @@ class TestStageVarsApi:
         response = request_view(
             "GET",
             "stage.vars-retrieve-update",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
         )
         assert response.status_code == 200
         data = response.json()
@@ -179,8 +179,8 @@ class TestStageVarsApi:
         response = request_view(
             "PUT",
             "stage.vars-retrieve-update",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
             data=data,
         )
         assert response.status_code == 200
@@ -196,8 +196,8 @@ class TestStageBackendApi:
         response = request_view(
             "GET",
             "stage.backend-list",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
         )
         assert response.status_code == 200
         data = response.json()
@@ -207,8 +207,8 @@ class TestStageBackendApi:
         response = request_view(
             "GET",
             "stage.backend-retrieve-update",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id, "backend_id": fake_backend.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id, "backend_id": fake_backend.id},
+            gateway=fake_stage.gateway,
         )
         assert response.status_code == 200
         data = response.json()
@@ -230,8 +230,8 @@ class TestStageBackendApi:
         response = request_view(
             "PUT",
             "stage.backend-retrieve-update",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id, "backend_id": fake_backend.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id, "backend_id": fake_backend.id},
+            gateway=fake_stage.gateway,
             data=data,
         )
         assert response.status_code == 200
@@ -246,8 +246,8 @@ class TestStageStatusUpdateApi:
         response = request_view(
             "PUT",
             "stage.status-update",
-            path_params={"gateway_id": fake_stage.api.id, "id": fake_stage.id},
-            gateway=fake_stage.api,
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
             data=data,
         )
         assert response.status_code == 200

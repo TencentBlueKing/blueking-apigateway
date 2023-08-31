@@ -42,7 +42,7 @@ from .serializers import (
 class StageQuerySetMixin:
     def get_queryset(self):
         queryset = super().get_queryset()
-        return queryset.filter(api=self.request.gateway)
+        return queryset.filter(gateway=self.request.gateway)
 
 
 class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
@@ -75,7 +75,7 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
         tags=["WebAPI.Stage"],
     )
     def create(self, request, *args, **kwargs):
-        slz = StageInputSLZ(data=request.data, context={"api": request.gateway})
+        slz = StageInputSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -126,7 +126,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        slz = StageInputSLZ(instance=instance, data=request.data, context={"api": request.gateway})
+        slz = StageInputSLZ(instance=instance, data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -201,7 +201,7 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        serializer = StageVarsSLZ(instance, context={"api": request.gateway})
+        serializer = StageVarsSLZ(instance, context={"gateway": request.gateway})
 
         return OKJsonResponse(data=serializer.data)
 
@@ -211,7 +211,7 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
         tags=["WebAPI.Stage"],
     )
     def update(self, request, *args, **kwargs):
-        slz = StageVarsSLZ(data=request.data, context={"api": request.gateway})
+        slz = StageVarsSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data

@@ -69,8 +69,8 @@ class TestGatewayManager:
         gateway = create_gateway(name="search-apis-test-a")
         gateway_2 = create_gateway(name="search-apis-test-b")
 
-        stage_prod = G(Stage, api=gateway, name="prod")
-        stage_test = G(Stage, api=gateway, name="test")
+        stage_prod = G(Stage, gateway=gateway, name="prod")
+        stage_test = G(Stage, gateway=gateway, name="test")
 
         G(Resource, api=gateway)
         resource_version = G(ResourceVersion, gateway=gateway)
@@ -127,8 +127,8 @@ class TestStageManager:
 
     def test_get_stage_ids(self):
         gateway = G(Gateway)
-        s1 = G(Stage, api=gateway)
-        s2 = G(Stage, api=gateway)
+        s1 = G(Stage, gateway=gateway)
+        s2 = G(Stage, gateway=gateway)
 
         result = Stage.objects.get_ids(gateway.id)
         assert sorted(result) == [s1.id, s2.id]
@@ -137,8 +137,8 @@ class TestStageManager:
         result = Stage.objects.get_id_to_fields(gateway_id=fake_gateway.id, fields=["id", "name"])
         assert result == {}
 
-        s1 = G(Stage, api=fake_gateway)
-        s2 = G(Stage, api=fake_gateway)
+        s1 = G(Stage, gateway=fake_gateway)
+        s2 = G(Stage, gateway=fake_gateway)
 
         result = Stage.objects.get_id_to_fields(gateway_id=fake_gateway.id, fields=["id", "name"])
         assert result == {
@@ -148,8 +148,8 @@ class TestStageManager:
 
     def test_get_name_id_map(self):
         gateway = G(Gateway)
-        s1 = G(Stage, api=gateway, name="prod")
-        s2 = G(Stage, api=gateway, name="test")
+        s1 = G(Stage, gateway=gateway, name="prod")
+        s2 = G(Stage, gateway=gateway, name="test")
 
         result = Stage.objects.get_name_id_map(gateway)
         assert result == {"prod": s1.id, "test": s2.id}
@@ -158,16 +158,16 @@ class TestStageManager:
         gateway = G(Gateway)
         data = [
             {
-                "api": gateway,
+                "gateway": gateway,
                 "created_by": "admin",
             }
         ]
         for test in data:
             result = StageHandler().create_default(
-                test["api"],
+                test["gateway"],
                 created_by=test["created_by"],
             )
-            assert result.api == test["api"]
+            assert result.gateway == test["gateway"]
             assert result.name == "prod"
             assert result.vars == {}
             assert result.status == constants.StageStatusEnum.INACTIVE.value
@@ -178,8 +178,8 @@ class TestStageManager:
 
         micro_gateway = G(MicroGateway, gateway=gateway)
 
-        G(Stage, api=gateway)
-        s2 = G(Stage, api=gateway, micro_gateway=micro_gateway)
+        G(Stage, gateway=gateway)
+        s2 = G(Stage, gateway=gateway, micro_gateway=micro_gateway)
 
         result = Stage.objects.get_micro_gateway_id_to_fields(gateway.id)
         assert result == {
@@ -193,15 +193,15 @@ class TestStageManager:
     def test_get_gateway_name_to_active_stage_names(self):
         gateway = G(Gateway)
 
-        s1 = G(Stage, api=gateway, name="s1", status=StageStatusEnum.ACTIVE.value)
-        s2 = G(Stage, api=gateway, name="s2", status=StageStatusEnum.INACTIVE.value)
-        s3 = G(Stage, api=gateway, name="s3", status=StageStatusEnum.ACTIVE.value)
+        s1 = G(Stage, gateway=gateway, name="s1", status=StageStatusEnum.ACTIVE.value)
+        s2 = G(Stage, gateway=gateway, name="s2", status=StageStatusEnum.INACTIVE.value)
+        s3 = G(Stage, gateway=gateway, name="s3", status=StageStatusEnum.ACTIVE.value)
 
         result = Stage.objects.get_gateway_name_to_active_stage_names([gateway])
         assert result == {gateway.name: ["s1", "s3"]}
 
     def test_get_name(self, fake_gateway):
-        s = G(Stage, api=fake_gateway)
+        s = G(Stage, gateway=fake_gateway)
 
         name = Stage.objects.get_name(fake_gateway.id, s.id)
         assert name == s.name
@@ -717,8 +717,8 @@ class TestStageResourceDisabledManager(TestCase):
     def test_get_disabled_stages(self):
         gateway = G(Gateway)
         resource = G(Resource, api=gateway)
-        stage_prod = G(Stage, api=gateway, name="prod")
-        stage_test = G(Stage, api=gateway, name="test")
+        stage_prod = G(Stage, gateway=gateway, name="prod")
+        stage_test = G(Stage, gateway=gateway, name="test")
 
         G(StageResourceDisabled, resource=resource, stage=stage_prod)
         G(StageResourceDisabled, resource=resource, stage=stage_test)
@@ -742,8 +742,8 @@ class TestStageResourceDisabledManager(TestCase):
         gateway = G(Gateway)
         resource1 = G(Resource, api=gateway)
         resource2 = G(Resource, api=gateway)
-        stage_prod = G(Stage, api=gateway, name="prod")
-        stage_test = G(Stage, api=gateway, name="test")
+        stage_prod = G(Stage, gateway=gateway, name="prod")
+        stage_test = G(Stage, gateway=gateway, name="test")
 
         G(StageResourceDisabled, resource=resource1, stage=stage_prod)
         G(StageResourceDisabled, resource=resource2, stage=stage_prod)
@@ -774,11 +774,63 @@ class TestStageResourceDisabledManager(TestCase):
 
 
 class TestReleaseManager:
+    def test_get_stage_release_status(self):
+        gateway = G(Gateway)
+
+        stage_prod = G(Stage, gateway=gateway, name="prod", status=1)
+        stage_test = G(Stage, gateway=gateway, name="test", status=1)
+
+        resource_version = G(ResourceVersion, gateway=gateway)
+        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version)
+
+        data = [
+            {
+                "stage_ids": [stage_prod.id, stage_test.id],
+                "expected": {
+                    stage_prod.id: True,
+                },
+            }
+        ]
+        for test in data:
+            result = Release.objects.get_stage_release_status(test["stage_ids"])
+            assert result == test["expected"]
+
+    def test_get_stage_release(self):
+        gateway = G(Gateway)
+
+        stage_prod = G(Stage, gateway=gateway, name="prod", status=1)
+        stage_test = G(Stage, gateway=gateway, name="test", status=1)
+
+        resource_version = G(ResourceVersion, gateway=gateway, name="test-01", title="test", version="1.0.1")
+        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)
+
+        data = [
+            {
+                "stage_ids": [stage_prod.id, stage_test.id],
+                "expected": {
+                    stage_prod.id: {
+                        "release_status": True,
+                        "release_time": dummy_time.time,
+                        "resource_version_id": resource_version.id,
+                        "resource_version_name": "test-01",
+                        "resource_version_title": "test",
+                        "resource_version_display": "1.0.1(test)",
+                        "resource_version": {
+                            "version": "1.0.1",
+                        },
+                    },
+                },
+            }
+        ]
+        for test in data:
+            result = Release.objects.get_stage_release(gateway, test["stage_ids"])
+            assert result == test["expected"]
+
     def test_get_released_stages(self):
         gateway = G(Gateway)
-        stage_prod = G(Stage, api=gateway, name="prod", status=1)
-        stage_test = G(Stage, api=gateway, name="test", status=1)
-        stage_dev = G(Stage, api=gateway, name="dev", status=1)
+        stage_prod = G(Stage, gateway=gateway, name="prod", status=1)
+        stage_test = G(Stage, gateway=gateway, name="test", status=1)
+        stage_dev = G(Stage, gateway=gateway, name="dev", status=1)
         resource_version_1 = G(ResourceVersion, gateway=gateway)
         resource_version_2 = G(ResourceVersion, gateway=gateway)
         G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version_1)
@@ -849,8 +901,8 @@ class TestReleaseManager:
 
     def test_save_release(self):
         gateway = G(Gateway)
-        stage_1 = G(Stage, api=gateway)
-        stage_2 = G(Stage, api=gateway)
+        stage_1 = G(Stage, gateway=gateway)
+        stage_2 = G(Stage, gateway=gateway)
         resource_version = G(ResourceVersion, gateway=gateway)
         G(Release, gateway=gateway, stage=stage_1, resource_version=resource_version)
 
@@ -878,8 +930,8 @@ class TestReleaseManager:
     def test_get_released_resource_version_ids(self):
         gateway = G(Gateway)
 
-        s1 = G(Stage, api=gateway, name="prod")
-        s2 = G(Stage, api=gateway, name="test")
+        s1 = G(Stage, gateway=gateway, name="prod")
+        s2 = G(Stage, gateway=gateway, name="test")
 
         rv1 = G(ResourceVersion, gateway=gateway)
         rv2 = G(ResourceVersion, gateway=gateway)
@@ -893,11 +945,26 @@ class TestReleaseManager:
         result = Release.objects.get_released_resource_version_ids(gateway.id, "prod")
         assert result == [rv1.id]
 
+    def test_released_stage_names(self):
+        gateway = G(Gateway)
+
+        s1 = G(Stage, gateway=gateway, name="prod")
+        s2 = G(Stage, gateway=gateway, name="test")
+
+        rv1 = G(ResourceVersion, gateway=gateway)
+        rv2 = G(ResourceVersion, gateway=gateway)
+
+        G(Release, gateway=gateway, resource_version=rv1, stage=s1)
+        G(Release, gateway=gateway, resource_version=rv2, stage=s2)
+
+        result = Release.objects.get_released_stage_names(gateway.id)
+        assert result == ["prod", "test"]
+
     def test_get_released_stage_count(self):
         gateway = G(Gateway)
-        s1 = G(Stage, api=gateway)
-        s2 = G(Stage, api=gateway)
-        s3 = G(Stage, api=gateway)
+        s1 = G(Stage, gateway=gateway)
+        s2 = G(Stage, gateway=gateway)
+        s3 = G(Stage, gateway=gateway)
 
         rv1 = G(ResourceVersion, gateway=gateway)
         rv2 = G(ResourceVersion, gateway=gateway)
@@ -931,9 +998,9 @@ class TestReleaseManager:
 
     def test_get_stage_id_to_fields_map(self):
         gateway = G(Gateway)
-        s1 = G(Stage, api=gateway)
-        s2 = G(Stage, api=gateway)
-        s3 = G(Stage, api=gateway)
+        s1 = G(Stage, gateway=gateway)
+        s2 = G(Stage, gateway=gateway)
+        s3 = G(Stage, gateway=gateway)
 
         rv1 = G(ResourceVersion, gateway=gateway)
         rv2 = G(ResourceVersion, gateway=gateway)
@@ -986,8 +1053,8 @@ class TestReleaseManager:
 
     def test_get_stage_ids_unreleased_the_version(self):
         gateway = G(Gateway)
-        s1 = G(Stage, api=gateway)
-        s2 = G(Stage, api=gateway)
+        s1 = G(Stage, gateway=gateway)
+        s2 = G(Stage, gateway=gateway)
 
         resource_version = G(ResourceVersion, gateway=gateway)
         G(Release, gateway=gateway, stage=s1, resource_version=resource_version)
@@ -1000,6 +1067,52 @@ class TestReleaseManager:
 
 
 class TestReleasedResourceManager:
+    def test_clear_unreleased_resource(self):
+        gateway = G(Gateway)
+
+        s1 = G(Stage, gateway=gateway)
+
+        rv1 = G(ResourceVersion, gateway=gateway)
+        rv2 = G(ResourceVersion, gateway=gateway)
+
+        G(Release, gateway=gateway, stage=s1, resource_version=rv1)
+
+        G(ReleasedResource, gateway=gateway, resource_version_id=rv1.id, data={})
+        G(ReleasedResource, gateway=gateway, resource_version_id=rv2.id, data={})
+
+        ReleasedResource.objects.clear_unreleased_resource(gateway.id)
+
+        assert ReleasedResource.objects.filter(resource_version_id=rv1.id).exists()
+        assert not ReleasedResource.objects.filter(resource_version_id=rv2.id).exists()
+
+    def test_get_resource_released_stage_count(self):
+        gateway = G(Gateway)
+
+        s1 = G(Stage, gateway=gateway)
+        s2 = G(Stage, gateway=gateway)
+
+        r1 = G(Resource, api=gateway)
+        r2 = G(Resource, api=gateway)
+
+        rv1 = G(ResourceVersion, gateway=gateway)
+        rv2 = G(ResourceVersion, gateway=gateway)
+
+        G(Release, gateway=gateway, stage=s1, resource_version=rv1)
+        G(Release, gateway=gateway, stage=s2, resource_version=rv2)
+
+        G(ReleasedResource, gateway=gateway, resource_version_id=rv1.id, resource_id=r1.id, data={})
+        G(ReleasedResource, gateway=gateway, resource_version_id=rv1.id, resource_id=r2.id, data={})
+        G(ReleasedResource, gateway=gateway, resource_version_id=rv2.id, resource_id=r2.id, data={})
+
+        result = ReleasedResource.objects.get_resource_released_stage_count(
+            gateway_id=gateway.id,
+            resource_ids=[r1.id, r2.id],
+        )
+        assert result == {
+            r1.id: 1,
+            r2.id: 2,
+        }
+
     def test_get_latest_released_resource(self):
         gateway = G(Gateway)
         resource = G(Resource, api=gateway)
@@ -1149,9 +1262,9 @@ class TestReleasedResourceManager:
         fake_gateway.name = "test"
         fake_gateway.save()
 
-        s1 = G(Stage, api=fake_gateway, name="prod", status=1)
-        s2 = G(Stage, api=fake_gateway, name="dev", status=1)
-        s3 = G(Stage, api=fake_gateway, name="test", status=1)
+        s1 = G(Stage, gateway=fake_gateway, name="prod", status=1)
+        s2 = G(Stage, gateway=fake_gateway, name="dev", status=1)
+        s3 = G(Stage, gateway=fake_gateway, name="test", status=1)
 
         r1 = G(Resource, api=fake_gateway, name="test1")
         r2 = G(Resource, api=fake_gateway, name="test2")
@@ -1235,8 +1348,8 @@ class TestReleasedResourceManager:
 class TestReleaseHistoryManager(TestCase):
     def test_filter_release_history(self):
         gateway = G(Gateway)
-        stage_prod = G(Stage, api=gateway, name="prod")
-        stage_test = G(Stage, api=gateway, name="test")
+        stage_prod = G(Stage, gateway=gateway, name="prod")
+        stage_test = G(Stage, gateway=gateway, name="test")
         resource_version_1 = G(ResourceVersion, gateway=gateway, name="test-20191225-aaaaa")
         resource_version_2 = G(ResourceVersion, gateway=gateway, name="test-20191225-bbbbb")
 
@@ -1313,8 +1426,8 @@ class TestReleaseHistoryManager(TestCase):
 
     def test_delete_without_stage_related(self):
         gateway = G(Gateway)
-        stage_1 = G(Stage, api=gateway)
-        stage_2 = G(Stage, api=gateway)
+        stage_1 = G(Stage, gateway=gateway)
+        stage_2 = G(Stage, gateway=gateway)
 
         history_1 = G(ReleaseHistory, gateway=gateway, stage=stage_1)
         history_2 = G(ReleaseHistory, gateway=gateway, stage=stage_2)
@@ -1522,7 +1635,7 @@ class TestStageItemManager:
 
 class TestStageItemConfigManager:
     def test_get_configured_item_ids(self, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         stage_item1 = G(StageItem, api=fake_gateway)
         G(StageItem, api=fake_gateway)
@@ -1535,27 +1648,13 @@ class TestStageItemConfigManager:
         result = StageItemConfig.objects.get_stage_item_id_to_configured_stages(fake_gateway.id)
         assert result == {}
 
-        s1 = G(Stage, api=fake_gateway)
-        G(Stage, api=fake_gateway)
+        s1 = G(Stage, gateway=fake_gateway)
+        G(Stage, gateway=fake_gateway)
         item = G(StageItem, api=fake_gateway)
         G(StageItemConfig, api=fake_gateway, stage=s1, stage_item=item)
 
         result = StageItemConfig.objects.get_stage_item_id_to_configured_stages(fake_gateway.id)
         assert result == {item.id: [{"id": s1.id, "name": s1.name}]}
-
-    def test_get_configs(self, fake_stage_item_config):
-        result = StageItemConfig.objects.get_configs(
-            gateway_id=fake_stage_item_config.api.id,
-            stage_item_id=fake_stage_item_config.stage_item.id,
-        )
-        stage = fake_stage_item_config.stage
-        assert result == [
-            {
-                "stage_id": stage.id,
-                "stage_name": stage.name,
-                "config": {"nodes": [{"host": "1.0.0.1", "weight": 100}]},
-            }
-        ]
 
 
 class TestMicroGatewayManager:

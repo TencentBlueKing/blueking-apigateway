@@ -33,7 +33,7 @@ class TestScopeManager:
 
 class TestStageScopeManager:
     def test_get_scope_ids(self, fake_gateway):
-        s = G(Stage, api=fake_gateway)
+        s = G(Stage, gateway=fake_gateway)
 
         manager = StageScopeManager()
         assert manager.get_scope_ids(fake_gateway.id, []) == [s.id]

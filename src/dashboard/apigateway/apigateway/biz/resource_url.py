@@ -27,7 +27,7 @@ class ResourceURLHandler:
         gateway = Gateway.objects.get(name=gateway_name)
         if gateway.is_micro_gateway:
             # 微网关
-            stage = Stage.objects.get(api=gateway, name=stage_name)
+            stage = Stage.objects.get(gateway=gateway, name=stage_name)
             micro_gateway: MicroGateway = stage.micro_gateway
             if micro_gateway:
                 http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(micro_gateway.config)

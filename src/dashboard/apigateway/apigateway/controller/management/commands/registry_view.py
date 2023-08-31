@@ -42,7 +42,7 @@ class Command(BaseCommand):
 
     def handle(self, micro_gateway_name: str, api_name: str, stage_name: str, name: str, kind: str, *args, **kwargs):
         gateway = models.Gateway.objects.get(name=api_name)
-        stage = models.Stage.objects.get(name=stage_name, api=gateway)
+        stage = models.Stage.objects.get(name=stage_name, gateway=gateway)
         micro_gateway = self._get_micro_gateway(micro_gateway_name)
 
         key_prefix = KeyPrefixHandler().get_release_key_prefix(micro_gateway.name, gateway.name, stage.name)

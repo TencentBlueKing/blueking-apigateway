@@ -104,7 +104,7 @@ class ProxyPathVarsValidator(GetGatewayFromContextMixin):
         if not (self.check_stage_vars_exist and stage_proxy_path_vars):
             return
 
-        for stage in Stage.objects.filter(api_id=gateway.id):
+        for stage in Stage.objects.filter(gateway_id=gateway.id):
             not_exist_vars = self._get_not_exist_vars(stage_proxy_path_vars, stage.vars.keys())
             if not_exist_vars:
                 raise serializers.ValidationError(

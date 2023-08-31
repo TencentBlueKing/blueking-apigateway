@@ -198,7 +198,7 @@ class ResourceImportExportViewSet(ResourceViewSet):
         tags=["Resource"],
     )
     def export_resources(self, request, *args, **kwargs):
-        slz = serializers.ResourceExportConditionSLZ(data=request.data, context={"api": request.gateway})
+        slz = serializers.ResourceExportConditionSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -300,7 +300,7 @@ class ResourceURLViewSet(BaseResourceViewSet):
         instance = self.get_object()
 
         urls = []
-        for stage_name in Stage.objects.filter(api=request.gateway).values_list("name", flat=True):
+        for stage_name in Stage.objects.filter(gateway=request.gateway).values_list("name", flat=True):
             urls.append(
                 {
                     "stage_name": stage_name,
@@ -328,7 +328,7 @@ class ResourceReleaseStageViewSet(BaseResourceViewSet):
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        stages = Stage.objects.filter(api=request.gateway).order_by("name")
+        stages = Stage.objects.filter(gateway=request.gateway).order_by("name")
         slz = serializers.ResourceReleaseStageSLZ(
             stages,
             context={

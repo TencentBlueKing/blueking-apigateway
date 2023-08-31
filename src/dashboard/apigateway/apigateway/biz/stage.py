@@ -31,7 +31,7 @@ class StageHandler:
     @transaction.atomic
     def create(data: Dict[str, Any], created_by: str) -> Stage:
         stage = Stage(
-            api=data["api"],
+            gateway=data["gateway"],
             name=data["name"],
             description=data["description"],
             created_by=created_by,
@@ -43,7 +43,7 @@ class StageHandler:
         backend_configs = []
         for backend in data["backends"]:
             backend_config = BackendConfig(
-                gateway=data["api"],
+                gateway=data["gateway"],
                 backend_id=backend["id"],
                 stage=stage,
                 config=backend["config"],
@@ -66,7 +66,7 @@ class StageHandler:
 
         backends = {
             backend_config.backend_id: backend_config
-            for backend_config in BackendConfig.objects.filter(gateway=stage.api, stage=stage)
+            for backend_config in BackendConfig.objects.filter(gateway=stage.gateway, stage=stage)
         }
 
         for backend_config in data["backends"]:
@@ -81,7 +81,7 @@ class StageHandler:
     @staticmethod
     def delete(stage: Stage):
         with transaction.atomic():
-            BackendConfig.objects.filter(gateway=stage.api, stage=stage).delete()
+            BackendConfig.objects.filter(gateway=stage.gateway, stage=stage).delete()
 
             # 2. delete release
 
@@ -92,7 +92,7 @@ class StageHandler:
 
             # 5. delete release-history
 
-            ReleaseHistory.objects.delete_without_stage_related(stage.api.id)
+            ReleaseHistory.objects.delete_without_stage_related(stage.gateway.id)
 
         # TODO 删除stage CR
 
@@ -106,7 +106,7 @@ class StageHandler:
 
     @staticmethod
     def delete_by_gateway_id(gateway_id):
-        for stage in Stage.objects.filter(api_id=gateway_id):
+        for stage in Stage.objects.filter(gateway_id=gateway_id):
             StageHandler.delete(stage)
 
     @staticmethod
@@ -115,7 +115,7 @@ class StageHandler:
         创建默认 stage，网关创建时，需要创建一个默认环境
         """
         stage = Stage.objects.create(
-            api=gateway,
+            gateway=gateway,
             name=DEFAULT_STAGE_NAME,
             description="正式环境",
             description_en="Prod",
@@ -150,7 +150,7 @@ class StageHandler:
     # TODO: move into get_id_to_micro_gateway_fields?
     @staticmethod
     def get_id_to_micro_gateway_id(gateway_id: int) -> Dict[int, Optional[str]]:
-        return dict(Stage.objects.filter(api_id=gateway_id).values_list("id", "micro_gateway_id"))
+        return dict(Stage.objects.filter(gateway_id=gateway_id).values_list("id", "micro_gateway_id"))
 
     @staticmethod
     def get_id_to_micro_gateway_fields(gateway_id: int) -> Dict[int, Optional[Dict[str, Any]]]:

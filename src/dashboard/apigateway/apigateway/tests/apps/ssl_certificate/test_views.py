@@ -23,8 +23,8 @@ from apigateway.core.models import SslCertificateBinding, Stage
 class TestSSLCertificateBindScopesViewSet:
     def test_bind(self, request_view, fake_ssl_certificate):
         fake_gateway = fake_ssl_certificate.api
-        s1 = G(Stage, api=fake_gateway)
-        s2 = G(Stage, api=fake_gateway)
+        s1 = G(Stage, gateway=fake_gateway)
+        s2 = G(Stage, gateway=fake_gateway)
 
         response = request_view(
             "POST",
@@ -41,8 +41,8 @@ class TestSSLCertificateBindScopesViewSet:
 
     def test_unbind(self, request_view, fake_ssl_certificate):
         fake_gateway = fake_ssl_certificate.api
-        s1 = G(Stage, api=fake_gateway)
-        s2 = G(Stage, api=fake_gateway)
+        s1 = G(Stage, gateway=fake_gateway)
+        s2 = G(Stage, gateway=fake_gateway)
         G(
             SslCertificateBinding,
             api=fake_gateway,
@@ -93,7 +93,7 @@ class TestSSLCertificateBindScopesViewSet:
 class TestScopeBindSSLCertificateViewSet:
     def test_bind(self, request_view, fake_ssl_certificate):
         fake_gateway = fake_ssl_certificate.api
-        s = G(Stage, api=fake_gateway)
+        s = G(Stage, gateway=fake_gateway)
 
         response = request_view(
             "POST",
@@ -110,7 +110,7 @@ class TestScopeBindSSLCertificateViewSet:
 
     def test_unbind(self, request_view, fake_ssl_certificate):
         fake_gateway = fake_ssl_certificate.api
-        s = G(Stage, api=fake_gateway)
+        s = G(Stage, gateway=fake_gateway)
         G(
             SslCertificateBinding,
             api=fake_gateway,

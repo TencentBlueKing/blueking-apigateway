@@ -89,15 +89,7 @@ class GatewayFeatureFlagContext(BaseContext):
         return SchemaFactory().get_context_gateway_feature_flag_schema()
 
 
-class StageRateLimitContext(BaseContext):
-    scope_type = ContextScopeTypeEnum.STAGE.value
-    type = ContextTypeEnum.STAGE_RATE_LIMIT.value
-
-    @cached_property
-    def schema(self):
-        return SchemaFactory().get_context_stage_rate_limit_schema()
-
-
+# TODO DELETE IT 1.14
 class StageProxyHTTPContext(BaseContext):
     """Context data related with HTTP proxy in "stage" scope."""
 

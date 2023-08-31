@@ -92,7 +92,7 @@ class TestGatewayProvider:
 
 class TestGatewayStageProvider:
     def test_list_instance(self, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         result = GatewayStageProvider().list_instance(
             FancyDict(parent={"id": str(fake_gateway.id), "type": "gateway"}), Page(limit=10, offset=0)
@@ -101,7 +101,7 @@ class TestGatewayStageProvider:
         assert result.results[0]["id"] == str(fake_stage.id)
 
     def test_fetch_instance_info(self, fake_stage, mocker):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         provider = GatewayStageProvider()
         mocker.patch.object(provider, "_fetch_gateway_approvers", return_value={})
@@ -113,7 +113,7 @@ class TestGatewayStageProvider:
         assert result.results[0]["id"] == str(fake_stage.id)
 
     def test_search_instance(self, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         result = GatewayStageProvider().search_instance(
             FancyDict(keyword="", parent={"id": str(fake_gateway.id), "type": "gateway"}),
@@ -191,7 +191,7 @@ class TestGatewayPluginConfigProvider:
 
 class TestIAMResourceProviderFactory:
     def test_provide__list_attr(self, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         result = IAMResourceProviderFactory(ResourceTypeEnum.STAGE).provide(
             "list_attr",
@@ -206,7 +206,7 @@ class TestIAMResourceProviderFactory:
         assert result == []
 
     def test_provide__list_attr_value(self, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         result = IAMResourceProviderFactory(ResourceTypeEnum.STAGE).provide(
             "list_attr_value",
@@ -221,7 +221,7 @@ class TestIAMResourceProviderFactory:
         assert result == {"results": [], "count": 0}
 
     def test_provide__list_instance(self, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         result = IAMResourceProviderFactory(ResourceTypeEnum.STAGE).provide(
             "list_instance",
@@ -236,7 +236,7 @@ class TestIAMResourceProviderFactory:
         assert result == {"results": [{"id": str(fake_stage.id), "display_name": fake_stage.name}], "count": 1}
 
     def test_provide__fetch_instance_info(self, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         result = IAMResourceProviderFactory(ResourceTypeEnum.STAGE).provide(
             "fetch_instance_info",
@@ -251,7 +251,7 @@ class TestIAMResourceProviderFactory:
         assert result == [{"id": str(fake_stage.id), "display_name": fake_stage.name, "_bk_iam_approver_": []}]
 
     def test_provide__list_instance_by_policy(self, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         result = IAMResourceProviderFactory(ResourceTypeEnum.STAGE).provide(
             "list_instance_by_policy",
@@ -266,7 +266,7 @@ class TestIAMResourceProviderFactory:
         assert result == []
 
     def test_provide__search_instance(self, fake_stage):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         result = IAMResourceProviderFactory(ResourceTypeEnum.STAGE).provide(
             "search_instance",

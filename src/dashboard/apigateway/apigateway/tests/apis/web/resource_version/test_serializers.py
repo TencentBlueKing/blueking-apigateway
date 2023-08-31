@@ -59,7 +59,7 @@ class TestResourceVersionInfoSLZ:
                 "comment": "",
             },
             context={
-                "api": fake_gateway,
+                "gateway": fake_gateway,
             },
         )
         slz.is_valid()
