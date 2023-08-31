@@ -55,8 +55,6 @@ urlpatterns = [
     # apps: normal
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
     path("backend/apis/<int:gateway_id>/support/", include("apigateway.apps.support.urls")),
-    path("backend/apis/<int:gateway_id>/access_strategies/", include("apigateway.apps.access_strategy.urls")),
-    path("backend/apis/<int:gateway_id>/plugins/", include("apigateway.apps.plugin.urls")),
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     path("backend/esb/", include("apigateway.apps.esb.urls")),
     # FIXME: change this to a new url in future
@@ -82,6 +80,7 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/stages/", include("apigateway.apis.web.stage.urls")),
     path("backend/gateways/<int:gateway_id>/docs/", include("apigateway.apis.web.resource_doc.urls")),
     path("backend/gateways/<int:gateway_id>/releases/", include("apigateway.apis.web.release.urls")),
+    path("backend/gateways/<int:gateway_id>/plugins/", include("apigateway.apis.web.plugin.urls")),
     # todo 不应该放在顶层，后续要想办法挪到下层
     path(
         "backend/gateways/monitors/alarm/records/summary/",

@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -100,7 +101,7 @@ class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.GatewayLabel"])
+    @swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.APILabels"])
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance_id = instance.id

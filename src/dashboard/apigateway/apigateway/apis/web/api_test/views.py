@@ -43,7 +43,7 @@ class APITestApi(generics.CreateAPIView):
     @swagger_auto_schema(
         request_body=APITestInputSLZ,
         responses={status.HTTP_200_OK: APITestOutputSLZ},
-        tags=["APITest"],
+        tags=["WebAPI.APITest"],
     )
     def post(self, request, *args, **kwargs):
         slz = APITestInputSLZ(data=request.data)

@@ -23,12 +23,6 @@ from jsonschema import validate
 from apigateway.schema import instances
 
 
-class TestAccessStrategyCircuitBreaker:
-    def test_validate(self):
-        instance = instances.AccessStrategyCircuitBreaker
-        validate(instance=json.loads(instance.example), schema=json.loads(instance.schema))
-
-
 class TestMicroGateway:
     def test_validate(self):
         instance = instances.MicroGateway

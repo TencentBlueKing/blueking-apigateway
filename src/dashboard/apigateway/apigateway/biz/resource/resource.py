@@ -22,8 +22,6 @@ from typing import Any, Dict, List, Optional
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
-from apigateway.apps.access_strategy.models import AccessStrategyBinding
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import APILabel, ResourceLabel
@@ -145,13 +143,6 @@ class ResourceHandler:
         # 3. delete plugin binding
         PluginBinding.objects.filter(
             scope_type=PluginBindingScopeEnum.RESOURCE.value,
-            scope_id__in=resource_ids,
-        ).delete()
-
-        # 3.1 delete access-strategy binding
-        # TODO: 待 access-strategy 全部迁移到 plugin 后，删除此代码
-        AccessStrategyBinding.objects.filter(
-            scope_type=AccessStrategyBindScopeEnum.RESOURCE.value,
             scope_id__in=resource_ids,
         ).delete()
 
