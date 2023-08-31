@@ -45,8 +45,8 @@ class TestReleaseBatchCreateApi:
             return_value=None,
         )
 
-        stage_1 = G(Stage, api=fake_gateway, name="prod", status=0)
-        stage_2 = G(Stage, api=fake_gateway, name="test", status=0)
+        stage_1 = G(Stage, gateway=fake_gateway, name="prod", status=0)
+        stage_2 = G(Stage, gateway=fake_gateway, name="test", status=0)
         resource_version = G(ResourceVersion, gateway=fake_gateway, _data=json.dumps([]))
         G(Release, gateway=fake_gateway, stage=stage_1, resource_version=resource_version)
 
@@ -98,8 +98,8 @@ class TestReleaseBatchCreateApi:
 
 class TestReleaseHistoryListApi:
     def test_list(self, request_view, fake_gateway, request_factory):
-        stage_1 = G(Stage, api=fake_gateway, name="test-01")
-        stage_2 = G(Stage, api=fake_gateway)
+        stage_1 = G(Stage, gateway=fake_gateway, name="test-01")
+        stage_2 = G(Stage, gateway=fake_gateway)
 
         resource_version = G(ResourceVersion, gateway=fake_gateway)
 
@@ -146,7 +146,7 @@ class TestReleaseHistoryListApi:
 
 class TestReleaseHistoryRetrieveApi:
     def test_retrieve_latest(self, request_view, fake_gateway):
-        stage = G(Stage, api=fake_gateway)
+        stage = G(Stage, gateway=fake_gateway)
         resource_version = G(ResourceVersion, gateway=fake_gateway)
         G(ReleaseHistory, gateway=fake_gateway, created_time=dummy_time.time)
         history = G(
@@ -202,7 +202,7 @@ class TestReleaseHistoryRetrieveApi:
 
 class TestPublishEventsRetrieveAPI:
     def test_retrieve(self, request_view, fake_gateway):
-        stage = G(Stage, api=fake_gateway)
+        stage = G(Stage, gateway=fake_gateway)
         resource_version = G(ResourceVersion, gateway=fake_gateway)
         G(ReleaseHistory, gateway=fake_gateway, created_time=dummy_time.time)
         history = G(

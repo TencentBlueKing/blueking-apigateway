@@ -85,7 +85,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
 
         return FailJsonResponse(
             status=status.HTTP_404_NOT_FOUND,
-            code="UNKNOWN",
+            code=error_codes.NOT_FOUND,
             message=_("当前选择环境的发布版本中资源为空，请发布新版本到该环境"),
         )
 

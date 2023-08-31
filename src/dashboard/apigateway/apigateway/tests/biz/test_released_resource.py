@@ -122,8 +122,8 @@ def test_clear_unreleased_resource(fake_gateway, fake_stage):
 
 
 def test_get_resource_released_stage_count(fake_gateway):
-    s1 = G(Stage, api=fake_gateway)
-    s2 = G(Stage, api=fake_gateway)
+    s1 = G(Stage, gateway=fake_gateway)
+    s2 = G(Stage, gateway=fake_gateway)
 
     r1 = G(Resource, api=fake_gateway)
     r2 = G(Resource, api=fake_gateway)
@@ -149,8 +149,8 @@ def test_get_resource_released_stage_count(fake_gateway):
 
 
 def test_get_stage_release(fake_gateway):
-    stage_prod = G(Stage, api=fake_gateway, name="prod", status=1)
-    stage_test = G(Stage, api=fake_gateway, name="test", status=1)
+    stage_prod = G(Stage, gateway=fake_gateway, name="prod", status=1)
+    stage_test = G(Stage, gateway=fake_gateway, name="test", status=1)
 
     resource_version = G(ResourceVersion, gateway=fake_gateway, name="test-01", title="test", version="1.0.1")
     G(Release, gateway=fake_gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)

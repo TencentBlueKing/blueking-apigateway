@@ -84,7 +84,7 @@ class ResourceViewSet(BaseResourceViewSet, CreateResourceMixin, UpdateResourceMi
                 "resource_labels": ResourceLabel.objects.get_labels(resource_ids),
                 "latest_resource_version": ResourceVersion.objects.get_latest_version(request.gateway.id),
                 "resource_released_stage_count": get_resource_released_stage_count(request.gateway.id, resource_ids),
-                "stage_count": Stage.objects.filter(api_id=request.gateway.id).count(),
+                "stage_count": Stage.objects.filter(gateway_id=request.gateway.id).count(),
                 "doc_languages_of_resources": ResourceDoc.objects.get_doc_languages_of_resources(
                     gateway_id=request.gateway.id, resource_ids=resource_ids
                 ),

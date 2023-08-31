@@ -66,8 +66,8 @@ class TestResourceVersionListCreateApi:
             title="test",
             created_time=dummy_time.time,
         )
-        stage_prod = G(Stage, api=fake_gateway, status=1)
-        stage_test = G(Stage, api=fake_gateway, status=1)
+        stage_prod = G(Stage, gateway=fake_gateway, status=1)
+        stage_test = G(Stage, gateway=fake_gateway, status=1)
         G(Release, gateway=fake_gateway, stage=stage_prod, resource_version=resource_version)
         G(Release, gateway=fake_gateway, stage=stage_test, resource_version=resource_version)
         G(APISDK, gateway=fake_gateway, resource_version=resource_version)
