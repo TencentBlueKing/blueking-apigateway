@@ -107,7 +107,7 @@ class TestResourceInputSLZ:
             data=data,
             context={
                 "api": fake_gateway,
-                "stages": Stage.objects.filter(api=fake_gateway),
+                "stages": Stage.objects.filter(gateway=fake_gateway),
             },
         )
         slz.is_valid(raise_exception=True)
@@ -120,7 +120,7 @@ class TestResourceInputSLZ:
             data=data,
             context={
                 "api": fake_gateway,
-                "stages": Stage.objects.filter(api=fake_gateway),
+                "stages": Stage.objects.filter(gateway=fake_gateway),
             },
         )
         slz.is_valid(raise_exception=True)
@@ -184,7 +184,7 @@ class TestResourceDataSLZ:
 
 class TestResourceImportInputSLZ:
     def test_validate(self, fake_stage, fake_resource_swagger):
-        fake_gateway = fake_stage.api
+        fake_gateway = fake_stage.gateway
 
         data = {
             "content": fake_resource_swagger,

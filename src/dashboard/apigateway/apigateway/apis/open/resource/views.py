@@ -46,7 +46,7 @@ class ResourceSyncApi(generics.CreateAPIView):
         slz = ResourceImportInputSLZ(
             data=request.data,
             context={
-                "stages": Stage.objects.filter(api=request.gateway),
+                "stages": Stage.objects.filter(gateway=request.gateway),
                 "exist_label_names": list(APILabel.objects.filter(api=request.gateway).values_list("name", flat=True)),
             },
         )

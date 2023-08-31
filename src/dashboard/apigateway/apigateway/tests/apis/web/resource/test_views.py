@@ -605,7 +605,7 @@ class TestBackendPathCheckApi:
         ],
     )
     def test_get(self, request_view, fake_gateway, data, expected):
-        G(Stage, api=fake_gateway, name="prod", _vars='{"k1": "v1"}')
+        G(Stage, gateway=fake_gateway, name="prod", _vars='{"k1": "v1"}')
 
         resp = request_view(
             method="GET",
@@ -617,7 +617,7 @@ class TestBackendPathCheckApi:
         assert resp.status_code == expected
 
     def test_get__data(self, request_view, fake_gateway):
-        stage = G(Stage, api=fake_gateway, name="prod", _vars='{"k1": "v1"}')
+        stage = G(Stage, gateway=fake_gateway, name="prod", _vars='{"k1": "v1"}')
         backend = G(Backend, gateway=fake_gateway, name="default")
         G(
             BackendConfig,
@@ -650,7 +650,7 @@ class TestBackendPathCheckApi:
         ]
 
     def test_get_backend_hosts(self, fake_gateway, fake_request):
-        stage = G(Stage, api=fake_gateway, _vars='{"k1": "v1"}')
+        stage = G(Stage, gateway=fake_gateway, _vars='{"k1": "v1"}')
         backend = G(Backend, gateway=fake_gateway, name="default")
         G(
             BackendConfig,

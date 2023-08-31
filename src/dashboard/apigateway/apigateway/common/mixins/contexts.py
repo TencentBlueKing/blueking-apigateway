@@ -22,4 +22,9 @@ class GetGatewayFromContextMixin:
     def _get_gateway(self, serializer):
         if serializer.context.get("request"):
             return serializer.context["request"].gateway
-        return serializer.context["gateway"]
+
+        if "gateway" in serializer.context:
+            return serializer.context["gateway"]
+
+        # FIXME: 1.13 删除此行
+        return serializer.context["api"]

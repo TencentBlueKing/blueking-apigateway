@@ -116,7 +116,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
             data=request.data,
             context={
                 "api": request.gateway,
-                "stages": Stage.objects.filter(api=request.gateway),
+                "stages": Stage.objects.filter(gateway=request.gateway),
             },
         )
         slz.is_valid(raise_exception=True)
@@ -166,7 +166,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             data=request.data,
             context={
                 "api": request.gateway,
-                "stages": Stage.objects.filter(api=request.gateway),
+                "stages": Stage.objects.filter(gateway=request.gateway),
             },
         )
         slz.is_valid(raise_exception=True)
@@ -305,7 +305,7 @@ class ResourceImportCheckApi(generics.CreateAPIView):
         slz = ResourceImportCheckInputSLZ(
             data=request.data,
             context={
-                "stages": Stage.objects.filter(api=request.gateway),
+                "stages": Stage.objects.filter(gateway=request.gateway),
                 "exist_label_names": list(APILabel.objects.filter(api=request.gateway).values_list("name", flat=True)),
             },
         )
@@ -343,7 +343,7 @@ class ResourceImportApi(generics.CreateAPIView):
         slz = ResourceImportInputSLZ(
             data=request.data,
             context={
-                "stages": Stage.objects.filter(api=request.gateway),
+                "stages": Stage.objects.filter(gateway=request.gateway),
                 "exist_label_names": list(APILabel.objects.filter(api=request.gateway).values_list("name", flat=True)),
             },
         )
@@ -434,7 +434,7 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
         slz = self.get_serializer(
             data=request.query_params,
             context={
-                "stages": Stage.objects.filter(api=request.gateway),
+                "stages": Stage.objects.filter(gateway=request.gateway),
             },
         )
         slz.is_valid(raise_exception=True)
@@ -444,7 +444,7 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
         backend_hosts = self._get_backend_hosts(backend_id)
 
         result = []
-        for stage in Stage.objects.filter(api=request.gateway):
+        for stage in Stage.objects.filter(gateway=request.gateway):
             stage_vars = stage.vars
             result.append(
                 {
