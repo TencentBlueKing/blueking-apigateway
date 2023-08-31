@@ -20,7 +20,7 @@ from django.conf import settings
 from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
-from apigateway.apis.web.gateway.constants import UserAuthTypeEnum
+from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apps.esb.helpers import BoardConfigManager
 from apigateway.apps.esb.utils import get_related_boards
 

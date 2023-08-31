@@ -18,6 +18,12 @@
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 
 
+class UserAuthTypeEnum(StructuredEnum):
+    IEOD = EnumField("ieod")
+    TENCENT = EnumField("tencent")
+    DEFAULT = EnumField("default")
+
+
 class ExportTypeEnum(StructuredEnum):
     # 全部资源
     ALL = EnumField("all")

@@ -23,7 +23,8 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
-from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN, UserAuthTypeEnum
+from apigateway.apis.web.constants import UserAuthTypeEnum
+from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.validators import BKAppCodeListValidator

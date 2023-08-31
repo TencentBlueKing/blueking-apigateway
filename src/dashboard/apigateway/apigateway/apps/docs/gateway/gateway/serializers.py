@@ -20,7 +20,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apps.docs.gateway.constants_ext import UserAuthTypeEnum
+from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.core.constants import GatewayTypeEnum
 
 

@@ -17,14 +17,5 @@
 #
 import re
 
-from blue_krill.data_types.enum import EnumField, StructuredEnum
-
-
-class UserAuthTypeEnum(StructuredEnum):
-    IEOD = EnumField("ieod")
-    TENCENT = EnumField("tencent")
-    DEFAULT = EnumField("default")
-
-
 # 网关名
 GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
