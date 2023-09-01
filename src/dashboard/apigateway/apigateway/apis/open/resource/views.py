@@ -34,7 +34,7 @@ class ResourceSyncApi(generics.CreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
 
     def get_queryset(self):
-        return Resource.objects.filter(api=self.request.gateway)
+        return Resource.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
         request_body=ResourceImportInputSLZ,

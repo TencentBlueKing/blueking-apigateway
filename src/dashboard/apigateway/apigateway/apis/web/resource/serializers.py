@@ -104,7 +104,7 @@ class HttpBackendConfigSLZ(serializers.Serializer):
 
 
 class ResourceInputSLZ(serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True)
     path = serializers.RegexField(PATH_PATTERN, max_length=2048)
     auth_config = ResourceAuthConfigSLZ()
@@ -117,7 +117,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
     class Meta:
         model = Resource
         fields = [
-            "api",
+            "gateway",
             # 基本信息
             "name",
             "description",
@@ -145,12 +145,12 @@ class ResourceInputSLZ(serializers.ModelSerializer):
             ),
             UniqueTogetherValidator(
                 queryset=Resource.objects.all(),
-                fields=["api", "name"],
+                fields=["gateway", "name"],
                 message=gettext_lazy("网关下资源名称已经存在。"),
             ),
             UniqueTogetherValidator(
                 queryset=Resource.objects.all(),
-                fields=["api", "method", "path"],
+                fields=["gateway", "method", "path"],
                 message=gettext_lazy("网关前端配置中，请求方法+请求路径已经存在。"),
             ),
             PathVarsValidator(),
@@ -163,11 +163,11 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         return value or None
 
     def validate(self, data):
-        self._validate_method(data["api"], data["path"], data["method"])
+        self._validate_method(data["gateway"], data["path"], data["method"])
         self._validate_match_subpath(data)
 
         data["resource"] = self.instance
-        data["backend"] = self._validate_backend_id(data["api"], data["backend_id"])
+        data["backend"] = self._validate_backend_id(data["gateway"], data["backend_id"])
 
         return data
 
@@ -177,7 +177,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         - 如果请求方法 method 为 ANY，则相同 path 下不能存在其他资源
         - 如果请求方法 method 不为 ANY，则校验 path 下不能存在 method 为 ANY 的资源
         """
-        queryset = Resource.objects.filter(api_id=gateway.id, path=path)
+        queryset = Resource.objects.filter(gateway_id=gateway.id, path=path)
         queryset = self._exclude_current_instance(queryset)
 
         if method == HTTP_METHOD_ANY:

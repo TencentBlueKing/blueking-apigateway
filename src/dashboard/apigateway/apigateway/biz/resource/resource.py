@@ -119,7 +119,7 @@ class ResourceHandler:
 
     @staticmethod
     def delete_by_gateway_id(gateway_id):
-        resource_ids = list(Resource.objects.filter(api_id=gateway_id).values_list("id", flat=True))
+        resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
         if not resource_ids:
             return
         ResourceHandler().delete_resources(resource_ids)
@@ -131,7 +131,9 @@ class ResourceHandler:
 
         if gateway is not None:
             # 指定网关时，二次确认资源属于该网关，防止误删除
-            resource_ids = list(Resource.objects.filter(api=gateway, id__in=resource_ids).values_list("id", flat=True))
+            resource_ids = list(
+                Resource.objects.filter(gateway=gateway, id__in=resource_ids).values_list("id", flat=True)
+            )
             assert resource_ids
 
         # 1. delete auth config context
@@ -157,7 +159,7 @@ class ResourceHandler:
         """
         查询资源，根据模糊查询串匹配，根据path、method匹配，根据标签匹配
         """
-        queryset = Resource.objects.filter(api=gateway)
+        queryset = Resource.objects.filter(gateway=gateway)
 
         # query 不是模型字段，仅支持模糊匹配，如需精确匹配，可使用具体字段
         if query and fuzzy:
@@ -245,7 +247,7 @@ class ResourceHandler:
     @staticmethod
     def filter_by_resource_filter_condition(gateway_id: int, condition: Dict[str, Any]):
         """根据前端资源列表筛选条件，筛选出符合条件的资源"""
-        queryset = Resource.objects.filter(api_id=gateway_id)
+        queryset = Resource.objects.filter(gateway_id=gateway_id)
 
         if condition.get("name"):
             queryset = queryset.filter(name=condition["name"])

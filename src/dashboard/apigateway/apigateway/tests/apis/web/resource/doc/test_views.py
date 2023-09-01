@@ -30,7 +30,7 @@ class TestDocListCreateApi:
         assert len(result["data"]) == 2
 
     def test_create(self, request_view, fake_resource, faker):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         resp = request_view(
             method="POST",

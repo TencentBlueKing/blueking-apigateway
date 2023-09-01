@@ -84,7 +84,7 @@ class TestResourceDataConvertor:
             },
         ]
 
-        convertor = ResourceDataConvertor(fake_resource.api, resources)
+        convertor = ResourceDataConvertor(fake_resource.gateway, resources)
         with pytest.raises(ValueError):
             convertor.convert()
 
@@ -92,7 +92,7 @@ class TestResourceDataConvertor:
         resource_id_to_obj = {fake_resource.id: fake_resource}
         resource_key_to_resource_obj = {f"{fake_resource.method}:{fake_resource.path}": fake_resource}
 
-        convertor = ResourceDataConvertor(fake_resource.api, [])
+        convertor = ResourceDataConvertor(fake_resource.gateway, [])
 
         resource_obj = convertor._get_resource_obj(
             {"id": fake_resource.id}, resource_id_to_obj, resource_key_to_resource_obj
@@ -156,7 +156,7 @@ class TestResourceImportValidator:
             fake_resource_data.copy(update={"resource": fake_resource}, deep=True),
         ]
 
-        validator = ResourceImportValidator(fake_resource.api, resource_data_list, True)
+        validator = ResourceImportValidator(fake_resource.gateway, resource_data_list, True)
         with pytest.raises(ValueError):
             validator._validate_resources()
 
@@ -164,7 +164,7 @@ class TestResourceImportValidator:
         resource_data_list = [
             fake_resource_data.copy(update={"method": fake_resource.method, "path": fake_resource.path}, deep=True),
         ]
-        validator = ResourceImportValidator(fake_resource.api, resource_data_list, False)
+        validator = ResourceImportValidator(fake_resource.gateway, resource_data_list, False)
         with pytest.raises(ValueError):
             validator._validate_method_path()
 
@@ -172,7 +172,7 @@ class TestResourceImportValidator:
             fake_resource_data.copy(update={"method": "GET", "path": "/foo"}, deep=True),
             fake_resource_data.copy(update={"method": "GET", "path": "/foo"}, deep=True),
         ]
-        validator = ResourceImportValidator(fake_resource.api, resource_data_list, True)
+        validator = ResourceImportValidator(fake_resource.gateway, resource_data_list, True)
         with pytest.raises(ValueError):
             validator._validate_method_path()
 
@@ -217,7 +217,7 @@ class TestResourceImportValidator:
             fake_resource_data.copy(deep=True),
             fake_resource_data.copy(deep=True),
         ]
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
         fake_gateway.name = "foo"
         validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
         with pytest.raises(ValueError):

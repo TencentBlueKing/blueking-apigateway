@@ -32,7 +32,7 @@ class DocArchiveGenerator:
         resource_ids: List[int],
     ) -> List[str]:
         resource_id_to_name = dict(
-            Resource.objects.filter(api_id=gateway_id, id__in=resource_ids).values_list("id", "name")
+            Resource.objects.filter(gateway_id=gateway_id, id__in=resource_ids).values_list("id", "name")
         )
 
         files = []

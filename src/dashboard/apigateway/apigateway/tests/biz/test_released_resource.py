@@ -121,8 +121,8 @@ def test_get_resource_released_stage_count(fake_gateway):
     s1 = G(Stage, gateway=fake_gateway)
     s2 = G(Stage, gateway=fake_gateway)
 
-    r1 = G(Resource, api=fake_gateway)
-    r2 = G(Resource, api=fake_gateway)
+    r1 = G(Resource, gateway=fake_gateway)
+    r2 = G(Resource, gateway=fake_gateway)
 
     rv1 = G(ResourceVersion, gateway=fake_gateway)
     rv2 = G(ResourceVersion, gateway=fake_gateway)

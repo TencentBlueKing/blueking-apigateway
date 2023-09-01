@@ -86,7 +86,7 @@ class TestResourceHandler:
             assert result == test["expected"]
 
     def test_save_resource_labels(self, fake_resource):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         label_1 = G(APILabel, gateway=fake_gateway)
         label_2 = G(APILabel, gateway=fake_gateway)

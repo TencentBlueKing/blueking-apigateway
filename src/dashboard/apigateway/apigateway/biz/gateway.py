@@ -271,9 +271,11 @@ class GatewayHandler:
     def get_resource_count(gateway_ids: List[int]) -> Dict[int, int]:
         """获取网关资源数量"""
         resource_count = (
-            Resource.objects.filter(api_id__in=gateway_ids).values("api_id").annotate(count=Count("api_id"))
+            Resource.objects.filter(gateway_id__in=gateway_ids)
+            .values("gateway_id")
+            .annotate(count=Count("gateway_id"))
         )
-        return {i["api_id"]: i["count"] for i in resource_count}
+        return {i["gateway_id"]: i["count"] for i in resource_count}
 
     @staticmethod
     def get_max_resource_count(gateway_name: str):

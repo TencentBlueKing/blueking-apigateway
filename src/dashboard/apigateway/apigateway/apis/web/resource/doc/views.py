@@ -36,7 +36,7 @@ class DocListCreateApi(generics.ListCreateAPIView):
         return ResourceDoc.objects.filter(gateway=self.request.gateway)
 
     def _get_resource(self):
-        return get_object_or_404(Resource, api=self.request.gateway, id=self.kwargs["resource_id"])
+        return get_object_or_404(Resource, gateway=self.request.gateway, id=self.kwargs["resource_id"])
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: DocOutputSLZ(many=True)},
@@ -109,7 +109,7 @@ class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
         return ResourceDoc.objects.filter(gateway=self.request.gateway, resource_id=self.kwargs["resource_id"])
 
     def _get_resource(self):
-        return get_object_or_404(Resource, api=self.request.gateway, id=self.kwargs["resource_id"])
+        return get_object_or_404(Resource, gateway=self.request.gateway, id=self.kwargs["resource_id"])
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=DocInputSLZ, tags=["WebAPI.Resource.Doc"])
     def update(self, request, *args, **kwargs):

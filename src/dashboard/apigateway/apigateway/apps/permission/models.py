@@ -142,7 +142,7 @@ class AppResourcePermission(TimestampedModelMixin):
 
     @cached_property
     def resource(self) -> Optional[Resource]:
-        return Resource.objects.filter(api_id=self.api_id, id=self.resource_id).first()
+        return Resource.objects.filter(gateway_id=self.api_id, id=self.resource_id).first()
 
 
 class AppPermissionApply(TimestampedModelMixin):

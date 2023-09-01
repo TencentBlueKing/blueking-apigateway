@@ -196,7 +196,7 @@ def fake_backend(fake_gateway, fake_stage, faker):
 def fake_resource(faker, fake_gateway, fake_backend):
     resource = G(
         Resource,
-        api=fake_gateway,
+        gateway=fake_gateway,
         name=faker.color_name(),
         method=faker.http_method(),
         path=faker.uri_path(),
@@ -846,7 +846,7 @@ def mock_board(settings):
 def fake_resource_doc(faker, fake_resource):
     return G(
         ResourceDoc,
-        gateway=fake_resource.api,
+        gateway=fake_resource.gateway,
         resource_id=fake_resource.id,
         language=faker.random_element(
             ["en", "zh"],

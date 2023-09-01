@@ -66,7 +66,7 @@ class AppResourcePermissionQuerySetMixin:
         queryset = super().get_queryset()
 
         # 仅展示资源存在的权限
-        resource_ids = Resource.objects.filter(api=self.request.gateway).values_list("id", flat=True)
+        resource_ids = Resource.objects.filter(gateway=self.request.gateway).values_list("id", flat=True)
         return queryset.filter(api=self.request.gateway, resource_id__in=resource_ids)
 
 

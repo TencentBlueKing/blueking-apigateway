@@ -78,7 +78,7 @@ class TestResourceInputSLZ:
         assert result == expected
 
     def test_validate(self, fake_resource, faker):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
         backend = G(Backend, gateway=fake_gateway)
         data = {
             "name": "test",
@@ -106,7 +106,7 @@ class TestResourceInputSLZ:
         slz = ResourceInputSLZ(
             data=data,
             context={
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "stages": Stage.objects.filter(gateway=fake_gateway),
             },
         )
@@ -249,7 +249,7 @@ class TestResourceImportInputSLZ:
 class TestResourceExportOutputSLZ:
     def test_to_representation(self, fake_resource):
         proxies = {proxy.id: proxy for proxy in Proxy.objects.filter(resource__in=[fake_resource])}
-        backends = {backend.id: backend.name for backend in Backend.objects.filter(gateway=fake_resource.api)}
+        backends = {backend.id: backend.name for backend in Backend.objects.filter(gateway=fake_resource.gateway)}
 
         slz = ResourceExportOutputSLZ(
             [fake_resource],

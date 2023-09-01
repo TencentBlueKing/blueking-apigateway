@@ -127,7 +127,7 @@ class TestResourceListCreateApi:
 
 class TestResourceRetrieveUpdateDestroyApi:
     def test_retrieve(self, fake_resource, request_view):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         resp = request_view(
             method="GET",
@@ -140,7 +140,7 @@ class TestResourceRetrieveUpdateDestroyApi:
         assert result["data"]["id"] == fake_resource.id
 
     def test_update(self, request_view, fake_resource):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
         backend = Backend.objects.filter(gateway=fake_gateway).first()
 
         data = {
@@ -184,7 +184,7 @@ class TestResourceRetrieveUpdateDestroyApi:
         }
 
     def test_destroy(self, request_view, fake_resource):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         resp = request_view(
             method="DELETE",
@@ -208,7 +208,7 @@ class TestResourceBatchUpdateDestroyApi:
         resp = request_view(
             method="PUT",
             view_name="resource.batch_update_destroy",
-            path_params={"gateway_id": fake_resource.api.id},
+            path_params={"gateway_id": fake_resource.gateway.id},
             data=data,
         )
 
@@ -226,7 +226,7 @@ class TestResourceBatchUpdateDestroyApi:
         resp = request_view(
             method="DELETE",
             view_name="resource.batch_update_destroy",
-            path_params={"gateway_id": fake_resource.api.id},
+            path_params={"gateway_id": fake_resource.gateway.id},
             data=data,
         )
 
@@ -236,7 +236,7 @@ class TestResourceBatchUpdateDestroyApi:
 
 class TestResourceLabelUpdateApi:
     def test_update(self, request_view, fake_resource):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
         label_1 = G(APILabel, gateway=fake_gateway)
         label_2 = G(APILabel, gateway=fake_gateway)
 
@@ -536,7 +536,7 @@ class TestResourceExportApi:
         ],
     )
     def test_post(self, request_view, fake_resource, data):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
         label = G(APILabel, gateway=fake_gateway)
         G(ResourceLabel, resource=fake_resource, api_label=label)
 

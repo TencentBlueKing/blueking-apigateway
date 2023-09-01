@@ -65,7 +65,7 @@ class TestAppPermissionInputSLZ:
         ]
 
         for test in data:
-            slz = serializers.AppPermissionInputSLZ(data=test, context={"gateway": fake_resource.api})
+            slz = serializers.AppPermissionInputSLZ(data=test, context={"gateway": fake_resource.gateway})
 
             if not test.get("will_error"):
                 slz.is_valid(raise_exception=True)

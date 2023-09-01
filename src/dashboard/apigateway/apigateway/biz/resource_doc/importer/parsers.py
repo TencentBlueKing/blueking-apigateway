@@ -46,7 +46,7 @@ class BaseParser:
         - 补全解析文档对应的资源、资源文档对象
         - 判断文档内容是否变更
         """
-        resources = {resource.name: resource for resource in Resource.objects.filter(api_id=self.gateway_id)}
+        resources = {resource.name: resource for resource in Resource.objects.filter(gateway_id=self.gateway_id)}
         # en/zh share the same resource_id, use add language to distinguish
         resource_docs = {
             f"{resource_doc.language}:{resource_doc.resource_id}": resource_doc

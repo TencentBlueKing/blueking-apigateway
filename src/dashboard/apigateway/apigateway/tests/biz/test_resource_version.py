@@ -81,7 +81,7 @@ class TestResourceVersionHandler:
         )
 
     def test_create_resource_version(self, fake_resource):
-        gateway = fake_resource.api
+        gateway = fake_resource.gateway
 
         ResourceVersionHandler.create_resource_version(gateway, {"comment": "test"}, "admin")
         assert ResourceVersion.objects.filter(gateway=gateway).count() == 1
@@ -209,10 +209,10 @@ class TestResourceVersionHandler:
 
 class TestResourceDocVersionHandler:
     def test_get_doc_data_by_rv_or_new(self, fake_gateway):
-        resource = G(Resource, api=fake_gateway)
+        resource = G(Resource, gateway=fake_gateway)
         rv = G(ResourceVersion, gateway=fake_gateway)
 
-        G(ResourceDoc, api=fake_gateway, resource_id=resource.id)
+        G(ResourceDoc, gateway=fake_gateway, resource_id=resource.id)
         G(
             ResourceDocVersion,
             gateway=fake_gateway,

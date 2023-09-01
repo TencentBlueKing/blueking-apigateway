@@ -38,7 +38,7 @@ class TestAppResourcePermissionViewSet:
         mocker.patch("apigateway.apis.web.permission.serializers.BKAppCodeValidator.__call__")
 
     def test_list(self, fake_resource, request_view):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         G(
             models.AppResourcePermission,
@@ -83,7 +83,7 @@ class TestAppResourcePermissionViewSet:
 
     def test_create(self, mocker, request_view, fake_resource):
         mocker.patch("apigateway.apps.permission.models.generate_expire_time", return_value=dummy_time.time)
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         data = [
             {
@@ -128,7 +128,7 @@ class TestAppGatewayPermissionViewSet:
         mocker.patch("apigateway.apis.web.permission.serializers.BKAppCodeValidator.__call__")
 
     def test_list(self, fake_resource, request_view):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         G(
             models.AppAPIPermission,
@@ -163,7 +163,7 @@ class TestAppGatewayPermissionViewSet:
 
     def test_create(self, mocker, request_view, fake_resource):
         mocker.patch("apigateway.apps.permission.models.generate_expire_time", return_value=dummy_time.time)
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         data = [
             {

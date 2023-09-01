@@ -74,7 +74,7 @@ from .serializers import (
 
 class ResourceQuerySetMixin:
     def get_queryset(self):
-        return Resource.objects.filter(api=self.request.gateway)
+        return Resource.objects.filter(gateway=self.request.gateway)
 
 
 class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
@@ -414,13 +414,13 @@ class ResourceExportApi(generics.CreateAPIView):
     ):
         """获取待导出的资源"""
         if export_type == ExportTypeEnum.ALL.value:
-            return Resource.objects.filter(api_id=gateway_id)
+            return Resource.objects.filter(gateway_id=gateway_id)
 
         elif export_type == ExportTypeEnum.FILTERED.value:
             return ResourceHandler.filter_by_resource_filter_condition(gateway_id, resource_filter_condition or {})
 
         elif export_type == ExportTypeEnum.SELECTED.value:
-            return Resource.objects.filter(api_id=gateway_id, id__in=resource_ids)
+            return Resource.objects.filter(gateway_id=gateway_id, id__in=resource_ids)
 
         return Resource.objects.none()
 
