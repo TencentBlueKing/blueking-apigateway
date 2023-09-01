@@ -81,7 +81,7 @@ class TestAppResourcePermissionManager:
     @pytest.fixture(autouse=True)
     def setup_fixture(self):
         self.gateway = G(Gateway, created_by="admin")
-        self.resource = G(Resource, api=self.gateway)
+        self.resource = G(Resource, gateway=self.gateway)
 
     def test_filter_public_permission_by_app(self, unique_id):
         api1 = G(Gateway, is_public=True)
@@ -163,8 +163,8 @@ class TestAppResourcePermissionManager:
         assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(721)
 
     def test_save_permissions(self):
-        resource_1 = G(Resource, api=self.gateway)
-        resource_2 = G(Resource, api=self.gateway)
+        resource_1 = G(Resource, gateway=self.gateway)
+        resource_2 = G(Resource, gateway=self.gateway)
         G(
             models.AppResourcePermission,
             api=self.gateway,
@@ -198,7 +198,7 @@ class TestAppResourcePermissionManager:
     def test_sync_from_api_permission(self):
         bk_app_code = "test"
         gateway = G(Gateway)
-        resource = G(Resource, api=gateway)
+        resource = G(Resource, gateway=gateway)
 
         # has no api-perm
         models.AppResourcePermission.objects.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])

@@ -63,9 +63,9 @@ class StageAdmin(admin.ModelAdmin):
 
 
 class ResourceAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "method", "path", "api", "proxy_id", "is_public"]
+    list_display = ["id", "name", "method", "path", "gateway", "proxy_id", "is_public"]
     search_fields = ["id", "name", "path"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
 
 
 class StageResourceDisabledAdmin(admin.ModelAdmin):

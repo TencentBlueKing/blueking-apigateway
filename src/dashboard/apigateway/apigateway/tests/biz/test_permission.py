@@ -206,8 +206,8 @@ class TestAPIPermissionDimensionManager:
 
 class TestResourcePermissionDimensionManager:
     def _make_fake_apply(self, fake_gateway):
-        r1 = G(Resource, api=fake_gateway)
-        r2 = G(Resource, api=fake_gateway)
+        r1 = G(Resource, gateway=fake_gateway)
+        r2 = G(Resource, gateway=fake_gateway)
 
         return G(
             AppPermissionApply,

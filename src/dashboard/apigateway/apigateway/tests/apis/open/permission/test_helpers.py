@@ -251,7 +251,7 @@ class TestResourcePermission:
 
 class TestAppPermissionBuilder:
     def test_build(self, mocker, fake_gateway, unique_id):
-        r = G(Resource, api=fake_gateway)
+        r = G(Resource, gateway=fake_gateway)
         G(AppAPIPermission, api=fake_gateway, bk_app_code=unique_id, expires=None)
         G(AppResourcePermission, api=fake_gateway, bk_app_code=unique_id, resource_id=r.id)
 

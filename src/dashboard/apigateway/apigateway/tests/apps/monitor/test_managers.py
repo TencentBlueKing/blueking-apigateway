@@ -53,8 +53,8 @@ class TestAlarmStrategyManager(TestCase):
     def test_get_resource_alarm_strategy(self):
         gateway_1 = G(Gateway)
         gateway_2 = G(Gateway)
-        resource_1 = G(Resource, api=gateway_2)
-        resource_2 = G(Resource, api=gateway_2)
+        resource_1 = G(Resource, gateway=gateway_2)
+        resource_2 = G(Resource, gateway=gateway_2)
 
         api_label = G(APILabel, gateway=gateway_2)
         G(ResourceLabel, resource=resource_1, api_label=api_label)

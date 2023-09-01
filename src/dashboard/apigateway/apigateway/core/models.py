@@ -206,7 +206,7 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     description = description_i18n.default_field(default="")
     description_en = description_i18n.field("en")
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     method = models.CharField(max_length=10, choices=RESOURCE_METHOD_CHOICES, blank=False, null=False)
     path = models.CharField(max_length=2048, blank=False, null=False)
     match_subpath = models.BooleanField(default=False)
@@ -225,9 +225,6 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     class Meta:
         verbose_name = "Resource"
         verbose_name_plural = "Resource"
-        # unique_together = (
-        #     ('api', 'method', 'path'),
-        # )
         db_table = "core_resource"
 
     @property
@@ -687,7 +684,6 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
     jwt for each api
     """
 
-    # api = models.ForeignKey(API, on_delete=models.PROTECT, unique=True)
     api = models.OneToOneField(
         Gateway,
         on_delete=models.CASCADE,

@@ -273,9 +273,9 @@ class TestGatewayHandler:
         gateway_2 = G(Gateway)
         gateway_3 = G(Gateway)
 
-        G(Resource, api=gateway_1)
-        G(Resource, api=gateway_1)
-        G(Resource, api=gateway_2)
+        G(Resource, gateway=gateway_1)
+        G(Resource, gateway=gateway_1)
+        G(Resource, gateway=gateway_2)
 
         data = [
             {

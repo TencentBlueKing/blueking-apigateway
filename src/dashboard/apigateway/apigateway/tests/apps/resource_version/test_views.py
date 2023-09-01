@@ -40,7 +40,7 @@ class TestResourceVersionViewSet(TestCase):
 
     # def test_create(self, fake_resource):
     #     gateway = create_gateway()
-    #     resource = G(Resource, api=gateway)
+    #     resource = G(Resource, =gateway)
     #     ResourceHandler().save_related_data(
     #         self.gateway,
     #         resource,
@@ -206,14 +206,14 @@ class TestResourceVersionViewSet(TestCase):
         gateway_1 = create_gateway()
 
         gateway_2 = create_gateway()
-        G(Resource, api=gateway_2)
+        G(Resource, gateway=gateway_2)
 
         gateway_3 = create_gateway()
-        G(Resource, api=gateway_3, updated_time=dummy_time.time + datetime.timedelta(seconds=10))
+        G(Resource, gateway=gateway_3, updated_time=dummy_time.time + datetime.timedelta(seconds=10))
         G(ResourceVersion, gateway=gateway_3, created_time=dummy_time.time)
 
         gateway_4 = create_gateway()
-        G(Resource, api=gateway_4, updated_time=dummy_time.time)
+        G(Resource, gateway=gateway_4, updated_time=dummy_time.time)
         G(
             ResourceVersion,
             gateway=gateway_4,
@@ -222,7 +222,7 @@ class TestResourceVersionViewSet(TestCase):
         )
 
         gateway_5 = create_gateway()
-        G(Resource, api=gateway_5, updated_time=dummy_time.time)
+        G(Resource, gateway=gateway_5, updated_time=dummy_time.time)
         G(
             ResourceVersion,
             gateway=gateway_5,

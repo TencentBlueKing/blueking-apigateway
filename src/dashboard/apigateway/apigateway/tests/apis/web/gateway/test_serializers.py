@@ -41,8 +41,8 @@ class TestGatewayListOutputSLZ:
         stage_1 = G(Stage, gateway=gateway_1, name="prod")
         stage_2 = G(Stage, gateway=gateway_1, name="test")
 
-        G(Resource, api=gateway_1)
-        G(Resource, api=gateway_1)
+        G(Resource, gateway=gateway_1)
+        G(Resource, gateway=gateway_1)
 
         expected = [
             {

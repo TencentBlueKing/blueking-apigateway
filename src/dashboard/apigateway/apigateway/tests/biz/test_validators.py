@@ -77,9 +77,9 @@ class TestResourceIDValidator:
         )
 
     def test_validate(self, fake_gateway):
-        r1 = G(Resource, api=fake_gateway)
-        r2 = G(Resource, api=fake_gateway)
-        r3 = G(Resource, api=G(Gateway))
+        r1 = G(Resource, gateway=fake_gateway)
+        r2 = G(Resource, gateway=fake_gateway)
+        r3 = G(Resource, gateway=G(Gateway))
 
         # 单个资源
         slz = self.ResourceIDSLZ(data={"resource_id": r1.id}, context={"gateway": fake_gateway})

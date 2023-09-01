@@ -128,8 +128,8 @@ class TestAPILabelManager:
 class TestResourceLabelManager(TestCase):
     def test_get_labels(self):
         gateway = G(Gateway)
-        resource_1 = G(Resource, api=gateway)
-        resource_2 = G(Resource, api=gateway)
+        resource_1 = G(Resource, gateway=gateway)
+        resource_2 = G(Resource, gateway=gateway)
         label_1 = G(APILabel, gateway=gateway, name="label_1")
         label_2 = G(APILabel, gateway=gateway, name="label_2")
 
@@ -162,8 +162,8 @@ class TestResourceLabelManager(TestCase):
 
     def test_filter_resource_ids(self):
         gateway = G(Gateway)
-        resource_1 = G(Resource, api=gateway)
-        resource_2 = G(Resource, api=gateway)
+        resource_1 = G(Resource, gateway=gateway)
+        resource_2 = G(Resource, gateway=gateway)
         label_1 = G(APILabel, gateway=gateway, name="label_1")
         label_2 = G(APILabel, gateway=gateway, name="label_2")
 
@@ -199,8 +199,8 @@ class TestResourceLabelManager(TestCase):
 
     def test_filter_labels_by_gateway(self):
         gateway = G(Gateway)
-        resource_1 = G(Resource, api=gateway)
-        resource_2 = G(Resource, api=gateway)
+        resource_1 = G(Resource, gateway=gateway)
+        resource_2 = G(Resource, gateway=gateway)
         label_1 = G(APILabel, gateway=gateway, name="label_1")
         label_2 = G(APILabel, gateway=gateway, name="label_2")
 
@@ -234,8 +234,8 @@ class TestResourceLabelManager(TestCase):
     def test_get_api_label_ids(self):
         gateway = G(Gateway)
 
-        resource_1 = G(Resource, api=gateway)
-        resource_2 = G(Resource, api=gateway)
+        resource_1 = G(Resource, gateway=gateway)
+        resource_2 = G(Resource, gateway=gateway)
         label_1 = G(APILabel, gateway=gateway, name="label_1")
         label_2 = G(APILabel, gateway=gateway, name="label_2")
 

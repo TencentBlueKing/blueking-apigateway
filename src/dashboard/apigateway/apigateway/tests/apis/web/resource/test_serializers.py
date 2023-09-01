@@ -127,8 +127,8 @@ class TestResourceInputSLZ:
         assert slz.validated_data["resource"] == fake_resource
 
     def test_validate_method(self, fake_gateway):
-        r1 = G(Resource, api=fake_gateway, method="POST", path="/foo")
-        r2 = G(Resource, api=fake_gateway, method="ANY", path="/bar")
+        r1 = G(Resource, gateway=fake_gateway, method="POST", path="/foo")
+        r2 = G(Resource, gateway=fake_gateway, method="ANY", path="/bar")
 
         with pytest.raises(ValidationError):
             slz = ResourceInputSLZ()

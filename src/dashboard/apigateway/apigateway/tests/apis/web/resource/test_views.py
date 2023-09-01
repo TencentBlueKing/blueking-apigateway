@@ -54,8 +54,8 @@ class TestResourceListCreateApi:
         ],
     )
     def test_list(self, request_view, fake_gateway, data, expected):
-        G(Resource, api=fake_gateway, path="/echo/", method="GET", name="echo")
-        G(Resource, api=fake_gateway, path="/test/", method="GET", name="test")
+        G(Resource, gateway=fake_gateway, path="/echo/", method="GET", name="echo")
+        G(Resource, gateway=fake_gateway, path="/test/", method="GET", name="test")
 
         resp = request_view(
             method="GET",
@@ -105,7 +105,7 @@ class TestResourceListCreateApi:
 
         assert resp.status_code == 201
 
-        resource = Resource.objects.get(api=fake_gateway, method=data["method"], path=data["path"])
+        resource = Resource.objects.get(gateway=fake_gateway, method=data["method"], path=data["path"])
         assert resource.is_public == data["is_public"]
         assert resource.match_subpath == data["match_subpath"]
 
@@ -523,7 +523,7 @@ class TestResourceImportApi:
         )
 
         assert resp.status_code == 200
-        assert Resource.objects.filter(api=fake_gateway).count() == expected
+        assert Resource.objects.filter(gateway=fake_gateway).count() == expected
 
 
 class TestResourceExportApi:
@@ -688,8 +688,8 @@ class TestBackendPathCheckApi:
 
 class TestResourcesWithVerifiedUserRequiredApi:
     def test_list(self, request_view, fake_gateway):
-        resource_1 = G(Resource, api=fake_gateway)
-        resource_2 = G(Resource, api=fake_gateway)
+        resource_1 = G(Resource, gateway=fake_gateway)
+        resource_2 = G(Resource, gateway=fake_gateway)
 
         auth_config = ResourceHandler.get_default_auth_config()
         ResourceAuthContext().save(resource_1.id, dict(auth_config, auth_verified_required=True))

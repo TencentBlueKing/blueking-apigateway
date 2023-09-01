@@ -79,7 +79,7 @@ class TestAppPermissionInputSLZ:
 class TestAppGatewayPermissionOutputSLZ(TestCase):
     def test_to_representation(self):
         gateway = G(Gateway)
-        resource = G(Resource, api=gateway, path="/echo/", method="GET")
+        resource = G(Resource, gateway=gateway, path="/echo/", method="GET")
 
         app_api_permission = G(
             models.AppAPIPermission,
@@ -138,7 +138,7 @@ class TestAppPermissionIDsSLZ(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.gateway = G(Gateway, created_by="admin")
-        cls.resource = G(Resource, api=cls.gateway)
+        cls.resource = G(Resource, gateway=cls.gateway)
         cls.request = create_request()
         cls.request.gateway = cls.gateway
 

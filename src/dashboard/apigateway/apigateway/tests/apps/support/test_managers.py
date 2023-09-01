@@ -38,8 +38,8 @@ class TestResourceDocManager:
     def test_get_doc_key_to_id(self):
         gateway = G(Gateway)
 
-        r1 = G(Resource, api=gateway)
-        r2 = G(Resource, api=gateway)
+        r1 = G(Resource, gateway=gateway)
+        r2 = G(Resource, gateway=gateway)
 
         doc1 = G(ResourceDoc, resource_id=r1.id, gateway=gateway)
         doc2 = G(ResourceDoc, resource_id=r2.id, gateway=gateway, language="en")
@@ -53,8 +53,8 @@ class TestResourceDocManager:
     def test_query_doc_key_to_content(self):
         gateway = G(Gateway)
 
-        r1 = G(Resource, api=gateway)
-        r2 = G(Resource, api=gateway)
+        r1 = G(Resource, gateway=gateway)
+        r2 = G(Resource, gateway=gateway)
 
         doc1 = G(ResourceDoc, resource_id=r1.id, gateway=gateway, content="content1")
         doc2 = G(ResourceDoc, resource_id=r2.id, gateway=gateway, content="content2", language="en")
@@ -68,8 +68,8 @@ class TestResourceDocManager:
     def test_get_doc_languages_of_resources(self):
         gateway = G(Gateway)
 
-        r1 = G(Resource, api=gateway)
-        r2 = G(Resource, api=gateway)
+        r1 = G(Resource, gateway=gateway)
+        r2 = G(Resource, gateway=gateway)
 
         doc1 = G(ResourceDoc, gateway=gateway, resource_id=r1.id, language="zh")
         doc2 = G(ResourceDoc, gateway=gateway, resource_id=r2.id, language="en")
@@ -82,7 +82,7 @@ class TestResourceDocManager:
 
     def test_filter_docs(self):
         gateway = G(Gateway)
-        r = G(Resource, api=gateway)
+        r = G(Resource, gateway=gateway)
         doc = G(ResourceDoc, resource_id=r.id, gateway=gateway)
 
         assert list(ResourceDoc.objects.filter_docs(gateway.id).values_list("id", flat=True)) == [doc.id]
@@ -224,7 +224,7 @@ class TestReleasedResourceDocManager:
 
 class TestResourceDocVersionManager:
     def test_get_doc_data_by_rv_or_new(self, fake_gateway):
-        resource = G(Resource, api=fake_gateway)
+        resource = G(Resource, gateway=fake_gateway)
         rv = G(ResourceVersion, gateway=fake_gateway)
 
         G(ResourceDoc, gateway=fake_gateway, resource_id=resource.id)

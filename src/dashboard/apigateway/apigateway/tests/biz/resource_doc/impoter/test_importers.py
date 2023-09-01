@@ -29,7 +29,7 @@ class TestDocImporter:
     def test_import_docs(self, fake_resource_doc, faker):
         fake_gateway = fake_resource_doc.gateway
         fake_resource = Resource.objects.get(id=fake_resource_doc.resource_id)
-        resource_2 = G(Resource, api=fake_gateway)
+        resource_2 = G(Resource, gateway=fake_gateway)
 
         docs = [
             ArchiveDoc(
@@ -137,7 +137,7 @@ class TestDocImporter:
     def test_save_docs(self, faker, fake_resource_doc):
         fake_gateway = fake_resource_doc.gateway
         fake_resource = Resource.objects.get(id=fake_resource_doc.resource_id)
-        resource_2 = G(Resource, api=fake_gateway)
+        resource_2 = G(Resource, gateway=fake_gateway)
 
         docs = [
             ArchiveDoc(

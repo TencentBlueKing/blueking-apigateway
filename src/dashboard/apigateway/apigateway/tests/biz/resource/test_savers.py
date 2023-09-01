@@ -35,7 +35,7 @@ class TestResourceSavers:
         saver = ResourcesSaver(fake_gateway, resource_data_list, "admin")
         result = saver.save()
         assert len(result) == 2
-        assert Resource.objects.filter(api=fake_gateway).count() == 2
+        assert Resource.objects.filter(gateway=fake_gateway).count() == 2
         assert Proxy.objects.filter(resource__api=fake_gateway).count() == 2
         assert (
             Context.objects.filter(
@@ -55,7 +55,7 @@ class TestResourceSavers:
             type=ProxyTypeEnum.MOCK.value,
         )
 
-        saver = ResourcesSaver(fake_resource.api, resource_data_list, "admin")
+        saver = ResourcesSaver(fake_resource.gateway, resource_data_list, "admin")
         with pytest.raises(ResourceProxyDuplicateError):
             saver.save()
 
@@ -71,8 +71,8 @@ class TestResourceSavers:
         assert result is True
 
     def test_complete_with_resource(self, fake_gateway, fake_resource_data):
-        resource_1 = G(Resource, api=fake_gateway, name="foo1", method="GET", path="/foo1")
-        resource_2 = G(Resource, api=fake_gateway, name="foo2", method="POST", path="/foo2")
+        resource_1 = G(Resource, gateway=fake_gateway, name="foo1", method="GET", path="/foo1")
+        resource_2 = G(Resource, gateway=fake_gateway, name="foo2", method="POST", path="/foo2")
 
         resource_data_list = [
             fake_resource_data.copy(update={"resource": resource_1}, deep=True),
@@ -85,8 +85,8 @@ class TestResourceSavers:
         assert resource_data_list[1].resource == resource_2
 
     def test_save_proxies(self, fake_gateway, fake_resource_data):
-        resource_1 = G(Resource, api=fake_gateway, name="foo1", method="GET")
-        resource_2 = G(Resource, api=fake_gateway, name="foo2", method="POST")
+        resource_1 = G(Resource, gateway=fake_gateway, name="foo1", method="GET")
+        resource_2 = G(Resource, gateway=fake_gateway, name="foo2", method="POST")
 
         resource_data_list = [
             fake_resource_data.copy(update={"resource": resource_1}, deep=True),
@@ -104,7 +104,7 @@ class TestResourceSavers:
         assert Proxy.objects.filter(resource__api=fake_gateway).count() == 2
 
     def test_save_auth_configs(self, fake_gateway, fake_resource_data):
-        resource = G(Resource, api=fake_gateway, name="foo")
+        resource = G(Resource, gateway=fake_gateway, name="foo")
 
         resource_data = fake_resource_data.copy(update={"resource": resource}, deep=True)
 

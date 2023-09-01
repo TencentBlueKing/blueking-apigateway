@@ -27,8 +27,8 @@ class TestPluginBindingHandler:
         s1 = G(Stage, gateway=fake_gateway)
         s2 = G(Stage, gateway=fake_gateway)
 
-        r1 = G(Resource, api=fake_gateway)
-        r2 = G(Resource, api=fake_gateway)
+        r1 = G(Resource, gateway=fake_gateway)
+        r2 = G(Resource, gateway=fake_gateway)
 
         result = PluginBindingHandler.get_scopes(
             gateway_id=fake_gateway.id, scope_type=PluginBindingScopeEnum.STAGE, scope_ids=[s1.id, s2.id]

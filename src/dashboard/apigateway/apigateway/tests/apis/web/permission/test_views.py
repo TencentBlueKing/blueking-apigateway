@@ -209,7 +209,7 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
         cls.gateway = create_gateway()
 
     def test_renew(self):
-        resource = G(Resource, api=self.gateway)
+        resource = G(Resource, gateway=self.gateway)
 
         perm_2 = G(
             models.AppResourcePermission,
@@ -247,7 +247,7 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
             )
 
     def test_destroy(self):
-        resource = G(Resource, api=self.gateway)
+        resource = G(Resource, gateway=self.gateway)
 
         perm_2 = G(
             models.AppResourcePermission,
@@ -290,7 +290,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
         cls.gateway = create_gateway()
 
     def test_renew(self):
-        resource = G(Resource, api=self.gateway)
+        resource = G(Resource, gateway=self.gateway)
 
         perm_1 = G(
             models.AppAPIPermission,
@@ -325,7 +325,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
             )
 
     def test_destroy(self):
-        resource = G(Resource, api=self.gateway)
+        resource = G(Resource, gateway=self.gateway)
 
         perm_1 = G(
             models.AppAPIPermission,
@@ -461,7 +461,7 @@ class TestAppPermissionRecordViewSet(TestCase):
         cls.gateway = create_gateway()
 
     def test_list(self):
-        resource = G(Resource, api=self.gateway)
+        resource = G(Resource, gateway=self.gateway)
         G(
             models.AppPermissionRecord,
             api=self.gateway,
@@ -498,7 +498,7 @@ class TestAppPermissionRecordViewSet(TestCase):
             self.assertEqual(result["data"]["count"], test["expected"]["count"])
 
     def test_retrieve(self):
-        resource = G(Resource, api=self.gateway)
+        resource = G(Resource, gateway=self.gateway)
         record = G(
             models.AppPermissionRecord,
             api=self.gateway,

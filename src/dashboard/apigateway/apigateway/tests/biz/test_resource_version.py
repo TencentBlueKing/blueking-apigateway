@@ -32,7 +32,7 @@ from apigateway.utils.time import now_datetime
 class TestResourceVersionHandler:
     def test_make_version(self):
         gateway = G(Gateway)
-        resource = G(Resource, api=gateway, created_time=dummy_time.time, updated_time=dummy_time.time)
+        resource = G(Resource, gateway=gateway, created_time=dummy_time.time, updated_time=dummy_time.time)
 
         ResourceHandler().save_auth_config(
             resource.id,
