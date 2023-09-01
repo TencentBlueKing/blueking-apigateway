@@ -85,7 +85,7 @@ class StageV1ViewSet(viewsets.ViewSet):
         slz = serializers.StageWithResourceVersionV1SLZ(
             queryset,
             many=True,
-            context={"stage_release": ReleasedResourceDataHandler().get_stage_release(gateway=request.gateway)},
+            context={"stage_release": ReleasedResourceDataHandler.get_stage_release(gateway=request.gateway)},
         )
         return V1OKJsonResponse(data=slz.data)
 
