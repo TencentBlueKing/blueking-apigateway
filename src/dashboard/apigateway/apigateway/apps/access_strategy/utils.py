@@ -20,10 +20,10 @@ from typing import List, Optional
 from apigateway.apps.access_strategy.constants import AccessStrategyTypeEnum
 from apigateway.apps.access_strategy.models import IPGroup
 from apigateway.apps.plugin.models import PluginConfig, PluginType
-from apigateway.controller.crds.release_data.access_strategy import CorsASC
 from apigateway.utils.ip import parse_ip_content_to_list
 from apigateway.utils.yaml import yaml_dumps, yaml_dumps_multiline_string
 
+from .convertor import CorsASC
 from .models import AccessStrategy
 
 # FIXME: 转换成 PluginConfig 对应的格式是 前端动态表单保存下来的格式
