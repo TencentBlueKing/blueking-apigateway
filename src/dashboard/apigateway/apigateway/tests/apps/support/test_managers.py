@@ -41,8 +41,8 @@ class TestResourceDocManager:
         r1 = G(Resource, api=gateway)
         r2 = G(Resource, api=gateway)
 
-        doc1 = G(ResourceDoc, resource_id=r1.id, api=gateway)
-        doc2 = G(ResourceDoc, resource_id=r2.id, api=gateway, language="en")
+        doc1 = G(ResourceDoc, resource_id=r1.id, gateway=gateway)
+        doc2 = G(ResourceDoc, resource_id=r2.id, gateway=gateway, language="en")
 
         result = ResourceDoc.objects.get_doc_key_to_id(gateway.id)
         assert result == {
@@ -56,8 +56,8 @@ class TestResourceDocManager:
         r1 = G(Resource, api=gateway)
         r2 = G(Resource, api=gateway)
 
-        doc1 = G(ResourceDoc, resource_id=r1.id, api=gateway, content="content1")
-        doc2 = G(ResourceDoc, resource_id=r2.id, api=gateway, content="content2", language="en")
+        doc1 = G(ResourceDoc, resource_id=r1.id, gateway=gateway, content="content1")
+        doc2 = G(ResourceDoc, resource_id=r2.id, gateway=gateway, content="content2", language="en")
 
         result = ResourceDoc.objects.query_doc_key_to_content(gateway.id)
         assert result == {
@@ -71,8 +71,8 @@ class TestResourceDocManager:
         r1 = G(Resource, api=gateway)
         r2 = G(Resource, api=gateway)
 
-        doc1 = G(ResourceDoc, api=gateway, resource_id=r1.id, language="zh")
-        doc2 = G(ResourceDoc, api=gateway, resource_id=r2.id, language="en")
+        doc1 = G(ResourceDoc, gateway=gateway, resource_id=r1.id, language="zh")
+        doc2 = G(ResourceDoc, gateway=gateway, resource_id=r2.id, language="en")
 
         result = ResourceDoc.objects.get_doc_languages_of_resources(gateway.id, [r1.id, r2.id])
         assert result == {
@@ -83,7 +83,7 @@ class TestResourceDocManager:
     def test_filter_docs(self):
         gateway = G(Gateway)
         r = G(Resource, api=gateway)
-        doc = G(ResourceDoc, resource_id=r.id, api=gateway)
+        doc = G(ResourceDoc, resource_id=r.id, gateway=gateway)
 
         assert list(ResourceDoc.objects.filter_docs(gateway.id).values_list("id", flat=True)) == [doc.id]
         assert ResourceDoc.objects.filter_docs(gateway.id, [r.id]).count() == 1
@@ -94,8 +94,8 @@ class TestResourceDocSwaggerManager:
     def test_get_resource_doc_id_to_id(self):
         gateway = G(Gateway)
 
-        doc1 = G(ResourceDoc, api=gateway)
-        doc2 = G(ResourceDoc, api=gateway)
+        doc1 = G(ResourceDoc, gateway=gateway)
+        doc2 = G(ResourceDoc, gateway=gateway)
 
         s1 = G(ResourceDocSwagger, api=gateway, resource_doc=doc1)
         s2 = G(ResourceDocSwagger, api=gateway, resource_doc=doc2)
@@ -227,7 +227,7 @@ class TestResourceDocVersionManager:
         resource = G(Resource, api=fake_gateway)
         rv = G(ResourceVersion, gateway=fake_gateway)
 
-        G(ResourceDoc, api=fake_gateway, resource_id=resource.id)
+        G(ResourceDoc, gateway=fake_gateway, resource_id=resource.id)
         G(
             ResourceDocVersion,
             gateway=fake_gateway,

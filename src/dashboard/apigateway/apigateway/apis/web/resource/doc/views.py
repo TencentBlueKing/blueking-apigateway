@@ -33,7 +33,7 @@ class DocListCreateApi(generics.ListCreateAPIView):
     serializer_class = DocInputSLZ
 
     def get_queryset(self):
-        return ResourceDoc.objects.filter(api=self.request.gateway)
+        return ResourceDoc.objects.filter(gateway=self.request.gateway)
 
     def _get_resource(self):
         return get_object_or_404(Resource, api=self.request.gateway, id=self.kwargs["resource_id"])
@@ -82,7 +82,7 @@ class DocListCreateApi(generics.ListCreateAPIView):
         slz.is_valid(raise_exception=True)
 
         slz.save(
-            api=request.gateway,
+            gateway=request.gateway,
             resource_id=resource.id,
             type=DocTypeEnum.MARKDOWN.value,
             source=DocSourceEnum.CUSTOM.value,
@@ -106,7 +106,7 @@ class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
     lookup_field = "id"
 
     def get_queryset(self):
-        return ResourceDoc.objects.filter(api=self.request.gateway, resource_id=self.kwargs["resource_id"])
+        return ResourceDoc.objects.filter(gateway=self.request.gateway, resource_id=self.kwargs["resource_id"])
 
     def _get_resource(self):
         return get_object_or_404(Resource, api=self.request.gateway, id=self.kwargs["resource_id"])

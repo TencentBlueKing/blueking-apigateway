@@ -50,7 +50,7 @@ class BaseParser:
         # en/zh share the same resource_id, use add language to distinguish
         resource_docs = {
             f"{resource_doc.language}:{resource_doc.resource_id}": resource_doc
-            for resource_doc in ResourceDoc.objects.filter(api_id=self.gateway_id)
+            for resource_doc in ResourceDoc.objects.filter(gateway_id=self.gateway_id)
         }
         for doc in docs:
             doc.resource = resources.get(doc.resource_name)

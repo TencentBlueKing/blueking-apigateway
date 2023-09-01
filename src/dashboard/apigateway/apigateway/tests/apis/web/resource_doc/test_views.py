@@ -101,7 +101,7 @@ class TestDocImportBySwaggerApi:
 
 class TestDocExportApi:
     def test_post(self, request_view, fake_resource_doc):
-        fake_gateway = fake_resource_doc.api
+        fake_gateway = fake_resource_doc.gateway
 
         resp = request_view(
             method="POST",

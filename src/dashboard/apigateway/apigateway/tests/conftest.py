@@ -846,7 +846,7 @@ def mock_board(settings):
 def fake_resource_doc(faker, fake_resource):
     return G(
         ResourceDoc,
-        api=fake_resource.api,
+        gateway=fake_resource.api,
         resource_id=fake_resource.id,
         language=faker.random_element(
             ["en", "zh"],

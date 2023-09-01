@@ -229,7 +229,7 @@ class TestResourceVersionViewSet(TestCase):
             created_time=dummy_time.time + datetime.timedelta(seconds=10),
             _data=json.dumps([{"id": 1}]),
         )
-        G(ResourceDoc, api=gateway_5, updated_time=dummy_time.time + datetime.timedelta(seconds=20))
+        G(ResourceDoc, gateway=gateway_5, updated_time=dummy_time.time + datetime.timedelta(seconds=20))
         G(
             ResourceDocVersion,
             gateway=gateway_5,

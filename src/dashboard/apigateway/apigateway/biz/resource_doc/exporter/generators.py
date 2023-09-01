@@ -36,7 +36,7 @@ class DocArchiveGenerator:
         )
 
         files = []
-        queryset = ResourceDoc.objects.filter(api_id=gateway_id, resource_id__in=resource_ids)
+        queryset = ResourceDoc.objects.filter(gateway_id=gateway_id, resource_id__in=resource_ids)
         for resource_doc in queryset:
             resource_name = resource_id_to_name.get(resource_doc.resource_id)
             if not resource_name:

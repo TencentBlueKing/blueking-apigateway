@@ -26,7 +26,7 @@ from apigateway.apps.support.models import ResourceDoc
 class TestDocInputSLZ:
     def test_validate_language(self, faker, fake_gateway):
         resource_id = faker.pyint(min_value=1)
-        resource_doc = G(ResourceDoc, api=fake_gateway, resource_id=resource_id, language="zh")
+        resource_doc = G(ResourceDoc, gateway=fake_gateway, resource_id=resource_id, language="zh")
 
         # create
         slz = DocInputSLZ(data={}, context={"gateway_id": fake_gateway.id, "resource_id": resource_id})
@@ -37,7 +37,7 @@ class TestDocInputSLZ:
             assert slz.validate_language("zh") == "zh"
 
         # update
-        G(ResourceDoc, api=fake_gateway, resource_id=resource_id, language="en")
+        G(ResourceDoc, gateway=fake_gateway, resource_id=resource_id, language="en")
         slz = DocInputSLZ(
             instance=resource_doc, data={}, context={"gateway_id": fake_gateway.id, "resource_id": resource_id}
         )
