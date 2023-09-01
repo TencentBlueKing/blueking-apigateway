@@ -44,9 +44,11 @@ from apigateway.core.constants import (
     MicroGatewayStatusEnum,
     ProxyTypeEnum,
     PublishEventEnum,
+    PublishEventNameTypeEnum,
     PublishEventStatusEnum,
     PublishSourceEnum,
     ReleaseStatusEnum,
+    ResourceVersionSchemaEnum,
     SSLCertificateBindingScopeTypeEnum,
     SSLCertificateTypeEnum,
     StageStatusEnum,
@@ -491,9 +493,17 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
     name = models.CharField(_("[Deprecated] 版本名"), max_length=128, unique=True)
+    # todo: 1.14删除
     title = models.CharField(max_length=128, blank=True, default="", null=True)
     comment = models.CharField(max_length=512, blank=True, null=True)
     _data = models.TextField(db_column="data")
+    # 用于不同数据格式解析版本数据兼容历史数据
+    scheme_version = models.CharField(
+        max_length=32,
+        choices=ResourceVersionSchemaEnum.get_choices(),
+        default=ResourceVersionSchemaEnum.V1Version.value,
+    )
+
     created_time = models.DateTimeField(null=True, blank=True)
 
     objects = managers.ResourceVersionManager()
@@ -664,6 +674,14 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
     @detail.setter
     def detail(self, detail: dict):
         self._detail = json.dumps(detail)
+
+    @property
+    def is_running(self):
+        return self.status == PublishEventStatusEnum.DOING.value or (
+            # 如果不是最后一个事件，如果是success的话说明也是running
+            self.status == PublishEventStatusEnum.SUCCESS.value
+            and self.name != PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
+        )
 
     def __str__(self):
         return f"<PublishEvent: {self.gateway_id}/{self.stage_id}/{self.publish_id}/{self.name}>/{self.status}"

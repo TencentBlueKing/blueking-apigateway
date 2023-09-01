@@ -16,20 +16,18 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.common.funcs import get_resource_version_display
 from apigateway.core.constants import SEMVER_PATTERN
 from apigateway.core.models import Gateway, Resource, ResourceVersion
 from apigateway.utils import time as time_utils
-from apigateway.utils.string import random_string
 
 
-class ResourceVersionSLZ(serializers.ModelSerializer):
+class ResourceVersionInfoSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     # TODO: 待开源版中，同步资源版本的服务全部切换为 version 后，此字段才能指定为必填: required=True
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=False)
@@ -68,11 +66,11 @@ class ResourceVersionSLZ(serializers.ModelSerializer):
         if queryset.exists():
             raise serializers.ValidationError(_("版本 {version} 已存在。").format(version=version))
 
-    def _validate_resource_count(self, api):
+    def _validate_resource_count(self, gateway):
         """
         校验网关下资源数量，网关下资源数量为0时，不允许创建网关版本
         """
-        if not Resource.objects.filter(api_id=api.id).exists():
+        if not Resource.objects.filter(api_id=gateway.id).exists():
             raise serializers.ValidationError(_("请先创建资源，然后再生成版本。"))
 
     def to_representation(self, instance):
@@ -89,7 +87,7 @@ class ResourceVersionSLZ(serializers.ModelSerializer):
         now = time_utils.now_datetime()
 
         # created_time：与版本名中时间保持一致，方便SDK使用此时间作为版本号
-        name = self._generate_version_name(gateway.name, now)
+        name = ResourceVersionHandler.generate_version_name(gateway.name, now)
         validated_data.update(
             {
                 "name": name,
@@ -101,29 +99,8 @@ class ResourceVersionSLZ(serializers.ModelSerializer):
 
         return super().create(validated_data)
 
-    def _generate_version_name(self, gateway_name: str, now: datetime.datetime) -> str:
-        """生成新的版本名称"""
-        return "{gateway_name}_{now_str}_{random_str}".format(
-            gateway_name=gateway_name,
-            now_str=time_utils.format(now, fmt="YYYYMMDDHHmmss"),
-            random_str=random_string(5),
-        )
 
-
-class ResourceVersionUpdateSLZ(serializers.ModelSerializer):
-    title = serializers.CharField(label="版本名称", max_length=128, required=True)
-    comment = serializers.CharField(label="版本说明", max_length=512, allow_blank=True, required=False)
-
-    class Meta:
-        model = ResourceVersion
-        fields = [
-            "title",
-            "comment",
-        ]
-        lookup_field = "id"
-
-
-class ResourceVersionListSLZ(serializers.ModelSerializer):
+class ResourceVersionListOutputSLZ(serializers.ModelSerializer):
     released_stages = serializers.SerializerMethodField()
     has_sdk = serializers.SerializerMethodField()
     resource_version_display = serializers.SerializerMethodField()
@@ -155,14 +132,14 @@ class ResourceVersionListSLZ(serializers.ModelSerializer):
         return obj.get("version") or obj.get("name", "")
 
     def get_resource_version_display(self, obj):
-        return get_resource_version_display(obj)
+        return ResourceVersionHandler.get_resource_version_display(obj)
 
 
-class NeedNewVersionSLZ(serializers.Serializer):
+class NeedNewVersionOutputSLZ(serializers.Serializer):
     need_new_version = serializers.BooleanField()
 
 
-class ResourceVersionDiffQuerySLZ(serializers.Serializer):
+class ResourceVersionDiffQueryInputSLZ(serializers.Serializer):
     source_resource_version_id = serializers.IntegerField(allow_null=True)
     target_resource_version_id = serializers.IntegerField(allow_null=True)
 
@@ -175,7 +152,7 @@ class ResourceVersionResourceSLZ(serializers.Serializer):
     diff = serializers.DictField(allow_null=True)
 
 
-class ResourceVersionDiffSLZ(serializers.Serializer):
+class ResourceVersionDiffOutputSLZ(serializers.Serializer):
     add = ResourceVersionResourceSLZ()
     delete = ResourceVersionResourceSLZ()
     update = serializers.DictField(child=ResourceVersionResourceSLZ())

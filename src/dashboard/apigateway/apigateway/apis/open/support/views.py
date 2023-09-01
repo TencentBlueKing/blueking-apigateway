@@ -79,6 +79,7 @@ class SDKGenerateViewSet(viewsets.ViewSet):
 
     @transaction.atomic
     @swagger_auto_schema(
+        # todo: 是否需要将support改成sdk?目前只有sdk相关的
         tags=["OpenAPI.Support"],
     )
     def generate(self, request, gateway_name: str, *args, **kwargs):

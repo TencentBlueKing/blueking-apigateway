@@ -53,7 +53,7 @@ class ComponentReleaser:
         # resource_version_manager = ResourceVersionManager()
         version = self._prepare_version(self.gateway.id, self.release_history.id)
         # self.resource_version = resource_version_manager.create_resource_version(
-        self.resource_version = ResourceVersionHandler().create_resource_version(
+        self.resource_version = ResourceVersionHandler.create_resource_version(
             self.gateway,
             data={
                 "version": version,

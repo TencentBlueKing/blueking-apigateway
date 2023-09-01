@@ -36,11 +36,11 @@ class TestResourceVersionViewSet:
 
     def test_create(self, request_factory, fake_gateway, mocker):
         mocker.patch(
-            "apigateway.apis.open.resource_version.views.ResourceVersionHandler.make_version",
+            "apigateway.biz.resource_version.ResourceVersionHandler.make_version",
             return_value=[{"name": "test"}],
         )
         mocker.patch(
-            "apigateway.apps.resource_version.serializers.ResourceVersionSLZ._validate_resource_count",
+            "apigateway.biz.resource_version.ResourceVersionHandler._validata_resource_version_data",
             return_value=None,
         )
 
@@ -55,7 +55,6 @@ class TestResourceVersionViewSet:
         view = views.ResourceVersionViewSet.as_view({"post": "create"})
         response = view(request, fake_gateway.name)
         result = get_response_json(response)
-
         assert result["code"] == 0
 
     @pytest.mark.parametrize(

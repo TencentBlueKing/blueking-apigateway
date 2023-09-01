@@ -33,7 +33,6 @@ from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import InstanceDeleteError
 from apigateway.common.factories import SchemaFactory
-from apigateway.common.funcs import get_resource_version_display
 from apigateway.common.mcryptography import AESCipherManager
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
@@ -466,52 +465,6 @@ class ResourceVersionManager(models.Manager):
 
 
 class ReleaseManager(models.Manager):
-    def get_stage_release_status(self, stage_ids):
-        """
-        获取环境部署状态
-        """
-        released_stage_ids = self.filter(
-            stage_id__in=stage_ids, stage__status=StageStatusEnum.ACTIVE.value
-        ).values_list("stage_id", flat=True)
-        return {stage_id: True for stage_id in released_stage_ids}
-
-    def get_stage_release(self, gateway, stage_ids=None):
-        """
-        获取环境部署信息
-        """
-        queryset = self.filter(gateway_id=gateway.id, stage__status=StageStatusEnum.ACTIVE.value)
-        if stage_ids is not None:
-            queryset = queryset.filter(stage_id__in=stage_ids)
-
-        stage_release = queryset.values(
-            "stage_id",
-            "resource_version_id",
-            "resource_version__name",
-            "resource_version__title",
-            "resource_version__version",
-            "updated_time",
-        )
-        return {
-            release["stage_id"]: {
-                "release_status": True,
-                "release_time": release["updated_time"],
-                "resource_version_id": release["resource_version_id"],
-                "resource_version_name": release["resource_version__name"],
-                "resource_version_title": release["resource_version__title"],
-                "resource_version": {
-                    "version": release["resource_version__version"],
-                },
-                "resource_version_display": get_resource_version_display(
-                    {
-                        "version": release["resource_version__version"],
-                        "name": release["resource_version__name"],
-                        "title": release["resource_version__title"],
-                    }
-                ),
-            }
-            for release in stage_release
-        }
-
     def get_released_stages(self, gateway=None, resource_version_ids=None):
         # 查询版本信息，并按照版本ID排序
         # 只显示Stage未下线的发布信息
@@ -550,11 +503,6 @@ class ReleaseManager(models.Manager):
             resource_version_id: [stage["name"] for stage in stages]
             for resource_version_id, stages in released_stages.items()
         }
-
-    def save_related_data(self, gateway, stage):
-        # 发布后，将环境状态更新为可用
-        stage.status = StageStatusEnum.ACTIVE.value
-        stage.save(update_fields=["status", "updated_time"])
 
     def save_release(self, gateway, stage, resource_version, comment, username):
         obj, created = self.get_or_create(
@@ -606,9 +554,6 @@ class ReleaseManager(models.Manager):
         if not ids:
             return None
         return ids[0]
-
-    def get_released_stage_names(self, gateway_id: int) -> List[str]:
-        return list(self.filter(gateway_id=gateway_id).values_list("stage__name", flat=True))
 
     def get_released_stage_count(self, resource_version_ids: List[int]) -> Dict[int, int]:
         """获取资源版本已发布的环境数量"""
@@ -671,70 +616,12 @@ class ReleasedResourceManager(models.Manager):
         ]
         self.bulk_create(resource_to_add, batch_size=settings.RELEASED_RESOURCE_CREATE_BATCH_SIZE)
 
-    # FIXME: move to biz/released_resource ReleasedResource
-    def clear_unreleased_resource(self, gateway_id: int) -> None:
-        """清理未发布的资源，如已发布版本被新版本替换的情况"""
-        from apigateway.core.models import Release
-
-        resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
-        self.filter(gateway_id=gateway_id).exclude(resource_version_id__in=resource_version_ids).delete()
-
     def get_resource_version_id_to_obj_map(self, gateway_id: int, resource_id: int):
         """获取已发布资源版本ID对应的发布资源"""
         return {
             resource.resource_version_id: resource
             for resource in self.filter(gateway_id=gateway_id, resource_id=resource_id)
         }
-
-    # FIXME: move to biz/released_resource ReleasedResource
-    def get_resource_released_stage_count(self, gateway_id: int, resource_ids: List[int]) -> Dict[int, int]:
-        """获取资源已发布环境的数量"""
-        from apigateway.core.models import Release
-
-        resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
-        released_stage_count = Release.objects.get_released_stage_count(resource_version_ids)
-
-        resource_released_stage_count: dict = defaultdict(int)
-
-        queryset = self.filter(gateway_id=gateway_id, resource_id__in=resource_ids).values(
-            "resource_id", "resource_version_id"
-        )
-        for resource in queryset:
-            resource_id = resource["resource_id"]
-            resource_version_id = resource["resource_version_id"]
-            resource_released_stage_count[resource_id] += released_stage_count.get(resource_version_id, 0)
-
-        return resource_released_stage_count
-
-    # FIXME: move to biz/released_resource ReleasedResource
-    def get_resource_released_stages(self, gateway_id: int, resource_id: int) -> Dict[int, dict]:
-        """获取资源已发布的环境信息"""
-        from apigateway.core.models import Release, ResourceVersion
-
-        rv_id_to_released_resource_map = self.get_resource_version_id_to_obj_map(gateway_id, resource_id)
-        released_stage_id_map = Release.objects.get_stage_id_to_fields_map(
-            gateway_id, rv_id_to_released_resource_map.keys()
-        )
-        resource_version_id_map = ResourceVersion.objects.get_id_to_fields_map(
-            gateway_id,
-            rv_id_to_released_resource_map.keys(),
-        )
-
-        resource_released_stages = {}
-        for stage_id, stage_release in released_stage_id_map.items():
-            resource_version_id = stage_release["resource_version_id"]
-            resource_version = resource_version_id_map[resource_version_id]
-            released_resource = rv_id_to_released_resource_map[resource_version_id]
-            resource_released_stages[stage_id] = {
-                "stage_id": stage_id,
-                "resource_version_id": resource_version["id"],
-                "resource_version_name": resource_version["name"],
-                "resource_version_title": resource_version["title"],
-                "resource_version_display": get_resource_version_display(resource_version),
-                "released_resource": released_resource,
-            }
-
-        return resource_released_stages
 
     def get_released_resource(self, gateway_id: int, resource_version_id: int, resource_name: str) -> Optional[dict]:
         released_resource = self.filter(

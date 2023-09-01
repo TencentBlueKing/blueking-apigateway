@@ -50,11 +50,9 @@ urlpatterns = [
     # iam provider
     path("backend/api/iam/", include("apigateway.apis.iam.urls")),
     # apps: core
-    path("backend/apis/<int:gateway_id>/resource_versions/", include("apigateway.apps.resource_version.urls")),
     path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     # apps: normal
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
-    path("backend/apis/<int:gateway_id>/support/", include("apigateway.apps.support.urls")),
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     path("backend/esb/", include("apigateway.apps.esb.urls")),
     # FIXME: change this to a new url in future
@@ -81,6 +79,8 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/docs/", include("apigateway.apis.web.resource_doc.urls")),
     path("backend/gateways/<int:gateway_id>/releases/", include("apigateway.apis.web.release.urls")),
     path("backend/gateways/<int:gateway_id>/plugins/", include("apigateway.apis.web.plugin.urls")),
+    path("backend/gateways/<int:gateway_id>/resource_versions/", include("apigateway.apis.web.resource_version.urls")),
+    path("backend/gateways/<int:gateway_id>/support/", include("apigateway.apis.web.support.urls")),
     # todo 不应该放在顶层，后续要想办法挪到下层
     path(
         "backend/gateways/monitors/alarm/records/summary/",

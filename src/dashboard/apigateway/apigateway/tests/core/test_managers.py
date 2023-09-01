@@ -774,58 +774,6 @@ class TestStageResourceDisabledManager(TestCase):
 
 
 class TestReleaseManager:
-    def test_get_stage_release_status(self):
-        gateway = G(Gateway)
-
-        stage_prod = G(Stage, gateway=gateway, name="prod", status=1)
-        stage_test = G(Stage, gateway=gateway, name="test", status=1)
-
-        resource_version = G(ResourceVersion, gateway=gateway)
-        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version)
-
-        data = [
-            {
-                "stage_ids": [stage_prod.id, stage_test.id],
-                "expected": {
-                    stage_prod.id: True,
-                },
-            }
-        ]
-        for test in data:
-            result = Release.objects.get_stage_release_status(test["stage_ids"])
-            assert result == test["expected"]
-
-    def test_get_stage_release(self):
-        gateway = G(Gateway)
-
-        stage_prod = G(Stage, gateway=gateway, name="prod", status=1)
-        stage_test = G(Stage, gateway=gateway, name="test", status=1)
-
-        resource_version = G(ResourceVersion, gateway=gateway, name="test-01", title="test", version="1.0.1")
-        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version, updated_time=dummy_time.time)
-
-        data = [
-            {
-                "stage_ids": [stage_prod.id, stage_test.id],
-                "expected": {
-                    stage_prod.id: {
-                        "release_status": True,
-                        "release_time": dummy_time.time,
-                        "resource_version_id": resource_version.id,
-                        "resource_version_name": "test-01",
-                        "resource_version_title": "test",
-                        "resource_version_display": "1.0.1(test)",
-                        "resource_version": {
-                            "version": "1.0.1",
-                        },
-                    },
-                },
-            }
-        ]
-        for test in data:
-            result = Release.objects.get_stage_release(gateway, test["stage_ids"])
-            assert result == test["expected"]
-
     def test_get_released_stages(self):
         gateway = G(Gateway)
         stage_prod = G(Stage, gateway=gateway, name="prod", status=1)
@@ -945,21 +893,6 @@ class TestReleaseManager:
         result = Release.objects.get_released_resource_version_ids(gateway.id, "prod")
         assert result == [rv1.id]
 
-    def test_released_stage_names(self):
-        gateway = G(Gateway)
-
-        s1 = G(Stage, gateway=gateway, name="prod")
-        s2 = G(Stage, gateway=gateway, name="test")
-
-        rv1 = G(ResourceVersion, gateway=gateway)
-        rv2 = G(ResourceVersion, gateway=gateway)
-
-        G(Release, gateway=gateway, resource_version=rv1, stage=s1)
-        G(Release, gateway=gateway, resource_version=rv2, stage=s2)
-
-        result = Release.objects.get_released_stage_names(gateway.id)
-        assert result == ["prod", "test"]
-
     def test_get_released_stage_count(self):
         gateway = G(Gateway)
         s1 = G(Stage, gateway=gateway)
@@ -1067,52 +1000,6 @@ class TestReleaseManager:
 
 
 class TestReleasedResourceManager:
-    def test_clear_unreleased_resource(self):
-        gateway = G(Gateway)
-
-        s1 = G(Stage, gateway=gateway)
-
-        rv1 = G(ResourceVersion, gateway=gateway)
-        rv2 = G(ResourceVersion, gateway=gateway)
-
-        G(Release, gateway=gateway, stage=s1, resource_version=rv1)
-
-        G(ReleasedResource, gateway=gateway, resource_version_id=rv1.id, data={})
-        G(ReleasedResource, gateway=gateway, resource_version_id=rv2.id, data={})
-
-        ReleasedResource.objects.clear_unreleased_resource(gateway.id)
-
-        assert ReleasedResource.objects.filter(resource_version_id=rv1.id).exists()
-        assert not ReleasedResource.objects.filter(resource_version_id=rv2.id).exists()
-
-    def test_get_resource_released_stage_count(self):
-        gateway = G(Gateway)
-
-        s1 = G(Stage, gateway=gateway)
-        s2 = G(Stage, gateway=gateway)
-
-        r1 = G(Resource, gateway=gateway)
-        r2 = G(Resource, gateway=gateway)
-
-        rv1 = G(ResourceVersion, gateway=gateway)
-        rv2 = G(ResourceVersion, gateway=gateway)
-
-        G(Release, gateway=gateway, stage=s1, resource_version=rv1)
-        G(Release, gateway=gateway, stage=s2, resource_version=rv2)
-
-        G(ReleasedResource, gateway=gateway, resource_version_id=rv1.id, resource_id=r1.id, data={})
-        G(ReleasedResource, gateway=gateway, resource_version_id=rv1.id, resource_id=r2.id, data={})
-        G(ReleasedResource, gateway=gateway, resource_version_id=rv2.id, resource_id=r2.id, data={})
-
-        result = ReleasedResource.objects.get_resource_released_stage_count(
-            gateway_id=gateway.id,
-            resource_ids=[r1.id, r2.id],
-        )
-        assert result == {
-            r1.id: 1,
-            r2.id: 2,
-        }
-
     def test_get_latest_released_resource(self):
         gateway = G(Gateway)
         resource = G(Resource, gateway=gateway)

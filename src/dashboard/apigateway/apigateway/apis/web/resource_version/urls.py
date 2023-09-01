@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,32 +16,26 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
+from django.urls import path
 
-from apigateway.common.funcs import get_resource_version_display
-
-
-@pytest.mark.parametrize(
-    "data, expected",
-    [
-        (
-            {
-                "version": "1.0.0",
-                "name": "n1",
-                "title": "t1",
-            },
-            "1.0.0(t1)",
-        ),
-        (
-            {
-                "version": "",
-                "name": "n2",
-                "title": "t2",
-            },
-            "n2(t2)",
-        ),
-    ],
+from .views import (
+    ResourceVersionDiffRetrieveApi,
+    ResourceVersionListCreateApi,
+    ResourceVersionNeedNewVersionRetrieveApi,
+    ResourceVersionRetrieveApi,
 )
-def test_get_resource_version_display(data, expected):
-    result = get_resource_version_display(data)
-    assert result == expected
+
+urlpatterns = [
+    path("", ResourceVersionListCreateApi.as_view(), name="gateway.resource_version.list_create"),
+    path(
+        "<int:id>/",
+        ResourceVersionRetrieveApi.as_view(),
+        name="gateway.resource_version.retrieve",
+    ),
+    path(
+        "need_new_version/",
+        ResourceVersionNeedNewVersionRetrieveApi.as_view(),
+        name="gateway.resource_version.need_new_version",
+    ),
+    path("diff/", ResourceVersionDiffRetrieveApi.as_view(), name="gateway.resource_version.diff"),
+]

@@ -200,7 +200,7 @@ class AppPermissionBuilder:
 
         resource_map: defaultdict = defaultdict(dict)
         for api_id in api_permission_map.keys():
-            for resource in ResourceVersionHandler().get_released_public_resources(api_id):
+            for resource in ResourceVersionHandler.get_released_public_resources(api_id):
                 resource.update({"api_permission": api_permission_map.get(api_id)})
                 resource_map[resource["id"]] = resource
 
