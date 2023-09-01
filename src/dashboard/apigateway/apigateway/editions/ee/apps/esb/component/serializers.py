@@ -228,6 +228,6 @@ class ComponentReleaseHistorySLZ(serializers.Serializer):
         if resource_version_id not in self.context["resource_version_id_to_fields"]:
             return ""
 
-        return ResourceVersionHandler().get_resource_version_display(
+        return ResourceVersionHandler.get_resource_version_display(
             self.context["resource_version_id_to_fields"][resource_version_id]
         )

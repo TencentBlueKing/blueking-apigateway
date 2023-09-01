@@ -198,7 +198,7 @@ class GatewayHandler:
 
         # 5. delete resource-version
 
-        ResourceVersionHandler().delete_by_gateway_id(gateway_id)
+        ResourceVersionHandler.delete_by_gateway_id(gateway_id)
 
         # plugin bindings
 

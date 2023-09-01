@@ -87,7 +87,7 @@ class ResourceVersionInfoSLZ(serializers.ModelSerializer):
         now = time_utils.now_datetime()
 
         # created_time：与版本名中时间保持一致，方便SDK使用此时间作为版本号
-        name = ResourceVersionHandler().generate_version_name(gateway.name, now)
+        name = ResourceVersionHandler.generate_version_name(gateway.name, now)
         validated_data.update(
             {
                 "name": name,
@@ -132,7 +132,7 @@ class ResourceVersionListOutputSLZ(serializers.ModelSerializer):
         return obj.get("version") or obj.get("name", "")
 
     def get_resource_version_display(self, obj):
-        return ResourceVersionHandler().get_resource_version_display(obj)
+        return ResourceVersionHandler.get_resource_version_display(obj)
 
 
 class NeedNewVersionOutputSLZ(serializers.Serializer):

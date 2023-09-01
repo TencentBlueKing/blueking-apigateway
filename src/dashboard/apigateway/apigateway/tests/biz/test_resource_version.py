@@ -54,7 +54,7 @@ class TestResourceVersionHandler:
             },
         )
 
-        data = ResourceVersionHandler().make_version(gateway)
+        data = ResourceVersionHandler.make_version(gateway)
         assert data[0]["id"] == resource.id
         assert data[0]["method"] == resource.method
         assert data[0]["path"] == resource.path
@@ -96,7 +96,7 @@ class TestResourceVersionHandler:
             disabled_stage_ids=[],
         )
 
-        ResourceVersionHandler().create_resource_version(gateway, {"comment": "test"}, "admin")
+        ResourceVersionHandler.create_resource_version(gateway, {"comment": "test"}, "admin")
         assert ResourceVersion.objects.filter(gateway=gateway).count() == 1
 
     @pytest.mark.parametrize(
@@ -175,7 +175,7 @@ class TestResourceVersionHandler:
             return_value=["test"],
         )
 
-        result = ResourceVersionHandler().get_released_public_resources(api_id, stage_name)
+        result = ResourceVersionHandler.get_released_public_resources(api_id, stage_name)
         assert expected == result
 
         get_released_resource_version_ids_mock.assert_called_once_with(api_id, stage_name)
@@ -203,10 +203,10 @@ class TestResourceVersionHandler:
         ],
     )
     def test_get_resource_version_display(self, data, expected):
-        result = ResourceVersionHandler().get_resource_version_display(data)
+        result = ResourceVersionHandler.get_resource_version_display(data)
         assert result == expected
 
     def test_generate_version_name(self):
-        result = ResourceVersionHandler().generate_version_name("test", dummy_time.time)
+        result = ResourceVersionHandler.generate_version_name("test", dummy_time.time)
         time_str = time_utils.format(dummy_time.time, fmt="YYYYMMDDHHmmss")
         assert result.startswith(f"test_{time_str}_")

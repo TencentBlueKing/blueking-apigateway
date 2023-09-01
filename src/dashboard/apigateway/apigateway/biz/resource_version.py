@@ -97,7 +97,7 @@ class ResourceVersionHandler:
         if resource_version_id:
             return ResourceVersion.objects.get(gateway=gateway, id=resource_version_id).data
 
-        return ResourceVersionHandler().make_version(gateway)
+        return ResourceVersionHandler.make_version(gateway)
 
     @staticmethod
     def delete_by_gateway_id(gateway_id: int):
@@ -111,12 +111,12 @@ class ResourceVersionHandler:
     @staticmethod
     def create_resource_version(gateway: Gateway, data: Dict[str, Any], username: str = "") -> ResourceVersion:
         # validata data
-        ResourceVersionHandler()._validata_resource_version_data(gateway, data.get("version", ""))
+        ResourceVersionHandler._validata_resource_version_data(gateway, data.get("version", ""))
 
         now = time_utils.now_datetime()
 
         # created_time：与版本名中时间保持一致，方便SDK使用此时间作为版本号
-        name = ResourceVersionHandler().generate_version_name(gateway.name, now)
+        name = ResourceVersionHandler.generate_version_name(gateway.name, now)
         data.update(
             {
                 "name": name,
@@ -130,7 +130,7 @@ class ResourceVersionHandler:
 
         resource_version.save()
 
-        ResourceVersionHandler().add_create_audit_log(gateway, resource_version, username)
+        ResourceVersionHandler.add_create_audit_log(gateway, resource_version, username)
 
         return resource_version
 

@@ -512,7 +512,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     scheme_version = models.CharField(
         max_length=32,
         choices=ResourceVersionSchemaEnum.get_choices(),
-        default=ResourceVersionSchemaEnum.OldVersion.value,
+        default=ResourceVersionSchemaEnum.V1Version.value,
     )
 
     created_time = models.DateTimeField(null=True, blank=True)
@@ -689,6 +689,7 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
     @property
     def is_running(self):
         return self.status == PublishEventStatusEnum.DOING.value or (
+            # 如果不是最后一个事件，如果是success的话说明也是running
             self.status == PublishEventStatusEnum.SUCCESS.value
             and self.name != PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
         )

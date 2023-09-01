@@ -145,13 +145,13 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
         source_resource_doc_updated_time: dict,
         target_resource_doc_updated_time: dict,
     ) -> dict:
-        source_data_map = {}
+        source_key_to_value_map = {}
         target_data_map = {}
         for item in source_data:
             resource_id = item["id"]
             # 添加文档更新时间
             item["doc_updated_time"] = source_resource_doc_updated_time.get(resource_id, {})
-            source_data_map[resource_id] = item
+            source_key_to_value_map[resource_id] = item
         for item in target_data:
             resource_id = item["id"]
             # 添加文档更新时间
@@ -162,7 +162,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
         resource_delete = []
         resource_update = []
 
-        for resource_id, source_resource_data in source_data_map.items():
+        for resource_id, source_resource_data in source_key_to_value_map.items():
             source_resource_differ = ResourceDifferHandler.parse_obj(source_resource_data)
             target_resource_data = target_data_map.pop(resource_id, None)
 

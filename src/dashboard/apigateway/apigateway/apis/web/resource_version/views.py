@@ -18,25 +18,31 @@
 #
 
 from django.db import transaction
-from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status
+from rest_framework import generics, serializers, status
+from rest_framework.generics import get_object_or_404
 
-from apigateway.apis.web.resource_version import serializers
 from apigateway.apps.support.models import APISDK, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
-from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, Resource, ResourceVersion
-from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.responses import OKJsonResponse
+
+from .serializers import (
+    NeedNewVersionOutputSLZ,
+    ResourceVersionDiffOutputSLZ,
+    ResourceVersionDiffQueryInputSLZ,
+    ResourceVersionInfoSLZ,
+    ResourceVersionListOutputSLZ,
+)
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.ResourceVersionListOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: ResourceVersionListOutputSLZ(many=True)},
         tags=["WebAPI.ResourceVersion"],
     ),
 )
@@ -44,12 +50,12 @@ from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
     name="post",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        request_body=serializers.ResourceVersionInfoSLZ,
+        request_body=ResourceVersionInfoSLZ,
         tags=["WebAPI.ResourceVersion"],
     ),
 )
 class ResourceVersionListCreateApi(generics.ListCreateAPIView):
-    serializer_class = serializers.ResourceVersionInfoSLZ
+    serializer_class = ResourceVersionInfoSLZ
     lookup_field = "id"
 
     def get_queryset(self):
@@ -65,7 +71,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         page = self.paginate_queryset(data)
         resource_version_ids = [rv["id"] for rv in page]
 
-        slz = serializers.ResourceVersionListOutputSLZ(
+        slz = ResourceVersionListOutputSLZ(
             page,
             many=True,
             context={
@@ -80,11 +86,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        # manager = ResourceVersionManager()
-        # instance = manager.create_resource_version(request.gateway, request.data, request.user.username)
-        instance = ResourceVersionHandler().create_resource_version(
-            request.gateway, request.data, request.user.username
-        )
+        instance = ResourceVersionHandler.create_resource_version(request.gateway, request.data, request.user.username)
 
         # 创建文档版本
         if ResourceDoc.objects.doc_exists(request.gateway.id):
@@ -98,7 +100,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
 
 
 class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
-    serializer_class = serializers.ResourceVersionInfoSLZ
+    serializer_class = ResourceVersionInfoSLZ
     lookup_field = "id"
 
     def get_queryset(self):
@@ -129,18 +131,16 @@ class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
     @method_decorator(
         name="get",
         decorator=swagger_auto_schema(
-            responses={status.HTTP_200_OK: serializers.NeedNewVersionOutputSLZ()}, tags=["WebAPI.ResourceVersion"]
+            responses={status.HTTP_200_OK: NeedNewVersionOutputSLZ()}, tags=["WebAPI.ResourceVersion"]
         ),
     )
     def get(self, request, *args, **kwargs):
         resource_version_exist = ResourceVersion.objects.filter(gateway_id=request.gateway.id).exists()
         resource_exist = Resource.objects.filter(api_id=request.gateway.id).exists()
         if not (resource_version_exist or resource_exist):
-            return FailJsonResponse(
-                status=status.HTTP_404_NOT_FOUND, code=error_codes.NOT_FOUND, message=_("请先创建资源，然后再发布版本。")
-            )
+            raise serializers.ValidationError(_("请先创建资源，然后再发布版本。"))
 
-        if ResourceVersionHandler().need_new_version(request.gateway.id):
+        if ResourceVersionHandler.need_new_version(request.gateway.id):
             return OKJsonResponse(
                 data={"need_new_version": True, "msg": _("资源有更新，需生成新版本并发布到指定环境，才能生效。")},
             )
@@ -160,8 +160,8 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
     @method_decorator(
         name="get",
         decorator=swagger_auto_schema(
-            query_serializer=serializers.ResourceVersionDiffQueryInputSLZ(),
-            responses={status.HTTP_200_OK: serializers.ResourceVersionDiffOutputSLZ()},
+            query_serializer=ResourceVersionDiffQueryInputSLZ(),
+            responses={status.HTTP_200_OK: ResourceVersionDiffOutputSLZ()},
             tags=["WebAPI.ResourceVersion"],
         ),
     )
@@ -169,20 +169,17 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
         """
         版本对比
         """
-        slz = serializers.ResourceVersionDiffQueryInputSLZ(data=request.query_params)
+        slz = ResourceVersionDiffQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
 
-        try:
-            source_resource_data = ResourceVersionHandler().get_data_by_id_or_new(
-                request.gateway, data.get("source_resource_version_id")
-            )
-            target_resource_data = ResourceVersionHandler().get_data_by_id_or_new(
-                request.gateway, data.get("target_resource_version_id")
-            )
-        except ResourceVersion.DoesNotExist:
-            raise Http404
+        source_resource_data = get_object_or_404(
+            ResourceVersionHandler.get_data_by_id_or_new(request.gateway, data.get("source_resource_version_id"))
+        )
+        target_resource_data = get_object_or_404(
+            ResourceVersionHandler.get_data_by_id_or_new(request.gateway, data.get("target_resource_version_id"))
+        )
 
         return OKJsonResponse(
             data=ResourceDifferHandler.diff_resource_version_data(

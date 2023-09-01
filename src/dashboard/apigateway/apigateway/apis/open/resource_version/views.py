@@ -40,9 +40,7 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
     def create(self, request, gateway_name: str, *args, **kwargs):
         # manager = ResourceVersionManager()
         # instance = manager.create_resource_version(request.gateway, request.data, request.user.username)
-        instance = ResourceVersionHandler().create_resource_version(
-            request.gateway, request.data, request.user.username
-        )
+        instance = ResourceVersionHandler.create_resource_version(request.gateway, request.data, request.user.username)
 
         # 创建文档版本
         if ResourceDoc.objects.doc_exists(request.gateway.id):

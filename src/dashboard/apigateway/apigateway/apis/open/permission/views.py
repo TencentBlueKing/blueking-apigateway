@@ -67,7 +67,7 @@ class ResourceViewSet(viewsets.ViewSet):
         slz = serializers.AppPermissionResourceQuerySLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        resources = ResourceVersionHandler().get_released_public_resources(request.gateway.id)
+        resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
 
         # 过滤掉不允许主动申请权限的资源
         resources = list(filter(lambda x: x["allow_apply_permission"], resources))

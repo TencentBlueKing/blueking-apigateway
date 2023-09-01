@@ -93,7 +93,7 @@ class APISDKV1SLZ(serializers.Serializer):
 
     def get_resource_version_display(self, obj):
         resource_version_data = self.context["resource_versions"][obj.instance.resource_version_id]
-        return ResourceVersionHandler().get_resource_version_display(resource_version_data)
+        return ResourceVersionHandler.get_resource_version_display(resource_version_data)
 
     def get_released_stages(self, obj):
         return self.context["released_stages"].get(obj.instance.resource_version_id, [])

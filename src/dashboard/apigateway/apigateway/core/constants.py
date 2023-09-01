@@ -186,8 +186,8 @@ class PublishSourceEnum(StructuredEnum):
 
 
 class ResourceVersionSchemaEnum(StructuredEnum):
-    OldVersion = EnumField("1.0", "旧模型版本")
-    NewVersion = EnumField("2.0", "新模型版本")
+    V1Version = EnumField("1.0", "旧模型版本")
+    V2Version = EnumField("2.0", "新模型版本")
 
 
 class ProxyTypeEnum(StructuredEnum):

@@ -25,16 +25,22 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.release import serializers
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.released_resource import ReleasedResourceData
+from apigateway.biz.released_resource import ReleasedResourceDataHandler
 from apigateway.biz.releaser import ReleaseBatchManager, ReleaseError
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
+
+from .serializers import (
+    PublishEventQueryOutputSLZ,
+    ReleaseBatchInputSLZ,
+    ReleaseHistoryOutputSLZ,
+    ReleaseHistoryQueryInputSLZ,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +71,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         stage_name = instance.stage.name
         data = defaultdict(list)
         for resource in instance.resource_version.data:
-            resource_data = ReleasedResourceData.from_data(resource)
+            resource_data = ReleasedResourceDataHandler.from_data(resource)
             # 禁用环境时，去掉相应资源
             if resource_data.is_disabled_in_stage(stage_name):
                 continue
@@ -126,13 +132,13 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        request_body=serializers.ReleaseBatchInputSLZ,
-        responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ()},
+        request_body=ReleaseBatchInputSLZ,
+        responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ()},
         tags=["WebAPI.Release"],
     ),
 )
 class ReleaseBatchCreateApi(generics.CreateAPIView):
-    serializer_class = serializers.ReleaseBatchInputSLZ
+    serializer_class = ReleaseBatchInputSLZ
     lookup_field = "id"
 
     def get_queryset(self):
@@ -148,7 +154,7 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
 
-        slz = serializers.ReleaseHistoryOutputSLZ(
+        slz = ReleaseHistoryOutputSLZ(
             history,
             context={
                 "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids([history.id]),
@@ -161,19 +167,19 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
     name="get",
     decorator=swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=serializers.ReleaseHistoryQueryInputSLZ(),
-        responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ(many=True)},
+        query_serializer=ReleaseHistoryQueryInputSLZ(),
+        responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ(many=True)},
         tags=["WebAPI.Release"],
     ),
 )
 class ReleaseHistoryListApi(generics.ListAPIView):
-    serializer_class = serializers.ReleaseHistoryOutputSLZ
+    serializer_class = ReleaseHistoryOutputSLZ
 
     def get_queryset(self):
         return ReleaseHistory.objects.filter(gateway=self.request.gateway)
 
     def list(self, request, *args, **kwargs):
-        slz = serializers.ReleaseHistoryQueryInputSLZ(data=request.query_params)
+        slz = ReleaseHistoryQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -204,12 +210,10 @@ class ReleaseHistoryListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.ReleaseHistoryOutputSLZ()}, tags=["WebAPI.Release"]
-    ),
+    decorator=swagger_auto_schema(responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ()}, tags=["WebAPI.Release"]),
 )
 class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
-    serializer_class = serializers.ReleaseHistoryOutputSLZ
+    serializer_class = ReleaseHistoryOutputSLZ
 
     def get_queryset(self):
         return ReleaseHistory.objects.filter(gateway=self.request.gateway)
@@ -235,12 +239,12 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="查询发布事件(日志)",
-        responses={status.HTTP_200_OK: serializers.PublishEventQueryOutputSLZ()},
+        responses={status.HTTP_200_OK: PublishEventQueryOutputSLZ()},
         tags=["WebAPI.Release"],
     ),
 )
 class PublishEventsRetrieveAPI(generics.RetrieveAPIView):
-    serializer_class = serializers.PublishEventQueryOutputSLZ
+    serializer_class = PublishEventQueryOutputSLZ
     lookup_url_kwarg = "publish_id"
 
     def get_queryset(self):

@@ -145,7 +145,7 @@ class SupportHelper:
         # FIXME: duplicate with /api/v1/apis/{api_id}/released/stages/{stage_name}/resources/ view
         gateway = self._get_gateway(gateway_id)
 
-        resources = ResourceVersionHandler().get_released_public_resources(gateway.id, stage_name=stage_name)
+        resources = ResourceVersionHandler.get_released_public_resources(gateway.id, stage_name=stage_name)
         resource_ids = [resource["id"] for resource in resources]
         paginator = LimitOffsetPaginator(count=len(resources), offset=0, limit=len(resources))
 
@@ -304,7 +304,7 @@ class SupportHelper:
                     "resource_version_id": release["resource_version__id"],
                     "resource_version_name": release["resource_version__name"],
                     "resource_version_title": release["resource_version__title"],
-                    "resource_version_display": ResourceVersionHandler().get_resource_version_display(
+                    "resource_version_display": ResourceVersionHandler.get_resource_version_display(
                         {
                             "version": release["resource_version__version"],
                             "name": release["resource_version__name"],

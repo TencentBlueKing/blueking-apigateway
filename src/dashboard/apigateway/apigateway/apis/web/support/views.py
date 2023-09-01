@@ -76,9 +76,6 @@ class APISDKListCreateApi(generics.ListCreateAPIView):
         slz = self.get_serializer(sdks, many=True)
         return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=serializers.APISDKGenerateInputSLZ, tags=["Support"]
-    )
     @transaction.atomic
     def create(self, request, gateway_id):
         """
