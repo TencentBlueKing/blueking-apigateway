@@ -27,7 +27,8 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from requests import Response
 
-from apigateway.components.exceptions import RemoteAPIResultError, RemoteRequestError
+from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
+from apigateway.common.error_codes import error_codes
 from apigateway.components.utils import inject_accept_language
 from apigateway.utils.list import chunk_list
 
@@ -41,7 +42,7 @@ class PaaSV3Component:
 
     def _parse_response(self, response: Optional[Response]) -> Any:
         if response is None:
-            raise RemoteRequestError(_("请求 bkpaas3 获取应用信息失败，请联系系统负责人处理或稍后重试。"))
+            raise error_codes.INTERNAL.format(_("请求 bkpaas3 获取应用信息失败，请联系系统负责人处理或稍后重试。"), replace=True)
 
         try:
             result = response.json()
@@ -49,22 +50,23 @@ class PaaSV3Component:
             logger.warning(
                 "request bkpaas3 error, request: %s, response: %s", to_curl(response.request), response.text
             )
-            raise RemoteRequestError(_("请求 bkpaas3 获取应用信息失败，接口响应数据非 JSON 格式。"))
+            raise error_codes.INTERNAL.format(_("请求 bkpaas3 获取应用信息失败，接口响应数据非 JSON 格式。"), replace=True)
 
         if not result["result"]:
             logger.warning(
                 "request bkpaas3 error, request: %s, response: %s", to_curl(response.request), response.text
             )
-            raise RemoteAPIResultError(
+            raise error_codes.INTERNAL.format(
                 _("请求 bkpaas3 获取应用信息失败，{code_slug}，{message}。").format(
                     code_slug=result.get("code_slug", "Error"),
                     message=result.get("message"),
-                )
+                ),
+                replace=True,
             )
 
         return result["data"]
 
-    @cached(cache=TTLCache(maxsize=2000, ttl=300))
+    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_SHORT.value))
     def get_app(self, app_code):
         data = self.get_apps([app_code])
         return data.get(app_code)
