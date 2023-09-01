@@ -81,7 +81,7 @@ class ResourceDoc(TimestampedModelMixin, OperatorModelMixin):
 class ResourceDocSwagger(TimestampedModelMixin):
     """资源文档扩展数据，若资源文档通过 Swagger 导入，可存储资源的 Swagger 描述"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_doc = models.OneToOneField(ResourceDoc, on_delete=models.CASCADE)
     swagger = models.TextField(blank=True, default="")
 

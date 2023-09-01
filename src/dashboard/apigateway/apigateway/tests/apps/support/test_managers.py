@@ -97,8 +97,8 @@ class TestResourceDocSwaggerManager:
         doc1 = G(ResourceDoc, gateway=gateway)
         doc2 = G(ResourceDoc, gateway=gateway)
 
-        s1 = G(ResourceDocSwagger, api=gateway, resource_doc=doc1)
-        s2 = G(ResourceDocSwagger, api=gateway, resource_doc=doc2)
+        s1 = G(ResourceDocSwagger, gateway=gateway, resource_doc=doc1)
+        s2 = G(ResourceDocSwagger, gateway=gateway, resource_doc=doc2)
 
         result = ResourceDocSwagger.objects.get_resource_doc_id_to_id(gateway.id)
         assert result == {

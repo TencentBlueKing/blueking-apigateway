@@ -73,7 +73,7 @@ class ResourceDocManager(models.Manager):
 
 class ResourceDocSwaggerManager(models.Manager):
     def get_resource_doc_id_to_id(self, gateway_id: int) -> Dict[int, int]:
-        return dict(self.filter(api_id=gateway_id).values_list("resource_doc_id", "id"))
+        return dict(self.filter(gateway_id=gateway_id).values_list("resource_doc_id", "id"))
 
 
 class ResourceDocVersionManager(models.Manager):
