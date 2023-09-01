@@ -321,7 +321,7 @@ class TestResourcesImporter:
         assert not Resource.objects.filter(id=resource_2_id).exists()
 
     def test_create_not_exist_labels(self, fake_gateway, fake_resource_data):
-        G(APILabel, api=fake_gateway, name="label1")
+        G(APILabel, gateway=fake_gateway, name="label1")
 
         resource_data_list = [
             fake_resource_data.copy(
@@ -335,11 +335,11 @@ class TestResourcesImporter:
         importer = ResourcesImporter(fake_gateway, resource_data_list)
         importer._create_not_exist_labels()
 
-        assert APILabel.objects.filter(api=fake_gateway).count() == 3
+        assert APILabel.objects.filter(gateway=fake_gateway).count() == 3
 
     def test_complete_label_ids(self, fake_gateway, fake_resource_data):
-        label_1 = G(APILabel, api=fake_gateway, name="label1")
-        label_2 = G(APILabel, api=fake_gateway, name="label2")
+        label_1 = G(APILabel, gateway=fake_gateway, name="label1")
+        label_2 = G(APILabel, gateway=fake_gateway, name="label2")
 
         resource_data_list = [
             fake_resource_data.copy(

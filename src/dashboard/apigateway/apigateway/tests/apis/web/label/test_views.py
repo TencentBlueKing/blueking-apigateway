@@ -23,8 +23,8 @@ from apigateway.apps.label.models import APILabel
 
 class TestGatewayLabelListCreateApi:
     def test_list(self, request_view, fake_gateway):
-        G(APILabel, api=fake_gateway)
-        G(APILabel, api=fake_gateway)
+        G(APILabel, gateway=fake_gateway)
+        G(APILabel, gateway=fake_gateway)
 
         resp = request_view(
             method="GET",
@@ -49,7 +49,7 @@ class TestGatewayLabelListCreateApi:
 
 class GatewayLabelRetrieveUpdateDestroyApi:
     def test_retrieve(self, request_view, fake_gateway):
-        label = G(APILabel, api=fake_gateway)
+        label = G(APILabel, gateway=fake_gateway)
 
         resp = request_view(
             method="GET",
@@ -62,7 +62,7 @@ class GatewayLabelRetrieveUpdateDestroyApi:
         assert result["data"]["id"] == label.id
 
     def test_update(self, request_view, faker, fake_gateway):
-        label = G(APILabel, api=fake_gateway)
+        label = G(APILabel, gateway=fake_gateway)
 
         new_name = faker.pystr(min_chars=3)
 
@@ -77,7 +77,7 @@ class GatewayLabelRetrieveUpdateDestroyApi:
         assert APILabel.objects.filter(api=fake_gateway, name=new_name).exists()
 
     def test_destroy(self, request_view, fake_gateway):
-        label = G(APILabel, api=fake_gateway)
+        label = G(APILabel, gateway=fake_gateway)
 
         resp = request_view(
             method="DELETE",

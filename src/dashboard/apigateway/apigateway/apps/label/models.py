@@ -28,13 +28,13 @@ class APILabel(TimestampedModelMixin, OperatorModelMixin):
     Gateway labels, a label set
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     name = models.CharField(max_length=32)
 
     objects = APILabelManager()
 
     class Meta:
-        unique_together = ("api", "name")
+        unique_together = ("gateway", "name")
         db_table = "label_api"
 
     def __str__(self):

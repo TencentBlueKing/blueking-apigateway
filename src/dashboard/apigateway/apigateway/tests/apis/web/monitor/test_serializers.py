@@ -101,8 +101,8 @@ class TestAlarmStrategyInputSLZ(TestCase):
         cls.request.gateway = cls.gateway
 
     def test_to_internal_value(self):
-        label_1 = G(APILabel, api=self.gateway)
-        label_2 = G(APILabel, api=self.gateway)
+        label_1 = G(APILabel, gateway=self.gateway)
+        label_2 = G(APILabel, gateway=self.gateway)
 
         data = [
             {
@@ -158,8 +158,8 @@ class TestAlarmStrategyInputSLZ(TestCase):
             self.assertEqual(slz.validated_data, test["expected"])
 
     def test_to_representation(self):
-        label_1 = G(APILabel, api=self.gateway)
-        label_2 = G(APILabel, api=self.gateway)
+        label_1 = G(APILabel, gateway=self.gateway)
+        label_2 = G(APILabel, gateway=self.gateway)
 
         data = [
             {

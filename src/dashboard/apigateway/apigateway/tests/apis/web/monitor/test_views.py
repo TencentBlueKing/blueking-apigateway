@@ -42,7 +42,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
         cls.gateway = create_gateway()
-        cls.label = G(APILabel, api=cls.gateway)
+        cls.label = G(APILabel, gateway=cls.gateway)
 
     def test_create(self):
         data = [
@@ -82,7 +82,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
             self.assertEqual(strategy.api_labels.count(), len(test["api_label_ids"]))
 
     def test_list(self):
-        api_label = G(APILabel, api=self.gateway, name="test")
+        api_label = G(APILabel, gateway=self.gateway, name="test")
 
         strategy_1 = G(AlarmStrategy, api=self.gateway, name="list-01", updated_time=dummy_time.time)
         strategy_1.api_labels.add(api_label)
@@ -163,7 +163,7 @@ class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
         cls.gateway = create_gateway()
-        cls.label = G(APILabel, api=cls.gateway)
+        cls.label = G(APILabel, gateway=cls.gateway)
 
     def test_retrieve(self):
         alarm_strategy = G(
@@ -254,7 +254,7 @@ class TestAlarmStrategyUpdateStatusApi(TestCase):
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
         cls.gateway = create_gateway()
-        cls.label = G(APILabel, api=cls.gateway)
+        cls.label = G(APILabel, gateway=cls.gateway)
 
     def test_update_status(self):
         alarm_strategy = G(

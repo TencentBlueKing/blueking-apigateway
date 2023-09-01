@@ -376,7 +376,7 @@ class ResourcesImporter:
 
     def _complete_label_ids(self):
         """补全资源中的 label_ids 信息"""
-        labels = dict(APILabel.objects.filter(api=self.gateway).values_list("name", "id"))
+        labels = dict(APILabel.objects.filter(gateway=self.gateway).values_list("name", "id"))
         for resource_data in self.resource_data_list:
             resource_data.label_ids = [labels[name] for name in resource_data.metadata.get("labels", [])]
 

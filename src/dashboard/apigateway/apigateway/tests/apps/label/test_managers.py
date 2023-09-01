@@ -27,65 +27,65 @@ class TestAPILabelManager:
     def get_labels(self):
         gateway = G(Gateway)
 
-        l1 = G(APILabel, api=gateway)
-        l2 = G(APILabel, api=gateway)
+        l1 = G(APILabel, gateway=gateway)
+        l2 = G(APILabel, gateway=gateway)
 
         data = [
             {
                 "params": {
-                    "api": gateway,
+                    "gateway": gateway,
                     "ids": None,
                 },
                 "expected": [{"id": l1.id, "name": l1.name}, {"id": l2.id, "name": l2.name}],
             },
             {
                 "params": {
-                    "api": gateway,
+                    "gateway": gateway,
                     "ids": [],
                 },
                 "expected": [],
             },
             {
                 "params": {
-                    "api": gateway,
+                    "gateway": gateway,
                     "ids": [l2.id],
                 },
                 "expected": [{"id": l2.id, "name": l2.name}],
             },
         ]
         for test in data:
-            result = APILabel.objects.get_labels(gateway=test["params"]["api"], ids=test["params"]["ids"])
+            result = APILabel.objects.get_labels(gateway=test["params"]["gateway"], ids=test["params"]["ids"])
             assert result == test["exptected"]
 
     def test_filter_by_label_name(self):
         gateway = G(Gateway)
-        G(APILabel, api=gateway, name="label_1")
-        G(APILabel, api=gateway, name="label_2")
+        G(APILabel, gateway=gateway, name="label_1")
+        G(APILabel, gateway=gateway, name="label_2")
 
         data = [
             {
-                "api": gateway,
+                "gateway": gateway,
                 "label_name": "label_1",
                 "expected": {
                     "count": 1,
                 },
             },
             {
-                "api": gateway,
+                "gateway": gateway,
                 "label_name": "label_2",
                 "expected": {
                     "count": 1,
                 },
             },
             {
-                "api": gateway,
+                "gateway": gateway,
                 "label_name": "label_3",
                 "expected": {
                     "count": 0,
                 },
             },
             {
-                "api": gateway,
+                "gateway": gateway,
                 "label_name": "",
                 "expected": {
                     "count": 2,
@@ -93,21 +93,21 @@ class TestAPILabelManager:
             },
         ]
         for test in data:
-            result = APILabel.objects.filter_by_label_name(gateway=test["api"], label_name=test["label_name"])
+            result = APILabel.objects.filter_by_label_name(gateway=test["gateway"], label_name=test["label_name"])
             assert result.count() == test["expected"]["count"]
 
     def test_get_label_ids(self):
         gateway = G(Gateway)
-        l1 = G(APILabel, api=gateway)
-        l2 = G(APILabel, api=gateway)
+        l1 = G(APILabel, gateway=gateway)
+        l2 = G(APILabel, gateway=gateway)
 
         result = APILabel.objects.get_label_ids(gateway)
         assert result == [l1.id, l2.id]
 
     def test_get_name_id_map(self):
         gateway = G(Gateway)
-        l1 = G(APILabel, api=gateway, name="t1")
-        l2 = G(APILabel, api=gateway, name="t2")
+        l1 = G(APILabel, gateway=gateway, name="t1")
+        l2 = G(APILabel, gateway=gateway, name="t2")
 
         result = APILabel.objects.get_name_id_map(gateway)
         assert result == {
@@ -116,7 +116,7 @@ class TestAPILabelManager:
         }
 
     def test_save_labels(self, fake_gateway):
-        l1 = G(APILabel, api=fake_gateway, name="T1")
+        l1 = G(APILabel, gateway=fake_gateway, name="T1")
 
         result = APILabel.objects.save_labels(fake_gateway, ["T1"], "")
         assert result == {"T1": l1.id}
@@ -130,8 +130,8 @@ class TestResourceLabelManager(TestCase):
         gateway = G(Gateway)
         resource_1 = G(Resource, api=gateway)
         resource_2 = G(Resource, api=gateway)
-        label_1 = G(APILabel, api=gateway, name="label_1")
-        label_2 = G(APILabel, api=gateway, name="label_2")
+        label_1 = G(APILabel, gateway=gateway, name="label_1")
+        label_2 = G(APILabel, gateway=gateway, name="label_2")
 
         G(ResourceLabel, resource=resource_1, api_label=label_1)
         G(ResourceLabel, resource=resource_2, api_label=label_1)
@@ -164,8 +164,8 @@ class TestResourceLabelManager(TestCase):
         gateway = G(Gateway)
         resource_1 = G(Resource, api=gateway)
         resource_2 = G(Resource, api=gateway)
-        label_1 = G(APILabel, api=gateway, name="label_1")
-        label_2 = G(APILabel, api=gateway, name="label_2")
+        label_1 = G(APILabel, gateway=gateway, name="label_1")
+        label_2 = G(APILabel, gateway=gateway, name="label_2")
 
         G(ResourceLabel, resource=resource_1, api_label=label_1)
         G(ResourceLabel, resource=resource_1, api_label=label_2)
@@ -173,36 +173,36 @@ class TestResourceLabelManager(TestCase):
 
         data = [
             {
-                "api": gateway,
+                "gateway": gateway,
                 "label_name": "label_1",
                 "expected": [resource_1.id, resource_2.id],
             },
             {
-                "api": gateway,
+                "gateway": gateway,
                 "label_name": "label_2",
                 "expected": [resource_1.id],
             },
             {
-                "api": gateway,
+                "gateway": gateway,
                 "label_name": "label_3",
                 "expected": [],
             },
             {
-                "api": gateway,
+                "gateway": gateway,
                 "label_name": "",
                 "expected": [resource_1.id, resource_2.id],
             },
         ]
         for test in data:
-            result = ResourceLabel.objects.filter_resource_ids(gateway=test["api"], label_name=test["label_name"])
+            result = ResourceLabel.objects.filter_resource_ids(gateway=test["gateway"], label_name=test["label_name"])
             self.assertEqual(set(result), set(test["expected"]))
 
     def test_filter_labels_by_gateway(self):
         gateway = G(Gateway)
         resource_1 = G(Resource, api=gateway)
         resource_2 = G(Resource, api=gateway)
-        label_1 = G(APILabel, api=gateway, name="label_1")
-        label_2 = G(APILabel, api=gateway, name="label_2")
+        label_1 = G(APILabel, gateway=gateway, name="label_1")
+        label_2 = G(APILabel, gateway=gateway, name="label_2")
 
         G(ResourceLabel, resource=resource_1, api_label=label_1)
         G(ResourceLabel, resource=resource_2, api_label=label_1)
@@ -236,8 +236,8 @@ class TestResourceLabelManager(TestCase):
 
         resource_1 = G(Resource, api=gateway)
         resource_2 = G(Resource, api=gateway)
-        label_1 = G(APILabel, api=gateway, name="label_1")
-        label_2 = G(APILabel, api=gateway, name="label_2")
+        label_1 = G(APILabel, gateway=gateway, name="label_1")
+        label_2 = G(APILabel, gateway=gateway, name="label_2")
 
         G(ResourceLabel, resource=resource_1, api_label=label_1)
         G(ResourceLabel, resource=resource_1, api_label=label_2)

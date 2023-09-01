@@ -237,8 +237,8 @@ class TestResourceBatchUpdateDestroyApi:
 class TestResourceLabelUpdateApi:
     def test_update(self, request_view, fake_resource):
         fake_gateway = fake_resource.api
-        label_1 = G(APILabel, api=fake_gateway)
-        label_2 = G(APILabel, api=fake_gateway)
+        label_1 = G(APILabel, gateway=fake_gateway)
+        label_2 = G(APILabel, gateway=fake_gateway)
 
         resp = request_view(
             method="PUT",
@@ -537,7 +537,7 @@ class TestResourceExportApi:
     )
     def test_post(self, request_view, fake_resource, data):
         fake_gateway = fake_resource.api
-        label = G(APILabel, api=fake_gateway)
+        label = G(APILabel, gateway=fake_gateway)
         G(ResourceLabel, resource=fake_resource, api_label=label)
 
         resp = request_view(

@@ -56,7 +56,7 @@ class TestAlarmStrategyManager(TestCase):
         resource_1 = G(Resource, api=gateway_2)
         resource_2 = G(Resource, api=gateway_2)
 
-        api_label = G(APILabel, api=gateway_2)
+        api_label = G(APILabel, gateway=gateway_2)
         G(ResourceLabel, resource=resource_1, api_label=api_label)
 
         alarm_strategy = G(

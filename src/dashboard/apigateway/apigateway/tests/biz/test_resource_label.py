@@ -23,8 +23,8 @@ from apigateway.biz.resource_label import ResourceLabelHandler
 
 class TestResourceLabelHandler:
     def test_get_labels_by_gateway(self, fake_resource):
-        label_1 = G(APILabel, api=fake_resource.api, name="label1")
-        label_2 = G(APILabel, api=fake_resource.api, name="label2")
+        label_1 = G(APILabel, gateway=fake_resource.api, name="label1")
+        label_2 = G(APILabel, gateway=fake_resource.api, name="label2")
 
         G(ResourceLabel, resource=fake_resource, api_label=label_1)
         G(ResourceLabel, resource=fake_resource, api_label=label_2)
@@ -38,8 +38,8 @@ class TestResourceLabelHandler:
         }
 
     def test_get_labels(self, fake_resource):
-        label_1 = G(APILabel, api=fake_resource.api, name="label1")
-        label_2 = G(APILabel, api=fake_resource.api, name="label2")
+        label_1 = G(APILabel, gateway=fake_resource.api, name="label1")
+        label_2 = G(APILabel, gateway=fake_resource.api, name="label2")
 
         G(ResourceLabel, resource=fake_resource, api_label=label_1)
         G(ResourceLabel, resource=fake_resource, api_label=label_2)

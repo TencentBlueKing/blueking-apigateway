@@ -208,7 +208,7 @@ class ResourcesSaver:
             Context.objects.bulk_update(update_contexts, fields=["_config"], batch_size=BULK_BATCH_SIZE)
 
     def _save_resource_labels(self, resource_ids: List[int]):
-        gateway_labels = {label.id: label for label in APILabel.objects.filter(api=self.gateway)}
+        gateway_labels = {label.id: label for label in APILabel.objects.filter(gateway=self.gateway)}
 
         remaining_resource_labels = {}
         for label in ResourceLabel.objects.filter(resource_id__in=resource_ids):

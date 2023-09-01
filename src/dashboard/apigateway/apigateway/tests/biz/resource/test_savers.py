@@ -140,8 +140,8 @@ class TestResourceSavers:
     def test_save_resource_labels(self, fake_resource, fake_resource_data):
         fake_gateway = fake_resource.api
 
-        label_1 = G(APILabel, api=fake_gateway)
-        label_2 = G(APILabel, api=fake_gateway)
+        label_1 = G(APILabel, gateway=fake_gateway)
+        label_2 = G(APILabel, gateway=fake_gateway)
 
         G(ResourceLabel, api_label=label_1, resource=fake_resource)
 

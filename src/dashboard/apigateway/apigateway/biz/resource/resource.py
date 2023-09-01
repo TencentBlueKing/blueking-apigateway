@@ -257,7 +257,7 @@ class ResourceHandler:
             queryset = queryset.filter(method=condition["method"])
 
         if condition.get("label_ids"):
-            labels = APILabel.objects.filter(api_id=gateway_id, id__in=condition["label_ids"])
+            labels = APILabel.objects.filter(gateway_id=gateway_id, id__in=condition["label_ids"])
             resource_ids = (
                 ResourceLabel.objects.filter(api_label__in=labels).values_list("resource_id", flat=True).distinct()
             )
@@ -321,7 +321,7 @@ class ResourceHandler:
         }
 
         add_resource_labels = []
-        for gateway_label in APILabel.objects.filter(api=gateway, id__in=label_ids):
+        for gateway_label in APILabel.objects.filter(gateway=gateway, id__in=label_ids):
             if gateway_label.id in remaining_resource_labels:
                 remaining_resource_labels.pop(gateway_label.id)
                 continue
