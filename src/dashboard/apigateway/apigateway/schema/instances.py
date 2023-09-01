@@ -348,8 +348,7 @@ class ProxyHTTP(NewMetaSchemaMixin, metaclass=Singleton):
   "type": "object",
   "required": [
     "method",
-    "path",
-    "transform_headers"
+    "path"
   ],
   "properties": {
     "method": {

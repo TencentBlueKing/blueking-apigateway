@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,9 +15,34 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from blue_krill.data_types.enum import EnumField, StructuredEnum
-from django.utils.translation import gettext_lazy as _
+import pytest
+
+from apigateway.apis.web.resource.constants import PATH_VAR_PATTERN, STAGE_PATH_VAR_NAME_PATTERN
 
 
-class UserAuthTypeEnum(StructuredEnum):
-    DEFAULT = EnumField("default", label=_("蓝鲸用户"))
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("/echo/{username}/", ["username"]),
+        ("/hello/{env.region}/", ["env.region"]),
+        ("/hello/{{uuid}}", ["{uuid"]),
+    ],
+)
+def test_path_var_pattern(value, expected):
+    result = PATH_VAR_PATTERN.findall(value)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("env.username", "username"),
+        ("envregion", None),
+    ],
+)
+def test_stage_path_var_name_pattern(value, expected):
+    result = STAGE_PATH_VAR_NAME_PATTERN.match(value)
+    if result:
+        result = result.group(1)
+
+    assert result == expected

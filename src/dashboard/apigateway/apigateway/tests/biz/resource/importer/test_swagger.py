@@ -19,45 +19,49 @@
 import json
 
 import pytest
-from django.test import TestCase
 
-from apigateway.apps.resource.swagger.swagger import ResourceSwaggerExporter, ResourceSwaggerImporter, SwaggerManager
-from apigateway.core.constants import SwaggerFormatEnum
+from apigateway.biz.constants import SwaggerFormatEnum
+from apigateway.biz.resource.importer.swagger import (
+    ResourceSwaggerExporter,
+    ResourceSwaggerImporter,
+    SwaggerManager,
+)
+from apigateway.utils.yaml import yaml_loads
 
 
 class TestSwaggerManager:
     @pytest.mark.parametrize(
-        "content, will_error, expected",
+        "content, expected, error",
         [
             (
                 "{test}",
-                True,
                 None,
+                Exception,
             ),
             (
                 '{"swagger": "2.0"}',
-                False,
                 {
                     "swagger": "2.0",
                 },
+                None,
             ),
             (
                 'swagger: "2.0"',
-                False,
                 {
                     "swagger": "2.0",
                 },
+                None,
             ),
         ],
     )
-    def test_load_from_swagger(self, content, will_error, expected):
-        if will_error:
-            with pytest.raises(Exception):
-                SwaggerManager.load_from_swagger(content)
+    def test_load_from_swagger(self, content, expected, error):
+        if not error:
+            manager = SwaggerManager.load_from_swagger(content)
+            assert manager._swagger_data == expected
             return
 
-        manager = SwaggerManager.load_from_swagger(content)
-        assert manager.content == expected
+        with pytest.raises(error):
+            SwaggerManager.load_from_swagger(content)
 
     @pytest.mark.parametrize(
         "swagger, expected",
@@ -71,7 +75,7 @@ class TestSwaggerManager:
         assert result == expected
 
     @pytest.mark.parametrize(
-        "content, expected",
+        "swagger_data, expected",
         [
             (
                 {
@@ -94,8 +98,8 @@ class TestSwaggerManager:
             ),
         ],
     )
-    def test_get_paths(self, content, expected):
-        manager = SwaggerManager(content=content)
+    def test_get_paths(self, swagger_data, expected):
+        manager = SwaggerManager(swagger_data=swagger_data)
         result = manager.get_paths()
         assert result == expected
 
@@ -146,7 +150,7 @@ class TestSwaggerManager:
         ],
     )
     def test_add_base_path_to_path(self, base_path, paths, expected):
-        manager = SwaggerManager(content={})
+        manager = SwaggerManager(swagger_data={})
         result = manager._add_base_path_to_path(base_path, paths)
         assert result == expected
 
@@ -180,7 +184,7 @@ class TestSwaggerManager:
         ],
     )
     def test_remove_invalid_method(self, paths, expected):
-        manager = SwaggerManager(content={})
+        manager = SwaggerManager(swagger_data={})
         result = manager._remove_invalid_method(paths)
         assert result == expected
 
@@ -592,13 +596,13 @@ class TestSwaggerManager:
     def test_validate(self, content, will_error):
         manager = SwaggerManager.load_from_swagger(content)
 
-        if will_error:
-            with pytest.raises(Exception):
-                manager.validate()
+        if not will_error:
+            result = manager.validate()
+            assert result is None
             return
 
-        result = manager.validate()
-        assert result is None
+        with pytest.raises(Exception):
+            manager.validate()
 
     @pytest.mark.parametrize(
         "base_path, path, expected",
@@ -609,16 +613,29 @@ class TestSwaggerManager:
         ],
     )
     def test_join_path(self, base_path, path, expected):
-        manager = SwaggerManager(content={})
+        manager = SwaggerManager(swagger_data={})
         result = manager._join_path(base_path, path)
         assert result == expected
 
 
-class TestResourceSwaggerImporter(TestCase):
-    def test_get_resources(self):
-        data = [
+class TestResourceSwaggerImporter:
+    @pytest.fixture
+    def fake_swagger_content(self):
+        return json.dumps(
             {
-                "content": json.dumps(
+                "swagger": "2.0",
+                "basePath": "/",
+                "info": {},
+                "schemes": ["http"],
+                "paths": {},
+            }
+        )
+
+    @pytest.mark.parametrize(
+        "content, expected",
+        [
+            (
+                json.dumps(
                     {
                         "swagger": "2.0",
                         "basePath": "/",
@@ -643,35 +660,17 @@ class TestResourceSwaggerImporter(TestCase):
                                             "method": "get",
                                             "matchSubpath": True,
                                             "timeout": 30,
-                                            "upstreams": [
-                                                {
-                                                    "loadbalance": "roundrobin",
-                                                    "hosts": [
-                                                        {
-                                                            "host": "bking.com",
-                                                        },
-                                                        {
-                                                            "host": "test.bking.com",
-                                                        },
-                                                    ],
-                                                }
-                                            ],
-                                            "transformHeaders": {
-                                                "set": {"X-Token": "test"},
-                                                "delete": ["X-Token2"],
-                                            },
                                         },
                                         "authConfig": {
                                             "userVerifiedRequired": False,
                                         },
-                                        "disabledStages": ["prod", "test"],
                                     },
                                 },
                             }
                         },
                     }
                 ),
-                "expected": [
+                [
                     {
                         "method": "GET",
                         "path": "/http/get/mapping/{userId}",
@@ -682,101 +681,23 @@ class TestResourceSwaggerImporter(TestCase):
                         "is_public": False,
                         "allow_apply_permission": False,
                         "match_subpath": True,
-                        "proxy_type": "http",
-                        "proxy_configs": {
-                            "http": {
-                                "path": "/hello/",
-                                "method": "GET",
-                                "match_subpath": True,
-                                "timeout": 30,
-                                "upstreams": [
-                                    {
-                                        "loadbalance": "roundrobin",
-                                        "hosts": [
-                                            {
-                                                "host": "bking.com",
-                                            },
-                                            {
-                                                "host": "test.bking.com",
-                                            },
-                                        ],
-                                    }
-                                ],
-                                "transform_headers": {
-                                    "set": {"X-Token": "test"},
-                                    "delete": ["X-Token2"],
-                                },
-                            }
+                        "backend_name": "default",
+                        "backend_config": {
+                            "path": "/hello/",
+                            "method": "GET",
+                            "match_subpath": True,
+                            "timeout": 30,
                         },
                         "auth_config": {
                             "auth_verified_required": False,
+                            "app_verified_required": True,
+                            "resource_perm_required": True,
                         },
-                        "disabled_stages": ["prod", "test"],
                     }
                 ],
-            },
-            # ok, proxy-type mock
-            {
-                "content": json.dumps(
-                    {
-                        "swagger": "2.0",
-                        "basePath": "/",
-                        "info": {
-                            "version": "0.1",
-                            "title": "API Gateway Swagger",
-                        },
-                        "paths": {
-                            "/http/get/mapping/{userId}": {
-                                "get": {
-                                    "description": "中文",
-                                    "operationId": "http_get_mapping_userid",
-                                    "x-bk-apigateway-resource": {
-                                        "descriptionEn": "English",
-                                        "backend": {
-                                            "type": "MOCK",
-                                            "statusCode": 200,
-                                            "responseBody": "test",
-                                            "headers": {
-                                                "X-Token": "test",
-                                            },
-                                        },
-                                    },
-                                },
-                            }
-                        },
-                    }
-                ),
-                "expected": [
-                    {
-                        "method": "GET",
-                        "path": "/http/get/mapping/{userId}",
-                        "name": "http_get_mapping_userid",
-                        "description": "中文",
-                        "description_en": "English",
-                        "labels": [],
-                        "is_public": True,
-                        "allow_apply_permission": True,
-                        "match_subpath": False,
-                        "proxy_type": "mock",
-                        "proxy_configs": {
-                            "mock": {
-                                "code": 200,
-                                "body": "test",
-                                "headers": {
-                                    "X-Token": "test",
-                                },
-                            }
-                        },
-                        "auth_config": {
-                            "auth_verified_required": True,
-                        },
-                        "disabled_stages": [],
-                    }
-                ],
-            },
-            # ok, any method
-            {
-                "content": json.dumps(
+            ),
+            (
+                json.dumps(
                     {
                         "swagger": "2.0",
                         "basePath": "/",
@@ -800,7 +721,7 @@ class TestResourceSwaggerImporter(TestCase):
                         },
                     }
                 ),
-                "expected": [
+                [
                     {
                         "method": "ANY",
                         "path": "/http/get/mapping/{userId}",
@@ -811,27 +732,23 @@ class TestResourceSwaggerImporter(TestCase):
                         "is_public": True,
                         "allow_apply_permission": True,
                         "match_subpath": False,
-                        "proxy_type": "http",
-                        "proxy_configs": {
-                            "http": {
-                                "method": "ANY",
-                                "path": "/echo/",
-                                "match_subpath": False,
-                                "timeout": 0,
-                                "upstreams": {},
-                                "transform_headers": {},
-                            }
+                        "backend_name": "default",
+                        "backend_config": {
+                            "method": "ANY",
+                            "path": "/echo/",
+                            "match_subpath": False,
+                            "timeout": 0,
                         },
                         "auth_config": {
                             "auth_verified_required": True,
+                            "app_verified_required": True,
+                            "resource_perm_required": True,
                         },
-                        "disabled_stages": [],
                     }
                 ],
-            },
-            # ok, basePath not /
-            {
-                "content": json.dumps(
+            ),
+            (
+                json.dumps(
                     {
                         "swagger": "2.0",
                         "basePath": "/api/",
@@ -855,7 +772,7 @@ class TestResourceSwaggerImporter(TestCase):
                         },
                     }
                 ),
-                "expected": [
+                [
                     {
                         "method": "ANY",
                         "path": "/api/echo/",
@@ -866,35 +783,105 @@ class TestResourceSwaggerImporter(TestCase):
                         "is_public": True,
                         "allow_apply_permission": True,
                         "match_subpath": False,
-                        "proxy_type": "http",
-                        "proxy_configs": {
-                            "http": {
-                                "method": "ANY",
-                                "path": "/echo/",
-                                "match_subpath": False,
-                                "timeout": 0,
-                                "upstreams": {},
-                                "transform_headers": {},
-                            }
+                        "backend_name": "default",
+                        "backend_config": {
+                            "method": "ANY",
+                            "path": "/echo/",
+                            "match_subpath": False,
+                            "timeout": 0,
                         },
                         "auth_config": {
                             "auth_verified_required": True,
+                            "app_verified_required": True,
+                            "resource_perm_required": True,
                         },
-                        "disabled_stages": [],
                     }
                 ],
+            ),
+        ],
+    )
+    def test_get_resources(self, content, expected):
+        importer = ResourceSwaggerImporter(content)
+        result = importer.get_resources()
+        assert result == expected
+
+    def test_adapt_method(self, fake_swagger_content):
+        importer = ResourceSwaggerImporter(fake_swagger_content)
+        assert importer._adapt_method("get") == "GET"
+        assert importer._adapt_method("x-bk-apigateway-method-any") == "ANY"
+
+    def test_adapt_backend(self, fake_swagger_content):
+        importer = ResourceSwaggerImporter(fake_swagger_content)
+
+        with pytest.raises(ValueError):
+            importer._adapt_backend({"upstreams": {"foo": "bar"}})
+
+        result = importer._adapt_backend(
+            {
+                "type": "HTTP",
+                "method": "get",
+                "path": "/foo",
+                "matchSubpath": True,
             },
-        ]
-        for test in data:
-            importer = ResourceSwaggerImporter(test["content"])
-            result = importer.get_resources()
-            self.assertEqual(result, test["expected"])
+        )
+        assert result == {
+            "method": "GET",
+            "path": "/foo",
+            "match_subpath": True,
+            "timeout": 0,
+        }
+
+    @pytest.mark.parametrize(
+        "auth_config, expected",
+        [
+            (
+                {
+                    "userVerifiedRequired": True,
+                    "appVerifiedRequired": True,
+                    "resourcePermissionRequired": True,
+                },
+                {
+                    "auth_verified_required": True,
+                    "app_verified_required": True,
+                    "resource_perm_required": True,
+                },
+            ),
+            (
+                {
+                    "userVerifiedRequired": False,
+                    "appVerifiedRequired": False,
+                    "resourcePermissionRequired": False,
+                },
+                {
+                    "auth_verified_required": False,
+                    "app_verified_required": False,
+                    "resource_perm_required": False,
+                },
+            ),
+            (
+                {
+                    "userVerifiedRequired": False,
+                    "appVerifiedRequired": False,
+                    "resourcePermissionRequired": True,
+                },
+                {
+                    "auth_verified_required": False,
+                    "app_verified_required": False,
+                    "resource_perm_required": False,
+                },
+            ),
+        ],
+    )
+    def test_adapt_auth_config(self, fake_swagger_content, auth_config, expected):
+        importer = ResourceSwaggerImporter(fake_swagger_content)
+        result = importer._adapt_auth_config(auth_config)
+        assert result == expected
 
 
 class TestResourceSwaggerExporter:
-    @pytest.fixture(autouse=True)
-    def setup_imported(self):
-        self.imported = {
+    @pytest.fixture
+    def fake_resource_dict(self):
+        return {
             "method": "POST",
             "path": "/users",
             "match_subpath": False,
@@ -904,145 +891,176 @@ class TestResourceSwaggerExporter:
             "labels": ["testing"],
             "is_public": True,
             "allow_apply_permission": True,
-            "proxy_type": "http",
-            "proxy_configs": {
-                "http": {
-                    "method": "POST",
-                    "path": "/users",
-                    "match_subpath": False,
-                    "timeout": 0,
-                    "upstreams": {},
-                    "transform_headers": {},
-                }
+            "backend_name": "default",
+            "backend_config": {
+                "method": "POST",
+                "path": "/users",
+                "match_subpath": False,
+                "timeout": 0,
             },
-            "auth_config": {"auth_verified_required": True},
-            "disabled_stages": ["prod"],
+            "auth_config": {
+                "auth_verified_required": True,
+            },
         }
 
-    def do_export(self, exporter, resources):
-        swagger = exporter.to_swagger(resources, "json")
-        exported = json.loads(swagger)
-        return exported["paths"][self.imported["path"]][self.imported["method"].lower()]
-
-    def test_export(self):
+    def test_to_swagger(self, fake_resource_dict):
         exporter = ResourceSwaggerExporter()
-        operation = self.do_export(exporter, [self.imported])
 
-        http_config = self.imported["proxy_configs"][self.imported["proxy_type"]]
+        content = exporter.to_swagger([fake_resource_dict], "json")
+        assert json.loads(content)["paths"]
+
+        content = exporter.to_swagger([fake_resource_dict], "yaml")
+        assert yaml_loads(content)["paths"]
+
+    def test_generate_paths(self, fake_resource_dict):
+        exporter = ResourceSwaggerExporter()
+        paths = exporter._generate_paths([fake_resource_dict])
+        operation = paths[fake_resource_dict["path"]][fake_resource_dict["method"].lower()]
 
         assert operation == {
-            "operationId": self.imported["name"],
-            "description": self.imported["description"],
-            "tags": self.imported["labels"],
+            "operationId": fake_resource_dict["name"],
+            "description": fake_resource_dict["description"],
+            "tags": fake_resource_dict["labels"],
             "x-bk-apigateway-resource": {
-                "descriptionEn": self.imported["description_en"],
-                "isPublic": self.imported["is_public"],
-                "allowApplyPermission": self.imported["allow_apply_permission"],
-                "matchSubpath": self.imported["match_subpath"],
+                "descriptionEn": fake_resource_dict["description_en"],
+                "isPublic": fake_resource_dict["is_public"],
+                "allowApplyPermission": fake_resource_dict["allow_apply_permission"],
+                "matchSubpath": fake_resource_dict["match_subpath"],
                 "backend": {
-                    "type": self.imported["proxy_type"].upper(),
-                    "method": http_config["method"].lower(),
-                    "path": http_config["path"],
-                    "matchSubpath": http_config["match_subpath"],
-                    "timeout": http_config["timeout"],
-                    "upstreams": http_config["upstreams"],
-                    "transformHeaders": http_config["transform_headers"],
+                    "name": fake_resource_dict["backend_name"],
+                    "method": fake_resource_dict["backend_config"]["method"].lower(),
+                    "path": fake_resource_dict["backend_config"]["path"],
+                    "matchSubpath": fake_resource_dict["backend_config"]["match_subpath"],
+                    "timeout": fake_resource_dict["backend_config"]["timeout"],
                 },
-                "authConfig": {"userVerifiedRequired": self.imported["auth_config"]["auth_verified_required"]},
-                "disabledStages": self.imported["disabled_stages"],
+                "authConfig": {
+                    "userVerifiedRequired": fake_resource_dict["auth_config"]["auth_verified_required"],
+                    "appVerifiedRequired": True,
+                    "resourcePermissionRequired": True,
+                },
             },
             "responses": {"default": {"description": ""}},
         }
 
-    def test_export_exclude_bk_apigateway_resource(self):
+    def test_generate_paths__exclude_bk_apigateway_resource(self, fake_resource_dict):
         exporter = ResourceSwaggerExporter(include_bk_apigateway_resource=False)
-        operation = self.do_export(exporter, [self.imported])
+        paths = exporter._generate_paths([fake_resource_dict])
+        operation = paths[fake_resource_dict["path"]][fake_resource_dict["method"].lower()]
 
         assert "x-bk-apigateway-resource" not in operation
 
-    def test_export_without_description_en(self):
-        self.imported.pop("description_en")
-
+    def test_adapt_method(self):
         exporter = ResourceSwaggerExporter()
-        operation = self.do_export(exporter, [self.imported])
 
-        assert operation["x-bk-apigateway-resource"]["descriptionEn"] is None
+        result = exporter._adapt_method("ANY")
+        assert result == "x-bk-apigateway-method-any"
 
+        result = exporter._adapt_method("POST")
+        assert result == "post"
 
-class TestResourceSwagger:
-    @pytest.fixture(autouse=True)
-    def setup_exported(self):
-        self.exported = {
-            "swagger": "2.0",
-            "basePath": "/",
-            "info": {"version": "0.1", "title": "API Gateway Resources", "description": ""},
-            "schemes": ["http"],
-            "paths": {
-                "/users": {
-                    "post": {
-                        "operationId": "add_user",
-                        "description": "创建新用户",
-                        "tags": [],
-                        "x-bk-apigateway-resource": {
-                            "descriptionEn": "Adds a new user",
-                            "isPublic": True,
-                            "allowApplyPermission": True,
-                            "matchSubpath": False,
-                            "backend": {
-                                "type": "HTTP",
-                                "method": "post",
-                                "path": "/users",
-                                "matchSubpath": False,
-                                "timeout": 0,
-                                "upstreams": {},
-                                "transformHeaders": {},
-                            },
-                            "authConfig": {"userVerifiedRequired": True},
-                            "disabledStages": [],
-                        },
-                        "responses": {"default": {"description": ""}},
-                    }
-                }
-            },
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "backend_name": "foo",
+                    "backend_config": {"method": "GET", "path": "/foo"},
+                    "proxy_type": "http",
+                    "proxy_configs": {},
+                },
+                {
+                    "name": "foo",
+                    "type": "HTTP",
+                    "method": "get",
+                    "path": "/foo",
+                    "matchSubpath": False,
+                    "timeout": 0,
+                },
+            ),
+            (
+                {
+                    "backend_name": "",
+                    "backend_config": {},
+                    "proxy_type": "http",
+                    "proxy_configs": {
+                        "http": {
+                            "method": "GET",
+                            "path": "/bar",
+                            "match_subpath": False,
+                            "timeout": 30,
+                        }
+                    },
+                },
+                {
+                    "type": "HTTP",
+                    "method": "get",
+                    "path": "/bar",
+                    "matchSubpath": False,
+                    "timeout": 30,
+                    "upstreams": {},
+                    "transformHeaders": {},
+                },
+            ),
+        ],
+    )
+    def test_adapt_backend(self, data, expected):
+        exporter = ResourceSwaggerExporter()
+
+        result = exporter._adapt_backend(**data)
+        assert result == expected
+
+    def test_adapt_backend__error(self):
+        data = {
+            "backend_name": "",
+            "backend_config": {},
+            "proxy_type": "mock",
+            "proxy_configs": {},
         }
 
-    @pytest.fixture(autouse=True)
-    def setup_exported_swagger(self):
-        self.exported_swagger = json.dumps(self.exported)
+        exporter = ResourceSwaggerExporter()
+        with pytest.raises(ValueError):
+            exporter._adapt_backend(**data)
 
-    def do_import_resources(self, swagger):
-        importer = ResourceSwaggerImporter(swagger)
-        importer.validate()
-
-        return importer.get_resources()
-
-    def do_export_resources(self, exporter, resources):
-        exported = exporter.to_swagger(resources, "json")
-        return exported, json.loads(exported)
-
-    def test_usage(self):
-        imported_resources = self.do_import_resources(self.exported_swagger)
-
-        _, exported = self.do_export_resources(
-            ResourceSwaggerExporter(
-                api_version=self.exported["info"]["version"],
-                include_bk_apigateway_resource=True,
-                title=self.exported["info"]["title"],
-                description=self.exported["info"]["description"],
+    @pytest.mark.parametrize(
+        "auth_config, expected",
+        [
+            (
+                {
+                    "auth_verified_required": True,
+                },
+                {
+                    "userVerifiedRequired": True,
+                    "appVerifiedRequired": True,
+                    "resourcePermissionRequired": True,
+                },
             ),
-            imported_resources,
-        )
-
-        assert exported == self.exported
-
-        exported_swagger, _ = self.do_export_resources(
-            ResourceSwaggerExporter(
-                api_version=self.exported["info"]["version"],
-                include_bk_apigateway_resource=True,
-                title=self.exported["info"]["title"],
-                description=self.exported["info"]["description"],
+            (
+                {
+                    "auth_verified_required": False,
+                    "app_verified_required": False,
+                    "resource_perm_required": False,
+                },
+                {
+                    "userVerifiedRequired": False,
+                    "appVerifiedRequired": False,
+                    "resourcePermissionRequired": False,
+                },
             ),
-            imported_resources,
-        )
-
-        assert imported_resources == self.do_import_resources(exported_swagger)
+            (
+                {
+                    "auth_verified_required": False,
+                    "app_verified_required": False,
+                    "resource_perm_required": True,
+                },
+                {
+                    "userVerifiedRequired": False,
+                    "appVerifiedRequired": False,
+                    "resourcePermissionRequired": False,
+                },
+            ),
+        ],
+    )
+    def test_adapt_auth_config(self, auth_config, expected):
+        exporter = ResourceSwaggerExporter()
+        result = exporter._adapt_auth_config(auth_config)
+        assert result == expected

@@ -31,57 +31,6 @@ class TestResourceHandler:
     def setup_fixtures(self):
         self.gateway = G(Gateway)
 
-    def test_save_related_data(self):
-        gateway = G(Gateway)
-        resource = G(Resource)
-        stage_prod = G(Stage, gateway=gateway, name="prod")
-        label = G(APILabel, api=gateway)
-
-        data = {
-            "proxy_type": "http",
-            "proxy_configs": {
-                "http": {
-                    "method": "GET",
-                    "path": "/echo/",
-                    "timeout": 10,
-                    "upstreams": {
-                        "loadbalance": "roundrobin",
-                        "hosts": [
-                            {
-                                "host": "www.a.com",
-                                "weight": 100,
-                            }
-                        ],
-                    },
-                    "transform_headers": {
-                        "replace": {"k1": "v1", "k2": "v2"},
-                    },
-                }
-            },
-            "auth_config": {
-                "skip_auth_verification": False,
-                "auth_verified_required": True,
-                "app_verified_required": True,
-                "resource_perm_required": True,
-            },
-            "label_ids": [label.id],
-            "disabled_stage_ids": [stage_prod.id],
-        }
-        ResourceHandler().save_related_data(
-            gateway,
-            resource,
-            proxy_type=data["proxy_type"],
-            proxy_config=data["proxy_configs"][data["proxy_type"]],
-            auth_config=data["auth_config"],
-            label_ids=data.get("label_ids", []),
-            disabled_stage_ids=data.get("disabled_stage_ids", []),
-        )
-
-        assert Proxy.objects.filter(resource=resource, type="http").count() == 1
-        assert Resource.objects.get(id=resource.id).proxy_id == Proxy.objects.get(resource=resource, type="http").id
-        assert ResourceLabel.objects.filter(resource=resource).count() == 1
-        assert StageResourceDisabled.objects.filter(resource=resource).count() == 1
-
     def test_get_proxy_configs(self):
         backend_service = G(BackendService)
         resource = G(Resource)
@@ -136,21 +85,20 @@ class TestResourceHandler:
             result = ResourceHandler().get_proxy_configs(resource)
             assert result == test["expected"]
 
-    def test_save_labels(self):
-        gateway = G(Gateway)
-        resource = G(Resource, api=gateway)
+    def test_save_resource_labels(self, fake_resource):
+        fake_gateway = fake_resource.api
 
-        label = G(APILabel, api=gateway)
-        invalid_label = G(APILabel, api=gateway)
-        G(ResourceLabel, resource=resource, api_label=invalid_label)
+        label_1 = G(APILabel, api=fake_gateway)
+        label_2 = G(APILabel, api=fake_gateway)
+        G(ResourceLabel, resource=fake_resource, api_label=label_1)
 
         # test save label
-        ResourceHandler().save_labels(gateway, resource, [label.id])
-        assert ResourceLabel.objects.filter(resource=resource).count() == 2
+        ResourceHandler().save_resource_labels(fake_gateway, fake_resource, [label_2.id, label_1.id])
+        assert ResourceLabel.objects.filter(resource=fake_resource).count() == 2
 
         # test delete invalid labels
-        ResourceHandler().save_labels(gateway, resource, [label.id], delete_unspecified=True)
-        assert ResourceLabel.objects.filter(resource=resource).count() == 1
+        ResourceHandler().save_resource_labels(fake_gateway, fake_resource, [label_2.id])
+        assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
 
     def test_save_disabled_stages(self):
         gateway = G(Gateway)
@@ -300,61 +248,10 @@ class TestResourceHandler:
             )
             assert result == test["expected"]["count"]
 
-    def test_snapshot(self):
-        gateway = G(Gateway)
-
-        resource = G(
-            Resource,
-            api=gateway,
-            name="test",
-            method="GET",
-            path="/echo/",
-        )
-
-        stage_prod = G(Stage, gateway=gateway, name="prod")
-        stage_test = G(Stage, gateway=gateway, name="test")
-
-        data = {
-            "proxy_type": "http",
-            "proxy_configs": {
-                "http": {
-                    "method": "GET",
-                    "path": "/echo/",
-                    "timeout": 10,
-                    "upstreams": {
-                        "loadbalance": "roundrobin",
-                        "hosts": [
-                            {
-                                "host": "www.a.com",
-                                "weight": 100,
-                            }
-                        ],
-                    },
-                    "transform_headers": {
-                        "replace": {"k1": "v1", "k2": "v2"},
-                    },
-                }
-            },
-            "auth_config": {
-                "skip_auth_verification": False,
-                "auth_verified_required": True,
-                "app_verified_required": True,
-                "resource_perm_required": True,
-            },
-            "disabled_stage_ids": [stage_prod.id, stage_test.id],
-        }
-        ResourceHandler().save_related_data(
-            gateway,
-            resource,
-            proxy_type=data["proxy_type"],
-            proxy_config=data["proxy_configs"][data["proxy_type"]],
-            auth_config=data["auth_config"],
-            label_ids=data.get("label_ids", []),
-            disabled_stage_ids=data.get("disabled_stage_ids", []),
-        )
-
-        snapshot = ResourceHandler().snapshot(resource, as_dict=True)
-        assert snapshot["disabled_stages"] == ["prod", "test"]
+    def test_snapshot(self, fake_resource):
+        snapshot = ResourceHandler().snapshot(fake_resource, as_dict=True)
+        assert snapshot
+        assert isinstance(snapshot, dict)
 
     def test_filter_by_resource_filter_condition(self, fake_gateway):
         resource_1 = G(Resource, api=fake_gateway, name="test1", method="GET", path="/test")

@@ -64,45 +64,6 @@ class TestConstants:
         assert bool(result) == matched
 
     @pytest.mark.parametrize(
-        "value, matched",
-        [
-            ("http://0.0.0.1", True),
-            ("http://0.0.0.1/", True),
-            ("http://[2001:db8:3333:4444:5555:6666:7777:8888]", True),
-            ("https://[2001:db8:3333:4444:5555:6666:7777:8888]/", True),
-            ("https://2001:db8:3333:4444:5555:6666:7777:8888", False),
-            ("http://0.0.0.1/a/", False),
-            ("http://{env.host}", True),
-        ],
-    )
-    def test_resource_domain_pattern(self, value, matched):
-        result = constants.RESOURCE_DOMAIN_PATTERN.match(value)
-        assert bool(result) == matched
-
-    @pytest.mark.parametrize(
-        "value, match",
-        [
-            # ok
-            ("abcd-123", True),
-            # length < 3
-            ("aa", False),
-            # length > 32
-            ("a" * 50, False),
-            # include uppercase letter
-            ("abA", False),
-            # first letter is digit
-            ("8ab", False),
-            # include '_'
-            ("ab_c", False),
-        ],
-    )
-    def test_api_name_pattern(self, value, match):
-        if match:
-            assert constants.GATEWAY_NAME_PATTERN.match(value)
-        else:
-            assert not constants.GATEWAY_NAME_PATTERN.match(value)
-
-    @pytest.mark.parametrize(
         "value, match",
         [
             # ok
@@ -166,32 +127,6 @@ class TestConstants:
             assert result
         else:
             assert not result
-
-    @pytest.mark.parametrize(
-        "value, expected",
-        [
-            ("/echo/{username}/", ["username"]),
-            ("/hello/{env.region}/", ["env.region"]),
-            ("/hello/{{uuid}}", ["{uuid"]),
-        ],
-    )
-    def test_path_var_pattern(self, value, expected):
-        result = constants.PATH_VAR_PATTERN.findall(value)
-        assert result == expected
-
-    @pytest.mark.parametrize(
-        "value, expected",
-        [
-            ("env.username", "username"),
-            ("envregion", None),
-        ],
-    )
-    def test_stage_path_var_name_pattern(self, value, expected):
-        result = constants.STAGE_PATH_VAR_NAME_PATTERN.match(value)
-        if result:
-            result = result.group(1)
-
-        assert result == expected
 
     @pytest.mark.parametrize(
         "value, match",

@@ -23,12 +23,12 @@ from typing import IO, AnyStr, Dict, List, Optional, Union
 from bkapi_client_generator import expand_swagger
 from django.utils.translation import gettext as _
 
-from apigateway.apps.resource.swagger.swagger import SwaggerManager
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
+from apigateway.biz.constants import SwaggerFormatEnum
+from apigateway.biz.resource.importer.swagger import SwaggerManager
 from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
-from apigateway.core.constants import SwaggerFormatEnum
 from apigateway.core.models import Resource
 from apigateway.utils.file import read_file, write_to_file
 

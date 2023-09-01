@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -17,20 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
-class ResourceListV1SLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = SerializerTranslatedField(
-        default_field="description_i18n", translated_fields={"en": "description_en"}
-    )
-    description_en = serializers.CharField(default=None, required=False, write_only=True)
-    method = serializers.CharField()
-    path = serializers.CharField()
-
-
-class ResourceSyncSLZ(serializers.Serializer):
-    content = serializers.CharField()
-    delete = serializers.BooleanField(required=False, default=False)
+class ResourceSyncOutputSLZ(serializers.Serializer):
+    added = serializers.ListField(child=serializers.DictField())
+    updated = serializers.ListField(child=serializers.DictField())
+    deleted = serializers.ListField(child=serializers.DictField())

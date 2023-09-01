@@ -274,12 +274,12 @@ class ProxyManager(models.Manager):
     def delete_by_resource_ids(self, resource_ids):
         self.filter(resource_id__in=resource_ids).delete()
 
-    def filter_id_snapshot_map(self, resource_ids):
+    def get_resource_id_to_snapshot(self, resource_ids):
         from apigateway.schema.models import Schema
 
         schemas = Schema.objects.filter_id_snapshot_map()
         return {
-            proxy.id: proxy.snapshot(as_dict=True, schemas=schemas)
+            proxy.resource_id: proxy.snapshot(as_dict=True, schemas=schemas)
             for proxy in self.filter(resource_id__in=resource_ids)
         }
 

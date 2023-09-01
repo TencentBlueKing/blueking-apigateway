@@ -1,0 +1,706 @@
+# -*- coding: utf-8 -*-
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+import json
+
+import pytest
+from ddf import G
+
+from apigateway.apis.web.resource.views import (
+    BackendPathCheckApi,
+)
+from apigateway.apps.label.models import APILabel, ResourceLabel
+from apigateway.biz.resource import ResourceHandler
+from apigateway.common.contexts import ResourceAuthContext
+from apigateway.core import constants
+from apigateway.core.models import Backend, BackendConfig, Context, Proxy, Resource, Stage
+
+
+class TestResourceListCreateApi:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {},
+                2,
+            ),
+            (
+                {"path": "/echo/"},
+                1,
+            ),
+            (
+                {"method": "GET"},
+                2,
+            ),
+            (
+                {"query": "echo"},
+                1,
+            ),
+        ],
+    )
+    def test_list(self, request_view, fake_gateway, data, expected):
+        G(Resource, api=fake_gateway, path="/echo/", method="GET", name="echo")
+        G(Resource, api=fake_gateway, path="/test/", method="GET", name="test")
+
+        resp = request_view(
+            method="GET",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert len(result["data"]["results"]) == expected
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {
+                "name": "post_echo",
+                "description": "desc",
+                "is_public": True,
+                "method": "POST",
+                "path": "/echo/",
+                "match_subpath": False,
+                "label_ids": [],
+                "backend_config": {
+                    "method": "GET",
+                    "path": "/echo/",
+                    "match_subpath": False,
+                    "timeout": 30,
+                },
+                "auth_config": {
+                    "auth_verified_required": False,
+                    "app_verified_required": True,
+                    "resource_perm_required": True,
+                },
+            },
+        ],
+    )
+    def test_create(self, request_view, fake_gateway, data):
+        backend = G(Backend, gateway=fake_gateway)
+        data["backend_id"] = backend.id
+
+        resp = request_view(
+            method="POST",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+        )
+
+        assert resp.status_code == 201
+
+        resource = Resource.objects.get(api=fake_gateway, method=data["method"], path=data["path"])
+        assert resource.is_public == data["is_public"]
+        assert resource.match_subpath == data["match_subpath"]
+
+        proxy = Proxy.objects.get(resource=resource)
+        assert proxy.backend_id == backend.id
+
+        context = Context.objects.get(
+            scope_type=constants.ContextScopeTypeEnum.RESOURCE.value,
+            type=constants.ContextTypeEnum.RESOURCE_AUTH.value,
+            scope_id=resource.id,
+        )
+        assert context.config == {
+            "skip_auth_verification": False,
+            "auth_verified_required": False,
+            "app_verified_required": True,
+            "resource_perm_required": True,
+        }
+
+
+class TestResourceRetrieveUpdateDestroyApi:
+    def test_retrieve(self, fake_resource, request_view):
+        fake_gateway = fake_resource.api
+
+        resp = request_view(
+            method="GET",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource.id},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["id"] == fake_resource.id
+
+    def test_update(self, request_view, fake_resource):
+        fake_gateway = fake_resource.api
+        backend = Backend.objects.filter(gateway=fake_gateway).first()
+
+        data = {
+            "name": "post_echo",
+            "description": "desc",
+            "is_public": True,
+            "method": "POST",
+            "path": "/echo/",
+            "label_ids": [],
+            "backend_id": backend.id,
+            "backend_config": {
+                "method": "GET",
+                "path": "/echo/",
+                "timeout": 30,
+            },
+            "auth_config": {
+                "auth_verified_required": False,
+                "app_verified_required": True,
+                "resource_perm_required": True,
+            },
+        }
+
+        resp = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource.id},
+            data=data,
+        )
+
+        assert resp.status_code == 200
+
+        proxy = Proxy.objects.get(resource=fake_resource)
+        assert proxy.backend_id == backend.id
+
+        auth_config = ResourceAuthContext().get_config(fake_resource.id)
+        assert auth_config == {
+            "skip_auth_verification": False,
+            "auth_verified_required": False,
+            "app_verified_required": True,
+            "resource_perm_required": True,
+        }
+
+    def test_destroy(self, request_view, fake_resource):
+        fake_gateway = fake_resource.api
+
+        resp = request_view(
+            method="DELETE",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource.id},
+        )
+        assert resp.status_code == 204
+        assert not Resource.objects.filter(id=fake_resource.id).exists()
+        assert not Proxy.objects.filter(resource=fake_resource)
+        assert not Context.objects.filter(type="resource", scope_id=fake_resource.id)
+
+
+class TestResourceBatchUpdateDestroyApi:
+    def test_update(self, request_view, fake_resource):
+        data = {
+            "ids": [fake_resource.id],
+            "is_public": True,
+            "allow_apply_permission": True,
+        }
+
+        resp = request_view(
+            method="PUT",
+            view_name="resource.batch_update_destroy",
+            path_params={"gateway_id": fake_resource.api.id},
+            data=data,
+        )
+
+        assert resp.status_code == 200
+
+        resource = Resource.objects.get(id=fake_resource.id)
+        assert resource.is_public == data["is_public"]
+        assert resource.allow_apply_permission == data["allow_apply_permission"]
+
+    def test_destroy(self, request_view, fake_resource):
+        data = {
+            "ids": [fake_resource.id],
+        }
+
+        resp = request_view(
+            method="DELETE",
+            view_name="resource.batch_update_destroy",
+            path_params={"gateway_id": fake_resource.api.id},
+            data=data,
+        )
+
+        assert resp.status_code == 204
+        assert not Resource.objects.filter(id__in=data["ids"]).exists()
+
+
+class TestResourceLabelUpdateApi:
+    def test_update(self, request_view, fake_resource):
+        fake_gateway = fake_resource.api
+        label_1 = G(APILabel, api=fake_gateway)
+        label_2 = G(APILabel, api=fake_gateway)
+
+        resp = request_view(
+            method="PUT",
+            view_name="resource.label.update",
+            path_params={"gateway_id": fake_gateway.id, "resource_id": fake_resource.id},
+            data={
+                "label_ids": [label_1.id],
+            },
+        )
+        assert resp.status_code == 200
+        assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
+
+        resp = request_view(
+            method="PUT",
+            view_name="resource.label.update",
+            path_params={"gateway_id": fake_gateway.id, "resource_id": fake_resource.id},
+            data={
+                "label_ids": [label_1.id, label_2.id],
+            },
+        )
+        assert resp.status_code == 200
+        assert ResourceLabel.objects.filter(resource=fake_resource).count() == 2
+
+        resp = request_view(
+            method="PUT",
+            view_name="resource.label.update",
+            path_params={"gateway_id": fake_gateway.id, "resource_id": fake_resource.id},
+            data={
+                "label_ids": [label_2.id],
+            },
+        )
+        assert resp.status_code == 200
+        assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
+
+
+class TestResourceImportCheckApi:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "content": json.dumps(
+                        {
+                            "swagger": "2.0",
+                            "basePath": "/",
+                            "info": {
+                                "version": "0.1",
+                                "title": "API Gateway Swagger",
+                            },
+                            "schemes": ["http"],
+                            "paths": {
+                                "/http/get/mapping/{userId}": {
+                                    "get": {
+                                        "operationId": "http_get_mapping_user_id",
+                                        "description": "test",
+                                        "tags": ["pet"],
+                                        "schemes": ["http"],
+                                        "x-bk-apigateway-resource": {
+                                            "isPublic": True,
+                                            "allowApplyPermission": True,
+                                            "matchSubpath": True,
+                                            "backend": {
+                                                "name": "default",
+                                                "type": "HTTP",
+                                                "method": "get",
+                                                "path": "/hello/",
+                                                "matchSubpath": True,
+                                                "timeout": 30,
+                                            },
+                                        },
+                                    },
+                                }
+                            },
+                        }
+                    ),
+                },
+                [
+                    {
+                        "id": None,
+                        "name": "http_get_mapping_user_id",
+                        "description": "test",
+                        "method": "GET",
+                        "path": "/http/get/mapping/{userId}/*",
+                        "doc": {
+                            "id": None,
+                            "language": "",
+                        },
+                    }
+                ],
+            ),
+            (
+                {
+                    "doc_language": "zh",
+                    "content": json.dumps(
+                        {
+                            "swagger": "2.0",
+                            "basePath": "/",
+                            "info": {
+                                "version": "0.1",
+                                "title": "API Gateway Swagger",
+                            },
+                            "schemes": ["http"],
+                            "paths": {
+                                "/http/get/mapping/{userId}": {
+                                    "get": {
+                                        "operationId": "http_get_mapping_user_id",
+                                        "description": "test",
+                                        "tags": ["pet"],
+                                        "schemes": ["http"],
+                                        "x-bk-apigateway-resource": {
+                                            "isPublic": True,
+                                            "allowApplyPermission": True,
+                                            "matchSubpath": False,
+                                            "backend": {
+                                                "name": "default",
+                                                "type": "HTTP",
+                                                "method": "get",
+                                                "path": "/hello/",
+                                                "matchSubpath": False,
+                                                "timeout": 30,
+                                            },
+                                        },
+                                    },
+                                }
+                            },
+                        }
+                    ),
+                },
+                [
+                    {
+                        "id": None,
+                        "name": "http_get_mapping_user_id",
+                        "description": "test",
+                        "method": "GET",
+                        "path": "/http/get/mapping/{userId}",
+                        "doc": {
+                            "id": None,
+                            "language": "zh",
+                        },
+                    }
+                ],
+            ),
+        ],
+    )
+    def test_post(self, request_view, fake_gateway, data, expected):
+        G(Backend, gateway=fake_gateway, name="default")
+        resp = request_view(
+            method="POST",
+            view_name="resource.import.check",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"] == expected
+
+
+class TestResourceImportApi:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "content": json.dumps(
+                        {
+                            "swagger": "2.0",
+                            "basePath": "/",
+                            "info": {
+                                "version": "0.1",
+                                "title": "API Gateway Swagger",
+                            },
+                            "schemes": ["http"],
+                            "paths": {
+                                "/import/r/{user}/": {
+                                    "get": {
+                                        "operationId": "import_r_user",
+                                        "description": "test",
+                                        "tags": ["pet"],
+                                        "schemes": ["http"],
+                                        "x-bk-apigateway-resource": {
+                                            "isPublic": True,
+                                            "backend": {
+                                                "name": "default",
+                                                "type": "HTTP",
+                                                "path": "/hello/",
+                                                "method": "get",
+                                                "timeout": 30,
+                                            },
+                                        },
+                                    },
+                                },
+                                "/import/any/{user}/": {
+                                    "x-bk-apigateway-method-any": {
+                                        "operationId": "import_any_user",
+                                        "description": "test",
+                                        "schemes": ["http"],
+                                        "x-bk-apigateway-resource": {
+                                            "backend": {
+                                                "name": "default",
+                                                "type": "HTTP",
+                                                "path": "/hello/",
+                                                "method": "any",
+                                                "timeout": 0,
+                                            }
+                                        },
+                                    },
+                                },
+                            },
+                        }
+                    ),
+                },
+                2,
+            ),
+            (
+                {
+                    "content": json.dumps(
+                        {
+                            "swagger": "2.0",
+                            "basePath": "/",
+                            "info": {
+                                "version": "0.1",
+                                "title": "API Gateway Swagger",
+                            },
+                            "schemes": ["http"],
+                            "paths": {
+                                "/import/r/{user}/": {
+                                    "get": {
+                                        "operationId": "import_r_user_2",
+                                        "description": "test",
+                                        "tags": ["pet"],
+                                        "schemes": ["http"],
+                                        "x-bk-apigateway-resource": {
+                                            "isPublic": True,
+                                            "backend": {
+                                                "name": "default",
+                                                "type": "HTTP",
+                                                "path": "/hello/",
+                                                "method": "get",
+                                                "timeout": 30,
+                                            },
+                                        },
+                                    },
+                                },
+                                "/import/any/{user}/2/": {
+                                    "x-bk-apigateway-method-any": {
+                                        "operationId": "import_any_user_2",
+                                        "description": "test",
+                                        "schemes": ["http"],
+                                        "x-bk-apigateway-resource": {
+                                            "backend": {
+                                                "name": "default",
+                                                "type": "HTTP",
+                                                "path": "/hello/",
+                                                "method": "any",
+                                                "timeout": 30,
+                                            }
+                                        },
+                                    },
+                                },
+                            },
+                        }
+                    ),
+                    "selected_resources": [
+                        {
+                            "name": "import_any_user_2",
+                        }
+                    ],
+                },
+                1,
+            ),
+        ],
+    )
+    def test_post(self, request_view, fake_gateway, data, expected):
+        G(Backend, gateway=fake_gateway, name="default")
+
+        resp = request_view(
+            method="POST",
+            view_name="resource.import",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+        )
+
+        assert resp.status_code == 200
+        assert Resource.objects.filter(api=fake_gateway).count() == expected
+
+
+class TestResourceExportApi:
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {"export_type": "all", "file_type": "yaml"},
+            {"export_type": "filtered", "file_type": "json"},
+            {"export_type": "selected", "file_type": "yaml"},
+        ],
+    )
+    def test_post(self, request_view, fake_resource, data):
+        fake_gateway = fake_resource.api
+        label = G(APILabel, api=fake_gateway)
+        G(ResourceLabel, resource=fake_resource, api_label=label)
+
+        resp = request_view(
+            method="POST",
+            view_name="resource.export",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+        )
+
+        assert resp.status_code == 200
+
+
+class TestBackendPathCheckApi:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                # ok, no vars
+                {
+                    "path": "/echo/",
+                    "backend_path": "/echo/",
+                },
+                200,
+            ),
+            (
+                # ok, have same vars
+                {
+                    "path": "/echo/{cmd}/",
+                    "backend_path": "/echo/{cmd}/",
+                },
+                200,
+            ),
+            (
+                # ok, have same vars or env vars
+                {
+                    "path": "/echo/{cmd}/",
+                    "backend_path": "/echo/{cmd}/{env.k1}/",
+                },
+                200,
+            ),
+            (
+                # fail, proxy-path vars not exist in path
+                {
+                    "path": "/echo/",
+                    "backend_path": "/echo/{cmd}/",
+                },
+                400,
+            ),
+            (
+                # fail, proxy-path vars not exist in path
+                {
+                    "path": "/echo/{cmd}/",
+                    "backend_path": "/echo/{cmd2}/",
+                },
+                400,
+            ),
+            (
+                # fail, proxy-path env vars not exist in stage vars
+                {
+                    "path": "/echo/{cmd}/",
+                    "backend_path": "/echo/{cmd}/{env.k2}/",
+                },
+                400,
+            ),
+        ],
+    )
+    def test_get(self, request_view, fake_gateway, data, expected):
+        G(Stage, gateway=fake_gateway, name="prod", _vars='{"k1": "v1"}')
+
+        resp = request_view(
+            method="GET",
+            view_name="resource.backend_path.check",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+        )
+
+        assert resp.status_code == expected
+
+    def test_get__data(self, request_view, fake_gateway):
+        stage = G(Stage, gateway=fake_gateway, name="prod", _vars='{"k1": "v1"}')
+        backend = G(Backend, gateway=fake_gateway, name="default")
+        G(
+            BackendConfig,
+            gateway=fake_gateway,
+            stage=stage,
+            backend=backend,
+            config={"type": "node", "hosts": [{"host": "api.demo.com", "scheme": "http"}]},
+        )
+
+        data = {
+            "backend_id": backend.id,
+            "path": "/echo/{cmd}/",
+            "backend_path": "/echo/{cmd}/{env.k1}/",
+        }
+
+        resp = request_view(
+            method="GET",
+            view_name="resource.backend_path.check",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"] == [
+            {
+                "stage": {"id": stage.id, "name": stage.name},
+                "backend_urls": ["http://api.demo.com/echo/{cmd}/v1/"],
+            }
+        ]
+
+    def test_get_backend_hosts(self, fake_gateway, fake_request):
+        stage = G(Stage, gateway=fake_gateway, _vars='{"k1": "v1"}')
+        backend = G(Backend, gateway=fake_gateway, name="default")
+        G(
+            BackendConfig,
+            gateway=fake_gateway,
+            stage=stage,
+            backend=backend,
+            config={"type": "node", "hosts": [{"host": "api.demo.com", "scheme": "http"}]},
+        )
+
+        view = BackendPathCheckApi()
+        fake_request.gateway = fake_gateway
+        view.request = fake_request
+
+        result = view._get_backend_hosts(None)
+        assert result == {}
+
+        result = view._get_backend_hosts(backend.id)
+        assert result == {stage.id: ["http://api.demo.com"]}
+
+    @pytest.mark.parametrize(
+        "host, path, vars, expected",
+        [
+            ("http://api.demo.com", "/color/", {}, "http://api.demo.com/color/"),
+            ("http://api.demo.com", "/color/{color}", {}, "http://api.demo.com/color/{color}"),
+            ("http://api.demo.com", "/color/{env.color}", {}, "http://api.demo.com/color/{env.color}"),
+            ("http://api.demo.com", "/color/{env.color}", {"color": "green"}, "http://api.demo.com/color/green"),
+        ],
+    )
+    def test_get_backend_url(self, host, path, vars, expected):
+        view = BackendPathCheckApi()
+
+        result = view._get_backend_url(host, path, vars)
+        assert result == expected
+
+
+class TestResourcesWithVerifiedUserRequiredApi:
+    def test_list(self, request_view, fake_gateway):
+        resource_1 = G(Resource, api=fake_gateway)
+        resource_2 = G(Resource, api=fake_gateway)
+
+        auth_config = ResourceHandler.get_default_auth_config()
+        ResourceAuthContext().save(resource_1.id, dict(auth_config, auth_verified_required=True))
+        ResourceAuthContext().save(resource_2.id, dict(auth_config, auth_verified_required=False))
+
+        resp = request_view(
+            method="GET",
+            view_name="resource.list_with_verified_user_required",
+            path_params={"gateway_id": fake_gateway.id},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1

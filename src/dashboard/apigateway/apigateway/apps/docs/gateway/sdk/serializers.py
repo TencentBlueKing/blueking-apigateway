@@ -19,7 +19,7 @@
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from rest_framework import serializers
 
-from apigateway.apps.docs.gateway.constants_ext import UserAuthTypeEnum
+from apigateway.apis.web.constants import UserAuthTypeEnum
 
 
 class ProgrammingLanguageEnum(StructuredEnum):

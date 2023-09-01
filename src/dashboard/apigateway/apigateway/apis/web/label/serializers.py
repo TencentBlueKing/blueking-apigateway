@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
@@ -48,7 +49,7 @@ class GatewayLabelInputSLZ(serializers.ModelSerializer):
             ),
             MaxCountPerGatewayValidator(
                 APILabel,
-                max_count_callback=lambda gateway: gateway.max_api_label_count,
+                max_count_callback=lambda gateway: settings.MAX_LABEL_COUNT_PER_GATEWAY,
                 message=gettext_lazy("每个网关最多创建 {max_count} 个标签。"),
             ),
         ]

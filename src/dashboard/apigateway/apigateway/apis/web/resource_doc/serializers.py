@@ -17,8 +17,8 @@
 #
 from rest_framework import serializers
 
+from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.support.constants import DocArchiveTypeEnum, DocLanguageEnum
-from apigateway.core.constants import ExportTypeEnum
 
 
 class DocArchiveParseInputSLZ(serializers.Serializer):
