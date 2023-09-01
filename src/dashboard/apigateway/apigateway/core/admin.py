@@ -124,15 +124,15 @@ class ContextAdmin(admin.ModelAdmin):
 
 
 class JWTAdmin(admin.ModelAdmin):
-    list_display = ["api"]
-    search_fields = ["api__id"]
+    list_display = ["gateway"]
+    search_fields = ["gateway__id"]
     exclude = ["private_key"]
 
 
 class APIRelatedAppAdmin(admin.ModelAdmin):
-    list_display = ["api", "bk_app_code"]
-    search_fields = ["api__id", "bk_app_code"]
-    list_filter = ["api"]
+    list_display = ["gateway", "bk_app_code"]
+    search_fields = ["gateway__id", "bk_app_code"]
+    list_filter = ["gateway"]
 
 
 class MicroGatewayAdmin(admin.ModelAdmin):
@@ -158,15 +158,15 @@ class BackendConfigAdmin(admin.ModelAdmin):
 
 
 class SslCertificateAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "name", "type", "expires", "updated_time"]
+    list_display = ["id", "gateway", "name", "type", "expires", "updated_time"]
     search_fields = ["name"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
 
 
 class SslCertificateBindingAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "scope_type", "scope_id", "ssl_certificate_id"]
+    list_display = ["id", "gateway", "scope_type", "scope_id", "ssl_certificate_id"]
     search_fields = ["scope_id", "ssl_certificate_id"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
 
 
 admin.site.register(Gateway, GatewayAdmin)

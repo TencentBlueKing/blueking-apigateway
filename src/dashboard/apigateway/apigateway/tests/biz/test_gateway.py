@@ -220,10 +220,10 @@ class TestGatewayHandler:
             scope_id=fake_gateway.id,
         ).exists()
 
-        assert JWT.objects.filter(api=fake_gateway).exists()
+        assert JWT.objects.filter(gateway=fake_gateway).exists()
         assert Stage.objects.filter(gateway=fake_gateway).exists()
         assert AlarmStrategy.objects.filter(api=fake_gateway).exists()
-        assert APIRelatedApp.objects.filter(api=fake_gateway, bk_app_code="test").exists()
+        assert APIRelatedApp.objects.filter(gateway=fake_gateway, bk_app_code="test").exists()
 
     def test_delete_gateway(
         self,

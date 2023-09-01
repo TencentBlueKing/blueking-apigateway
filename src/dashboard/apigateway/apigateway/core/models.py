@@ -699,11 +699,12 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
 
 class JWT(TimestampedModelMixin, OperatorModelMixin):
     """
-    jwt for each api
+    jwt for each gateway
     """
 
-    api = models.OneToOneField(
+    gateway = models.OneToOneField(
         Gateway,
+        db_column="api_id",
         on_delete=models.CASCADE,
         primary_key=True,
     )
@@ -716,7 +717,7 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
     objects = managers.JWTManager()
 
     def __str__(self):
-        return f"<JWT: {self.api}>"
+        return f"<JWT: {self.gateway}>"
 
     class Meta:
         verbose_name = "JWT"
@@ -727,13 +728,13 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
 class APIRelatedApp(TimestampedModelMixin):
     """网关关联的蓝鲸应用"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     bk_app_code = models.CharField(max_length=32, db_index=True)
 
     objects = managers.APIRelatedAppManager()
 
     def __str__(self):
-        return f"<APIRelatedApp: {self.bk_app_code}/{self.api_id}>"
+        return f"<APIRelatedApp: {self.bk_app_code}/{self.gateway_id}>"
 
     class Meta:
         db_table = "core_api_related_app"
@@ -842,7 +843,7 @@ class BackendService(TimestampedModelMixin, OperatorModelMixin):
 class SslCertificate(TimestampedModelMixin, OperatorModelMixin):
     """SSL 证书"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     type = models.CharField(
         max_length=32,
         choices=SSLCertificateTypeEnum.get_choices(),
@@ -867,7 +868,7 @@ class SslCertificate(TimestampedModelMixin, OperatorModelMixin):
 class SslCertificateBinding(TimestampedModelMixin, OperatorModelMixin):
     """证书绑定"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     scope_type = models.CharField(
         max_length=32,
         choices=SSLCertificateBindingScopeTypeEnum.get_choices(),
@@ -883,4 +884,4 @@ class SslCertificateBinding(TimestampedModelMixin, OperatorModelMixin):
 
     class Meta:
         db_table = "core_ssl_certificate_binding"
-        unique_together = ("api", "scope_type", "scope_id", "ssl_certificate")
+        unique_together = ("gateway", "scope_type", "scope_id", "ssl_certificate")

@@ -69,7 +69,7 @@ class SSLCertificateViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.SSLCertificateSLZ
 
     def get_queryset(self):
-        return SslCertificate.objects.filter(api=self.request.gateway)
+        return SslCertificate.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
@@ -115,12 +115,12 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def bind(self, request, *args, **kwargs):
         """证书，绑定 scope 对象"""
-        slz = serializers.BindOrUnbindScopesSLZ(data=request.data, context={"api_id": self.request.gateway.id})
+        slz = serializers.BindOrUnbindScopesSLZ(data=request.data, context={"gateway_id": self.request.gateway.id})
         slz.is_valid(raise_exception=True)
 
         for scope_id in slz.validated_data["scope_ids"]:
             binding, created = SslCertificateBinding.objects.update_or_create(
-                api=self.request.gateway,
+                gateway=self.request.gateway,
                 scope_type=slz.validated_data["scope_type"],
                 scope_id=scope_id,
                 ssl_certificate_id=slz.validated_data["ssl_certificate_id"],
@@ -134,7 +134,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
 
         # 仅绑定用户当前指定的对象，删除未指定的绑定
         SslCertificateBinding.objects.filter(
-            api=self.request.gateway,
+            gateway=self.request.gateway,
             scope_type=slz.validated_data["scope_type"],
             ssl_certificate_id=slz.validated_data["ssl_certificate_id"],
         ).exclude(scope_id__in=slz.validated_data["scope_ids"]).delete()
@@ -151,11 +151,11 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def unbind(self, request, *args, **kwargs):
         """证书，解绑 scope 对象"""
-        slz = serializers.BindOrUnbindScopesSLZ(data=request.data, context={"api_id": self.request.gateway.id})
+        slz = serializers.BindOrUnbindScopesSLZ(data=request.data, context={"gateway_id": self.request.gateway.id})
         slz.is_valid(raise_exception=True)
 
         SslCertificateBinding.objects.filter(
-            api=self.request.gateway,
+            gateway=self.request.gateway,
             ssl_certificate_id=slz.validated_data["ssl_certificate_id"],
             scope_type=slz.validated_data["scope_type"],
             scope_id__in=slz.validated_data["scope_ids"],
@@ -176,7 +176,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
         slz.is_valid(raise_exception=True)
 
         queryset = SslCertificateBinding.objects.filter(
-            api=self.request.gateway, scope_type=slz.validated_data["scope_type"]
+            gateway=self.request.gateway, scope_type=slz.validated_data["scope_type"]
         )
         if slz.validated_data.get("scope_id"):
             queryset = queryset.filter(scope_id=slz.validated_data["scope_id"])
@@ -200,14 +200,14 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
     def bind(self, request, *args, **kwargs):
         """scope 对象，绑定证书"""
         slz = serializers.BindOrUnbindSSLCertificatesSLZ(
-            data=request.data, context={"api_id": self.request.gateway.id}
+            data=request.data, context={"gateway_id": self.request.gateway.id}
         )
         slz.is_valid(raise_exception=True)
 
         valid_scope_id = slz.validated_data["scope_id"]
         for ssl_certificate_id in slz.validated_data["ssl_certificate_ids"]:
             binding, created = SslCertificateBinding.objects.update_or_create(
-                api=self.request.gateway,
+                gateway=self.request.gateway,
                 scope_type=slz.validated_data["scope_type"],
                 scope_id=valid_scope_id,
                 ssl_certificate_id=ssl_certificate_id,
@@ -221,7 +221,7 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
 
         # 仅绑定用户当前指定的对象，删除未指定的绑定
         SslCertificateBinding.objects.filter(
-            api=self.request.gateway,
+            gateway=self.request.gateway,
             scope_type=slz.validated_data["scope_type"],
             scope_id=valid_scope_id,
         ).exclude(ssl_certificate_id__in=slz.validated_data["ssl_certificate_ids"]).delete()
@@ -239,12 +239,12 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
     def unbind(self, request, *args, **kwargs):
         """scope 对象，解绑证书"""
         slz = serializers.BindOrUnbindSSLCertificatesSLZ(
-            data=request.data, context={"api_id": self.request.gateway.id}
+            data=request.data, context={"gateway_id": self.request.gateway.id}
         )
         slz.is_valid(raise_exception=True)
 
         SslCertificateBinding.objects.filter(
-            api=self.request.gateway,
+            gateway=self.request.gateway,
             scope_type=slz.validated_data["scope_type"],
             scope_id=slz.validated_data["scope_id"],
             ssl_certificate_id__in=slz.validated_data["ssl_certificate_ids"],

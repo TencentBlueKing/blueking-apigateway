@@ -31,7 +31,7 @@ from apigateway.utils.time import utctime
 
 
 class SSLCertificateSLZ(serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     snis = serializers.ListField(child=serializers.CharField(), allow_empty=True, read_only=True)
     expires = serializers.DateTimeField(read_only=True)
 
@@ -39,7 +39,7 @@ class SSLCertificateSLZ(serializers.ModelSerializer):
         model = SslCertificate
         fields = (
             "id",
-            "api",
+            "gateway",
             "type",
             "name",
             "snis",
@@ -53,7 +53,7 @@ class SSLCertificateSLZ(serializers.ModelSerializer):
         validators = [
             UniqueTogetherValidator(
                 queryset=SslCertificate.objects.all(),
-                fields=["api", "type", "name"],
+                fields=["gateway", "type", "name"],
                 message=gettext_lazy("网关下证书名称已存在。"),
             ),
         ]
@@ -106,7 +106,7 @@ class BindOrUnbindScopesSLZ(serializers.Serializer):
     scope_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
 
     def validate_ssl_certificate_id(self, value) -> int:
-        valid_id = SslCertificate.objects.get_valid_id(gateway_id=self.context["api_id"], id_=value)
+        valid_id = SslCertificate.objects.get_valid_id(gateway_id=self.context["gateway_id"], id_=value)
         if not valid_id:
             raise serializers.ValidationError(_("证书【id={ssl_certificate_id}】不存在。").format(ssl_certificate_id=value))
         return valid_id
@@ -116,7 +116,7 @@ class BindOrUnbindScopesSLZ(serializers.Serializer):
         return data
 
     def _get_valid_scope_ids(self, scope_type: str, scope_ids: List[int]) -> List[int]:
-        return SslCertificateBinding.objects.get_valid_scope_ids(self.context["api_id"], scope_type, scope_ids)
+        return SslCertificateBinding.objects.get_valid_scope_ids(self.context["gateway_id"], scope_type, scope_ids)
 
 
 class BindOrUnbindSSLCertificatesSLZ(serializers.Serializer):
@@ -127,14 +127,16 @@ class BindOrUnbindSSLCertificatesSLZ(serializers.Serializer):
     ssl_certificate_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
 
     def validate_ssl_certificate_ids(self, value: List[int]) -> List[int]:
-        return SslCertificate.objects.get_valid_ids(self.context["api_id"], value)
+        return SslCertificate.objects.get_valid_ids(self.context["gateway_id"], value)
 
     def validate(self, data):
         data["scope_id"] = self._validate_scope_id(data["scope_type"], data["scope_id"])
         return data
 
     def _validate_scope_id(self, scope_type: str, scope_id: int) -> int:
-        valid_scope_id = SslCertificateBinding.objects.get_valid_scope_id(self.context["api_id"], scope_type, scope_id)
+        valid_scope_id = SslCertificateBinding.objects.get_valid_scope_id(
+            self.context["gateway_id"], scope_type, scope_id
+        )
         if not valid_scope_id:
             raise serializers.ValidationError({"scope_id": _("scope【id={scope_id}】不存在。").format(scope_id=scope_id)})
 

@@ -860,7 +860,7 @@ class JWTManager(models.Manager):
         private_key, public_key = KeyGenerator().generate_rsa_key()
         cipher = AESCipherManager.create_jwt_cipher()
         return self.create(
-            api=gateway,
+            gateway=gateway,
             # 使用加密数据，不保存明文的 private_key
             # private_key=smart_str(private_key),
             private_key="",
@@ -871,7 +871,7 @@ class JWTManager(models.Manager):
     def update_jwt_key(self, gateway, private_key: bytes, public_key: bytes):
         cipher = AESCipherManager.create_jwt_cipher()
 
-        jwt = self.get(api=gateway)
+        jwt = self.get(gateway=gateway)
         jwt.public_key = smart_str(public_key)
         jwt.encrypted_private_key = cipher.encrypt_to_hex(smart_str(private_key))
         jwt.save(update_fields=["public_key", "encrypted_private_key"])
@@ -879,19 +879,19 @@ class JWTManager(models.Manager):
     def get_private_key(self, gateway_id: int) -> str:
         cipher = AESCipherManager.create_jwt_cipher()
 
-        jwt = self.get(api_id=gateway_id)
+        jwt = self.get(gateway_id=gateway_id)
         return cipher.decrypt_from_hex(jwt.encrypted_private_key)
 
     def get_jwt(self, gateway):
         try:
-            return self.get(api=gateway)
+            return self.get(gateway=gateway)
         except Exception:
             raise error_codes.NOT_FOUND.format(_("网关密钥不存在。"), replace=True)
 
     def is_jwt_key_changed(self, gateway, private_key: bytes, public_key: bytes) -> bool:
         cipher = AESCipherManager.create_jwt_cipher()
 
-        jwt = self.get(api=gateway)
+        jwt = self.get(gateway=gateway)
         return jwt.public_key != smart_str(public_key) or cipher.decrypt_from_hex(
             jwt.encrypted_private_key
         ) != smart_str(private_key)
@@ -900,7 +900,7 @@ class JWTManager(models.Manager):
 class APIRelatedAppManager(models.Manager):
     def allow_app_manage_gateway(self, gateway_id: int, bk_app_code: str) -> bool:
         """是否允许应用管理网关"""
-        return self.filter(api_id=gateway_id, bk_app_code=bk_app_code).exists()
+        return self.filter(gateway_id=gateway_id, bk_app_code=bk_app_code).exists()
 
     def add_related_app(self, gateway_id: int, bk_app_code: str):
         """添加关联应用"""
@@ -908,7 +908,7 @@ class APIRelatedAppManager(models.Manager):
         # 检查app能关联的网关最大数量
         self._check_app_gateway_limit(bk_app_code)
 
-        self.get_or_create(api_id=gateway_id, bk_app_code=bk_app_code)
+        self.get_or_create(gateway_id=gateway_id, bk_app_code=bk_app_code)
 
     def _check_app_gateway_limit(self, bk_app_code: str):
         max_gateway_per_app = settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"].get(
@@ -961,10 +961,10 @@ class SslCertificateManager(models.Manager):
         from apigateway.core.models import SslCertificateBinding
 
         # delete binding
-        SslCertificateBinding.objects.filter(api_id=gateway_id).delete()
+        SslCertificateBinding.objects.filter(gateway_id=gateway_id).delete()
 
         # delete ssl-certificate
-        self.filter(api_id=gateway_id).delete()
+        self.filter(gateway_id=gateway_id).delete()
 
     def delete_by_id(self, id: int):
         self._check_for_delete(id)
@@ -988,10 +988,10 @@ class SslCertificateManager(models.Manager):
         )
 
     def get_valid_ids(self, gateway_id: int, ids: List[int]) -> List[int]:
-        return list(self.filter(api_id=gateway_id, id__in=ids).values_list("id", flat=True))
+        return list(self.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))
 
     def get_valid_id(self, gateway_id: int, id_: int) -> Optional[int]:
-        return self.filter(api_id=gateway_id, id=id_).values_list("id", flat=True).first()
+        return self.filter(gateway_id=gateway_id, id=id_).values_list("id", flat=True).first()
 
 
 class SslCertificateBindingManager(models.Manager):
@@ -1004,11 +1004,11 @@ class SslCertificateBindingManager(models.Manager):
     ):
         """同步绑定关系，将新增，更新或删除绑定关系，保持其与实际一致"""
         if not ssl_certificate_id:
-            self.filter(api_id=gateway_id, scope_type=scope_type.value, scope_id=scope_id).delete()
+            self.filter(gateway_id=gateway_id, scope_type=scope_type.value, scope_id=scope_id).delete()
             return
 
         self.update_or_create(
-            api_id=gateway_id,
+            gateway_id=gateway_id,
             scope_type=scope_type.value,
             scope_id=scope_id,
             defaults={

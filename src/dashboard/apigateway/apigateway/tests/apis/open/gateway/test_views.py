@@ -131,7 +131,7 @@ class TestAPIPublicKeyViewSet:
         )
 
         gateway = G(Gateway, name=unique_gateway_name)
-        G(JWT, api=gateway, public_key="test")
+        G(JWT, gateway=gateway, public_key="test")
 
         request = request_factory.get(f"/api/v1/apis/{unique_gateway_name}/public_key/")
         request.gateway = gateway
@@ -194,7 +194,7 @@ class TestAPIRelatedAppViewSet:
         response = view(request, gateway_name=request.gateway.name)
         result = get_response_json(response)
         assert result["code"] == 0
-        assert APIRelatedApp.objects.filter(api=request.gateway).count() == 2
+        assert APIRelatedApp.objects.filter(gateway=request.gateway).count() == 2
 
     def test_add_related_apps_error(self, mocker, request_factory, disable_app_permission):
         request = request_factory.post(

@@ -570,15 +570,15 @@ def fake_node_data(unique_stage_item_name):
 
 @pytest.fixture
 def fake_ssl_certificate(fake_gateway):
-    return G(SslCertificate, api=fake_gateway)
+    return G(SslCertificate, gateway=fake_gateway)
 
 
 @pytest.fixture
 def fake_ssl_certificate_binding(fake_ssl_certificate):
-    stage = G(Stage, gateway=fake_ssl_certificate.api)
+    stage = G(Stage, gateway=fake_ssl_certificate.gateway)
     return G(
         SslCertificateBinding,
-        api=fake_ssl_certificate.api,
+        gateway=fake_ssl_certificate.gateway,
         scope_type="stage",
         scope_id=stage.id,
         ssl_certificate=fake_ssl_certificate,

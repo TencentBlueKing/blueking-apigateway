@@ -1330,22 +1330,22 @@ class TestJWTManager:
         gateway = G(Gateway)
         data = [
             {
-                "api": gateway,
+                "gateway": gateway,
             }
         ]
         for test in data:
-            result = JWT.objects.create_jwt(test["api"])
-            assert result.api == test["api"]
+            result = JWT.objects.create_jwt(test["gateway"])
+            assert result.gateway == test["gateway"]
             assert result.private_key == ""
             assert "BEGIN PUBLIC KEY" in result.public_key
             assert result.encrypted_private_key
 
     def test_update_jwt_key(self, faker):
         gateway = G(Gateway)
-        jwt = G(JWT, api=gateway, private_key=faker.pystr(), public_key=faker.pystr())
+        jwt = G(JWT, gateway=gateway, private_key=faker.pystr(), public_key=faker.pystr())
 
         JWT.objects.update_jwt_key(gateway, "test", "test")
-        jwt = JWT.objects.get(api=gateway)
+        jwt = JWT.objects.get(gateway=gateway)
 
         cipher = AESCipherManager.create_jwt_cipher()
         assert jwt.public_key == "test"
@@ -1353,7 +1353,7 @@ class TestJWTManager:
 
     def test_get_private_key(self):
         gateway = G(Gateway)
-        jwt = G(JWT, api=gateway)
+        jwt = G(JWT, gateway=gateway)
         JWT.objects.update_jwt_key(gateway, "test", "test")
         assert JWT.objects.get_private_key(gateway.id) == "test"
 
@@ -1391,7 +1391,7 @@ class TestAPIRelatedApp:
         result = APIRelatedApp.objects.allow_app_manage_gateway(gateway.id, unique_id)
         assert result is False
 
-        G(APIRelatedApp, api=gateway, bk_app_code=unique_id)
+        G(APIRelatedApp, gateway=gateway, bk_app_code=unique_id)
         result = APIRelatedApp.objects.allow_app_manage_gateway(gateway.id, unique_id)
         assert result is True
 
@@ -1399,13 +1399,13 @@ class TestAPIRelatedApp:
         gateway = G(Gateway)
 
         APIRelatedApp.objects.add_related_app(gateway.id, "foo")
-        assert APIRelatedApp.objects.filter(api_id=gateway.id).count() == 1
+        assert APIRelatedApp.objects.filter(gateway_id=gateway.id).count() == 1
 
         APIRelatedApp.objects.add_related_app(gateway.id, "foo")
-        assert APIRelatedApp.objects.filter(api_id=gateway.id).count() == 1
+        assert APIRelatedApp.objects.filter(gateway_id=gateway.id).count() == 1
 
         APIRelatedApp.objects.add_related_app(gateway.id, "bar")
-        assert APIRelatedApp.objects.filter(api_id=gateway.id).count() == 2
+        assert APIRelatedApp.objects.filter(gateway_id=gateway.id).count() == 2
 
     def test_check_app_gateway_limit(self):
         APIRelatedApp.objects.all().delete()
@@ -1440,10 +1440,10 @@ class TestBackendServiceManager:
 
 class TestSslCertificateManager:
     def test_delete_by_id(self, fake_gateway):
-        ssl_certificate = G(SslCertificate, api=fake_gateway)
+        ssl_certificate = G(SslCertificate, gateway=fake_gateway)
         related = G(
             SslCertificateBinding,
-            api=fake_gateway,
+            gateway=fake_gateway,
             scope_type=SSLCertificateBindingScopeTypeEnum.STAGE_ITEM_CONFIG.value,
             scope_id=1,
             ssl_certificate=ssl_certificate,
@@ -1454,24 +1454,24 @@ class TestSslCertificateManager:
 
         related.delete()
         SslCertificate.objects.delete_by_id(ssl_certificate.id)
-        assert not SslCertificate.objects.filter(api=fake_gateway).exists()
+        assert not SslCertificate.objects.filter(gateway=fake_gateway).exists()
 
     def test_get_valid_ids(self, fake_ssl_certificate):
         result = SslCertificate.objects.get_valid_ids(
-            gateway_id=fake_ssl_certificate.api.id,
+            gateway_id=fake_ssl_certificate.gateway.id,
             ids=[fake_ssl_certificate.id, 0],
         )
         assert result == [fake_ssl_certificate.id]
 
     def test_get_valid_id(self, fake_ssl_certificate):
         result = SslCertificate.objects.get_valid_id(
-            gateway_id=fake_ssl_certificate.api.id,
+            gateway_id=fake_ssl_certificate.gateway.id,
             id_=fake_ssl_certificate.id,
         )
         assert result == fake_ssl_certificate.id
 
         result = SslCertificate.objects.get_valid_id(
-            gateway_id=fake_ssl_certificate.api.id,
+            gateway_id=fake_ssl_certificate.gateway.id,
             id_=0,
         )
         assert result is None
@@ -1480,14 +1480,14 @@ class TestSslCertificateManager:
 class TestSslCertificateBindingManager:
     def test_get_valid_scope_id(self, fake_ssl_certificate_binding):
         result = SslCertificateBinding.objects.get_valid_scope_id(
-            gateway_id=fake_ssl_certificate_binding.api.id,
+            gateway_id=fake_ssl_certificate_binding.gateway.id,
             scope_type=fake_ssl_certificate_binding.scope_type,
             scope_id=fake_ssl_certificate_binding.scope_id,
         )
         assert result == fake_ssl_certificate_binding.scope_id
 
         result = SslCertificateBinding.objects.get_valid_scope_id(
-            gateway_id=fake_ssl_certificate_binding.api.id,
+            gateway_id=fake_ssl_certificate_binding.gateway.id,
             scope_type=fake_ssl_certificate_binding.scope_type,
             scope_id=0,
         )

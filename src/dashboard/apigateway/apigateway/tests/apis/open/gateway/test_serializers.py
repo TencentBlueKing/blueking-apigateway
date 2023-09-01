@@ -230,7 +230,7 @@ class TestGatewaySyncSLZ:
         slz.save(created_by="", updated_by="")
 
         assert Gateway.objects.filter(name=unique_gateway_name).exists()
-        assert APIRelatedApp.objects.filter(api=slz.instance, bk_app_code=bk_app_code).exists()
+        assert APIRelatedApp.objects.filter(gateway=slz.instance, bk_app_code=bk_app_code).exists()
         api_auth = GatewayAuthContext().get_config(slz.instance.id)
         assert api_auth["unfiltered_sensitive_keys"] == ["bk_token"]
         assert api_auth["api_type"] == 10
