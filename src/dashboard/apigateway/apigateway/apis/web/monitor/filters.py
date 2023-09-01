@@ -32,7 +32,7 @@ class AlarmRecordFilterBackend(BaseFilterBackend):
 
         data = slz.validated_data
 
-        strategy_queryset = AlarmStrategy.objects.filter(api=request.gateway)
+        strategy_queryset = AlarmStrategy.objects.filter(gateway=request.gateway)
 
         if data.get("alarm_strategy_id"):
             strategy_queryset = strategy_queryset.filter(id=data["alarm_strategy_id"])

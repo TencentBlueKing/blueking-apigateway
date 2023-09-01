@@ -45,7 +45,7 @@ class AlarmFilterConfig(ConfigModelMixin):
     """
 
     alarm_type = models.CharField(max_length=64, choices=AlarmTypeEnum.get_choices(), db_index=True)
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE, blank=True, null=True)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE, blank=True, null=True)
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
     comment = models.CharField(max_length=512, blank=True, default="")
 
@@ -74,7 +74,7 @@ class AlarmFilterConfig(ConfigModelMixin):
 
 
 class AlarmStrategy(ConfigModelMixin):
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     alarm_type = models.CharField(max_length=64, choices=API_ALARM_TYPE_CHOICES, db_index=True)
     alarm_subtype = models.CharField(
@@ -108,7 +108,7 @@ class AlarmStrategy(ConfigModelMixin):
 
         config = self.config
         if NoticeRoleEnum.MAINTAINER.value in config["notice_config"]["notice_role"]:
-            gateway = Gateway.objects.get(id=self.api_id)
+            gateway = Gateway.objects.get(id=self.gateway_id)
             receivers.update(gateway.maintainers)
         if config["notice_config"]["notice_extra_receiver"]:
             receivers.update(config["notice_config"]["notice_extra_receiver"])
@@ -116,7 +116,7 @@ class AlarmStrategy(ConfigModelMixin):
 
 
 class AlarmRecord(models.Model):
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE, blank=True, null=True)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE, blank=True, null=True)
     alarm_strategies = models.ManyToManyField(AlarmStrategy)
     alarm_attr_id = models.IntegerField(_("监控平台告警特性ID"))
     alarm_id = models.CharField(_("监控平台告警ID"), max_length=32, db_index=True)

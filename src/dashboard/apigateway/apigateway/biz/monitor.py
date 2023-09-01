@@ -54,7 +54,7 @@ class ResourceMonitorHandler:
         api_summary_map = defaultdict(list)
         for strategy in strategies:
             alarm_record = alarm_record_id_map[strategy.latest_alarm_record_id]
-            api_summary_map[strategy.api_id].append(
+            api_summary_map[strategy.gateway_id].append(
                 {
                     "id": strategy.id,
                     "name": strategy.name,

@@ -21,34 +21,34 @@ from . import models
 
 
 class AlarmFilterConfigAdmin(admin.ModelAdmin):
-    list_display = ["alarm_type", "api"]
-    list_filter = ["api", "alarm_type"]
+    list_display = ["alarm_type", "gateway"]
+    list_filter = ["gateway", "alarm_type"]
 
 
 class AlarmStrategyAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "api",
+        "gateway",
         "name",
         "alarm_type",
         "alarm_subtype",
         "enabled",
     )
-    list_filter = ["api"]
+    list_filter = ["gateway"]
     search_fields = ("name",)
     filter_horizontal = ["api_labels"]
 
 
 class AlarmRecordAdmin(admin.ModelAdmin):
     list_display = (
-        "api",
+        "gateway",
         "alarm_attr_id",
         "alarm_id",
         "source_time",
         "status",
     )
     filter_horizontal = ["alarm_strategies"]
-    list_filter = ["api", "status"]
+    list_filter = ["gateway", "status"]
 
 
 admin.site.register(models.AlarmFilterConfig, AlarmFilterConfigAdmin)

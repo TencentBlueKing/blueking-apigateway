@@ -127,7 +127,7 @@ class TestAlarmStrategyInputSLZ(TestCase):
                     },
                 },
                 "expected": {
-                    "api": self.gateway,
+                    "gateway": self.gateway,
                     "name": "test",
                     "alarm_type": "resource_backend",
                     "alarm_subtype": "status_code_5xx",
@@ -165,7 +165,7 @@ class TestAlarmStrategyInputSLZ(TestCase):
             {
                 "instance": G(
                     AlarmStrategy,
-                    api=self.gateway,
+                    gateway=self.gateway,
                     name="test",
                     alarm_type="resource_backend",
                     alarm_subtype="status_code_5xx",
@@ -226,7 +226,7 @@ class TestAlarmStrategyInputSLZ(TestCase):
 class TestAlarmRecordOutputSLZ(TestCase):
     def test_to_representation(self):
         gateway = G(Gateway)
-        alarm_strategy = G(AlarmStrategy, api=gateway, name="test")
+        alarm_strategy = G(AlarmStrategy, gateway=gateway, name="test")
         alarm_record = G(AlarmRecord, created_time=dummy_time.time)
         alarm_record.alarm_strategies.set([alarm_strategy])
 

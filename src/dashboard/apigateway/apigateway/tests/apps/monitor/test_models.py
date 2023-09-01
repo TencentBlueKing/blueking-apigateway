@@ -26,10 +26,10 @@ from apigateway.core.models import Gateway
 
 class TestAlarmStrategy(TestCase):
     def test_notice_receivers(self):
-        api = G(Gateway, _maintainers="test")
+        gateway = G(Gateway, _maintainers="test")
         strategy = G(
             AlarmStrategy,
-            api=api,
+            gateway=gateway,
             schema=SchemaFactory().get_monitor_alarm_strategy_schema(),
         )
 
