@@ -101,7 +101,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        tags=["webapi.monitor"],
+        tags=["WebAPI.monitor"],
     ),
 )
 @method_decorator(
@@ -164,7 +164,7 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=AlarmStrategyUpdateStatusInputSLZ,
-        tags=["webapi.monitor"],
+        tags=["WebAPI.monitor"],
     ),
 )
 @method_decorator(
@@ -172,7 +172,7 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=AlarmStrategyUpdateStatusInputSLZ,
-        tags=["webapi.monitor"],
+        tags=["WebAPI.monitor"],
     ),
 )
 class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):

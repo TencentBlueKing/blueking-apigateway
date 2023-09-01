@@ -18,21 +18,9 @@
 #
 from django.urls import path
 
-from .views import ResourceVersionDiffViewSet, ResourceVersionViewSet
+from apigateway.apis.web.support.views import APISDKListCreateApi
 
 urlpatterns = [
-    path(
-        "", ResourceVersionViewSet.as_view({"get": "list", "post": "create"}), name="apigateway.apps.resource_version"
-    ),
-    path(
-        "<int:id>/",
-        ResourceVersionViewSet.as_view({"get": "retrieve", "put": "update"}),
-        name="apigateway.apps.resource_version.detail",
-    ),
-    path(
-        "need_new_version/",
-        ResourceVersionViewSet.as_view({"get": "need_new_version"}),
-        name="apigateway.apps.resource_version.need_new_version",
-    ),
-    path("diff/", ResourceVersionDiffViewSet.as_view({"get": "diff"}), name="apigateway.apps.resource_version.diff"),
+    # 资源 SDK
+    path("sdks/", APISDKListCreateApi.as_view(), name="support.api_sdk.list_create"),
 ]

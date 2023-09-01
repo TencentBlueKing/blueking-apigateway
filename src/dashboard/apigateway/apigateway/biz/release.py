@@ -21,7 +21,6 @@ from django.db.models import Max
 
 from apigateway.core.constants import (
     GatewayStatusEnum,
-    PublishEventNameTypeEnum,
     PublishEventStatusEnum,
     PublishSourceEnum,
     StageStatusEnum,
@@ -119,10 +118,7 @@ class ReleaseHandler:
             else:
                 # 如果最新事件状态是成功，但不是最后一个节点，返回发布中
                 latest_event = release_event_map[release_history.id]
-                if (
-                    latest_event.status == PublishEventStatusEnum.SUCCESS.value
-                    and latest_event.name != PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
-                ):
+                if latest_event.is_running:
                     stage_publish_status[release_history.stage_id]["status"] = PublishEventStatusEnum.DOING.value
                 else:
                     stage_publish_status[release_history.stage_id]["status"] = latest_event.status

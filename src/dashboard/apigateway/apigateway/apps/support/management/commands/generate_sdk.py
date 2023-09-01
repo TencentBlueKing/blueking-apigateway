@@ -62,10 +62,7 @@ class Command(BaseCommand):
         with SDKHelper(resource_version=resource_version, output_dir=output_dir) as helper:
             context = helper.create_context(
                 language=language,
-                include_private_resources=include_private_resources,
-                is_public=is_public,
                 version=version,
-                operator=operator,
             )
 
         if context.files:

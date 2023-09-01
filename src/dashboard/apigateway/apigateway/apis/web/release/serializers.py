@@ -17,13 +17,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from typing import List
 
 from django.http import Http404
 from rest_framework import serializers
 
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusEnum, ReleaseStatusEnum
-from apigateway.core.models import ResourceVersion, Stage
+from apigateway.core.models import ReleaseHistory, ResourceVersion, Stage
 
 
 class ReleaseBatchInputSLZ(serializers.Serializer):
@@ -64,13 +65,13 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
     status = serializers.SerializerMethodField(read_only=True, help_text="发布状态")
     is_running = serializers.SerializerMethodField(read_only=True, help_text="是否正在发布")
 
-    def get_stage_names(self, obj):
+    def get_stage_names(self, obj: ReleaseHistory) -> List[str]:
         return list(obj.stages.order_by("name").values_list("name", flat=True))
 
-    def get_resource_version_display(self, obj):
+    def get_resource_version_display(self, obj: ReleaseHistory) -> str:
         return obj.resource_version.object_display
 
-    def get_status(self, obj):
+    def get_status(self, obj: ReleaseHistory) -> str:
         event = self.context["publish_events_map"].get(obj.id, None)
         if event:
             return f"{event.name} {event.status}"
@@ -78,7 +79,7 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
         # 兼容历史数据
         return obj.message
 
-    def get_cost(self, obj):
+    def get_cost(self, obj: ReleaseHistory) -> int:
         # 获取最新事件
         event = self.context["publish_events_map"].get(obj.id, None)
         if not event:
@@ -94,7 +95,7 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
         # 0代表还没到达终态
         return 0
 
-    def get_is_running(self, obj):
+    def get_is_running(self, obj: ReleaseHistory) -> bool:
         # 获取最新事件
         event = self.context["publish_events_map"].get(obj.id, None)
         if not event:
@@ -102,7 +103,7 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
             return obj.status not in [ReleaseStatusEnum.SUCCESS.value, ReleaseStatusEnum.FAILURE.value]
 
         # 最新事件是否是doing
-        return event.status == PublishEventStatusEnum.DOING.value
+        return event.is_running
 
 
 class PublishEventInfoSLZ(serializers.Serializer):

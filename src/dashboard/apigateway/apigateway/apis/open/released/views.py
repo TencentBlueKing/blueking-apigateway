@@ -68,7 +68,7 @@ class ReleasedResourceViewSet(viewsets.ModelViewSet):
         if not request.gateway.is_active_and_public:
             raise Http404
 
-        resources = ResourceVersionHandler().get_released_public_resources(
+        resources = ResourceVersionHandler.get_released_public_resources(
             request.gateway.id,
             stage_name=stage_name,
         )
@@ -93,7 +93,7 @@ class ReleasedResourceViewSet(viewsets.ModelViewSet):
         if not request.gateway.is_active_and_public:
             raise Http404
 
-        resources = ResourceVersionHandler().get_released_public_resources(request.gateway.id, stage_name=stage_name)
+        resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id, stage_name=stage_name)
         paginator = LimitOffsetPaginator(count=len(resources), offset=0, limit=len(resources))
 
         slz = serializers.ListReleasedResourceV2SLZ(

@@ -21,7 +21,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.resource_version import serializers
-from apigateway.apps.resource_version.serializers import ResourceVersionSLZ
+from apigateway.apis.web.resource_version.serializers import ResourceVersionInfoSLZ
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.releaser import ReleaseBatchManager, ReleaseError
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -35,14 +35,12 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 class ResourceVersionViewSet(viewsets.GenericViewSet):
     permission_classes = [GatewayRelatedAppPermission]
 
-    @swagger_auto_schema(request_body=ResourceVersionSLZ, tags=["OpenAPI.ResourceVersion"])
+    @swagger_auto_schema(request_body=ResourceVersionInfoSLZ, tags=["OpenAPI.ResourceVersion"])
     @transaction.atomic
     def create(self, request, gateway_name: str, *args, **kwargs):
         # manager = ResourceVersionManager()
         # instance = manager.create_resource_version(request.gateway, request.data, request.user.username)
-        instance = ResourceVersionHandler().create_resource_version(
-            request.gateway, request.data, request.user.username
-        )
+        instance = ResourceVersionHandler.create_resource_version(request.gateway, request.data, request.user.username)
 
         # 创建文档版本
         if ResourceDoc.objects.doc_exists(request.gateway.id):

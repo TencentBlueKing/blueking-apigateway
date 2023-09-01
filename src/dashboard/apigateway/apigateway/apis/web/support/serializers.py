@@ -25,12 +25,10 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.utils.time import now_datetime
 
 
-class APISDKGenerateSLZ(serializers.Serializer):
+class APISDKGenerateInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     resource_version_id = serializers.IntegerField(required=True)
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
-    include_private_resources = serializers.BooleanField(label="包含非公开资源")
-    is_public = serializers.BooleanField(label="是否为公开", default=None)
     version = serializers.CharField(
         label="版本",
         default="",
@@ -65,13 +63,13 @@ class APISDKGenerateSLZ(serializers.Serializer):
         return value
 
 
-class APISDKQuerySLZ(serializers.Serializer):
+class APISDKQueryInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), required=False)
     version_number = serializers.CharField(required=False, allow_blank=True)
     resource_version_id = serializers.IntegerField(allow_null=True, required=False)
 
 
-class SDKSLZ(serializers.Serializer):
+class SDKListOutputSLZ(serializers.Serializer):
     download_url = serializers.CharField(source="instance.url")
     id = serializers.IntegerField(source="instance.id")
     resource_version_id = serializers.IntegerField(source="instance.resource_version.id")
@@ -80,9 +78,6 @@ class SDKSLZ(serializers.Serializer):
     resource_version_display = serializers.CharField(source="instance.resource_version.object_display")
     language = serializers.CharField(source="language.value")
     version_number = serializers.CharField(source="instance.version_number")
-    include_private_resources = serializers.BooleanField(source="instance.include_private_resources")
-    is_public = serializers.BooleanField(source="instance.is_public")
-    is_recommended = serializers.BooleanField(source="instance.is_recommended")
     created_time = serializers.DateTimeField(source="instance.created_time")
     updated_time = serializers.DateTimeField(source="instance.updated_time")
     config = serializers.DictField()
