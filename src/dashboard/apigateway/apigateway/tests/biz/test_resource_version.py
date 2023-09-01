@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
+import datetime
 import json
 
 import pytest
@@ -27,6 +27,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
 from apigateway.utils import time as time_utils
+from apigateway.utils.time import now_datetime
 
 
 class TestResourceVersionHandler:
@@ -78,23 +79,8 @@ class TestResourceVersionHandler:
             separators=(",", ":"),
         )
 
-    def test_create_resource_version(self):
-        gateway = G(Gateway)
-
-        resource = G(Resource, api=gateway)
-        ResourceHandler().save_related_data(
-            gateway,
-            resource,
-            proxy_type="mock",
-            proxy_config={
-                "code": 200,
-                "body": "test",
-                "headers": {},
-            },
-            auth_config={"auth_verified_required": True},
-            label_ids=[],
-            disabled_stage_ids=[],
-        )
+    def test_create_resource_version(self, fake_resource):
+        gateway = fake_resource.api
 
         ResourceVersionHandler.create_resource_version(gateway, {"comment": "test"}, "admin")
         assert ResourceVersion.objects.filter(gateway=gateway).count() == 1
@@ -210,3 +196,11 @@ class TestResourceVersionHandler:
         result = ResourceVersionHandler.generate_version_name("test", dummy_time.time)
         time_str = time_utils.format(dummy_time.time, fmt="YYYYMMDDHHmmss")
         assert result.startswith(f"test_{time_str}_")
+
+    def test_get_latest_created_time(self, fake_gateway):
+        result = ResourceVersionHandler.get_latest_created_time(fake_gateway.id)
+        assert result is None
+
+        G(ResourceVersion, gateway=fake_gateway, created_time=now_datetime())
+        result = ResourceVersionHandler.get_latest_created_time(fake_gateway.id)
+        assert isinstance(result, datetime.datetime)

@@ -16,9 +16,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from collections import Counter
 
 
 def chunk_list(lst, n):
     """将一个列表拆分成大小为 n 的多个列表"""
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
+
+
+def get_duplicate_items(items) -> list:
+    return [item for item, count in Counter(items).items() if count > 1]

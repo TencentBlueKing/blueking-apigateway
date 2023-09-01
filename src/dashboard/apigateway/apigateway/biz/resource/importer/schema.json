@@ -325,6 +325,9 @@
                         "HTTP"
                       ]
                     },
+                    "name": {
+                      "type": "string"
+                    },
                     "method": {
                       "type": "string",
                       "enum": [
@@ -356,7 +359,6 @@
                     }
                   },
                   "required": [
-                    "type",
                     "method",
                     "path"
                   ]

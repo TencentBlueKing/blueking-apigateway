@@ -18,37 +18,61 @@
 #
 import json
 import logging
+import pkgutil
 from collections import defaultdict
-from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import jsonschema
+from django.utils.translation import gettext as _
 
-from apigateway.apps.resource.swagger.helpers import AuthConfigConverter, format_jsonschema_error, load_swagger_schema
+from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.constants import (
+    DEFAULT_BACKEND_NAME,
     HTTP_METHOD_ANY,
-    VALID_METHOD_IN_SWAGGER_PATHITEM,
     ProxyTypeEnum,
-    SwaggerExtensionEnum,
-    SwaggerFormatEnum,
 )
 from apigateway.utils.yaml import yaml_dumps, yaml_loads
+
+from .constants import VALID_METHOD_IN_SWAGGER_PATHITEM, SwaggerExtensionEnum
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+def load_swagger_schema():
+    """
+    https://github.com/OAI/OpenAPI-Specification/blob/master/schemas/v2.0/schema.json
+    """
+    data = pkgutil.get_data("apigateway.biz.resource.importer", "schema.json")
+    return json.loads(data.decode("utf-8"))
+
+
+def format_as_index(indices):
+    """
+    Construct a single string containing indexing operations for the indices.
+
+    For example, [1, 2, "foo"] -> [1][2]["foo"]
+    """
+    if not indices:
+        return ""
+    return "[%s]" % "][".join(repr(index) for index in indices)
+
+
+def format_json_schema_error(error):
+    return f"{format_as_index(error.absolute_path)}: {error.message}"
+
+
 class SwaggerManager:
-    content: Dict[str, Any] = field(default_factory=dict)
+    def __init__(self, swagger_data: Dict[str, Any]):
+        self._swagger_data = swagger_data
 
     @classmethod
     def load_from_swagger(cls, swagger: str) -> "SwaggerManager":
         swagger_format = cls.guess_swagger_format(swagger)
         if swagger_format == SwaggerFormatEnum.JSON:
-            return cls(content=json.loads(swagger))
+            return cls(swagger_data=json.loads(swagger))
 
-        return cls(content=yaml_loads(swagger))
+        return cls(swagger_data=yaml_loads(swagger))
 
     @classmethod
     def guess_swagger_format(cls, swagger: str) -> SwaggerFormatEnum:
@@ -60,17 +84,17 @@ class SwaggerManager:
 
     def validate(self):
         try:
-            jsonschema.validate(instance=self.content, schema=load_swagger_schema())
+            jsonschema.validate(instance=self._swagger_data, schema=load_swagger_schema())
         except (jsonschema.ValidationError, jsonschema.SchemaError) as e:
-            raise SchemaValidationError(format_jsonschema_error(e))
+            raise SchemaValidationError(format_json_schema_error(e))
         except Exception as e:
             logger.exception("failed to validate swagger.")
             raise SchemaValidationError(str(e))
 
     def get_paths(self) -> Dict[str, Any]:
-        paths = self.content["paths"]
+        paths = self._swagger_data["paths"]
         paths = self._remove_invalid_method(paths)
-        return self._add_base_path_to_path(self.content.get("basePath", "/"), paths)
+        return self._add_base_path_to_path(self._swagger_data.get("basePath", "/"), paths)
 
     @classmethod
     def to_swagger(
@@ -144,7 +168,6 @@ class ResourceSwaggerImporter:
                     "method": method,
                     "path": path,
                 }
-                proxy_type, proxy_configs = self._adapt_backend(backend)
 
                 resource = {
                     "method": method,
@@ -156,57 +179,37 @@ class ResourceSwaggerImporter:
                     "labels": operation.get("tags", []),
                     "is_public": extension_resource.get("isPublic", True),
                     "allow_apply_permission": extension_resource.get("allowApplyPermission", True),
-                    "proxy_type": proxy_type,
-                    "proxy_configs": proxy_configs,
-                    "auth_config": AuthConfigConverter.to_inner(extension_resource.get("authConfig", {})),
-                    "disabled_stages": extension_resource.get("disabledStages", []),
+                    "auth_config": self._adapt_auth_config(extension_resource.get("authConfig", {})),
+                    "backend_name": backend.get("name", DEFAULT_BACKEND_NAME),
+                    "backend_config": self._adapt_backend(backend),
                 }
 
                 resources.append(resource)
 
         return resources
 
-    def _adapt_method(self, method):
+    def _adapt_method(self, method: str) -> str:
         """
         适配 method
         """
         if method == SwaggerExtensionEnum.METHOD_ANY.value:
             return HTTP_METHOD_ANY
+
         return method.upper()
 
-    def _adapt_backend(self, backend):
+    def _adapt_backend(self, backend: Dict) -> Dict:
         """
         适配后端配置
         """
-        proxy_type = backend["type"].lower()
-        if proxy_type == ProxyTypeEnum.HTTP.value:
-            return (
-                proxy_type,
-                {
-                    ProxyTypeEnum.HTTP.value: {
-                        "method": backend["method"].upper(),
-                        "path": backend["path"],
-                        "match_subpath": backend.get("matchSubpath", False),
-                        "timeout": backend.get("timeout", 0),
-                        "upstreams": backend.get("upstreams") or {},
-                        "transform_headers": backend.get("transformHeaders") or {},
-                    }
-                },
-            )
+        if backend.get("upstreams") or backend.get("transformHeaders"):
+            raise ValueError(_("当前版本，不支持 backend 中配置 upstreams, transformHeaders，请更新至最新版本资源 yaml 配置。"))
 
-        elif proxy_type == ProxyTypeEnum.MOCK.value:
-            return (
-                proxy_type,
-                {
-                    ProxyTypeEnum.MOCK.value: {
-                        "code": backend["statusCode"],
-                        "body": backend.get("responseBody", ""),
-                        "headers": backend.get("headers", {}),
-                    }
-                },
-            )
-
-        return None, {}
+        return {
+            "method": backend["method"].upper(),
+            "path": backend["path"],
+            "match_subpath": backend.get("matchSubpath", False),
+            "timeout": backend.get("timeout", 0),
+        }
 
     def _adapt_description(self, summary: Optional[str], description: Optional[str]):
         """与根据 swagger 协议生成资源文档保持一致"""
@@ -220,13 +223,31 @@ class ResourceSwaggerImporter:
 
         return "\n\n".join(parts)
 
+    def _adapt_auth_config(self, auth_config: dict):
+        config = {
+            "auth_verified_required": auth_config.get("userVerifiedRequired", True),
+            "app_verified_required": auth_config.get("appVerifiedRequired", True),
+            "resource_perm_required": auth_config.get("resourcePermissionRequired", True),
+        }
 
-@dataclass
+        if config["app_verified_required"] is False:
+            config["resource_perm_required"] = False
+
+        return config
+
+
 class ResourceSwaggerExporter:
-    api_version: str = "0.1"
-    include_bk_apigateway_resource: bool = True
-    title: str = "API Gateway Resources"
-    description: str = ""
+    def __init__(
+        self,
+        api_version: str = "0.2",
+        include_bk_apigateway_resource: bool = True,
+        title: str = "API Gateway Resources",
+        description: str = "",
+    ):
+        self.api_version = api_version
+        self.include_bk_apigateway_resource = include_bk_apigateway_resource
+        self.title = title
+        self.description = description
 
     def to_swagger(self, resources: list, file_type: str = "") -> str:
         content = {
@@ -243,24 +264,11 @@ class ResourceSwaggerExporter:
 
         if file_type == SwaggerFormatEnum.JSON.value:
             return json.dumps(content, indent=4)
+
         return yaml_dumps(content)
 
-    def _generate_bk_apigateway_resource(self, operation: Dict[str, Any], resource: Dict[str, Any]):
-        operation[SwaggerExtensionEnum.RESOURCE.value] = {
-            "isPublic": resource["is_public"],
-            "allowApplyPermission": resource["allow_apply_permission"],
-            "matchSubpath": resource.get("match_subpath", False),
-            "backend": self._adapt_backend(
-                resource["proxy_type"],
-                resource["proxy_configs"],
-            ),
-            "authConfig": AuthConfigConverter.to_yaml(resource["auth_config"]),
-            "disabledStages": resource["disabled_stages"],
-            "descriptionEn": resource.get("description_en"),
-        }
-
-    def _generate_paths(self, resources):
-        paths = {}
+    def _generate_paths(self, resources: List[Dict]) -> Dict[str, Any]:
+        paths: Dict[str, Any] = {}
         for resource in resources:
             path = resource["path"]
             paths.setdefault(path, {})
@@ -279,18 +287,50 @@ class ResourceSwaggerExporter:
                 self._generate_bk_apigateway_resource(operation, resource)
 
             paths[path][method] = operation
+
         return paths
 
-    def _adapt_method(self, method):
+    def _generate_bk_apigateway_resource(self, operation: Dict[str, Any], resource: Dict[str, Any]):
+        operation[SwaggerExtensionEnum.RESOURCE.value] = {
+            "isPublic": resource["is_public"],
+            "allowApplyPermission": resource["allow_apply_permission"],
+            "matchSubpath": resource.get("match_subpath", False),
+            "backend": self._adapt_backend(
+                resource.get("backend_name", ""),
+                resource.get("backend_config", {}),
+                resource.get("proxy_type", ""),
+                resource.get("proxy_configs", {}),
+            ),
+            "authConfig": self._adapt_auth_config(resource["auth_config"]),
+            "descriptionEn": resource.get("description_en"),
+        }
+
+    def _adapt_method(self, method: str) -> str:
         if method == HTTP_METHOD_ANY:
             return SwaggerExtensionEnum.METHOD_ANY.value
 
         return method.lower()
 
-    def _adapt_backend(self, proxy_type, proxy_configs):
-        backend = {
-            "type": proxy_type.upper(),
-        }
+    def _adapt_backend(self, backend_name: str, backend_config: Dict, proxy_type: str, proxy_configs: Dict) -> Dict:
+        backend = {}
+
+        if backend_name:
+            backend["name"] = backend_name
+
+        if proxy_type:
+            backend["type"] = proxy_type.upper()
+
+        if backend_config:
+            backend.update(
+                {
+                    "method": backend_config["method"].lower(),
+                    "path": backend_config["path"],
+                    "matchSubpath": backend_config.get("match_subpath", False),
+                    "timeout": backend_config.get("timeout", 0),
+                }
+            )
+            return backend
+
         if proxy_type == ProxyTypeEnum.HTTP.value:
             http_config = proxy_configs[ProxyTypeEnum.HTTP.value]
             backend.update(
@@ -303,15 +343,19 @@ class ResourceSwaggerExporter:
                     "transformHeaders": http_config.get("transform_headers", {}),
                 }
             )
-
-        elif proxy_type == ProxyTypeEnum.MOCK.value:
-            mock_config = proxy_configs[ProxyTypeEnum.MOCK.value]
-            backend.update(
-                {
-                    "statusCode": mock_config["code"],
-                    "responseBody": mock_config.get("body", ""),
-                    "headers": mock_config.get("headers", {}),
-                }
-            )
+        else:
+            raise ValueError(f"unsupported proxy_type: {proxy_type}")
 
         return backend
+
+    def _adapt_auth_config(self, auth_config: Dict) -> Dict:
+        config = {
+            "userVerifiedRequired": auth_config.get("auth_verified_required", True),
+            "appVerifiedRequired": auth_config.get("app_verified_required", True),
+            "resourcePermissionRequired": auth_config.get("resource_perm_required", True),
+        }
+
+        if config["appVerifiedRequired"] is False:
+            config["resourcePermissionRequired"] = False
+
+        return config

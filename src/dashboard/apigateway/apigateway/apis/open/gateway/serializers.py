@@ -23,22 +23,22 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
+from apigateway.apis.web.constants import UserAuthTypeEnum
+from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.validators import BKAppCodeListValidator
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
-    GATEWAY_NAME_PATTERN,
     APIHostingTypeEnum,
     GatewayStatusEnum,
     GatewayTypeEnum,
-    UserAuthTypeEnum,
 )
 from apigateway.core.models import Gateway, ReleaseHistory
 
 
 class GatewayQueryV1SLZ(serializers.Serializer):
-    user_auth_type = serializers.ChoiceField(choices=UserAuthTypeEnum.choices(), allow_blank=True, required=False)
+    user_auth_type = serializers.ChoiceField(choices=UserAuthTypeEnum.get_choices(), allow_blank=True, required=False)
     query = serializers.CharField(required=False, allow_blank=True)
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
@@ -87,7 +87,7 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         choices=[GatewayTypeEnum.OFFICIAL_API.value, GatewayTypeEnum.CLOUDS_API.value], required=False
     )
     user_auth_type = serializers.ChoiceField(
-        choices=UserAuthTypeEnum.choices(),
+        choices=UserAuthTypeEnum.get_choices(),
         default=settings.DEFAULT_USER_AUTH_TYPE,
     )
     user_config = UserConfigSLZ(required=False)

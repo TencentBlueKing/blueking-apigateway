@@ -18,29 +18,12 @@
 #
 from django.urls import path
 
-from apigateway.apis.open.released.views import ReleasedResourceViewSet
 from apigateway.apis.open.resource import views
 
 urlpatterns = [
     path(
-        "apis/<int:gateway_id>/resources/",
-        views.ResourceV1ViewSet.as_view({"get": "list", "post": "create"}),
-        name="openapi.resources",
-    ),
-    path(
-        "apis/<int:gateway_id>/resources/<int:id>/",
-        views.ResourceV1ViewSet.as_view({"delete": "destroy", "get": "retrieve"}),
-        name="openapi.resources.detail",
-    ),
-    path(
         "apis/<slug:gateway_name>/resources/sync/",
-        views.ResourceSyncV1ViewSet.as_view({"post": "sync"}),
-        name="openapi.resources.sync",
-    ),
-    # TODO: 待API帮助中心更新后，需删除此接口
-    path(
-        "apis/<int:gateway_id>/resources/released/",
-        ReleasedResourceViewSet.as_view({"get": "list"}),
-        name="openapi.resources.list_released",
+        views.ResourceSyncApi.as_view(),
+        name="openapi.resource.sync",
     ),
 ]

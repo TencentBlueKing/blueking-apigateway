@@ -35,7 +35,18 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
-from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, Resource, SslCertificate, Stage
+from apigateway.core.models import (
+    JWT,
+    APIRelatedApp,
+    Backend,
+    BackendConfig,
+    Context,
+    Gateway,
+    Release,
+    Resource,
+    SslCertificate,
+    Stage,
+)
 from apigateway.utils.dict import deep_update
 
 from .resource import ResourceHandler
@@ -188,6 +199,9 @@ class GatewayHandler:
 
         Release.objects.delete_by_gateway_id(gateway_id)
 
+        # delete backend config
+        BackendConfig.objects.filter(gateway_id=gateway_id).delete()
+
         # 3. delete stage
 
         StageHandler().delete_by_gateway_id(gateway_id)
@@ -207,6 +221,10 @@ class GatewayHandler:
         # delete ssl-certificate
 
         SslCertificate.objects.delete_by_gateway_id(gateway_id)
+
+        # delete backend
+
+        Backend.objects.filter(gateway_id=gateway_id).delete()
 
         # delete api
         Gateway.objects.filter(id=gateway_id).delete()
@@ -256,3 +274,9 @@ class GatewayHandler:
             Resource.objects.filter(api_id__in=gateway_ids).values("api_id").annotate(count=Count("api_id"))
         )
         return {i["api_id"]: i["count"] for i in resource_count}
+
+    @staticmethod
+    def get_max_resource_count(gateway_name: str):
+        return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
+            gateway_name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
+        )

@@ -15,11 +15,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from collections import defaultdict
+from typing import Dict, List
+
 from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.support.constants import DocLanguageEnum
+from apigateway.apps.support.models import ResourceDoc
 
 from .constants import EN_RESOURCE_DOC_TMPL, ZH_RESOURCE_DOC_TMPL
 
@@ -49,6 +53,34 @@ class ResourceDocHandler:
             op_object=instance_name,
             comment=comment,
         )
+
+    @staticmethod
+    def get_docs(resource_ids: List[int]) -> Dict[int, List]:
+        if not resource_ids:
+            return {}
+
+        queryset = ResourceDoc.objects.filter(resource_id__in=resource_ids).values("id", "resource_id", "language")
+
+        docs = defaultdict(list)
+        for doc in queryset:
+            docs[doc["resource_id"]].append(
+                {
+                    "id": doc["id"],
+                    "language": doc["language"],
+                }
+            )
+
+        return docs
+
+    @staticmethod
+    def get_docs_by_language(resource_ids: List[int], language: str) -> Dict[int, Dict]:
+        if not (resource_ids and language):
+            return {}
+
+        queryset = ResourceDoc.objects.filter(resource_id__in=resource_ids, language=language).values(
+            "id", "resource_id", "language"
+        )
+        return {doc["resource_id"]: {"id": doc["id"], "language": doc["language"]} for doc in queryset}
 
     @staticmethod
     def get_resource_doc_tmpl(gateway_name: str, language: str) -> str:

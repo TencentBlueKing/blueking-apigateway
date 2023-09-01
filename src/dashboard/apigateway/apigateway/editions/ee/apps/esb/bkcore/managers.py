@@ -189,23 +189,6 @@ class ComponentResourceBindingManager(models.Manager):
     def get_component_key_to_resource_id(self) -> Dict[str, int]:
         return {binding.component_key: binding.resource_id for binding in self.all()}
 
-    def sync(self, imported_resources: List[Dict[str, Any]]):
-        resource_ids = [resource["id"] for resource in imported_resources]
-
-        # 删除不存在资源的绑定关系
-        self.exclude(resource_id__in=resource_ids).delete()
-
-        for resource in imported_resources:
-            extend_data = resource["extend_data"]
-            self.update_or_create(
-                resource_id=resource["id"],
-                defaults={
-                    "component_id": extend_data.get("component_id") or 0,
-                    "component_method": extend_data["component_method"],
-                    "component_path": extend_data["component_path"],
-                },
-            )
-
 
 class ComponentReleaseHistoryManager(models.Manager):
     def get_histories(self, time_start=None, time_end=None, order_by=None) -> List[Dict[str, Any]]:

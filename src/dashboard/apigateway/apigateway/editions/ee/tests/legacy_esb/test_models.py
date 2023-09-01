@@ -294,46 +294,6 @@ class TestESBBuffetComponent:
             timeout_time=30,
         )
 
-    def test_to_resource(self, fake_buffet_component):
-        assert fake_buffet_component.to_resource() == {
-            "name": "post_echo",
-            "description": "test",
-            "method": "POST",
-            "path": "/echo/",
-            "is_public": False,
-            "allow_apply_permission": False,
-            "labels": [],
-            "proxy_type": "http",
-            "proxy_configs": {
-                "http": {
-                    "method": "POST",
-                    "path": "/echo/",
-                    "timeout": 600,
-                    "upstreams": {
-                        "loadbalance": "roundrobin",
-                        "hosts": [
-                            {
-                                "host": "http://1.1.1.1",
-                                "weight": 100,
-                            }
-                        ],
-                    },
-                    "transform_headers": {
-                        "set": {
-                            "a": "b",
-                            "Content-Type": "application/json",
-                        }
-                    },
-                },
-            },
-            "auth_config": {
-                "auth_verified_required": False,
-                "app_verified_required": False,
-                "resource_perm_required": False,
-            },
-            "disabled_stages": [],
-        }
-
     @pytest.mark.parametrize(
         "method, path, expected",
         [

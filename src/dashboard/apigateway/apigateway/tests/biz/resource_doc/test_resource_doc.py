@@ -15,6 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from ddf import G
+
+from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 
 
@@ -28,3 +31,49 @@ class TestResourceDocHandler:
 
         result = ResourceDocHandler.get_resource_doc_tmpl("bk-user", "unknown")
         assert result == ""
+
+    def test_get_docs(self, fake_resource):
+        result = ResourceDocHandler.get_docs([])
+        assert result == {}
+
+        zh_doc = G(ResourceDoc, resource_id=fake_resource.id, api=fake_resource.api, language="zh")
+        result = ResourceDocHandler.get_docs([fake_resource.id])
+        assert result == {
+            fake_resource.id: [
+                {
+                    "id": zh_doc.id,
+                    "language": "zh",
+                }
+            ]
+        }
+
+        en_doc = G(ResourceDoc, resource_id=fake_resource.id, api=fake_resource.api, language="en")
+        result = ResourceDocHandler.get_docs([fake_resource.id])
+        assert result == {
+            fake_resource.id: [
+                {
+                    "id": zh_doc.id,
+                    "language": "zh",
+                },
+                {
+                    "id": en_doc.id,
+                    "language": "en",
+                },
+            ]
+        }
+
+    def test_get_docs_by_language(self, fake_resource):
+        zh_doc = G(ResourceDoc, resource_id=fake_resource.id, api=fake_resource.api, language="zh")
+        en_doc = G(ResourceDoc, resource_id=fake_resource.id, api=fake_resource.api, language="en")
+
+        result = ResourceDocHandler.get_docs_by_language([], "en")
+        assert result == {}
+
+        result = ResourceDocHandler.get_docs_by_language([fake_resource.id], "")
+        assert result == {}
+
+        result = ResourceDocHandler.get_docs_by_language([fake_resource.id], "zh")
+        assert result == {fake_resource.id: {"id": zh_doc.id, "language": "zh"}}
+
+        result = ResourceDocHandler.get_docs_by_language([fake_resource.id], "en")
+        assert result == {fake_resource.id: {"id": en_doc.id, "language": "en"}}

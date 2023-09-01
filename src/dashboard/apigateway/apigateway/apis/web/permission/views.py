@@ -27,6 +27,7 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
     AppAPIPermission,
@@ -36,7 +37,6 @@ from apigateway.apps.permission.models import (
 )
 from apigateway.apps.permission.tasks import send_mail_for_perm_handle
 from apigateway.biz.permission import PermissionDimensionManager
-from apigateway.core.constants import ExportTypeEnum
 from apigateway.core.models import Resource
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema

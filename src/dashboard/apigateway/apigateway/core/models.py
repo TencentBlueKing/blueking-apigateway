@@ -140,16 +140,6 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     def max_stage_count(self) -> int:
         return settings.MAX_STAGE_COUNT_PER_GATEWAY
 
-    @property
-    def max_resource_count(self) -> int:
-        return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
-            self.name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
-        )
-
-    @property
-    def max_api_label_count(self) -> int:
-        return settings.MAX_API_LABEL_COUNT_PER_GATEWAY
-
 
 class Stage(TimestampedModelMixin, OperatorModelMixin):
     """
@@ -273,9 +263,11 @@ class Proxy(ConfigModelMixin):
     resource = models.ForeignKey(Resource, on_delete=models.PROTECT)
     type = models.CharField(max_length=20, choices=ProxyTypeEnum.get_choices(), blank=False, null=False)
 
+    backend = models.ForeignKey("Backend", null=True, default=None, on_delete=models.PROTECT)
+
+    # TODO: 1.14 待删除
     backend_config_type = models.CharField(max_length=32, default=BackendConfigTypeEnum.DEFAULT.value)
     backend_service = models.ForeignKey("BackendService", on_delete=models.SET_NULL, null=True, default=None)
-
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
     # config = from ConfigModelMixin
 

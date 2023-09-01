@@ -34,8 +34,10 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyle
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.apps.support.models import APISDK, ResourceDoc
 from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import GatewayAuthContext
+from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import (
     APIHostingTypeEnum,
     ProxyTypeEnum,
@@ -47,6 +49,7 @@ from apigateway.core.models import (
     BackendConfig,
     Gateway,
     MicroGateway,
+    Proxy,
     PublishEvent,
     Release,
     ReleasedResource,
@@ -190,7 +193,7 @@ def fake_backend(fake_gateway, fake_stage, faker):
 
 
 @pytest.fixture
-def fake_resource(faker, fake_gateway):
+def fake_resource(faker, fake_gateway, fake_backend):
     resource = G(
         Resource,
         api=fake_gateway,
@@ -198,7 +201,7 @@ def fake_resource(faker, fake_gateway):
         method=faker.http_method(),
         path=faker.uri_path(),
     )
-    ResourceHandler().save_auth_config(
+    ResourceHandler.save_auth_config(
         resource.id,
         {
             "skip_auth_verification": False,
@@ -207,21 +210,22 @@ def fake_resource(faker, fake_gateway):
             "resource_perm_required": True,
         },
     )
-    ResourceHandler().save_proxy_config(
-        resource,
-        ProxyTypeEnum.HTTP.value,
-        {
-            "method": faker.http_method(),
-            "path": faker.uri_path(),
-            "match_subpath": False,
-            "timeout": faker.random_int(),
-            "upstreams": {
-                "loadbalance": "roundrobin",
-                "hosts": [{"host": f"http://{faker.domain_name()}", "weight": 100}],
-            },
-            "transform_headers": {},
-        },
+    G(
+        Proxy,
+        type=ProxyTypeEnum.HTTP.value,
+        resource=resource,
+        backend=fake_backend,
+        _config=json.dumps(
+            {
+                "method": faker.http_method(),
+                "path": faker.uri_path(),
+                "match_subpath": False,
+                "timeout": faker.random_int(),
+            }
+        ),
+        schema=SchemaFactory().get_proxy_schema(ProxyTypeEnum.HTTP.value),
     )
+
     return resource
 
 
@@ -231,7 +235,8 @@ def fake_resource1(faker, fake_resource):
     resource.pk = None
     resource.name = faker.bothify("?????")
     resource.save()
-    ResourceHandler().save_auth_config(
+
+    ResourceHandler.save_auth_config(
         resource.id,
         {
             "skip_auth_verification": False,
@@ -240,6 +245,12 @@ def fake_resource1(faker, fake_resource):
             "resource_perm_required": True,
         },
     )
+
+    proxy = deepcopy(Proxy.objects.get(resource_id=fake_resource.id))
+    proxy.pk = None
+    proxy.resource = resource
+    proxy.save()
+
     return resource
 
 
@@ -249,7 +260,14 @@ def fake_resource2(faker, fake_resource):
     resource.pk = None
     resource.name = faker.bothify("?????")
     resource.save()
-    ResourceHandler().save_auth_config(resource.id, {})
+
+    ResourceHandler.save_auth_config(resource.id, {})
+
+    proxy = deepcopy(Proxy.objects.get(resource_id=fake_resource.id))
+    proxy.pk = None
+    proxy.resource = resource
+    proxy.save()
+
     return resource
 
 
@@ -833,4 +851,54 @@ def fake_resource_doc(faker, fake_resource):
         language=faker.random_element(
             ["en", "zh"],
         ),
+    )
+
+
+@pytest.fixture
+def fake_resource_swagger():
+    return json.dumps(
+        {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {
+                "version": "1.0.0",
+                "title": "API Gateway Swagger",
+            },
+            "schemes": ["http"],
+            "paths": {
+                "/http/get/mapping/{userId}": {
+                    "get": {
+                        "operationId": "http_get_mapping_user_id",
+                        "description": "test",
+                        "tags": ["pet"],
+                        "schemes": ["http"],
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "allowApplyPermission": True,
+                            "matchSubpath": True,
+                            "backend": {
+                                "name": "default",
+                                "path": "/hello/",
+                                "method": "get",
+                                "matchSubpath": True,
+                                "timeout": 30,
+                            },
+                        },
+                    },
+                }
+            },
+        }
+    )
+
+
+@pytest.fixture
+def fake_resource_data(faker):
+    return ResourceData(
+        resource=None,
+        name=faker.pystr(),
+        description=faker.pystr(),
+        method="GET",
+        path=faker.pystr(),
+        auth_config=ResourceAuthConfig(),
+        backend_config=ResourceBackendConfig(method="GET", path=faker.pystr()),
     )

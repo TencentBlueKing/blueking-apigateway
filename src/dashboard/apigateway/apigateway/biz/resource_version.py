@@ -47,7 +47,7 @@ class ResourceVersionHandler:
         resource_queryset = Resource.objects.filter(api_id=gateway.id).all()
         resource_ids = list(resource_queryset.values_list("id", flat=True))
 
-        proxy_map = Proxy.objects.filter_id_snapshot_map(resource_ids)
+        proxy_map = Proxy.objects.get_resource_id_to_snapshot(resource_ids)
 
         context_map = Context.objects.filter_id_type_snapshot_map(
             scope_type=ContextScopeTypeEnum.RESOURCE.value,
@@ -65,7 +65,7 @@ class ResourceVersionHandler:
         }
 
         return [
-            ResourceHandler().snapshot(
+            ResourceHandler.snapshot(
                 r,
                 as_dict=True,
                 proxy_map=proxy_map,
@@ -101,7 +101,6 @@ class ResourceVersionHandler:
 
     @staticmethod
     def delete_by_gateway_id(gateway_id: int):
-
         # delete api release
         Release.objects.delete_by_gateway_id(gateway_id)
 
@@ -217,3 +216,7 @@ class ResourceVersionHandler:
             now_str=time_utils.format(now, fmt="YYYYMMDDHHmmss"),
             random_str=random_string(5),
         )
+
+    @staticmethod
+    def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:
+        return ResourceVersion.objects.filter(gateway_id=gateway_id).values_list("created_time", flat=True).last()

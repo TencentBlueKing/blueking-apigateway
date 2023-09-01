@@ -30,7 +30,7 @@ from django.utils.encoding import force_bytes
 
 from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.permission.constants import PermissionLevelEnum
-from apigateway.core.constants import HTTP_METHOD_ANY, LoadBalanceTypeEnum, ProxyTypeEnum
+from apigateway.core.constants import HTTP_METHOD_ANY
 from apigateway.legacy_esb.constants import BK_SYSTEMS, SystemDocCategoryEnum
 from apigateway.legacy_esb.managers import SystemDocCategoryManager
 
@@ -357,43 +357,6 @@ class ESBBuffetComponent(models.Model):
 
     class Meta:
         db_table = "esb_buffet_component"
-
-    def to_resource(self):
-        return {
-            "name": self._name,
-            "description": self.description,
-            "method": self._convert_method(self.registed_http_method),
-            "path": self.registed_path,
-            "is_public": False,
-            "allow_apply_permission": False,
-            "labels": [],
-            "proxy_type": ProxyTypeEnum.HTTP.value,
-            "proxy_configs": {
-                ProxyTypeEnum.HTTP.value: {
-                    "method": self._convert_method(self.dest_http_method),
-                    "path": self._backend_path,
-                    "timeout": min(self._timeout, _MAX_APIGATEWAY_TIMEOUT),
-                    "upstreams": {
-                        "loadbalance": LoadBalanceTypeEnum.RR.value,
-                        "hosts": [
-                            {
-                                "host": self._backend_host,
-                                "weight": 100,
-                            }
-                        ],
-                    },
-                    "transform_headers": {
-                        "set": self._enrich_extra_headers(),
-                    },
-                }
-            },
-            "auth_config": {
-                "auth_verified_required": False,
-                "app_verified_required": False,
-                "resource_perm_required": False,
-            },
-            "disabled_stages": [],
-        }
 
     @property
     def _name(self) -> str:

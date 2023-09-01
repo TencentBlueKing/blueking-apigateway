@@ -69,16 +69,12 @@ class TestComponent:
                     "name": "demo_echo",
                     "description": "test",
                     "is_public": False,
-                    "proxy_type": "http",
-                    "proxy_configs": {
-                        "http": {
-                            "method": "GET",
-                            "path": "/backend/echo/",
-                            "match_subpath": False,
-                            "timeout": 0,
-                            "upstreams": {},
-                            "transform_headers": {},
-                        }
+                    "backend_name": "default",
+                    "backend_config": {
+                        "method": "GET",
+                        "path": "/backend/echo/",
+                        "match_subpath": False,
+                        "timeout": 0,
                     },
                     "auth_config": {
                         "app_verified_required": False,
@@ -87,8 +83,7 @@ class TestComponent:
                     },
                     "allow_apply_permission": False,
                     "labels": ["DEMO"],
-                    "disabled_stages": [],
-                    "extend_data": {
+                    "metadata": {
                         "system_name": "DEMO",
                         "component_id": None,
                         "component_name": "echo",
@@ -204,16 +199,12 @@ class TestComponentConvertor:
                         "name": "demo_echo",
                         "description": "test",
                         "is_public": False,
-                        "proxy_type": "http",
-                        "proxy_configs": {
-                            "http": {
-                                "method": "GET",
-                                "path": "/backend/echo/",
-                                "match_subpath": False,
-                                "timeout": 0,
-                                "upstreams": {},
-                                "transform_headers": {},
-                            }
+                        "backend_name": "default",
+                        "backend_config": {
+                            "method": "GET",
+                            "path": "/backend/echo/",
+                            "match_subpath": False,
+                            "timeout": 0,
                         },
                         "auth_config": {
                             "app_verified_required": False,
@@ -222,8 +213,7 @@ class TestComponentConvertor:
                         },
                         "allow_apply_permission": False,
                         "labels": ["DEMO"],
-                        "disabled_stages": [],
-                        "extend_data": {
+                        "metadata": {
                             "system_name": "DEMO",
                             "component_id": None,
                             "component_name": "echo",

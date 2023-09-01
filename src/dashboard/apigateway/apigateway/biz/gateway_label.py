@@ -15,10 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import List
+
 from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
+from apigateway.apps.label.models import APILabel
+from apigateway.core.models import Gateway
 
 
 class GatewayLabelHandler:
@@ -46,3 +50,15 @@ class GatewayLabelHandler:
             op_object=instance_name,
             comment=comment,
         )
+
+    @staticmethod
+    def save_labels(gateway: Gateway, names: List[str], username: str = ""):
+        exist_names = APILabel.objects.filter(api=gateway).values_list("name", flat=True)
+        need_create_names = set(names) - set(exist_names)
+        if not need_create_names:
+            return
+
+        labels = [
+            APILabel(api=gateway, name=name, created_by=username, updated_by=username) for name in need_create_names
+        ]
+        APILabel.objects.bulk_create(labels, batch_size=100)

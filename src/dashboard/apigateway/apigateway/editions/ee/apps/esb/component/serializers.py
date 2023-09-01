@@ -192,12 +192,12 @@ class ESBChannelBatchSLZ(serializers.Serializer):
 class ComponentResourceBindingSLZ(serializers.Serializer):
     resource_id = serializers.IntegerField(source="id", read_only=True)
     resource_name = serializers.CharField(source="name", read_only=True)
-    system_name = serializers.CharField(source="extend_data.system_name", read_only=True)
-    component_id = serializers.IntegerField(source="extend_data.component_id", read_only=True)
-    component_name = serializers.CharField(source="extend_data.component_name", read_only=True)
-    component_method = serializers.CharField(source="extend_data.component_method", read_only=True)
-    component_path = serializers.CharField(source="extend_data.component_path", read_only=True)
-    component_permission_level = serializers.CharField(source="extend_data.component_permission_level", read_only=True)
+    system_name = serializers.CharField(source="metadata.system_name", read_only=True)
+    component_id = serializers.IntegerField(source="metadata.component_id", read_only=True)
+    component_name = serializers.CharField(source="metadata.component_name", read_only=True)
+    component_method = serializers.CharField(source="metadata.component_method", read_only=True)
+    component_path = serializers.CharField(source="metadata.component_path", read_only=True)
+    component_permission_level = serializers.CharField(source="metadata.component_permission_level", read_only=True)
 
 
 class QueryComponentReleaseHistorySLZ(serializers.Serializer):

@@ -61,7 +61,8 @@ class TestGatewayHandler:
             ]
         }
 
-        result = GatewayHandler().get_stages_with_release_status([fake_gateway.id])
+        result = GatewayHandler.get_stages_with_release_status([fake_gateway.id])
+        result[fake_gateway.id] = sorted(result[fake_gateway.id], key=lambda x: x["id"])
         assert result == expected
 
     @pytest.mark.parametrize(
@@ -224,7 +225,7 @@ class TestGatewayHandler:
         assert AlarmStrategy.objects.filter(api=fake_gateway).exists()
         assert APIRelatedApp.objects.filter(api=fake_gateway, bk_app_code="test").exists()
 
-    def test_delete_api(
+    def test_delete_gateway(
         self,
         fake_gateway,
         fake_stage,
@@ -236,7 +237,7 @@ class TestGatewayHandler:
         echo_plugin_resource_binding,
         fake_ssl_certificate,
     ):
-        GatewayHandler().delete_gateway(gateway_id=fake_gateway.pk)
+        GatewayHandler.delete_gateway(gateway_id=fake_gateway.pk)
 
         for model in [
             fake_stage,
@@ -296,3 +297,23 @@ class TestGatewayHandler:
         for test in data:
             result = GatewayHandler.get_resource_count(test["gateway_ids"])
             assert result == test["expected"]
+
+    @pytest.mark.parametrize(
+        "gateway_name, expected",
+        [
+            ("app1", 30),
+            ("app2", 50),
+            ("app3", 20),
+        ],
+    )
+    def test_get_max_resource_count(self, settings, gateway_name, expected):
+        settings.API_GATEWAY_RESOURCE_LIMITS = {
+            "max_resource_count_per_gateway": 20,
+            "max_resource_count_per_gateway_whitelist": {
+                "app1": 30,
+                "app2": 50,
+            },
+        }
+
+        result = GatewayHandler.get_max_resource_count(gateway_name)
+        assert result == expected

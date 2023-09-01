@@ -16,13 +16,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
 import datetime
+import re
 from typing import Optional
 
 from rest_framework import serializers
 
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
-from apigateway.core.constants import DURATION_IN_SECOND_PATTERN
 from apigateway.utils.time import timestamp, utctime
 
 
@@ -50,6 +51,10 @@ class TimestampField(serializers.IntegerField):
 
         assert isinstance(value, datetime.datetime), "Only accept datetime"
         return timestamp(value)
+
+
+# 单位为秒的持续时间
+DURATION_IN_SECOND_PATTERN = re.compile(r"^(\d+)s$")
 
 
 class DurationInSecondField(serializers.IntegerField):
