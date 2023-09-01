@@ -62,16 +62,11 @@ class SDKHelper:
     def create_context(
         self,
         language: str,
-        include_private_resources: bool,
-        is_public: bool,
         version: str,
-        operator: Optional[str],
     ) -> SDKContext:
         resource_version = self.resource_version
         manager = SDKManagerFactory.create(
             language,
-            include_private_resources=include_private_resources,
-            is_public=is_public,
             version=version,
         )
         return manager.handle(self.output_dir, resource_version)
@@ -79,17 +74,12 @@ class SDKHelper:
     def create(
         self,
         language: str,
-        include_private_resources: bool,
-        is_public: bool,
         version: str,
         operator: Optional[str],
     ) -> SDKInfo:
         context = self.create_context(
             language=language,
-            include_private_resources=include_private_resources,
-            is_public=is_public,
             version=version,
-            operator=operator,
         )
 
         now = time_utils.now_datetime()
@@ -102,15 +92,13 @@ class SDKHelper:
             name=context.name,
             url=context.url,
             schema=SchemaFactory().get_api_sdk_schema(),
-            include_private_resources=include_private_resources,
-            is_public=context.is_public and context.is_distributed,
             config=context.config,
             created_time=now,
             updated_time=now,
             created_by=operator,
         )
 
-        if instance.is_public and context.is_latest:
+        if context.is_latest:
             instance.mark_is_recommended()
 
         return SDKInfo(context=context, sdk=instance)

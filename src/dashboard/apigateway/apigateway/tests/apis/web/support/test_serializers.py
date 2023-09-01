@@ -59,13 +59,10 @@ class TestSDKListOutputSLZ:
                 "created_time": dummy_time.str,
                 "updated_time": dummy_time.str,
                 "download_url": "http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
-                "include_private_resources": sdk_1.include_private_resources,
                 "is_uploaded_to_pypi": True,
                 "resource_version_id": resource_version.id,
                 "resource_version_name": resource_version.name,
                 "resource_version_title": resource_version.title,
                 "resource_version_display": "1.0.1(test)",
-                "is_public": False,
-                "is_recommended": False,
             },
         ]

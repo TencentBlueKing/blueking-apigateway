@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 
 import pytest
 from ddf import G
@@ -26,7 +25,6 @@ from apigateway.apps.support.models import (
     ReleasedResourceDoc,
     ResourceDoc,
     ResourceDocSwagger,
-    ResourceDocVersion,
 )
 from apigateway.core.models import Gateway, Resource, ResourceVersion
 from apigateway.tests.utils.testing import create_gateway
@@ -220,43 +218,3 @@ class TestReleasedResourceDocManager:
             fake_resource1.id,
         )
         assert result == {"zh": "1970-10-10 12:10:20"}
-
-
-class TestResourceDocVersionManager:
-    def test_get_doc_data_by_rv_or_new(self, fake_gateway):
-        resource = G(Resource, api=fake_gateway)
-        rv = G(ResourceVersion, gateway=fake_gateway)
-
-        G(ResourceDoc, api=fake_gateway, resource_id=resource.id)
-        G(
-            ResourceDocVersion,
-            gateway=fake_gateway,
-            resource_version=rv,
-            _data=json.dumps([{"resource_id": 1, "language": "zh", "content": "test"}]),
-        )
-
-        # new resource-doc-version
-        result = ResourceDocVersion.objects.get_doc_data_by_rv_or_new(fake_gateway.id, None)
-        assert len(result) == 1
-
-        # resource_version_id not exist
-        result = ResourceDocVersion.objects.get_doc_data_by_rv_or_new(fake_gateway.id, rv.id + 1)
-        assert result == []
-
-        # resource_version_id exist
-        result = ResourceDocVersion.objects.get_doc_data_by_rv_or_new(fake_gateway.id, rv.id)
-        assert result == [{"resource_id": 1, "language": "zh", "content": "test"}]
-
-    def test_get_doc_updated_time(self, fake_gateway):
-        rv = G(ResourceVersion, gateway=fake_gateway)
-        G(
-            ResourceDocVersion,
-            gateway=fake_gateway,
-            resource_version=rv,
-            _data=json.dumps(
-                [{"resource_id": 1, "language": "zh", "content": "test", "updated_time": "1970-10-10 12:10:20"}]
-            ),
-        )
-
-        result = ResourceDocVersion.objects.get_doc_updated_time(fake_gateway.id, rv.id)
-        assert result == {1: {"zh": "1970-10-10 12:10:20"}}

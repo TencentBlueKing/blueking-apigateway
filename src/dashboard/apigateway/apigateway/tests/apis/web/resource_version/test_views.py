@@ -23,26 +23,12 @@ import operator
 from django_dynamic_fixture import G
 
 from apigateway.apps.support.models import APISDK, ResourceDoc, ResourceDocVersion
-from apigateway.biz.resource import ResourceHandler
 from apigateway.core.models import Release, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time
 
 
 class TestResourceVersionListCreateApi:
     def test_create(self, request_view, fake_gateway, fake_resource1):
-        ResourceHandler().save_related_data(
-            fake_gateway,
-            fake_resource1,
-            proxy_type="mock",
-            proxy_config={
-                "code": 200,
-                "body": "test",
-                "headers": {},
-            },
-            auth_config={"auth_verified_required": True},
-            label_ids=[],
-            disabled_stage_ids=[],
-        )
 
         data = {
             "comment": "test",
@@ -55,7 +41,7 @@ class TestResourceVersionListCreateApi:
             path_params={"gateway_id": fake_gateway.id},
             data=data,
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 201
         assert ResourceVersion.objects.filter(gateway=fake_gateway).count() > 0
 
     def test_list(self, request_view, fake_gateway):

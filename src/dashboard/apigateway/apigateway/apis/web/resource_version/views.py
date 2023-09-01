@@ -96,7 +96,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
                 data=ResourceDocVersion.objects.make_version(request.gateway.id),
             )
 
-        return OKJsonResponse(data={"id": instance.id})
+        return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 
 class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
@@ -104,7 +104,7 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
     lookup_field = "id"
 
     def get_queryset(self):
-        return ResourceVersion.objects.filter(gateway=self.request.gateway).order_by("-id")
+        return ResourceVersion.objects.filter(gateway=self.request.gateway)
 
     @method_decorator(
         name="get",
@@ -117,9 +117,9 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
         data = slz.data
 
         # 补充资源文档的更新时间
-        resource_doc_updated_time = ResourceDocVersion.objects.get_doc_updated_time(request.gateway.id, instance.id)
+        resource_docs_updated_time = ResourceDocVersion.objects.get_doc_updated_time(request.gateway.id, instance.id)
         for item in data["data"]:
-            item["doc_updated_time"] = resource_doc_updated_time.get(item["id"], {})
+            item["doc_updated_time"] = resource_docs_updated_time.get(item["id"], {})
 
         return OKJsonResponse(data=data)
 
@@ -155,7 +155,7 @@ class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
 
 class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
     def get_queryset(self):
-        return ResourceVersion.objects.filter(gateway=self.request.gateway).order_by("-id")
+        return ResourceVersion.objects.filter(gateway=self.request.gateway)
 
     @method_decorator(
         name="get",

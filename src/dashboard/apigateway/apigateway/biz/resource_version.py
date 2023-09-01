@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from django.utils.translation import gettext as _
@@ -25,6 +26,8 @@ from rest_framework import serializers
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import ResourceLabel
+from apigateway.apps.support.constants import DocLanguageEnum
+from apigateway.apps.support.models import ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.core.constants import ContextScopeTypeEnum
 from apigateway.core.models import (
@@ -107,14 +110,14 @@ class ResourceVersionHandler:
         # delete resource version
         ResourceVersion.objects.filter(gateway_id=gateway_id).delete()
 
-    @staticmethod
-    def create_resource_version(gateway: Gateway, data: Dict[str, Any], username: str = "") -> ResourceVersion:
+    @classmethod
+    def create_resource_version(cls, gateway: Gateway, data: Dict[str, Any], username: str = "") -> ResourceVersion:
         # validata data
-        ResourceVersionHandler._validata_resource_version_data(gateway, data.get("version", ""))
+        cls._validata_resource_version_data(gateway, data.get("version", ""))
 
         now = time_utils.now_datetime()
 
-        # created_time：与版本名中时间保持一致，方便SDK使用此时间作为版本号
+        # todo: name是否直接可以去掉？ created_time：与版本名中时间保持一致，方便SDK使用此时间作为版本号
         name = ResourceVersionHandler.generate_version_name(gateway.name, now)
         data.update(
             {
@@ -144,8 +147,7 @@ class ResourceVersionHandler:
             return
 
         # ResourceVersion 中数据量较大，因此，不使用 UniqueTogetherValidator
-        queryset = ResourceVersion.objects.filter(gateway=gateway, version=version)
-        if queryset.exists():
+        if ResourceVersion.objects.filter(gateway=gateway, version=version).exists():
             raise serializers.ValidationError(_("版本 {version} 已存在。").format(version=version))
         return
 
@@ -220,3 +222,61 @@ class ResourceVersionHandler:
     @staticmethod
     def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:
         return ResourceVersion.objects.filter(gateway_id=gateway_id).values_list("created_time", flat=True).last()
+
+
+class ResourceDocVersionHandler:
+    @staticmethod
+    def get_doc_data_by_rv_or_new(gateway_id: int, resource_version_id: Optional[int]) -> List[Any]:
+        """获取版本中文档内容"""
+        if resource_version_id:
+            try:
+                return ResourceDocVersion.objects.get(
+                    gateway_id=gateway_id, resource_version_id=resource_version_id
+                ).data
+            except ResourceDocVersion.DoesNotExist:
+                return []
+
+        return ResourceDocVersion.objects.make_version(gateway_id)
+
+    @staticmethod
+    def get_doc_updated_time(gateway_id: int, resource_version_id: Optional[int]):
+        """获取文档更新时间
+
+        @return:
+        {
+            1: {
+                "zh": "1970-01-01 12:30:50 +8000",
+                "en": "1970-01-01 12:30:50 +8000"
+            }
+        }
+        """
+        doc_data = ResourceDocVersionHandler.get_doc_data_by_rv_or_new(gateway_id, resource_version_id)
+
+        result: Dict[int, Dict[str, Any]] = defaultdict(dict)
+        for doc in doc_data:
+            language = doc.get("language", DocLanguageEnum.ZH.value)
+            result[doc["resource_id"]][language] = doc["updated_time"]
+
+        return result
+
+    @staticmethod
+    def need_new_version(gateway_id):
+        """
+        是否需要创建新的资源文档版本
+        """
+        from apigateway.apps.support.models import ResourceDoc
+
+        latest_version = ResourceDocVersion.objects.get_latest_version(gateway_id)
+        latest_resource_doc = ResourceDoc.objects.get_latest_resource_doc(gateway_id)
+
+        if not (latest_version or latest_resource_doc):
+            return False
+
+        if not latest_version:
+            return True
+
+        if latest_resource_doc and latest_resource_doc.updated_time > latest_version.created_time:
+            return True
+
+        # 文档不可直接删除，资源删除导致的文档删除，在判断“是否需要创建资源版本”时校验
+        return False

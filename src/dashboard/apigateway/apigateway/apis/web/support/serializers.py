@@ -29,8 +29,6 @@ class APISDKGenerateInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     resource_version_id = serializers.IntegerField(required=True)
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
-    include_private_resources = serializers.BooleanField(label="包含非公开资源")
-    is_public = serializers.BooleanField(label="是否为公开", default=None)
     version = serializers.CharField(
         label="版本",
         default="",
@@ -80,9 +78,6 @@ class SDKListOutputSLZ(serializers.Serializer):
     resource_version_display = serializers.CharField(source="instance.resource_version.object_display")
     language = serializers.CharField(source="language.value")
     version_number = serializers.CharField(source="instance.version_number")
-    include_private_resources = serializers.BooleanField(source="instance.include_private_resources")
-    is_public = serializers.BooleanField(source="instance.is_public")
-    is_recommended = serializers.BooleanField(source="instance.is_recommended")
     created_time = serializers.DateTimeField(source="instance.created_time")
     updated_time = serializers.DateTimeField(source="instance.updated_time")
     config = serializers.DictField()

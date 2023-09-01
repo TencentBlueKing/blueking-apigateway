@@ -32,7 +32,7 @@ from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import APISDK
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
-from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
+from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
@@ -54,9 +54,7 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 class APISDKListCreateApi(generics.ListCreateAPIView):
     serializer_class = serializers.SDKListOutputSLZ
     lookup_field = "id"
-    queryset = APISDK.objects.all()
 
-    @swagger_auto_schema()
     def list(self, request, *args, **kwargs):
         slz = serializers.APISDKQueryInputSLZ(data=request.query_params, context={"request": request})
         slz.is_valid(raise_exception=True)
@@ -91,20 +89,15 @@ class APISDKListCreateApi(generics.ListCreateAPIView):
 
         data = cast(Dict[str, Any], slz.validated_data)
         resource_version = get_object_or_404(ResourceVersion, gateway=request.gateway, id=data["resource_version_id"])
-        include_private_resources = data["include_private_resources"]
 
         with SDKHelper(resource_version=resource_version) as helper:
             try:
                 info = helper.create(
                     data["language"],
-                    include_private_resources=include_private_resources,
-                    is_public=data["is_public"],
                     version=data["version"],
                     operator=self.request.user.username,
                 )
             except exceptions.ResourcesIsEmpty:
-                if include_private_resources:
-                    raise error_codes.INTERNAL.format(_("网关下无资源（请求方法非 ANY），无法生成 SDK。"), replace=True)
                 raise error_codes.INTERNAL.format(_("网关下无资源（公开，且请求方法非 ANY），无法生成 SDK。"), replace=True)
             except exceptions.GenerateError:
                 raise error_codes.INTERNAL.format(_("网关 SDK 生成失败。"), replace=True)
@@ -119,10 +112,10 @@ class APISDKListCreateApi(generics.ListCreateAPIView):
                 )
 
             # 非公开 SDK，直接进行下载
-            if not info.context.is_public:
-                packaged_files = info.get_packaged_files()
-                file_name, file_path = next(iter(packaged_files.items()))
-                return DownloadableResponse(open(file_path, "rb"), filename=file_name)
+            # if not info.context.is_public:
+            #     packaged_files = info.get_packaged_files()
+            #     file_name, file_path = next(iter(packaged_files.items()))
+            #     return DownloadableResponse(open(file_path, "rb"), filename=file_name)
 
         slz = self.get_serializer(SDKFactory.create(info.sdk))
         return OKJsonResponse(data=slz.data)

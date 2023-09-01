@@ -80,14 +80,11 @@ class TestAPISDKListCreateApi:
                             "created_time": dummy_time.str,
                             "updated_time": dummy_time.str,
                             "download_url": "",
-                            "include_private_resources": sdk_2.include_private_resources,
                             "is_uploaded_to_pypi": False,
                             "resource_version_id": resource_version.id,
                             "resource_version_name": resource_version.name,
                             "resource_version_title": resource_version.title,
                             "resource_version_display": "1.0.1(test)",
-                            "is_public": False,
-                            "is_recommended": False,
                         },
                         {
                             "config": {"is_uploaded_to_pypi": True},
@@ -98,14 +95,11 @@ class TestAPISDKListCreateApi:
                             "created_time": dummy_time.str,
                             "updated_time": dummy_time.str,
                             "download_url": "http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
-                            "include_private_resources": sdk_1.include_private_resources,
                             "is_uploaded_to_pypi": True,
                             "resource_version_id": resource_version.id,
                             "resource_version_name": resource_version.name,
                             "resource_version_title": resource_version.title,
                             "resource_version_display": "1.0.1(test)",
-                            "is_public": False,
-                            "is_recommended": False,
                         },
                     ],
                 },
@@ -136,7 +130,6 @@ class TestAPISDKListCreateApi:
                 language=ProgrammingLanguageEnum.PYTHON,
                 version="2",
                 config={"python": {"is_uploaded_to_pypi": True}},
-                is_public=True,
                 is_latest=True,
                 is_distributed=True,
                 files=[f"bkapigw-{fake_gateway.name}-2.tar.gz"],
@@ -154,7 +147,6 @@ class TestAPISDKListCreateApi:
                 },
                 "expected": {
                     "name": f"bkapigw-{fake_gateway.name}",
-                    "include_private_resources": False,
                     "is_uploaded_to_pypi": True,
                     "language": "python",
                     "version_number": "2",
@@ -176,7 +168,6 @@ class TestAPISDKListCreateApi:
 
             result = resp.json()
             assert result["data"]["name"] == test["expected"]["name"]
-            assert result["data"]["include_private_resources"] == test["expected"]["include_private_resources"]
             assert result["data"]["is_uploaded_to_pypi"] == test["expected"]["is_uploaded_to_pypi"]
             assert result["data"]["language"] == test["expected"]["language"]
             assert result["data"]["resource_version_id"] == test["expected"]["resource_version_id"]

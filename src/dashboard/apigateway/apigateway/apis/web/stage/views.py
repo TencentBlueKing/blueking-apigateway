@@ -112,7 +112,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
         serializer = StageOutputSLZ(
             instance,
             context={
-                "stage_release": ReleasedResourceDataHandler().get_stage_release(
+                "stage_release": ReleasedResourceDataHandler.get_stage_release(
                     gateway=request.gateway, stage_ids=[instance.id]
                 ),
                 # TODO 获取各个环境的发布状态与publish_id
