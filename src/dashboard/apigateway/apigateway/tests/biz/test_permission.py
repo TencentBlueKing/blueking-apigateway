@@ -77,7 +77,7 @@ class TestAPIPermissionDimensionManager:
         return G(
             AppPermissionApply,
             bk_app_code="test",
-            api=fake_gateway,
+            gateway=fake_gateway,
             _resource_ids="",
             grant_dimension="api",
             status=ApplyStatusEnum.PENDING.value,
@@ -88,7 +88,7 @@ class TestAPIPermissionDimensionManager:
             AppPermissionApplyStatus,
             apply=fake_apply,
             bk_app_code=fake_apply.bk_app_code,
-            api=fake_apply.api,
+            gateway=fake_apply.gateway,
             resource=None,
             grant_dimension=GrantDimensionEnum.API.value,
             status=ApplyStatusEnum.PENDING.value,
@@ -99,7 +99,7 @@ class TestAPIPermissionDimensionManager:
         apply = self._make_fake_apply(fake_gateway)
         self._make_fake_apply_status(apply)
         record = APIPermissionDimensionManager().handle_permission_apply(
-            gateway=apply.api,
+            gateway=apply.gateway,
             apply=apply,
             status=ApplyStatusEnum.APPROVED.value,
             comment="",
@@ -107,8 +107,8 @@ class TestAPIPermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
-        assert AppAPIPermission.objects.filter(api=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
-        assert AppPermissionApplyStatus.objects.filter(api=fake_gateway).count() == 0
+        assert AppAPIPermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
+        assert AppPermissionApplyStatus.objects.filter(gateway=fake_gateway).count() == 0
 
     def test_handle_permission_apply_rejected(self, fake_gateway):
         # 审批拒绝
@@ -124,8 +124,8 @@ class TestAPIPermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
-        assert AppAPIPermission.objects.filter(api=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
-        assert AppPermissionApplyStatus.objects.filter(api=fake_gateway).count() == 0
+        assert AppAPIPermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
+        assert AppPermissionApplyStatus.objects.filter(gateway=fake_gateway).count() == 0
 
     def test_save_permission_apply_status(self, fake_gateway):
         apply = self._make_fake_apply(fake_gateway)
@@ -144,7 +144,7 @@ class TestAPIPermissionDimensionManager:
                 bk_app_code=apply.bk_app_code,
                 apply=apply,
                 status=ApplyStatusEnum.PENDING.value,
-                api=fake_gateway,
+                gateway=fake_gateway,
                 resource=None,
             ).count()
             == 1
@@ -163,7 +163,7 @@ class TestAPIPermissionDimensionManager:
                 bk_app_code=apply.bk_app_code,
                 apply=apply,
                 status=ApplyStatusEnum.REJECTED.value,
-                api=fake_gateway,
+                gateway=fake_gateway,
                 resource=None,
             ).count()
             == 1
@@ -176,7 +176,7 @@ class TestAPIPermissionDimensionManager:
         # 权限申请中
         record = G(
             AppPermissionApplyStatus,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code=target_app_code,
             grant_dimension="api",
             status="pending",
@@ -191,7 +191,7 @@ class TestAPIPermissionDimensionManager:
         assert result is True
 
         # 已拥有权限，权限永久有效
-        G(AppAPIPermission, api=fake_gateway, bk_app_code=target_app_code, expires=None)
+        G(AppAPIPermission, gateway=fake_gateway, bk_app_code=target_app_code, expires=None)
         result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code)
         assert result is False
 
@@ -212,7 +212,7 @@ class TestResourcePermissionDimensionManager:
         return G(
             AppPermissionApply,
             bk_app_code="test",
-            api=fake_gateway,
+            gateway=fake_gateway,
             _resource_ids=f"{r1.id};{r2.id}",
             grant_dimension=GrantDimensionEnum.RESOURCE.value,
             status=ApplyStatusEnum.PENDING.value,
@@ -224,7 +224,7 @@ class TestResourcePermissionDimensionManager:
                 AppPermissionApplyStatus,
                 apply=fake_apply,
                 bk_app_code=fake_apply.bk_app_code,
-                api=fake_apply.api,
+                gateway=fake_apply.gateway,
                 resource=resource,
                 grant_dimension=GrantDimensionEnum.RESOURCE.value,
                 status=ApplyStatusEnum.PENDING.value,
@@ -244,8 +244,10 @@ class TestResourcePermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
-        assert AppResourcePermission.objects.filter(api=fake_gateway, bk_app_code=apply.bk_app_code).count() == 2
-        assert AppPermissionApplyStatus.objects.filter(api=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
+        assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 2
+        assert (
+            AppPermissionApplyStatus.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
+        )
 
     def test_handle_permission_apply_rejected(self, fake_gateway):
         # 审批拒绝，全部拒绝
@@ -261,10 +263,10 @@ class TestResourcePermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
-        assert AppResourcePermission.objects.filter(api=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
+        assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
         assert (
             AppPermissionApplyStatus.objects.filter(
-                api=fake_gateway,
+                gateway=fake_gateway,
                 bk_app_code=apply.bk_app_code,
                 apply=None,
             ).count()
@@ -285,8 +287,10 @@ class TestResourcePermissionDimensionManager:
             part_resource_ids=apply.resource_ids[:1],
         )
         assert record.id
-        assert AppResourcePermission.objects.filter(api=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
-        assert AppPermissionApplyStatus.objects.filter(api=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
+        assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
+        assert (
+            AppPermissionApplyStatus.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
+        )
 
     def test_save_permission_apply_status(self, fake_gateway):
         apply = self._make_fake_apply(fake_gateway)
@@ -306,7 +310,7 @@ class TestResourcePermissionDimensionManager:
                 bk_app_code=apply.bk_app_code,
                 apply=apply,
                 status=ApplyStatusEnum.PENDING.value,
-                api=fake_gateway,
+                gateway=fake_gateway,
             ).count()
             == 2
         )
@@ -325,7 +329,7 @@ class TestResourcePermissionDimensionManager:
                 bk_app_code=apply.bk_app_code,
                 apply=apply,
                 status=ApplyStatusEnum.REJECTED.value,
-                api=fake_gateway,
+                gateway=fake_gateway,
             ).count()
             == 2
         )

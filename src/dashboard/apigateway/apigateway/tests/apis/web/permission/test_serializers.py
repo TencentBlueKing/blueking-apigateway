@@ -83,14 +83,14 @@ class TestAppGatewayPermissionOutputSLZ(TestCase):
 
         app_api_permission = G(
             models.AppAPIPermission,
-            api=gateway,
+            gateway=gateway,
             bk_app_code="test",
             expires=None,
         )
 
         app_resource_permission = G(
             models.AppResourcePermission,
-            api=gateway,
+            gateway=gateway,
             resource_id=resource.id,
             bk_app_code="test",
             expires=dummy_time.time,

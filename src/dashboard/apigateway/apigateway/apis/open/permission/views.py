@@ -130,7 +130,7 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
             applied_time=now_datetime(),
             reason=data["reason"],
             expire_days=data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
-            api=request.gateway,
+            gateway=request.gateway,
             resource_ids=data.get("resource_ids", []),
             grant_dimension=data["grant_dimension"],
             status=ApplyStatusEnum.PENDING.value,
@@ -139,7 +139,7 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
         instance = AppPermissionApply.objects.create(
             bk_app_code=data["target_app_code"],
             applied_by=request.user.username,
-            api=request.gateway,
+            gateway=request.gateway,
             resource_ids=data.get("resource_ids", []),
             grant_dimension=data["grant_dimension"],
             status=ApplyStatusEnum.PENDING.value,
@@ -239,7 +239,7 @@ class RevokeAppPermissionViewSet(viewsets.ViewSet):
 
         permission_model = AppPermissionHelper().get_permission_model(data["grant_dimension"])
         permission_model.objects.filter(
-            api=request.gateway,
+            gateway=request.gateway,
             bk_app_code__in=data["target_app_codes"],
         ).delete()
 
@@ -334,7 +334,7 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
         slz = serializers.AppPermissionRecordDetailSLZ(
             record,
             context={
-                "resource_id_map": Resource.objects.filter_id_object_map(record.api.id),
+                "resource_id_map": Resource.objects.filter_id_object_map(record.gateway.id),
             },
         )
         return V1OKJsonResponse("OK", data=slz.data)

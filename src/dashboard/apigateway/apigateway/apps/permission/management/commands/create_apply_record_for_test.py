@@ -38,7 +38,7 @@ class Command(BaseCommand):
     def handle(self, gateway_id: int, count: int, bk_app_code: str, dry_run: bool, **options) -> None:
         resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
         if not resource_ids:
-            print(f"warning: api[id={gateway_id}] has no resources")
+            print(f"warning: gateway[id={gateway_id}] has no resources")
             return
 
         for _ in range(count):
@@ -55,7 +55,7 @@ class Command(BaseCommand):
                 continue
 
             AppPermissionApply.objects.create(
-                api_id=gateway_id,
+                gateway_id=gateway_id,
                 bk_app_code=bk_app_code,
                 applied_by="admin",
                 resource_ids=apply_resource_ids,

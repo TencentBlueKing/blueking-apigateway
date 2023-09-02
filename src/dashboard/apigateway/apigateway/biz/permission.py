@@ -155,7 +155,7 @@ class APIPermissionDimensionManager(PermissionDimensionManager):
     ):
         AppPermissionApplyStatus.objects.update_or_create(
             bk_app_code=bk_app_code,
-            api=gateway,
+            gateway=gateway,
             resource=None,
             grant_dimension=GrantDimensionEnum.API.value,
             defaults={
@@ -189,7 +189,7 @@ class APIPermissionDimensionManager(PermissionDimensionManager):
             return False, _("权限申请中，请联系网关负责人审批。")
 
         api_perm = AppAPIPermission.objects.filter(
-            api_id=gateway_id,
+            gateway_id=gateway_id,
             bk_app_code=bk_app_code,
         ).first()
 
@@ -262,7 +262,7 @@ class ResourcePermissionDimensionManager(PermissionDimensionManager):
         for resource in resources:
             AppPermissionApplyStatus.objects.update_or_create(
                 bk_app_code=bk_app_code,
-                api=gateway,
+                gateway=gateway,
                 resource=resource,
                 grant_dimension=GrantDimensionEnum.RESOURCE.value,
                 defaults={

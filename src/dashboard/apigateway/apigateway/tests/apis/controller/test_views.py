@@ -29,12 +29,12 @@ class TestMicroGatewayPermissionViewSet:
         self.app1 = "app-a"
         self.app2 = "app-b"
 
-        G(AppAPIPermission, bk_app_code=self.app1, api=fake_gateway)
-        G(AppResourcePermission, bk_app_code=self.app1, api=fake_gateway, resource_id=fake_resource1.id)
+        G(AppAPIPermission, bk_app_code=self.app1, gateway=fake_gateway)
+        G(AppResourcePermission, bk_app_code=self.app1, gateway=fake_gateway, resource_id=fake_resource1.id)
 
-        G(AppAPIPermission, bk_app_code=self.app2, api=fake_gateway)
-        G(AppResourcePermission, bk_app_code=self.app2, api=fake_gateway, resource_id=fake_resource1.id)
-        G(AppResourcePermission, bk_app_code=self.app2, api=fake_gateway, resource_id=fake_resource2.id)
+        G(AppAPIPermission, bk_app_code=self.app2, gateway=fake_gateway)
+        G(AppResourcePermission, bk_app_code=self.app2, gateway=fake_gateway, resource_id=fake_resource1.id)
+        G(AppResourcePermission, bk_app_code=self.app2, gateway=fake_gateway, resource_id=fake_resource2.id)
 
     def is_app_has_api_permission(self, result, gateway, app_code):
         api_permissions = result["data"]["api_permissions"]
@@ -282,7 +282,7 @@ class TestMicroGatewayNewestPermissionViewSet:
         assert data["resource_permissions"] == []
 
     def test_list_gateway_permissions(self, fake_micro_gateway, fake_gateway, default_redis):
-        G(AppAPIPermission, api=fake_gateway, bk_app_code=self.app)
+        G(AppAPIPermission, gateway=fake_gateway, bk_app_code=self.app)
 
         response = self.request_newest_gateway_permissions(fake_micro_gateway, fake_gateway.name)
 
@@ -292,7 +292,7 @@ class TestMicroGatewayNewestPermissionViewSet:
         assert permission["bk_app_code"] == self.app
 
     def test_list_resource_permissions(self, fake_micro_gateway, fake_gateway, fake_resource, default_redis):
-        G(AppResourcePermission, api=fake_gateway, bk_app_code=self.app, resource_id=fake_resource.id)
+        G(AppResourcePermission, gateway=fake_gateway, bk_app_code=self.app, resource_id=fake_resource.id)
 
         response = self.request_newest_resource_permissions(fake_micro_gateway, fake_gateway.name)
 

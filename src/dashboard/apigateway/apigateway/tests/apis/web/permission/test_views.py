@@ -42,14 +42,14 @@ class TestAppResourcePermissionViewSet:
 
         G(
             models.AppResourcePermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code="test",
             resource_id=fake_resource.id,
             grant_type="apply",
         )
         G(
             models.AppResourcePermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code="test-2",
             resource_id=fake_resource.id,
             grant_type="apply",
@@ -132,7 +132,7 @@ class TestAppGatewayPermissionViewSet:
 
         G(
             models.AppAPIPermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code="test",
         )
 
@@ -213,7 +213,7 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
 
         perm_2 = G(
             models.AppResourcePermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test",
             resource_id=resource.id,
             grant_type="apply",
@@ -239,7 +239,7 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
             self.assertEqual(response.status_code, 201, result)
 
             perm_record = models.AppResourcePermission.objects.filter(
-                api=self.gateway,
+                gateway=self.gateway,
                 id=test["params"]["ids"][0],
             ).first()
             self.assertTrue(
@@ -251,7 +251,7 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
 
         perm_2 = G(
             models.AppResourcePermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test",
             resource_id=resource.id,
             grant_type="apply",
@@ -277,7 +277,7 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
             permission_model = models.AppResourcePermission
             self.assertFalse(
                 permission_model.objects.filter(
-                    api=self.gateway,
+                    gateway=self.gateway,
                     id=test["ids"][0],
                 ).exists()
             )
@@ -294,7 +294,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
 
         perm_1 = G(
             models.AppAPIPermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test",
         )
 
@@ -317,7 +317,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
 
             permission_model = models.AppAPIPermission
             perm_record = permission_model.objects.filter(
-                api=self.gateway,
+                gateway=self.gateway,
                 id=test["params"]["ids"][0],
             ).first()
             self.assertTrue(
@@ -329,7 +329,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
 
         perm_1 = G(
             models.AppAPIPermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test",
         )
 
@@ -353,7 +353,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
             permission_model = models.AppAPIPermission
             self.assertFalse(
                 permission_model.objects.filter(
-                    api=self.gateway,
+                    gateway=self.gateway,
                     id=test["ids"][0],
                 ).exists()
             )
@@ -363,7 +363,7 @@ class TestAppPermissionApplyViewSet:
     def test_list(self, request_factory, fake_gateway):
         G(
             models.AppPermissionApply,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code="test",
         )
 
@@ -408,13 +408,13 @@ class TestAppPermissionApplyBatchViewSet:
 
         apply_1 = G(
             models.AppPermissionApply,
-            api=fake_gateway,
+            gateway=fake_gateway,
             grant_dimension="api",
         )
 
         apply_2 = G(
             models.AppPermissionApply,
-            api=fake_gateway,
+            gateway=fake_gateway,
             _resource_ids="1,2,3",
             grant_dimension="resource",
         )
@@ -451,7 +451,7 @@ class TestAppPermissionApplyBatchViewSet:
 
             assert response.status_code == 201
 
-        assert models.AppPermissionApply.objects.filter(api=fake_gateway).count() == 0
+        assert models.AppPermissionApply.objects.filter(gateway=fake_gateway).count() == 0
 
 
 class TestAppPermissionRecordViewSet(TestCase):
@@ -464,7 +464,7 @@ class TestAppPermissionRecordViewSet(TestCase):
         resource = G(Resource, gateway=self.gateway)
         G(
             models.AppPermissionRecord,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test",
             _resource_ids=f"{resource.id}",
             _handled_resource_ids=json.dumps(
@@ -501,7 +501,7 @@ class TestAppPermissionRecordViewSet(TestCase):
         resource = G(Resource, gateway=self.gateway)
         record = G(
             models.AppPermissionRecord,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test",
             _resource_ids=f"{resource.id}",
             _handled_resource_ids=json.dumps(
