@@ -115,7 +115,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
         slz = ResourceInputSLZ(
             data=request.data,
             context={
-                "api": request.gateway,
+                "gateway": request.gateway,
                 "stages": Stage.objects.filter(gateway=request.gateway),
             },
         )
@@ -165,7 +165,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             instance,
             data=request.data,
             context={
-                "api": request.gateway,
+                "gateway": request.gateway,
                 "stages": Stage.objects.filter(gateway=request.gateway),
             },
         )

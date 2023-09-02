@@ -52,7 +52,7 @@ class TestAPIExistFilter:
         result = self.filter._do(event)
         assert result == event
         mock_update_alarm.assert_called_once_with(1, gateway=gateway)
-        event.update_extend_fields.assert_called_once_with({"api": gateway})
+        event.update_extend_fields.assert_called_once_with({"gateway": gateway})
 
     def test_do_with_api_not_exist(self, faker, mocker):
         event = mocker.MagicMock(alarm_record_id=1, event_dimensions={"api_id": 0})

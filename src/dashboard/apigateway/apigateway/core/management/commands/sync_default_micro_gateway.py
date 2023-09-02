@@ -44,7 +44,7 @@ class Command(BaseCommand):
     """同步默认网关"""
 
     def add_arguments(self, parser):
-        parser.add_argument("--api", dest="api_name", required=True, help="default apigateway name")
+        parser.add_argument("--gateway", dest="gateway_name", required=True, help="default gateway name")
         parser.add_argument("--stage", dest="stage_name", required=True, help="default stage name")
         parser.add_argument("--name", dest="micro_gateway_name", required=True, help="default micro-gateway name")
         parser.add_argument(
@@ -74,7 +74,7 @@ class Command(BaseCommand):
                 "name": micro_gateway_name,
                 "status": constants.MicroGatewayStatusEnum.UPDATED.value,
                 "schema": SchemaFactory().get_micro_gateway_schema(),
-                "api": gateway,
+                "gateway": gateway,
             },
         )
 
@@ -85,12 +85,12 @@ class Command(BaseCommand):
         return micro_gateway
 
     @transaction.atomic()
-    def handle(self, secret_key: Optional[str], api_name: str, http_url: str, dry_run: bool, **kwargs):
+    def handle(self, secret_key: Optional[str], gateway_name: str, http_url: str, dry_run: bool, **kwargs):
         # FIXME: why slz here?
         slz = ArgumentSLZ(data=kwargs)
         slz.is_valid(raise_exception=True)
 
-        gateway = Gateway.objects.get(name=api_name)
+        gateway = Gateway.objects.get(name=gateway_name)
         micro_gateway = self.sync_micro_gateway(
             gateway=gateway,
             stage_name=slz.validated_data["stage_name"],

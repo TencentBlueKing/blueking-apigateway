@@ -52,8 +52,8 @@ class RelatedAPIGatewaySLZ(serializers.Serializer):
         stage_name = data.get("stage_name", "")
         resource_name = data.get("resource_name", "")
 
-        api = support_helper.get_gateway_by_name(gateway_name)
-        if not api:
+        gateway = support_helper.get_gateway_by_name(gateway_name)
+        if not gateway:
             raise serializers.ValidationError(
                 {
                     "api_name": f"网关[{gateway_name}]不存在",
@@ -62,7 +62,7 @@ class RelatedAPIGatewaySLZ(serializers.Serializer):
 
         resource = {}
         if stage_name and resource_name:
-            resource = support_helper.get_released_resource(api["id"], stage_name, resource_name)
+            resource = support_helper.get_released_resource(gateway["id"], stage_name, resource_name)
             if not resource:
                 raise serializers.ValidationError(
                     {
@@ -71,7 +71,7 @@ class RelatedAPIGatewaySLZ(serializers.Serializer):
                 )
 
         return {
-            "api_id": api["id"],
+            "api_id": gateway["id"],
             "stage_name": stage_name,
             "resource_id": resource.get("id"),
         }

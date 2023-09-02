@@ -30,11 +30,11 @@ python manage.py sync_managers_to_user
 python manage.py update_gateway_hosting_type --all --hosting-type=1
 
 # 微网关初始化
-python manage.py sync_api --name "${DEFAULT_MICRO_GATEWAY_API_NAME}" --hosting-type 1
-python manage.py add_stage --api "${DEFAULT_MICRO_GATEWAY_API_NAME}" --name "${DEFAULT_MICRO_GATEWAY_STAGE_NAME}"
-python manage.py add_related_app --api-name "${DEFAULT_MICRO_GATEWAY_API_NAME}" --app-code "${BK_APP_CODE}"
+python manage.py sync_gateway --name "${DEFAULT_MICRO_GATEWAY_API_NAME}" --hosting-type 1
+python manage.py add_stage --gateway "${DEFAULT_MICRO_GATEWAY_API_NAME}" --name "${DEFAULT_MICRO_GATEWAY_STAGE_NAME}"
+python manage.py add_related_app --gateway-name "${DEFAULT_MICRO_GATEWAY_API_NAME}" --app-code "${BK_APP_CODE}"
 python manage.py sync_default_micro_gateway \
---api "${DEFAULT_MICRO_GATEWAY_API_NAME}" \
+--gateway "${DEFAULT_MICRO_GATEWAY_API_NAME}" \
 --stage "${DEFAULT_MICRO_GATEWAY_STAGE_NAME}" \
 --name "${DEFAULT_MICRO_GATEWAY_NAME}" \
 --secret "${DEFAULT_MICRO_GATEWAY_SECRET}" \

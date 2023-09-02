@@ -50,12 +50,14 @@ class Command(BaseCommand):
     """同步已发布的资源到共享网关，只对存在且Activate状态的stage进行同步处理，非Activate stage与曾被删除的stage将忽略"""
 
     def add_arguments(self, parser):
-        parser.add_argument("--api-names", dest="api_names", nargs="*", help="api names, default is all micro apis")
+        parser.add_argument(
+            "--gateway-names", dest="gateway_names", nargs="*", help="gateway names, default is all micro apis"
+        )
 
-    def handle(self, api_names: Optional[List[str]], *args, **options):
+    def handle(self, gateway_names: Optional[List[str]], *args, **options):
         gateways = Gateway.objects.filter_micro_and_active_queryset()
-        if api_names:
-            gateways = gateways.filter(name__in=api_names)
+        if gateway_names:
+            gateways = gateways.filter(name__in=gateway_names)
 
         failed_gateway_names = []
         with Pool(POOL_SIZE) as pool:

@@ -68,7 +68,7 @@ class GatewayManager(models.Manager):
         if order_by:
             queryset = queryset.order_by(order_by)
 
-        return [api for api in queryset if api.has_permission(username)]
+        return [gateway for gateway in queryset if gateway.has_permission(username)]
 
     def fetch_authorized_gateway_ids(self, username: str) -> List[str]:
         """获取用户有权限的网关 ID 列表"""

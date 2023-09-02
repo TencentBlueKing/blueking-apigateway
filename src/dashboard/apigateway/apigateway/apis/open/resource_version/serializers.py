@@ -27,7 +27,7 @@ from apigateway.core.models import ResourceVersion, Stage
 
 
 class ReleaseV1SLZ(serializers.Serializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=False)
     resource_version_name = serializers.CharField(max_length=128, required=False)
     stage_names = serializers.ListField(child=serializers.CharField(max_length=64), allow_empty=True, default=list)
@@ -36,24 +36,24 @@ class ReleaseV1SLZ(serializers.Serializer):
     def to_internal_value(self, data):
         data = super().to_internal_value(data)
         data["resource_version_id"] = self._get_resource_version_id(
-            data["api"],
+            data["gateway"],
             data.get("version"),
             data.get("resource_version_name"),
         )
-        data["stage_ids"] = self._get_stage_ids(data["api"], data["stage_names"])
+        data["stage_ids"] = self._get_stage_ids(data["gateway"], data["stage_names"])
         return data
 
-    def _get_resource_version_id(self, api, version: Optional[str], resource_version_name: Optional[str]) -> int:
+    def _get_resource_version_id(self, gateway, version: Optional[str], resource_version_name: Optional[str]) -> int:
         if version:
-            return self._get_resource_version_id_by_version(api, version)
+            return self._get_resource_version_id_by_version(gateway, version)
 
         if resource_version_name:
-            return self._get_resource_version_id_by_name(api, resource_version_name)
+            return self._get_resource_version_id_by_name(gateway, resource_version_name)
 
         raise serializers.ValidationError({"version": "请指定待发布的版本"})
 
-    def _get_resource_version_id_by_name(self, api, resource_version_name: str) -> int:
-        resource_version_id = ResourceVersion.objects.get_id_by_name(api, resource_version_name)
+    def _get_resource_version_id_by_name(self, gateway, resource_version_name: str) -> int:
+        resource_version_id = ResourceVersion.objects.get_id_by_name(gateway, resource_version_name)
         if not resource_version_id:
             raise serializers.ValidationError(
                 {
@@ -65,15 +65,15 @@ class ReleaseV1SLZ(serializers.Serializer):
 
         return resource_version_id
 
-    def _get_resource_version_id_by_version(self, api, version: str) -> int:
-        resource_version_id = ResourceVersion.objects.get_id_by_version(api.id, version)
+    def _get_resource_version_id_by_version(self, gateway, version: str) -> int:
+        resource_version_id = ResourceVersion.objects.get_id_by_version(gateway.id, version)
         if not resource_version_id:
             raise serializers.ValidationError({"version": _("版本【{version}】不存在。").format(version=version)})
 
         return resource_version_id
 
-    def _get_stage_ids(self, api, stage_names: List[str]) -> List[int]:
-        name_to_id_map = Stage.objects.get_name_id_map(api)
+    def _get_stage_ids(self, gateway, stage_names: List[str]) -> List[int]:
+        name_to_id_map = Stage.objects.get_name_id_map(gateway)
 
         # 如果未指定 stage_names，则默认处理网关下所有环境
         if not stage_names:

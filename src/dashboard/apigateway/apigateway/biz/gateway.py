@@ -154,7 +154,7 @@ class GatewayHandler:
         unfiltered_sensitive_keys: Optional[List[str]] = None,
         api_type: Optional[GatewayTypeEnum] = None,
     ):
-        # 1. save api auth_config
+        # 1. save gateway auth_config
         GatewayHandler().save_auth_config(
             gateway.id,
             user_auth_type=user_auth_type,
@@ -188,7 +188,7 @@ class GatewayHandler:
         # 0. 删除权限中心中网关的分级管理员和用户组
         IAMHandler.delete_grade_manager_and_builtin_user_groups(gateway_id)
 
-        # 1. delete api context
+        # 1. delete gateway context
 
         Context.objects.delete_by_scope_ids(
             scope_type=ContextScopeTypeEnum.GATEWAY.value,
@@ -226,7 +226,7 @@ class GatewayHandler:
 
         Backend.objects.filter(gateway_id=gateway_id).delete()
 
-        # delete api
+        # delete gateway
         Gateway.objects.filter(id=gateway_id).delete()
 
     @staticmethod

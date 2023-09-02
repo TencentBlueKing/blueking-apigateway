@@ -32,13 +32,13 @@ from apigateway.core.models import Gateway, Resource, Stage
 
 class TestMaxCountPerGatewayValidator:
     class StageSLZ(serializers.ModelSerializer):
-        api = serializers.HiddenField(default=CurrentGatewayDefault())
+        gateway = serializers.HiddenField(default=CurrentGatewayDefault())
         name = serializers.CharField()
 
         class Meta:
             model = Stage
             fields = (
-                "api",
+                "gateway",
                 "name",
             )
 

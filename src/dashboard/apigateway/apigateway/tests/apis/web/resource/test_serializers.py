@@ -119,7 +119,7 @@ class TestResourceInputSLZ:
             fake_resource,
             data=data,
             context={
-                "api": fake_gateway,
+                "gateway": fake_gateway,
                 "stages": Stage.objects.filter(gateway=fake_gateway),
             },
         )

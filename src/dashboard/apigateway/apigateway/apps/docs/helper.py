@@ -282,7 +282,7 @@ class SupportHelper:
             ).items()
         }
 
-        releases = Release.objects.filter(api_id=gateway.id).values(
+        releases = Release.objects.filter(gateway_id=gateway.id).values(
             "stage__id",
             "stage__name",
             "stage__is_public",

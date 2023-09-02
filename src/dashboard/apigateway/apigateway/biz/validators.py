@@ -34,10 +34,7 @@ class MaxCountPerGatewayValidator(GetGatewayFromContextMixin):
 
     def _get_exist_count(self, gateway):
         fields = [f.name for f in self.model._meta.get_fields()]
-        if "gateway" in fields and "api" not in fields:
-            return self.model.objects.filter(gateway_id=gateway.id).count()
-
-        return self.model.objects.filter(api_id=gateway.id).count()
+        return self.model.objects.filter(gateway_id=gateway.id).count()
 
     def __call__(self, attrs, serializer):
         gateway = self._get_gateway(serializer)

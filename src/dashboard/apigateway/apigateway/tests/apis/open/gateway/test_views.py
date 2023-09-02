@@ -110,11 +110,11 @@ class TestAPIViewSet:
         ]
 
         for test in data:
-            api_id = test["id"]
-            request = self.factory.get(f"/api/v1/apis/{api_id}/", data=test)
+            gateway_id = test["id"]
+            request = self.factory.get(f"/api/v1/apis/{gateway_id}/", data=test)
 
             view = views.GatewayViewSet.as_view({"get": "retrieve"})
-            response = view(request, id=api_id)
+            response = view(request, id=gateway_id)
 
             result = get_response_json(response)
             assert result["code"] == 0, result

@@ -34,7 +34,7 @@ class AlarmRecordManager(models.Manager):
     def update_alarm(self, id, gateway=None, status=None, comment=None, message=None, alarm_strategies=None):
         data = {}
         if gateway is not None:
-            data["api"] = gateway
+            data["gateway"] = gateway
 
         if status is not None:
             data["status"] = status

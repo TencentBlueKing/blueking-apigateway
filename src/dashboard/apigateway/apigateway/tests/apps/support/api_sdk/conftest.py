@@ -24,14 +24,7 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.support.api_sdk.models import SDKContext
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.core.models import Gateway, ResourceVersion
-
-
-@pytest.fixture
-def api(faker):
-    api = cast(Gateway, G(Gateway, name=faker.pystr(), description=faker.pystr()))
-    yield api
-    api.delete()
+from apigateway.core.models import ResourceVersion
 
 
 @pytest.fixture
@@ -79,12 +72,12 @@ def resource_version_data(public_api_resources, private_api_resources):
 
 
 @pytest.fixture
-def resource_version(api, resource_version_data, faker):
+def resource_version(fake_gateway, resource_version_data, faker):
     resource_version = cast(
         ResourceVersion,
         G(
             ResourceVersion,
-            gateway=api,
+            gateway=fake_gateway,
             name=faker.pystr(),
             title=faker.pystr(),
             comment=faker.pystr(),

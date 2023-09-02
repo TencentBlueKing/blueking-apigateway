@@ -69,7 +69,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     """
     API, a system
     the name is unique and will be part of the path in APIGateway
-    /api/{api.name}/{stage.name}/{resource.path}/
+    /api/{gateway.name}/{stage.name}/{resource.path}/
     """
 
     name = models.CharField(max_length=64, unique=True)
@@ -198,9 +198,9 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     """
     The specific endpoint registered to APIGateway.
 
-    api-method-path should be unique
+    gateway-method-path should be unique
 
-    NOTE: do unique check for api/method/path
+    NOTE: do unique check for gateway/method/path
     """
 
     name = models.CharField(max_length=256, default="", blank=True, null=True)
@@ -320,7 +320,7 @@ class Proxy(ConfigModelMixin):
 class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
     """
     The status of a stage-resource
-    Enabled by default for api-stage-resource, but you can disabled part of them.
+    Enabled by default for gateway-stage-resource, but you can disabled part of them.
     """
 
     # can be delete cascade
@@ -479,7 +479,7 @@ class Context(ConfigModelMixin):
     def should_do_publish(self):
         """
         NOTE: for resource context, is static, will be online after release be published
-        but the context of api/stage, is dynamic, will be online after the settings be saved
+        but the context of gateway/stage, is dynamic, will be online after the settings be saved
         """
         return self.scope_type in (ContextScopeTypeEnum.GATEWAY.value, ContextScopeTypeEnum.STAGE.value)
 

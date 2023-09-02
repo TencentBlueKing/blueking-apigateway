@@ -158,7 +158,7 @@ class ReleasedResourceDocManager(models.Manager):
 
         resource_doc_to_add = [
             self.model(
-                gateway_id=resource_doc_version.api_id,
+                gateway_id=resource_doc_version.gateway_id,
                 resource_version_id=resource_doc_version.resource_version_id,
                 resource_id=doc["resource_id"],
                 language=doc.get("language", DocLanguageEnum.ZH.value),
@@ -180,7 +180,7 @@ class ReleasedResourceDocManager(models.Manager):
         # TODO: 暂时仅支持展示中文文档
         resource_doc = (
             self.filter(
-                api_id=gateway_id,
+                gateway_id=gateway_id,
                 resource_id=resource_id,
                 language=DocLanguageEnum.ZH.value,
             )

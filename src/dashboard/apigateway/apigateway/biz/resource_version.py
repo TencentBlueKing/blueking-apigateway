@@ -104,7 +104,7 @@ class ResourceVersionHandler:
 
     @staticmethod
     def delete_by_gateway_id(gateway_id: int):
-        # delete api release
+        # delete gateway release
         Release.objects.delete_by_gateway_id(gateway_id)
 
         # delete resource version

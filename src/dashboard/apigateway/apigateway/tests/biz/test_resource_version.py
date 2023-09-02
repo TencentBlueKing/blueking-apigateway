@@ -87,7 +87,7 @@ class TestResourceVersionHandler:
         assert ResourceVersion.objects.filter(gateway=gateway).count() == 1
 
     @pytest.mark.parametrize(
-        "api_id, stage_name, mocked_released_resource_version_ids, mocked_resources, expected",
+        "gateway_id, stage_name, mocked_released_resource_version_ids, mocked_resources, expected",
         [
             (
                 1,
@@ -141,7 +141,7 @@ class TestResourceVersionHandler:
     def test_get_released_public_resources(
         self,
         mocker,
-        api_id,
+        gateway_id,
         stage_name,
         mocked_released_resource_version_ids,
         mocked_resources,
@@ -162,10 +162,10 @@ class TestResourceVersionHandler:
             return_value=["test"],
         )
 
-        result = ResourceVersionHandler.get_released_public_resources(api_id, stage_name)
+        result = ResourceVersionHandler.get_released_public_resources(gateway_id, stage_name)
         assert expected == result
 
-        get_released_resource_version_ids_mock.assert_called_once_with(api_id, stage_name)
+        get_released_resource_version_ids_mock.assert_called_once_with(gateway_id, stage_name)
         get_resources_mock.assert_called()
 
     @pytest.mark.parametrize(

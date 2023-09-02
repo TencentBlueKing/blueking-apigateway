@@ -75,7 +75,7 @@ class TestAlarmStrategyManager(TestCase):
         )
 
         data = [
-            # api alarm-strategy not exist
+            # gateway alarm-strategy not exist
             {
                 "gateway_id": gateway_1.id,
                 "resource_id": 1,

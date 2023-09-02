@@ -74,7 +74,7 @@ class GatewayLabelRetrieveUpdateDestroyApi:
         )
 
         assert resp.status_code == 204
-        assert APILabel.objects.filter(api=fake_gateway, name=new_name).exists()
+        assert APILabel.objects.filter(gateway=fake_gateway, name=new_name).exists()
 
     def test_destroy(self, request_view, fake_gateway):
         label = G(APILabel, gateway=fake_gateway)
@@ -86,4 +86,4 @@ class GatewayLabelRetrieveUpdateDestroyApi:
         )
 
         assert resp.status_code == 204
-        assert not APILabel.objects.filter(api=fake_gateway).exists()
+        assert not APILabel.objects.filter(gateway=fake_gateway).exists()

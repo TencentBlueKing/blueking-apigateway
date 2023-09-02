@@ -30,13 +30,13 @@ pytestmark = pytest.mark.django_db
 
 class TestStageVarsValidator:
     class StageSLZ(serializers.ModelSerializer):
-        api = serializers.HiddenField(default=CurrentGatewayDefault())
+        gateway = serializers.HiddenField(default=CurrentGatewayDefault())
         vars = serializers.DictField(label="环境变量", child=serializers.CharField())
 
         class Meta:
             model = Stage
             fields = (
-                "api",
+                "gateway",
                 "vars",
             )
 

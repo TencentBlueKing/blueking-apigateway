@@ -160,7 +160,7 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
         try:
             apply_async_on_commit(send_mail_for_perm_apply, args=[instance.id])
         except Exception:
-            logger.exception("send mail to api manager fail. apply_record_id=%s", instance.id)
+            logger.exception("send mail to gateway manager fail. apply_record_id=%s", instance.id)
 
         return V1OKJsonResponse(
             "OK",

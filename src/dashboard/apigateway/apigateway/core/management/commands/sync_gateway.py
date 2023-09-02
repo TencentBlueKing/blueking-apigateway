@@ -60,4 +60,4 @@ class Command(BaseCommand):
         slz.is_valid(raise_exception=True)
         slz.save(created_by="admin", updated_by="admin")
 
-        logger.info(f"sync api success: name={name}")
+        logger.info(f"sync gateway success: name={name}")

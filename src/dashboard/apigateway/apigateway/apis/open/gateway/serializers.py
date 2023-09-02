@@ -128,7 +128,7 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        # 1. save api
+        # 1. save gateway
         api_type = validated_data.pop("api_type", None)
         instance = super().create(validated_data)
 
