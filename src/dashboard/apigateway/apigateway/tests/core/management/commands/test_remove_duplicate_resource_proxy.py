@@ -1,6 +1,6 @@
+from dashboard.apigateway.apigateway.core.management.commands.remove_duplicate_resource_proxy import Command
 from ddf import G
 
-from apigateway.core.management.commands.migrate_resources import Command
 from apigateway.core.models import Proxy
 
 

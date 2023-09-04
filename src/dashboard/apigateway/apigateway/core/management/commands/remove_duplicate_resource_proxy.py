@@ -19,15 +19,17 @@
 import logging
 from typing import List, Optional
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
+from apigateway.core.constants import ProxyTypeEnum
 from apigateway.core.models import Gateway, Proxy, Resource
 
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    """迁移资源数据
+    """
+    删除重复的资源 proxy
 
     - 删除未使用的 proxy 数据
     """
@@ -53,6 +55,18 @@ class Command(BaseCommand):
 
             if not proxies:
                 continue
+
+            not_mock_proxies = [proxy for proxy in proxies.values() if proxy.type != ProxyTypeEnum.MOCK.value]
+            if not_mock_proxies:
+                raise CommandError(
+                    "For gateway (id={gateway_id}), proxies are not mock type, please check:\n{proxies}".format(
+                        gateway_id=gateway_id,
+                        proxies="\n".join(
+                            f"id={proxy.id}, resource_id={proxy.resource_id}, type={proxy.type}"
+                            for proxy in proxies.values()
+                        ),
+                    )
+                )
 
             print(
                 "For gateway (id={gateway_id}), the following proxies are not in used and will be deleted, proxies:\n{proxies}".format(
