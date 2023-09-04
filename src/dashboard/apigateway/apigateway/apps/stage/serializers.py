@@ -27,6 +27,7 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.stage.validators import StageVarsValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
@@ -36,7 +37,6 @@ from apigateway.core.constants import (
     DEFAULT_LB_HOST_WEIGHT,
     DOMAIN_PATTERN,
     HEADER_KEY_PATTERN,
-    MAX_BACKEND_TIMEOUT_IN_SECOND,
     STAGE_NAME_PATTERN,
     LoadBalanceTypeEnum,
 )

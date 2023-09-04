@@ -20,9 +20,9 @@
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import SEMVER_PATTERN
 from apigateway.core.models import Gateway, Resource, ResourceVersion
 from apigateway.utils import time as time_utils
 

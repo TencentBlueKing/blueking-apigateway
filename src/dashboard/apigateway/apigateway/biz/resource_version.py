@@ -28,18 +28,10 @@ from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDocVersion
+from apigateway.biz.context import ContextHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.core.constants import ContextScopeTypeEnum
-from apigateway.core.models import (
-    Context,
-    Gateway,
-    Proxy,
-    Release,
-    Resource,
-    ResourceVersion,
-    Stage,
-    StageResourceDisabled,
-)
+from apigateway.core.models import Gateway, Proxy, Release, Resource, ResourceVersion, Stage, StageResourceDisabled
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import random_string
 
@@ -52,7 +44,7 @@ class ResourceVersionHandler:
 
         proxy_map = Proxy.objects.get_resource_id_to_snapshot(resource_ids)
 
-        context_map = Context.objects.filter_id_type_snapshot_map(
+        context_map = ContextHandler.filter_id_type_snapshot_map(
             scope_type=ContextScopeTypeEnum.RESOURCE.value,
             scope_ids=resource_ids,
         )

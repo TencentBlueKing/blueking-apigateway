@@ -51,8 +51,6 @@ from apigateway.core.models import (
     SslCertificate,
     SslCertificateBinding,
     Stage,
-    StageItem,
-    StageItemConfig,
     StageResourceDisabled,
 )
 from apigateway.tests.utils.testing import create_gateway, dummy_time
@@ -1492,56 +1490,6 @@ class TestSslCertificateBindingManager:
             scope_id=0,
         )
         assert result is None
-
-
-class TestStageItemManager:
-    def delete_stage_item(self, fake_gateway):
-        stage_item = G(StageItem, api=fake_gateway)
-        backend_service = G(BackendService, api=fake_gateway, stage_item=stage_item)
-
-        with pytest.raises(InstanceDeleteError):
-            StageItem.objects.delete_stage_item(stage_item.id)
-
-        backend_service.delete()
-        StageItem.objects.delete_stage_item(stage_item.id)
-        assert not StageItem.objects.filter(api=fake_gateway).exists()
-
-    def test_get_reference_instances(self, fake_gateway):
-        item = G(StageItem, api=fake_gateway)
-        result = StageItem.objects.get_reference_instances(fake_gateway.id)
-        assert result == {}
-
-        G(BackendService, api=fake_gateway, stage_item=item)
-        result = StageItem.objects.get_reference_instances(fake_gateway.id)
-        assert len(result[item.id]) == 1
-
-        G(BackendService, api=fake_gateway)
-        result = StageItem.objects.get_reference_instances(fake_gateway.id)
-        assert len(result[item.id]) == 1
-
-
-class TestStageItemConfigManager:
-    def test_get_configured_item_ids(self, fake_stage):
-        fake_gateway = fake_stage.gateway
-
-        stage_item1 = G(StageItem, api=fake_gateway)
-        G(StageItem, api=fake_gateway)
-        G(StageItemConfig, api=fake_gateway, stage=fake_stage, stage_item=stage_item1)
-
-        result = StageItemConfig.objects.get_configured_item_ids(fake_gateway.id, fake_stage.id)
-        assert result == set([stage_item1.id])
-
-    def test_get_stage_item_id_to_configured_stages(self, fake_gateway):
-        result = StageItemConfig.objects.get_stage_item_id_to_configured_stages(fake_gateway.id)
-        assert result == {}
-
-        s1 = G(Stage, gateway=fake_gateway)
-        G(Stage, gateway=fake_gateway)
-        item = G(StageItem, api=fake_gateway)
-        G(StageItemConfig, api=fake_gateway, stage=s1, stage_item=item)
-
-        result = StageItemConfig.objects.get_stage_item_id_to_configured_stages(fake_gateway.id)
-        assert result == {item.id: [{"id": s1.id, "name": s1.name}]}
 
 
 class TestMicroGatewayManager:

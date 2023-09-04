@@ -27,17 +27,13 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apis.web.resource.validators import BackendPathVarsValidator, PathVarsValidator
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.constants import SwaggerFormatEnum
+from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SwaggerFormatEnum
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerImporter
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import (
-    HTTP_METHOD_ANY,
-    MAX_BACKEND_TIMEOUT_IN_SECOND,
-    RESOURCE_METHOD_CHOICES,
-)
+from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
 

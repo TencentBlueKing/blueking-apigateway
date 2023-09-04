@@ -20,8 +20,9 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, MAX_BACKEND_TIMEOUT_IN_SECOND, BackendTypeEnum
+from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
 
 from .constants import (

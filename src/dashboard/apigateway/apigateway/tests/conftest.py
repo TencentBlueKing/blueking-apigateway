@@ -411,11 +411,6 @@ def unique_backend_service_name(unique_id):
 
 
 @pytest.fixture
-def unique_stage_item_name(unique_id):
-    return f"a{unique_id[:19]}".lower()
-
-
-@pytest.fixture
 def fake_tgz_file(faker):
     fp = tempfile.TemporaryFile()
     fp.write(faker.tar(compression="gz"))
@@ -549,23 +544,6 @@ def celery_mock_task_for_testing(celery_task_mocker=None, *args, **kwargs):
 @pytest.fixture()
 def celery_mock_task():
     return celery_mock_task_for_testing
-
-
-@pytest.fixture
-def fake_node_data(unique_stage_item_name):
-    return {
-        "name": unique_stage_item_name,
-        "type": "node",
-        "description": "this is a test",
-        "config": {
-            "nodes": [
-                {
-                    "host": "1.0.0.1:8000",
-                    "weight": 100,
-                },
-            ]
-        },
-    }
 
 
 @pytest.fixture
