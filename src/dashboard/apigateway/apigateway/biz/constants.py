@@ -36,3 +36,6 @@ SEMVER_PATTERN = re.compile(
 
 
 MAX_BACKEND_TIMEOUT_IN_SECOND = 600
+
+# stage var
+STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")

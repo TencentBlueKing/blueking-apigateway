@@ -20,8 +20,10 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
+from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN
+from apigateway.core.models import ResourceVersion
 
-from .constants import APP_CODE_PATTERN
+from .constants import APP_CODE_PATTERN, STAGE_VAR_FOR_PATH_PATTERN
 
 
 class MaxCountPerGatewayValidator(GetGatewayFromContextMixin):
@@ -93,3 +95,50 @@ class BKAppCodeValidator:
 
         if not APP_CODE_PATTERN.match(value):
             raise serializers.ValidationError(_("蓝鲸应用【{value}】不匹配要求的模式。").format(value=value))
+
+
+class StageVarsValuesValidator:
+    """
+    校验变量的值是否符合要求
+    - 用作路径变量时：值应符合路径片段规则
+    - 用作Host变量时：值应符合 Host 规则
+    """
+
+    def __call__(self, attrs):
+        gateway = attrs["gateway"]
+        stage_name = attrs["stage_name"]
+        stage_vars = attrs["vars"]
+        resource_version_id = attrs["resource_version_id"]
+
+        used_stage_vars = ResourceVersion.objects.get_used_stage_vars(gateway.id, resource_version_id)
+        if not used_stage_vars:
+            return
+
+        for key in used_stage_vars["in_path"]:
+            if key not in stage_vars:
+                raise serializers.ValidationError(
+                    _("环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作路径变量，必须存在。").format(stage_name=stage_name, key=key),
+                )
+            if not STAGE_VAR_FOR_PATH_PATTERN.match(stage_vars[key]):
+                raise serializers.ValidationError(
+                    _("环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作路径变量，变量值不是一个合法的 URL 路径片段。").format(
+                        stage_name=stage_name,
+                        key=key,
+                    ),
+                )
+
+        for key in used_stage_vars["in_host"]:
+            _value = stage_vars.get(key)
+            if not _value:
+                raise serializers.ValidationError(
+                    _("环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作 Host 变量，不能为空。").format(
+                        stage_name=stage_name, key=key
+                    ),
+                )
+            if not HOST_WITHOUT_SCHEME_PATTERN.match(_value):
+                raise serializers.ValidationError(
+                    _('环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作 Host 变量，变量值不是一个合法的 Host（不包含"http(s)://"）。').format(
+                        stage_name=stage_name,
+                        key=key,
+                    )
+                )

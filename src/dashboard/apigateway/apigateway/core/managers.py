@@ -46,7 +46,6 @@ from apigateway.core.constants import (
     SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
-from apigateway.core.utils import get_resource_doc_link
 from apigateway.utils.crypto import KeyGenerator
 from apigateway.utils.time import now_datetime
 
@@ -299,29 +298,6 @@ class StageResourceDisabledManager(models.Manager):
             }
             for stage in disabled_stages
         ]
-
-    # TODO: move to biz/stage_resource_disabled.py StageResourceDisabledHandler?
-    def filter_disabled_stages_by_gateway(self, gateway):
-        from apigateway.core.models import Stage
-
-        stage_ids = Stage.objects.get_ids(gateway.id)
-
-        queryset = self.filter(stage_id__in=stage_ids)
-        queryset = queryset.values("stage_id", "stage__name", "resource_id")
-
-        disabled = sorted(queryset, key=operator.itemgetter("resource_id"))
-
-        disabled_groups = itertools.groupby(disabled, key=operator.itemgetter("resource_id"))
-        resource_disabled = {}
-        for resource_id, group in disabled_groups:
-            resource_disabled[resource_id] = [
-                {
-                    "id": stage["stage_id"],
-                    "name": stage["stage__name"],
-                }
-                for stage in group
-            ]
-        return resource_disabled
 
     def is_exists(self, stage_id, resource_id):
         return self.filter(stage__id=stage_id, resource__id=resource_id).exists()
@@ -662,7 +638,7 @@ class ReleasedResourceManager(models.Manager):
 
         return [self._parse_released_resource(resource) for resource in self.filter(id__in=ids)]
 
-    def _filter_resource_version_ids(self, resource_ids: List[int]) -> List[int]:
+    def filter_resource_version_ids(self, resource_ids: List[int]) -> List[int]:
         """过滤出资源所属的资源版本号"""
         return list(
             self.filter(resource_id__in=resource_ids)
@@ -671,39 +647,7 @@ class ReleasedResourceManager(models.Manager):
             .values_list("resource_version_id", flat=True)
         )
 
-    # FIXME: move to biz/released_resource ReleasedResource
-    def get_latest_doc_link(self, resource_ids: List[int]) -> Dict[int, str]:
-        from apigateway.core.models import Release
-
-        if not resource_ids:
-            return {}
-
-        resource_version_ids = self._filter_resource_version_ids(resource_ids)
-        released_stage_names = Release.objects.get_resource_version_released_stage_names(resource_version_ids)
-
-        # 按照资源版本从小到大排序，可使最新版本数据覆盖前面版本的数据
-        released_resources = self.filter(resource_id__in=resource_ids).order_by("resource_id", "resource_version_id")
-
-        doc_links = {}
-        for resource in released_resources:
-            stage_names = released_stage_names.get(resource.resource_version_id)
-            if not stage_names:
-                continue
-
-            disabled_stages = resource.data.get("disabled_stages") or []
-            recommended_stage = self._get_recommended_stage_name(stage_names, disabled_stages)
-            if not recommended_stage:
-                continue
-
-            doc_links[resource.resource_id] = get_resource_doc_link(
-                resource.gateway.name,
-                recommended_stage,
-                resource.resource_name,
-            )
-
-        return doc_links
-
-    def _get_recommended_stage_name(self, stage_names: List[str], disabled_stages: List[str]) -> Optional[str]:
+    def get_recommended_stage_name(self, stage_names: List[str], disabled_stages: List[str]) -> Optional[str]:
         available_stages = set(stage_names) - set(disabled_stages)
         if not available_stages:
             return None
@@ -773,21 +717,6 @@ class ReleaseHistoryManager(models.Manager):
             queryset = queryset.order_by(order_by)
 
         return queryset.distinct()
-
-    # FIXME: move to biz/released_resource ReleasedResource
-    def delete_without_stage_related(self, gateway_id):
-        """
-        删除无 stages 关联的数据
-
-        因与 stages 为 ManyToMany 关联，删除 stage 时，
-        仅自动清理了 stage 与 release-history 的关联数据，
-        需要清理一次 release-history 本身的无效数据
-        """
-        from apigateway.core.models import Stage
-
-        stage_ids = Stage.objects.get_ids(gateway_id)
-
-        self.filter(gateway_id=gateway_id).exclude(stages__id__in=stage_ids).delete()
 
     def get_recent_releasers(self, gateway_id: int) -> List[str]:
         qs = self.filter(gateway_id=gateway_id).order_by("-id")[:10]

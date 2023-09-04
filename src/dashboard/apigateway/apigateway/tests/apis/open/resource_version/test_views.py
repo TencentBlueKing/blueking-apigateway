@@ -64,7 +64,7 @@ class TestResourceVersionViewSet:
     def test_release(self, faker, request_view, fake_admin_user, fake_gateway, mocker, unreleased_stage_ids):
         G(ResourceVersion, gateway=fake_gateway)
         mocker.patch(
-            "apigateway.apis.open.resource_version.views.ReleaseBatchManager.release_batch",
+            "apigateway.biz.releaser.DefaultGatewayReleaserHandler.release_batch",
             return_value=None,
         )
         mocker.patch(

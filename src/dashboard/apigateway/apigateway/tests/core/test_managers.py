@@ -736,40 +736,6 @@ class TestStageResourceDisabledManager(TestCase):
             ],
         )
 
-    def test_filter_disabled_stages_by_gateway(self):
-        gateway = G(Gateway)
-        resource1 = G(Resource, gateway=gateway)
-        resource2 = G(Resource, gateway=gateway)
-        stage_prod = G(Stage, gateway=gateway, name="prod")
-        stage_test = G(Stage, gateway=gateway, name="test")
-
-        G(StageResourceDisabled, resource=resource1, stage=stage_prod)
-        G(StageResourceDisabled, resource=resource2, stage=stage_prod)
-        G(StageResourceDisabled, resource=resource1, stage=stage_test)
-
-        result = StageResourceDisabled.objects.filter_disabled_stages_by_gateway(gateway)
-        self.assertEqual(
-            result,
-            {
-                resource1.id: [
-                    {
-                        "id": stage_prod.id,
-                        "name": stage_prod.name,
-                    },
-                    {
-                        "id": stage_test.id,
-                        "name": stage_test.name,
-                    },
-                ],
-                resource2.id: [
-                    {
-                        "id": stage_prod.id,
-                        "name": stage_prod.name,
-                    },
-                ],
-            },
-        )
-
 
 class TestReleaseManager:
     def test_get_released_stages(self):
@@ -1135,56 +1101,6 @@ class TestReleasedResourceManager:
         assert result[0]["name"] == "test1-2"
         assert result[1]["name"] == "test2-1"
 
-    def test_get_latest_doc_link(self, mocker, settings, fake_gateway):
-        def mocked_get_resource_doc_link(api_name, stage_name, resource_name):
-            return f"{api_name}/{stage_name}/{resource_name}"
-
-        mocker.patch(
-            "apigateway.core.managers.get_resource_doc_link",
-            side_effect=mocked_get_resource_doc_link,
-        )
-
-        fake_gateway.name = "test"
-        fake_gateway.save()
-
-        s1 = G(Stage, gateway=fake_gateway, name="prod", status=1)
-        s2 = G(Stage, gateway=fake_gateway, name="dev", status=1)
-        s3 = G(Stage, gateway=fake_gateway, name="test", status=1)
-
-        r1 = G(Resource, gateway=fake_gateway, name="test1")
-        r2 = G(Resource, gateway=fake_gateway, name="test2")
-        r3 = G(Resource, gateway=fake_gateway, name="test3")
-        r4 = G(Resource, gateway=fake_gateway, name="test4")
-
-        rv1 = G(ResourceVersion, gateway=fake_gateway)
-        rv2 = G(ResourceVersion, gateway=fake_gateway)
-
-        G(Release, gateway=fake_gateway, resource_version=rv1, stage=s1)
-        G(Release, gateway=fake_gateway, resource_version=rv1, stage=s2)
-        G(Release, gateway=fake_gateway, resource_version=rv2, stage=s3)
-
-        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r1.id, resource_name=r1.name)
-        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r2.id, resource_name=r2.name)
-        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv2.id, resource_id=r1.id, resource_name=r1.name)
-        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv2.id, resource_id=r3.id, resource_name=r3.name)
-        G(
-            ReleasedResource,
-            gateway=fake_gateway,
-            resource_version_id=rv1.id,
-            resource_id=r4.id,
-            resource_name=r4.name,
-            data={"disabled_stages": ["prod"]},
-        )
-
-        result = ReleasedResource.objects.get_latest_doc_link([r1.id, r2.id, r3.id, r4.id])
-
-        assert result == {
-            r1.id: "test/test/test1",
-            r2.id: "test/prod/test2",
-            r3.id: "test/test/test3",
-            r4.id: "test/dev/test4",
-        }
-
     def test_filter_resource_version_ids(self):
         fake_gateway = G(Gateway)
 
@@ -1197,7 +1113,7 @@ class TestReleasedResourceManager:
         G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r1.id)
         G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r2.id)
 
-        result = ReleasedResource.objects._filter_resource_version_ids([r1.id, r2.id])
+        result = ReleasedResource.objects.filter_resource_version_ids([r1.id, r2.id])
         assert result == [rv1.id]
 
     @pytest.mark.parametrize(
@@ -1226,7 +1142,7 @@ class TestReleasedResourceManager:
         ],
     )
     def test_get_recommended_stage_name(self, stage_names, disabled_stages, expecged):
-        result = ReleasedResource.objects._get_recommended_stage_name(stage_names, disabled_stages)
+        result = ReleasedResource.objects.get_recommended_stage_name(stage_names, disabled_stages)
         assert result == expecged
 
 
@@ -1308,19 +1224,6 @@ class TestReleaseHistoryManager(TestCase):
         for test in data:
             result = ReleaseHistory.objects.filter_release_history(gateway, fuzzy=True, **test["params"])
             self.assertEqual(result.count(), test["expected"]["count"])
-
-    def test_delete_without_stage_related(self):
-        gateway = G(Gateway)
-        stage_1 = G(Stage, gateway=gateway)
-        stage_2 = G(Stage, gateway=gateway)
-
-        history_1 = G(ReleaseHistory, gateway=gateway, stage=stage_1)
-        history_2 = G(ReleaseHistory, gateway=gateway, stage=stage_2)
-        history_2.stages.add(stage_2)
-
-        ReleaseHistory.objects.delete_without_stage_related(gateway.id)
-
-        self.assertFalse(ReleaseHistory.objects.filter(id=history_1.id).exists())
 
 
 class TestJWTManager:
