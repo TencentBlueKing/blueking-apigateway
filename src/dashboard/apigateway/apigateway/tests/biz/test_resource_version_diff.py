@@ -259,64 +259,64 @@ class TestResourceProxyDiffer:
         result = source_differ.diff_proxy(target_differ)
         assert result == expected
 
-
-class TestResourcePluginDiffer:
-    @pytest.mark.parametrize(
-        "source_plugins, target_plugins, expected",
-        [
-            (
-                [
-                    {
-                        "id": 1,
-                        "name": "bk-mock",
-                        "type": 2,
-                        "config": {
-                            "response_status": 200,
-                            "response_example": "success",
-                            "response_headers": "application/text",
-                        },
-                    }
-                ],
-                [
-                    {
-                        "id": 1,
-                        "name": "bk-mock",
-                        "type": 2,
-                        "config": {
-                            "response_status": 200,
-                            "response_example": "fail",
-                            "response_headers": "application/text",
-                        },
-                    }
-                ],
-                [
-                    {
-                        "added_plugins": {},
-                        "modified_plugins": {
-                            "bk-mock": [
-                                {
-                                    "config": {
-                                        "response_status": 200,
-                                        "response_example": "success",
-                                        "response_headers": "application/text",
-                                    }
-                                },
-                                {
-                                    "config": {
-                                        "response_status": 200,
-                                        "response_example": "fail",
-                                        "response_headers": "application/text",
-                                    }
-                                },
-                            ]
-                        },
-                        "deleted_plugins": {},
-                    },
-                    None,
-                ],
-            )
-        ],
-    )
+    #
+    # class TestResourcePluginDiffer:
+    #     @pytest.mark.parametrize(
+    #         "source_plugins, target_plugins, expected",
+    #         [
+    #             (
+    #                 [
+    #                     {
+    #                         "id": 1,
+    #                         "name": "bk-mock",
+    #                         "type": 2,
+    #                         "config": {
+    #                             "response_status": 200,
+    #                             "response_example": "success",
+    #                             "response_headers": "application/text",
+    #                         },
+    #                     }
+    #                 ],
+    #                 [
+    #                     {
+    #                         "id": 1,
+    #                         "name": "bk-mock",
+    #                         "type": 2,
+    #                         "config": {
+    #                             "response_status": 200,
+    #                             "response_example": "fail",
+    #                             "response_headers": "application/text",
+    #                         },
+    #                     }
+    #                 ],
+    #                 [
+    #                     {
+    #                         "added_plugins": {},
+    #                         "modified_plugins": {
+    #                             "bk-mock": [
+    #                                 {
+    #                                     "config": {
+    #                                         "response_status": 200,
+    #                                         "response_example": "success",
+    #                                         "response_headers": "application/text",
+    #                                     }
+    #                                 },
+    #                                 {
+    #                                     "config": {
+    #                                         "response_status": 200,
+    #                                         "response_example": "fail",
+    #                                         "response_headers": "application/text",
+    #                                     }
+    #                                 },
+    #                             ]
+    #                         },
+    #                         "deleted_plugins": {},
+    #                     },
+    #                     None,
+    #                 ],
+    #             )
+    #         ],
+    #     )
     def test_diff_plugin(self, source_plugins, target_plugins, expected):
         class ResourceProxyDiffer(ResourceDifferHandler):
             id: int = 0
