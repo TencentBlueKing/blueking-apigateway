@@ -160,7 +160,9 @@ class PublishSourceEnum(StructuredEnum):
     VERSION_PUBLISH = EnumField("version_publish", "版本发布")
 
     # plugin
+    PLUGIN_BIND = EnumField("plugin_bind", "插件绑定")
     PLUGIN_UPDATE = EnumField("plugin_update", "插件更新")
+    PLUGIN_UNBIND = EnumField("plugin_unbind", "插件解绑")
 
     # stage
     STAGE_DISABLE = EnumField("stage_disable", "环境下架")
