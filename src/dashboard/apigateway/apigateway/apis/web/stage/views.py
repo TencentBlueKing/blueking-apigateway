@@ -162,7 +162,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 
         # 判断环境是否已下线
         if not instance.deletable:
-            raise error_codes.INVALID_ARGUMENT.format(_("请先下线环境，然后再删除。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("请先下线环境，然后再删除。"))
 
         StageHandler.delete(instance)
 

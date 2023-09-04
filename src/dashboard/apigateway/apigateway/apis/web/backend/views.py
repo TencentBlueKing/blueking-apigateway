@@ -147,7 +147,7 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
 
         # 通过stage/resource关联数据校验是否能删除
         if not BackendHandler.deletable(instance):
-            raise error_codes.INVALID_ARGUMENT.format(_("请先下线后端服务，然后再删除。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("请先下线后端服务，然后再删除。"))
 
         BackendConfig.objects.filter(backend=instance).delete()
         instance.delete()

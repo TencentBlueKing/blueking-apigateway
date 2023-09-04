@@ -119,7 +119,6 @@ class BackendListOutputSLZ(serializers.ModelSerializer):
         return self.context["resource_count"].get(obj.id, 0)
 
     def get_deletable(self, obj):
-        # 提一个方法判断Backend是否可删除
         if obj.name == DEFAULT_BACKEND_NAME:
             return False
 

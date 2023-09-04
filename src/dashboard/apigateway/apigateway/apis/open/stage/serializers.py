@@ -111,9 +111,6 @@ class UpstreamsSLZ(serializers.Serializer):
 
 
 class TransformHeadersSLZ(serializers.Serializer):
-    # add = serializers.DictField(child=serializers.CharField(), required=False, allow_empty=True)
-    # append = serializers.DictField(child=serializers.CharField(), required=False, allow_empty=True)
-    # replace = serializers.DictField(child=serializers.CharField(), required=False, allow_empty=True)
     set = serializers.DictField(label="设置", child=serializers.CharField(), required=False, allow_empty=True)
     delete = serializers.ListField(label="删除", child=serializers.CharField(), required=False, allow_empty=True)
 
