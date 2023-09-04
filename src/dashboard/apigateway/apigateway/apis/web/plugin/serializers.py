@@ -185,5 +185,7 @@ class PluginBindingListOutputSLZ(serializers.Serializer):
 
 
 class ScopePluginConfigListOutputSLZ(serializers.Serializer):
+    code = serializers.CharField()
     name = serializers.CharField()
     config = serializers.DictField()
+    config_id = serializers.IntegerField()

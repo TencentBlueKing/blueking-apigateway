@@ -148,7 +148,15 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
         ],
     )
     def test_update(
-        self, request_view, fake_gateway, fake_stage, echo_plugin, echo_plugin_type, config_tmpl, status_code
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        echo_plugin,
+        echo_plugin_type,
+        echo_plugin_stage_binding,
+        config_tmpl,
+        status_code,
     ):
         response = request_view(
             "PUT",
@@ -177,7 +185,9 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
             assert plugin["id"] == echo_plugin.pk
         # assert result["code"] == code
 
-    def test_delete(self, request_view, fake_gateway, fake_stage, echo_plugin, echo_plugin_type):
+    def test_delete(
+        self, request_view, fake_gateway, fake_stage, echo_plugin, echo_plugin_type, echo_plugin_stage_binding
+    ):
         response = request_view(
             "DELETE",
             "plugins.config.details",

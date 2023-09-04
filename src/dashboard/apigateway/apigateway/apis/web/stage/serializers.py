@@ -25,7 +25,7 @@ from apigateway.apis.web.backend.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.backend.serializers import BaseBackendConfigSLZ
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import STAGE_NAME_PATTERN
+from apigateway.core.constants import STAGE_NAME_PATTERN, StageStatusEnum
 from apigateway.core.models import Backend, Stage
 
 from .validators import StageVarsValidator
@@ -190,4 +190,4 @@ class StagePartialInputSLZ(serializers.Serializer):
 
 
 class StageStatusInputSLZ(serializers.Serializer):
-    status = serializers.ChoiceField(choices=[(0, "INACTIVE")])
+    status = serializers.ChoiceField(choices=[(StageStatusEnum.INACTIVE.value, "INACTIVE")])

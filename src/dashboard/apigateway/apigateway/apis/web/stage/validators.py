@@ -21,8 +21,10 @@ from rest_framework import serializers
 
 from apigateway.biz.released_resource import ReleasedResourceDataHandler
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, STAGE_VAR_FOR_PATH_PATTERN, STAGE_VAR_NAME_PATTERN
+from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN
 from apigateway.core.models import ResourceVersion
+
+from .constants import STAGE_VAR_FOR_PATH_PATTERN, STAGE_VAR_NAME_PATTERN
 
 
 class StageVarsValuesValidator:
