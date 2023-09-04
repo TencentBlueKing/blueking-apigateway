@@ -25,7 +25,7 @@ from apigateway.apis.open.stage import serializers
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.stage.serializers import StageSLZ
-from apigateway.biz.released_resource import ReleasedResourceData
+from apigateway.biz.released_resource import ReleasedResourceDataHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Stage
@@ -85,7 +85,7 @@ class StageV1ViewSet(viewsets.ViewSet):
         slz = serializers.StageWithResourceVersionV1SLZ(
             queryset,
             many=True,
-            context={"stage_release": ReleasedResourceData.get_stage_release(gateway=request.gateway)},
+            context={"stage_release": ReleasedResourceDataHandler.get_stage_release(gateway=request.gateway)},
         )
         return V1OKJsonResponse(data=slz.data)
 
