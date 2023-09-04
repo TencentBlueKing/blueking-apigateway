@@ -21,7 +21,12 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, MAX_BACKEND_TIMEOUT_IN_SECOND, BackendTypeEnum
+from apigateway.core.constants import (
+    DEFAULT_BACKEND_NAME,
+    HOST_WITHOUT_SCHEME_PATTERN,
+    MAX_BACKEND_TIMEOUT_IN_SECOND,
+    BackendTypeEnum,
+)
 from apigateway.core.models import Backend, BackendConfig, Stage
 
 from .constants import (
@@ -111,14 +116,14 @@ class BackendListOutputSLZ(serializers.ModelSerializer):
         fields = ["id", "name", "description", "resource_count", "deletable", "updated_time"]
 
     def get_resource_count(self, obj):
-        # TODO 从resource关联的backend来算数量
-        return 0
+        return self.context["resource_count"].get(obj.id, 0)
 
     def get_deletable(self, obj):
         # 提一个方法判断Backend是否可删除
-        # TODO 查询Resource关联是否存在
-        # TODO 查询Stage关联是否存在
-        return True
+        if obj.name == DEFAULT_BACKEND_NAME:
+            return False
+
+        return self.get_resource_count(obj) == 0
 
 
 class BackendRetrieveOutputSLZ(serializers.Serializer):

@@ -24,7 +24,8 @@ from rest_framework import generics, status
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.biz.backend import BackendHandler
-from apigateway.core.models import Backend, BackendConfig
+from apigateway.common.error_codes import error_codes
+from apigateway.core.models import Backend, BackendConfig, Proxy
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
@@ -53,10 +54,16 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
 
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            backend_ids = [backend.id for backend in page]
+            serializer = BackendListOutputSLZ(
+                page, many=True, context={"resource_count": Proxy.objects.get_backend_resource_count(backend_ids)}
+            )
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
+        backend_ids = [backend.id for backend in queryset]
+        serializer = BackendListOutputSLZ(
+            page, many=True, context={"resource_count": Proxy.objects.get_backend_resource_count(backend_ids)}
+        )
         return OKJsonResponse(data=serializer.data)
 
     @swagger_auto_schema(
@@ -138,7 +145,9 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        # TODO 通过stage/resource关联数据校验是否能删除
+        # 通过stage/resource关联数据校验是否能删除
+        if not BackendHandler.deletable(instance):
+            raise error_codes.INVALID_ARGUMENT.format(_("请先下线后端服务，然后再删除。"))
 
         BackendConfig.objects.filter(backend=instance).delete()
         instance.delete()
