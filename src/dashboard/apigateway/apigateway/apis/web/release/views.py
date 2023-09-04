@@ -28,7 +28,7 @@ from rest_framework import generics, status
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceDataHandler
-from apigateway.biz.releaser import ReleaseBatchManager, ReleaseError
+from apigateway.biz.releaser import ReleaseBatchHandler, ReleaseError
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
@@ -145,10 +145,18 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
         return Release.objects.filter(gateway=self.request.gateway)
 
     def create(self, request, *args, **kwargs):
-        manager = ReleaseBatchManager(access_token=get_user_access_token_from_request(request))
+        handler = ReleaseBatchHandler(access_token=get_user_access_token_from_request(request))
 
         try:
-            history = manager.release_batch(request.gateway, request.data, request.user.username)
+            slz = ReleaseBatchInputSLZ(data=request.data, context={"gateway": request.gateway})
+            slz.is_valid(raise_exception=True)
+            history = handler.release_batch(
+                request.gateway,
+                slz.validated_data["stage_ids"],
+                slz.validated_data["resource_version_id"],
+                slz.validated_data.get("comment", ""),
+                request.user.username,
+            )
         except ReleaseError as err:
             logger.exception("release failed.")
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
