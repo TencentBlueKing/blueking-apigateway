@@ -77,6 +77,9 @@ class StageHandler:
 
         BackendConfig.objects.bulk_update(backends.values(), fields=["config", "updated_by"])
 
+        # 触发环境发布
+        trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, updated_by, stage.gateway_id, stage.id, is_sync=True)
+
         return stage
 
     @staticmethod

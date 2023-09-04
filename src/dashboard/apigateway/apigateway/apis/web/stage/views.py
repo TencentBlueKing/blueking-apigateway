@@ -140,9 +140,6 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
         username = request.user.username
         stage = StageHandler.update(instance, data, username)
 
-        # 触发环境发布
-        trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, username, stage.gateway_id, stage.id, is_sync=True)
-
         record_audit_log(
             username=username,
             op_type=OpTypeEnum.MODIFY.value,
