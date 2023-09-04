@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,3 +16,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import pytest
+
+from apigateway.biz.constants import STAGE_VAR_FOR_PATH_PATTERN
+
+
+class TestConstants:
+    @pytest.mark.parametrize(
+        "value, match",
+        [
+            ("/hello", True),
+            ("hello", True),
+            ("/hello/?a=b", False),
+            ("/hello/#fff", False),
+        ],
+    )
+    def test_stage_var_for_path_pattern(self, value, match):
+        result = STAGE_VAR_FOR_PATH_PATTERN.match(value)
+        if match:
+            assert result
+        else:
+            assert not result

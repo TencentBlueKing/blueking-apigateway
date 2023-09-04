@@ -22,7 +22,8 @@ from rest_framework import serializers
 from apigateway.biz.released_resource import ReleasedResourceDataHandler
 from apigateway.biz.validators import StageVarsValuesValidator
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
-from apigateway.core.constants import STAGE_VAR_NAME_PATTERN
+
+from .constants import STAGE_VAR_NAME_PATTERN
 
 
 class StageVarsValidator(GetGatewayFromContextMixin):

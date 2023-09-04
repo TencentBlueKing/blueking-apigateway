@@ -22,9 +22,9 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.stage import serializers
+from apigateway.apis.open.stage.serializers import StageSLZ
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.stage.serializers import StageSLZ
 from apigateway.biz.released_resource import ReleasedResourceDataHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import StageStatusEnum

@@ -283,6 +283,10 @@ class ProxyManager(models.Manager):
             for proxy in self.filter(resource_id__in=resource_ids)
         }
 
+    def get_backend_resource_count(self, backend_ids: List[int]) -> Dict[int, int]:
+        qs = self.filter(backend_id__in=backend_ids).values("backend_id").annotate(count=Count("backend_id"))
+        return {i["backend_id"]: i["count"] for i in qs}
+
 
 class StageResourceDisabledManager(models.Manager):
     def get_disabled_stages(self, resource_id):

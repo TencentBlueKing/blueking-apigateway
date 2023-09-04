@@ -36,34 +36,6 @@ class TestConstants:
         assert bool(result) == matched
 
     @pytest.mark.parametrize(
-        "value, matched",
-        [
-            ("http://2001:db8:3333:4444:5555:6666:7777:8888", False),
-            ("http://[2001:db8:3333:4444:5555:6666:7777:8888]", True),
-            ("https://[2001:db8:3333:4444:5555:6666:7777:8888]:8000", True),
-            ("https://[aaaa::7777:8888]:8000/", True),
-        ],
-    )
-    def test_domain_with_http_and_ipv6_pattern(self, value, matched):
-        result = constants.DOMAIN_WITH_HTTP_AND_IPV6_PATTERN.match(value)
-        assert bool(result) == matched
-
-    @pytest.mark.parametrize(
-        "value, matched",
-        [
-            ("http://0.0.0.1", True),
-            ("http://0.0.0.1/", True),
-            ("http://[2001:db8:3333:4444:5555:6666:7777:8888]", True),
-            ("https://[2001:db8:3333:4444:5555:6666:7777:8888]/", True),
-            ("https://2001:db8:3333:4444:5555:6666:7777:8888", False),
-            ("http://0.0.0.1/a/", False),
-        ],
-    )
-    def test_domain_pattern(self, value, matched):
-        result = constants.DOMAIN_PATTERN.match(value)
-        assert bool(result) == matched
-
-    @pytest.mark.parametrize(
         "value, match",
         [
             # ok
@@ -89,22 +61,6 @@ class TestConstants:
     def test_stage_var_pattern(self, value, expected):
         result = constants.STAGE_VAR_PATTERN.findall(value)
         assert result == expected
-
-    @pytest.mark.parametrize(
-        "value, match",
-        [
-            ("/hello", True),
-            ("hello", True),
-            ("/hello/?a=b", False),
-            ("/hello/#fff", False),
-        ],
-    )
-    def test_stage_var_for_path_pattern(self, value, match):
-        result = constants.STAGE_VAR_FOR_PATH_PATTERN.match(value)
-        if match:
-            assert result
-        else:
-            assert not result
 
     @pytest.mark.parametrize(
         "value, match",

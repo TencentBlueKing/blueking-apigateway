@@ -21,7 +21,7 @@ import logging
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apigateway.apps.stage.serializers import StageSLZ
+from apigateway.apis.open.stage.serializers import StageSLZ
 from apigateway.core.models import Gateway, Stage
 from apigateway.utils.django import get_object_or_None
 
