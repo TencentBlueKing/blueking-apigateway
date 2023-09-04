@@ -59,7 +59,7 @@ class Command(BaseCommand):
                         gateway_id=gateway_id,
                         proxies="\n".join(
                             f"id={proxy.id}, resource_id={proxy.resource_id}, type={proxy.type}"
-                            for proxy in proxies.values()
+                            for proxy in not_mock_proxies
                         ),
                     )
                 )
