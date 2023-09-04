@@ -696,6 +696,7 @@ API_GATEWAY_RESOURCE_LIMITS = {
     # 配置 app 的特殊规则
     "max_gateway_count_per_app_whitelist": {
         "bk_sops": 1000000,  # 标准运维网关数量无限制
+        "data": 1000000,
     },
     # 配置网关的特殊规则
     "max_resource_count_per_gateway_whitelist": {
