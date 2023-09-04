@@ -116,6 +116,20 @@ class ResourceContexts(BaseModel, DiffMixin):
         return self.resource_auth.diff(target.resource_auth)
 
 
+class ResourcePluginConfig(BaseModel, DiffMixin):
+    id: int
+    name: str
+    type: int
+    config: Dict[Text, Any] = Field(default_factory=dict)
+
+
+class ResourcePlugins(BaseModel, DiffMixin):
+    config: ResourcePluginConfig
+
+    def diff_config(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
+        return self.config.diff(target.config)
+
+
 class ResourceDifferHandler(BaseModel, DiffMixin):
     id: int
     name: Text
@@ -127,6 +141,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
     proxy: Union[ResourceHTTPProxy, ResourceMockProxy]
     contexts: ResourceContexts
     disabled_stages: List[Text] = Field(default_factory=list)
+    plugins: List[ResourcePluginConfig] = Field(default_factory=list)
     doc_updated_time: Dict[str, str]
 
     def diff_proxy(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
@@ -137,6 +152,36 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
 
     def diff_contexts(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
         return self.contexts.diff(target.contexts)
+
+    def diff_plugins(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
+        source_plugins = {plugin.name: plugin for plugin in self.plugins}
+        target_plugins = {plugin.name: plugin for plugin in target.plugins}
+
+        added_plugins = {}
+        deleted_plugins = {}
+        modified_plugins = {}
+
+        # Compare plugins that exist in both self.plugins and target.plugins
+        for name, source_plugin in source_plugins.items():
+            if name in target_plugins:
+                target_plugin = target_plugins[name]
+                diff_result = source_plugin.diff(target_plugin)
+                if diff_result:
+                    modified_plugins[name] = diff_result
+            else:
+                deleted_plugins[name] = source_plugin.dict()
+
+        # Find plugins that exist in target.plugins but not in self.plugins
+        for name, target_plugin in target_plugins.items():
+            if name not in source_plugins:
+                added_plugins[name] = target_plugin.dict()
+
+        return (
+            {"added_plugins": added_plugins, "modified_plugins": modified_plugins, "deleted_plugins": deleted_plugins}
+            if added_plugins or modified_plugins or deleted_plugins
+            else None,
+            None,
+        )
 
     @staticmethod
     def diff_resource_version_data(
