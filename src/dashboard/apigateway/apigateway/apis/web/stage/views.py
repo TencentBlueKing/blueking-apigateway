@@ -25,6 +25,8 @@ from apigateway.apps.audit.utils import record_audit_log
 from apigateway.biz.released_resource import ReleasedResourceDataHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.error_codes import error_codes
+from apigateway.controller.tasks.syncing import trigger_gateway_publish
+from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import BackendConfig, Stage
 from apigateway.utils.responses import OKJsonResponse
 
@@ -135,10 +137,11 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 
         data = slz.validated_data
 
-        stage = StageHandler.update(instance, data, request.user.username)
+        username = request.user.username
+        stage = StageHandler.update(instance, data, username)
 
         record_audit_log(
-            username=request.user.username,
+            username=username,
             op_type=OpTypeEnum.MODIFY.value,
             op_status=OpStatusEnum.SUCCESS.value,
             op_object_group=request.gateway.id,
@@ -159,7 +162,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 
         # 判断环境是否已下线
         if not instance.deletable:
-            raise error_codes.INVALID_ARGUMENT.format(_("请先下线环境，然后再删除。"))
+            raise error_codes.FAILED_PRECONDITION.format(_("请先下线环境，然后再删除。"))
 
         StageHandler.delete(instance)
 
@@ -224,6 +227,23 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
         instance.vars = data["vars"]
         instance.save()
 
+        username = request.user.username
+        # 触发环境发布
+        trigger_gateway_publish(
+            PublishSourceEnum.STAGE_UPDATE, username, instance.gateway_id, instance.id, is_sync=True
+        )
+
+        record_audit_log(
+            username=username,
+            op_type=OpTypeEnum.MODIFY.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=request.gateway.id,
+            op_object_type=OpObjectTypeEnum.STAGE.value,
+            op_object_id=instance.id,
+            op_object=instance.name,
+            comment=_("更新环境变量"),
+        )
+
         return OKJsonResponse()
 
 
@@ -234,7 +254,7 @@ class BackendConfigQuerySetMixin:
 
 
 class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
-    queryset = BackendConfig.objects.order_by("backend__id").prefetch_related("backend")
+    queryset = BackendConfig.objects.order_by("backend_id").prefetch_related("backend")
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: StageBackendOutputSLZ(many=True)},
@@ -254,7 +274,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
         tags=["WebAPI.Stage"],
     )
     def retrieve(self, request, *args, **kwargs):
-        instance = get_object_or_404(self.get_queryset(), backend__id=self.kwargs["backend_id"])
+        instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
 
         serializer = StageBackendOutputSLZ(instance)
         return OKJsonResponse(data=serializer.data)
@@ -265,7 +285,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
         tags=["WebAPI.Stage"],
     )
     def update(self, request, *args, **kwargs):
-        instance = get_object_or_404(self.get_queryset(), backend__id=self.kwargs["backend_id"])
+        instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
 
         slz = BackendConfigInputSLZ(data=request.data, context={"backend": instance.backend})
         slz.is_valid(raise_exception=True)
@@ -273,6 +293,12 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
         data = slz.validated_data
         instance.config = data
         instance.save()
+
+        username = request.user.username
+        # 触发环境发布
+        trigger_gateway_publish(
+            PublishSourceEnum.BACKEND_UPDATE, username, instance.gateway_id, instance.stage_id, is_sync=True
+        )
 
         return OKJsonResponse()
 
@@ -294,10 +320,11 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
 
         instance = self.get_object()
 
-        StageHandler.set_status(instance, data["status"], request.user.username)
+        username = request.user.username
+        StageHandler.set_status(instance, data["status"], username)
 
         record_audit_log(
-            username=request.user.username,
+            username=username,
             op_type=OpTypeEnum.MODIFY.value,
             op_status=OpStatusEnum.SUCCESS.value,
             op_object_group=request.gateway.id,
