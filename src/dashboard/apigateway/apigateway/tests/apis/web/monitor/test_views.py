@@ -42,7 +42,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
         cls.gateway = create_gateway()
-        cls.label = G(APILabel, api=cls.gateway)
+        cls.label = G(APILabel, gateway=cls.gateway)
 
     def test_create(self):
         data = [
@@ -78,16 +78,16 @@ class TestAlarmStrategyListCreateApi(TestCase):
 
             self.assertEqual(response.status_code, 201, result)
 
-            strategy = AlarmStrategy.objects.get(api=self.gateway, name="test")
+            strategy = AlarmStrategy.objects.get(gateway=self.gateway, name="test")
             self.assertEqual(strategy.api_labels.count(), len(test["api_label_ids"]))
 
     def test_list(self):
-        api_label = G(APILabel, api=self.gateway, name="test")
+        api_label = G(APILabel, gateway=self.gateway, name="test")
 
-        strategy_1 = G(AlarmStrategy, api=self.gateway, name="list-01", updated_time=dummy_time.time)
+        strategy_1 = G(AlarmStrategy, gateway=self.gateway, name="list-01", updated_time=dummy_time.time)
         strategy_1.api_labels.add(api_label)
 
-        strategy_2 = G(AlarmStrategy, api=self.gateway, name="list-02", updated_time=dummy_time.time)
+        strategy_2 = G(AlarmStrategy, gateway=self.gateway, name="list-02", updated_time=dummy_time.time)
 
         data = [
             {
@@ -163,12 +163,12 @@ class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
         cls.gateway = create_gateway()
-        cls.label = G(APILabel, api=cls.gateway)
+        cls.label = G(APILabel, gateway=cls.gateway)
 
     def test_retrieve(self):
         alarm_strategy = G(
             AlarmStrategy,
-            api=self.gateway,
+            gateway=self.gateway,
             name="test",
             alarm_type="resource_backend",
             _api_label_ids=f"{self.label.id}",
@@ -202,7 +202,7 @@ class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
     def test_update(self):
         alarm_strategy = G(
             AlarmStrategy,
-            api=self.gateway,
+            gateway=self.gateway,
             schema=SchemaFactory().get_monitor_alarm_strategy_schema(),
         )
         data = [
@@ -239,7 +239,7 @@ class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
             self.assertEqual(response.status_code, 204)
 
     def test_destroy(self):
-        alarm_strategy = G(AlarmStrategy, api=self.gateway)
+        alarm_strategy = G(AlarmStrategy, gateway=self.gateway)
 
         request = self.factory.delete(f"/apis/{self.gateway.id}/monitors/alarm/strategies/{alarm_strategy.id}/")
 
@@ -254,12 +254,12 @@ class TestAlarmStrategyUpdateStatusApi(TestCase):
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
         cls.gateway = create_gateway()
-        cls.label = G(APILabel, api=cls.gateway)
+        cls.label = G(APILabel, gateway=cls.gateway)
 
     def test_update_status(self):
         alarm_strategy = G(
             AlarmStrategy,
-            api=self.gateway,
+            gateway=self.gateway,
             name="test",
             alarm_type="resource_backend",
             _api_label_ids=f"{self.label.id}",
@@ -305,16 +305,16 @@ class TestAlarmRecordListApi(TestCase):
         cls.gateway = create_gateway()
 
     def test_list(self):
-        strategy_1 = G(AlarmStrategy, api=self.gateway)
-        strategy_2 = G(AlarmStrategy, api=self.gateway)
+        strategy_1 = G(AlarmStrategy, gateway=self.gateway)
+        strategy_2 = G(AlarmStrategy, gateway=self.gateway)
 
-        record = G(AlarmRecord, api=self.gateway, status="received")
+        record = G(AlarmRecord, gateway=self.gateway, status="received")
         record.alarm_strategies.set([strategy_1])
 
-        record = G(AlarmRecord, api=self.gateway, status="received")
+        record = G(AlarmRecord, gateway=self.gateway, status="received")
         record.alarm_strategies.set([strategy_1])
 
-        record = G(AlarmRecord, api=self.gateway, status="skipped")
+        record = G(AlarmRecord, gateway=self.gateway, status="skipped")
         record.alarm_strategies.set([strategy_2])
 
         data = [
@@ -355,8 +355,8 @@ class TestAlarmRecordRetrieveApi(TestCase):
         cls.gateway = create_gateway()
 
     def test_retrieve(self):
-        strategy = G(AlarmStrategy, api=self.gateway)
-        alarm_record = G(AlarmRecord, api=self.gateway)
+        strategy = G(AlarmStrategy, gateway=self.gateway)
+        alarm_record = G(AlarmRecord, gateway=self.gateway)
         alarm_record.alarm_strategies.set([strategy])
 
         request = self.factory.get(f"/apis/{self.gateway.id}/monitors/alarm/records/{alarm_record.id}/")
@@ -375,8 +375,8 @@ class TestAlarmRecordSummaryListApi(TestCase):
         cls.gateway = create_gateway()
 
     def test_get(self):
-        strategy_1 = G(AlarmStrategy, api=self.gateway)
-        strategy_2 = G(AlarmStrategy, api=self.gateway)
+        strategy_1 = G(AlarmStrategy, gateway=self.gateway)
+        strategy_2 = G(AlarmStrategy, gateway=self.gateway)
 
         alarm_record_1 = G(AlarmRecord, created_time=dummy_time.time)
         alarm_record_1.alarm_strategies.set([strategy_1])

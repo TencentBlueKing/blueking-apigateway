@@ -37,30 +37,30 @@ class TestAppAPIPermissionManager:
         self.gateway = G(Gateway, created_by="admin")
 
     def test_filter_public_permission_by_app(self, unique_id):
-        api1 = G(Gateway, is_public=True)
-        api2 = G(Gateway, is_public=False)
+        gateway_1 = G(Gateway, is_public=True)
+        gateway_2 = G(Gateway, is_public=False)
 
-        G(models.AppAPIPermission, api=api1, bk_app_code=unique_id)
-        G(models.AppAPIPermission, api=api2, bk_app_code=unique_id)
+        G(models.AppAPIPermission, gateway=gateway_1, bk_app_code=unique_id)
+        G(models.AppAPIPermission, gateway=gateway_2, bk_app_code=unique_id)
 
         assert 1 == models.AppAPIPermission.objects.filter_public_permission_by_app(unique_id).count()
 
     def test_renew_by_ids(self):
         perm_1 = G(
             models.AppAPIPermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test-1",
             expires=dummy_time.time,
         )
         perm_2 = G(
             models.AppAPIPermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test-2",
             expires=to_datetime_from_now(170),
         )
         perm_3 = G(
             models.AppAPIPermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test-3",
             expires=to_datetime_from_now(days=720),
         )
@@ -81,35 +81,35 @@ class TestAppResourcePermissionManager:
     @pytest.fixture(autouse=True)
     def setup_fixture(self):
         self.gateway = G(Gateway, created_by="admin")
-        self.resource = G(Resource, api=self.gateway)
+        self.resource = G(Resource, gateway=self.gateway)
 
     def test_filter_public_permission_by_app(self, unique_id):
-        api1 = G(Gateway, is_public=True)
-        api2 = G(Gateway, is_public=False)
+        gateway_1 = G(Gateway, is_public=True)
+        gateway_2 = G(Gateway, is_public=False)
 
-        G(models.AppResourcePermission, api=api1, bk_app_code=unique_id)
-        G(models.AppResourcePermission, api=api2, bk_app_code=unique_id)
+        G(models.AppResourcePermission, gateway=gateway_1, bk_app_code=unique_id)
+        G(models.AppResourcePermission, gateway=gateway_2, bk_app_code=unique_id)
 
         assert 1 == models.AppResourcePermission.objects.filter_public_permission_by_app(unique_id).count()
 
     def test_renew_by_ids(self):
         perm_1 = G(
             models.AppResourcePermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test-1",
             expires=dummy_time.time,
             resource_id=self.resource.id,
         )
         perm_2 = G(
             models.AppResourcePermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test-2",
             expires=to_datetime_from_now(days=70),
             resource_id=self.resource.id,
         )
         perm_3 = G(
             models.AppResourcePermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test-3",
             expires=to_datetime_from_now(days=720),
             resource_id=self.resource.id,
@@ -129,21 +129,21 @@ class TestAppResourcePermissionManager:
     def test_renew_not_expired_permission(self):
         perm_1 = G(
             models.AppResourcePermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test-1",
             expires=dummy_time.time,
             resource_id=self.resource.id,
         )
         perm_2 = G(
             models.AppResourcePermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test-2",
             expires=to_datetime_from_now(days=70),
             resource_id=self.resource.id,
         )
         perm_3 = G(
             models.AppResourcePermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test-3",
             expires=to_datetime_from_now(days=720),
             resource_id=self.resource.id,
@@ -163,11 +163,11 @@ class TestAppResourcePermissionManager:
         assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(721)
 
     def test_save_permissions(self):
-        resource_1 = G(Resource, api=self.gateway)
-        resource_2 = G(Resource, api=self.gateway)
+        resource_1 = G(Resource, gateway=self.gateway)
+        resource_2 = G(Resource, gateway=self.gateway)
         G(
             models.AppResourcePermission,
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code="test",
             grant_type="initialize",
             resource_id=resource_1.id,
@@ -190,7 +190,7 @@ class TestAppResourcePermissionManager:
         for test in data:
             models.AppResourcePermission.objects.save_permissions(self.gateway, **test)
             permission = models.AppResourcePermission.objects.get(
-                api=self.gateway, resource_id=test["resource_ids"][0], bk_app_code=test["bk_app_code"]
+                gateway=self.gateway, resource_id=test["resource_ids"][0], bk_app_code=test["bk_app_code"]
             )
             assert permission.grant_type == test["grant_type"]
             assert 180 * 24 * 3600 - 10 < (permission.expires - now_datetime()).total_seconds() < 180 * 24 * 3600
@@ -198,36 +198,36 @@ class TestAppResourcePermissionManager:
     def test_sync_from_api_permission(self):
         bk_app_code = "test"
         gateway = G(Gateway)
-        resource = G(Resource, api=gateway)
+        resource = G(Resource, gateway=gateway)
 
         # has no api-perm
         models.AppResourcePermission.objects.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
-        assert models.AppResourcePermission.objects.filter(api=gateway, bk_app_code=bk_app_code).count() == 0
+        assert models.AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 0
 
         # api-perm expired
         api_perm = G(
             models.AppAPIPermission,
-            api=gateway,
+            gateway=gateway,
             bk_app_code=bk_app_code,
             expires=now_datetime() - datetime.timedelta(seconds=10),
         )
         models.AppResourcePermission.objects.sync_from_gateway_permission(gateway, bk_app_code, [1])
-        assert models.AppResourcePermission.objects.filter(api=gateway, bk_app_code=bk_app_code).count() == 0
+        assert models.AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 0
 
         api_perm.expires = now_datetime() + datetime.timedelta(seconds=10)
         api_perm.save()
         models.AppResourcePermission.objects.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
-        assert models.AppResourcePermission.objects.filter(api=gateway, bk_app_code=bk_app_code).count() == 1
+        assert models.AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 1
 
 
 class TestAppPermissionRecordManager:
     def test_filter_record(self):
-        api1 = G(Gateway, name="test1")
-        api2 = G(Gateway, name="test2")
+        gateway_1 = G(Gateway, name="test1")
+        gateway_2 = G(Gateway, name="test2")
 
         G(
             models.AppPermissionRecord,
-            api=api1,
+            gateway=gateway_1,
             bk_app_code="test",
             applied_by="admin1",
             applied_time=now_datetime(),
@@ -237,7 +237,7 @@ class TestAppPermissionRecordManager:
         )
         G(
             models.AppPermissionRecord,
-            api=api2,
+            gateway=gateway_2,
             bk_app_code="test-2",
             applied_by="admin2",
             applied_time=dummy_time.time,
@@ -246,7 +246,7 @@ class TestAppPermissionRecordManager:
             grant_dimension="resource",
         )
 
-        queryset = models.AppPermissionRecord.objects.filter(api__id__in=[api1.id, api2.id])
+        queryset = models.AppPermissionRecord.objects.filter(gateway__id__in=[gateway_1.id, gateway_2.id])
         assert 1 == models.AppPermissionRecord.objects.filter_record(queryset, bk_app_code="test").count()
         assert (
             1

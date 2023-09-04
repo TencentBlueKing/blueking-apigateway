@@ -69,7 +69,7 @@ class HeaderRewriteConvertor:
         # 如果没有绑定, 新建插件配置, 并绑定到scope
         if plugin_config:
             config = PluginConfig(
-                api_id=gateway_id,
+                gateway_id=gateway_id,
                 name=f"{scope_type} [{scope_id}] header rewrite",
                 type=PluginType.objects.get(code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value),
                 yaml=yaml_dumps(plugin_config),

@@ -26,7 +26,7 @@ from apigateway.core.models import Resource
 
 class TestBaseParser:
     def test_enrich_docs(self, fake_resource_doc, faker):
-        fake_gateway = fake_resource_doc.api
+        fake_gateway = fake_resource_doc.gateway
         fake_resource = Resource.objects.get(id=fake_resource_doc.resource_id)
         parser = BaseParser(fake_gateway.id)
 

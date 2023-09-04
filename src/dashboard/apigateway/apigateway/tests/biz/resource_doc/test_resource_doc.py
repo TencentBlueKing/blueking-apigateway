@@ -36,7 +36,7 @@ class TestResourceDocHandler:
         result = ResourceDocHandler.get_docs([])
         assert result == {}
 
-        zh_doc = G(ResourceDoc, resource_id=fake_resource.id, api=fake_resource.api, language="zh")
+        zh_doc = G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="zh")
         result = ResourceDocHandler.get_docs([fake_resource.id])
         assert result == {
             fake_resource.id: [
@@ -47,7 +47,7 @@ class TestResourceDocHandler:
             ]
         }
 
-        en_doc = G(ResourceDoc, resource_id=fake_resource.id, api=fake_resource.api, language="en")
+        en_doc = G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="en")
         result = ResourceDocHandler.get_docs([fake_resource.id])
         assert result == {
             fake_resource.id: [
@@ -63,8 +63,8 @@ class TestResourceDocHandler:
         }
 
     def test_get_docs_by_language(self, fake_resource):
-        zh_doc = G(ResourceDoc, resource_id=fake_resource.id, api=fake_resource.api, language="zh")
-        en_doc = G(ResourceDoc, resource_id=fake_resource.id, api=fake_resource.api, language="en")
+        zh_doc = G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="zh")
+        en_doc = G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="en")
 
         result = ResourceDocHandler.get_docs_by_language([], "en")
         assert result == {}

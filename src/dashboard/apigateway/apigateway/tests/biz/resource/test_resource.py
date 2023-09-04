@@ -86,10 +86,10 @@ class TestResourceHandler:
             assert result == test["expected"]
 
     def test_save_resource_labels(self, fake_resource):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
-        label_1 = G(APILabel, api=fake_gateway)
-        label_2 = G(APILabel, api=fake_gateway)
+        label_1 = G(APILabel, gateway=fake_gateway)
+        label_2 = G(APILabel, gateway=fake_gateway)
         G(ResourceLabel, resource=fake_resource, api_label=label_1)
 
         # test save label
@@ -102,7 +102,7 @@ class TestResourceHandler:
 
     def test_save_disabled_stages(self):
         gateway = G(Gateway)
-        resource = G(Resource, api=gateway)
+        resource = G(Resource, gateway=gateway)
         stage = G(Stage, gateway=gateway)
         invalid_stage = G(Stage, gateway=gateway)
         G(StageResourceDisabled, resource=resource, stage=invalid_stage)
@@ -195,11 +195,11 @@ class TestResourceHandler:
 
     def test_filter_resource(self):
         gateway = G(Gateway)
-        G(Resource, api=gateway, path="/apis/", method="GET", name="search_apis")
-        G(Resource, api=gateway, path="/resources/", method="POST", name="create_resource")
-        resource = G(Resource, api=gateway, path="/labels/1/", method="DELETE", name="delete_label")
+        G(Resource, gateway=gateway, path="/apis/", method="GET", name="search_apis")
+        G(Resource, gateway=gateway, path="/resources/", method="POST", name="create_resource")
+        resource = G(Resource, gateway=gateway, path="/labels/1/", method="DELETE", name="delete_label")
 
-        api_label = G(APILabel, api=gateway, name="hello")
+        api_label = G(APILabel, gateway=gateway, name="hello")
         G(ResourceLabel, resource=resource, api_label=api_label)
 
         data = [
@@ -254,10 +254,10 @@ class TestResourceHandler:
         assert isinstance(snapshot, dict)
 
     def test_filter_by_resource_filter_condition(self, fake_gateway):
-        resource_1 = G(Resource, api=fake_gateway, name="test1", method="GET", path="/test")
-        resource_2 = G(Resource, api=fake_gateway, name="test2", method="POST", path="/test")
-        resource_3 = G(Resource, api=fake_gateway, name="color", method="PUT", path="/green")
-        label = G(APILabel, api=fake_gateway)
+        resource_1 = G(Resource, gateway=fake_gateway, name="test1", method="GET", path="/test")
+        resource_2 = G(Resource, gateway=fake_gateway, name="test2", method="POST", path="/test")
+        resource_3 = G(Resource, gateway=fake_gateway, name="color", method="PUT", path="/green")
+        label = G(APILabel, gateway=fake_gateway)
         G(ResourceLabel, api_label=label, resource=resource_1)
 
         result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"name": "test1"})

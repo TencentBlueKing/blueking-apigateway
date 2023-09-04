@@ -63,7 +63,7 @@ class TestAppPermissionResourceSLZ:
     )
     def test_to_representation(self, mocker, params, expected):
         slz = serializers.AppPermissionResourceSLZ(
-            params, context={"request": mock.MagicMock(api=mock.MagicMock(name="test"))}
+            params, context={"request": mock.MagicMock(gateway=mock.MagicMock(name="test"))}
         )
         assert slz.data == expected
 
@@ -190,7 +190,7 @@ class TestPaaSAppPermissionApplySLZ:
             return_value=None,
         )
 
-        slz = serializers.PaaSAppPermissionApplySLZ(data=params, context={"request": mock.MagicMock(api=None)})
+        slz = serializers.PaaSAppPermissionApplySLZ(data=params, context={"request": mock.MagicMock(gateway=None)})
         slz.is_valid()
 
         if will_error:
@@ -230,7 +230,7 @@ class TestAppPermissionApplyV1SLZ:
 
         permission = G(
             AppAPIPermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code=bk_app_code,
             expires=to_datetime_from_now(days=180),
         )
@@ -245,7 +245,7 @@ class TestAppPermissionApplyV1SLZ:
         bk_app_code = "app2"
         G(
             AppPermissionApplyStatus,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code=bk_app_code,
             grant_dimension="api",
             status="pending",

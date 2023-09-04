@@ -36,13 +36,13 @@ from apigateway.core.models import Gateway, Resource
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument("--api-names", dest="api_names", type=str, nargs="*")
+        parser.add_argument("--gateway-names", dest="gateway_names", type=str, nargs="*")
         parser.add_argument("--file-type", dest="file_type", default="tgz", choices=DocArchiveTypeEnum.get_values())
         parser.add_argument("--output", dest="output", type=str, help="output filename")
 
-    def handle(self, api_names: List[str], file_type: str, output: str, **options) -> None:
+    def handle(self, gateway_names: List[str], file_type: str, output: str, **options) -> None:
         output = self._validate_output(output, file_type)
-        gateway_name_to_id = self._get_export_gateways(api_names)
+        gateway_name_to_id = self._get_export_gateways(gateway_names)
         archivefile = ArchiveFileFactory.from_file_type(file_type)
 
         doc_files = []
@@ -86,8 +86,8 @@ class Command(BaseCommand):
         if not gateway_names:
             return gateway_name_to_id
 
-        not_exist_api = set(gateway_names) - set(gateway_name_to_id.keys())
-        if not_exist_api:
-            raise CommandError(f"以下网关不存在，请检查：{', '.join(sorted(list(not_exist_api)))}")
+        not_exist_gateway = set(gateway_names) - set(gateway_name_to_id.keys())
+        if not_exist_gateway:
+            raise CommandError(f"以下网关不存在，请检查：{', '.join(sorted(list(not_exist_gateway)))}")
 
         return {name: gateway_name_to_id[name] for name in gateway_names}

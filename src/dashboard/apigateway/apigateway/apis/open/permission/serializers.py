@@ -241,7 +241,7 @@ class AppPermissionRecordSLZ(serializers.ModelSerializer):
         ]
 
     def get_api_name(self, obj):
-        return obj.api.name
+        return obj.gateway.name
 
     def get_apply_status(self, obj):
         return obj.status
@@ -252,7 +252,7 @@ class AppPermissionRecordSLZ(serializers.ModelSerializer):
     def get_handled_by(self, obj):
         if obj.handled_by:
             return [obj.handled_by]
-        return obj.api.maintainers
+        return obj.gateway.maintainers
 
     def get_comment(self, obj):
         return obj.comment or ""

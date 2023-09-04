@@ -33,11 +33,11 @@ class Command(BaseCommand):
     """更新网关的 JWT 密钥"""
 
     def add_arguments(self, parser):
-        parser.add_argument("--api-name", type=str, dest="api_name", required=True)
+        parser.add_argument("--gateway-name", type=str, dest="gateway_name", required=True)
         parser.add_argument("--private-key", type=str, dest="private_key", required=True)
         parser.add_argument("--public-key", type=str, dest="public_key", required=True)
 
-    def handle(self, api_name: str, private_key: str, public_key: str, **options):
+    def handle(self, gateway_name: str, private_key: str, public_key: str, **options):
         decoded_private_key = self._decode_base64(private_key).strip()
         decoded_public_key = self._decode_base64(public_key).strip()
 
@@ -46,14 +46,14 @@ class Command(BaseCommand):
         except RSAKeyValidationError as err:
             raise CommandError(str(err))
 
-        gateway = get_object_or_None(Gateway, name=api_name)
+        gateway = get_object_or_None(Gateway, name=gateway_name)
         if not gateway:
-            raise CommandError(f"gateway not found: gateway_name={api_name}")
+            raise CommandError(f"gateway not found: gateway_name={gateway_name}")
 
         JWT.objects.update_jwt_key(gateway, decoded_private_key, decoded_public_key)
 
         logger.info(
-            f"update gateway jwt key success: gateway_name={api_name}, public_key=`{smart_str(decoded_public_key)}`"
+            f"update gateway jwt key success: gateway_name={gateway_name}, public_key=`{smart_str(decoded_public_key)}`"
         )
 
     def _decode_base64(self, encoded_key: str) -> bytes:

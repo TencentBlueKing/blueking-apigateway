@@ -54,12 +54,12 @@ class SDKViewSet(viewsets.GenericViewSet):
         slz = SDKQuerySLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        api = support_helper.get_gateway_by_name(gateway_name)
-        if not api:
+        gateway = support_helper.get_gateway_by_name(gateway_name)
+        if not gateway:
             raise error_codes.NOT_FOUND
 
         sdks = support_helper.get_stage_sdks(
-            api["id"],
+            gateway["id"],
             language=slz.validated_data["language"],
         )
         slz = StageSDKSLZ(sorted(sdks or [], key=lambda x: x["stage_name"]), many=True)

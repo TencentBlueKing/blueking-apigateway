@@ -251,9 +251,9 @@ class TestResourcePermission:
 
 class TestAppPermissionBuilder:
     def test_build(self, mocker, fake_gateway, unique_id):
-        r = G(Resource, api=fake_gateway)
-        G(AppAPIPermission, api=fake_gateway, bk_app_code=unique_id, expires=None)
-        G(AppResourcePermission, api=fake_gateway, bk_app_code=unique_id, resource_id=r.id)
+        r = G(Resource, gateway=fake_gateway)
+        G(AppAPIPermission, gateway=fake_gateway, bk_app_code=unique_id, expires=None)
+        G(AppResourcePermission, gateway=fake_gateway, bk_app_code=unique_id, resource_id=r.id)
 
         mocker.patch(
             "apigateway.apis.open.permission.helpers.ResourceVersionHandler.get_released_public_resources",

@@ -25,7 +25,7 @@ from apigateway.core.models import Resource
 class ResourceLabelHandler:
     @classmethod
     def get_labels_by_gateway(cls, gateway_id: int) -> Dict[int, List]:
-        resource_ids = list(Resource.objects.filter(api_id=gateway_id).values_list("id", flat=True))
+        resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
         return cls.get_labels(resource_ids)
 
     @staticmethod

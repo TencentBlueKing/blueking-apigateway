@@ -35,9 +35,9 @@ from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Sta
 pytestmark = pytest.mark.django_db(transaction=True)
 
 
-def get_release_data(api):
-    stage = G(Stage, gateway=api)
-    resource_version = G(ResourceVersion, gateway=api, name=f"{api.id}-{stage.id}")
+def get_release_data(gateway):
+    stage = G(Stage, gateway=gateway)
+    resource_version = G(ResourceVersion, gateway=gateway, name=f"{gateway.id}-{stage.id}")
 
     return {
         "stage_ids": [stage.id],
@@ -243,9 +243,9 @@ class TestDefaultGatewayReleaser:
 class TestMicroGatewayReleaser:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self, fake_gateway):
-        self.api = fake_gateway
+        self.gateway = fake_gateway
         self.releaser = MicroGatewayReleaser.from_data(
-            self.api, get_release_data(self.api), access_token="access_token"
+            self.gateway, get_release_data(self.gateway), access_token="access_token"
         )
 
     def test_do_release_edge_gateway(

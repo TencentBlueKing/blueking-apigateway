@@ -101,8 +101,8 @@ class TestAlarmStrategyInputSLZ(TestCase):
         cls.request.gateway = cls.gateway
 
     def test_to_internal_value(self):
-        label_1 = G(APILabel, api=self.gateway)
-        label_2 = G(APILabel, api=self.gateway)
+        label_1 = G(APILabel, gateway=self.gateway)
+        label_2 = G(APILabel, gateway=self.gateway)
 
         data = [
             {
@@ -127,7 +127,7 @@ class TestAlarmStrategyInputSLZ(TestCase):
                     },
                 },
                 "expected": {
-                    "api": self.gateway,
+                    "gateway": self.gateway,
                     "name": "test",
                     "alarm_type": "resource_backend",
                     "alarm_subtype": "status_code_5xx",
@@ -158,14 +158,14 @@ class TestAlarmStrategyInputSLZ(TestCase):
             self.assertEqual(slz.validated_data, test["expected"])
 
     def test_to_representation(self):
-        label_1 = G(APILabel, api=self.gateway)
-        label_2 = G(APILabel, api=self.gateway)
+        label_1 = G(APILabel, gateway=self.gateway)
+        label_2 = G(APILabel, gateway=self.gateway)
 
         data = [
             {
                 "instance": G(
                     AlarmStrategy,
-                    api=self.gateway,
+                    gateway=self.gateway,
                     name="test",
                     alarm_type="resource_backend",
                     alarm_subtype="status_code_5xx",
@@ -226,7 +226,7 @@ class TestAlarmStrategyInputSLZ(TestCase):
 class TestAlarmRecordOutputSLZ(TestCase):
     def test_to_representation(self):
         gateway = G(Gateway)
-        alarm_strategy = G(AlarmStrategy, api=gateway, name="test")
+        alarm_strategy = G(AlarmStrategy, gateway=gateway, name="test")
         alarm_record = G(AlarmRecord, created_time=dummy_time.time)
         alarm_record.alarm_strategies.set([alarm_strategy])
 

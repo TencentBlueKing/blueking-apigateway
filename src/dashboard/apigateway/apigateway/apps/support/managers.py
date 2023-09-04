@@ -30,30 +30,30 @@ from apigateway.core.constants import GatewayStatusEnum
 
 class ResourceDocManager(models.Manager):
     def doc_exists(self, gateway_id):
-        return self.filter(api_id=gateway_id).exists()
+        return self.filter(gateway_id=gateway_id).exists()
 
     def delete_by_resource_ids(self, resource_ids):
         self.filter(resource_id__in=resource_ids).delete()
 
     def get_latest_resource_doc(self, gateway_id):
-        return self.filter(api_id=gateway_id).order_by("-updated_time").first()
+        return self.filter(gateway_id=gateway_id).order_by("-updated_time").first()
 
     def get_doc_key_to_id(self, gateway_id: int) -> Dict[str, int]:
         return {
             f"{doc['resource_id']}:{doc['language']}": doc["id"]
-            for doc in self.filter(api_id=gateway_id).values("id", "resource_id", "language")
+            for doc in self.filter(gateway_id=gateway_id).values("id", "resource_id", "language")
         }
 
     def query_doc_key_to_content(self, gateway_id: int) -> Dict[str, str]:
         # note: the content is rendered, not the raw file content
         return {
             f"{doc['resource_id']}:{doc['language']}": doc["content"]
-            for doc in self.filter(api_id=gateway_id).values("resource_id", "content", "language")
+            for doc in self.filter(gateway_id=gateway_id).values("resource_id", "content", "language")
         }
 
     def get_doc_languages_of_resources(self, gateway_id: int, resource_ids: List[int]) -> Dict[int, List[str]]:
         data = (
-            self.filter(api_id=gateway_id, resource_id__in=resource_ids)
+            self.filter(gateway_id=gateway_id, resource_id__in=resource_ids)
             .values("resource_id", "language")
             .order_by("resource_id")
         )
@@ -63,7 +63,7 @@ class ResourceDocManager(models.Manager):
         }
 
     def filter_docs(self, gateway_id: int, resource_ids: Optional[List[int]] = None):
-        qs = self.filter(api_id=gateway_id)
+        qs = self.filter(gateway_id=gateway_id)
 
         if resource_ids is not None:
             qs = qs.filter(resource_id__in=resource_ids)
@@ -73,14 +73,14 @@ class ResourceDocManager(models.Manager):
 
 class ResourceDocSwaggerManager(models.Manager):
     def get_resource_doc_id_to_id(self, gateway_id: int) -> Dict[int, int]:
-        return dict(self.filter(api_id=gateway_id).values_list("resource_doc_id", "id"))
+        return dict(self.filter(gateway_id=gateway_id).values_list("resource_doc_id", "id"))
 
 
 class ResourceDocVersionManager(models.Manager):
     def make_version(self, gateway_id):
         from apigateway.apps.support.models import ResourceDoc
 
-        docs = ResourceDoc.objects.filter(api_id=gateway_id).all()
+        docs = ResourceDoc.objects.filter(gateway_id=gateway_id).all()
         return [d.snapshot(as_dict=True) for d in docs]
 
     def get_by_resource_version_id(self, gateway_id: int, resource_version_id: int):
@@ -158,7 +158,7 @@ class ReleasedResourceDocManager(models.Manager):
 
         resource_doc_to_add = [
             self.model(
-                gateway_id=resource_doc_version.api_id,
+                gateway_id=resource_doc_version.gateway_id,
                 resource_version_id=resource_doc_version.resource_version_id,
                 resource_id=doc["resource_id"],
                 language=doc.get("language", DocLanguageEnum.ZH.value),
@@ -180,7 +180,7 @@ class ReleasedResourceDocManager(models.Manager):
         # TODO: 暂时仅支持展示中文文档
         resource_doc = (
             self.filter(
-                api_id=gateway_id,
+                gateway_id=gateway_id,
                 resource_id=resource_id,
                 language=DocLanguageEnum.ZH.value,
             )

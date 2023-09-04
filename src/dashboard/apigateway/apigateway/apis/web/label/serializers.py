@@ -31,12 +31,12 @@ class GatewayLabelOutputSLZ(serializers.Serializer):
 
 
 class GatewayLabelInputSLZ(serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
 
     class Meta:
         model = APILabel
         fields = [
-            "api",
+            "gateway",
             "id",
             "name",
         ]
@@ -44,7 +44,7 @@ class GatewayLabelInputSLZ(serializers.ModelSerializer):
         validators = [
             UniqueTogetherValidator(
                 queryset=APILabel.objects.all(),
-                fields=("api", "name"),
+                fields=("gateway", "name"),
                 message=gettext_lazy("网关下标签名称已存在。"),
             ),
             MaxCountPerGatewayValidator(

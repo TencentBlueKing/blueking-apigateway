@@ -147,7 +147,7 @@ class ScopeValidationMixin:
             if not Stage.objects.filter(gateway=gateway, id=scope_id).exists():
                 raise error_codes.INVALID_ARGUMENT.format(f"scope_type {scope_type}, scope_id {scope_id} is invalid")
         elif scope_type == "resource":
-            if not Resource.objects.filter(api=gateway, id=scope_id).exists():
+            if not Resource.objects.filter(gateway=gateway, id=scope_id).exists():
                 raise error_codes.INVALID_ARGUMENT.format(f"scope_type {scope_type}, scope_id {scope_id} is invalid")
         else:
             raise error_codes.INVALID_ARGUMENT.format(f"scope_type {scope_type} is invalid")
@@ -337,7 +337,7 @@ class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
                 resource_ids.append(binding.scope_id)
 
         stage_names = Stage.objects.filter(gateway=gateway, id__in=stage_ids).values_list("name", flat=True)
-        resource_names = Resource.objects.filter(api=gateway, id__in=resource_ids).values_list("name", flat=True)
+        resource_names = Resource.objects.filter(gateway=gateway, id__in=resource_ids).values_list("name", flat=True)
         data = {
             "stages": stage_names,
             "resources": resource_names,

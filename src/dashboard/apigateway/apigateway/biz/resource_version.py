@@ -47,7 +47,7 @@ from apigateway.utils.string import random_string
 class ResourceVersionHandler:
     @staticmethod
     def make_version(gateway: Gateway):
-        resource_queryset = Resource.objects.filter(api_id=gateway.id).all()
+        resource_queryset = Resource.objects.filter(gateway_id=gateway.id).all()
         resource_ids = list(resource_queryset.values_list("id", flat=True))
 
         proxy_map = Proxy.objects.get_resource_id_to_snapshot(resource_ids)
@@ -104,7 +104,7 @@ class ResourceVersionHandler:
 
     @staticmethod
     def delete_by_gateway_id(gateway_id: int):
-        # delete api release
+        # delete gateway release
         Release.objects.delete_by_gateway_id(gateway_id)
 
         # delete resource version
@@ -139,7 +139,7 @@ class ResourceVersionHandler:
     @staticmethod
     def _validata_resource_version_data(gateway: Gateway, version: str):
         # 判断是否创建资源
-        if not Resource.objects.filter(api_id=gateway.id).exists():
+        if not Resource.objects.filter(gateway_id=gateway.id).exists():
             raise serializers.ValidationError(_("请先创建资源，然后再生成版本。"))
 
         # TODO: 临时跳过 version 校验，待提供 version 后，此部分删除
@@ -197,7 +197,7 @@ class ResourceVersionHandler:
 
         # 版本中资源数量是否发生变化
         # some resource could be deleted
-        resource_count = Resource.objects.filter(api_id=gateway_id).count()
+        resource_count = Resource.objects.filter(gateway_id=gateway_id).count()
         if resource_count != len(latest_version.data):
             return True
 

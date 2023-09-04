@@ -17,7 +17,7 @@
 #
 class TestDocListCreateApi:
     def test_list(self, request_view, fake_resource_doc):
-        fake_gateway = fake_resource_doc.api
+        fake_gateway = fake_resource_doc.gateway
 
         resp = request_view(
             method="GET",
@@ -30,7 +30,7 @@ class TestDocListCreateApi:
         assert len(result["data"]) == 2
 
     def test_create(self, request_view, fake_resource, faker):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         resp = request_view(
             method="POST",
@@ -49,7 +49,7 @@ class TestDocListCreateApi:
 
 class TestDocUpdateDestroyApi:
     def test_update(self, request_view, fake_resource_doc, faker):
-        fake_gateway = fake_resource_doc.api
+        fake_gateway = fake_resource_doc.gateway
 
         resp = request_view(
             method="PUT",
@@ -67,7 +67,7 @@ class TestDocUpdateDestroyApi:
         assert resp.status_code == 200
 
     def test_destroy(self, request_view, fake_resource_doc):
-        fake_gateway = fake_resource_doc.api
+        fake_gateway = fake_resource_doc.gateway
 
         resp = request_view(
             method="DELETE",

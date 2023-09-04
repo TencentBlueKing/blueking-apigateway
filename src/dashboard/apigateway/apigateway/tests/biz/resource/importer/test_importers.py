@@ -30,8 +30,8 @@ from apigateway.core.models import Backend, Resource
 
 class TestResourceDataConvertor:
     def test_convert(self, fake_gateway, faker):
-        resource_1 = G(Resource, api=fake_gateway, name="test1", method="GET", path="/test1")
-        resource_2 = G(Resource, api=fake_gateway, name="test2", method="POST", path="/test2")
+        resource_1 = G(Resource, gateway=fake_gateway, name="test1", method="GET", path="/test1")
+        resource_2 = G(Resource, gateway=fake_gateway, name="test2", method="POST", path="/test2")
 
         backend_1 = G(Backend, gateway=fake_gateway, name="foo")
         backend_2 = G(Backend, gateway=fake_gateway, name="default")
@@ -84,7 +84,7 @@ class TestResourceDataConvertor:
             },
         ]
 
-        convertor = ResourceDataConvertor(fake_resource.api, resources)
+        convertor = ResourceDataConvertor(fake_resource.gateway, resources)
         with pytest.raises(ValueError):
             convertor.convert()
 
@@ -92,7 +92,7 @@ class TestResourceDataConvertor:
         resource_id_to_obj = {fake_resource.id: fake_resource}
         resource_key_to_resource_obj = {f"{fake_resource.method}:{fake_resource.path}": fake_resource}
 
-        convertor = ResourceDataConvertor(fake_resource.api, [])
+        convertor = ResourceDataConvertor(fake_resource.gateway, [])
 
         resource_obj = convertor._get_resource_obj(
             {"id": fake_resource.id}, resource_id_to_obj, resource_key_to_resource_obj
@@ -119,8 +119,8 @@ class TestResourceImportValidator:
         validator.validate()
 
     def test_get_unchanged_resources(self, fake_gateway, fake_resource_data):
-        resource_1 = G(Resource, api=fake_gateway)
-        resource_2 = G(Resource, api=fake_gateway)
+        resource_1 = G(Resource, gateway=fake_gateway)
+        resource_2 = G(Resource, gateway=fake_gateway)
 
         resource_data_list = [
             fake_resource_data.copy(update={"resource": resource_1}, deep=True),
@@ -137,8 +137,8 @@ class TestResourceImportValidator:
         assert result[0]["id"] == resource_2.id
 
     def test_get_unspecified_resources(self, fake_gateway, fake_resource_data):
-        resource_1 = G(Resource, api=fake_gateway)
-        resource_2 = G(Resource, api=fake_gateway)
+        resource_1 = G(Resource, gateway=fake_gateway)
+        resource_2 = G(Resource, gateway=fake_gateway)
 
         resource_data_list = [
             fake_resource_data.copy(update={"resource": resource_1}, deep=True),
@@ -156,7 +156,7 @@ class TestResourceImportValidator:
             fake_resource_data.copy(update={"resource": fake_resource}, deep=True),
         ]
 
-        validator = ResourceImportValidator(fake_resource.api, resource_data_list, True)
+        validator = ResourceImportValidator(fake_resource.gateway, resource_data_list, True)
         with pytest.raises(ValueError):
             validator._validate_resources()
 
@@ -164,7 +164,7 @@ class TestResourceImportValidator:
         resource_data_list = [
             fake_resource_data.copy(update={"method": fake_resource.method, "path": fake_resource.path}, deep=True),
         ]
-        validator = ResourceImportValidator(fake_resource.api, resource_data_list, False)
+        validator = ResourceImportValidator(fake_resource.gateway, resource_data_list, False)
         with pytest.raises(ValueError):
             validator._validate_method_path()
 
@@ -172,12 +172,12 @@ class TestResourceImportValidator:
             fake_resource_data.copy(update={"method": "GET", "path": "/foo"}, deep=True),
             fake_resource_data.copy(update={"method": "GET", "path": "/foo"}, deep=True),
         ]
-        validator = ResourceImportValidator(fake_resource.api, resource_data_list, True)
+        validator = ResourceImportValidator(fake_resource.gateway, resource_data_list, True)
         with pytest.raises(ValueError):
             validator._validate_method_path()
 
     def test_validate_method__error(self, fake_gateway, fake_resource_data):
-        G(Resource, api=fake_gateway, method="GET", path="/foo")
+        G(Resource, gateway=fake_gateway, method="GET", path="/foo")
 
         resource_data_list = [
             fake_resource_data.copy(update={"method": "ANY", "path": "/foo"}, deep=True),
@@ -187,7 +187,7 @@ class TestResourceImportValidator:
             validator._validate_method()
 
     def test_validate_name__error(self, fake_gateway, fake_resource_data):
-        G(Resource, api=fake_gateway, name="foo")
+        G(Resource, gateway=fake_gateway, name="foo")
         resource_data_list = [
             fake_resource_data.copy(update={"name": "foo"}, deep=True),
         ]
@@ -217,7 +217,7 @@ class TestResourceImportValidator:
             fake_resource_data.copy(deep=True),
             fake_resource_data.copy(deep=True),
         ]
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
         fake_gateway.name = "foo"
         validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
         with pytest.raises(ValueError):
@@ -253,8 +253,8 @@ class TestResourcesImporter:
         assert len(importer.resource_data_list) == 1
 
     def test_import_resources(self, fake_gateway, fake_resource_data):
-        resource_1 = G(Resource, api=fake_gateway, name="test1", method="GET", path="/test1")
-        resource_2 = G(Resource, api=fake_gateway, name="test2", method="POST", path="/test2")
+        resource_1 = G(Resource, gateway=fake_gateway, name="test1", method="GET", path="/test1")
+        resource_2 = G(Resource, gateway=fake_gateway, name="test2", method="POST", path="/test2")
         resource_2_id = resource_2.id
 
         G(Backend, gateway=fake_gateway, name="default")
@@ -270,7 +270,7 @@ class TestResourcesImporter:
         )
         importer.import_resources()
 
-        resource_ids = list(Resource.objects.filter(api=fake_gateway).values_list("id", flat=True))
+        resource_ids = list(Resource.objects.filter(gateway=fake_gateway).values_list("id", flat=True))
         assert len(resource_ids) == 2
         assert resource_2_id not in resource_ids
         assert resource_1.id in resource_ids
@@ -306,8 +306,8 @@ class TestResourcesImporter:
         assert len(result) == expected
 
     def test_delete_unspecified_resources(self, fake_gateway, fake_resource_data):
-        resource_1 = G(Resource, api=fake_gateway, name="test1", method="GET", path="/test1")
-        resource_2 = G(Resource, api=fake_gateway, name="test2", method="POST", path="/test2")
+        resource_1 = G(Resource, gateway=fake_gateway, name="test1", method="GET", path="/test1")
+        resource_2 = G(Resource, gateway=fake_gateway, name="test2", method="POST", path="/test2")
         resource_2_id = resource_2.id
 
         resource_data_list = [
@@ -321,7 +321,7 @@ class TestResourcesImporter:
         assert not Resource.objects.filter(id=resource_2_id).exists()
 
     def test_create_not_exist_labels(self, fake_gateway, fake_resource_data):
-        G(APILabel, api=fake_gateway, name="label1")
+        G(APILabel, gateway=fake_gateway, name="label1")
 
         resource_data_list = [
             fake_resource_data.copy(
@@ -335,11 +335,11 @@ class TestResourcesImporter:
         importer = ResourcesImporter(fake_gateway, resource_data_list)
         importer._create_not_exist_labels()
 
-        assert APILabel.objects.filter(api=fake_gateway).count() == 3
+        assert APILabel.objects.filter(gateway=fake_gateway).count() == 3
 
     def test_complete_label_ids(self, fake_gateway, fake_resource_data):
-        label_1 = G(APILabel, api=fake_gateway, name="label1")
-        label_2 = G(APILabel, api=fake_gateway, name="label2")
+        label_1 = G(APILabel, gateway=fake_gateway, name="label1")
+        label_2 = G(APILabel, gateway=fake_gateway, name="label2")
 
         resource_data_list = [
             fake_resource_data.copy(

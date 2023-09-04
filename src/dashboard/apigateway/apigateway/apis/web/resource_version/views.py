@@ -136,7 +136,7 @@ class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
     )
     def get(self, request, *args, **kwargs):
         resource_version_exist = ResourceVersion.objects.filter(gateway_id=request.gateway.id).exists()
-        resource_exist = Resource.objects.filter(api_id=request.gateway.id).exists()
+        resource_exist = Resource.objects.filter(gateway_id=request.gateway.id).exists()
         if not (resource_version_exist or resource_exist):
             raise serializers.ValidationError(_("请先创建资源，然后再发布版本。"))
 

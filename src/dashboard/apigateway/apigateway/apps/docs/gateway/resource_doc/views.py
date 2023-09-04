@@ -34,17 +34,17 @@ class ResourceDocViewSet(viewsets.GenericViewSet):
     )
     def retrieve(self, request, gateway_name: str, stage_name: str, resource_name: str, *args, **kwargs):
         """获取网关资源的文档"""
-        api = support_helper.get_gateway_by_name(gateway_name)
-        if not api:
+        gateway = support_helper.get_gateway_by_name(gateway_name)
+        if not gateway:
             raise error_codes.NOT_FOUND
 
-        data = support_helper.get_resource_doc(api["id"], stage_name, resource_name)
+        data = support_helper.get_resource_doc(gateway["id"], stage_name, resource_name)
         helper = ResourceDocHelper(
             stage_name,
             data["resource"] or {},
             data["doc"] or {},
             data["resource_url"] or "",
-            api["maintainers"],
+            gateway["maintainers"],
         )
 
         doc = helper.get_doc()

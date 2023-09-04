@@ -65,7 +65,7 @@ class TestAppPermissionInputSLZ:
         ]
 
         for test in data:
-            slz = serializers.AppPermissionInputSLZ(data=test, context={"gateway": fake_resource.api})
+            slz = serializers.AppPermissionInputSLZ(data=test, context={"gateway": fake_resource.gateway})
 
             if not test.get("will_error"):
                 slz.is_valid(raise_exception=True)
@@ -79,18 +79,18 @@ class TestAppPermissionInputSLZ:
 class TestAppGatewayPermissionOutputSLZ(TestCase):
     def test_to_representation(self):
         gateway = G(Gateway)
-        resource = G(Resource, api=gateway, path="/echo/", method="GET")
+        resource = G(Resource, gateway=gateway, path="/echo/", method="GET")
 
         app_api_permission = G(
             models.AppAPIPermission,
-            api=gateway,
+            gateway=gateway,
             bk_app_code="test",
             expires=None,
         )
 
         app_resource_permission = G(
             models.AppResourcePermission,
-            api=gateway,
+            gateway=gateway,
             resource_id=resource.id,
             bk_app_code="test",
             expires=dummy_time.time,
@@ -138,7 +138,7 @@ class TestAppPermissionIDsSLZ(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.gateway = G(Gateway, created_by="admin")
-        cls.resource = G(Resource, api=cls.gateway)
+        cls.resource = G(Resource, gateway=cls.gateway)
         cls.request = create_request()
         cls.request.gateway = cls.gateway
 

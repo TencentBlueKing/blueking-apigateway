@@ -31,7 +31,7 @@ class Command(BaseCommand):
         for src_perm in AppAPIPermission.objects.filter(bk_app_code=src_app):
             dst_perm, created = AppAPIPermission.objects.get_or_create(
                 bk_app_code=dst_app,
-                api_id=src_perm.api_id,
+                gateway_id=src_perm.gateway_id,
                 defaults={
                     "expires": src_perm.expires,
                 },
@@ -44,7 +44,7 @@ class Command(BaseCommand):
         for src_perm in AppResourcePermission.objects.filter(bk_app_code=src_app):
             dst_perm, created = AppResourcePermission.objects.get_or_create(
                 bk_app_code=dst_app,
-                api_id=src_perm.api_id,
+                gateway_id=src_perm.gateway_id,
                 resource_id=src_perm.resource_id,
                 defaults={
                     "expires": src_perm.expires,
@@ -58,18 +58,20 @@ class Command(BaseCommand):
     def _copy_api_permission_dry_run(self, src_app, dst_app):
         for src_perm in AppAPIPermission.objects.filter(bk_app_code=src_app):
             try:
-                dst_perm = AppAPIPermission.objects.get(bk_app_code=dst_app, api_id=src_perm.api_id)
+                dst_perm = AppAPIPermission.objects.get(bk_app_code=dst_app, gateway_id=src_perm.gateway_id)
             except AppAPIPermission.DoesNotExist:
-                print(f"add new perm: bk_app_code={dst_app}, api_id={src_perm.api_id}, expires={src_perm.expires}")
+                print(
+                    f"add new perm: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, expires={src_perm.expires}"
+                )
             else:
                 if dst_perm.expires < src_perm.expires:
                     print(
-                        f"update perm expires: bk_app_code={dst_app}, api_id={src_perm.api_id}, "
+                        f"update perm expires: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, "
                         f"expires={src_perm.expires}"
                     )
                 else:
                     print(
-                        f"perm exist and ignore: bk_app_code={dst_app}, api_id={src_perm.api_id}, "
+                        f"perm exist and ignore: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, "
                         f"expires={dst_perm.expires}"
                     )
 
@@ -78,23 +80,23 @@ class Command(BaseCommand):
             try:
                 dst_perm = AppResourcePermission.objects.get(
                     bk_app_code=dst_app,
-                    api_id=src_perm.api_id,
+                    gateway_id=src_perm.gateway_id,
                     resource_id=src_perm.resource_id,
                 )
             except AppResourcePermission.DoesNotExist:
                 print(
-                    f"add new perm: bk_app_code={dst_app}, api_id={src_perm.api_id}, "
+                    f"add new perm: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, "
                     f"resource_id={src_perm.resource_id}, expires={src_perm.expires}"
                 )
             else:
                 if dst_perm.expires < src_perm.expires:
                     print(
-                        f"update perm expires: bk_app_code={dst_app}, api_id={src_perm.api_id}, "
+                        f"update perm expires: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, "
                         f"resource_id={src_perm.resource_id}, expires={src_perm.expires}"
                     )
                 else:
                     print(
-                        f"perm exist and ignore: bk_app_code={dst_app}, api_id={src_perm.api_id}, "
+                        f"perm exist and ignore: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, "
                         f"resource_id={src_perm.resource_id}, expires={dst_perm.expires}"
                     )
 

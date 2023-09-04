@@ -57,7 +57,7 @@ class TestReleaseBatchInputSLZ:
                     "resource_version_id": resource_version.id,
                 },
             },
-            # error, stage_3 not belong to api
+            # error, stage_3 not belong to gateway
             {
                 "stage_ids": [stage_3.id, stage_1.id],
                 "resource_version_id": resource_version.id,

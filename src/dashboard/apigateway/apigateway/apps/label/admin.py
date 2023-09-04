@@ -22,9 +22,9 @@ from apigateway.apps.label.models import APILabel, ResourceLabel
 
 
 class APILabelAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "api"]
-    list_filter = ["api"]
-    search_fields = ["api__id", "name"]
+    list_display = ["id", "name", "gateway"]
+    list_filter = ["gateway"]
+    search_fields = ["gateway__id", "name"]
 
 
 class ResourceLabelAdmin(admin.ModelAdmin):

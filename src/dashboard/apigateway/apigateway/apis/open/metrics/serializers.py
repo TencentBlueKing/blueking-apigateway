@@ -35,12 +35,12 @@ class StatisticsAPIRequestV1SLZ(serializers.Serializer):
     bk_app_code_list = serializers.SerializerMethodField()
 
     def get_api_name(self, obj):
-        api = self.context["api_id_map"].get(obj["api_id"])
-        return api.name if api else ""
+        gateway = self.context["api_id_map"].get(obj["api_id"])
+        return gateway.name if gateway else ""
 
     def get_api_maintainers(self, obj):
-        api = self.context["api_id_map"].get(obj["api_id"])
-        return api.maintainers if api else ""
+        gateway = self.context["api_id_map"].get(obj["api_id"])
+        return gateway.maintainers if gateway else ""
 
     def get_bk_app_code_list(self, obj):
         return self.context["app_request_data"].get(obj["api_id"], {}).get("bk_app_code_list", [])

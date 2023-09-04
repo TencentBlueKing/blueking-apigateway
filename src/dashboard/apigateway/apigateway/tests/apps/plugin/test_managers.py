@@ -44,8 +44,8 @@ class TestPluginBindingManager:
 
     def test_create_or_update_bindings(self, fake_gateway):
         config = G(PluginConfig, gateway=fake_gateway)
-        r1 = G(Resource, api=fake_gateway)
-        r2 = G(Resource, api=fake_gateway)
+        r1 = G(Resource, gateway=fake_gateway)
+        r2 = G(Resource, gateway=fake_gateway)
         G(PluginBinding, gateway=fake_gateway, scope_id=r1.id, scope_type="resource")
 
         PluginBinding.objects.create_or_update_bindings(
@@ -58,7 +58,7 @@ class TestPluginBindingManager:
         assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 2
 
     def test_get_valid_scope_ids(self, fake_gateway):
-        r = G(Resource, api=fake_gateway)
+        r = G(Resource, gateway=fake_gateway)
         s = G(Stage, gateway=fake_gateway)
 
         result = PluginBinding.objects.get_valid_scope_ids(

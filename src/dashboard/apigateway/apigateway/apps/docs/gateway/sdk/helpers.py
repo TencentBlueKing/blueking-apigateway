@@ -50,7 +50,6 @@ class ResourceForSDK(metaclass=ABCMeta):
             self.sdk_created_time = dateutil_parser.parse(sdk_created_time_str)
 
     def as_dict(self):
-        # return asdict(self)
         return {
             "api_id": self.api_id,
             "api_name": self.api_name,

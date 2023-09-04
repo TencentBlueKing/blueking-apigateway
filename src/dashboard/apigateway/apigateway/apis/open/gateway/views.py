@@ -126,7 +126,7 @@ class GatewayPublicKeyViewSet(viewsets.ViewSet):
 
     @swagger_auto_schema(tags=["OpenAPI.Gateway"])
     def get_public_key(self, request, gateway_name: str, *args, **kwargs):
-        jwt = JWT.objects.get(api=request.gateway)
+        jwt = JWT.objects.get(gateway=request.gateway)
         return V1OKJsonResponse(
             "OK",
             data={
@@ -189,7 +189,7 @@ class GatewayRelatedAppViewSet(viewsets.ViewSet):
         slz.is_valid(raise_exception=True)
 
         for bk_app_code in slz.validated_data["target_app_codes"]:
-            if not APIRelatedApp.objects.filter(api_id=request.gateway.id, bk_app_code=bk_app_code).exists():
+            if not APIRelatedApp.objects.filter(gateway_id=request.gateway.id, bk_app_code=bk_app_code).exists():
                 APIRelatedApp.objects.add_related_app(request.gateway.id, bk_app_code)
 
         return V1OKJsonResponse("OK")

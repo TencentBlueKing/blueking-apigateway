@@ -42,14 +42,14 @@ class GatewayViewSet(viewsets.GenericViewSet):
 
         data = slz.validated_data
 
-        apis = support_helper.get_gateways(
+        gateways = support_helper.get_gateways(
             user_auth_type=data.get("user_auth_type"),
             query=data.get("query"),
             fuzzy=True,
         )
-        paginator = LimitOffsetPaginator(count=len(apis), offset=0, limit=len(apis))
+        paginator = LimitOffsetPaginator(count=len(gateways), offset=0, limit=len(gateways))
         slz = GatewaySLZ(
-            sorted(apis, key=lambda x: (x["api_type"], x["name"])),
+            sorted(gateways, key=lambda x: (x["api_type"], x["name"])),
             many=True,
         )
 
@@ -61,9 +61,9 @@ class GatewayViewSet(viewsets.GenericViewSet):
     )
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """根据网关名称，获取网关详情"""
-        api = support_helper.get_gateway_by_name(gateway_name)
-        if not api:
+        gateway = support_helper.get_gateway_by_name(gateway_name)
+        if not gateway:
             raise error_codes.NOT_FOUND
 
-        slz = GatewaySLZ(api)
+        slz = GatewaySLZ(gateway)
         return V1OKJsonResponse("OK", data=slz.data)

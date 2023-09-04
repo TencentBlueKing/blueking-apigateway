@@ -26,7 +26,7 @@ from apigateway.core.models import Context, Proxy, Resource
 
 class TestResourceSavers:
     def test_save(self, fake_resource, fake_resource_data):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         resource_data_list = [
             fake_resource_data.copy(update={"resource": fake_resource}, deep=True),
@@ -35,8 +35,8 @@ class TestResourceSavers:
         saver = ResourcesSaver(fake_gateway, resource_data_list, "admin")
         result = saver.save()
         assert len(result) == 2
-        assert Resource.objects.filter(api=fake_gateway).count() == 2
-        assert Proxy.objects.filter(resource__api=fake_gateway).count() == 2
+        assert Resource.objects.filter(gateway=fake_gateway).count() == 2
+        assert Proxy.objects.filter(resource__gateway=fake_gateway).count() == 2
         assert (
             Context.objects.filter(
                 scope_type=ContextScopeTypeEnum.RESOURCE.value,
@@ -55,12 +55,12 @@ class TestResourceSavers:
             type=ProxyTypeEnum.MOCK.value,
         )
 
-        saver = ResourcesSaver(fake_resource.api, resource_data_list, "admin")
+        saver = ResourcesSaver(fake_resource.gateway, resource_data_list, "admin")
         with pytest.raises(ResourceProxyDuplicateError):
             saver.save()
 
     def test_save_resources(self, fake_resource, fake_resource_data):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         resource_data_list = [
             fake_resource_data.copy(update={"resource": fake_resource}, deep=True),
@@ -71,8 +71,8 @@ class TestResourceSavers:
         assert result is True
 
     def test_complete_with_resource(self, fake_gateway, fake_resource_data):
-        resource_1 = G(Resource, api=fake_gateway, name="foo1", method="GET", path="/foo1")
-        resource_2 = G(Resource, api=fake_gateway, name="foo2", method="POST", path="/foo2")
+        resource_1 = G(Resource, gateway=fake_gateway, name="foo1", method="GET", path="/foo1")
+        resource_2 = G(Resource, gateway=fake_gateway, name="foo2", method="POST", path="/foo2")
 
         resource_data_list = [
             fake_resource_data.copy(update={"resource": resource_1}, deep=True),
@@ -85,15 +85,15 @@ class TestResourceSavers:
         assert resource_data_list[1].resource == resource_2
 
     def test_save_proxies(self, fake_gateway, fake_resource_data):
-        resource_1 = G(Resource, api=fake_gateway, name="foo1", method="GET")
-        resource_2 = G(Resource, api=fake_gateway, name="foo2", method="POST")
+        resource_1 = G(Resource, gateway=fake_gateway, name="foo1", method="GET")
+        resource_2 = G(Resource, gateway=fake_gateway, name="foo2", method="POST")
 
         resource_data_list = [
             fake_resource_data.copy(update={"resource": resource_1}, deep=True),
         ]
         saver = ResourcesSaver(fake_gateway, resource_data_list, "admin")
         saver._save_proxies(resource_ids=[resource_1.id])
-        assert Proxy.objects.filter(resource__api=fake_gateway).count() == 1
+        assert Proxy.objects.filter(resource__gateway=fake_gateway).count() == 1
 
         resource_data_list = [
             fake_resource_data.copy(update={"resource": resource_1}, deep=True),
@@ -101,10 +101,10 @@ class TestResourceSavers:
         ]
         saver = ResourcesSaver(fake_gateway, resource_data_list, "admin")
         saver._save_proxies(resource_ids=[resource_1.id, resource_2.id])
-        assert Proxy.objects.filter(resource__api=fake_gateway).count() == 2
+        assert Proxy.objects.filter(resource__gateway=fake_gateway).count() == 2
 
     def test_save_auth_configs(self, fake_gateway, fake_resource_data):
-        resource = G(Resource, api=fake_gateway, name="foo")
+        resource = G(Resource, gateway=fake_gateway, name="foo")
 
         resource_data = fake_resource_data.copy(update={"resource": resource}, deep=True)
 
@@ -138,10 +138,10 @@ class TestResourceSavers:
         }
 
     def test_save_resource_labels(self, fake_resource, fake_resource_data):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
-        label_1 = G(APILabel, api=fake_gateway)
-        label_2 = G(APILabel, api=fake_gateway)
+        label_1 = G(APILabel, gateway=fake_gateway)
+        label_2 = G(APILabel, gateway=fake_gateway)
 
         G(ResourceLabel, api_label=label_1, resource=fake_resource)
 
@@ -151,5 +151,5 @@ class TestResourceSavers:
 
         saver = ResourcesSaver(fake_gateway, resource_data_list, "admin")
         saver._save_resource_labels(resource_ids=[fake_resource.id])
-        assert ResourceLabel.objects.filter(resource__api=fake_gateway).count() == 1
+        assert ResourceLabel.objects.filter(resource__gateway=fake_gateway).count() == 1
         assert ResourceLabel.objects.filter(api_label=label_1).count() == 0
