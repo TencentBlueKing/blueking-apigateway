@@ -28,11 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    """
-    删除重复的资源 proxy
-
-    - 删除未使用的 proxy 数据
-    """
+    """删除重复的资源 proxy"""
 
     def add_arguments(self, parser):
         parser.add_argument("--gateway-name", type=str, dest="gateway_name")
