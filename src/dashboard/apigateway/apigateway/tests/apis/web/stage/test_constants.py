@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.apis.web.stage import constants
+from apigateway.biz.constants import STAGE_VAR_FOR_PATH_PATTERN
 
 
 class TestConstants:
@@ -32,7 +32,7 @@ class TestConstants:
         ],
     )
     def test_stage_var_for_path_pattern(self, value, match):
-        result = constants.STAGE_VAR_FOR_PATH_PATTERN.match(value)
+        result = STAGE_VAR_FOR_PATH_PATTERN.match(value)
         if match:
             assert result
         else:

@@ -19,4 +19,3 @@
 import re
 
 STAGE_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,49}$")
-STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")

@@ -27,3 +27,6 @@ class SwaggerFormatEnum(StructuredEnum):
 
 # bk app code
 APP_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
+
+# stage var
+STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")

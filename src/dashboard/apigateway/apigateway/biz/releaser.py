@@ -18,7 +18,7 @@
 #
 from abc import ABCMeta
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import List
 
 from attrs import define
 from blue_krill.async_utils.django_utils import delay_on_commit
@@ -27,13 +27,12 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.web.release.serializers import ReleaseBatchInputSLZ
-from apigateway.apis.web.stage.validators import StageVarsValuesValidator
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceDataHandler
+from apigateway.biz.validators import StageVarsValuesValidator
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.tasks import release_gateway_by_helm, release_gateway_by_registry
@@ -48,7 +47,6 @@ from apigateway.core.models import (
     ResourceVersion,
     Stage,
 )
-from apigateway.core.signals import reversion_update_signal
 
 
 class ReleaseError(Exception):
@@ -70,16 +68,26 @@ class SharedMicroGatewayNotFound(Exception):
 class GatewayReleaserFactory:
     @classmethod
     def get_releaser(
-        cls, gateway: Gateway, data: Dict[str, Any], access_token: str, username: str = ""
-    ) -> "BaseGatewayReleaser":
+        cls,
+        gateway: Gateway,
+        stage_ids: List[int],
+        resource_version_id: int,
+        comment: str,
+        access_token: str,
+        username: str = "",
+    ) -> "BaseGatewayReleaserHandler":
         if gateway.is_micro_gateway:
-            return MicroGatewayReleaser.from_data(gateway, data, access_token, username)
+            return MicroGatewayReleaserHandler.from_data(
+                gateway, stage_ids, resource_version_id, comment, access_token, username
+            )
 
-        return DefaultGatewayReleaser.from_data(gateway, data, access_token, username)
+        return DefaultGatewayReleaserHandler.from_data(
+            gateway, stage_ids, resource_version_id, comment, access_token, username
+        )
 
 
 @dataclass
-class BaseGatewayReleaser(metaclass=ABCMeta):
+class BaseGatewayReleaserHandler(metaclass=ABCMeta):
     gateway: Gateway
     stages: List[Stage]
     resource_version: ResourceVersion
@@ -88,22 +96,29 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
     access_token: str = ""
 
     @classmethod
-    def from_data(cls, gateway: Gateway, data: Dict[str, Any], access_token: str, username: str = ""):
+    def from_data(
+        cls,
+        gateway: Gateway,
+        stage_ids: List[int],
+        resource_version_id: int,
+        comment: str,
+        access_token: str,
+        username: str = "",
+    ):
         """
         :param gateway: 待操作的网关
-        :param data: 包含以下几项数据
-            - stage_ids: 待发布环境
-            - resource_version_id：待发布版本
-            - comment：发布备注
+        :param stage_ids: 发布的环境id列表
+        :param resource_version_id: 发布的版本id
+        :param comment: 发布备注
+        :param access_token: access_token
+        :param username: 发布人
         """
-        slz = slz = ReleaseBatchInputSLZ(data=data, context={"gateway": gateway})
-        slz.is_valid(raise_exception=True)
 
         return cls(
             gateway=gateway,
-            stages=list(Stage.objects.filter(id__in=slz.validated_data["stage_ids"])),
-            resource_version=ResourceVersion.objects.get(id=slz.validated_data["resource_version_id"]),
-            comment=slz.validated_data.get("comment", ""),
+            stages=list(Stage.objects.filter(id__in=stage_ids)),
+            resource_version=ResourceVersion.objects.get(id=resource_version_id),
+            comment=comment,
             username=username,
             access_token=access_token,
         )
@@ -154,9 +169,6 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
             )
 
             release_instances.append(instance)
-
-            # send signal
-            reversion_update_signal.send(sender=Release, instance_id=instance.id, action="release")
 
             # record audit log
             record_audit_log(
@@ -231,12 +243,12 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
 
 
 @dataclass
-class DefaultGatewayReleaser(BaseGatewayReleaser):
+class DefaultGatewayReleaserHandler(BaseGatewayReleaserHandler):
     """APIGateway 默认网关发布器"""
 
 
 @dataclass
-class MicroGatewayReleaser(BaseGatewayReleaser):
+class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
     """微网关发布器"""
 
     @cached_property
@@ -309,10 +321,12 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
 
 @define(slots=False)
-class ReleaseBatchManager:
+class ReleaseBatchHandler:
     access_token: str = ""
 
-    def release_batch(self, gateway: Gateway, data: dict, username: str = ""):
+    def release_batch(
+        self, gateway: Gateway, stage_ids: List[int], resource_version_id: int, comment: str, username: str = ""
+    ):
         return GatewayReleaserFactory.get_releaser(
-            gateway, data, access_token=self.access_token, username=username
+            gateway, stage_ids, resource_version_id, comment, access_token=self.access_token, username=username
         ).release_batch()

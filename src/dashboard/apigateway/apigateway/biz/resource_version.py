@@ -26,11 +26,15 @@ from rest_framework import serializers
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import ResourceLabel
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
-from apigateway.core.constants import ContextScopeTypeEnum
+from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
+from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import (
+    Backend,
     Context,
     Gateway,
     Proxy,
@@ -38,7 +42,6 @@ from apigateway.core.models import (
     Resource,
     ResourceVersion,
     Stage,
-    StageResourceDisabled,
 )
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import random_string
@@ -56,16 +59,28 @@ class ResourceVersionHandler:
             scope_type=ContextScopeTypeEnum.RESOURCE.value,
             scope_ids=resource_ids,
         )
-
         disabled_stage_map = {
             resource_id: [stage["name"] for stage in stages]
-            for resource_id, stages in StageResourceDisabled.objects.filter_disabled_stages_by_gateway(gateway).items()
+            for resource_id, stages in StageResourceDisabledHandler.filter_disabled_stages_by_gateway(gateway).items()
         }
 
-        api_label_map = {
+        gateway_label_map = {
             resource_id: [label["id"] for label in labels]
             for resource_id, labels in ResourceLabel.objects.filter_labels_by_gateway(gateway).items()
         }
+
+        # backend
+        backend_ids = list(Backend.objects.filter(gateway_id=gateway.id).values_list("id", flat=True))
+
+        # plugin
+        resource_id_to_plugin_bindings = PluginBinding.objects.query_scope_id_to_bindings(
+            gateway.id, PluginBindingScopeEnum.RESOURCE, resource_ids
+        )
+
+        resource_plugins_map: Dict[int, List[Dict]] = defaultdict(list)
+
+        for resource_id, bindings in resource_id_to_plugin_bindings.items():
+            resource_plugins_map[resource_id].extend([binding.snapshot() for binding in bindings])
 
         return [
             ResourceHandler.snapshot(
@@ -74,7 +89,9 @@ class ResourceVersionHandler:
                 proxy_map=proxy_map,
                 context_map=context_map,
                 disabled_stage_map=disabled_stage_map,
-                api_label_map=api_label_map,
+                api_label_map=gateway_label_map,
+                backends=backend_ids,
+                plugin_map=resource_plugins_map,
             )
             for r in resource_queryset
         ]
@@ -126,6 +143,7 @@ class ResourceVersionHandler:
                 # TODO: 待 version 改为必填后，下面的 version 赋值去掉
                 "version": data.get("version") or name,
                 "created_time": now,
+                "scheme_version": ResourceVersionSchemaEnum.V2Version.value,
             }
         )
         resource_version = ResourceVersion(**data)

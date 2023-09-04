@@ -21,9 +21,10 @@ from typing import Any, Dict, Optional
 
 from django.db import transaction
 
+from apigateway.biz.release import ReleaseHandler
 from apigateway.controller.tasks.syncing import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, DEFAULT_STAGE_NAME, PublishSourceEnum, StageStatusEnum
-from apigateway.core.models import Backend, BackendConfig, MicroGateway, Release, ReleaseHistory, Stage
+from apigateway.core.models import Backend, BackendConfig, MicroGateway, Release, Stage
 from apigateway.utils.time import now_datetime
 
 
@@ -96,7 +97,7 @@ class StageHandler:
 
             # 5. delete release-history
 
-            ReleaseHistory.objects.delete_without_stage_related(stage.gateway.id)
+            ReleaseHandler.delete_without_stage_related(stage.gateway.id)
 
         # TODO 删除stage CR
 

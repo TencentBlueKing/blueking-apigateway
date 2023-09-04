@@ -27,6 +27,7 @@ from pydantic import BaseModel, parse_obj_as
 
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionLevelEnum, PermissionStatusEnum
 from apigateway.apps.permission.models import AppAPIPermission, AppPermissionApplyStatus, AppResourcePermission
+from apigateway.biz.released_resource import ReleasedResourceDataHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ReleasedResource, Resource
 
@@ -134,7 +135,7 @@ class ResourcePermissionBuilder:
     def build(self, resources: list) -> list:
         resources = copy.copy(resources)
         resource_ids = [resource["id"] for resource in resources]
-        doc_links = ReleasedResource.objects.get_latest_doc_link(resource_ids)
+        doc_links = ReleasedResourceDataHandler.get_latest_doc_link(resource_ids)
 
         for resource in resources:
             resource["api_name"] = self.gateway.name
@@ -211,7 +212,7 @@ class AppPermissionBuilder:
             resource_map[resource["id"]].update(resource)
 
         resource_id_to_fields_map = Resource.objects.get_id_to_fields_map(list(resource_map.keys()))
-        doc_links = ReleasedResource.objects.get_latest_doc_link(list(resource_map.keys()))
+        doc_links = ReleasedResourceDataHandler.get_latest_doc_link(list(resource_map.keys()))
         for resource_id, resource in resource_map.items():
             resource["api_name"] = resource_id_to_fields_map.get(resource_id, {}).get("api_name", "")
             resource["doc_link"] = doc_links.get(resource_id, "")

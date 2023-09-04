@@ -27,7 +27,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.biz.permission import ResourcePermissionHandler
-from apigateway.biz.released_resource import ReleasedResourceDataHandler
+from apigateway.biz.released_resource import get_released_resource_data
 from apigateway.core.models import Stage
 from apigateway.utils.curlify import to_curl
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
@@ -52,9 +52,7 @@ class APITestApi(generics.CreateAPIView):
 
         # 获取资源
         stage = generics.get_object_or_404(Stage, gateway=request.gateway, id=data["stage_id"])
-        released_resource = ReleasedResourceDataHandler.get_released_resource_data(
-            request.gateway, stage, data["resource_id"]
-        )
+        released_resource = get_released_resource_data(request.gateway, stage, data["resource_id"])
         if not released_resource:
             raise Http404
 

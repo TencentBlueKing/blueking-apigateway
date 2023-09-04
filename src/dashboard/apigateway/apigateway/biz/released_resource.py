@@ -17,29 +17,28 @@
 #
 import json
 from collections import defaultdict
+from dataclasses import dataclass, field
 from typing import Any, Dict, List
-
-from attrs import define, field
 
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
-from apigateway.core.utils import get_path_display
+from apigateway.core.utils import get_path_display, get_resource_doc_link
 
 
-@define
-class ReleasedResourceDataHandler:
+@dataclass
+class ReleasedResourceData:
     id: int
     method: str
     path: str
-    match_subpath: bool = field(default=False)
-    disabled_stages: List[str] = field(factory=list)
-    _contexts: Dict[str, Any] = field(factory=dict)
+    match_subpath: bool = False
+    disabled_stages: List[str] = field(default_factory=list)
+    contexts: Dict[str, Any] = field(default_factory=dict)
     verified_user_required: bool = field(init=False)
     resource_perm_required: bool = field(init=False)
 
-    def __attrs_post_init__(self):
-        resource_auth_config = json.loads(self._contexts["resource_auth"]["config"])
+    def __post_init__(self):
+        resource_auth_config = json.loads(self.contexts["resource_auth"]["config"])
         self.verified_user_required = self._get_verified_user_required(resource_auth_config)
         self.resource_perm_required = self._get_resource_perm_required(resource_auth_config)
 
@@ -62,28 +61,31 @@ class ReleasedResourceDataHandler:
         return get_path_display(self.path, self.match_subpath)
 
     def _get_verified_user_required(self, config: Dict[str, Any]) -> bool:
-        return not config.get("skip_auth_verification") and bool(config.get("auth_verified_required"))
+        return not config.get("skip_auth_verification", False) and bool(config.get("auth_verified_required", False))
 
     def _get_resource_perm_required(self, config: Dict[str, Any]) -> bool:
-        return bool(config.get("resource_perm_required"))
+        return bool(config.get("resource_perm_required", False))
 
-    @staticmethod
-    def get_released_resource_data(gateway: Gateway, stage: Stage, resource_id: int):
-        resource_version_id = (
-            Release.objects.filter(gateway=gateway, stage=stage).values_list("resource_version_id", flat=True).first()
-        )
-        if not resource_version_id:
-            return None
 
-        released_resource = ReleasedResource.objects.filter(
-            gateway=gateway,
-            resource_version_id=resource_version_id,
-            resource_id=resource_id,
-        ).first()
-        if not released_resource:
-            return None
+def get_released_resource_data(gateway: Gateway, stage: Stage, resource_id: int):
+    resource_version_id = (
+        Release.objects.filter(gateway=gateway, stage=stage).values_list("resource_version_id", flat=True).first()
+    )
+    if not resource_version_id:
+        return None
 
-        return ReleasedResourceDataHandler.from_data(released_resource.data)
+    released_resource = ReleasedResource.objects.filter(
+        gateway=gateway,
+        resource_version_id=resource_version_id,
+        resource_id=resource_id,
+    ).first()
+    if not released_resource:
+        return None
+
+    return ReleasedResourceData.from_data(released_resource.data)
+
+
+class ReleasedResourceDataHandler:
 
     # TODO 待重构
     @staticmethod
@@ -183,3 +185,36 @@ class ReleasedResourceDataHandler:
             }
             for release in stage_release
         }
+
+    @staticmethod
+    def get_latest_doc_link(resource_ids: List[int]) -> Dict[int, str]:
+
+        if not resource_ids:
+            return {}
+
+        resource_version_ids = ReleasedResource.objects.filter_resource_version_ids(resource_ids)
+        released_stage_names = Release.objects.get_resource_version_released_stage_names(resource_version_ids)
+
+        # 按照资源版本从小到大排序，可使最新版本数据覆盖前面版本的数据
+        released_resources = ReleasedResource.objects.filter(resource_id__in=resource_ids).order_by(
+            "resource_id", "resource_version_id"
+        )
+
+        doc_links = {}
+        for resource in released_resources:
+            stage_names = released_stage_names.get(resource.resource_version_id)
+            if not stage_names:
+                continue
+
+            disabled_stages = resource.data.get("disabled_stages") or []
+            recommeded_stage = ReleasedResource.objects.get_recommended_stage_name(stage_names, disabled_stages)
+            if not recommeded_stage:
+                continue
+
+            doc_links[resource.resource_id] = get_resource_doc_link(
+                resource.gateway.name,
+                recommeded_stage,
+                resource.resource_name,
+            )
+
+        return doc_links

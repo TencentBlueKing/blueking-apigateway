@@ -168,6 +168,7 @@ class Plugin(ConfigModelMixin):
 
     target = models.ForeignKey(PluginConfig, on_delete=models.SET_NULL, null=True)
     schema = models.ForeignKey(Schema, blank=True, null=True, on_delete=models.PROTECT)
+
     # config from ConfigModelMixin
 
     def __str__(self):
@@ -214,6 +215,14 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
 
     def get_type(self):
         return self.config.type.code
+
+    def snapshot(self):
+        return {
+            "id": self.id,
+            "type": self.get_type(),
+            "name": self.config.type.name,
+            "config": self.get_config(),
+        }
 
     def __str__(self) -> str:
         return f"<PluginBinding {self.pk}/{self.scope_type}/{self.scope_id}/{self.config.type}>"

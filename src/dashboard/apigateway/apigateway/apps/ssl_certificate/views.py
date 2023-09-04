@@ -24,7 +24,6 @@ from rest_framework import status, viewsets
 
 from apigateway.apps.ssl_certificate import serializers
 from apigateway.core.models import SslCertificate, SslCertificateBinding
-from apigateway.core.signals import reversion_update_signal
 from apigateway.utils.crypto import CertificateChecker
 from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
@@ -139,8 +138,6 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
             ssl_certificate_id=slz.validated_data["ssl_certificate_id"],
         ).exclude(scope_id__in=slz.validated_data["scope_ids"]).delete()
 
-        reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="bind")
-
         return V1OKJsonResponse()
 
     @swagger_auto_schema(
@@ -160,8 +157,6 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
             scope_type=slz.validated_data["scope_type"],
             scope_id__in=slz.validated_data["scope_ids"],
         ).delete()
-
-        reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="unbind")
 
         return V1OKJsonResponse()
 
@@ -226,8 +221,6 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
             scope_id=valid_scope_id,
         ).exclude(ssl_certificate_id__in=slz.validated_data["ssl_certificate_ids"]).delete()
 
-        reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="bind")
-
         return V1OKJsonResponse()
 
     @swagger_auto_schema(
@@ -249,8 +242,6 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
             scope_id=slz.validated_data["scope_id"],
             ssl_certificate_id__in=slz.validated_data["ssl_certificate_ids"],
         ).delete()
-
-        reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="unbind")
 
         return V1OKJsonResponse()
 
