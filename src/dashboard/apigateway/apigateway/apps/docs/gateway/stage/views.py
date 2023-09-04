@@ -33,10 +33,10 @@ class StageViewSet(viewsets.GenericViewSet):
     )
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关环境列表"""
-        api = support_helper.get_gateway_by_name(gateway_name)
-        if not api:
+        gateway = support_helper.get_gateway_by_name(gateway_name)
+        if not gateway:
             raise error_codes.NOT_FOUND
 
-        stages = support_helper.get_stages(api["id"])
+        stages = support_helper.get_stages(gateway["id"])
         slz = StageSLZ(sorted(stages or [], key=lambda x: x["name"]), many=True)
         return V1OKJsonResponse("OK", data=slz.data)

@@ -61,18 +61,18 @@ def send_mail_for_perm_apply(record_id):
         "permission/perm_apply_mail_template.html",
         context={
             "title": title,
-            "api_name": record.api.name,
+            "api_name": record.gateway.name,
             "bk_app_code": record.bk_app_code,
             "expire_days_display": PermissionApplyExpireDaysEnum.get_choice_label(record.expire_days),
             "grant_dimension_display": GrantDimensionEnum.get_choice_label(record.grant_dimension),
-            "resource_names": sorted(manager.get_resource_names_display(record.api.id, record.resource_ids)),
-            "perm_apply_link": f"{apigw_domain}/{record.api_id}/permission/applys",
+            "resource_names": sorted(manager.get_resource_names_display(record.gateway.id, record.resource_ids)),
+            "perm_apply_link": f"{apigw_domain}/{record.gateway_id}/permission/applys",
         },
     )
 
     params = {
         "title": title,
-        "receiver__username": ";".join(record.api.maintainers),
+        "receiver__username": ";".join(record.gateway.maintainers),
         "content": mail_content,
         "attachments": [
             {
@@ -97,7 +97,7 @@ def send_mail_for_perm_handle(record_id):
 
     approved_resource_names = sorted(
         manager.get_approved_resource_names_display(
-            record.api.id,
+            record.gateway.id,
             handled_resource_ids.get(ApplyStatusEnum.APPROVED.value),
             record.status,
         )
@@ -105,7 +105,7 @@ def send_mail_for_perm_handle(record_id):
 
     rejected_resource_names = sorted(
         manager.get_rejected_resource_names_display(
-            record.api.id,
+            record.gateway.id,
             handled_resource_ids.get(ApplyStatusEnum.REJECTED.value),
             record.status,
         )
@@ -130,13 +130,13 @@ def send_mail_for_perm_handle(record_id):
         }
         part2_permission = {}
 
-    title = f"【蓝鲸API网关】你对网关【{record.api.name}】资源访问权限的申请已完成"
+    title = f"【蓝鲸API网关】你对网关【{record.gateway.name}】资源访问权限的申请已完成"
 
     mail_content = render_to_string(
         "permission/perm_handle_mail_template.html",
         context={
             "title": title,
-            "api_name": record.api.name,
+            "api_name": record.gateway.name,
             "bk_app_code": record.bk_app_code,
             "part1_permission": part1_permission,
             "part2_permission": part2_permission,

@@ -72,7 +72,7 @@ class TestGatewayManager:
         stage_prod = G(Stage, gateway=gateway, name="prod")
         stage_test = G(Stage, gateway=gateway, name="test")
 
-        G(Resource, api=gateway)
+        G(Resource, gateway=gateway)
         resource_version = G(ResourceVersion, gateway=gateway)
         G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version)
 
@@ -217,7 +217,7 @@ class TestResourceManager:
 
     def test_filter_valid_ids(self):
         gateway = G(Gateway)
-        resource = G(Resource, api=gateway)
+        resource = G(Resource, gateway=gateway)
 
         data = [
             {
@@ -242,10 +242,10 @@ class TestResourceManager:
             assert result == test["expected"]
 
     def test_filter_resource_path_method_to_id(self):
-        r1 = G(Resource, api=self.gateway, path="/hello/", method="GET")
-        r2 = G(Resource, api=self.gateway, path="/hello/", method="POST")
-        r3 = G(Resource, api=self.gateway, path="/hello/{user_id}/", method="POST")
-        r4 = G(Resource, api=self.gateway, path="/test/", method="ANY")
+        r1 = G(Resource, gateway=self.gateway, path="/hello/", method="GET")
+        r2 = G(Resource, gateway=self.gateway, path="/hello/", method="POST")
+        r3 = G(Resource, gateway=self.gateway, path="/hello/{user_id}/", method="POST")
+        r4 = G(Resource, gateway=self.gateway, path="/test/", method="ANY")
 
         expected = {
             "/hello/": {
@@ -265,8 +265,8 @@ class TestResourceManager:
     def test_filter_id_to_fields(self):
         gateway = G(Gateway)
 
-        r1 = G(Resource, api=gateway, method="GET", path="/echo/", name="get_echo")
-        r2 = G(Resource, api=gateway, method="POST", path="/echo/", name="post_echo")
+        r1 = G(Resource, gateway=gateway, method="GET", path="/echo/", name="get_echo")
+        r2 = G(Resource, gateway=gateway, method="POST", path="/echo/", name="post_echo")
 
         result = Resource.objects.filter_id_to_fields(gateway.id, ["id", "name", "method", "path"])
         assert result == {
@@ -287,8 +287,8 @@ class TestResourceManager:
     def test_filter_id_is_public_map(self):
         gateway = G(Gateway)
 
-        r1 = G(Resource, api=gateway, is_public=True)
-        r2 = G(Resource, api=gateway, is_public=False)
+        r1 = G(Resource, gateway=gateway, is_public=True)
+        r2 = G(Resource, gateway=gateway, is_public=False)
 
         result = Resource.objects.filter_id_is_public_map(gateway.id)
         assert result == {r1.id: True, r2.id: False}
@@ -297,9 +297,9 @@ class TestResourceManager:
         a1 = G(Gateway)
         a2 = G(Gateway)
 
-        r1 = G(Resource, api=a1)
-        r2 = G(Resource, api=a2)
-        r3 = G(Resource, api=a1)
+        r1 = G(Resource, gateway=a1)
+        r2 = G(Resource, gateway=a2)
+        r3 = G(Resource, gateway=a1)
 
         result = Resource.objects.group_by_api_id([r1.id, r2.id, r3.id])
         assert result == {
@@ -310,7 +310,7 @@ class TestResourceManager:
     def test_get_id_to_name(self):
         gateway = G(Gateway)
 
-        r = G(Resource, api=gateway, name="test")
+        r = G(Resource, gateway=gateway, name="test")
 
         assert Resource.objects.get_id_to_name(gateway.id) == {r.id: "test"}
         assert Resource.objects.get_id_to_name(gateway.id, [r.id]) == {r.id: "test"}
@@ -319,9 +319,9 @@ class TestResourceManager:
     def test_get_unspecified_resource_fields(self):
         gateway = G(Gateway)
 
-        r1 = G(Resource, api=gateway, name="r1", method="GET", path="/echo/r1/")
-        r2 = G(Resource, api=gateway, name="r2", method="POST", path="/echo/r2/")
-        r3 = G(Resource, api=gateway, name="r3", method="POST", path="/echo/r3/")
+        r1 = G(Resource, gateway=gateway, name="r1", method="GET", path="/echo/r1/")
+        r2 = G(Resource, gateway=gateway, name="r2", method="POST", path="/echo/r2/")
+        r3 = G(Resource, gateway=gateway, name="r3", method="POST", path="/echo/r3/")
 
         assert Resource.objects.get_unspecified_resource_fields(gateway.id, []) == [
             {"id": r1.id, "name": "r1", "method": "GET", "path": "/echo/r1/"},
@@ -336,8 +336,8 @@ class TestResourceManager:
 
     def test_get_resource_ids_by_names(self):
         gateway = G(Gateway)
-        resource_1 = G(Resource, name="red", api=gateway)
-        resource_2 = G(Resource, name="green", api=gateway)
+        resource_1 = G(Resource, name="red", gateway=gateway)
+        resource_2 = G(Resource, name="green", gateway=gateway)
 
         assert Resource.objects.get_resource_ids_by_names(gateway.id, None) == []
         assert Resource.objects.get_resource_ids_by_names(gateway.id, []) == []
@@ -348,7 +348,7 @@ class TestResourceManager:
         ]
 
     def test_get_name(self, fake_gateway):
-        resource = G(Resource, api=fake_gateway)
+        resource = G(Resource, gateway=fake_gateway)
 
         name = Resource.objects.get_name(fake_gateway.id, resource.id)
         assert name == resource.name
@@ -716,7 +716,7 @@ class TestResourceVersionManager:
 class TestStageResourceDisabledManager(TestCase):
     def test_get_disabled_stages(self):
         gateway = G(Gateway)
-        resource = G(Resource, api=gateway)
+        resource = G(Resource, gateway=gateway)
         stage_prod = G(Stage, gateway=gateway, name="prod")
         stage_test = G(Stage, gateway=gateway, name="test")
 
@@ -740,8 +740,8 @@ class TestStageResourceDisabledManager(TestCase):
 
     def test_filter_disabled_stages_by_gateway(self):
         gateway = G(Gateway)
-        resource1 = G(Resource, api=gateway)
-        resource2 = G(Resource, api=gateway)
+        resource1 = G(Resource, gateway=gateway)
+        resource2 = G(Resource, gateway=gateway)
         stage_prod = G(Stage, gateway=gateway, name="prod")
         stage_test = G(Stage, gateway=gateway, name="test")
 
@@ -1002,7 +1002,7 @@ class TestReleaseManager:
 class TestReleasedResourceManager:
     def test_get_latest_released_resource(self):
         gateway = G(Gateway)
-        resource = G(Resource, api=gateway)
+        resource = G(Resource, gateway=gateway)
 
         rv_1 = G(ResourceVersion, gateway=gateway)
         G(ResourceVersion, gateway=gateway)
@@ -1055,8 +1055,8 @@ class TestReleasedResourceManager:
         }
 
     def test_filter_latest_released_resources(self, fake_gateway):
-        r1 = G(Resource, api=fake_gateway)
-        r2 = G(Resource, api=fake_gateway)
+        r1 = G(Resource, gateway=fake_gateway)
+        r2 = G(Resource, gateway=fake_gateway)
 
         G(
             ReleasedResource,
@@ -1153,10 +1153,10 @@ class TestReleasedResourceManager:
         s2 = G(Stage, gateway=fake_gateway, name="dev", status=1)
         s3 = G(Stage, gateway=fake_gateway, name="test", status=1)
 
-        r1 = G(Resource, api=fake_gateway, name="test1")
-        r2 = G(Resource, api=fake_gateway, name="test2")
-        r3 = G(Resource, api=fake_gateway, name="test3")
-        r4 = G(Resource, api=fake_gateway, name="test4")
+        r1 = G(Resource, gateway=fake_gateway, name="test1")
+        r2 = G(Resource, gateway=fake_gateway, name="test2")
+        r3 = G(Resource, gateway=fake_gateway, name="test3")
+        r4 = G(Resource, gateway=fake_gateway, name="test4")
 
         rv1 = G(ResourceVersion, gateway=fake_gateway)
         rv2 = G(ResourceVersion, gateway=fake_gateway)
@@ -1190,8 +1190,8 @@ class TestReleasedResourceManager:
     def test_filter_resource_version_ids(self):
         fake_gateway = G(Gateway)
 
-        r1 = G(Resource, api=fake_gateway)
-        r2 = G(Resource, api=fake_gateway)
+        r1 = G(Resource, gateway=fake_gateway)
+        r2 = G(Resource, gateway=fake_gateway)
 
         rv1 = G(ResourceVersion, gateway=fake_gateway)
         rv2 = G(ResourceVersion, gateway=fake_gateway)
@@ -1330,22 +1330,22 @@ class TestJWTManager:
         gateway = G(Gateway)
         data = [
             {
-                "api": gateway,
+                "gateway": gateway,
             }
         ]
         for test in data:
-            result = JWT.objects.create_jwt(test["api"])
-            assert result.api == test["api"]
+            result = JWT.objects.create_jwt(test["gateway"])
+            assert result.gateway == test["gateway"]
             assert result.private_key == ""
             assert "BEGIN PUBLIC KEY" in result.public_key
             assert result.encrypted_private_key
 
     def test_update_jwt_key(self, faker):
         gateway = G(Gateway)
-        jwt = G(JWT, api=gateway, private_key=faker.pystr(), public_key=faker.pystr())
+        jwt = G(JWT, gateway=gateway, private_key=faker.pystr(), public_key=faker.pystr())
 
         JWT.objects.update_jwt_key(gateway, "test", "test")
-        jwt = JWT.objects.get(api=gateway)
+        jwt = JWT.objects.get(gateway=gateway)
 
         cipher = AESCipherManager.create_jwt_cipher()
         assert jwt.public_key == "test"
@@ -1353,7 +1353,7 @@ class TestJWTManager:
 
     def test_get_private_key(self):
         gateway = G(Gateway)
-        jwt = G(JWT, api=gateway)
+        jwt = G(JWT, gateway=gateway)
         JWT.objects.update_jwt_key(gateway, "test", "test")
         assert JWT.objects.get_private_key(gateway.id) == "test"
 
@@ -1391,7 +1391,7 @@ class TestAPIRelatedApp:
         result = APIRelatedApp.objects.allow_app_manage_gateway(gateway.id, unique_id)
         assert result is False
 
-        G(APIRelatedApp, api=gateway, bk_app_code=unique_id)
+        G(APIRelatedApp, gateway=gateway, bk_app_code=unique_id)
         result = APIRelatedApp.objects.allow_app_manage_gateway(gateway.id, unique_id)
         assert result is True
 
@@ -1399,13 +1399,13 @@ class TestAPIRelatedApp:
         gateway = G(Gateway)
 
         APIRelatedApp.objects.add_related_app(gateway.id, "foo")
-        assert APIRelatedApp.objects.filter(api_id=gateway.id).count() == 1
+        assert APIRelatedApp.objects.filter(gateway_id=gateway.id).count() == 1
 
         APIRelatedApp.objects.add_related_app(gateway.id, "foo")
-        assert APIRelatedApp.objects.filter(api_id=gateway.id).count() == 1
+        assert APIRelatedApp.objects.filter(gateway_id=gateway.id).count() == 1
 
         APIRelatedApp.objects.add_related_app(gateway.id, "bar")
-        assert APIRelatedApp.objects.filter(api_id=gateway.id).count() == 2
+        assert APIRelatedApp.objects.filter(gateway_id=gateway.id).count() == 2
 
     def test_check_app_gateway_limit(self):
         APIRelatedApp.objects.all().delete()
@@ -1440,10 +1440,10 @@ class TestBackendServiceManager:
 
 class TestSslCertificateManager:
     def test_delete_by_id(self, fake_gateway):
-        ssl_certificate = G(SslCertificate, api=fake_gateway)
+        ssl_certificate = G(SslCertificate, gateway=fake_gateway)
         related = G(
             SslCertificateBinding,
-            api=fake_gateway,
+            gateway=fake_gateway,
             scope_type=SSLCertificateBindingScopeTypeEnum.STAGE_ITEM_CONFIG.value,
             scope_id=1,
             ssl_certificate=ssl_certificate,
@@ -1454,24 +1454,24 @@ class TestSslCertificateManager:
 
         related.delete()
         SslCertificate.objects.delete_by_id(ssl_certificate.id)
-        assert not SslCertificate.objects.filter(api=fake_gateway).exists()
+        assert not SslCertificate.objects.filter(gateway=fake_gateway).exists()
 
     def test_get_valid_ids(self, fake_ssl_certificate):
         result = SslCertificate.objects.get_valid_ids(
-            gateway_id=fake_ssl_certificate.api.id,
+            gateway_id=fake_ssl_certificate.gateway.id,
             ids=[fake_ssl_certificate.id, 0],
         )
         assert result == [fake_ssl_certificate.id]
 
     def test_get_valid_id(self, fake_ssl_certificate):
         result = SslCertificate.objects.get_valid_id(
-            gateway_id=fake_ssl_certificate.api.id,
+            gateway_id=fake_ssl_certificate.gateway.id,
             id_=fake_ssl_certificate.id,
         )
         assert result == fake_ssl_certificate.id
 
         result = SslCertificate.objects.get_valid_id(
-            gateway_id=fake_ssl_certificate.api.id,
+            gateway_id=fake_ssl_certificate.gateway.id,
             id_=0,
         )
         assert result is None
@@ -1480,14 +1480,14 @@ class TestSslCertificateManager:
 class TestSslCertificateBindingManager:
     def test_get_valid_scope_id(self, fake_ssl_certificate_binding):
         result = SslCertificateBinding.objects.get_valid_scope_id(
-            gateway_id=fake_ssl_certificate_binding.api.id,
+            gateway_id=fake_ssl_certificate_binding.gateway.id,
             scope_type=fake_ssl_certificate_binding.scope_type,
             scope_id=fake_ssl_certificate_binding.scope_id,
         )
         assert result == fake_ssl_certificate_binding.scope_id
 
         result = SslCertificateBinding.objects.get_valid_scope_id(
-            gateway_id=fake_ssl_certificate_binding.api.id,
+            gateway_id=fake_ssl_certificate_binding.gateway.id,
             scope_type=fake_ssl_certificate_binding.scope_type,
             scope_id=0,
         )

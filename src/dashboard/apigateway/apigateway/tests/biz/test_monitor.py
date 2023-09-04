@@ -31,8 +31,8 @@ class TestResourceMonitorHandler:
         self.gateway = create_gateway()
 
     def test_statistics_api_alarm_record(self):
-        strategy_1 = G(AlarmStrategy, api=self.gateway)
-        strategy_2 = G(AlarmStrategy, api=self.gateway)
+        strategy_1 = G(AlarmStrategy, gateway=self.gateway)
+        strategy_2 = G(AlarmStrategy, gateway=self.gateway)
 
         alarm_record_1 = G(AlarmRecord, created_time=dummy_time.time)
         alarm_record_1.alarm_strategies.set([strategy_1])

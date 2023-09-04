@@ -34,7 +34,7 @@ class AlarmRecordManager(models.Manager):
     def update_alarm(self, id, gateway=None, status=None, comment=None, message=None, alarm_strategies=None):
         data = {}
         if gateway is not None:
-            data["api"] = gateway
+            data["gateway"] = gateway
 
         if status is not None:
             data["status"] = status
@@ -68,7 +68,7 @@ class AlarmStrategyManager(models.Manager):
                 ResourceBackendAlarmSubTypeEnum.BAD_GATEWAY,
             ]:
                 self.create(
-                    api=gateway,
+                    gateway=gateway,
                     name=ResourceBackendAlarmSubTypeEnum.get_choice_label(alarm_subtype),
                     alarm_type=alarm_type.value,
                     alarm_subtype=alarm_subtype.value,
@@ -99,7 +99,7 @@ class AlarmStrategyManager(models.Manager):
         """
         获取资源绑定的告警策略
         """
-        strategies = self.filter(api_id=gateway_id, alarm_subtype=alarm_subtype)
+        strategies = self.filter(gateway_id=gateway_id, alarm_subtype=alarm_subtype)
         if not strategies.exists():
             return []
 
@@ -117,7 +117,7 @@ class AlarmStrategyManager(models.Manager):
         return matched_strategies
 
     def filter_alarm_strategy(self, gateway, api_label_id=None, query=None, order_by=None, fuzzy=True):
-        queryset = self.filter(api=gateway)
+        queryset = self.filter(gateway=gateway)
 
         if query and fuzzy:
             queryset = queryset.filter(name__contains=query)
@@ -136,7 +136,7 @@ class AlarmStrategyManager(models.Manager):
         """
         alarm_record_count = self._get_alarm_record_count_object(time_start, time_end)
         return (
-            self.filter(api_id__in=gateway_ids)
+            self.filter(gateway_id__in=gateway_ids)
             .annotate(alarm_record_count=alarm_record_count, latest_alarm_record_id=Max("alarmrecord"))
             .filter(alarm_record_count__gt=0)
         )
@@ -147,7 +147,9 @@ class AlarmStrategyManager(models.Manager):
         """
         alarm_record_count = self._get_alarm_record_count_object(time_start, time_end)
         return dict(
-            self.filter(api_id__in=gateway_ids).values_list("api_id").annotate(alarm_record_count=alarm_record_count)
+            self.filter(gateway_id__in=gateway_ids)
+            .values_list("gateway_id")
+            .annotate(alarm_record_count=alarm_record_count)
         )
 
     def _get_alarm_record_count_object(self, time_start=None, time_end=None):

@@ -67,7 +67,7 @@ class ResourceDataConvertor:
         self.resources = resources
 
     def convert(self) -> List[ResourceData]:
-        resource_objs = list(Resource.objects.filter(api=self.gateway))
+        resource_objs = list(Resource.objects.filter(gateway=self.gateway))
         resource_id_to_resource_obj = {resource.id: resource for resource in resource_objs}
         resource_key_to_resource_obj = {f"{resource.method}:{resource.path}": resource for resource in resource_objs}
         backends = {backend.name: backend for backend in Backend.objects.filter(gateway=self.gateway)}
@@ -168,7 +168,7 @@ class ResourceImportValidator:
             resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource
         ]
         return list(
-            Resource.objects.filter(api=self.gateway)
+            Resource.objects.filter(gateway=self.gateway)
             .exclude(id__in=specified_resource_ids)
             .values("id", "name", "method", "path")
         )
@@ -354,7 +354,7 @@ class ResourcesImporter:
             resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource
         ]
         unspecified_resources = list(
-            Resource.objects.filter(api=self.gateway)
+            Resource.objects.filter(gateway=self.gateway)
             .exclude(id__in=resource_ids)
             .values("id", "name", "method", "path")
         )
@@ -376,7 +376,7 @@ class ResourcesImporter:
 
     def _complete_label_ids(self):
         """补全资源中的 label_ids 信息"""
-        labels = dict(APILabel.objects.filter(api=self.gateway).values_list("name", "id"))
+        labels = dict(APILabel.objects.filter(gateway=self.gateway).values_list("name", "id"))
         for resource_data in self.resource_data_list:
             resource_data.label_ids = [labels[name] for name in resource_data.metadata.get("labels", [])]
 

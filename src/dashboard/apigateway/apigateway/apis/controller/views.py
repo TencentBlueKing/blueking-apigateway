@@ -189,7 +189,7 @@ class MicroGatewayPermissionViewSet(BaseMicroGatewayViewSet):
             return resource_permissions
 
         name_mappings = self._get_released_resource_name_mappings(release)
-        queryset = AppResourcePermission.objects.filter(api=gateway)
+        queryset = AppResourcePermission.objects.filter(gateway=gateway)
         if app_code_list:
             queryset = queryset.filter(bk_app_code__in=app_code_list)
         for permission in queryset:
@@ -210,7 +210,7 @@ class MicroGatewayPermissionViewSet(BaseMicroGatewayViewSet):
         return resource_permissions
 
     def _get_api_permissions(self, gateway: Gateway, app_code_list: Optional[List[str]]):
-        qs = AppAPIPermission.objects.filter(api=gateway)
+        qs = AppAPIPermission.objects.filter(gateway=gateway)
         if app_code_list:
             qs = qs.filter(bk_app_code__in=app_code_list)
 
@@ -327,7 +327,7 @@ class MicroGatewayNewestPermissionViewSet(BaseMicroGatewayViewSet):
         slz = MicroGatewayApiPermissionSLZ(instance)
 
         cls._set_fast_permission_cache(
-            cls.get_related_gateway_permission_fast_cache_key(instance.api_id, instance.bk_app_code),
+            cls.get_related_gateway_permission_fast_cache_key(instance.gateway_id, instance.bk_app_code),
             slz.data,
         )
 
@@ -342,7 +342,7 @@ class MicroGatewayNewestPermissionViewSet(BaseMicroGatewayViewSet):
         cache_value["resource_name"] = resource.name
 
         cls._set_fast_permission_cache(
-            cls.get_resource_permission_fast_cache_key(instance.api_id, resource.name, instance.bk_app_code),
+            cls.get_resource_permission_fast_cache_key(instance.gateway_id, resource.name, instance.bk_app_code),
             cache_value,
         )
 

@@ -28,6 +28,6 @@ class PluginBindingHandler:
             return list(Stage.objects.filter(gateway_id=gateway_id, id__in=scope_ids).values("id", "name"))
 
         elif scope_type == PluginBindingScopeEnum.RESOURCE:
-            return list(Resource.objects.filter(api_id=gateway_id, id__in=scope_ids).values("id", "name"))
+            return list(Resource.objects.filter(gateway_id=gateway_id, id__in=scope_ids).values("id", "name"))
 
         raise ValueError(f"unsupported scope_type: {scope_type.value}")

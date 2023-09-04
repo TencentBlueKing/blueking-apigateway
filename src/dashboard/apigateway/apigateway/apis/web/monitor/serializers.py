@@ -63,14 +63,14 @@ class AlarmStrategyConfigSLZ(serializers.Serializer):
 
 
 class AlarmStrategyInputSLZ(serializers.ModelSerializer):
-    api = serializers.HiddenField(default=CurrentGatewayDefault())
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     api_label_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
     config = AlarmStrategyConfigSLZ()
 
     class Meta:
         model = AlarmStrategy
         fields = [
-            "api",
+            "gateway",
             "id",
             "name",
             "alarm_type",

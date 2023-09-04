@@ -152,7 +152,7 @@ class ResourcePermissionBuilder:
 
     def _get_api_permission(self):
         return AppAPIPermission.objects.filter(
-            api=self.gateway,
+            gateway=self.gateway,
             bk_app_code=self.target_app_code,
         ).first()
 
@@ -160,7 +160,7 @@ class ResourcePermissionBuilder:
         return {
             perm.resource_id: perm
             for perm in AppResourcePermission.objects.filter(
-                api=self.gateway,
+                gateway=self.gateway,
                 bk_app_code=self.target_app_code,
             )
         }
@@ -168,7 +168,7 @@ class ResourcePermissionBuilder:
     def _get_api_permission_apply_status(self):
         apply_status = AppPermissionApplyStatus.objects.filter(
             bk_app_code=self.target_app_code,
-            api_id=self.gateway.id,
+            gateway_id=self.gateway.id,
             grant_dimension=GrantDimensionEnum.API.value,
         ).first()
 
@@ -182,7 +182,7 @@ class ResourcePermissionBuilder:
             apply_status.resource_id: apply_status.status
             for apply_status in AppPermissionApplyStatus.objects.filter(
                 bk_app_code=self.target_app_code,
-                api_id=self.gateway.id,
+                gateway_id=self.gateway.id,
                 grant_dimension=GrantDimensionEnum.RESOURCE.value,
             )
         }
@@ -199,9 +199,9 @@ class AppPermissionBuilder:
         resource_permission_map = self._get_resource_permission_map()
 
         resource_map: defaultdict = defaultdict(dict)
-        for api_id in api_permission_map.keys():
-            for resource in ResourceVersionHandler.get_released_public_resources(api_id):
-                resource.update({"api_permission": api_permission_map.get(api_id)})
+        for gateway_id in api_permission_map.keys():
+            for resource in ResourceVersionHandler.get_released_public_resources(gateway_id):
+                resource.update({"api_permission": api_permission_map.get(gateway_id)})
                 resource_map[resource["id"]] = resource
 
         for resource in ReleasedResource.objects.filter_latest_released_resources(
@@ -221,7 +221,7 @@ class AppPermissionBuilder:
 
     def _get_api_permission_map(self) -> Dict[int, AppAPIPermission]:
         return {
-            perm.api_id: perm
+            perm.gateway_id: perm
             for perm in AppAPIPermission.objects.filter_public_permission_by_app(bk_app_code=self.target_app_code)
         }
 

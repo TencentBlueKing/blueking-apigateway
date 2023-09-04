@@ -26,7 +26,7 @@ class TestDocArchiveGenerator:
     def test_generate(self, mocker, faker, fake_resource_doc):
         mocker.patch("apigateway.biz.resource_doc.exporter.generators.write_to_file", return_value=None)
 
-        fake_gateway = fake_resource_doc.api
+        fake_gateway = fake_resource_doc.gateway
         resource = Resource.objects.get(id=fake_resource_doc.resource_id)
 
         generator = DocArchiveGenerator()

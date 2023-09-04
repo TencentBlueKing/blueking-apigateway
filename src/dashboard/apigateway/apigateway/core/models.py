@@ -69,7 +69,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     """
     API, a system
     the name is unique and will be part of the path in APIGateway
-    /api/{api.name}/{stage.name}/{resource.path}/
+    /api/{gateway.name}/{stage.name}/{resource.path}/
     """
 
     name = models.CharField(max_length=64, unique=True)
@@ -198,9 +198,9 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     """
     The specific endpoint registered to APIGateway.
 
-    api-method-path should be unique
+    gateway-method-path should be unique
 
-    NOTE: do unique check for api/method/path
+    NOTE: do unique check for gateway/method/path
     """
 
     name = models.CharField(max_length=256, default="", blank=True, null=True)
@@ -208,7 +208,7 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     description = description_i18n.default_field(default="")
     description_en = description_i18n.field("en")
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     method = models.CharField(max_length=10, choices=RESOURCE_METHOD_CHOICES, blank=False, null=False)
     path = models.CharField(max_length=2048, blank=False, null=False)
     match_subpath = models.BooleanField(default=False)
@@ -227,9 +227,6 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     class Meta:
         verbose_name = "Resource"
         verbose_name_plural = "Resource"
-        # unique_together = (
-        #     ('api', 'method', 'path'),
-        # )
         db_table = "core_resource"
 
     @property
@@ -323,7 +320,7 @@ class Proxy(ConfigModelMixin):
 class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
     """
     The status of a stage-resource
-    Enabled by default for api-stage-resource, but you can disabled part of them.
+    Enabled by default for gateway-stage-resource, but you can disabled part of them.
     """
 
     # can be delete cascade
@@ -482,7 +479,7 @@ class Context(ConfigModelMixin):
     def should_do_publish(self):
         """
         NOTE: for resource context, is static, will be online after release be published
-        but the context of api/stage, is dynamic, will be online after the settings be saved
+        but the context of gateway/stage, is dynamic, will be online after the settings be saved
         """
         return self.scope_type in (ContextScopeTypeEnum.GATEWAY.value, ContextScopeTypeEnum.STAGE.value)
 
@@ -702,12 +699,12 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
 
 class JWT(TimestampedModelMixin, OperatorModelMixin):
     """
-    jwt for each api
+    jwt for each gateway
     """
 
-    # api = models.ForeignKey(API, on_delete=models.PROTECT, unique=True)
-    api = models.OneToOneField(
+    gateway = models.OneToOneField(
         Gateway,
+        db_column="api_id",
         on_delete=models.CASCADE,
         primary_key=True,
     )
@@ -720,7 +717,7 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
     objects = managers.JWTManager()
 
     def __str__(self):
-        return f"<JWT: {self.api}>"
+        return f"<JWT: {self.gateway}>"
 
     class Meta:
         verbose_name = "JWT"
@@ -731,13 +728,13 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
 class APIRelatedApp(TimestampedModelMixin):
     """网关关联的蓝鲸应用"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     bk_app_code = models.CharField(max_length=32, db_index=True)
 
     objects = managers.APIRelatedAppManager()
 
     def __str__(self):
-        return f"<APIRelatedApp: {self.bk_app_code}/{self.api_id}>"
+        return f"<APIRelatedApp: {self.bk_app_code}/{self.gateway_id}>"
 
     class Meta:
         db_table = "core_api_related_app"
@@ -846,7 +843,7 @@ class BackendService(TimestampedModelMixin, OperatorModelMixin):
 class SslCertificate(TimestampedModelMixin, OperatorModelMixin):
     """SSL 证书"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     type = models.CharField(
         max_length=32,
         choices=SSLCertificateTypeEnum.get_choices(),
@@ -871,7 +868,7 @@ class SslCertificate(TimestampedModelMixin, OperatorModelMixin):
 class SslCertificateBinding(TimestampedModelMixin, OperatorModelMixin):
     """证书绑定"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     scope_type = models.CharField(
         max_length=32,
         choices=SSLCertificateBindingScopeTypeEnum.get_choices(),
@@ -887,4 +884,4 @@ class SslCertificateBinding(TimestampedModelMixin, OperatorModelMixin):
 
     class Meta:
         db_table = "core_ssl_certificate_binding"
-        unique_together = ("api", "scope_type", "scope_id", "ssl_certificate")
+        unique_together = ("gateway", "scope_type", "scope_id", "ssl_certificate")

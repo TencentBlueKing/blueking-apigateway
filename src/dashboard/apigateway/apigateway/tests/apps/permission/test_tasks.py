@@ -42,35 +42,35 @@ class TestRenewAppResourcePermission:
 
         G(
             AppResourcePermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code=bk_app_code,
             resource_id=1,
             expires=to_datetime_from_now(days=3),
         )
         G(
             AppResourcePermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code=bk_app_code,
             resource_id=2,
             expires=to_datetime_from_now(days=-3),
         )
         G(
             AppResourcePermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code=bk_app_code,
             resource_id=3,
             expires=to_datetime_from_now(days=3),
         )
         G(
             AppResourcePermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code=bk_app_code,
             resource_id=4,
             expires=to_datetime_from_now(days=720),
         )
         G(
             AppResourcePermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             bk_app_code=bk_app_code,
             resource_id=5,
             expires=to_datetime_from_now(days=170),
@@ -79,18 +79,20 @@ class TestRenewAppResourcePermission:
         renew_app_resource_permission()
 
         assert AppResourcePermission.objects.get(
-            api_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=1
+            gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=1
         ).expires < to_datetime_from_now(days=4)
         assert (
-            AppResourcePermission.objects.get(api_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=2).expires
+            AppResourcePermission.objects.get(
+                gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=2
+            ).expires
             < now_datetime()
         )
         assert AppResourcePermission.objects.get(
-            api_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=3
+            gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=3
         ).expires > to_datetime_from_now(days=179)
         assert AppResourcePermission.objects.get(
-            api_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=4
+            gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=4
         ).expires > to_datetime_from_now(days=719)
         assert AppResourcePermission.objects.get(
-            api_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=5
+            gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=5
         ).expires > to_datetime_from_now(days=179)

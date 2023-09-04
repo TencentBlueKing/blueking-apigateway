@@ -64,7 +64,7 @@ class DocImporter:
                 assert doc.resource
                 add_resource_docs.append(
                     ResourceDoc(
-                        api_id=self.gateway_id,
+                        gateway_id=self.gateway_id,
                         resource_id=doc.resource.id,
                         language=doc.language.value,
                         type=DocTypeEnum.MARKDOWN.value,

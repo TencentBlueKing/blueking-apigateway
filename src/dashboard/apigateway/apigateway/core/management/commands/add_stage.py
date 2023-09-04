@@ -36,12 +36,12 @@ class Command(BaseCommand):
     """
 
     def add_arguments(self, parser):
-        parser.add_argument("--api", dest="api_name", required=True, help="gateway name")
+        parser.add_argument("--gateway", dest="gateway_name", required=True, help="gateway name")
         parser.add_argument("--name", type=str, dest="name", required=True)
 
     @transaction.atomic
-    def handle(self, api_name: str, name: str, **options):
-        gateway = Gateway.objects.get(name=api_name)
+    def handle(self, gateway_name: str, name: str, **options):
+        gateway = Gateway.objects.get(name=gateway_name)
         stage = get_object_or_None(Stage, gateway=gateway, name=name)
 
         if stage:
@@ -70,7 +70,7 @@ class Command(BaseCommand):
                 },
             },
             context={
-                "api": gateway,
+                "gateway": gateway,
             },
         )
 

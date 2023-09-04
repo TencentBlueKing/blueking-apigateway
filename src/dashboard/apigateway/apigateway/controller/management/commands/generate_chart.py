@@ -38,7 +38,7 @@ class Command(BaseCommand):
     """
 
     def add_arguments(self, parser):
-        parser.add_argument("--api-name", type=str, help="网关名", required=True)
+        parser.add_argument("--gateway-name", type=str, help="网关名", required=True)
         parser.add_argument("--stage-name", type=str, default="prod", help="网关环境")
         parser.add_argument("--output-dir", type=str, default=settings.BASE_DIR, help="输出目录")
         parser.add_argument("--chart-file", type=str, default="chart.tgz", help="chart 文件名")
@@ -64,8 +64,10 @@ class Command(BaseCommand):
         except Release.DoesNotExist:
             raise CommandError(f"网关【name={gateway.name}】下环境【name={stage.name}】未发布")
 
-    def handle(self, api_name: str, stage_name: str, output_dir: str, chart_file: str, values_file: str, **options):
-        release = self._get_release(api_name, stage_name)
+    def handle(
+        self, gateway_name: str, stage_name: str, output_dir: str, chart_file: str, values_file: str, **options
+    ):
+        release = self._get_release(gateway_name, stage_name)
         stage = release.stage
         micro_gateway = stage.micro_gateway
         if not micro_gateway:

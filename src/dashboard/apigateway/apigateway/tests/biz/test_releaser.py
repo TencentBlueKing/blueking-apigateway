@@ -18,10 +18,10 @@
 #
 import pytest
 from ddf import G
-from django.http import Http404
 
 from apigateway.biz.releaser import (
-    DefaultGatewayReleaser,
+    BaseGatewayReleaserHandler,
+    DefaultGatewayReleaserHandler,
     GatewayReleaserFactory,
     MicroGatewayReleaseHistory,
     MicroGatewayReleaserHandler,
@@ -35,9 +35,9 @@ from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Sta
 pytestmark = pytest.mark.django_db(transaction=True)
 
 
-def get_release_data(api):
-    stage = G(Stage, gateway=api)
-    resource_version = G(ResourceVersion, gateway=api, name=f"{api.id}-{stage.id}")
+def get_release_data(gateway):
+    stage = G(Stage, gateway=gateway)
+    resource_version = G(ResourceVersion, gateway=gateway, name=f"{gateway.id}-{stage.id}")
 
     return {
         "stage_ids": [stage.id],
@@ -51,7 +51,7 @@ class TestGatewayReleaserFactory:
         "hosting_type, expected",
         [
             (APIHostingTypeEnum.MICRO.value, MicroGatewayReleaserHandler),
-            (APIHostingTypeEnum.DEFAULT.value, DefaultGatewayReleaser),
+            (APIHostingTypeEnum.DEFAULT.value, DefaultGatewayReleaserHandler),
         ],
     )
     def test_get_releaser(self, fake_gateway, hosting_type, expected):
@@ -70,22 +70,22 @@ class TestGatewayReleaserFactory:
 
 class TestDefaultGatewayReleaser:
     def test_from_data(self, fake_gateway, fake_stage, fake_resource_version):
-        releaser = DefaultGatewayReleaser.from_data(
+        releaser = DefaultGatewayReleaserHandler.from_data(
             fake_gateway,
-            {"stage_ids": [fake_stage.id], "resource_version_id": fake_resource_version.id},
+            [fake_stage.id],
+            fake_resource_version.id,
+            "",
             access_token="access_token",
         )
-        assert isinstance(releaser, DefaultGatewayReleaser)
+        assert isinstance(releaser, DefaultGatewayReleaserHandler)
 
         # 资源版本 不存在
-        with pytest.raises(Http404):
-            DefaultGatewayReleaser.from_data(
-                fake_gateway, {"stage_ids": [fake_stage.id], "resource_version_id": 0}, access_token="access_token"
-            )
+        with pytest.raises(ResourceVersion.DoesNotExist):
+            DefaultGatewayReleaserHandler.from_data(fake_gateway, [fake_stage.id], 0, "", access_token="access_token")
 
     def test_release_batch(self, mocker, fake_gateway):
         release_data = get_release_data(fake_gateway)
-        releaser = DefaultGatewayReleaser.from_data(
+        releaser = DefaultGatewayReleaserHandler.from_data(
             fake_gateway,
             release_data["stage_ids"],
             release_data["resource_version_id"],
@@ -199,7 +199,7 @@ class TestDefaultGatewayReleaser:
 
         fake_stage.vars = vars
         fake_stage.save(update_fields=["_vars"])
-        releaser = DefaultGatewayReleaser(
+        releaser = DefaultGatewayReleaserHandler(
             gateway=fake_gateway, stages=[fake_stage], resource_version=fake_resource_version
         )
 
@@ -230,7 +230,7 @@ class TestDefaultGatewayReleaser:
             "apigateway.biz.releaser.StageProxyHTTPContext.contain_hosts",
             return_value=contain_hosts_ret,
         ):
-            releaser = DefaultGatewayReleaser(
+            releaser = DefaultGatewayReleaserHandler(
                 gateway=fake_gateway, stages=[fake_stage], resource_version=fake_resource_version
             )
 
@@ -246,7 +246,7 @@ class TestDefaultGatewayReleaser:
         s1 = G(Stage, gateway=fake_gateway, status=0)
         s2 = G(Stage, gateway=fake_gateway, status=1)
 
-        releaser = DefaultGatewayReleaser(gateway=fake_gateway, stages=[s1, s2], resource_version=None)
+        releaser = DefaultGatewayReleaserHandler(gateway=fake_gateway, stages=[s1, s2], resource_version=None)
         releaser._activate_stages()
 
         assert Stage.objects.filter(id__in=[s1.id, s2.id], status=1).count() == 2
@@ -255,9 +255,14 @@ class TestDefaultGatewayReleaser:
 class TestMicroGatewayReleaser:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self, fake_gateway):
-        self.api = fake_gateway
-        self.releaser = MicroGatewayReleaserHandler.from_data(
-            self.api, get_release_data(self.api), access_token="access_token"
+        self.gateway = fake_gateway
+        release_data = get_release_data(self.gateway)
+        self.releaser = BaseGatewayReleaserHandler.from_data(
+            self.gateway,
+            release_data["stage_ids"],
+            release_data["resource_version_id"],
+            release_data["comment"],
+            access_token="access_token",
         )
 
     def test_do_release_edge_gateway(
@@ -348,7 +353,9 @@ class TestMicroGatewayReleaser:
 
 class TestReleaseBatchManager:
     def test_release_batch(self, mocker, fake_gateway):
-        mock_release_batch = mocker.patch("apigateway.biz.releaser.DefaultGatewayReleaser.release_batch")
-
-        ReleaseBatchHandler(access_token="access_token").release_batch(fake_gateway, get_release_data(fake_gateway))
+        mock_release_batch = mocker.patch("apigateway.biz.releaser.DefaultGatewayReleaserHandler.release_batch")
+        release_data = get_release_data(fake_gateway)
+        ReleaseBatchHandler(access_token="access_token").release_batch(
+            fake_gateway, release_data["stage_ids"], release_data["resource_version_id"], release_data["comment"]
+        )
         mock_release_batch.assert_called_once_with()

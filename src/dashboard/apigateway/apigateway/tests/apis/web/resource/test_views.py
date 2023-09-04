@@ -54,8 +54,8 @@ class TestResourceListCreateApi:
         ],
     )
     def test_list(self, request_view, fake_gateway, data, expected):
-        G(Resource, api=fake_gateway, path="/echo/", method="GET", name="echo")
-        G(Resource, api=fake_gateway, path="/test/", method="GET", name="test")
+        G(Resource, gateway=fake_gateway, path="/echo/", method="GET", name="echo")
+        G(Resource, gateway=fake_gateway, path="/test/", method="GET", name="test")
 
         resp = request_view(
             method="GET",
@@ -105,7 +105,7 @@ class TestResourceListCreateApi:
 
         assert resp.status_code == 201
 
-        resource = Resource.objects.get(api=fake_gateway, method=data["method"], path=data["path"])
+        resource = Resource.objects.get(gateway=fake_gateway, method=data["method"], path=data["path"])
         assert resource.is_public == data["is_public"]
         assert resource.match_subpath == data["match_subpath"]
 
@@ -127,7 +127,7 @@ class TestResourceListCreateApi:
 
 class TestResourceRetrieveUpdateDestroyApi:
     def test_retrieve(self, fake_resource, request_view):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         resp = request_view(
             method="GET",
@@ -140,7 +140,7 @@ class TestResourceRetrieveUpdateDestroyApi:
         assert result["data"]["id"] == fake_resource.id
 
     def test_update(self, request_view, fake_resource):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
         backend = Backend.objects.filter(gateway=fake_gateway).first()
 
         data = {
@@ -184,7 +184,7 @@ class TestResourceRetrieveUpdateDestroyApi:
         }
 
     def test_destroy(self, request_view, fake_resource):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         resp = request_view(
             method="DELETE",
@@ -208,7 +208,7 @@ class TestResourceBatchUpdateDestroyApi:
         resp = request_view(
             method="PUT",
             view_name="resource.batch_update_destroy",
-            path_params={"gateway_id": fake_resource.api.id},
+            path_params={"gateway_id": fake_resource.gateway.id},
             data=data,
         )
 
@@ -226,7 +226,7 @@ class TestResourceBatchUpdateDestroyApi:
         resp = request_view(
             method="DELETE",
             view_name="resource.batch_update_destroy",
-            path_params={"gateway_id": fake_resource.api.id},
+            path_params={"gateway_id": fake_resource.gateway.id},
             data=data,
         )
 
@@ -236,9 +236,9 @@ class TestResourceBatchUpdateDestroyApi:
 
 class TestResourceLabelUpdateApi:
     def test_update(self, request_view, fake_resource):
-        fake_gateway = fake_resource.api
-        label_1 = G(APILabel, api=fake_gateway)
-        label_2 = G(APILabel, api=fake_gateway)
+        fake_gateway = fake_resource.gateway
+        label_1 = G(APILabel, gateway=fake_gateway)
+        label_2 = G(APILabel, gateway=fake_gateway)
 
         resp = request_view(
             method="PUT",
@@ -523,7 +523,7 @@ class TestResourceImportApi:
         )
 
         assert resp.status_code == 200
-        assert Resource.objects.filter(api=fake_gateway).count() == expected
+        assert Resource.objects.filter(gateway=fake_gateway).count() == expected
 
 
 class TestResourceExportApi:
@@ -536,8 +536,8 @@ class TestResourceExportApi:
         ],
     )
     def test_post(self, request_view, fake_resource, data):
-        fake_gateway = fake_resource.api
-        label = G(APILabel, api=fake_gateway)
+        fake_gateway = fake_resource.gateway
+        label = G(APILabel, gateway=fake_gateway)
         G(ResourceLabel, resource=fake_resource, api_label=label)
 
         resp = request_view(
@@ -688,8 +688,8 @@ class TestBackendPathCheckApi:
 
 class TestResourcesWithVerifiedUserRequiredApi:
     def test_list(self, request_view, fake_gateway):
-        resource_1 = G(Resource, api=fake_gateway)
-        resource_2 = G(Resource, api=fake_gateway)
+        resource_1 = G(Resource, gateway=fake_gateway)
+        resource_2 = G(Resource, gateway=fake_gateway)
 
         auth_config = ResourceHandler.get_default_auth_config()
         ResourceAuthContext().save(resource_1.id, dict(auth_config, auth_verified_required=True))

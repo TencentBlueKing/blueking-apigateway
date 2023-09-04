@@ -82,7 +82,7 @@ class GatewayReleaserFactory:
                 gateway, stage_ids, resource_version_id, comment, access_token, username
             )
 
-        return DefaultGatewayReleaser.from_data(
+        return DefaultGatewayReleaserHandler.from_data(
             gateway, stage_ids, resource_version_id, comment, access_token, username
         )
 
@@ -247,7 +247,7 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
 
 
 @dataclass
-class DefaultGatewayReleaser(BaseGatewayReleaserHandler):
+class DefaultGatewayReleaserHandler(BaseGatewayReleaserHandler):
     """APIGateway 默认网关发布器"""
 
 

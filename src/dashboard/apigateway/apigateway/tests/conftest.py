@@ -196,7 +196,7 @@ def fake_backend(fake_gateway, fake_stage, faker):
 def fake_resource(faker, fake_gateway, fake_backend):
     resource = G(
         Resource,
-        api=fake_gateway,
+        gateway=fake_gateway,
         name=faker.color_name(),
         method=faker.http_method(),
         path=faker.uri_path(),
@@ -570,15 +570,15 @@ def fake_node_data(unique_stage_item_name):
 
 @pytest.fixture
 def fake_ssl_certificate(fake_gateway):
-    return G(SslCertificate, api=fake_gateway)
+    return G(SslCertificate, gateway=fake_gateway)
 
 
 @pytest.fixture
 def fake_ssl_certificate_binding(fake_ssl_certificate):
-    stage = G(Stage, gateway=fake_ssl_certificate.api)
+    stage = G(Stage, gateway=fake_ssl_certificate.gateway)
     return G(
         SslCertificateBinding,
-        api=fake_ssl_certificate.api,
+        gateway=fake_ssl_certificate.gateway,
         scope_type="stage",
         scope_id=stage.id,
         ssl_certificate=fake_ssl_certificate,
@@ -846,7 +846,7 @@ def mock_board(settings):
 def fake_resource_doc(faker, fake_resource):
     return G(
         ResourceDoc,
-        api=fake_resource.api,
+        gateway=fake_resource.gateway,
         resource_id=fake_resource.id,
         language=faker.random_element(
             ["en", "zh"],

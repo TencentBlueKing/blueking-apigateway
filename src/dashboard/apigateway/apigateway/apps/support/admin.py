@@ -21,9 +21,9 @@ from apigateway.apps.support.models import APISDK, ReleasedResourceDoc, Resource
 
 
 class ResourceDocAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "resource_id", "language", "source", "updated_by", "updated_time"]
+    list_display = ["id", "gateway", "resource_id", "language", "source", "updated_by", "updated_time"]
     search_fields = ["id", "resource_id"]
-    list_filter = ["api", "language"]
+    list_filter = ["gateway", "language"]
 
 
 class ResourceDocVersionAdmin(admin.ModelAdmin):

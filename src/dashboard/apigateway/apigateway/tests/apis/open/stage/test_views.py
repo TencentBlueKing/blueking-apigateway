@@ -100,7 +100,7 @@ class TestStageViewSet:
 class TestStageV1ViewSet:
     def list_stages_with_resource_version(self, request_to_view, request_factory, fake_release):
         request = request_factory.get("")
-        request.gateway = fake_release.api
+        request.gateway = fake_release.gateway
 
         G(Stage, name="test", gateway=request.gateway, status=StageStatusEnum.ACTIVE.value)
 
@@ -141,7 +141,7 @@ class TestStageSyncViewSet:
             return_value=True,
         )
 
-        api = G(Gateway, name=unique_gateway_name, is_public=False)
+        gateway = G(Gateway, name=unique_gateway_name, is_public=False)
 
         request = request_factory.post(
             f"/api/v1/apis/{unique_gateway_name}/stages/sync/",
@@ -172,12 +172,12 @@ class TestStageSyncViewSet:
                 },
             },
         )
-        request.gateway = api
+        request.gateway = gateway
 
         view = views.StageSyncViewSet.as_view({"post": "sync"})
         response = view(request, gateway_name=unique_gateway_name)
 
         result = get_response_json(response)
-        stage = Stage.objects.get(gateway=api, name="prod")
+        stage = Stage.objects.get(gateway=gateway, name="prod")
         assert result["code"] == 0
         assert stage.status == 0

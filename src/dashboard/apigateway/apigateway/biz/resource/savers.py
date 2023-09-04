@@ -77,7 +77,7 @@ class ResourcesSaver:
                 update_resources.append(resource)
             else:
                 resource = Resource(
-                    api=self.gateway,
+                    gateway=self.gateway,
                     created_by=self.username,
                     updated_by=self.username,
                     proxy_id=0,
@@ -96,7 +96,7 @@ class ResourcesSaver:
 
     def _complete_with_resource(self):
         # bulk_create 返回的资源列表中，无资源 ID，因此，根据资源名称将新增资源补充到资源数据中
-        resources = {resource.name: resource for resource in Resource.objects.filter(api=self.gateway)}
+        resources = {resource.name: resource for resource in Resource.objects.filter(gateway=self.gateway)}
         for resource_data in self.resource_data_list:
             if resource_data.resource:
                 continue
@@ -208,7 +208,7 @@ class ResourcesSaver:
             Context.objects.bulk_update(update_contexts, fields=["_config"], batch_size=BULK_BATCH_SIZE)
 
     def _save_resource_labels(self, resource_ids: List[int]):
-        gateway_labels = {label.id: label for label in APILabel.objects.filter(api=self.gateway)}
+        gateway_labels = {label.id: label for label in APILabel.objects.filter(gateway=self.gateway)}
 
         remaining_resource_labels = {}
         for label in ResourceLabel.objects.filter(resource_id__in=resource_ids):

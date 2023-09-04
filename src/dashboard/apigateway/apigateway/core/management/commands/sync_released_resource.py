@@ -28,13 +28,13 @@ from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceV
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument("--api-id", type=int, dest="api_id")
+        parser.add_argument("--gateway-id", type=int, dest="gateway_id")
         parser.add_argument("--all", dest="_all", action="store_true")
         parser.add_argument("--force", dest="force", action="store_true", help="force")
         parser.add_argument("--dry-run", dest="dry_run", action="store_true", help="dry run")
 
-    def handle(self, api_id: int, _all: bool, force: bool, dry_run: bool, **options) -> None:
-        gateway_ids = self._get_gateway_ids(_all, api_id)
+    def handle(self, gateway_id: int, _all: bool, force: bool, dry_run: bool, **options) -> None:
+        gateway_ids = self._get_gateway_ids(_all, gateway_id)
         self._sync_released_resource(gateway_ids, force, dry_run)
 
     def _sync_released_resource(self, gateway_ids: List[int], force: bool, dry_run: bool) -> None:
@@ -45,7 +45,7 @@ class Command(BaseCommand):
                 continue
 
             if dry_run:
-                print(f"sync api[id={resource_version.api_id}] resource_version[id={resource_version.id}]")
+                print(f"sync gateway[id={resource_version.gateway_id}] resource_version[id={resource_version.id}]")
                 continue
 
             ReleasedResource.objects.save_released_resource(resource_version, force=force)

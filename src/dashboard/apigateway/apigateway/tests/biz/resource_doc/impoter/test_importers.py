@@ -27,9 +27,9 @@ from apigateway.core.models import Resource
 
 class TestDocImporter:
     def test_import_docs(self, fake_resource_doc, faker):
-        fake_gateway = fake_resource_doc.api
+        fake_gateway = fake_resource_doc.gateway
         fake_resource = Resource.objects.get(id=fake_resource_doc.resource_id)
-        resource_2 = G(Resource, api=fake_gateway)
+        resource_2 = G(Resource, gateway=fake_gateway)
 
         docs = [
             ArchiveDoc(
@@ -55,7 +55,7 @@ class TestDocImporter:
         importer = DocImporter(fake_gateway.id, None)
         importer.import_docs(docs)
 
-        assert ResourceDoc.objects.filter(api=fake_gateway).count() == 2
+        assert ResourceDoc.objects.filter(gateway=fake_gateway).count() == 2
 
     def test_filter_valid_docs(self, faker, fake_resource):
         importer = DocImporter(1, None)
@@ -135,9 +135,9 @@ class TestDocImporter:
         assert len(docs) == expected
 
     def test_save_docs(self, faker, fake_resource_doc):
-        fake_gateway = fake_resource_doc.api
+        fake_gateway = fake_resource_doc.gateway
         fake_resource = Resource.objects.get(id=fake_resource_doc.resource_id)
-        resource_2 = G(Resource, api=fake_gateway)
+        resource_2 = G(Resource, gateway=fake_gateway)
 
         docs = [
             ArchiveDoc(
@@ -158,7 +158,7 @@ class TestDocImporter:
         importer = DocImporter(fake_gateway.id, None)
         importer._save_docs(docs)
 
-        assert ResourceDoc.objects.filter(api=fake_gateway).count() == 2
+        assert ResourceDoc.objects.filter(gateway=fake_gateway).count() == 2
 
     @pytest.mark.parametrize(
         "selected_resource_docs, expected",

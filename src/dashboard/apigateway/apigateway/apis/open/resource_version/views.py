@@ -106,7 +106,9 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
 
         handler = ReleaseBatchHandler(access_token=get_user_access_token_from_request(request))
         try:
-            handler.release_batch(request.gateway, data, request.user.username)
+            handler.release_batch(
+                request.gateway, data["stage_ids"], data["resource_version_id"], data["comment"], request.user.username
+            )
         except ReleaseError as err:
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
             return V1FailJsonResponse(str(err))

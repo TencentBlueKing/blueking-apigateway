@@ -38,7 +38,7 @@ from apigateway.utils import time
 
 
 class ResourceDoc(TimestampedModelMixin, OperatorModelMixin):
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE, null=True)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE, null=True)
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
     type = models.CharField(max_length=32, choices=DocTypeEnum.get_choices())
     language = models.CharField(
@@ -61,7 +61,7 @@ class ResourceDoc(TimestampedModelMixin, OperatorModelMixin):
         verbose_name = _("资源文档")
         verbose_name_plural = _("资源文档")
         db_table = "support_resource_doc"
-        unique_together = ("api", "resource_id", "language")
+        unique_together = ("gateway", "resource_id", "language")
 
     def snapshot(self, as_dict=False):
         data = {
@@ -81,7 +81,7 @@ class ResourceDoc(TimestampedModelMixin, OperatorModelMixin):
 class ResourceDocSwagger(TimestampedModelMixin):
     """资源文档扩展数据，若资源文档通过 Swagger 导入，可存储资源的 Swagger 描述"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_doc = models.OneToOneField(ResourceDoc, on_delete=models.CASCADE)
     swagger = models.TextField(blank=True, default="")
 

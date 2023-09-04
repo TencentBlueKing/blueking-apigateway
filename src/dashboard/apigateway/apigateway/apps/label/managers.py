@@ -29,22 +29,22 @@ from apigateway.apps.audit.utils import record_audit_log
 
 class APILabelManager(models.Manager):
     def get_labels(self, gateway, ids=None) -> List[Dict[int, str]]:
-        queryset = self.filter(api=gateway)
+        queryset = self.filter(gateway=gateway)
         if ids is not None:
             queryset = queryset.filter(id__in=ids)
         return list(queryset.values("id", "name"))
 
     def get_label_ids(self, gateway) -> List[int]:
-        return list(self.filter(api_id=gateway.id).values_list("id", flat=True))
+        return list(self.filter(gateway_id=gateway.id).values_list("id", flat=True))
 
     def get_name_id_map(self, gateway) -> Dict[str, int]:
-        return dict(self.filter(api_id=gateway.id).values_list("name", "id"))
+        return dict(self.filter(gateway_id=gateway.id).values_list("name", "id"))
 
     def save_labels(self, gateway, names: List[str], username: str) -> Dict[str, int]:
         name_to_id = {}
         for name in names:
             obj, created = self.get_or_create(
-                api_id=gateway.id,
+                gateway_id=gateway.id,
                 name=name,
                 defaults={
                     "created_by": username,
@@ -67,7 +67,7 @@ class APILabelManager(models.Manager):
         return name_to_id
 
     def filter_by_label_name(self, gateway, label_name=None):
-        queryset = self.filter(api=gateway)
+        queryset = self.filter(gateway=gateway)
         if label_name:
             queryset = queryset.filter(name=label_name)
         return queryset

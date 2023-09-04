@@ -32,7 +32,7 @@ class DocInputSLZ(serializers.ModelSerializer):
     def validate_language(self, value):
         gateway_id = self.context["gateway_id"]
         resource_id = self.context["resource_id"]
-        queryset = ResourceDoc.objects.filter(api_id=gateway_id, resource_id=resource_id, language=value)
+        queryset = ResourceDoc.objects.filter(gateway_id=gateway_id, resource_id=resource_id, language=value)
         if self.instance is not None:
             queryset = queryset.exclude(pk=self.instance.pk)
 

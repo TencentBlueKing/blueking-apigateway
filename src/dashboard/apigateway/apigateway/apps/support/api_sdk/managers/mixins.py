@@ -50,7 +50,7 @@ class SDKManagerMixin:
 
     def get_is_latest(self, resource_version):
         return APISDK.objects.should_be_set_to_public_latest(  # type: ignore
-            resource_version.api,
+            resource_version.gateway,
             resource_version.id,
             self.is_public,
         )

@@ -60,7 +60,7 @@ class TestGatewayLabelInputSLZ:
         ],
     )
     def test_validate(self, fake_gateway, data, expected):
-        G(APILabel, api=fake_gateway, name="exist")
+        G(APILabel, gateway=fake_gateway, name="exist")
 
         slz = GatewayLabelInputSLZ(data=data, context={"gateway": fake_gateway})
         slz.is_valid()
@@ -69,7 +69,7 @@ class TestGatewayLabelInputSLZ:
             assert slz.errors
             return
 
-        expected["api"] = fake_gateway
+        expected["gateway"] = fake_gateway
         assert slz.validated_data == expected
 
     @pytest.mark.parametrize(
@@ -103,8 +103,8 @@ class TestGatewayLabelInputSLZ:
         ],
     )
     def test_validate_update(self, fake_gateway, data, expected):
-        instance = G(APILabel, api=fake_gateway, name="exist")
-        G(APILabel, api=fake_gateway, name="other-exist")
+        instance = G(APILabel, gateway=fake_gateway, name="exist")
+        G(APILabel, gateway=fake_gateway, name="other-exist")
 
         slz = GatewayLabelInputSLZ(instance=instance, data=data, context={"gateway": fake_gateway})
         slz.is_valid()
@@ -113,5 +113,5 @@ class TestGatewayLabelInputSLZ:
             assert slz.errors
             return
 
-        expected["api"] = fake_gateway
+        expected["gateway"] = fake_gateway
         assert slz.validated_data == expected

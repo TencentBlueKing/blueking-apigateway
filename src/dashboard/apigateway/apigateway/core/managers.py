@@ -68,7 +68,7 @@ class GatewayManager(models.Manager):
         if order_by:
             queryset = queryset.order_by(order_by)
 
-        return [api for api in queryset if api.has_permission(username)]
+        return [gateway for gateway in queryset if gateway.has_permission(username)]
 
     def fetch_authorized_gateway_ids(self, username: str) -> List[str]:
         """获取用户有权限的网关 ID 列表"""
@@ -151,13 +151,13 @@ class ResourceManager(models.Manager):
         if not ids:
             return self.none()
 
-        return self.filter(api=gateway, id__in=ids)
+        return self.filter(gateway=gateway, id__in=ids)
 
     def filter_valid_ids(self, gateway, ids):
-        return list(self.filter(api=gateway, id__in=ids).values_list("id", flat=True))
+        return list(self.filter(gateway=gateway, id__in=ids).values_list("id", flat=True))
 
     def get_latest_resource(self, gateway_id):
-        return self.filter(api_id=gateway_id).order_by("-updated_time").first()
+        return self.filter(gateway_id=gateway_id).order_by("-updated_time").first()
 
     def filter_resource_path_method_to_id(self, gateway_id):
         """
@@ -167,44 +167,46 @@ class ResourceManager(models.Manager):
             }
         }
         """
-        resources = self.filter(api_id=gateway_id).values("id", "method", "path")
+        resources = self.filter(gateway_id=gateway_id).values("id", "method", "path")
         path_method_to_id = defaultdict(dict)
         for resource in resources:
             path_method_to_id[resource["path"]][resource["method"]] = resource["id"]
         return path_method_to_id
 
     def filter_id_to_fields(self, gateway_id: int, fields: List[str]) -> Dict[int, Dict[str, Any]]:
-        return {resource["id"]: resource for resource in self.filter(api_id=gateway_id).values(*fields)}
+        return {resource["id"]: resource for resource in self.filter(gateway_id=gateway_id).values(*fields)}
 
     def filter_resource_name_to_id(self, gateway_id):
-        return dict(self.filter(api_id=gateway_id).values_list("name", "id"))
+        return dict(self.filter(gateway_id=gateway_id).values_list("name", "id"))
 
     def filter_id_is_public_map(self, gateway_id):
-        return dict(self.filter(api_id=gateway_id).values_list("id", "is_public"))
+        return dict(self.filter(gateway_id=gateway_id).values_list("id", "is_public"))
 
     def filter_public_resource_ids(self, gateway_id: int) -> List[int]:
-        return list(self.filter(api_id=gateway_id, is_public=True).values_list("id", flat=True))
+        return list(self.filter(gateway_id=gateway_id, is_public=True).values_list("id", flat=True))
 
     def filter_id_object_map(self, gateway_id):
-        return {obj.id: obj for obj in self.filter(api_id=gateway_id)}
+        return {obj.id: obj for obj in self.filter(gateway_id=gateway_id)}
 
     def filter_resource_names(self, gateway_id, ids):
         if not ids:
             return []
 
-        return list(self.filter(api_id=gateway_id, id__in=ids).values_list("name", flat=True))
+        return list(self.filter(gateway_id=gateway_id, id__in=ids).values_list("name", flat=True))
 
     def get_id_to_fields_map(self, resource_ids: List[int]) -> Dict[int, dict]:
         if not resource_ids:
             return {}
 
         return {
-            r["id"]: dict(r, api_name=r["api__name"])
-            for r in self.filter(id__in=resource_ids).values("id", "name", "description", "api_id", "api__name")
+            r["id"]: dict(r, api_name=r["gateway__name"])
+            for r in self.filter(id__in=resource_ids).values(
+                "id", "name", "description", "gateway_id", "gateway__name"
+            )
         }
 
     def get_id_to_name(self, gateway_id: int, resource_ids: Optional[List[int]] = None) -> Dict[int, str]:
-        qs = self.filter(api_id=gateway_id)
+        qs = self.filter(gateway_id=gateway_id)
 
         if resource_ids is not None:
             qs = qs.filter(id__in=resource_ids)
@@ -212,24 +214,24 @@ class ResourceManager(models.Manager):
         return dict(qs.values_list("id", "name"))
 
     def group_by_api_id(self, resource_ids: List[int]) -> Dict[int, List[int]]:
-        data = self.filter(id__in=resource_ids).values("api_id", "id").order_by("api_id")
+        data = self.filter(id__in=resource_ids).values("gateway_id", "id").order_by("gateway_id")
         return {
-            api_id: [item["id"] for item in group]
-            for api_id, group in itertools.groupby(data, key=operator.itemgetter("api_id"))
+            gateway_id: [item["id"] for item in group]
+            for gateway_id, group in itertools.groupby(data, key=operator.itemgetter("gateway_id"))
         }
 
     def get_unspecified_resource_fields(self, gateway_id: int, ids: List[int]) -> List[Dict[str, Any]]:
         """获取指定网关下，未在指定 ids 中的资源的一些字段数据"""
-        return list(self.filter(api_id=gateway_id).exclude(id__in=ids).values("id", "name", "method", "path"))
+        return list(self.filter(gateway_id=gateway_id).exclude(id__in=ids).values("id", "name", "method", "path"))
 
     def get_resource_ids_by_names(self, gateway_id: int, resource_names: Optional[List[str]]) -> List[int]:
         if not resource_names:
             return []
 
-        return list(self.filter(api_id=gateway_id, name__in=resource_names).values_list("id", flat=True))
+        return list(self.filter(gateway_id=gateway_id, name__in=resource_names).values_list("id", flat=True))
 
     def get_name(self, gateway_id: int, id_: int) -> Optional[str]:
-        return self.filter(api=gateway_id, id=id_).values_list("name", flat=True).first()
+        return self.filter(gateway_id=gateway_id, id=id_).values_list("name", flat=True).first()
 
 
 class ProxyManager(models.Manager):
@@ -858,7 +860,7 @@ class JWTManager(models.Manager):
         private_key, public_key = KeyGenerator().generate_rsa_key()
         cipher = AESCipherManager.create_jwt_cipher()
         return self.create(
-            api=gateway,
+            gateway=gateway,
             # 使用加密数据，不保存明文的 private_key
             # private_key=smart_str(private_key),
             private_key="",
@@ -869,7 +871,7 @@ class JWTManager(models.Manager):
     def update_jwt_key(self, gateway, private_key: bytes, public_key: bytes):
         cipher = AESCipherManager.create_jwt_cipher()
 
-        jwt = self.get(api=gateway)
+        jwt = self.get(gateway=gateway)
         jwt.public_key = smart_str(public_key)
         jwt.encrypted_private_key = cipher.encrypt_to_hex(smart_str(private_key))
         jwt.save(update_fields=["public_key", "encrypted_private_key"])
@@ -877,19 +879,19 @@ class JWTManager(models.Manager):
     def get_private_key(self, gateway_id: int) -> str:
         cipher = AESCipherManager.create_jwt_cipher()
 
-        jwt = self.get(api_id=gateway_id)
+        jwt = self.get(gateway_id=gateway_id)
         return cipher.decrypt_from_hex(jwt.encrypted_private_key)
 
     def get_jwt(self, gateway):
         try:
-            return self.get(api=gateway)
+            return self.get(gateway=gateway)
         except Exception:
             raise error_codes.NOT_FOUND.format(_("网关密钥不存在。"), replace=True)
 
     def is_jwt_key_changed(self, gateway, private_key: bytes, public_key: bytes) -> bool:
         cipher = AESCipherManager.create_jwt_cipher()
 
-        jwt = self.get(api=gateway)
+        jwt = self.get(gateway=gateway)
         return jwt.public_key != smart_str(public_key) or cipher.decrypt_from_hex(
             jwt.encrypted_private_key
         ) != smart_str(private_key)
@@ -898,7 +900,7 @@ class JWTManager(models.Manager):
 class APIRelatedAppManager(models.Manager):
     def allow_app_manage_gateway(self, gateway_id: int, bk_app_code: str) -> bool:
         """是否允许应用管理网关"""
-        return self.filter(api_id=gateway_id, bk_app_code=bk_app_code).exists()
+        return self.filter(gateway_id=gateway_id, bk_app_code=bk_app_code).exists()
 
     def add_related_app(self, gateway_id: int, bk_app_code: str):
         """添加关联应用"""
@@ -906,7 +908,7 @@ class APIRelatedAppManager(models.Manager):
         # 检查app能关联的网关最大数量
         self._check_app_gateway_limit(bk_app_code)
 
-        self.get_or_create(api_id=gateway_id, bk_app_code=bk_app_code)
+        self.get_or_create(gateway_id=gateway_id, bk_app_code=bk_app_code)
 
     def _check_app_gateway_limit(self, bk_app_code: str):
         max_gateway_per_app = settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"].get(
@@ -959,10 +961,10 @@ class SslCertificateManager(models.Manager):
         from apigateway.core.models import SslCertificateBinding
 
         # delete binding
-        SslCertificateBinding.objects.filter(api_id=gateway_id).delete()
+        SslCertificateBinding.objects.filter(gateway_id=gateway_id).delete()
 
         # delete ssl-certificate
-        self.filter(api_id=gateway_id).delete()
+        self.filter(gateway_id=gateway_id).delete()
 
     def delete_by_id(self, id: int):
         self._check_for_delete(id)
@@ -986,10 +988,10 @@ class SslCertificateManager(models.Manager):
         )
 
     def get_valid_ids(self, gateway_id: int, ids: List[int]) -> List[int]:
-        return list(self.filter(api_id=gateway_id, id__in=ids).values_list("id", flat=True))
+        return list(self.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))
 
     def get_valid_id(self, gateway_id: int, id_: int) -> Optional[int]:
-        return self.filter(api_id=gateway_id, id=id_).values_list("id", flat=True).first()
+        return self.filter(gateway_id=gateway_id, id=id_).values_list("id", flat=True).first()
 
 
 class SslCertificateBindingManager(models.Manager):
@@ -1002,11 +1004,11 @@ class SslCertificateBindingManager(models.Manager):
     ):
         """同步绑定关系，将新增，更新或删除绑定关系，保持其与实际一致"""
         if not ssl_certificate_id:
-            self.filter(api_id=gateway_id, scope_type=scope_type.value, scope_id=scope_id).delete()
+            self.filter(gateway_id=gateway_id, scope_type=scope_type.value, scope_id=scope_id).delete()
             return
 
         self.update_or_create(
-            api_id=gateway_id,
+            gateway_id=gateway_id,
             scope_type=scope_type.value,
             scope_id=scope_id,
             defaults={

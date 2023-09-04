@@ -87,11 +87,11 @@ class TestResourceBackendAlerter:
         self.alerter = resource_backend.ResourceBackendAlerter(notice_ways=[])
 
     def test_get_receivers(self, mocker, mock_event):
-        api = G(Gateway, _maintainers="admin1")
+        gateway = G(Gateway, _maintainers="admin1")
 
         mock_event.extend = {
             "alarm_strategies": [],
-            "api": api,
+            "gateway": gateway,
         }
         result = self.alerter.get_receivers(mock_event)
         assert result == ["admin1"]

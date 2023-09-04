@@ -25,7 +25,7 @@ from django_dynamic_fixture import G
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
-from apigateway.core.models import Gateway, Resource, ResourceVersion, Stage
+from apigateway.core.models import Backend, Gateway, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import now_datetime
@@ -34,8 +34,8 @@ from apigateway.utils.time import now_datetime
 class TestResourceVersionHandler:
     def test_make_version(self):
         gateway = G(Gateway)
-        resource = G(Resource, api=gateway, created_time=dummy_time.time, updated_time=dummy_time.time)
-
+        resource = G(Resource, gateway=gateway, created_time=dummy_time.time, updated_time=dummy_time.time)
+        backend = G(Backend, gateway=gateway)
         ResourceHandler().save_auth_config(
             resource.id,
             {
@@ -81,13 +81,13 @@ class TestResourceVersionHandler:
         )
 
     def test_create_resource_version(self, fake_resource):
-        gateway = fake_resource.api
+        gateway = fake_resource.gateway
 
         ResourceVersionHandler.create_resource_version(gateway, {"comment": "test"}, "admin")
         assert ResourceVersion.objects.filter(gateway=gateway).count() == 1
 
     @pytest.mark.parametrize(
-        "api_id, stage_name, mocked_released_resource_version_ids, mocked_resources, expected",
+        "gateway_id, stage_name, mocked_released_resource_version_ids, mocked_resources, expected",
         [
             (
                 1,
@@ -141,7 +141,7 @@ class TestResourceVersionHandler:
     def test_get_released_public_resources(
         self,
         mocker,
-        api_id,
+        gateway_id,
         stage_name,
         mocked_released_resource_version_ids,
         mocked_resources,
@@ -162,10 +162,10 @@ class TestResourceVersionHandler:
             return_value=["test"],
         )
 
-        result = ResourceVersionHandler.get_released_public_resources(api_id, stage_name)
+        result = ResourceVersionHandler.get_released_public_resources(gateway_id, stage_name)
         assert expected == result
 
-        get_released_resource_version_ids_mock.assert_called_once_with(api_id, stage_name)
+        get_released_resource_version_ids_mock.assert_called_once_with(gateway_id, stage_name)
         get_resources_mock.assert_called()
 
     @pytest.mark.parametrize(
@@ -209,10 +209,10 @@ class TestResourceVersionHandler:
 
 class TestResourceDocVersionHandler:
     def test_get_doc_data_by_rv_or_new(self, fake_gateway):
-        resource = G(Resource, api=fake_gateway)
+        resource = G(Resource, gateway=fake_gateway)
         rv = G(ResourceVersion, gateway=fake_gateway)
 
-        G(ResourceDoc, api=fake_gateway, resource_id=resource.id)
+        G(ResourceDoc, gateway=fake_gateway, resource_id=resource.id)
         G(
             ResourceDocVersion,
             gateway=fake_gateway,

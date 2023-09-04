@@ -30,7 +30,7 @@ def test_generate_chart(edge_gateway, edge_gateway_stage, edge_release, tmpdir):
     values_file = "values.yaml"
     call_command(
         "generate_chart",
-        "--api-name",
+        "--gateway-name",
         edge_gateway.name,
         "--stage-name",
         edge_gateway_stage.name,

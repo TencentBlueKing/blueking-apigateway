@@ -70,7 +70,7 @@ class ResourceVersionInfoSLZ(serializers.ModelSerializer):
         """
         校验网关下资源数量，网关下资源数量为0时，不允许创建网关版本
         """
-        if not Resource.objects.filter(api_id=gateway.id).exists():
+        if not Resource.objects.filter(gateway_id=gateway.id).exists():
             raise serializers.ValidationError(_("请先创建资源，然后再生成版本。"))
 
     def to_representation(self, instance):

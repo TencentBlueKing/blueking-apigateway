@@ -32,7 +32,7 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
     serializer_class = GatewayLabelInputSLZ
 
     def get_queryset(self):
-        return APILabel.objects.filter(api=self.request.gateway)
+        return APILabel.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: GatewayLabelOutputSLZ(many=True)},
@@ -71,7 +71,7 @@ class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView
     lookup_field = "id"
 
     def get_queryset(self):
-        return APILabel.objects.filter(api=self.request.gateway)
+        return APILabel.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: GatewayLabelOutputSLZ()}, tags=["WebAPI.GatewayLabel"])
     def retrieve(self, request, *args, **kwargs):

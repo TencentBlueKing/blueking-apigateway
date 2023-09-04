@@ -22,10 +22,10 @@ from apigateway.biz.gateway_label import GatewayLabelHandler
 class TestGatewayLabelHandler:
     def test_save_labels(self, fake_gateway):
         GatewayLabelHandler.save_labels(fake_gateway, ["label1"])
-        assert APILabel.objects.filter(api=fake_gateway).count() == 1
+        assert APILabel.objects.filter(gateway=fake_gateway).count() == 1
 
         GatewayLabelHandler.save_labels(fake_gateway, ["label1", "label2", "label3"])
-        assert APILabel.objects.filter(api=fake_gateway).count() == 3
+        assert APILabel.objects.filter(gateway=fake_gateway).count() == 3
 
         GatewayLabelHandler.save_labels(fake_gateway, ["label2", "label3", "label4"])
-        assert APILabel.objects.filter(api=fake_gateway).count() == 4
+        assert APILabel.objects.filter(gateway=fake_gateway).count() == 4

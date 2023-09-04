@@ -66,8 +66,8 @@ class AppResourcePermissionQuerySetMixin:
         queryset = super().get_queryset()
 
         # 仅展示资源存在的权限
-        resource_ids = Resource.objects.filter(api=self.request.gateway).values_list("id", flat=True)
-        return queryset.filter(api=self.request.gateway, resource_id__in=resource_ids)
+        resource_ids = Resource.objects.filter(gateway=self.request.gateway).values_list("id", flat=True)
+        return queryset.filter(gateway=self.request.gateway, resource_id__in=resource_ids)
 
 
 class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, generics.ListCreateAPIView):
@@ -180,7 +180,7 @@ class AppResourcePermissionAppCodeListApi(generics.ListAPIView):
         """获取有权限的应用列表"""
 
         app_codes = list(
-            AppResourcePermission.objects.filter(api=request.gateway)
+            AppResourcePermission.objects.filter(gateway=request.gateway)
             .order_by("bk_app_code")
             .distinct()
             .values_list("bk_app_code", flat=True)
@@ -230,7 +230,7 @@ class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generic
 
 class AppGatewayPermissionQuerySetMixin:
     def get_queryset(self):
-        return super().get_queryset().filter(api=self.request.gateway)
+        return super().get_queryset().filter(gateway=self.request.gateway)
 
 
 class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, generics.ListCreateAPIView):
@@ -340,7 +340,7 @@ class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
         """获取有权限的应用列表"""
 
         app_codes = list(
-            AppAPIPermission.objects.filter(api=request.gateway)
+            AppAPIPermission.objects.filter(gateway=request.gateway)
             .order_by("bk_app_code")
             .distinct()
             .values_list("bk_app_code", flat=True)
@@ -389,7 +389,7 @@ class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.
 
 class AppPermissionApplyQuerySetMixin:
     def get_queryset(self):
-        return AppPermissionApply.objects.filter(api=self.request.gateway).order_by("-id")
+        return AppPermissionApply.objects.filter(gateway=self.request.gateway).order_by("-id")
 
 
 class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAPIView):
@@ -428,7 +428,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
 
     def get_queryset(self):
         return (
-            AppPermissionRecord.objects.filter(api=self.request.gateway)
+            AppPermissionRecord.objects.filter(gateway=self.request.gateway)
             .exclude(status=ApplyStatusEnum.PENDING.value)
             .order_by("-handled_time")
         )
@@ -456,7 +456,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
     lookup_field = "id"
 
     def get_queryset(self):
-        return AppPermissionRecord.objects.filter(api=self.request.gateway).order_by("-handled_time")
+        return AppPermissionRecord.objects.filter(gateway=self.request.gateway).order_by("-handled_time")
 
     @swagger_auto_schema(tags=["WebAPI.Permission"])
     def retrieve(self, request, *args, **kwargs):

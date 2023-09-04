@@ -88,7 +88,7 @@ class ResourceBackendAlerter(Alerter):
     def get_receivers(self, event: MonitorEvent):
         alarm_strategies = event.extend["alarm_strategies"]
         if not alarm_strategies:
-            return event.extend["api"].maintainers
+            return event.extend["gateway"].maintainers
 
         receivers = set()
         for strategy in alarm_strategies:

@@ -62,7 +62,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
     serializer_class = AlarmStrategyInputSLZ
 
     def get_queryset(self):
-        return AlarmStrategy.objects.filter(api=self.request.gateway)
+        return AlarmStrategy.objects.filter(gateway=self.request.gateway)
 
     def create(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.data)
@@ -130,7 +130,7 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
     lookup_field = "id"
 
     def get_queryset(self):
-        return AlarmStrategy.objects.filter(api=self.request.gateway)
+        return AlarmStrategy.objects.filter(gateway=self.request.gateway)
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -181,7 +181,7 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
     serializer_class = AlarmStrategyUpdateStatusInputSLZ
 
     def get_queryset(self):
-        return AlarmStrategy.objects.filter(api=self.request.gateway)
+        return AlarmStrategy.objects.filter(gateway=self.request.gateway)
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()

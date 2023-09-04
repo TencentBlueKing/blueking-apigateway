@@ -60,7 +60,7 @@ class TestCommand:
     )
     def test_handle(self, api_name, private_key, public_key, expected_error):
         gateway = G(Gateway, name="test-update-jwt-key")
-        jwt = G(JWT, api=gateway)
+        jwt = G(JWT, gateway=gateway)
 
         if expected_error is None:
             Command().handle(api_name, private_key, public_key)

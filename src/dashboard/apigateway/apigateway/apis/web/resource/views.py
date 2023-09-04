@@ -74,7 +74,7 @@ from .serializers import (
 
 class ResourceQuerySetMixin:
     def get_queryset(self):
-        return Resource.objects.filter(api=self.request.gateway)
+        return Resource.objects.filter(gateway=self.request.gateway)
 
 
 class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
@@ -115,7 +115,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
         slz = ResourceInputSLZ(
             data=request.data,
             context={
-                "api": request.gateway,
+                "gateway": request.gateway,
                 "stages": Stage.objects.filter(gateway=request.gateway),
             },
         )
@@ -165,7 +165,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             instance,
             data=request.data,
             context={
-                "api": request.gateway,
+                "gateway": request.gateway,
                 "stages": Stage.objects.filter(gateway=request.gateway),
             },
         )
@@ -306,7 +306,9 @@ class ResourceImportCheckApi(generics.CreateAPIView):
             data=request.data,
             context={
                 "stages": Stage.objects.filter(gateway=request.gateway),
-                "exist_label_names": list(APILabel.objects.filter(api=request.gateway).values_list("name", flat=True)),
+                "exist_label_names": list(
+                    APILabel.objects.filter(gateway=request.gateway).values_list("name", flat=True)
+                ),
             },
         )
         slz.is_valid(raise_exception=True)
@@ -344,7 +346,9 @@ class ResourceImportApi(generics.CreateAPIView):
             data=request.data,
             context={
                 "stages": Stage.objects.filter(gateway=request.gateway),
-                "exist_label_names": list(APILabel.objects.filter(api=request.gateway).values_list("name", flat=True)),
+                "exist_label_names": list(
+                    APILabel.objects.filter(gateway=request.gateway).values_list("name", flat=True)
+                ),
             },
         )
         slz.is_valid(raise_exception=True)
@@ -410,13 +414,13 @@ class ResourceExportApi(generics.CreateAPIView):
     ):
         """获取待导出的资源"""
         if export_type == ExportTypeEnum.ALL.value:
-            return Resource.objects.filter(api_id=gateway_id)
+            return Resource.objects.filter(gateway_id=gateway_id)
 
         elif export_type == ExportTypeEnum.FILTERED.value:
             return ResourceHandler.filter_by_resource_filter_condition(gateway_id, resource_filter_condition or {})
 
         elif export_type == ExportTypeEnum.SELECTED.value:
-            return Resource.objects.filter(api_id=gateway_id, id__in=resource_ids)
+            return Resource.objects.filter(gateway_id=gateway_id, id__in=resource_ids)
 
         return Resource.objects.none()
 

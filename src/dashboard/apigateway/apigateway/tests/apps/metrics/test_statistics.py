@@ -24,7 +24,7 @@ from apigateway.utils.time import now_datetime
 
 @pytest.fixture()
 def fake_statistics_api_request_metrics(fake_resource):
-    fake_gateway = fake_resource.api
+    fake_gateway = fake_resource.gateway
     return {
         "series": [
             {
@@ -51,7 +51,7 @@ def fake_statistics_api_request_metrics(fake_resource):
 
 @pytest.fixture()
 def fake_statistics_api_request_duration_metrics(fake_resource):
-    fake_gateway = fake_resource.api
+    fake_gateway = fake_resource.gateway
     return {
         "series": [
             {
@@ -68,7 +68,7 @@ def fake_statistics_api_request_duration_metrics(fake_resource):
 
 @pytest.fixture()
 def fake_statistics_app_request_metrics(fake_resource):
-    fake_gateway = fake_resource.api
+    fake_gateway = fake_resource.gateway
     return {
         "series": [
             {
@@ -126,7 +126,7 @@ class TestStatisticsHandler:
             "apigateway.apps.metrics.statistics.StatisticsAPIRequestDurationMetrics.query",
             return_value=fake_statistics_api_request_duration_metrics,
         )
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         now = now_datetime()
 
@@ -140,7 +140,7 @@ class TestStatisticsHandler:
         assert record.total_msecs == 154
 
     def test_save_app_request_data(self, mocker, fake_resource, fake_statistics_app_request_metrics):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
         mocker.patch(
             "apigateway.apps.metrics.statistics.StatisticsAppRequestMetrics.query",
             return_value=fake_statistics_app_request_metrics,
@@ -166,7 +166,7 @@ class TestStatisticsHandler:
         assert handler._get_gateway_id(fake_gateway.name) == fake_gateway.id
 
     def test_get_resource_id(self, fake_resource):
-        fake_gateway = fake_resource.api
+        fake_gateway = fake_resource.gateway
 
         handler = StatisticsHandler()
 

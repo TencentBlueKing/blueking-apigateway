@@ -30,13 +30,13 @@ pytestmark = pytest.mark.django_db
 
 class TestStageVarsValidator:
     class StageSLZ(serializers.ModelSerializer):
-        api = serializers.HiddenField(default=CurrentGatewayDefault())
+        gateway = serializers.HiddenField(default=CurrentGatewayDefault())
         vars = serializers.DictField(label="环境变量", child=serializers.CharField())
 
         class Meta:
             model = Stage
             fields = (
-                "api",
+                "gateway",
                 "vars",
             )
 
@@ -170,7 +170,7 @@ class TestStageVarsValidator:
         for test in data:
             slz = self.StageSLZ(instance=stage, data={"vars": test["vars"]}, context={"request": self.request})
             mocker.patch(
-                "apigateway.apis.web.stage.validators.ResourceVersion.objects.get_used_stage_vars",
+                "apigateway.biz.validators.ResourceVersion.objects.get_used_stage_vars",
                 return_value=test["mock_used_stage_vars"],
             )
 

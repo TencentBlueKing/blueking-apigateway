@@ -32,36 +32,36 @@ class TestAlarmStrategyManager(TestCase):
         gateway = G(Gateway)
         data = [
             {
-                "api": gateway,
+                "gateway": gateway,
                 "created_by": "admin",
             },
         ]
         for test in data:
             AlarmStrategy.objects.create_default_strategy(
-                test["api"],
+                test["gateway"],
                 created_by=test["created_by"],
             )
 
-            strategy_queryset = AlarmStrategy.objects.filter(api=gateway)
+            strategy_queryset = AlarmStrategy.objects.filter(gateway=gateway)
             self.assertEqual(strategy_queryset.count(), 3)
 
             strategy = strategy_queryset.first()
-            self.assertEqual(strategy.api, test["api"])
+            self.assertEqual(strategy.gateway, test["gateway"])
             self.assertEqual(strategy.enabled, True)
             self.assertEqual(strategy.created_by, "admin")
 
     def test_get_resource_alarm_strategy(self):
         gateway_1 = G(Gateway)
         gateway_2 = G(Gateway)
-        resource_1 = G(Resource, api=gateway_2)
-        resource_2 = G(Resource, api=gateway_2)
+        resource_1 = G(Resource, gateway=gateway_2)
+        resource_2 = G(Resource, gateway=gateway_2)
 
-        api_label = G(APILabel, api=gateway_2)
+        api_label = G(APILabel, gateway=gateway_2)
         G(ResourceLabel, resource=resource_1, api_label=api_label)
 
         alarm_strategy = G(
             AlarmStrategy,
-            api=gateway_2,
+            gateway=gateway_2,
             enabled=True,
             alarm_subtype="status_code_5xx",
         )
@@ -69,32 +69,32 @@ class TestAlarmStrategyManager(TestCase):
 
         alarm_strategy_2 = G(
             AlarmStrategy,
-            api=gateway_2,
+            gateway=gateway_2,
             enabled=True,
             alarm_subtype="status_code_5xx",
         )
 
         data = [
-            # api alarm-strategy not exist
+            # gateway alarm-strategy not exist
             {
-                "api_id": gateway_1.id,
+                "gateway_id": gateway_1.id,
                 "resource_id": 1,
                 "expected": [],
             },
             {
-                "api_id": gateway_2.id,
+                "gateway_id": gateway_2.id,
                 "resource_id": resource_1.id,
                 "expected": [alarm_strategy, alarm_strategy_2],
             },
             {
-                "api_id": gateway_2.id,
+                "gateway_id": gateway_2.id,
                 "resource_id": resource_2.id,
                 "expected": [alarm_strategy_2],
             },
         ]
         for test in data:
             result = AlarmStrategy.objects.get_resource_alarm_strategy(
-                test["api_id"],
+                test["gateway_id"],
                 test["resource_id"],
                 "status_code_5xx",
             )
@@ -103,8 +103,8 @@ class TestAlarmStrategyManager(TestCase):
     def test_annotate_alarm_record_by_strategy(self):
         gateway = G(Gateway)
 
-        strategy_1 = G(AlarmStrategy, api=gateway)
-        strategy_2 = G(AlarmStrategy, api=gateway)
+        strategy_1 = G(AlarmStrategy, gateway=gateway)
+        strategy_2 = G(AlarmStrategy, gateway=gateway)
 
         record_1 = G(AlarmRecord, created_time=dummy_time.time)
         record_1.alarm_strategies.set([strategy_1])
@@ -154,8 +154,8 @@ class TestAlarmStrategyManager(TestCase):
     def test_annotate_alarm_record_by_api(self):
         gateway = G(Gateway)
 
-        strategy_1 = G(AlarmStrategy, api=gateway)
-        strategy_2 = G(AlarmStrategy, api=gateway)
+        strategy_1 = G(AlarmStrategy, gateway=gateway)
+        strategy_2 = G(AlarmStrategy, gateway=gateway)
 
         record_1 = G(AlarmRecord, created_time=dummy_time.time)
         record_1.alarm_strategies.set([strategy_1])

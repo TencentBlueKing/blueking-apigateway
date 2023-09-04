@@ -49,7 +49,7 @@ class Command(BaseCommand):
 
             AppAPIPermission.objects.get_or_create(
                 bk_app_code=bk_app_code,
-                api=esb_gateway,
+                gateway=esb_gateway,
                 defaults={
                     "expires": calculate_expires(None),
                 },

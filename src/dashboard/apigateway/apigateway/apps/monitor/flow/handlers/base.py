@@ -61,19 +61,19 @@ class APIExistFilter(AlertHandler):
     """网关必须存在"""
 
     def _do(self, event: MonitorEvent) -> Optional[MonitorEvent]:
-        api_id = int(event.event_dimensions["api_id"])
+        gateway_id = int(event.event_dimensions["api_id"])
 
-        gateway = Gateway.objects.filter(id=api_id).first()
+        gateway = Gateway.objects.filter(id=gateway_id).first()
         if not gateway:
             AlarmRecord.objects.update_alarm(
                 event.alarm_record_id,
                 status=AlarmStatusEnum.SKIPPED.value,
-                comment=f"网关[id={api_id}]不存在",
+                comment=f"网关[id={gateway_id}]不存在",
             )
             return None
 
         AlarmRecord.objects.update_alarm(event.alarm_record_id, gateway=gateway)
-        event.update_extend_fields({"api": gateway})
+        event.update_extend_fields({"gateway": gateway})
         return event
 
 
