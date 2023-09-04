@@ -58,7 +58,6 @@ urlpatterns = [
     # backend/docs urls -- begin
     path("backend/docs/apigateway/", include("apigateway.apps.docs.gateway.urls")),
     path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
-    path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
     # refactoring begin ------
     path("backend/i18n/setlang/", set_language, name="set_language"),
     path("backend/users/", include("apigateway.apis.web.user.urls")),

@@ -101,7 +101,6 @@ INSTALLED_APPS = [
     "apigateway.apps.feature",
     "apigateway.apps.esb",
     "apigateway.apps.esb.bkcore",
-    "apigateway.apps.docs.feedback",
     "apigw_manager.apigw",
     "apigateway.controller",
     "apigateway.healthz",
@@ -792,7 +791,6 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_SDK": env.bool("FEATURE_FLAG_ENABLE_SDK", False),
     "ALLOW_CREATE_APPCHAT": env.bool("FEATURE_FLAG_ALLOW_CREATE_APPCHAT", False),
     "MENU_ITEM_TOOLS": env.bool("FEATURE_FLAG_MENU_ITEM_TOOLS", False),
-    "ENABLE_FEEDBACK": env.bool("FEATURE_FLAG_ENABLE_FEEDBACK", False),
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
