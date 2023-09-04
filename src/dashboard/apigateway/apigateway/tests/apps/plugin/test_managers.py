@@ -22,26 +22,12 @@ from django.utils.translation import override
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm
-from apigateway.core.models import Resource, Stage
+from apigateway.core.models import Resource
 
 pytestmark = pytest.mark.django_db
 
 
 class TestPluginBindingManager:
-    def test_bulk_update_or_create(self, fake_gateway, fake_plugin_config):
-        binding1 = PluginBinding(gateway=fake_gateway, scope_type="resource", scope_id=1, config=fake_plugin_config)
-        binding2 = G(PluginBinding, gateway=fake_gateway, config=None, scope_id=2)
-        binding2.config = fake_plugin_config
-        binding2.scope_id = 3
-
-        PluginBinding.objects.bulk_update_or_create([binding1, binding2], fields=["config", "scope_type"])
-
-        assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 2
-
-        binding2 = PluginBinding.objects.get(pk=binding2.pk)
-        assert binding2.config == fake_plugin_config
-        assert binding2.scope_id == 2
-
     def test_create_or_update_bindings(self, fake_gateway):
         config = G(PluginConfig, gateway=fake_gateway)
         r1 = G(Resource, gateway=fake_gateway)
@@ -56,20 +42,6 @@ class TestPluginBindingManager:
             username="admin",
         )
         assert PluginBinding.objects.filter(gateway=fake_gateway).count() == 2
-
-    def test_get_valid_scope_ids(self, fake_gateway):
-        r = G(Resource, gateway=fake_gateway)
-        s = G(Stage, gateway=fake_gateway)
-
-        result = PluginBinding.objects.get_valid_scope_ids(
-            fake_gateway.id, scope_type="resource", scope_ids=[r.id, r.id + 1]
-        )
-        assert result == [r.id]
-
-        result = PluginBinding.objects.get_valid_scope_ids(
-            fake_gateway.id, scope_type="stage", scope_ids=[s.id, s.id + 1]
-        )
-        assert result == [s.id]
 
     def test_query_scope_id_to_bindings(self, fake_gateway, fake_plugin_config):
         binding1 = G(PluginBinding, gateway=fake_gateway, scope_type="resource", scope_id=1, config=fake_plugin_config)

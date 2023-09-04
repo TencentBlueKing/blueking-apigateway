@@ -35,22 +35,6 @@ class PluginBindingManager(models.Manager):
     def bulk_delete(self, objs):
         return self.filter(id__in=[i.pk for i in objs]).delete()
 
-    def bulk_update_or_create(self, objs, fields):
-        to_updates = []
-        to_creates = []
-
-        for obj in objs:
-            if obj.pk is not None:
-                to_updates.append(obj)
-            else:
-                to_creates.append(obj)
-
-        if to_updates:
-            self.bulk_update(to_updates, fields=fields)
-
-        if to_creates:
-            self.bulk_create(to_creates)
-
     def create_or_update_bindings(
         self,
         gateway,
@@ -79,16 +63,6 @@ class PluginBindingManager(models.Manager):
                 binding.plugin = plugin
                 binding.updated_by = username
                 binding.save()
-
-    def get_valid_scope_ids(self, gateway_id: int, scope_type: str, scope_ids: List[int]) -> List[int]:
-        from apigateway.core.models import Resource, Stage
-
-        if scope_type == PluginBindingScopeEnum.STAGE.value:
-            return list(Stage.objects.filter(gateway_id=gateway_id, id__in=scope_ids).values_list("id", flat=True))
-        elif scope_type == PluginBindingScopeEnum.RESOURCE.value:
-            return list(Resource.objects.filter(gateway_id=gateway_id, id__in=scope_ids).values_list("id", flat=True))
-
-        raise ValueError(f"unsupported scope_type: {scope_type}")
 
     def query_scope_id_to_bindings(
         self,
@@ -122,11 +96,10 @@ class PluginFormManager(models.Manager):
         # sorting the query results by language make the default language(the blank string) always at the end
         return self.filter(q).order_by("-language")
 
-    # def get_by_natural_key(self, language: str, type_code: str):
-    #     return self.get(language=language, type__code=type_code)
+    def get_by_natural_key(self, language: str, type_code: str):
+        return self.get(language=language, type__code=type_code)
 
 
 class PluginTypeManager(models.Manager):
-    pass
-    # def get_by_natural_key(self, code: str):
-    #     return self.get(code=code)
+    def get_by_natural_key(self, code: str):
+        return self.get(code=code)

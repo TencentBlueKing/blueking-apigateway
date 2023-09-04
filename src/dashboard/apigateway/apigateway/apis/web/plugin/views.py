@@ -26,9 +26,11 @@ from rest_framework.generics import get_object_or_404
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.apps.plugin.constants import PluginStyleEnum, PluginTypeScopeEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.common.error_codes import error_codes
+from apigateway.controller.tasks.syncing import trigger_gateway_publish
+from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import OKJsonResponse, ResponseRender
 
@@ -212,8 +214,19 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
             config=serializer.instance,
         ).save()
 
-        # audit
         request = self.request
+        # if scope_type is stage, should publish
+        if scope_type == PluginBindingScopeEnum.STAGE.value:
+            # 触发环境发布
+            trigger_gateway_publish(
+                PublishSourceEnum.PLUGIN_BIND,
+                request.user.username,
+                request.gateway.id,
+                scope_id,
+                is_sync=False,
+            )
+
+        # audit
         record_audit_log(
             username=request.user.username,
             op_type=OpTypeEnum.CREATE.value,
@@ -276,6 +289,19 @@ class PluginConfigRetrieveUpdateDestroyApi(
         super().perform_update(serializer)
         request = self.request
 
+        # if scope_type is stage, should publish
+        scope_type = self.kwargs["scope_type"]
+        scope_id = self.kwargs["scope_id"]
+        if scope_type == PluginBindingScopeEnum.STAGE.value:
+            # 触发环境发布
+            trigger_gateway_publish(
+                PublishSourceEnum.PLUGIN_UPDATE,
+                request.user.username,
+                request.gateway.id,
+                scope_id,
+                is_sync=False,
+            )
+
         record_audit_log(
             username=request.user.username,
             op_type=OpTypeEnum.MODIFY.value,
@@ -300,6 +326,19 @@ class PluginConfigRetrieveUpdateDestroyApi(
 
         super().perform_destroy(instance)
         request = self.request
+
+        # if scope_type is stage, should publish
+        scope_type = self.kwargs["scope_type"]
+        scope_id = self.kwargs["scope_id"]
+        if scope_type == PluginBindingScopeEnum.STAGE.value:
+            # 触发环境发布
+            trigger_gateway_publish(
+                PublishSourceEnum.PLUGIN_UPDATE,
+                request.user.username,
+                request.gateway.id,
+                scope_id,
+                is_sync=False,
+            )
 
         record_audit_log(
             username=request.user.username,
@@ -366,8 +405,10 @@ class ScopePluginConfigListApi(generics.ListAPIView, ScopeValidationMixin):
 
         data = [
             {
+                "code": binding.config.type.code,
                 "name": binding.config.type.name,
                 "config": binding.get_config(),
+                "config_id": binding.config.id,
             }
             for binding in bindings
         ]
