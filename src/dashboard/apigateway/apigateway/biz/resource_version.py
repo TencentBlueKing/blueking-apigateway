@@ -30,12 +30,12 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDocVersion
+from apigateway.biz.context import ContextHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import (
     Backend,
-    Context,
     Gateway,
     Proxy,
     Release,
@@ -55,7 +55,7 @@ class ResourceVersionHandler:
 
         proxy_map = Proxy.objects.get_resource_id_to_snapshot(resource_ids)
 
-        context_map = Context.objects.filter_id_type_snapshot_map(
+        context_map = ContextHandler.filter_id_type_snapshot_map(
             scope_type=ContextScopeTypeEnum.RESOURCE.value,
             scope_ids=resource_ids,
         )

@@ -253,8 +253,8 @@ class Proxy(ConfigModelMixin):
     - type is http, then the schema can be  proxy_http-1 or proxy_http-2
     - type is mock, then the schema can be  proxy_mock-1 or proxy_mock-2
 
-    # 从http 1.0升级到http2.0
-    # 此时这里type=http, 只能存一条, 所以schema需要变更为proxy_http-2
+    # 从 http 1.0 升级到 http2.0
+    # 此时这里 type=http, 只能存一条，所以 schema 需要变更为 proxy_http-2
     """
 
     resource = models.ForeignKey(Resource, on_delete=models.PROTECT)
@@ -349,8 +349,6 @@ class StageItem(TimestampedModelMixin, OperatorModelMixin):
     name = models.CharField(max_length=128)
     description = models.TextField(blank=True, default="")
 
-    objects = managers.StageItemManager()
-
     class Meta:
         db_table = "core_stage_item"
 
@@ -363,8 +361,6 @@ class StageItemConfig(TimestampedModelMixin, OperatorModelMixin):
     stage = models.ForeignKey(Stage, on_delete=models.CASCADE)
     stage_item = models.ForeignKey(StageItem, on_delete=models.CASCADE)
     config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
-
-    objects = managers.StageItemConfigManager()
 
     class Meta:
         unique_together = ("api", "stage", "stage_item")

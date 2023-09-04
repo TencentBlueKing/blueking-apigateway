@@ -15,27 +15,34 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
-from ddf import G
 
-from apigateway.core.constants import ScopeTypeEnum
-from apigateway.core.models import Stage
-from apigateway.core.scopes import ScopeManager, StageScopeManager
+from collections import defaultdict
 
-pytestmark = pytest.mark.django_db
+from apigateway.core.models import Context
+from apigateway.schema.models import Schema
 
 
-class TestScopeManager:
-    def test_get_manager(self):
-        manager = ScopeManager.get_manager(ScopeTypeEnum.STAGE.value)
-        assert isinstance(manager, StageScopeManager)
+class ContextHandler:
+    @staticmethod
+    def filter_id_type_snapshot_map(scope_type, scope_ids):
+        """
+        获取 id=>type=>snapshot 的数据，如
+        {
+            1: {
+                "resource_auth": {
+                    "id": 123,
+                    ...
+                }
+            }
+        }
+        """
 
-
-class TestStageScopeManager:
-    def test_get_scope_ids(self, fake_gateway):
-        s = G(Stage, gateway=fake_gateway)
-
-        manager = StageScopeManager()
-        assert manager.get_scope_ids(fake_gateway.id, []) == [s.id]
-        assert manager.get_scope_ids(fake_gateway.id, [{"name": s.name}]) == [s.id]
-        assert manager.get_scope_ids(fake_gateway.id, [{"name": "not-exist"}]) == []
+        schemas = Schema.objects.filter_id_snapshot_map()
+        id_type_snapshot_map = defaultdict(dict)
+        queryset = Context.objects.filter(scope_type=scope_type, scope_id__in=scope_ids)
+        for c in queryset:
+            id_type_snapshot_map[c.scope_id][c.type] = c.snapshot(
+                as_dict=True,
+                schemas=schemas,
+            )
+        return id_type_snapshot_map

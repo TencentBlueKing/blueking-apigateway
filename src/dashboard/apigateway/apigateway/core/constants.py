@@ -252,21 +252,5 @@ HOST_WITHOUT_SCHEME_PATTERN = re.compile(
 # 资源路径转换为名称正则
 PATH_TO_NAME_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 
-# Semver
-SEMVER_PATTERN = re.compile(
-    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
-    r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-)
-
-
 # Micro gateway
 MICRO_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,19}$")
-
-# 后端服务名称
-BACKEND_SERVICE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
-
-# 超时时间设置
-MAX_BACKEND_TIMEOUT_IN_SECOND = 600
-MAX_CONNECT_TIMEOUT_IN_SECOND = 600
-MAX_SEND_TIMEOUT_IN_SECOND = 600
-MAX_READ_TIMEOUT_IN_SECOND = 600

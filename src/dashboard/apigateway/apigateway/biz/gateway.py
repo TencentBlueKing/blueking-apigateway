@@ -110,7 +110,7 @@ class GatewayHandler:
         """
         存储网关认证配置
 
-        :param gateway_id: 网关id
+        :param gateway_id: 网关 id
         :param user_auth_type:
         :param user_conf: 用户类型为 default 的用户的认证配置
         :param api_type: 网关类型，只有 ESB 才能被设置为 SUPER_OFFICIAL_API 网关，网关会将所有请求参数透传给其后端服务
