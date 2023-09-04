@@ -27,7 +27,7 @@ from rest_framework import generics, status
 
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.released_resource import ReleasedResourceDataHandler
+from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.biz.releaser import ReleaseBatchHandler, ReleaseError
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
@@ -71,7 +71,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         stage_name = instance.stage.name
         data = defaultdict(list)
         for resource in instance.resource_version.data:
-            resource_data = ReleasedResourceDataHandler.from_data(resource)
+            resource_data = ReleasedResourceData.from_data(resource)
             # 禁用环境时，去掉相应资源
             if resource_data.is_disabled_in_stage(stage_name):
                 continue
@@ -145,11 +145,11 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
         return Release.objects.filter(gateway=self.request.gateway)
 
     def create(self, request, *args, **kwargs):
-        handler = ReleaseBatchHandler(access_token=get_user_access_token_from_request(request))
+        slz = ReleaseBatchInputSLZ(data=request.data, context={"gateway": request.gateway})
+        slz.is_valid(raise_exception=True)
 
+        handler = ReleaseBatchHandler(access_token=get_user_access_token_from_request(request))
         try:
-            slz = ReleaseBatchInputSLZ(data=request.data, context={"gateway": request.gateway})
-            slz.is_valid(raise_exception=True)
             history = handler.release_batch(
                 request.gateway,
                 slz.validated_data["stage_ids"],
@@ -159,7 +159,6 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
             )
         except ReleaseError as err:
             logger.exception("release failed.")
-            # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
 
         slz = ReleaseHistoryOutputSLZ(

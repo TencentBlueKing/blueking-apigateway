@@ -47,7 +47,6 @@ from apigateway.core.models import (
     ResourceVersion,
     Stage,
 )
-from apigateway.core.signals import reversion_update_signal
 
 
 class ReleaseError(Exception):
@@ -170,9 +169,6 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
             )
 
             release_instances.append(instance)
-
-            # send signal
-            reversion_update_signal.send(sender=Release, instance_id=instance.id, action="release")
 
             # record audit log
             record_audit_log(

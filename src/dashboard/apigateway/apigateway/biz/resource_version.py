@@ -31,6 +31,7 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import (
     Backend,
@@ -41,7 +42,6 @@ from apigateway.core.models import (
     Resource,
     ResourceVersion,
     Stage,
-    StageResourceDisabled,
 )
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import random_string
@@ -61,7 +61,7 @@ class ResourceVersionHandler:
         )
         disabled_stage_map = {
             resource_id: [stage["name"] for stage in stages]
-            for resource_id, stages in StageResourceDisabled.objects.filter_disabled_stages_by_gateway(gateway).items()
+            for resource_id, stages in StageResourceDisabledHandler.filter_disabled_stages_by_gateway(gateway).items()
         }
 
         gateway_label_map = {
@@ -70,7 +70,7 @@ class ResourceVersionHandler:
         }
 
         # backend
-        backend = Backend.objects.filter(gateway_id=gateway.id).get()
+        backend_ids = list(Backend.objects.filter(gateway_id=gateway.id).values_list("id", flat=True))
 
         # plugin
         resource_id_to_plugin_bindings = PluginBinding.objects.query_scope_id_to_bindings(
@@ -80,17 +80,7 @@ class ResourceVersionHandler:
         resource_plugins_map: Dict[int, List[Dict]] = defaultdict(list)
 
         for resource_id, bindings in resource_id_to_plugin_bindings.items():
-            resource_plugins_map[resource_id].extend(
-                [
-                    {
-                        "id": binding.id,
-                        "type": binding.get_type(),
-                        "name": binding.config.name,
-                        "config": binding.get_config(),
-                    }
-                    for binding in bindings
-                ]
-            )
+            resource_plugins_map[resource_id].extend([binding.snapshot() for binding in bindings])
 
         return [
             ResourceHandler.snapshot(
@@ -100,7 +90,7 @@ class ResourceVersionHandler:
                 context_map=context_map,
                 disabled_stage_map=disabled_stage_map,
                 api_label_map=gateway_label_map,
-                backend=backend,
+                backends=backend_ids,
                 plugin_map=resource_plugins_map,
             )
             for r in resource_queryset

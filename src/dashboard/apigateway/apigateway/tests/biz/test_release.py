@@ -97,3 +97,15 @@ class TestReleaseHandler:
             ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
             == PublishEventStatusTypeEnum.SUCCESS.value
         )
+
+    def test_delete_without_stage_related(self, fake_gateway):
+        stage_1 = G(Stage, gateway=fake_gateway)
+        stage_2 = G(Stage, gateway=fake_gateway)
+
+        history_1 = G(ReleaseHistory, gateway=fake_gateway, stage=stage_1)
+        history_2 = G(ReleaseHistory, gateway=fake_gateway, stage=stage_2)
+        history_2.stages.add(stage_2)
+
+        ReleaseHandler.delete_without_stage_related(fake_gateway.id)
+
+        assert ReleaseHistory.objects.filter(id=history_1.id).exists() is False
