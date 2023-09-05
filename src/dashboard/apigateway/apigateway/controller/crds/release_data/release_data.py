@@ -28,7 +28,7 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
-from apigateway.core.constants import BackendTypeEnum, ContextScopeTypeEnum, ContextTypeEnum
+from apigateway.core.constants import BackendTypeEnum, ContextScopeTypeEnum, ContextTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import JWT, BackendConfig, Context, Gateway, Release, ResourceVersion, Stage
 
 logger = logging.getLogger(__name__)
@@ -45,6 +45,10 @@ class ReleaseData:
     @cached_property
     def stage(self) -> Stage:
         return self._release.stage
+
+    @cached_property
+    def is_schema_v2(self) -> bool:
+        return self._release.resource_version.schema_version == ResourceVersionSchemaEnum.V2Version
 
     @cached_property
     def resource_version(self) -> ResourceVersion:
@@ -82,7 +86,9 @@ class ReleaseData:
         return json.loads(self._stage_backend[BackendTypeEnum.HTTP.value]["config"])
 
     @cached_property
-    def stage_proxy_config(self) -> Dict[str, Any]:
+    def stage_backend_config(self) -> Dict[str, Any]:
+        if self.is_schema_v2:
+            json.loads(self._stage_backend[BackendTypeEnum.HTTP.value]["config"])
         return json.loads(self._stage_contexts[ContextTypeEnum.STAGE_PROXY_HTTP.value]["config"])
 
     @cached_property

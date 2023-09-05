@@ -57,7 +57,7 @@ class StageConvertor(BaseConvertor):
                 rewrite=StageRewrite(
                     enabled=True,
                     headers=self._convert_http_rewrite_headers(
-                        self._release_data.stage_proxy_config.get("transform_headers")
+                        self._release_data.stage_backend_config.get("transform_headers")
                     ),
                 ),
                 vars=self._release_data.stage.vars,

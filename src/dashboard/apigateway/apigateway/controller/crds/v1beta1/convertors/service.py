@@ -23,29 +23,16 @@ from apigateway.controller.crds.constants import UpstreamSchemeEnum, UpstreamTyp
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor, UrlInfo
 from apigateway.controller.crds.v1beta1.models.base import TimeoutConfig, Upstream, UpstreamCheck, UpstreamNode
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService, BkGatewayServiceSpec
-from apigateway.core.constants import ResourceVersionSchemaEnum
 
 
 class ServiceConvertor(BaseConvertor):
     def convert(self) -> List[BkGatewayService]:
 
-        # 通过发布版本的scheme version来走不同的转换逻辑
-        is_schema_v2 = self._release_data.resource_version.schema_version == ResourceVersionSchemaEnum.V2Version
-
-        # 将环境配置作为一个默认的服务，分离出服务的概念
-        upstreams = (
-            self._release_data.stage_proxy_config.get("upstreams")
-            if not is_schema_v2
-            else self._release_data.stage_backend_http_config.get("hosts")
-        )
+        upstreams = self._release_data.stage_backend_config.get("upstreams")
         if not upstreams:
             return []
 
-        timeout = (
-            self._release_data.stage_proxy_config.get("timeout", 0)
-            if not is_schema_v2
-            else self._release_data.stage_backend_http_config.get("timeout", 0)
-        )
+        timeout = self._release_data.stage_backend_config.get("timeout", 0)
 
         upstream = Upstream(
             type=UpstreamTypeEnum.ROUNDROBIN,

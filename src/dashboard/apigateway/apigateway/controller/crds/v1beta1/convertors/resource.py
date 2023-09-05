@@ -177,7 +177,7 @@ class HttpResourceConvertor(BaseConvertor):
 
     def _convert_http_resource_timeout(self, resource_proxy: Dict[str, Any]) -> TimeoutConfig:
         # 资源没有配置则使用环境的
-        timeout = resource_proxy.get("timeout") or self._release_data.stage_proxy_config.get("timeout") or 60
+        timeout = resource_proxy.get("timeout") or self._release_data.stage_backend_config.get("timeout") or 60
 
         return TimeoutConfig(
             connect=timeout,
@@ -186,7 +186,7 @@ class HttpResourceConvertor(BaseConvertor):
         )
 
     def _convert_http_resource_rewrite(self, resource_proxy: Dict[str, Any]) -> ResourceRewrite:
-        headers = self._convert_http_rewrite_headers(self._release_data.stage_proxy_config.get("transform_headers"))
+        headers = self._convert_http_rewrite_headers(self._release_data.stage_backend_config.get("transform_headers"))
         headers.update(self._convert_http_rewrite_headers(resource_proxy.get("transform_headers")))
 
         return ResourceRewrite(
