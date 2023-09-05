@@ -28,8 +28,8 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
-from apigateway.core.models import JWT, Context, Gateway, Release, ResourceVersion, Stage
+from apigateway.core.constants import BackendTypeEnum, ContextScopeTypeEnum, ContextTypeEnum
+from apigateway.core.models import JWT, BackendConfig, Context, Gateway, Release, ResourceVersion, Stage
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,23 @@ class ReleaseData:
                 scope_type=ContextScopeTypeEnum.STAGE.value,
             )
         }
+
+    @cached_property
+    def _stage_backend(self) -> Dict[str, Dict[str, Any]]:
+        """
+        :return: A dict contains all the backend objects at "stage" scope, the key is
+            the type of backend, such as "http/grpc".
+        """
+        return {
+            b.backend.type: b.config
+            for b in BackendConfig.objects.filter(gateway_id=self.gateway.pk, stage_id=self.stage.pk).prefetch_related(
+                "backend"
+            )
+        }
+
+    @cached_property
+    def stage_backend_http_config(self) -> Dict[str, Any]:
+        return json.loads(self._stage_backend[BackendTypeEnum.HTTP.value]["config"])
 
     @cached_property
     def stage_proxy_config(self) -> Dict[str, Any]:

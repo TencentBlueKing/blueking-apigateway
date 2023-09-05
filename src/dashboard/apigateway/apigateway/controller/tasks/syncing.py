@@ -22,7 +22,6 @@ from typing import Optional, Tuple
 from blue_krill.async_utils.django_utils import delay_on_commit
 from celery import shared_task
 
-from apigateway.biz.release import ReleaseHandler
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.constants import NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.combine import CombineDistributor
@@ -92,11 +91,19 @@ def revoke_release(release_id: int, publish_id: int):
 
     release = Release.objects.get(id=release_id)
 
+    shared_gateway = MicroGateway.objects.get_default_shared_gateway()
+
+    distributor = CombineDistributor()
+    if publish_id == NO_NEED_REPORT_EVENT_PUBLISH_ID:
+        is_success, err_msg = distributor.revoke(release, shared_gateway, str(uuid.uuid4()), publish_id=publish_id)
+        if not is_success:
+            logger.error(err_msg)
+        return is_success
+
     release_history = ReleaseHistory.objects.get(id=publish_id)
 
     PublishEventReporter.report_create_publish_task_success_event(release_history, release.stage)
 
-    shared_gateway = MicroGateway.objects.get_default_shared_gateway()
     procedure_logger = ReleaseProcedureLogger(
         "revoke_release",
         logger=logger,
@@ -106,7 +113,6 @@ def revoke_release(release_id: int, publish_id: int):
         publish_id=release_history.pk,
     )
     PublishEventReporter.report_distribute_configuration_doing_event(release_history, release.stage)
-    distributor = CombineDistributor()
 
     procedure_logger.info("revoke begin")
 
@@ -150,6 +156,18 @@ def _check_release_gateway(gateway_id: Optional[int] = None, release: Optional[R
     return True, ""
 
 
+def _save_release_history(release: Release, source: PublishSourceEnum, author: str) -> ReleaseHistory:
+    """保存发布历史"""
+    release_history = ReleaseHistory.objects.create(
+        gateway=release.gateway,
+        stage=release.stage,
+        source=source.value,
+        resource_version=release.resource_version,
+        created_by=author,
+    )
+    return release_history
+
+
 def _trigger_rolling_publish(
     source: PublishSourceEnum,
     author: str,
@@ -169,7 +187,7 @@ def _trigger_rolling_publish(
         is_cli_sync = source is PublishSourceEnum.CLI_SYNC
         if not is_cli_sync:
             # 如果不是手动同步就需要生成发布历史
-            release_history = ReleaseHandler.save_release_history(release, source, author)
+            release_history = _save_release_history(release, source, author)
             publish_id = release_history.pk
 
         # 发布check
@@ -213,7 +231,7 @@ def _trigger_revoke_publish(
         release_list = Release.objects.get_release_by_stage_id(stage_id)
     for release in release_list:
         # 创建发布历史
-        release_history = ReleaseHandler.save_release_history(release, source, author)
+        release_history = _save_release_history(release, source, author)
 
         # 发布check
         check_result, msg = _check_release_gateway(gateway_id=gateway_id, release=release)
@@ -237,6 +255,36 @@ def _trigger_revoke_publish(
             )
 
 
+def _trigger_delete_publish(
+    source: PublishSourceEnum,
+    author: str,
+    gateway_id: Optional[int] = None,
+    stage_id: Optional[int] = None,
+    is_sync: Optional[bool] = False,
+):
+    """触发删除发布"""
+
+    release_list = []
+    if gateway_id:
+        release_list = Release.objects.get_release_by_gateway_id(gateway_id)
+    if stage_id:
+        release_list = Release.objects.get_release_by_stage_id(stage_id)
+    for release in release_list:
+        # 开始发布
+        if is_sync:
+            return revoke_release(
+                release_id=release.id, publish_id=NO_NEED_REPORT_EVENT_PUBLISH_ID, author=author, source=source
+            )
+        else:
+            delay_on_commit(
+                revoke_release,
+                release_id=release.id,
+                publish_id=NO_NEED_REPORT_EVENT_PUBLISH_ID,
+                author=author,
+                source=source,
+            )
+
+
 def trigger_gateway_publish(
     source: PublishSourceEnum,
     author: str,
@@ -253,11 +301,13 @@ def trigger_gateway_publish(
       is_sync: 同步异步
     """
 
-    # 网关启用/环境变量更新/插件更新/后端服务更新/命令行同步(不产生publish_id)：滚动更新网关进行发布
+    # 网关启用/环境变量更新/插件更新/插件绑定/插件解绑/后端服务更新/命令行同步(不产生publish_id)：滚动更新网关进行发布
     if source in [
         PublishSourceEnum.GATEWAY_ENABLE,
         PublishSourceEnum.STAGE_UPDATE,
         PublishSourceEnum.PLUGIN_UPDATE,
+        PublishSourceEnum.PLUGIN_BIND,
+        PublishSourceEnum.PLUGIN_UNBIND,
         PublishSourceEnum.BACKEND_UPDATE,
         PublishSourceEnum.CLI_SYNC,
     ]:
@@ -274,3 +324,10 @@ def trigger_gateway_publish(
             return _trigger_revoke_publish(source, author, gateway_id, stage_id, is_sync=is_sync)
         else:
             _trigger_revoke_publish(source, author, gateway_id, stage_id, is_sync=is_sync)
+
+    # 环境删除需要删除所有的相关etcd数据
+    if source == PublishSourceEnum.STAGE_DELETE:
+        if is_sync:
+            return _trigger_delete_publish(source, author, gateway_id, stage_id, is_sync=is_sync)
+        else:
+            _trigger_delete_publish(source, author, gateway_id, stage_id, is_sync=is_sync)

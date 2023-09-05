@@ -18,6 +18,7 @@
 #
 import datetime
 import json
+from unittest.mock import MagicMock
 
 import pytest
 from django_dynamic_fixture import G
@@ -45,6 +46,8 @@ class TestReleaseBatchCreateApi:
         stage_2 = G(Stage, gateway=fake_gateway, name="test", status=0)
         resource_version = G(ResourceVersion, gateway=fake_gateway, _data=json.dumps([]))
         G(Release, gateway=fake_gateway, stage=stage_1, resource_version=resource_version)
+
+        mocker.patch("apigateway.apis.web.release.views.Lock", return_value=MagicMock())
 
         if configure_hosts:
             # Config a valid hosts config for each stages

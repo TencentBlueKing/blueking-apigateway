@@ -32,6 +32,8 @@ from apigateway.biz.releaser import ReleaseBatchHandler, ReleaseError
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
+from apigateway.utils.exception import LockTimeout
+from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
@@ -148,15 +150,24 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
         slz = ReleaseBatchInputSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
+        # 发布加锁
+        sorted_stage_ids = sorted(slz.validated_data["stage_ids"])
+        gateway_id = request.gateway.id
+        stage_key = "".join(str(x) for x in sorted_stage_ids)
+
         handler = ReleaseBatchHandler(access_token=get_user_access_token_from_request(request))
         try:
-            history = handler.release_batch(
-                request.gateway,
-                slz.validated_data["stage_ids"],
-                slz.validated_data["resource_version_id"],
-                slz.validated_data.get("comment", ""),
-                request.user.username,
-            )
+            with Lock(f"{gateway_id}_{stage_key}", timeout=5, try_get_times=1):
+                history = handler.release_batch(
+                    request.gateway,
+                    slz.validated_data["stage_ids"],
+                    slz.validated_data["resource_version_id"],
+                    slz.validated_data.get("comment", ""),
+                    request.user.username,
+                )
+        except LockTimeout as err:
+            logger.exception("release failed.")
+            return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
         except ReleaseError as err:
             logger.exception("release failed.")
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))

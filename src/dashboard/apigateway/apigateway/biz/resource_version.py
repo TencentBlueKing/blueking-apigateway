@@ -29,7 +29,7 @@ from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.apps.support.models import ResourceDocVersion
+from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.context import ContextHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
@@ -143,7 +143,7 @@ class ResourceVersionHandler:
                 # TODO: 待 version 改为必填后，下面的 version 赋值去掉
                 "version": data.get("version") or name,
                 "created_time": now,
-                "scheme_version": ResourceVersionSchemaEnum.V2Version.value,
+                "schema_version": ResourceVersionSchemaEnum.V2Version.value,
             }
         )
         resource_version = ResourceVersion(**data)
@@ -282,7 +282,6 @@ class ResourceDocVersionHandler:
         """
         是否需要创建新的资源文档版本
         """
-        from apigateway.apps.support.models import ResourceDoc
 
         latest_version = ResourceDocVersion.objects.get_latest_version(gateway_id)
         latest_resource_doc = ResourceDoc.objects.get_latest_resource_doc(gateway_id)

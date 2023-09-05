@@ -40,18 +40,6 @@ class ReleaseHandler:
         )
 
     @staticmethod
-    def save_release_history(release: Release, source: PublishSourceEnum, author: str) -> ReleaseHistory:
-        """保存发布历史"""
-        release_history = ReleaseHistory.objects.create(
-            gateway=release.gateway,
-            stage=release.stage,
-            source=source.value,
-            resource_version=release.resource_version,
-            created_by=author,
-        )
-        return release_history
-
-    @staticmethod
     def save_release_history_with_id(
         gateway_id: int, stage_id: int, resource_version_id: int, source: PublishSourceEnum, author: str
     ) -> ReleaseHistory:

@@ -166,7 +166,8 @@ class PublishSourceEnum(StructuredEnum):
 
     # stage
     STAGE_DISABLE = EnumField("stage_disable", "环境下架")
-    STAGE_UPDATE = EnumField("stage_env_update", "环境更新")
+    STAGE_DELETE = EnumField("stage_delete", "环境删除")
+    STAGE_UPDATE = EnumField("stage_update", "环境更新")
 
     # backend
     BACKEND_UPDATE = EnumField("backend_update", "服务更新")
@@ -234,7 +235,6 @@ class BackendTypeEnum(StructuredEnum):
 DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100
 DEFAULT_BACKEND_NAME = "default"
-
 
 # Stage
 STAGE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,19}$")
