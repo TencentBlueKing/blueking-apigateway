@@ -16,10 +16,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from apigateway.core.constants import StageStatusEnum
 
-from .views import StageViewSet
 
-urlpatterns = [
-    path("", StageViewSet.as_view({"get": "list"}), name="apps.docs.gateway.stages"),
-]
+class TestStageListApi:
+    def test_list(self, request_view, fake_stage):
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.is_public = True
+        fake_stage.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="docs.gateway.stage.list",
+            path_params={"gateway_name": fake_stage.gateway.name},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) >= 1

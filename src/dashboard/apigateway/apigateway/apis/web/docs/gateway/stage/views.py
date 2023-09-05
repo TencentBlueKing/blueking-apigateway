@@ -17,26 +17,32 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
+from rest_framework import generics, status
 
-from apigateway.apps.docs.helper import support_helper
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import V1OKJsonResponse
+from apigateway.core.constants import StageStatusEnum
+from apigateway.core.models import Stage
+from apigateway.utils.responses import OKJsonResponse
 
-from .serializers import StageSLZ
+from .serializers import StageOutputSLZ
 
 
-class StageViewSet(viewsets.GenericViewSet):
+class StageListApi(generics.ListAPIView):
     @swagger_auto_schema(
-        responses={status.HTTP_200_OK: StageSLZ(many=True)},
-        tags=["APIGateway.Stage"],
+        responses={status.HTTP_200_OK: StageOutputSLZ(many=True)},
+        tags=["WebAPI.Docs.Stage"],
     )
     def list(self, request, gateway_name: str, *args, **kwargs):
-        """获取网关环境列表"""
-        gateway = support_helper.get_gateway_by_name(gateway_name)
+        """获取网关公开、可用的环境列表"""
+        gateway = GatewayHandler.get_displayable_gateway(gateway_name)
         if not gateway:
             raise error_codes.NOT_FOUND
 
-        stages = support_helper.get_stages(gateway["id"])
-        slz = StageSLZ(sorted(stages or [], key=lambda x: x["name"]), many=True)
-        return V1OKJsonResponse("OK", data=slz.data)
+        stages = Stage.objects.filter(
+            gateway=gateway,
+            status=StageStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        slz = StageOutputSLZ(stages, many=True)
+        return OKJsonResponse(data=slz.data)

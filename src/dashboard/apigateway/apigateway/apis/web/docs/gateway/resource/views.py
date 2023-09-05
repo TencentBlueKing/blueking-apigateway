@@ -26,22 +26,26 @@ from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
-from .serializers import ResourceOutputSLZ
+from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
 
 
 class ResourceListApi(generics.ListAPIView):
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
+        query_serializer=ResourceListInputSLZ,
         responses={status.HTTP_200_OK: ResourceOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Resource"],
     )
-    def list(self, request, gateway_name: str, stage_name: str, *args, **kwargs):
+    def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关环境下已发布的资源列表"""
         gateway = GatewayHandler.get_displayable_gateway(gateway_name)
         if not gateway:
             raise error_codes.NOT_FOUND
 
-        resources = ReleasedResourceHandler.get_released_public_resources(gateway.id, stage_name)
+        slz = ResourceListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        resources = ReleasedResourceHandler.get_released_public_resources(gateway.id, slz.validated_data["stage_name"])
         resource_ids = [resource.id for resource in resources]
         slz = ResourceOutputSLZ(
             resources,

@@ -20,22 +20,7 @@ from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
-class ResourceListInputSLZ(serializers.Serializer):
-    stage_name = serializers.CharField()
-
-
-class ResourceOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    description = SerializerTranslatedField(
-        translated_fields={"en": "description_en"}, allow_blank=True, read_only=True
-    )
-    method = serializers.CharField(read_only=True)
-    path = serializers.CharField(read_only=True)
-    verified_user_required = serializers.BooleanField(read_only=True)
-    verified_app_required = serializers.BooleanField(read_only=True)
-    resource_perm_required = serializers.BooleanField(read_only=True)
-    labels = serializers.SerializerMethodField()
-
-    def get_labels(self, obj):
-        return self.context["labels"].get(obj.id, [])
+class StageOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)

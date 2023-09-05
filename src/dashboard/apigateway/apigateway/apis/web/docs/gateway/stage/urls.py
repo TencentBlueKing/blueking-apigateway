@@ -16,13 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from rest_framework import serializers
+from django.urls import path
 
+from .views import StageListApi
 
-class StageSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = serializers.CharField()
-
-    class Meta:
-        ref_name = "apps.docs.gateway.stage"
+urlpatterns = [
+    path("", StageListApi.as_view(), name="docs.gateway.stage.list"),
+]

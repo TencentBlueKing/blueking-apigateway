@@ -21,8 +21,6 @@ from django.urls import include, path
 from apigateway.apps.docs.gateway.sdk.views import SDKViewSet
 
 urlpatterns = [
-    # stages
-    path("apis/<slug:gateway_name>/stages/", include("apigateway.apps.docs.gateway.stage.urls")),
     # resource doc
     path(
         "apis/<slug:gateway_name>/stages/<slug:stage_name>/resources/<slug:resource_name>/doc/",
