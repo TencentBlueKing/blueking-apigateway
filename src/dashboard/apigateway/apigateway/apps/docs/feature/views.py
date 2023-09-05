@@ -30,7 +30,7 @@ from .constants import EditionFeatureFlag
 class FeatureFlagViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        tags=["Feature"],
+        tags=["Docs.Feature"],
     )
     def list(self, request, *args, **kwargs):
         """获取特性开关列表"""

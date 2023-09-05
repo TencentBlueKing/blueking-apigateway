@@ -37,7 +37,7 @@ class AuditEventLogViewSet(viewsets.ModelViewSet):
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.AuditEventLogQuerySLZ,
         responses={status.HTTP_200_OK: serializers.AuditEventLogSLZ(many=True)},
-        tags=["Audit"],
+        tags=["WebAPI.Audit"],
     )
     def list(self, request, gateway_id, *args, **kwargs):
         slz = serializers.AuditEventLogQuerySLZ(data=request.query_params)

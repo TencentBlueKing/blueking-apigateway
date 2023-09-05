@@ -33,7 +33,7 @@ class SDKViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         query_serializer=SDKQuerySLZ,
         responses={status.HTTP_200_OK: GatewaySDKSLZ(many=True)},
-        tags=["APIGateway.APISDK"],
+        tags=["Docs.APIGateway.APISDK"],
     )
     def list(self, request, *args, **kwargs):
         """所有网关SDK"""
@@ -47,7 +47,7 @@ class SDKViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         query_serializer=SDKQuerySLZ,
         responses={status.HTTP_200_OK: StageSDKSLZ(many=True)},
-        tags=["APIGateway.APISDK"],
+        tags=["Docs.APIGateway.APISDK"],
     )
     def list_api_sdks(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK列表"""
@@ -68,7 +68,7 @@ class SDKViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         query_serializer=SDKUsageExampleConditionSLZ,
         responses={status.HTTP_200_OK: ""},
-        tags=["APIGateway.APISDK"],
+        tags=["Docs.APIGateway.APISDK"],
     )
     def get_usage_example(self, request, gateway_name: str, stage_name: str, resource_name: str, *args, **kwargs):
         """获取网关SDK示例"""
@@ -106,7 +106,7 @@ class SDKViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         query_serializer=SDKDocConditionSLZ,
         responses={status.HTTP_200_OK: ""},
-        tags=["APIGateway.APISDK"],
+        tags=["Docs.APIGateway.APISDK"],
     )
     def get_doc(self, request, *args, **kwargs):
         """获取网关SDK说明文档"""

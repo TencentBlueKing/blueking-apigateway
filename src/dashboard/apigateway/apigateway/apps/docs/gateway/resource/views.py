@@ -31,7 +31,7 @@ class ResourceViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: ResourceSLZ(many=True)},
-        tags=["APIGateway.Resource"],
+        tags=["Docs.APIGateway.Resource"],
     )
     def list(self, request, gateway_name: str, stage_name: str, *args, **kwargs):
         """获取网关环境下的资源列表"""
