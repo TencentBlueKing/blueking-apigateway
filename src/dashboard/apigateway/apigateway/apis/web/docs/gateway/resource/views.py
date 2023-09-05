@@ -17,29 +17,37 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
+from rest_framework import generics, status
 
-from apigateway.apps.docs.helper import support_helper
+from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.released_resource import ReleasedResourceHandler
+from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.responses import V1OKJsonResponse
+from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
-from .serializers import ResourceSLZ
+from .serializers import ResourceOutputSLZ
 
 
-class ResourceViewSet(viewsets.GenericViewSet):
+class ResourceListApi(generics.ListAPIView):
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
-        responses={status.HTTP_200_OK: ResourceSLZ(many=True)},
-        tags=["APIGateway.Resource"],
+        responses={status.HTTP_200_OK: ResourceOutputSLZ(many=True)},
+        tags=["WebAPI.Docs.Resource"],
     )
     def list(self, request, gateway_name: str, stage_name: str, *args, **kwargs):
-        """获取网关环境下的资源列表"""
-        gateway = support_helper.get_gateway_by_name(gateway_name)
+        """获取网关环境下已发布的资源列表"""
+        gateway = GatewayHandler.get_displayable_gateway(gateway_name)
         if not gateway:
             raise error_codes.NOT_FOUND
 
-        data = support_helper.get_released_resources(gateway["id"], stage_name)
-        slz = ResourceSLZ(sorted(data["results"], key=lambda x: x["name"]), many=True)
-        data["results"] = slz.data
-        return V1OKJsonResponse("OK", data=data)
+        resources = ReleasedResourceHandler.get_released_public_resources(gateway.id, stage_name)
+        resource_ids = [resource.id for resource in resources]
+        slz = ResourceOutputSLZ(
+            resources,
+            many=True,
+            context={
+                "labels": ResourceLabelHandler.get_labels(resource_ids),
+            },
+        )
+        return OKJsonResponse(data=slz.data)

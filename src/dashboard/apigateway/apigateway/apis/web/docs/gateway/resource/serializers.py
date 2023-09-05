@@ -17,18 +17,21 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from rest_framework import serializers
+from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
-class ResourceSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = serializers.CharField()
-    method = serializers.CharField()
-    path = serializers.CharField()
-    app_verified_required = serializers.BooleanField()
-    resource_perm_required = serializers.BooleanField()
-    user_verified_required = serializers.BooleanField()
-    labels = serializers.ListField()
+class ResourceOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = SerializerTranslatedField(
+        translated_fields={"en": "description_en"}, allow_blank=True, read_only=True
+    )
+    method = serializers.CharField(read_only=True)
+    path = serializers.CharField(read_only=True)
+    verified_user_required = serializers.BooleanField(read_only=True)
+    verified_app_required = serializers.BooleanField(read_only=True)
+    resource_perm_required = serializers.BooleanField(read_only=True)
+    labels = serializers.SerializerMethodField()
 
-    class Meta:
-        ref_name = "apps.docs.gateway.resource"
+    def get_labels(self, obj):
+        return self.context["labels"].get(obj.id, [])

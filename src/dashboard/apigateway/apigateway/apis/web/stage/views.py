@@ -22,7 +22,7 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
-from apigateway.biz.released_resource import ReleasedResourceDataHandler
+from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.controller.tasks.syncing import trigger_gateway_publish
@@ -63,7 +63,7 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
             many=True,
             context={
                 # 状态为 active 的环境，Release 中存在记录，则为已发布，否则为未发布
-                "stage_release": ReleasedResourceDataHandler.get_stage_release(
+                "stage_release": ReleasedResourceHandler.get_stage_release(
                     gateway=request.gateway, stage_ids=stage_ids
                 ),
                 # TODO 获取各个环境的发布状态与publish_id
@@ -114,7 +114,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
         serializer = StageOutputSLZ(
             instance,
             context={
-                "stage_release": ReleasedResourceDataHandler.get_stage_release(
+                "stage_release": ReleasedResourceHandler.get_stage_release(
                     gateway=request.gateway, stage_ids=[instance.id]
                 ),
                 # TODO 获取各个环境的发布状态与publish_id

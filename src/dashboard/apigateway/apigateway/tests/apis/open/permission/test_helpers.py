@@ -288,7 +288,7 @@ class TestAppPermissionBuilder:
             },
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResourceDataHandler.get_latest_doc_link",
+            "apigateway.apis.open.permission.helpers.ReleasedResourceHandler.get_latest_doc_link",
             return_value={
                 r.id: "test",
             },

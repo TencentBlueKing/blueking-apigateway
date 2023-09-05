@@ -16,20 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import include, path
+from django.urls import path
 
-from apigateway.apps.docs.gateway.sdk.views import SDKViewSet
+from .views import ResourceListApi
 
 urlpatterns = [
-    # stages
-    path("apis/<slug:gateway_name>/stages/", include("apigateway.apps.docs.gateway.stage.urls")),
-    # resource doc
-    path(
-        "apis/<slug:gateway_name>/stages/<slug:stage_name>/resources/<slug:resource_name>/doc/",
-        include("apigateway.apps.docs.gateway.resource_doc.urls"),
-    ),
-    # sdks
-    path("apis/<slug:gateway_name>/", include("apigateway.apps.docs.gateway.sdk.urls")),
-    path("sdks/", SDKViewSet.as_view({"get": "list"}), name="apigateway.apps.docs.gateway.sdk.list"),
-    path("sdks/doc/", SDKViewSet.as_view({"get": "get_doc"}), name="apigateway.apps.docs.gateway.sdk.doc"),
+    path("", ResourceListApi.as_view(), name="docs.gateway.resource.list"),
 ]

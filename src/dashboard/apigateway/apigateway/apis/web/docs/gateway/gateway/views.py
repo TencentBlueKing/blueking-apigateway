@@ -18,11 +18,12 @@
 #
 from typing import List
 
-from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.contexts import GatewayAuthContext
+from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Release
 from apigateway.utils.responses import OKJsonResponse
@@ -74,7 +75,10 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
     )
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """根据网关名称，获取网关详情"""
-        gateway = get_object_or_404(Gateway, status=GatewayStatusEnum.ACTIVE.value, is_public=True, name=gateway_name)
+        gateway = GatewayHandler.get_displayable_gateway(gateway_name)
+        if not gateway:
+            raise error_codes.NOT_FOUND
+
         slz = GatewayOutputSLZ(
             gateway,
             context={
