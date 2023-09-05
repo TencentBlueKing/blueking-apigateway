@@ -32,7 +32,7 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 @method_decorator(
     name="retrieve",
     decorator=swagger_auto_schema(
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
         responses={status.HTTP_200_OK: serializers.SSLCertificateSLZ},
         operation_description="retrieve ssl certificate",
     ),
@@ -40,7 +40,7 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 @method_decorator(
     name="create",
     decorator=swagger_auto_schema(
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
         request_body=serializers.SSLCertificateSLZ,
         responses={status.HTTP_200_OK: serializers.SSLCertificateSLZ},
         operation_description="create ssl certificate",
@@ -49,7 +49,7 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 @method_decorator(
     name="update",
     decorator=swagger_auto_schema(
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
         request_body=serializers.SSLCertificateSLZ,
         responses={status.HTTP_200_OK: serializers.SSLCertificateSLZ},
         operation_description="update ssl certificate",
@@ -58,7 +58,7 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 @method_decorator(
     name="destroy",
     decorator=swagger_auto_schema(
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
         responses={status.HTTP_200_OK: ""},
         operation_description="delete ssl certificate",
     ),
@@ -74,7 +74,7 @@ class SSLCertificateViewSet(viewsets.ModelViewSet):
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QuerySSLCertificateSLZ,
         responses={status.HTTP_200_OK: serializers.ListSSLCertificateSLZ(many=True)},
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     def list(self, request, *args, **kwargs):
         slz = serializers.QuerySSLCertificateSLZ(data=request.query_params)
@@ -109,7 +109,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=serializers.BindOrUnbindScopesSLZ,
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     @transaction.atomic
     def bind(self, request, *args, **kwargs):
@@ -143,7 +143,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=serializers.BindOrUnbindScopesSLZ,
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     @transaction.atomic
     def unbind(self, request, *args, **kwargs):
@@ -164,7 +164,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QuerySSLCertificateBindingSLZ,
         responses={status.HTTP_200_OK: serializers.ListSSLCertificateBindingSLZ(many=True)},
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     def list(self, request, *args, **kwargs):
         slz = serializers.QuerySSLCertificateBindingSLZ(data=request.query_params)
@@ -189,7 +189,7 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=serializers.BindOrUnbindSSLCertificatesSLZ,
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     @transaction.atomic
     def bind(self, request, *args, **kwargs):
@@ -226,7 +226,7 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=serializers.BindOrUnbindSSLCertificatesSLZ,
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     @transaction.atomic
     def unbind(self, request, *args, **kwargs):

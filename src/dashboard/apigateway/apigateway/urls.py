@@ -49,8 +49,7 @@ urlpatterns = [
     path("backend/api/v1/edge-controller/", include("apigateway.apis.controller.urls")),
     # iam provider
     path("backend/api/iam/", include("apigateway.apis.iam.urls")),
-    # apps: core
-    path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
+    path("backend/gateways/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     # apps: normal
     path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
     path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
