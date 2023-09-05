@@ -20,8 +20,8 @@ from typing import List
 from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import APILabel
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.models import Gateway
 
 

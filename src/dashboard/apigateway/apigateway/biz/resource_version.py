@@ -24,7 +24,6 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
@@ -33,16 +32,9 @@ from apigateway.apps.support.models import ResourceDocVersion
 from apigateway.biz.context import ContextHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
-from apigateway.core.models import (
-    Backend,
-    Gateway,
-    Proxy,
-    Release,
-    Resource,
-    ResourceVersion,
-    Stage,
-)
+from apigateway.core.models import Backend, Gateway, Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import random_string
 

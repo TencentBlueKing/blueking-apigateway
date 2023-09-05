@@ -25,9 +25,9 @@ from rest_framework import generics, status
 from rest_framework.generics import get_object_or_404
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
 from apigateway.controller.tasks.syncing import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum

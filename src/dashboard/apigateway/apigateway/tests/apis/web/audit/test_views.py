@@ -19,12 +19,12 @@
 from django.test import TestCase
 from django_dynamic_fixture import G
 
+from apigateway.apis.web.audit.views import AuditEventLogListApi
 from apigateway.apps.audit.models import AuditEventLog
-from apigateway.apps.audit.views import AuditEventLogViewSet
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, get_response_json
 
 
-class TestAuditEventLogViewSet(TestCase):
+class TestAuditEventLogListApi(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.factory = APIRequestFactory()
@@ -56,9 +56,9 @@ class TestAuditEventLogViewSet(TestCase):
         ]
 
         for test in data:
-            request = self.factory.get(f"/apis/{self.gateway.id}/audits/logs/", data=test)
+            request = self.factory.get(f"/gateways/{self.gateway.id}/audits/logs/", data=test)
 
-            view = AuditEventLogViewSet.as_view({"get": "list"})
+            view = AuditEventLogListApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
 
             result = get_response_json(response)
