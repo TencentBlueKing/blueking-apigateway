@@ -21,7 +21,7 @@ from typing import List
 from django.conf import settings
 
 from apigateway.apps.monitor.constants import SOURCE_TIME_OFFSET_SECONDS
-from apigateway.common.es_clients import ESClientFactory
+from apigateway.common.es.clients import ESClientFactory
 
 
 class LogSearchClient:
