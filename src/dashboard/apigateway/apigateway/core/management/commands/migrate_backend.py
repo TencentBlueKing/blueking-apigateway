@@ -75,34 +75,63 @@ class Command(BaseCommand):
         # config 与已创建 backend 映射
         config_backend: Dict[Tuple, Backend] = {}
 
-        # 迁移resource的proxy请求头
-        qs = Proxy.objects.filter(resource__api=gateway).prefetch_related("resource").all()
+        resource_backend_count = 0
+        # 迁移resource的proxy上游配置
+        qs = Proxy.objects.filter(resource__gateway=gateway).all()
         paginator = Paginator(qs, 100)
         for i in paginator.page_range:
             for proxy in paginator.page(i):
                 config = proxy.config
                 if not config["upstreams"]:
-                    # TODO 关联resource与default_backend
+                    # 关联resource与default_backend
+                    proxy.backend = default_backend
+                    proxy.save()
                     continue
 
                 # 已有相同的backend
                 config_hash_tuple = self._get_config_hash_tuple(config)
                 if config_hash_tuple in config_backend:
                     backend = config_backend[config_hash_tuple]
-                    # TODO 关联resource与backend
+                    # 关联resource与backend
+                    proxy.backend = backend
+                    proxy.save()
                     continue
 
-                backend = self._handle_resource_backend(gateway, stages, stage_timeout, config)
-                # TODO 关联resource与backend
+                resource_backend_count += 1
+                backend = self._handle_resource_backend(gateway, stages, stage_timeout, config, resource_backend_count)
+                # 关联resource与backend
+                proxy.backend = backend
+                proxy.save()
 
                 config_backend[config_hash_tuple] = backend
 
+        # 清理未使用的backend
+        used_backend_ids = list(
+            Proxy.objects.filter(resource__gateway=gateway).values_list("backend_id", flat=True).distinct()
+        )
+        used_backend_ids.append(default_backend.id)
+
+        delete_backend_ids = list(
+            Backend.objects.exclude(id__in=used_backend_ids)
+            .filter(name__contains="backend-")
+            .values_list("id", flat=True)
+        )
+
+        if delete_backend_ids:
+            BackendConfig.objects.filter(backend_id__in=delete_backend_ids).delete()
+            Backend.objects.filter(id__in=delete_backend_ids).delete()
+
     def _handle_resource_backend(
-        self, gateway: Gateway, stages: List[Stage], stage_timeout: Dict[int, int], proxy_http_config: Dict[str, Any]
+        self,
+        gateway: Gateway,
+        stages: List[Stage],
+        stage_timeout: Dict[int, int],
+        proxy_http_config: Dict[str, Any],
+        resource_backend_count: int,
     ) -> Backend:
         backend = Backend.objects.create(
             gateway=gateway,
-            name="todo",  # TODO 确定一个名字规则
+            name=f"backend-{resource_backend_count}",
         )
 
         backend_configs = []

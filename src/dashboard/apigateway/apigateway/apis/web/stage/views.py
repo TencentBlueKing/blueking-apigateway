@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -47,13 +48,24 @@ class StageQuerySetMixin:
         return queryset.filter(gateway=self.request.gateway)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: StageOutputSLZ(many=True)},
+        tags=["WebAPI.Stage"],
+    ),
+)
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_201_CREATED: ""},
+        request_body=StageInputSLZ,
+        tags=["WebAPI.Stage"],
+    ),
+)
 class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
     queryset = Stage.objects.order_by("id")
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: StageOutputSLZ(many=True)},
-        tags=["WebAPI.Stage"],
-    )
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
 
@@ -73,11 +85,6 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
 
         return OKJsonResponse(data=serializer.data)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""},
-        request_body=StageInputSLZ,
-        tags=["WebAPI.Stage"],
-    )
     def create(self, request, *args, **kwargs):
         slz = StageInputSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
@@ -100,14 +107,40 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: StageOutputSLZ()},
+        tags=["WebAPI.Stage"],
+    ),
+)
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
+        request_body=StageInputSLZ,
+        tags=["WebAPI.Stage"],
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Stage"],
+    ),
+)
+@method_decorator(
+    name="patch",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
+        request_body=StagePartialInputSLZ,
+        tags=["WebAPI.Stage"],
+    ),
+)
 class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "id"
     queryset = Stage.objects.all()
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: StageOutputSLZ()},
-        tags=["WebAPI.Stage"],
-    )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -124,11 +157,6 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 
         return OKJsonResponse(data=serializer.data)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        request_body=StageInputSLZ,
-        tags=["WebAPI.Stage"],
-    )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -153,10 +181,6 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 
         return OKJsonResponse()
 
-    @swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["WebAPI.Stage"],
-    )
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -179,11 +203,6 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        request_body=StagePartialInputSLZ,
-        tags=["WebAPI.Stage"],
-    )
     def partial_update(self, request, *args, **kwargs):
         slz = StagePartialInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
@@ -197,14 +216,25 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
         return OKJsonResponse()
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: StageOutputSLZ()},
+        tags=["WebAPI.Stage"],
+    ),
+)
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
+        request_body=StageVarsSLZ,
+        tags=["WebAPI.Stage"],
+    ),
+)
 class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIView):
     lookup_field = "id"
     queryset = Stage.objects.all()
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: StageOutputSLZ()},
-        tags=["WebAPI.Stage"],
-    )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -212,11 +242,6 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
 
         return OKJsonResponse(data=serializer.data)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        request_body=StageVarsSLZ,
-        tags=["WebAPI.Stage"],
-    )
     def update(self, request, *args, **kwargs):
         slz = StageVarsSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
@@ -253,6 +278,13 @@ class BackendConfigQuerySetMixin:
         return queryset.filter(gateway=self.request.gateway, stage_id=self.kwargs["id"])
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: StageBackendOutputSLZ(many=True)},
+        tags=["WebAPI.Stage"],
+    ),
+)
 class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
     queryset = BackendConfig.objects.order_by("backend_id").prefetch_related("backend")
 
@@ -266,6 +298,21 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
         return OKJsonResponse(data=serializer.data)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: StageBackendOutputSLZ()},
+        tags=["WebAPI.Stage"],
+    ),
+)
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
+        request_body=BackendConfigInputSLZ,
+        tags=["WebAPI.Stage"],
+    ),
+)
 class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.RetrieveUpdateAPIView):
     queryset = BackendConfig.objects.prefetch_related("backend")
 
@@ -279,11 +326,6 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
         serializer = StageBackendOutputSLZ(instance)
         return OKJsonResponse(data=serializer.data)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        request_body=BackendConfigInputSLZ,
-        tags=["WebAPI.Stage"],
-    )
     def update(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
 
@@ -303,15 +345,18 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
         return OKJsonResponse()
 
 
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
+        request_body=StageStatusInputSLZ,
+        tags=["WebAPI.Stage"],
+    ),
+)
 class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
     lookup_field = "id"
     queryset = Stage.objects.all()
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        request_body=StageStatusInputSLZ,
-        tags=["WebAPI.Stage"],
-    )
     def update(self, request, *args, **kwargs):
         slz = StageStatusInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)

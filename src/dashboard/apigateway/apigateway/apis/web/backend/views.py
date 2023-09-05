@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.db import transaction
+from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -39,16 +40,27 @@ class BackendQuerySetMixin:
         return queryset.filter(gateway=self.request.gateway)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        auto_schema=PaginatedResponseSwaggerAutoSchema,
+        responses={status.HTTP_200_OK: BackendListOutputSLZ(many=True)},
+        tags=["WebAPI.Backend"],
+    ),
+)
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_201_CREATED: ""},
+        request_body=BackendInputSLZ,
+        tags=["WebAPI.Backend"],
+    ),
+)
 class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
     queryset = Backend.objects.order_by("-id")
     serializer_class = BackendListOutputSLZ
     filterset_class = BackendFilter
 
-    @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
-        responses={status.HTTP_200_OK: BackendListOutputSLZ(many=True)},
-        tags=["WebAPI.Backend"],
-    )
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
 
@@ -66,11 +78,6 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
         )
         return OKJsonResponse(data=serializer.data)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""},
-        request_body=BackendInputSLZ,
-        tags=["WebAPI.Backend"],
-    )
     def create(self, request, *args, **kwargs):
         """
         创建后端服务
@@ -96,24 +103,37 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: BackendRetrieveOutputSLZ()},
+        tags=["WebAPI.Backend"],
+    ),
+)
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
+        request_body=BackendInputSLZ,
+        tags=["WebAPI.Backend"],
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Backend"],
+    ),
+)
 class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "id"
     queryset = Backend.objects.all()
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: BackendRetrieveOutputSLZ()},
-        tags=["WebAPI.Backend"],
-    )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = BackendRetrieveOutputSLZ(instance)
         return OKJsonResponse(data=serializer.data)
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        request_body=BackendInputSLZ,
-        tags=["WebAPI.Backend"],
-    )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -137,10 +157,6 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
 
         return OKJsonResponse()
 
-    @swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["WebAPI.Backend"],
-    )
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
