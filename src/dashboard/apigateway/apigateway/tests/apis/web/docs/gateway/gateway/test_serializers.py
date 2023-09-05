@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,3 +16,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.apis.web.docs.gateway.gateway.serializers import GatewayOutputSLZ
+from apigateway.common.contexts import GatewayAuthContext
+
+
+class TestGatewayOutputSLZ:
+    def test_to_representation(self, settings, fake_gateway):
+        settings.BK_API_URL_TMPL = "http://{api_name}.example.com"
+
+        slz = GatewayOutputSLZ(
+            fake_gateway,
+            context={
+                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
+            },
+        )
+
+        assert slz.data["is_official"] is False
+        assert slz.data["api_url"] == f"http://{fake_gateway.name}.example.com"

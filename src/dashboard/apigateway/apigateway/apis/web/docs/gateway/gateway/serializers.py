@@ -17,35 +17,22 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.conf import settings
-from django.utils.translation import gettext as _
 from rest_framework import serializers
+from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
-from apigateway.apis.web.constants import UserAuthTypeEnum
-from apigateway.core.constants import GatewayTypeEnum
-
-
-class GatewayQuerySLZ(serializers.Serializer):
-    query = serializers.CharField(required=False, allow_blank=True)
-    user_auth_type = serializers.CharField(required=False, allow_blank=True)
+from apigateway.biz.gateway_type import GatewayTypeHandler
 
 
-class GatewaySLZ(serializers.Serializer):
+class GatewayOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
-    description = serializers.CharField()
+    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
     maintainers = serializers.ListField()
-    user_auth_type = serializers.CharField()
-    user_auth_type_display = serializers.SerializerMethodField()
-    name_prefix = serializers.SerializerMethodField()
+    is_official = serializers.SerializerMethodField()
     api_url = serializers.SerializerMethodField()
 
-    def get_name_prefix(self, obj):
-        if obj["api_type"] in [GatewayTypeEnum.SUPER_OFFICIAL_API.value, GatewayTypeEnum.OFFICIAL_API.value]:
-            return _("[官方]")
-        return ""
-
-    def get_user_auth_type_display(self, obj):
-        return UserAuthTypeEnum.get_choice_label(obj["user_auth_type"])
-
     def get_api_url(self, obj):
-        return getattr(settings, "BK_API_URL_TMPL", "").format(api_name=obj["name"])
+        return getattr(settings, "BK_API_URL_TMPL", "").format(api_name=obj.name)
+
+    def get_is_official(self, obj):
+        return GatewayTypeHandler.is_official(self.context["gateway_auth_configs"][obj.id].gateway_type)

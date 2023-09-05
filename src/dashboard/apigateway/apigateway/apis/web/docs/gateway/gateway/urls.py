@@ -18,13 +18,9 @@
 #
 from django.urls import path
 
-from .views import GatewayViewSet
+from . import views
 
 urlpatterns = [
-    path("", GatewayViewSet.as_view({"get": "list"}), name="apigateway.apps.docs.apigateway.api.list"),
-    path(
-        "<slug:gateway_name>/",
-        GatewayViewSet.as_view({"get": "retrieve"}),
-        name="apigateway.apps.docs.apigateway.api.retrieve",
-    ),
+    path("", views.GatewayListApi.as_view(), name="docs.gateway.list"),
+    path("<slug:gateway_name>/", views.GatewayRetrieveApi.as_view(), name="docs.gateway.retrieve"),
 ]
