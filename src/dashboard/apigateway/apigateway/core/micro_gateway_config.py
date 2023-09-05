@@ -22,6 +22,8 @@ import cattr
 from attrs import define
 from django.utils.functional import cached_property
 
+# FIXME: use the pydantic, remove cattr/attrs
+
 
 class MicroGatewayConfigStructureMixin:
     _micro_gateway_config_key: str

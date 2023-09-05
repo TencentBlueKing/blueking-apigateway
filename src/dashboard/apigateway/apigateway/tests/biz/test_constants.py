@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,27 +16,23 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import re
+import pytest
 
-from blue_krill.data_types.enum import EnumField, StructuredEnum
-
-
-class SwaggerFormatEnum(StructuredEnum):
-    YAML = EnumField("yaml", label="YAML")
-    JSON = EnumField("json", label="JSON")
+from apigateway.biz import constants
 
 
-# bk app code
-APP_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
-
-# Semver
-SEMVER_PATTERN = re.compile(
-    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
-    r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-)
-
-
-MAX_BACKEND_TIMEOUT_IN_SECOND = 600
-
-# stage var
-STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")
+class TestConstants:
+    @pytest.mark.parametrize(
+        "value, match",
+        [
+            ("1.0.0", True),
+            ("1.0.0-beta.1", True),
+            ("v1.0.0", False),
+        ],
+    )
+    def test_semver_pattern(self, value, match):
+        result = constants.SEMVER_PATTERN.match(value)
+        if match:
+            assert result
+        else:
+            assert not result

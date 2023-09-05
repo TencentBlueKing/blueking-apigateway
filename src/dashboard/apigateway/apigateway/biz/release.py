@@ -25,7 +25,7 @@ from apigateway.core.constants import (
     PublishSourceEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, Stage
 
 
 class ReleaseHandler:
@@ -123,3 +123,17 @@ class ReleaseHandler:
                 else:
                     stage_publish_status[release_history.stage_id]["status"] = latest_event.status
         return stage_publish_status
+
+    @staticmethod
+    def delete_without_stage_related(gateway_id):
+        """
+        删除无 stages 关联的数据
+
+        因与 stages 为 ManyToMany 关联，删除 stage 时，
+        仅自动清理了 stage 与 release-history 的关联数据，
+        需要清理一次 release-history 本身的无效数据
+        """
+
+        stage_ids = Stage.objects.get_ids(gateway_id)
+
+        ReleaseHistory.objects.filter(gateway_id=gateway_id).exclude(stages__id__in=stage_ids).delete()

@@ -21,8 +21,10 @@ from typing import Any, Dict, Optional
 
 from django.db import transaction
 
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, DEFAULT_STAGE_NAME, StageStatusEnum
-from apigateway.core.models import Backend, BackendConfig, MicroGateway, Release, ReleaseHistory, Stage
+from apigateway.biz.release import ReleaseHandler
+from apigateway.controller.tasks.syncing import trigger_gateway_publish
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, DEFAULT_STAGE_NAME, PublishSourceEnum, StageStatusEnum
+from apigateway.core.models import Backend, BackendConfig, MicroGateway, Release, Stage
 from apigateway.utils.time import now_datetime
 
 
@@ -76,6 +78,9 @@ class StageHandler:
 
         BackendConfig.objects.bulk_update(backends.values(), fields=["config", "updated_by"])
 
+        # 触发环境发布
+        trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, updated_by, stage.gateway_id, stage.id, is_sync=True)
+
         return stage
 
     @staticmethod
@@ -92,7 +97,7 @@ class StageHandler:
 
             # 5. delete release-history
 
-            ReleaseHistory.objects.delete_without_stage_related(stage.gateway.id)
+            ReleaseHandler.delete_without_stage_related(stage.gateway.id)
 
         # TODO 删除stage CR
 
@@ -102,7 +107,11 @@ class StageHandler:
         stage.updated_by = updated_by
         stage.save()
 
-        # TODO 下架/上架发布
+        if status == StageStatusEnum.INACTIVE.value:
+            # 触发环境发布
+            trigger_gateway_publish(
+                PublishSourceEnum.STAGE_DISABLE, updated_by, stage.gateway_id, stage.id, is_sync=True
+            )
 
     @staticmethod
     def delete_by_gateway_id(gateway_id):

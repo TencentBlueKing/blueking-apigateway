@@ -160,7 +160,9 @@ class PublishSourceEnum(StructuredEnum):
     VERSION_PUBLISH = EnumField("version_publish", "版本发布")
 
     # plugin
+    PLUGIN_BIND = EnumField("plugin_bind", "插件绑定")
     PLUGIN_UPDATE = EnumField("plugin_update", "插件更新")
+    PLUGIN_UNBIND = EnumField("plugin_unbind", "插件解绑")
 
     # stage
     STAGE_DISABLE = EnumField("stage_disable", "环境下架")
@@ -236,49 +238,19 @@ DEFAULT_BACKEND_NAME = "default"
 
 # Stage
 STAGE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,19}$")
-STAGE_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,49}$")
 STAGE_VAR_REFERENCE_PATTERN = re.compile(r"env\.([a-zA-Z][a-zA-Z0-9_]{0,49})")
 STAGE_VAR_PATTERN = re.compile(r"\{%s\}" % STAGE_VAR_REFERENCE_PATTERN.pattern)
-STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")
 # 为降低正则表达式复杂度，此 IPV6 正则并不完全准确，且作为访问地址，其应放在中括号中，例如：[2001:db8:3333:4444:5555:6666:7777:8888]:8000
 DOMAIN_WITH_IPV6_PATTERN = re.compile(r"^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$")
-DOMAIN_WITH_HTTP_AND_IPV6_PATTERN = re.compile(
-    r"^http(s)?:\/\/\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?\/?$"
-)
 # 不带 scheme 的服务地址
 HOST_WITHOUT_SCHEME_PATTERN = re.compile(
     r"^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$"
     + "|"
     + DOMAIN_WITH_IPV6_PATTERN.pattern
 )
-STAGE_ITEM_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{0,49}$")
 
 # 资源路径转换为名称正则
 PATH_TO_NAME_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 
-DOMAIN_PATTERN = re.compile(
-    r"^(?=^.{3,255}$)http(s)?:\/\/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?\/?$"
-    + "|"
-    + DOMAIN_WITH_HTTP_AND_IPV6_PATTERN.pattern
-)
-
-HEADER_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9-]{1,100}$")
-
-# Semver
-SEMVER_PATTERN = re.compile(
-    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
-    r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-)
-
-
 # Micro gateway
 MICRO_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,19}$")
-
-# 后端服务名称
-BACKEND_SERVICE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
-
-# 超时时间设置
-MAX_BACKEND_TIMEOUT_IN_SECOND = 600
-MAX_CONNECT_TIMEOUT_IN_SECOND = 600
-MAX_SEND_TIMEOUT_IN_SECOND = 600
-MAX_READ_TIMEOUT_IN_SECOND = 600

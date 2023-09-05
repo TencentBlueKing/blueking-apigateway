@@ -20,7 +20,7 @@ import itertools
 import json
 import operator
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Set, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 from cachetools import TTLCache, cached
 from django.conf import settings
@@ -46,7 +46,6 @@ from apigateway.core.constants import (
     SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
-from apigateway.core.utils import get_resource_doc_link
 from apigateway.utils.crypto import KeyGenerator
 from apigateway.utils.time import now_datetime
 
@@ -85,7 +84,7 @@ class GatewayManager(models.Manager):
 
     def filter_id_object_map(self, ids=None):
         """
-        获取网关ID对
+        获取网关 ID 对
         """
         queryset = self.all()
         if ids is not None:
@@ -284,6 +283,10 @@ class ProxyManager(models.Manager):
             for proxy in self.filter(resource_id__in=resource_ids)
         }
 
+    def get_backend_resource_count(self, backend_ids: List[int]) -> Dict[int, int]:
+        qs = self.filter(backend_id__in=backend_ids).values("backend_id").annotate(count=Count("backend_id"))
+        return {i["backend_id"]: i["count"] for i in qs}
+
 
 class StageResourceDisabledManager(models.Manager):
     def get_disabled_stages(self, resource_id):
@@ -295,29 +298,6 @@ class StageResourceDisabledManager(models.Manager):
             }
             for stage in disabled_stages
         ]
-
-    # TODO: move to biz/stage_resource_disabled.py StageResourceDisabledHandler?
-    def filter_disabled_stages_by_gateway(self, gateway):
-        from apigateway.core.models import Stage
-
-        stage_ids = Stage.objects.get_ids(gateway.id)
-
-        queryset = self.filter(stage_id__in=stage_ids)
-        queryset = queryset.values("stage_id", "stage__name", "resource_id")
-
-        disabled = sorted(queryset, key=operator.itemgetter("resource_id"))
-
-        disabled_groups = itertools.groupby(disabled, key=operator.itemgetter("resource_id"))
-        resource_disabled = {}
-        for resource_id, group in disabled_groups:
-            resource_disabled[resource_id] = [
-                {
-                    "id": stage["stage_id"],
-                    "name": stage["stage__name"],
-                }
-                for stage in group
-            ]
-        return resource_disabled
 
     def is_exists(self, stage_id, resource_id):
         return self.filter(stage__id=stage_id, resource__id=resource_id).exists()
@@ -468,8 +448,8 @@ class ResourceVersionManager(models.Manager):
 
 class ReleaseManager(models.Manager):
     def get_released_stages(self, gateway=None, resource_version_ids=None):
-        # 查询版本信息，并按照版本ID排序
-        # 只显示Stage未下线的发布信息
+        # 查询版本信息，并按照版本 ID 排序
+        # 只显示 Stage 未下线的发布信息
         queryset = self.filter(stage__status=StageStatusEnum.ACTIVE.value)
 
         if gateway is not None:
@@ -480,7 +460,7 @@ class ReleaseManager(models.Manager):
 
         releases = queryset.values("stage_id", "stage__name", "resource_version_id").order_by("resource_version_id")
 
-        # 根据版本ID对列表中的数据进行分组，分组前，需要根据分组的 key 进行排序
+        # 根据版本 ID 对列表中的数据进行分组，分组前，需要根据分组的 key 进行排序
         release_groups = itertools.groupby(releases, key=operator.itemgetter("resource_version_id"))
 
         # 获取每个版本对应的环境信息
@@ -619,7 +599,7 @@ class ReleasedResourceManager(models.Manager):
         self.bulk_create(resource_to_add, batch_size=settings.RELEASED_RESOURCE_CREATE_BATCH_SIZE)
 
     def get_resource_version_id_to_obj_map(self, gateway_id: int, resource_id: int):
-        """获取已发布资源版本ID对应的发布资源"""
+        """获取已发布资源版本 ID 对应的发布资源"""
         return {
             resource.resource_version_id: resource
             for resource in self.filter(gateway_id=gateway_id, resource_id=resource_id)
@@ -658,7 +638,7 @@ class ReleasedResourceManager(models.Manager):
 
         return [self._parse_released_resource(resource) for resource in self.filter(id__in=ids)]
 
-    def _filter_resource_version_ids(self, resource_ids: List[int]) -> List[int]:
+    def filter_resource_version_ids(self, resource_ids: List[int]) -> List[int]:
         """过滤出资源所属的资源版本号"""
         return list(
             self.filter(resource_id__in=resource_ids)
@@ -667,39 +647,7 @@ class ReleasedResourceManager(models.Manager):
             .values_list("resource_version_id", flat=True)
         )
 
-    # FIXME: move to biz/released_resource ReleasedResource
-    def get_latest_doc_link(self, resource_ids: List[int]) -> Dict[int, str]:
-        from apigateway.core.models import Release
-
-        if not resource_ids:
-            return {}
-
-        resource_version_ids = self._filter_resource_version_ids(resource_ids)
-        released_stage_names = Release.objects.get_resource_version_released_stage_names(resource_version_ids)
-
-        # 按照资源版本从小到大排序，可使最新版本数据覆盖前面版本的数据
-        released_resources = self.filter(resource_id__in=resource_ids).order_by("resource_id", "resource_version_id")
-
-        doc_links = {}
-        for resource in released_resources:
-            stage_names = released_stage_names.get(resource.resource_version_id)
-            if not stage_names:
-                continue
-
-            disabled_stages = resource.data.get("disabled_stages") or []
-            recommeded_stage = self._get_recommended_stage_name(stage_names, disabled_stages)
-            if not recommeded_stage:
-                continue
-
-            doc_links[resource.resource_id] = get_resource_doc_link(
-                resource.gateway.name,
-                recommeded_stage,
-                resource.resource_name,
-            )
-
-        return doc_links
-
-    def _get_recommended_stage_name(self, stage_names: List[str], disabled_stages: List[str]) -> Optional[str]:
+    def get_recommended_stage_name(self, stage_names: List[str], disabled_stages: List[str]) -> Optional[str]:
         available_stages = set(stage_names) - set(disabled_stages)
         if not available_stages:
             return None
@@ -762,28 +710,13 @@ class ReleaseHistoryManager(models.Manager):
                 queryset = queryset.filter(created_by=created_by)
 
         if time_start and time_end:
-            # time_start、time_end须同时存在，否则无效
+            # time_start、time_end 须同时存在，否则无效
             queryset = queryset.filter(created_time__range=(time_start, time_end))
 
         if order_by:
             queryset = queryset.order_by(order_by)
 
         return queryset.distinct()
-
-    # FIXME: move to biz/released_resource ReleasedResource
-    def delete_without_stage_related(self, gateway_id):
-        """
-        删除无 stages 关联的数据
-
-        因与 stages 为 ManyToMany 关联，删除 stage 时，
-        仅自动清理了 stage 与 release-history 的关联数据，
-        需要清理一次 release-history 本身的无效数据
-        """
-        from apigateway.core.models import Stage
-
-        stage_ids = Stage.objects.get_ids(gateway_id)
-
-        self.filter(gateway_id=gateway_id).exclude(stages__id__in=stage_ids).delete()
 
     def get_recent_releasers(self, gateway_id: int) -> List[str]:
         qs = self.filter(gateway_id=gateway_id).order_by("-id")[:10]
@@ -828,31 +761,6 @@ class ContextManager(models.Manager):
 
     def delete_by_scope_ids(self, scope_type, scope_ids):
         self.filter(scope_type=scope_type, scope_id__in=scope_ids).delete()
-
-    # FIXME: move to biz/context ContextHandler? or not
-    def filter_id_type_snapshot_map(self, scope_type, scope_ids):
-        """
-        获取 id=>type=>snapshot 的数据，如
-        {
-            1: {
-                "resource_auth": {
-                    "id": 123,
-                    ...
-                }
-            }
-        }
-        """
-        from apigateway.schema.models import Schema
-
-        schemas = Schema.objects.filter_id_snapshot_map()
-        id_type_snapshot_map = defaultdict(dict)
-        queryset = self.filter(scope_type=scope_type, scope_id__in=scope_ids)
-        for c in queryset:
-            id_type_snapshot_map[c.scope_id][c.type] = c.snapshot(
-                as_dict=True,
-                schemas=schemas,
-            )
-        return id_type_snapshot_map
 
 
 class JWTManager(models.Manager):
@@ -1031,70 +939,3 @@ class SslCertificateBindingManager(models.Manager):
     def get_valid_scope_id(self, gateway_id: int, scope_type: str, scope_id: int) -> Optional[int]:
         scope_objects = self.get_scope_objects(gateway_id, scope_type, [scope_id])
         return scope_objects.values_list("id", flat=True).first()
-
-
-class StageItemManager(models.Manager):
-    def delete_stage_item(self, id: int):
-        self._check_for_delete(id)
-        self.filter(id=id).delete()
-
-    def _check_for_delete(self, id: int):
-        from apigateway.core.models import BackendService
-
-        backend_service = BackendService.objects.filter(stage_item_id=id).first()
-        if not backend_service:
-            return
-
-        raise InstanceDeleteError(
-            _("环境配置项【id={id}】被后端服务【id={backend_service_id}, name={backend_service_name}】引用，无法删除。").format(
-                id=id, backend_service_id=backend_service.id, backend_service_name=backend_service.name
-            )
-        )
-
-    def get_reference_instances(self, gateway_id: int) -> Dict[str, List[Any]]:
-        from apigateway.core.models import BackendService
-
-        result: Dict[str, List[Any]] = defaultdict(list)
-
-        backend_services = (
-            BackendService.objects.filter(api_id=gateway_id).exclude(stage_item=None).values("stage_item__id", "name")
-        )
-        for service in backend_services:
-            stage_item_id = service["stage_item__id"]
-            result[stage_item_id].append(
-                {
-                    "instance_display": service["name"],
-                    "type_display": _("后端服务"),
-                }
-            )
-
-        return result
-
-
-class StageItemConfigManager(models.Manager):
-    def get_configured_item_ids(self, gateway_id: int, stage_id: int) -> Set[int]:
-        return set(self.filter(api_id=gateway_id, stage_id=stage_id).values_list("stage_item_id", flat=True))
-
-    def get_stage_item_id_to_configured_stages(self, gateway_id: int) -> Dict[str, List[Any]]:
-        result = defaultdict(list)
-
-        values = self.filter(api_id=gateway_id).values("stage__id", "stage__name", "stage_item_id")
-        for value in values:
-            stage_item_id = value["stage_item_id"]
-            result[stage_item_id].append(
-                {
-                    "id": value["stage__id"],
-                    "name": value["stage__name"],
-                }
-            )
-
-        return result
-
-    def get_configs(self, gateway_id, stage_item_id: int) -> List[Dict[str, Any]]:
-        values = self.filter(api_id=gateway_id, stage_item_id=stage_item_id).values(
-            "stage_id", "stage__name", "config"
-        )
-        return [
-            {"stage_id": value["stage_id"], "stage_name": value["stage__name"], "config": value["config"]}
-            for value in values
-        ]

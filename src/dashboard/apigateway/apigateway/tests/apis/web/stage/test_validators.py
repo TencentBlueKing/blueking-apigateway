@@ -170,7 +170,7 @@ class TestStageVarsValidator:
         for test in data:
             slz = self.StageSLZ(instance=stage, data={"vars": test["vars"]}, context={"request": self.request})
             mocker.patch(
-                "apigateway.apis.web.stage.validators.ResourceVersion.objects.get_used_stage_vars",
+                "apigateway.biz.validators.ResourceVersion.objects.get_used_stage_vars",
                 return_value=test["mock_used_stage_vars"],
             )
 

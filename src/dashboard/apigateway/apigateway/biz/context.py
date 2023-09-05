@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,17 +15,34 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import logging
 
-from django.dispatch import Signal, receiver
+from collections import defaultdict
 
-from apigateway.utils.redis_publisher import RedisPublisher
-
-logger = logging.getLogger(__name__)
-
-reversion_update_signal = Signal(providing_args=["instance_id", "action"])
+from apigateway.core.models import Context
+from apigateway.schema.models import Schema
 
 
-@receiver(reversion_update_signal, dispatch_uid="reversion_update")
-def _notify_reversion_update(sender, instance_id, action, *args, **kwargs):
-    RedisPublisher().publish(f"{sender.__name__}[id={instance_id}] {action}")
+class ContextHandler:
+    @staticmethod
+    def filter_id_type_snapshot_map(scope_type, scope_ids):
+        """
+        获取 id=>type=>snapshot 的数据，如
+        {
+            1: {
+                "resource_auth": {
+                    "id": 123,
+                    ...
+                }
+            }
+        }
+        """
+
+        schemas = Schema.objects.filter_id_snapshot_map()
+        id_type_snapshot_map = defaultdict(dict)
+        queryset = Context.objects.filter(scope_type=scope_type, scope_id__in=scope_ids)
+        for c in queryset:
+            id_type_snapshot_map[c.scope_id][c.type] = c.snapshot(
+                as_dict=True,
+                schemas=schemas,
+            )
+        return id_type_snapshot_map

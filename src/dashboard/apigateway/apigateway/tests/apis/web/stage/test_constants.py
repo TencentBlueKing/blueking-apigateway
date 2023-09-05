@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,26 +17,23 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from ddf import G
 
-from apigateway.core.constants import ScopeTypeEnum
-from apigateway.core.models import Stage
-from apigateway.core.scopes import ScopeManager, StageScopeManager
-
-pytestmark = pytest.mark.django_db
+from apigateway.biz.constants import STAGE_VAR_FOR_PATH_PATTERN
 
 
-class TestScopeManager:
-    def test_get_manager(self):
-        manager = ScopeManager.get_manager(ScopeTypeEnum.STAGE.value)
-        assert isinstance(manager, StageScopeManager)
-
-
-class TestStageScopeManager:
-    def test_get_scope_ids(self, fake_gateway):
-        s = G(Stage, gateway=fake_gateway)
-
-        manager = StageScopeManager()
-        assert manager.get_scope_ids(fake_gateway.id, []) == [s.id]
-        assert manager.get_scope_ids(fake_gateway.id, [{"name": s.name}]) == [s.id]
-        assert manager.get_scope_ids(fake_gateway.id, [{"name": "not-exist"}]) == []
+class TestConstants:
+    @pytest.mark.parametrize(
+        "value, match",
+        [
+            ("/hello", True),
+            ("hello", True),
+            ("/hello/?a=b", False),
+            ("/hello/#fff", False),
+        ],
+    )
+    def test_stage_var_for_path_pattern(self, value, match):
+        result = STAGE_VAR_FOR_PATH_PATTERN.match(value)
+        if match:
+            assert result
+        else:
+            assert not result

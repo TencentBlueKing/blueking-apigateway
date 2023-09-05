@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,3 +16,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import re
+
+DOMAIN_WITH_HTTP_AND_IPV6_PATTERN = re.compile(
+    r"^http(s)?:\/\/\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?\/?$"
+)
+DOMAIN_PATTERN = re.compile(
+    r"^(?=^.{3,255}$)http(s)?:\/\/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?\/?$"
+    + "|"
+    + DOMAIN_WITH_HTTP_AND_IPV6_PATTERN.pattern
+)
+
+HEADER_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9-]{1,100}$")

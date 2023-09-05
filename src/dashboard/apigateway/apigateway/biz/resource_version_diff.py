@@ -116,6 +116,20 @@ class ResourceContexts(BaseModel, DiffMixin):
         return self.resource_auth.diff(target.resource_auth)
 
 
+class ResourcePluginConfig(BaseModel, DiffMixin):
+    id: int
+    name: str
+    type: int
+    config: Dict[Text, Any] = Field(default_factory=dict)
+
+
+class ResourcePlugins(BaseModel, DiffMixin):
+    config: ResourcePluginConfig
+
+    def diff_config(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
+        return self.config.diff(target.config)
+
+
 class ResourceDifferHandler(BaseModel, DiffMixin):
     id: int
     name: Text
@@ -127,6 +141,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
     proxy: Union[ResourceHTTPProxy, ResourceMockProxy]
     contexts: ResourceContexts
     disabled_stages: List[Text] = Field(default_factory=list)
+    plugins: List[ResourcePluginConfig] = Field(default_factory=list)
     doc_updated_time: Dict[str, str]
 
     def diff_proxy(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
@@ -137,6 +152,11 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
 
     def diff_contexts(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
         return self.contexts.diff(target.contexts)
+
+    def diff_plugins(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
+        source_plugins = {plugin.type: plugin.dict() for plugin in self.plugins}
+        target_plugins = {plugin.type: plugin.dict() for plugin in target.plugins}
+        return source_plugins, target_plugins
 
     @staticmethod
     def diff_resource_version_data(

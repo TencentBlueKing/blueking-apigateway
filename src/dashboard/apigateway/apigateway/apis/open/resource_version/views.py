@@ -23,7 +23,7 @@ from rest_framework import status, viewsets
 from apigateway.apis.open.resource_version import serializers
 from apigateway.apis.web.resource_version.serializers import ResourceVersionInfoSLZ
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
-from apigateway.biz.releaser import ReleaseBatchManager, ReleaseError
+from apigateway.biz.releaser import ReleaseBatchHandler, ReleaseError
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ResourceVersion, Stage
@@ -104,9 +104,11 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
                 },
             )
 
-        manager = ReleaseBatchManager(access_token=get_user_access_token_from_request(request))
+        handler = ReleaseBatchHandler(access_token=get_user_access_token_from_request(request))
         try:
-            manager.release_batch(request.gateway, data, request.user.username)
+            handler.release_batch(
+                request.gateway, data["stage_ids"], data["resource_version_id"], data["comment"], request.user.username
+            )
         except ReleaseError as err:
             # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
             return V1FailJsonResponse(str(err))
