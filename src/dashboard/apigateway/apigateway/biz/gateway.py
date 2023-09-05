@@ -34,7 +34,7 @@ from apigateway.biz.iam import IAMHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
-from apigateway.core.constants import ContextScopeTypeEnum, GatewayStatusEnum, GatewayTypeEnum
+from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import (
     JWT,
     APIRelatedApp,
@@ -282,12 +282,3 @@ class GatewayHandler:
         return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
             gateway_name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
         )
-
-    @staticmethod
-    def get_displayable_gateway(gateway_name: str) -> Optional[Gateway]:
-        """
-        API 文档中，可展示的网关
-        - 启用中
-        - 可公开
-        """
-        return Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True, name=gateway_name).first()

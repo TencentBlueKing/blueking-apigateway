@@ -21,9 +21,8 @@ from typing import List
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.contexts import GatewayAuthContext
-from apigateway.common.error_codes import error_codes
+from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Release
 from apigateway.utils.responses import OKJsonResponse
@@ -69,20 +68,18 @@ class GatewayListApi(generics.ListAPIView):
 
 
 class GatewayRetrieveApi(generics.RetrieveAPIView):
+    permission_classes = [GatewayDisplayablePermission]
+
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: GatewayOutputSLZ},
         tags=["WebAPI.Docs.Gateway"],
     )
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """根据网关名称，获取网关详情"""
-        gateway = GatewayHandler.get_displayable_gateway(gateway_name)
-        if not gateway:
-            raise error_codes.NOT_FOUND
-
         slz = GatewayOutputSLZ(
-            gateway,
+            request.gateway,
             context={
-                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([gateway.id]),
+                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([request.gateway.id]),
             },
         )
         return OKJsonResponse(data=slz.data)

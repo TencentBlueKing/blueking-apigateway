@@ -19,10 +19,9 @@
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
-from apigateway.common.error_codes import error_codes
+from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
@@ -30,6 +29,8 @@ from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
 
 
 class ResourceListApi(generics.ListAPIView):
+    permission_classes = [GatewayDisplayablePermission]
+
     @swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=ResourceListInputSLZ,
@@ -38,14 +39,12 @@ class ResourceListApi(generics.ListAPIView):
     )
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关环境下已发布的资源列表"""
-        gateway = GatewayHandler.get_displayable_gateway(gateway_name)
-        if not gateway:
-            raise error_codes.NOT_FOUND
-
         slz = ResourceListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        resources = ReleasedResourceHandler.get_released_public_resources(gateway.id, slz.validated_data["stage_name"])
+        resources = ReleasedResourceHandler.get_released_public_resources(
+            request.gateway.id, slz.validated_data["stage_name"]
+        )
         resource_ids = [resource.id for resource in resources]
         slz = ResourceOutputSLZ(
             resources,

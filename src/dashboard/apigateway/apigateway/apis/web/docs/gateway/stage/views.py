@@ -19,8 +19,7 @@
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.gateway import GatewayHandler
-from apigateway.common.error_codes import error_codes
+from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Stage
 from apigateway.utils.responses import OKJsonResponse
@@ -29,18 +28,16 @@ from .serializers import StageOutputSLZ
 
 
 class StageListApi(generics.ListAPIView):
+    permission_classes = [GatewayDisplayablePermission]
+
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: StageOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Stage"],
     )
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关公开、可用的环境列表"""
-        gateway = GatewayHandler.get_displayable_gateway(gateway_name)
-        if not gateway:
-            raise error_codes.NOT_FOUND
-
         stages = Stage.objects.filter(
-            gateway=gateway,
+            gateway=request.gateway,
             status=StageStatusEnum.ACTIVE.value,
             is_public=True,
         )

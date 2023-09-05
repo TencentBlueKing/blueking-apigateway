@@ -20,6 +20,7 @@ from django.http import Http404
 from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
+from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import APIRelatedApp, Gateway
 
 
@@ -103,3 +104,33 @@ class GatewayRelatedAppPermission(permissions.BasePermission):
             return Gateway.objects.get(**filter_kwargs)
         except Gateway.DoesNotExist:
             return None
+
+
+class GatewayDisplayablePermission(permissions.BasePermission):
+    """
+    校验网关是否可公开展示
+    - 网关已启用
+    - 网关允许公开
+    """
+
+    message = gettext_lazy("网关不存在")
+
+    def has_permission(self, request, view):
+        gateway_obj = self._get_displayable_gateway(view)
+        if not gateway_obj:
+            return Http404
+
+        request.gateway = gateway_obj
+
+    def _get_displayable_gateway(self, view):
+        lookup_url_kwarg = "gateway_name"
+
+        if lookup_url_kwarg not in view.kwargs:
+            return None
+
+        gateway_name = view.kwargs[lookup_url_kwarg]
+        return Gateway.objects.filter(
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            name=gateway_name,
+        ).first()
