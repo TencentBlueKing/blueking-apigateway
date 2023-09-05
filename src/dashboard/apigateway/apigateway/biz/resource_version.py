@@ -222,6 +222,17 @@ class ResourceVersionHandler:
         return False
 
     @staticmethod
+    def get_latest_version_by_gateway(gateway_id: int):
+        """通过gateway_id获取最新的版本号"""
+
+        # 查询最近的10条数据，并根据 id 字段排序
+        versions = ResourceVersion.objects.filter(gateway_id=gateway_id).order_by("-id")[:10].values("version")
+
+        # 取最大的 version
+        max_version = max(version["version"] for version in versions)
+        return max_version
+
+    @staticmethod
     def get_resource_version_display(data: Dict[str, Any]) -> str:
         if not data["version"]:
             return f"{data['name']}({data['title']})"
