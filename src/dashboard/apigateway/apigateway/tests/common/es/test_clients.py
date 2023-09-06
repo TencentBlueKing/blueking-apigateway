@@ -21,7 +21,7 @@ from elasticsearch.exceptions import AuthenticationException, ConnectionError, C
 from urllib3.exceptions import ConnectTimeoutError
 
 from apigateway.common.error_codes import APIError
-from apigateway.common.es_clients import (
+from apigateway.common.es.clients import (
     BaseESClient,
     BKLogESClient,
     DslESClient,
@@ -41,11 +41,11 @@ class TestElasticsearchGetter:
             getter._get_elasticsearch()
 
         mocker.patch.object(getter, "_hosts", new_callable=mocker.PropertyMock(return_value="es-hosts"))
-        mocker.patch("apigateway.common.es_clients.Elasticsearch", return_value=mocker.MagicMock())
+        mocker.patch("apigateway.common.es.clients.Elasticsearch", return_value=mocker.MagicMock())
         assert getter._get_elasticsearch() is not None
 
         mocker.patch.object(getter, "_hosts", new_callable=mocker.PropertyMock(return_value="es-hosts"))
-        mocker.patch("apigateway.common.es_clients.Elasticsearch", side_effect=Exception)
+        mocker.patch("apigateway.common.es.clients.Elasticsearch", side_effect=Exception)
         with pytest.raises(APIError):
             getter._get_elasticsearch()
 
@@ -150,14 +150,14 @@ class TestBKLogESClientMixin:
         es_client = BKLogESClient(es_index)
 
         mocker.patch(
-            "apigateway.common.es_clients.bk_log_component.esquery_dsl",
+            "apigateway.common.es.clients.bk_log_component.esquery_dsl",
             side_effect=RemoteRequestError(faker.pystr, BKAPIError("error")),
         )
         with pytest.raises(APIError):
             es_client.execute_search(es_body)
 
         mocked_esquery_dsl = mocker.patch(
-            "apigateway.common.es_clients.bk_log_component.esquery_dsl",
+            "apigateway.common.es.clients.bk_log_component.esquery_dsl",
             return_value={"test": 1},
         )
         result = es_client.execute_search(es_body)

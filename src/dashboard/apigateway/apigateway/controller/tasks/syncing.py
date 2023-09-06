@@ -17,17 +17,22 @@
 #
 import logging
 import uuid
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 from celery import shared_task
 
-from apigateway.biz.release import ReleaseHandler
 from apigateway.common.event.event import PublishEventReporter
-from apigateway.controller.constants import NO_NEED_REPORT_EVENT_PUBLISH_ID
+from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.combine import CombineDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
-from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
+from apigateway.core.constants import (
+    GatewayStatusEnum,
+    PublishSourceEnum,
+    PublishSourceTriggerPublishTypeMapping,
+    StageStatusEnum,
+    TriggerPublishType,
+)
 from apigateway.core.models import Gateway, MicroGateway, Release, ReleaseHistory
 
 logger = logging.getLogger(__name__)
@@ -92,11 +97,19 @@ def revoke_release(release_id: int, publish_id: int):
 
     release = Release.objects.get(id=release_id)
 
+    shared_gateway = MicroGateway.objects.get_default_shared_gateway()
+
+    distributor = CombineDistributor()
+    if publish_id == DELETE_PUBLISH_ID:
+        is_success, err_msg = distributor.revoke(release, shared_gateway, str(uuid.uuid4()), publish_id=publish_id)
+        if not is_success:
+            logger.error(err_msg)
+        return is_success
+
     release_history = ReleaseHistory.objects.get(id=publish_id)
 
     PublishEventReporter.report_create_publish_task_success_event(release_history, release.stage)
 
-    shared_gateway = MicroGateway.objects.get_default_shared_gateway()
     procedure_logger = ReleaseProcedureLogger(
         "revoke_release",
         logger=logger,
@@ -106,7 +119,6 @@ def revoke_release(release_id: int, publish_id: int):
         publish_id=release_history.pk,
     )
     PublishEventReporter.report_distribute_configuration_doing_event(release_history, release.stage)
-    distributor = CombineDistributor()
 
     procedure_logger.info("revoke begin")
 
@@ -150,30 +162,37 @@ def _check_release_gateway(gateway_id: Optional[int] = None, release: Optional[R
     return True, ""
 
 
+def _save_release_history(release: Release, source: PublishSourceEnum, author: str) -> ReleaseHistory:
+    """保存发布历史"""
+    release_history = ReleaseHistory.objects.create(
+        gateway=release.gateway,
+        stage=release.stage,
+        source=source.value,
+        resource_version=release.resource_version,
+        created_by=author,
+    )
+    return release_history
+
+
 def _trigger_rolling_publish(
     source: PublishSourceEnum,
     author: str,
-    gateway_id: int,
-    stage_id: Optional[int] = None,
+    release_list: List[Release],
     is_sync: Optional[bool] = False,
 ):
     """触发网关滚动更新"""
 
-    for release in Release.objects.filter(gateway_id=gateway_id).prefetch_related("stage"):
-        # 如果是环境变量发布，需要过滤对应stage
-        if stage_id and release.stage.pk != stage_id:
-            continue
-
+    for release in release_list:
         release_history = ReleaseHistory()
         publish_id = NO_NEED_REPORT_EVENT_PUBLISH_ID
         is_cli_sync = source is PublishSourceEnum.CLI_SYNC
         if not is_cli_sync:
             # 如果不是手动同步就需要生成发布历史
-            release_history = ReleaseHandler.save_release_history(release, source, author)
+            release_history = _save_release_history(release, source, author)
             publish_id = release_history.pk
 
         # 发布check
-        check_release_result, msg = _check_release_gateway(gateway_id=gateway_id, release=release)
+        check_release_result, msg = _check_release_gateway(gateway_id=release.gateway.pk, release=release)
         if not check_release_result:
             logging.warning(msg)
             if not is_cli_sync:
@@ -187,36 +206,30 @@ def _trigger_rolling_publish(
 
         # 开始发布
         if is_sync:
-            return rolling_update_release(gateway_id=gateway_id, publish_id=publish_id, release_id=release.pk)
+            return rolling_update_release(gateway_id=release.gateway.pk, publish_id=publish_id, release_id=release.pk)
         else:
             delay_on_commit(
                 rolling_update_release,
-                gateway_id=gateway_id,
+                gateway_id=release.gateway_id,
                 publish_id=publish_id,
                 release_id=release.pk,
             )
 
 
-def _trigger_revoke_publish(
+def _trigger_revoke_disable_publish(
     source: PublishSourceEnum,
     author: str,
-    gateway_id: Optional[int] = None,
-    stage_id: Optional[int] = None,
+    release_list: List[Release],
     is_sync: Optional[bool] = False,
 ):
     """触发撤销发布"""
 
-    release_list = []
-    if gateway_id:
-        release_list = Release.objects.get_release_by_gateway_id(gateway_id)
-    if stage_id:
-        release_list = Release.objects.get_release_by_stage_id(stage_id)
     for release in release_list:
         # 创建发布历史
-        release_history = ReleaseHandler.save_release_history(release, source, author)
+        release_history = _save_release_history(release, source, author)
 
         # 发布check
-        check_result, msg = _check_release_gateway(gateway_id=gateway_id, release=release)
+        check_result, msg = _check_release_gateway(gateway_id=release.gateway.pk, release=release)
 
         # 上报发布配置校验事件
         if check_result:
@@ -237,10 +250,31 @@ def _trigger_revoke_publish(
             )
 
 
+def _trigger_revoke_delete_publish(
+    source: PublishSourceEnum,
+    author: str,
+    release_list: List[Release],
+    is_sync: Optional[bool] = False,
+):
+    """触发删除发布"""
+    for release in release_list:
+        # 开始发布
+        if is_sync:
+            return revoke_release(release_id=release.id, publish_id=DELETE_PUBLISH_ID, author=author, source=source)
+        else:
+            delay_on_commit(
+                revoke_release,
+                release_id=release.id,
+                publish_id=DELETE_PUBLISH_ID,
+                author=author,
+                source=source,
+            )
+
+
 def trigger_gateway_publish(
     source: PublishSourceEnum,
     author: str,
-    gateway_id: Optional[int] = None,
+    gateway_id: int,
     stage_id: Optional[int] = None,
     is_sync: Optional[bool] = False,
 ):
@@ -252,25 +286,22 @@ def trigger_gateway_publish(
       stage_id: 环境id
       is_sync: 同步异步
     """
+    trigger_publish_type = PublishSourceTriggerPublishTypeMapping[source]
+    if not trigger_publish_type:
+        raise ValueError(f"source[{source}] is illegal")
 
-    # 网关启用/环境变量更新/插件更新/后端服务更新/命令行同步(不产生publish_id)：滚动更新网关进行发布
-    if source in [
-        PublishSourceEnum.GATEWAY_ENABLE,
-        PublishSourceEnum.STAGE_UPDATE,
-        PublishSourceEnum.PLUGIN_UPDATE,
-        PublishSourceEnum.BACKEND_UPDATE,
-        PublishSourceEnum.CLI_SYNC,
-    ]:
-        if not gateway_id:
-            return
-        if is_sync:
-            return _trigger_rolling_publish(source, author, gateway_id=gateway_id, stage_id=stage_id, is_sync=is_sync)
-        else:
-            _trigger_rolling_publish(source, author, gateway_id=gateway_id, stage_id=stage_id, is_sync=is_sync)
+    qs = Release.objects.filter(gateway_id=gateway_id)
 
-    # 网关停用：需要删除网关进行发布/资源停用：需要删除对应网关环境进行发布
-    if source in [PublishSourceEnum.GATEWAY_DISABLE, PublishSourceEnum.STAGE_DISABLE]:
-        if is_sync:
-            return _trigger_revoke_publish(source, author, gateway_id, stage_id, is_sync=is_sync)
-        else:
-            _trigger_revoke_publish(source, author, gateway_id, stage_id, is_sync=is_sync)
+    if stage_id:
+        qs = qs.filter(stage_id=stage_id)
+
+    release_list = qs.prefetch_related("gateway", "stage").all()
+
+    if trigger_publish_type == TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE:
+        return _trigger_rolling_publish(source, author, release_list, is_sync=is_sync)
+
+    if trigger_publish_type == TriggerPublishType.TRIGGER_REVOKE_DISABLE_RELEASE:
+        return _trigger_revoke_disable_publish(source, author, release_list, is_sync=is_sync)
+
+    if trigger_publish_type == TriggerPublishType.TRIGGER_REVOKE_DELETE_RELEASE:
+        return _trigger_revoke_delete_publish(source, author, release_list, is_sync=is_sync)

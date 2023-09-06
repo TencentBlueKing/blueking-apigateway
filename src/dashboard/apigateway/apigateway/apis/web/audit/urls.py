@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,23 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import logging
-from typing import Optional, Type
+from django.urls import path
 
-logger = logging.getLogger(__name__)
+from .views import AuditEventLogListApi
 
-
-def check_result_code(name: str, exception_type: Type[Exception], code: Optional[int], message: Optional[str]):
-    """Check the code in result which returned by api response, if the code is not equal to 0, raise the exception."""
-
-    logger.debug("checking %s result, code %s, message %s", name, code, message)
-    if code == 0:
-        return
-
-    raise exception_type(f"{name} error, code {code}, message {message}")
-
-
-class LockTimeout(Exception):
-    """Lock timeout error"""
-
-    pass
+urlpatterns = [
+    path("logs/", AuditEventLogListApi.as_view(), name="audit.logs.list"),
+]

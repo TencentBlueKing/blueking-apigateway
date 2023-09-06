@@ -33,7 +33,7 @@ class SDKViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         query_serializer=SDKQuerySLZ,
         responses={status.HTTP_200_OK: SDKSLZ(many=True)},
-        tags=["ESB.SDK"],
+        tags=["Docs.ESB.SDK"],
     )
     def list(self, request, *args, **kwargs):
         """获取SDK列表"""
@@ -55,7 +55,7 @@ class SDKViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         query_serializer=SDKQuerySLZ,
         responses={status.HTTP_200_OK: SDKSLZ},
-        tags=["ESB.SDK"],
+        tags=["Docs.ESB.SDK"],
     )
     @check_board_exist
     def retrieve(self, request, board: str, *args, **kwargs):
@@ -73,7 +73,7 @@ class SDKViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         query_serializer=SDKUsageExampleConditionSLZ,
         responses={status.HTTP_200_OK: ""},
-        tags=["ESB.SDK"],
+        tags=["Docs.ESB.SDK"],
     )
     @check_board_exist
     def get_usage_example(self, request, board: str, system_name: str, component_name: str, *args, **kwargs):
@@ -104,7 +104,7 @@ class SDKViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         query_serializer=SDKDocConditionSLZ,
         responses={status.HTTP_200_OK: ""},
-        tags=["ESB.SDK"],
+        tags=["Docs.ESB.SDK"],
     )
     def get_doc(self, request, *args, **kwargs):
         """获取ESB SDK说明文档"""

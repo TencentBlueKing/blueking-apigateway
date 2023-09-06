@@ -21,9 +21,9 @@ from typing import Dict, List
 from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.constants import LanguageCodeEnum
 
 from .constants import EN_RESOURCE_DOC_TMPL, ZH_RESOURCE_DOC_TMPL

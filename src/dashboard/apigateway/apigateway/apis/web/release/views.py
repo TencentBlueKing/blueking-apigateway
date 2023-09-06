@@ -19,6 +19,7 @@
 import logging
 from collections import defaultdict
 
+from django.conf import settings
 from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -32,14 +33,16 @@ from apigateway.biz.releaser import ReleaseBatchHandler, ReleaseError
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
+from apigateway.utils.exception import LockTimeout
+from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .serializers import (
     PublishEventQueryOutputSLZ,
-    ReleaseBatchInputSLZ,
     ReleaseHistoryOutputSLZ,
     ReleaseHistoryQueryInputSLZ,
+    ReleaseInputSLZ,
 )
 
 logger = logging.getLogger(__name__)
@@ -132,31 +135,43 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        request_body=ReleaseBatchInputSLZ,
+        request_body=ReleaseInputSLZ,
         responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ()},
         tags=["WebAPI.Release"],
     ),
 )
 class ReleaseBatchCreateApi(generics.CreateAPIView):
-    serializer_class = ReleaseBatchInputSLZ
+    serializer_class = ReleaseInputSLZ
     lookup_field = "id"
 
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
 
     def create(self, request, *args, **kwargs):
-        slz = ReleaseBatchInputSLZ(data=request.data, context={"gateway": request.gateway})
+        slz = ReleaseInputSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
+
+        # 发布加锁
+        stage_id = slz.validated_data["stage_id"]
+        gateway_id = request.gateway.id
 
         handler = ReleaseBatchHandler(access_token=get_user_access_token_from_request(request))
         try:
-            history = handler.release_batch(
-                request.gateway,
-                slz.validated_data["stage_ids"],
-                slz.validated_data["resource_version_id"],
-                slz.validated_data.get("comment", ""),
-                request.user.username,
-            )
+            with Lock(
+                f"{gateway_id}_{stage_id}",
+                timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
+                try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
+            ):
+                history = handler.release_batch(
+                    request.gateway,
+                    [slz.validated_data["stage_id"]],
+                    slz.validated_data["resource_version_id"],
+                    slz.validated_data.get("comment", ""),
+                    request.user.username,
+                )
+        except LockTimeout as err:
+            logger.exception("release failed.")
+            return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
         except ReleaseError as err:
             logger.exception("release failed.")
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))

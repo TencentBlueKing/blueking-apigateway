@@ -40,25 +40,24 @@ from rest_framework import permissions
 from apigateway.apis.web.monitor.views import AlarmRecordSummaryListApi
 
 urlpatterns = [
+    # /metrics
     path("", include("django_prometheus.urls")),
-    path("backend/admin42/", admin.site.urls),
+    # /healthz
     path("backend/", include("apigateway.healthz.urls")),
+    # /admin42
+    path("backend/admin42/", admin.site.urls),
+    # /userinfo
     path("backend/accounts/", include("apigateway.account.urls")),
-    path("backend/api/v1/", include("apigateway.apis.open.urls")),
-    # edge-controller
-    path("backend/api/v1/edge-controller/", include("apigateway.apis.controller.urls")),
+    # esb
+    path("backend/esb/", include("apigateway.apps.esb.urls")),
     # iam provider
     path("backend/api/iam/", include("apigateway.apis.iam.urls")),
-    # apps: core
-    path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
-    # apps: normal
-    path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
-    path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
-    path("backend/esb/", include("apigateway.apps.esb.urls")),
-    # backend/docs urls -- begin
-    path("backend/docs/apigateway/", include("apigateway.apps.docs.gateway.urls")),
+    # edge-controller
+    path("backend/api/v1/edge-controller/", include("apigateway.apis.controller.urls")),
+    # open api
+    path("backend/api/v1/", include("apigateway.apis.open.urls")),
+    # api-support backend/docs urls
     path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
-    # new
     path("backend/docs/gateways/", include("apigateway.apis.web.docs.gateway.gateway.urls")),
     path(
         "backend/docs/gateways/<slug:gateway_name>/resources/",
@@ -70,7 +69,7 @@ urlpatterns = [
         "backend/docs/gateways/<slug:gateway_name>/sdks/",
         include("apigateway.apis.web.docs.gateway.gateway_sdk.urls"),
     ),
-    # refactoring begin ------
+    # web api
     path("backend/i18n/setlang/", set_language, name="set_language"),
     path("backend/users/", include("apigateway.apis.web.user.urls")),
     path("backend/feature/", include("apigateway.apis.web.feature.urls")),
@@ -89,13 +88,16 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/plugins/", include("apigateway.apis.web.plugin.urls")),
     path("backend/gateways/<int:gateway_id>/resource_versions/", include("apigateway.apis.web.resource_version.urls")),
     path("backend/gateways/<int:gateway_id>/support/", include("apigateway.apis.web.support.urls")),
+    path("backend/gateways/<int:gateway_id>/audits/", include("apigateway.apis.web.audit.urls")),
+    # TODO: refactor or remove
+    path("backend/gateways/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
+    path("backend/gateways/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     # todo 不应该放在顶层，后续要想办法挪到下层
     path(
         "backend/gateways/monitors/alarm/records/summary/",
         AlarmRecordSummaryListApi.as_view(),
         name="monitors.alarm_records.summary",
     ),
-    # refactoring end ------
 ]
 
 # add drf-yasg automatically generated documents

@@ -22,7 +22,6 @@ from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusTypeEnum,
-    PublishSourceEnum,
     StageStatusEnum,
 )
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, Stage
@@ -42,10 +41,6 @@ class TestReleaseHandler:
         fake_gateway.status = GatewayStatusEnum.INACTIVE.value
         fake_gateway.save()
         assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == []
-
-    def test_save_release_history(self, fake_release):
-        ReleaseHandler.save_release_history(fake_release, PublishSourceEnum.VERSION_PUBLISH, "test")
-        assert ReleaseHistory.objects.filter(gateway=fake_release.gateway, stage=fake_release.stage).count() == 1
 
     def test_get_latest_publish_event_by_release_history_ids(self, fake_release_history, fake_publish_event):
         assert (

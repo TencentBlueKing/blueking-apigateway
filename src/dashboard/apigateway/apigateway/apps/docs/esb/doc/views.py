@@ -29,7 +29,7 @@ from .serializers import ComponentDocSLZ
 class DocViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        tags=["ESB.Doc"],
+        tags=["Docs.ESB.Doc"],
     )
     @check_board_exist
     def retrieve(self, request, board: str, system_name: str, component_name: str, *args, **kwargs):

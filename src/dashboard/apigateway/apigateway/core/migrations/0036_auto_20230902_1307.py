@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='resourceversion',
-            name='scheme_version',
+            name='schema_version',
             field=models.CharField(choices=[('1.0', '旧模型版本'), ('2.0', '新模型版本')], default='1.0', max_length=32),
         ),
         migrations.AlterField(

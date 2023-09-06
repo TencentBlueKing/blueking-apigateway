@@ -24,25 +24,17 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.apps.support.models import ResourceDocVersion
+from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.context import ContextHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
-from apigateway.core.models import (
-    Backend,
-    Gateway,
-    Proxy,
-    Release,
-    Resource,
-    ResourceVersion,
-    Stage,
-)
+from apigateway.core.models import Backend, Gateway, Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import random_string
 
@@ -143,7 +135,7 @@ class ResourceVersionHandler:
                 # TODO: 待 version 改为必填后，下面的 version 赋值去掉
                 "version": data.get("version") or name,
                 "created_time": now,
-                "scheme_version": ResourceVersionSchemaEnum.V2Version.value,
+                "schema_version": ResourceVersionSchemaEnum.V2.value,
             }
         )
         resource_version = ResourceVersion(**data)
@@ -222,6 +214,17 @@ class ResourceVersionHandler:
         return False
 
     @staticmethod
+    def get_latest_version_by_gateway(gateway_id: int):
+        """通过gateway_id获取最新的版本号"""
+
+        # 查询最近的10条数据，并根据 id 字段排序
+        versions = ResourceVersion.objects.filter(gateway_id=gateway_id).order_by("-id")[:10].values("version")
+
+        # 取最大的 version
+        max_version = max(version["version"] for version in versions)
+        return max_version
+
+    @staticmethod
     def get_resource_version_display(data: Dict[str, Any]) -> str:
         if not data["version"]:
             return f"{data['name']}({data['title']})"
@@ -282,7 +285,6 @@ class ResourceDocVersionHandler:
         """
         是否需要创建新的资源文档版本
         """
-        from apigateway.apps.support.models import ResourceDoc
 
         latest_version = ResourceDocVersion.objects.get_latest_version(gateway_id)
         latest_resource_doc = ResourceDoc.objects.get_latest_resource_doc(gateway_id)

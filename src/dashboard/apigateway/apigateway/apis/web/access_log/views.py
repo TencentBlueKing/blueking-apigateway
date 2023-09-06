@@ -23,6 +23,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.http import Http404
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -45,12 +46,15 @@ from .serializers import (
 )
 
 
-class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         query_serializer=RequestLogQueryInputSLZ,
         responses={status.HTTP_200_OK: TimeChartOutputSLZ()},
         tags=["WebAPI.Log"],
-    )
+    ),
+)
+class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -72,13 +76,16 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse(data=slz.data)
 
 
-class SearchLogListApi(generics.ListAPIView):
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=RequestLogQueryInputSLZ,
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["WebAPI.Log"],
-    )
+    ),
+)
+class SearchLogListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -125,16 +132,19 @@ class SearchLogListApi(generics.ListAPIView):
         return logs
 
 
-class LogDetailListApi(generics.ListAPIView):
-    # 打开分享日志链接的，可能不是网关负责人，因此去除权限校验
-    api_permission_exempt = True
-
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=LogDetailQueryInputSLZ,
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["WebAPI.Log"],
-    )
+    ),
+)
+class LogDetailListApi(generics.ListAPIView):
+    # 打开分享日志链接的，可能不是网关负责人，因此去除权限校验
+    api_permission_exempt = True
+
     def list(self, request, request_id, *args, **kwargs):
         """
         获取指定 request_id 的日志内容
@@ -157,13 +167,16 @@ class LogDetailListApi(generics.ListAPIView):
         return OKJsonResponse(data=results)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: LogLinkOutputSLZ()},
+        tags=["WebAPI.Log"],
+    ),
+)
 class LogLinkRetrieveApi(generics.RetrieveAPIView):
     api_permission_exempt = False
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: LogLinkOutputSLZ()},
-        tags=["WebAPI.Log"],
-    )
     def retrieve(self, request, request_id, *args, **kwargs):
         """
         获取指定 request_id 日志的分享链接
