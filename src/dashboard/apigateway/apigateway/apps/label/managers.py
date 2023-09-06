@@ -24,7 +24,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
+from apigateway.common.audit.shortcuts import record_audit_log
 
 
 class APILabelManager(models.Manager):

@@ -16,31 +16,36 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
+from rest_framework import generics, status
 
-from apigateway.apps.audit import serializers
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
+from .serializers import AuditEventLogOutputSLZ, AuditEventLogQueryInputSLZ
 
-class AuditEventLogViewSet(viewsets.ModelViewSet):
-    serializer_class = serializers.AuditEventLogSLZ
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        auto_schema=PaginatedResponseSwaggerAutoSchema,
+        query_serializer=AuditEventLogQueryInputSLZ,
+        responses={status.HTTP_200_OK: AuditEventLogOutputSLZ(many=True)},
+        tags=["WebAPI.Audit"],
+    ),
+)
+class AuditEventLogListApi(generics.ListAPIView):
+    serializer_class = AuditEventLogOutputSLZ
     lookup_field = "id"
 
     def get_queryset(self):
         # 过滤网关数据
         return AuditEventLog.objects.filter(op_object_group=str(self.request.gateway.id)).order_by("-id")
 
-    @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
-        query_serializer=serializers.AuditEventLogQuerySLZ,
-        responses={status.HTTP_200_OK: serializers.AuditEventLogSLZ(many=True)},
-        tags=["WebAPI.Audit"],
-    )
     def list(self, request, gateway_id, *args, **kwargs):
-        slz = serializers.AuditEventLogQuerySLZ(data=request.query_params)
+        slz = AuditEventLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data

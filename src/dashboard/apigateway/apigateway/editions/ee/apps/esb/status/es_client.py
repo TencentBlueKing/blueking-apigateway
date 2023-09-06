@@ -17,13 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 """
-请求Elasticsearch辅助Client
+请求 Elasticsearch 辅助 Client
 """
 from typing import ClassVar, Type
 
 from django.conf import settings
 
-from apigateway.common.es_clients import BaseESClient, BKLogESClient, ESClientTypeEnum, RawESClient
+from apigateway.common.es.clients import BaseESClient, BKLogESClient, ESClientTypeEnum, RawESClient
 
 
 class BaseSearchClient:

@@ -22,10 +22,10 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.micro_gateway import serializers
 from apigateway.apps.micro_gateway.constants import MicroGatewayCreateWayEnum
 from apigateway.apps.micro_gateway.handlers import MicroGatewayHandlerFactory
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.models import MicroGateway, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import V1OKJsonResponse
