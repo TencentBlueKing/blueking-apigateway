@@ -18,6 +18,7 @@
 import logging
 from typing import Optional, Tuple
 
+from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.key_prefix import KeyPrefixHandler
@@ -100,6 +101,17 @@ class EtcdDistributor(BaseDistributor):
     ) -> Tuple[bool, str]:
         """撤销已发布到 micro-gateway 对应的 registry 中的配置"""
         registry = self._get_registry(release.gateway, release.stage, micro_gateway)
+
+        # 删除所有相关数据
+        if publish_id == DELETE_PUBLISH_ID:
+            try:
+                registry.delete_resources_by_key_prefix()
+            except Exception as e:
+                fail_msg = f"revoke delete resources from etcd failed: {type(e).__name__}: {str(e)}"
+                logger.exception(fail_msg)
+                return False, fail_msg
+            return True, ""
+
         procedure_logger = ReleaseProcedureLogger(
             "gateway-revoking",
             logger=logger,

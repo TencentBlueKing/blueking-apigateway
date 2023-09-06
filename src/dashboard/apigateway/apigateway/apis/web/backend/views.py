@@ -23,8 +23,8 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.biz.backend import BackendHandler
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Backend, BackendConfig, Proxy
 from apigateway.utils.responses import OKJsonResponse

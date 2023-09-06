@@ -30,7 +30,7 @@ from .serializers import ResourceDocSLZ
 class ResourceDocViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        tags=["APIGateway.ResourceDoc"],
+        tags=["Docs.APIGateway.ResourceDoc"],
     )
     def retrieve(self, request, gateway_name: str, stage_name: str, resource_name: str, *args, **kwargs):
         """获取网关资源的文档"""

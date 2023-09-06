@@ -27,14 +27,13 @@ from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStat
 from apigateway.core.models import ReleaseHistory, ResourceVersion, Stage
 
 
-class ReleaseBatchInputSLZ(serializers.Serializer):
+class ReleaseInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    stage_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+    stage_id = serializers.IntegerField(allow_null=True, required=True)
     resource_version_id = serializers.IntegerField(required=True)
 
-    def validate_stage_ids(self, value):
-        count = Stage.objects.filter(gateway=self.context["gateway"], id__in=value).count()
-        if len(value) != count:
+    def validate_stage_id(self, value):
+        if not Stage.objects.filter(gateway=self.context["gateway"], id=value).exists():
             raise Http404
 
         return value

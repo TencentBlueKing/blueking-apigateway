@@ -29,7 +29,7 @@ from .serializers import StageSLZ
 class StageViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: StageSLZ(many=True)},
-        tags=["APIGateway.Stage"],
+        tags=["Docs.APIGateway.Stage"],
     )
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关环境列表"""

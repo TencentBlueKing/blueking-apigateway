@@ -19,8 +19,8 @@
 from django.test import TestCase
 from django_dynamic_fixture import G
 
+from apigateway.apis.web.audit.serializers import AuditEventLogOutputSLZ
 from apigateway.apps.audit.models import AuditEventLog
-from apigateway.apps.audit.serializers import AuditEventLogSLZ
 from apigateway.core.models import Gateway
 from apigateway.tests.utils.testing import dummy_time
 
@@ -90,5 +90,5 @@ class TestAuditEventLogSLZ(TestCase):
             },
         ]
         for test in data:
-            slz = AuditEventLogSLZ(instance=test["instance"])
+            slz = AuditEventLogOutputSLZ(instance=test["instance"])
             self.assertEqual(slz.data, test["expected"])

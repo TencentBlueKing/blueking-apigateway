@@ -27,12 +27,12 @@ from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayS
 
 class ServiceConvertor(BaseConvertor):
     def convert(self) -> List[BkGatewayService]:
-        # 将环境配置作为一个默认的服务，分离出服务的概念
-        upstreams = self._release_data.stage_proxy_config.get("upstreams")
+
+        upstreams = self._release_data.stage_backend_config.get("upstreams")
         if not upstreams:
             return []
 
-        timeout = self._release_data.stage_proxy_config.get("timeout") or 0
+        timeout = self._release_data.stage_backend_config.get("timeout", 0)
 
         upstream = Upstream(
             type=UpstreamTypeEnum.ROUNDROBIN,
