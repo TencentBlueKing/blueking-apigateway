@@ -28,11 +28,11 @@ from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceDataHandler
 from apigateway.biz.validators import StageVarsValuesValidator
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.tasks import release_gateway_by_helm, release_gateway_by_registry

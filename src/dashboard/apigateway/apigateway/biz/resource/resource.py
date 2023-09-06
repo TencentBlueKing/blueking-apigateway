@@ -23,11 +23,11 @@ from django.db.models import Q
 from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ResourceDoc
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import BackendConfigTypeEnum, ContextScopeTypeEnum
 from apigateway.core.models import Context, Gateway, Proxy, Resource, Stage, StageResourceDisabled

@@ -21,9 +21,9 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.biz.released_resource import ReleasedResourceDataHandler
 from apigateway.biz.stage import StageHandler
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
 from apigateway.controller.tasks.syncing import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum

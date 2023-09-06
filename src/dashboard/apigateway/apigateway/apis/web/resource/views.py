@@ -28,28 +28,18 @@ from rest_framework import generics, status
 
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.label.models import APILabel
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.importer import (
-    ResourceDataConvertor,
-    ResourceImportValidator,
-    ResourcesImporter,
-)
+from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
 from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
-from apigateway.core.models import (
-    Backend,
-    BackendConfig,
-    Proxy,
-    Resource,
-    Stage,
-)
+from apigateway.core.models import Backend, BackendConfig, Proxy, Resource, Stage
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
