@@ -28,7 +28,13 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
-from apigateway.core.constants import BackendTypeEnum, ContextScopeTypeEnum, ContextTypeEnum, ResourceVersionSchemaEnum
+from apigateway.core.constants import (
+    DEFAULT_BACKEND_NAME,
+    BackendTypeEnum,
+    ContextScopeTypeEnum,
+    ContextTypeEnum,
+    ResourceVersionSchemaEnum,
+)
 from apigateway.core.models import JWT, BackendConfig, Context, Gateway, Release, ResourceVersion, Stage
 
 logger = logging.getLogger(__name__)
@@ -76,9 +82,9 @@ class ReleaseData:
         """
         return {
             b.backend.type: b.config
-            for b in BackendConfig.objects.filter(gateway_id=self.gateway.pk, stage_id=self.stage.pk).prefetch_related(
-                "backend"
-            )
+            for b in BackendConfig.objects.filter(
+                gateway_id=self.gateway.pk, stage_id=self.stage.pk, backend__name=DEFAULT_BACKEND_NAME
+            ).prefetch_related("backend")
         }
 
     @cached_property

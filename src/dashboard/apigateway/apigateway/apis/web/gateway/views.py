@@ -28,7 +28,8 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.controller.tasks.syncing import trigger_gateway_publish
+from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
 
@@ -184,7 +185,11 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
         slz.save(updated_by=request.user.username)
 
-        # FIXME: 添加触发发布微网关的逻辑
+        if instance.is_micro_gateway:
+            # 触发环境发布
+            source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
+            username = request.user.username
+            trigger_gateway_publish(source, username, instance.id)
 
         GatewayHandler.record_audit_log_success(
             username=request.user.username,
