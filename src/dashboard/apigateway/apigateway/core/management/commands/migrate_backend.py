@@ -111,6 +111,7 @@ class Command(BaseCommand):
         )
         used_backend_ids.append(default_backend.id)
 
+        # 查询排除了已使用的backend, 并且名称中包含backend-的backend, 用于清理上一次迁移现在重复的backend
         delete_backend_ids = list(
             Backend.objects.exclude(id__in=used_backend_ids)
             .filter(name__contains="backend-")
