@@ -26,7 +26,7 @@ from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Release, ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
 
-from .serializers import SdkDocInputSLZ, SdkListInputSLZ, SdkListOutputSLZ
+from .serializers import SdkDocInputSLZ, SdkDocOutputSLZ, SdkListInputSLZ, SdkListOutputSLZ
 
 
 class SdkListApi(generics.ListAPIView):
@@ -60,13 +60,13 @@ class SdkListApi(generics.ListAPIView):
                 ),
             },
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
 
 class SdkDocApi(generics.RetrieveAPIView):
     @swagger_auto_schema(
         query_serializer=SdkDocInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_200_OK: SdkDocOutputSLZ},
         tags=["Docs.Gateway.SDK"],
     )
     def retrieve(self, request, *args, **kwargs):
@@ -76,12 +76,13 @@ class SdkDocApi(generics.RetrieveAPIView):
 
         programming_language = slz.validated_data["language"]
 
-        return OKJsonResponse(
-            "OK",
-            data={
+        output_slz = SdkDocOutputSLZ(
+            {
                 "content": render_to_string(
                     f"api_sdk/{get_current_language_code()}/{programming_language}_sdk_doc.md",
                     context=DummySdkDocContext().as_dict(),
                 ),
-            },
+            }
         )
+
+        return OKJsonResponse(data=output_slz.data)

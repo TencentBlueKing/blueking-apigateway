@@ -52,3 +52,7 @@ class SdkUsageExampleInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
     stage_name = serializers.CharField()
     resource_name = serializers.CharField()
+
+
+class SdkUsageExampleOutputSLZ(serializers.Serializer):
+    content = serializers.CharField(allow_blank=True)

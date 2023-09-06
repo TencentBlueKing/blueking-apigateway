@@ -57,3 +57,7 @@ class SdkListOutputSLZ(serializers.Serializer):
 
 class SdkDocInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
+
+
+class SdkDocOutputSLZ(serializers.Serializer):
+    content = serializers.CharField(allow_blank=True)

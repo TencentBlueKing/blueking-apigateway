@@ -28,7 +28,7 @@ from apigateway.biz.sdk.models import SdkDocContext
 from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.utils.responses import OKJsonResponse
 
-from .serializers import SdkListInputSLZ, SdkUsageExampleInputSLZ, StageSdkOutputSLZ
+from .serializers import SdkListInputSLZ, SdkUsageExampleInputSLZ, SdkUsageExampleOutputSLZ, StageSdkOutputSLZ
 
 
 class SdkListApi(generics.ListAPIView):
@@ -57,7 +57,7 @@ class SdkUsageExampleApi(generics.RetrieveAPIView):
 
     @swagger_auto_schema(
         query_serializer=SdkUsageExampleInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_200_OK: SdkUsageExampleOutputSLZ},
         tags=["Docs.Gateway.SDK"],
     )
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
@@ -82,8 +82,5 @@ class SdkUsageExampleApi(generics.RetrieveAPIView):
             ).as_dict(),
         )
 
-        return OKJsonResponse(
-            data={
-                "content": content,
-            },
-        )
+        slz = SdkUsageExampleOutputSLZ(data={"content": content})
+        return OKJsonResponse(data=slz.data)

@@ -30,7 +30,6 @@ class GatewaySdkHandler:
             Release.objects.filter(gateway_id=gateway_id).values(
                 "stage__id",
                 "stage__name",
-                "stage__is_public",
                 "resource_version__id",
                 "resource_version__name",
                 "resource_version__title",
