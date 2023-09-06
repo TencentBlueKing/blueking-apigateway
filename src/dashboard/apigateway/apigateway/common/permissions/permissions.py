@@ -118,7 +118,7 @@ class GatewayDisplayablePermission(permissions.BasePermission):
     def has_permission(self, request, view):
         gateway_obj = self._get_displayable_gateway(view)
         if not gateway_obj:
-            return Http404
+            raise Http404
 
         request.gateway = gateway_obj
         return True

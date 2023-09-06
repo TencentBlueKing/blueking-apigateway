@@ -47,3 +47,14 @@ class TestGatewayRetrieveApi:
 
         assert resp.status_code == 200
         assert result["data"]["is_official"] is False
+
+        fake_gateway.is_public = False
+        fake_gateway.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="docs.gateway.retrieve",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+        )
+        assert resp.status_code == 404
