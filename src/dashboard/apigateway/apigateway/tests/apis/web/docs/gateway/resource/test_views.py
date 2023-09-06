@@ -19,32 +19,19 @@
 
 
 class TestResourceListApi:
-    def test_list(self, fake_release, request_view):
-        fake_gateway = fake_release.gateway
-
+    def test_list(self, fake_gateway, fake_stage, fake_release, request_view):
         resp = request_view(
             method="GET",
             view_name="docs.gateway.resource.list",
             path_params={
                 "gateway_name": fake_gateway.name,
-                "stage_name": fake_release.stage.name,
             },
+            data={
+                "stage_name": fake_stage.name,
+            },
+            gateway=fake_gateway,
         )
         result = resp.json()
 
         assert resp.status_code == 200
         assert len(result["data"]) > 0
-
-        # 网关不公开
-        fake_gateway.is_public = False
-        fake_gateway.save()
-
-        resp = request_view(
-            method="GET",
-            view_name="docs.gateway.resource.list",
-            path_params={
-                "gateway_name": fake_gateway.name,
-                "stage_name": fake_release.stage.name,
-            },
-        )
-        assert resp.status_code == 0

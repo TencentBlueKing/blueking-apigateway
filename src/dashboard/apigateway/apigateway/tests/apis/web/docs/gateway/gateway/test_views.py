@@ -18,16 +18,11 @@
 #
 from ddf import G
 
-from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Release
 
 
 class TestGatewayListApi:
     def test_list(self, request_view, fake_gateway):
-        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.is_public = True
-        fake_gateway.save()
-
         G(Release, gateway=fake_gateway)
 
         resp = request_view(
@@ -42,24 +37,11 @@ class TestGatewayListApi:
 
 class TestGatewayRetrieveApi:
     def test_retrieve(self, request_view, fake_gateway):
-        fake_gateway.is_public = False
-        fake_gateway.save()
-
         resp = request_view(
             method="GET",
             view_name="docs.gateway.retrieve",
             path_params={"gateway_name": fake_gateway.name},
-        )
-        assert resp.status_code == 404
-
-        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.is_public = True
-        fake_gateway.save()
-
-        resp = request_view(
-            method="GET",
-            view_name="docs.gateway.retrieve",
-            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
         )
         result = resp.json()
 

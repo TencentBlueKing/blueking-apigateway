@@ -42,11 +42,11 @@ class TestGatewaySdkHandler:
         assert result == []
 
     def test_get_resource_version_latest_public_sdk(self, fake_gateway, fake_resource_version):
-        G(APISDK, gateway=fake_gateway, is_public=True, resource_version_id=fake_resource_version, language="zh")
+        G(APISDK, gateway=fake_gateway, is_public=True, resource_version=fake_resource_version, language="zh")
         latest_sdk = G(
-            APISDK, gateway=fake_gateway, is_public=True, resource_version_id=fake_resource_version, language="zh"
+            APISDK, gateway=fake_gateway, is_public=True, resource_version=fake_resource_version, language="zh"
         )
 
         assert GatewaySdkHandler._get_resource_version_latest_public_sdk(
-            fake_gateway.id, [fake_resource_version], "zh"
+            fake_gateway.id, [fake_resource_version.id], "zh"
         ) == {fake_resource_version.id: latest_sdk}

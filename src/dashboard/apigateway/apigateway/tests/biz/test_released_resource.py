@@ -200,4 +200,4 @@ class TestReleasedResourceHandler:
             fake_gateway.id, fake_stage.name, fake_released_resource.resource_name
         )
         assert result
-        assert isinstance(result, dict)
+        assert isinstance(result, ReleasedResource)

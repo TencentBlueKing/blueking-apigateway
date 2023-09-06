@@ -25,12 +25,12 @@ class SdkListInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
 
-class StageSLZ(serializers):
+class StageSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
 
 
-class ResourceVersionSLZ(serializers):
+class ResourceVersionSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     display = serializers.CharField(read_only=True)
 

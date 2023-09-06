@@ -20,7 +20,7 @@ from apigateway.core.constants import StageStatusEnum
 
 
 class TestStageListApi:
-    def test_list(self, request_view, fake_stage):
+    def test_list(self, request_view, fake_gateway, fake_stage):
         fake_stage.status = StageStatusEnum.ACTIVE.value
         fake_stage.is_public = True
         fake_stage.save()
@@ -28,7 +28,8 @@ class TestStageListApi:
         resp = request_view(
             method="GET",
             view_name="docs.gateway.stage.list",
-            path_params={"gateway_name": fake_stage.gateway.name},
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
         )
         result = resp.json()
 
@@ -41,7 +42,8 @@ class TestStageListApi:
         resp = request_view(
             method="GET",
             view_name="docs.gateway.stage.list",
-            path_params={"gateway_name": fake_stage.gateway.name},
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
         )
         result = resp.json()
         assert resp.status_code == 200

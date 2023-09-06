@@ -377,12 +377,12 @@ def fake_released_resource(fake_gateway, fake_resource1, fake_resource_version, 
 
 @pytest.fixture
 def fake_resource_doc1(fake_resource1):
-    return G(gateway=fake_resource1.gateway, resource_id=fake_resource1.id)
+    return G(ResourceDoc, gateway=fake_resource1.gateway, resource_id=fake_resource1.id)
 
 
 @pytest.fixture
 def fake_resource_doc2(fake_resource2):
-    return G(gateway=fake_resource2.gateway, resource_id=fake_resource2.id)
+    return G(ResourceDoc, gateway=fake_resource2.gateway, resource_id=fake_resource2.id)
 
 
 @pytest.fixture
@@ -401,6 +401,7 @@ def fake_released_resource_doc(fake_gateway, fake_resource_version, fake_resourc
         gateway=fake_gateway,
         resource_version_id=fake_resource_version.id,
         resource_id=fake_resource1.id,
+        language="zh",
         data=resource_id_to_data[fake_resource1.id],
     )
 
@@ -476,8 +477,9 @@ def fake_sdk(fake_gateway, fake_resource_version):
         APISDK,
         gateway=fake_gateway,
         resource_version=fake_resource_version,
-        language="magic",
+        language="python",
         is_recommended=True,
+        is_public=True,
         _config="{}",
     )
 

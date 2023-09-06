@@ -45,7 +45,7 @@ class SdkListOutputSLZ(serializers.Serializer):
         return SDKFactory.create(obj).as_dict()
 
     def get_resource_version(self, obj):
-        resource_version = self.context[obj.resource_version_id]
+        resource_version = self.context["resource_versions"][obj.resource_version_id]
         return {
             "id": resource_version["id"],
             "display": ResourceVersionHandler.get_resource_version_display(resource_version),

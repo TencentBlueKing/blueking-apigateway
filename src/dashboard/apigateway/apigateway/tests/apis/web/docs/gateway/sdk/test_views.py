@@ -27,9 +27,10 @@ class TestSdkListApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["gateway"]
-        assert result["data"]["sdk"]
-        assert result["data"]["resource_version"]
+        assert len(result["data"]) >= 1
+        assert result["data"][0]["gateway"]
+        assert result["data"][0]["sdk"]
+        assert result["data"][0]["resource_version"]
 
 
 class TestSdkDocApi:

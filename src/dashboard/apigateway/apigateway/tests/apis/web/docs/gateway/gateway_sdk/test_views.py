@@ -25,6 +25,10 @@ class TestSdkListApi:
             path_params={
                 "gateway_name": fake_gateway.name,
             },
+            data={
+                "language": fake_sdk.language,
+            },
+            gateway=fake_gateway,
         )
         result = resp.json()
 
@@ -48,6 +52,7 @@ class TestSdkUsageExampleApi:
                 "stage_name": "prod",
                 "resource_name": "get_color",
             },
+            gateway=fake_gateway,
         )
         result = resp.json()
 

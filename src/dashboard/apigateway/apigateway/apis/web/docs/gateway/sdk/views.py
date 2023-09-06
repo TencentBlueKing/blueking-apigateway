@@ -55,9 +55,12 @@ class SdkListApi(generics.ListAPIView):
             many=True,
             context={
                 "released_stages": Release.objects.get_released_stages(resource_version_ids=resource_version_ids),
-                "resource_versions": ResourceVersion.objects.filter(id__in=resource_version_ids).values_list(
-                    "id", "version", "title", "name"
-                ),
+                "resource_versions": {
+                    version["id"]: version
+                    for version in ResourceVersion.objects.filter(id__in=resource_version_ids).values(
+                        "id", "version", "title", "name"
+                    )
+                },
             },
         )
         return OKJsonResponse(data=slz.data)

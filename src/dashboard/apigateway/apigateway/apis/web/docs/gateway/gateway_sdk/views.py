@@ -82,5 +82,5 @@ class SdkUsageExampleApi(generics.RetrieveAPIView):
             ).as_dict(),
         )
 
-        slz = SdkUsageExampleOutputSLZ(data={"content": content})
+        slz = SdkUsageExampleOutputSLZ({"content": content})
         return OKJsonResponse(data=slz.data)

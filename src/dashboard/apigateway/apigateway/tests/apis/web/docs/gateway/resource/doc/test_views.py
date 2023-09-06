@@ -17,14 +17,23 @@
 # to the current version of the project delivered to anyone in the future.
 #
 class TestDocListApi:
-    def test_list(self, request_view, mocker, fake_gateway, fake_stage, fake_released_resource_doc, fake_resource1):
+    def test_list(
+        self,
+        request_view,
+        mocker,
+        fake_gateway,
+        fake_stage,
+        fake_released_resource,
+        fake_released_resource_doc,
+    ):
         resp = request_view(
             method="GET",
             view_name="docs.gateway.resource.doc.list",
-            path_params={"gateway_name": fake_gateway.name, "resource_name": fake_resource1.name},
+            path_params={"gateway_name": fake_gateway.name, "resource_name": fake_released_resource.resource_name},
             data={
                 "stage_name": fake_stage.name,
             },
+            gateway=fake_gateway,
         )
         result = resp.json()
 
@@ -39,10 +48,11 @@ class TestDocListApi:
         resp = request_view(
             method="GET",
             view_name="docs.gateway.resource.doc.list",
-            path_params={"gateway_name": fake_gateway.name, "resource_name": fake_resource1.name},
+            path_params={"gateway_name": fake_gateway.name, "resource_name": fake_released_resource.resource_name},
             data={
                 "stage_name": fake_stage.name,
             },
+            gateway=fake_gateway,
         )
         assert resp.status_code == 404
 
@@ -53,9 +63,10 @@ class TestDocListApi:
         resp = request_view(
             method="GET",
             view_name="docs.gateway.resource.doc.list",
-            path_params={"gateway_name": fake_gateway.name, "resource_name": fake_resource1.name},
+            path_params={"gateway_name": fake_gateway.name, "resource_name": fake_released_resource.resource_name},
             data={
                 "stage_name": fake_stage.name,
             },
+            gateway=fake_gateway,
         )
         assert resp.status_code == 404
