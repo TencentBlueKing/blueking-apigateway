@@ -38,9 +38,8 @@ class TestReleaseBatchInputSLZ:
         self.request = create_request()
         self.request.gateway = self.gateway
 
-    def test_validate_stage_ids(self, mocker):
+    def test_validate_stage_id(self, mocker):
         stage_1 = G(Stage, gateway=self.gateway)
-        stage_2 = G(Stage, gateway=self.gateway)
 
         gateway = G(Gateway)
         stage_3 = G(Stage, gateway=gateway)
@@ -49,17 +48,17 @@ class TestReleaseBatchInputSLZ:
 
         data = [
             {
-                "stage_ids": [stage_1.id, stage_2.id],
+                "stage_id": stage_1.id,
                 "resource_version_id": resource_version.id,
                 "expected": {
                     "gateway": self.gateway,
-                    "stage_ids": [stage_1.id, stage_2.id],
+                    "stage_id": stage_1.id,
                     "resource_version_id": resource_version.id,
                 },
             },
             # error, stage_3 not belong to gateway
             {
-                "stage_ids": [stage_3.id, stage_1.id],
+                "stage_id": stage_3.id,
                 "resource_version_id": resource_version.id,
                 "will_error": True,
             },
@@ -84,17 +83,17 @@ class TestReleaseBatchInputSLZ:
         data = [
             # ok
             {
-                "stage_ids": [stage.id],
+                "stage_id": stage.id,
                 "resource_version_id": resource_version_2.id,
                 "expected": {
                     "gateway": self.gateway,
-                    "stage_ids": [stage.id],
+                    "stage_id": stage.id,
                     "resource_version_id": resource_version_2.id,
                 },
             },
             # error, resoruce_version not belong to self.gateway
             {
-                "stage_ids": [stage.id],
+                "stage_id": [stage.id],
                 "resource_version_id": resource_version_1.id,
                 "will_error": True,
             },

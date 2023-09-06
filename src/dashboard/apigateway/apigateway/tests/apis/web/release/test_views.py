@@ -61,37 +61,38 @@ class TestReleaseBatchCreateApi:
                     },
                 )
 
-        data = {
-            "gateway_id": fake_gateway.id,
-            "stage_ids": [stage_1.id, stage_2.id],
-            "resource_version_id": resource_version.id,
-        }
+        for stage in [stage_1, stage_2]:
+            data = {
+                "gateway_id": fake_gateway.id,
+                "stage_id": stage.id,
+                "resource_version_id": resource_version.id,
+            }
+            resp = request_view(
+                method="POST",
+                view_name="gateway.releases.create",
+                gateway=fake_gateway,
+                path_params={"gateway_id": fake_gateway.id},
+                data=data,
+                user=fake_admin_user,
+            )
 
-        resp = request_view(
-            method="POST",
-            view_name="gateway.releases.create",
-            gateway=fake_gateway,
-            path_params={"gateway_id": fake_gateway.id},
-            data=data,
-            user=fake_admin_user,
-        )
+            result = resp.json()
 
-        result = resp.json()
+            print(result)
 
-        # There should be one history record for both cases.
-        history_qs = ReleaseHistory.objects.filter(stages__id__in=data["stage_ids"]).distinct()
-        assert history_qs.count() == 1
+            # There should be one history record for both cases.
+            history_qs = ReleaseHistory.objects.filter(stage_id=data["stage_id"]).distinct()
+            assert history_qs.count() == 1
 
-        if not succeeded:
-            # assert history_qs[0].status == ReleaseStatusEnum.FAILURE.value
-            assert resp.status_code != 200, result
-        else:
-            # The request finished successfully
-            # assert history_qs[0].status == ReleaseStatusEnum.SUCCESS.value
-            assert resp.status_code == 200, result
+            if not succeeded:
+                # assert history_qs[0].status == ReleaseStatusEnum.FAILURE.value
+                assert resp.status_code != 200, result
+            else:
+                # The request finished successfully
+                # assert history_qs[0].status == ReleaseStatusEnum.SUCCESS.value
+                assert resp.status_code == 200, result
 
-            for stage_id in data["stage_ids"]:
-                release = Release.objects.get(stage__id=stage_id)
+                release = Release.objects.get(stage__id=stage.id)
                 assert release.resource_version == resource_version
 
 

@@ -46,6 +46,9 @@ class MockRedisClient:
     def get(self, key):
         return self.data.get(key)
 
+    def lock(self, key, timeout):
+        return self.setnx(key, "")
+
 
 # 定义 Redis 客户端的 fixture
 @pytest.fixture(scope="function")

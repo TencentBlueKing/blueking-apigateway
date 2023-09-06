@@ -18,7 +18,7 @@
 import logging
 from typing import Optional, Tuple
 
-from apigateway.controller.constants import NO_NEED_REPORT_EVENT_PUBLISH_ID
+from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.key_prefix import KeyPrefixHandler
@@ -103,7 +103,7 @@ class EtcdDistributor(BaseDistributor):
         registry = self._get_registry(release.gateway, release.stage, micro_gateway)
 
         # 删除所有相关数据
-        if publish_id == NO_NEED_REPORT_EVENT_PUBLISH_ID:
+        if publish_id == DELETE_PUBLISH_ID:
             try:
                 registry.delete_resources_by_key_prefix()
             except Exception as e:

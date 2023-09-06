@@ -19,6 +19,7 @@
 import logging
 from collections import defaultdict
 
+from django.conf import settings
 from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -151,16 +152,19 @@ class ReleaseBatchCreateApi(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
 
         # 发布加锁
-        sorted_stage_ids = sorted(slz.validated_data["stage_ids"])
+        stage_id = slz.validated_data["stage_id"]
         gateway_id = request.gateway.id
-        stage_key = "".join(str(x) for x in sorted_stage_ids)
 
         handler = ReleaseBatchHandler(access_token=get_user_access_token_from_request(request))
         try:
-            with Lock(f"{gateway_id}_{stage_key}", timeout=5, try_get_times=1):
+            with Lock(
+                f"{gateway_id}_{stage_id}",
+                timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
+                try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
+            ):
                 history = handler.release_batch(
                     request.gateway,
-                    slz.validated_data["stage_ids"],
+                    [slz.validated_data["stage_id"]],
                     slz.validated_data["resource_version_id"],
                     slz.validated_data.get("comment", ""),
                     request.user.username,

@@ -48,7 +48,7 @@ class ReleaseData:
 
     @cached_property
     def is_schema_v2(self) -> bool:
-        return self._release.resource_version.schema_version == ResourceVersionSchemaEnum.V2Version
+        return self._release.resource_version.schema_version == ResourceVersionSchemaEnum.V2Version.value
 
     @cached_property
     def resource_version(self) -> ResourceVersion:
@@ -88,7 +88,7 @@ class ReleaseData:
     @cached_property
     def stage_backend_config(self) -> Dict[str, Any]:
         if self.is_schema_v2:
-            json.loads(self._stage_backend[BackendTypeEnum.HTTP.value]["config"])
+            return self._stage_backend[BackendTypeEnum.HTTP.value]["config"]
         return json.loads(self._stage_contexts[ContextTypeEnum.STAGE_PROXY_HTTP.value]["config"])
 
     @cached_property

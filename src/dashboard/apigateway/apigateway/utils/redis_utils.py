@@ -116,9 +116,7 @@ class Lock(object):
         try_get_times = self.try_get_times
         while try_get_times > 0:
             # 尝试获取锁
-            if self.client.setnx(self.key, 0):
-                # 设置锁的过期时间
-                self.client.expire(self.key, self.timeout)
+            if self.client.lock(self.key, self.timeout):
                 return
             # 获取锁失败，等待一段时间后重试
             try_get_times -= 1
