@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.template.loader import render_to_string
+from django.utils.decorators import method_decorator
 from django.utils.timezone import now as timezone_now
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -31,14 +32,17 @@ from apigateway.utils.responses import OKJsonResponse
 from .serializers import SdkListInputSLZ, SdkUsageExampleInputSLZ, SdkUsageExampleOutputSLZ, StageSdkOutputSLZ
 
 
-class SdkListApi(generics.ListAPIView):
-    permission_classes = [GatewayDisplayablePermission]
-
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         query_serializer=SdkListInputSLZ,
         responses={status.HTTP_200_OK: StageSdkOutputSLZ(many=True)},
         tags=["Docs.Gateway.SDK"],
-    )
+    ),
+)
+class SdkListApi(generics.ListAPIView):
+    permission_classes = [GatewayDisplayablePermission]
+
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK列表"""
         slz = SdkListInputSLZ(data=request.query_params)
@@ -52,14 +56,17 @@ class SdkListApi(generics.ListAPIView):
         return OKJsonResponse(data=slz.data)
 
 
-class SdkUsageExampleApi(generics.RetrieveAPIView):
-    permission_classes = [GatewayDisplayablePermission]
-
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         query_serializer=SdkUsageExampleInputSLZ,
         responses={status.HTTP_200_OK: SdkUsageExampleOutputSLZ},
         tags=["Docs.Gateway.SDK"],
-    )
+    ),
+)
+class SdkUsageExampleApi(generics.RetrieveAPIView):
+    permission_classes = [GatewayDisplayablePermission]
+
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK示例"""
         slz = SdkUsageExampleInputSLZ(data=request.query_params)

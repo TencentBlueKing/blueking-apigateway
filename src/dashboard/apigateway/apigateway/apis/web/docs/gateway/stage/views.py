@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -27,13 +28,16 @@ from apigateway.utils.responses import OKJsonResponse
 from .serializers import StageOutputSLZ
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: StageOutputSLZ(many=True)},
+        tags=["WebAPI.Docs.Stage"],
+    ),
+)
 class StageListApi(generics.ListAPIView):
     permission_classes = [GatewayDisplayablePermission]
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: StageOutputSLZ(many=True)},
-        tags=["WebAPI.Docs.Stage"],
-    )
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关公开、可用的环境列表"""
         stages = Stage.objects.filter(

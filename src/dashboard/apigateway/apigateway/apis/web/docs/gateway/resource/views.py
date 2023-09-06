@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -28,15 +29,18 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
 
 
-class ResourceListApi(generics.ListAPIView):
-    permission_classes = [GatewayDisplayablePermission]
-
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=ResourceListInputSLZ,
         responses={status.HTTP_200_OK: ResourceOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Resource"],
-    )
+    ),
+)
+class ResourceListApi(generics.ListAPIView):
+    permission_classes = [GatewayDisplayablePermission]
+
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关环境下已发布的资源列表"""
         slz = ResourceListInputSLZ(data=request.query_params)

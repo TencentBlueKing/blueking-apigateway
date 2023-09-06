@@ -18,6 +18,7 @@
 #
 from typing import List
 
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -30,11 +31,14 @@ from apigateway.utils.responses import OKJsonResponse
 from .serializers import GatewayOutputSLZ
 
 
-class GatewayListApi(generics.ListAPIView):
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: GatewayOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Gateway"],
-    )
+    ),
+)
+class GatewayListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """获取网关列表"""
         gateways = self._get_displayable_gateways()
@@ -67,13 +71,16 @@ class GatewayListApi(generics.ListAPIView):
         )
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: GatewayOutputSLZ},
+        tags=["WebAPI.Docs.Gateway"],
+    ),
+)
 class GatewayRetrieveApi(generics.RetrieveAPIView):
     permission_classes = [GatewayDisplayablePermission]
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: GatewayOutputSLZ},
-        tags=["WebAPI.Docs.Gateway"],
-    )
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """根据网关名称，获取网关详情"""
         slz = GatewayOutputSLZ(

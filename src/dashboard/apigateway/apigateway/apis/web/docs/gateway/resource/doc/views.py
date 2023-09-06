@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from tencent_apigateway_common.django.translation import get_current_language_code
@@ -30,14 +31,17 @@ from apigateway.utils.responses import OKJsonResponse
 from .serializers import DocListInputSLZ, DocOutputSLZ
 
 
-class DocListApi(generics.ListAPIView):
-    permission_classes = [GatewayDisplayablePermission]
-
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         query_serializer=DocListInputSLZ,
         responses={status.HTTP_200_OK: DocOutputSLZ},
         tags=["WebAPI.Docs.ResourceDoc"],
-    )
+    ),
+)
+class DocListApi(generics.ListAPIView):
+    permission_classes = [GatewayDisplayablePermission]
+
     def list(self, request, gateway_name: str, resource_name: str, *args, **kwargs):
         """获取网关资源的文档"""
         slz = DocListInputSLZ(data=request.query_params)

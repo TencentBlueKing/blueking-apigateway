@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.template.loader import render_to_string
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from tencent_apigateway_common.django.translation import get_current_language_code
@@ -29,12 +30,15 @@ from apigateway.utils.responses import OKJsonResponse
 from .serializers import SdkDocInputSLZ, SdkDocOutputSLZ, SdkListInputSLZ, SdkListOutputSLZ
 
 
-class SdkListApi(generics.ListAPIView):
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         query_serializer=SdkListInputSLZ,
         responses={status.HTTP_200_OK: SdkListOutputSLZ(many=True)},
         tags=["Docs.Gateway.SDK"],
-    )
+    ),
+)
+class SdkListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """所有网关SDK"""
         slz = SdkListInputSLZ(data=request.query_params)
@@ -66,12 +70,15 @@ class SdkListApi(generics.ListAPIView):
         return OKJsonResponse(data=slz.data)
 
 
-class SdkDocApi(generics.RetrieveAPIView):
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         query_serializer=SdkDocInputSLZ,
         responses={status.HTTP_200_OK: SdkDocOutputSLZ},
         tags=["Docs.Gateway.SDK"],
-    )
+    ),
+)
+class SdkDocApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         """获取网关SDK说明文档"""
         slz = SdkDocInputSLZ(data=request.query_params)

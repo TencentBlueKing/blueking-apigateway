@@ -16,10 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
 from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
 
 
@@ -32,7 +32,7 @@ class GatewayOutputSLZ(serializers.Serializer):
     api_url = serializers.SerializerMethodField()
 
     def get_api_url(self, obj):
-        return getattr(settings, "BK_API_URL_TMPL", "").format(api_name=obj.name)
+        return GatewayHandler.get_api_domain(obj)
 
     def get_is_official(self, obj):
         return GatewayTypeHandler.is_official(self.context["gateway_auth_configs"][obj.id].gateway_type)
