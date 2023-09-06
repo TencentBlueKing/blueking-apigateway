@@ -22,7 +22,9 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceDataHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
@@ -78,8 +80,8 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
                 "stage_release": ReleasedResourceDataHandler.get_stage_release(
                     gateway=request.gateway, stage_ids=stage_ids
                 ),
-                # TODO 获取各个环境的发布状态与publish_id
-                "new_resource_version": "",  # TODO 获取网关的新资源版本号
+                "stage_publish_status": ReleaseHandler.batch_get_stage_release_status(stage_ids),
+                "new_resource_version": ResourceVersionHandler.get_latest_version_by_gateway(request.gateway.id),
             },
         )
 
@@ -150,8 +152,8 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
                 "stage_release": ReleasedResourceDataHandler.get_stage_release(
                     gateway=request.gateway, stage_ids=[instance.id]
                 ),
-                # TODO 获取各个环境的发布状态与publish_id
-                "new_resource_version": "",  # TODO 获取网关的新资源版本号
+                "stage_publish_status": ReleaseHandler.batch_get_stage_release_status([instance.id]),
+                "new_resource_version": ResourceVersionHandler.get_latest_version_by_gateway(request.gateway.id),
             },
         )
 
