@@ -27,7 +27,7 @@ from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStat
 from apigateway.core.models import ReleaseHistory, ResourceVersion, Stage
 
 
-class ReleaseBatchInputSLZ(serializers.Serializer):
+class ReleaseInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     stage_id = serializers.IntegerField(allow_null=True, required=True)
     resource_version_id = serializers.IntegerField(required=True)

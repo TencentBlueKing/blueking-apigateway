@@ -143,7 +143,7 @@ class ResourceVersionHandler:
                 # TODO: 待 version 改为必填后，下面的 version 赋值去掉
                 "version": data.get("version") or name,
                 "created_time": now,
-                "schema_version": ResourceVersionSchemaEnum.V2Version.value,
+                "schema_version": ResourceVersionSchemaEnum.V2.value,
             }
         )
         resource_version = ResourceVersion(**data)

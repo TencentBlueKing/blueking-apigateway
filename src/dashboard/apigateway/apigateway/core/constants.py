@@ -202,8 +202,8 @@ PublishSourceTriggerPublishTypeMapping = {
 
 
 class ResourceVersionSchemaEnum(StructuredEnum):
-    V1Version = EnumField("1.0", "旧模型版本")
-    V2Version = EnumField("2.0", "新模型版本")
+    V1 = EnumField("1.0", "旧模型版本")
+    V2 = EnumField("2.0", "新模型版本")
 
 
 class ProxyTypeEnum(StructuredEnum):

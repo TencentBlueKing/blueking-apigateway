@@ -31,7 +31,7 @@ from apigateway.core.models import Gateway, PublishEvent, ReleaseHistory, Resour
 from apigateway.tests.utils.testing import create_gateway, create_request, dummy_time
 
 
-class TestReleaseBatchInputSLZ:
+class TestReleaseInputSLZ:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
         self.gateway = G(Gateway)
@@ -64,7 +64,7 @@ class TestReleaseBatchInputSLZ:
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"gateway": self.gateway})
+            slz = serializers.ReleaseInputSLZ(data=test, context={"gateway": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()
@@ -99,7 +99,7 @@ class TestReleaseBatchInputSLZ:
             },
         ]
         for test in data:
-            slz = serializers.ReleaseBatchInputSLZ(data=test, context={"gateway": self.gateway})
+            slz = serializers.ReleaseInputSLZ(data=test, context={"gateway": self.gateway})
             if test.get("will_error"):
                 with pytest.raises(Http404):
                     slz.is_valid()

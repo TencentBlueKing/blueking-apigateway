@@ -108,6 +108,7 @@ class EtcdDistributor(BaseDistributor):
                 registry.delete_resources_by_key_prefix()
             except Exception as e:
                 fail_msg = f"revoke delete resources from etcd failed: {type(e).__name__}: {str(e)}"
+                logger.exception(fail_msg)
                 return False, fail_msg
             return True, ""
 

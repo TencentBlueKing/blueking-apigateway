@@ -40,9 +40,9 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .serializers import (
     PublishEventQueryOutputSLZ,
-    ReleaseBatchInputSLZ,
     ReleaseHistoryOutputSLZ,
     ReleaseHistoryQueryInputSLZ,
+    ReleaseInputSLZ,
 )
 
 logger = logging.getLogger(__name__)
@@ -135,20 +135,20 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        request_body=ReleaseBatchInputSLZ,
+        request_body=ReleaseInputSLZ,
         responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ()},
         tags=["WebAPI.Release"],
     ),
 )
 class ReleaseBatchCreateApi(generics.CreateAPIView):
-    serializer_class = ReleaseBatchInputSLZ
+    serializer_class = ReleaseInputSLZ
     lookup_field = "id"
 
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
 
     def create(self, request, *args, **kwargs):
-        slz = ReleaseBatchInputSLZ(data=request.data, context={"gateway": request.gateway})
+        slz = ReleaseInputSLZ(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         # 发布加锁

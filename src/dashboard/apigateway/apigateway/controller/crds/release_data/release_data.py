@@ -48,7 +48,7 @@ class ReleaseData:
 
     @cached_property
     def is_schema_v2(self) -> bool:
-        return self._release.resource_version.schema_version == ResourceVersionSchemaEnum.V2Version.value
+        return self._release.resource_version.schema_version == ResourceVersionSchemaEnum.V2.value
 
     @cached_property
     def resource_version(self) -> ResourceVersion:

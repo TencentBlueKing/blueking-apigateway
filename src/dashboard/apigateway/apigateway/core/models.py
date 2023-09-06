@@ -497,7 +497,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     schema_version = models.CharField(
         max_length=32,
         choices=ResourceVersionSchemaEnum.get_choices(),
-        default=ResourceVersionSchemaEnum.V1Version.value,
+        default=ResourceVersionSchemaEnum.V1.value,
     )
 
     created_time = models.DateTimeField(null=True, blank=True)
