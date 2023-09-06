@@ -18,18 +18,18 @@
 from ddf import G
 
 from apigateway.apps.support.models import APISDK
-from apigateway.biz.sdk.gateway_sdk import GatewaySdkHandler
+from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 
 
-class TestGatewaySdkHandler:
+class TestGatewaySDKHandler:
     def test_stage_sdks(self, fake_gateway, fake_stage, fake_release, fake_sdk):
-        result = GatewaySdkHandler.get_stage_sdks(fake_gateway.id, fake_sdk.language)
+        result = GatewaySDKHandler.get_stage_sdks(fake_gateway.id, fake_sdk.language)
         assert len(result) == 1
         assert result[0]["stage"]
         assert result[0]["resource_version"]
         assert result[0]["sdk"]
 
-        result = GatewaySdkHandler.get_stage_sdks(fake_gateway.id, "not_exist")
+        result = GatewaySDKHandler.get_stage_sdks(fake_gateway.id, "not_exist")
         assert len(result) == 1
         assert result[0]["stage"]
         assert result[0]["resource_version"]
@@ -38,7 +38,7 @@ class TestGatewaySdkHandler:
         fake_stage.is_public = False
         fake_stage.save()
 
-        result = GatewaySdkHandler.get_stage_sdks(fake_gateway.id, fake_sdk.language)
+        result = GatewaySDKHandler.get_stage_sdks(fake_gateway.id, fake_sdk.language)
         assert result == []
 
     def test_get_resource_version_latest_public_sdk(self, fake_gateway, fake_resource_version):
@@ -47,6 +47,6 @@ class TestGatewaySdkHandler:
             APISDK, gateway=fake_gateway, is_public=True, resource_version=fake_resource_version, language="zh"
         )
 
-        assert GatewaySdkHandler._get_resource_version_latest_public_sdk(
+        assert GatewaySDKHandler._get_resource_version_latest_public_sdk(
             fake_gateway.id, [fake_resource_version.id], "zh"
         ) == {fake_resource_version.id: latest_sdk}

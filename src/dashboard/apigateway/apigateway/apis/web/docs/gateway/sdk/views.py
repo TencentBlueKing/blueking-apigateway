@@ -22,26 +22,26 @@ from rest_framework import generics, status
 from tencent_apigateway_common.django.translation import get_current_language_code
 
 from apigateway.apps.support.models import APISDK
-from apigateway.biz.sdk.models import DummySdkDocContext
+from apigateway.biz.sdk.models import DummySDKDocContext
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Release, ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
 
-from .serializers import SdkDocInputSLZ, SdkDocOutputSLZ, SdkListInputSLZ, SdkListOutputSLZ
+from .serializers import SDKDocInputSLZ, SDKDocOutputSLZ, SDKListInputSLZ, SDKListOutputSLZ
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        query_serializer=SdkListInputSLZ,
-        responses={status.HTTP_200_OK: SdkListOutputSLZ(many=True)},
+        query_serializer=SDKListInputSLZ,
+        responses={status.HTTP_200_OK: SDKListOutputSLZ(many=True)},
         tags=["Docs.Gateway.SDK"],
     ),
 )
-class SdkListApi(generics.ListAPIView):
+class SDKListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """所有网关SDK"""
-        slz = SdkListInputSLZ(data=request.query_params)
+        slz = SDKListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         sdks = list(
@@ -54,7 +54,7 @@ class SdkListApi(generics.ListAPIView):
         )
         resource_version_ids = {sdk.resource_version_id for sdk in sdks}
 
-        slz = SdkListOutputSLZ(
+        slz = SDKListOutputSLZ(
             sdks,
             many=True,
             context={
@@ -73,24 +73,24 @@ class SdkListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        query_serializer=SdkDocInputSLZ,
-        responses={status.HTTP_200_OK: SdkDocOutputSLZ},
+        query_serializer=SDKDocInputSLZ,
+        responses={status.HTTP_200_OK: SDKDocOutputSLZ},
         tags=["Docs.Gateway.SDK"],
     ),
 )
-class SdkDocApi(generics.RetrieveAPIView):
+class SDKDocApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         """获取网关SDK说明文档"""
-        slz = SdkDocInputSLZ(data=request.query_params)
+        slz = SDKDocInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         programming_language = slz.validated_data["language"]
 
-        output_slz = SdkDocOutputSLZ(
+        output_slz = SDKDocOutputSLZ(
             {
                 "content": render_to_string(
                     f"api_sdk/{get_current_language_code()}/{programming_language}_sdk_doc.md",
-                    context=DummySdkDocContext().as_dict(),
+                    context=DummySDKDocContext().as_dict(),
                 ),
             }
         )

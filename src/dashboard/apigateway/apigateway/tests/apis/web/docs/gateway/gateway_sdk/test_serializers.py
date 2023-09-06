@@ -17,10 +17,10 @@
 #
 import pytest
 
-from apigateway.apis.web.docs.gateway.gateway_sdk.serializers import StageSdkOutputSLZ
+from apigateway.apis.web.docs.gateway.gateway_sdk.serializers import StageSDKOutputSLZ
 
 
-class TestStageSdkOutputSLZ:
+class TestStageSDKOutputSLZ:
     @pytest.mark.parametrize(
         "data, expected",
         [
@@ -86,5 +86,5 @@ class TestStageSdkOutputSLZ:
         ],
     )
     def test_to_representation(self, data, expected):
-        slz = StageSdkOutputSLZ(data)
+        slz = StageSDKOutputSLZ(data)
         assert slz.data == expected

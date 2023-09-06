@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-class TestSdkListApi:
+class TestSDKListApi:
     def test_list(self, request_view, fake_sdk):
         resp = request_view(
             method="GET",
@@ -33,7 +33,7 @@ class TestSdkListApi:
         assert result["data"][0]["resource_version"]
 
 
-class TestSdkDocApi:
+class TestSDKDocApi:
     def test_retrieve(self, request_view):
         resp = request_view(
             method="GET",

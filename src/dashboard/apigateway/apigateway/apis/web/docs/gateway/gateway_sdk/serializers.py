@@ -21,7 +21,7 @@ from rest_framework import serializers
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 
 
-class SdkListInputSLZ(serializers.Serializer):
+class SDKListInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
 
@@ -35,24 +35,24 @@ class ResourceVersionSLZ(serializers.Serializer):
     display = serializers.CharField(read_only=True)
 
 
-class SdkSLZ(serializers.Serializer):
+class SDKSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     version = serializers.CharField(read_only=True)
     url = serializers.CharField(read_only=True)
     install_command = serializers.CharField(read_only=True)
 
 
-class StageSdkOutputSLZ(serializers.Serializer):
+class StageSDKOutputSLZ(serializers.Serializer):
     stage = StageSLZ()
     resource_version = ResourceVersionSLZ()
-    sdk = SdkSLZ(allow_null=True)
+    sdk = SDKSLZ(allow_null=True)
 
 
-class SdkUsageExampleInputSLZ(serializers.Serializer):
+class SDKUsageExampleInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
     stage_name = serializers.CharField()
     resource_name = serializers.CharField()
 
 
-class SdkUsageExampleOutputSLZ(serializers.Serializer):
+class SDKUsageExampleOutputSLZ(serializers.Serializer):
     content = serializers.CharField(allow_blank=True)

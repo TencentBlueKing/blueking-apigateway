@@ -23,7 +23,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Release
 
 
-class GatewaySdkHandler:
+class GatewaySDKHandler:
     @classmethod
     def get_stage_sdks(cls, gateway_id: int, language: str) -> List:
         releases = list(

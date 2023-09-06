@@ -18,13 +18,13 @@
 #
 from django.urls import path
 
-from .views import SdkListApi, SdkUsageExampleApi
+from .views import SDKListApi, SDKUsageExampleApi
 
 urlpatterns = [
-    path("", SdkListApi.as_view(), name="docs.gateway.gateway_sdk.list"),
+    path("", SDKListApi.as_view(), name="docs.gateway.gateway_sdk.list"),
     path(
         "usage-example/",
-        SdkUsageExampleApi.as_view(),
+        SDKUsageExampleApi.as_view(),
         name="docs.gateway.gateway_sdk.retrieve_usage_example",
     ),
 ]

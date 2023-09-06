@@ -18,9 +18,9 @@
 #
 from django.urls import path
 
-from .views import SdkDocApi, SdkListApi
+from .views import SDKDocApi, SDKListApi
 
 urlpatterns = [
-    path("", SdkListApi.as_view(), name="docs.gateway.sdk.list"),
-    path("doc/", SdkDocApi.as_view(), name="docs.gateway.sdk.retrieve_doc"),
+    path("", SDKListApi.as_view(), name="docs.gateway.sdk.list"),
+    path("doc/", SDKDocApi.as_view(), name="docs.gateway.sdk.retrieve_doc"),
 ]

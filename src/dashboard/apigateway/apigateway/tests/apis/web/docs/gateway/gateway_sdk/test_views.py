@@ -17,7 +17,7 @@
 #
 
 
-class TestSdkListApi:
+class TestSDKListApi:
     def test_list(self, request_view, fake_gateway, fake_stage, fake_sdk, fake_release):
         resp = request_view(
             method="GET",
@@ -39,7 +39,7 @@ class TestSdkListApi:
         assert result["data"][0]["sdk"]
 
 
-class TestSdkUsageExampleApi:
+class TestSDKUsageExampleApi:
     def test_retrieve(self, request_view, fake_gateway, fake_sdk):
         resp = request_view(
             method="GET",

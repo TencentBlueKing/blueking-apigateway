@@ -25,7 +25,7 @@ from django.utils.timezone import now as timezone_now
 
 
 @dataclass
-class SdkDocContext:
+class SDKDocContext:
     gateway_name: str
     stage_name: str
     resource_name: str
@@ -45,7 +45,7 @@ class SdkDocContext:
 
 
 @dataclass
-class DummySdkDocContext(SdkDocContext):
+class DummySDKDocContext(SDKDocContext):
     gateway_name: str = "agent"
     stage_name: str = "prod"
     resource_name: str = "get_agent_status"

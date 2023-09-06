@@ -24,52 +24,52 @@ from rest_framework import generics, status
 from tencent_apigateway_common.django.translation import get_current_language_code
 
 from apigateway.apps.support.models import APISDK
-from apigateway.biz.sdk.gateway_sdk import GatewaySdkHandler
-from apigateway.biz.sdk.models import SdkDocContext
+from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.biz.sdk.models import SDKDocContext
 from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.utils.responses import OKJsonResponse
 
-from .serializers import SdkListInputSLZ, SdkUsageExampleInputSLZ, SdkUsageExampleOutputSLZ, StageSdkOutputSLZ
+from .serializers import SDKListInputSLZ, SDKUsageExampleInputSLZ, SDKUsageExampleOutputSLZ, StageSDKOutputSLZ
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        query_serializer=SdkListInputSLZ,
-        responses={status.HTTP_200_OK: StageSdkOutputSLZ(many=True)},
+        query_serializer=SDKListInputSLZ,
+        responses={status.HTTP_200_OK: StageSDKOutputSLZ(many=True)},
         tags=["Docs.Gateway.SDK"],
     ),
 )
-class SdkListApi(generics.ListAPIView):
+class SDKListApi(generics.ListAPIView):
     permission_classes = [GatewayDisplayablePermission]
 
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK列表"""
-        slz = SdkListInputSLZ(data=request.query_params)
+        slz = SDKListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        sdks = GatewaySdkHandler.get_stage_sdks(
+        sdks = GatewaySDKHandler.get_stage_sdks(
             gateway_id=request.gateway.id,
             language=slz.validated_data["language"],
         )
-        slz = StageSdkOutputSLZ(sdks, many=True)
+        slz = StageSDKOutputSLZ(sdks, many=True)
         return OKJsonResponse(data=slz.data)
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        query_serializer=SdkUsageExampleInputSLZ,
-        responses={status.HTTP_200_OK: SdkUsageExampleOutputSLZ},
+        query_serializer=SDKUsageExampleInputSLZ,
+        responses={status.HTTP_200_OK: SDKUsageExampleOutputSLZ},
         tags=["Docs.Gateway.SDK"],
     ),
 )
-class SdkUsageExampleApi(generics.RetrieveAPIView):
+class SDKUsageExampleApi(generics.RetrieveAPIView):
     permission_classes = [GatewayDisplayablePermission]
 
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK示例"""
-        slz = SdkUsageExampleInputSLZ(data=request.query_params)
+        slz = SDKUsageExampleInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
         programming_language = slz.validated_data["language"]
 
@@ -81,7 +81,7 @@ class SdkUsageExampleApi(generics.RetrieveAPIView):
 
         content = render_to_string(
             f"api_sdk/{get_current_language_code()}/{programming_language}_sdk_usage_example.md",
-            context=SdkDocContext(
+            context=SDKDocContext(
                 gateway_name=request.gateway.name,
                 stage_name=slz.validated_data["stage_name"],
                 resource_name=slz.validated_data["resource_name"],
@@ -89,5 +89,5 @@ class SdkUsageExampleApi(generics.RetrieveAPIView):
             ).as_dict(),
         )
 
-        slz = SdkUsageExampleOutputSLZ({"content": content})
+        slz = SDKUsageExampleOutputSLZ({"content": content})
         return OKJsonResponse(data=slz.data)

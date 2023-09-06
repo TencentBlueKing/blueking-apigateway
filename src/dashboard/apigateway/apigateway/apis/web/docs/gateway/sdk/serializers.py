@@ -24,7 +24,7 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.biz.resource_version import ResourceVersionHandler
 
 
-class SdkListInputSLZ(serializers.Serializer):
+class SDKListInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
 
@@ -34,7 +34,7 @@ class GatewaySLZ(serializers.Serializer):
     description = SerializerTranslatedField(translated_fields={"en": "description_en"}, read_only=True)
 
 
-class SdkListOutputSLZ(serializers.Serializer):
+class SDKListOutputSLZ(serializers.Serializer):
     gateway = GatewaySLZ()
     sdk = serializers.SerializerMethodField()
     resource_version = serializers.SerializerMethodField()
@@ -55,9 +55,9 @@ class SdkListOutputSLZ(serializers.Serializer):
         return self.context["released_stages"].get(obj.resource_version_id, [])
 
 
-class SdkDocInputSLZ(serializers.Serializer):
+class SDKDocInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
 
-class SdkDocOutputSLZ(serializers.Serializer):
+class SDKDocOutputSLZ(serializers.Serializer):
     content = serializers.CharField(allow_blank=True)
