@@ -31,7 +31,7 @@ class ComponentViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         query_serializer=ComponentSearchSLZ,
         responses={status.HTTP_200_OK: ComponentSearchResultSLZ(many=True)},
-        tags=["ESB.Component"],
+        tags=["Docs.ESB.Component"],
     )
     @check_board_exist
     def search(self, request, board: str, *args, **kwargs):
@@ -50,7 +50,7 @@ class ComponentViewSet(viewsets.GenericViewSet):
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ComponentSLZ(many=True)},
-        tags=["ESB.Component"],
+        tags=["Docs.ESB.Component"],
     )
     @check_board_exist
     def list(self, request, board: str, system_name: str, *args, **kwargs):

@@ -33,7 +33,7 @@ class GatewayViewSet(viewsets.GenericViewSet):
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=GatewayQuerySLZ,
         responses={status.HTTP_200_OK: GatewaySLZ(many=True)},
-        tags=["APIGateway.Gateway"],
+        tags=["Docs.APIGateway.Gateway"],
     )
     def list(self, request, *args, **kwargs):
         """获取网关列表"""
@@ -57,7 +57,7 @@ class GatewayViewSet(viewsets.GenericViewSet):
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: GatewaySLZ},
-        tags=["APIGateway.Gateway"],
+        tags=["Docs.APIGateway.Gateway"],
     )
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """根据网关名称，获取网关详情"""

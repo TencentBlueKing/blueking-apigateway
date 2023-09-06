@@ -31,7 +31,7 @@ from .serializers import ComponentSystemSLZ
 class SystemViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        tags=["ESB.System"],
+        tags=["Docs.ESB.System"],
     )
     def list(self, request, *args, **kwargs):
         """获取系统列表"""
@@ -40,7 +40,7 @@ class SystemViewSet(viewsets.GenericViewSet):
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ComponentSystemSLZ},
-        tags=["ESB.System"],
+        tags=["Docs.ESB.System"],
     )
     @check_board_exist
     def retrieve(self, request, board: str, system_name: str, *args, **kwargs):
