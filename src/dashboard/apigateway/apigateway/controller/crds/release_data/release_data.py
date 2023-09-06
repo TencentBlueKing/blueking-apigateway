@@ -82,10 +82,6 @@ class ReleaseData:
         }
 
     @cached_property
-    def stage_backend_http_config(self) -> Dict[str, Any]:
-        return json.loads(self._stage_backend[BackendTypeEnum.HTTP.value]["config"])
-
-    @cached_property
     def stage_backend_config(self) -> Dict[str, Any]:
         if self.is_schema_v2:
             return self._stage_backend[BackendTypeEnum.HTTP.value]["config"]

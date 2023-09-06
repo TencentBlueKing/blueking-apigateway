@@ -224,7 +224,7 @@ def _trigger_rolling_publish(
 def _trigger_revoke_disable_publish(
     source: PublishSourceEnum,
     author: str,
-    gateway_id: Optional[int] = None,
+    gateway_id: int,
     stage_id: Optional[int] = None,
     is_sync: Optional[bool] = False,
 ):
@@ -264,7 +264,7 @@ def _trigger_revoke_disable_publish(
 def _trigger_revoke_delete_publish(
     source: PublishSourceEnum,
     author: str,
-    gateway_id: Optional[int] = None,
+    gateway_id: int,
     stage_id: Optional[int] = None,
     is_sync: Optional[bool] = False,
 ):
