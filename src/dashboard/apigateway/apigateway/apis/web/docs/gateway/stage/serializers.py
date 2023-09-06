@@ -24,3 +24,6 @@ class StageOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.stage"

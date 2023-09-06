@@ -24,10 +24,16 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 class SDKListInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk"
+
 
 class StageSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk"
 
 
 class ResourceVersionSLZ(serializers.Serializer):
@@ -40,6 +46,9 @@ class SDKSLZ(serializers.Serializer):
     version = serializers.CharField(read_only=True)
     url = serializers.CharField(read_only=True)
     install_command = serializers.CharField(read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk"
 
 
 class StageSDKOutputSLZ(serializers.Serializer):

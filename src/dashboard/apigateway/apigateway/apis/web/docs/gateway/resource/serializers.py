@@ -37,5 +37,8 @@ class ResourceOutputSLZ(serializers.Serializer):
     resource_perm_required = serializers.BooleanField(read_only=True)
     labels = serializers.SerializerMethodField()
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.resource"
+
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])

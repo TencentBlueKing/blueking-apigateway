@@ -27,6 +27,9 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 class SDKListInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.sdk"
+
 
 class GatewaySLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
@@ -40,6 +43,9 @@ class SDKListOutputSLZ(serializers.Serializer):
     resource_version = serializers.SerializerMethodField()
     # 资源版本已发布的环境
     released_stages = serializers.SerializerMethodField()
+
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.sdk"
 
     def get_sdk(self, obj):
         return SDKFactory.create(obj).as_dict()
