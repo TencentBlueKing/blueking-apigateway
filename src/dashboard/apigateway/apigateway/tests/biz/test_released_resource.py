@@ -179,3 +179,25 @@ class TestReleasedResourceHandler:
         for test in data:
             result = ReleasedResourceHandler.get_stage_release(fake_gateway, test["stage_ids"])
             assert result == test["expected"]
+
+    def test_get_public_released_resource_data_list(self, fake_gateway, fake_stage, fake_release):
+        result = ReleasedResourceHandler.get_public_released_resource_data_list(fake_gateway.id, fake_stage.name)
+        assert len(result) >= 1
+
+        result = ReleasedResourceHandler.get_public_released_resource_data_list(fake_gateway.id, "")
+        assert len(result) == 0
+
+    def test_get_released_resource(self, fake_gateway, fake_stage, fake_released_resource):
+        result = ReleasedResourceHandler.get_released_resource(
+            fake_gateway.id, "", fake_released_resource.resource_name
+        )
+        assert result is None
+
+        result = ReleasedResourceHandler.get_released_resource(fake_gateway.id, fake_stage.name, "")
+        assert result is None
+
+        result = ReleasedResourceHandler.get_released_resource(
+            fake_gateway.id, fake_stage.name, fake_released_resource.resource_name
+        )
+        assert result
+        assert isinstance(result, dict)

@@ -30,6 +30,7 @@ class GatewaySdkHandler:
             Release.objects.filter(gateway_id=gateway_id).values(
                 "stage__id",
                 "stage__name",
+                "stage__is_public",
                 "resource_version__id",
                 "resource_version__name",
                 "resource_version__title",
@@ -42,6 +43,9 @@ class GatewaySdkHandler:
 
         stage_sdks = []
         for release in releases:
+            if not release["stage__is_public"]:
+                continue
+
             sdk = gateway_sdks.get(release["resource_version__id"])
             stage_sdks.append(
                 {

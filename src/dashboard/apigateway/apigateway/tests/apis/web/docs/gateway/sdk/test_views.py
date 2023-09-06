@@ -15,30 +15,33 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+class TestSdkListApi:
+    def test_list(self, request_view, fake_sdk):
+        resp = request_view(
+            method="GET",
+            view_name="docs.gateway.sdk.list",
+            data={
+                "language": fake_sdk.language,
+            },
+        )
+        result = resp.json()
 
-from apigateway.biz.released_resource_doc.constants import (
-    BKAPI_AUTHORIZATION_DESCRIPTION_EN,
-    BKAPI_AUTHORIZATION_DESCRIPTION_ZH,
-)
-from apigateway.utils.jinja2 import render_to_string
+        assert resp.status_code == 200
+        assert result["data"]["gateway"]
+        assert result["data"]["sdk"]
+        assert result["data"]["resource_version"]
 
 
-def test_bkapi_authorization_description():
-    result = render_to_string(
-        BKAPI_AUTHORIZATION_DESCRIPTION_ZH,
-        verified_app_required=True,
-        verified_user_required=True,
-        docs_urls={},
-    )
-    assert result
+class TestSdkDocApi:
+    def test_retrieve(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="docs.gateway.sdk.retrieve_doc",
+            data={
+                "language": "python",
+            },
+        )
+        result = resp.json()
 
-    result = render_to_string(
-        BKAPI_AUTHORIZATION_DESCRIPTION_EN,
-        verified_app_required=True,
-        verified_user_required=True,
-        docs_urls={
-            "USE_GATEWAY_API": "",
-            "ACCESS_TOKEN_API": "",
-        },
-    )
-    assert result
+        assert resp.status_code == 200
+        assert result["data"]["content"]

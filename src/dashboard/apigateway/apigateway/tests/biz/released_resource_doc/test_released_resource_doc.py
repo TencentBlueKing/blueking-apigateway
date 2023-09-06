@@ -15,3 +15,48 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.biz.released_resource_doc import ReleasedResourceDocData, ReleasedResourceDocHandler
+
+
+class TestReleasedResourceDocData:
+    def test_from_data(self):
+        result = ReleasedResourceDocData.from_data(
+            {
+                "language": "zh",
+                "content": "hello world",
+                "updated_time": "2021-01-01 00:00:00",
+            }
+        )
+
+        assert result.language == "zh"
+        assert result.content == "hello world"
+        assert result.updated_time == "2021-01-01 00:00:00"
+
+
+class TestReleasedResourceDocHandler:
+    def test_get_released_resource_doc_data(
+        self, fake_gateway, fake_stage, fake_released_resource, fake_released_resource_doc
+    ):
+        resource_data, doc_data = ReleasedResourceDocHandler.get_released_resource_doc_data(
+            fake_gateway.id, fake_stage.name, "", fake_released_resource_doc.language
+        )
+        assert resource_data is None
+        assert doc_data is None
+
+        resource_data, doc_data = ReleasedResourceDocHandler.get_released_resource_doc_data(
+            fake_gateway.id,
+            fake_stage.name,
+            fake_released_resource.resource_name,
+            "not_exist",
+        )
+        assert resource_data is not None
+        assert doc_data is None
+
+        resource_data, doc_data = ReleasedResourceDocHandler.get_released_resource_doc_data(
+            fake_gateway.id,
+            fake_stage.name,
+            fake_released_resource.resource_name,
+            fake_released_resource_doc.language,
+        )
+        assert resource_data is not None
+        assert doc_data is not None

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,33 +15,41 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.core.constants import StageStatusEnum
 
 
-class TestStageListApi:
-    def test_list(self, request_view, fake_stage):
-        fake_stage.status = StageStatusEnum.ACTIVE.value
-        fake_stage.is_public = True
-        fake_stage.save()
-
+class TestSdkListApi:
+    def test_list(self, request_view, fake_gateway, fake_stage, fake_sdk, fake_release):
         resp = request_view(
             method="GET",
-            view_name="docs.gateway.stage.list",
-            path_params={"gateway_name": fake_stage.gateway.name},
+            view_name="docs.gateway.gateway_sdk.list",
+            path_params={
+                "gateway_name": fake_gateway.name,
+            },
         )
         result = resp.json()
 
         assert resp.status_code == 200
-        assert len(result["data"]) >= 1
+        assert len(result["data"]) == 1
+        assert result["data"][0]["stage"]
+        assert result["data"][0]["resource_version"]
+        assert result["data"][0]["sdk"]
 
-        fake_stage.is_public = False
-        fake_stage.save()
 
+class TestSdkUsageExampleApi:
+    def test_retrieve(self, request_view, fake_gateway, fake_sdk):
         resp = request_view(
             method="GET",
-            view_name="docs.gateway.stage.list",
-            path_params={"gateway_name": fake_stage.gateway.name},
+            view_name="docs.gateway.gateway_sdk.retrieve_usage_example",
+            path_params={
+                "gateway_name": fake_gateway.name,
+            },
+            data={
+                "language": "python",
+                "stage_name": "prod",
+                "resource_name": "get_color",
+            },
         )
         result = resp.json()
+
         assert resp.status_code == 200
-        assert len(result["data"]) == 0
+        assert result["data"]["content"]
