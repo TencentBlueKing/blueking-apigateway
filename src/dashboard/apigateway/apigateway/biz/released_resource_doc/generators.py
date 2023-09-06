@@ -18,52 +18,56 @@
 #
 import re
 import textwrap
-from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional
 
-from tencent_apigateway_common.django.translation import get_current_language_code
+from django.conf import settings
 
+from apigateway.biz.released_resource import ReleasedResourceData
+from apigateway.biz.resource_url import ResourceURLHandler
+from apigateway.core.models import Gateway
+from apigateway.core.utils import get_path_display, get_resource_url
 from apigateway.utils.jinja2 import render_to_string
 
 from .constants import BKAPI_AUTHORIZATION_DESCRIPTIONS, RESOURCE_URL_PARTS, APIDocTypeEnum
+from .released_resource_doc import ReleasedResourceDocData
 
 
-@dataclass
-class ResourceDocHelper:
-    stage_name: str
-    resource: dict
-    doc: dict
-    resource_url: str
-    api_maintainers: List[str]
+class DocGenerator:
+    def __init__(
+        self,
+        gateway: Gateway,
+        stage_name: str,
+        resource_data: ReleasedResourceData,
+        doc_data: ReleasedResourceDocData,
+        language: str,
+    ):
+        self.gateway = gateway
+        self.stage_name = stage_name
+        self.resource_data = resource_data
+        self.doc_data = doc_data
+        self.language = language
 
     def get_doc(self) -> dict:
-        # 资源不存在
-        if not self.resource:
-            return {}
-
         return {
             "type": APIDocTypeEnum.MARKDOWN.value,
             "content": self._get_doc_content(),
-            "updated_time": self.doc.get("updated_time", ""),
+            "updated_time": self.doc_data.updated_time,
         }
 
     def _get_doc_content(self) -> str:
         parts = [
             self._get_resource_url_part(),
             self._get_common_request_params_part(),
-            self._replace_bkapi_authorization_description(self.doc.get("content")),
+            self._replace_bkapi_authorization_description(self.doc_data.content),
         ]
         return "\n\n".join(filter(None, parts))
 
     def _get_resource_url_part(self) -> str:
-        if not self.resource:
-            return ""
-
-        part = RESOURCE_URL_PARTS.get(get_current_language_code(), "")
+        part = RESOURCE_URL_PARTS.get(self.language, "")
         part = part.format(
             stage_name=self.stage_name,
-            method=self.resource["method"],
-            resource_url=self.resource_url,
+            method=self.resource_data.method,
+            resource_url=self._get_resource_url(),
         )
 
         return textwrap.dedent(part).strip()
@@ -71,9 +75,10 @@ class ResourceDocHelper:
     def _get_common_request_params_part(self) -> str:
         """公共请求参数"""
         description = render_to_string(
-            BKAPI_AUTHORIZATION_DESCRIPTIONS.get(get_current_language_code(), ""),
-            app_verified_required=self.resource.get("app_verified_required", False),
-            user_verified_required=self.resource.get("user_verified_required", False),
+            BKAPI_AUTHORIZATION_DESCRIPTIONS.get(self.language, ""),
+            verified_app_required=self.resource_data.verified_app_required,
+            verified_user_required=self.resource_data.verified_user_required,
+            docs_urls=getattr(settings, "DOCS_URLS", {}),
         )
         return description.strip()
 
@@ -82,3 +87,11 @@ class ResourceDocHelper:
             return None
 
         return re.sub(r"{{ *bkapi_authorization_description *}}", "", content)
+
+    def _get_resource_url(self):
+        return get_resource_url(
+            resource_url_tmpl=ResourceURLHandler.get_resource_url_tmpl(self.gateway.name, self.stage_name),
+            gateway_name=self.gateway.name,
+            stage_name=self.stage_name,
+            resource_path=get_path_display(self.resource_data.path, self.resource_data.match_subpath),
+        )

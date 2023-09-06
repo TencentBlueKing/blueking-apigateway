@@ -121,6 +121,7 @@ class GatewayDisplayablePermission(permissions.BasePermission):
             return Http404
 
         request.gateway = gateway_obj
+        return True
 
     def _get_displayable_gateway(self, view):
         lookup_url_kwarg = "gateway_name"

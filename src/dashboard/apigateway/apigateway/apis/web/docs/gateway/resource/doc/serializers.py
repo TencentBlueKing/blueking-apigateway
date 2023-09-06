@@ -18,17 +18,12 @@
 #
 from rest_framework import serializers
 
-from apigateway.utils import time
+
+class DocListInputSLZ(serializers.Serializer):
+    stage_name = serializers.CharField()
 
 
-class ResourceDocSLZ(serializers.Serializer):
+class DocOutputSLZ(serializers.Serializer):
     type = serializers.CharField()
     content = serializers.CharField()
-    updated_time = serializers.SerializerMethodField()
-
-    def get_updated_time(self, obj):
-        if not obj.get("updated_time"):
-            return ""
-
-        updated_time = time.utctime(obj["updated_time"])
-        return serializers.DateTimeField(allow_null=True, required=False).to_representation(updated_time)
+    updated_time = serializers.DateTimeField()

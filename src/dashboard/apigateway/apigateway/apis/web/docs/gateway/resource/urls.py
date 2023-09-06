@@ -18,8 +18,10 @@
 #
 from django.urls import path
 
+from .doc.views import DocListApi
 from .views import ResourceListApi
 
 urlpatterns = [
     path("", ResourceListApi.as_view(), name="docs.gateway.resource.list"),
+    path("<slug:resource_name>/docs/", DocListApi.as_view(), name="docs.gateway.resource.doc.list"),
 ]

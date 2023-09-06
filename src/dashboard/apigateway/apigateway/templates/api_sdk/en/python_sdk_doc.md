@@ -13,6 +13,6 @@ pip install {gateway SDK package name}
 
 ### Using the SDK
 
-Assuming the gateway API {{resource_name}} exists under gateway {{api_name}}
+Assuming the gateway API {{resource_name}} exists under gateway {{gateway_name}}
 
 {% include "api_sdk/en/python_sdk_usage_example.md" %}

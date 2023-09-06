@@ -65,6 +65,11 @@ urlpatterns = [
         include("apigateway.apis.web.docs.gateway.resource.urls"),
     ),
     path("backend/docs/gateways/<slug:gateway_name>/stages/", include("apigateway.apis.web.docs.gateway.stage.urls")),
+    path("backend/docs/sdks/", include("apigateway.apis.web.docs.gateway.sdk.urls")),
+    path(
+        "backend/docs/gateways/<slug:gateway_name>/sdks/",
+        include("apigateway.apis.web.docs.gateway.gateway_sdk.urls"),
+    ),
     # refactoring begin ------
     path("backend/i18n/setlang/", set_language, name="set_language"),
     path("backend/users/", include("apigateway.apis.web.user.urls")),

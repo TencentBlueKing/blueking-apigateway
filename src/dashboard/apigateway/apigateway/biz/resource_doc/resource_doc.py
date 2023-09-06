@@ -24,6 +24,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
+from apigateway.common.constants import LanguageCodeEnum
 
 from .constants import EN_RESOURCE_DOC_TMPL, ZH_RESOURCE_DOC_TMPL
 
@@ -96,3 +97,11 @@ class ResourceDocHandler:
             template = ""
 
         return template.replace("__GATEWAY_NAME__", gateway_name.replace("-", "_"))
+
+    @staticmethod
+    def get_doc_language(language_code: str) -> str:
+        doc_languages = {
+            LanguageCodeEnum.ZH_HANS.value: DocLanguageEnum.ZH.value,
+            LanguageCodeEnum.EN.value: DocLanguageEnum.EN.value,
+        }
+        return doc_languages.get(language_code, DocLanguageEnum.ZH.value)

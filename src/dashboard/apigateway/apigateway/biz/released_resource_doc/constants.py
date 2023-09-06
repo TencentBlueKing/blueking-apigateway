@@ -16,20 +16,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from enum import Enum
+from blue_krill.data_types.enum import EnumField, StructuredEnum
 
-from apigateway.common.constants import ChoiceEnumMixin, LanguageCodeEnum
+from apigateway.apps.support.constants import DocLanguageEnum
 
 
-class APIDocTypeEnum(ChoiceEnumMixin, Enum):
-    MARKDOWN = "markdown"
+class APIDocTypeEnum(StructuredEnum):
+    MARKDOWN = EnumField("markdown")
 
 
 BKAPI_AUTHORIZATION_DESCRIPTION_ZH = """
-{%- if app_verified_required or user_verified_required %}
+{%- if verified_app_required or verified_user_required %}
 ### 公共请求参数
 
-公共请求参数是用于标识应用和用户的参数，如果云 API 接口需要认证应用或用户，则请求时需要携带这些参数，才能正常发起请求。公共请求参数，可通过请求头 `X-Bkapi-Authorization` 传递，值为 JSON 格式字符串。
+公共请求参数是用于标识应用和用户的参数，如果云 API 接口需要认证应用或用户，则请求时需要携带这些参数，才能正常发起请求。公共请求参数，可通过请求头 `X-Bkapi-Authorization` 传递，值为 JSON 格式字符串。{%- if docs_urls.USE_GATEWAY_API %}详情请查看 [调用网关 API]({{ docs_urls.USE_GATEWAY_API }}){%- endif %}
 
 **示例：** 使用 curl 命令，请求时携带认证请求头
 
@@ -55,12 +55,12 @@ requests.get(
 
 | 字段  | 类型 | 必选 |  描述 |
 |-----------|------------|--------|------------|
-{%- if app_verified_required %}
+{%- if verified_app_required %}
 | bk_app_code   | string  |  否 | 应用 ID，可以通过`蓝鲸开发者中心 -> 应用基本设置 -> 基本信息 -> 鉴权信息`获取；*网关 SDK 默认已添加* |
 | bk_app_secret | string  |  否 | 安全秘钥，可以通过`蓝鲸开发者中心 -> 应用基本设置 -> 基本信息 -> 鉴权信息`获取；*网关 SDK 默认已添加* |
 {%- endif %}
-| access_token  | string  |  否 | 用户或应用 access_token |
-{%- if user_verified_required %}
+| access_token  | string  |  否 | 用户或应用 access_token{%- if docs_urls.ACCESS_TOKEN_API %}，详情参考 [AccessToken API]({{ docs_urls.ACCESS_TOKEN_API }}){%- endif %} |
+{%- if verified_user_required %}
 | bk_username   | string  |  否 | 当前用户用户名，应用免登录态验证白名单中的应用，用此字段指定当前用户 |
 {%- endif %}
 {%- endif %}
@@ -68,7 +68,7 @@ requests.get(
 
 
 BKAPI_AUTHORIZATION_DESCRIPTION_EN = """
-{%- if app_verified_required or user_verified_required %}
+{%- if verified_app_required or verified_user_required %}
 ### Public Request Parameters
 
 Public request parameters are parameters used to identify the application and user. If the cloud API requires authentication of the application or user, the request needs to carry these parameters in order to initiate the request properly. The public request parameters, which can be passed through the request header `X-Bkapi-Authorization`, have the value as a JSON formatted string.
@@ -97,12 +97,12 @@ The supported fields of the header `X-Bkapi-Authorization` are shown in the foll
 
 | Field  | Type | Required |  Description |
 |-----------|------------|--------|------------|
-{%- if app_verified_required %}
+{%- if verified_app_required %}
 | bk_app_code   | string  |  No | App ID, can get from `Developer Center -> App Settings -> Basic Information -> Authentication Information`; *Gateway SDK added by default* |
 | bk_app_secret | string  |  No | App Secret, can get from `Developer Center -> App Settings -> Basic Information -> Authentication Information`; *Gateway SDK added by default* |
 {%- endif %}
-| access_token  | string  |  No | User or App access_token |
-{%- if user_verified_required %}
+| access_token  | string  |  No | User or App access_token{%- if docs_urls.ACCESS_TOKEN_API %}, details [AccessToken API]({{ docs_urls.ACCESS_TOKEN_API }}){%- endif %} |
+{%- if verified_user_required %}
 | bk_username   | string  |  No | Current user username, user verification exempted apps, use this field to specify the current user  |
 {%- endif %}
 {%- endif %}
@@ -110,8 +110,8 @@ The supported fields of the header `X-Bkapi-Authorization` are shown in the foll
 
 
 BKAPI_AUTHORIZATION_DESCRIPTIONS = {
-    LanguageCodeEnum.ZH_HANS.value: BKAPI_AUTHORIZATION_DESCRIPTION_ZH,
-    LanguageCodeEnum.EN.value: BKAPI_AUTHORIZATION_DESCRIPTION_EN,
+    DocLanguageEnum.ZH.value: BKAPI_AUTHORIZATION_DESCRIPTION_ZH,
+    DocLanguageEnum.EN.value: BKAPI_AUTHORIZATION_DESCRIPTION_EN,
 }
 
 RESOURCE_URL_PART_ZH = """
@@ -130,6 +130,6 @@ RESOURCE_URL_PART_EN = """
 """
 
 RESOURCE_URL_PARTS = {
-    LanguageCodeEnum.ZH_HANS.value: RESOURCE_URL_PART_ZH,
-    LanguageCodeEnum.EN.value: RESOURCE_URL_PART_EN,
+    DocLanguageEnum.ZH.value: RESOURCE_URL_PART_ZH,
+    DocLanguageEnum.EN.value: RESOURCE_URL_PART_EN,
 }

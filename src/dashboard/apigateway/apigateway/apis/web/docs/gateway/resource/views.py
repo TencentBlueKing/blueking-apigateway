@@ -42,7 +42,7 @@ class ResourceListApi(generics.ListAPIView):
         slz = ResourceListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        resources = ReleasedResourceHandler.get_released_public_resources(
+        resources = ReleasedResourceHandler.get_public_released_resource_data_list(
             request.gateway.id, slz.validated_data["stage_name"]
         )
         resource_ids = [resource.id for resource in resources]
