@@ -278,14 +278,12 @@ def _trigger_revoke_delete_publish(
     for release in release_list:
         # 开始发布
         if is_sync:
-            return revoke_release(
-                release_id=release.id, publish_id=NO_NEED_REPORT_EVENT_PUBLISH_ID, author=author, source=source
-            )
+            return revoke_release(release_id=release.id, publish_id=DELETE_PUBLISH_ID, author=author, source=source)
         else:
             delay_on_commit(
                 revoke_release,
                 release_id=release.id,
-                publish_id=NO_NEED_REPORT_EVENT_PUBLISH_ID,
+                publish_id=DELETE_PUBLISH_ID,
                 author=author,
                 source=source,
             )
