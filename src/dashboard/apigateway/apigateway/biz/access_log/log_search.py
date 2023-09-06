@@ -23,7 +23,7 @@ from elasticsearch_dsl import Search
 from elasticsearch_dsl.aggs import A
 
 from apigateway.biz.access_log.constants import ES_OUTPUT_FIELDS
-from apigateway.common.es_clients import ESClientFactory
+from apigateway.common.es.clients import ESClientFactory
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
 
