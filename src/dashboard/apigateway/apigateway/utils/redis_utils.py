@@ -17,16 +17,21 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+import time
 from typing import Dict
 
 import redis
 from django.conf import settings
 from redis import sentinel
 
+from .exception import LockTimeout
+
 logger = logging.getLogger(__name__)
 
 REDIS_TIMEOUT = 2
 REDIS_CLIENTS: Dict[str, redis.Redis] = {}
+
+LOCK_KEY_PREFIX = "lock_"
 
 
 def get_redis_pool(redis_conf):
@@ -86,3 +91,49 @@ def get_default_redis_client():
 def get_redis_key(key):
     """Get redis key with prefix"""
     return f"{settings.REDIS_PREFIX}{key}"
+
+
+class Lock(object):
+    def __init__(self, key, timeout=5, try_get_times=5):
+        """初始化锁对象
+
+        Args:
+            key: 锁的 key
+            timeout: 锁的过期时间，单位为秒，默认为 20 秒
+            try_get_times: 尝试获取锁的次数，默认为 10 次
+        """
+        self.key = LOCK_KEY_PREFIX + key
+        self.timeout = timeout
+        self.try_get_times = try_get_times
+        self.client = get_default_redis_client()
+
+    def __enter__(self):
+        """获取锁
+
+        Returns:
+            如果获取锁成功，返回 None；否则抛出 LockTimeout 异常
+        """
+        try_get_times = self.try_get_times
+        while try_get_times > 0:
+            # 尝试获取锁
+            if self.client.lock(self.key, self.timeout):
+                return
+            # 获取锁失败，等待一段时间后重试
+            try_get_times -= 1
+            if try_get_times > 0:
+                time.sleep(1)
+        # 获取锁超时，抛出 LockTimeout 异常
+        errmsg = "lock[key:%s] timeout|timeout:%s,try_get_times:%s" % (self.key, self.timeout, self.try_get_times)
+        logging.error(errmsg)
+        raise LockTimeout("Timeout while waiting for lock")
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """释放锁"""
+        try:
+            self.client.delete(self.key)
+        except Exception:
+            pass
+
+    def force_unlock(self):
+        """强制释放锁"""
+        self.client.delete(self.key)

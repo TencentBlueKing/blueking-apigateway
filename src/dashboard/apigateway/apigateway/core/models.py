@@ -494,10 +494,10 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     comment = models.CharField(max_length=512, blank=True, null=True)
     _data = models.TextField(db_column="data")
     # 用于不同数据格式解析版本数据兼容历史数据
-    scheme_version = models.CharField(
+    schema_version = models.CharField(
         max_length=32,
         choices=ResourceVersionSchemaEnum.get_choices(),
-        default=ResourceVersionSchemaEnum.V1Version.value,
+        default=ResourceVersionSchemaEnum.V1.value,
     )
 
     created_time = models.DateTimeField(null=True, blank=True)

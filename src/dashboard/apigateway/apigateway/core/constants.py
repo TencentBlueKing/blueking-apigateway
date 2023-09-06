@@ -166,7 +166,8 @@ class PublishSourceEnum(StructuredEnum):
 
     # stage
     STAGE_DISABLE = EnumField("stage_disable", "环境下架")
-    STAGE_UPDATE = EnumField("stage_env_update", "环境更新")
+    STAGE_DELETE = EnumField("stage_delete", "环境删除")
+    STAGE_UPDATE = EnumField("stage_update", "环境更新")
 
     # backend
     BACKEND_UPDATE = EnumField("backend_update", "服务更新")
@@ -175,9 +176,34 @@ class PublishSourceEnum(StructuredEnum):
     CLI_SYNC = EnumField("cli_sync", "命令行同步")
 
 
+# 触发发布类型
+class TriggerPublishType(StructuredEnum):
+    TRIGGER_ROLLING_UPDATE_RELEASE = EnumField("trigger_rolling_update_release", "滚动更新发布")
+    TRIGGER_REVOKE_DISABLE_RELEASE = EnumField("trigger_revoke_disable_release", "停用/下架发布")
+    TRIGGER_REVOKE_DELETE_RELEASE = EnumField("trigger_revoke_delete_release", "删除发布")
+
+
+#  不同发布来源对应不同的触发发布类型
+PublishSourceTriggerPublishTypeMapping = {
+    # 滚动更新发布
+    PublishSourceEnum.GATEWAY_ENABLE: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.STAGE_UPDATE: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.PLUGIN_UPDATE: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.PLUGIN_BIND: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.PLUGIN_UNBIND: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.BACKEND_UPDATE: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.CLI_SYNC: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
+    # 停用/下架发布
+    PublishSourceEnum.GATEWAY_DISABLE: TriggerPublishType.TRIGGER_REVOKE_DISABLE_RELEASE,
+    PublishSourceEnum.STAGE_DISABLE: TriggerPublishType.TRIGGER_REVOKE_DISABLE_RELEASE,
+    # 删除发布
+    PublishSourceEnum.STAGE_DELETE: TriggerPublishType.TRIGGER_REVOKE_DELETE_RELEASE,
+}
+
+
 class ResourceVersionSchemaEnum(StructuredEnum):
-    V1Version = EnumField("1.0", "旧模型版本")
-    V2Version = EnumField("2.0", "新模型版本")
+    V1 = EnumField("1.0", "旧模型版本")
+    V2 = EnumField("2.0", "新模型版本")
 
 
 class ProxyTypeEnum(StructuredEnum):
@@ -234,7 +260,6 @@ class BackendTypeEnum(StructuredEnum):
 DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100
 DEFAULT_BACKEND_NAME = "default"
-
 
 # Stage
 STAGE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,19}$")

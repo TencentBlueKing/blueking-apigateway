@@ -206,6 +206,13 @@ class TestResourceVersionHandler:
         result = ResourceVersionHandler.get_latest_created_time(fake_gateway.id)
         assert isinstance(result, datetime.datetime)
 
+    def test_get_latest_version_by_gateway(self, fake_gateway):
+        resource_version_1 = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", created_time=now_datetime())
+        resource_version_2 = G(ResourceVersion, gateway=fake_gateway, version="1.1.1", created_time=now_datetime())
+        resource_version_3 = G(ResourceVersion, gateway=fake_gateway, version="2.0.0", created_time=now_datetime())
+        result = ResourceVersionHandler.get_latest_version_by_gateway(fake_gateway.id)
+        assert result == resource_version_3.version
+
 
 class TestResourceDocVersionHandler:
     def test_get_doc_data_by_rv_or_new(self, fake_gateway):
