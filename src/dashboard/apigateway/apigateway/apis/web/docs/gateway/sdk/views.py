@@ -54,7 +54,7 @@ class SDKListApi(generics.ListAPIView):
         )
         resource_version_ids = {sdk.resource_version_id for sdk in sdks}
 
-        slz = SDKListOutputSLZ(
+        output_slz = SDKListOutputSLZ(
             sdks,
             many=True,
             context={
@@ -67,7 +67,7 @@ class SDKListApi(generics.ListAPIView):
                 },
             },
         )
-        return OKJsonResponse(data=slz.data)
+        return OKJsonResponse(data=output_slz.data)
 
 
 @method_decorator(

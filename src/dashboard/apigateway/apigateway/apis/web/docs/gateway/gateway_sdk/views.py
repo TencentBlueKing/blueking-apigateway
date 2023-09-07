@@ -52,8 +52,8 @@ class SDKListApi(generics.ListAPIView):
             gateway_id=request.gateway.id,
             language=slz.validated_data["language"],
         )
-        slz = StageSDKOutputSLZ(sdks, many=True)
-        return OKJsonResponse(data=slz.data)
+        output_slz = StageSDKOutputSLZ(sdks, many=True)
+        return OKJsonResponse(data=output_slz.data)
 
 
 @method_decorator(
@@ -89,5 +89,5 @@ class SDKUsageExampleApi(generics.RetrieveAPIView):
             ).as_dict(),
         )
 
-        slz = SDKUsageExampleOutputSLZ({"content": content})
-        return OKJsonResponse(data=slz.data)
+        output_slz = SDKUsageExampleOutputSLZ({"content": content})
+        return OKJsonResponse(data=output_slz.data)

@@ -50,11 +50,11 @@ class ResourceListApi(generics.ListAPIView):
             request.gateway.id, slz.validated_data["stage_name"]
         )
         resource_ids = [resource.id for resource in resources]
-        slz = ResourceOutputSLZ(
+        output_slz = ResourceOutputSLZ(
             resources,
             many=True,
             context={
                 "labels": ResourceLabelHandler.get_labels(resource_ids),
             },
         )
-        return OKJsonResponse(data=slz.data)
+        return OKJsonResponse(data=output_slz.data)
