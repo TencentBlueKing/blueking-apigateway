@@ -19,7 +19,7 @@
 from rest_framework import serializers
 
 
-class DocListInputSLZ(serializers.Serializer):
+class DocInputSLZ(serializers.Serializer):
     stage_name = serializers.CharField()
 
 

@@ -28,7 +28,7 @@ class TestDocListApi:
     ):
         resp = request_view(
             method="GET",
-            view_name="docs.gateway.resource.doc.list",
+            view_name="docs.gateway.resource.doc.retrieve",
             path_params={"gateway_name": fake_gateway.name, "resource_name": fake_released_resource.resource_name},
             data={
                 "stage_name": fake_stage.name,
@@ -47,7 +47,7 @@ class TestDocListApi:
         )
         resp = request_view(
             method="GET",
-            view_name="docs.gateway.resource.doc.list",
+            view_name="docs.gateway.resource.doc.retrieve",
             path_params={"gateway_name": fake_gateway.name, "resource_name": fake_released_resource.resource_name},
             data={
                 "stage_name": fake_stage.name,
@@ -62,7 +62,7 @@ class TestDocListApi:
         )
         resp = request_view(
             method="GET",
-            view_name="docs.gateway.resource.doc.list",
+            view_name="docs.gateway.resource.doc.retrieve",
             path_params={"gateway_name": fake_gateway.name, "resource_name": fake_released_resource.resource_name},
             data={
                 "stage_name": fake_stage.name,

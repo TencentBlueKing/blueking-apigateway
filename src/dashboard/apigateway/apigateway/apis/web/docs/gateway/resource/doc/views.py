@@ -28,23 +28,23 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.utils.responses import OKJsonResponse
 
-from .serializers import DocListInputSLZ, DocOutputSLZ
+from .serializers import DocInputSLZ, DocOutputSLZ
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        query_serializer=DocListInputSLZ,
+        query_serializer=DocInputSLZ,
         responses={status.HTTP_200_OK: DocOutputSLZ},
         tags=["WebAPI.Docs.ResourceDoc"],
     ),
 )
-class DocListApi(generics.ListAPIView):
+class DocRetrieveApi(generics.RetrieveAPIView):
     permission_classes = [GatewayDisplayablePermission]
 
-    def list(self, request, gateway_name: str, resource_name: str, *args, **kwargs):
+    def retrieve(self, request, gateway_name: str, resource_name: str, *args, **kwargs):
         """获取网关资源的文档"""
-        slz = DocListInputSLZ(data=request.query_params)
+        slz = DocInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         resource_data, doc_data = ReleasedResourceDocHandler.get_released_resource_doc_data(
