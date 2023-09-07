@@ -290,10 +290,6 @@ class BackendConfigQuerySetMixin:
 class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
     queryset = BackendConfig.objects.order_by("backend_id").prefetch_related("backend")
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: StageBackendOutputSLZ(many=True)},
-        tags=["WebAPI.Stage"],
-    )
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = StageBackendOutputSLZ(queryset, many=True)
@@ -318,10 +314,6 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
 class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.RetrieveUpdateAPIView):
     queryset = BackendConfig.objects.prefetch_related("backend")
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: StageBackendOutputSLZ()},
-        tags=["WebAPI.Stage"],
-    )
     def retrieve(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
 

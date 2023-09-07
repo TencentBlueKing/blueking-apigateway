@@ -71,6 +71,9 @@ class HostSLZ(serializers.Serializer):
     host = serializers.RegexField(DOMAIN_PATTERN)
     weight = serializers.IntegerField(min_value=1, required=False)
 
+    class Meta:
+        ref_name = "apis.open.stage.HostSLZ"
+
 
 class UpstreamsSLZ(serializers.Serializer):
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices())
