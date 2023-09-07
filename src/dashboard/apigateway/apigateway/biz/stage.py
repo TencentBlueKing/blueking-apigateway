@@ -99,7 +99,8 @@ class StageHandler:
 
             ReleaseHandler.delete_without_stage_related(stage.gateway.id)
 
-        # TODO 删除stage CR
+        # 删除stage CR
+        trigger_gateway_publish(PublishSourceEnum.STAGE_DELETE, "admin", stage.gateway_id, stage.id, is_sync=False)
 
     @staticmethod
     def set_status(stage: Stage, status: int, updated_by: str):
