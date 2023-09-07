@@ -69,5 +69,5 @@ class DocRetrieveApi(generics.RetrieveAPIView):
         )
 
         doc = generator.get_doc()
-        slz = DocOutputSLZ(doc)
-        return OKJsonResponse(data=slz.data)
+        output_slz = DocOutputSLZ(doc)
+        return OKJsonResponse(data=output_slz.data)
