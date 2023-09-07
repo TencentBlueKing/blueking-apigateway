@@ -61,8 +61,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
         )
 
     def get_release_status(self, obj):
-        # TODO 从发布的biz中获取到所有stage的发布状态
-        return ""
+        return self.context["stage_publish_status"].get(obj.id, {}).get("status", "")
 
     def get_release_time(self, obj):
         release_time = self.context["stage_release"].get(obj.id, {}).get("release_time", "")
@@ -75,8 +74,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
         return self.context["stage_release"].get(obj.id, {}).get("resource_version", {}).get("version", "")
 
     def get_publish_id(self, obj):
-        # TODO 从发布的biz中获取到所有stage的发布状态, 用户显示发布日志
-        return 0
+        return self.context["stage_publish_status"].get(obj.id, {}).get("publish_id", 0)
 
     def get_new_resource_version(self, obj):
         new_resource_version = self.context["new_resource_version"]
