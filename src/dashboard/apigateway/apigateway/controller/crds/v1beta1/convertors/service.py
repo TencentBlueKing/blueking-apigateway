@@ -44,7 +44,8 @@ class ServiceConvertor(BaseConvertor):
         )
 
         for node in upstreams.get("hosts", []):
-            url_info = UrlInfo(node["host"])
+            host = node["scheme"] + node["host"] if self._release_data.is_schema_v2 else node["host"]
+            url_info = UrlInfo(host)
 
             try:
                 upstream.scheme = UpstreamSchemeEnum(url_info.scheme)

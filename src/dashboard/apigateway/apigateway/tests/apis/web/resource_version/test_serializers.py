@@ -103,6 +103,7 @@ class TestResourceVersionListOutputSLZ:
                     ]
                 },
                 "resource_version_ids_has_sdk": [],
+                "resource_version_ids_sdk_count": {},
             },
         )
         assert slz.data == [

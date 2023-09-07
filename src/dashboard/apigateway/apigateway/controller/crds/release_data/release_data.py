@@ -79,9 +79,13 @@ class ReleaseData:
         :return: A dict contains all the backend objects at "stage" scope, the key is
             the type of backend, such as "http/grpc".
         """
-        return BackendConfig.objects.filter(
-            gateway_id=self.gateway.pk, stage_id=self.stage.pk, backend__name=DEFAULT_BACKEND_NAME
-        ).prefetch_related("backend")
+        return (
+            BackendConfig.objects.filter(
+                gateway_id=self.gateway.pk, stage_id=self.stage.pk, backend__name=DEFAULT_BACKEND_NAME
+            )
+            .prefetch_related("backend")
+            .get()
+        )
 
     @cached_property
     def stage_backend_config(self) -> Dict[str, Any]:
