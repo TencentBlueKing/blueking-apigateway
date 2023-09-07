@@ -69,7 +69,7 @@ class TestReleaseBatchCreateApi:
             }
             resp = request_view(
                 method="POST",
-                view_name="gateway.releases.create",
+                view_name="gateway.release.create",
                 gateway=fake_gateway,
                 path_params={"gateway_id": fake_gateway.id},
                 data=data,
