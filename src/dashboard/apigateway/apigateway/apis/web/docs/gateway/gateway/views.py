@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List
 
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
@@ -41,7 +40,7 @@ from .serializers import GatewayOutputSLZ
 class GatewayListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """获取网关列表"""
-        gateways = self._get_displayable_gateways()
+        gateways = list(self.get_queryset())
         gateway_ids = [gateway.id for gateway in gateways]
         slz = GatewayOutputSLZ(
             gateways,
@@ -53,7 +52,7 @@ class GatewayListApi(generics.ListAPIView):
 
         return OKJsonResponse(data=sorted(slz.data, key=lambda x: (-x["is_official"], x["name"])))
 
-    def _get_displayable_gateways(self) -> List[Gateway]:
+    def get_queryset(self):
         """
         查询可显示的网关
         - 网关公开
@@ -62,12 +61,10 @@ class GatewayListApi(generics.ListAPIView):
         """
         released_gateway_ids = Release.objects.all().values_list("gateway_id", flat=True)
 
-        return list(
-            Gateway.objects.filter(
-                status=GatewayStatusEnum.ACTIVE.value,
-                is_public=True,
-                id__in=released_gateway_ids,
-            )
+        return Gateway.objects.filter(
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            id__in=released_gateway_ids,
         )
 
 
