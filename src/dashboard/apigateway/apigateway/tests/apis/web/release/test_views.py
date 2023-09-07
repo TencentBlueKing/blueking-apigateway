@@ -78,8 +78,6 @@ class TestReleaseBatchCreateApi:
 
             result = resp.json()
 
-            print(result)
-
             # There should be one history record for both cases.
             history_qs = ReleaseHistory.objects.filter(stage_id=data["stage_id"]).distinct()
             assert history_qs.count() == 1
