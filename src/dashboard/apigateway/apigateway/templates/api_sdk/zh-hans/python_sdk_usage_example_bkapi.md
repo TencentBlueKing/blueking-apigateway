@@ -1,7 +1,7 @@
-创建网关 {{api_name}} 客户端并调用 API 资源 {{resource_name}} 使用示例：
+创建网关 {{gateway_name}} 客户端并调用 API 资源 {{resource_name}} 使用示例：
 
 ```python
-from bkapi.{{api_name_with_underscore}}.client import Client
+from bkapi.{{gateway_name_with_underscore}}.client import Client
 
 # 创建网关客户端
 client = Client(
@@ -32,7 +32,7 @@ client.api.{{resource_name}}(
 - `get_client_by_request`，可快速通过 Django 中的 `request` 对象生成客户端：
 
 ```python
-from bkapi.{{api_name_with_underscore}}.shortcuts import get_client_by_request
+from bkapi.{{gateway_name_with_underscore}}.shortcuts import get_client_by_request
 
 # 自动从 django settings 获取蓝鲸应用信息（app_code=settings.BK_APP_CODE，app_secret=settings.BK_APP_SECRET）
 client = get_client_by_request(
@@ -48,7 +48,7 @@ client.api.{{resource_name}}(...)
 - `get_client_by_username`，对于后台任务等不能直接获取到 `request` 对象的场景，可调用该函数，读取用户上次缓存的登录态，但可能会因为缓存不存在或用户态失效等情况导致失败。
 
 ```python
-from bkapi.{{api_name_with_underscore}}.shortcuts import get_client_by_username
+from bkapi.{{gateway_name_with_underscore}}.shortcuts import get_client_by_username
 
 # 自动从 django settings 获取蓝鲸应用信息（app_code=settings.BK_APP_CODE，app_secret=settings.BK_APP_SECRET）
 client = get_client_by_username(

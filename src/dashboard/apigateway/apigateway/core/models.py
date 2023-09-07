@@ -594,6 +594,10 @@ class ReleasedResource(TimestampedModelMixin):
         unique_together = ("gateway", "resource_version_id", "resource_id")
         db_table = "core_released_resource"
 
+    @property
+    def is_public(self) -> bool:
+        return self.data.get("is_public", False)
+
 
 class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     """

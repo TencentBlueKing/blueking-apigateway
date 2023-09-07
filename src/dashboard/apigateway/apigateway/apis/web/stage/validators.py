@@ -19,7 +19,7 @@
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.biz.released_resource import ReleasedResourceDataHandler
+from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.validators import StageVarsValuesValidator
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 
@@ -60,7 +60,7 @@ class StageVarsValidator(GetGatewayFromContextMixin):
             return
 
         stage_id = instance.id
-        stage_release = ReleasedResourceDataHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
+        stage_release = ReleasedResourceHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
         if not stage_release:
             return
 

@@ -79,6 +79,15 @@ class SDK:
     def from_model(cls, instance: APISDK):
         return cls(instance=instance)
 
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "language": self.language.value,
+            "version": self.version,
+            "url": self.url,
+            "name": self.name,
+            "install_command": self.install_command,
+        }
+
 
 @dataclass
 class Generator:

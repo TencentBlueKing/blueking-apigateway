@@ -16,19 +16,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from enum import Enum
-
-from apigateway.common.constants import ChoiceEnumMixin
+from blue_krill.data_types.enum import EnumField, StructuredEnum
 
 
-class DocTypeEnum(ChoiceEnumMixin, Enum):
-    PLATFORM = "platform"
-    COMPONENT = "component"
-    APIGATEWAY = "apigateway"
+class FeedbackDocTypeEnum(StructuredEnum):
+    PLATFORM = EnumField("platform")
+    COMPONENT = EnumField("component")
+    APIGATEWAY = EnumField("apigateway")
 
 
-class NoticeStatusEnum(ChoiceEnumMixin, Enum):
-    RECEIVED = "received"
-    SKIPPED = "skipped"
-    SUCCESS = "success"
-    FAILURE = "failure"
+class NoticeStatusEnum(StructuredEnum):
+    RECEIVED = EnumField("received")
+    SKIPPED = EnumField("skipped")
+    SUCCESS = EnumField("success")
+    FAILURE = EnumField("failure")

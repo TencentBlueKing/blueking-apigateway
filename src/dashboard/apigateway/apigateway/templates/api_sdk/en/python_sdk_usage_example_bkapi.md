@@ -1,7 +1,7 @@
-Create a gateway {{api_name}} client and call the API {{resource_name}} Example of use：
+Create a gateway {{gateway_name}} client and call the API {{resource_name}} Example of use：
 
 ```python
-from bkapi.{{api_name_with_underscore}}.client import Client
+from bkapi.{{gateway_name_with_underscore}}.client import Client
 
 # Create gateway client
 client = Client(
@@ -33,7 +33,7 @@ For Django projects, additional helper functions are provided in the `shortcuts`
 - `get_client_by_request` to quickly generate a client from the `request` object in Django.
 
 ```python
-from bkapi.{{api_name_with_underscore}}.shortcuts import get_client_by_request
+from bkapi.{{gateway_name_with_underscore}}.shortcuts import get_client_by_request
 
 # Automatically get BlueKing app info from django settings (app_code=settings.BK_APP_CODE, app_secret=settings.BK_APP_SECRET)
 client = get_client_by_request(
@@ -49,7 +49,7 @@ client.api.{{resource_name}}(...)
 - `get_client_by_username`, for scenarios such as background tasks where the `request` object cannot be fetched directly, can be called to read the user's last cached login state, but may fail because the cache does not exist or the user state is invalid, etc.
 
 ```python
-from bkapi.{{api_name_with_underscore}}.shortcuts import get_client_by_username
+from bkapi.{{gateway_name_with_underscore}}.shortcuts import get_client_by_username
 
 # Automatically get BlueKing app info from django settings (app_code=settings.BK_APP_CODE, app_secret=settings.BK_APP_SECRET)
 client = get_client_by_username(

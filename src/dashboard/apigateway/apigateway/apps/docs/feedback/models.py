@@ -21,12 +21,12 @@ from jsonfield import JSONField
 
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 
-from .constants import DocTypeEnum, NoticeStatusEnum
+from .constants import FeedbackDocTypeEnum, NoticeStatusEnum
 
 
 class Feedback(TimestampedModelMixin, OperatorModelMixin):
     positive = models.BooleanField(default=False)
-    doc_type = models.CharField("文档类型", choices=DocTypeEnum.choices(), max_length=32)
+    doc_type = models.CharField("文档类型", choices=FeedbackDocTypeEnum.get_choices(), max_length=32)
     labels = JSONField("问题类型", default=list)
     link = models.CharField("文档链接", max_length=1024, default="", blank=True)
     content = models.TextField("反馈内容", default="", blank=True)
@@ -80,7 +80,7 @@ class FeedbackRelatedAPIGateway(models.Model):
 class Notice(models.Model):
     feedback = models.ForeignKey(Feedback, on_delete=models.CASCADE)
     receivers = models.CharField("接收人", max_length=1024)
-    status = models.CharField("通知状态", max_length=32, choices=NoticeStatusEnum.choices())
+    status = models.CharField("通知状态", max_length=32, choices=NoticeStatusEnum.get_choices())
     message = models.TextField("通知结果", default="", blank=True)
 
     def __str__(self):
