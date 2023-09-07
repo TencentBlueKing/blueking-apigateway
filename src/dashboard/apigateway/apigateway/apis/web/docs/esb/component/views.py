@@ -51,8 +51,8 @@ class ComponentSearchApi(generics.ListAPIView):
             order_by=("system_id", "name"),
         )
 
-        slz = ComponentSearchOutputSLZ(queryset[:COMPONENT_SEARCH_LIMIT], many=True)
-        return OKJsonResponse(data=slz.data)
+        output_slz = ComponentSearchOutputSLZ(queryset[:COMPONENT_SEARCH_LIMIT], many=True)
+        return OKJsonResponse(data=output_slz.data)
 
 
 @method_decorator(

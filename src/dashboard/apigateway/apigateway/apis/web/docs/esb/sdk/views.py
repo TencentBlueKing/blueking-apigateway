@@ -62,8 +62,8 @@ class SDKListApi(generics.ListAPIView):
                 continue
             sdks.append(sdk)
 
-        slz = SDKOutputSLZ(sorted(sdks, key=lambda x: x.sdk_name), many=True)
-        return OKJsonResponse(data=slz.data)
+        output_slz = SDKOutputSLZ(sorted(sdks, key=lambda x: x.sdk_name), many=True)
+        return OKJsonResponse(data=output_slz.data)
 
 
 @method_decorator(
@@ -85,8 +85,8 @@ class SDKRetrieveApi(generics.RetrieveAPIView):
         if not sdk:
             raise error_codes.NOT_FOUND
 
-        slz = SDKOutputSLZ(sdk)
-        return OKJsonResponse(data=slz.data)
+        output_slz = SDKOutputSLZ(sdk)
+        return OKJsonResponse(data=output_slz.data)
 
 
 @method_decorator(
