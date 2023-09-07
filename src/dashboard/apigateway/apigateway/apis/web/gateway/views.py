@@ -175,7 +175,7 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
     @swagger_auto_schema(
         request_body=GatewayUpdateStatusInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["Gateway"],
     )
     def update(self, request, *args, **kwargs):
