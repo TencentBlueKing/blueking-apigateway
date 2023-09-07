@@ -39,11 +39,7 @@ class TestMicroGatewayPermissionViewSet:
     def is_app_has_api_permission(self, result, gateway, app_code):
         api_permissions = result["data"]["api_permissions"]
         assert result["data"]["gateway_name"] == gateway.name
-        for permission in api_permissions:
-            if permission["bk_app_code"] == app_code:
-                return True
-
-        return False
+        return any(permission["bk_app_code"] == app_code for permission in api_permissions)
 
     def is_app_has_resource_permission(self, result, app_code, resource_name):
         resource_permissions = result["data"]["resource_permissions"]

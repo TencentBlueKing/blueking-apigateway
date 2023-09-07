@@ -20,7 +20,7 @@ from typing import List, Optional
 
 from django.core.management.base import BaseCommand, CommandError
 
-import apigateway.controller.tasks.syncing as syncing
+from apigateway.controller.tasks import syncing
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Gateway
 

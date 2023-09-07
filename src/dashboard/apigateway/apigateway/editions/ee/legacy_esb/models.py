@@ -59,11 +59,7 @@ class LegacyModelMigrator:
         raise NotImplementedError
 
     def has_different_field_value(self, src_obj: Any, dst_obj: Any, fields: List[str]) -> bool:
-        for field in fields:
-            if getattr(src_obj, field) != getattr(dst_obj, field):
-                return True
-
-        return False
+        return any(getattr(src_obj, field) != getattr(dst_obj, field) for field in fields)
 
 
 def _convert_is_official_to_data_type(is_official: bool) -> int:

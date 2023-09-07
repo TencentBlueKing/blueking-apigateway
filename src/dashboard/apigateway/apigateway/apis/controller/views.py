@@ -270,7 +270,7 @@ class MicroGatewayPermissionViewSet(BaseMicroGatewayViewSet):
         try:
             client.set(cache_key, json.dumps(queried), ex=expires)
         except Exception:
-            logger.exception("abort set permissions into cache %s, error: %s", cache_key)
+            logger.exception("abort set permissions into cache %s", cache_key)
 
     def _get_stage_by_name(self, gateway: Gateway, stage_name: str) -> Stage:
         return get_object_or_404(Stage, gateway=gateway, name=stage_name)

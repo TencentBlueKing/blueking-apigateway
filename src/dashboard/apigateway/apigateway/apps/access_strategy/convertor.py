@@ -117,7 +117,7 @@ class IpAccessControlASC(AccessStrategyConvertor):
         # the access strategy will be remove soon, so use `allow` and `deny` here directly
         if config["type"] == "allow":
             return {"whitelist": ip_list}
-        elif config["type"] == "deny":
+        if config["type"] == "deny":
             return {"blacklist": ip_list}
 
         raise ValueError("type should be either one of allow or deny for access strategy ip-control")

@@ -30,8 +30,8 @@ def parse_ip_content_to_list(ip_content: str) -> List[str]:
     # split with \n\r, then ignore blank line and `# comment`
     ips = set()
     ip_lines = ip_content.splitlines()
-    for ip_line in ip_lines:
-        ip_line = ip_line.strip()
+    for ip_line_raw in ip_lines:
+        ip_line = ip_line_raw.strip()
         if not ip_line or ip_line.startswith("#"):
             continue
 

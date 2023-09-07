@@ -21,8 +21,8 @@
 def str_bool(value, allow_null=False):
     if value in ["true", "True", "TRUE", "1", 1, True]:
         return True
-    elif value in ["false", "False", "FALSE", "0", 0, False]:
+    if value in ["false", "False", "FALSE", "0", 0, False]:
         return False
-    elif value in ["null", "Null", "NULL", "", None] and allow_null:
+    if value in ["null", "Null", "NULL", "", None] and allow_null:
         return None
     raise ValueError("Must be a valid boolean")

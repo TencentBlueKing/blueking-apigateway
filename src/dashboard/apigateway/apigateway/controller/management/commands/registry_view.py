@@ -51,10 +51,9 @@ class Command(BaseCommand):
         resource_type = self.get_resource_type_by_kind(kind)
 
         registry = EtcdRegistry(key_prefix)
-        resources = []
-        for resource in registry.iter_by_type(resource_type):
-            if name in resource.metadata.name:
-                resources.append(resource.dict())
+        resources = [
+            resource.dict() for resource in registry.iter_by_type(resource_type) if name in resource.metadata.name
+        ]
 
         pprint(resources)
 

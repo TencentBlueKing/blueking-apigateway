@@ -30,7 +30,7 @@ class FeedbackRelatedObjectFactory:
     def get(doc_type: str) -> "FeedbackRelatedObject":
         if doc_type == DocTypeEnum.COMPONENT.value:
             return ReleatedComponent()
-        elif doc_type == DocTypeEnum.APIGATEWAY.value:
+        if doc_type == DocTypeEnum.APIGATEWAY.value:
             return RelatedAPIGateway()
 
         raise error_codes.INVALID_ARGUMENT.format(f"unsupported doc_type: {doc_type}")

@@ -41,7 +41,9 @@ def _release_gateway(
     procedure_logger: ReleaseProcedureLogger,
 ):
     """发布资源到微网关"""
-    procedure_logger.info(f"release begin, micro_gateway_release_history_id({micro_gateway_release_history_id})")
+    procedure_logger.info(
+        f"release begin, micro_gateway_release_history_id({micro_gateway_release_history_id})"
+    )  # ruff: noqa: G004
     release_history_qs = MicroGatewayReleaseHistory.objects.filter(id=micro_gateway_release_history_id)
     latest_micro_gateway_release_history = release_history_qs.last()
     # 表明发布已开始

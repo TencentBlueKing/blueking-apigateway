@@ -21,7 +21,7 @@ from typing import List, Optional
 
 from django.core.management.base import BaseCommand, CommandError
 
-import apigateway.controller.tasks.syncing as syncing
+from apigateway.controller.tasks import syncing
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Gateway
 
@@ -41,9 +41,9 @@ def sync_gateway(gateway):
     if not ok:
         print(f"[ERROR] syncing release for gateway {gateway.name} failed")
         return gateway.name
-    else:
-        print(f"[INFO] syncing release for gateway {gateway.name} success")
-        return None
+
+    print(f"[INFO] syncing release for gateway {gateway.name} success")
+    return None
 
 
 class Command(BaseCommand):

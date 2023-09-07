@@ -134,9 +134,7 @@ def fake_anonymous_user(mocker):
 
 @pytest.fixture
 def fake_request(request_factory):
-    request = request_factory.get("")
-
-    return request
+    return request_factory.get("")
 
 
 @pytest.fixture
@@ -273,7 +271,7 @@ def fake_resource2(faker, fake_resource):
 
 @pytest.fixture
 def fake_micro_gateway(fake_gateway_for_micro_gateway, faker):
-    gateway = G(
+    return G(
         MicroGateway,
         gateway=fake_gateway_for_micro_gateway,
         name=faker.color_name(),
@@ -297,7 +295,6 @@ def fake_micro_gateway(fake_gateway_for_micro_gateway, faker):
             }
         ),
     )
-    return gateway
 
 
 @pytest.fixture

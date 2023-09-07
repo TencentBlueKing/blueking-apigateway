@@ -21,5 +21,5 @@
 def get_user_access_token_from_request(request):
     if request and request.user and hasattr(request.user, "token") and hasattr(request.user.token, "access_token"):
         return request.user.token.access_token
-    else:
-        return None
+
+    return None

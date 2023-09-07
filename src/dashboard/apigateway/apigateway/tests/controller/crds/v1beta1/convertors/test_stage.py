@@ -104,3 +104,4 @@ class TestStageConvertor:
         for plugin in stage.spec.plugins:
             if plugin.name == name:
                 return plugin
+        return None

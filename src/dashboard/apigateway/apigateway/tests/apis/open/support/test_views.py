@@ -139,7 +139,7 @@ class TestSDKGenerateViewSet:
         rf,
         request_to_view,
     ):
-        MockSDKHelper = mocker.patch("apigateway.apis.open.support.views.SDKHelper")
+        MockSDKHelper = mocker.patch("apigateway.apis.open.support.views.SDKHelper")  # ruff: noqa: N806
         helper = MockSDKHelper.return_value.__enter__.return_value
 
         request = rf.post(

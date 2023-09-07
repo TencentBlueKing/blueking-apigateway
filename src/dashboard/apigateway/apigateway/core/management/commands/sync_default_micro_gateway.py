@@ -127,8 +127,7 @@ class Command(BaseCommand):
                     'Skip updating existing "secret_key" because it is not supported.', self.style.WARNING
                 )
                 return
-            else:
-                return
+            return
 
         # The "secret_key" is absent or empty, replace it
         secret_key = secret_key or generate_unique_id()

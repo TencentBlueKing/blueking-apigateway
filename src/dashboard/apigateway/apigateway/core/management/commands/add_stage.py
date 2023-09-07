@@ -77,4 +77,4 @@ class Command(BaseCommand):
         slz.is_valid(raise_exception=True)
         slz.save(created_by="admin", updated_by="admin")
 
-        logger.info(f"Add stage [name={name}] success")
+        logger.info("Add stage [name=%s] success", name)

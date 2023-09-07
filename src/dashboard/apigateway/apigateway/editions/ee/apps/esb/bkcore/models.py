@@ -157,7 +157,7 @@ class ComponentResourceBinding(ModelWithBoard):
     def component_key(self) -> Optional[str]:
         if self.component_id:
             return str(self.component_id)
-        elif self.component_path:
+        if self.component_path:
             return f"{self.component_method}:{self.component_path}"
 
         return None

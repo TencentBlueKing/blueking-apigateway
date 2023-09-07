@@ -166,10 +166,7 @@ class ResourceHandler:
             queryset = queryset.filter(Q(path__contains=query) | Q(name__contains=query))
 
         if path:
-            if fuzzy:
-                queryset = queryset.filter(path__contains=path)
-            else:
-                queryset = queryset.filter(path=path)
+            queryset = queryset.filter(path__contains=path) if fuzzy else queryset.filter(path=path)
 
         if method:
             queryset = queryset.filter(method=method)

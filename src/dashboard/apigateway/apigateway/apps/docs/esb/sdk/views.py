@@ -42,7 +42,7 @@ class SDKViewSet(viewsets.GenericViewSet):
 
         sdks = []
 
-        for board in settings.ESB_BOARD_CONFIGS.keys():
+        for board in settings.ESB_BOARD_CONFIGS:
             sdk = SDKFactory.get_sdk(board, slz.validated_data["language"])
             if not sdk:
                 continue

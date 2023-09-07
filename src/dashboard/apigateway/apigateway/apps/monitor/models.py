@@ -66,9 +66,9 @@ class AlarmFilterConfig(ConfigModelMixin):
         # check the config value
         try:
             _ = self.config
-        except Exception as e:
+        except Exception:
             logger.exception("the config field is not a valid json")
-            raise e
+            raise
 
         super().save(*args, **kwargs)
 

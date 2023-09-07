@@ -137,7 +137,8 @@ class SysEventsTimeline(APIView):
                     # 对于这段时间总请求数大于 5 的才当做可用率下降，否则当做普通错误
                     if in_availability_dropped:
                         continue
-                    elif (
+
+                    if (
                         time_piece["requests"]["count"] > 5
                         and time_piece["requests"]["error_count"] > 1
                         and (i == 0 or data[i - 1]["rate_availability"]["value"] == 1)
@@ -342,8 +343,7 @@ def es_get_system_stats(time_since=None, system_name=None, mts_start=None, mts_e
     )
     result = []
     if "aggregations" in data:
-        for bucket_data in data["aggregations"]["systems"]["buckets"]:
-            result.append(process_bucket_data(bucket_data))
+        result = [process_bucket_data(bucket_data) for bucket_data in data["aggregations"]["systems"]["buckets"]]
 
     # 可用率最低，响应时间越慢的系统将会被放在最前面
     result.sort(key=lambda x: (x["rate_availability"]["value"], -x["perc95_resp_time"]["value"]))

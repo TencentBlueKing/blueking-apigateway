@@ -150,7 +150,7 @@ class CertificateChecker:
             self._extract_alternative_names(),
         ):
             if name not in snis:
-                snis.append(name)
+                snis.append(name)  # ruff: noqa: PERF401
 
         return snis
 

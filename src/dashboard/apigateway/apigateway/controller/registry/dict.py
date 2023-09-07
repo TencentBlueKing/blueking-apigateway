@@ -57,4 +57,4 @@ class DictRegistry(Registry):
 
     def _get_exist_keys_by_key_prefix(self) -> Dict[str, bool]:
         """用于单元测试"""
-        return {k: True for k in self._registry_dict.keys()}
+        return {k: True for k in self._registry_dict}

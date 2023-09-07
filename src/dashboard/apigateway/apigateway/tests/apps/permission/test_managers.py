@@ -43,7 +43,7 @@ class TestAppAPIPermissionManager:
         G(models.AppAPIPermission, gateway=gateway_1, bk_app_code=unique_id)
         G(models.AppAPIPermission, gateway=gateway_2, bk_app_code=unique_id)
 
-        assert 1 == models.AppAPIPermission.objects.filter_public_permission_by_app(unique_id).count()
+        assert models.AppAPIPermission.objects.filter_public_permission_by_app(unique_id).count() == 1
 
     def test_renew_by_ids(self):
         perm_1 = G(
@@ -90,7 +90,7 @@ class TestAppResourcePermissionManager:
         G(models.AppResourcePermission, gateway=gateway_1, bk_app_code=unique_id)
         G(models.AppResourcePermission, gateway=gateway_2, bk_app_code=unique_id)
 
-        assert 1 == models.AppResourcePermission.objects.filter_public_permission_by_app(unique_id).count()
+        assert models.AppResourcePermission.objects.filter_public_permission_by_app(unique_id).count() == 1
 
     def test_renew_by_ids(self):
         perm_1 = G(
@@ -247,13 +247,13 @@ class TestAppPermissionRecordManager:
         )
 
         queryset = models.AppPermissionRecord.objects.filter(gateway__id__in=[gateway_1.id, gateway_2.id])
-        assert 1 == models.AppPermissionRecord.objects.filter_record(queryset, bk_app_code="test").count()
+        assert models.AppPermissionRecord.objects.filter_record(queryset, bk_app_code="test").count() == 1
         assert (
-            1
-            == models.AppPermissionRecord.objects.filter_record(
+            models.AppPermissionRecord.objects.filter_record(
                 queryset,
                 applied_time_start=now_datetime() - datetime.timedelta(seconds=10),
                 applied_time_end=now_datetime() + datetime.timedelta(seconds=10),
             ).count()
+            == 1
         )
-        assert 1 == models.AppPermissionRecord.objects.filter_record(queryset, status="approved").count()
+        assert models.AppPermissionRecord.objects.filter_record(queryset, status="approved").count() == 1

@@ -25,10 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_command(cmd, check=False, timeout=10):
-    if isinstance(cmd, list):
-        shell = False
-    else:
-        shell = True
+    shell = not isinstance(cmd, list)
 
     try:
         completed_process = subprocess.run(
@@ -39,15 +36,17 @@ def run_command(cmd, check=False, timeout=10):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-    except Exception as e:
-        logger.error(f"run shell {cmd} error.")
-        raise e
+    except Exception:
+        logger.exception("run shell %s error.", cmd)
+        raise
 
     if completed_process.returncode != 0:
         logger.error(
-            f"run shell {cmd} fail. "
-            f"returncode={completed_process.returncode}, "
-            f"stdout={completed_process.stdout}, stderr={completed_process.stderr}"
+            "run shell %s fail. returncode=%s, stdout=%s, stderr=%s",
+            cmd,
+            completed_process.returncode,
+            completed_process.stdout,
+            completed_process.stderr,
         )
 
     return (completed_process.returncode, force_str(completed_process.stdout), force_str(completed_process.stderr))

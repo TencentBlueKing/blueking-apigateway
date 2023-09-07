@@ -27,7 +27,7 @@ class DiffMixin:
         source_diff_data = {}
         target_diff_data = {}
 
-        for key in getattr(self, "__fields__", {}).keys():
+        for key in getattr(self, "__fields__", {}):
             diff_method = getattr(self, f"diff_{key}", None)
             if diff_method is not None:
                 source_diff_value, target_diff_value = diff_method(target)
@@ -70,7 +70,7 @@ class ResourceProxyHTTPConfig(BaseModel, DiffMixin):
     transform_headers: Dict[Text, Any] = Field(default_factory=dict)
 
     @validator("transform_headers")
-    def clean_transform_headers(cls, v):
+    def clean_transform_headers(cls, v):  # ruff: noqa: N805
         return TransformHeaders.parse_obj(v).dict(exclude_unset=True)
 
 
@@ -182,8 +182,8 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
         resource_delete = []
         resource_update = []
 
-        for resource_id, source_resource_data in source_key_to_value_map.items():
-            source_resource_differ = ResourceDifferHandler.parse_obj(source_resource_data)
+        for resource_id, source_resource_data_raw in source_key_to_value_map.items():
+            source_resource_differ = ResourceDifferHandler.parse_obj(source_resource_data_raw)
             target_resource_data = target_data_map.pop(resource_id, None)
 
             # 目标版本中资源不存在，资源被删除

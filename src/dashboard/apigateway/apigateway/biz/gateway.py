@@ -135,7 +135,7 @@ class GatewayHandler:
             new_config["unfiltered_sensitive_keys"] = unfiltered_sensitive_keys
 
         if not new_config:
-            return
+            return None
 
         current_config = GatewayHandler().get_current_gateway_auth_config(gateway_id)
 

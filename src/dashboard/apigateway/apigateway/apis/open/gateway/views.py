@@ -55,12 +55,8 @@ class GatewayViewSet(viewsets.ModelViewSet):
         获取可用的网关列表
         """
         if name:
-            if fuzzy:
-                # 模糊匹配，查询名称中包含 name 的网关
-                queryset = queryset.filter(name__contains=name)
-            else:
-                # 精确匹配，查询名称为 name 的网关
-                queryset = queryset.filter(name=name)
+            # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
+            queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
 
         if query and fuzzy:
             queryset = queryset.filter(Q(name__icontains=query) | Q(description__icontains=query))

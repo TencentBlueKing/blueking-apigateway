@@ -40,7 +40,9 @@ class AlarmRecordCreator(AlertHandler):
         """创建监控告警记录"""
         if not event.should_alert:
             logger.warning(
-                f"monitor event should not be alerted, event_id={event.id}, strategy_id={event.strategy_id}"
+                "monitor event should not be alerted, event_id=%s, strategy_id=%s",
+                event.id,
+                event.strategy_id,
             )
             return None
 
@@ -88,11 +90,7 @@ class RelatedLogRecordsFetcher(AlertHandler):
         return client.search(time_utils.timestamp(event.event_begin_time), event.event_dimensions)
 
     def _filter_request_log_records(self, alarm_type: AlarmTypeEnum, records: Iterable[Dict[str, Any]]) -> list:
-        filtered_records = []
-        for record in records:
-            if self._is_record_need_alert(alarm_type, record["_source"]):
-                filtered_records.append(record)
-        return filtered_records
+        return [record for record in records if self._is_record_need_alert(alarm_type, record["_source"])]
 
     def _is_record_need_alert(self, alarm_type: AlarmTypeEnum, record_source: dict):
         filter_conditions = AlarmFilterConfig.objects.get_filter_config(alarm_type.value)
@@ -104,8 +102,9 @@ class RelatedLogRecordsFetcher(AlertHandler):
         ok, message, records = self._get_request_log_records(event)
         if not ok:
             logger.error(
-                f"get monitor events failed. source_time: {event.event_begin_time}, "
-                f"match_dimension: {event.event_dimensions}"
+                "get monitor events failed. source_time: %s, match_dimension: %s",
+                event.event_begin_time,
+                event.event_dimensions,
             )
             AlarmRecord.objects.update_alarm(
                 event.alarm_record_id, status=AlarmStatusEnum.SKIPPED.value, comment=f"获取告警事件源记录失败，{message}"

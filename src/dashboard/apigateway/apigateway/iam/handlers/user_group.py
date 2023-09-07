@@ -61,9 +61,9 @@ class IAMUserGroupHandler:
     def _generate_user_group_name(self, role: UserRoleEnum, gateway_name: str) -> str:
         if role == UserRoleEnum.MANAGER:
             return _("API网关-{gateway_name}-管理员").format(gateway_name=gateway_name)
-        elif role == UserRoleEnum.DEVELOPER:
+        if role == UserRoleEnum.DEVELOPER:
             return _("API网关-{gateway_name}-开发者").format(gateway_name=gateway_name)
-        elif role == UserRoleEnum.OPERATOR:
+        if role == UserRoleEnum.OPERATOR:
             return _("API网关-{gateway_name}-运营者").format(gateway_name=gateway_name)
 
         raise ValueError(f"unsupported role: {role.value}")
@@ -71,9 +71,9 @@ class IAMUserGroupHandler:
     def _generate_user_group_description(self, role: UserRoleEnum, gateway_name: str) -> str:
         if role == UserRoleEnum.MANAGER:
             return _("API网关 ({gateway_name}) 管理员，拥有网关的全部权限。").format(gateway_name=gateway_name)
-        elif role == UserRoleEnum.DEVELOPER:
+        if role == UserRoleEnum.DEVELOPER:
             return _("API网关 ({gateway_name}) 开发者，拥有网关的开发权限，如管理资源，查看日志，在线测试等。").format(gateway_name=gateway_name)
-        elif role == UserRoleEnum.OPERATOR:
+        if role == UserRoleEnum.OPERATOR:
             return _("API网关 ({gateway_name}) 运营者，拥有网关的运营权限，如管理权限，查看日志等。").format(gateway_name=gateway_name)
 
         raise ValueError(f"unsupported role: {role.value}")
@@ -132,7 +132,7 @@ class IAMUserGroupHandler:
         :param members: 用户组成员
         """
         if not members:
-            return
+            return None
 
         user_group_id = self._get_user_group_id(gateway_id, role)
         return self._bk_iam_client.add_user_group_members(user_group_id, members, NEVER_EXPIRE_TIMESTAMP)

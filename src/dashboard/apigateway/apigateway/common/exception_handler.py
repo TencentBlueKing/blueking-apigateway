@@ -53,32 +53,31 @@ def one_line_error(error: ValidationError):
         return "format error message failed"
 
 
-def custom_exception_handler(exc, context):
+def custom_exception_handler(exc, context):  # ruff: noqa: PLR0911
     is_legacy = False
     request = context.get("request")
-    if request:
-        if "/backend/api/v1/" in request.path:
-            is_legacy = True
+    if request and "/backend/api/v1/" in request.path:
+        is_legacy = True
 
     if isinstance(exc, (NotAuthenticated, AuthenticationFailed)):
         error = error_codes.UNAUTHENTICATED
         return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
-    elif isinstance(exc, ValidationError):
+    if isinstance(exc, ValidationError):
         set_rollback()
         error = error_codes.INVALID_ARGUMENT.format(message=one_line_error(exc))
         return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
-    elif isinstance(exc, APIError):
+    if isinstance(exc, APIError):
         set_rollback()
         return Response(exc.code.as_json(is_legacy), status=exc.code.status_code, headers={})
 
-    elif isinstance(exc, MethodNotAllowed):
+    if isinstance(exc, MethodNotAllowed):
         set_rollback()
         error = error_codes.METHOD_NOT_ALLOWED.format(message=exc.detail)
         return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
-    elif isinstance(exc, PermissionDenied):
+    if isinstance(exc, PermissionDenied):
         set_rollback()
         error = error_codes.IAM_NO_PERMISSION.format(message=exc.detail, replace=True)
         return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})

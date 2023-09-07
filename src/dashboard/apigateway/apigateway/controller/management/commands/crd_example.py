@@ -63,19 +63,23 @@ class Command(BaseCommand):
     def get_field_value_comment(self, field: fields.ModelField):
         if isinstance(field.type_, type) and issubclass(field.type_, Enum):
             return "/".join(e.value for e in field.type_)
+        return None
 
     def get_complex_commented_dict_from_model_field(self, field: fields.ModelField, level: int):
         if field.shape == fields.SHAPE_SINGLETON:
             return self.get_commented_map_from_model(field.type_, level)
-        elif field.shape in {fields.SHAPE_LIST, fields.SHAPE_SET, fields.SHAPE_SEQUENCE, fields.SHAPE_TUPLE}:
+
+        if field.shape in {fields.SHAPE_LIST, fields.SHAPE_SET, fields.SHAPE_SEQUENCE, fields.SHAPE_TUPLE}:
             return [self.get_commented_map_from_model(field.type_, level)]
-        elif field.key_field:
+
+        if field.key_field:
             key = "<example>"
             result = CommentedMap({"<example>": self.get_commented_map_from_model(field.type_, level + 1)})
             result.yaml_set_comment_before_after_key(
                 key=key, before=self.get_field_comment(field.key_field), indent=level * 2
             )
             return result
+        return None
 
     def get_commented_map_from_model(self, model: Type[BaseModel], level: int):
         result = CommentedMap()

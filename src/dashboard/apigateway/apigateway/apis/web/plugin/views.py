@@ -163,11 +163,10 @@ class PluginTypeCodeValidationMixin:
         if not plugin_type:
             raise error_codes.INVALID_ARGUMENT.format(f"code {code} is invalid")
 
-        if type_id:
-            if plugin_type != type_id:
-                raise error_codes.INVALID_ARGUMENT.format(
-                    f"code {code} in query_string is not matched the type_id={type_id.id}(code={type_id.code}) in body"
-                )
+        if type_id and plugin_type != type_id:
+            raise error_codes.INVALID_ARGUMENT.format(
+                f"code {code} in query_string is not matched the type_id={type_id.id}(code={type_id.code}) in body"
+            )
 
 
 @method_decorator(

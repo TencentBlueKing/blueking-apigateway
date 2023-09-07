@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from dataclasses import dataclass
 from typing import List
 
@@ -223,8 +223,7 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
             }
         )
 
-    @abstractmethod
-    def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
+    def _do_release(self, releases: List[Release], release_history: ReleaseHistory):  # ruff: noqa: B027
         """发布资源版本"""
 
     def _activate_stages(self):
@@ -267,7 +266,7 @@ class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
     def _create_release_task_for_shared_gateway(self, release: Release, release_history: ReleaseHistory):
         shared_gateway = self._shared_micro_gateway
         if not shared_gateway:
-            return
+            return None
 
         history = MicroGatewayReleaseHistory.objects.create(
             gateway=release.gateway,
@@ -287,7 +286,7 @@ class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
         stage = release.stage
         micro_gateway = stage.micro_gateway
         if not micro_gateway or not micro_gateway.is_managed:
-            return
+            return None
 
         history = MicroGatewayReleaseHistory.objects.create(
             gateway=release.gateway,

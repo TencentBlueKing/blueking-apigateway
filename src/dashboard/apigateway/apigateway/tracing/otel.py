@@ -82,9 +82,9 @@ def setup_trace_config():
             )
         )
 
-        if settings.OTEL_TYPE == OTELTypeEnum.GRPC.value:
+        if settings.OTEL_TYPE == OTELTypeEnum.GRPC.value:  # ruff: noqa: SIM300
             otlp_exporter = GrpcSpanExporter(endpoint=settings.OTEL_GRPC_HOST, insecure=True)
-        elif settings.OTEL_TYPE == OTELTypeEnum.HTTP.value:
+        elif settings.OTEL_TYPE == OTELTypeEnum.HTTP.value:  # ruff: noqa: SIM300
             otlp_exporter = HttpSpanExporter(endpoint=settings.OTEL_HTTP_URL, timeout=settings.OTEL_HTTP_TIMEOUT)
         else:
             raise ValueError(f"Unknown settings OTEL_TYPE: {settings.OTEL_TYPE}")

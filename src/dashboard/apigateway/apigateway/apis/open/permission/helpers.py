@@ -36,8 +36,10 @@ class AppPermissionHelper:
     def get_permission_model(self, dimension: str):
         if dimension == GrantDimensionEnum.API.value:
             return AppAPIPermission
-        elif dimension == GrantDimensionEnum.RESOURCE.value:
+
+        if dimension == GrantDimensionEnum.RESOURCE.value:
             return AppResourcePermission
+
         raise ValueError(f"unsupported dimension: {dimension}")
 
 
@@ -200,7 +202,7 @@ class AppPermissionBuilder:
         resource_permission_map = self._get_resource_permission_map()
 
         resource_map: defaultdict = defaultdict(dict)
-        for gateway_id in api_permission_map.keys():
+        for gateway_id in api_permission_map:
             for resource in ResourceVersionHandler.get_released_public_resources(gateway_id):
                 resource.update({"api_permission": api_permission_map.get(gateway_id)})
                 resource_map[resource["id"]] = resource
