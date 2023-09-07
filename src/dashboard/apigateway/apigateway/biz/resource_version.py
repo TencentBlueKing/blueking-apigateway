@@ -223,6 +223,8 @@ class ResourceVersionHandler:
 
         # 查询最近的10条数据，并根据 id 字段排序
         versions = ResourceVersion.objects.filter(gateway_id=gateway_id).order_by("-id")[:10].values("version")
+        if not versions:
+            return ""
 
         # 取最大的 version
         max_version = max(version["version"] for version in versions)

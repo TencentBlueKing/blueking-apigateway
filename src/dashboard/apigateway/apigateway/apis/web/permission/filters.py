@@ -69,7 +69,6 @@ class AppPermissionApplyFilter(filters.FilterSet):
 class AppGatewayPermissionFilter(filters.FilterSet):
     bk_app_code = filters.CharFilter()
     query = filters.CharFilter(method="query_filter")
-    resource_id = filters.NumberFilter()
     order_by = filters.OrderingFilter(
         choices=[(field, field) for field in ["bk_app_code", "-bk_app_code", "expires", "-expires"]]
     )
@@ -79,7 +78,6 @@ class AppGatewayPermissionFilter(filters.FilterSet):
         fields = [
             "bk_app_code",
             "query",
-            "resource_id",
             "order_by",
         ]
 
