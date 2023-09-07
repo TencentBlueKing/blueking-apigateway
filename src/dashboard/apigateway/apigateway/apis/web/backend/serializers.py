@@ -22,11 +22,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import (
-    DEFAULT_BACKEND_NAME,
-    HOST_WITHOUT_SCHEME_PATTERN,
-    BackendTypeEnum,
-)
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, HOST_WITHOUT_SCHEME_PATTERN, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
 
 from .constants import (
@@ -42,6 +38,9 @@ class HostSLZ(serializers.Serializer):
     scheme = serializers.ChoiceField(choices=BackendConfigSchemeEnum.get_choices())
     host = serializers.RegexField(HOST_WITHOUT_SCHEME_PATTERN)
     weight = serializers.IntegerField(min_value=1, required=False)
+
+    class Meta:
+        ref_name = "apis.web.backend.HostSLZ"
 
 
 class BaseBackendConfigSLZ(serializers.Serializer):
