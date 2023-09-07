@@ -31,7 +31,7 @@ from .serializers import ComponentDocOutputSLZ
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ComponentDocOutputSLZ},
-        tags=["Docs.ESB.Doc"],
+        tags=["Docs.ESB.Component"],
     ),
 )
 class DocRetrieveApi(generics.RetrieveAPIView):

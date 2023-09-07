@@ -46,9 +46,7 @@ class TestSDKListApi:
 
 
 class TestSDKRetrieveApi:
-    def test_retrieve(self, settings, mocker, faker, request_view):
-        settings.ESB_BOARD_CONFIGS = {"default": {}}
-
+    def test_retrieve(self, mock_board, mocker, faker, request_view):
         mocker.patch(
             "apigateway.apis.web.docs.esb.sdk.views.SDKFactory.get_sdk",
             return_value=None,
@@ -57,7 +55,7 @@ class TestSDKRetrieveApi:
             method="GET",
             view_name="docs.esb.sdk.retrieve",
             path_params={
-                "board": "default",
+                "board": mock_board,
             },
             data={
                 "language": "python",
@@ -80,7 +78,7 @@ class TestSDKRetrieveApi:
             method="GET",
             view_name="docs.esb.sdk.retrieve",
             path_params={
-                "board": "default",
+                "board": mock_board,
             },
             data={
                 "language": "python",

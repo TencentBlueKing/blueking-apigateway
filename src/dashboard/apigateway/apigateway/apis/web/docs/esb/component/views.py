@@ -24,7 +24,7 @@ from apigateway.apps.esb.bkcore.models import ESBChannel
 from apigateway.biz.esb.decorators import check_board_exist
 from apigateway.utils.responses import OKJsonResponse
 
-from .serializers import ComponentSearchInputSLZ, ComponentSearchOutputSLZ, ComponentSLZ
+from .serializers import ComponentOutputSLZ, ComponentSearchInputSLZ, ComponentSearchOutputSLZ
 
 # 组件API模糊搜索时，结果数据限制大小
 COMPONENT_SEARCH_LIMIT = 30
@@ -58,7 +58,7 @@ class ComponentSearchApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ComponentSLZ(many=True)},
+        responses={status.HTTP_200_OK: ComponentOutputSLZ(many=True)},
         tags=["Docs.ESB.Component"],
     ),
 )
@@ -67,5 +67,5 @@ class ComponentListApi(generics.ListAPIView):
     def list(self, request, board: str, system_name: str, *args, **kwargs):
         """查询系统下组件API列表"""
         queryset = ESBChannel.objects.filter_public_components(board, system_name=system_name, order_by=("name",))
-        slz = ComponentSLZ(queryset, many=True)
+        slz = ComponentOutputSLZ(queryset, many=True)
         return OKJsonResponse(data=slz.data)

@@ -33,10 +33,12 @@ class ComponentSearchOutputSLZ(serializers.Serializer):
     system_name = serializers.CharField(source="system.name")
 
 
-class ComponentSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = SerializerTranslatedField(translated_fields={"en": "description_en"}, default_field="description")
+class ComponentOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = SerializerTranslatedField(
+        translated_fields={"en": "description_en"}, default_field="description", read_only=True
+    )
     verified_app_required = serializers.SerializerMethodField()
     verified_user_required = serializers.SerializerMethodField()
     component_permission_required = serializers.SerializerMethodField()
