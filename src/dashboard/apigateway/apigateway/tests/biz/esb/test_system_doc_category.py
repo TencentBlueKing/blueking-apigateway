@@ -84,6 +84,3 @@ class TestSystemDocCategoryHandler:
                 ],
             }
         ]
-
-    def test_get_system_doc_categories_by_settings(self):
-        pass

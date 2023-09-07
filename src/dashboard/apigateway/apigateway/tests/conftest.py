@@ -845,7 +845,7 @@ def mock_board(settings):
             "sdk_package_prefix": "blueking.component.open",
             "sdk_description": "access open apis",
             "sdk_doc_templates": {
-                "python_sdk_usage_example": "test.md",
+                "python_sdk_usage_example": "python_sdk_usage_example_v2.md",
             },
         },
     }

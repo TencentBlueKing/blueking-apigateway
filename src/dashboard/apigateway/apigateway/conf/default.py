@@ -728,8 +728,6 @@ BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {
 
 BK_API_DEFAULT_STAGE_MAPPINGS = env.dict("BK_API_DEFAULT_STAGE_MAPPINGS", default={})
 
-PYTHON_SDK_MANAGER_CLASS = "apigateway.apps.docs.esb.sdk.manager.SimplePythonSDKManager"
-
 FAKE_SEND_NOTICE = env.bool("FAKE_SEND_NOTICE", default=False)
 
 # ==============================================================================
