@@ -85,7 +85,7 @@ class BackendInputSLZ(serializers.Serializer):
                     )
                 )
 
-        config_stage_id = set([backend_config["stage_id"] for backend_config in attrs["configs"]])
+        config_stage_id = {backend_config["stage_id"] for backend_config in attrs["configs"]}
         for stage in stages:
             if stage.id not in config_stage_id:
                 raise serializers.ValidationError(

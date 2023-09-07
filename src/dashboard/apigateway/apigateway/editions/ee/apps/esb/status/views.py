@@ -164,7 +164,7 @@ class SysEventsTimeline(APIView):
     def _save_real_timeline_events(self, events):
         """将实时计算的事件插入数据库"""
         for live_event in events:
-            key = dict(system_name=live_event["system_name"], ts_happened_at=live_event["mts"] / 1000)
+            key = {"system_name": live_event["system_name"], "ts_happened_at": live_event["mts"] / 1000}
             # 判断事件不存在，插入事件
             # 最近一分钟的事件不要插入，因为这个数据会被更新
             if (

@@ -151,7 +151,7 @@ class ComponentSystem(LegacyModelMigrator, models.Model):
     @property
     def maintainers(self):
         maintainers = re.findall(r"[^,; ]+", f"{self.component_admin};{self.interface_admin}")
-        return sorted(list(set(maintainers)), key=maintainers.index)
+        return sorted(set(maintainers), key=maintainers.index)
 
 
 class ESBChannel(LegacyModelMigrator, models.Model):

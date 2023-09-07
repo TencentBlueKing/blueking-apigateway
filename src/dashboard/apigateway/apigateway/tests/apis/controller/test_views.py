@@ -324,8 +324,8 @@ class TestMicroGatewayInfoViewSet:
         assert info["name"] == fake_shared_gateway.name
 
         found = False
-        for info in info["related_infos"]:
-            if info["gateway_name"] == fake_gateway.name and info["stage_name"] == fake_stage.name:
+        for i in info["related_infos"]:
+            if i["gateway_name"] == fake_gateway.name and i["stage_name"] == fake_stage.name:
                 found = True
                 break
 
@@ -352,8 +352,8 @@ class TestMicroGatewayInfoViewSet:
         assert info["name"] == fake_edge_gateway.name
 
         found = False
-        for info in info["related_infos"]:
-            if info["gateway_name"] == fake_gateway.name and info["stage_name"] == fake_stage.name:
+        for i in info["related_infos"]:
+            if i["gateway_name"] == fake_gateway.name and i["stage_name"] == fake_stage.name:
                 found = True
                 break
 

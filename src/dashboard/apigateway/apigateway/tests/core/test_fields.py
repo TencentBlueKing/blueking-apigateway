@@ -96,7 +96,7 @@ class TestDurationInSecondField:
         slz = self.DurationSLZ(instance={"duration": duration})
         if will_error:
             with pytest.raises(serializers.ValidationError):
-                slz.data
+                assert slz.data
             return
 
         assert slz.data["duration"] == expected

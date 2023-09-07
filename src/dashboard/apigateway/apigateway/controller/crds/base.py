@@ -60,5 +60,3 @@ class KubernetesResource(KubernetesModel):
 
 class CustomResourceSpec(KubernetesModel):
     """K8S 自定义资源的声明"""
-
-    pass

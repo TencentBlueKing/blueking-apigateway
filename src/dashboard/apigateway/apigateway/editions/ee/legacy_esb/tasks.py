@@ -89,7 +89,7 @@ class LegacyESBSynchronizer:
         wlist = set()
         wlist.update(delimiter.findall(legacy_obj.wlist))
         wlist.update(delimiter.findall(new_obj.wlist))
-        new_obj.wlist = ",".join(sorted(list(wlist)))
+        new_obj.wlist = ",".join(sorted(wlist))
         new_obj.save(update_fields=["wlist"])
 
     def _sync_jwt_key(self, dry_run: bool):

@@ -24,7 +24,7 @@ class OfficialWriteFields:
         official_write_fields: List[str] = []
 
     def update(self, instance, validated_data):
-        if getattr(instance, "is_official"):
+        if instance.is_official:
             validated_data = {
                 key: value for key, value in validated_data.items() if key in self.Meta.official_write_fields
             }

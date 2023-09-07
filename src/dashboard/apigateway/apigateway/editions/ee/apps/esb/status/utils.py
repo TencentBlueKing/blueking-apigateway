@@ -24,7 +24,7 @@ from apigateway.apps.esb.bkcore.models import ComponentSystem
 def get_system_basic_info(system_names):
     """获取系统的基本信息"""
     system_objs = ComponentSystem.objects.filter(name__in=system_names)
-    system_obj_map = dict((x.name, x) for x in system_objs)
+    system_obj_map = {x.name: x for x in system_objs}
     system_basic_info = {}
     for system_name in system_names:
         system_obj = system_obj_map.get(system_name)

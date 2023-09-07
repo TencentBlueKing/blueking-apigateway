@@ -173,10 +173,15 @@ build-backend = "poetry.masonry.api"
 
 [tool.ruff]
 # Enable Pyflakes `E` and `F` codes by default.
-select = ["E", "F", "W", "I", "C90"]
+select = ["E", "F", "W", "I", "C90", "B", "PIE", "C4"]
+# add below when upgrade to >=3.7
+# - B flake8-bugbear
+# - PIE flake8-pie
+# - C4 flake8-comprehensions
+
 # TODO: enable `SIM` / `RET` / `N` / `C4` / `G` / `PT` / `PL` / `TRY` / `PERF`
 # Disable E501 until this issue is fixed: https://github.com/astral-sh/ruff/issues/3825
-ignore = ["E741", "F841", "E501"]
+ignore = ["E741", "F841", "E501", "B017", "B904", "B905"]
 
 # Exclude a variety of commonly ignored directories.
 exclude = [

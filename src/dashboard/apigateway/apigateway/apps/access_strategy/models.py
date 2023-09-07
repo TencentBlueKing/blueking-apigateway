@@ -103,7 +103,7 @@ class AccessStrategy(ConfigModelMixin):
 
         # check the config value
         try:
-            self.config
+            _ = self.config
         except Exception as e:
             logger.exception("the config field is not a valid json")
             raise e
@@ -117,7 +117,7 @@ class AccessStrategy(ConfigModelMixin):
         config = self.config
         config["ip_group_list"].extend(ip_group_list)
         # 去重
-        config["ip_group_list"] = sorted(list(set(config["ip_group_list"])))
+        config["ip_group_list"] = sorted(set(config["ip_group_list"]))
         self.config = config
 
 

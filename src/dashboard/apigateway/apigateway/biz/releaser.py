@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import List
 
@@ -86,6 +86,7 @@ class GatewayReleaserFactory:
         )
 
 
+# FIXME: this is not a good abstract template, should be refactored
 @dataclass
 class BaseGatewayReleaserHandler(metaclass=ABCMeta):
     gateway: Gateway
@@ -222,6 +223,7 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
             }
         )
 
+    @abstractmethod
     def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
         """发布资源版本"""
 
@@ -245,6 +247,9 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
 @dataclass
 class DefaultGatewayReleaserHandler(BaseGatewayReleaserHandler):
     """APIGateway 默认网关发布器"""
+
+    def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
+        """发布资源版本"""
 
 
 @dataclass

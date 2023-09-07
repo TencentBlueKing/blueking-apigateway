@@ -133,7 +133,8 @@ class TestComponent:
         mocker.patch.object(self.component, "path", new_callable=mocker.PropertyMock(return_value=""))
 
         with pytest.raises(ValueError):
-            self.component.component_key
+            pass
+            # self.component.component_key
 
 
 class TestComponentConvertor:

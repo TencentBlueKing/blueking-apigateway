@@ -22,11 +22,9 @@ from django.contrib.auth.backends import ModelBackend
 class BKTicketBackend(ModelBackend):
     def get_credentials(self, request):
         """获取认证信息"""
-        pass
 
     def verify_credentials(self, credentials):
         """校验认证信息"""
-        pass
 
     def authenticate(self, request):
         pass

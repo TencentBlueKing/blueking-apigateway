@@ -109,7 +109,7 @@ class TestReleasedResourceViewSet:
         result = get_response_json(response)
 
         if will_error:
-            response.status_code == 404
+            assert response.status_code == 404
             assert result["code"] == 40000
             return
 

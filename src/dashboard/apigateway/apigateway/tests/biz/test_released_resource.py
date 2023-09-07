@@ -79,13 +79,11 @@ class TestReleasedResource:
     )
     def test_init(self, config, expected):
         data = ReleasedResourceData(
-            **{
-                "id": 1,
-                "method": "GET",
-                "path": "/foo",
-                "match_subpath": False,
-                "contexts": {"resource_auth": {"config": json.dumps(config)}},
-            }
+            id=1,
+            method="GET",
+            path="/foo",
+            match_subpath=False,
+            contexts={"resource_auth": {"config": json.dumps(config)}},
         )
         assert data.verified_user_required == expected["verified_user_required"]
         assert data.resource_perm_required == expected["resource_perm_required"]

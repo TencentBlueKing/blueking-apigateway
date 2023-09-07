@@ -33,5 +33,3 @@ def check_result_code(name: str, exception_type: Type[Exception], code: Optional
 
 class LockTimeout(Exception):
     """Lock timeout error"""
-
-    pass
