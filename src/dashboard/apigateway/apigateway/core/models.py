@@ -287,7 +287,7 @@ class Proxy(ConfigModelMixin):
         data = {
             "id": self.pk,
             "type": self.type,
-            "backend_id": self.backend.pk if self.backend else 0,
+            "backend_id": self.backend_id,
             # save the string
             # "config": self._config,
             "config": json.dumps(self.config, separators=(",", ":")),

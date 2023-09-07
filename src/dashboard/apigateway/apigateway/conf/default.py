@@ -160,7 +160,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "wsgi.application"
 
-
 DATABASE_ROUTERS = [
     "apigateway.utils.db_router.DBRouter",
 ]
@@ -436,7 +435,6 @@ if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
         }
     )
 
-
 # log 配置
 LOG_LEVEL = env.str("LOG_LEVEL", "WARNING")
 LOG_DIR = env.str("BK_APIGW_LOG_PATH", "")
@@ -466,6 +464,9 @@ if BK_APIGW_ES_HOST and BK_APIGW_ES_PORT:
 DEFAULT_ES_SEARCH_TIMEOUT = env.int("DEFAULT_ES_SEARCH_TIMEOUT", 30)
 DEFAULT_ES_HTTP_TIMEOUT = env.int("DEFAULT_ES_HTTP_TIMEOUT", 30)
 DEFAULT_ES_AGGS_TERM_SIZE = env.int("DEFAULT_ES_AGGS_TERM_SIZE", 1000)
+
+# 清理任务相关配置
+CLEAN_PUBLISH_EVENT_INTERVAL_DAYS = env.int("CLEAN_PUBLISH_EVENT_INTERVAL_DAYS", 1000)
 
 # bkrepo 配置
 BKREPO_ENDPOINT_URL = env.str("BKREPO_ENDPOINT_URL", "")
@@ -776,7 +777,6 @@ USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
 USE_BKAPI_BKMONITORV3 = env.bool("USE_BKAPI_BKMONITORV3", False)
 # 是否使用 bklog 网关 API
 USE_BKAPI_BK_LOG = env.bool("USE_BKAPI_BK_LOG", False)
-
 
 # ==============================================================================
 # Feature Flag

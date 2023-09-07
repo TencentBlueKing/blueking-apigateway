@@ -180,16 +180,17 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
     )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = GatewayUpdateStatusInputSLZ(instance=instance, data=request.data)
+        slz = self.get_serializer(instance=instance, data=request.data)
         slz.is_valid(raise_exception=True)
+
+        is_need_publish = slz.validated_data["status"] is not instance.status
 
         slz.save(updated_by=request.user.username)
 
-        if instance.is_micro_gateway:
-            # 触发环境发布
+        # 触发网关发布
+        if is_need_publish:
             source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
-            username = request.user.username
-            trigger_gateway_publish(source, username, instance.id)
+            trigger_gateway_publish(source, request.user.username, instance.id)
 
         GatewayHandler.record_audit_log_success(
             username=request.user.username,
@@ -199,4 +200,4 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
             instance_name=instance.name,
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

@@ -19,6 +19,7 @@ import logging
 from datetime import datetime, timedelta
 
 from celery import shared_task
+from django.conf import settings
 
 from apigateway.core.models import PublishEvent
 
@@ -30,7 +31,7 @@ def delete_old_publish_events():
     """
     Deletes publish events that are more than a year old.
     """
-    one_year_ago = datetime.now() - timedelta(days=365)
+    one_year_ago = datetime.now() - timedelta(days=settings.CLEAN_PUBLISH_EVENT_INTERVAL_DAYS)
     logger.info(f"deleting publish events older than {one_year_ago}")
 
     deleted_count, _ = PublishEvent.objects.filter(created_at__lt=one_year_ago).delete()

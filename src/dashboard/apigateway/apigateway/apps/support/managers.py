@@ -241,8 +241,11 @@ class APISDKManager(models.Manager):
     def get_latest_sdk(self, gateway_id, language):
         return self.filter(gateway_id=gateway_id, language=language).order_by("-id").first()
 
-    def get_resource_version_sdk_count(self, resource_version_id, language):
+    def get_resource_version_language_sdk_count(self, resource_version_id, language):
         return self.filter(resource_version_id=resource_version_id, language=language).count()
+
+    def get_resource_version_sdk_count(self, resource_version_id):
+        return self.filter(resource_version_id=resource_version_id).count()
 
     def should_be_set_to_public_latest(
         self, gateway_id: int, resource_version_id: int, is_uploaded_to_pypi: bool

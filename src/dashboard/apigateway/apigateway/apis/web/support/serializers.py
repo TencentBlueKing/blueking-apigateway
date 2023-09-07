@@ -80,6 +80,7 @@ class SDKListOutputSLZ(serializers.Serializer):
     version_number = serializers.CharField(source="instance.version_number")
     created_time = serializers.DateTimeField(source="instance.created_time")
     updated_time = serializers.DateTimeField(source="instance.updated_time")
+    created_by = serializers.CharField(source="instance.created_by")
     config = serializers.DictField()
     name = serializers.CharField(source="instance.name")
 

@@ -161,15 +161,21 @@ class HttpResourceConvertor(BaseConvertor):
 
     def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any], backend_id: int) -> Optional[Upstream]:
         # 如果是v2，需要从backend_config里面去拿upstreams
-        upstreams = (
-            resource_proxy.get("upstreams")
-            if not self._release_data.is_schema_v2
-            else BackendConfig.objects.filter(
-                backend_id=backend_id, gateway_id=self._release_data.gateway.pk, stage_id=self._release_data.stage.pk
+
+        upstreams = None
+
+        if self._release_data.is_schema_v2:
+            upstreams = (
+                BackendConfig.objects.filter(
+                    backend_id=backend_id,
+                    gateway_id=self._release_data.gateway.pk,
+                    stage_id=self._release_data.stage.pk,
+                )
+                .values_list("config", flat=True)
+                .first()
             )
-            .values_list("config", flat=True)
-            .first()
-        )
+        else:
+            upstreams = resource_proxy.get("upstreams")
 
         if not upstreams:
             return None

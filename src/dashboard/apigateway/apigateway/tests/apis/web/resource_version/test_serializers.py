@@ -114,6 +114,7 @@ class TestResourceVersionListOutputSLZ:
                 "comment": resource_version.comment,
                 "resource_version_display": "1.0.1(test)",
                 "has_sdk": False,
+                "sdk_count": 0,
                 "released_stages": [
                     {
                         "id": 1,

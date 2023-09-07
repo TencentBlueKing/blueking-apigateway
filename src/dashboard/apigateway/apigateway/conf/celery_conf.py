@@ -44,7 +44,7 @@ CELERY_BEAT_SCHEDULE = {
     # },
     "apigateway.controller.tasks.clean_task.delete_old_publish_events": {
         "task": "apigateway.controller.clean_task.delete_old_publish_events",
-        "schedule": crontab(day_of_week="monday", hour=0, minute=0),
+        "schedule": crontab(day_of_week="*", hour=0, minute=0),
     },
 }
 
