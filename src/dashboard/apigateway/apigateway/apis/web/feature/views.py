@@ -19,6 +19,7 @@
 import copy
 
 from django.conf import settings
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -26,11 +27,14 @@ from apigateway.apps.feature.models import UserFeatureFlag
 from apigateway.utils.responses import OKJsonResponse
 
 
-class FeatureFlagListApi(generics.ListAPIView):
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.Feature"],
-    )
+    ),
+)
+class FeatureFlagListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """获取特性开关列表"""
         feature_flags = copy.copy(settings.DEFAULT_FEATURE_FLAG)

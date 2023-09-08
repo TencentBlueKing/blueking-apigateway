@@ -89,6 +89,7 @@ class TestResourceVersionViewSet:
             "apigateway.apis.open.resource_version.views.Release.objects.get_stage_ids_unreleased_the_version",
             return_value=unreleased_stage_ids,
         )
+        mocker.patch("apigateway.apis.open.resource_version.views.ReleaseBatchHandler.release_batch")
 
         response = request_view(
             "POST",

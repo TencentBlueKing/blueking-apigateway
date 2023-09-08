@@ -30,7 +30,7 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.released_resource import ReleasedResourceDataHandler
+from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.validators import StageVarsValuesValidator
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import StageProxyHTTPContext
@@ -232,7 +232,7 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
 
     def _update_and_clear_released_resources(self):
         ReleasedResource.objects.save_released_resource(self.resource_version)
-        ReleasedResourceDataHandler.clear_unreleased_resource(self.gateway.id)
+        ReleasedResourceHandler.clear_unreleased_resource(self.gateway.id)
 
     def _update_and_clear_released_resource_docs(self):
         resource_doc_version = ResourceDocVersion.objects.get_by_resource_version_id(
