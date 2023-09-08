@@ -31,9 +31,9 @@ def delete_old_publish_events():
     """
     Deletes publish events that are more than a year old.
     """
-    one_year_ago = datetime.now() - timedelta(days=settings.CLEAN_PUBLISH_EVENT_INTERVAL_DAYS)
-    logger.info(f"deleting publish events older than {one_year_ago}")
+    deleted_end_time = datetime.now() - timedelta(days=settings.CLEAN_PUBLISH_EVENT_INTERVAL_DAYS)
+    logger.info(f"deleting publish events older than {deleted_end_time}")
 
-    deleted_count, _ = PublishEvent.objects.filter(created_at__lt=one_year_ago).delete()
+    deleted_count, _ = PublishEvent.objects.filter(created_at__lt=deleted_end_time).delete()
 
-    logger.info(f"deleted {deleted_count} publish events older than {one_year_ago}")
+    logger.info(f"deleted {deleted_count} publish events older than {deleted_end_time}")
