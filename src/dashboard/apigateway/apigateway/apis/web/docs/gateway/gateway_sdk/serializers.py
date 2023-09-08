@@ -48,7 +48,7 @@ class SDKSLZ(serializers.Serializer):
     install_command = serializers.CharField(read_only=True)
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk"
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.SDKSLZ"
 
 
 class StageSDKOutputSLZ(serializers.Serializer):
@@ -65,3 +65,6 @@ class SDKUsageExampleInputSLZ(serializers.Serializer):
 
 class SDKUsageExampleOutputSLZ(serializers.Serializer):
     content = serializers.CharField(allow_blank=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.SDKUsageExampleOutputSLZ"

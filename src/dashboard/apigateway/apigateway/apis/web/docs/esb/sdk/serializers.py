@@ -24,6 +24,9 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 class SDKListInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.esb.sdk.SDKListInputSLZ"
+
 
 class SDKRetrieveInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
@@ -32,9 +35,15 @@ class SDKRetrieveInputSLZ(serializers.Serializer):
 class SDKDocInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.esb.sdk.SDKDocInputSLZ"
+
 
 class SDKDocOutputSLZ(serializers.Serializer):
     content = serializers.CharField()
+
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.esb.sdk.SDKDocOutputSLZ"
 
 
 class SDKUsageExampleInputSLZ(serializers.Serializer):
@@ -46,6 +55,9 @@ class SDKUsageExampleInputSLZ(serializers.Serializer):
 class SDKUsageExampleOutputSLZ(serializers.Serializer):
     content = serializers.CharField()
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.esb.sdk.SDKUsageExampleOutputSLZ"
+
 
 class SDKOutputSLZ(serializers.Serializer):
     board_label = serializers.CharField()
@@ -56,4 +68,4 @@ class SDKOutputSLZ(serializers.Serializer):
     sdk_install_command = serializers.CharField()
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.esb.sdk"
+        ref_name = "apigateway.apis.web.docs.esb.sdk.SDKOutputSLZ"
