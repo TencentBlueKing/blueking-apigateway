@@ -51,3 +51,4 @@ class DocOutputSLZ(serializers.ModelSerializer):
             "content",
         ]
         read_only_fields = fields
+        ref_name = "apigateway.apis.web.resource.doc"

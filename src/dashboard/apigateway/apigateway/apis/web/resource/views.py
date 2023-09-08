@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 from django.db import transaction
+from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -67,13 +68,22 @@ class ResourceQuerySetMixin:
         return Resource.objects.filter(gateway=self.request.gateway)
 
 
-class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=ResourceQueryInputSLZ,
         responses={status.HTTP_200_OK: ResourceListOutputSLZ(many=True)},
         tags=["WebAPI.Resource"],
-    )
+    ),
+)
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_201_CREATED: ""}, request_body=ResourceInputSLZ, tags=["WebAPI.Resource"]
+    ),
+)
+class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         slz = ResourceQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -97,9 +107,6 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
         )
         return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
 
-    @swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""}, request_body=ResourceInputSLZ, tags=["WebAPI.Resource"]
-    )
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         slz = ResourceInputSLZ(
@@ -130,10 +137,22 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(responses={status.HTTP_200_OK: ResourceOutputSLZ()}, tags=["WebAPI.Resource"]),
+)
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""}, request_body=ResourceInputSLZ, tags=["WebAPI.Resource"]
+    ),
+)
+@method_decorator(
+    name="delete", decorator=swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.Resource"])
+)
 class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "id"
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ResourceOutputSLZ()}, tags=["WebAPI.Resource"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = ResourceOutputSLZ(
@@ -146,7 +165,6 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         )
         return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, request_body=ResourceInputSLZ, tags=["WebAPI.Resource"])
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -179,7 +197,6 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 
         return OKJsonResponse()
 
-    @swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.Resource"])
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -198,12 +215,23 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
-class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIView, generics.DestroyAPIView):
-    @swagger_auto_schema(
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=ResourceBatchUpdateInputSLZ,
         tags=["WebAPI.Resource"],
-    )
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        request_body=ResourceBatchDestroyInputSLZ,
+        tags=["WebAPI.Resource"],
+    ),
+)
+class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIView, generics.DestroyAPIView):
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         slz = ResourceBatchUpdateInputSLZ(data=request.data)
@@ -229,11 +257,6 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
 
         return OKJsonResponse()
 
-    @swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=ResourceBatchDestroyInputSLZ,
-        tags=["WebAPI.Resource"],
-    )
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         slz = ResourceBatchDestroyInputSLZ(data=request.data)
@@ -260,15 +283,18 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
+        request_body=ResourceLabelUpdateInputSLZ,
+        tags=["WebAPI.Resource"],
+    ),
+)
 class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
     lookup_url_kwarg = "resource_id"
     lookup_field = "id"
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        request_body=ResourceLabelUpdateInputSLZ,
-        tags=["WebAPI.Resource"],
-    )
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         slz = ResourceLabelUpdateInputSLZ(data=request.data)
@@ -473,11 +499,14 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
         return re.sub(STAGE_VAR_PATTERN, replace, url)
 
 
-class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListAPIView):
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ResourceWithVerifiedUserRequiredOutputSLZ(many=True)},
         tags=["WebAPI.Resource"],
-    )
+    ),
+)
+class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """过滤出需要认证用户的资源列表"""
         resources = list(self.get_queryset().values("id", "name"))
