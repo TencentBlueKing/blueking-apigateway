@@ -57,7 +57,6 @@ urlpatterns = [
     # open api
     path("backend/api/v1/", include("apigateway.apis.open.urls")),
     # api-support backend/docs urls
-    path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
     path("backend/docs/gateways/", include("apigateway.apis.web.docs.gateway.gateway.urls")),
     path(
         "backend/docs/gateways/<slug:gateway_name>/resources/",
@@ -69,6 +68,12 @@ urlpatterns = [
         "backend/docs/gateways/<slug:gateway_name>/sdks/",
         include("apigateway.apis.web.docs.gateway.gateway_sdk.urls"),
     ),
+    path("backend/docs/esb/boards/<slug:board>/systems/", include("apigateway.apis.web.docs.esb.system.urls")),
+    path(
+        "backend/docs/esb/boards/<slug:board>/systems/<slug:system_name>/components/",
+        include("apigateway.apis.web.docs.esb.component.urls"),
+    ),
+    path("backend/docs/esb/boards/<slug:board>/sdks/", include("apigateway.apis.web.docs.esb.sdk.urls")),
     # web api
     path("backend/i18n/setlang/", set_language, name="set_language"),
     path("backend/users/", include("apigateway.apis.web.user.urls")),
