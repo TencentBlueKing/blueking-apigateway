@@ -92,7 +92,7 @@ class DslESClient(ElasticsearchGetter, BaseESClient):
             logger.exception("failed to connect elasticsearch.")
             raise error_codes.INTERNAL.format(es_hosts_display=self._get_es_hosts_display(), err=err)
         except (ConnectionTimeout, ConnectTimeoutError):
-            logger.error(
+            logger.exception(
                 "connect to elasticsearch timeout. timeout=%s, index=%s, body=%s",
                 self._get_es_search_timeout(),
                 self._get_es_index(),
@@ -102,7 +102,7 @@ class DslESClient(ElasticsearchGetter, BaseESClient):
                 es_hosts_display=self._get_es_hosts_display(), timeout=self._get_es_search_timeout()
             )
         except NotFoundError:
-            logger.error("elasticsearch index not found. index=%s", self._get_es_index())
+            logger.exception("elasticsearch index not found. index=%s", self._get_es_index())
             raise error_codes.INTERNAL.format(
                 es_hosts_display=self._get_es_hosts_display(), index=self._get_es_index()
             )
@@ -144,7 +144,7 @@ class RawESClient(ElasticsearchGetter, BaseESClient):
             logger.exception("failed to connect elasticsearch.")
             raise error_codes.INTERNAL.format(es_hosts_display=self._get_es_hosts_display(), err=err)
         except (ConnectionTimeout, ConnectTimeoutError):
-            logger.error(
+            logger.exception(
                 "connect to elasticsearch timeout. timeout=%s, index=%s, body=%s",
                 self._get_es_search_timeout(),
                 self._get_es_index(),
@@ -154,7 +154,7 @@ class RawESClient(ElasticsearchGetter, BaseESClient):
                 es_hosts_display=self._get_es_hosts_display(), timeout=self._get_es_search_timeout()
             )
         except NotFoundError:
-            logger.error("elasticsearch index not found. index=%s", self._get_es_index())
+            logger.exception("elasticsearch index not found. index=%s", self._get_es_index())
             raise error_codes.INTERNAL.format(
                 es_hosts_display=self._get_es_hosts_display(), index=self._get_es_index()
             )
@@ -192,7 +192,7 @@ class ESClientFactory:
         if es_client_type == ESClientTypeEnum.BK_LOG.value:
             return BKLogESClient(es_index)
 
-        elif es_client_type == ESClientTypeEnum.ELASTICSEARCH.value:
+        if es_client_type == ESClientTypeEnum.ELASTICSEARCH.value:
             return RawESClient(es_index)
 
         raise ValueError(f"unsupported es_client_type: {es_client_type}")

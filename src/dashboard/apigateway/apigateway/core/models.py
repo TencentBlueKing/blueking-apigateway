@@ -310,10 +310,10 @@ class Proxy(ConfigModelMixin):
 
         # check the config value
         try:
-            self.config
-        except Exception as e:
+            _ = self.config
+        except Exception:
             logger.exception("the config field is not a valid json")
-            raise e
+            raise
 
         super().save(*args, **kwargs)
 
@@ -466,10 +466,10 @@ class Context(ConfigModelMixin):
 
         # check the config value
         try:
-            self.config
-        except Exception as e:
+            _ = self.config
+        except Exception:
             logger.exception("the config field is not a valid json")
-            raise e
+            raise
 
         super().save(*args, **kwargs)
 

@@ -33,7 +33,7 @@ class RequestAPIHandler:
 
     def call_api(self, operation, *args, **kwargs) -> Tuple[Dict[str, Any], Response]:
         try:
-            response = getattr(operation, "request")(*args, **kwargs)
+            response = operation.request(*args, **kwargs)
         except BKAPIError as err:
             raise RemoteRequestError(self.name, err)
 

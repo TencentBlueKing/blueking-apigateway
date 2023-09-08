@@ -94,10 +94,10 @@ class PermissionManager:
         if status == ApplyStatusEnum.APPROVED.value:
             return component_ids, []
 
-        elif status == ApplyStatusEnum.REJECTED.value:
+        if status == ApplyStatusEnum.REJECTED.value:
             return [], component_ids
 
-        elif status == ApplyStatusEnum.PARTIAL_APPROVED.value:
+        if status == ApplyStatusEnum.PARTIAL_APPROVED.value:
             component_id_set = set(component_ids)
             part_component_id_set = set(part_component_ids or [])
             return list(component_id_set & part_component_id_set), list(component_id_set - part_component_id_set)

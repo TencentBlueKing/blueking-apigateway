@@ -102,10 +102,9 @@ def test_lock_acquire_failed(redis_client):
         time.sleep(1)
 
         # 获取锁2，期望获取锁失败
-        with pytest.raises(LockTimeout):
-            with lock2:
-                # 模拟持有锁时的操作
-                time.sleep(1)
+        with pytest.raises(LockTimeout), lock2:
+            # 模拟持有锁时的操作
+            time.sleep(1)
 
     # 获取锁2，期望获取锁成功
     with lock2:

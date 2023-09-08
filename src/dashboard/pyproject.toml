@@ -173,10 +173,44 @@ build-backend = "poetry.masonry.api"
 
 [tool.ruff]
 # Enable Pyflakes `E` and `F` codes by default.
-select = ["E", "F", "W", "I", "C90"]
-# TODO: enable `SIM` / `RET` / `N` / `C4` / `G` / `PT` / `PL` / `TRY` / `PERF`
+select = ["E", "F", "W", "I", "C90", "B", "PIE", "C4", "PL", "RET", "N",  "PERF", "G", "TRY", "SIM",]
+# TODO: enable `PT`
+
 # Disable E501 until this issue is fixed: https://github.com/astral-sh/ruff/issues/3825
-ignore = ["E741", "F841", "E501"]
+ignore = [
+    # https://beta.ruff.rs/docs/rules/assert-raises-exception/
+    "B017",
+    # https://beta.ruff.rs/docs/rules/raise-without-from-inside-except/
+    "B904",
+    # https://beta.ruff.rs/docs/rules/zip-without-explicit-strict/
+    "B905",
+    # https://beta.ruff.rs/docs/rules/line-too-long/
+    "E501",
+    # https://beta.ruff.rs/docs/rules/ambiguous-variable-name/
+    "E741",
+    # https://beta.ruff.rs/docs/rules/unused-variable/
+    "F841",
+    # https://beta.ruff.rs/docs/rules/error-suffix-on-exception-name/
+    "N818",
+    # https://beta.ruff.rs/docs/rules/try-except-in-loop/
+    "PERF203",
+    # https://beta.ruff.rs/docs/rules/too-many-arguments/
+    "PLR0913",
+    # https://beta.ruff.rs/docs/rules/raise-vanilla-args/
+    "TRY003",
+    # https://beta.ruff.rs/docs/rules/reraise-no-cause/
+    "TRY200",
+    # https://beta.ruff.rs/docs/rules/try-consider-else/
+    "TRY300",
+    # https://beta.ruff.rs/docs/rules/raise-within-try/
+    "TRY301",
+    # https://beta.ruff.rs/docs/rules/magic-value-comparison/
+    "PLR2004",
+    # https://beta.ruff.rs/docs/rules/suppressible-exception/
+    "SIM105",
+    # https://beta.ruff.rs/docs/rules/open-file-with-context-handler/
+    "SIM115",
+]
 
 # Exclude a variety of commonly ignored directories.
 exclude = [

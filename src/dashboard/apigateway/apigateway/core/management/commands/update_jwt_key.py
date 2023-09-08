@@ -53,7 +53,9 @@ class Command(BaseCommand):
         JWT.objects.update_jwt_key(gateway, decoded_private_key, decoded_public_key)
 
         logger.info(
-            f"update gateway jwt key success: gateway_name={gateway_name}, public_key=`{smart_str(decoded_public_key)}`"
+            "update gateway jwt key success: gateway_name=%s, public_key=`%s`",
+            gateway_name,
+            smart_str(decoded_public_key),
         )
 
     def _decode_base64(self, encoded_key: str) -> bytes:

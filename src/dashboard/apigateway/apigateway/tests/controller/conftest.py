@@ -246,6 +246,7 @@ def edge_resource_overwrite_stage_snapshot(edge_resource_version, edge_resource_
     for i in edge_resource_version.data:
         if i["id"] == edge_resource_overwrite_stage.id:
             return i
+    return None
 
 
 @fixture
@@ -253,6 +254,7 @@ def edge_resource_inherit_stage_snapshot(edge_resource_version, edge_resource_in
     for i in edge_resource_version.data:
         if i["id"] == edge_resource_inherit_stage.id:
             return i
+    return None
 
 
 @fixture

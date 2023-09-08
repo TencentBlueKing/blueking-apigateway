@@ -111,7 +111,7 @@ class RateLimitYamlConvertor(BasePluginYamlConvertor):
 class IPRestrictionYamlConvertor(BasePluginYamlConvertor):
     def to_representation(self, payload: str) -> str:
         """this is a compatibility method, for old data, convert to new format"""
-        if payload.startswith("whitelist: |-") or payload.startswith("blacklist: |-"):
+        if payload.startswith(("whitelist: |-", "blacklist: |-")):
             return payload
 
         # old: whitelist:\n  - 1.1.1.1\n  - 2.2.2.2\n  - 1.1.1.1/24

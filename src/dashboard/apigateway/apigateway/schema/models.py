@@ -96,4 +96,4 @@ class Schema(TimestampedModelMixin):
             json.loads(data)
             self._schema = data
         else:
-            raise ValueError("data should be dict or str")
+            raise TypeError("data should be dict or str")

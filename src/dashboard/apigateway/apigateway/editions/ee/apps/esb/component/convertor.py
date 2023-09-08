@@ -94,7 +94,7 @@ class Component(BaseModel):
     def component_key(self) -> str:
         if self.id:
             return str(self.id)
-        elif self.path:
+        if self.path:
             return f"{self.method}:{self.path}"
 
         raise ValueError("component id or method+path cannot be empty at the same time")
@@ -126,7 +126,7 @@ class ComponentConvertor:
             try:
                 parsed_components.append(Component.parse_obj(component))
             except ValidationError:
-                logger.exception(f"component configuration error, please check: {json.dumps(component)}")
+                logger.exception("component configuration error, please check: %s", json.dumps(component))
                 raise error_codes.INTERNAL.format(message=_("组件配置错误，请进行检查。"))
         return parsed_components
 

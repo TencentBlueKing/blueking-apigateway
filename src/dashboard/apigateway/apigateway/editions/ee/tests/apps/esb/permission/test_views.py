@@ -105,7 +105,7 @@ class TestAppPermissionApplyRecordViewSet:
         result = get_response_json(response)
 
         assert response.status_code == 200
-        assert 1 == AppComponentPermission.objects.filter(bk_app_code=unique_id).count()
+        assert AppComponentPermission.objects.filter(bk_app_code=unique_id).count() == 1
 
 
 class TestAppComponentPermissionViewSet:
@@ -132,7 +132,7 @@ class TestAppComponentPermissionViewSet:
         result = get_response_json(response)
 
         assert response.status_code == 200
-        assert 2 == len(result["data"]["results"])
+        assert len(result["data"]["results"]) == 2
 
     def test_renew(self, faker):
         p1 = G(AppComponentPermission, expires=faker.past_datetime(tzinfo=datetime.timezone.utc))
@@ -173,4 +173,4 @@ class TestAppComponentPermissionViewSet:
 
         assert response.status_code == 200
 
-        assert 1 == AppComponentPermission.objects.filter(board=unique_id).count()
+        assert AppComponentPermission.objects.filter(board=unique_id).count() == 1

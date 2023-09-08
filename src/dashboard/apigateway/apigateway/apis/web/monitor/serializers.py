@@ -108,7 +108,7 @@ class AlarmStrategyListOutputSLZ(serializers.ModelSerializer):
         lookup_field = "id"
 
     def get_api_label_names(self, obj):
-        return sorted(list(obj.api_labels.values_list("name", flat=True)))
+        return sorted(obj.api_labels.values_list("name", flat=True))
 
 
 class AlarmStrategyUpdateStatusInputSLZ(serializers.ModelSerializer):
@@ -143,7 +143,7 @@ class AlarmRecordQueryOutputSLZ(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_alarm_strategy_names(self, obj):
-        return sorted(list(obj.alarm_strategies.values_list("name", flat=True)))
+        return sorted(obj.alarm_strategies.values_list("name", flat=True))
 
 
 class AlarmStrategyQueryInputSLZ(serializers.Serializer):

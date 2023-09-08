@@ -63,7 +63,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
     def get_manager(cls, grant_dimension: str) -> "PermissionDimensionManager":
         if grant_dimension == GrantDimensionEnum.API.value:
             return APIPermissionDimensionManager()
-        elif grant_dimension == GrantDimensionEnum.RESOURCE.value:
+        if grant_dimension == GrantDimensionEnum.RESOURCE.value:
             return ResourcePermissionDimensionManager()
 
         raise error_codes.INVALID_ARGUMENT.format(f"unsupported grant_dimension: {grant_dimension}")
@@ -299,10 +299,10 @@ class ResourcePermissionDimensionManager(PermissionDimensionManager):
         if status == ApplyStatusEnum.APPROVED.value:
             return resource_ids, []
 
-        elif status == ApplyStatusEnum.REJECTED.value:
+        if status == ApplyStatusEnum.REJECTED.value:
             return [], resource_ids
 
-        elif status == ApplyStatusEnum.PARTIAL_APPROVED.value:
+        if status == ApplyStatusEnum.PARTIAL_APPROVED.value:
             resource_id_set = set(resource_ids)
             part_resource_id_set = set(part_resource_ids or [])
             return list(resource_id_set & part_resource_id_set), list(resource_id_set - part_resource_id_set)

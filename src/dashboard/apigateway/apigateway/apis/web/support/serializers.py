@@ -38,13 +38,15 @@ class APISDKGenerateInputSLZ(serializers.Serializer):
 
     def validate(self, data):
         # 用户指定版本号的情况下，需要检查一下版本是否存在
-        if data["version"]:
-            if APISDK.objects.filter_sdk(
+        if (
+            data["version"]
+            and APISDK.objects.filter_sdk(
                 gateway=data["gateway"],
                 language=data["language"],
                 version_number=data["version"],
-            ).exists():
-                raise serializers.ValidationError(_("版本已存在。"))
+            ).exists()
+        ):
+            raise serializers.ValidationError(_("版本已存在。"))
 
         latest_sdk = APISDK.objects.get_latest_sdk(gateway_id=data["gateway"].id, language=data["language"])
         if latest_sdk:

@@ -129,8 +129,4 @@ class ChartHelper:
             return False
 
         data = result["data"]
-        for i in data["data"]:
-            if i.get("version") == version:
-                return True
-
-        return False
+        return any(i.get("version") == version for i in data["data"])

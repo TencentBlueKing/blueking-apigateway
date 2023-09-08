@@ -129,12 +129,15 @@ class HelmReleaseContext(BaseModel):
 class HelmDistributor(BaseDistributor):
     def __init__(
         self,
-        operator: str = getattr(settings, "BK_APP_CODE", ""),
+        operator: str = "",
         chart_helper: Optional[ChartHelper] = None,
         release_helper: Optional[ReleaseHelper] = None,
         generate_chart: bool = True,
         release_callback: Optional[Callable[[Release, MicroGateway, ReleaseInfo], bool]] = None,
     ):
+        if not operator:
+            self.operator = getattr(settings, "BK_APP_CODE", "")
+
         self.operator = operator
         self.chart_helper = chart_helper or ChartHelper()
         self.release_helper = release_helper or ReleaseHelper()

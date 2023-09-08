@@ -32,6 +32,7 @@ class TestHttpResourceConvertor:
         for plugin in plugins:
             if plugin.name == name:
                 return plugin
+        return None
 
     def test_convert_http_resource_plugin_bk_resource_context(
         self, edge_resource_inherit_stage_snapshot, fake_http_resource_convertor

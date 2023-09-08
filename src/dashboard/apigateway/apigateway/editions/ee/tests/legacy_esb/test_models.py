@@ -66,8 +66,8 @@ class TestLegacyModelMigrator:
 
 
 def test_convert_is_official_to_data_type():
-    assert 1 == legacy_models._convert_is_official_to_data_type(True)
-    assert 3 == legacy_models._convert_is_official_to_data_type(False)
+    assert legacy_models._convert_is_official_to_data_type(True) == 1
+    assert legacy_models._convert_is_official_to_data_type(False) == 3
 
 
 class TestComponentSystem:

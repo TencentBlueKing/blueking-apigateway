@@ -133,7 +133,7 @@ class HttpResourceConvertor(BaseConvertor):
             "app_verified_required": False,
             "resource_perm_required": False,
         }
-        resource = {
+        return {
             "id": -1,
             "name": name,
             "description": "获取发布信息，用于检查版本发布结果",
@@ -157,7 +157,6 @@ class HttpResourceConvertor(BaseConvertor):
             "disabled_stages": [],
             "api_labels": [],
         }
-        return resource
 
     def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any], backend_id: int) -> Optional[Upstream]:
         # 如果是v2，需要从backend_config里面去拿upstreams

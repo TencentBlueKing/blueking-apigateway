@@ -207,7 +207,7 @@ class CrdChartGenerator:
             for term in terms:
                 func, _, value = term.partition(" ")
                 if func == "nindent":
-                    term = f"nindent {int(value) + indent_level * indent_step}"
+                    term = f"nindent {int(value) + indent_level * indent_step}"  # ruff: noqa: PLW2901
                 fixed.append(term)
 
             return "{{ %s }}" % " | ".join(fixed)
@@ -256,8 +256,6 @@ class CrdChartGenerator:
         self.generate_chart(str(chart_dir))
 
         archive = TgzArchiveFile()
-        files = []
-        for f in iter_files_recursive(chart_dir):
-            files.append(f.relative_to(output_dir).as_posix())
+        files = [f.relative_to(output_dir).as_posix() for f in iter_files_recursive(chart_dir)]
 
         return archive.archive(str(output), "chart.tgz", files)

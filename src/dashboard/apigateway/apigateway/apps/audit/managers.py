@@ -42,9 +42,6 @@ class AuditEventLogManager(models.Manager):
             queryset = queryset.filter(op_type=op_type)
 
         if username:
-            if fuzzy:
-                queryset = queryset.filter(username__icontains=username)
-            else:
-                queryset = queryset.filter(username=username)
+            queryset = queryset.filter(username__icontains=username) if fuzzy else queryset.filter(username=username)
 
         return queryset

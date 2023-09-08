@@ -67,6 +67,7 @@ class IPRestrictionConvertor(PluginConvertor):
         if isinstance(item, list):
             # deduplicate
             return list(set(item))
+        return None
 
     def convert(self, plugin_config: PluginConfig) -> Dict[str, Any]:
         """generate config for bk-ip-restriction

@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import contextlib
 import logging
 import time
 from typing import Dict
@@ -53,16 +54,16 @@ def get_redis_pool(redis_conf):
             password=redis_conf["password"],
             max_connections=redis_conf["max_connections"],
         )
-    else:
-        return redis.BlockingConnectionPool(
-            host=redis_conf["host"],
-            port=redis_conf["port"],
-            db=redis_conf.get("db", 0),
-            password=redis_conf["password"],
-            max_connections=redis_conf["max_connections"],
-            socket_timeout=REDIS_TIMEOUT,
-            timeout=REDIS_TIMEOUT,
-        )
+
+    return redis.BlockingConnectionPool(
+        host=redis_conf["host"],
+        port=redis_conf["port"],
+        db=redis_conf.get("db", 0),
+        password=redis_conf["password"],
+        max_connections=redis_conf["max_connections"],
+        socket_timeout=REDIS_TIMEOUT,
+        timeout=REDIS_TIMEOUT,
+    )
 
 
 def get_redis_client(name: str, redis_conf):
@@ -129,10 +130,8 @@ class Lock(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         """释放锁"""
-        try:
+        with contextlib.suppress(Exception):
             self.client.delete(self.key)
-        except Exception:
-            pass
 
     def force_unlock(self):
         """强制释放锁"""

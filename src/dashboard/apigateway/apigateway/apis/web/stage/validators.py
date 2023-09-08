@@ -44,7 +44,7 @@ class StageVarsValidator(GetGatewayFromContextMixin):
         """
         校验变量的 key 是否符合正则表达式
         """
-        for key in _vars.keys():
+        for key in _vars:
             if not STAGE_VAR_NAME_PATTERN.match(key):
                 raise serializers.ValidationError(
                     _("变量名【{key}】非法，应由字母、数字、下划线（_）组成，首字符必须是字母，长度小于50个字符。").format(key=key),

@@ -106,7 +106,7 @@ class BKIAMClient:
         :param members: 待添加成员名称列表
         """
         if not members:
-            return
+            return None
 
         api_result, response = self._request_handler.call_api(
             self._client.api.management_add_grade_manager_members,
@@ -123,7 +123,7 @@ class BKIAMClient:
         :param members: 待删除的成员名称列表
         """
         if not members:
-            return
+            return None
 
         api_result, response = self._request_handler.call_api(
             self._client.api.management_delete_grade_manager_members,
@@ -186,7 +186,7 @@ class BKIAMClient:
         :param expired_at: 过期时间，时间戳，单位秒
         """
         if not members:
-            return
+            return None
 
         api_result, response = self._request_handler.call_api(
             self._client.api.v2_management_add_group_members,

@@ -18,7 +18,7 @@
 """
 微网关实例处理器
 """
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from typing import Any, Dict
 
 from blue_krill.async_utils.django_utils import delay_on_commit
@@ -29,7 +29,9 @@ from apigateway.controller.tasks import deploy_micro_gateway
 from apigateway.core.constants import MicroGatewayStatusEnum
 
 
-class BaseMicroGatwayHandler(metaclass=ABCMeta):
+# FIXME: this is not a good abstract template, should be refactored
+class BaseMicroGatewayHandler(metaclass=ABCMeta):
+    @abstractmethod
     def deploy(self, micro_gateway_id: int, access_token: str, username: str = ""):
         """部署微网关"""
 
@@ -40,7 +42,7 @@ class BaseMicroGatwayHandler(metaclass=ABCMeta):
         return {}
 
 
-class NeedDeployMicroGatewayHandler(BaseMicroGatwayHandler):
+class NeedDeployMicroGatewayHandler(BaseMicroGatewayHandler):
     """新部署的微网关实例"""
 
     def deploy(self, micro_gateway_id: int, access_token: str, username: str = ""):
@@ -54,8 +56,11 @@ class NeedDeployMicroGatewayHandler(BaseMicroGatwayHandler):
         }
 
 
-class RelateDeployedMicroGatewayHandler(BaseMicroGatwayHandler):
+class RelateDeployedMicroGatewayHandler(BaseMicroGatewayHandler):
     """接入已部署的微网关实例"""
+
+    def deploy(self, micro_gateway_id: int, access_token: str, username: str = ""):
+        """部署微网关"""
 
     def get_initial_status(self) -> MicroGatewayStatusEnum:
         return MicroGatewayStatusEnum.INSTALLED
@@ -68,7 +73,7 @@ class MicroGatewayHandlerFactory:
     }
 
     @classmethod
-    def get_handler(cls, create_way: MicroGatewayCreateWayEnum) -> BaseMicroGatwayHandler:
+    def get_handler(cls, create_way: MicroGatewayCreateWayEnum) -> BaseMicroGatewayHandler:
         try:
             handler_cls = cls._mapping[create_way]
 

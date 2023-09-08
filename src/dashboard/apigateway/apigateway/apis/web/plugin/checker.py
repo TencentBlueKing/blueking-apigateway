@@ -110,8 +110,8 @@ class BkIPRestrictionChecker(BaseChecker):
         """
         ip_lines = ip_content.splitlines()
 
-        for index, ip_line in enumerate(ip_lines):
-            ip_line = ip_line.strip()
+        for index, ip_line_raw in enumerate(ip_lines):
+            ip_line = ip_line_raw.strip()
             # ignore empty line and comment line
             if not ip_line or ip_line.startswith("#"):
                 continue

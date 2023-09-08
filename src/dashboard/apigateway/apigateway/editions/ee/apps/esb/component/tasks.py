@@ -64,10 +64,7 @@ def sync_and_release_esb_components(api_id: int, username: str, access_token: st
         logger.info("sync and release components success")
     except Exception as err:
         logger.exception("failed to sync and release components")
-        if isinstance(err, ValidationError):
-            message = one_line_error(err)
-        else:
-            message = str(err)
+        message = one_line_error(err) if isinstance(err, ValidationError) else str(err)
         releaser.mark_release_fail(message)
 
         raise

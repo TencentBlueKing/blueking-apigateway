@@ -167,7 +167,7 @@ class StageHandler:
         id_to_micro_gateway_id = StageHandler().get_id_to_micro_gateway_id(gateway_id)
         result: Dict[int, Optional[Dict[str, Any]]] = {i: None for i in id_to_micro_gateway_id}
 
-        valid_micro_gateway_ids = set(i for i in id_to_micro_gateway_id.values() if i is not None)
+        valid_micro_gateway_ids = {i for i in id_to_micro_gateway_id.values() if i is not None}
         if not valid_micro_gateway_ids:
             return result
 

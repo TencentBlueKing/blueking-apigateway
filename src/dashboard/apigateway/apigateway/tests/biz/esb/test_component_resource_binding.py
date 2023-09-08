@@ -31,7 +31,6 @@ class TestComponentResourceBindingHandler:
         G(ComponentResourceBinding, resource_id=resource_1.id, component_id=1)
         G(ComponentResourceBinding, resource_id=resource_2.id, component_id=2)
 
-        fake_resource_data
         resource_data_list = [
             fake_resource_data.copy(
                 update={

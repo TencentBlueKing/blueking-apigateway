@@ -432,10 +432,10 @@ class ResourceExportApi(generics.CreateAPIView):
         if export_type == ExportTypeEnum.ALL.value:
             return Resource.objects.filter(gateway_id=gateway_id)
 
-        elif export_type == ExportTypeEnum.FILTERED.value:
+        if export_type == ExportTypeEnum.FILTERED.value:
             return ResourceHandler.filter_by_resource_filter_condition(gateway_id, resource_filter_condition or {})
 
-        elif export_type == ExportTypeEnum.SELECTED.value:
+        if export_type == ExportTypeEnum.SELECTED.value:
             return Resource.objects.filter(gateway_id=gateway_id, id__in=resource_ids)
 
         return Resource.objects.none()

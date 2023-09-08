@@ -40,4 +40,4 @@ class Command(BaseCommand):
 
         APIRelatedApp.objects.add_related_app(gateway.id, bk_app_code)
 
-        logger.info(f"add related app success: gateway_name={gateway_name}, app_code={bk_app_code}")
+        logger.info("add related app success: gateway_name=%s, app_code=%s", gateway_name, bk_app_code)

@@ -58,7 +58,7 @@ class EtcdRegistry(Registry):
             if not self.apply_resource(resource):
                 sync_fail_resources.append(resource)
 
-        for key in remaining_keys.keys():
+        for key in remaining_keys:
             if not self._delete_by_key(key):
                 logger.warning(
                     "failed to remove key [%s] from registry %s",

@@ -123,7 +123,7 @@ class StageInputSLZ(serializers.Serializer):
                     _("网关下不存在id为【{backend_id}】的后端服务。").format(backend_id=input_backend["id"])
                 )
 
-        input_backend_ids = set([backend["id"] for backend in attrs["backends"]])
+        input_backend_ids = {backend["id"] for backend in attrs["backends"]}
         for backend in backends:
             if backend.id not in input_backend_ids:
                 raise serializers.ValidationError(_("环境缺少【{backend_name}】的后端服务。").format(backend_name=backend.name))

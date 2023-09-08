@@ -60,8 +60,8 @@ from apigateway.utils.dict import (
             # include and exclude exist
             {
                 "data": {"a": 1, "b": 2, "c": 3},
-                "include": set(["a", "c"]),
-                "exclude": set(["b", "d"]),
+                "include": {"a", "c"},
+                "exclude": {"b", "d"},
             },
             {"a": 1, "c": 3},
         ),
@@ -69,7 +69,7 @@ from apigateway.utils.dict import (
             # include exist and exclude_none is true
             {
                 "data": {"a": 1, "b": 2, "c": None},
-                "include": set(["b"]),
+                "include": {"b"},
                 "exclude_none": True,
             },
             {"b": 2},
@@ -186,7 +186,7 @@ def test_update_existing(mapping, update, expected):
 
 def test_update_existing_is_not_mutating():
     mapping = {"key": {"inner_key": 1}}
-    updated_mapping = update_existing(mapping, **{"key": 0})
+    updated_mapping = update_existing(mapping, key=0)
     assert updated_mapping == {"key": 0}
     assert mapping == {"key": {"inner_key": 1}}
 

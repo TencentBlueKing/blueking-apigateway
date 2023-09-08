@@ -29,7 +29,7 @@ class ArchiveFileFactory:
         if file_type == DocArchiveTypeEnum.TGZ.value:
             return TgzArchiveFile()
 
-        elif file_type == DocArchiveTypeEnum.ZIP.value:
+        if file_type == DocArchiveTypeEnum.ZIP.value:
             return ZipArchiveFile()
 
         raise ValueError(f"unsupported file_type: {file_type}")
@@ -44,13 +44,13 @@ class ArchiveFileFactory:
         if zipfile.is_zipfile(fileobj):
             return DocArchiveTypeEnum.ZIP.value
 
-        elif cls._is_tarfile(fileobj):
+        if cls._is_tarfile(fileobj):
             return DocArchiveTypeEnum.TGZ.value
 
         return "unknown"
 
     @classmethod
-    def _is_tarfile(self, fileobj) -> bool:
+    def _is_tarfile(cls, fileobj) -> bool:
         # python 3.8 以下 tarfile.is_tarfile 支持文件名，不支持文件对象
         fileobj.seek(0)
 

@@ -132,10 +132,10 @@ class ArchiveParser(BaseParser):
         if name.startswith("_"):
             return None
 
-        elif name.endswith(".md"):
+        if name.endswith(".md"):
             return name[:-3]
 
-        elif name.endswith(".md.j2"):
+        if name.endswith(".md.j2"):
             # `.md.j2` 结尾的为 jinja2 模板文件，用于支持文档的模板渲染
             return name[:-6]
 

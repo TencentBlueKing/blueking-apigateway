@@ -39,11 +39,7 @@ class TestMicroGatewayPermissionViewSet:
     def is_app_has_api_permission(self, result, gateway, app_code):
         api_permissions = result["data"]["api_permissions"]
         assert result["data"]["gateway_name"] == gateway.name
-        for permission in api_permissions:
-            if permission["bk_app_code"] == app_code:
-                return True
-
-        return False
+        return any(permission["bk_app_code"] == app_code for permission in api_permissions)
 
     def is_app_has_resource_permission(self, result, app_code, resource_name):
         resource_permissions = result["data"]["resource_permissions"]
@@ -324,8 +320,8 @@ class TestMicroGatewayInfoViewSet:
         assert info["name"] == fake_shared_gateway.name
 
         found = False
-        for info in info["related_infos"]:
-            if info["gateway_name"] == fake_gateway.name and info["stage_name"] == fake_stage.name:
+        for i in info["related_infos"]:
+            if i["gateway_name"] == fake_gateway.name and i["stage_name"] == fake_stage.name:
                 found = True
                 break
 
@@ -352,8 +348,8 @@ class TestMicroGatewayInfoViewSet:
         assert info["name"] == fake_edge_gateway.name
 
         found = False
-        for info in info["related_infos"]:
-            if info["gateway_name"] == fake_gateway.name and info["stage_name"] == fake_stage.name:
+        for i in info["related_infos"]:
+            if i["gateway_name"] == fake_gateway.name and i["stage_name"] == fake_stage.name:
                 found = True
                 break
 

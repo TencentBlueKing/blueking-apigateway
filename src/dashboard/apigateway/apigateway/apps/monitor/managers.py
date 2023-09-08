@@ -55,7 +55,7 @@ class AlarmRecordManager(models.Manager):
 class AlarmFilterConfigManager(models.Manager):
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_SHORT.value))
     def get_filter_config(self, alarm_type):
-        configs = map(lambda x: x.config, self.filter(alarm_type=alarm_type))
+        configs = (x.config for x in self.filter(alarm_type=alarm_type))
         return list(filter(None, configs))
 
 

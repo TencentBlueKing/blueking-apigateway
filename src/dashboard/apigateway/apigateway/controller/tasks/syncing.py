@@ -155,7 +155,7 @@ def _check_release_gateway(gateway_id: Optional[int] = None, release: Optional[R
     if release and not release.stage:
         msg = f"release(id={release.pk}) has not stage, ignored"
         return False, msg
-    elif release and release.stage and release.stage.status != StageStatusEnum.ACTIVE.value:
+    if release and release.stage and release.stage.status != StageStatusEnum.ACTIVE.value:
         msg = f"release(id={release.pk})  stage(name={release.stage.name}) is not active, ignored"
         return False, msg
 
@@ -164,14 +164,13 @@ def _check_release_gateway(gateway_id: Optional[int] = None, release: Optional[R
 
 def _save_release_history(release: Release, source: PublishSourceEnum, author: str) -> ReleaseHistory:
     """保存发布历史"""
-    release_history = ReleaseHistory.objects.create(
+    return ReleaseHistory.objects.create(
         gateway=release.gateway,
         stage=release.stage,
         source=source.value,
         resource_version=release.resource_version,
         created_by=author,
     )
-    return release_history
 
 
 def _trigger_rolling_publish(
@@ -191,15 +190,16 @@ def _trigger_rolling_publish(
             release_history = _save_release_history(release, source, author)
             publish_id = release_history.pk
 
-        # 发布check
+        # FIXME: refactor below, is_cli_sync
+        # 发布 check
         check_release_result, msg = _check_release_gateway(gateway_id=release.gateway.pk, release=release)
         if not check_release_result:
             logging.warning(msg)
             if not is_cli_sync:
                 PublishEventReporter.report_config_validate_fail_event(release_history, release.stage, msg)
             continue
-        else:
-            if not is_cli_sync:
+        else:  # ruff: noqa: RET507
+            if not is_cli_sync:  # ruff: noqa: PLR5501
                 PublishEventReporter.report_config_validate_success_event(release_history, release.stage)
         if not is_cli_sync:
             PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
@@ -207,13 +207,14 @@ def _trigger_rolling_publish(
         # 开始发布
         if is_sync:
             return rolling_update_release(gateway_id=release.gateway.pk, publish_id=publish_id, release_id=release.pk)
-        else:
-            delay_on_commit(
-                rolling_update_release,
-                gateway_id=release.gateway_id,
-                publish_id=publish_id,
-                release_id=release.pk,
-            )
+
+        delay_on_commit(
+            rolling_update_release,
+            gateway_id=release.gateway_id,
+            publish_id=publish_id,
+            release_id=release.pk,
+        )
+    return None
 
 
 def _trigger_revoke_disable_publish(
@@ -244,10 +245,10 @@ def _trigger_revoke_disable_publish(
         # 开始发布
         if is_sync:
             return revoke_release(release_id=release.id, publish_id=release_history.id, author=author, source=source)
-        else:
-            delay_on_commit(
-                revoke_release, release_id=release.id, publish_id=release_history.id, author=author, source=source
-            )
+        delay_on_commit(
+            revoke_release, release_id=release.id, publish_id=release_history.id, author=author, source=source
+        )
+    return None
 
 
 def _trigger_revoke_delete_publish(
@@ -261,14 +262,15 @@ def _trigger_revoke_delete_publish(
         # 开始发布
         if is_sync:
             return revoke_release(release_id=release.id, publish_id=DELETE_PUBLISH_ID, author=author, source=source)
-        else:
-            delay_on_commit(
-                revoke_release,
-                release_id=release.id,
-                publish_id=DELETE_PUBLISH_ID,
-                author=author,
-                source=source,
-            )
+        # else:
+        delay_on_commit(
+            revoke_release,
+            release_id=release.id,
+            publish_id=DELETE_PUBLISH_ID,
+            author=author,
+            source=source,
+        )
+    return None
 
 
 def trigger_gateway_publish(
@@ -305,3 +307,4 @@ def trigger_gateway_publish(
 
     if trigger_publish_type == TriggerPublishType.TRIGGER_REVOKE_DELETE_RELEASE:
         return _trigger_revoke_delete_publish(source, author, release_list, is_sync=is_sync)
+    return None

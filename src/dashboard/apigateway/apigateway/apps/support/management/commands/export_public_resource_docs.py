@@ -88,6 +88,6 @@ class Command(BaseCommand):
 
         not_exist_gateway = set(gateway_names) - set(gateway_name_to_id.keys())
         if not_exist_gateway:
-            raise CommandError(f"以下网关不存在，请检查：{', '.join(sorted(list(not_exist_gateway)))}")
+            raise CommandError(f"以下网关不存在，请检查：{', '.join(sorted(not_exist_gateway))}")
 
         return {name: gateway_name_to_id[name] for name in gateway_names}

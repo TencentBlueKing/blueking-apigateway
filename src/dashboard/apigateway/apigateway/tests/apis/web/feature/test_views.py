@@ -44,6 +44,6 @@ class TestFeatureFlagListApi:
         response = view(request)
         result = get_response_json(response)
         assert len(result["data"]) == 3
-        assert settings.DEFAULT_FEATURE_FLAG == {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
+        assert {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True} == settings.DEFAULT_FEATURE_FLAG
         assert result["data"]["MENU_ITEM_ESB_API"] == expected
         assert result["data"]["MENU_ITEM_ESB_API_DOC"] is True

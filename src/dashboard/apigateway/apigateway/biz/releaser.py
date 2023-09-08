@@ -86,6 +86,7 @@ class GatewayReleaserFactory:
         )
 
 
+# FIXME: this is not a good abstract template, should be refactored
 @dataclass
 class BaseGatewayReleaserHandler(metaclass=ABCMeta):
     gateway: Gateway
@@ -222,7 +223,7 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
             }
         )
 
-    def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
+    def _do_release(self, releases: List[Release], release_history: ReleaseHistory):  # ruff: noqa: B027
         """发布资源版本"""
 
     def _activate_stages(self):
@@ -246,6 +247,9 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
 class DefaultGatewayReleaserHandler(BaseGatewayReleaserHandler):
     """APIGateway 默认网关发布器"""
 
+    def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
+        """发布资源版本"""
+
 
 @dataclass
 class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
@@ -262,7 +266,7 @@ class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
     def _create_release_task_for_shared_gateway(self, release: Release, release_history: ReleaseHistory):
         shared_gateway = self._shared_micro_gateway
         if not shared_gateway:
-            return
+            return None
 
         history = MicroGatewayReleaseHistory.objects.create(
             gateway=release.gateway,
@@ -282,7 +286,7 @@ class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
         stage = release.stage
         micro_gateway = stage.micro_gateway
         if not micro_gateway or not micro_gateway.is_managed:
-            return
+            return None
 
         history = MicroGatewayReleaseHistory.objects.create(
             gateway=release.gateway,

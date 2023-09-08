@@ -19,7 +19,7 @@
 import html
 import logging
 import textwrap
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from typing import Optional
 
 from django.utils.translation import gettext
@@ -106,13 +106,13 @@ class ComponentDocBuilder(metaclass=ABCMeta):
         self.doc_content = doc_content
         self.component_config = component_config
 
+    @abstractmethod
     def get_doc_type(self) -> str:
         """获取文档类型"""
-        return "unknown"
 
+    @abstractmethod
     def build_doc(self) -> str:
         """构造文档内容"""
-        return ""
 
 
 class MarkdownDocBuilder(ComponentDocBuilder):

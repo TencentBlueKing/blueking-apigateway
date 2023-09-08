@@ -218,6 +218,7 @@ def parse_cors(access_strategy: AccessStrategy) -> Optional[PluginConfig]:
     )
 
     pass
+    return None
 
 
 parse_funcs = {

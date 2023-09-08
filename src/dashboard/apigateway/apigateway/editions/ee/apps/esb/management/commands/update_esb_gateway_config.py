@@ -67,7 +67,7 @@ class Command(BaseCommand):
         """检查配置是否有差异，若有差异，则需要更新"""
         for key, value in new_config.items():
             if isinstance(value, Enum):
-                value = value.value
+                value = value.value  # ruff: noqa: PLW2901
 
             if value != current_config.get(key):
                 return True

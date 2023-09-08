@@ -65,8 +65,7 @@ class IPGroup(TimestampedModelMixin, OperatorModelMixin):
 
         # split with \n\r, then ignore blank line and `# comment`
         lines = re.split(r"[\n\r]+", self._ips)
-        valid_lines = [line for line in lines if line and (not line.startswith("#"))]
-        return valid_lines
+        return [line for line in lines if line and (not line.startswith("#"))]
 
     @ips.setter
     def ips(self, data):
@@ -103,10 +102,10 @@ class AccessStrategy(ConfigModelMixin):
 
         # check the config value
         try:
-            self.config
-        except Exception as e:
+            _ = self.config
+        except Exception:
             logger.exception("the config field is not a valid json")
-            raise e
+            raise
 
         super().save(*args, **kwargs)
 
@@ -117,7 +116,7 @@ class AccessStrategy(ConfigModelMixin):
         config = self.config
         config["ip_group_list"].extend(ip_group_list)
         # 去重
-        config["ip_group_list"] = sorted(list(set(config["ip_group_list"])))
+        config["ip_group_list"] = sorted(set(config["ip_group_list"]))
         self.config = config
 
 

@@ -39,7 +39,8 @@ class Command(BaseCommand):
         duplicate_names = legacy_models.SystemDocCategory.objects.get_duplicate_names()
         if duplicate_names:
             logger.error(
-                f"旧版文档分类中，name={', '.join(duplicate_names)} 重复，请手动删除重复数据，或调用 `python manage.py fix_legacy_data` 删除重复数据"
+                "旧版文档分类中，name=%s 重复，请手动删除重复数据，或调用 `python manage.py fix_legacy_data` 删除重复数据",
+                ", ".join(duplicate_names),
             )
             sys.exit(1)
 

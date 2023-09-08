@@ -248,7 +248,7 @@ def get_search_es_client():
     if es_client_type == ESClientTypeEnum.BK_LOG.value:
         return BKLogSearchClient()
 
-    elif es_client_type == ESClientTypeEnum.ELASTICSEARCH.value:
+    if es_client_type == ESClientTypeEnum.ELASTICSEARCH.value:
         return RawESSearchClient()
 
     raise ValueError(f"unsupported es_client_type: {es_client_type}")

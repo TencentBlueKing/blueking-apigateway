@@ -94,8 +94,8 @@ class PypiSourceDistributor(Distributor):
                 env=env,
                 cwd=source_dir,
             )
-        except CalledProcessError as err:
-            logger.error("upload to pypi repository [%s] failed: %s", self.repository, err)
+        except CalledProcessError:
+            logger.exception("upload to pypi repository [%s] failed", self.repository)
             raise DistributeError(f"can not distribute to pypi repository [{self.repository}]")
 
         result.url = self.get_download_url()

@@ -27,11 +27,7 @@ from django.utils.translation import gettext as _
 
 from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.common.exceptions import SchemaValidationError
-from apigateway.core.constants import (
-    DEFAULT_BACKEND_NAME,
-    HTTP_METHOD_ANY,
-    ProxyTypeEnum,
-)
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
 from apigateway.utils.yaml import yaml_dumps, yaml_loads
 
 from .constants import VALID_METHOD_IN_SWAGGER_PATHITEM, SwaggerExtensionEnum
@@ -128,8 +124,8 @@ class SwaggerManager:
         """将 base_path 添加到 path"""
         new_paths = {}
         for path, path_item in paths.items():
-            path = self._join_path(base_path, path)
-            new_paths[path] = path_item
+            new_path = self._join_path(base_path, path)
+            new_paths[new_path] = path_item
 
         return new_paths
 
@@ -158,8 +154,8 @@ class ResourceSwaggerImporter:
     def get_resources(self):
         resources = []
         for path, path_item in self.swagger_manager.get_paths().items():
-            for method, operation in path_item.items():
-                method = self._adapt_method(method)
+            for method_raw, operation in path_item.items():
+                method = self._adapt_method(method_raw)
 
                 extension_resource = operation.get(SwaggerExtensionEnum.RESOURCE.value, {})
 

@@ -52,12 +52,10 @@ class TestComponentListApi:
     def test_list(self, mocker, mock_board, request_view):
         mock_component = mocker.MagicMock()
         mock_component.configure_mock(
-            **{
-                "id": 1,
-                "name": "t1",
-                "description": "l1",
-                "permission_level": "normal",
-            }
+            id=1,
+            name="t1",
+            description="l1",
+            permission_level="normal",
         )
 
         mocker.patch(

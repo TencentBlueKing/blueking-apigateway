@@ -227,8 +227,7 @@ class ResourceVersionHandler:
             return ""
 
         # 取最大的 version
-        max_version = max(version["version"] for version in versions)
-        return max_version
+        return max(version["version"] for version in versions)
 
     @staticmethod
     def get_resource_version_display(data: Dict[str, Any]) -> str:

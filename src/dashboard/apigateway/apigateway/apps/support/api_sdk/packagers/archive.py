@@ -34,9 +34,7 @@ class TgzPackager(Packager):
     def pack(self, output_dir: str) -> List[str]:
         output = Path(output_dir)
         archive = TgzArchiveFile()
-        files = []
-        for f in iter_files_recursive(output):
-            files.append(f.relative_to(output).as_posix())
+        files = [f.relative_to(output).as_posix() for f in iter_files_recursive(output)]
 
         return [
             archive.archive(output_dir, f"{self.context.name}-{parse_version(self.context.version)}.tar.gz", files)

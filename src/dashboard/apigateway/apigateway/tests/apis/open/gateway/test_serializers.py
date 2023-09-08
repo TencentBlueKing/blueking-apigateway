@@ -250,7 +250,7 @@ class TestGatewaySyncSLZ:
         slz.is_valid(raise_exception=True)
         slz.save(created_by="", updated_by="")
         api_auth = GatewayAuthContext().get_config(slz.instance.id)
-        api_auth["api_type"] == 1
+        assert api_auth["api_type"] == 1
 
     def test_update(self, settings, fake_gateway, unique_gateway_name):
         settings.SPECIAL_API_AUTH_CONFIGS = {
