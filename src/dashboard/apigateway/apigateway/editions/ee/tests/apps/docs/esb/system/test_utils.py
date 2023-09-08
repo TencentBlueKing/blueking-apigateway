@@ -18,68 +18,72 @@
 #
 import pytest
 
-from apigateway.apps.docs.esb.system.utils import get_system_doc_categories
+from apigateway.biz.esb.system_doc_category import SystemDocCategoryHandler
 
 pytestmark = pytest.mark.django_db
 
 
-def test_get_system_doc_categories(mocker):
-    mocker.patch(
-        "apigateway.apps.docs.esb.system.utils.SystemDocCategory.objects.group_category_id_by_board",
-        return_value={
-            "test": [1, 2],
-        },
-    )
-    mocker.patch(
-        "apigateway.apps.docs.esb.system.utils.SystemDocCategory.objects.group_system_id_by_category_id",
-        return_value={
-            1: [1, 2],
-            2: [3, 4],
-        },
-    )
-    mocker.patch(
-        "apigateway.apps.docs.esb.system.utils.DocCategory.objects.get_id_to_fields_map",
-        return_value={
-            1: {"id": 1, "name": "c1", "priority": 1},
-            2: {"id": 2, "name": "c2", "priority": 2},
-        },
-    )
-    mocker.patch(
-        "apigateway.apps.docs.esb.system.utils.ComponentSystem.objects.get_id_to_fields_map",
-        return_value={
-            3: {"name": "s3", "description": "desc"},
-            4: {"name": "s4", "description": "desc"},
-        },
-    )
-    mocker.patch(
-        "apigateway.apps.docs.esb.system.utils.ESBChannel.objects.filter_active_and_public_system_ids",
-        return_value=[3, 4],
-    )
-    mocker.patch(
-        "apigateway.apps.docs.esb.system.utils.BoardConfigManager.get_board_label",
-        return_value="test-label",
-    )
+class TestSystemDocCategoryHandler:
+    def test_get_system_doc_categories_by_db(self, mocker):
+        mocker.patch(
+            "apigateway.biz.esb.system_doc_category.SystemDocCategory.objects.group_category_id_by_board",
+            return_value={
+                "test": [1, 2],
+            },
+        )
+        mocker.patch(
+            "apigateway.biz.esb.system_doc_category.SystemDocCategory.objects.group_system_id_by_category_id",
+            return_value={
+                1: [1, 2],
+                2: [3, 4],
+            },
+        )
+        mocker.patch(
+            "apigateway.biz.esb.system_doc_category.DocCategory.objects.get_id_to_fields_map",
+            return_value={
+                1: {"id": 1, "name": "c1", "priority": 1},
+                2: {"id": 2, "name": "c2", "priority": 2},
+            },
+        )
+        mocker.patch(
+            "apigateway.biz.esb.system_doc_category.ComponentSystem.objects.get_id_to_fields_map",
+            return_value={
+                3: {"name": "s3", "description": "desc"},
+                4: {"name": "s4", "description": "desc"},
+            },
+        )
+        mocker.patch(
+            "apigateway.biz.esb.system_doc_category.ESBChannel.objects.filter_active_and_public_system_ids",
+            return_value=[3, 4],
+        )
+        mocker.patch(
+            "apigateway.biz.esb.system_doc_category.BoardConfigManager.get_board_label",
+            return_value="test-label",
+        )
 
-    result = get_system_doc_categories()
-    assert result == [
-        {
-            "board": "test",
-            "board_label": "test-label",
-            "categories": [
-                {
-                    "id": 2,
-                    "name": "c2",
-                    "systems": [
-                        {
-                            "name": "s3",
-                            "description": "desc",
-                        },
-                        {
-                            "name": "s4",
-                            "description": "desc",
-                        },
-                    ],
-                }
-            ],
-        }
-    ]
+        result = SystemDocCategoryHandler._get_system_doc_categories_by_db()
+        assert result == [
+            {
+                "board": "test",
+                "board_label": "test-label",
+                "categories": [
+                    {
+                        "id": 2,
+                        "name": "c2",
+                        "systems": [
+                            {
+                                "name": "s3",
+                                "description": "desc",
+                            },
+                            {
+                                "name": "s4",
+                                "description": "desc",
+                            },
+                        ],
+                    }
+                ],
+            }
+        ]
+
+    def test_get_system_doc_categories_by_settings(self):
+        pass

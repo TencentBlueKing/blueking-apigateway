@@ -156,6 +156,10 @@ class ResourceVersionHandler:
         if not version:
             return
 
+        # 是否创建backend
+        if not Backend.objects.filter(gateway_id=gateway.id).exists():
+            raise serializers.ValidationError(_("请先创建后端服务，然后再生成版本。"))
+
         # ResourceVersion 中数据量较大，因此，不使用 UniqueTogetherValidator
         if ResourceVersion.objects.filter(gateway=gateway, version=version).exists():
             raise serializers.ValidationError(_("版本 {version} 已存在。").format(version=version))

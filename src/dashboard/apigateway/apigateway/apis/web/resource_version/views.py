@@ -80,6 +80,9 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
                     request.gateway.id,
                     resource_version_ids,
                 ),
+                "resource_version_ids_sdk_count": APISDK.objects.get_resource_version_sdk_count_map(
+                    resource_version_ids
+                ),
             },
         )
         return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))

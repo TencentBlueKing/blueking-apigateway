@@ -28,7 +28,12 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
-from apigateway.core.constants import BackendTypeEnum, ContextScopeTypeEnum, ContextTypeEnum, ResourceVersionSchemaEnum
+from apigateway.core.constants import (
+    DEFAULT_BACKEND_NAME,
+    ContextScopeTypeEnum,
+    ContextTypeEnum,
+    ResourceVersionSchemaEnum,
+)
 from apigateway.core.models import JWT, BackendConfig, Context, Gateway, Release, ResourceVersion, Stage
 
 logger = logging.getLogger(__name__)
@@ -69,23 +74,31 @@ class ReleaseData:
         }
 
     @cached_property
-    def _stage_backend(self) -> Dict[str, Dict[str, Any]]:
+    def _stage_backend(self) -> BackendConfig:
         """
         :return: A dict contains all the backend objects at "stage" scope, the key is
             the type of backend, such as "http/grpc".
         """
-        return {
-            b.backend.type: b.config
-            for b in BackendConfig.objects.filter(gateway_id=self.gateway.pk, stage_id=self.stage.pk).prefetch_related(
-                "backend"
+        return (
+            BackendConfig.objects.filter(
+                gateway_id=self.gateway.pk, stage_id=self.stage.pk, backend__name=DEFAULT_BACKEND_NAME
             )
-        }
+            .prefetch_related("backend")
+            .get()
+        )
 
     @cached_property
     def stage_backend_config(self) -> Dict[str, Any]:
         if self.is_schema_v2:
-            return self._stage_backend[BackendTypeEnum.HTTP.value]["config"]
+            return self._stage_backend.config
         return json.loads(self._stage_contexts[ContextTypeEnum.STAGE_PROXY_HTTP.value]["config"])
+
+    @cached_property
+    def stage_upstreams(self) -> Dict[str, Any]:
+        if self.is_schema_v2:
+            return self.stage_backend_config
+
+        return self.stage_backend_config.get("upstreams")
 
     @cached_property
     def stage_rate_limit_config(self) -> Optional[Dict[str, Any]]:

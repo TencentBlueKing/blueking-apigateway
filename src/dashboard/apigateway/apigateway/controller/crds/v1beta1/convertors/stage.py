@@ -24,7 +24,7 @@ from apigateway.controller.crds.base import KubernetesResourceMetadata
 from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor, UrlInfo
 from apigateway.controller.crds.v1beta1.models.base import PluginConfig
-from apigateway.controller.crds.v1beta1.models.gateway_stage import BkGatewayStage, BkGatewayStageSpec, StageRewrite
+from apigateway.controller.crds.v1beta1.models.gateway_stage import BkGatewayStage, BkGatewayStageSpec
 from apigateway.core.micro_gateway_config import MicroGatewayHTTPInfo
 from apigateway.core.models import MicroGateway
 
@@ -54,12 +54,6 @@ class StageConvertor(BaseConvertor):
             spec=BkGatewayStageSpec(
                 name=self._release_data.stage.name,
                 description=self._release_data.stage.description,
-                rewrite=StageRewrite(
-                    enabled=True,
-                    headers=self._convert_http_rewrite_headers(
-                        self._release_data.stage_backend_config.get("transform_headers")
-                    ),
-                ),
                 vars=self._release_data.stage.vars,
                 path_prefix=path_prefix,
                 plugins=plugins,

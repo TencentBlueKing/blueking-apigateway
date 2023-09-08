@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Count
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.core.constants import GatewayStatusEnum
@@ -241,8 +242,16 @@ class APISDKManager(models.Manager):
     def get_latest_sdk(self, gateway_id, language):
         return self.filter(gateway_id=gateway_id, language=language).order_by("-id").first()
 
-    def get_resource_version_sdk_count(self, resource_version_id, language):
+    def get_resource_version_language_sdk_count(self, resource_version_id, language):
         return self.filter(resource_version_id=resource_version_id, language=language).count()
+
+    def get_resource_version_sdk_count_map(self, resource_version_ids: List[int]):
+        queryset = (
+            self.filter(resource_version_id__in=resource_version_ids)
+            .values("resource_version_id")
+            .annotate(count=Count("id"))
+        )
+        return {item["resource_version_id"]: item["count"] for item in queryset}
 
     def should_be_set_to_public_latest(
         self, gateway_id: int, resource_version_id: int, is_uploaded_to_pypi: bool

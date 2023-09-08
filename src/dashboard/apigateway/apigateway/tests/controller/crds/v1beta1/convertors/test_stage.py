@@ -46,9 +46,6 @@ class TestStageConvertor:
         assert spec.vars["stage_name"] == edge_gateway_stage.name
         assert spec.domain == ""
         assert spec.path_prefix == micro_gateway_http_path
-        assert spec.rewrite.enabled
-        assert spec.rewrite.headers["X-Set-By-Stage"] == edge_gateway_stage.name
-        assert spec.rewrite.headers["X-Del-By-Stage"] == ""
 
     @pytest.mark.parametrize(
         "name",

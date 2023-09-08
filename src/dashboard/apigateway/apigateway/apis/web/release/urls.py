@@ -21,14 +21,14 @@ from django.urls import include, path
 from .views import (
     PublishEventsRetrieveAPI,
     ReleaseAvailableResourceListApi,
-    ReleaseBatchCreateApi,
+    ReleaseCreateApi,
     ReleasedResourceRetrieveApi,
     ReleaseHistoryListApi,
     ReleaseHistoryRetrieveApi,
 )
 
 urlpatterns = [
-    path("batch/", ReleaseBatchCreateApi.as_view(), name="gateway.releases.create"),
+    path("", ReleaseCreateApi.as_view(), name="gateway.release.create"),
     path(
         "stages/<int:stage_id>/available_resources/",
         ReleaseAvailableResourceListApi.as_view(),

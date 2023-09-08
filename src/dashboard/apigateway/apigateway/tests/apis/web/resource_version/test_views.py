@@ -29,7 +29,6 @@ from apigateway.tests.utils.testing import create_gateway, dummy_time
 
 class TestResourceVersionListCreateApi:
     def test_create(self, request_view, fake_gateway, fake_resource1):
-
         data = {
             "comment": "test",
         }
@@ -81,6 +80,7 @@ class TestResourceVersionListCreateApi:
                 "comment": resource_version.comment,
                 "resource_version_display": "1.0.1(test)",
                 "has_sdk": True,
+                "sdk_count": 1,
                 "created_time": dummy_time.str,
             },
         ]

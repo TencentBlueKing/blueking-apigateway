@@ -35,7 +35,7 @@ from apigateway.controller.crds.v1beta1.models.gateway_resource import (
 )
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService
 from apigateway.core.constants import ProxyTypeEnum
-from apigateway.core.models import MicroGateway
+from apigateway.core.models import BackendConfig, MicroGateway
 from apigateway.utils.time import now_str
 
 
@@ -85,8 +85,10 @@ class HttpResourceConvertor(BaseConvertor):
 
         resource_proxy = json.loads(resource["proxy"]["config"])
 
+        backend_id = resource["proxy"]["backend_id"]
+
         service_name = ""
-        upstream = self._convert_http_resource_upstream(resource_proxy)
+        upstream = self._convert_http_resource_upstream(resource_proxy, backend_id)
         # operator 会将环境级别的插件绑定到service，如果资源没有定义上游，依然绑定服务
         service_name = self._default_stage_service_key
 
@@ -156,8 +158,24 @@ class HttpResourceConvertor(BaseConvertor):
             "api_labels": [],
         }
 
-    def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any]) -> Optional[Upstream]:
-        upstreams = resource_proxy.get("upstreams")
+    def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any], backend_id: int) -> Optional[Upstream]:
+        # 如果是v2，需要从backend_config里面去拿upstreams
+
+        upstreams = None
+
+        if self._release_data.is_schema_v2:
+            upstreams = (
+                BackendConfig.objects.filter(
+                    backend_id=backend_id,
+                    gateway_id=self._release_data.gateway.pk,
+                    stage_id=self._release_data.stage.pk,
+                )
+                .values_list("config", flat=True)
+                .first()
+            )
+        else:
+            upstreams = resource_proxy.get("upstreams")
+
         if not upstreams:
             return None
 
