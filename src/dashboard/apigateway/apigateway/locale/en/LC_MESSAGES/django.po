@@ -1292,6 +1292,11 @@ msgstr "Resource version {version} already exists."
 msgid "请先创建资源，然后再生成版本。"
 msgstr "Please create a resource first and then generate version."
 
+#: apigateway/apps/resource_version/serializers.py:76
+msgid "请先创建后端服务，然后再生成版本。"
+msgstr "Please create a backend first and then generate version."
+
+
 #: apigateway/apps/resource_version/views.py:124
 msgid "更新版本"
 msgstr "Update resource version"

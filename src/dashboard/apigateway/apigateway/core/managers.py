@@ -280,7 +280,7 @@ class ProxyManager(models.Manager):
         schemas = Schema.objects.filter_id_snapshot_map()
         return {
             proxy.resource_id: proxy.snapshot(as_dict=True, schemas=schemas)
-            for proxy in self.filter(resource_id__in=resource_ids)
+            for proxy in self.filter(resource_id__in=resource_ids).prefetch_related("backend")
         }
 
     def get_backend_resource_count(self, backend_ids: List[int]) -> Dict[int, int]:

@@ -33,7 +33,7 @@ class SDKManagerMixin:
 
     def get_version(self, resource_version):
         """根据网关和资源版本，生成SDK版本号"""
-        count = APISDK.objects.get_resource_version_sdk_count(  # type: ignore
+        count = APISDK.objects.get_resource_version_language_sdk_count(  # type: ignore
             resource_version.id,
             ProgrammingLanguageEnum.PYTHON.value,
         )

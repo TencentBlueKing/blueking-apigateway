@@ -42,6 +42,7 @@ class TestSDKListOutputSLZ:
             schema=SchemaFactory().get_api_sdk_schema(),
             created_time=dummy_time.time,
             updated_time=dummy_time.time,
+            created_by="test",
             url="http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
         )
         sdks = [SDKFactory.create(model=sdk_1)]
@@ -57,6 +58,7 @@ class TestSDKListOutputSLZ:
                 "name": "bkapigw-test",
                 "version_number": "12345",
                 "created_time": dummy_time.str,
+                "created_by": "test",
                 "updated_time": dummy_time.str,
                 "download_url": "http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
                 "is_uploaded_to_pypi": True,

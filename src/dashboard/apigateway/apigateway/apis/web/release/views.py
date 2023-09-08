@@ -140,7 +140,7 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
         tags=["WebAPI.Release"],
     ),
 )
-class ReleaseBatchCreateApi(generics.CreateAPIView):
+class ReleaseCreateApi(generics.CreateAPIView):
     serializer_class = ReleaseInputSLZ
     lookup_field = "id"
 

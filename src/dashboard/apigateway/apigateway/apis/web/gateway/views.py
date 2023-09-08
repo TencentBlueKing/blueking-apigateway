@@ -29,7 +29,8 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.controller.tasks.syncing import trigger_gateway_publish
+from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
 
@@ -200,7 +201,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     name="put",
     decorator=swagger_auto_schema(
         request_body=GatewayUpdateStatusInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Gateway"],
     ),
 )
@@ -211,12 +212,17 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = GatewayUpdateStatusInputSLZ(instance=instance, data=request.data)
+        slz = self.get_serializer(instance=instance, data=request.data)
         slz.is_valid(raise_exception=True)
+
+        is_need_publish = slz.validated_data["status"] is not instance.status
 
         slz.save(updated_by=request.user.username)
 
-        # FIXME: 添加触发发布微网关的逻辑
+        # 触发网关发布
+        if is_need_publish:
+            source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
+            trigger_gateway_publish(source, request.user.username, instance.id)
 
         GatewayHandler.record_audit_log_success(
             username=request.user.username,
@@ -226,4 +232,4 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
             instance_name=instance.name,
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

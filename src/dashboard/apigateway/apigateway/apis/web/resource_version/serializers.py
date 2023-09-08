@@ -103,6 +103,7 @@ class ResourceVersionInfoSLZ(serializers.ModelSerializer):
 class ResourceVersionListOutputSLZ(serializers.ModelSerializer):
     released_stages = serializers.SerializerMethodField()
     has_sdk = serializers.SerializerMethodField()
+    sdk_count = serializers.SerializerMethodField()
     resource_version_display = serializers.SerializerMethodField()
     version = serializers.SerializerMethodField()
 
@@ -118,6 +119,7 @@ class ResourceVersionListOutputSLZ(serializers.ModelSerializer):
             "created_time",
             "released_stages",
             "has_sdk",
+            "sdk_count",
         )
         read_only_fields = fields
         lookup_field = "id"
@@ -127,6 +129,9 @@ class ResourceVersionListOutputSLZ(serializers.ModelSerializer):
 
     def get_has_sdk(self, obj):
         return obj["id"] in self.context["resource_version_ids_has_sdk"]
+
+    def get_sdk_count(self, obj):
+        return self.context["resource_version_ids_sdk_count"].get(obj["id"], 0)
 
     def get_version(self, obj):
         return obj.get("version") or obj.get("name", "")
