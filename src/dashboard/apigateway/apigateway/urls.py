@@ -57,10 +57,18 @@ urlpatterns = [
     # open api
     path("backend/api/v1/", include("apigateway.apis.open.urls")),
     # api-support backend/docs urls
-    path("backend/docs/apigateway/", include("apigateway.apps.docs.gateway.urls")),
     path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
-    path("backend/docs/feature/", include("apigateway.apps.docs.feature.urls")),
-    path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
+    path("backend/docs/gateways/", include("apigateway.apis.web.docs.gateway.gateway.urls")),
+    path(
+        "backend/docs/gateways/<slug:gateway_name>/resources/",
+        include("apigateway.apis.web.docs.gateway.resource.urls"),
+    ),
+    path("backend/docs/gateways/<slug:gateway_name>/stages/", include("apigateway.apis.web.docs.gateway.stage.urls")),
+    path("backend/docs/sdks/", include("apigateway.apis.web.docs.gateway.sdk.urls")),
+    path(
+        "backend/docs/gateways/<slug:gateway_name>/sdks/",
+        include("apigateway.apis.web.docs.gateway.gateway_sdk.urls"),
+    ),
     # web api
     path("backend/i18n/setlang/", set_language, name="set_language"),
     path("backend/users/", include("apigateway.apis.web.user.urls")),

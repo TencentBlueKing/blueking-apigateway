@@ -19,6 +19,7 @@ from typing import List
 
 from django.conf import settings
 from django.db import transaction
+from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -42,11 +43,20 @@ from .serializers import (
 )
 
 
-class GatewayListCreateApi(generics.ListCreateAPIView):
-    @swagger_auto_schema(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: GatewayListOutputSLZ(many=True)},
-        tags=["Gateway"],
-    )
+        tags=["WebAPI.Gateway"],
+    ),
+)
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        request_body=GatewayCreateInputSLZ, responses={status.HTTP_201_CREATED: ""}, tags=["WebAPI.Gateway"]
+    ),
+)
+class GatewayListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         gateways = self._filter_list_gateways(self.request.user.username)
         gateway_ids = [gateway.id for gateway in gateways]
@@ -69,7 +79,6 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         queryset = Gateway.objects.filter(_maintainers__contains=username)
         return [gateway for gateway in queryset if gateway.has_permission(username)]
 
-    @swagger_auto_schema(responses={status.HTTP_201_CREATED: ""}, tags=["Gateway"])
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         slz = GatewayCreateInputSLZ(data=request.data, context={"created_by": request.user.username})
@@ -101,12 +110,41 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         return OKJsonResponse(status=status.HTTP_201_CREATED, data={"id": slz.instance.id})
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: GatewayRetrieveOutputSLZ()},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        request_body=GatewayUpdateInputSLZ,
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+@method_decorator(
+    name="patch",
+    decorator=swagger_auto_schema(
+        request_body=GatewayUpdateInputSLZ,
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.Gateway"],
+    ),
+)
 class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     queryset = Gateway.objects.all()
     serializer_class = GatewayRetrieveOutputSLZ
     lookup_url_kwarg = "gateway_id"
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: GatewayRetrieveOutputSLZ()}, tags=["Gateway"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = GatewayRetrieveOutputSLZ(
@@ -118,11 +156,6 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         )
         return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(
-        request_body=GatewayUpdateInputSLZ,
-        responses={status.HTTP_200_OK: ""},
-        tags=["Gateway"],
-    )
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
 
@@ -142,10 +175,6 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         return OKJsonResponse()
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        tags=["Gateway"],
-    )
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -168,16 +197,19 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        request_body=GatewayUpdateStatusInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Gateway"],
+    ),
+)
 class GatewayUpdateStatusApi(generics.UpdateAPIView):
     queryset = Gateway.objects.all()
     serializer_class = GatewayUpdateStatusInputSLZ
     lookup_url_kwarg = "gateway_id"
 
-    @swagger_auto_schema(
-        request_body=GatewayUpdateStatusInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["Gateway"],
-    )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance=instance, data=request.data)

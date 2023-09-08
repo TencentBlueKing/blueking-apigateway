@@ -32,7 +32,7 @@ from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
-from apigateway.apps.support.models import APISDK, ResourceDoc
+from apigateway.apps.support.models import APISDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -233,6 +233,7 @@ def fake_resource(faker, fake_gateway, fake_backend):
 def fake_resource1(faker, fake_resource):
     resource = deepcopy(fake_resource)
     resource.pk = None
+    resource.is_public = True
     resource.name = faker.bothify("?????")
     resource.save()
 
@@ -375,6 +376,37 @@ def fake_released_resource(fake_gateway, fake_resource1, fake_resource_version, 
 
 
 @pytest.fixture
+def fake_resource_doc1(fake_resource1):
+    return G(ResourceDoc, gateway=fake_resource1.gateway, resource_id=fake_resource1.id)
+
+
+@pytest.fixture
+def fake_resource_doc2(fake_resource2):
+    return G(ResourceDoc, gateway=fake_resource2.gateway, resource_id=fake_resource2.id)
+
+
+@pytest.fixture
+def fake_resource_doc_version(fake_gateway, fake_resource_version, fake_resource_doc1, fake_resource_doc2):
+    resource_doc_version = G(ResourceDocVersion, gateway=fake_gateway, resource_version=fake_resource_version)
+    resource_doc_version.data = ResourceDocVersion.objects.make_version(fake_gateway.id)
+    resource_doc_version.save()
+    return resource_doc_version
+
+
+@pytest.fixture
+def fake_released_resource_doc(fake_gateway, fake_resource_version, fake_resource_doc_version, fake_resource1):
+    resource_id_to_data = {item["resource_id"]: item for item in fake_resource_doc_version.data}
+    return G(
+        ReleasedResourceDoc,
+        gateway=fake_gateway,
+        resource_version_id=fake_resource_version.id,
+        resource_id=fake_resource1.id,
+        language="zh",
+        data=resource_id_to_data[fake_resource1.id],
+    )
+
+
+@pytest.fixture
 def api_factory():
     return partial(G, Gateway, _maintainers=FAKE_USERNAME)
 
@@ -445,8 +477,9 @@ def fake_sdk(fake_gateway, fake_resource_version):
         APISDK,
         gateway=fake_gateway,
         resource_version=fake_resource_version,
-        language="magic",
+        language="python",
         is_recommended=True,
+        is_public=True,
         _config="{}",
     )
 

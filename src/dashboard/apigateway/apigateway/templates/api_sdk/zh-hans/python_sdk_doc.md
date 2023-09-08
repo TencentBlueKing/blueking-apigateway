@@ -12,6 +12,6 @@ pip install {网关SDK包名}
 
 ### 使用SDK
 
-假定网关 {{api_name}} 下存在网关API {{resource_name}}。
+假定网关 {{gateway_name}} 下存在网关API {{resource_name}}。
 
 {% include "api_sdk/zh-hans/python_sdk_usage_example.md" %}
