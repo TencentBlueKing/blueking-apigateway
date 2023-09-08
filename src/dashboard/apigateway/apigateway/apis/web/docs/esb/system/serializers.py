@@ -25,6 +25,9 @@ class SystemSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     description = serializers.CharField(allow_blank=True, read_only=True)
 
+    class Meta:
+        ref_name = "apis.web.docs.esb.system.SystemSLZ"
+
 
 class SystemCategorySLZ(serializers.Serializer):
     id = serializers.CharField(read_only=True)

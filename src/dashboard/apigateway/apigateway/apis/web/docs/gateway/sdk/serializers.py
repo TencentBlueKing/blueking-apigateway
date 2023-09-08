@@ -28,7 +28,7 @@ class SDKListInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.sdk"
+        ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKListInputSLZ"
 
 
 class GatewaySLZ(serializers.Serializer):
@@ -64,6 +64,12 @@ class SDKListOutputSLZ(serializers.Serializer):
 class SDKDocInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKDocInputSLZ"
+
 
 class SDKDocOutputSLZ(serializers.Serializer):
     content = serializers.CharField(allow_blank=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKDocOutputSLZ"
