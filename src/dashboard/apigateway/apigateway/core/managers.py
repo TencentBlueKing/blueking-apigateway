@@ -32,13 +32,11 @@ from django.utils.translation import gettext as _
 from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import InstanceDeleteError
-from apigateway.common.factories import SchemaFactory
 from apigateway.common.mcryptography import AESCipherManager
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     STAGE_VAR_PATTERN,
     APIHostingTypeEnum,
-    BackendConfigTypeEnum,
     GatewayStatusEnum,
     ProxyTypeEnum,
     PublishEventNameTypeEnum,
@@ -182,27 +180,6 @@ class ResourceManager(models.Manager):
 
 
 class ProxyManager(models.Manager):
-    # FIXME: move to biz layer
-    def save_proxy_config(
-        self,
-        resource,
-        type,
-        config,
-        backend_config_type: str = BackendConfigTypeEnum.DEFAULT.value,
-        backend_service_id: Optional[int] = None,
-    ):
-        factory = SchemaFactory()
-        return self.update_or_create(
-            resource=resource,
-            type=type,
-            defaults={
-                "backend_config_type": backend_config_type,
-                "backend_service_id": backend_service_id,
-                "config": config,
-                "schema": factory.get_proxy_schema(type),
-            },
-        )
-
     def get_resource_id_to_snapshot(self, resource_ids):
         from apigateway.schema.models import Schema
 

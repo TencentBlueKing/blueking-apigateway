@@ -39,7 +39,6 @@ from apigateway.core.models import (
     APIRelatedApp,
     Gateway,
     MicroGateway,
-    Proxy,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -260,66 +259,6 @@ class TestResourceManager:
 
 class TestContextManager(TestCase):
     pass
-
-
-class TestProxyManager(TestCase):
-    def test_save_proxy_config(self):
-        resource = G(Resource)
-
-        data = [
-            {
-                "type": "http",
-                "configs": {
-                    "http": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        "timeout": 10,
-                        "upstreams": {
-                            "loadbalance": "roundrobin",
-                            "hosts": [
-                                {
-                                    "host": "www.a.com",
-                                    "weight": 100,
-                                }
-                            ],
-                        },
-                        "transform_headers": {
-                            "replace": {"k1": "v1", "k2": "v2"},
-                        },
-                    }
-                },
-            },
-            {
-                "type": "mock",
-                "configs": {
-                    "mock": {
-                        "code": 200,
-                        "body": "test",
-                        "headers": {
-                            "k1": "v1",
-                        },
-                    }
-                },
-            },
-            {
-                "type": "mock",
-                "configs": {
-                    "mock": {
-                        "code": "invalid",
-                    }
-                },
-                "will_error": True,
-            },
-        ]
-
-        for test in data:
-            if not test.get("will_error"):
-                Proxy.objects.save_proxy_config(resource, test["type"], test["configs"][test["type"]])
-                self.assertEqual(Proxy.objects.filter(resource=resource, type=test["type"]).count(), 1)
-                continue
-
-            with self.assertRaises(Exception):
-                Proxy.objects.save_proxy_config(resource, test["type"], test["configs"][test["type"]])
 
 
 class TestResourceVersionManager:
