@@ -31,15 +31,12 @@ from apigateway.common.exceptions import InstanceDeleteError
 from apigateway.common.mcryptography import AESCipherManager
 from apigateway.core import constants
 from apigateway.core.constants import (
-    APIHostingTypeEnum,
-    GatewayStatusEnum,
     SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
 from apigateway.core.models import (
     JWT,
     APIRelatedApp,
-    BackendService,
     Gateway,
     MicroGateway,
     Proxy,
@@ -101,21 +98,6 @@ class TestGatewayManager:
             result = Gateway.objects.search_gateways(test["username"], test["name"])
             assert result[0] == test["expected"][0]
             assert result[1] == test["expected"][1]
-
-    def test_query_micro_and_active_ids(self):
-        g1 = G(Gateway, hosting_type=APIHostingTypeEnum.DEFAULT.value, status=GatewayStatusEnum.ACTIVE.value)
-        g2 = G(Gateway, hosting_type=APIHostingTypeEnum.DEFAULT.value, status=GatewayStatusEnum.INACTIVE.value)
-        g3 = G(Gateway, hosting_type=APIHostingTypeEnum.MICRO.value, status=GatewayStatusEnum.ACTIVE.value)
-        g4 = G(Gateway, hosting_type=APIHostingTypeEnum.MICRO.value, status=GatewayStatusEnum.INACTIVE.value)
-
-        result = Gateway.objects.query_micro_and_active_ids()
-        assert g3.id in result
-        assert g1.id not in result
-        assert g2.id not in result
-        assert g4.id not in result
-
-        result = Gateway.objects.query_micro_and_active_ids(ids=[g4.id])
-        assert g3.id not in result
 
 
 class TestStageManager:
@@ -239,58 +221,6 @@ class TestResourceManager:
             result = Resource.objects.filter_valid_ids(gateway, test["ids"])
             assert result == test["expected"]
 
-    def test_filter_resource_path_method_to_id(self):
-        r1 = G(Resource, gateway=self.gateway, path="/hello/", method="GET")
-        r2 = G(Resource, gateway=self.gateway, path="/hello/", method="POST")
-        r3 = G(Resource, gateway=self.gateway, path="/hello/{user_id}/", method="POST")
-        r4 = G(Resource, gateway=self.gateway, path="/test/", method="ANY")
-
-        expected = {
-            "/hello/": {
-                "GET": r1.id,
-                "POST": r2.id,
-            },
-            "/hello/{user_id}/": {
-                "POST": r3.id,
-            },
-            "/test/": {
-                "ANY": r4.id,
-            },
-        }
-        result = Resource.objects.filter_resource_path_method_to_id(self.gateway.id)
-        assert result == expected
-
-    def test_filter_id_to_fields(self):
-        gateway = G(Gateway)
-
-        r1 = G(Resource, gateway=gateway, method="GET", path="/echo/", name="get_echo")
-        r2 = G(Resource, gateway=gateway, method="POST", path="/echo/", name="post_echo")
-
-        result = Resource.objects.filter_id_to_fields(gateway.id, ["id", "name", "method", "path"])
-        assert result == {
-            r1.id: {
-                "id": r1.id,
-                "name": "get_echo",
-                "method": "GET",
-                "path": "/echo/",
-            },
-            r2.id: {
-                "id": r2.id,
-                "name": "post_echo",
-                "method": "POST",
-                "path": "/echo/",
-            },
-        }
-
-    def test_filter_id_is_public_map(self):
-        gateway = G(Gateway)
-
-        r1 = G(Resource, gateway=gateway, is_public=True)
-        r2 = G(Resource, gateway=gateway, is_public=False)
-
-        result = Resource.objects.filter_id_is_public_map(gateway.id)
-        assert result == {r1.id: True, r2.id: False}
-
     def test_group_by_api_id(self):
         a1 = G(Gateway)
         a2 = G(Gateway)
@@ -304,33 +234,6 @@ class TestResourceManager:
             a1.id: [r1.id, r3.id],
             a2.id: [r2.id],
         }
-
-    def test_get_id_to_name(self):
-        gateway = G(Gateway)
-
-        r = G(Resource, gateway=gateway, name="test")
-
-        assert Resource.objects.get_id_to_name(gateway.id) == {r.id: "test"}
-        assert Resource.objects.get_id_to_name(gateway.id, [r.id]) == {r.id: "test"}
-        assert Resource.objects.get_id_to_name(gateway.id, []) == {}
-
-    def test_get_unspecified_resource_fields(self):
-        gateway = G(Gateway)
-
-        r1 = G(Resource, gateway=gateway, name="r1", method="GET", path="/echo/r1/")
-        r2 = G(Resource, gateway=gateway, name="r2", method="POST", path="/echo/r2/")
-        r3 = G(Resource, gateway=gateway, name="r3", method="POST", path="/echo/r3/")
-
-        assert Resource.objects.get_unspecified_resource_fields(gateway.id, []) == [
-            {"id": r1.id, "name": "r1", "method": "GET", "path": "/echo/r1/"},
-            {"id": r2.id, "name": "r2", "method": "POST", "path": "/echo/r2/"},
-            {"id": r3.id, "name": "r3", "method": "POST", "path": "/echo/r3/"},
-        ]
-
-        assert Resource.objects.get_unspecified_resource_fields(gateway.id, [r2.id]) == [
-            {"id": r1.id, "name": "r1", "method": "GET", "path": "/echo/r1/"},
-            {"id": r3.id, "name": "r3", "method": "POST", "path": "/echo/r3/"},
-        ]
 
     def test_get_resource_ids_by_names(self):
         gateway = G(Gateway)
@@ -417,44 +320,6 @@ class TestProxyManager(TestCase):
 
             with self.assertRaises(Exception):
                 Proxy.objects.save_proxy_config(resource, test["type"], test["configs"][test["type"]])
-
-    def test_get_proxy_type(self):
-        resource = G(Resource)
-        proxy = G(Proxy, resource=resource, type="http")
-
-        result = Proxy.objects.get_proxy_type(proxy.id)
-        self.assertEqual(result, "http")
-
-    def test_filter_proxies(self):
-        resource = G(Resource)
-        proxy, _ = Proxy.objects.save_proxy_config(
-            resource,
-            "http",
-            {
-                "method": "GET",
-                "path": "/echo/",
-                "timeout": 10,
-                "upstreams": {},
-                "transform_headers": {},
-            },
-        )
-        result = Proxy.objects.filter_proxies([resource.id])
-
-        self.assertEqual(
-            result,
-            {
-                proxy.id: {
-                    "type": "http",
-                    "config": {
-                        "method": "GET",
-                        "path": "/echo/",
-                        "timeout": 10,
-                        "upstreams": {},
-                        "transform_headers": {},
-                    },
-                }
-            },
-        )
 
 
 class TestResourceVersionManager:
@@ -600,83 +465,6 @@ class TestResourceVersionManager:
         resource_version = G(ResourceVersion, gateway=gateway, version=unique_id)
         result = ResourceVersion.objects.get_id_by_version(gateway, unique_id)
         assert result == resource_version.id
-
-    def test_has_used_stage_upstreams(self, fake_gateway):
-        data = [
-            # proxy type is mock
-            {
-                "resource_version": G(
-                    ResourceVersion,
-                    gateway=fake_gateway,
-                    _data=json.dumps(
-                        [
-                            {
-                                "proxy": {
-                                    "type": "mock",
-                                }
-                            }
-                        ]
-                    ),
-                ),
-                "expected": False,
-            },
-            # custom upstreams
-            {
-                "resource_version": G(
-                    ResourceVersion,
-                    gateway=fake_gateway,
-                    _data=json.dumps(
-                        [
-                            {
-                                "proxy": {
-                                    "type": "http",
-                                    "config": json.dumps(
-                                        {
-                                            "path": "/echo/",
-                                            "upstreams": {
-                                                "hosts": [
-                                                    {"host": "http://example.com"},
-                                                ]
-                                            },
-                                        }
-                                    ),
-                                }
-                            }
-                        ]
-                    ),
-                ),
-                "expected": False,
-            },
-            # use stage upstreams
-            {
-                "resource_version": G(
-                    ResourceVersion,
-                    gateway=fake_gateway,
-                    _data=json.dumps(
-                        [
-                            {
-                                "proxy": {
-                                    "type": "http",
-                                    "config": json.dumps(
-                                        {
-                                            "path": "/echo/",
-                                            "upstreams": {},
-                                        }
-                                    ),
-                                }
-                            }
-                        ]
-                    ),
-                ),
-                "expected": True,
-            },
-        ]
-        for test in data:
-            result = ResourceVersion.objects.has_used_stage_upstreams(
-                gateway_id=fake_gateway.id,
-                id=test["resource_version"].id,
-            )
-            assert result == test["expected"]
 
     def test_get_object_fields(self, fake_resource_version):
         expected = {
@@ -964,60 +752,6 @@ class TestReleaseManager:
 
 
 class TestReleasedResourceManager:
-    def test_get_latest_released_resource(self):
-        gateway = G(Gateway)
-        resource = G(Resource, gateway=gateway)
-
-        rv_1 = G(ResourceVersion, gateway=gateway)
-        G(ResourceVersion, gateway=gateway)
-        rv_3 = G(ResourceVersion, gateway=gateway)
-
-        G(ReleasedResource, gateway=gateway, resource_id=resource.id, resource_version_id=rv_1.id, data={})
-        G(
-            ReleasedResource,
-            gateway=gateway,
-            resource_id=resource.id,
-            resource_version_id=rv_3.id,
-            data={
-                "id": resource.id,
-                "name": "test",
-                "description": "desc",
-                "method": "GET",
-                "path": "/test",
-                "match_subpath": False,
-                "is_public": True,
-                "contexts": {
-                    "resource_auth": {
-                        "config": json.dumps(
-                            {
-                                "resource_perm_required": True,
-                                "app_verified_required": True,
-                                "auth_verified_required": True,
-                            }
-                        ),
-                    }
-                },
-            },
-        )
-
-        result = ReleasedResource.objects.get_latest_released_resource(gateway.id, resource.id)
-
-        assert result == {
-            "id": resource.id,
-            "name": "test",
-            "description": "desc",
-            "description_en": "",
-            "method": "GET",
-            "path": "/test",
-            "match_subpath": False,
-            "is_public": True,
-            "allow_apply_permission": True,
-            "resource_perm_required": True,
-            "app_verified_required": True,
-            "user_verified_required": True,
-            "disabled_stages": [],
-        }
-
     def test_filter_latest_released_resources(self, fake_gateway):
         r1 = G(Resource, gateway=fake_gateway)
         r2 = G(Resource, gateway=fake_gateway)
@@ -1258,15 +992,6 @@ class TestJWTManager:
         JWT.objects.update_jwt_key(gateway, "test", "test")
         assert JWT.objects.get_private_key(gateway.id) == "test"
 
-    def test_get_jwt(self):
-        gateway = G(Gateway)
-        jwt = JWT.objects.create_jwt(gateway)
-        assert JWT.objects.get_jwt(gateway) == jwt
-
-        gateway = G(Gateway)
-        with pytest.raises(APIError):
-            JWT.objects.get_jwt(gateway)
-
     def test_is_jwt_key_changed(self, faker):
         gateway = G(Gateway)
         jwt = JWT.objects.create_jwt(gateway)
@@ -1324,19 +1049,6 @@ class TestAPIRelatedApp:
         APIRelatedApp.objects._check_app_gateway_limit("bk_test")
 
         APIRelatedApp.objects.all().delete()
-
-
-class TestBackendServiceManager:
-    def test_delete_backend_service(self, fake_gateway):
-        backend_service = G(BackendService, api=fake_gateway)
-        proxy = G(Proxy, backend_service=backend_service)
-
-        with pytest.raises(InstanceDeleteError):
-            BackendService.objects.delete_backend_service(backend_service.id)
-
-        proxy.delete()
-        BackendService.objects.delete_backend_service(backend_service.id)
-        assert not BackendService.objects.filter(api=fake_gateway).exists()
 
 
 class TestSslCertificateManager:

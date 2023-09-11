@@ -23,6 +23,7 @@ from apigateway.controller.crds.base import KubernetesResource
 logger = logging.getLogger(__name__)
 
 
+# FIXME: should be a abstract class !
 class Registry:
     """配置注册中心，本质上是一个 KV 结构的存储，可以同时存储多种类型的资源，并可以进行迭代，修改和查询等操作"""
 
