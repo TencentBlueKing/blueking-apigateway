@@ -43,10 +43,6 @@ def _is_gateway_ok_for_releasing(release: Release) -> Tuple[bool, str]:
     gateway_id = release.gateway.pk
     # 剔除非微网关托管的网关
     gateway = Gateway.objects.get(pk=gateway_id)
-    if gateway.is_micro_gateway:
-        msg = f"rolling_update_release: gateway(id={gateway_id}) not exist or is not a micro-gateway, skip"
-        return False, msg
-
     if gateway.status != GatewayStatusEnum.ACTIVE.value:
         msg = f"rolling_update_release: gateway(id={gateway_id}) is not active, skip"
         return False, msg

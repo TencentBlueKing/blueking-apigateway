@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import List
 
@@ -64,7 +63,7 @@ class SharedMicroGatewayNotFound(Exception):
 
 
 @dataclass
-class BaseGatewayReleaser(metaclass=ABCMeta):
+class BaseGatewayReleaser:
     gateway: Gateway
     stages: List[Stage]
     resource_version: ResourceVersion
@@ -193,7 +192,6 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
             }
         )
 
-    @abstractmethod
     def _do_release(self, releases: List[Release], release_history: ReleaseHistory):  # ruff: noqa: B027
         """发布资源版本"""
 
@@ -216,14 +214,7 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
         ReleasedResourceDoc.objects.clear_unreleased_resource_doc(self.gateway.id)
 
 
-@dataclass
-class DefaultGatewayReleaser(BaseGatewayReleaser):
-    """APIGateway 默认网关发布器"""
-
-    def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
-        """发布资源版本"""
-
-
+#
 @dataclass
 class MicroGatewayReleaser(BaseGatewayReleaser):
     """微网关发布器"""
@@ -297,27 +288,6 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         delay_on_commit(group(*tasks))
 
 
-class GatewayReleaserFactory:
-    @classmethod
-    def get_releaser(
-        cls,
-        gateway: Gateway,
-        stage_ids: List[int],
-        resource_version_id: int,
-        comment: str,
-        access_token: str,
-        username: str = "",
-    ) -> "BaseGatewayReleaser":
-        if gateway.is_micro_gateway:
-            return MicroGatewayReleaser.from_data(
-                gateway, stage_ids, resource_version_id, comment, access_token, username
-            )
-
-        return DefaultGatewayReleaser.from_data(
-            gateway, stage_ids, resource_version_id, comment, access_token, username
-        )
-
-
 class BatchReleaser:
     access_token: str = ""
 
@@ -326,7 +296,7 @@ class BatchReleaser:
 
     def release(
         self, gateway: Gateway, stage_ids: List[int], resource_version_id: int, comment: str, username: str = ""
-    ):
-        return GatewayReleaserFactory.get_releaser(
-            gateway, stage_ids, resource_version_id, comment, access_token=self.access_token, username=username
+    ) -> ReleaseHistory:
+        return MicroGatewayReleaser.from_data(
+            gateway, stage_ids, resource_version_id, comment, self.access_token, username
         ).release()

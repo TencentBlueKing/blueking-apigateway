@@ -132,11 +132,6 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         return settings.BK_API_URL_TMPL.format(api_name=self.name)
 
     @property
-    def is_micro_gateway(self) -> bool:
-        """是否为微网关实例"""
-        return self.hosting_type == APIHostingTypeEnum.MICRO.value
-
-    @property
     def max_stage_count(self) -> int:
         return settings.MAX_STAGE_COUNT_PER_GATEWAY
 
