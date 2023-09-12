@@ -835,8 +835,6 @@ class BackendService(TimestampedModelMixin, OperatorModelMixin):
     timeout = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     ssl_enabled = models.BooleanField(default=False)
 
-    objects = managers.BackendServiceManager()
-
     class Meta:
         db_table = "core_backend_service"
 

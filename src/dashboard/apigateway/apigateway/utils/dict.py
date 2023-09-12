@@ -16,41 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, Iterable, List, Optional, Set, Type, Union
-
-
-def new_dict(
-    data: Dict[str, Any],
-    include: Union[Set[str], List[str], None] = None,
-    exclude: Union[Set[str], List[str], None] = None,
-    exclude_none: bool = False,
-) -> Dict[str, Any]:
-    def calculate_keys() -> Optional[Set[str]]:
-        if include is None and exclude is None:
-            return None
-
-        keys = set(data.keys())
-
-        if include is not None:
-            keys &= set(include)
-
-        if exclude:
-            keys -= set(exclude)
-
-        return keys
-
-    new_data = {}
-    allowed_keys = calculate_keys()
-    for key, value in data.items():
-        if (allowed_keys is not None and key not in allowed_keys) or (exclude_none and value is None):
-            continue
-        new_data[key] = value
-
-    return new_data
-
-
-def from_exist_keys(data: dict, keys: list) -> dict:
-    return {key: data[key] for key in keys if key in data}
+from typing import Any, Dict, Iterable, List, Optional, Type
 
 
 def deep_update(mapping: Dict[str, Any], *updating_mappings: Dict[str, Any]) -> Dict[str, Any]:

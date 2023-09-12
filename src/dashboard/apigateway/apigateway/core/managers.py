@@ -20,7 +20,7 @@ import itertools
 import json
 import operator
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional
 
 from cachetools import TTLCache, cached
 from django.conf import settings
@@ -32,13 +32,11 @@ from django.utils.translation import gettext as _
 from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import InstanceDeleteError
-from apigateway.common.factories import SchemaFactory
 from apigateway.common.mcryptography import AESCipherManager
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     STAGE_VAR_PATTERN,
     APIHostingTypeEnum,
-    BackendConfigTypeEnum,
     GatewayStatusEnum,
     ProxyTypeEnum,
     SSLCertificateBindingScopeTypeEnum,
@@ -47,9 +45,10 @@ from apigateway.core.constants import (
 from apigateway.utils.crypto import KeyGenerator
 from apigateway.utils.time import now_datetime
 
+# - managers.py 下面不能存在跨 models 的操作，每个 manager 只关心自己的逻辑 (避免循环引用)
+
 # TODO
 # - 所有带 FIXME 的都需要处理，挪到合适的层
-# - managers.py 下面不能存在跨 models 的操作，每个 manager 只关心自己的逻辑 (避免循环引用)
 
 
 class GatewayManager(models.Manager):
@@ -67,19 +66,6 @@ class GatewayManager(models.Manager):
 
         return [gateway for gateway in queryset if gateway.has_permission(username)]
 
-    def fetch_authorized_gateway_ids(self, username: str) -> List[str]:
-        """获取用户有权限的网关 ID 列表"""
-        queryset = self.filter(_maintainers__contains=username)
-        return [gateway.id for gateway in queryset if gateway.has_permission(username)]
-
-    def get_or_new_gateway(self, name):
-        if self.filter(name=name).exists():
-            return self.get(name=name)
-        gateway = self.model()
-        gateway.name = name
-
-        return gateway
-
     def filter_id_object_map(self, ids=None):
         """
         获取网关 ID 对
@@ -92,14 +78,6 @@ class GatewayManager(models.Manager):
     def filter_micro_and_active_queryset(self):
         """获取托管类型为微网关，且已启用的网关，用于获取可发布到共享微网关实例的网关"""
         return self.filter(hosting_type=APIHostingTypeEnum.MICRO.value, status=GatewayStatusEnum.ACTIVE.value)
-
-    def query_micro_and_active_ids(self, ids: Union[List[int], None] = None) -> List[int]:
-        """获取托管类型为微网关，且已启用的网关 ID 列表；如果给定了网关 ID 列表，则返回其中符合条件的 ID 列表"""
-        queryset = self.filter_micro_and_active_queryset()
-        if ids is not None:
-            queryset = queryset.filter(id__in=ids)
-
-        return list(queryset.values_list("id", flat=True))
 
 
 class StageManager(models.Manager):
@@ -156,28 +134,8 @@ class ResourceManager(models.Manager):
     def get_latest_resource(self, gateway_id):
         return self.filter(gateway_id=gateway_id).order_by("-updated_time").first()
 
-    def filter_resource_path_method_to_id(self, gateway_id):
-        """
-        :return: {
-            "/test/": {
-                "GET": 1,
-            }
-        }
-        """
-        resources = self.filter(gateway_id=gateway_id).values("id", "method", "path")
-        path_method_to_id = defaultdict(dict)
-        for resource in resources:
-            path_method_to_id[resource["path"]][resource["method"]] = resource["id"]
-        return path_method_to_id
-
-    def filter_id_to_fields(self, gateway_id: int, fields: List[str]) -> Dict[int, Dict[str, Any]]:
-        return {resource["id"]: resource for resource in self.filter(gateway_id=gateway_id).values(*fields)}
-
     def filter_resource_name_to_id(self, gateway_id):
         return dict(self.filter(gateway_id=gateway_id).values_list("name", "id"))
-
-    def filter_id_is_public_map(self, gateway_id):
-        return dict(self.filter(gateway_id=gateway_id).values_list("id", "is_public"))
 
     def filter_public_resource_ids(self, gateway_id: int) -> List[int]:
         return list(self.filter(gateway_id=gateway_id, is_public=True).values_list("id", flat=True))
@@ -202,24 +160,12 @@ class ResourceManager(models.Manager):
             )
         }
 
-    def get_id_to_name(self, gateway_id: int, resource_ids: Optional[List[int]] = None) -> Dict[int, str]:
-        qs = self.filter(gateway_id=gateway_id)
-
-        if resource_ids is not None:
-            qs = qs.filter(id__in=resource_ids)
-
-        return dict(qs.values_list("id", "name"))
-
     def group_by_api_id(self, resource_ids: List[int]) -> Dict[int, List[int]]:
         data = self.filter(id__in=resource_ids).values("gateway_id", "id").order_by("gateway_id")
         return {
             gateway_id: [item["id"] for item in group]
             for gateway_id, group in itertools.groupby(data, key=operator.itemgetter("gateway_id"))
         }
-
-    def get_unspecified_resource_fields(self, gateway_id: int, ids: List[int]) -> List[Dict[str, Any]]:
-        """获取指定网关下，未在指定 ids 中的资源的一些字段数据"""
-        return list(self.filter(gateway_id=gateway_id).exclude(id__in=ids).values("id", "name", "method", "path"))
 
     def get_resource_ids_by_names(self, gateway_id: int, resource_names: Optional[List[str]]) -> List[int]:
         if not resource_names:
@@ -232,46 +178,6 @@ class ResourceManager(models.Manager):
 
 
 class ProxyManager(models.Manager):
-    # FIXME: move to biz layer
-    def save_proxy_config(
-        self,
-        resource,
-        type,
-        config,
-        backend_config_type: str = BackendConfigTypeEnum.DEFAULT.value,
-        backend_service_id: Optional[int] = None,
-    ):
-        factory = SchemaFactory()
-        return self.update_or_create(
-            resource=resource,
-            type=type,
-            defaults={
-                "backend_config_type": backend_config_type,
-                "backend_service_id": backend_service_id,
-                "config": config,
-                "schema": factory.get_proxy_schema(type),
-            },
-        )
-
-    def get_proxy_type(self, proxy_id):
-        """
-        获取代理的类型
-        """
-        return self.get(id=proxy_id).type
-
-    def filter_proxies(self, resource_ids):
-        queryset = self.filter(resource_id__in=resource_ids)
-        return {
-            proxy.id: {
-                "type": proxy.type,
-                "config": proxy.config,
-            }
-            for proxy in queryset
-        }
-
-    def delete_by_resource_ids(self, resource_ids):
-        self.filter(resource_id__in=resource_ids).delete()
-
     def get_resource_id_to_snapshot(self, resource_ids):
         from apigateway.schema.models import Schema
 
@@ -305,16 +211,6 @@ class StageResourceDisabledManager(models.Manager):
 
     def get_record(self, stage_id, resource_id):
         return self.get(stage__id=stage_id, resource__id=resource_id)
-
-    def get_or_new_record(self, stage_id, resource_id):
-        if self.is_exists(stage_id, resource_id):
-            return self.get_record(stage_id, resource_id)
-
-        record = self.model()
-        record.stage_id = stage_id
-        record.resource_id = resource_id
-
-        return record
 
 
 class ResourceVersionManager(models.Manager):
@@ -354,21 +250,6 @@ class ResourceVersionManager(models.Manager):
             "in_path": list(used_in_path),
             "in_host": list(used_in_host),
         }
-
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_LONG.value))
-    def has_used_stage_upstreams(self, gateway_id: int, id: int) -> bool:
-        """资源 Hosts 是否存在使用默认配置"""
-        resoruce_version = self.filter(gateway_id=gateway_id, id=id).first()
-        for resource in resoruce_version.data:
-            if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
-                continue
-
-            proxy_config = json.loads(resource["proxy"]["config"])
-            proxy_upstreams = proxy_config.get("upstreams")
-            if not proxy_upstreams:
-                return True
-
-        return False
 
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_LONG.value))
     def get_resources(self, gateway_id: int, id: int) -> Dict[int, dict]:
@@ -512,12 +393,6 @@ class ReleaseManager(models.Manager):
     def delete_by_stage_ids(self, stage_ids):
         self.filter(stage_id__in=stage_ids).delete()
 
-    def get_release_by_stage_id(self, stage_id):
-        return self.filter(stage_id=stage_id).all()
-
-    def get_release_by_gateway_id(self, gateway_id):
-        return self.filter(gateway_id=gateway_id).all()
-
     def filter_released_gateway_ids(self, gateway_ids):
         return set(self.filter(gateway_id__in=gateway_ids).values_list("gateway_id", flat=True))
 
@@ -611,16 +486,6 @@ class ReleasedResourceManager(models.Manager):
         ).first()
         if not released_resource:
             return None
-
-        return self._parse_released_resource(released_resource)
-
-    def get_latest_released_resource(self, gateway_id: int, resource_id: int) -> dict:
-        """获取资源最新的发布配置"""
-        released_resource = (
-            self.filter(gateway_id=gateway_id, resource_id=resource_id).order_by("-resource_version_id").first()
-        )
-        if not released_resource:
-            return {}
 
         return self._parse_released_resource(released_resource)
 
@@ -726,17 +591,6 @@ class PublishEventManager(models.Manager):
 
 
 class ContextManager(models.Manager):
-    def save_config(self, scope_type, scope_id, type, config, schema):
-        return self.update_or_create(
-            scope_type=scope_type,
-            scope_id=scope_id,
-            type=type,
-            defaults={
-                "config": config,
-                "schema": schema,
-            },
-        )
-
     def get_config(self, scope_type, scope_id, type):
         return self.get(scope_type=scope_type, scope_id=scope_id, type=type).config
 
@@ -770,12 +624,6 @@ class JWTManager(models.Manager):
 
         jwt = self.get(gateway_id=gateway_id)
         return cipher.decrypt_from_hex(jwt.encrypted_private_key)
-
-    def get_jwt(self, gateway):
-        try:
-            return self.get(gateway=gateway)
-        except Exception:
-            raise error_codes.NOT_FOUND.format(_("网关密钥不存在。"), replace=True)
 
     def is_jwt_key_changed(self, gateway, private_key: bytes, public_key: bytes) -> bool:
         cipher = AESCipherManager.create_jwt_cipher()
@@ -826,23 +674,6 @@ class MicroGatewayManager(models.Manager):
 
         count = self.filter(gateway_id__in=gateway_ids).values("gateway_id").annotate(count=Count("gateway_id"))
         return {i["gateway_id"]: i["count"] for i in count}
-
-
-class BackendServiceManager(models.Manager):
-    def delete_backend_service(self, id: int):
-        self._precheck_delete_instance(id)
-        self.filter(id=id).delete()
-
-    def _precheck_delete_instance(self, id: int):
-        from apigateway.core.models import Proxy
-
-        proxy = Proxy.objects.filter(backend_service_id=id).first()
-        if not proxy:
-            return
-
-        raise InstanceDeleteError(
-            _("后端服务【id={id}】被资源【id={resource_id}】引用，无法删除。").format(id=id, resource_id=proxy.resource_id)
-        )
 
 
 class SslCertificateManager(models.Manager):

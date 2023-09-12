@@ -38,10 +38,5 @@ def random_string(length=10):
     return "".join(random.choice(letters) for i in range(length))
 
 
-def random_secret(length=10):
-    """Generate a random secret of fixed length"""
-    return "".join(random.choice(string.digits + string.ascii_letters + string.punctuation) for i in range(length))
-
-
 def generate_unique_id():
     return uuid.uuid4().hex

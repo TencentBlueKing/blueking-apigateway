@@ -123,13 +123,6 @@ class ResourcePluginConfig(BaseModel, DiffMixin):
     config: Dict[Text, Any] = Field(default_factory=dict)
 
 
-class ResourcePlugins(BaseModel, DiffMixin):
-    config: ResourcePluginConfig
-
-    def diff_config(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
-        return self.config.diff(target.config)
-
-
 class ResourceDifferHandler(BaseModel, DiffMixin):
     id: int
     name: Text

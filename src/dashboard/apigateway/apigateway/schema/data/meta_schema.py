@@ -26,8 +26,6 @@ from apigateway.schema.instances import (
     MicroGateway,
     MonitorAlarmFilter,
     MonitorAlarmStrategy,
-    PluginIpRestriction,
-    PluginVerifiedUserExemptedApps,
     ProxyHTTP,
     ProxyMock,
 )
@@ -45,8 +43,6 @@ def init_meta_schemas():
         MonitorAlarmStrategy(),
         APISDK(),
         MicroGateway(),
-        PluginIpRestriction(),
-        PluginVerifiedUserExemptedApps(),
     ]
 
     return [d.new_meta_schema() for d in meta_schema_instances]
