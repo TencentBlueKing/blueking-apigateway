@@ -490,7 +490,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
     name = models.CharField(_("[Deprecated] 版本名"), max_length=128, unique=True)
-    # todo: 1.14删除
+    # todo: 1.14 删除
     title = models.CharField(max_length=128, blank=True, default="", null=True)
     comment = models.CharField(max_length=512, blank=True, null=True)
     _data = models.TextField(db_column="data")
@@ -620,7 +620,7 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         choices=PublishSourceEnum.get_choices(),
         default=PublishSourceEnum.VERSION_PUBLISH.value,
     )
-    # todo:1.14删掉该字段废弃，由publish_event来决定最终状态
+    # todo:1.14 删掉该字段废弃，由 publish_event 来决定最终状态
     status = models.CharField(
         _("发布状态"),
         max_length=16,
@@ -798,7 +798,7 @@ class MicroGatewayReleaseHistory(models.Model):
     release_history = models.ForeignKey(ReleaseHistory, on_delete=models.CASCADE)
     message = models.TextField(blank=True, null=True, default="")
 
-    # todo: 废弃：1.14删除
+    # todo: 废弃：1.14 删除
     status = models.CharField(
         _("发布状态"),
         max_length=16,
