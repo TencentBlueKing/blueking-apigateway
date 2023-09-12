@@ -20,7 +20,6 @@ from abc import ABCMeta
 from dataclasses import dataclass
 from typing import List
 
-from attrs import define
 from blue_krill.async_utils.django_utils import delay_on_commit
 from celery.canvas import group
 from django.utils.functional import cached_property
@@ -324,7 +323,7 @@ class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
         delay_on_commit(group(*tasks))
 
 
-@define(slots=False)
+@dataclass
 class ReleaseBatchHandler:
     access_token: str = ""
 

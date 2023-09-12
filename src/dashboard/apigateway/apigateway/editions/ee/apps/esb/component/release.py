@@ -17,9 +17,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from attrs import define
 from django.db import transaction
 from django.utils.translation import gettext as _
 
@@ -30,7 +30,7 @@ from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Gateway, ResourceVersion, Stage
 
 
-@define(slots=False)
+@dataclass
 class ComponentReleaser:
     gateway: Gateway
     username: str
