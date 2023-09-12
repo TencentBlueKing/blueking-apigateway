@@ -19,6 +19,7 @@
 from django.db import models
 
 
+# FIXME: move to apis/web, remove the manager method here
 class AuditEventLogManager(models.Manager):
     def filter_log(
         self,

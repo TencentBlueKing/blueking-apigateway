@@ -19,7 +19,6 @@
 
 import datetime
 import re
-from typing import Optional
 
 from rest_framework import serializers
 
@@ -55,20 +54,3 @@ class TimestampField(serializers.IntegerField):
 
 # 单位为秒的持续时间
 DURATION_IN_SECOND_PATTERN = re.compile(r"^(\d+)s$")
-
-
-class DurationInSecondField(serializers.IntegerField):
-    # 使用 to_internal_value 时，无法验证 min_value，因此，覆盖 run_validation
-    def run_validation(self, data: Optional[int]) -> str:
-        data = super().run_validation(data)
-        return f"{data}s" if data is not None else ""
-
-    def to_representation(self, value: str) -> Optional[int]:
-        if not value:
-            return None
-
-        match = DURATION_IN_SECOND_PATTERN.match(value)
-        if not match:
-            raise serializers.ValidationError("invalid data", code="invalid")
-
-        return int(match.group(1))

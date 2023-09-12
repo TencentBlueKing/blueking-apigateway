@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import functools
 
 from rest_framework import serializers as drf_serializers
 
@@ -36,22 +35,3 @@ class CustomFieldsSerializer(drf_serializers.Serializer):
         if add_fields is not None:
             # Add 'add_fields' to fields
             self.fields.update(add_fields)
-
-
-def set_default_to_context(context_key):
-    """
-    为 serializer 设置默认的 context 值，以便于在当前 serializer 管理其依赖的 context 数据；
-    - 注意：多个 serializer 组合时，需防止 context_key 冲突
-    """
-
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
-            if context_key not in self.context:
-                self.context[context_key] = func(self, *args, **kwargs)
-
-            return self.context[context_key]
-
-        return wrapper
-
-    return decorator
