@@ -19,6 +19,7 @@
 
 from django.db import migrations, models
 import django.db.models.deletion
+from django_add_default_value import AddDefaultValue
 
 
 class Migration(migrations.Migration):
@@ -58,6 +59,13 @@ class Migration(migrations.Migration):
             name='schema_version',
             field=models.CharField(choices=[('1.0', '旧模型版本'), ('2.0', '新模型版本')], default='1.0', max_length=32),
         ),
+
+        AddDefaultValue(
+            model_name='resourceversion',
+            name='schema_version',
+            value='1.0'
+        ),
+
         migrations.AlterField(
             model_name='apirelatedapp',
             name='gateway',
