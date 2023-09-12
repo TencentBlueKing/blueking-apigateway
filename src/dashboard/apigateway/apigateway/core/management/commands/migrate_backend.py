@@ -48,7 +48,7 @@ class Command(BaseCommand):
 
     def _handle_gateway(self, gateway: Gateway):
         # 创建默认backend
-        default_backend = Backend.objects.get_or_create(
+        default_backend, _ = Backend.objects.get_or_create(
             gateway=gateway,
             name=DEFAULT_BACKEND_NAME,
         )
@@ -82,7 +82,7 @@ class Command(BaseCommand):
         for i in paginator.page_range:
             for proxy in paginator.page(i):
                 config = proxy.config
-                if not config["upstreams"]:
+                if "upstreams" not in config or not config["upstreams"]:
                     # 关联resource与default_backend
                     proxy.backend = default_backend
                     proxy.save()
@@ -183,8 +183,11 @@ class Command(BaseCommand):
     ):
         hosts = []
         for host in proxy_http_config["upstreams"]["hosts"]:
-            scheme, _host = host["host"].split("://")
-            hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
+            if host["host"]:
+                scheme, _host = host["host"].split("://")
+                hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
+            else:
+                hosts.append({"scheme": "http", "host": "", "weight": host["weight"]})
 
         config = {
             "type": "node",
