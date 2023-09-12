@@ -133,7 +133,7 @@ class EtcdDistributor(BaseDistributor):
             with procedure_logger.step(f"delete resources from etcd by key_prefix({registry.key_prefix})"):
                 registry.delete_resources_by_key_prefix()
 
-                # 删除资源后需要同步虚拟路由到etcd
+                # 删除资源后需要同步虚拟路由到 etcd
                 convertor.convert()
                 resources = list(convertor.get_kubernetes_resources())
                 with procedure_logger.step(f"sync version resources(count={len(resources)}) to etcd"):

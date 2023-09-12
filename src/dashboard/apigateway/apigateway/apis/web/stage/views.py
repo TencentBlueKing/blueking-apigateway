@@ -28,7 +28,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
-from apigateway.controller.tasks.syncing import trigger_gateway_publish
+from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import BackendConfig, Stage
 from apigateway.utils.responses import OKJsonResponse
