@@ -35,25 +35,27 @@ from apigateway.core.models import Gateway, Release, ReleaseHistory
 logger = logging.getLogger(__name__)
 
 
-def _check_release_gateway(gateway_id: Optional[int] = None, release: Optional[Release] = None) -> Tuple[bool, str]:
+def _is_gateway_ok_for_releasing(release: Release) -> Tuple[bool, str]:
     """网关发布校验"""
+    if not release:
+        return False, "release is None, ignored"
 
+    gateway_id = release.gateway.pk
     # 剔除非微网关托管的网关
-    if gateway_id:
-        gateway = Gateway.objects.get(pk=gateway_id)
-        if gateway.is_micro_gateway:
-            msg = f"rolling_update_release: gateway(id={gateway_id}) not exist or is not a micro-gateway, skip"
-            return False, msg
+    gateway = Gateway.objects.get(pk=gateway_id)
+    if gateway.is_micro_gateway:
+        msg = f"rolling_update_release: gateway(id={gateway_id}) not exist or is not a micro-gateway, skip"
+        return False, msg
 
-        if gateway.status != GatewayStatusEnum.ACTIVE.value:
-            msg = f"rolling_update_release: gateway(id={gateway_id}) is not active, skip"
-            return False, msg
+    if gateway.status != GatewayStatusEnum.ACTIVE.value:
+        msg = f"rolling_update_release: gateway(id={gateway_id}) is not active, skip"
+        return False, msg
 
     # 校验环境
-    if release and not release.stage:
+    if not release.stage:
         msg = f"release(id={release.pk}) has not stage, ignored"
         return False, msg
-    if release and release.stage and release.stage.status != StageStatusEnum.ACTIVE.value:
+    if release.stage.status != StageStatusEnum.ACTIVE.value:
         msg = f"release(id={release.pk})  stage(name={release.stage.name}) is not active, ignored"
         return False, msg
 
@@ -80,27 +82,25 @@ def _trigger_rolling_publish(
     """触发网关滚动更新"""
 
     for release in release_list:
-        release_history = ReleaseHistory()
-        publish_id = NO_NEED_REPORT_EVENT_PUBLISH_ID
-        is_cli_sync = source is PublishSourceEnum.CLI_SYNC
-        if not is_cli_sync:
+        if source is PublishSourceEnum.CLI_SYNC:
+            release_history = ReleaseHistory()
+            # make it as default
+            release_history.source = PublishSourceEnum.CLI_SYNC.value
+            publish_id = NO_NEED_REPORT_EVENT_PUBLISH_ID
+        else:
             # 如果不是手动同步就需要生成发布历史
             release_history = _save_release_history(release, source, author)
             publish_id = release_history.pk
 
-        # FIXME: refactor below, is_cli_sync
         # 发布 check
-        check_release_result, msg = _check_release_gateway(gateway_id=release.gateway.pk, release=release)
-        if not check_release_result:
+        ok, msg = _is_gateway_ok_for_releasing(release)
+        if not ok:
             logger.warning(msg)
-            if not is_cli_sync:
-                PublishEventReporter.report_config_validate_fail_event(release_history, release.stage, msg)
+            PublishEventReporter.report_config_validate_fail_event(release_history, msg)
             continue
-        else:  # ruff: noqa: RET507
-            if not is_cli_sync:  # ruff: noqa: PLR5501
-                PublishEventReporter.report_config_validate_success_event(release_history, release.stage)
-        if not is_cli_sync:
-            PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
+
+        PublishEventReporter.report_config_validate_success_event(release_history)
+        PublishEventReporter.report_create_publish_task_doing_event(release_history)
 
         # 开始发布
         if is_sync:
@@ -127,18 +127,16 @@ def _trigger_revoke_disable_publish(
         # 创建发布历史
         release_history = _save_release_history(release, source, author)
 
-        # 发布check
-        check_result, msg = _check_release_gateway(gateway_id=release.gateway.pk, release=release)
-
+        # 发布 check
+        ok, msg = _is_gateway_ok_for_releasing(release)
         # 上报发布配置校验事件
-        if check_result:
-            PublishEventReporter.report_config_validate_success_event(release_history, release.stage)
-        else:
+        if not ok:
             logging.warning(msg)
-            PublishEventReporter.report_config_validate_fail_event(release_history, release.stage, msg)
+            PublishEventReporter.report_config_validate_fail_event(release_history, msg)
             continue
 
-        PublishEventReporter.report_distribute_configuration_doing_event(release_history, release_history.stage)
+        PublishEventReporter.report_config_validate_success_event(release_history)
+        PublishEventReporter.report_distribute_configuration_doing_event(release_history)
 
         # 开始发布
         if is_sync:
@@ -157,6 +155,7 @@ def _trigger_revoke_delete_publish(
 ):
     """触发删除发布"""
     for release in release_list:
+        # FIXME: no release_history to report event?
         # 开始发布
         if is_sync:
             return revoke_release(release_id=release.id, publish_id=DELETE_PUBLISH_ID, author=author, source=source)

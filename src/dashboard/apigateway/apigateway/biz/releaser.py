@@ -141,7 +141,7 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
             )
             history.stages.set(self.stages)
             # 上报发布校验失败事件: todo: 支持批量环境发布
-            PublishEventReporter.report_config_validate_fail_event(history, history.stage, message)
+            PublishEventReporter.report_config_validate_fail_event(history, message)
             raise ReleaseError(message) from err
         # save release history
         history = ReleaseHandler.save_release_history_with_id(
@@ -153,7 +153,7 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
         )
         history.stages.set(self.stages)
 
-        PublishEventReporter.report_config_validate_success_event(history, history.stage)
+        PublishEventReporter.report_config_validate_success_event(history)
 
         release_instances = []
 
@@ -304,7 +304,7 @@ class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
 
     def _create_release_task(self, release: Release, release_history: ReleaseHistory):
         # create publish event
-        PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
+        PublishEventReporter.report_create_publish_task_doing_event(release_history)
         # NOTE: 发布专享网关时，不再将资源同时发布到共享网关
         micro_gateway = release.stage.micro_gateway
         if not micro_gateway or micro_gateway.is_shared:

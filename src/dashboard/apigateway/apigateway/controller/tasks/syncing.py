@@ -32,13 +32,12 @@ logger = logging.getLogger(__name__)
 @shared_task(ignore_result=True)
 def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     """滚动同步微网关配置，不会生成新的版本"""
-    is_cli_sync = publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID
 
     release = Release.objects.get(id=release_id)
 
+    is_cli_sync = publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID
     release_history = None if is_cli_sync else ReleaseHistory.objects.get(id=release_id)
-    if release_history:
-        PublishEventReporter.report_create_publish_task_success_event(release_history, release.stage)
+    PublishEventReporter.report_create_publish_task_success_event(release_history)
 
     logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
 
@@ -57,8 +56,7 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
         publish_id=publish_id,
     )
 
-    if release_history:
-        PublishEventReporter.report_distribute_configuration_doing_event(release_history, release.stage)
+    PublishEventReporter.report_distribute_configuration_doing_event(release_history)
 
     procedure_logger.info("distribute begin")
     is_success, err_msg = distributor.distribute(
@@ -70,13 +68,10 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     if not is_success:
         msg = f"distribute failed: {err_msg}"
         if not is_cli_sync:
-            PublishEventReporter.report_distribute_configuration_failure_event(
-                release_history, release.stage.pk, err_msg
-            )
+            PublishEventReporter.report_distribute_configuration_failure_event(release_history, err_msg)
         procedure_logger.info(msg)
     else:
-        if release_history:
-            PublishEventReporter.report_distribute_configuration_success_event(release_history, release.stage)
+        PublishEventReporter.report_distribute_configuration_success_event(release_history)
         procedure_logger.info("distribute succeeded")
 
     return is_success
@@ -99,7 +94,7 @@ def revoke_release(release_id: int, publish_id: int):
 
     release_history = ReleaseHistory.objects.get(id=publish_id)
 
-    PublishEventReporter.report_create_publish_task_success_event(release_history, release.stage)
+    PublishEventReporter.report_create_publish_task_success_event(release_history)
 
     procedure_logger = ReleaseProcedureLogger(
         "revoke_release",
@@ -109,7 +104,7 @@ def revoke_release(release_id: int, publish_id: int):
         micro_gateway=shared_gateway,
         publish_id=release_history.pk,
     )
-    PublishEventReporter.report_distribute_configuration_doing_event(release_history, release.stage)
+    PublishEventReporter.report_distribute_configuration_doing_event(release_history)
 
     procedure_logger.info("revoke begin")
 
@@ -118,11 +113,9 @@ def revoke_release(release_id: int, publish_id: int):
     )
     if not is_success:
         msg = f"revoke failed: {err_msg}"
-        PublishEventReporter.report_distribute_configuration_failure_event(
-            release_history, release_history.stage, err_msg
-        )
+        PublishEventReporter.report_distribute_configuration_failure_event(release_history, err_msg)
         procedure_logger.info(msg)
     else:
-        PublishEventReporter.report_distribute_configuration_success_event(release_history, release_history.stage)
+        PublishEventReporter.report_distribute_configuration_success_event(release_history)
         procedure_logger.info("revoke succeeded")
     return is_success
