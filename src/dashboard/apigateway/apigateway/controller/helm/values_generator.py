@@ -16,9 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from copy import deepcopy
+from dataclasses import dataclass, field
 from typing import Any, Dict
 
-from attrs import define, field
 from django.conf import settings
 
 from apigateway.controller.crds.config_controller import create_config_controller
@@ -26,7 +26,7 @@ from apigateway.core.micro_gateway_config import MicroGatewayHTTPInfo
 from apigateway.core.models import MicroGateway, Stage
 
 
-@define(slots=False)
+@dataclass
 class MicroGatewayValuesGenerator:
     micro_gateway: MicroGateway
     stage: Stage = field(init=False)
@@ -34,12 +34,12 @@ class MicroGatewayValuesGenerator:
     http_info: MicroGatewayHTTPInfo = field(init=False)
     values: Dict[str, Any] = field(init=False)
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         self.micro_gateway_config = self.micro_gateway.config
         self.stage = self.micro_gateway.stage_set.first()
         self.http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(
             self.micro_gateway_config
-        )  # NOTE 配置一个url, 用于状态上报
+        )  # NOTE 配置一个 url, 用于状态上报
         self.values = self.micro_gateway_config.get("values", {})
 
     def _merge_dict(self, to: Dict[str, Any], from_: Dict[str, Any]):
@@ -79,7 +79,7 @@ class MicroGatewayValuesGenerator:
         }
         self._merge_dict(values, deepcopy(self.values))
 
-        # TODO 暂时不支持配置, 等状态上报的方案确定
+        # TODO 暂时不支持配置，等状态上报的方案确定
         # jwt_auth_info = MicroGatewayJWTAuth.from_micro_gateway_config(self.micro_gateway.config)
         # self._merge_dict(
         #     values,

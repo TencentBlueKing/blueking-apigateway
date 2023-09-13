@@ -44,7 +44,7 @@ class TestReleaseHandler:
 
     def test_get_latest_publish_event_by_release_history_ids(self, fake_release_history, fake_publish_event):
         assert (
-            ReleaseHandler.get_latest_publish_event_by_release_history_ids([fake_release_history.id])[
+            ReleaseHandler.get_publish_id_to_latest_publish_event_map([fake_release_history.id])[
                 fake_release_history.id
             ]
             == fake_publish_event
@@ -57,7 +57,7 @@ class TestReleaseHandler:
             status=PublishEventStatusTypeEnum.SUCCESS.value,
         )
         assert (
-            ReleaseHandler.get_latest_publish_event_by_release_history_ids([fake_release_history.id])[
+            ReleaseHandler.get_publish_id_to_latest_publish_event_map([fake_release_history.id])[
                 fake_release_history.id
             ]
             == event_2
@@ -101,6 +101,6 @@ class TestReleaseHandler:
         history_2 = G(ReleaseHistory, gateway=fake_gateway, stage=stage_2)
         history_2.stages.add(stage_2)
 
-        ReleaseHandler.delete_without_stage_related(fake_gateway.id)
+        ReleaseHandler.clean_no_stage_related_release_history(fake_gateway.id)
 
         assert ReleaseHistory.objects.filter(id=history_1.id).exists() is False

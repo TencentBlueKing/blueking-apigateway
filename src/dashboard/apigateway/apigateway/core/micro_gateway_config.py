@@ -15,14 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from dataclasses import dataclass
 from typing import Any, Dict, Type, TypeVar
 from urllib.parse import urlparse
 
 import cattr
-from attrs import define
 from django.utils.functional import cached_property
 
-# FIXME: use the pydantic, remove cattr/attrs
+# FIXME: use the pydantic, remove cattr
 
 
 class MicroGatewayConfigStructureMixin:
@@ -39,7 +39,7 @@ class MicroGatewayConfigStructureMixin:
 T = TypeVar("T", bound=MicroGatewayConfigStructureMixin)
 
 
-@define(slots=False)
+@dataclass
 class MicroGatewayBcsInfo(MicroGatewayConfigStructureMixin):
     """微网关实例配置中的 bcs 配置"""
 
@@ -55,7 +55,7 @@ class MicroGatewayBcsInfo(MicroGatewayConfigStructureMixin):
     chart_name: str = ""
 
 
-@define(slots=False)
+@dataclass
 class MicroGatewayJWTAuth(MicroGatewayConfigStructureMixin):
     """微网关实例配置中的 jwt 认证配置"""
 
@@ -64,7 +64,7 @@ class MicroGatewayJWTAuth(MicroGatewayConfigStructureMixin):
     secret_key: str = ""
 
 
-@define(slots=False)
+@dataclass
 class MicroGatewayHTTPInfo(MicroGatewayConfigStructureMixin):
     """微网关实例配置中的 http 配置"""
 

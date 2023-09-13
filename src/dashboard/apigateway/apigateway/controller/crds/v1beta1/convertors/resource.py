@@ -89,7 +89,7 @@ class HttpResourceConvertor(BaseConvertor):
 
         service_name = ""
         upstream = self._convert_http_resource_upstream(resource_proxy, backend_id)
-        # operator 会将环境级别的插件绑定到service，如果资源没有定义上游，依然绑定服务
+        # operator 会将环境级别的插件绑定到 service，如果资源没有定义上游，依然绑定服务
         service_name = self._default_stage_service_key
 
         methods = []
@@ -159,7 +159,7 @@ class HttpResourceConvertor(BaseConvertor):
         }
 
     def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any], backend_id: int) -> Optional[Upstream]:
-        # 如果是v2，需要从backend_config里面去拿upstreams
+        # 如果是 v2，需要从 backend_config 里面去拿 upstreams
 
         upstreams = None
 
@@ -203,7 +203,7 @@ class HttpResourceConvertor(BaseConvertor):
         )
 
     def _convert_http_resource_rewrite(self, resource_proxy: Dict[str, Any]) -> ResourceRewrite:
-        # 1.13去掉这个逻辑
+        # FIXME: 1.13 去掉这个逻辑
         if self._release_data.is_schema_v2:
             return ResourceRewrite(
                 enabled=False,

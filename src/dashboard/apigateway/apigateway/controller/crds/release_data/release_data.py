@@ -18,9 +18,9 @@
 import json
 import logging
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from attr import define
 from django.utils.functional import cached_property
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
@@ -39,7 +39,7 @@ from apigateway.core.models import JWT, BackendConfig, Context, Gateway, Release
 logger = logging.getLogger(__name__)
 
 
-@define(slots=False)
+@dataclass
 class ReleaseData:
     _release: Release
 

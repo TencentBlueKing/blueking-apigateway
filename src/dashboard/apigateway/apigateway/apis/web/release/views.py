@@ -29,7 +29,7 @@ from rest_framework import generics, status
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.biz.releaser import ReleaseBatchHandler, ReleaseError
+from apigateway.biz.releaser import BatchReleaser, ReleaseError
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
@@ -154,14 +154,14 @@ class ReleaseCreateApi(generics.CreateAPIView):
         stage_id = slz.validated_data["stage_id"]
         gateway_id = request.gateway.id
 
-        handler = ReleaseBatchHandler(access_token=get_user_access_token_from_request(request))
+        releaser = BatchReleaser(access_token=get_user_access_token_from_request(request))
         try:
             with Lock(
                 f"{gateway_id}_{stage_id}",
                 timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
                 try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
             ):
-                history = handler.release_batch(
+                history = releaser.release(
                     request.gateway,
                     [slz.validated_data["stage_id"]],
                     slz.validated_data["resource_version_id"],
@@ -178,7 +178,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
         slz = ReleaseHistoryOutputSLZ(
             history,
             context={
-                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids([history.id]),
+                "publish_events_map": ReleaseHandler.get_publish_id_to_latest_publish_event_map([history.id]),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -220,7 +220,7 @@ class ReleaseHistoryListApi(generics.ListAPIView):
             page,
             many=True,
             context={
-                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids(
+                "publish_events_map": ReleaseHandler.get_publish_id_to_latest_publish_event_map(
                     [release_history.id for release_history in page]
                 ),
             },
@@ -249,7 +249,7 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
         slz = slz_class(
             instance,
             context={
-                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids([instance.id]),
+                "publish_events_map": ReleaseHandler.get_publish_id_to_latest_publish_event_map([instance.id]),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -275,10 +275,8 @@ class PublishEventsRetrieveAPI(generics.RetrieveAPIView):
         slz = self.get_serializer(
             release_history,
             context={
-                "publish_events": ReleaseHandler.get_publish_events_by_release_history_id(release_history.id),
-                "publish_events_map": ReleaseHandler.get_latest_publish_event_by_release_history_ids(
-                    [release_history.id]
-                ),
+                "publish_events": ReleaseHandler.list_publish_events_by_release_history_id(release_history.id),
+                "publish_events_map": ReleaseHandler.get_publish_id_to_latest_publish_event_map([release_history.id]),
             },
         )
         return OKJsonResponse(data=slz.data)

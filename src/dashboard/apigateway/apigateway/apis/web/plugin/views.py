@@ -30,7 +30,7 @@ from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginFor
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
 from apigateway.common.renderers import BkStandardApiJSONRenderer
-from apigateway.controller.tasks.syncing import trigger_gateway_publish
+from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import OKJsonResponse
