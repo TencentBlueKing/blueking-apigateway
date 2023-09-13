@@ -16,9 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from rest_framework.pagination import LimitOffsetPagination
-
-from apigateway.utils.conv import str_bool
 
 
 class LimitOffsetPaginator:
@@ -44,27 +41,3 @@ class LimitOffsetPaginator:
             "has_previous": self.has_previous(),
             "results": data,
         }
-
-
-class StandardLimitOffsetPagination(LimitOffsetPagination):
-    """
-    对 DRF LimitOffsetPagination 进行扩展，获取分页数据
-    """
-
-    # 不分页时，limit 指定一个较大值，以便返回全量数据
-    _no_page_limit = 1000000000
-
-    def get_paginated_data(self, data: list) -> dict:
-        return {
-            "count": self.count,
-            "has_next": bool(self.get_next_link()),
-            "has_previous": bool(self.get_previous_link()),
-            "results": data,
-        }
-
-    def get_limit(self, request):
-        limit = super().get_limit(request)
-        no_page = str_bool(request.query_params.get("no_page", False), allow_null=True)
-        if no_page and limit is not None:
-            return self._no_page_limit
-        return limit

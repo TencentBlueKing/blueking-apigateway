@@ -40,7 +40,6 @@ from apigateway.apps.permission.tasks import send_mail_for_perm_handle
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.core.models import Resource
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .filters import (
     AppGatewayPermissionFilter,
@@ -74,7 +73,6 @@ class AppResourcePermissionQuerySetMixin:
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: AppResourcePermissionOutputSLZ(many=True)},
         tags=["WebAPI.Permission"],
     ),
@@ -99,7 +97,7 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
         page = self.paginate_queryset(queryset)
 
         serializer = AppResourcePermissionOutputSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         """
@@ -258,7 +256,6 @@ class AppGatewayPermissionQuerySetMixin:
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: AppGatewayPermissionOutputSLZ(many=True)},
         tags=["WebAPI.Permission"],
     ),
@@ -283,7 +280,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
         page = self.paginate_queryset(queryset)
 
         serializer = AppGatewayPermissionOutputSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         """
@@ -439,7 +436,6 @@ class AppPermissionApplyQuerySetMixin:
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: AppPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.Permission"],
     ),
@@ -454,10 +450,8 @@ class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAP
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
 
-        page = self.paginate_queryset(queryset)
-
         serializer = AppPermissionApplyOutputSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
 
 @method_decorator(
@@ -479,7 +473,6 @@ class AppPermissionApplyRetrieveApi(AppPermissionApplyQuerySetMixin, generics.Re
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: AppPermissionRecordOutputSLZ(many=True)},
         tags=["WebAPI.Permission"],
     ),
@@ -505,7 +498,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
                 "resource_id_map": Resource.objects.filter_id_object_map(request.gateway.id),
             },
         )
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
 
 @method_decorator(

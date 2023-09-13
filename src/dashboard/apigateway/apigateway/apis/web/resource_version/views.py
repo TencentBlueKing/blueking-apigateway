@@ -85,7 +85,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
                 ),
             },
         )
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):

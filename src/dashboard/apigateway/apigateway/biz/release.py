@@ -15,16 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List
+from typing import Any, Dict, List
 
 from django.db.models import Max
 
-from apigateway.core.constants import (
-    GatewayStatusEnum,
-    PublishEventStatusEnum,
-    PublishSourceEnum,
-    StageStatusEnum,
-)
+from apigateway.core.constants import GatewayStatusEnum, PublishEventStatusEnum, StageStatusEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, Stage
 
 
@@ -40,42 +35,23 @@ class ReleaseHandler:
         )
 
     @staticmethod
-    def save_release_history_with_id(
-        gateway_id: int, stage_id: int, resource_version_id: int, source: PublishSourceEnum, author: str
-    ) -> ReleaseHistory:
-        """保存发布历史"""
-        return ReleaseHistory.objects.create(
-            gateway_id=gateway_id,
-            stage_id=stage_id,
-            source=source.value,
-            resource_version_id=resource_version_id,
-            created_by=author,
+    def get_publish_id_to_latest_publish_event_map(release_history_ids: List[int]) -> Dict[int, PublishEvent]:
+        """通过 release_history_ids 查询最新的一个发布事件"""
+        # 需要按照 "publish_id", "step", "status" 升序 (django 默认 ASC) 排列，正确排列每个事件节点的不同状态事件
+        publish_events = PublishEvent.objects.filter(publish_id__in=release_history_ids).order_by(
+            "publish_id", "step", "status"
         )
-
-    @staticmethod
-    def batch_get_publish_event_by_release_history_ids(release_history_ids: List[int]) -> List[PublishEvent]:
-        # 需要按照 "publish_id", "step", "status" 升序(django默认 ASC)排列,正确排列每个事件节点的不同状态事件
-        return PublishEvent.objects.filter(publish_id__in=release_history_ids).order_by("publish_id", "step", "status")
-
-    @staticmethod
-    def get_latest_publish_event_by_release_history_ids(release_history_ids: List[int]):
-        """通过release_history_ids查询最新的一个发布事件"""
-
-        publish_events = ReleaseHandler.batch_get_publish_event_by_release_history_ids(release_history_ids)
-
+        # here only get the latest publish event for each publish_id
         return {event.publish_id: event for event in publish_events}
 
     @staticmethod
-    def get_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:
-        """通过release_history_id查询所有发布事件"""
-
-        publish_events = ReleaseHandler.batch_get_publish_event_by_release_history_ids([release_history_id])
-
-        return list(publish_events)
+    def list_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:
+        """通过 release_history_id 查询所有发布事件"""
+        return PublishEvent.objects.filter(publish_id=release_history_id).order_by("step", "status").all()
 
     @staticmethod
-    def batch_get_stage_release_status(stage_ids: List[int]):
-        """批量查询stage的当前状态(发布状态+publish_id)"""
+    def batch_get_stage_release_status(stage_ids: List[int]) -> Dict[int, Dict[str, Any]]:
+        """批量查询 stage 的当前状态 (发布状态+publish_id)"""
         """return {"stage_id":{"status"/"publish_id"}}"""
 
         # 获取多个 stage_id 对应的最新的 ReleaseHistory 记录的 id
@@ -86,30 +62,38 @@ class ReleaseHandler:
         )
 
         # 查询最新的 ReleaseHistory 记录
-        latest_release_histories = ReleaseHistory.objects.filter(id__in=latest_release_history_ids)
+        latest_release_histories = ReleaseHistory.objects.filter(id__in=latest_release_history_ids).all()
 
         # 查询发布历史对应的最新发布事件
-        release_event_map = ReleaseHandler.get_latest_publish_event_by_release_history_ids(latest_release_history_ids)
+        publish_id_to_latest_event_map = ReleaseHandler.get_publish_id_to_latest_publish_event_map(
+            latest_release_history_ids
+        )
 
         # 遍历结果集
         stage_publish_status = {}
         for release_history in latest_release_histories:
-            stage_publish_status[release_history.stage_id] = {"publish_id": release_history.id}
+            stage_id = release_history.stage_id
+            publish_id = release_history.id
+
+            state = {"publish_id": publish_id}
             # 如果没有查到任何发布事件
-            if release_history.id not in release_event_map:
+            if publish_id not in publish_id_to_latest_event_map:
                 # 兼容以前，使用以前的状态
-                stage_publish_status[release_history.stage_id]["status"] = release_history.status
+                state["status"] = release_history.status
             else:
                 # 如果最新事件状态是成功，但不是最后一个节点，返回发布中
-                latest_event = release_event_map[release_history.id]
+                latest_event = publish_id_to_latest_event_map[publish_id]
                 if latest_event.is_running:
-                    stage_publish_status[release_history.stage_id]["status"] = PublishEventStatusEnum.DOING.value
+                    state["status"] = PublishEventStatusEnum.DOING.value
                 else:
-                    stage_publish_status[release_history.stage_id]["status"] = latest_event.status
+                    state["status"] = latest_event.status
+
+            stage_publish_status[stage_id] = state
+
         return stage_publish_status
 
     @staticmethod
-    def delete_without_stage_related(gateway_id):
+    def clean_no_stage_related_release_history(gateway_id):
         """
         删除无 stages 关联的数据
 

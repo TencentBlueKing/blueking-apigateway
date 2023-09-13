@@ -26,7 +26,6 @@ from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
 from apigateway.biz.monitor import ResourceMonitorHandler
 from apigateway.common.factories import SchemaFactory
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 from apigateway.utils.time import now_datetime
 
 from . import filters
@@ -45,7 +44,6 @@ from .serializers import (
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=AlarmStrategyQueryInputSLZ,
         responses={status.HTTP_200_OK: AlarmStrategyListOutputSLZ(many=True)},
         tags=["WebAPI.Monitor"],
@@ -95,7 +93,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
 
         page = self.paginate_queryset(queryset)
         serializer = AlarmStrategyListOutputSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
 
 @method_decorator(
@@ -199,7 +197,6 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=AlarmRecordQueryInputSLZ,
         responses={status.HTTP_200_OK: AlarmRecordQueryOutputSLZ(many=True)},
         tags=["WebAPI.Monitor"],
@@ -219,7 +216,7 @@ class AlarmRecordListApi(generics.ListAPIView):
         page = self.paginate_queryset(queryset)
 
         serializer = self.get_serializer(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
 
 @method_decorator(

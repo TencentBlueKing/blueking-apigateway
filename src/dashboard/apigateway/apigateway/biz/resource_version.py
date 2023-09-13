@@ -104,7 +104,7 @@ class ResourceVersionHandler:
     @staticmethod
     def get_data_by_id_or_new(gateway: Gateway, resource_version_id: Optional[int]) -> list:
         """
-        根据版本ID获取Data，或者获取当前资源列表中的版本数据
+        根据版本 ID 获取 Data，或者获取当前资源列表中的版本数据
         """
         if resource_version_id:
             return ResourceVersion.objects.get(gateway=gateway, id=resource_version_id).data
@@ -121,12 +121,12 @@ class ResourceVersionHandler:
 
     @classmethod
     def create_resource_version(cls, gateway: Gateway, data: Dict[str, Any], username: str = "") -> ResourceVersion:
-        # validata data
-        cls._validata_resource_version_data(gateway, data.get("version", ""))
+        # validate data
+        cls._validate_resource_version_data(gateway, data.get("version", ""))
 
         now = time_utils.now_datetime()
 
-        # todo: name是否直接可以去掉？ created_time：与版本名中时间保持一致，方便SDK使用此时间作为版本号
+        # todo: name 是否直接可以去掉？created_time：与版本名中时间保持一致，方便 SDK 使用此时间作为版本号
         name = ResourceVersionHandler.generate_version_name(gateway.name, now)
         data.update(
             {
@@ -148,7 +148,7 @@ class ResourceVersionHandler:
         return resource_version
 
     @staticmethod
-    def _validata_resource_version_data(gateway: Gateway, version: str):
+    def _validate_resource_version_data(gateway: Gateway, version: str):
         # 判断是否创建资源
         if not Resource.objects.filter(gateway_id=gateway.id).exists():
             raise serializers.ValidationError(_("请先创建资源，然后再生成版本。"))
@@ -220,9 +220,9 @@ class ResourceVersionHandler:
 
     @staticmethod
     def get_latest_version_by_gateway(gateway_id: int):
-        """通过gateway_id获取最新的版本号"""
+        """通过 gateway_id 获取最新的版本号"""
 
-        # 查询最近的10条数据，并根据 id 字段排序
+        # 查询最近的 10 条数据，并根据 id 字段排序
         versions = ResourceVersion.objects.filter(gateway_id=gateway_id).order_by("-id")[:10].values("version")
         if not versions:
             return ""

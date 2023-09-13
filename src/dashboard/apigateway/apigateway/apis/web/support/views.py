@@ -33,13 +33,11 @@ from apigateway.apps.support.models import APISDK
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.APISDKQueryInputSLZ(),
         responses={status.HTTP_200_OK: serializers.SDKListOutputSLZ(many=True)},
         tags=["WebAPI.Support"],
@@ -72,7 +70,7 @@ class APISDKListCreateApi(generics.ListCreateAPIView):
 
         sdks = [SDKFactory.create(model=i) for i in page]
         slz = self.get_serializer(sdks, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
     @transaction.atomic
     def create(self, request, gateway_id):

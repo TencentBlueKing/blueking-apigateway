@@ -28,7 +28,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.components.bcs_helper import BcsApiGatewayApiRequestError, BcsHelper
 from apigateway.controller.helm.release import ReleaseHelper
 from apigateway.utils.access_token import get_user_access_token_from_request
-from apigateway.utils.responses import V1OKJsonResponse
+from apigateway.utils.responses import OKJsonResponse
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class BcsViewSet(viewsets.ViewSet):
             raise error_codes.INTERNAL.format(str(err), replace=True)
 
         slz = serializers.BcsProjectSLZ(projects, many=True)
-        return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("project_name")))
+        return OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("project_name")))
 
     @swagger_auto_schema(
         query_serializer=serializers.QueryBcsClusterSLZ,
@@ -63,7 +63,7 @@ class BcsViewSet(viewsets.ViewSet):
             raise error_codes.INTERNAL.format(str(err), replace=True)
 
         slz = serializers.BcsClusterSLZ(clusters, many=True)
-        return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("cluster_id")))
+        return OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("cluster_id")))
 
     @swagger_auto_schema(
         query_serializer=serializers.QueryBcsNamespaceSLZ,
@@ -85,7 +85,7 @@ class BcsViewSet(viewsets.ViewSet):
             raise error_codes.INTERNAL.format(str(err), replace=True)
 
         slz = serializers.BcsNamespaceSLZ(namespaces, many=True)
-        return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("namespace")))
+        return OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("namespace")))
 
     @swagger_auto_schema(
         query_serializer=serializers.QueryBcsReleaseSLZ,
@@ -111,4 +111,4 @@ class BcsViewSet(viewsets.ViewSet):
         matched_releases = filter(lambda x: x.chart_name == settings.BCS_MICRO_GATEWAY_CHART_NAME, releases)
 
         slz = serializers.BcsReleaseSLZ(matched_releases, many=True)
-        return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("release_name")))
+        return OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("release_name")))

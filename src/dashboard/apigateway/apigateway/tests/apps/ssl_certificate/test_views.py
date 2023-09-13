@@ -33,8 +33,8 @@ class TestSSLCertificateBindScopesViewSet:
             path_params={"gateway_id": fake_gateway.id},
             data={"scope_type": "stage", "scope_ids": [s1.id, s2.id], "ssl_certificate_id": fake_ssl_certificate.id},
         )
-        result = response.json()
-        assert result["code"] == 0
+        assert response.status_code == 200
+        _ = response.json()
         assert (
             SslCertificateBinding.objects.filter(gateway=fake_gateway, ssl_certificate=fake_ssl_certificate).count()
             == 2
@@ -66,8 +66,8 @@ class TestSSLCertificateBindScopesViewSet:
             path_params={"gateway_id": fake_gateway.id},
             data={"scope_type": "stage", "scope_ids": [s2.id], "ssl_certificate_id": fake_ssl_certificate.id},
         )
-        result = response.json()
-        assert result["code"] == 0
+        assert response.status_code == 200
+        _ = response.json()
         assert (
             SslCertificateBinding.objects.filter(gateway=fake_gateway, ssl_certificate=fake_ssl_certificate).count()
             == 1
@@ -87,8 +87,9 @@ class TestSSLCertificateBindScopesViewSet:
             },
         )
 
+        assert response.status_code == 200
+
         result = response.json()
-        assert result["code"] == 0
         assert len(result["data"]["results"]) == 1
 
 
@@ -104,8 +105,10 @@ class TestScopeBindSSLCertificateViewSet:
             path_params={"gateway_id": fake_gateway.id},
             data={"scope_type": "stage", "scope_id": s.id, "ssl_certificate_ids": [fake_ssl_certificate.id]},
         )
-        result = response.json()
-        assert result["code"] == 0
+
+        assert response.status_code == 200
+
+        _ = response.json()
         assert (
             SslCertificateBinding.objects.filter(gateway=fake_gateway, ssl_certificate=fake_ssl_certificate).count()
             == 1
@@ -129,8 +132,7 @@ class TestScopeBindSSLCertificateViewSet:
             path_params={"gateway_id": fake_gateway.id},
             data={"scope_type": "stage", "scope_id": s.id, "ssl_certificate_ids": [fake_ssl_certificate.id]},
         )
-        result = response.json()
-        assert result["code"] == 0
+        _ = response.json()
         assert (
             SslCertificateBinding.objects.filter(gateway=fake_gateway, ssl_certificate=fake_ssl_certificate).count()
             == 0
@@ -151,5 +153,4 @@ class TestCheckCertViewSet:
         )
 
         result = response.json()
-        assert result["code"] == 0
         assert result["data"]["snis"] == ["bkapi.example.com"]

@@ -17,20 +17,20 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from attrs import define
 from django.db import transaction
 from django.utils.translation import gettext as _
 
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
-from apigateway.biz.releaser import ReleaseBatchHandler
+from apigateway.biz.releaser import BatchReleaser
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Gateway, ResourceVersion, Stage
 
 
-@define(slots=False)
+@dataclass
 class ComponentReleaser:
     gateway: Gateway
     username: str
@@ -68,8 +68,8 @@ class ComponentReleaser:
         """发布组件对应的网关，并记录组件发布历史记录"""
         assert self.resource_version
 
-        release_manager = ReleaseBatchHandler(access_token=self.access_token)
-        release_manager.release_batch(
+        releaser = BatchReleaser(access_token=self.access_token)
+        releaser.release(
             self.gateway,
             {
                 "stage_ids": Stage.objects.get_ids(self.gateway.id),

@@ -17,11 +17,11 @@
 #
 import logging
 import time
+from dataclasses import dataclass, field
 from typing import Optional
 
 import cattr
 import jwt
-from attrs import define, field
 from django.utils.translation import gettext_lazy
 from redis import Redis
 from rest_framework import permissions
@@ -33,7 +33,7 @@ from apigateway.utils.redis_utils import get_default_redis_client, get_redis_key
 logger = logging.getLogger(__name__)
 
 
-@define(slots=True)
+@dataclass
 class MicroGatewayJWTPayload:
     sub: str = ""
     name: str = ""
@@ -41,7 +41,7 @@ class MicroGatewayJWTPayload:
     exp: int = 0
 
 
-@define
+@dataclass
 class MicroGatewayInstancePermission(permissions.BasePermission):
     """
     获取微网关实例并认证权限
@@ -51,7 +51,7 @@ class MicroGatewayInstancePermission(permissions.BasePermission):
     subject = "micro-gateway"
     default_algorithm = "HS512"
     tolerable_seconds = 60
-    redis: Redis = field(factory=get_default_redis_client)
+    redis: Redis = field(default_factory=get_default_redis_client)
 
     def has_permission(self, request, view):
         micro_gateway = self._get_micro_gateway(view)

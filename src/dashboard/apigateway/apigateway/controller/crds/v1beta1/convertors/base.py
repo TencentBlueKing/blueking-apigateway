@@ -16,10 +16,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import hashlib
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, Optional
 from urllib.parse import urlparse
 
-from attrs import define, field
 from blue_krill.cubing_case import shortcuts
 
 from apigateway.controller.crds.base import KubernetesResourceMetadata
@@ -27,7 +28,7 @@ from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.core.models import MicroGateway
 
 
-@define(slots=False)
+@dataclass
 class UrlInfo:
     url: str
     scheme: str = field(init=False)
@@ -38,7 +39,7 @@ class UrlInfo:
     query: str = field(init=False)
     _default_ports: ClassVar[Dict[str, int]] = {"http": 80, "https": 443}
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         url_info = urlparse(self.url)
         self.scheme = url_info.scheme
         self.netloc = url_info.netloc
@@ -56,11 +57,12 @@ class UrlInfo:
         return self._default_ports.get(self.scheme, None)
 
 
-class BaseConvertor:
+class BaseConvertor(ABC):
     def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway):
         self._release_data = release_data
         self._micro_gateway = micro_gateway
 
+    @abstractmethod
     def convert(self):
         return NotImplementedError()
 
