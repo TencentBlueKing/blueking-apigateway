@@ -23,7 +23,7 @@ from django_dynamic_fixture import G
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
 from apigateway.common.contexts import ResourceAuthContext
-from apigateway.core.models import BackendService, Gateway, Proxy, Resource, Stage, StageResourceDisabled
+from apigateway.core.models import Gateway, Proxy, Resource, Stage, StageResourceDisabled
 
 
 class TestResourceHandler:
@@ -32,23 +32,18 @@ class TestResourceHandler:
         self.gateway = G(Gateway)
 
     def test_get_proxy_configs(self):
-        backend_service = G(BackendService)
         resource = G(Resource)
         proxy_http = G(
             Proxy,
             resource=resource,
             type="http",
             _config='{"method": "GET"}',
-            backend_service=backend_service,
-            backend_config_type="existed",
         )
         proxy_mock = G(
             Proxy,
             resource=resource,
             type="mock",
             _config='{"code": 200}',
-            backend_service=None,
-            backend_config_type="default",
         )
 
         data = [
@@ -56,8 +51,6 @@ class TestResourceHandler:
                 "proxy_id": proxy_http.id,
                 "expected": {
                     "type": "http",
-                    "backend_service_id": backend_service.id,
-                    "backend_config_type": "existed",
                     "configs": {
                         "http": {"method": "GET"},
                         "mock": {"code": 200},
@@ -68,8 +61,6 @@ class TestResourceHandler:
                 "proxy_id": proxy_mock.id,
                 "expected": {
                     "type": "mock",
-                    "backend_service_id": None,
-                    "backend_config_type": "default",
                     "configs": {
                         "http": {"method": "GET"},
                         "mock": {"code": 200},

@@ -29,7 +29,8 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import ResourceAuthContext
-from apigateway.core.constants import BackendConfigTypeEnum, ContextScopeTypeEnum
+from apigateway.common.factories import SchemaFactory
+from apigateway.core.constants import ContextScopeTypeEnum
 from apigateway.core.models import Context, Gateway, Proxy, Resource, Stage, StageResourceDisabled
 from apigateway.utils import time
 
@@ -84,20 +85,26 @@ class ResourceHandler:
         except Context.DoesNotExist:
             return default_hidden_config
 
+    # FIXME: this function only used by tests
     @staticmethod
     def save_proxy_config(
         resource,
         proxy_type,
         proxy_config,
-        backend_config_type: str = BackendConfigTypeEnum.DEFAULT.value,
-        backend_service_id: Optional[int] = None,
     ):
-        proxy, created = Proxy.objects.save_proxy_config(
-            resource,
-            proxy_type,
-            proxy_config,
-            backend_config_type=backend_config_type,
-            backend_service_id=backend_service_id,
+        # proxy, created = Proxy.objects.save_proxy_config(
+        #     resource,
+        #     proxy_type,
+        #     proxy_config,
+        # )
+        factory = SchemaFactory()
+        proxy, created = Proxy.objects.update_or_create(
+            resource=resource,
+            type=proxy_type,
+            defaults={
+                "config": proxy_config,
+                "schema": factory.get_proxy_schema(proxy_type),
+            },
         )
         resource.proxy_id = proxy.id
         resource.save(update_fields=["proxy_id", "updated_time"])
@@ -112,8 +119,6 @@ class ResourceHandler:
 
         return {
             "type": current_proxy.type,
-            "backend_config_type": current_proxy.backend_config_type,
-            "backend_service_id": current_proxy.backend_service_id,
             "configs": {proxy.type: proxy.config for proxy in Proxy.objects.filter(resource=resource)},
         }
 

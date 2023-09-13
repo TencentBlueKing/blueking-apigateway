@@ -217,9 +217,6 @@ def parse_cors(access_strategy: AccessStrategy) -> Optional[PluginConfig]:
         yaml=yaml_dumps(data),
     )
 
-    pass
-    return None
-
 
 parse_funcs = {
     AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value: parse_ip_access_control,

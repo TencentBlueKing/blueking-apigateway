@@ -53,9 +53,6 @@ class SchemaFactory:
     def get_monitor_alarm_strategy_schema(self):
         return self._get_schema_instance(instances.MonitorAlarmStrategy())
 
-    def get_monitor_alarm_filter_schema(self):
-        return self._get_schema_instance(instances.MonitorAlarmFilter())
-
     def get_api_sdk_schema(self):
         return self._get_schema_instance(instances.APISDK())
 
