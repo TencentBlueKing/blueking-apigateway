@@ -41,7 +41,7 @@ def _is_gateway_ok_for_releasing(release: Release) -> Tuple[bool, str]:
         return False, "release is None, ignored"
 
     gateway_id = release.gateway.pk
-    # 剔除非微网关托管的网关
+    # 剔除停用的网关
     gateway = Gateway.objects.get(pk=gateway_id)
     if gateway.status != GatewayStatusEnum.ACTIVE.value:
         msg = f"rolling_update_release: gateway(id={gateway_id}) is not active, skip"
@@ -111,7 +111,7 @@ def _trigger_rolling_publish(
     return None
 
 
-def _trigger_revoke_disable_publish(
+def _trigger_revoke_publish_for_disable(
     source: PublishSourceEnum,
     author: str,
     release_list: List[Release],
@@ -143,7 +143,7 @@ def _trigger_revoke_disable_publish(
     return None
 
 
-def _trigger_revoke_delete_publish(
+def _trigger_revoke_publish_for_deleting(
     source: PublishSourceEnum,
     author: str,
     release_list: List[Release],
@@ -196,8 +196,8 @@ def trigger_gateway_publish(
         return _trigger_rolling_publish(source, author, release_list, is_sync=is_sync)
 
     if trigger_publish_type == TriggerPublishType.TRIGGER_REVOKE_DISABLE_RELEASE:
-        return _trigger_revoke_disable_publish(source, author, release_list, is_sync=is_sync)
+        return _trigger_revoke_publish_for_disable(source, author, release_list, is_sync=is_sync)
 
     if trigger_publish_type == TriggerPublishType.TRIGGER_REVOKE_DELETE_RELEASE:
-        return _trigger_revoke_delete_publish(source, author, release_list, is_sync=is_sync)
+        return _trigger_revoke_publish_for_deleting(source, author, release_list, is_sync=is_sync)
     return None

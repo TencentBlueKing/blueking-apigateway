@@ -72,7 +72,7 @@ class ReleaseHandler:
         # 遍历结果集
         stage_publish_status = {}
         for release_history in latest_release_histories:
-            stage_id = release_history.stage.id
+            stage_id = release_history.stage_id
             publish_id = release_history.id
 
             state = {"publish_id": publish_id}
