@@ -29,7 +29,7 @@ from apigateway.biz.resource_version_diff import (
     ResourceDifferHandler,
     ResourceHTTPProxy,
     ResourceMockProxy,
-    ResourcePlugins,
+    ResourcePluginConfig,
 )
 
 
@@ -251,7 +251,7 @@ class TestResourceProxyDiffer:
             path: Text = ""
             contexts: ResourceContexts = None
             disabled_stages: List[Text] = []
-            plugins: ResourcePlugins = None
+            plugins: List[ResourcePluginConfig] = []
             doc_updated_time: Dict[str, str] = {}
 
         source_differ = ResourceProxyDiffer(proxy=source_proxy)

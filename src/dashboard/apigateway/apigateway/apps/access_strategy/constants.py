@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 
@@ -31,19 +30,6 @@ class AccessStrategyTypeEnum(StructuredEnum):
     ERROR_STATUS_CODE_200 = EnumField("error_status_code_200", label="网关错误使用HTTP状态码200(不推荐)")
     CORS = EnumField("cors", label="跨域资源共享(CORS)")
     CIRCUIT_BREAKER = EnumField("circuit_breaker", label="断路器")
-
-
-# 访问策略类型 -> 插件类型，用于二者类型的转换
-STRATEGY_TYPE_TO_PLUGIN_TYPE: Dict[str, str] = {
-    AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value: "bk-ip-restriction",
-    AccessStrategyTypeEnum.RATE_LIMIT.value: "bk-rate-limit",
-    AccessStrategyTypeEnum.USER_VERIFIED_UNREQUIRED_APPS.value: "bk-verified-user-exempted-apps",
-    AccessStrategyTypeEnum.ERROR_STATUS_CODE_200.value: "bk-status-rewrite",
-    AccessStrategyTypeEnum.CORS.value: "bk-cors",
-}
-
-# 插件类型 -> 访问策略类型
-PLUGIN_TYPE_TO_STRATEGY_TYPE: Dict[str, str] = {value: key for key, value in STRATEGY_TYPE_TO_PLUGIN_TYPE.items()}
 
 
 class AccessStrategyBindScopeEnum(ChoiceEnum):
