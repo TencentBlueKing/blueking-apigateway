@@ -19,7 +19,7 @@ from typing import Any, Dict
 
 from django.db import transaction
 
-from apigateway.controller.tasks.syncing import trigger_gateway_publish
+from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, PublishSourceEnum
 from apigateway.core.models import Backend, BackendConfig, Proxy
 

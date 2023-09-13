@@ -69,7 +69,7 @@ class TestResourceVersionListCreateApi:
             return_value=[{"name": "test"}],
         )
         mocker.patch(
-            "apigateway.biz.resource_version.ResourceVersionHandler._validata_resource_version_data",
+            "apigateway.biz.resource_version.ResourceVersionHandler._validate_resource_version_data",
             return_value=None,
         )
 
@@ -101,7 +101,7 @@ class TestResourceVersionReleaseApi:
     def test_release(self, faker, request_view, fake_admin_user, fake_gateway, mocker, unreleased_stage_ids):
         G(ResourceVersion, gateway=fake_gateway)
         mocker.patch(
-            "apigateway.biz.releaser.DefaultGatewayReleaserHandler.release_batch",
+            "apigateway.biz.releaser.BaseGatewayReleaser.release",
             return_value=None,
         )
         mocker.patch(
@@ -126,7 +126,7 @@ class TestResourceVersionReleaseApi:
             "apigateway.apis.open.resource_version.views.Release.objects.get_stage_ids_unreleased_the_version",
             return_value=unreleased_stage_ids,
         )
-        mocker.patch("apigateway.apis.open.resource_version.views.ReleaseBatchHandler.release_batch")
+        mocker.patch("apigateway.apis.open.resource_version.views.BatchReleaser.release")
 
         response = request_view(
             "POST",

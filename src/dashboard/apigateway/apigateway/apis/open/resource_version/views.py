@@ -24,7 +24,7 @@ from rest_framework import generics, status
 from apigateway.apis.open.resource_version import serializers
 from apigateway.apis.web.resource_version.serializers import ResourceVersionInfoSLZ
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
-from apigateway.biz.releaser import ReleaseBatchHandler, ReleaseError
+from apigateway.biz.releaser import BatchReleaser, ReleaseError
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ResourceVersion, Stage
@@ -116,9 +116,9 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
                 },
             )
 
-        handler = ReleaseBatchHandler(access_token=get_user_access_token_from_request(request))
+        releaser = BatchReleaser(access_token=get_user_access_token_from_request(request))
         try:
-            handler.release_batch(
+            releaser.release(
                 request.gateway, data["stage_ids"], data["resource_version_id"], data["comment"], request.user.username
             )
         except ReleaseError as err:

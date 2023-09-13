@@ -37,7 +37,7 @@ class ReleaseProcedureLogger(ProcedureLogger):
         publish_id: Optional[int] = None,
     ):
         """
-        :param release_task_id: 发布任务ID，触发发布任务时，可以设置一个 uuid 字符串，其将会打印到日志中，便于过滤日志
+        :param release_task_id: 发布任务 ID，触发发布任务时，可以设置一个 uuid 字符串，其将会打印到日志中，便于过滤日志
         """
         super().__init__(name, logger)
         self._gateway = gateway

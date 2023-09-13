@@ -190,7 +190,6 @@ class TestComponentSyncViewSet:
         )
         response = view(request)
         result = get_response_json(response)
-        assert result["code"] == 0
         assert result["data"] == expected
 
     def test_sync_check(self, mocker, fake_admin_user):
@@ -242,9 +241,9 @@ class TestComponentSyncViewSet:
             return_value=mocker.MagicMock(**{"locked.return_value": True}),
         )
         response = view(request)
+        assert response.status_code == 400
         result = get_response_json(response)
-        assert result["code"] != 0
-        assert result["data"] == {"is_releasing": True}
+        assert result["error"]["data"] == {"is_releasing": True}
         mock_sync_and_release.assert_not_called()
 
         # not locked
@@ -254,7 +253,6 @@ class TestComponentSyncViewSet:
         )
         response = view(request)
         result = get_response_json(response)
-        assert result["code"] == 0
         assert result["data"] == {"is_releasing": True}
         mock_sync_and_release.assert_called_once_with(
             args=(api_id, "admin", request.user.token.access_token, False),
@@ -327,8 +325,9 @@ class TestComponentReleaseHistoryViewSet:
         view = views.ComponentReleaseHistoryViewSet.as_view({"get": "list"})
         response = view(request)
 
+        assert response.status_code == 200
+
         result = get_response_json(response)
-        assert result["code"] == 0
         assert result["data"]["results"] == expected, result
 
         mock_get_histories.assert_called_once_with(
@@ -363,7 +362,6 @@ class TestComponentReleaseHistoryViewSet:
         response = view(request, id=history.id)
 
         result = get_response_json(response)
-        assert result["code"] == 0
         assert result["data"] == [
             {
                 "resource_id": 1,

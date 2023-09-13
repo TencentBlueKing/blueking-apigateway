@@ -273,9 +273,14 @@ def fake_release_data(edge_release):
     return ReleaseData(edge_release)
 
 
+class DummyConvertor(BaseConvertor):
+    def convert(self):
+        pass
+
+
 @fixture
 def fake_base_convertor(fake_release_data, micro_gateway):
-    return BaseConvertor(fake_release_data, micro_gateway)
+    return DummyConvertor(fake_release_data, micro_gateway)
 
 
 @fixture

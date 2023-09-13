@@ -16,9 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from dataclasses import dataclass
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
-
-from attrs import define
 
 from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum, AccessStrategyTypeEnum
 from apigateway.apps.access_strategy.models import AccessStrategy, IPGroup
@@ -27,7 +26,7 @@ from apigateway.utils.header import canonical_header_key
 from apigateway.utils.ip import parse_ip_content_to_list
 
 
-@define(slots=False)
+@dataclass
 class AccessStrategyConvertor:
     """访问策略转换器，将访问策略转换为 PluginData"""
 

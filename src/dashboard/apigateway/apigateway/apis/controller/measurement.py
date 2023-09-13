@@ -48,7 +48,7 @@ class MicroGatewayStatusMeasurementPoint(MeasurementPoint):
     """网关状态测量点"""
 
     measurement = "gateway-status"
-    # 网关汇总状态，当这个值不为0时，表示网关异常，请根据状态位以及细化的状态来判断具体的异常
+    # 网关汇总状态，当这个值不为 0 时，表示网关异常，请根据状态位以及细化的状态来判断具体的异常
     status: MicroGatewayStatus = field(converter=MicroGatewayStatus.convert)  # type: ignore
     # 副本数量
     replicas: int = field(converter=int)

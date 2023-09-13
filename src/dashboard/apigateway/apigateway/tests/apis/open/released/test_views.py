@@ -17,8 +17,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from ddf import G
 
 from apigateway.apis.open.released import views
+from apigateway.core.models import Stage
 from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
@@ -304,6 +306,9 @@ class TestReleasedResourceListByGatewayNameApi:
             "apigateway.apis.open.released.views.ResourceVersionHandler.get_released_public_resources",
             return_value=mocked_resources,
         )
+
+        # fake a stage with name => for get_resource_url_tmpl
+        G(Stage, gateway=fake_gateway, status=1, name=stage_name, description="fake description")
 
         request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway

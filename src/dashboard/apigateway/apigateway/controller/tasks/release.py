@@ -49,11 +49,9 @@ def _release_gateway(
     # 表明发布已开始
     release_history_qs.update(status=ReleaseStatusEnum.RELEASING.value)
     # add publish event
-    PublishEventReporter.report_create_publish_task_success_event(
-        latest_micro_gateway_release_history.release_history, release.stage
-    )
+    PublishEventReporter.report_create_publish_task_success_event(latest_micro_gateway_release_history.release_history)
     PublishEventReporter.report_distribute_configuration_doing_event(
-        latest_micro_gateway_release_history.release_history, release.stage
+        latest_micro_gateway_release_history.release_history
     )
     try:
         is_success, fail_msg = distributor.distribute(
@@ -64,12 +62,12 @@ def _release_gateway(
         )
         if is_success:
             PublishEventReporter.report_distribute_configuration_success_event(
-                latest_micro_gateway_release_history.release_history, release.stage
+                latest_micro_gateway_release_history.release_history,
             )
 
         else:
             PublishEventReporter.report_distribute_configuration_failure_event(
-                latest_micro_gateway_release_history.release_history, release.stage, fail_msg
+                latest_micro_gateway_release_history.release_history, fail_msg
             )
             return False
     except Exception as err:
@@ -77,7 +75,7 @@ def _release_gateway(
         procedure_logger.exception("release failed")
         # 上报失败事件
         PublishEventReporter.report_distribute_configuration_failure_event(
-            latest_micro_gateway_release_history.release_history, release.stage, f"error: {err}"
+            latest_micro_gateway_release_history.release_history, f"error: {err}"
         )
         # 异常抛出，让 celery 停止编排
         raise

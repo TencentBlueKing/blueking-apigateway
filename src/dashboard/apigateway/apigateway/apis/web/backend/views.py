@@ -28,7 +28,6 @@ from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Backend, BackendConfig, Proxy
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .filters import BackendFilter
 from .serializers import BackendInputSLZ, BackendListOutputSLZ, BackendRetrieveOutputSLZ
@@ -43,7 +42,6 @@ class BackendQuerySetMixin:
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: BackendListOutputSLZ(many=True)},
         tags=["WebAPI.Backend"],
     ),

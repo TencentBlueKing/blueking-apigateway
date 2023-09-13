@@ -16,12 +16,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import copy
+from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from attrs import define
 
-
-@define
+@dataclass
 class SensitiveCleaner:
     """
     处理敏感信息
