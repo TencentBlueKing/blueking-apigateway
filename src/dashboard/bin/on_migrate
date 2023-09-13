@@ -22,6 +22,7 @@ python manage.py migrate
 python manage.py migrate bkcore --database bkcore
 python manage.py loaddata -i apigateway/fixtures/*.yaml
 python manage.py migrate_access_strategy
+python manage.py migrate_backend
 
 # dashboard 相关
 python manage.py sync_schema
