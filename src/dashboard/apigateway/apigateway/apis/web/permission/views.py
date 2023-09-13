@@ -97,7 +97,7 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
         page = self.paginate_queryset(queryset)
 
         serializer = AppResourcePermissionOutputSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         """
@@ -280,7 +280,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
         page = self.paginate_queryset(queryset)
 
         serializer = AppGatewayPermissionOutputSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         """
@@ -450,10 +450,8 @@ class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAP
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
 
-        page = self.paginate_queryset(queryset)
-
         serializer = AppPermissionApplyOutputSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
 
 @method_decorator(
@@ -500,7 +498,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
                 "resource_id_map": Resource.objects.filter_id_object_map(request.gateway.id),
             },
         )
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
 
 @method_decorator(

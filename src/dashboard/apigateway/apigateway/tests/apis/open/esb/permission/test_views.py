@@ -200,13 +200,12 @@ class TestAppPermissionApplyRecordViewSet:
             expire_days=180,
         )
 
-        request = request_factory.get("/", data=params)
+        request = request_factory.get("/backend/api/v1/", data=params)
 
         view = views.AppPermissionApplyRecordViewSet.as_view({"get": "list"})
         response = view(request)
 
         result = get_response_json(response)
-        assert result["code"] == 0
         assert result["data"]["count"] == 1
         assert result["data"]["has_next"] is False
         assert result["data"]["has_previous"] is False

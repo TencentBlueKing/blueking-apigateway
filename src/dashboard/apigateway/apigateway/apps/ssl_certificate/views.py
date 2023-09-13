@@ -25,7 +25,7 @@ from rest_framework import status, viewsets
 from apigateway.apps.ssl_certificate import serializers
 from apigateway.core.models import SslCertificate, SslCertificateBinding
 from apigateway.utils.crypto import CertificateChecker
-from apigateway.utils.responses import V1OKJsonResponse
+from apigateway.utils.responses import OKJsonResponse
 
 
 @method_decorator(
@@ -89,7 +89,7 @@ class SSLCertificateViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
 
         slz = serializers.ListSSLCertificateSLZ(page, many=True)
-        return V1OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user.username, updated_by=self.request.user.username)
@@ -136,7 +136,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
             ssl_certificate_id=slz.validated_data["ssl_certificate_id"],
         ).exclude(scope_id__in=slz.validated_data["scope_ids"]).delete()
 
-        return V1OKJsonResponse()
+        return OKJsonResponse()
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -156,7 +156,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
             scope_id__in=slz.validated_data["scope_ids"],
         ).delete()
 
-        return V1OKJsonResponse()
+        return OKJsonResponse()
 
     @swagger_auto_schema(
         query_serializer=serializers.QuerySSLCertificateBindingSLZ,
@@ -179,7 +179,7 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
 
         serializer = serializers.ListSSLCertificateBindingSLZ(page, many=True)
-        return V1OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
 
 class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
@@ -218,7 +218,7 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
             scope_id=valid_scope_id,
         ).exclude(ssl_certificate_id__in=slz.validated_data["ssl_certificate_ids"]).delete()
 
-        return V1OKJsonResponse()
+        return OKJsonResponse()
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
@@ -240,7 +240,7 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
             ssl_certificate_id__in=slz.validated_data["ssl_certificate_ids"],
         ).delete()
 
-        return V1OKJsonResponse()
+        return OKJsonResponse()
 
 
 class CheckCertViewSet(viewsets.ViewSet):
@@ -254,4 +254,4 @@ class CheckCertViewSet(viewsets.ViewSet):
         slz.is_valid(raise_exception=True)
 
         checker = CertificateChecker(**slz.validated_data)
-        return V1OKJsonResponse(data=checker.check())
+        return OKJsonResponse(data=checker.check())

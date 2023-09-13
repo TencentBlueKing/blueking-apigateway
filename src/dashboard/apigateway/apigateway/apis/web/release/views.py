@@ -225,7 +225,7 @@ class ReleaseHistoryListApi(generics.ListAPIView):
                 ),
             },
         )
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
 
 @method_decorator(

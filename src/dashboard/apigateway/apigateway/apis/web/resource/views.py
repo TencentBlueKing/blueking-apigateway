@@ -103,7 +103,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
                 "latest_version_created_time": ResourceVersionHandler.get_latest_created_time(request.gateway.id),
             },
         )
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):

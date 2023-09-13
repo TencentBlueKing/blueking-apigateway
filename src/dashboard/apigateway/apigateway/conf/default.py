@@ -262,7 +262,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
         "apigateway.common.permissions.GatewayPermission",
     ),
-    "DEFAULT_PAGINATION_CLASS": "apigateway.utils.paginator.StandardLimitOffsetPagination",
+    "DEFAULT_PAGINATION_CLASS": "apigateway.common.pagination.StandardLimitOffsetPagination",
     "PAGE_SIZE": 10,
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",),

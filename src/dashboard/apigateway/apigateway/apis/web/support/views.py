@@ -70,7 +70,7 @@ class APISDKListCreateApi(generics.ListCreateAPIView):
 
         sdks = [SDKFactory.create(model=i) for i in page]
         slz = self.get_serializer(sdks, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
     @transaction.atomic
     def create(self, request, gateway_id):

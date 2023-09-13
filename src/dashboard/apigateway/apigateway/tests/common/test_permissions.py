@@ -23,7 +23,7 @@ from django.http import Http404
 from rest_framework import viewsets
 
 from apigateway.common.permissions import GatewayRelatedAppPermission
-from apigateway.utils.responses import V1OKJsonResponse
+from apigateway.utils.responses import OKJsonResponse
 
 pytestmark = pytest.mark.django_db
 
@@ -33,7 +33,7 @@ class TestGatewayRelatedAppPermission:
         permission_classes = [GatewayRelatedAppPermission]
 
         def retrieve(self, request, api_name: str, *args, **kwargs):
-            return V1OKJsonResponse("OK")
+            return OKJsonResponse()
 
     @pytest.mark.parametrize(
         "mock_gateway, allow_api_not_exist, api_permission_exempt, mock_allow_manage, expected",

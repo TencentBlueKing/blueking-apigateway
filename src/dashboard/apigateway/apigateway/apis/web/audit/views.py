@@ -21,7 +21,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.models import AuditEventLog
-from apigateway.utils.responses import V1OKJsonResponse
 
 from .serializers import AuditEventLogOutputSLZ, AuditEventLogQueryInputSLZ
 
@@ -60,4 +59,4 @@ class AuditEventLogListApi(generics.ListAPIView):
 
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page, many=True)
-        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)

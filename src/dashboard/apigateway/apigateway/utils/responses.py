@@ -21,7 +21,6 @@ from typing import Any, Dict, List, Union
 
 from django.http import FileResponse, HttpResponse, JsonResponse
 from rest_framework import status
-from rest_framework.renderers import JSONRenderer
 
 
 class FailJsonResponse(JsonResponse):
@@ -109,20 +108,3 @@ class DownloadableResponse(FileResponse):
         self["Access-Control-Allow-Headers"] = "Content-Type,Content-Disposition"
         self["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
         self["Access-Control-Expose-Headers"] = "Content-Type,Content-Disposition"
-
-
-# TODO: change drf default render
-class ResponseRender(JSONRenderer):
-    """将 DRF 返回的结构进行标准化转换，兼容 error handler 处理结果"""
-
-    def render(self, data, accepted_media_type=None, renderer_context=None):
-        response = renderer_context["response"]
-
-        if response.status_code == status.HTTP_200_OK or response.status_code == status.HTTP_201_CREATED:
-            result = {
-                "data": data,
-            }
-
-            return super().render(result, accepted_media_type, renderer_context)
-
-        return super().render(data, accepted_media_type, renderer_context)

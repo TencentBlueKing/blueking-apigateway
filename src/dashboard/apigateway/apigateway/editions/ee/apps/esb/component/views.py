@@ -41,7 +41,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.django import get_object_or_None
-from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
+from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
 logger = logging.getLogger(__name__)
 
@@ -66,13 +66,13 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
             },
         )
 
-        return V1OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(response_serializer=serializers.ESBChannelDetailSLZ, tags=["ESB.Component"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = serializers.ESBChannelDetailSLZ(instance)
-        return V1OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(request_body=serializers.ESBChannelSLZ, tags=["ESB.Component"])
     @transaction.atomic
@@ -91,7 +91,7 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
             config={},
         )
 
-        return V1OKJsonResponse("OK", data={"id": slz.instance.id})
+        return OKJsonResponse(data={"id": slz.instance.id})
 
     @swagger_auto_schema(request_body=serializers.ESBChannelSLZ, tags=["ESB.Component"])
     @transaction.atomic
@@ -105,7 +105,7 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return V1OKJsonResponse("OK")
+        return OKJsonResponse()
 
     @swagger_auto_schema(tags=["ESB.Component"])
     @transaction.atomic
@@ -118,7 +118,7 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
 
         ESBChannel.objects.delete_custom_channels([instance.id])
 
-        return V1OKJsonResponse("OK")
+        return OKJsonResponse()
 
 
 class ESBChannelBatchViewSet(viewsets.ModelViewSet):
@@ -139,7 +139,7 @@ class ESBChannelBatchViewSet(viewsets.ModelViewSet):
 
         ESBChannel.objects.delete_custom_channels(slz.validated_data["ids"])
 
-        return V1OKJsonResponse("OK")
+        return OKJsonResponse()
 
 
 class ComponentSyncViewSet(viewsets.ViewSet):
@@ -148,27 +148,27 @@ class ComponentSyncViewSet(viewsets.ViewSet):
     @swagger_auto_schema(tags=["ESB.Component"])
     def need_new_release(self, request, *args, **kwargs):
         if ComponentReleaseHistory.objects.need_new_release():
-            return V1OKJsonResponse(
-                _("组件配置有更新，新增组件或更新组件请求方法、请求路径、权限级别，需同步到网关才能生效。"),
+            return OKJsonResponse(
+                # _("组件配置有更新，新增组件或更新组件请求方法、请求路径、权限级别，需同步到网关才能生效。"),
                 data={
                     "need_new_release": True,
                 },
             )
 
-        return V1OKJsonResponse("OK", data={"need_new_release": False})
+        return OKJsonResponse(data={"need_new_release": False})
 
     @swagger_auto_schema(tags=["ESB.Component"])
     def get_release_status(self, request, *args, **kwargs):
         """获取组件的发布状态"""
         release_lock = get_release_lock()
         locked = release_lock.locked()
-        return V1OKJsonResponse("OK", data={"is_releasing": locked})
+        return OKJsonResponse(data={"is_releasing": locked})
 
     @swagger_auto_schema(tags=["ESB.Component"])
     def retrieve_esb_gateway(self, request, *args, **kwargs):
         """获取 ESB 组件对应网关的信息"""
         esb_gateway = self._get_esb_gateway()
-        return V1OKJsonResponse("OK", data={"gateway_id": esb_gateway.id, "gateway_name": esb_gateway.name})
+        return OKJsonResponse(data={"gateway_id": esb_gateway.id, "gateway_name": esb_gateway.name})
 
     @swagger_auto_schema(tags=["ESB.Component"])
     def sync_check(self, request, *args, **kwargs):
@@ -188,7 +188,7 @@ class ComponentSyncViewSet(viewsets.ViewSet):
 
         resources = unspecified_resources + [resource_data.snapshot() for resource_data in resource_data_list]
         slz = serializers.ComponentResourceBindingSLZ(resources, many=True)
-        return V1OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(tags=["ESB.Component"])
     def sync_and_release(self, request, *args, **kwargs):
@@ -197,7 +197,12 @@ class ComponentSyncViewSet(viewsets.ViewSet):
         # 检查锁状态，防止多个同步任务同时进行
         release_lock = get_release_lock()
         if release_lock.locked():
-            return V1FailJsonResponse(_("当前已有同步任务正在执行，请稍后重试。"), data={"is_releasing": True})
+            return FailJsonResponse(
+                status=status.HTTP_400_BAD_REQUEST,
+                code="FAILED_PRECONDITION",
+                message=_("当前已有同步任务正在执行，请稍后重试。"),
+                data={"is_releasing": True},
+            )
 
         # 因同步及发布任务耗时较长，因此采用异步方式处理
         apply_async_on_commit(
@@ -206,7 +211,7 @@ class ComponentSyncViewSet(viewsets.ViewSet):
             expires=ESB_RELEASE_TASK_EXPIRES,
         )
 
-        return V1OKJsonResponse("OK", data={"is_releasing": True})
+        return OKJsonResponse(data={"is_releasing": True})
 
     def _get_esb_gateway(self) -> Gateway:
         gateway = get_object_or_None(Gateway, name=settings.BK_ESB_GATEWAY_NAME)
@@ -247,7 +252,7 @@ class ComponentReleaseHistoryViewSet(viewsets.ModelViewSet):
                 ),
             },
         )
-        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.ComponentResourceBindingSLZ(many=True)},
@@ -256,4 +261,4 @@ class ComponentReleaseHistoryViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = serializers.ComponentResourceBindingSLZ(instance.data, many=True)
-        return V1OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)

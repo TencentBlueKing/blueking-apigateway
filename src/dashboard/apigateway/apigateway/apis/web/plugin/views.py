@@ -29,10 +29,11 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyle
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
+from apigateway.common.renderers import BkStandardApiJSONRenderer
 from apigateway.controller.tasks.syncing import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Resource, Stage
-from apigateway.utils.responses import OKJsonResponse, ResponseRender
+from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
     PluginBindingListOutputSLZ,
@@ -56,7 +57,6 @@ from .serializers import (
 )
 class PluginTypeListApi(generics.ListAPIView):
     serializer_class = PluginTypeSLZ
-    renderer_classes = [ResponseRender]
 
     def get_serializer_context(self):
         # 需要返回描述，描述在 plugin_form 中
@@ -116,7 +116,7 @@ class PluginTypeListApi(generics.ListAPIView):
 )
 class PluginFormRetrieveApi(generics.RetrieveAPIView):
     serializer_class = PluginFormSLZ
-    renderer_classes = [ResponseRender]
+    renderer_classes = [BkStandardApiJSONRenderer]
 
     def get_object(self):
         plugin_type = get_object_or_404(
@@ -180,7 +180,7 @@ class PluginTypeCodeValidationMixin:
 )
 class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, PluginTypeCodeValidationMixin):
     serializer_class = PluginConfigCreateInputSLZ
-    renderer_classes = [ResponseRender]
+    renderer_classes = [BkStandardApiJSONRenderer]
 
     def get_queryset(self):
         return PluginConfig.objects.prefetch_related("type").filter(gateway=self.request.gateway)
@@ -270,7 +270,8 @@ class PluginConfigRetrieveUpdateDestroyApi(
     generics.RetrieveUpdateDestroyAPIView, ScopeValidationMixin, PluginTypeCodeValidationMixin
 ):
     serializer_class = PluginConfigRetrieveUpdateInputSLZ
-    renderer_classes = [ResponseRender]
+    renderer_classes = [BkStandardApiJSONRenderer]
+
     lookup_field = "id"
 
     def get_queryset(self):

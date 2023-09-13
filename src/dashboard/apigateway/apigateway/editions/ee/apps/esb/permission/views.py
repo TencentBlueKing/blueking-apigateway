@@ -29,7 +29,7 @@ from apigateway.apps.esb.permission import serializers
 from apigateway.apps.esb.permission.helpers import PermissionManager
 from apigateway.apps.esb.permissions import UserAccessESBPermission
 from apigateway.apps.permission.constants import DEFAULT_PERMISSION_EXPIRE_DAYS, ApplyStatusEnum
-from apigateway.utils.responses import V1OKJsonResponse
+from apigateway.utils.responses import OKJsonResponse
 
 
 class AppPermissionApplyRecordViewSet(viewsets.ModelViewSet):
@@ -64,7 +64,7 @@ class AppPermissionApplyRecordViewSet(viewsets.ModelViewSet):
 
         page = self.paginate_queryset(qs)
         records = self._serialize_records(page)
-        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(records))
+        return self.get_paginated_response(records)
 
     @swagger_auto_schema(
         query_serializer=serializers.QueryAppPermissionApplyRecordSLZ,
@@ -92,7 +92,7 @@ class AppPermissionApplyRecordViewSet(viewsets.ModelViewSet):
 
         page = self.paginate_queryset(qs)
         records = self._serialize_records(page)
-        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(records))
+        return self.get_paginated_response(records)
 
     def _serialize_records(self, records: List[AppPermissionApplyRecord]) -> List[dict]:
         component_map = ESBChannel.objects.get_component_map_by_ids(
@@ -119,7 +119,7 @@ class AppPermissionApplyRecordViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, id: int, *args, **kwargs):
         instance = self.get_object()
         slz = serializers.AppPermissionApplyRecordDetailSLZ(instance)
-        return V1OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
         request_body=serializers.BatchHandleAppPermissionApplyRecordSLZ,
@@ -145,7 +145,7 @@ class AppPermissionApplyRecordViewSet(viewsets.ModelViewSet):
                 part_component_ids=part_component_ids.get(f"{record.id}"),
             )
 
-        return V1OKJsonResponse("OK")
+        return OKJsonResponse()
 
 
 class AppComponentPermissionViewSet(viewsets.ModelViewSet):
@@ -178,7 +178,7 @@ class AppComponentPermissionViewSet(viewsets.ModelViewSet):
                 "component_map": ESBChannel.objects.get_component_map_by_ids([p.component_id for p in page]),
             },
         )
-        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
     @swagger_auto_schema(
         request_body=serializers.BatchAppComponentPermissionSLZ,
@@ -200,7 +200,7 @@ class AppComponentPermissionViewSet(viewsets.ModelViewSet):
             expire_days=DEFAULT_PERMISSION_EXPIRE_DAYS,
         )
 
-        return V1OKJsonResponse("OK")
+        return OKJsonResponse()
 
     @swagger_auto_schema(
         request_body=serializers.BatchAppComponentPermissionSLZ,
@@ -221,4 +221,4 @@ class AppComponentPermissionViewSet(viewsets.ModelViewSet):
             ids=data["ids"],
         )
 
-        return V1OKJsonResponse("OK")
+        return OKJsonResponse()

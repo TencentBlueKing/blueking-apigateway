@@ -93,7 +93,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
 
         page = self.paginate_queryset(queryset)
         serializer = AlarmStrategyListOutputSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
 
 @method_decorator(
@@ -216,7 +216,7 @@ class AlarmRecordListApi(generics.ListAPIView):
         page = self.paginate_queryset(queryset)
 
         serializer = self.get_serializer(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
 
 @method_decorator(
