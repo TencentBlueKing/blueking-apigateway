@@ -143,8 +143,9 @@ class TestMicroGatewayViewSet:
         request = self.factory.get("")
         response = view(request, gateway_id=self.gateway.id)
 
+        assert response.status_code == 200
+
         result = get_response_json(response)
-        assert result["code"] == 0
         assert len(result["data"]["results"]) == 1
 
     def test_update(self, request_view, fake_gateway, fake_admin_user, mock_micro_gateway_config, faker):
@@ -190,8 +191,9 @@ class TestMicroGatewayViewSet:
             user=fake_admin_user,
         )
 
-        result = get_response_json(response)
-        assert result["code"] == 0, result
+        assert response.status_code == 200
+
+        _ = get_response_json(response)
 
         micro_gateway = MicroGateway.objects.get(id=micro_gateway.id)
         assert micro_gateway.name == expected_name
@@ -208,8 +210,9 @@ class TestMicroGatewayViewSet:
         request = self.factory.get("")
         response = view(request, gateway_id=self.gateway.id, id=micro_gateway.id)
 
-        result = get_response_json(response)
-        assert result["code"] == 0
+        assert response.status_code == 200
+
+        _ = get_response_json(response)
 
     def test_destroy(self):
         micro_gateway = G(MicroGateway, gateway=self.gateway)
@@ -219,6 +222,7 @@ class TestMicroGatewayViewSet:
         view = MicroGatewayViewSet.as_view({"delete": "destroy"})
         response = view(request, gateway_id=self.gateway.id, id=micro_gateway.id)
 
-        result = get_response_json(response)
-        assert result["code"] == 0
+        _ = get_response_json(response)
+
+        assert response.status_code == 200
         assert not MicroGateway.objects.filter(id=micro_gateway_id).exists()

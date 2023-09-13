@@ -35,7 +35,6 @@ from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .serializers import (
     LogDetailQueryInputSLZ,
@@ -79,7 +78,6 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["WebAPI.Log"],
     ),
@@ -134,7 +132,6 @@ class SearchLogListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=LogDetailQueryInputSLZ,
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["WebAPI.Log"],

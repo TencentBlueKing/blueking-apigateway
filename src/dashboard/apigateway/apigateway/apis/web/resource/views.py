@@ -42,7 +42,6 @@ from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import Backend, BackendConfig, Proxy, Resource, Stage
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .serializers import (
     BackendPathCheckInputSLZ,
@@ -71,7 +70,6 @@ class ResourceQuerySetMixin:
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=ResourceQueryInputSLZ,
         responses={status.HTTP_200_OK: ResourceListOutputSLZ(many=True)},
         tags=["WebAPI.Resource"],
@@ -105,7 +103,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
                 "latest_version_created_time": ResourceVersionHandler.get_latest_created_time(request.gateway.id),
             },
         )
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):

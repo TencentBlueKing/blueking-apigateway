@@ -29,7 +29,6 @@ from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ResourceVersion, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
 class ResourceVersionViewSet(viewsets.GenericViewSet):
@@ -61,7 +60,6 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
         )
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: ""},
         tags=["OpenAPI.ResourceVersion"],
     )

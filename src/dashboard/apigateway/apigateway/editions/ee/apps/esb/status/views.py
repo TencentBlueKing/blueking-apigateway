@@ -24,7 +24,7 @@ from rest_framework.views import APIView
 from apigateway.apps.esb.bkcore.models import RealTimelineEvent
 from apigateway.apps.esb.status.es_client import get_search_es_client
 from apigateway.apps.esb.status.utils import get_system_basic_info, str_percentage, str_to_seconds
-from apigateway.utils.responses import V1OKJsonResponse
+from apigateway.utils.responses import OKJsonResponse
 
 
 class SysAllSummaryView(APIView):
@@ -41,7 +41,7 @@ class SysAllSummaryView(APIView):
         for info in result:
             info["basic_info"] = system_basic_info[info["system_name"]]
 
-        return V1OKJsonResponse("OK", data=result)
+        return OKJsonResponse(data=result)
 
 
 class SysEventsTimeline(APIView):
@@ -83,7 +83,7 @@ class SysEventsTimeline(APIView):
             event["mts_end"] = event["mts"] + self.time_interval_seconds * 1000
 
         events = self._add_system_info(events)
-        return V1OKJsonResponse("OK", data=events)
+        return OKJsonResponse(data=events)
 
     def _parse_aggregations_data(self, data):
         if "aggregations" not in data:
@@ -196,7 +196,7 @@ class SysUnstableSystemsView(APIView):
         # 筛选出有问题的系统摘要
         [complement_summary(d) for d in result]
         ret = [x for x in result if x["unstable"]]
-        return V1OKJsonResponse("OK", data=ret)
+        return OKJsonResponse(data=ret)
 
 
 class SysSummaryView(APIView):
@@ -222,7 +222,7 @@ class SysSummaryView(APIView):
         # 获取系统基本信息
         system_basic_info = get_system_basic_info([system_name])
         data["basic_info"] = system_basic_info[system_name]
-        return V1OKJsonResponse("OK", data=data)
+        return OKJsonResponse(data=data)
 
 
 class SysDateHistogramView(APIView):
@@ -265,7 +265,7 @@ class SysDateHistogramView(APIView):
             ]
             result.append(summary)
         # 为方便js中判定data为空，无数据时，设值为None
-        return V1OKJsonResponse("OK", data=result[0] if result else None)
+        return OKJsonResponse(data=result[0] if result else None)
 
 
 class SysDetailsGroupByView(APIView):
@@ -299,7 +299,7 @@ class SysDetailsGroupByView(APIView):
             result.sort(key=lambda x: (x["rate_availability"]["value"], -x["requests"]["count"]))
         elif order == "requests_desc":
             result.sort(key=lambda x: x["requests"]["count"], reverse=True)
-        return V1OKJsonResponse("OK", data=result[:size])
+        return OKJsonResponse(data=result[:size])
 
 
 class SysErrorsView(APIView):
@@ -322,8 +322,7 @@ class SysErrorsView(APIView):
             value["timestamp"] = d["sort"][0]
             data_list.append(value)
 
-        return V1OKJsonResponse(
-            "OK",
+        return OKJsonResponse(
             data={
                 "data": {
                     "data_list": data_list,

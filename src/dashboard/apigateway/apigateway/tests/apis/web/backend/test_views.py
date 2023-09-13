@@ -65,7 +65,7 @@ class TestBackendApi:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["count"] == 1
+        assert data["data"]["count"] == 1
 
     def test_retrieve(self, request_view, fake_stage):
         fake_gateway = fake_stage.gateway
