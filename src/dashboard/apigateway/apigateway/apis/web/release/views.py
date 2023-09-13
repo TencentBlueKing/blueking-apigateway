@@ -36,7 +36,6 @@ from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .serializers import (
     PublishEventQueryOutputSLZ,
@@ -188,7 +187,6 @@ class ReleaseCreateApi(generics.CreateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=ReleaseHistoryQueryInputSLZ(),
         responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ(many=True)},
         tags=["WebAPI.Release"],

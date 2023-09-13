@@ -30,7 +30,6 @@ from apigateway.apps.esb.permission.helpers import PermissionManager
 from apigateway.apps.esb.permissions import UserAccessESBPermission
 from apigateway.apps.permission.constants import DEFAULT_PERMISSION_EXPIRE_DAYS, ApplyStatusEnum
 from apigateway.utils.responses import V1OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
 class AppPermissionApplyRecordViewSet(viewsets.ModelViewSet):
@@ -42,7 +41,6 @@ class AppPermissionApplyRecordViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QueryAppPermissionApplyRecordSLZ,
         response_serializer=serializers.AppPermissionApplyRecordSLZ(many=True),
         tags=["ESB.Permission"],
@@ -69,7 +67,6 @@ class AppPermissionApplyRecordViewSet(viewsets.ModelViewSet):
         return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(records))
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QueryAppPermissionApplyRecordSLZ,
         response_serializer=serializers.AppPermissionApplyRecordSLZ(many=True),
         tags=["ESB.Permission"],
@@ -156,7 +153,6 @@ class AppComponentPermissionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, UserAccessESBPermission]
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QueryAppPermissionSLZ,
         responses={status.HTTP_200_OK: serializers.ESBAppPermissionListSLZ(many=True)},
         tags=["ESB.Permission"],

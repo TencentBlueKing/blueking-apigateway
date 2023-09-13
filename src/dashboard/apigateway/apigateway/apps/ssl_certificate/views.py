@@ -26,7 +26,6 @@ from apigateway.apps.ssl_certificate import serializers
 from apigateway.core.models import SslCertificate, SslCertificateBinding
 from apigateway.utils.crypto import CertificateChecker
 from apigateway.utils.responses import V1OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
 @method_decorator(
@@ -71,7 +70,6 @@ class SSLCertificateViewSet(viewsets.ModelViewSet):
         return SslCertificate.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QuerySSLCertificateSLZ,
         responses={status.HTTP_200_OK: serializers.ListSSLCertificateSLZ(many=True)},
         tags=["WebAPI.SSLCertificate"],
@@ -161,7 +159,6 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
         return V1OKJsonResponse()
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QuerySSLCertificateBindingSLZ,
         responses={status.HTTP_200_OK: serializers.ListSSLCertificateBindingSLZ(many=True)},
         tags=["WebAPI.SSLCertificate"],

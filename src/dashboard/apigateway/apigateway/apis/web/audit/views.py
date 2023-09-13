@@ -22,7 +22,6 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.utils.responses import V1OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .serializers import AuditEventLogOutputSLZ, AuditEventLogQueryInputSLZ
 
@@ -30,7 +29,6 @@ from .serializers import AuditEventLogOutputSLZ, AuditEventLogQueryInputSLZ
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=AuditEventLogQueryInputSLZ,
         responses={status.HTTP_200_OK: AuditEventLogOutputSLZ(many=True)},
         tags=["WebAPI.Audit"],

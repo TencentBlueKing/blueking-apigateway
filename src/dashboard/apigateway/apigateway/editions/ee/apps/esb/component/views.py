@@ -42,7 +42,6 @@ from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.django import get_object_or_None
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +222,6 @@ class ComponentReleaseHistoryViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QueryComponentReleaseHistorySLZ,
         responses={status.HTTP_200_OK: serializers.ComponentReleaseHistorySLZ(many=True)},
         tags=["ESB.Component"],

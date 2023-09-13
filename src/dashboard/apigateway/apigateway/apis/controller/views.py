@@ -46,7 +46,6 @@ from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
 from apigateway.core.models import Gateway, MicroGateway, Release, Stage
 from apigateway.utils.redis_utils import get_default_redis_client, get_redis_key
 from apigateway.utils.responses import V1OKJsonResponse
-from apigateway.utils.swagger import GenericResponseSwaggerAutoSchema
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +74,6 @@ class MicroGatewayStatusViewSet(BaseMicroGatewayViewSet):
 
     @swagger_auto_schema(
         operation_description="上报微网关的状态",
-        auto_schema=GenericResponseSwaggerAutoSchema,
         tags=["OpenAPI.MicroGateway"],
     )
     def refresh(self, request, instance_id):

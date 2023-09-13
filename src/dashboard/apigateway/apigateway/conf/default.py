@@ -271,7 +271,7 @@ REST_FRAMEWORK = {
 }
 
 SWAGGER_SETTINGS = {
-    "DEFAULT_AUTO_SCHEMA_CLASS": "apigateway.utils.swagger.ResponseSwaggerAutoSchema",
+    "DEFAULT_AUTO_SCHEMA_CLASS": "apigateway.common.swagger.BkStandardResponseSwaggerAutoSchema",
 }
 
 # https://docs.djangoproject.com/en/3.2/ref/checks/

@@ -29,7 +29,6 @@ from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.models import MicroGateway, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import V1OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
 class MicroGatewayViewSet(viewsets.ModelViewSet):
@@ -71,7 +70,6 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
         return V1OKJsonResponse("OK", data={"id": slz.instance.id})
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QueryMicroGatewaySLZ,
         responses={status.HTTP_200_OK: serializers.ListMicroGatewaySLZ(many=True)},
         tags=["MicroGateway"],

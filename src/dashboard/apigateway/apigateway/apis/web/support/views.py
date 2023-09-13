@@ -33,13 +33,11 @@ from apigateway.apps.support.models import APISDK
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.APISDKQueryInputSLZ(),
         responses={status.HTTP_200_OK: serializers.SDKListOutputSLZ(many=True)},
         tags=["WebAPI.Support"],
