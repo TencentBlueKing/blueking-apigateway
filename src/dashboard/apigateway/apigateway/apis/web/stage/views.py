@@ -235,17 +235,18 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 )
 class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIView):
     lookup_field = "id"
+    serializer_class = StageVarsSLZ
     queryset = Stage.objects.all()
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        serializer = StageVarsSLZ(instance, context={"gateway": request.gateway})
+        serializer = self.get_serializer(instance, context={"gateway": request.gateway})
 
         return OKJsonResponse(data=serializer.data)
 
     def update(self, request, *args, **kwargs):
-        slz = StageVarsSLZ(data=request.data, context={"gateway": request.gateway})
+        slz = self.get_serializer(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -313,6 +314,7 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
 )
 class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.RetrieveUpdateAPIView):
     queryset = BackendConfig.objects.prefetch_related("backend")
+    serializer_class = BackendConfigInputSLZ
 
     def retrieve(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
@@ -323,7 +325,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
     def update(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
 
-        slz = BackendConfigInputSLZ(data=request.data, context={"backend": instance.backend})
+        slz = self.get_serializer(data=request.data, context={"backend": instance.backend})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -349,10 +351,11 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
 )
 class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
     lookup_field = "id"
+    serializer_class = StageStatusInputSLZ
     queryset = Stage.objects.all()
 
     def update(self, request, *args, **kwargs):
-        slz = StageStatusInputSLZ(data=request.data)
+        slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data

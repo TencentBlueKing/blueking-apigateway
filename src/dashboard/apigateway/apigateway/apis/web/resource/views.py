@@ -151,6 +151,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
     name="delete", decorator=swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.Resource"])
 )
 class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ResourceInputSLZ
     lookup_field = "id"
 
     def retrieve(self, request, *args, **kwargs):
@@ -169,7 +170,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        slz = ResourceInputSLZ(
+        slz = self.get_serializer(
             instance,
             data=request.data,
             context={
@@ -232,9 +233,11 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
     ),
 )
 class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIView, generics.DestroyAPIView):
+    serializer_class = ResourceBatchUpdateInputSLZ
+
     @transaction.atomic
     def update(self, request, *args, **kwargs):
-        slz = ResourceBatchUpdateInputSLZ(data=request.data)
+        slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
         queryset = self.get_queryset().filter(id__in=slz.validated_data["ids"])
@@ -292,12 +295,13 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
     ),
 )
 class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
+    serializer_class = ResourceLabelUpdateInputSLZ
     lookup_url_kwarg = "resource_id"
     lookup_field = "id"
 
     @transaction.atomic
     def update(self, request, *args, **kwargs):
-        slz = ResourceLabelUpdateInputSLZ(data=request.data)
+        slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
         instance = self.get_object()

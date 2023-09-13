@@ -34,6 +34,7 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 class ResourceVersionViewSet(viewsets.GenericViewSet):
     permission_classes = [GatewayRelatedAppPermission]
+    serializer_class = serializers.ReleaseV1SLZ
 
     @swagger_auto_schema(request_body=ResourceVersionInfoSLZ, tags=["OpenAPI.ResourceVersion"])
     @transaction.atomic
@@ -80,7 +81,7 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
     @swagger_auto_schema(tags=["OpenAPI.ResourceVersion"])
     @transaction.atomic
     def release(self, request, gateway_name: str, *args, **kwargs):
-        slz = serializers.ReleaseV1SLZ(data=request.data, context={"request": request})
+        slz = self.get_serializer(data=request.data, context={"request": request})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
