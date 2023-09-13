@@ -17,10 +17,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from ddf import G
 
 from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.biz.released_resource_doc import ReleasedResourceDocData
 from apigateway.biz.released_resource_doc.generators import DocGenerator
+from apigateway.core.models import Stage
 
 
 class TestDocGenerator:
@@ -28,9 +30,13 @@ class TestDocGenerator:
         resource_data = ReleasedResourceData.from_data(fake_released_resource.data)
         doc_data = ReleasedResourceDocData.from_data(fake_released_resource_doc.data)
 
+        stage_name = "prod"
+        # fake a stage with name => for get_resource_url_tmpl
+        G(Stage, gateway=fake_gateway, status=1, name=stage_name, description="fake description")
+
         generator = DocGenerator(
             gateway=fake_gateway,
-            stage_name="prod",
+            stage_name=stage_name,
             resource_data=resource_data,
             doc_data=doc_data,
             language="zh",
@@ -44,9 +50,13 @@ class TestDocGenerator:
         resource_data = ReleasedResourceData.from_data(fake_released_resource.data)
         doc_data = ReleasedResourceDocData.from_data(fake_released_resource_doc.data)
 
+        stage_name = "prod"
+        # fake a stage with name => for get_resource_url_tmpl
+        G(Stage, gateway=fake_gateway, status=1, name=stage_name, description="fake description")
+
         generator = DocGenerator(
             gateway=fake_gateway,
-            stage_name="prod",
+            stage_name=stage_name,
             resource_data=resource_data,
             doc_data=doc_data,
             language=language,

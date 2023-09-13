@@ -16,11 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from abc import ABCMeta
 from dataclasses import dataclass
 from typing import List
 
-from attrs import define
 from blue_krill.async_utils.django_utils import delay_on_commit
 from celery.canvas import group
 from django.utils.functional import cached_property
@@ -29,7 +27,6 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
-from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.validators import StageVarsValuesValidator
 from apigateway.common.audit.shortcuts import record_audit_log
@@ -65,36 +62,14 @@ class SharedMicroGatewayNotFound(Exception):
     """未找到共享微网关实例"""
 
 
-class GatewayReleaserFactory:
-    @classmethod
-    def get_releaser(
-        cls,
-        gateway: Gateway,
-        stage_ids: List[int],
-        resource_version_id: int,
-        comment: str,
-        access_token: str,
-        username: str = "",
-    ) -> "BaseGatewayReleaserHandler":
-        if gateway.is_micro_gateway:
-            return MicroGatewayReleaserHandler.from_data(
-                gateway, stage_ids, resource_version_id, comment, access_token, username
-            )
-
-        return DefaultGatewayReleaserHandler.from_data(
-            gateway, stage_ids, resource_version_id, comment, access_token, username
-        )
-
-
-# FIXME: this is not a good abstract template, should be refactored
 @dataclass
-class BaseGatewayReleaserHandler(metaclass=ABCMeta):
+class BaseGatewayReleaser:
     gateway: Gateway
     stages: List[Stage]
     resource_version: ResourceVersion
     comment: str = ""
-    username: str = ""
     access_token: str = ""
+    username: str = ""
 
     @classmethod
     def from_data(
@@ -108,57 +83,42 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
     ):
         """
         :param gateway: 待操作的网关
-        :param stage_ids: 发布的环境id列表
-        :param resource_version_id: 发布的版本id
+        :param stage_ids: 发布的环境 id 列表
+        :param resource_version_id: 发布的版本 id
         :param comment: 发布备注
         :param access_token: access_token
         :param username: 发布人
         """
-
         return cls(
             gateway=gateway,
             stages=list(Stage.objects.filter(id__in=stage_ids)),
             resource_version=ResourceVersion.objects.get(id=resource_version_id),
             comment=comment,
-            username=username,
             access_token=access_token,
+            username=username,
         )
 
-    def release_batch(self):
-        # 环境、部署信息校验
-        # 普通参数校验失败，不需要记录发布日志，环境参数校验失败，需记录发布日志
-        # 因此，将普通参数校验，环境参数校验分开处理
-
-        try:
-            self._validate()
-        except (ValidationError, ReleaseValidationError, NonRelatedMicroGatewayError) as err:
-            message = err.detail[0] if isinstance(err, ValidationError) else str(err)
-            history = ReleaseHandler.save_release_history_with_id(
-                gateway_id=self.gateway.id,
-                stage_id=self.stages[0].id,
-                resource_version_id=self.resource_version.id,
-                source=PublishSourceEnum.VERSION_PUBLISH,
-                author=self.username,
-            )
-            history.stages.set(self.stages)
-            # 上报发布校验失败事件: todo: 支持批量环境发布
-            PublishEventReporter.report_config_validate_fail_event(history, history.stage, message)
-            raise ReleaseError(message) from err
-        # save release history
-        history = ReleaseHandler.save_release_history_with_id(
+    def _save_release_history(self) -> ReleaseHistory:
+        history = ReleaseHistory.objects.create(
             gateway_id=self.gateway.id,
             stage_id=self.stages[0].id,
-            resource_version_id=self.resource_version.id,
             source=PublishSourceEnum.VERSION_PUBLISH,
-            author=self.username,
+            resource_version_id=self.resource_version.id,
+            comment=self.comment,
+            created_by=self.username,
         )
         history.stages.set(self.stages)
+        return history
 
-        PublishEventReporter.report_config_validate_success_event(history, history.stage)
+    def release(self):
+        self._pre_release()
 
-        release_instances = []
+        # save release history
+        history = self._save_release_history()
+        PublishEventReporter.report_config_validate_success_event(history)
 
         # save release
+        release_instances = []
         for stage in self.stages:
             # save release
             instance = Release.objects.save_release(
@@ -168,7 +128,6 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
                 comment=self.comment,
                 username=self.username,
             )
-
             release_instances.append(instance)
 
             # record audit log
@@ -186,13 +145,23 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
         # 批量发布，仅对微网关生效
         self._do_release(release_instances, history)
 
-        # 发布后，将环境状态更新为可用
-        self._activate_stages()
-
-        self._update_and_clear_released_resources()
-        self._update_and_clear_released_resource_docs()
+        self._post_release()
 
         return history
+
+    def _pre_release(self):
+        # 环境、部署信息校验
+        # 普通参数校验失败，不需要记录发布日志，环境参数校验失败，需记录发布日志
+        # 因此，将普通参数校验，环境参数校验分开处理
+        try:
+            self._validate()
+        except (ValidationError, ReleaseValidationError, NonRelatedMicroGatewayError) as err:
+            message = err.detail[0] if isinstance(err, ValidationError) else str(err)
+
+            # 上报发布校验失败事件：todo: 支持批量环境发布
+            history = self._save_release_history()
+            PublishEventReporter.report_config_validate_fail_event(history, message)
+            raise ReleaseError(message) from err
 
     def _validate(self):
         """校验待发布数据"""
@@ -226,15 +195,17 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
     def _do_release(self, releases: List[Release], release_history: ReleaseHistory):  # ruff: noqa: B027
         """发布资源版本"""
 
-    def _activate_stages(self):
+    def _post_release(self):
+        # 发布后，将环境状态更新为可用
+        # activate stages
         stage_ids = [stage.id for stage in self.stages]
         Stage.objects.filter(id__in=stage_ids).update(status=StageStatusEnum.ACTIVE.value)
 
-    def _update_and_clear_released_resources(self):
+        # update_and_clear_released_resources
         ReleasedResource.objects.save_released_resource(self.resource_version)
         ReleasedResourceHandler.clear_unreleased_resource(self.gateway.id)
 
-    def _update_and_clear_released_resource_docs(self):
+        # update_and_clear_released_resource_docs()
         resource_doc_version = ResourceDocVersion.objects.get_by_resource_version_id(
             self.gateway.id,
             self.resource_version.id,
@@ -243,16 +214,9 @@ class BaseGatewayReleaserHandler(metaclass=ABCMeta):
         ReleasedResourceDoc.objects.clear_unreleased_resource_doc(self.gateway.id)
 
 
+#
 @dataclass
-class DefaultGatewayReleaserHandler(BaseGatewayReleaserHandler):
-    """APIGateway 默认网关发布器"""
-
-    def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
-        """发布资源版本"""
-
-
-@dataclass
-class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
+class MicroGatewayReleaser(BaseGatewayReleaser):
     """微网关发布器"""
 
     @cached_property
@@ -305,7 +269,7 @@ class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
 
     def _create_release_task(self, release: Release, release_history: ReleaseHistory):
         # create publish event
-        PublishEventReporter.report_create_publish_task_doing_event(release_history, release.stage)
+        PublishEventReporter.report_create_publish_task_doing_event(release_history)
         # NOTE: 发布专享网关时，不再将资源同时发布到共享网关
         micro_gateway = release.stage.micro_gateway
         if not micro_gateway or micro_gateway.is_shared:
@@ -324,13 +288,15 @@ class MicroGatewayReleaserHandler(BaseGatewayReleaserHandler):
         delay_on_commit(group(*tasks))
 
 
-@define(slots=False)
-class ReleaseBatchHandler:
+class BatchReleaser:
     access_token: str = ""
 
-    def release_batch(
+    def __init__(self, access_token):
+        self.access_token = access_token
+
+    def release(
         self, gateway: Gateway, stage_ids: List[int], resource_version_id: int, comment: str, username: str = ""
-    ):
-        return GatewayReleaserFactory.get_releaser(
-            gateway, stage_ids, resource_version_id, comment, access_token=self.access_token, username=username
-        ).release_batch()
+    ) -> ReleaseHistory:
+        return MicroGatewayReleaser.from_data(
+            gateway, stage_ids, resource_version_id, comment, self.access_token, username
+        ).release()

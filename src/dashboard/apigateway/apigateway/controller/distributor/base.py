@@ -15,12 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 
 from apigateway.core.models import MicroGateway, Release
 
 
-class BaseDistributor:
+class BaseDistributor(ABC):
+    @abstractmethod
     def distribute(
         self,
         release: Release,
@@ -31,6 +33,7 @@ class BaseDistributor:
         """发布到微网关"""
         raise NotImplementedError()
 
+    @abstractmethod
     def revoke(
         self,
         release: Release,

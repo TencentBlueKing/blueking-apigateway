@@ -15,12 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from dataclasses import dataclass
 from typing import Any, ClassVar, Dict
 
-from attr import define
 
-
-@define(slots=False)
+@dataclass
 class PluginData:
     type_code: str
     config: Dict[str, Any]
@@ -35,7 +34,7 @@ class PluginData:
     @property
     def name(self) -> str:
         """
-        插件信息中, type_code 为插件类型，一般情况下，此即为插件名；
+        插件信息中，type_code 为插件类型，一般情况下，此即为插件名；
         但是，频率控制插件绑定到环境、资源时，使用了不同的插件，所以要做一下转换
         """
         return self._type_code_to_name.get(f"{self.type_code}:{self.binding_scope_type}", self.type_code)

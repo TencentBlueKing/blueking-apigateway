@@ -18,7 +18,6 @@
 #
 from typing import Any, Dict, List
 
-from attrs import define
 from django.db import transaction
 
 from apigateway.apps.esb.component.convertor import ComponentConvertor
@@ -29,7 +28,6 @@ from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.core.models import Gateway
 
 
-@define(slots=False)
 class ComponentSynchronizer:
     def get_importing_resources(self) -> List[Dict[str, Any]]:
         # 获取组件对应的资源配置

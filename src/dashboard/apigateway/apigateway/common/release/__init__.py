@@ -15,12 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import enum
-
-# 发布资源特殊 publish_id
-NO_NEED_REPORT_EVENT_PUBLISH_ID = -1
-DELETE_PUBLISH_ID = -2
-
-
-class MicroGatewayStatusCodeEnum(int, enum.Enum):
-    OK = 0

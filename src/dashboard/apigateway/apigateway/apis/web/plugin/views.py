@@ -29,7 +29,7 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyle
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
-from apigateway.controller.tasks.syncing import trigger_gateway_publish
+from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import OKJsonResponse, ResponseRender

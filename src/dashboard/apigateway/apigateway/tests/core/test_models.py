@@ -21,7 +21,7 @@ from django_dynamic_fixture import G
 
 from apigateway.biz.resource import ResourceHandler
 from apigateway.core import models
-from apigateway.core.constants import APIHostingTypeEnum, GatewayStatusEnum
+from apigateway.core.constants import GatewayStatusEnum
 
 pytestmark = pytest.mark.django_db
 
@@ -39,17 +39,6 @@ class TestAPI:
     def test_is_active_and_public(self, status, is_public, expected):
         gateway = G(models.Gateway, status=status, is_public=is_public)
         assert gateway.is_active_and_public == expected
-
-    @pytest.mark.parametrize(
-        "hosting_type, expected",
-        [
-            (APIHostingTypeEnum.DEFAULT.value, False),
-            (APIHostingTypeEnum.MICRO.value, True),
-        ],
-    )
-    def test_is_micro_gateway(self, hosting_type, expected):
-        gateway = G(models.Gateway, hosting_type=hosting_type)
-        assert gateway.is_micro_gateway is expected
 
 
 class TestResource:
