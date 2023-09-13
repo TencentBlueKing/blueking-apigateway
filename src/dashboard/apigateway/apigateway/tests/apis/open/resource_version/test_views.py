@@ -19,14 +19,13 @@
 import pytest
 from ddf import G
 
-from apigateway.apis.open.resource_version import views
 from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
 
 
-class TestResourceVersionViewSet:
+class TestResourceVersionListCreateApi:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self, mocker):
         mocker.patch(
@@ -34,7 +33,37 @@ class TestResourceVersionViewSet:
             return_value=True,
         )
 
-    def test_create(self, request_factory, fake_gateway, mocker):
+    def test_list(self, request_view, fake_resource_version):
+        fake_gateway = fake_resource_version.gateway
+        response = request_view(
+            "GET",
+            "openapi.resource_versions.list_create",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_name": fake_gateway.name,
+            },
+            data={
+                "version": fake_resource_version.version,
+            },
+        )
+        result = response.json()
+        assert result["data"]["count"] == 1
+
+        response = request_view(
+            "GET",
+            "openapi.resource_versions.list_create",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_name": fake_gateway.name,
+            },
+            data={
+                "version": fake_resource_version.version + "-not-exists",
+            },
+        )
+        result = response.json()
+        assert result["data"]["count"] == 0
+
+    def test_create(self, request_view, fake_gateway, mocker):
         mocker.patch(
             "apigateway.biz.resource_version.ResourceVersionHandler.make_version",
             return_value=[{"name": "test"}],
@@ -44,18 +73,26 @@ class TestResourceVersionViewSet:
             return_value=None,
         )
 
-        request = request_factory.post(
-            "",
+        resp = request_view(
+            method="POST",
+            view_name="openapi.resource_versions.list_create",
+            path_params={"gateway_name": fake_gateway.name},
             data={
                 "title": "test",
             },
+            gateway=fake_gateway,
         )
-        request.gateway = fake_gateway
-
-        view = views.ResourceVersionViewSet.as_view({"post": "create"})
-        response = view(request, fake_gateway.name)
-        result = get_response_json(response)
+        result = resp.json()
         assert result["code"] == 0
+
+
+class TestResourceVersionReleaseApi:
+    @pytest.fixture(autouse=True)
+    def setup_fixtures(self, mocker):
+        mocker.patch(
+            "apigateway.apis.open.resource_version.views.GatewayRelatedAppPermission.has_permission",
+            return_value=True,
+        )
 
     @pytest.mark.parametrize(
         "unreleased_stage_ids",
@@ -68,7 +105,7 @@ class TestResourceVersionViewSet:
             return_value=None,
         )
         mocker.patch(
-            "apigateway.apis.open.resource_version.serializers.ReleaseV1SLZ.to_internal_value",
+            "apigateway.apis.open.resource_version.serializers.ReleaseInputV1SLZ.to_internal_value",
             return_value={
                 "gateway": fake_gateway,
                 "stage_ids": [1, 2],
@@ -107,34 +144,3 @@ class TestResourceVersionViewSet:
 
         result = get_response_json(response)
         assert result["code"] == 0
-
-    def test_list(self, fake_resource_version, request_view):
-        fake_gateway = fake_resource_version.gateway
-
-        response = request_view(
-            "GET",
-            "openapi.resource_versions",
-            gateway=fake_gateway,
-            path_params={
-                "gateway_name": fake_gateway.name,
-            },
-            data={
-                "version": fake_resource_version.version,
-            },
-        )
-        result = response.json()
-        assert result["data"]["count"] == 1
-
-        response = request_view(
-            "GET",
-            "openapi.resource_versions",
-            gateway=fake_gateway,
-            path_params={
-                "gateway_name": fake_gateway.name,
-            },
-            data={
-                "version": fake_resource_version.version + "-not-exists",
-            },
-        )
-        result = response.json()
-        assert result["data"]["count"] == 0

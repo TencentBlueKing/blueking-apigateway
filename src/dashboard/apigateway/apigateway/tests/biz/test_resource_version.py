@@ -21,6 +21,7 @@ import json
 
 import pytest
 from django_dynamic_fixture import G
+from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
@@ -209,6 +210,37 @@ class TestResourceVersionHandler:
         resource_version_3 = G(ResourceVersion, gateway=fake_gateway, version="2.0.0", created_time=now_datetime())
         result = ResourceVersionHandler.get_latest_version_by_gateway(fake_gateway.id)
         assert result == resource_version_3.version
+
+    def test_get_resource_version_id_by_name(self, mocker, faker, fake_gateway):
+        id_ = faker.pyint(min_value=1)
+        mocker.patch(
+            "apigateway.biz.resource_version.ResourceVersion.objects.get_id_by_name",
+            return_value=id_,
+        )
+        assert ResourceVersionHandler.get_resource_version_id_by_name(fake_gateway, faker.pystr()) == id_
+
+        mocker.patch(
+            "apigateway.biz.resource_version.ResourceVersion.objects.get_id_by_name",
+            return_value=None,
+        )
+        with pytest.raises(ValidationError):
+            ResourceVersionHandler.get_resource_version_id_by_name(fake_gateway, faker.pystr())
+
+    def test_get_resource_version_id_by_version(self, mocker, faker, fake_gateway):
+
+        id_ = faker.pyint(min_value=1)
+        mocker.patch(
+            "apigateway.biz.resource_version.ResourceVersion.objects.get_id_by_version",
+            return_value=id_,
+        )
+        assert ResourceVersionHandler.get_resource_version_id_by_version(fake_gateway, faker.pystr()) == id_
+
+        mocker.patch(
+            "apigateway.biz.resource_version.ResourceVersion.objects.get_id_by_version",
+            return_value=None,
+        )
+        with pytest.raises(ValidationError):
+            ResourceVersionHandler.get_resource_version_id_by_version(fake_gateway, faker.pystr())
 
 
 class TestResourceDocVersionHandler:

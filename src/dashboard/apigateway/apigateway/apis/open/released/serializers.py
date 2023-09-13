@@ -33,14 +33,14 @@ class ResourceV1SLZ(serializers.Serializer):
     path = serializers.CharField()
 
 
-class ReleasedResourceSLZ(serializers.Serializer):
+class ReleasedResourceOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     method = serializers.CharField(read_only=True)
     path = serializers.CharField(read_only=True)
 
 
-class ReleasedResourceListV1SLZ(ResourceV1SLZ):
+class ReleasedResourceListOutputV1SLZ(ResourceV1SLZ):
     app_verified_required = serializers.BooleanField()
     resource_perm_required = serializers.BooleanField()
     user_verified_required = serializers.BooleanField()
@@ -51,7 +51,7 @@ class ReleasedResourceListV1SLZ(ResourceV1SLZ):
         return self.context["resource_labels"].get(obj["id"], [])
 
 
-class ListReleasedResourceV2SLZ(ResourceV1SLZ):
+class ListReleasedResourceInputV2SLZ(ResourceV1SLZ):
     app_verified_required = serializers.BooleanField()
     resource_perm_required = serializers.BooleanField()
     user_verified_required = serializers.BooleanField()

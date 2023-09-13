@@ -17,8 +17,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.db import transaction
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
+from rest_framework import generics, status
 
 from apigateway.apis.open.resource_version import serializers
 from apigateway.apis.web.resource_version.serializers import ResourceVersionInfoSLZ
@@ -29,13 +30,37 @@ from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ResourceVersion, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
-class ResourceVersionViewSet(viewsets.GenericViewSet):
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
+        tags=["OpenAPI.ResourceVersion"],
+    ),
+)
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        request_body=ResourceVersionInfoSLZ,
+        tags=["OpenAPI.ResourceVersion"],
+    ),
+)
+class ResourceVersionListCreateApi(generics.ListCreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
 
-    @swagger_auto_schema(request_body=ResourceVersionInfoSLZ, tags=["OpenAPI.ResourceVersion"])
+    def list(self, request, *args, **kwargs):
+        slz = serializers.QueryResourceVersionInputV1SLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        versions = ResourceVersion.objects.filter_objects_fields(
+            gateway_id=self.request.gateway.id,
+            version=slz.validated_data.get("version"),
+        )
+        page = self.paginate_queryset(versions)
+        slz = serializers.ListResourceVersionOutputV1SLZ(page, many=True)
+        return V1OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+
     @transaction.atomic
     def create(self, request, gateway_name: str, *args, **kwargs):
         # manager = ResourceVersionManager()
@@ -60,27 +85,14 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
             },
         )
 
-    @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
-        responses={status.HTTP_200_OK: ""},
-        tags=["OpenAPI.ResourceVersion"],
-    )
-    def list(self, request, *args, **kwargs):
-        slz = serializers.QueryResourceVersionV1SLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
 
-        versions = ResourceVersion.objects.filter_objects_fields(
-            gateway_id=self.request.gateway.id,
-            version=slz.validated_data.get("version"),
-        )
-        page = self.paginate_queryset(versions)
-        slz = serializers.ListResourceVersionV1SLZ(page, many=True)
-        return V1OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+class ResourceVersionReleaseApi(generics.CreateAPIView):
+    permission_classes = [GatewayRelatedAppPermission]
 
     @swagger_auto_schema(tags=["OpenAPI.ResourceVersion"])
     @transaction.atomic
-    def release(self, request, gateway_name: str, *args, **kwargs):
-        slz = serializers.ReleaseV1SLZ(data=request.data, context={"request": request})
+    def post(self, request, gateway_name: str, *args, **kwargs):
+        slz = serializers.ReleaseInputV1SLZ(data=request.data, context={"request": request})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -123,8 +135,12 @@ class ResourceVersionViewSet(viewsets.GenericViewSet):
             },
         )
 
+
+class ResourceVersionGetLatestApi(generics.RetrieveAPIView):
+    permission_classes = [GatewayRelatedAppPermission]
+
     @swagger_auto_schema(tags=["OpenAPI.ResourceVersion"])
-    def latest(self, request, gateway_name: str, *args, **kwargs):
+    def get(self, request, gateway_name: str, *args, **kwargs):
         resource_version = ResourceVersion.objects.get_latest_version(request.gateway.id)
 
         if not resource_version:

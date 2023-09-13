@@ -17,9 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from django.db import transaction
+from django.utils.translation import gettext as _
+from rest_framework import serializers
 
 from apigateway.biz.release import ReleaseHandler
 from apigateway.controller.tasks.syncing import trigger_gateway_publish
@@ -177,3 +179,20 @@ class StageHandler:
                 result[id_] = micro_gateway_id_to_fields.get(micro_gateway_id)
 
         return result
+
+    @staticmethod
+    def get_stage_ids(gateway, stage_names: List[str]) -> List[int]:
+        name_to_id_map = Stage.objects.get_name_id_map(gateway)
+
+        # 如果未指定 stage_names，则默认处理网关下所有环境
+        if not stage_names:
+            return list(name_to_id_map.values())
+
+        stage_ids = set()
+        for stage_name in stage_names:
+            if stage_name not in name_to_id_map:
+                raise serializers.ValidationError(
+                    {"stage_names": _("环境【{stage_name}】不存在。").format(stage_name=stage_name)}
+                )
+            stage_ids.add(name_to_id_map[stage_name])
+        return list(stage_ids)

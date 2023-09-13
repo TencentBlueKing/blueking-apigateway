@@ -249,6 +249,14 @@ class ResourceVersionHandler:
     def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:
         return ResourceVersion.objects.filter(gateway_id=gateway_id).values_list("created_time", flat=True).last()
 
+    @staticmethod
+    def get_resource_version_id_by_version(gateway, version: str) -> int:
+        return ResourceVersion.objects.get_id_by_version(gateway.id, version)
+
+    @staticmethod
+    def get_resource_version_id_by_name(gateway, resource_version_name: str) -> int:
+        return ResourceVersion.objects.get_id_by_name(gateway, resource_version_name)
+
 
 class ResourceDocVersionHandler:
     @staticmethod
