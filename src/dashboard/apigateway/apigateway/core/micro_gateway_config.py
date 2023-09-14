@@ -15,14 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, Type, TypeVar
 from urllib.parse import urlparse
 
-import cattr
 from django.utils.functional import cached_property
-
-# FIXME: use the pydantic, remove cattr
 
 
 class MicroGatewayConfigStructureMixin:
@@ -30,10 +27,11 @@ class MicroGatewayConfigStructureMixin:
 
     @classmethod
     def from_micro_gateway_config(cls: Type["T"], config: Dict[str, Any]) -> "T":
-        return cattr.structure(config.get(cls._micro_gateway_config_key) or {}, cls)
+        data = config.get(cls._micro_gateway_config_key) or {}
+        return cls(**data)
 
     def to_micro_gateway_config(self) -> Dict[str, Any]:
-        return {self._micro_gateway_config_key: cattr.unstructure(self)}
+        return {self._micro_gateway_config_key: asdict(self)}
 
 
 T = TypeVar("T", bound=MicroGatewayConfigStructureMixin)

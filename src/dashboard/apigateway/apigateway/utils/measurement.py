@@ -16,10 +16,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+from dataclasses import asdict, dataclass, field, fields
 from enum import Enum
 from typing import ClassVar, Generic, Optional, Set, Type, TypeVar
 
-from attrs import asdict, define, field, fields
 from django.utils.encoding import smart_str
 from redis import Redis
 
@@ -28,25 +28,40 @@ from apigateway.utils.redis_utils import get_default_redis_client, get_redis_key
 logger = logging.getLogger(__name__)
 
 
-@define(slots=False)
+def custom_asdict_factory(data):
+    def convert_value(obj):
+        if isinstance(obj, Enum):
+            return obj.value
+        return obj
+
+    return {k: convert_value(v) for k, v in data}
+
+
+@dataclass
 class MeasurementPoint:
     measurement: ClassVar[str]
-    name: str = field(converter=smart_str)  # type: ignore
-    timestamp: int = field(converter=int)
+    name: str
+    timestamp: int
+
+    def __post_init__(self):
+        if not isinstance(self.name, str):
+            self.name = smart_str(self.name)
+        if not isinstance(self.timestamp, int):
+            self.timestamp = int(self.timestamp)
 
 
 T = TypeVar("T", bound=MeasurementPoint)
 
 
-@define(slots=False)
+@dataclass
 class Measurement(Generic[T]):
     """Measurement is a collection of metrics."""
 
     point_type: Type[T]
-    client: Redis = field(factory=get_default_redis_client)
-    _available_fields: Set[str] = field(factory=set)
+    client: Redis = field(default_factory=get_default_redis_client)
+    _available_fields: Set[str] = field(default_factory=set)
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         self._available_fields.update(i.name for i in fields(self.point_type))
 
     def _get_key(self, name: str):
@@ -55,17 +70,11 @@ class Measurement(Generic[T]):
 
         return get_redis_key(f"{self.point_type.measurement}:{name}")
 
-    def _enum_serializer(self, sender, attr, value):
-        if isinstance(value, Enum):
-            return value.value
-
-        return value
-
     def update(self, point: T):
         """Update metrics."""
         values = asdict(
             point,
-            value_serializer=self._enum_serializer,
+            dict_factory=custom_asdict_factory,
         )
 
         self.client.hmset(self._get_key(point.name), values)  # type: ignore
