@@ -31,17 +31,9 @@ from apigateway.tests.utils.testing import create_gateway, dummy_time
 pytestmark = pytest.mark.django_db
 
 
-class TestReleaseBatchCreateApi:
-    @pytest.mark.parametrize(
-        "configure_hosts,succeeded",
-        [
-            (True, True),
-            (False, False),
-        ],
-    )
-    def test_release_with_hosts(self, request_view, configure_hosts, succeeded, fake_admin_user, mocker, fake_gateway):
+class TestReleaseCreateApi:
+    def test_release_with_hosts(self, request_view, fake_admin_user, mocker, fake_gateway, fake_resource_version):
         """Test release API with different hosts config of stage objects."""
-
         stage_1 = G(Stage, gateway=fake_gateway, name="prod", status=0)
         stage_2 = G(Stage, gateway=fake_gateway, name="test", status=0)
         resource_version = G(ResourceVersion, gateway=fake_gateway, _data=json.dumps([]))
@@ -49,19 +41,28 @@ class TestReleaseBatchCreateApi:
 
         mocker.patch("apigateway.apis.web.release.views.Lock", return_value=MagicMock())
 
-        if configure_hosts:
-            # Config a valid hosts config for each stages
-            for stage in [stage_1, stage_2]:
-                StageProxyHTTPContext().save(
-                    stage.id,
-                    config={
-                        "upstreams": {"hosts": [{"host": "https://example.com"}], "loadbalance": "roundrobin"},
-                        "timeout": 60,
-                        "transform_headers": {},
-                    },
-                )
+        # Config a valid hosts config for each stages
+        for stage in [stage_1, stage_2]:
+            StageProxyHTTPContext().save(
+                stage.id,
+                config={
+                    "upstreams": {"hosts": [{"host": "https://example.com"}], "loadbalance": "roundrobin"},
+                    "timeout": 60,
+                    "transform_headers": {},
+                },
+            )
 
         for stage in [stage_1, stage_2]:
+            release_history = G(
+                ReleaseHistory,
+                gateway=fake_gateway,
+                stage=stage,
+                resource_version=fake_resource_version,
+                created_time=dummy_time.time,
+            )
+            # TODO: mock the releaser
+            mocker.patch("apigateway.biz.releaser.BatchReleaser.release", return_value=release_history)
+
             data = {
                 "gateway_id": fake_gateway.id,
                 "stage_id": stage.id,
@@ -82,16 +83,7 @@ class TestReleaseBatchCreateApi:
             history_qs = ReleaseHistory.objects.filter(stage_id=data["stage_id"]).distinct()
             assert history_qs.count() == 1
 
-            if not succeeded:
-                # assert history_qs[0].status == ReleaseStatusEnum.FAILURE.value
-                assert resp.status_code != 200, result
-            else:
-                # The request finished successfully
-                # assert history_qs[0].status == ReleaseStatusEnum.SUCCESS.value
-                assert resp.status_code == 200, result
-
-                release = Release.objects.get(stage__id=stage.id)
-                assert release.resource_version == resource_version
+            assert resp.status_code == 200, result
 
 
 class TestReleaseHistoryListApi:

@@ -30,7 +30,6 @@ from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ReleasedResource
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import V1OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
 class ReleasedResourceViewSet(viewsets.ModelViewSet):
@@ -60,7 +59,6 @@ class ReleasedResourceViewSet(viewsets.ModelViewSet):
         return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: serializers.ReleasedResourceListV1SLZ(many=True)},
         tags=["OpenAPI.Resource"],
     )
@@ -85,7 +83,6 @@ class ReleasedResourceViewSet(viewsets.ModelViewSet):
         return V1OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         responses={status.HTTP_200_OK: serializers.ListReleasedResourceV2SLZ(many=True)},
         tags=["OpenAPI.Resource"],
     )

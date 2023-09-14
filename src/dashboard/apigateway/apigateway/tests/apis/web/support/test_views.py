@@ -68,8 +68,6 @@ class TestAPISDKListCreateApi:
                 },
                 "expected": {
                     "count": 2,
-                    "has_next": False,
-                    "has_previous": False,
                     "results": [
                         {
                             "config": {"is_uploaded_to_pypi": False},

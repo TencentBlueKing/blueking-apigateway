@@ -16,9 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+from dataclasses import dataclass, field
 from typing import Iterable, List, Optional
-
-from attr import define, field
 
 from apigateway.controller.crds.base import KubernetesResource
 from apigateway.controller.crds.release_data.release_data import ReleaseData
@@ -37,11 +36,11 @@ from apigateway.core.models import MicroGateway, Release
 logger = logging.getLogger(__name__)
 
 
-@define(slots=False)
+@dataclass
 class CustomResourceConvertor:
     """网关自定义资源转换器"""
 
-    # 为何 Covertor 需要一个中间的 registry？
+    # 为何 Convertor 需要一个中间的 registry？
     # 1. registry 抽象可以让 Convertor 不耦合任何具体类型
     # 2. 转换过程中可以通过 registry 来查询确保引用正确（如 BkgatewayResource.service 字段）
 
@@ -57,7 +56,7 @@ class CustomResourceConvertor:
     revoke_flag: Optional[bool] = field(default=False)
     # 包含哪些资源的开关
     include_config: bool = field(default=True)
-    # 默认包含stage资源，调用方不需要传
+    # 默认包含 stage 资源，调用方不需要传
     include_stage: bool = field(default=True)
     include_http_resource: bool = field(default=True)
     include_service: bool = field(default=True)
@@ -65,11 +64,11 @@ class CustomResourceConvertor:
     # 转换后的资源
     _gateway_config: Optional[BkGatewayConfig] = field(init=False, default=None)
     _stage: Optional[BkGatewayStage] = field(init=False, default=None)
-    _services: List[BkGatewayService] = field(init=False, default=list)
-    _http_resources: List[BkGatewayResource] = field(init=False, default=list)
-    _plugin_metadata: List[BkGatewayPluginMetadata] = field(init=False, default=list)
+    _services: List[BkGatewayService] = field(init=False, default_factory=list)
+    _http_resources: List[BkGatewayResource] = field(init=False, default_factory=list)
+    _plugin_metadata: List[BkGatewayPluginMetadata] = field(init=False, default_factory=list)
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         self._release_data = ReleaseData(self.release)
 
     def convert(self):

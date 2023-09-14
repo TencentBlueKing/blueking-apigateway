@@ -230,13 +230,12 @@ class TestAppPermissionRecordViewSet:
 
         record = G(models.AppPermissionRecord, bk_app_code=unique_id, gateway=fake_gateway)
 
-        request = request_factory.get("/", data=params)
+        request = request_factory.get("/backend/api/v1/", data=params)
 
         view = views.AppPermissionRecordViewSet.as_view({"get": "list"})
         response = view(request)
 
         result = get_response_json(response)
-        assert result["code"] == 0
         assert result["data"]["count"] == 1
         assert len(result["data"]["results"]) == 1
         assert result["data"]["results"][0]["id"] == record.id

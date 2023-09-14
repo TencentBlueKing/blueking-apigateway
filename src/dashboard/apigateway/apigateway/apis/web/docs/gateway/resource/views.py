@@ -24,7 +24,6 @@ from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
 
@@ -32,7 +31,6 @@ from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=ResourceListInputSLZ,
         responses={status.HTTP_200_OK: ResourceOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Resource"],

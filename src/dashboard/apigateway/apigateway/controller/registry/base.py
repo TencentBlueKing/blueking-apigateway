@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+from abc import ABC, abstractmethod
 from typing import ClassVar, Iterable, List, Type
 
 from apigateway.controller.crds.base import KubernetesResource
@@ -23,8 +24,7 @@ from apigateway.controller.crds.base import KubernetesResource
 logger = logging.getLogger(__name__)
 
 
-# FIXME: should be a abstract class !
-class Registry:
+class Registry(ABC):
     """配置注册中心，本质上是一个 KV 结构的存储，可以同时存储多种类型的资源，并可以进行迭代，修改和查询等操作"""
 
     registry_type: ClassVar[str]
@@ -36,10 +36,12 @@ class Registry:
         # key_prefix 应以 / 结尾，防止筛选数据出现错误；如 key_prefix 为 /foo 时，不应该过滤出 /foo2 的数据
         self.key_prefix = key_prefix if key_prefix.endswith("/") else f"{key_prefix}/"
 
+    @abstractmethod
     def apply_resource(self, resource: KubernetesResource) -> bool:
         """写入资源"""
         raise NotImplementedError()
 
+    @abstractmethod
     def sync_resources_by_key_prefix(self, resources: List[KubernetesResource]) -> List[KubernetesResource]:
         """按 key_prefix 同步资源，若 key_prefix 下的资源不在待同步资源列表中，将被删除
 
@@ -47,10 +49,12 @@ class Registry:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     def delete_resources_by_key_prefix(self):
         """删除 key_prefix 下的所有资源"""
         raise NotImplementedError()
 
+    @abstractmethod
     def iter_by_type(self, resource_type: Type[KubernetesResource]) -> Iterable[KubernetesResource]:
         """获取 key_prefix 下，指定类型的资源"""
         raise NotImplementedError()

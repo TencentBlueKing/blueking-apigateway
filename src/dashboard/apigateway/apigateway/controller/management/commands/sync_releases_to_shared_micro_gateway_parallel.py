@@ -21,7 +21,7 @@ from typing import List, Optional
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apigateway.controller.tasks import syncing
+from apigateway.common.release import publish
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Gateway
 
@@ -37,7 +37,7 @@ def sync_gateway(gateway):
     connection.close()
 
     print(f"syncing release for gateway {gateway.name} ...")
-    ok = syncing.trigger_gateway_publish(PublishSourceEnum.CLI_SYNC, author="cli", gateway_id=gateway.id, is_sync=True)
+    ok = publish.trigger_gateway_publish(PublishSourceEnum.CLI_SYNC, author="cli", gateway_id=gateway.id, is_sync=True)
     if not ok:
         print(f"[ERROR] syncing release for gateway {gateway.name} failed")
         return gateway.name

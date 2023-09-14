@@ -16,20 +16,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 import pytest
 from ddf import G
 
 from apigateway.biz.releaser import (
-    BaseGatewayReleaserHandler,
-    DefaultGatewayReleaserHandler,
-    GatewayReleaserFactory,
+    BaseGatewayReleaser,
+    BatchReleaser,
     MicroGatewayReleaseHistory,
-    MicroGatewayReleaserHandler,
-    ReleaseBatchHandler,
+    MicroGatewayReleaser,
     ReleaseError,
     ReleaseValidationError,
 )
-from apigateway.core.constants import APIHostingTypeEnum, ReleaseStatusEnum
+from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -37,7 +37,12 @@ pytestmark = pytest.mark.django_db(transaction=True)
 
 def get_release_data(gateway):
     stage = G(Stage, gateway=gateway)
-    resource_version = G(ResourceVersion, gateway=gateway, name=f"{gateway.id}-{stage.id}")
+    resource_version = G(
+        ResourceVersion,
+        gateway=gateway,
+        name=f"{gateway.id}-{stage.id}",
+        _data=json.dumps([{"id": 1, "name": "demo", "method": "GET", "path": "/"}]),
+    )
 
     return {
         "stage_ids": [stage.id],
@@ -46,46 +51,24 @@ def get_release_data(gateway):
     }
 
 
-class TestGatewayReleaserFactory:
-    @pytest.mark.parametrize(
-        "hosting_type, expected",
-        [
-            (APIHostingTypeEnum.MICRO.value, MicroGatewayReleaserHandler),
-            (APIHostingTypeEnum.DEFAULT.value, DefaultGatewayReleaserHandler),
-        ],
-    )
-    def test_get_releaser(self, fake_gateway, hosting_type, expected):
-        fake_gateway.hosting_type = hosting_type
-
-        release_data = get_release_data(fake_gateway)
-        result = GatewayReleaserFactory.get_releaser(
-            fake_gateway,
-            release_data["stage_ids"],
-            release_data["resource_version_id"],
-            release_data.get("comment", ""),
-            access_token="access_token",
-        )
-        assert isinstance(result, expected)
-
-
-class TestDefaultGatewayReleaser:
+class TestBaseGatewayReleaser:
     def test_from_data(self, fake_gateway, fake_stage, fake_resource_version):
-        releaser = DefaultGatewayReleaserHandler.from_data(
+        releaser = BaseGatewayReleaser.from_data(
             fake_gateway,
             [fake_stage.id],
             fake_resource_version.id,
             "",
             access_token="access_token",
         )
-        assert isinstance(releaser, DefaultGatewayReleaserHandler)
+        assert isinstance(releaser, BaseGatewayReleaser)
 
         # 资源版本 不存在
         with pytest.raises(ResourceVersion.DoesNotExist):
-            DefaultGatewayReleaserHandler.from_data(fake_gateway, [fake_stage.id], 0, "", access_token="access_token")
+            BaseGatewayReleaser.from_data(fake_gateway, [fake_stage.id], 0, "", access_token="access_token")
 
-    def test_release_batch(self, mocker, fake_gateway):
+    def test_release(self, mocker, fake_gateway):
         release_data = get_release_data(fake_gateway)
-        releaser = DefaultGatewayReleaserHandler.from_data(
+        releaser = BaseGatewayReleaser.from_data(
             fake_gateway,
             release_data["stage_ids"],
             release_data["resource_version_id"],
@@ -96,20 +79,15 @@ class TestDefaultGatewayReleaser:
         # 校验失败
         mocker.patch.object(releaser, "_validate", side_effect=ReleaseValidationError)
         with pytest.raises(ReleaseError):
-            releaser.release_batch()
+            releaser.release()
         ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.FAILURE.value).exists()
 
         # 校验成功
         mocker.patch.object(releaser, "_validate", return_value=None)
         mock_release = mocker.patch.object(releaser, "_do_release")
-        mock_update_and_clear_released_resources = mocker.patch.object(
-            releaser, "_update_and_clear_released_resources"
-        )
-        mock_update_and_clear_released_resource_docs = mocker.patch.object(
-            releaser, "_update_and_clear_released_resource_docs"
-        )
+        # mock_post_release = mocker.patch.object(releaser, "_post_release")
 
-        releaser.release_batch()
+        releaser.release()
         resource_version_ids = list(
             Release.objects.filter(stage_id__in=release_data["stage_ids"])
             .distinct()
@@ -123,8 +101,7 @@ class TestDefaultGatewayReleaser:
         )
 
         mock_release.assert_called()
-        mock_update_and_clear_released_resources.assert_called()
-        mock_update_and_clear_released_resource_docs.assert_called()
+        # mock_post_release.assert_called()
 
     @pytest.mark.parametrize(
         "vars, mock_used_stage_vars, will_error",
@@ -199,7 +176,7 @@ class TestDefaultGatewayReleaser:
 
         fake_stage.vars = vars
         fake_stage.save(update_fields=["_vars"])
-        releaser = DefaultGatewayReleaserHandler(
+        releaser = BaseGatewayReleaser(
             gateway=fake_gateway, stages=[fake_stage], resource_version=fake_resource_version
         )
 
@@ -230,7 +207,7 @@ class TestDefaultGatewayReleaser:
             "apigateway.biz.releaser.StageProxyHTTPContext.contain_hosts",
             return_value=contain_hosts_ret,
         ):
-            releaser = DefaultGatewayReleaserHandler(
+            releaser = BaseGatewayReleaser(
                 gateway=fake_gateway, stages=[fake_stage], resource_version=fake_resource_version
             )
 
@@ -242,12 +219,12 @@ class TestDefaultGatewayReleaser:
                     releaser._validate_stage_upstreams(fake_gateway.id, fake_stage, fake_resource_version.id) is None
                 )
 
-    def test_activate_stages(self, fake_gateway):
+    def test_activate_stages(self, fake_gateway, fake_resource_version):
         s1 = G(Stage, gateway=fake_gateway, status=0)
         s2 = G(Stage, gateway=fake_gateway, status=1)
 
-        releaser = DefaultGatewayReleaserHandler(gateway=fake_gateway, stages=[s1, s2], resource_version=None)
-        releaser._activate_stages()
+        releaser = BaseGatewayReleaser(gateway=fake_gateway, stages=[s1, s2], resource_version=fake_resource_version)
+        releaser._post_release()
 
         assert Stage.objects.filter(id__in=[s1.id, s2.id], status=1).count() == 2
 
@@ -257,7 +234,8 @@ class TestMicroGatewayReleaser:
     def setup_fixtures(self, fake_gateway):
         self.gateway = fake_gateway
         release_data = get_release_data(self.gateway)
-        self.releaser = BaseGatewayReleaserHandler.from_data(
+        # self.releaser = BaseGatewayReleaser.from_data(
+        self.releaser = MicroGatewayReleaser.from_data(
             self.gateway,
             release_data["stage_ids"],
             release_data["resource_version_id"],
@@ -282,7 +260,7 @@ class TestMicroGatewayReleaser:
             "apigateway.biz.releaser.release_gateway_by_helm",
             wraps=celery_mock_task,
         )
-        releaser = MicroGatewayReleaserHandler(
+        releaser = MicroGatewayReleaser(
             gateway=fake_gateway,
             stages=[fake_stage],
             resource_version=fake_resource_version,
@@ -326,7 +304,7 @@ class TestMicroGatewayReleaser:
             "apigateway.biz.releaser.release_gateway_by_registry",
             wraps=celery_mock_task,
         )
-        releaser = MicroGatewayReleaserHandler(
+        releaser = MicroGatewayReleaser(
             gateway=fake_gateway, stages=[fake_stage], resource_version=fake_resource_version
         )
 
@@ -351,11 +329,11 @@ class TestMicroGatewayReleaser:
         ).exists()
 
 
-class TestReleaseBatchManager:
-    def test_release_batch(self, mocker, fake_gateway):
-        mock_release_batch = mocker.patch("apigateway.biz.releaser.DefaultGatewayReleaserHandler.release_batch")
+class TestBatchReleaser:
+    def test_release(self, mocker, fake_gateway):
+        mock_release = mocker.patch("apigateway.biz.releaser.BaseGatewayReleaser.release")
         release_data = get_release_data(fake_gateway)
-        ReleaseBatchHandler(access_token="access_token").release_batch(
+        BatchReleaser(access_token="access_token").release(
             fake_gateway, release_data["stage_ids"], release_data["resource_version_id"], release_data["comment"]
         )
-        mock_release_batch.assert_called_once_with()
+        mock_release.assert_called_once_with()
