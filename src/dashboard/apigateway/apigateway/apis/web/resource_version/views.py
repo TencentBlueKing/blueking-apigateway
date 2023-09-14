@@ -18,7 +18,6 @@
 #
 
 from django.db import transaction
-from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -179,14 +178,10 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
         source_resource_data = ResourceVersionHandler.get_data_by_id_or_new(
             request.gateway, data.get("source_resource_version_id")
         )
-        if not source_resource_data:
-            raise Http404
 
         target_resource_data = ResourceVersionHandler.get_data_by_id_or_new(
             request.gateway, data.get("target_resource_version_id")
         )
-        if not target_resource_data:
-            raise Http404
 
         return OKJsonResponse(
             data=ResourceDifferHandler.diff_resource_version_data(
