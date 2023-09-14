@@ -67,7 +67,7 @@ class PublishEventReporter:
         dashboard 配置参数校验成功事件上报
         """
         name = PublishEventNameTypeEnum.VALIDATE_CONFIGURATION
-        status = PublishEventStatusTypeEnum.DOING
+        status = PublishEventStatusTypeEnum.SUCCESS
         detail = None
 
         cls._report_event(publish, name, status, detail)
@@ -78,7 +78,7 @@ class PublishEventReporter:
         dashboard 配置参数校验失败事件上报
         """
         name = PublishEventNameTypeEnum.VALIDATE_CONFIGURATION
-        status = PublishEventStatusTypeEnum.DOING
+        status = PublishEventStatusTypeEnum.FAILURE
         detail = {
             "err_msg": msg,
         }

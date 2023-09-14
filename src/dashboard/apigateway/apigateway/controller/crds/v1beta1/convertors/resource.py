@@ -85,7 +85,7 @@ class HttpResourceConvertor(BaseConvertor):
 
         resource_proxy = json.loads(resource["proxy"]["config"])
 
-        backend_id = resource["proxy"]["backend_id"]
+        backend_id = resource["proxy"].get("backend_id", 0)
 
         service_name = ""
         upstream = self._convert_http_resource_upstream(resource_proxy, backend_id)
