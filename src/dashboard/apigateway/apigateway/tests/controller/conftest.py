@@ -23,6 +23,7 @@ from ddf import G
 from pytest import fixture
 
 from apigateway.apps.plugin.models import PluginConfig, PluginType
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import StageProxyHTTPContext
@@ -37,17 +38,17 @@ from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvert
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
 from apigateway.controller.registry.dict import DictRegistry
 from apigateway.core.constants import APIHostingTypeEnum, ProxyTypeEnum, StageStatusEnum
-from apigateway.core.models import JWT, MicroGateway, Release, ResourceVersion
+from apigateway.core.models import MicroGateway, Release, ResourceVersion
 from apigateway.utils.yaml import yaml_dumps
 
 
 @fixture
-def edge_gateway(faker, fake_gateway):
+def edge_gateway(fake_gateway):
     fake_gateway.hosting_type = APIHostingTypeEnum.MICRO.value
     fake_gateway.is_public = True
     fake_gateway.save()
 
-    JWT.objects.create_jwt(fake_gateway)
+    GatewayJWTHandler.create_jwt(fake_gateway)
 
     return fake_gateway
 

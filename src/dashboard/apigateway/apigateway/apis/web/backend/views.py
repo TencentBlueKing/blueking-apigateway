@@ -24,9 +24,10 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.biz.backend import BackendHandler
+from apigateway.biz.proxy import ProxyHandler
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
-from apigateway.core.models import Backend, BackendConfig, Proxy
+from apigateway.core.models import Backend, BackendConfig
 from apigateway.utils.responses import OKJsonResponse
 
 from .filters import BackendFilter
@@ -66,13 +67,13 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
         if page is not None:
             backend_ids = [backend.id for backend in page]
             serializer = BackendListOutputSLZ(
-                page, many=True, context={"resource_count": Proxy.objects.get_backend_resource_count(backend_ids)}
+                page, many=True, context={"resource_count": ProxyHandler.get_resource_count_by_backend(backend_ids)}
             )
             return self.get_paginated_response(serializer.data)
 
         backend_ids = [backend.id for backend in queryset]
         serializer = BackendListOutputSLZ(
-            page, many=True, context={"resource_count": Proxy.objects.get_backend_resource_count(backend_ids)}
+            page, many=True, context={"resource_count": ProxyHandler.get_resource_count_by_backend(backend_ids)}
         )
         return OKJsonResponse(data=serializer.data)
 

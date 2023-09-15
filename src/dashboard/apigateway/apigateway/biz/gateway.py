@@ -29,6 +29,8 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
+from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.iam import IAMHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.audit.shortcuts import record_audit_log
@@ -36,8 +38,6 @@ from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagCon
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import (
-    JWT,
-    APIRelatedApp,
     Backend,
     BackendConfig,
     Context,
@@ -55,6 +55,13 @@ from .stage import StageHandler
 
 
 class GatewayHandler:
+    @staticmethod
+    def get_gateways_by_user(username: str) -> List[Gateway]:
+        """获取用户有权限的的网关列表"""
+        # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
+        queryset = Gateway.objects.filter(_maintainers__contains=username)
+        return [gateway for gateway in queryset if gateway.has_permission(username)]
+
     @staticmethod
     def get_stages_with_release_status(gateway_ids: List[int]) -> Dict[int, list]:
         """
@@ -165,7 +172,7 @@ class GatewayHandler:
 
         # 2. save jwt
 
-        JWT.objects.create_jwt(gateway)
+        GatewayJWTHandler.create_jwt(gateway)
 
         # 3. create default stage
 
@@ -177,7 +184,7 @@ class GatewayHandler:
 
         # 5. create related app
         if related_app_code:
-            APIRelatedApp.objects.add_related_app(gateway.id, related_app_code)
+            GatewayRelatedAppHandler.add_related_app(gateway.id, related_app_code)
 
         # 6. 在权限中心注册分级管理员，创建用户组
         if settings.USE_BK_IAM_PERMISSION:

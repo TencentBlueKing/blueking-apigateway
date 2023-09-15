@@ -27,9 +27,10 @@ from apigateway.apis.web.gateway.serializers import (
     GatewayUpdateStatusInputSLZ,
 )
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.common.contexts import GatewayAuthConfig
 from apigateway.core.constants import GatewayTypeEnum
-from apigateway.core.models import JWT, Gateway, Resource, Stage
+from apigateway.core.models import Gateway, Resource, Stage
 from apigateway.utils.crypto import calculate_fingerprint
 
 
@@ -212,7 +213,7 @@ class TestGatewayRetrieveOutputSLZ:
                 ),
             },
         )
-        jwt = JWT.objects.create_jwt(fake_gateway)
+        jwt = GatewayJWTHandler.create_jwt(fake_gateway)
 
         expected = {
             "id": fake_gateway.id,

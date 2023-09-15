@@ -157,7 +157,6 @@ class AlarmStrategyQueryInputSLZ(serializers.Serializer):
 
 
 class AlarmRecordSummaryQueryInputSLZ(serializers.Serializer):
-    query = serializers.CharField(allow_blank=True, required=False)
     time_start = TimestampField(allow_null=True, required=False)
     time_end = TimestampField(allow_null=True, required=False)
 

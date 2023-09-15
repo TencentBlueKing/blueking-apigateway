@@ -495,7 +495,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
             page,
             many=True,
             context={
-                "resource_id_map": Resource.objects.filter_id_object_map(request.gateway.id),
+                "resource_id_map": {r.id: r for r in Resource.objects.filter(gateway=request.gateway)},
             },
         )
         return self.get_paginated_response(serializer.data)
@@ -519,7 +519,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         slz = AppPermissionRecordOutputSLZ(
             instance,
             context={
-                "resource_id_map": Resource.objects.filter_id_object_map(request.gateway.id),
+                "resource_id_map": {r.id: r for r in Resource.objects.filter(gateway=request.gateway)},
             },
         )
         return OKJsonResponse(data=slz.data)

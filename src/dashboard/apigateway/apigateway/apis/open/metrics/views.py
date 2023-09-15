@@ -56,7 +56,7 @@ class StatisticsV1ViewSet(viewsets.ModelViewSet):
         )
 
         # 获取网关
-        gateway_id_map = Gateway.objects.filter_id_object_map(ids=api_request_data.keys())
+        gateway_id_map = {gateway.id: gateway for gateway in Gateway.objects.filter(id__in=api_request_data.keys())}
 
         slz = serializers.StatisticsAPIRequestV1SLZ(
             api_request_data.values(),

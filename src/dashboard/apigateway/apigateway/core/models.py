@@ -89,8 +89,6 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         default=APIHostingTypeEnum.DEFAULT.value,
     )
 
-    objects = managers.GatewayManager()
-
     def __str__(self):
         return f"<Gateway: {self.pk}/{self.name}>"
 
@@ -214,8 +212,6 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     is_public = models.BooleanField(default=True)
     allow_apply_permission = models.BooleanField(default=True)
 
-    objects = managers.ResourceManager()
-
     def __str__(self):
         return f"<Resource: {self.pk}/{self.name}>"
 
@@ -262,8 +258,6 @@ class Proxy(ConfigModelMixin):
     backend_service = models.ForeignKey("BackendService", on_delete=models.SET_NULL, null=True, default=None)
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
     # config = from ConfigModelMixin
-
-    objects = managers.ProxyManager()
 
     def __str__(self):
         return f"<Proxy: {self.pk}/{self.type}>"
@@ -710,8 +704,6 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
 
     encrypted_private_key = models.TextField(blank=False, null=False, default="")
 
-    objects = managers.JWTManager()
-
     def __str__(self):
         return f"<JWT: {self.gateway}>"
 
@@ -726,8 +718,6 @@ class APIRelatedApp(TimestampedModelMixin):
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     bk_app_code = models.CharField(max_length=32, db_index=True)
-
-    objects = managers.APIRelatedAppManager()
 
     def __str__(self):
         return f"<APIRelatedApp: {self.bk_app_code}/{self.gateway_id}>"

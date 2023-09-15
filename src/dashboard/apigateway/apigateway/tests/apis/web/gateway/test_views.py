@@ -15,10 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from ddf import G
-
-from apigateway.apis.web.gateway.views import GatewayListCreateApi
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import JWT, Gateway, Stage
 
@@ -33,20 +31,6 @@ class TestGatewayListCreateApi:
 
         assert resp.status_code == 200
         assert len(result["data"]) >= 1
-
-    def test_filter_list_gateways(self):
-        G(Gateway, _maintainers="admin1")
-        G(Gateway, _maintainers="admin2;admin1")
-
-        view = GatewayListCreateApi()
-        gateways = view._filter_list_gateways("admin1")
-        assert len(gateways) >= 2
-
-        gateways = view._filter_list_gateways("admin2")
-        assert len(gateways) >= 1
-
-        gateways = view._filter_list_gateways("not_exist_user")
-        assert len(gateways) == 0
 
     def test_create(self, request_view, faker, unique_gateway_name):
         data = {
@@ -73,7 +57,7 @@ class TestGatewayListCreateApi:
 
 class TestGatewayRetrieveUpdateDestroyApi:
     def test_retrieve(self, request_view, fake_gateway):
-        JWT.objects.create_jwt(fake_gateway)
+        GatewayJWTHandler.create_jwt(fake_gateway)
         GatewayHandler.save_auth_config(fake_gateway.id, "default")
 
         resp = request_view(

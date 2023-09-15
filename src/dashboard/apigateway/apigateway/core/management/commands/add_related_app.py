@@ -20,7 +20,8 @@ import logging
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apigateway.core.models import APIRelatedApp, Gateway
+from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,6 @@ class Command(BaseCommand):
         if not gateway:
             raise CommandError(f"gateway not found: gateway_name={gateway_name}")
 
-        APIRelatedApp.objects.add_related_app(gateway.id, bk_app_code)
+        GatewayRelatedAppHandler.add_related_app(gateway.id, bk_app_code)
 
         logger.info("add related app success: gateway_name=%s, app_code=%s", gateway_name, bk_app_code)

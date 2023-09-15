@@ -30,11 +30,12 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.context import ContextHandler
+from apigateway.biz.proxy import ProxyHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
-from apigateway.core.models import Backend, Gateway, Proxy, Release, Resource, ResourceVersion, Stage
+from apigateway.core.models import Backend, Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import random_string
 
@@ -45,7 +46,7 @@ class ResourceVersionHandler:
         resource_queryset = Resource.objects.filter(gateway_id=gateway.id).all()
         resource_ids = list(resource_queryset.values_list("id", flat=True))
 
-        proxy_map = Proxy.objects.get_resource_id_to_snapshot(resource_ids)
+        proxy_map = ProxyHandler.get_resource_id_to_snapshot(resource_ids)
 
         context_map = ContextHandler.filter_id_type_snapshot_map(
             scope_type=ContextScopeTypeEnum.RESOURCE.value,
@@ -196,7 +197,8 @@ class ResourceVersionHandler:
         是否需要创建新的资源版本
         """
         latest_version = ResourceVersion.objects.get_latest_version(gateway_id)
-        latest_resource = Resource.objects.get_latest_resource(gateway_id)
+        # 最近更新的资源
+        latest_resource = Resource.objects.filter(gateway_id=gateway_id).order_by("-updated_time").first()
 
         if not (latest_version or latest_resource):
             return False

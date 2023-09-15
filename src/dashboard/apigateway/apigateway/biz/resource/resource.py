@@ -16,7 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import itertools
 import json
+import operator
 from typing import Any, Dict, List, Optional
 
 from django.db.models import Q
@@ -346,3 +348,12 @@ class ResourceHandler:
 
         if remaining_resource_labels:
             ResourceLabel.objects.filter(id__in=remaining_resource_labels.values()).delete()
+
+    @staticmethod
+    def group_by_gateway_id(resource_ids: List[int]) -> Dict[int, List[int]]:
+        """将资源 ID 按网关进行分组"""
+        data = Resource.objects.filter(id__in=resource_ids).values("gateway_id", "id").order_by("gateway_id")
+        return {
+            gateway_id: [item["id"] for item in group]
+            for gateway_id, group in itertools.groupby(data, key=operator.itemgetter("gateway_id"))
+        }

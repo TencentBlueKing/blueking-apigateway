@@ -268,3 +268,17 @@ class TestResourceHandler:
 
         result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {})
         assert result.count() == 3
+
+    def test_group_by_gateway_id(self):
+        gateway_1 = G(Gateway)
+        gateway_2 = G(Gateway)
+
+        r1 = G(Resource, gateway=gateway_1)
+        r2 = G(Resource, gateway=gateway_2)
+        r3 = G(Resource, gateway=gateway_1)
+
+        result = ResourceHandler.group_by_gateway_id([r1.id, r2.id, r3.id])
+        assert result == {
+            gateway_1.id: [r1.id, r3.id],
+            gateway_2.id: [r2.id],
+        }

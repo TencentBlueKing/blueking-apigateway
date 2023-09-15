@@ -272,7 +272,10 @@ class ResourcePermissionDimensionManager(PermissionDimensionManager):
             )
 
     def get_resource_names_display(self, gateway_id: int, resource_ids: List[int]) -> List[str]:
-        return Resource.objects.filter_resource_names(gateway_id, ids=resource_ids)
+        if not resource_ids:
+            return []
+
+        return list(Resource.objects.filter(gateway_id=gateway_id, id__in=resource_ids).values_list("name", flat=True))
 
     def get_approved_resource_names_display(self, gateway_id: int, resource_ids: List[int], status: str) -> List[str]:
         return self.get_resource_names_display(gateway_id, resource_ids)

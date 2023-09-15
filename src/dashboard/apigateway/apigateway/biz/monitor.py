@@ -20,18 +20,17 @@ from collections import defaultdict
 from rest_framework.fields import DateTimeField
 
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
-from apigateway.core.models import Gateway
+from apigateway.biz.gateway import GatewayHandler
 
 
 class ResourceMonitorHandler:
     @staticmethod
-    def statistics_api_alarm_record(username, name, time_start, time_end):
+    def statistics_api_alarm_record(username, time_start, time_end):
         """
         统计网关下，各策略的告警信息
         """
-
         # 1. get current user's gateways
-        gateways = Gateway.objects.search_gateways(username=username, name=name)
+        gateways = GatewayHandler.get_gateways_by_user(username)
         gateway_id_map = {g.id: g for g in gateways}
 
         # 2. annotate alarm-record by strategy

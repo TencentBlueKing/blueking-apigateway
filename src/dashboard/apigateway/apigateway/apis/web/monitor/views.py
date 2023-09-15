@@ -261,7 +261,6 @@ class AlarmRecordSummaryListApi(generics.ListAPIView):
 
         results = ResourceMonitorHandler.statistics_api_alarm_record(
             username=self.request.user.username,
-            name=data.get("query"),
             time_start=data.get("time_start"),
             time_end=data.get("time_end"),
         )

@@ -22,7 +22,7 @@ from typing import List, Optional
 from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.common.release import publish
-from apigateway.core.constants import PublishSourceEnum
+from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, gateway_names: Optional[List[str]], *args, **options):
-        gateways = Gateway.objects.filter_micro_and_active_queryset()
+        gateways = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value)
         if gateway_names:
             gateways = gateways.filter(name__in=gateway_names)
 
