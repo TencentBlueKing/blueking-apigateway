@@ -40,7 +40,6 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 from .serializers import (
     PublishEventQueryOutputSLZ,
-    ReleasedResourceOutputSLZ,
     ReleaseHistoryOutputSLZ,
     ReleaseHistoryQueryInputSLZ,
     ReleaseInputSLZ,
@@ -54,7 +53,6 @@ logger = logging.getLogger(__name__)
     decorator=swagger_auto_schema(tags=["WebAPI.Release"]),
 )
 class ReleaseAvailableResourceListApi(generics.ListAPIView):
-    serializer_class = ReleasedResourceOutputSLZ
     lookup_field = "stage_id"
 
     def get_queryset(self):
@@ -101,7 +99,6 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
 
 
 class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
-    serializer_class = ReleasedResourceOutputSLZ
     lookup_field = "stage_id"
 
     def get_queryset(self):

@@ -124,7 +124,3 @@ class PublishEventQueryOutputSLZ(ReleaseHistoryOutputSLZ):
     def to_representation(self, obj):
         obj.events = self.context["publish_events"]
         return super().to_representation(obj)
-
-
-class ReleasedResourceOutputSLZ(serializers.Serializer):
-    pass
