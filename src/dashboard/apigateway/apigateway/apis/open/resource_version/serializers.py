@@ -22,12 +22,12 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.biz.constants import SEMVER_PATTERN
-from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.fields import CurrentGatewayDefault
+from apigateway.core.models import ResourceVersion
 
 
-class ReleaseInputV1SLZ(serializers.Serializer):
+class ReleaseV1InputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=False)
     resource_version_name = serializers.CharField(max_length=128, required=False)
@@ -46,14 +46,12 @@ class ReleaseInputV1SLZ(serializers.Serializer):
 
     def _get_resource_version_id(self, gateway, version: Optional[str], resource_version_name: Optional[str]) -> int:
         if version:
-            resource_version_id = ResourceVersionHandler.get_resource_version_id_by_version(gateway, version)
+            resource_version_id = ResourceVersion.objects.get_id_by_version(gateway.id, version)
             if not resource_version_id:
                 raise serializers.ValidationError({"version": _("版本【{version}】不存在。").format(version=version)})
             return resource_version_id
         if resource_version_name:
-            resource_version_id = ResourceVersionHandler.get_resource_version_id_by_name(
-                gateway, resource_version_name
-            )
+            resource_version_id = ResourceVersion.objects.get_id_by_name(gateway, resource_version_name)
             if not resource_version_id:
                 raise serializers.ValidationError(
                     {
@@ -67,11 +65,11 @@ class ReleaseInputV1SLZ(serializers.Serializer):
         raise serializers.ValidationError({"version": "请指定待发布的版本"})
 
 
-class QueryResourceVersionInputV1SLZ(serializers.Serializer):
+class ResourceVersionQueryV1InputSLZ(serializers.Serializer):
     version = serializers.CharField(required=False)
 
 
-class ListResourceVersionOutputV1SLZ(serializers.Serializer):
+class ResourceVersionListV1OutputSLZ(serializers.Serializer):
     version = serializers.CharField(read_only=True)
     title = serializers.CharField(read_only=True)
     comment = serializers.CharField(read_only=True)

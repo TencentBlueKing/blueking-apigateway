@@ -210,18 +210,6 @@ class TestResourceVersionHandler:
         result = ResourceVersionHandler.get_latest_version_by_gateway(fake_gateway.id)
         assert result == resource_version_3.version
 
-    def test_get_resource_version_id_by_name(self, fake_gateway, fake_resource_version):
-        assert (
-            ResourceVersionHandler.get_resource_version_id_by_name(fake_gateway, fake_resource_version.name)
-            == fake_resource_version.id
-        )
-
-    def test_get_resource_version_id_by_version(self, fake_gateway, fake_resource_version):
-        assert (
-            ResourceVersionHandler.get_resource_version_id_by_version(fake_gateway, fake_resource_version.version)
-            == fake_resource_version.id
-        )
-
 
 class TestResourceDocVersionHandler:
     def test_get_doc_data_by_rv_or_new(self, fake_gateway):

@@ -77,7 +77,7 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.ReleasedResourceListOutputV1SLZ(many=True)},
+        responses={status.HTTP_200_OK: serializers.ReleasedResourceListV1OutputSLZ(many=True)},
         tags=["OpenAPI.Resource"],
     ),
 )
@@ -99,7 +99,7 @@ class ReleasedResourceListApi(generics.ListAPIView):
         resource_ids = [resource["id"] for resource in resources]
         paginator = LimitOffsetPaginator(count=len(resources), offset=0, limit=len(resources))
 
-        slz = serializers.ReleasedResourceListOutputV1SLZ(
+        slz = serializers.ReleasedResourceListV1OutputSLZ(
             resources,
             many=True,
             context={
@@ -112,7 +112,7 @@ class ReleasedResourceListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.ListReleasedResourceInputV2SLZ(many=True)},
+        responses={status.HTTP_200_OK: serializers.ReleasedResourceListV1InputSLZ(many=True)},
         tags=["OpenAPI.Resource"],
     ),
 )
@@ -120,23 +120,19 @@ class ReleasedResourceListByGatewayNameApi(generics.ListAPIView):
     lookup_field = "id"
     api_permission_exempt = True
 
+    permission_classes = [GatewayRelatedAppPermission]
+
     def get_queryset(self):
         return ReleasedResource.objects.filter(gateway=self.request.gateway)
 
-    def get_permissions(self):
-        permission_classes = [GatewayRelatedAppPermission]
-        return [permission() for permission in permission_classes]
-
-    def list(self, request, *args, **kwargs):
+    def list(self, request, gateway_name, stage_name, *args, **kwargs):
         if not request.gateway.is_active_and_public:
             raise Http404
-
-        stage_name = kwargs["stage_name"]
 
         resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id, stage_name=stage_name)
         paginator = LimitOffsetPaginator(count=len(resources), offset=0, limit=len(resources))
 
-        slz = serializers.ListReleasedResourceInputV2SLZ(
+        slz = serializers.ReleasedResourceListV1InputSLZ(
             resources,
             many=True,
             context={

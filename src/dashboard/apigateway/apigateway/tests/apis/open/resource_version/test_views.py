@@ -106,7 +106,7 @@ class TestResourceVersionReleaseApi:
             return_value=None,
         )
         mocker.patch(
-            "apigateway.apis.open.resource_version.serializers.ReleaseInputV1SLZ.to_internal_value",
+            "apigateway.apis.open.resource_version.serializers.ReleaseV1InputSLZ.to_internal_value",
             return_value={
                 "gateway": fake_gateway,
                 "stage_ids": [1, 2],

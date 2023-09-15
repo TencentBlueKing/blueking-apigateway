@@ -24,7 +24,7 @@ from apigateway.apis.open.resource_version import serializers
 class TestReleaseInputV1SLZ:
     def _new_slz(self, fake_request, fake_gateway, bk_app_code, stage_names: List[str], resource_version_name: str):
         fake_request.gateway = fake_gateway
-        return serializers.ReleaseInputV1SLZ(
+        return serializers.ReleaseV1InputSLZ(
             data={
                 "resource_version_name": resource_version_name,
                 "stage_names": stage_names,
@@ -36,7 +36,7 @@ class TestReleaseInputV1SLZ:
 
     def test_validate(self, mocker, fake_request, fake_gateway):
         mocker.patch(
-            "apigateway.apis.open.resource_version.serializers.ReleaseInputV1SLZ._get_resource_version_id",
+            "apigateway.apis.open.resource_version.serializers.ReleaseV1InputSLZ._get_resource_version_id",
             return_value=None,
         )
         mocker.patch(
@@ -50,11 +50,11 @@ class TestReleaseInputV1SLZ:
 
     def test_get_resource_version_id(self, mocker, faker, fake_request, fake_gateway):
         mock_get_by_version = mocker.patch(
-            "apigateway.biz.resource_version.ResourceVersionHandler.get_resource_version_id_by_version",
+            "apigateway.apis.open.resource_version.serializers.ResourceVersion.objects.get_id_by_version",
             return_value=faker.pyint(),
         )
         mock_get_by_name = mocker.patch(
-            "apigateway.biz.resource_version.ResourceVersionHandler.get_resource_version_id_by_name",
+            "apigateway.apis.open.resource_version.serializers.ResourceVersion.objects.get_id_by_name",
             return_value=faker.pyint(),
         )
         slz = self._new_slz(fake_request, fake_gateway, "test", [], "test")
@@ -65,5 +65,5 @@ class TestReleaseInputV1SLZ:
 
         mock_get_by_name.reset_mock()
         slz._get_resource_version_id(fake_gateway, "1.0.0", "test")
-        mock_get_by_version.assert_called_once_with(fake_gateway, "1.0.0")
+        mock_get_by_version.assert_called_once_with(fake_gateway.id, "1.0.0")
         mock_get_by_name.assert_not_called()
