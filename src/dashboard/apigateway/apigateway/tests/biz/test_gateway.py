@@ -32,7 +32,7 @@ from apigateway.core.constants import (
     GatewayTypeEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, Resource, Stage
+from apigateway.core.models import JWT, Context, Gateway, GatewayRelatedApp, Release, Resource, Stage
 
 
 class TestGatewayHandler:
@@ -236,7 +236,7 @@ class TestGatewayHandler:
         assert JWT.objects.filter(gateway=fake_gateway).exists()
         assert Stage.objects.filter(gateway=fake_gateway).exists()
         assert AlarmStrategy.objects.filter(gateway=fake_gateway).exists()
-        assert APIRelatedApp.objects.filter(gateway=fake_gateway, bk_app_code="test").exists()
+        assert GatewayRelatedApp.objects.filter(gateway=fake_gateway, bk_app_code="test").exists()
 
     def test_delete_gateway(
         self,

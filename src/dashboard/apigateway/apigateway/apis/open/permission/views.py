@@ -155,7 +155,7 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
             gateway=request.gateway,
             apply=instance,
             status=ApplyStatusEnum.PENDING.value,
-            resources=Resource.objects.filter(gateway=request.gateway, id__in=data.get("resource_ids", [])),
+            resources=Resource.objects.filter(gateway=request.gateway, id__in=data.get("resource_ids") or []),
         )
 
         try:

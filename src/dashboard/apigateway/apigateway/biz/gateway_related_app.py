@@ -18,7 +18,7 @@
 from django.conf import settings
 
 from apigateway.common.error_codes import error_codes
-from apigateway.core.models import APIRelatedApp
+from apigateway.core.models import GatewayRelatedApp
 
 
 class GatewayRelatedAppHandler:
@@ -28,14 +28,14 @@ class GatewayRelatedAppHandler:
         # 检查app能关联的网关最大数量
         cls._check_app_gateway_limit(bk_app_code)
 
-        APIRelatedApp.objects.get_or_create(gateway_id=gateway_id, bk_app_code=bk_app_code)
+        GatewayRelatedApp.objects.get_or_create(gateway_id=gateway_id, bk_app_code=bk_app_code)
 
     @staticmethod
     def _check_app_gateway_limit(bk_app_code: str):
         max_gateway_per_app = settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"].get(
             bk_app_code, settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app"]
         )
-        if APIRelatedApp.objects.filter(bk_app_code=bk_app_code).count() >= max_gateway_per_app:
+        if GatewayRelatedApp.objects.filter(bk_app_code=bk_app_code).count() >= max_gateway_per_app:
             raise error_codes.INVALID_ARGUMENT.format(
                 f"The app [{bk_app_code}] exceeds the limit of the number of gateways that can be related."
                 + f" The maximum limit is {max_gateway_per_app}."

@@ -24,7 +24,7 @@ from rest_framework.serializers import ValidationError
 
 from apigateway.apis.open.gateway import views
 from apigateway.common.contexts import GatewayAuthContext
-from apigateway.core.models import JWT, APIRelatedApp, Gateway, Release, Stage
+from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release, Stage
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, get_response_json
 
 pytestmark = pytest.mark.django_db
@@ -177,7 +177,7 @@ class TestAPISyncViewSet:
         assert gateway.is_public is True
 
 
-class TestAPIRelatedAppViewSet:
+class TestGatewayRelatedAppViewSet:
     def test_add_related_apps_ok(self, mocker, request_factory, disable_app_permission):
         request = request_factory.post(
             "/backend/api/v1/demo/related-apps/",
@@ -194,7 +194,7 @@ class TestAPIRelatedAppViewSet:
         response = view(request, gateway_name=request.gateway.name)
         result = get_response_json(response)
         assert result["code"] == 0
-        assert APIRelatedApp.objects.filter(gateway=request.gateway).count() == 2
+        assert GatewayRelatedApp.objects.filter(gateway=request.gateway).count() == 2
 
     def test_add_related_apps_error(self, mocker, request_factory, disable_app_permission):
         request = request_factory.post(

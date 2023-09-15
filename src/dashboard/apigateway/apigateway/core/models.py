@@ -713,14 +713,14 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_jwt"
 
 
-class APIRelatedApp(TimestampedModelMixin):
+class GatewayRelatedApp(TimestampedModelMixin):
     """网关关联的蓝鲸应用"""
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     bk_app_code = models.CharField(max_length=32, db_index=True)
 
     def __str__(self):
-        return f"<APIRelatedApp: {self.bk_app_code}/{self.gateway_id}>"
+        return f"<GatewayRelatedApp: {self.bk_app_code}/{self.gateway_id}>"
 
     class Meta:
         db_table = "core_api_related_app"

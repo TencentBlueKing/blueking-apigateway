@@ -20,19 +20,19 @@ from django.conf import settings
 
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.common.error_codes import APIError
-from apigateway.core.models import APIRelatedApp
+from apigateway.core.models import GatewayRelatedApp
 
 
 class TestGatewayRelatedAppHandler:
     def test_add_related_app(self, fake_gateway):
         GatewayRelatedAppHandler.add_related_app(fake_gateway.id, "foo")
-        assert APIRelatedApp.objects.filter(gateway_id=fake_gateway.id).count() == 1
+        assert GatewayRelatedApp.objects.filter(gateway_id=fake_gateway.id).count() == 1
 
         GatewayRelatedAppHandler.add_related_app(fake_gateway.id, "foo")
-        assert APIRelatedApp.objects.filter(gateway_id=fake_gateway.id).count() == 1
+        assert GatewayRelatedApp.objects.filter(gateway_id=fake_gateway.id).count() == 1
 
         GatewayRelatedAppHandler.add_related_app(fake_gateway.id, "bar")
-        assert APIRelatedApp.objects.filter(gateway_id=fake_gateway.id).count() == 2
+        assert GatewayRelatedApp.objects.filter(gateway_id=fake_gateway.id).count() == 2
 
     def test_check_app_gateway_limit(self, fake_gateway):
         settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"]["bk_test"] = 1
