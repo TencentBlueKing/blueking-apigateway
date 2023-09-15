@@ -70,6 +70,8 @@ class ComponentViewSet(viewsets.GenericViewSet):
 
 
 class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
+    serializer_class = serializers.AppPermissionApplySLZ
+
     @transaction.atomic
     def apply(self, request, system_id: int, *args, **kwargs):
         """创建申请资源权限的申请单据"""
@@ -78,7 +80,7 @@ class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
         except ComponentSystem.DoesNotExist:
             raise error_codes.NOT_FOUND
 
-        slz = serializers.AppPermissionApplySLZ(
+        slz = self.get_serializer(
             data=request.data,
             context={
                 "system_id": system.id,
@@ -128,8 +130,10 @@ class AppPermissionRenewAPIView(viewsets.GenericViewSet):
     权限续期
     """
 
+    serializer_class = serializers.AppPermissionRenewSLZ
+
     def renew(self, request, *args, **kwargs):
-        slz = serializers.AppPermissionRenewSLZ(data=request.data)
+        slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -171,8 +175,10 @@ class AppPermissionViewSet(viewsets.ViewSet):
 
 
 class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
+    serializer_class = serializers.AppPermissionApplyRecordQuerySLZ
+
     def list(self, request, *args, **kwargs):
-        slz = serializers.AppPermissionApplyRecordQuerySLZ(data=request.query_params)
+        slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -194,7 +200,7 @@ class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
         return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
 
     def retrieve(self, request, record_id: int, *args, **kwargs):
-        slz = serializers.AppPermissionApplyRecordQuerySLZ(data=request.query_params)
+        slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
