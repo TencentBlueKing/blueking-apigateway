@@ -23,7 +23,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.released import serializers
-from apigateway.apps.label.models import ResourceLabel
+from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_url import ResourceURLHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
@@ -77,7 +77,7 @@ class ReleasedResourceViewSet(viewsets.ModelViewSet):
             resources,
             many=True,
             context={
-                "resource_labels": ResourceLabel.objects.get_labels(resource_ids),
+                "resource_labels": ResourceLabelHandler.get_labels(resource_ids),
             },
         )
         return V1OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))

@@ -27,8 +27,6 @@ from apigateway.apps.support.constants import DocLanguageEnum, DocSourceEnum, Do
 from apigateway.apps.support.managers import (
     APISDKManager,
     ReleasedResourceDocManager,
-    ResourceDocManager,
-    ResourceDocSwaggerManager,
     ResourceDocVersionManager,
 )
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
@@ -51,8 +49,6 @@ class ResourceDoc(TimestampedModelMixin, OperatorModelMixin):
         max_length=32, choices=DocSourceEnum.get_choices(), default=DocSourceEnum.CUSTOM.value, db_index=True
     )
     content = models.TextField(blank=True, null=True, default="")
-
-    objects = ResourceDocManager()
 
     def __self__(self):
         return f"<ResourceDoc: {self.resource}>"
@@ -84,8 +80,6 @@ class ResourceDocSwagger(TimestampedModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_doc = models.OneToOneField(ResourceDoc, on_delete=models.CASCADE)
     swagger = models.TextField(blank=True, default="")
-
-    objects = ResourceDocSwaggerManager()
 
     def __str__(self):
         return f"<ResourceDocSwagger: {self.resource_doc}>"

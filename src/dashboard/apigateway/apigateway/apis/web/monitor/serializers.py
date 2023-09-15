@@ -86,9 +86,7 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
 
     def validate_api_label_ids(self, value):
         gateway = self.context["request"].gateway
-        # 如果 api-label ids 为空，则获取的有效标签数据应该为空
-        valid_labels = APILabel.objects.get_labels(gateway=gateway, ids=value or [])
-        return [label["id"] for label in valid_labels]
+        return list(APILabel.objects.filter(gateway=gateway, id__in=value or []).values_list("id", flat=True))
 
 
 class AlarmStrategyListOutputSLZ(serializers.ModelSerializer):

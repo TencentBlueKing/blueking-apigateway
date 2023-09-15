@@ -105,13 +105,14 @@ class AlarmStrategyManager(models.Manager):
 
         from apigateway.apps.label.models import ResourceLabel
 
-        api_label_ids = set(ResourceLabel.objects.get_api_label_ids(resource_id))
-
+        gateway_label_ids = set(
+            ResourceLabel.objects.filter(resource_id=resource_id).values_list("api_label_id", flat=True)
+        )
         matched_strategies = []
 
         for strategy in strategies:
-            stragegy_api_label_ids = strategy.api_label_ids
-            if not stragegy_api_label_ids or set(stragegy_api_label_ids) & api_label_ids:
+            strategy_gateway_label_ids = strategy.api_label_ids
+            if not strategy_gateway_label_ids or set(strategy_gateway_label_ids) & gateway_label_ids:
                 matched_strategies.append(strategy)
 
         return matched_strategies

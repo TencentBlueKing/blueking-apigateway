@@ -24,14 +24,15 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
+from apigateway.apps.support.models import ResourceDocVersion
 from apigateway.biz.context import ContextHandler
 from apigateway.biz.proxy import ProxyHandler
 from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
@@ -59,7 +60,7 @@ class ResourceVersionHandler:
 
         gateway_label_map = {
             resource_id: [label["id"] for label in labels]
-            for resource_id, labels in ResourceLabel.objects.filter_labels_by_gateway(gateway).items()
+            for resource_id, labels in ResourceLabelHandler.get_labels_by_gateway(gateway).items()
         }
 
         # backend
@@ -197,10 +198,9 @@ class ResourceVersionHandler:
         是否需要创建新的资源版本
         """
         latest_version = ResourceVersion.objects.get_latest_version(gateway_id)
-        # 最近更新的资源
-        latest_resource = Resource.objects.filter(gateway_id=gateway_id).order_by("-updated_time").first()
+        resource_last_updated_time = ResourceHandler.get_last_updated_time(gateway_id)
 
-        if not (latest_version or latest_resource):
+        if not (latest_version or resource_last_updated_time):
             return False
 
         # 无资源版本
@@ -208,7 +208,7 @@ class ResourceVersionHandler:
             return True
 
         # 如果有最近更新的资源，最近的更新资源时间 > 最新版本生成时间
-        if latest_resource and latest_resource.updated_time > latest_version.created_time:
+        if resource_last_updated_time and resource_last_updated_time > latest_version.created_time:
             return True
 
         # 版本中资源数量是否发生变化
@@ -288,21 +288,18 @@ class ResourceDocVersionHandler:
         return result
 
     @staticmethod
-    def need_new_version(gateway_id):
-        """
-        是否需要创建新的资源文档版本
-        """
-
+    def need_new_version(gateway_id: int) -> bool:
+        """是否需要创建新的资源文档版本"""
         latest_version = ResourceDocVersion.objects.get_latest_version(gateway_id)
-        latest_resource_doc = ResourceDoc.objects.get_latest_resource_doc(gateway_id)
+        doc_last_updated_time = ResourceDocHandler.get_last_updated_time(gateway_id)
 
-        if not (latest_version or latest_resource_doc):
+        if not (latest_version or doc_last_updated_time):
             return False
 
         if not latest_version:
             return True
 
-        if latest_resource_doc and latest_resource_doc.updated_time > latest_version.created_time:
+        if doc_last_updated_time and doc_last_updated_time > latest_version.created_time:
             return True
 
         # 文档不可直接删除，资源删除导致的文档删除，在判断“是否需要创建资源版本”时校验

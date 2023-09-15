@@ -16,10 +16,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
 import itertools
 import json
 import operator
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from django.db.models import Q
 from django.utils.translation import gettext as _
@@ -251,3 +252,13 @@ class ResourceHandler:
             gateway_id: [item["id"] for item in group]
             for gateway_id, group in itertools.groupby(data, key=operator.itemgetter("gateway_id"))
         }
+
+    @staticmethod
+    def get_last_updated_time(gateway_id: int) -> Optional[datetime.datetime]:
+        """获取网关下资源的最近更新时间"""
+        return (
+            Resource.objects.filter(gateway_id=gateway_id)
+            .order_by("-updated_time")
+            .values_list("updated_time", flat=True)
+            .first()
+        )

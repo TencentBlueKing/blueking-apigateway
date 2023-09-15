@@ -25,7 +25,7 @@ from rest_framework import generics, serializers, status
 from rest_framework.generics import get_object_or_404
 
 from apigateway.apps.support.models import APISDK, ResourceDoc, ResourceDocVersion
-from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
@@ -92,7 +92,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         instance = ResourceVersionHandler.create_resource_version(request.gateway, request.data, request.user.username)
 
         # 创建文档版本
-        if ResourceDoc.objects.doc_exists(request.gateway.id):
+        if ResourceDoc.objects.filter(gateway=request.gateway).exists():
             ResourceDocVersion.objects.create(
                 gateway=self.request.gateway,
                 resource_version=instance,
@@ -148,7 +148,7 @@ class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
                 data={"need_new_version": True, "msg": _("资源有更新，需生成新版本并发布到指定环境，才能生效。")},
             )
 
-        if ResourceDocVersion.objects.need_new_version(request.gateway.id):
+        if ResourceDocVersionHandler.need_new_version(request.gateway.id):
             return OKJsonResponse(
                 data={"need_new_version": True, "msg": _("资源文档有更新，需生成新版本并发布到任一环境，才能生效。")},
             )

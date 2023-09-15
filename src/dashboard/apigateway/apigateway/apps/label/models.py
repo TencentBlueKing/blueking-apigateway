@@ -20,8 +20,6 @@ from django.db import models
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway, Resource
 
-from .managers import APILabelManager, ResourceLabelManager
-
 
 class APILabel(TimestampedModelMixin, OperatorModelMixin):
     """
@@ -30,8 +28,6 @@ class APILabel(TimestampedModelMixin, OperatorModelMixin):
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     name = models.CharField(max_length=32)
-
-    objects = APILabelManager()
 
     class Meta:
         unique_together = ("gateway", "name")
@@ -49,8 +45,6 @@ class ResourceLabel(TimestampedModelMixin):
 
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
     api_label = models.ForeignKey(APILabel, on_delete=models.CASCADE)
-
-    objects = ResourceLabelManager()
 
     class Meta:
         unique_together = ("resource", "api_label")
