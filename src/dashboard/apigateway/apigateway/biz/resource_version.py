@@ -36,7 +36,7 @@ from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
-from apigateway.core.models import Backend, Gateway, Release, Resource, ResourceVersion, Stage
+from apigateway.core.models import Backend, Gateway, Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import random_string
 
