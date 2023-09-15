@@ -1288,9 +1288,9 @@ msgstr "Batch delete resources"
 msgid "版本 {version} 已存在。"
 msgstr "Resource version {version} already exists."
 
-#: apigateway/apps/resource_version/serializers.py:76
-msgid "请先创建资源，然后再生成版本。"
-msgstr "Please create a resource first and then generate version."
+#: apigateway/apps/resource_version/serializers.py:162
+msgid "存在资源未绑定后端服务. "
+msgstr "There is a resource that is not bound to the backend service."
 
 #: apigateway/apps/resource_version/serializers.py:76
 msgid "请先创建后端服务，然后再生成版本。"

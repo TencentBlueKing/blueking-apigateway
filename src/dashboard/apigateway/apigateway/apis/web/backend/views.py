@@ -126,6 +126,7 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
 )
 class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "id"
+    serializer_class = BackendInputSLZ
     queryset = Backend.objects.all()
 
     def retrieve(self, request, *args, **kwargs):
@@ -136,7 +137,7 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        slz = BackendInputSLZ(instance=instance, data=request.data, context={"gateway": request.gateway})
+        slz = self.get_serializer(instance=instance, data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data

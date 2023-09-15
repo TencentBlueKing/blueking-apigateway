@@ -177,7 +177,7 @@ class PublishSourceEnum(StructuredEnum):
 
 
 # 触发发布类型
-class TriggerPublishType(StructuredEnum):
+class TriggerPublishTypeEnum(StructuredEnum):
     TRIGGER_ROLLING_UPDATE_RELEASE = EnumField("trigger_rolling_update_release", "滚动更新发布")
     TRIGGER_REVOKE_DISABLE_RELEASE = EnumField("trigger_revoke_disable_release", "停用/下架发布")
     TRIGGER_REVOKE_DELETE_RELEASE = EnumField("trigger_revoke_delete_release", "删除发布")
@@ -186,18 +186,18 @@ class TriggerPublishType(StructuredEnum):
 #  不同发布来源对应不同的触发发布类型
 PublishSourceTriggerPublishTypeMapping = {
     # 滚动更新发布
-    PublishSourceEnum.GATEWAY_ENABLE: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
-    PublishSourceEnum.STAGE_UPDATE: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
-    PublishSourceEnum.PLUGIN_UPDATE: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
-    PublishSourceEnum.PLUGIN_BIND: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
-    PublishSourceEnum.PLUGIN_UNBIND: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
-    PublishSourceEnum.BACKEND_UPDATE: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
-    PublishSourceEnum.CLI_SYNC: TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.GATEWAY_ENABLE: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.STAGE_UPDATE: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.PLUGIN_UPDATE: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.PLUGIN_BIND: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.PLUGIN_UNBIND: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.BACKEND_UPDATE: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.CLI_SYNC: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
     # 停用/下架发布
-    PublishSourceEnum.GATEWAY_DISABLE: TriggerPublishType.TRIGGER_REVOKE_DISABLE_RELEASE,
-    PublishSourceEnum.STAGE_DISABLE: TriggerPublishType.TRIGGER_REVOKE_DISABLE_RELEASE,
+    PublishSourceEnum.GATEWAY_DISABLE: TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE,
+    PublishSourceEnum.STAGE_DISABLE: TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE,
     # 删除发布
-    PublishSourceEnum.STAGE_DELETE: TriggerPublishType.TRIGGER_REVOKE_DELETE_RELEASE,
+    PublishSourceEnum.STAGE_DELETE: TriggerPublishTypeEnum.TRIGGER_REVOKE_DELETE_RELEASE,
 }
 
 

@@ -37,6 +37,11 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
 
     is_cli_sync = publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID
     release_history = None if is_cli_sync else ReleaseHistory.objects.get(id=release_id)
+
+    # 事件上报要以release维度的stage来上报
+    if release_history:
+        release_history.stage = release.stage
+
     PublishEventReporter.report_create_publish_task_success_event(release_history)
 
     logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
@@ -93,6 +98,9 @@ def revoke_release(release_id: int, publish_id: int):
         return is_success
 
     release_history = ReleaseHistory.objects.get(id=publish_id)
+
+    # 上报事件需要按照release stage维度上报
+    release_history.stage = release.stage
 
     PublishEventReporter.report_create_publish_task_success_event(release_history)
 

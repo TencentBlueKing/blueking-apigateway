@@ -86,10 +86,11 @@ class ResourceViewSet(viewsets.ViewSet):
 
 
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
+    serializer_class = serializers.AppAPIPermissionQuerySLZ
     api_permission_exempt = True
 
     def allow_apply_by_gateway(self, request, *args, **kwargs):
-        slz = serializers.AppAPIPermissionQuerySLZ(data=request.query_params)
+        slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         allow, reason = PermissionDimensionManager.get_manager(GrantDimensionEnum.API.value).allow_apply_permission(
@@ -300,8 +301,10 @@ class AppPermissionViewSet(viewsets.ViewSet):
 
 
 class AppPermissionRecordViewSet(viewsets.GenericViewSet):
+    serializer_class = serializers.AppPermissionRecordQuerySLZ
+
     def list(self, request, *args, **kwargs):
-        slz = serializers.AppPermissionRecordQuerySLZ(data=request.query_params)
+        slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data

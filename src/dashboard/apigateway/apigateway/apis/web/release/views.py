@@ -52,7 +52,6 @@ logger = logging.getLogger(__name__)
     decorator=swagger_auto_schema(tags=["WebAPI.Release"]),
 )
 class ReleaseAvailableResourceListApi(generics.ListAPIView):
-    serializer_class = None
     lookup_field = "stage_id"
 
     def get_queryset(self):

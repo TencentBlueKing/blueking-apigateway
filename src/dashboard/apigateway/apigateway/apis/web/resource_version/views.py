@@ -22,7 +22,6 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, serializers, status
-from rest_framework.generics import get_object_or_404
 
 from apigateway.apps.support.models import APISDK, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
@@ -176,12 +175,12 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-
-        source_resource_data = get_object_or_404(
-            ResourceVersionHandler.get_data_by_id_or_new(request.gateway, data.get("source_resource_version_id"))
+        source_resource_data = ResourceVersionHandler.get_data_by_id_or_new(
+            request.gateway, data.get("source_resource_version_id")
         )
-        target_resource_data = get_object_or_404(
-            ResourceVersionHandler.get_data_by_id_or_new(request.gateway, data.get("target_resource_version_id"))
+
+        target_resource_data = ResourceVersionHandler.get_data_by_id_or_new(
+            request.gateway, data.get("target_resource_version_id")
         )
 
         return OKJsonResponse(
