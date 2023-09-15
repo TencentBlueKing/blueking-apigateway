@@ -29,17 +29,18 @@ from apigateway.controller.tasks import deploy_micro_gateway
 from apigateway.core.constants import MicroGatewayStatusEnum
 
 
-# FIXME: this is not a good abstract template, should be refactored
 class BaseMicroGatewayHandler(metaclass=ABCMeta):
     @abstractmethod
     def deploy(self, micro_gateway_id: int, access_token: str, username: str = ""):
         """部署微网关"""
 
+    @abstractmethod
     def get_initial_status(self) -> MicroGatewayStatusEnum:
-        return MicroGatewayStatusEnum.PENDING
+        raise NotImplementedError
 
+    @abstractmethod
     def get_initial_bcs_info(self) -> Dict[str, Any]:
-        return {}
+        raise NotImplementedError
 
 
 class NeedDeployMicroGatewayHandler(BaseMicroGatewayHandler):
@@ -47,6 +48,9 @@ class NeedDeployMicroGatewayHandler(BaseMicroGatewayHandler):
 
     def deploy(self, micro_gateway_id: int, access_token: str, username: str = ""):
         delay_on_commit(deploy_micro_gateway, micro_gateway_id, access_token, username)
+
+    def get_initial_status(self) -> MicroGatewayStatusEnum:
+        return MicroGatewayStatusEnum.PENDING
 
     def get_initial_bcs_info(self) -> Dict[str, Any]:
         """新部署微网关实例时，使用默认配置的 chart"""
@@ -64,6 +68,9 @@ class RelateDeployedMicroGatewayHandler(BaseMicroGatewayHandler):
 
     def get_initial_status(self) -> MicroGatewayStatusEnum:
         return MicroGatewayStatusEnum.INSTALLED
+
+    def get_initial_bcs_info(self) -> Dict[str, Any]:
+        return {}
 
 
 class MicroGatewayHandlerFactory:

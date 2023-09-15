@@ -17,8 +17,6 @@
 #
 from rest_framework import serializers
 
-from apigateway.apps.permission.models import AppAPIPermission
-
 
 class GatewayStatusInfoSLZ(serializers.Serializer):
     """网关信息"""
@@ -45,51 +43,6 @@ class ReplicasStatusSLZ(serializers.Serializer):
 class MicroGatewayStatusSLZ(serializers.Serializer):
     gateway = GatewayStatusInfoSLZ(help_text="网关信息")
     replicas = serializers.ListField(help_text="副本状态", child=ReplicasStatusSLZ())
-
-
-class MicroGatewayApiPermissionSLZ(serializers.ModelSerializer):
-    bk_app_code = serializers.CharField(help_text="蓝鲸应用")
-    created_time = serializers.DateTimeField(help_text="创建时间")
-    updated_time = serializers.DateTimeField(help_text="更新时间")
-    expires = serializers.DateTimeField(help_text="过期时间")
-
-    class Meta:
-        model = AppAPIPermission
-        fields = ["created_time", "updated_time", "bk_app_code", "expires"]
-
-
-class MicroGatewayResourcePermissionSLZ(serializers.Serializer):
-    created_time = serializers.DateTimeField(help_text="创建时间")
-    updated_time = serializers.DateTimeField(help_text="更新时间")
-    expires = serializers.DateTimeField(help_text="过期时间")
-    bk_app_code = serializers.CharField(help_text="蓝鲸应用")
-    resource_name = serializers.CharField(help_text="资源名称", default=None)
-
-
-class MicroGatewayAppPermissionQuerySLZ(serializers.Serializer):
-    gateway_name = serializers.CharField(help_text="网关名称")
-    stage_name = serializers.CharField(help_text="环境名称")
-    resource_name = serializers.CharField(help_text="资源名称", required=False)
-    target_app_code = serializers.ListField(child=serializers.CharField(), help_text="蓝鲸应用", required=False)
-
-
-class MicroGatewayNewestGatewayPermissionQuerySLZ(serializers.Serializer):
-    gateway_name = serializers.CharField(help_text="网关名称")
-    stage_name = serializers.CharField(help_text="环境名称", required=False)
-    target_app_code = serializers.ListField(child=serializers.CharField(), help_text="蓝鲸应用", min_length=1)
-
-
-class MicroGatewayNewestResourcePermissionQuerySLZ(MicroGatewayNewestGatewayPermissionQuerySLZ):
-    resource_name = serializers.CharField(help_text="资源名称")
-
-
-class MicroGatewayAppPermissionSLZ(serializers.Serializer):
-    gateway_name = serializers.CharField(help_text="网关名称")
-    stage_name = serializers.CharField(help_text="环境名称", required=False)
-    api_permissions = serializers.ListField(child=MicroGatewayApiPermissionSLZ(), required=False, help_text="网关权限")
-    resource_permissions = serializers.ListField(
-        child=MicroGatewayResourcePermissionSLZ(), required=False, help_text="资源权限"
-    )
 
 
 class MicroGatewayRelatedInfoSLZ(serializers.Serializer):

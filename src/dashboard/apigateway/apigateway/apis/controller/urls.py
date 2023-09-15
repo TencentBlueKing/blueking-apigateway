@@ -18,33 +18,13 @@
 #
 from django.urls import path
 
-from apigateway.apis.controller.views import (
-    MicroGatewayInfoViewSet,
-    MicroGatewayNewestPermissionViewSet,
-    MicroGatewayPermissionViewSet,
-    MicroGatewayStatusViewSet,
-)
+from apigateway.apis.controller.views import MicroGatewayInfoViewSet, MicroGatewayStatusViewSet
 
 urlpatterns = [
     path(
         "micro-gateway/<uuid:instance_id>/status/",
         MicroGatewayStatusViewSet.as_view({"put": "refresh"}),
         name="apigateway.controller.micro_gateway_status",
-    ),
-    path(
-        "micro-gateway/<uuid:instance_id>/permissions/",
-        MicroGatewayPermissionViewSet.as_view({"get": "list"}),
-        name="apigateway.controller.micro_gateway_permissions",
-    ),
-    path(
-        "micro-gateway/<uuid:instance_id>/permissions/gateway/newest/",
-        MicroGatewayNewestPermissionViewSet.as_view({"get": "list_newest_gateway_permissions"}),
-        name="apigateway.controller.micro_gateway_permissions.gateway-newest",
-    ),
-    path(
-        "micro-gateway/<uuid:instance_id>/permissions/resource/newest/",
-        MicroGatewayNewestPermissionViewSet.as_view({"get": "list_newest_resource_permissions"}),
-        name="apigateway.controller.micro_gateway_permissions.resource-newest",
     ),
     path(
         "micro-gateway/<uuid:instance_id>/gateway/",

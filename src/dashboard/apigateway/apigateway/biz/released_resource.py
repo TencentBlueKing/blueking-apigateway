@@ -217,13 +217,13 @@ class ReleasedResourceHandler:
                 continue
 
             disabled_stages = resource.data.get("disabled_stages") or []
-            recommeded_stage = ReleasedResource.objects.get_recommended_stage_name(stage_names, disabled_stages)
-            if not recommeded_stage:
+            recommended_stage = ReleasedResource.objects.get_recommended_stage_name(stage_names, disabled_stages)
+            if not recommended_stage:
                 continue
 
             doc_links[resource.resource_id] = get_resource_doc_link(
                 resource.gateway.name,
-                recommeded_stage,
+                recommended_stage,
                 resource.resource_name,
             )
 

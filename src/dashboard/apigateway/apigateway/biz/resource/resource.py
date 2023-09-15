@@ -62,28 +62,19 @@ class ResourceHandler:
         """
         存储资源认证配置
         """
-        auth_config = ResourceHandler()._get_current_auth_config(resource_id)
-        auth_config.update(config)
-
-        return ResourceAuthContext().save(resource_id, auth_config)
-
-    # TODO: move into save_auth_config?
-    @staticmethod
-    def _get_current_auth_config(resource_id):
-        """
-        获取资源当前认证配置
-        """
-        default_hidden_config = {
-            # 跳过用户认证逻辑，值为False时，不根据请求参数中的用户信息校验用户
-            "skip_auth_verification": False,
-            "auth_verified_required": True,
-            "app_verified_required": True,
-            "resource_perm_required": True,
-        }
         try:
-            return ResourceAuthContext().get_config(resource_id)
+            auth_config = ResourceAuthContext().get_config(resource_id)
         except Context.DoesNotExist:
-            return default_hidden_config
+            auth_config = {
+                # 跳过用户认证逻辑，值为 False 时，不根据请求参数中的用户信息校验用户
+                "skip_auth_verification": False,
+                "auth_verified_required": True,
+                "app_verified_required": True,
+                "resource_perm_required": True,
+            }
+
+        auth_config.update(config)
+        return ResourceAuthContext().save(resource_id, auth_config)
 
     # FIXME: this function only used by tests
     @staticmethod
@@ -92,11 +83,6 @@ class ResourceHandler:
         proxy_type,
         proxy_config,
     ):
-        # proxy, created = Proxy.objects.save_proxy_config(
-        #     resource,
-        #     proxy_type,
-        #     proxy_config,
-        # )
         factory = SchemaFactory()
         proxy, created = Proxy.objects.update_or_create(
             resource=resource,
@@ -162,7 +148,7 @@ class ResourceHandler:
     @staticmethod
     def filter_resource(gateway, query=None, path=None, method=None, label_name=None, order_by=None, fuzzy=True):
         """
-        查询资源，根据模糊查询串匹配，根据path、method匹配，根据标签匹配
+        查询资源，根据模糊查询串匹配，根据 path、method 匹配，根据标签匹配
         """
         queryset = Resource.objects.filter(gateway=gateway)
 
@@ -287,7 +273,7 @@ class ResourceHandler:
     @staticmethod
     def get_default_auth_config():
         return {
-            # 跳过用户认证逻辑，值为False时，不根据请求参数中的用户信息校验用户
+            # 跳过用户认证逻辑，值为 False 时，不根据请求参数中的用户信息校验用户
             "skip_auth_verification": False,
             "auth_verified_required": True,
             "app_verified_required": True,
