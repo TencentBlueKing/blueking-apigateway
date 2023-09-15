@@ -21,7 +21,6 @@ import logging
 import uuid
 from typing import List
 
-from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
@@ -31,7 +30,6 @@ from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin
 from apigateway.core import managers
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
-    PATH_TO_NAME_PATTERN,
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
     BackendConfigTypeEnum,
@@ -67,7 +65,7 @@ NOTE:
 
 class Gateway(TimestampedModelMixin, OperatorModelMixin):
     """
-    API, a system
+    Gateway, a system
     the name is unique and will be part of the path in APIGateway
     /api/{gateway.name}/{stage.name}/{resource.path}/
     """
@@ -93,8 +91,8 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         return f"<Gateway: {self.pk}/{self.name}>"
 
     class Meta:
-        verbose_name = "API"
-        verbose_name_plural = "API"
+        verbose_name = "Gateway"
+        verbose_name_plural = "Gateway"
         db_table = "core_api"
 
     @property
@@ -120,18 +118,6 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     @property
     def is_active_and_public(self):
         return self.is_public and self.is_active
-
-    @property
-    def docs_url(self):
-        return settings.API_DOCS_URL_TMPL.format(api_name=self.name)
-
-    @property
-    def domain(self):
-        return settings.BK_API_URL_TMPL.format(api_name=self.name)
-
-    @property
-    def max_stage_count(self) -> int:
-        return settings.MAX_STAGE_COUNT_PER_GATEWAY
 
 
 class Stage(TimestampedModelMixin, OperatorModelMixin):
@@ -226,12 +212,6 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
         资源标识
         """
         return f"{self.method} {self.path_display}"
-
-    @property
-    def action_name(self):
-        if self.name:
-            return self.name
-        return "_".join([self.method.lower(), *PATH_TO_NAME_PATTERN.findall(self.path.lower())])
 
     @property
     def path_display(self):
