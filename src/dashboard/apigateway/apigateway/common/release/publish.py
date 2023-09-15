@@ -28,7 +28,7 @@ from apigateway.core.constants import (
     PublishSourceEnum,
     PublishSourceTriggerPublishTypeMapping,
     StageStatusEnum,
-    TriggerPublishType,
+    TriggerPublishTypeEnum,
 )
 from apigateway.core.models import Gateway, Release, ReleaseHistory
 
@@ -52,7 +52,7 @@ def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) ->
         return False, msg
 
     # 非 TRIGGER_REVOKE_DISABLE_RELEASE 场景才需要校验状态
-    if trigger_publish_type != TriggerPublishType.TRIGGER_REVOKE_DISABLE_RELEASE:
+    if trigger_publish_type != TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE:
         if gateway.status != GatewayStatusEnum.ACTIVE.value:
             msg = f"rolling_update_release: gateway(id={gateway_id}) is not active, skip"
             return False, msg
@@ -198,12 +198,12 @@ def trigger_gateway_publish(
 
     release_list = qs.prefetch_related("gateway", "stage").all()
 
-    if trigger_publish_type == TriggerPublishType.TRIGGER_ROLLING_UPDATE_RELEASE:
+    if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE:
         return _trigger_rolling_publish(source, author, release_list, is_sync=is_sync)
 
-    if trigger_publish_type == TriggerPublishType.TRIGGER_REVOKE_DISABLE_RELEASE:
+    if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE:
         return _trigger_revoke_publish_for_disable(source, author, release_list, is_sync=is_sync)
 
-    if trigger_publish_type == TriggerPublishType.TRIGGER_REVOKE_DELETE_RELEASE:
+    if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DELETE_RELEASE:
         return _trigger_revoke_publish_for_deleting(release_list, is_sync=is_sync)
     return None
