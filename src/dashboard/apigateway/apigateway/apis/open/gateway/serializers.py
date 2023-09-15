@@ -166,7 +166,7 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
 
         # 2. 更新网关配置
-        GatewayHandler().save_auth_config(
+        GatewayHandler.save_auth_config(
             instance.id,
             user_auth_type=validated_data["user_auth_type"],
             user_conf=validated_data.get("user_config"),

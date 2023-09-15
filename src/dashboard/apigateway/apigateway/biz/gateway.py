@@ -162,7 +162,7 @@ class GatewayHandler:
         api_type: Optional[GatewayTypeEnum] = None,
     ):
         # 1. save gateway auth_config
-        GatewayHandler().save_auth_config(
+        GatewayHandler.save_auth_config(
             gateway.id,
             user_auth_type=user_auth_type,
             user_conf=user_config,
@@ -211,11 +211,11 @@ class GatewayHandler:
 
         # 3. delete stage
 
-        StageHandler().delete_by_gateway_id(gateway_id)
+        StageHandler.delete_by_gateway_id(gateway_id)
 
         # 4. delete resource
 
-        ResourceHandler().delete_by_gateway_id(gateway_id)
+        ResourceHandler.delete_by_gateway_id(gateway_id)
 
         # 5. delete resource-version
 

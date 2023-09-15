@@ -195,7 +195,7 @@ class TestGatewayHandler:
             },
         )
 
-        result, _ = GatewayHandler().save_auth_config(
+        result, _ = GatewayHandler.save_auth_config(
             fake_gateway.id,
             user_auth_type="default",
             user_conf=user_conf,

@@ -23,58 +23,13 @@ from django_dynamic_fixture import G
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
 from apigateway.common.contexts import ResourceAuthContext
-from apigateway.core.models import Gateway, Proxy, Resource, Stage, StageResourceDisabled
+from apigateway.core.models import Gateway, Resource
 
 
 class TestResourceHandler:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
         self.gateway = G(Gateway)
-
-    def test_get_proxy_configs(self):
-        resource = G(Resource)
-        proxy_http = G(
-            Proxy,
-            resource=resource,
-            type="http",
-            _config='{"method": "GET"}',
-        )
-        proxy_mock = G(
-            Proxy,
-            resource=resource,
-            type="mock",
-            _config='{"code": 200}',
-        )
-
-        data = [
-            {
-                "proxy_id": proxy_http.id,
-                "expected": {
-                    "type": "http",
-                    "configs": {
-                        "http": {"method": "GET"},
-                        "mock": {"code": 200},
-                    },
-                },
-            },
-            {
-                "proxy_id": proxy_mock.id,
-                "expected": {
-                    "type": "mock",
-                    "configs": {
-                        "http": {"method": "GET"},
-                        "mock": {"code": 200},
-                    },
-                },
-            },
-        ]
-
-        for test in data:
-            resource.proxy_id = test["proxy_id"]
-            resource.save()
-
-            result = ResourceHandler().get_proxy_configs(resource)
-            assert result == test["expected"]
 
     def test_save_resource_labels(self, fake_resource):
         fake_gateway = fake_resource.gateway
@@ -90,21 +45,6 @@ class TestResourceHandler:
         # test delete invalid labels
         ResourceHandler().save_resource_labels(fake_gateway, fake_resource, [label_2.id])
         assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
-
-    def test_save_disabled_stages(self):
-        gateway = G(Gateway)
-        resource = G(Resource, gateway=gateway)
-        stage = G(Stage, gateway=gateway)
-        invalid_stage = G(Stage, gateway=gateway)
-        G(StageResourceDisabled, resource=resource, stage=invalid_stage)
-
-        # test save disabled stages
-        ResourceHandler().save_disabled_stages(gateway, resource, [stage.id])
-        assert StageResourceDisabled.objects.filter(resource=resource).count() == 2
-
-        # test delete invalid disabled_stages
-        ResourceHandler().save_disabled_stages(gateway, resource, [stage.id], delete_unspecified=True)
-        assert StageResourceDisabled.objects.filter(resource=resource).count() == 1
 
     def test_save_auth_config(self):
         resource = G(Resource)
@@ -138,11 +78,11 @@ class TestResourceHandler:
             },
         ]
         for test in data:
-            ResourceHandler().save_auth_config(resource.id, test["config"])
+            ResourceHandler.save_auth_config(resource.id, test["config"])
             assert ResourceAuthContext().get_config(resource.id) == test["expected"]
 
         # test skip_auth_verification=True in database
-        ResourceHandler().save_auth_config(
+        ResourceHandler.save_auth_config(
             resource.id,
             {
                 "skip_auth_verification": True,
@@ -181,63 +121,8 @@ class TestResourceHandler:
             },
         ]
         for test in data:
-            ResourceHandler().save_auth_config(resource.id, test["config"])
+            ResourceHandler.save_auth_config(resource.id, test["config"])
             assert ResourceAuthContext().get_config(resource.id) == test["expected"]
-
-    def test_filter_resource(self):
-        gateway = G(Gateway)
-        G(Resource, gateway=gateway, path="/apis/", method="GET", name="search_apis")
-        G(Resource, gateway=gateway, path="/resources/", method="POST", name="create_resource")
-        resource = G(Resource, gateway=gateway, path="/labels/1/", method="DELETE", name="delete_label")
-
-        api_label = G(APILabel, gateway=gateway, name="hello")
-        G(ResourceLabel, resource=resource, api_label=api_label)
-
-        data = [
-            {
-                "params": {"query": "/apis/"},
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {"query": "search_apis"},
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {"path": "/labels/"},
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {"method": "POST"},
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {"label_name": "hello"},
-                "expected": {
-                    "count": 1,
-                },
-            },
-        ]
-        for test in data:
-            result = (
-                ResourceHandler()
-                .filter_resource(
-                    gateway=gateway,
-                    query=test["params"].get("query"),
-                    path=test["params"].get("path"),
-                    method=test["params"].get("method"),
-                    label_name=test["params"].get("label_name"),
-                )
-                .count()
-            )
-            assert result == test["expected"]["count"]
 
     def test_snapshot(self, fake_resource):
         snapshot = ResourceHandler().snapshot(fake_resource, as_dict=True)

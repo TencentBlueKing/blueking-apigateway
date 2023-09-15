@@ -59,7 +59,7 @@ class Command(BaseCommand):
             print(f"gateway(name={settings.BK_ESB_GATEWAY_NAME}) auth config not changed, skip")
             return
 
-        GatewayHandler().save_auth_config(esb_gateway.id, **esb_gateway_auth_config)
+        GatewayHandler.save_auth_config(esb_gateway.id, **esb_gateway_auth_config)
 
         print(f"gateway(name={settings.BK_ESB_GATEWAY_NAME}) auth config updated")
 

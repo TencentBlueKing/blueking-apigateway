@@ -24,7 +24,6 @@ from pytest import fixture
 
 from apigateway.apps.plugin.models import PluginConfig, PluginType
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
-from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.controller.crds.base import KubernetesResource
@@ -37,8 +36,8 @@ from apigateway.controller.crds.v1beta1.convertors.resource import HttpResourceC
 from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvertor
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
 from apigateway.controller.registry.dict import DictRegistry
-from apigateway.core.constants import APIHostingTypeEnum, ProxyTypeEnum, StageStatusEnum
-from apigateway.core.models import MicroGateway, Release, ResourceVersion
+from apigateway.core.constants import APIHostingTypeEnum, StageStatusEnum
+from apigateway.core.models import MicroGateway, Proxy, Release, ResourceVersion
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -166,29 +165,27 @@ def edge_resource_overwrite_stage(fake_resource1):
 
 @fixture
 def edge_resource_overwrite_stage_proxy(faker, edge_resource_overwrite_stage, backend_service_http_host):
-    instance, _ = ResourceHandler().save_proxy_config(
-        edge_resource_overwrite_stage,
-        ProxyTypeEnum.HTTP.value,
-        {
-            "method": faker.http_method(),
-            "path": faker.uri_path(),
-            "match_subpath": False,
-            "timeout": faker.random_int(),
-            "upstreams": {
-                "loadbalance": "roundrobin",
-                "hosts": [{"host": backend_service_http_host, "weight": 100}],
-            },
-            "transform_headers": {
-                "set": {
-                    "X-Set-By-Resource": edge_resource_overwrite_stage.name,
-                },
-                "delete": [
-                    "X-Del-By-Resource",
-                ],
-            },
+    proxy = Proxy.objects.get(resource=edge_resource_overwrite_stage)
+    proxy.config = {
+        "method": faker.http_method(),
+        "path": faker.uri_path(),
+        "match_subpath": False,
+        "timeout": faker.random_int(),
+        "upstreams": {
+            "loadbalance": "roundrobin",
+            "hosts": [{"host": backend_service_http_host, "weight": 100}],
         },
-    )
-    return instance
+        "transform_headers": {
+            "set": {
+                "X-Set-By-Resource": edge_resource_overwrite_stage.name,
+            },
+            "delete": [
+                "X-Del-By-Resource",
+            ],
+        },
+    }
+    proxy.save()
+    return proxy
 
 
 @fixture
@@ -198,22 +195,20 @@ def edge_resource_inherit_stage(fake_resource2):
 
 @fixture
 def edge_resource_inherit_stage_proxy(faker, edge_resource_inherit_stage):
-    instance, _ = ResourceHandler().save_proxy_config(
-        edge_resource_inherit_stage,
-        ProxyTypeEnum.HTTP.value,
-        {
-            "method": faker.http_method(),
-            "path": faker.uri_path(),
-            "match_subpath": False,
-            "timeout": 0,
-            "upstreams": {},
-            "transform_headers": {
-                "set": {},
-                "delete": [],
-            },
+    proxy = Proxy.objects.get(resource=edge_resource_inherit_stage)
+    proxy.config = {
+        "method": faker.http_method(),
+        "path": faker.uri_path(),
+        "match_subpath": False,
+        "timeout": 0,
+        "upstreams": {},
+        "transform_headers": {
+            "set": {},
+            "delete": [],
         },
-    )
-    return instance
+    }
+    proxy.save()
+    return proxy
 
 
 @fixture
