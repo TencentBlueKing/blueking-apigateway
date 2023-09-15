@@ -15,16 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from dataclasses import dataclass
+
 import pytest
-from attrs import define, field
 
 from apigateway.utils.measurement import Measurement, MeasurementPoint
 
 
-@define
+@dataclass
 class DemoMeasurementPoint(MeasurementPoint):
     measurement = "testing"
-    value: int = field(converter=int)
+    value: int
+
+    def __post_init__(self):
+        super().__post_init__()
+        if not isinstance(self.value, int):
+            self.value = int(self.value)
 
 
 @pytest.fixture

@@ -47,6 +47,7 @@ class TestResourceVersionListCreateApi:
             },
         )
         result = response.json()
+
         assert result["data"]["count"] == 1
 
         response = request_view(

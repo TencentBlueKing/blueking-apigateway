@@ -18,9 +18,8 @@
 #
 from django.urls import path
 
-from .views import UserAuthTypeListApi, UserTokenGetApi
+from .views import UserAuthTypeListApi
 
 urlpatterns = [
-    path("token/", UserTokenGetApi.as_view(), name="user.token"),
-    path("user_auth_types/", UserAuthTypeListApi.as_view(), name="user.user_auth_types"),
+    path("user-auth-types/", UserAuthTypeListApi.as_view(), name="user.user_auth_types"),
 ]

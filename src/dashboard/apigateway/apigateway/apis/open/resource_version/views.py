@@ -21,7 +21,6 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.open.resource_version import serializers
 from apigateway.apis.web.resource_version.serializers import ResourceVersionInfoSLZ
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.releaser import BatchReleaser, ReleaseError
@@ -30,6 +29,8 @@ from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ResourceVersion, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
+
+from .serializers import ListResourceVersionOutputV1SLZ, QueryResourceVersionInputV1SLZ, ReleaseInputV1SLZ
 
 
 @method_decorator(
@@ -50,7 +51,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
 
     def list(self, request, *args, **kwargs):
-        slz = serializers.QueryResourceVersionInputV1SLZ(data=request.query_params)
+        slz = QueryResourceVersionInputV1SLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         versions = ResourceVersion.objects.filter_objects_fields(
@@ -58,7 +59,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
             version=slz.validated_data.get("version"),
         )
         page = self.paginate_queryset(versions)
-        slz = serializers.ListResourceVersionOutputV1SLZ(page, many=True)
+        slz = ListResourceVersionOutputV1SLZ(page, many=True)
         return V1OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
 
     @transaction.atomic
@@ -88,11 +89,12 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
 
 class ResourceVersionReleaseApi(generics.CreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
+    serializer_class = ReleaseInputV1SLZ
 
     @swagger_auto_schema(tags=["OpenAPI.ResourceVersion"])
     @transaction.atomic
     def post(self, request, gateway_name: str, *args, **kwargs):
-        slz = serializers.ReleaseInputV1SLZ(data=request.data, context={"request": request})
+        slz = self.get_serializer(data=request.data, context={"request": request})
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data

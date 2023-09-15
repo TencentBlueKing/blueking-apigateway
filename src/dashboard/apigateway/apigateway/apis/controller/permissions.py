@@ -20,7 +20,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
-import cattr
 import jwt
 from django.utils.translation import gettext_lazy
 from redis import Redis
@@ -150,7 +149,7 @@ class MicroGatewayInstancePermission(permissions.BasePermission):
         except Exception:
             return None
 
-        return cattr.structure(decoded, MicroGatewayJWTPayload)
+        return MicroGatewayJWTPayload(**decoded)
 
     def _get_micro_gateway(self, view) -> Optional[MicroGateway]:
         """

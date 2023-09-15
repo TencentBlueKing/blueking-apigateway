@@ -102,7 +102,7 @@ class BaseGatewayReleaser:
         history = ReleaseHistory.objects.create(
             gateway_id=self.gateway.id,
             stage_id=self.stages[0].id,
-            source=PublishSourceEnum.VERSION_PUBLISH,
+            source=PublishSourceEnum.VERSION_PUBLISH.value,
             resource_version_id=self.resource_version.id,
             comment=self.comment,
             created_by=self.username,
