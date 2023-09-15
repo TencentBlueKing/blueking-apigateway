@@ -131,6 +131,7 @@ class ResourceVersionHandler:
         data.update(
             {
                 "name": name,
+                "data": ResourceVersionHandler.make_version(gateway),
                 "gateway": gateway,
                 # TODO: 待 version 改为必填后，下面的 version 赋值去掉
                 "version": data.get("version") or name,
@@ -156,9 +157,9 @@ class ResourceVersionHandler:
         if not version:
             return
 
-        # 是否创建 backend
-        if not Backend.objects.filter(gateway_id=gateway.id).exists():
-            raise serializers.ValidationError(_("请先创建后端服务，然后再生成版本。"))
+        # 是否绑定backend
+        if Proxy.objects.filter(resource__gateway=gateway, backend__isnull=True).exists():
+            raise serializers.ValidationError(_("存在资源未绑定后端服务. "))
 
         # ResourceVersion 中数据量较大，因此，不使用 UniqueTogetherValidator
         if ResourceVersion.objects.filter(gateway=gateway, version=version).exists():

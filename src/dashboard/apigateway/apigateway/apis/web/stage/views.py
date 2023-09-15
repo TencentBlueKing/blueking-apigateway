@@ -257,9 +257,7 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
 
         username = request.user.username
         # 触发环境发布
-        trigger_gateway_publish(
-            PublishSourceEnum.STAGE_UPDATE, username, instance.gateway_id, instance.id, is_sync=True
-        )
+        trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, username, instance.gateway_id, instance.id)
 
         record_audit_log(
             username=username,
@@ -334,9 +332,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
 
         username = request.user.username
         # 触发环境发布
-        trigger_gateway_publish(
-            PublishSourceEnum.BACKEND_UPDATE, username, instance.gateway_id, instance.stage_id, is_sync=True
-        )
+        trigger_gateway_publish(PublishSourceEnum.BACKEND_UPDATE, username, instance.gateway_id, instance.stage_id)
 
         return OKJsonResponse()
 

@@ -85,6 +85,9 @@ class StageHandler:
 
     @staticmethod
     def delete(stage: Stage):
+        # 删除stage CR  先删除crd，发布过程需要用到
+        trigger_gateway_publish(PublishSourceEnum.STAGE_DELETE, "admin", stage.gateway_id, stage.id, is_sync=True)
+
         with transaction.atomic():
             BackendConfig.objects.filter(gateway=stage.gateway, stage=stage).delete()
 
@@ -98,9 +101,6 @@ class StageHandler:
             # 5. delete release-history
 
             ReleaseHandler.clean_no_stage_related_release_history(stage.gateway.id)
-
-        # 删除stage CR
-        trigger_gateway_publish(PublishSourceEnum.STAGE_DELETE, "admin", stage.gateway_id, stage.id, is_sync=False)
 
     @staticmethod
     def set_status(stage: Stage, status: int, updated_by: str):
