@@ -109,6 +109,7 @@ class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
     FAILURE = "failure"  # 发布失败
     PENDING = "pending"  # 待发布
     RELEASING = "releasing"  # 发布中
+    UNRELEASED = "unreleased"  # 未发布
 
 
 class PublishEventEnum(StructuredEnum):

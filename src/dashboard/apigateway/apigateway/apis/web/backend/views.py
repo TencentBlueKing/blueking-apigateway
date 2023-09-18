@@ -55,7 +55,7 @@ class BackendQuerySetMixin:
     ),
 )
 class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
-    queryset = Backend.objects.order_by("-id")
+    queryset = Backend.objects.order_by("id")
     serializer_class = BackendListOutputSLZ
     filterset_class = BackendFilter
 
@@ -111,7 +111,7 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=BackendInputSLZ,
         tags=["WebAPI.Backend"],
     ),
@@ -154,7 +154,7 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
             comment=_("更新后端服务"),
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):

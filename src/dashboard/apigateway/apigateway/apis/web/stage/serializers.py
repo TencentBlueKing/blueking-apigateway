@@ -25,16 +25,14 @@ from apigateway.apis.web.backend.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.backend.serializers import BaseBackendConfigSLZ
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import STAGE_NAME_PATTERN, StageStatusEnum
+from apigateway.core.constants import STAGE_NAME_PATTERN, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import Backend, Stage
 
 from .validators import StageVarsValidator
 
 
 class StageOutputSLZ(serializers.ModelSerializer):
-    release_status = serializers.SerializerMethodField()
-    release_time = serializers.SerializerMethodField()
-    release_by = serializers.SerializerMethodField()
+    release = serializers.SerializerMethodField()
     resource_version = serializers.SerializerMethodField()
     publish_id = serializers.SerializerMethodField()
     new_resource_version = serializers.SerializerMethodField()
@@ -52,23 +50,21 @@ class StageOutputSLZ(serializers.ModelSerializer):
             "status",
             "created_time",
             # by method
-            "release_status",
-            "release_time",
-            "release_by",
+            "release",
             "resource_version",
             "publish_id",
             "new_resource_version",
         )
 
-    def get_release_status(self, obj):
-        return self.context["stage_publish_status"].get(obj.id, {}).get("status", "")
-
-    def get_release_time(self, obj):
+    def get_release(self, obj):
         release_time = self.context["stage_release"].get(obj.id, {}).get("release_time", "")
-        return serializers.DateTimeField(allow_null=True, required=False).to_representation(release_time)
-
-    def get_release_by(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("release_by", "")
+        return {
+            "status": self.context["stage_publish_status"]
+            .get(obj.id, {})
+            .get("status", ReleaseStatusEnum.UNRELEASED.value),
+            "created_time": serializers.DateTimeField(allow_null=True, required=False).to_representation(release_time),
+            "created_by": self.context["stage_release"].get(obj.id, {}).get("release_by", ""),
+        }
 
     def get_resource_version(self, obj):
         return self.context["stage_release"].get(obj.id, {}).get("resource_version", {}).get("version", "")
@@ -126,7 +122,9 @@ class StageInputSLZ(serializers.Serializer):
         input_backend_ids = {backend["id"] for backend in attrs["backends"]}
         for backend in backends:
             if backend.id not in input_backend_ids:
-                raise serializers.ValidationError(_("环境缺少【{backend_name}】的后端服务。").format(backend_name=backend.name))
+                raise serializers.ValidationError(
+                    _("请求参数中，缺少后端服务【{backend_id}】的配置。").format(backend_name=backend.name)
+                )
 
         # 校验backend下类型选择的关联性
         for input_backend in attrs["backends"]:
@@ -174,7 +172,6 @@ class StageBackendOutputSLZ(serializers.Serializer):
 
 class BackendConfigInputSLZ(BaseBackendConfigSLZ):
     def validate(self, attrs):
-        # 查询网关下所有的backend
         backend = self.context["backend"]
 
         for host in attrs["hosts"]:

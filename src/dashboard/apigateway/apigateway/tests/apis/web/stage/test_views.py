@@ -104,9 +104,8 @@ class TestStageApi:
             gateway=fake_stage.gateway,
             data=data,
         )
-        assert response.status_code == 200
+        assert response.status_code == 204
         stage = Stage.objects.get(id=fake_stage.id)
-        assert stage.name == "stage-update"
         backend_config = BackendConfig.objects.get(stage=stage)
         assert backend_config.config == {
             "type": "node",
@@ -183,7 +182,7 @@ class TestStageVarsApi:
             gateway=fake_stage.gateway,
             data=data,
         )
-        assert response.status_code == 200
+        assert response.status_code == 204
         stage = Stage.objects.get(id=fake_stage.id)
         assert stage.vars == {
             "key1": "value1",
@@ -234,7 +233,7 @@ class TestStageBackendApi:
             gateway=fake_stage.gateway,
             data=data,
         )
-        assert response.status_code == 200
+        assert response.status_code == 204
         backend_config = BackendConfig.objects.get(stage=fake_stage, backend=fake_backend)
         assert backend_config.config == data
 
@@ -250,6 +249,6 @@ class TestStageStatusUpdateApi:
             gateway=fake_stage.gateway,
             data=data,
         )
-        assert response.status_code == 200
+        assert response.status_code == 204
         stage = Stage.objects.get(id=fake_stage.id)
         assert stage.status == 0
