@@ -165,6 +165,12 @@ class ResourceHandler:
         if condition.get("method"):
             queryset = queryset.filter(method=condition["method"])
 
+        if condition.get("backend_id"):
+            resource_ids = Proxy.objects.filter(gateway_id=gateway_id, backend_id=condition["backend_id"]).values_list(
+                "resource_id", flat=True
+            )
+            queryset = queryset.filter(id__in=resource_ids)
+
         if condition.get("label_ids"):
             labels = APILabel.objects.filter(gateway_id=gateway_id, id__in=condition["label_ids"])
             resource_ids = (

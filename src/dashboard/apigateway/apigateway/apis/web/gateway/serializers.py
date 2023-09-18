@@ -32,6 +32,14 @@ from .constants import GATEWAY_NAME_PATTERN
 from .validators import ReservedGatewayNameValidator
 
 
+class GatewayListInputSLZ(serializers.Serializer):
+    query = serializers.CharField(allow_blank=True, required=False)
+    order_by = serializers.ChoiceField(
+        choices=["-updated_time", "updated_time", "-created_time", "created_time", "name", "-name"],
+        default="-updated_time",
+    )
+
+
 class GatewayListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
@@ -107,7 +115,6 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     api_domain = serializers.SerializerMethodField()
     docs_url = serializers.SerializerMethodField()
     public_key_fingerprint = serializers.SerializerMethodField()
-    feature_flags = serializers.SerializerMethodField()
     allow_update_gateway_auth = serializers.SerializerMethodField()
 
     class Meta:
@@ -127,7 +134,6 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "api_domain",
             "docs_url",
             "public_key_fingerprint",
-            "feature_flags",
         )
         read_only_fields = fields
         lookup_field = "id"
@@ -143,9 +149,6 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
 
     def get_allow_update_gateway_auth(self, obj):
         return self.context["auth_config"].allow_update_gateway_auth
-
-    def get_feature_flags(self, obj):
-        return self.context["feature_flags"]
 
     def get_is_official(self, obj):
         return GatewayTypeHandler.is_official(self.context["auth_config"].gateway_type)
@@ -169,3 +172,7 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
         model = Gateway
         fields = ("status",)
         lookup_field = "id"
+
+
+class GatewayFeatureFlagsOutputSLZ(serializers.Serializer):
+    feature_flags = serializers.DictField()

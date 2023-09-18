@@ -30,6 +30,7 @@ from rest_framework import generics, status
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.label.models import APILabel
+from apigateway.biz.backend import BackendHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
@@ -100,6 +101,8 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
             context={
                 "labels": ResourceLabelHandler.get_labels(resource_ids),
                 "docs": ResourceDocHandler.get_docs(resource_ids),
+                "backends": BackendHandler.get_backends(request.gateway.id),
+                "proxies": {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)},
                 "latest_version_created_time": ResourceVersionHandler.get_latest_created_time(request.gateway.id),
             },
         )
@@ -235,7 +238,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
 
     @transaction.atomic
     def update(self, request, *args, **kwargs):
-        slz = self.get_serializer(data=request.data)
+        slz = self.get_serializer(data=request.data, context={"gateway_id": request.gateway.id})
         slz.is_valid(raise_exception=True)
 
         queryset = self.get_queryset().filter(id__in=slz.validated_data["ids"])
@@ -260,7 +263,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
-        slz = ResourceBatchDestroyInputSLZ(data=request.data)
+        slz = ResourceBatchDestroyInputSLZ(data=request.data, context={"gateway_id": request.gateway.id})
         slz.is_valid(raise_exception=True)
 
         queryset = self.get_queryset().filter(id__in=slz.validated_data["ids"])
@@ -299,7 +302,7 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
 
     @transaction.atomic
     def update(self, request, *args, **kwargs):
-        slz = self.get_serializer(data=request.data)
+        slz = self.get_serializer(data=request.data, context={"gateway_id": request.gateway.id})
         slz.is_valid(raise_exception=True)
 
         instance = self.get_object()

@@ -26,6 +26,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apis.web.resource.validators import BackendPathVarsValidator, PathVarsValidator
+from apigateway.apps.label.models import APILabel
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SwaggerFormatEnum
 from apigateway.biz.gateway import GatewayHandler
@@ -44,7 +45,8 @@ class ResourceQueryInputSLZ(serializers.Serializer):
     name = serializers.CharField(allow_blank=True, required=False)
     path = serializers.CharField(allow_blank=True, required=False)
     method = serializers.CharField(allow_blank=True, required=False)
-    label_ids = serializers.CharField(allow_blank=True, required=False)
+    label_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+    backend_id = serializers.IntegerField(allow_null=True, required=False)
     query = serializers.CharField(allow_blank=True, required=False)
     order_by = serializers.ChoiceField(
         choices=["-id", "name", "-name", "path", "-path", "updated_time", "-updated_time"],
@@ -57,6 +59,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
     path = serializers.CharField(source="path_display", read_only=True)
     labels = serializers.SerializerMethodField()
     docs = serializers.SerializerMethodField()
+    backend = serializers.SerializerMethodField()
     has_updated = serializers.SerializerMethodField(help_text="相对上次发布，有更新")
 
     class Meta:
@@ -69,11 +72,16 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
             "path",
             "created_time",
             "updated_time",
+            "backend",
             "labels",
             "docs",
             "has_updated",
         ]
         read_only_fields = fields
+
+    def get_backend(self, obj):
+        proxy = self.context["proxies"][obj.id]
+        return self.context["backends"][proxy.backend_id]
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])
@@ -203,6 +211,16 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         except Backend.DoesNotExist:
             raise serializers.ValidationError(_("后端服务 (id={id}) 不存在。").format(id=backend_id))
 
+    def validate_label_ids(self, value):
+        gateway = self.context["gateway"]
+        not_exist_ids = set(value) - set(
+            APILabel.objects.filter(gateway=gateway, id__in=value).values_list("id", flat=True)
+        )
+        if not_exist_ids:
+            raise serializers.ValidationError(_("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
+
+        return value
+
 
 class ResourceOutputSLZ(serializers.ModelSerializer):
     auth_config = serializers.SerializerMethodField()
@@ -247,15 +265,45 @@ class ResourceBatchUpdateInputSLZ(serializers.Serializer):
     is_public = serializers.BooleanField()
     allow_apply_permission = serializers.BooleanField()
 
+    def validate_ids(self, value):
+        gateway_id = self.context["gateway_id"]
+        not_exist_ids = set(value) - set(
+            Resource.objects.filter(gateway_id=gateway_id, id__in=value).values_list("id", flat=True)
+        )
+        if not_exist_ids:
+            raise serializers.ValidationError(_("资源不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
+
+        return value
+
 
 class ResourceBatchDestroyInputSLZ(serializers.Serializer):
     ids = serializers.ListField(child=serializers.IntegerField(min_value=1))
+
+    def validate_ids(self, value):
+        gateway_id = self.context["gateway_id"]
+        not_exist_ids = set(value) - set(
+            Resource.objects.filter(gateway_id=gateway_id, id__in=value).values_list("id", flat=True)
+        )
+        if not_exist_ids:
+            raise serializers.ValidationError(_("资源不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
+
+        return value
 
 
 class ResourceLabelUpdateInputSLZ(serializers.Serializer):
     label_ids = serializers.ListField(
         child=serializers.IntegerField(), allow_empty=True, max_length=MAX_LABEL_COUNT_PER_RESOURCE
     )
+
+    def validate_label_ids(self, value):
+        gateway_id = self.context["gateway_id"]
+        not_exist_ids = set(value) - set(
+            APILabel.objects.filter(gateway_id=gateway_id, id__in=value).values_list("id", flat=True)
+        )
+        if not_exist_ids:
+            raise serializers.ValidationError(_("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
+
+        return value
 
 
 class ResourceDataSLZ(serializers.ModelSerializer):
@@ -431,7 +479,7 @@ class BackendPathCheckInputSLZ(serializers.Serializer):
             "invalid": gettext_lazy("斜线(/)开头的合法URL路径，不包含http(s)开头的域名。"),
         },
     )
-    backend_id = serializers.IntegerField(allow_null=True, required=False)
+    backend_id = serializers.IntegerField()
     backend_path = serializers.RegexField(
         PATH_PATTERN,
         label="Path",

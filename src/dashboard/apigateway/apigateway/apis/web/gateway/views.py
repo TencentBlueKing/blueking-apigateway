@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import List, Optional
 
 from django.conf import settings
 from django.db import transaction
@@ -35,6 +36,8 @@ from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
     GatewayCreateInputSLZ,
+    GatewayFeatureFlagsOutputSLZ,
+    GatewayListInputSLZ,
     GatewayListOutputSLZ,
     GatewayRetrieveOutputSLZ,
     GatewayUpdateInputSLZ,
@@ -57,11 +60,23 @@ from .serializers import (
 )
 class GatewayListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
+        # 获取用户有权限的网关列表，后续切换到 IAM
         gateways = GatewayHandler.get_gateways_by_user(request.user.username)
         gateway_ids = [gateway.id for gateway in gateways]
 
-        slz = GatewayListOutputSLZ(
-            gateways,
+        slz = GatewayListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        queryset = self._filter_list_queryset(
+            gateway_ids,
+            slz.validated_data.get("query"),
+            slz.validated_data["order_by"],
+        )
+        page = self.paginate_queryset(queryset)
+        gateway_ids = [gateway.id for gateway in page]
+
+        output_slz = GatewayListOutputSLZ(
+            page,
             many=True,
             context={
                 "resource_count": GatewayHandler.get_resource_count(gateway_ids),
@@ -70,7 +85,15 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             },
         )
 
-        return OKJsonResponse(data=slz.data)
+        return self.get_paginated_response(output_slz.data)
+
+    def _filter_list_queryset(self, gateway_ids: List[int], query: Optional[str], order_by: str):
+        queryset = Gateway.objects.filter(id__in=gateway_ids)
+
+        if query:
+            queryset = queryset.filter(name__icontains=query)
+
+        return queryset.order_by(order_by)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -114,7 +137,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
     name="put",
     decorator=swagger_auto_schema(
         request_body=GatewayUpdateInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Gateway"],
     ),
 )
@@ -122,14 +145,14 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
     name="patch",
     decorator=swagger_auto_schema(
         request_body=GatewayUpdateInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Gateway"],
     ),
 )
 @method_decorator(
     name="delete",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Gateway"],
     ),
 )
@@ -144,7 +167,6 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             instance,
             context={
                 "auth_config": GatewayAuthContext().get_auth_config(instance.pk),
-                "feature_flags": GatewayHandler.get_feature_flag(instance.pk),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -166,7 +188,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             instance_name=instance.name,
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
@@ -226,3 +248,24 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: GatewayFeatureFlagsOutputSLZ()},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayFeatureFlagsApi(generics.ListAPIView):
+    queryset = Gateway.objects.all()
+    serializer_class = GatewayFeatureFlagsOutputSLZ
+    lookup_url_kwarg = "gateway_id"
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        feature_flags = GatewayHandler.get_feature_flags(instance.pk)
+        slz = self.get_serializer({"feature_flags": feature_flags})
+
+        return OKJsonResponse(data=slz.data)
