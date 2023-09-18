@@ -40,7 +40,7 @@ class ReplicasStatusSLZ(serializers.Serializer):
     data_plane_status_message = serializers.CharField(help_text="数据平面状态消息", required=False)
 
 
-class MicroGatewayStatusSLZ(serializers.Serializer):
+class MicroGatewayStatusInputSLZ(serializers.Serializer):
     gateway = GatewayStatusInfoSLZ(help_text="网关信息")
     replicas = serializers.ListField(help_text="副本状态", child=ReplicasStatusSLZ())
 
@@ -50,6 +50,6 @@ class MicroGatewayRelatedInfoSLZ(serializers.Serializer):
     stage_name = serializers.CharField(help_text="环境名称")
 
 
-class MicroGatewayInfoSLZ(serializers.Serializer):
+class MicroGatewayInfoOutputSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="微网关名称")
     related_infos = serializers.ListField(child=MicroGatewayRelatedInfoSLZ(), help_text="关联信息")

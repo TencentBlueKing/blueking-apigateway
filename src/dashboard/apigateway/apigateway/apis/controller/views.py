@@ -21,11 +21,10 @@ from typing import Optional
 
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
-from rest_framework.viewsets import GenericViewSet
+from rest_framework import generics, status
 
 from apigateway.apis.controller.permissions import MicroGatewayInstancePermission
-from apigateway.apis.controller.serializers import MicroGatewayInfoSLZ, MicroGatewayStatusSLZ
+from apigateway.apis.controller.serializers import MicroGatewayInfoOutputSLZ, MicroGatewayStatusInputSLZ
 from apigateway.controller.constants import MicroGatewayStatusCodeEnum
 from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
 from apigateway.core.models import Gateway, MicroGateway
@@ -36,9 +35,7 @@ logger = logging.getLogger(__name__)
 PERMISSION_CACHE_DURATION = 60
 
 
-class BaseMicroGatewayViewSet(GenericViewSet):
-    permission_classes = [MicroGatewayInstancePermission]
-
+class MicroGatewayApiMixin:
     def get_micro_gateway(self, instance_id):
         return get_object_or_404(MicroGateway, pk=instance_id)
 
@@ -53,14 +50,15 @@ class BaseMicroGatewayViewSet(GenericViewSet):
         return get_object_or_404(qs)
 
 
-class MicroGatewayStatusViewSet(BaseMicroGatewayViewSet):
-    serializer_class = MicroGatewayStatusSLZ
+class MicroGatewayStatusUpdateApi(generics.UpdateAPIView, MicroGatewayApiMixin):
+    permission_classes = [MicroGatewayInstancePermission]
+    serializer_class = MicroGatewayStatusInputSLZ
 
     @swagger_auto_schema(
         operation_description="上报微网关的状态",
         tags=["OpenAPI.MicroGateway"],
     )
-    def refresh(self, request, instance_id):
+    def put(self, request, instance_id):
         """
         更新微网关状态，因为微网关上报的状态是直接上报多个副本的状态的，因此这个接口需要汇总出一个状态
         以下条件全部满足时，认为是成功的：
@@ -151,19 +149,21 @@ class MicroGatewayStatusViewSet(BaseMicroGatewayViewSet):
         return OKJsonResponse()
 
 
-class MicroGatewayInfoViewSet(BaseMicroGatewayViewSet):
+class MicroGatewayInfoRetrieveApi(generics.RetrieveAPIView, MicroGatewayApiMixin):
     """查询微网关实例信息"""
+
+    permission_classes = [MicroGatewayInstancePermission]
 
     @swagger_auto_schema(
         operation_description="获取微网关信息",
-        responses={status.HTTP_200_OK: MicroGatewayInfoSLZ},
+        responses={status.HTTP_200_OK: MicroGatewayInfoOutputSLZ},
         tags=["OpenAPI.MicroGateway"],
     )
     def get(self, request, instance_id):
         micro_gateway = self.get_micro_gateway(instance_id)
         related_gateways = micro_gateway.query_related_gateways()
 
-        slz = MicroGatewayInfoSLZ(
+        slz = MicroGatewayInfoOutputSLZ(
             {
                 "name": micro_gateway.name,
                 "related_infos": [
