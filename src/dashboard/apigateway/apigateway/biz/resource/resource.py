@@ -272,3 +272,7 @@ class ResourceHandler:
     @staticmethod
     def get_id_to_resource(gateway_id: int) -> Dict[int, Resource]:
         return {r.id: r for r in Resource.objects.filter(gateway_id=gateway_id)}
+
+    @staticmethod
+    def get_valid_ids(gateway_id: int, ids: List[int]) -> List[int]:
+        return list(Resource.objects.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))

@@ -26,10 +26,11 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apis.web.resource.validators import BackendPathVarsValidator, PathVarsValidator
-from apigateway.apps.label.models import APILabel
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SwaggerFormatEnum
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway_label import GatewayLabelHandler
+from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerImporter
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.exceptions import SchemaValidationError
@@ -213,9 +214,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
 
     def validate_label_ids(self, value):
         gateway = self.context["gateway"]
-        not_exist_ids = set(value) - set(
-            APILabel.objects.filter(gateway=gateway, id__in=value).values_list("id", flat=True)
-        )
+        not_exist_ids = set(value) - set(GatewayLabelHandler.get_valid_ids(gateway.id, value))
         if not_exist_ids:
             raise serializers.ValidationError(_("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
 
@@ -267,9 +266,7 @@ class ResourceBatchUpdateInputSLZ(serializers.Serializer):
 
     def validate_ids(self, value):
         gateway_id = self.context["gateway_id"]
-        not_exist_ids = set(value) - set(
-            Resource.objects.filter(gateway_id=gateway_id, id__in=value).values_list("id", flat=True)
-        )
+        not_exist_ids = set(value) - set(ResourceHandler.get_valid_ids(gateway_id, value))
         if not_exist_ids:
             raise serializers.ValidationError(_("资源不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
 
@@ -281,9 +278,7 @@ class ResourceBatchDestroyInputSLZ(serializers.Serializer):
 
     def validate_ids(self, value):
         gateway_id = self.context["gateway_id"]
-        not_exist_ids = set(value) - set(
-            Resource.objects.filter(gateway_id=gateway_id, id__in=value).values_list("id", flat=True)
-        )
+        not_exist_ids = set(value) - set(ResourceHandler.get_valid_ids(gateway_id, value))
         if not_exist_ids:
             raise serializers.ValidationError(_("资源不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
 
@@ -297,9 +292,7 @@ class ResourceLabelUpdateInputSLZ(serializers.Serializer):
 
     def validate_label_ids(self, value):
         gateway_id = self.context["gateway_id"]
-        not_exist_ids = set(value) - set(
-            APILabel.objects.filter(gateway_id=gateway_id, id__in=value).values_list("id", flat=True)
-        )
+        not_exist_ids = set(value) - set(GatewayLabelHandler.get_valid_ids(gateway_id, value))
         if not_exist_ids:
             raise serializers.ValidationError(_("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
 
