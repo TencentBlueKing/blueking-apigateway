@@ -17,12 +17,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from abc import ABCMeta
-from typing import Dict, List, Text
+from typing import Text
 
 from django.utils.functional import cached_property
 
-from apigateway.common.factories import SchemaFactory
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
 from apigateway.core.models import Context
 
 _undefined = object()
@@ -78,48 +76,3 @@ class BaseContext(metaclass=ABCMeta):
             scope_id__in=scope_ids,
             type=self.type,
         ).delete()
-
-
-class GatewayFeatureFlagContext(BaseContext):
-    scope_type = ContextScopeTypeEnum.GATEWAY.value
-    type = ContextTypeEnum.GATEWAY_FEATURE_FLAG.value
-
-    @cached_property
-    def schema(self):
-        return SchemaFactory().get_context_gateway_feature_flag_schema()
-
-
-# TODO DELETE IT 1.14
-class StageProxyHTTPContext(BaseContext):
-    """Context data related with HTTP proxy in "stage" scope."""
-
-    scope_type = ContextScopeTypeEnum.STAGE.value
-    type = ContextTypeEnum.STAGE_PROXY_HTTP.value
-
-    @cached_property
-    def schema(self):
-        return SchemaFactory().get_context_stage_proxy_http_schema()
-
-    def contain_hosts(self, scope_id: int) -> bool:
-        """Check if the config contains any valid host entries. The hosts were set
-        to empty by default and require manual setup.
-
-        :param scope_id: The ID of stage.
-        :return: Whether the config contains valid host.
-        """
-        cfg = self.get_config(scope_id, default=None)
-        if not cfg:
-            return False
-        return any(h.get("host") for h in cfg["upstreams"].get("hosts", []))
-
-
-class ResourceAuthContext(BaseContext):
-    scope_type = ContextScopeTypeEnum.RESOURCE.value
-    type = ContextTypeEnum.RESOURCE_AUTH.value
-
-    @cached_property
-    def schema(self):
-        return SchemaFactory().get_context_resource_bkauth_schema()
-
-    def get_resource_id_to_auth_config(self, resource_ids: List[int]) -> Dict[int, dict]:
-        return {context.scope_id: context.config for context in self.filter_contexts(resource_ids)}
