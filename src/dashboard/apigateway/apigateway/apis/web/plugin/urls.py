@@ -45,6 +45,6 @@ urlpatterns = [
         PluginConfigRetrieveUpdateDestroyApi.as_view(),
         name="plugins.config.details",
     ),
-    path("<str:code>/forms/", PluginFormRetrieveApi.as_view(), name="plugins.forms"),
+    path("<str:code>/form/", PluginFormRetrieveApi.as_view(), name="plugins.form"),
     path("<str:code>/bindings/", PluginBindingListApi.as_view(), name="plugins.bindings"),
 ]
