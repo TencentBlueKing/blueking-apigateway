@@ -44,13 +44,13 @@ class TestGatewayHandler:
         G(Gateway, _maintainers="admin1")
         G(Gateway, _maintainers="admin2;admin1")
 
-        gateways = GatewayHandler.get_gateways_by_user("admin1")
+        gateways = GatewayHandler.list_gateways_by_user("admin1")
         assert len(gateways) >= 2
 
-        gateways = GatewayHandler.get_gateways_by_user("admin2")
+        gateways = GatewayHandler.list_gateways_by_user("admin2")
         assert len(gateways) >= 1
 
-        gateways = GatewayHandler.get_gateways_by_user("not_exist_user")
+        gateways = GatewayHandler.list_gateways_by_user("not_exist_user")
         assert len(gateways) == 0
 
     def test_get_stages_with_release_status(self, fake_gateway):

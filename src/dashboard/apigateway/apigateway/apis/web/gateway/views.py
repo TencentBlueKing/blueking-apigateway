@@ -61,7 +61,7 @@ from .serializers import (
 class GatewayListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         # 获取用户有权限的网关列表，后续切换到 IAM
-        gateways = GatewayHandler.get_gateways_by_user(request.user.username)
+        gateways = GatewayHandler.list_gateways_by_user(request.user.username)
         gateway_ids = [gateway.id for gateway in gateways]
 
         slz = GatewayListInputSLZ(data=request.query_params)

@@ -339,7 +339,7 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
         slz = serializers.AppPermissionRecordDetailSLZ(
             record,
             context={
-                "resource_id_map": {r.id: r for r in Resource.objects.filter(gateway=record.gateway)},
+                "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=record.gateway.id),
             },
         )
         return V1OKJsonResponse("OK", data=slz.data)

@@ -103,11 +103,10 @@ class AlarmStrategyManager(models.Manager):
         if not strategies.exists():
             return []
 
-        from apigateway.apps.label.models import ResourceLabel
+        # TODO: monitor managers 中部分方法应该挪到 biz 模块
+        from apigateway.biz.resource_label import ResourceLabelHandler
 
-        gateway_label_ids = set(
-            ResourceLabel.objects.filter(resource_id=resource_id).values_list("api_label_id", flat=True)
-        )
+        gateway_label_ids = set(ResourceLabelHandler.get_gateway_label_ids(resource_id))
         matched_strategies = []
 
         for strategy in strategies:
