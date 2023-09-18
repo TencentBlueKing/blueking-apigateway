@@ -44,3 +44,7 @@ class ResourceLabelHandler:
             )
 
         return resource_labels
+
+    @staticmethod
+    def get_gateway_label_ids(resource_id: int) -> List[int]:
+        return list(ResourceLabel.objects.filter(resource_id=resource_id).values_list("api_label_id", flat=True))

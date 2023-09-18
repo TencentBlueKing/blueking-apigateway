@@ -262,3 +262,7 @@ class ResourceHandler:
             .values_list("updated_time", flat=True)
             .first()
         )
+
+    @staticmethod
+    def get_id_to_resource(gateway_id: int) -> Dict[int, Resource]:
+        return {r.id: r for r in Resource.objects.filter(gateway_id=gateway_id)}

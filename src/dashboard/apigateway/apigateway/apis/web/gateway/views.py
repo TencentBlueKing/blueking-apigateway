@@ -57,7 +57,7 @@ from .serializers import (
 )
 class GatewayListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
-        gateways = GatewayHandler.get_gateways_by_user(request.user.username)
+        gateways = GatewayHandler.list_gateways_by_user(request.user.username)
         gateway_ids = [gateway.id for gateway in gateways]
 
         slz = GatewayListOutputSLZ(

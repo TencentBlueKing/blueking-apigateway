@@ -38,6 +38,7 @@ from apigateway.apps.permission.models import (
 )
 from apigateway.apps.permission.tasks import send_mail_for_perm_handle
 from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.resource import ResourceHandler
 from apigateway.core.models import Resource
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
@@ -495,7 +496,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
             page,
             many=True,
             context={
-                "resource_id_map": {r.id: r for r in Resource.objects.filter(gateway=request.gateway)},
+                "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=request.gateway.id),
             },
         )
         return self.get_paginated_response(serializer.data)
@@ -519,7 +520,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         slz = AppPermissionRecordOutputSLZ(
             instance,
             context={
-                "resource_id_map": {r.id: r for r in Resource.objects.filter(gateway=request.gateway)},
+                "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=request.gateway.id),
             },
         )
         return OKJsonResponse(data=slz.data)

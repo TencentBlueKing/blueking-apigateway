@@ -56,7 +56,7 @@ from .stage import StageHandler
 
 class GatewayHandler:
     @staticmethod
-    def get_gateways_by_user(username: str) -> List[Gateway]:
+    def list_gateways_by_user(username: str) -> List[Gateway]:
         """获取用户有权限的的网关列表"""
         # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
         queryset = Gateway.objects.filter(_maintainers__contains=username)
