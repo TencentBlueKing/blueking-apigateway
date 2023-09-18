@@ -61,3 +61,25 @@ class TestStageHandler:
         }
 
     pass
+
+    @pytest.mark.parametrize(
+        "stage_names, expected, will_error",
+        [
+            ([], [1, 2], False),
+            (["prod"], [1], False),
+            (["stag"], None, True),
+        ],
+    )
+    def test_get_stage_ids(self, mocker, fake_request, fake_gateway, stage_names, expected, will_error):
+        mocker.patch(
+            "apigateway.biz.stage.Stage.objects.get_name_id_map",
+            return_value={"prod": 1, "test": 2},
+        )
+
+        if will_error:
+            with pytest.raises(Exception):
+                StageHandler.get_stage_ids(fake_gateway, stage_names)
+            return
+
+        result = StageHandler.get_stage_ids(fake_gateway, stage_names)
+        assert expected == sorted(result)

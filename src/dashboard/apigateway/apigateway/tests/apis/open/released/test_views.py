@@ -26,7 +26,7 @@ from apigateway.tests.utils.testing import get_response_json
 pytestmark = pytest.mark.django_db
 
 
-class TestReleasedResourceViewSet:
+class TestReleasedResourceRetrieveApi:
     @pytest.mark.parametrize(
         "mocked_resource_version_id, mocked_resource, will_error, expected",
         [
@@ -106,7 +106,7 @@ class TestReleasedResourceViewSet:
         stage_name = "prod"
         resource_name = mocked_resource and mocked_resource["name"]
 
-        view = views.ReleasedResourceViewSet.as_view({"get": "retrieve"})
+        view = views.ReleasedResourceRetrieveApi.as_view()
         response = view(request, gateway_id=fake_gateway.id, stage_name=stage_name, resource_name=resource_name)
         result = get_response_json(response)
 
@@ -114,7 +114,6 @@ class TestReleasedResourceViewSet:
             assert response.status_code == 404
             assert result["code"] == 40000
             return
-
         assert result["code"] == 0
         assert result["data"] == expected
 
@@ -128,6 +127,8 @@ class TestReleasedResourceViewSet:
             resource_name,
         )
 
+
+class TestReleasedResourceListApi:
     @pytest.mark.parametrize(
         "stage_name, mocked_resources, mocked_labels, expected",
         [
@@ -212,7 +213,7 @@ class TestReleasedResourceViewSet:
         request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
 
-        view = views.ReleasedResourceViewSet.as_view({"get": "list"})
+        view = views.ReleasedResourceListApi.as_view()
         response = view(request, stage_name)
         result = get_response_json(response)
 
@@ -225,6 +226,8 @@ class TestReleasedResourceViewSet:
         )
         get_labels_mock.assert_called_once_with([r["id"] for r in mocked_resources])
 
+
+class TestReleasedResourceListByGatewayNameApi:
     @pytest.mark.parametrize(
         "stage_name, mocked_resources, expected",
         [
