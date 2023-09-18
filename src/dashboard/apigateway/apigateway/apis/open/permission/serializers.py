@@ -53,7 +53,7 @@ class AppPermissionResourceSLZ(serializers.Serializer):
     description_en = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     expires_in = serializers.SerializerMethodField()
     permission_level = serializers.CharField()
-    permission_status = serializers.ChoiceField(choices=PermissionStatusEnum.choices())
+    permission_status = serializers.ChoiceField(choices=PermissionStatusEnum.get_choices())
     permission_action = serializers.SerializerMethodField()
     doc_link = serializers.CharField()
 

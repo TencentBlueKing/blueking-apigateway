@@ -145,7 +145,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=ResourceInputSLZ, tags=["WebAPI.Resource"]
+        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=ResourceInputSLZ, tags=["WebAPI.Resource"]
     ),
 )
 @method_decorator(
@@ -197,7 +197,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             instance_name=instance.identity,
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
@@ -220,7 +220,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=ResourceBatchUpdateInputSLZ,
         tags=["WebAPI.Resource"],
     ),
@@ -259,7 +259,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
             comment=_("批量更新资源"),
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
@@ -290,7 +290,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=ResourceLabelUpdateInputSLZ,
         tags=["WebAPI.Resource"],
     ),
@@ -312,7 +312,7 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
             label_ids=slz.validated_data["label_ids"],
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class ResourceImportCheckApi(generics.CreateAPIView):
@@ -359,7 +359,7 @@ class ResourceImportCheckApi(generics.CreateAPIView):
 
 class ResourceImportApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        request_body=ResourceImportInputSLZ, responses={status.HTTP_200_OK: ""}, tags=["WebAPI.Resource"]
+        request_body=ResourceImportInputSLZ, responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.Resource"]
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -383,7 +383,7 @@ class ResourceImportApi(generics.CreateAPIView):
         )
         importer.import_resources()
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class ResourceExportApi(generics.CreateAPIView):

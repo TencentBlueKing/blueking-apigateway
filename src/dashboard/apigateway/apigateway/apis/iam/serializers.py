@@ -21,7 +21,7 @@ from apigateway.apis.iam.constants import MethodTypeEnum
 from apigateway.iam.constants import ResourceTypeEnum
 
 
-class QueryIAMResourceSLZ(serializers.Serializer):
+class IAMResourceQueryInputSLZ(serializers.Serializer):
     method = serializers.ChoiceField(choices=MethodTypeEnum.get_choices())
     type = serializers.ChoiceField(choices=ResourceTypeEnum.get_choices())
     filter = serializers.DictField(default=dict)

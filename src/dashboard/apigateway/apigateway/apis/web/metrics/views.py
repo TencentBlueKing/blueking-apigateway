@@ -86,7 +86,9 @@ class QueryRangeApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        stage_name = (
+            Stage.objects.filter(gateway=request.gateway, id=data["stage_id"]).values_list("name", flat=True).first()
+        )
         if not stage_name:
             raise Http404
 

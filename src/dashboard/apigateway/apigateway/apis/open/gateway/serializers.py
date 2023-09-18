@@ -64,7 +64,7 @@ class GatewayV1SLZ(serializers.Serializer):
         return list(set(recent_releasers) & set(obj.maintainers)) or obj.maintainers
 
 
-class GatewayV1DetailSLZ(GatewayV1SLZ):
+class GatewayRetrieveV1OutputSLZ(GatewayV1SLZ):
     api_type = None
     user_auth_type = None
 

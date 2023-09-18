@@ -32,7 +32,7 @@ from apigateway.apps.permission.models import (
 class AppResourcePermissionFilter(filters.FilterSet):
     bk_app_code = filters.CharFilter()
     query = filters.CharFilter(method="query_filter")
-    grant_type = filters.ChoiceFilter(choices=GrantTypeEnum.choices())
+    grant_type = filters.ChoiceFilter(choices=GrantTypeEnum.get_choices())
     resource_id = filters.NumberFilter()
     order_by = filters.OrderingFilter(
         choices=[(field, field) for field in ["bk_app_code", "-bk_app_code", "expires", "-expires"]]

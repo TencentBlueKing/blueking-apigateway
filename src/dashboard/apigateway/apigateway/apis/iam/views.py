@@ -23,7 +23,7 @@ from rest_framework.views import APIView
 
 from apigateway.apis.iam.authentication import IAMBasicAuthentication
 from apigateway.apis.iam.providers import IAMResourceProviderFactory
-from apigateway.apis.iam.serializers import QueryIAMResourceSLZ
+from apigateway.apis.iam.serializers import IAMResourceQueryInputSLZ
 from apigateway.iam.constants import ResourceTypeEnum
 
 
@@ -38,7 +38,7 @@ class IAMResourceAPIView(APIView):
         return {"language": request.LANGUAGE_CODE}
 
     def post(self, request, *args, **kwargs):
-        slz = QueryIAMResourceSLZ(data=request.data)
+        slz = IAMResourceQueryInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         validated_data = slz.validated_data

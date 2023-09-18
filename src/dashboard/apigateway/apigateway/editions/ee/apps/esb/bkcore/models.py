@@ -36,7 +36,6 @@ from apigateway.utils.time import NeverExpiresTime
 
 
 class ModelWithBoard(models.Model):
-
     board = models.CharField(max_length=64, default="default", blank=True, db_index=True)
 
     class Meta:
@@ -283,7 +282,6 @@ class AppPermissionApplyStatus(ModelWithBoard, TimestampedModelMixin):
 
 
 class ComponentDoc(ModelWithBoard, TimestampedModelMixin):
-
     component = models.ForeignKey(ESBChannel, on_delete=models.CASCADE)
     language = models.CharField(max_length=32, choices=LanguageEnum.get_django_choices())
     content = models.TextField(blank=True, default="")
@@ -320,7 +318,7 @@ class ComponentReleaseHistory(ModelWithBoard, TimestampedModelMixin, OperatorMod
     status = models.CharField(
         _("发布状态"),
         max_length=16,
-        choices=ReleaseStatusEnum.choices(),
+        choices=ReleaseStatusEnum.get_choices(),
         default=ReleaseStatusEnum.PENDING.value,
     )
     message = models.TextField(blank=True, default="")

@@ -28,7 +28,7 @@ from django.db import models
 from django.db.models import Count, Q
 from django.utils.translation import gettext as _
 
-from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
+from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import InstanceDeleteError
 from apigateway.core.constants import (
@@ -114,7 +114,7 @@ class ResourceVersionManager(models.Manager):
 
     # TODO: 缓存优化：可使用 django cache(with database backend) or dogpile 缓存
     # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_LONG.value))
+    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS))
     def get_used_stage_vars(self, gateway_id, id):
         resoruce_version = self.filter(gateway_id=gateway_id, id=id).first()
         if not resoruce_version:
@@ -143,7 +143,7 @@ class ResourceVersionManager(models.Manager):
             "in_host": list(used_in_host),
         }
 
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_LONG.value))
+    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS))
     def get_resources(self, gateway_id: int, id: int) -> Dict[int, dict]:
         resource_version = self.filter(gateway_id=gateway_id, id=id).first()
         if not resource_version:

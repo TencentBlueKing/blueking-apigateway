@@ -26,7 +26,7 @@ from apigateway.apps.monitor.constants import (
     NoticeWayEnum,
     ResourceBackendAlarmSubTypeEnum,
 )
-from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
+from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_5_MINUTES
 from apigateway.common.factories import SchemaFactory
 
 
@@ -53,7 +53,7 @@ class AlarmRecordManager(models.Manager):
 
 
 class AlarmFilterConfigManager(models.Manager):
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_SHORT.value))
+    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_5_MINUTES))
     def get_filter_config(self, alarm_type):
         configs = (x.config for x in self.filter(alarm_type=alarm_type))
         return list(filter(None, configs))
@@ -117,14 +117,14 @@ class AlarmStrategyManager(models.Manager):
 
         return matched_strategies
 
-    def filter_alarm_strategy(self, gateway, api_label_id=None, query=None, order_by=None, fuzzy=True):
+    def filter_alarm_strategy(self, gateway, gateway_label_id=None, query=None, order_by=None, fuzzy=True):
         queryset = self.filter(gateway=gateway)
 
         if query and fuzzy:
             queryset = queryset.filter(name__contains=query)
 
-        if api_label_id is not None:
-            queryset = queryset.filter(api_labels__id=api_label_id)
+        if gateway_label_id is not None:
+            queryset = queryset.filter(api_labels__id=gateway_label_id)
 
         if order_by is not None:
             queryset = queryset.order_by(order_by)
