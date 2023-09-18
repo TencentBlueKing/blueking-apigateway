@@ -332,6 +332,9 @@ class PluginConfigRetrieveUpdateDestroyApi(
             gateway=self.request.gateway, scope_type=scope_type, scope_id=scope_id, config=instance
         ).delete()
 
+        instance_id = instance.id
+        instance_name = instance.name
+
         super().perform_destroy(instance)
         request = self.request
 
@@ -354,8 +357,8 @@ class PluginConfigRetrieveUpdateDestroyApi(
             op_status=OpStatusEnum.SUCCESS.value,
             op_object_group=request.gateway.id,
             op_object_type=OpObjectTypeEnum.PLUGIN.value,
-            op_object_id=instance.id,
-            op_object=instance.name,
+            op_object_id=instance_id,
+            op_object=instance_name,
             comment=_("删除插件"),
         )
 

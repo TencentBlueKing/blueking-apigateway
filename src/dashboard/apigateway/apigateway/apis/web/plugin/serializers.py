@@ -92,11 +92,9 @@ class PluginFormOutputSLZ(serializers.ModelSerializer):
         )
 
 
-class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
+class PluginConfigBaseSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all())
-    # type_code = serializers.CharField(source="type.code", read_only=True)
-    # type_name = serializers.CharField(source="type.name_i18n", read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
 
     class Meta:
@@ -108,19 +106,9 @@ class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
             "description",
             "yaml",
             "type_id",
-            # "updated_by",
-            # "created_time",
-            # "updated_time",
-            # "type_code",
-            # "type_name",
         ]
         read_only_fields = [
             "id",
-            #     "updated_by",
-            #     "created_time",
-            #     "updated_time",
-            #     "type_code",
-            #     "type_name",
         ]
         lookup_field = "id"
 
@@ -167,7 +155,7 @@ class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
         return plugin
 
 
-class PluginConfigRetrieveUpdateInputSLZ(PluginConfigBaseInputSLZ):
+class PluginConfigRetrieveUpdateInputSLZ(PluginConfigBaseSLZ):
     def update(self, instance, validated_data):
         if instance.type.code != validated_data["type_id"].code:
             raise ValidationError(_("插件类型不允许更改。"))
@@ -175,7 +163,7 @@ class PluginConfigRetrieveUpdateInputSLZ(PluginConfigBaseInputSLZ):
         return self._update_plugin(instance, validated_data)
 
 
-class PluginConfigCreateInputSLZ(PluginConfigBaseInputSLZ):
+class PluginConfigCreateInputSLZ(PluginConfigBaseSLZ):
     def create(self, validated_data):
         plugin_type = validated_data["type_id"]
         if not plugin_type.is_public:

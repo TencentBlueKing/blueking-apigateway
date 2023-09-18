@@ -24,6 +24,7 @@
 """
 import ipaddress
 import re
+from abc import ABC, abstractmethod
 from collections import Counter
 from typing import ClassVar, Dict, List, Optional
 
@@ -33,7 +34,8 @@ from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.utils.yaml import yaml_loads
 
 
-class BaseChecker:
+class BaseChecker(ABC):
+    @abstractmethod
     def check(self, payload: str):
         pass
 
