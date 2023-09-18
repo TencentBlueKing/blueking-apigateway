@@ -69,7 +69,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         instance = ResourceVersionHandler.create_resource_version(request.gateway, request.data, request.user.username)
 
         # 创建文档版本
-        if ResourceDoc.objects.doc_exists(request.gateway.id):
+        if ResourceDoc.objects.filter(gateway=request.gateway).exists():
             ResourceDocVersion.objects.create(
                 gateway=request.gateway,
                 resource_version=instance,

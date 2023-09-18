@@ -206,7 +206,7 @@ class TestReleasedResourceListApi:
             return_value=mocked_resources,
         )
         get_labels_mock = mocker.patch(
-            "apigateway.apis.open.released.views.ResourceLabel.objects.get_labels",
+            "apigateway.apis.open.released.views.ResourceLabelHandler.get_labels",
             return_value=mocked_labels,
         )
 

@@ -27,11 +27,12 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.gateway import serializers
+from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import JWT, APIRelatedApp, Gateway, Release
+from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release
 from apigateway.utils.responses import V1OKJsonResponse
 
 
@@ -185,7 +186,7 @@ class GatewayRelatedAppViewSet(viewsets.ViewSet):
         slz.is_valid(raise_exception=True)
 
         for bk_app_code in slz.validated_data["target_app_codes"]:
-            if not APIRelatedApp.objects.filter(gateway_id=request.gateway.id, bk_app_code=bk_app_code).exists():
-                APIRelatedApp.objects.add_related_app(request.gateway.id, bk_app_code)
+            if not GatewayRelatedApp.objects.filter(gateway_id=request.gateway.id, bk_app_code=bk_app_code).exists():
+                GatewayRelatedAppHandler.add_related_app(request.gateway.id, bk_app_code)
 
         return V1OKJsonResponse("OK")

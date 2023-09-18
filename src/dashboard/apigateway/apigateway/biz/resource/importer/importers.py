@@ -362,7 +362,7 @@ class ResourcesImporter:
             return []
 
         unspecified_resource_ids = [resource["id"] for resource in unspecified_resources]
-        ResourceHandler.delete_resources(unspecified_resource_ids, self.gateway)
+        ResourceHandler.delete_resources(unspecified_resource_ids)
 
         return unspecified_resources
 

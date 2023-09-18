@@ -15,7 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List
 
 from django.conf import settings
 from django.db import transaction
@@ -58,7 +57,7 @@ from .serializers import (
 )
 class GatewayListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
-        gateways = self._filter_list_gateways(self.request.user.username)
+        gateways = GatewayHandler.list_gateways_by_user(request.user.username)
         gateway_ids = [gateway.id for gateway in gateways]
 
         slz = GatewayListOutputSLZ(
@@ -72,12 +71,6 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         )
 
         return OKJsonResponse(data=slz.data)
-
-    def _filter_list_gateways(self, username: str) -> List[Gateway]:
-        """过滤出当前用户有权限的网关列表"""
-        # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
-        queryset = Gateway.objects.filter(_maintainers__contains=username)
-        return [gateway for gateway in queryset if gateway.has_permission(username)]
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):

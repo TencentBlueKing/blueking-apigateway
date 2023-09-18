@@ -40,6 +40,7 @@ from apigateway.apps.permission.constants import (
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord, AppResourcePermission
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.permissions import GatewayRelatedAppPermission
@@ -155,7 +156,7 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
             gateway=request.gateway,
             apply=instance,
             status=ApplyStatusEnum.PENDING.value,
-            resources=Resource.objects.filter_by_ids(request.gateway, ids=data.get("resource_ids", [])),
+            resources=Resource.objects.filter(gateway=request.gateway, id__in=data.get("resource_ids") or []),
         )
 
         try:
@@ -210,9 +211,10 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
 
         data = slz.validated_data
 
-        resource_ids = Resource.objects.get_resource_ids_by_names(
-            gateway_id=request.gateway.id,
-            resource_names=data.get("resource_names"),
+        resource_ids = list(
+            Resource.objects.filter(gateway=request.gateway, name__in=data.get("resource_names") or []).values_list(
+                "id", flat=True
+            )
         )
 
         permission_model = AppPermissionHelper().get_permission_model(data["grant_dimension"])
@@ -265,7 +267,7 @@ class AppPermissionRenewAPIView(APIView):
 
         data = slz.validated_data
 
-        for gateway_id, resource_ids in Resource.objects.group_by_api_id(data["resource_ids"]).items():
+        for gateway_id, resource_ids in ResourceHandler.group_by_gateway_id(data["resource_ids"]).items():
             gateway = Gateway.objects.get(id=gateway_id)
             # 如果应用-资源权限不存在，则将按网关的权限同步到应用-资源权限
             AppResourcePermission.objects.sync_from_gateway_permission(
@@ -337,7 +339,7 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
         slz = serializers.AppPermissionRecordDetailSLZ(
             record,
             context={
-                "resource_id_map": Resource.objects.filter_id_object_map(record.gateway.id),
+                "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=record.gateway.id),
             },
         )
         return V1OKJsonResponse("OK", data=slz.data)

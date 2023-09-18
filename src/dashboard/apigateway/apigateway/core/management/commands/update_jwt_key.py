@@ -22,7 +22,8 @@ import logging
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.encoding import smart_str
 
-from apigateway.core.models import JWT, Gateway
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
+from apigateway.core.models import Gateway
 from apigateway.utils.crypto import KeyValidator, RSAKeyValidationError
 from apigateway.utils.django import get_object_or_None
 
@@ -50,7 +51,7 @@ class Command(BaseCommand):
         if not gateway:
             raise CommandError(f"gateway not found: gateway_name={gateway_name}")
 
-        JWT.objects.update_jwt_key(gateway, decoded_private_key, decoded_public_key)
+        GatewayJWTHandler.update_jwt_key(gateway, decoded_private_key, decoded_public_key)
 
         logger.info(
             "update gateway jwt key success: gateway_name=%s, public_key=`%s`",
