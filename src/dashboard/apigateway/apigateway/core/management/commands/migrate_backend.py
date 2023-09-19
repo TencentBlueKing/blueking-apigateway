@@ -74,7 +74,7 @@ class Command(BaseCommand):
             stage_timeout[stage.id] = config["timeout"]
 
         # config 与已创建 backend 映射
-        backend_stage_config = self._gen_backend_config_map(gateway)
+        backend_stage_config: Dict[int, Dict[int, Any]] = self._gen_backend_config_map(gateway)
 
         resource_backend_count = self._get_max_resource_backend_count(gateway)
         # 迁移resource的proxy上游配置
@@ -97,7 +97,7 @@ class Command(BaseCommand):
                     continue
 
                 resource_backend_count += 1
-                backend = self._handle_resource_backend(gateway, stages, stage_timeout, config, resource_backend_count)
+                backend = self._handle_resource_backend(gateway, resource_backend_count, resource_stage_config)
                 # 关联resource与backend
                 proxy.backend = backend
                 proxy.save()
@@ -151,7 +151,7 @@ class Command(BaseCommand):
         stages: List[Stage],
         stage_timeout: Dict[int, int],
         proxy_http_config: Dict[str, Any],
-    ) -> Dict[int, Dict[int, Any]]:
+    ) -> Dict[int, Dict[str, Any]]:
         stage_config = {}
         for stage in stages:
             vars = stage.vars
