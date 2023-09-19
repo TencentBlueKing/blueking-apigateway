@@ -89,7 +89,7 @@ class TestBaseGatewayReleaser:
 
         releaser.release()
         resource_version_ids = list(
-            Release.objects.filter(stage_id__in=release_data["stage_id"])
+            Release.objects.filter(stage_id=release_data["stage_id"])
             .distinct()
             .values_list("resource_version_id", flat=True)
         )
@@ -232,7 +232,7 @@ class TestMicroGatewayReleaser:
         # self.releaser = BaseGatewayReleaser.from_data(
         self.releaser = MicroGatewayReleaser.from_data(
             self.gateway,
-            release_data["stage_ids"],
+            release_data["stage_id"],
             release_data["resource_version_id"],
             release_data["comment"],
             access_token="access_token",

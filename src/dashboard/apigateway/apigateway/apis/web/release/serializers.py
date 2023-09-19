@@ -122,7 +122,7 @@ class ReleaseHistoryEventInfoSLZ(serializers.Serializer):
     created_time = serializers.DateTimeField(read_only=True, help_text="发布节点事件创建时间")
     detail = serializers.DictField(read_only=True, help_text="发布日志")
 
-    def get_status(self, obj: PublishEvent) -> str:
+    def get_name(self, obj: PublishEvent) -> str:
         return _(obj.name)
 
 
