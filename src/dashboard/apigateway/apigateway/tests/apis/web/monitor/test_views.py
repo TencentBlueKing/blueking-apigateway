@@ -50,7 +50,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
                 "name": "test",
                 "alarm_type": "resource_backend",
                 "alarm_subtype": "status_code_5xx",
-                "api_label_ids": [self.label.id],
+                "gateway_label_ids": [self.label.id],
                 "config": {
                     "detect_config": {
                         "duration": 60,
@@ -79,13 +79,13 @@ class TestAlarmStrategyListCreateApi(TestCase):
             self.assertEqual(response.status_code, 201, result)
 
             strategy = AlarmStrategy.objects.get(gateway=self.gateway, name="test")
-            self.assertEqual(strategy.api_labels.count(), len(test["api_label_ids"]))
+            self.assertEqual(strategy.api_labels.count(), len(test["gateway_label_ids"]))
 
     def test_list(self):
-        api_label = G(APILabel, gateway=self.gateway, name="test")
+        gateway_label = G(APILabel, gateway=self.gateway, name="test")
 
         strategy_1 = G(AlarmStrategy, gateway=self.gateway, name="list-01", updated_time=dummy_time.time)
-        strategy_1.api_labels.add(api_label)
+        strategy_1.api_labels.add(gateway_label)
 
         strategy_2 = G(AlarmStrategy, gateway=self.gateway, name="list-02", updated_time=dummy_time.time)
 
@@ -100,7 +100,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
                         "alarm_subtype": strategy_2.alarm_subtype,
                         "enabled": strategy_2.enabled,
                         "updated_time": dummy_time.str,
-                        "api_label_names": [],
+                        "gateway_labels": [],
                     },
                     {
                         "id": strategy_1.id,
@@ -109,7 +109,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
                         "alarm_subtype": strategy_1.alarm_subtype,
                         "enabled": strategy_1.enabled,
                         "updated_time": dummy_time.str,
-                        "api_label_names": [api_label.name],
+                        "gateway_labels": [{"id": gateway_label.id, "name": gateway_label.name}],
                     },
                 ],
             },
@@ -125,13 +125,13 @@ class TestAlarmStrategyListCreateApi(TestCase):
                         "alarm_subtype": strategy_2.alarm_subtype,
                         "enabled": strategy_2.enabled,
                         "updated_time": dummy_time.str,
-                        "api_label_names": [],
+                        "gateway_labels": [],
                     },
                 ],
             },
             {
                 "params": {
-                    "api_label_id": api_label.id,
+                    "gateway_label_id": gateway_label.id,
                 },
                 "expected": [
                     {
@@ -141,7 +141,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
                         "alarm_subtype": strategy_1.alarm_subtype,
                         "enabled": strategy_1.enabled,
                         "updated_time": dummy_time.str,
-                        "api_label_names": [api_label.name],
+                        "gateway_labels": [{"id": gateway_label.id, "name": gateway_label.name}],
                     },
                 ],
             },
@@ -210,7 +210,7 @@ class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
                 "name": "test",
                 "alarm_type": "resource_backend",
                 "alarm_subtype": "status_code_5xx",
-                "api_label_ids": [self.label.id],
+                "gateway_label_ids": [self.label.id],
                 "config": {
                     "detect_config": {
                         "duration": 60,
@@ -392,8 +392,10 @@ class TestAlarmRecordSummaryListApi(TestCase):
                 "params": {},
                 "expected": [
                     {
-                        "api_id": self.gateway.id,
-                        "api_name": self.gateway.name,
+                        "gateway": {
+                            "id": self.gateway.id,
+                            "name": self.gateway.name,
+                        },
                         "alarm_record_count": 3,
                         "strategy_summary": [
                             {
@@ -427,8 +429,10 @@ class TestAlarmRecordSummaryListApi(TestCase):
                 },
                 "expected": [
                     {
-                        "api_id": self.gateway.id,
-                        "api_name": self.gateway.name,
+                        "gateway": {
+                            "id": self.gateway.id,
+                            "name": self.gateway.name,
+                        },
                         "alarm_record_count": 2,
                         "strategy_summary": [
                             {

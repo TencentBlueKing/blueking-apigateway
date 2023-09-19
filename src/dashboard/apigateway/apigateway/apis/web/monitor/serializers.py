@@ -22,9 +22,9 @@ import operator
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apps.label.models import APILabel
 from apigateway.apps.monitor.constants import DETECT_METHOD_CHOICES, AlarmStatusEnum, NoticeRoleEnum, NoticeWayEnum
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
+from apigateway.biz.gateway_label import GatewayLabelHandler
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
 
 
@@ -87,7 +87,11 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
 
     def validate_gateway_label_ids(self, value):
         gateway = self.context["request"].gateway
-        return list(APILabel.objects.filter(gateway=gateway, id__in=value or []).values_list("id", flat=True))
+        not_exist_ids = set(value) - set(GatewayLabelHandler.get_valid_ids(gateway.id, value))
+        if not_exist_ids:
+            raise serializers.ValidationError(_("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
+
+        return value
 
 
 class AlarmStrategyListOutputSLZ(serializers.ModelSerializer):

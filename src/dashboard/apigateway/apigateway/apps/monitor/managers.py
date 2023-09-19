@@ -110,7 +110,7 @@ class AlarmStrategyManager(models.Manager):
         matched_strategies = []
 
         for strategy in strategies:
-            strategy_gateway_label_ids = strategy.api_label_ids
+            strategy_gateway_label_ids = strategy.gateway_label_ids
             if not strategy_gateway_label_ids or set(strategy_gateway_label_ids) & gateway_label_ids:
                 matched_strategies.append(strategy)
 

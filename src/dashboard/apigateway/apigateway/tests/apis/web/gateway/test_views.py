@@ -84,7 +84,7 @@ class TestGatewayRetrieveUpdateDestroyApi:
         )
         gateway = Gateway.objects.get(id=fake_gateway.id)
 
-        assert resp.status_code == 200
+        assert resp.status_code == 204
         assert gateway.description == data["description"]
         assert gateway.is_public is data["is_public"]
 

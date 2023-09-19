@@ -110,7 +110,7 @@ class TestAlarmStrategyInputSLZ(TestCase):
                 "name": "test",
                 "alarm_type": "resource_backend",
                 "alarm_subtype": "status_code_5xx",
-                "api_label_ids": [label_1.id, label_2.id],
+                "gateway_label_ids": [label_1.id, label_2.id],
                 "config": {
                     "detect_config": {
                         "duration": 60,
@@ -131,7 +131,7 @@ class TestAlarmStrategyInputSLZ(TestCase):
                     "name": "test",
                     "alarm_type": "resource_backend",
                     "alarm_subtype": "status_code_5xx",
-                    "api_label_ids": [label_1.id, label_2.id],
+                    "gateway_label_ids": [label_1.id, label_2.id],
                     "config": json.dumps(
                         {
                             "detect_config": {
@@ -187,13 +187,13 @@ class TestAlarmStrategyInputSLZ(TestCase):
                         }
                     ),
                 ),
-                "api_label_ids": [label_1.id, label_2.id],
+                "gateway_label_ids": [label_1.id, label_2.id],
                 "expected": {
                     "id": None,
                     "name": "test",
                     "alarm_type": "resource_backend",
                     "alarm_subtype": "status_code_5xx",
-                    "api_label_ids": sorted([label_1.id, label_2.id]),
+                    "gateway_label_ids": sorted([label_1.id, label_2.id]),
                     "config": {
                         "detect_config": {
                             "duration": 60,
@@ -213,13 +213,13 @@ class TestAlarmStrategyInputSLZ(TestCase):
             }
         ]
         for test in data:
-            test["instance"].api_labels.set(test["api_label_ids"])
+            test["instance"].api_labels.set(test["gateway_label_ids"])
             test["expected"]["id"] = test["instance"].id
 
             slz = serializers.AlarmStrategyInputSLZ(instance=test["instance"])
             slz_data = slz.data
 
-            slz_data["api_label_ids"] = sorted(slz_data["api_label_ids"])
+            slz_data["gateway_label_ids"] = sorted(slz_data["gateway_label_ids"])
             self.assertEqual(slz_data, test["expected"], dict(slz_data))
 
 

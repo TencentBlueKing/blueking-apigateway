@@ -248,7 +248,7 @@ class TestResourceImportInputSLZ:
 
 class TestResourceExportOutputSLZ:
     def test_to_representation(self, fake_resource):
-        proxies = {proxy.id: proxy for proxy in Proxy.objects.filter(resource__in=[fake_resource])}
+        proxies = {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource__in=[fake_resource])}
         backends = {backend.id: backend.name for backend in Backend.objects.filter(gateway=fake_resource.gateway)}
 
         slz = ResourceExportOutputSLZ(

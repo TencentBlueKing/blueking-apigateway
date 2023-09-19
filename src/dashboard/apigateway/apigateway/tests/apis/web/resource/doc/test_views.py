@@ -64,7 +64,7 @@ class TestDocUpdateDestroyApi:
                 "content": faker.pystr(),
             },
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 204
 
     def test_destroy(self, request_view, fake_resource_doc):
         fake_gateway = fake_resource_doc.gateway

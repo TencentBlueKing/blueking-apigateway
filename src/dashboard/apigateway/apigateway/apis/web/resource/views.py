@@ -464,7 +464,7 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
         )
         slz.is_valid(raise_exception=True)
 
-        backend_id = slz.validated_data.get("backend_id")
+        backend_id = slz.validated_data["backend_id"]
         backend_path = slz.validated_data.get("backend_config", {}).get("path", "")
         backend_hosts = self._get_backend_hosts(backend_id)
 

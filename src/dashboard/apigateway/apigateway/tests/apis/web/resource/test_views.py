@@ -53,9 +53,11 @@ class TestResourceListCreateApi:
             ),
         ],
     )
-    def test_list(self, request_view, fake_gateway, data, expected):
-        G(Resource, gateway=fake_gateway, path="/echo/", method="GET", name="echo")
-        G(Resource, gateway=fake_gateway, path="/test/", method="GET", name="test")
+    def test_list(self, request_view, fake_gateway, fake_backend, data, expected):
+        resource_1 = G(Resource, gateway=fake_gateway, path="/echo/", method="GET", name="echo")
+        resource_2 = G(Resource, gateway=fake_gateway, path="/test/", method="GET", name="test")
+        G(Proxy, resource=resource_1, backend=fake_backend)
+        G(Proxy, resource=resource_2, backend=fake_backend)
 
         resp = request_view(
             method="GET",
@@ -170,7 +172,7 @@ class TestResourceRetrieveUpdateDestroyApi:
             data=data,
         )
 
-        assert resp.status_code == 200
+        assert resp.status_code == 204
 
         proxy = Proxy.objects.get(resource=fake_resource)
         assert proxy.backend_id == backend.id
@@ -212,7 +214,7 @@ class TestResourceBatchUpdateDestroyApi:
             data=data,
         )
 
-        assert resp.status_code == 200
+        assert resp.status_code == 204
 
         resource = Resource.objects.get(id=fake_resource.id)
         assert resource.is_public == data["is_public"]
@@ -248,7 +250,7 @@ class TestResourceLabelUpdateApi:
                 "label_ids": [label_1.id],
             },
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 204
         assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
 
         resp = request_view(
@@ -259,7 +261,7 @@ class TestResourceLabelUpdateApi:
                 "label_ids": [label_1.id, label_2.id],
             },
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 204
         assert ResourceLabel.objects.filter(resource=fake_resource).count() == 2
 
         resp = request_view(
@@ -270,7 +272,7 @@ class TestResourceLabelUpdateApi:
                 "label_ids": [label_2.id],
             },
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 204
         assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
 
 
@@ -522,7 +524,7 @@ class TestResourceImportApi:
             data=data,
         )
 
-        assert resp.status_code == 200
+        assert resp.status_code == 204
         assert Resource.objects.filter(gateway=fake_gateway).count() == expected
 
 
@@ -604,8 +606,11 @@ class TestBackendPathCheckApi:
             ),
         ],
     )
-    def test_get(self, request_view, fake_gateway, data, expected):
-        G(Stage, gateway=fake_gateway, name="prod", _vars='{"k1": "v1"}')
+    def test_get(self, request_view, fake_gateway, fake_stage, fake_backend, data, expected):
+        fake_stage.vars = {"k1": "v1"}
+        fake_stage.save()
+
+        data["backend_id"] = fake_backend.id
 
         resp = request_view(
             method="GET",
