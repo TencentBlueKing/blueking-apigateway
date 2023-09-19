@@ -179,7 +179,7 @@ class Command(BaseCommand):
         return stage_config
 
     def _gen_backend_config_map(self, gateway: Gateway) -> Dict[int, Dict[int, Any]]:
-        backend_stage_config = defaultdict(dict)
+        backend_stage_config: Dict[int, Dict[int, Any]] = defaultdict(dict)
 
         for backend in Backend.objects.filter(gateway=gateway):
             for backend_config in BackendConfig.objects.filter(gateway=gateway, backend=backend):
