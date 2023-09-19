@@ -15,3 +15,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
+from typing import Dict, List
+
+from django.utils.functional import cached_property
+
+from apigateway.common.factories import SchemaFactory
+from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
+
+from .context import BaseContext
+
+
+class ResourceAuthContext(BaseContext):
+    scope_type = ContextScopeTypeEnum.RESOURCE.value
+    type = ContextTypeEnum.RESOURCE_AUTH.value
+
+    @cached_property
+    def schema(self):
+        return SchemaFactory().get_context_resource_bkauth_schema()
+
+    def get_resource_id_to_auth_config(self, resource_ids: List[int]) -> Dict[int, dict]:
+        return {context.scope_id: context.config for context in self.filter_contexts(resource_ids)}
