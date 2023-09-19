@@ -30,7 +30,7 @@ class GatewayStatusEnum(StructuredEnum):
     ACTIVE = EnumField(1, "启用中")
 
 
-# TODO: delete it
+# TODO: delete it in 1.14
 class APIHostingTypeEnum(StructuredEnum):
     """网关托管类型，影响特性集"""
 

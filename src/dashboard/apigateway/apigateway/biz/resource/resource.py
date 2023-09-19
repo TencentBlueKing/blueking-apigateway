@@ -184,7 +184,7 @@ class ResourceHandler:
     @staticmethod
     def get_default_auth_config():
         return {
-            # 跳过用户认证逻辑，值为False时，不根据请求参数中的用户信息校验用户
+            # 跳过用户认证逻辑，值为 False 时，不根据请求参数中的用户信息校验用户
             "skip_auth_verification": False,
             "auth_verified_required": True,
             "app_verified_required": True,

@@ -16,39 +16,26 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
-from apigateway.apis.controller.views import (
-    MicroGatewayInfoViewSet,
-    MicroGatewayNewestPermissionViewSet,
-    MicroGatewayPermissionViewSet,
-    MicroGatewayStatusViewSet,
-)
+from apigateway.apis.controller.views import MicroGatewayInfoRetrieveApi, MicroGatewayStatusUpdateApi
 
 urlpatterns = [
     path(
-        "micro-gateway/<uuid:instance_id>/status/",
-        MicroGatewayStatusViewSet.as_view({"put": "refresh"}),
-        name="apigateway.controller.micro_gateway_status",
-    ),
-    path(
-        "micro-gateway/<uuid:instance_id>/permissions/",
-        MicroGatewayPermissionViewSet.as_view({"get": "list"}),
-        name="apigateway.controller.micro_gateway_permissions",
-    ),
-    path(
-        "micro-gateway/<uuid:instance_id>/permissions/gateway/newest/",
-        MicroGatewayNewestPermissionViewSet.as_view({"get": "list_newest_gateway_permissions"}),
-        name="apigateway.controller.micro_gateway_permissions.gateway-newest",
-    ),
-    path(
-        "micro-gateway/<uuid:instance_id>/permissions/resource/newest/",
-        MicroGatewayNewestPermissionViewSet.as_view({"get": "list_newest_resource_permissions"}),
-        name="apigateway.controller.micro_gateway_permissions.resource-newest",
-    ),
-    path(
-        "micro-gateway/<uuid:instance_id>/gateway/",
-        MicroGatewayInfoViewSet.as_view({"get": "get"}),
-        name="apigateway.controller.micro_gateway_info",
+        "micro-gateway/<uuid:instance_id>/",
+        include(
+            [
+                path(
+                    "status/",
+                    MicroGatewayStatusUpdateApi.as_view(),
+                    name="apigateway.controller.micro_gateway_status",
+                ),
+                path(
+                    "gateway/",
+                    MicroGatewayInfoRetrieveApi.as_view(),
+                    name="apigateway.controller.micro_gateway_info",
+                ),
+            ]
+        ),
     ),
 ]
