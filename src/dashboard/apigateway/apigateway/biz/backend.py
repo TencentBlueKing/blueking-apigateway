@@ -105,4 +105,4 @@ class BackendHandler:
 
     @staticmethod
     def get_id_to_backend(gateway_id: int) -> Dict[int, Backend]:
-        return {backend["id"]: backend for backend in Backend.objects.filter(gateway_id=gateway_id)}
+        return {backend.id: backend for backend in Backend.objects.filter(gateway_id=gateway_id)}
