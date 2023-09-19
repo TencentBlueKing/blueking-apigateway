@@ -21,5 +21,5 @@ from django.urls import path
 from .views import QueryRangeApi
 
 urlpatterns = [
-    path("query_range/", QueryRangeApi.as_view(), name="metrics.query_range"),
+    path("query-range/", QueryRangeApi.as_view(), name="metrics.query_range"),
 ]

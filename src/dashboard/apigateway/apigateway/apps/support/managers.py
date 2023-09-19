@@ -16,8 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import itertools
-import operator
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
@@ -27,54 +25,6 @@ from django.db.models import Count
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.core.constants import GatewayStatusEnum
-
-
-class ResourceDocManager(models.Manager):
-    def doc_exists(self, gateway_id):
-        return self.filter(gateway_id=gateway_id).exists()
-
-    def delete_by_resource_ids(self, resource_ids):
-        self.filter(resource_id__in=resource_ids).delete()
-
-    def get_latest_resource_doc(self, gateway_id):
-        return self.filter(gateway_id=gateway_id).order_by("-updated_time").first()
-
-    def get_doc_key_to_id(self, gateway_id: int) -> Dict[str, int]:
-        return {
-            f"{doc['resource_id']}:{doc['language']}": doc["id"]
-            for doc in self.filter(gateway_id=gateway_id).values("id", "resource_id", "language")
-        }
-
-    def query_doc_key_to_content(self, gateway_id: int) -> Dict[str, str]:
-        # note: the content is rendered, not the raw file content
-        return {
-            f"{doc['resource_id']}:{doc['language']}": doc["content"]
-            for doc in self.filter(gateway_id=gateway_id).values("resource_id", "content", "language")
-        }
-
-    def get_doc_languages_of_resources(self, gateway_id: int, resource_ids: List[int]) -> Dict[int, List[str]]:
-        data = (
-            self.filter(gateway_id=gateway_id, resource_id__in=resource_ids)
-            .values("resource_id", "language")
-            .order_by("resource_id")
-        )
-        return {
-            resource_id: [item["language"] for item in group]
-            for resource_id, group in itertools.groupby(data, key=operator.itemgetter("resource_id"))
-        }
-
-    def filter_docs(self, gateway_id: int, resource_ids: Optional[List[int]] = None):
-        qs = self.filter(gateway_id=gateway_id)
-
-        if resource_ids is not None:
-            qs = qs.filter(resource_id__in=resource_ids)
-
-        return qs
-
-
-class ResourceDocSwaggerManager(models.Manager):
-    def get_resource_doc_id_to_id(self, gateway_id: int) -> Dict[int, int]:
-        return dict(self.filter(gateway_id=gateway_id).values_list("resource_doc_id", "id"))
 
 
 class ResourceDocVersionManager(models.Manager):
@@ -119,27 +69,6 @@ class ResourceDocVersionManager(models.Manager):
             result[doc["resource_id"]][language] = doc["updated_time"]
 
         return result
-
-    def need_new_version(self, gateway_id):
-        """
-        是否需要创建新的资源文档版本
-        """
-        from apigateway.apps.support.models import ResourceDoc
-
-        latest_version = self.get_latest_version(gateway_id)
-        latest_resource_doc = ResourceDoc.objects.get_latest_resource_doc(gateway_id)
-
-        if not (latest_version or latest_resource_doc):
-            return False
-
-        if not latest_version:
-            return True
-
-        if latest_resource_doc and latest_resource_doc.updated_time > latest_version.created_time:
-            return True
-
-        # 文档不可直接删除，资源删除导致的文档删除，在判断“是否需要创建资源版本”时校验
-        return False
 
 
 class ReleasedResourceDocManager(models.Manager):

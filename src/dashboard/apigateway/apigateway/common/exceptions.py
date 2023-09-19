@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Iterable
 
 
 class SchemaNotExist(Exception):
@@ -25,14 +24,6 @@ class SchemaNotExist(Exception):
 
 class SchemaValidationError(Exception):
     pass
-
-
-class InstancesNotExist(Exception):
-    def __init__(self, keys: Iterable):
-        self.keys = keys
-
-    def keys_display(self):
-        return ", ".join(map(str, self.keys))
 
 
 class InstanceDeleteError(Exception):

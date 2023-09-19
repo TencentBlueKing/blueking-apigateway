@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
@@ -102,7 +103,7 @@ class StageInputSLZ(serializers.Serializer):
             ),
             MaxCountPerGatewayValidator(
                 Stage,
-                max_count_callback=lambda gateway: gateway.max_stage_count,
+                max_count_callback=lambda gateway: settings.MAX_STAGE_COUNT_PER_GATEWAY,
                 message=gettext_lazy("每个网关最多创建 {max_count} 个环境。"),
             ),
         ]

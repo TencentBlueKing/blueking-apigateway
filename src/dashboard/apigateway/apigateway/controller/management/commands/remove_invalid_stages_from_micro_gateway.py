@@ -22,6 +22,7 @@ import etcd3
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, MicroGateway, Stage
 from apigateway.utils.etcd import get_etcd_client
 
@@ -49,7 +50,7 @@ class Command(BaseCommand):
     def handle(self, dry_run, *args, **options):
         self.dry_run = dry_run
 
-        gateways = Gateway.objects.filter_micro_and_active_queryset()
+        gateways = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value)
         shared_gateway = MicroGateway.objects.get_default_shared_gateway()
 
         num_of_keys = self._delete_invalid_stages(gateways, shared_gateway)

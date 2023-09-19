@@ -27,9 +27,10 @@ from apigateway.apis.web.gateway.serializers import (
     GatewayUpdateStatusInputSLZ,
 )
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.common.contexts import GatewayAuthConfig
 from apigateway.core.constants import GatewayTypeEnum
-from apigateway.core.models import JWT, Gateway, Resource, Stage
+from apigateway.core.models import Gateway, Resource, Stage
 from apigateway.utils.crypto import calculate_fingerprint
 
 
@@ -205,14 +206,13 @@ class TestGatewayRetrieveOutputSLZ:
         slz = GatewayRetrieveOutputSLZ(
             instance=fake_gateway,
             context={
-                "feature_flags": {"FOO": True},
                 "auth_config": GatewayAuthConfig(
                     gateway_type=GatewayTypeEnum.CLOUDS_API.value,
                     allow_update_gateway_auth=True,
                 ),
             },
         )
-        jwt = JWT.objects.create_jwt(fake_gateway)
+        jwt = GatewayJWTHandler.create_jwt(fake_gateway)
 
         expected = {
             "id": fake_gateway.id,
@@ -228,7 +228,6 @@ class TestGatewayRetrieveOutputSLZ:
             "api_domain": "http://bkapi.demo.com",
             "docs_url": "http://apigw.demo.com/docs/",
             "public_key_fingerprint": calculate_fingerprint(jwt.public_key),
-            "feature_flags": {"FOO": True},
             "is_official": False,
         }
 

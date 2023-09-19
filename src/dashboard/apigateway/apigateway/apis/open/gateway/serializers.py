@@ -64,7 +64,7 @@ class GatewayV1SLZ(serializers.Serializer):
         return list(set(recent_releasers) & set(obj.maintainers)) or obj.maintainers
 
 
-class GatewayV1DetailSLZ(GatewayV1SLZ):
+class GatewayRetrieveV1OutputSLZ(GatewayV1SLZ):
     api_type = None
     user_auth_type = None
 
@@ -166,7 +166,7 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
 
         # 2. 更新网关配置
-        GatewayHandler().save_auth_config(
+        GatewayHandler.save_auth_config(
             instance.id,
             user_auth_type=validated_data["user_auth_type"],
             user_conf=validated_data.get("user_config"),

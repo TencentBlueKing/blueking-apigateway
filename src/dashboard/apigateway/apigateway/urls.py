@@ -57,26 +57,9 @@ urlpatterns = [
     # open api
     path("backend/api/v1/", include("apigateway.apis.open.urls")),
     # api-support backend/docs urls
-    path("backend/docs/gateways/", include("apigateway.apis.web.docs.gateway.gateway.urls")),
-    path(
-        "backend/docs/gateways/<slug:gateway_name>/resources/",
-        include("apigateway.apis.web.docs.gateway.resource.urls"),
-    ),
-    path("backend/docs/gateways/<slug:gateway_name>/stages/", include("apigateway.apis.web.docs.gateway.stage.urls")),
-    path("backend/docs/sdks/", include("apigateway.apis.web.docs.gateway.sdk.urls")),
-    path(
-        "backend/docs/gateways/<slug:gateway_name>/sdks/",
-        include("apigateway.apis.web.docs.gateway.gateway_sdk.urls"),
-    ),
-    path("backend/docs/esb/boards/<slug:board>/systems/", include("apigateway.apis.web.docs.esb.system.urls")),
-    path(
-        "backend/docs/esb/boards/<slug:board>/systems/<slug:system_name>/components/",
-        include("apigateway.apis.web.docs.esb.component.urls"),
-    ),
-    path("backend/docs/esb/boards/<slug:board>/sdks/", include("apigateway.apis.web.docs.esb.sdk.urls")),
+    path("backend/docs/", include("apigateway.apis.web.docs.urls")),
     # web api
     path("backend/i18n/setlang/", set_language, name="set_language"),
-    path("backend/users/", include("apigateway.apis.web.user.urls")),
     path("backend/feature/", include("apigateway.apis.web.feature.urls")),
     path("backend/gateways/", include("apigateway.apis.web.gateway.urls")),
     path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),

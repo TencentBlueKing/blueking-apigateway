@@ -66,7 +66,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        api_label_ids = slz.validated_data.pop("api_label_ids", [])
+        gateway_label_ids = slz.validated_data.pop("gateway_label_ids", [])
 
         slz.save(
             created_by=request.user.username,
@@ -74,7 +74,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
         )
 
         # 存储关联的标签
-        slz.instance.api_labels.set(api_label_ids)
+        slz.instance.api_labels.set(gateway_label_ids)
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
@@ -86,7 +86,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
 
         queryset = AlarmStrategy.objects.filter_alarm_strategy(
             gateway=request.gateway,
-            api_label_id=data.get("api_label_id"),
+            gateway_label_id=data.get("gateway_label_id"),
             query=data.get("query"),
             order_by=data.get("order_by") or "-id",
         )
@@ -104,13 +104,6 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["WebAPI.Monitor"],
-    ),
-)
-@method_decorator(
-    name="patch",
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Monitor"],
@@ -136,13 +129,13 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
         slz = self.get_serializer(instance, data=request.data)
         slz.is_valid(raise_exception=True)
 
-        api_label_ids = slz.validated_data.pop("api_label_ids", [])
+        gateway_label_ids = slz.validated_data.pop("gateway_label_ids", [])
 
         slz.save(
             updated_by=request.user.username,
         )
 
-        slz.instance.api_labels.set(api_label_ids)
+        slz.instance.api_labels.set(gateway_label_ids)
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
@@ -261,7 +254,6 @@ class AlarmRecordSummaryListApi(generics.ListAPIView):
 
         results = ResourceMonitorHandler.statistics_api_alarm_record(
             username=self.request.user.username,
-            name=data.get("query"),
             time_start=data.get("time_start"),
             time_end=data.get("time_end"),
         )

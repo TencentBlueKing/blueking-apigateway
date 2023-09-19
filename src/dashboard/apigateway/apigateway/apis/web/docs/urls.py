@@ -17,19 +17,19 @@
 #
 from django.urls import include, path
 
-from . import views
-
 urlpatterns = [
-    path("", views.GatewayListCreateApi.as_view(), name="gateways.list_create"),
+    # 所有网关 sdk
+    path("sdks/", include("apigateway.apis.web.docs.gateway.sdk.urls")),
+    # 网关
+    path("gateways/", include("apigateway.apis.web.docs.gateway.gateway.urls")),
+    path("gateways/<slug:gateway_name>/resources/", include("apigateway.apis.web.docs.gateway.resource.urls")),
+    path("gateways/<slug:gateway_name>/stages/", include("apigateway.apis.web.docs.gateway.stage.urls")),
+    path("gateways/<slug:gateway_name>/sdks/", include("apigateway.apis.web.docs.gateway.gateway_sdk.urls")),
+    # esb
+    path("esb/boards/<slug:board>/systems/", include("apigateway.apis.web.docs.esb.system.urls")),
     path(
-        # 使用 gateway_id，复用 GatewayPermission 的权限校验
-        "<int:gateway_id>/",
-        include(
-            [
-                path("", views.GatewayRetrieveUpdateDestroyApi.as_view(), name="gateways.retrieve_update_destroy"),
-                path("status/", views.GatewayUpdateStatusApi.as_view(), name="gateways.update_status"),
-                path("feature-flags/", views.GatewayFeatureFlagsApi.as_view(), name="gateways.feature_flags.list"),
-            ]
-        ),
+        "esb/boards/<slug:board>/systems/<slug:system_name>/components/",
+        include("apigateway.apis.web.docs.esb.component.urls"),
     ),
+    path("esb/boards/<slug:board>/sdks/", include("apigateway.apis.web.docs.esb.sdk.urls")),
 ]

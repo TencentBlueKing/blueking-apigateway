@@ -20,23 +20,17 @@ import datetime
 import json
 
 import pytest
-from django.conf import settings
 from django.test import TestCase
-from django.utils.encoding import smart_bytes
 from django_dynamic_fixture import G
 
 from apigateway.biz.stage import StageHandler
-from apigateway.common.error_codes import APIError
 from apigateway.common.exceptions import InstanceDeleteError
-from apigateway.common.mcryptography import AESCipherManager
 from apigateway.core import constants
 from apigateway.core.constants import (
     SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
 from apigateway.core.models import (
-    JWT,
-    APIRelatedApp,
     Gateway,
     MicroGateway,
     Release,
@@ -49,54 +43,9 @@ from apigateway.core.models import (
     Stage,
     StageResourceDisabled,
 )
-from apigateway.tests.utils.testing import create_gateway, dummy_time
+from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
-
-
-class TestGatewayManager:
-    @pytest.fixture(autouse=True)
-    def setup_fixtures(self):
-        self.gateway = G(Gateway, created_by="admin")
-
-    def test_search_apis(self):
-        gateway = create_gateway(name="search-apis-test-a")
-        gateway_2 = create_gateway(name="search-apis-test-b")
-
-        stage_prod = G(Stage, gateway=gateway, name="prod")
-        stage_test = G(Stage, gateway=gateway, name="test")
-
-        G(Resource, gateway=gateway)
-        resource_version = G(ResourceVersion, gateway=gateway)
-        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version)
-
-        gateway.resource_count = 1
-        gateway.stages = [
-            {
-                "stage_id": stage_prod.id,
-                "stage_name": "prod",
-                "stage_release_status": True,
-            },
-            {
-                "stage_id": stage_test.id,
-                "stage_name": "test",
-                "stage_release_status": False,
-            },
-        ]
-        gateway_2.resource_count = 0
-        gateway_2.stages = []
-
-        data = [
-            {
-                "username": "admin",
-                "name": "search-apis-test",
-                "expected": [gateway, gateway_2],
-            }
-        ]
-        for test in data:
-            result = Gateway.objects.search_gateways(test["username"], test["name"])
-            assert result[0] == test["expected"][0]
-            assert result[1] == test["expected"][1]
 
 
 class TestStageManager:
@@ -187,78 +136,6 @@ class TestStageManager:
 
         name = Stage.objects.get_name(fake_gateway.id, 0)
         assert name is None
-
-
-class TestResourceManager:
-    @pytest.fixture(autouse=True)
-    def setup_fixtures(self):
-        self.gateway = G(Gateway)
-
-    def test_filter_valid_ids(self):
-        gateway = G(Gateway)
-        resource = G(Resource, gateway=gateway)
-
-        data = [
-            {
-                "ids": [],
-                "expected": [],
-            },
-            {
-                "ids": [0],
-                "expected": [],
-            },
-            {
-                "ids": [resource.id + 1],
-                "expected": [],
-            },
-            {
-                "ids": [resource.id],
-                "expected": [resource.id],
-            },
-        ]
-        for test in data:
-            result = Resource.objects.filter_valid_ids(gateway, test["ids"])
-            assert result == test["expected"]
-
-    def test_group_by_api_id(self):
-        a1 = G(Gateway)
-        a2 = G(Gateway)
-
-        r1 = G(Resource, gateway=a1)
-        r2 = G(Resource, gateway=a2)
-        r3 = G(Resource, gateway=a1)
-
-        result = Resource.objects.group_by_api_id([r1.id, r2.id, r3.id])
-        assert result == {
-            a1.id: [r1.id, r3.id],
-            a2.id: [r2.id],
-        }
-
-    def test_get_resource_ids_by_names(self):
-        gateway = G(Gateway)
-        resource_1 = G(Resource, name="red", gateway=gateway)
-        resource_2 = G(Resource, name="green", gateway=gateway)
-
-        assert Resource.objects.get_resource_ids_by_names(gateway.id, None) == []
-        assert Resource.objects.get_resource_ids_by_names(gateway.id, []) == []
-        assert Resource.objects.get_resource_ids_by_names(gateway.id, ["red"]) == [resource_1.id]
-        assert Resource.objects.get_resource_ids_by_names(gateway.id, ["red", "green"]) == [
-            resource_1.id,
-            resource_2.id,
-        ]
-
-    def test_get_name(self, fake_gateway):
-        resource = G(Resource, gateway=fake_gateway)
-
-        name = Resource.objects.get_name(fake_gateway.id, resource.id)
-        assert name == resource.name
-
-        name = Resource.objects.get_name(fake_gateway.id, 0)
-        assert name is None
-
-
-class TestContextManager(TestCase):
-    pass
 
 
 class TestResourceVersionManager:
@@ -897,97 +774,6 @@ class TestReleaseHistoryManager(TestCase):
         for test in data:
             result = ReleaseHistory.objects.filter_release_history(gateway, fuzzy=True, **test["params"])
             self.assertEqual(result.count(), test["expected"]["count"])
-
-
-class TestJWTManager:
-    def test_create_jwt(self):
-        gateway = G(Gateway)
-        data = [
-            {
-                "gateway": gateway,
-            }
-        ]
-        for test in data:
-            result = JWT.objects.create_jwt(test["gateway"])
-            assert result.gateway == test["gateway"]
-            assert result.private_key == ""
-            assert "BEGIN PUBLIC KEY" in result.public_key
-            assert result.encrypted_private_key
-
-    def test_update_jwt_key(self, faker):
-        gateway = G(Gateway)
-        jwt = G(JWT, gateway=gateway, private_key=faker.pystr(), public_key=faker.pystr())
-
-        JWT.objects.update_jwt_key(gateway, "test", "test")
-        jwt = JWT.objects.get(gateway=gateway)
-
-        cipher = AESCipherManager.create_jwt_cipher()
-        assert jwt.public_key == "test"
-        assert cipher.decrypt_from_hex(jwt.encrypted_private_key) == "test"
-
-    def test_get_private_key(self):
-        gateway = G(Gateway)
-        jwt = G(JWT, gateway=gateway)
-        JWT.objects.update_jwt_key(gateway, "test", "test")
-        assert JWT.objects.get_private_key(gateway.id) == "test"
-
-    def test_is_jwt_key_changed(self, faker):
-        gateway = G(Gateway)
-        jwt = JWT.objects.create_jwt(gateway)
-
-        assert JWT.objects.is_jwt_key_changed(
-            gateway,
-            smart_bytes(faker.pystr()),
-            smart_bytes(faker.pystr()),
-        )
-
-        cipher = AESCipherManager.create_jwt_cipher()
-        assert not JWT.objects.is_jwt_key_changed(
-            gateway,
-            cipher.decrypt_from_hex(jwt.encrypted_private_key),
-            smart_bytes(jwt.public_key),
-        )
-
-
-class TestAPIRelatedApp:
-    def test_allow_app_manage_gateway(self, unique_id):
-        gateway = G(Gateway)
-
-        result = APIRelatedApp.objects.allow_app_manage_gateway(gateway.id, unique_id)
-        assert result is False
-
-        G(APIRelatedApp, gateway=gateway, bk_app_code=unique_id)
-        result = APIRelatedApp.objects.allow_app_manage_gateway(gateway.id, unique_id)
-        assert result is True
-
-    def test_add_related_app(self):
-        gateway = G(Gateway)
-
-        APIRelatedApp.objects.add_related_app(gateway.id, "foo")
-        assert APIRelatedApp.objects.filter(gateway_id=gateway.id).count() == 1
-
-        APIRelatedApp.objects.add_related_app(gateway.id, "foo")
-        assert APIRelatedApp.objects.filter(gateway_id=gateway.id).count() == 1
-
-        APIRelatedApp.objects.add_related_app(gateway.id, "bar")
-        assert APIRelatedApp.objects.filter(gateway_id=gateway.id).count() == 2
-
-    def test_check_app_gateway_limit(self):
-        APIRelatedApp.objects.all().delete()
-
-        settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"]["bk_test"] = 1
-
-        gateway = G(Gateway)
-        APIRelatedApp.objects._check_app_gateway_limit("bk_test")
-
-        APIRelatedApp.objects.add_related_app(gateway.id, "bk_test")
-        with pytest.raises(APIError):
-            APIRelatedApp.objects._check_app_gateway_limit("bk_test")
-
-        del settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"]["bk_test"]
-        APIRelatedApp.objects._check_app_gateway_limit("bk_test")
-
-        APIRelatedApp.objects.all().delete()
 
 
 class TestSslCertificateManager:

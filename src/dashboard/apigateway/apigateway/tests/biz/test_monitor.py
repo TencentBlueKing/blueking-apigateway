@@ -53,8 +53,10 @@ class TestResourceMonitorHandler:
                 },
                 "expected": [
                     {
-                        "api_id": self.gateway.id,
-                        "api_name": self.gateway.name,
+                        "gateway": {
+                            "id": self.gateway.id,
+                            "name": self.gateway.name,
+                        },
                         "alarm_record_count": 2,
                         "strategy_summary": [
                             {
@@ -76,7 +78,6 @@ class TestResourceMonitorHandler:
         for test in data:
             result = ResourceMonitorHandler.statistics_api_alarm_record(
                 username=test["params"].get("user_name"),
-                name=test["params"].get("name"),
                 time_start=test["params"].get("time_start"),
                 time_end=test["params"].get("time_end"),
             )

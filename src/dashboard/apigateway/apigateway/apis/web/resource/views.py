@@ -30,6 +30,7 @@ from rest_framework import generics, status
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.label.models import APILabel
+from apigateway.biz.backend import BackendHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
@@ -40,7 +41,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
-from apigateway.core.models import Backend, BackendConfig, Proxy, Resource, Stage
+from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from .serializers import (
@@ -100,6 +101,8 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
             context={
                 "labels": ResourceLabelHandler.get_labels(resource_ids),
                 "docs": ResourceDocHandler.get_docs(resource_ids),
+                "backends": BackendHandler.get_id_to_instance(request.gateway.id),
+                "proxies": {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)},
                 "latest_version_created_time": ResourceVersionHandler.get_latest_created_time(request.gateway.id),
             },
         )
@@ -142,7 +145,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=ResourceInputSLZ, tags=["WebAPI.Resource"]
+        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=ResourceInputSLZ, tags=["WebAPI.Resource"]
     ),
 )
 @method_decorator(
@@ -194,7 +197,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             instance_name=instance.identity,
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
@@ -217,7 +220,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=ResourceBatchUpdateInputSLZ,
         tags=["WebAPI.Resource"],
     ),
@@ -235,7 +238,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
 
     @transaction.atomic
     def update(self, request, *args, **kwargs):
-        slz = self.get_serializer(data=request.data)
+        slz = self.get_serializer(data=request.data, context={"gateway_id": request.gateway.id})
         slz.is_valid(raise_exception=True)
 
         queryset = self.get_queryset().filter(id__in=slz.validated_data["ids"])
@@ -256,11 +259,11 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
             comment=_("批量更新资源"),
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
-        slz = ResourceBatchDestroyInputSLZ(data=request.data)
+        slz = ResourceBatchDestroyInputSLZ(data=request.data, context={"gateway_id": request.gateway.id})
         slz.is_valid(raise_exception=True)
 
         queryset = self.get_queryset().filter(id__in=slz.validated_data["ids"])
@@ -287,7 +290,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=ResourceLabelUpdateInputSLZ,
         tags=["WebAPI.Resource"],
     ),
@@ -299,7 +302,7 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
 
     @transaction.atomic
     def update(self, request, *args, **kwargs):
-        slz = self.get_serializer(data=request.data)
+        slz = self.get_serializer(data=request.data, context={"gateway_id": request.gateway.id})
         slz.is_valid(raise_exception=True)
 
         instance = self.get_object()
@@ -309,7 +312,7 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
             label_ids=slz.validated_data["label_ids"],
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class ResourceImportCheckApi(generics.CreateAPIView):
@@ -356,7 +359,7 @@ class ResourceImportCheckApi(generics.CreateAPIView):
 
 class ResourceImportApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        request_body=ResourceImportInputSLZ, responses={status.HTTP_200_OK: ""}, tags=["WebAPI.Resource"]
+        request_body=ResourceImportInputSLZ, responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.Resource"]
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -380,7 +383,7 @@ class ResourceImportApi(generics.CreateAPIView):
         )
         importer.import_resources()
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class ResourceExportApi(generics.CreateAPIView):
@@ -406,7 +409,7 @@ class ResourceExportApi(generics.CreateAPIView):
             many=True,
             context={
                 "labels": ResourceLabelHandler.get_labels_by_gateway(request.gateway.id),
-                "backends": dict(Backend.objects.filter(gateway=request.gateway).values_list("id", "name")),
+                "backends": BackendHandler.get_id_to_instance(gateway_id=request.gateway.id),
                 "proxies": {
                     proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=selected_resource_ids)
                 },
@@ -461,7 +464,7 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
         )
         slz.is_valid(raise_exception=True)
 
-        backend_id = slz.validated_data.get("backend_id")
+        backend_id = slz.validated_data["backend_id"]
         backend_path = slz.validated_data.get("backend_config", {}).get("path", "")
         backend_hosts = self._get_backend_hosts(backend_id)
 

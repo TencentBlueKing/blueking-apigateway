@@ -25,6 +25,7 @@ from django.utils.functional import cached_property
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
@@ -34,7 +35,7 @@ from apigateway.core.constants import (
     ContextTypeEnum,
     ResourceVersionSchemaEnum,
 )
-from apigateway.core.models import JWT, BackendConfig, Context, Gateway, Release, ResourceVersion, Stage
+from apigateway.core.models import BackendConfig, Context, Gateway, Release, ResourceVersion, Stage
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +110,7 @@ class ReleaseData:
 
     @cached_property
     def jwt_private_key(self) -> str:
-        return JWT.objects.get_private_key(self.gateway.pk)
+        return GatewayJWTHandler.get_private_key(self.gateway.pk)
 
     @cached_property
     def api_auth_config(self) -> Dict[str, Any]:

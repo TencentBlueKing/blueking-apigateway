@@ -42,7 +42,7 @@ class AppGatewayPermissionOutputSLZ(serializers.Serializer):
     resource_path = serializers.SerializerMethodField()
     resource_method = serializers.SerializerMethodField()
     expires = serializers.SerializerMethodField()
-    grant_type = serializers.ChoiceField(choices=GrantTypeEnum.choices(), default=GrantTypeEnum.INITIALIZE.value)
+    grant_type = serializers.ChoiceField(choices=GrantTypeEnum.get_choices(), default=GrantTypeEnum.INITIALIZE.value)
     renewable = serializers.SerializerMethodField()
 
     def get_resource_id(self, obj):
@@ -81,7 +81,7 @@ class AppPermissionExportInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(allow_blank=True, required=False)
     resource_id = serializers.IntegerField(allow_null=True, required=False)
     query = serializers.CharField(allow_blank=True, required=False)
-    grant_type = serializers.ChoiceField(choices=GrantTypeEnum.choices(), allow_blank=True, required=False)
+    grant_type = serializers.ChoiceField(choices=GrantTypeEnum.get_choices(), allow_blank=True, required=False)
     order_by = serializers.ChoiceField(
         choices=["bk_app_code", "-bk_app_code", "expires", "-expires"],
         allow_blank=True,

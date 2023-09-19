@@ -20,18 +20,17 @@ from collections import defaultdict
 from rest_framework.fields import DateTimeField
 
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
-from apigateway.core.models import Gateway
+from apigateway.biz.gateway import GatewayHandler
 
 
 class ResourceMonitorHandler:
     @staticmethod
-    def statistics_api_alarm_record(username, name, time_start, time_end):
+    def statistics_api_alarm_record(username, time_start, time_end):
         """
         统计网关下，各策略的告警信息
         """
-
         # 1. get current user's gateways
-        gateways = Gateway.objects.search_gateways(username=username, name=name)
+        gateways = GatewayHandler.list_gateways_by_user(username)
         gateway_id_map = {g.id: g for g in gateways}
 
         # 2. annotate alarm-record by strategy
@@ -41,7 +40,7 @@ class ResourceMonitorHandler:
             time_end=time_end,
         )
         # 3. annotate alarm-record by gateway
-        api_alarmrecord_count_map = AlarmStrategy.objects.annotate_alarm_record_by_gateway(
+        gateway_alarmrecord_count_map = AlarmStrategy.objects.annotate_alarm_record_by_gateway(
             gateway_ids=gateway_id_map.keys(),
             time_start=time_start,
             time_end=time_end,
@@ -51,10 +50,10 @@ class ResourceMonitorHandler:
         latest_alarm_record_ids = [s.latest_alarm_record_id for s in strategies]
         alarm_record_id_map = AlarmRecord.objects.in_bulk(latest_alarm_record_ids)
 
-        api_summary_map = defaultdict(list)
+        gateway_summary_map = defaultdict(list)
         for strategy in strategies:
             alarm_record = alarm_record_id_map[strategy.latest_alarm_record_id]
-            api_summary_map[strategy.gateway_id].append(
+            gateway_summary_map[strategy.gateway_id].append(
                 {
                     "id": strategy.id,
                     "name": strategy.name,
@@ -67,16 +66,18 @@ class ResourceMonitorHandler:
                 }
             )
 
-        api_summary = []
-        for gateway_id, summary in api_summary_map.items():
+        gateway_summary = []
+        for gateway_id, summary in gateway_summary_map.items():
             gateway = gateway_id_map[gateway_id]
-            api_summary.append(
+            gateway_summary.append(
                 {
-                    "api_id": gateway.id,
-                    "api_name": gateway.name,
+                    "gateway": {
+                        "id": gateway.id,
+                        "name": gateway.name,
+                    },
                     # 因为一个告警记录可能属于多条策略，因此将策略告警记录数量相加，并不等于网关告警记录数量
-                    "alarm_record_count": api_alarmrecord_count_map.get(gateway.id, 0),
+                    "alarm_record_count": gateway_alarmrecord_count_map.get(gateway.id, 0),
                     "strategy_summary": summary,
                 }
             )
-        return sorted(api_summary, key=lambda x: x["api_name"])
+        return sorted(gateway_summary, key=lambda x: x["gateway"]["name"])

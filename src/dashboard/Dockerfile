@@ -10,6 +10,7 @@ RUN pip config set global.index-url "${PYPI}"
 
 WORKDIR /app
 ADD build/requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 ADD build /app

@@ -92,7 +92,11 @@ class QueryRangeApi(generics.ListAPIView):
 
         resource_name = None
         if data.get("resource_id"):
-            resource_name = Resource.objects.get_name(request.gateway.id, data["resource_id"])
+            resource_name = (
+                Resource.objects.filter(gateway=request.gateway, id=data["resource_id"])
+                .values_list("name", flat=True)
+                .first()
+            )
 
         smart_time_range = MetricsSmartTimeRange(
             data.get("time_start"),

@@ -33,7 +33,7 @@ from .serializers import SystemListOutputSLZ, SystemRetrieveOutputSLZ
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: SystemListOutputSLZ(many=True)},
-        tags=["Docs.ESB.System"],
+        tags=["WebAPI.Docs.ESB.System"],
     ),
 )
 class SystemListApi(generics.ListAPIView):
@@ -48,7 +48,7 @@ class SystemListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: SystemRetrieveOutputSLZ},
-        tags=["Docs.ESB.System"],
+        tags=["WebAPI.Docs.ESB.System"],
     ),
 )
 class SystemRetrieveApi(generics.RetrieveAPIView):

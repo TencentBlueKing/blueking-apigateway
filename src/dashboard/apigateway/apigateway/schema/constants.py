@@ -16,14 +16,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.common.constants import ChoiceEnum
+from blue_krill.data_types.enum import EnumField, StructuredEnum
 
 
-class SchemaTypeEnum(ChoiceEnum):
-    CONTEXT = "context"
-    PROXY = "proxy"
-    PLUGIN = "plugin"
-    MONITOR = "monitor"
-    APISDK = "apisdk"
-    MICRO_GATEWAY = "micro_gateway"
-    BACKEND_SERVICE = "backend_service"
+class SchemaTypeEnum(StructuredEnum):
+    CONTEXT = EnumField("context")
+    PROXY = EnumField("proxy")
+    PLUGIN = EnumField("plugin")
+    MONITOR = EnumField("monitor")
+    APISDK = EnumField("apisdk")
+    MICRO_GATEWAY = EnumField("micro_gateway")
+    BACKEND_SERVICE = EnumField("backend_service")

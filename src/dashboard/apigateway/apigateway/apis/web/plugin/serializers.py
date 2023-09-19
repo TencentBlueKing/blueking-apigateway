@@ -28,17 +28,18 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.plugin.checker import PluginConfigYamlChecker
 from apigateway.apis.web.plugin.convertor import PluginConfigYamlConvertor
-from apigateway.apps.plugin.constants import PluginTypeScopeEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
 
 
-class PluginTypeSLZ(serializers.ModelSerializer):
+class PluginTypeOutputSLZ(serializers.ModelSerializer):
     name = serializers.CharField(source="name_i18n")
 
     notes = serializers.SerializerMethodField()
     related_scope_count = serializers.SerializerMethodField()
+    is_bound = serializers.SerializerMethodField()
 
     class Meta:
         model = PluginType
@@ -49,6 +50,7 @@ class PluginTypeSLZ(serializers.ModelSerializer):
             "is_public",
             "notes",
             "related_scope_count",
+            "is_bound",
         )
 
     def get_notes(self, obj):
@@ -59,13 +61,18 @@ class PluginTypeSLZ(serializers.ModelSerializer):
         related_scope_count = self.context.get("type_related_scope_count", {})
         return related_scope_count.get(obj.id, {"stage": 0, "resource": 0})
 
+    def get_is_bound(self, obj):
+        is_bound_map = self.context.get("type_is_bound_to_current_scope", {})
+        return is_bound_map.get(obj.id, False)
 
-class PluginTypeQuerySLZ(serializers.Serializer):
+
+class PluginTypeQueryInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(required=False)
-    scope = serializers.ChoiceField(choices=PluginTypeScopeEnum.get_choices(), required=True)
+    scope_type = serializers.ChoiceField(choices=PluginBindingScopeEnum.get_choices(), required=True)
+    scope_id = serializers.IntegerField(required=True)
 
 
-class PluginFormSLZ(serializers.ModelSerializer):
+class PluginFormOutputSLZ(serializers.ModelSerializer):
     type_code = serializers.CharField(source="type.code", read_only=True)
     type_name = serializers.CharField(source="type.name_i18n", read_only=True)
     config = serializers.DictField()
@@ -85,11 +92,9 @@ class PluginFormSLZ(serializers.ModelSerializer):
         )
 
 
-class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
+class PluginConfigBaseSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all())
-    # type_code = serializers.CharField(source="type.code", read_only=True)
-    # type_name = serializers.CharField(source="type.name_i18n", read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
 
     class Meta:
@@ -101,19 +106,9 @@ class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
             "description",
             "yaml",
             "type_id",
-            # "updated_by",
-            # "created_time",
-            # "updated_time",
-            # "type_code",
-            # "type_name",
         ]
         read_only_fields = [
             "id",
-            #     "updated_by",
-            #     "created_time",
-            #     "updated_time",
-            #     "type_code",
-            #     "type_name",
         ]
         lookup_field = "id"
 
@@ -160,7 +155,7 @@ class PluginConfigBaseInputSLZ(serializers.ModelSerializer):
         return plugin
 
 
-class PluginConfigRetrieveUpdateInputSLZ(PluginConfigBaseInputSLZ):
+class PluginConfigRetrieveUpdateInputSLZ(PluginConfigBaseSLZ):
     def update(self, instance, validated_data):
         if instance.type.code != validated_data["type_id"].code:
             raise ValidationError(_("插件类型不允许更改。"))
@@ -168,7 +163,7 @@ class PluginConfigRetrieveUpdateInputSLZ(PluginConfigBaseInputSLZ):
         return self._update_plugin(instance, validated_data)
 
 
-class PluginConfigCreateInputSLZ(PluginConfigBaseInputSLZ):
+class PluginConfigCreateInputSLZ(PluginConfigBaseSLZ):
     def create(self, validated_data):
         plugin_type = validated_data["type_id"]
         if not plugin_type.is_public:
@@ -179,9 +174,14 @@ class PluginConfigCreateInputSLZ(PluginConfigBaseInputSLZ):
         )
 
 
+class BindingScopeObjectSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+
+
 class PluginBindingListOutputSLZ(serializers.Serializer):
-    stages = serializers.ListField(child=serializers.CharField())
-    resources = serializers.ListField(child=serializers.CharField())
+    stages = serializers.ListField(child=BindingScopeObjectSLZ())
+    resources = serializers.ListField(child=BindingScopeObjectSLZ())
 
 
 class ScopePluginConfigListOutputSLZ(serializers.Serializer):

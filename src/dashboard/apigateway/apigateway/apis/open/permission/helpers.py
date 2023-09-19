@@ -213,10 +213,13 @@ class AppPermissionBuilder:
             resource.update({"resource_permission": resource_permission_map.get(resource["id"])})
             resource_map[resource["id"]].update(resource)
 
-        resource_id_to_fields_map = Resource.objects.get_id_to_fields_map(list(resource_map.keys()))
+        resource_id_to_gateway_name = dict(
+            Resource.objects.filter(id__in=list(resource_map.keys())).values_list("id", "gateway__name")
+        )
+
         doc_links = ReleasedResourceHandler.get_latest_doc_link(list(resource_map.keys()))
         for resource_id, resource in resource_map.items():
-            resource["api_name"] = resource_id_to_fields_map.get(resource_id, {}).get("api_name", "")
+            resource["api_name"] = resource_id_to_gateway_name.get(resource_id, "")
             resource["doc_link"] = doc_links.get(resource_id, "")
 
         resource_permissions = parse_obj_as(List[ResourcePermission], list(resource_map.values()))

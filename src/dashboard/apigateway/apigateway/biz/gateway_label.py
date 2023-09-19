@@ -63,3 +63,7 @@ class GatewayLabelHandler:
             for name in need_create_names
         ]
         APILabel.objects.bulk_create(labels, batch_size=100)
+
+    @staticmethod
+    def get_valid_ids(gateway_id: int, ids: List[int]) -> List[int]:
+        return list(APILabel.objects.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))

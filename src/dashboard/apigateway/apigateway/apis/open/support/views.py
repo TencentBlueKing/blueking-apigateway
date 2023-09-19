@@ -63,7 +63,7 @@ class APISDKV1ViewSet(viewsets.ModelViewSet):
             [SDKFactory.create(i) for i in queryset],
             many=True,
             context={
-                "gateway_id_map": Gateway.objects.filter_id_object_map(),
+                "gateway_id_map": {gateway.id: gateway for gateway in Gateway.objects.all()},
                 "gateway_id_config_map": GatewayAuthContext().filter_scope_id_config_map(),
                 "released_stages": Release.objects.get_released_stages(resource_version_ids=resource_version_ids),
                 "resource_versions": ResourceVersion.objects.get_id_to_fields_map(

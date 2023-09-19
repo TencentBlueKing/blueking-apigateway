@@ -26,7 +26,7 @@ from apigateway.utils.yaml import yaml_dumps, yaml_dumps_multiline_string
 from .convertor import CorsASC
 from .models import AccessStrategy
 
-# FIXME: 转换成 PluginConfig 对应的格式是 前端动态表单保存下来的格式
+# NOTE: 转换成 PluginConfig 对应的格式是 前端动态表单保存下来的格式
 # - source: access_strategy.config
 #     - the schema => and get real data from database online
 # - target: plugin_config.yaml

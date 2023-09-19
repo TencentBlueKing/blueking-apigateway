@@ -16,7 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
+import itertools
 import json
+import operator
 from typing import Any, Dict, List, Optional
 
 from django.db.models import Q
@@ -29,117 +32,37 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import ResourceAuthContext
-from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import ContextScopeTypeEnum
-from apigateway.core.models import Context, Gateway, Proxy, Resource, Stage, StageResourceDisabled
+from apigateway.core.models import Context, Gateway, Proxy, Resource, StageResourceDisabled
 from apigateway.utils import time
 
 
 class ResourceHandler:
-    @staticmethod
-    def save_disabled_stages(gateway, resource, disabled_stage_ids, delete_unspecified=False):
-        """
-        存储资源禁用环境
-        :param bool delete_unspecified: 是否删除未指定的禁用环境，资源下非本次提供的禁用环境即为未指定禁用环境
-        """
+    @classmethod
+    def save_auth_config(cls, resource_id: int, config: Dict[str, Any]):
+        """存储资源认证配置"""
+        # 获取当前的配置
+        try:
+            auth_config = ResourceAuthContext().get_config(resource_id)
+        except Context.DoesNotExist:
+            auth_config = cls.get_default_auth_config()
 
-        # 筛选出 StageResourceDisabled 中不存在的 disabled_stage_ids 进行添加
-        exist_disabled_stage_ids = StageResourceDisabled.objects.filter(
-            resource=resource, stage__id__in=disabled_stage_ids
-        ).values_list("stage__id", flat=True)
-        disabled_stages_to_add = Stage.objects.filter(
-            gateway=gateway, id__in=list(set(disabled_stage_ids) - set(exist_disabled_stage_ids))
-        )
-        for stage in disabled_stages_to_add:
-            StageResourceDisabled.objects.update_or_create(stage=stage, resource=resource)
-
-        if delete_unspecified:
-            # 清理非本次添加的禁用环境
-            StageResourceDisabled.objects.filter(resource=resource).exclude(stage__id__in=disabled_stage_ids).delete()
-
-    @staticmethod
-    def save_auth_config(resource_id, config):
-        """
-        存储资源认证配置
-        """
-        auth_config = ResourceHandler()._get_current_auth_config(resource_id)
+        # 用传入的配置，覆盖当前的配置
         auth_config.update(config)
 
-        return ResourceAuthContext().save(resource_id, auth_config)
-
-    # TODO: move into save_auth_config?
-    @staticmethod
-    def _get_current_auth_config(resource_id):
-        """
-        获取资源当前认证配置
-        """
-        default_hidden_config = {
-            # 跳过用户认证逻辑，值为False时，不根据请求参数中的用户信息校验用户
-            "skip_auth_verification": False,
-            "auth_verified_required": True,
-            "app_verified_required": True,
-            "resource_perm_required": True,
-        }
-        try:
-            return ResourceAuthContext().get_config(resource_id)
-        except Context.DoesNotExist:
-            return default_hidden_config
-
-    # FIXME: this function only used by tests
-    @staticmethod
-    def save_proxy_config(
-        resource,
-        proxy_type,
-        proxy_config,
-    ):
-        # proxy, created = Proxy.objects.save_proxy_config(
-        #     resource,
-        #     proxy_type,
-        #     proxy_config,
-        # )
-        factory = SchemaFactory()
-        proxy, created = Proxy.objects.update_or_create(
-            resource=resource,
-            type=proxy_type,
-            defaults={
-                "config": proxy_config,
-                "schema": factory.get_proxy_schema(proxy_type),
-            },
-        )
-        resource.proxy_id = proxy.id
-        resource.save(update_fields=["proxy_id", "updated_time"])
-        return proxy, created
-
-    @staticmethod
-    def get_proxy_configs(resource):
-        """
-        获取资源代理配置，及当前代理类型
-        """
-        current_proxy = Proxy.objects.get(id=resource.proxy_id)
-
-        return {
-            "type": current_proxy.type,
-            "configs": {proxy.type: proxy.config for proxy in Proxy.objects.filter(resource=resource)},
-        }
+        ResourceAuthContext().save(resource_id, auth_config)
 
     @staticmethod
     def delete_by_gateway_id(gateway_id):
         resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
         if not resource_ids:
             return
-        ResourceHandler().delete_resources(resource_ids)
+        ResourceHandler.delete_resources(resource_ids)
 
     @staticmethod
-    def delete_resources(resource_ids: List[int], gateway: Optional[Gateway] = None):
+    def delete_resources(resource_ids: List[int]):
         if not resource_ids:
             return
-
-        if gateway is not None:
-            # 指定网关时，二次确认资源属于该网关，防止误删除
-            resource_ids = list(
-                Resource.objects.filter(gateway=gateway, id__in=resource_ids).values_list("id", flat=True)
-            )
-            assert resource_ids
 
         # 1. delete auth config context
         Context.objects.filter(scope_type=ContextScopeTypeEnum.RESOURCE.value, scope_id__in=resource_ids).delete()
@@ -158,32 +81,6 @@ class ResourceHandler:
 
         # 5. delete resource
         Resource.objects.filter(id__in=resource_ids).delete()
-
-    @staticmethod
-    def filter_resource(gateway, query=None, path=None, method=None, label_name=None, order_by=None, fuzzy=True):
-        """
-        查询资源，根据模糊查询串匹配，根据path、method匹配，根据标签匹配
-        """
-        queryset = Resource.objects.filter(gateway=gateway)
-
-        # query 不是模型字段，仅支持模糊匹配，如需精确匹配，可使用具体字段
-        if query and fuzzy:
-            queryset = queryset.filter(Q(path__contains=query) | Q(name__contains=query))
-
-        if path:
-            queryset = queryset.filter(path__contains=path) if fuzzy else queryset.filter(path=path)
-
-        if method:
-            queryset = queryset.filter(method=method)
-
-        if label_name:
-            resource_ids = ResourceLabel.objects.filter_resource_ids(gateway=gateway, label_name=label_name)
-            queryset = queryset.filter(id__in=resource_ids)
-
-        if order_by:
-            queryset = queryset.order_by(order_by)
-
-        return queryset
 
     @staticmethod
     def snapshot(
@@ -268,6 +165,12 @@ class ResourceHandler:
         if condition.get("method"):
             queryset = queryset.filter(method=condition["method"])
 
+        if condition.get("backend_id"):
+            resource_ids = Proxy.objects.filter(
+                resource__gateway_id=gateway_id, backend_id=condition["backend_id"]
+            ).values_list("resource_id", flat=True)
+            queryset = queryset.filter(id__in=resource_ids)
+
         if condition.get("label_ids"):
             labels = APILabel.objects.filter(gateway_id=gateway_id, id__in=condition["label_ids"])
             resource_ids = (
@@ -287,7 +190,7 @@ class ResourceHandler:
     @staticmethod
     def get_default_auth_config():
         return {
-            # 跳过用户认证逻辑，值为False时，不根据请求参数中的用户信息校验用户
+            # 跳过用户认证逻辑，值为 False 时，不根据请求参数中的用户信息校验用户
             "skip_auth_verification": False,
             "auth_verified_required": True,
             "app_verified_required": True,
@@ -346,3 +249,30 @@ class ResourceHandler:
 
         if remaining_resource_labels:
             ResourceLabel.objects.filter(id__in=remaining_resource_labels.values()).delete()
+
+    @staticmethod
+    def group_by_gateway_id(resource_ids: List[int]) -> Dict[int, List[int]]:
+        """将资源 ID 按网关进行分组"""
+        data = Resource.objects.filter(id__in=resource_ids).values("gateway_id", "id").order_by("gateway_id")
+        return {
+            gateway_id: [item["id"] for item in group]
+            for gateway_id, group in itertools.groupby(data, key=operator.itemgetter("gateway_id"))
+        }
+
+    @staticmethod
+    def get_last_updated_time(gateway_id: int) -> Optional[datetime.datetime]:
+        """获取网关下资源的最近更新时间"""
+        return (
+            Resource.objects.filter(gateway_id=gateway_id)
+            .order_by("-updated_time")
+            .values_list("updated_time", flat=True)
+            .first()
+        )
+
+    @staticmethod
+    def get_id_to_resource(gateway_id: int) -> Dict[int, Resource]:
+        return {r.id: r for r in Resource.objects.filter(gateway_id=gateway_id)}
+
+    @staticmethod
+    def get_valid_ids(gateway_id: int, ids: List[int]) -> List[int]:
+        return list(Resource.objects.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))

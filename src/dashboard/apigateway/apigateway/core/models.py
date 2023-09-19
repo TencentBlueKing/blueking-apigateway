@@ -21,7 +21,6 @@ import logging
 import uuid
 from typing import List
 
-from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
@@ -31,7 +30,6 @@ from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin
 from apigateway.core import managers
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
-    PATH_TO_NAME_PATTERN,
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
     BackendConfigTypeEnum,
@@ -67,7 +65,7 @@ NOTE:
 
 class Gateway(TimestampedModelMixin, OperatorModelMixin):
     """
-    API, a system
+    Gateway, a system
     the name is unique and will be part of the path in APIGateway
     /api/{gateway.name}/{stage.name}/{resource.path}/
     """
@@ -89,14 +87,12 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         default=APIHostingTypeEnum.DEFAULT.value,
     )
 
-    objects = managers.GatewayManager()
-
     def __str__(self):
         return f"<Gateway: {self.pk}/{self.name}>"
 
     class Meta:
-        verbose_name = "API"
-        verbose_name_plural = "API"
+        verbose_name = "Gateway"
+        verbose_name_plural = "Gateway"
         db_table = "core_api"
 
     @property
@@ -122,18 +118,6 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     @property
     def is_active_and_public(self):
         return self.is_public and self.is_active
-
-    @property
-    def docs_url(self):
-        return settings.API_DOCS_URL_TMPL.format(api_name=self.name)
-
-    @property
-    def domain(self):
-        return settings.BK_API_URL_TMPL.format(api_name=self.name)
-
-    @property
-    def max_stage_count(self) -> int:
-        return settings.MAX_STAGE_COUNT_PER_GATEWAY
 
 
 class Stage(TimestampedModelMixin, OperatorModelMixin):
@@ -214,8 +198,6 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     is_public = models.BooleanField(default=True)
     allow_apply_permission = models.BooleanField(default=True)
 
-    objects = managers.ResourceManager()
-
     def __str__(self):
         return f"<Resource: {self.pk}/{self.name}>"
 
@@ -230,12 +212,6 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
         资源标识
         """
         return f"{self.method} {self.path_display}"
-
-    @property
-    def action_name(self):
-        if self.name:
-            return self.name
-        return "_".join([self.method.lower(), *PATH_TO_NAME_PATTERN.findall(self.path.lower())])
 
     @property
     def path_display(self):
@@ -262,8 +238,6 @@ class Proxy(ConfigModelMixin):
     backend_service = models.ForeignKey("BackendService", on_delete=models.SET_NULL, null=True, default=None)
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
     # config = from ConfigModelMixin
-
-    objects = managers.ProxyManager()
 
     def __str__(self):
         return f"<Proxy: {self.pk}/{self.type}>"
@@ -619,7 +593,7 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     status = models.CharField(
         _("发布状态"),
         max_length=16,
-        choices=ReleaseStatusEnum.choices(),
+        choices=ReleaseStatusEnum.get_choices(),
         default=ReleaseStatusEnum.PENDING.value,
     )
     # 废弃同上
@@ -710,8 +684,6 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
 
     encrypted_private_key = models.TextField(blank=False, null=False, default="")
 
-    objects = managers.JWTManager()
-
     def __str__(self):
         return f"<JWT: {self.gateway}>"
 
@@ -721,16 +693,14 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_jwt"
 
 
-class APIRelatedApp(TimestampedModelMixin):
+class GatewayRelatedApp(TimestampedModelMixin):
     """网关关联的蓝鲸应用"""
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     bk_app_code = models.CharField(max_length=32, db_index=True)
 
-    objects = managers.APIRelatedAppManager()
-
     def __str__(self):
-        return f"<APIRelatedApp: {self.bk_app_code}/{self.gateway_id}>"
+        return f"<GatewayRelatedApp: {self.bk_app_code}/{self.gateway_id}>"
 
     class Meta:
         db_table = "core_api_related_app"
@@ -797,7 +767,7 @@ class MicroGatewayReleaseHistory(models.Model):
     status = models.CharField(
         _("发布状态"),
         max_length=16,
-        choices=ReleaseStatusEnum.choices(),
+        choices=ReleaseStatusEnum.get_choices(),
         default=ReleaseStatusEnum.PENDING.value,
     )
     details = JSONField(blank=True, null=True)

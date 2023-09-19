@@ -52,10 +52,8 @@ class TestAPISDKV1ViewSet:
         )
 
         mocker.patch(
-            "apigateway.apis.open.support.views.Gateway.objects.filter_id_object_map",
-            return_value={
-                fake_gateway.id: fake_gateway,
-            },
+            "apigateway.apis.open.support.views.Gateway.objects.all",
+            return_value=[fake_gateway],
         )
         mocker.patch(
             "apigateway.apis.open.support.views.GatewayAuthContext.filter_scope_id_config_map",

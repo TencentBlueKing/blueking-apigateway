@@ -111,7 +111,7 @@ class DocListCreateApi(generics.ListCreateAPIView):
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=DocInputSLZ, tags=["WebAPI.Resource.Doc"]
+        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=DocInputSLZ, tags=["WebAPI.Resource.Doc"]
     ),
 )
 @method_decorator(
@@ -156,7 +156,7 @@ class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
             instance_name=f"{slz.instance.language}:{resource.name}",
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

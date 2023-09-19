@@ -32,16 +32,16 @@ urlpatterns = [
         "alarm/strategies/",
         include(
             [
-                path("", AlarmStrategyListCreateApi.as_view(), name="monitor.stages"),
+                path("", AlarmStrategyListCreateApi.as_view(), name="monitor.alarm.strategy.list_create"),
                 path(
                     "<int:id>/",
                     AlarmStrategyRetrieveUpdateDestroyApi.as_view(),
-                    name="monitor.alarm_strategies.detail",
+                    name="monitor.alarm.strategy.retrieve_update_destroy",
                 ),
                 path(
                     "<int:id>/status/",
                     AlarmStrategyUpdateStatusApi.as_view(),
-                    name="monitor.alarm_strategies.update_status",
+                    name="monitor.alarm.strategy.update_status",
                 ),
             ]
         ),
@@ -51,8 +51,8 @@ urlpatterns = [
         "alarm/records/",
         include(
             [
-                path("", AlarmRecordListApi.as_view(), name="monitor.alarm_records"),
-                path("<int:id>/", AlarmRecordRetrieveApi.as_view(), name="monitor.alarm_records.detail"),
+                path("", AlarmRecordListApi.as_view(), name="monitor.alarm_records.list"),
+                path("<int:id>/", AlarmRecordRetrieveApi.as_view(), name="monitor.alarm_records.retrieve"),
             ]
         ),
     ),

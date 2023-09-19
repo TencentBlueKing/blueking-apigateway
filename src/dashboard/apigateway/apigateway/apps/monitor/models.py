@@ -99,7 +99,7 @@ class AlarmStrategy(ConfigModelMixin):
         db_table = "monitor_alarm_strategy"
 
     @property
-    def api_label_ids(self) -> List[int]:
+    def gateway_label_ids(self) -> List[int]:
         return list(self.api_labels.values_list("id", flat=True))
 
     @property

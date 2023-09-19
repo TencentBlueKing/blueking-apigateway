@@ -19,6 +19,7 @@
 import logging
 
 from blue_krill.web.drf_utils import stringify_validation_error
+from rest_framework import status
 from rest_framework.exceptions import (
     APIException,
     AuthenticationFailed,
@@ -34,6 +35,15 @@ from rest_framework.views import exception_handler, set_rollback
 from apigateway.common.error_codes import APIError, error_codes
 
 logger = logging.getLogger(__name__)
+
+STATUS_CODE_DEFAULT_ERROR = {
+    status.HTTP_400_BAD_REQUEST: error_codes.INVALID_ARGUMENT,
+    status.HTTP_401_UNAUTHORIZED: error_codes.UNAUTHENTICATED,
+    status.HTTP_403_FORBIDDEN: error_codes.IAM_NO_PERMISSION,
+    status.HTTP_404_NOT_FOUND: error_codes.NOT_FOUND,
+    status.HTTP_405_METHOD_NOT_ALLOWED: error_codes.METHOD_NOT_ALLOWED,
+    status.HTTP_500_INTERNAL_SERVER_ERROR: error_codes.INTERNAL,
+}
 
 
 def one_line_error(error: ValidationError):
@@ -86,11 +96,14 @@ def custom_exception_handler(exc, context):  # ruff: noqa: PLR0911
     response = exception_handler(exc, context)
     # Use a default error code
     if response is not None:
-        error = error_codes.UNKNOWN.format(message=one_line_error(APIException(response.data)), replace=True)
+        message = one_line_error(APIException(response.data))
+        error_code = STATUS_CODE_DEFAULT_ERROR.get(response.status_code, error_codes.UNKNOWN)
+        error = error_code.format(message=message, replace=True)
         return Response(error.code.as_json(is_legacy), status=response.status_code, headers={})
 
     logger.exception("unhandled error occurred")
 
     set_rollback()
+
     error = error_codes.UNKNOWN.format(message=str(exc))
     return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
