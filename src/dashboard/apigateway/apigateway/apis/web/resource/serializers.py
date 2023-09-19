@@ -46,7 +46,7 @@ class ResourceQueryInputSLZ(serializers.Serializer):
     name = serializers.CharField(allow_blank=True, required=False)
     path = serializers.CharField(allow_blank=True, required=False)
     method = serializers.CharField(allow_blank=True, required=False)
-    label_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+    label_ids = serializers.CharField(allow_blank=True, required=False)
     backend_id = serializers.IntegerField(allow_null=True, required=False)
     query = serializers.CharField(allow_blank=True, required=False)
     order_by = serializers.ChoiceField(
@@ -54,6 +54,15 @@ class ResourceQueryInputSLZ(serializers.Serializer):
         allow_blank=True,
         required=False,
     )
+
+    def validate_label_ids(self, value):
+        if not value:
+            return []
+
+        try:
+            return [int(x) for x in value.split(",")]
+        except ValueError:
+            raise serializers.ValidationError(_("标签 ID 请用逗号分割"))
 
 
 class ResourceListOutputSLZ(serializers.ModelSerializer):
@@ -82,7 +91,11 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
 
     def get_backend(self, obj):
         proxy = self.context["proxies"][obj.id]
-        return self.context["backends"][proxy.backend_id]
+        backend = self.context["backends"][proxy.backend_id]
+        return {
+            "id": backend.id,
+            "name": backend.name,
+        }
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])
@@ -452,7 +465,7 @@ class ResourceExportOutputSLZ(serializers.Serializer):
 
     def get_backend_name(self, obj):
         proxy = self.context["proxies"][obj.id]
-        return self.context["backends"][proxy.backend_id]
+        return self.context["backends"][proxy.backend_id].name
 
     def get_backend_config(self, obj):
         proxy = self.context["proxies"][obj.id]

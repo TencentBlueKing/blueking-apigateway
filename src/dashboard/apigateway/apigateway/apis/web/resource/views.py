@@ -41,7 +41,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
-from apigateway.core.models import Backend, BackendConfig, Proxy, Resource, Stage
+from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from .serializers import (
@@ -101,7 +101,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
             context={
                 "labels": ResourceLabelHandler.get_labels(resource_ids),
                 "docs": ResourceDocHandler.get_docs(resource_ids),
-                "backends": BackendHandler.get_backends(request.gateway.id),
+                "backends": BackendHandler.get_id_to_backend(request.gateway.id),
                 "proxies": {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)},
                 "latest_version_created_time": ResourceVersionHandler.get_latest_created_time(request.gateway.id),
             },
@@ -409,7 +409,7 @@ class ResourceExportApi(generics.CreateAPIView):
             many=True,
             context={
                 "labels": ResourceLabelHandler.get_labels_by_gateway(request.gateway.id),
-                "backends": dict(Backend.objects.filter(gateway=request.gateway).values_list("id", "name")),
+                "backends": BackendHandler.get_id_to_backend(gateway_id=request.gateway.id),
                 "proxies": {
                     proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=selected_resource_ids)
                 },

@@ -166,9 +166,9 @@ class ResourceHandler:
             queryset = queryset.filter(method=condition["method"])
 
         if condition.get("backend_id"):
-            resource_ids = Proxy.objects.filter(gateway_id=gateway_id, backend_id=condition["backend_id"]).values_list(
-                "resource_id", flat=True
-            )
+            resource_ids = Proxy.objects.filter(
+                resource__gateway_id=gateway_id, backend_id=condition["backend_id"]
+            ).values_list("resource_id", flat=True)
             queryset = queryset.filter(id__in=resource_ids)
 
         if condition.get("label_ids"):
