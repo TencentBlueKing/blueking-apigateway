@@ -109,7 +109,6 @@ class IpAccessControlASC(AccessStrategyConvertor):
 
         # NOTE: incase the 404 after upgrade(the apisix required at least 1 item, otherwise load fail)
         # we add a no-possible ip here
-        # FIXME: generate the plugin data in 1.13, if got an empty ip list, unbind the plugin!!!!!!
         if not ip_list:
             ip_list = ["255.255.255.255"]
 

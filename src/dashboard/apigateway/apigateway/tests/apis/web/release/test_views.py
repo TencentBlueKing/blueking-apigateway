@@ -60,7 +60,6 @@ class TestReleaseCreateApi:
                 resource_version=fake_resource_version,
                 created_time=dummy_time.time,
             )
-            # TODO: mock the releaser
             mocker.patch("apigateway.biz.releaser.BatchReleaser.release", return_value=release_history)
 
             data = {

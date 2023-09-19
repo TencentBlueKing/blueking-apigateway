@@ -119,7 +119,7 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=StageInputSLZ,
         tags=["WebAPI.Stage"],
     ),
@@ -134,7 +134,7 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
 @method_decorator(
     name="patch",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=StagePartialInputSLZ,
         tags=["WebAPI.Stage"],
     ),
@@ -181,7 +181,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
             comment=_("更新环境"),
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -190,6 +190,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
         if not instance.deletable:
             raise error_codes.FAILED_PRECONDITION.format(_("请先下线环境，然后再删除。"))
 
+        stage_id = instance.id
         StageHandler.delete(instance)
 
         record_audit_log(
@@ -198,7 +199,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
             op_status=OpStatusEnum.SUCCESS.value,
             op_object_group=request.gateway.id,
             op_object_type=OpObjectTypeEnum.STAGE.value,
-            op_object_id=instance.id,
+            op_object_id=stage_id,
             op_object=instance.name,
             comment=_("删除环境"),
         )
@@ -215,20 +216,20 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
         instance.description = data["description"]
         instance.save()
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: StageOutputSLZ()},
+        responses={status.HTTP_200_OK: StageVarsSLZ()},
         tags=["WebAPI.Stage"],
     ),
 )
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=StageVarsSLZ,
         tags=["WebAPI.Stage"],
     ),
@@ -270,7 +271,7 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
             comment=_("更新环境变量"),
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class BackendConfigQuerySetMixin:
@@ -305,7 +306,7 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=BackendConfigInputSLZ,
         tags=["WebAPI.Stage"],
     ),
@@ -334,13 +335,13 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
         # 触发环境发布
         trigger_gateway_publish(PublishSourceEnum.BACKEND_UPDATE, username, instance.gateway_id, instance.stage_id)
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=StageStatusInputSLZ,
         tags=["WebAPI.Stage"],
     ),
@@ -372,4 +373,4 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
             comment=_("环境状态变更"),
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

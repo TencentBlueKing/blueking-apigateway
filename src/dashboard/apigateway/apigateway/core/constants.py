@@ -28,7 +28,7 @@ class GatewayStatusEnum(StructuredEnum):
     ACTIVE = EnumField(1, "启用中")
 
 
-# TODO: delete it
+# TODO: delete it in 1.14
 class APIHostingTypeEnum(StructuredEnum):
     """网关托管类型，影响特性集"""
 
@@ -107,6 +107,7 @@ class ReleaseStatusEnum(StructuredEnum):
     FAILURE = EnumField("failure")  # 发布失败
     PENDING = EnumField("pending")  # 待发布
     RELEASING = EnumField("releasing")  # 发布中
+    UNRELEASED = EnumField("unreleased")  # 未发布
 
 
 class PublishEventEnum(StructuredEnum):
