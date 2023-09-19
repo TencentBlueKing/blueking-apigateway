@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
 from .views import (
     PluginBindingListApi,
@@ -31,20 +31,37 @@ urlpatterns = [
     # plugins
     # list plugin types (global)
     path("", PluginTypeListApi.as_view(), name="plugins.types"),
-    # list plugin configs (by stage or resource)
-    path("<str:scope_type>/<int:scope_id>/", ScopePluginConfigListApi.as_view(), name="plugins.config.scope"),
-    # create a binding (by stage or resource)
     path(
-        "<str:scope_type>/<int:scope_id>/<str:code>/configs/",
-        PluginConfigCreateApi.as_view(),
-        name="plugins.config.create",
+        "<str:scope_type>/<int:scope_id>/",
+        include(
+            [
+                # list plugin configs (by stage or resource)
+                path("", ScopePluginConfigListApi.as_view(), name="plugins.config.scope"),
+                path(
+                    "<str:code>/configs/",
+                    include(
+                        [
+                            # create a binding (by stage or resource)
+                            path("", PluginConfigCreateApi.as_view(), name="plugins.config.create"),
+                            # get, update or delete a plugin config (delete equals delete bindings)
+                            path(
+                                "<int:id>/",
+                                PluginConfigRetrieveUpdateDestroyApi.as_view(),
+                                name="plugins.config.details",
+                            ),
+                        ]
+                    ),
+                ),
+            ]
+        ),
     ),
-    # get, update or delete a plugin config (delete equals delete bindings)
     path(
-        "<str:scope_type>/<int:scope_id>/<str:code>/configs/<int:id>/",
-        PluginConfigRetrieveUpdateDestroyApi.as_view(),
-        name="plugins.config.details",
+        "<str:code>/",
+        include(
+            [
+                path("form/", PluginFormRetrieveApi.as_view(), name="plugins.form"),
+                path("bindings/", PluginBindingListApi.as_view(), name="plugins.bindings"),
+            ]
+        ),
     ),
-    path("<str:code>/forms/", PluginFormRetrieveApi.as_view(), name="plugins.forms"),
-    path("<str:code>/bindings/", PluginBindingListApi.as_view(), name="plugins.bindings"),
 ]
