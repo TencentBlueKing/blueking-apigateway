@@ -19,30 +19,5 @@
 from django.db import models
 
 
-# FIXME: move to apis/web, remove the manager method here
 class AuditEventLogManager(models.Manager):
-    def filter_log(
-        self,
-        queryset,
-        time_start=None,
-        time_end=None,
-        op_object_type=None,
-        op_type=None,
-        username=None,
-        fuzzy=False,
-    ):
-        if time_start:
-            queryset = queryset.filter(op_time__gte=time_start)
-        if time_end:
-            queryset = queryset.filter(op_time__lte=time_end)
-
-        if op_object_type:
-            queryset = queryset.filter(op_object_type=op_object_type)
-
-        if op_type:
-            queryset = queryset.filter(op_type=op_type)
-
-        if username:
-            queryset = queryset.filter(username__icontains=username) if fuzzy else queryset.filter(username=username)
-
-        return queryset
+    pass

@@ -29,7 +29,8 @@ class TestPluginTypeListApi:
                 "gateway_id": fake_gateway.id,
             },
             data={
-                "scope": "stage_and_resource",
+                "scope_type": "stage",
+                "scope_id": 1,
             },
         )
 
@@ -50,7 +51,8 @@ class TestPluginTypeListApi:
                 "gateway_id": fake_gateway.id,
             },
             data={
-                "scope": "stage_and_resource",
+                "scope_type": "stage",
+                "scope_id": 1,
             },
         )
 
@@ -227,7 +229,7 @@ class TestPluginFormRetrieveApi:
         with override(language):
             response = request_view(
                 "GET",
-                "plugins.forms",
+                "plugins.form",
                 gateway=fake_gateway,
                 path_params={
                     "gateway_id": fake_gateway.id,
@@ -280,7 +282,7 @@ class TestPluginBindingListApi:
         resources = data["resources"]
 
         assert len(stages) == 1
-        assert stages[0] == fake_stage.name
+        assert stages[0]["name"] == fake_stage.name
 
         assert len(resources) == 1
-        assert resources[0] == fake_resource.name
+        assert resources[0]["name"] == fake_resource.name

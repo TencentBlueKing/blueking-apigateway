@@ -48,14 +48,26 @@ class AuditEventLogListApi(generics.ListAPIView):
         data = slz.validated_data
 
         queryset = self.get_queryset()
-        queryset = AuditEventLog.objects.filter_log(
-            queryset,
-            time_start=data.get("time_start"),
-            time_end=data.get("time_end"),
-            op_object_type=data.get("op_object_type"),
-            op_type=data.get("op_type"),
-            username=data.get("username"),
-        )
+
+        time_start = data.get("time_start")
+        time_end = data.get("time_end")
+        op_object_type = data.get("op_object_type")
+        op_type = data.get("op_type")
+        username = data.get("username")
+        fuzzy = data.get("fuzzy", False)
+
+        if time_start:
+            queryset = queryset.filter(op_time__gte=time_start)
+        if time_end:
+            queryset = queryset.filter(op_time__lte=time_end)
+
+        if op_object_type:
+            queryset = queryset.filter(op_object_type=op_object_type)
+        if op_type:
+            queryset = queryset.filter(op_type=op_type)
+
+        if username:
+            queryset = queryset.filter(username__icontains=username) if fuzzy else queryset.filter(username=username)
 
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page, many=True)

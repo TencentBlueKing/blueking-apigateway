@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import Dict
 
 from django.db import transaction
 from django.db.models import Q
@@ -39,9 +40,9 @@ from .serializers import (
     PluginBindingListOutputSLZ,
     PluginConfigCreateInputSLZ,
     PluginConfigRetrieveUpdateInputSLZ,
-    PluginFormSLZ,
-    PluginTypeQuerySLZ,
-    PluginTypeSLZ,
+    PluginFormOutputSLZ,
+    PluginTypeOutputSLZ,
+    PluginTypeQueryInputSLZ,
     ScopePluginConfigListOutputSLZ,
 )
 
@@ -49,18 +50,23 @@ from .serializers import (
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        query_serializer=PluginTypeQuerySLZ,
-        responses={status.HTTP_200_OK: PluginTypeSLZ(many=True)},
+        query_serializer=PluginTypeQueryInputSLZ,
+        responses={status.HTTP_200_OK: PluginTypeOutputSLZ(many=True)},
         tags=["WebAPI.Plugin"],
         operation_description="list the available plugin types",
     ),
 )
 class PluginTypeListApi(generics.ListAPIView):
-    serializer_class = PluginTypeSLZ
+    serializer_class = PluginTypeOutputSLZ
 
     def get_serializer_context(self):
         # 需要返回描述，描述在 plugin_form 中
         plugin_type_notes = {i["type_id"]: i["notes"] for i in PluginForm.objects.values("type_id", "notes")}
+
+        # 需要返回每个 pluginType 是否已经被当前资源绑定
+        current_scope_type = self.request.query_params.get("scope_type")
+        current_scope_id = self.request.query_params.get("scope_id")
+        type_is_bound_to_current_scope: Dict[int, bool] = {}
 
         # 需要返回每个 pluginType 对应绑定的环境数量/资源数量
         type_related_scope_count = {}
@@ -78,25 +84,34 @@ class PluginTypeListApi(generics.ListAPIView):
             count = type_related_scope_count[key].get(scope_type, 0)
             type_related_scope_count[key][scope_type] = count + 1
 
+            # is_bound
+            if current_scope_type == scope_type and current_scope_id == binding.scope_id:
+                type_is_bound_to_current_scope[key] = True
+
         return {
             "plugin_type_notes": plugin_type_notes,
             "type_related_scope_count": type_related_scope_count,
+            "type_is_bound_to_current_scope": type_is_bound_to_current_scope,
         }
 
     def get_queryset(self):
         """默认展示所有公开插件；不展示非公开插件"""
 
-        slz = PluginTypeQuerySLZ(data=self.request.query_params)
+        slz = PluginTypeQueryInputSLZ(data=self.request.query_params)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
-        scope = data.get("scope")
-        if scope in (PluginTypeScopeEnum.STAGE.value, PluginTypeScopeEnum.RESOURCE.value):
-            condition = Q(scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value) | Q(scope=scope)
-        else:
-            condition = Q(scope=scope)
+        scope_type = data.get("scope_type")
+        # scope_id = data.get("scope_id")
 
-        queryset = PluginType.objects.filter(is_public=True).filter(condition)
+        scope = (
+            PluginTypeScopeEnum.STAGE.value
+            if scope_type == PluginBindingScopeEnum.STAGE.value
+            else PluginTypeScopeEnum.RESOURCE.value
+        )
+        queryset = PluginType.objects.filter(is_public=True).filter(
+            Q(scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value) | Q(scope=scope)
+        )
 
         # 支持 keyword=abc 搜索
         keyword = data.get("keyword")
@@ -109,13 +124,13 @@ class PluginTypeListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: PluginFormSLZ()},
+        responses={status.HTTP_200_OK: PluginFormOutputSLZ()},
         tags=["WebAPI.Plugin"],
         operation_description="retrieve the plugin form data by plugin type",
     ),
 )
 class PluginFormRetrieveApi(generics.RetrieveAPIView):
-    serializer_class = PluginFormSLZ
+    serializer_class = PluginFormOutputSLZ
     renderer_classes = [BkStandardApiJSONRenderer]
 
     def get_object(self):
@@ -253,13 +268,6 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
     ),
 )
 @method_decorator(
-    name="patch",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: PluginConfigRetrieveUpdateInputSLZ()},
-        tags=["WebAPI.Plugin"],
-    ),
-)
-@method_decorator(
     name="delete",
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
@@ -324,6 +332,9 @@ class PluginConfigRetrieveUpdateDestroyApi(
             gateway=self.request.gateway, scope_type=scope_type, scope_id=scope_id, config=instance
         ).delete()
 
+        instance_id = instance.id
+        instance_name = instance.name
+
         super().perform_destroy(instance)
         request = self.request
 
@@ -346,8 +357,8 @@ class PluginConfigRetrieveUpdateDestroyApi(
             op_status=OpStatusEnum.SUCCESS.value,
             op_object_group=request.gateway.id,
             op_object_type=OpObjectTypeEnum.PLUGIN.value,
-            op_object_id=instance.id,
-            op_object=instance.name,
+            op_object_id=instance_id,
+            op_object=instance_name,
             comment=_("删除插件"),
         )
 
@@ -375,11 +386,11 @@ class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
             elif binding.scope_type == "resource":
                 resource_ids.append(binding.scope_id)
 
-        stage_names = Stage.objects.filter(gateway=gateway, id__in=stage_ids).values_list("name", flat=True)
-        resource_names = Resource.objects.filter(gateway=gateway, id__in=resource_ids).values_list("name", flat=True)
+        stages = Stage.objects.filter(gateway=gateway, id__in=stage_ids).values("id", "name")
+        resources = Resource.objects.filter(gateway=gateway, id__in=resource_ids).values("id", "name")
         data = {
-            "stages": stage_names,
-            "resources": resource_names,
+            "stages": stages,
+            "resources": resources,
         }
 
         serializer = PluginBindingListOutputSLZ(data)

@@ -22,7 +22,7 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 
 from apigateway.core.constants import BackendTypeEnum
 
-BACKEND_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,19}$")
+BACKEND_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9-]{0,19}$")
 
 
 class BackendConfigTypeEnum(StructuredEnum):

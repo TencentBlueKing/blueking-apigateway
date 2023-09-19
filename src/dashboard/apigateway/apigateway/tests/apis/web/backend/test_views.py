@@ -114,7 +114,7 @@ class TestBackendApi:
             gateway=fake_gateway,
             data=data,
         )
-        assert response.status_code == 200
+        assert response.status_code == 204
 
     def test_delete(self, request_view, fake_stage):
         fake_gateway = fake_stage.gateway

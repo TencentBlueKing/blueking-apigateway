@@ -228,10 +228,9 @@ class AppResourcePermissionRenewApi(generics.CreateAPIView):
 
 @method_decorator(
     name="delete",
-    # FIXME: DELETE ?ids=1,2,3
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=AppPermissionIDsSLZ,
+        query_serializer=AppPermissionIDsSLZ,
         tags=["WebAPI.Permission"],
     ),
 )

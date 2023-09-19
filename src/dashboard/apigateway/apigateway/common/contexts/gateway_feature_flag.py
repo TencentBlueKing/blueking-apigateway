@@ -15,3 +15,19 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
+from django.utils.functional import cached_property
+
+from apigateway.common.factories import SchemaFactory
+from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
+
+from .context import BaseContext
+
+
+class GatewayFeatureFlagContext(BaseContext):
+    scope_type = ContextScopeTypeEnum.GATEWAY.value
+    type = ContextTypeEnum.GATEWAY_FEATURE_FLAG.value
+
+    @cached_property
+    def schema(self):
+        return SchemaFactory().get_context_gateway_feature_flag_schema()

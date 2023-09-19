@@ -62,7 +62,6 @@ class StageHandler:
     @staticmethod
     @transaction.atomic
     def update(stage: Stage, data: Dict[str, Any], updated_by: str) -> Stage:
-        stage.name = data["name"]
         stage.description = data["description"]
         stage.updated_by = updated_by
         stage.save()

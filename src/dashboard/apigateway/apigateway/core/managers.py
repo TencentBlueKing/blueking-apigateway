@@ -42,9 +42,6 @@ from apigateway.utils.time import now_datetime
 
 # - managers.py 下面不能存在跨 models 的操作，每个 manager 只关心自己的逻辑 (避免循环引用)
 
-# TODO
-# - 所有带 FIXME 的都需要处理，挪到合适的层
-
 
 class StageManager(models.Manager):
     def get_names(self, gateway_id):
@@ -116,13 +113,13 @@ class ResourceVersionManager(models.Manager):
     # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS))
     def get_used_stage_vars(self, gateway_id, id):
-        resoruce_version = self.filter(gateway_id=gateway_id, id=id).first()
-        if not resoruce_version:
+        resource_version = self.filter(gateway_id=gateway_id, id=id).first()
+        if not resource_version:
             return None
 
         used_in_path = set()
         used_in_host = set()
-        for resource in resoruce_version.data:
+        for resource in resource_version.data:
             if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
                 continue
 

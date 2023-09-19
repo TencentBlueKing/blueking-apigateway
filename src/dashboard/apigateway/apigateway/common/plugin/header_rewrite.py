@@ -55,13 +55,11 @@ class HeaderRewriteConvertor:
                 # 如果已经绑定, 更新插件配置
                 config = binding.config
                 config.yaml = yaml_dumps(plugin_config)
-                # NOTE: 用bulk_update避免触发信号
                 PluginConfig.objects.bulk_update([config], ["yaml"])
                 return
 
             # 插件配置为空, 清理数据
             config = binding.config
-            # NOTE: 用bulk_delete避免触发信号
             PluginBinding.objects.bulk_delete([binding])
             PluginConfig.objects.bulk_delete([config])
             return
@@ -81,5 +79,4 @@ class HeaderRewriteConvertor:
                 scope_id=scope_id,
                 config=config,
             )
-            # NOTE: 用bulk_create避免触发信号
             PluginBinding.objects.bulk_create([binding])

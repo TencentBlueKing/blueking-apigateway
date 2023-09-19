@@ -24,7 +24,7 @@ from django_dynamic_fixture import G
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.common.contexts.context import GatewayFeatureFlagContext
+from apigateway.common.contexts import GatewayFeatureFlagContext
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     ContextTypeEnum,
