@@ -86,7 +86,8 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
     ),
 )
 @method_decorator(
-    name="delete", decorator=swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.APILabels"])
+    name="delete",
+    decorator=swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.GatewayLabel"]),
 )
 class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = GatewayLabelInputSLZ
