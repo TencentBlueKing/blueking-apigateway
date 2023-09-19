@@ -21,11 +21,11 @@ from django.contrib import admin
 
 from apigateway.core.models import (
     JWT,
-    APIRelatedApp,
     Backend,
     BackendConfig,
     Context,
     Gateway,
+    GatewayRelatedApp,
     MicroGateway,
     MicroGatewayReleaseHistory,
     Proxy,
@@ -129,7 +129,7 @@ class JWTAdmin(admin.ModelAdmin):
     exclude = ["private_key"]
 
 
-class APIRelatedAppAdmin(admin.ModelAdmin):
+class GatewayRelatedAppAdmin(admin.ModelAdmin):
     list_display = ["gateway", "bk_app_code"]
     search_fields = ["gateway__id", "bk_app_code"]
     list_filter = ["gateway"]
@@ -181,7 +181,7 @@ admin.site.register(ReleaseHistory, ReleaseHistoryAdmin)
 admin.site.register(PublishEvent, PublishEventAdmin)
 admin.site.register(Context, ContextAdmin)
 admin.site.register(JWT, JWTAdmin)
-admin.site.register(APIRelatedApp, APIRelatedAppAdmin)
+admin.site.register(GatewayRelatedApp, GatewayRelatedAppAdmin)
 admin.site.register(MicroGateway, MicroGatewayAdmin)
 admin.site.register(MicroGatewayReleaseHistory, MicroGatewayReleaseHistoryAdmin)
 admin.site.register(Backend, BackendAdmin)

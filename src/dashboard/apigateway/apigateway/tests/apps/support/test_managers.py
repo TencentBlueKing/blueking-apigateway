@@ -23,86 +23,11 @@ from ddf import G
 from apigateway.apps.support.models import (
     APISDK,
     ReleasedResourceDoc,
-    ResourceDoc,
-    ResourceDocSwagger,
 )
-from apigateway.core.models import Gateway, Resource, ResourceVersion
+from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import create_gateway
 
 pytestmark = pytest.mark.django_db
-
-
-class TestResourceDocManager:
-    def test_get_doc_key_to_id(self):
-        gateway = G(Gateway)
-
-        r1 = G(Resource, gateway=gateway)
-        r2 = G(Resource, gateway=gateway)
-
-        doc1 = G(ResourceDoc, resource_id=r1.id, gateway=gateway)
-        doc2 = G(ResourceDoc, resource_id=r2.id, gateway=gateway, language="en")
-
-        result = ResourceDoc.objects.get_doc_key_to_id(gateway.id)
-        assert result == {
-            f"{r1.id}:zh": doc1.id,
-            f"{r2.id}:en": doc2.id,
-        }
-
-    def test_query_doc_key_to_content(self):
-        gateway = G(Gateway)
-
-        r1 = G(Resource, gateway=gateway)
-        r2 = G(Resource, gateway=gateway)
-
-        doc1 = G(ResourceDoc, resource_id=r1.id, gateway=gateway, content="content1")
-        doc2 = G(ResourceDoc, resource_id=r2.id, gateway=gateway, content="content2", language="en")
-
-        result = ResourceDoc.objects.query_doc_key_to_content(gateway.id)
-        assert result == {
-            f"{r1.id}:zh": "content1",
-            f"{r2.id}:en": "content2",
-        }
-
-    def test_get_doc_languages_of_resources(self):
-        gateway = G(Gateway)
-
-        r1 = G(Resource, gateway=gateway)
-        r2 = G(Resource, gateway=gateway)
-
-        doc1 = G(ResourceDoc, gateway=gateway, resource_id=r1.id, language="zh")
-        doc2 = G(ResourceDoc, gateway=gateway, resource_id=r2.id, language="en")
-
-        result = ResourceDoc.objects.get_doc_languages_of_resources(gateway.id, [r1.id, r2.id])
-        assert result == {
-            r1.id: ["zh"],
-            r2.id: ["en"],
-        }
-
-    def test_filter_docs(self):
-        gateway = G(Gateway)
-        r = G(Resource, gateway=gateway)
-        doc = G(ResourceDoc, resource_id=r.id, gateway=gateway)
-
-        assert list(ResourceDoc.objects.filter_docs(gateway.id).values_list("id", flat=True)) == [doc.id]
-        assert ResourceDoc.objects.filter_docs(gateway.id, [r.id]).count() == 1
-        assert ResourceDoc.objects.filter_docs(gateway.id, []).count() == 0
-
-
-class TestResourceDocSwaggerManager:
-    def test_get_resource_doc_id_to_id(self):
-        gateway = G(Gateway)
-
-        doc1 = G(ResourceDoc, gateway=gateway)
-        doc2 = G(ResourceDoc, gateway=gateway)
-
-        s1 = G(ResourceDocSwagger, gateway=gateway, resource_doc=doc1)
-        s2 = G(ResourceDocSwagger, gateway=gateway, resource_doc=doc2)
-
-        result = ResourceDocSwagger.objects.get_resource_doc_id_to_id(gateway.id)
-        assert result == {
-            doc1.id: s1.id,
-            doc2.id: s2.id,
-        }
 
 
 class TestAPISDKManager:

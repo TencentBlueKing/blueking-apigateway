@@ -22,7 +22,7 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apis.open.gateway import serializers
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import APIRelatedApp, Gateway
+from apigateway.core.models import Gateway, GatewayRelatedApp
 
 pytestmark = pytest.mark.django_db
 
@@ -230,7 +230,7 @@ class TestGatewaySyncSLZ:
         slz.save(created_by="", updated_by="")
 
         assert Gateway.objects.filter(name=unique_gateway_name).exists()
-        assert APIRelatedApp.objects.filter(gateway=slz.instance, bk_app_code=bk_app_code).exists()
+        assert GatewayRelatedApp.objects.filter(gateway=slz.instance, bk_app_code=bk_app_code).exists()
         api_auth = GatewayAuthContext().get_config(slz.instance.id)
         assert api_auth["unfiltered_sensitive_keys"] == ["bk_token"]
         assert api_auth["api_type"] == 10

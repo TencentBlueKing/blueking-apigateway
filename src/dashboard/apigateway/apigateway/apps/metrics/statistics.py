@@ -178,6 +178,7 @@ class StatisticsHandler:
 
     def _get_resource_id(self, gateway_id: int, resource_name: str) -> Optional[int]:
         if gateway_id not in self._gateway_id_to_resources:
-            self._gateway_id_to_resources[gateway_id] = Resource.objects.filter_resource_name_to_id(gateway_id)
+            resource_name_to_id = dict(Resource.objects.filter(gateway_id=gateway_id).values_list("name", "id"))
+            self._gateway_id_to_resources[gateway_id] = resource_name_to_id
 
         return self._gateway_id_to_resources[gateway_id].get(resource_name)

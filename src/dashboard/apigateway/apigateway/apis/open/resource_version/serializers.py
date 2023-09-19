@@ -16,17 +16,18 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List, Optional
+from typing import Optional
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.biz.constants import SEMVER_PATTERN
+from apigateway.biz.stage import StageHandler
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.models import ResourceVersion, Stage
+from apigateway.core.models import ResourceVersion
 
 
-class ReleaseV1SLZ(serializers.Serializer):
+class ReleaseV1InputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=False)
     resource_version_name = serializers.CharField(max_length=128, required=False)
@@ -40,60 +41,35 @@ class ReleaseV1SLZ(serializers.Serializer):
             data.get("version"),
             data.get("resource_version_name"),
         )
-        data["stage_ids"] = self._get_stage_ids(data["gateway"], data["stage_names"])
+        data["stage_ids"] = StageHandler.get_stage_ids(data["gateway"], data["stage_names"])
         return data
 
     def _get_resource_version_id(self, gateway, version: Optional[str], resource_version_name: Optional[str]) -> int:
         if version:
-            return self._get_resource_version_id_by_version(gateway, version)
-
+            resource_version_id = ResourceVersion.objects.get_id_by_version(gateway.id, version)
+            if not resource_version_id:
+                raise serializers.ValidationError({"version": _("版本【{version}】不存在。").format(version=version)})
+            return resource_version_id
         if resource_version_name:
-            return self._get_resource_version_id_by_name(gateway, resource_version_name)
+            resource_version_id = ResourceVersion.objects.get_id_by_name(gateway, resource_version_name)
+            if not resource_version_id:
+                raise serializers.ValidationError(
+                    {
+                        "resource_version_name": _("版本【{resource_version_name}】不存在。").format(
+                            resource_version_name=resource_version_name,
+                        ),
+                    }
+                )
+            return resource_version_id
 
         raise serializers.ValidationError({"version": "请指定待发布的版本"})
 
-    def _get_resource_version_id_by_name(self, gateway, resource_version_name: str) -> int:
-        resource_version_id = ResourceVersion.objects.get_id_by_name(gateway, resource_version_name)
-        if not resource_version_id:
-            raise serializers.ValidationError(
-                {
-                    "resource_version_name": _("版本【{resource_version_name}】不存在。").format(
-                        resource_version_name=resource_version_name,
-                    ),
-                }
-            )
 
-        return resource_version_id
-
-    def _get_resource_version_id_by_version(self, gateway, version: str) -> int:
-        resource_version_id = ResourceVersion.objects.get_id_by_version(gateway.id, version)
-        if not resource_version_id:
-            raise serializers.ValidationError({"version": _("版本【{version}】不存在。").format(version=version)})
-
-        return resource_version_id
-
-    def _get_stage_ids(self, gateway, stage_names: List[str]) -> List[int]:
-        name_to_id_map = Stage.objects.get_name_id_map(gateway)
-
-        # 如果未指定 stage_names，则默认处理网关下所有环境
-        if not stage_names:
-            return list(name_to_id_map.values())
-
-        stage_ids = set()
-        for stage_name in stage_names:
-            if stage_name not in name_to_id_map:
-                raise serializers.ValidationError(
-                    {"stage_names": _("环境【{stage_name}】不存在。").format(stage_name=stage_name)}
-                )
-            stage_ids.add(name_to_id_map[stage_name])
-        return list(stage_ids)
-
-
-class QueryResourceVersionV1SLZ(serializers.Serializer):
+class ResourceVersionQueryV1InputSLZ(serializers.Serializer):
     version = serializers.CharField(required=False)
 
 
-class ListResourceVersionV1SLZ(serializers.Serializer):
+class ResourceVersionListV1OutputSLZ(serializers.Serializer):
     version = serializers.CharField(read_only=True)
     title = serializers.CharField(read_only=True)
     comment = serializers.CharField(read_only=True)

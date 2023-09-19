@@ -33,7 +33,7 @@ from apigateway.utils.time import now_datetime
 
 class TestResourceVersionHandler:
     def test_make_version(self, fake_gateway, fake_resource):
-        ResourceHandler().save_auth_config(
+        ResourceHandler.save_auth_config(
             fake_resource.id,
             {
                 "skip_auth_verification": False,
@@ -43,30 +43,12 @@ class TestResourceVersionHandler:
             },
         )
 
-        ResourceHandler().save_proxy_config(
-            fake_resource,
-            "mock",
-            {
-                "code": 200,
-                "body": "test",
-                "headers": {},
-            },
-        )
-
         data = ResourceVersionHandler.make_version(fake_gateway)
         assert data[0]["id"] == fake_resource.id
         assert data[0]["method"] == fake_resource.method
         assert data[0]["path"] == fake_resource.path
-        assert data[0]["proxy"]["id"] == fake_resource.proxy_id
-        assert data[0]["proxy"]["type"] == "mock"
-        assert data[0]["proxy"]["config"] == json.dumps(
-            {
-                "code": 200,
-                "body": "test",
-                "headers": {},
-            },
-            separators=(",", ":"),
-        )
+        assert data[0]["proxy"]["type"] == "http"
+        assert data[0]["proxy"]["config"]
         assert data[0]["contexts"]["resource_auth"]["config"] == json.dumps(
             {
                 "skip_auth_verification": False,

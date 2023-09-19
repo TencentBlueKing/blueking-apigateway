@@ -50,12 +50,12 @@ class Command(BaseCommand):
             for gateway_name, gateway_id in gateway_name_to_id.items():
                 doc_dir = os.path.join(temp_dir, gateway_name)
                 os.makedirs(doc_dir)
+
+                public_resource_ids = list(
+                    Resource.objects.filter(gateway_id=gateway_id, is_public=True).values_list("id", flat=True)
+                )
                 try:
-                    files = DocArchiveGenerator().generate(
-                        doc_dir,
-                        gateway_id,
-                        resource_ids=Resource.objects.filter_public_resource_ids(gateway_id),
-                    )
+                    files = DocArchiveGenerator().generate(doc_dir, gateway_id, resource_ids=public_resource_ids)
                 except NoResourceDocError:
                     os.rmdir(doc_dir)
                     continue

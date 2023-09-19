@@ -280,14 +280,6 @@ class TestAppPermissionBuilder:
             ],
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.Resource.objects.get_id_to_fields_map",
-            return_value={
-                r.id: {
-                    "api_name": "test",
-                }
-            },
-        )
-        mocker.patch(
             "apigateway.apis.open.permission.helpers.ReleasedResourceHandler.get_latest_doc_link",
             return_value={
                 r.id: "test",
@@ -299,7 +291,7 @@ class TestAppPermissionBuilder:
             {
                 "id": r.id,
                 "name": "test1-2",
-                "api_name": "test",
+                "api_name": fake_gateway.name,
                 "description": "desc",
                 "description_en": "desc_en",
                 "permission_status": "owned",

@@ -26,55 +26,21 @@ from cachetools import TTLCache, cached
 from django.conf import settings
 from django.db import models
 from django.db.models import Count, Q
-from django.utils.encoding import smart_str
 from django.utils.translation import gettext as _
 
 from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import InstanceDeleteError
-from apigateway.common.mcryptography import AESCipherManager
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     STAGE_VAR_PATTERN,
-    APIHostingTypeEnum,
-    GatewayStatusEnum,
     ProxyTypeEnum,
     SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
-from apigateway.utils.crypto import KeyGenerator
 from apigateway.utils.time import now_datetime
 
 # - managers.py 下面不能存在跨 models 的操作，每个 manager 只关心自己的逻辑 (避免循环引用)
-
-
-class GatewayManager(models.Manager):
-    def search_gateways(self, username, name=None, order_by=None):
-        """
-        根据用户、网关名筛选网关
-        """
-        queryset = self.filter(Q(created_by=username) | Q(_maintainers__contains=username))
-
-        if name:
-            queryset = queryset.filter(name__contains=name)
-
-        if order_by:
-            queryset = queryset.order_by(order_by)
-
-        return [gateway for gateway in queryset if gateway.has_permission(username)]
-
-    def filter_id_object_map(self, ids=None):
-        """
-        获取网关 ID 对
-        """
-        queryset = self.all()
-        if ids is not None:
-            queryset = queryset.filter(id__in=ids)
-        return {gateway.id: gateway for gateway in queryset}
-
-    def filter_micro_and_active_queryset(self):
-        """获取托管类型为微网关，且已启用的网关，用于获取可发布到共享微网关实例的网关"""
-        return self.filter(hosting_type=APIHostingTypeEnum.MICRO.value, status=GatewayStatusEnum.ACTIVE.value)
 
 
 class StageManager(models.Manager):
@@ -89,9 +55,6 @@ class StageManager(models.Manager):
 
     def get_id_to_fields(self, gateway_id: int, fields: List[str]) -> Dict[int, Dict[str, Any]]:
         return {stage["id"]: stage for stage in self.filter(gateway_id=gateway_id).values(*fields)}
-
-    def filter_valid_ids(self, gateway, ids):
-        return list(self.filter(gateway_id=gateway.id, id__in=ids).values_list("id", flat=True))
 
     def get_micro_gateway_id_to_fields(self, gateway_id: int) -> Dict[str, Dict[str, Any]]:
         return {
@@ -116,77 +79,6 @@ class StageManager(models.Manager):
 
     def get_name(self, gateway_id: int, id_: int) -> Optional[str]:
         return self.filter(gateway_id=gateway_id, id=id_).values_list("name", flat=True).first()
-
-
-class ResourceManager(models.Manager):
-    def filter_by_ids(self, gateway, ids):
-        if not ids:
-            return self.none()
-
-        return self.filter(gateway=gateway, id__in=ids)
-
-    def filter_valid_ids(self, gateway, ids):
-        return list(self.filter(gateway=gateway, id__in=ids).values_list("id", flat=True))
-
-    def get_latest_resource(self, gateway_id):
-        return self.filter(gateway_id=gateway_id).order_by("-updated_time").first()
-
-    def filter_resource_name_to_id(self, gateway_id):
-        return dict(self.filter(gateway_id=gateway_id).values_list("name", "id"))
-
-    def filter_public_resource_ids(self, gateway_id: int) -> List[int]:
-        return list(self.filter(gateway_id=gateway_id, is_public=True).values_list("id", flat=True))
-
-    def filter_id_object_map(self, gateway_id):
-        return {obj.id: obj for obj in self.filter(gateway_id=gateway_id)}
-
-    def filter_resource_names(self, gateway_id, ids):
-        if not ids:
-            return []
-
-        return list(self.filter(gateway_id=gateway_id, id__in=ids).values_list("name", flat=True))
-
-    def get_id_to_fields_map(self, resource_ids: List[int]) -> Dict[int, dict]:
-        if not resource_ids:
-            return {}
-
-        return {
-            r["id"]: dict(r, api_name=r["gateway__name"])
-            for r in self.filter(id__in=resource_ids).values(
-                "id", "name", "description", "gateway_id", "gateway__name"
-            )
-        }
-
-    def group_by_api_id(self, resource_ids: List[int]) -> Dict[int, List[int]]:
-        data = self.filter(id__in=resource_ids).values("gateway_id", "id").order_by("gateway_id")
-        return {
-            gateway_id: [item["id"] for item in group]
-            for gateway_id, group in itertools.groupby(data, key=operator.itemgetter("gateway_id"))
-        }
-
-    def get_resource_ids_by_names(self, gateway_id: int, resource_names: Optional[List[str]]) -> List[int]:
-        if not resource_names:
-            return []
-
-        return list(self.filter(gateway_id=gateway_id, name__in=resource_names).values_list("id", flat=True))
-
-    def get_name(self, gateway_id: int, id_: int) -> Optional[str]:
-        return self.filter(gateway_id=gateway_id, id=id_).values_list("name", flat=True).first()
-
-
-class ProxyManager(models.Manager):
-    def get_resource_id_to_snapshot(self, resource_ids):
-        from apigateway.schema.models import Schema
-
-        schemas = Schema.objects.filter_id_snapshot_map()
-        return {
-            proxy.resource_id: proxy.snapshot(as_dict=True, schemas=schemas)
-            for proxy in self.filter(resource_id__in=resource_ids).prefetch_related("backend")
-        }
-
-    def get_backend_resource_count(self, backend_ids: List[int]) -> Dict[int, int]:
-        qs = self.filter(backend_id__in=backend_ids).values("backend_id").annotate(count=Count("backend_id"))
-        return {i["backend_id"]: i["count"] for i in qs}
 
 
 class StageResourceDisabledManager(models.Manager):
@@ -593,66 +485,6 @@ class ContextManager(models.Manager):
 
     def delete_by_scope_ids(self, scope_type, scope_ids):
         self.filter(scope_type=scope_type, scope_id__in=scope_ids).delete()
-
-
-class JWTManager(models.Manager):
-    def create_jwt(self, gateway):
-        private_key, public_key = KeyGenerator().generate_rsa_key()
-        cipher = AESCipherManager.create_jwt_cipher()
-        return self.create(
-            gateway=gateway,
-            # 使用加密数据，不保存明文的 private_key
-            # private_key=smart_str(private_key),
-            private_key="",
-            public_key=smart_str(public_key),
-            encrypted_private_key=cipher.encrypt_to_hex(smart_str(private_key)),
-        )
-
-    def update_jwt_key(self, gateway, private_key: bytes, public_key: bytes):
-        cipher = AESCipherManager.create_jwt_cipher()
-
-        jwt = self.get(gateway=gateway)
-        jwt.public_key = smart_str(public_key)
-        jwt.encrypted_private_key = cipher.encrypt_to_hex(smart_str(private_key))
-        jwt.save(update_fields=["public_key", "encrypted_private_key"])
-
-    def get_private_key(self, gateway_id: int) -> str:
-        cipher = AESCipherManager.create_jwt_cipher()
-
-        jwt = self.get(gateway_id=gateway_id)
-        return cipher.decrypt_from_hex(jwt.encrypted_private_key)
-
-    def is_jwt_key_changed(self, gateway, private_key: bytes, public_key: bytes) -> bool:
-        cipher = AESCipherManager.create_jwt_cipher()
-
-        jwt = self.get(gateway=gateway)
-        return jwt.public_key != smart_str(public_key) or cipher.decrypt_from_hex(
-            jwt.encrypted_private_key
-        ) != smart_str(private_key)
-
-
-class APIRelatedAppManager(models.Manager):
-    def allow_app_manage_gateway(self, gateway_id: int, bk_app_code: str) -> bool:
-        """是否允许应用管理网关"""
-        return self.filter(gateway_id=gateway_id, bk_app_code=bk_app_code).exists()
-
-    def add_related_app(self, gateway_id: int, bk_app_code: str):
-        """添加关联应用"""
-
-        # 检查app能关联的网关最大数量
-        self._check_app_gateway_limit(bk_app_code)
-
-        self.get_or_create(gateway_id=gateway_id, bk_app_code=bk_app_code)
-
-    def _check_app_gateway_limit(self, bk_app_code: str):
-        max_gateway_per_app = settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"].get(
-            bk_app_code, settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app"]
-        )
-        if self.filter(bk_app_code=bk_app_code).count() >= max_gateway_per_app:
-            raise error_codes.INVALID_ARGUMENT.format(
-                f"The app [{bk_app_code}] exceeds the limit of the number of gateways that can be related."
-                + f" The maximum limit is {max_gateway_per_app}."
-            )
 
 
 class MicroGatewayManager(models.Manager):

@@ -15,8 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from django.utils.translation import gettext as _
 
@@ -105,3 +106,13 @@ class ResourceDocHandler:
             LanguageCodeEnum.EN.value: DocLanguageEnum.EN.value,
         }
         return doc_languages.get(language_code, DocLanguageEnum.ZH.value)
+
+    @staticmethod
+    def get_last_updated_time(gateway_id: int) -> Optional[datetime.datetime]:
+        """获取网关下资源文档的最近更新时间"""
+        return (
+            ResourceDoc.objects.filter(gateway_id=gateway_id)
+            .order_by("-updated_time")
+            .values_list("updated_time", flat=True)
+            .first()
+        )

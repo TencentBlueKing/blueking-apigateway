@@ -21,7 +21,7 @@ from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import APIRelatedApp, Gateway
+from apigateway.core.models import Gateway, GatewayRelatedApp
 
 
 class GatewayPermission(permissions.BasePermission):
@@ -87,7 +87,7 @@ class GatewayRelatedAppPermission(permissions.BasePermission):
         if getattr(view, "api_permission_exempt", False):
             return True
 
-        return APIRelatedApp.objects.allow_app_manage_gateway(request.gateway.id, request.app.app_code)
+        return GatewayRelatedApp.objects.filter(gateway=request.gateway, bk_app_code=request.app.app_code).exists()
 
     def get_gateway_object(self, view):
         """
