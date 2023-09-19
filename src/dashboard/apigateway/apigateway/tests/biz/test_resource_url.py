@@ -21,7 +21,6 @@ import json
 from django_dynamic_fixture import G
 
 from apigateway.biz.resource_url import ResourceURLHandler
-from apigateway.core.constants import APIHostingTypeEnum
 from apigateway.core.models import Gateway, MicroGateway, Stage
 
 
@@ -30,7 +29,7 @@ class TestResourceURLHandler:
         settings.API_RESOURCE_URL_TMPL = "http://bkapi.example.com/api/{api_name}/{stage_name}/{resource_path}"
 
         # 共享网关
-        gateway = G(Gateway, name=unique_id, hosting_type=APIHostingTypeEnum.DEFAULT.value)
+        gateway = G(Gateway, name=unique_id)
 
         stage = G(Stage, gateway=gateway, name="prod")
 
@@ -38,9 +37,6 @@ class TestResourceURLHandler:
         assert url == "http://bkapi.example.com/api/{api_name}/{stage_name}/{resource_path}"
 
         # 微网关
-        gateway.hosting_type = APIHostingTypeEnum.MICRO.value
-        gateway.save()
-
         micro_gateway = G(
             MicroGateway, gateway=gateway, _config=json.dumps({"http": {"http_url": "http://myapi.example.com"}})
         )

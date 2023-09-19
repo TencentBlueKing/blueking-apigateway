@@ -84,7 +84,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     # 不同的托管类型决定特性集
     hosting_type = models.IntegerField(
         choices=APIHostingTypeEnum.get_choices(),
-        default=APIHostingTypeEnum.DEFAULT.value,
+        default=APIHostingTypeEnum.MICRO.value,
     )
 
     def __str__(self):
