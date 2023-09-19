@@ -19,7 +19,6 @@
 from dataclasses import dataclass
 
 from blue_krill.async_utils.django_utils import delay_on_commit
-from celery.canvas import group
 from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
@@ -270,7 +269,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         task = self._create_release_task(release, release_history)
         # 任意一个任务失败都表示发布失败
         # 使用 celery 的编排能力，并发发布多个微网关，并且在发布完成后，更新微网关发布历史的状态
-        delay_on_commit(group(*task))
+        delay_on_commit(task)
 
 
 class Releaser:

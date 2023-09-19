@@ -96,7 +96,7 @@ class TestBaseGatewayReleaser:
         assert len(resource_version_ids) == 1
         assert resource_version_ids[0] == release_data["resource_version_id"]
         # assert ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.SUCCESS.value).exists()
-        assert Stage.objects.filter(id=release_data["stage_id"], status=1).count() == len(release_data["stage_ids"])
+        assert Stage.objects.filter(id=release_data["stage_id"], status=1).count() == 1
 
         mock_release.assert_called()
         # mock_post_release.assert_called()
