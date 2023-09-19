@@ -20,7 +20,7 @@ from typing import Any, Dict, List
 from django.db.models import Max
 
 from apigateway.core.constants import GatewayStatusEnum, PublishEventStatusEnum, StageStatusEnum
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory, Stage
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory
 
 
 class ReleaseHandler:
@@ -35,7 +35,7 @@ class ReleaseHandler:
         )
 
     @staticmethod
-    def get_publish_id_to_latest_publish_event_map(release_history_ids: List[int]) -> Dict[int, PublishEvent]:
+    def get_release_history_id_to_latest_publish_event_map(release_history_ids: List[int]) -> Dict[int, PublishEvent]:
         """通过 release_history_ids 查询最新的一个发布事件"""
         # 需要按照 "publish_id", "step", "status" 升序 (django 默认 ASC) 排列，正确排列每个事件节点的不同状态事件
         publish_events = PublishEvent.objects.filter(publish_id__in=release_history_ids).order_by(
@@ -65,7 +65,7 @@ class ReleaseHandler:
         latest_release_histories = ReleaseHistory.objects.filter(id__in=latest_release_history_ids).all()
 
         # 查询发布历史对应的最新发布事件
-        publish_id_to_latest_event_map = ReleaseHandler.get_publish_id_to_latest_publish_event_map(
+        publish_id_to_latest_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
             latest_release_history_ids
         )
 
@@ -91,17 +91,3 @@ class ReleaseHandler:
             stage_publish_status[stage_id] = state
 
         return stage_publish_status
-
-    @staticmethod
-    def clean_no_stage_related_release_history(gateway_id):
-        """
-        删除无 stages 关联的数据
-
-        因与 stages 为 ManyToMany 关联，删除 stage 时，
-        仅自动清理了 stage 与 release-history 的关联数据，
-        需要清理一次 release-history 本身的无效数据
-        """
-
-        stage_ids = Stage.objects.get_ids(gateway_id)
-
-        ReleaseHistory.objects.filter(gateway_id=gateway_id).exclude(stages__id__in=stage_ids).delete()

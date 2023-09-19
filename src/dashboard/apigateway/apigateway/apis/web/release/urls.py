@@ -19,18 +19,17 @@
 from django.urls import include, path
 
 from .views import (
-    PublishEventsRetrieveAPI,
     ReleaseAvailableResourceListApi,
     ReleaseCreateApi,
-    ReleasedResourceRetrieveApi,
     ReleaseHistoryListApi,
     ReleaseHistoryRetrieveApi,
+    RelishHistoryEventsRetrieveAPI,
 )
 
 urlpatterns = [
     path("", ReleaseCreateApi.as_view(), name="gateway.release.create"),
     path(
-        "stages/<int:stage_id>/available_resources/",
+        "stages/<int:stage_id>/resources/",
         ReleaseAvailableResourceListApi.as_view(),
         name="gateway.releases.available_resources",
     ),
@@ -40,13 +39,12 @@ urlpatterns = [
             [
                 path("", ReleaseHistoryListApi.as_view(), name="gateway.release_histories.list"),
                 path("latest/", ReleaseHistoryRetrieveApi.as_view(), name="gateway.release_histories.retrieve_latest"),
+                path(
+                    "<int:history_id>/events/",
+                    RelishHistoryEventsRetrieveAPI.as_view(),
+                    name="gateway.release_histories.events",
+                ),
             ]
         ),
     ),
-    path(
-        "resource-versions/<int:resource_version_id>/resources/<int:resource_id>/",
-        ReleasedResourceRetrieveApi.as_view(),
-        name="gateway.releases.released-resource.detail",
-    ),
-    path("publish/<int:publish_id>/events/", PublishEventsRetrieveAPI.as_view(), name="gateway.publish.events"),
 ]

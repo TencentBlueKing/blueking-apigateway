@@ -23,7 +23,6 @@ from django.db import transaction
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.biz.release import ReleaseHandler
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, DEFAULT_STAGE_NAME, PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import Backend, BackendConfig, MicroGateway, Release, Stage
@@ -98,10 +97,6 @@ class StageHandler:
 
             # 4. delete stages
             stage.delete()
-
-            # 5. delete release-history
-
-            ReleaseHandler.clean_no_stage_related_release_history(stage.gateway.id)
 
     @staticmethod
     def set_status(stage: Stage, status: int, updated_by: str):

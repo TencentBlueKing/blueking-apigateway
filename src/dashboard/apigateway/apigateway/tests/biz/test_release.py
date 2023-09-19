@@ -24,7 +24,7 @@ from apigateway.core.constants import (
     PublishEventStatusTypeEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory, Stage
+from apigateway.core.models import PublishEvent, Release, Stage
 
 
 class TestReleaseHandler:
@@ -44,7 +44,7 @@ class TestReleaseHandler:
 
     def test_get_latest_publish_event_by_release_history_ids(self, fake_release_history, fake_publish_event):
         assert (
-            ReleaseHandler.get_publish_id_to_latest_publish_event_map([fake_release_history.id])[
+            ReleaseHandler.get_release_history_id_to_latest_publish_event_map([fake_release_history.id])[
                 fake_release_history.id
             ]
             == fake_publish_event
@@ -57,7 +57,7 @@ class TestReleaseHandler:
             status=PublishEventStatusTypeEnum.SUCCESS.value,
         )
         assert (
-            ReleaseHandler.get_publish_id_to_latest_publish_event_map([fake_release_history.id])[
+            ReleaseHandler.get_release_history_id_to_latest_publish_event_map([fake_release_history.id])[
                 fake_release_history.id
             ]
             == event_2
@@ -92,15 +92,3 @@ class TestReleaseHandler:
             ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
             == PublishEventStatusTypeEnum.SUCCESS.value
         )
-
-    def test_delete_without_stage_related(self, fake_gateway):
-        stage_1 = G(Stage, gateway=fake_gateway)
-        stage_2 = G(Stage, gateway=fake_gateway)
-
-        history_1 = G(ReleaseHistory, gateway=fake_gateway, stage=stage_1)
-        history_2 = G(ReleaseHistory, gateway=fake_gateway, stage=stage_2)
-        history_2.stages.add(stage_2)
-
-        ReleaseHandler.clean_no_stage_related_release_history(fake_gateway.id)
-
-        assert ReleaseHistory.objects.filter(id=history_1.id).exists() is False
