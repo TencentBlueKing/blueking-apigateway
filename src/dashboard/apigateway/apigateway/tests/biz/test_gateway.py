@@ -269,7 +269,7 @@ class TestGatewayHandler:
         settings.GLOBAL_GATEWAY_FEATURE_FLAG = {"FOO": False, "BAR": True}
         GatewayFeatureFlagContext().save(fake_gateway.id, {"FOO": True})
 
-        feature_flag = GatewayHandler.get_feature_flag(fake_gateway.id)
+        feature_flag = GatewayHandler.get_feature_flags(fake_gateway.id)
         assert feature_flag == {"FOO": True, "BAR": True}
 
     def test_get_docs_url(self, settings, fake_gateway):

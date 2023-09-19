@@ -17,11 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp
+from apigateway.utils.django import get_object_or_None
 
 
 class GatewayPermission(permissions.BasePermission):
@@ -58,10 +60,7 @@ class GatewayPermission(permissions.BasePermission):
             return None
 
         filter_kwargs = {"id": view.kwargs[lookup_url_kwarg]}
-        try:
-            return Gateway.objects.get(**filter_kwargs)
-        except Gateway.DoesNotExist:
-            raise Http404
+        return get_object_or_404(Gateway, **filter_kwargs)
 
 
 class GatewayRelatedAppPermission(permissions.BasePermission):
@@ -100,10 +99,7 @@ class GatewayRelatedAppPermission(permissions.BasePermission):
             return None
 
         filter_kwargs = {"name": view.kwargs[lookup_url_kwarg]}
-        try:
-            return Gateway.objects.get(**filter_kwargs)
-        except Gateway.DoesNotExist:
-            return None
+        return get_object_or_None(Gateway, **filter_kwargs)
 
 
 class GatewayDisplayablePermission(permissions.BasePermission):

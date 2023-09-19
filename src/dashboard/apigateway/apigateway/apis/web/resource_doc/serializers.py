@@ -74,6 +74,7 @@ class ResourceFilterConditionSLZ(serializers.Serializer):
     path = serializers.CharField(allow_blank=True, required=False)
     method = serializers.CharField(allow_blank=True, required=False)
     label_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+    backend_id = serializers.IntegerField(allow_null=True, required=False)
     query = serializers.CharField(allow_blank=True, required=False)
 
 

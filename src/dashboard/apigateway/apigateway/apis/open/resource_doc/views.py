@@ -32,8 +32,8 @@ from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.utils.responses import V1OKJsonResponse
 
 from .serializers import (
-    DocImportByArchiveInputV1SLZ,
-    DocImportBySwaggerInputV1SLZ,
+    DocImportByArchiveV1InputSLZ,
+    DocImportBySwaggerV1InputSLZ,
 )
 
 
@@ -41,14 +41,14 @@ class DocImportByArchiveApi(generics.CreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
 
     @swagger_auto_schema(
-        request_body=DocImportByArchiveInputV1SLZ,
+        request_body=DocImportByArchiveV1InputSLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["OpenAPI.ResourceDoc"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         """根据 tgz/zip 归档文件，导入资源文档"""
-        slz = DocImportByArchiveInputV1SLZ(data=request.data)
+        slz = DocImportByArchiveV1InputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         parser = ArchiveParser(gateway_id=request.gateway.id)
@@ -69,14 +69,14 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
 
     @swagger_auto_schema(
-        request_body=DocImportBySwaggerInputV1SLZ,
+        request_body=DocImportBySwaggerV1InputSLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["OpenAPI.ResourceDoc"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         """根据 swagger 描述文件，导入资源文档"""
-        slz = DocImportBySwaggerInputV1SLZ(data=request.data)
+        slz = DocImportBySwaggerV1InputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         parser = SwaggerParser(gateway_id=request.gateway.id)

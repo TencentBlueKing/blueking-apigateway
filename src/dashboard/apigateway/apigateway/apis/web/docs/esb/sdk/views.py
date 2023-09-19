@@ -45,7 +45,7 @@ from .serializers import (
     decorator=swagger_auto_schema(
         query_serializer=SDKListInputSLZ,
         responses={status.HTTP_200_OK: SDKOutputSLZ(many=True)},
-        tags=["Docs.ESB.SDK"],
+        tags=["WebAPI.Docs.ESB.SDK"],
     ),
 )
 class SDKListApi(generics.ListAPIView):
@@ -71,7 +71,7 @@ class SDKListApi(generics.ListAPIView):
     decorator=swagger_auto_schema(
         query_serializer=SDKRetrieveInputSLZ,
         responses={status.HTTP_200_OK: SDKOutputSLZ},
-        tags=["Docs.ESB.SDK"],
+        tags=["WebAPI.Docs.ESB.SDK"],
     ),
 )
 class SDKRetrieveApi(generics.RetrieveAPIView):
@@ -94,7 +94,7 @@ class SDKRetrieveApi(generics.RetrieveAPIView):
     decorator=swagger_auto_schema(
         query_serializer=SDKUsageExampleInputSLZ,
         responses={status.HTTP_200_OK: SDKUsageExampleOutputSLZ},
-        tags=["Docs.ESB.SDK"],
+        tags=["WebAPI.Docs.ESB.SDK"],
     ),
 )
 class SDKUsageExampleApi(generics.RetrieveAPIView):
@@ -130,7 +130,7 @@ class SDKUsageExampleApi(generics.RetrieveAPIView):
     decorator=swagger_auto_schema(
         query_serializer=SDKDocInputSLZ,
         responses={status.HTTP_200_OK: SDKDocOutputSLZ},
-        tags=["Docs.ESB.SDK"],
+        tags=["WebAPI.Docs.ESB.SDK"],
     ),
 )
 class SDKDocRetrieveApi(generics.RetrieveAPIView):

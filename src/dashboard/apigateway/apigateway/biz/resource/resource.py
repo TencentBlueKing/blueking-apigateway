@@ -165,6 +165,12 @@ class ResourceHandler:
         if condition.get("method"):
             queryset = queryset.filter(method=condition["method"])
 
+        if condition.get("backend_id"):
+            resource_ids = Proxy.objects.filter(
+                resource__gateway_id=gateway_id, backend_id=condition["backend_id"]
+            ).values_list("resource_id", flat=True)
+            queryset = queryset.filter(id__in=resource_ids)
+
         if condition.get("label_ids"):
             labels = APILabel.objects.filter(gateway_id=gateway_id, id__in=condition["label_ids"])
             resource_ids = (
@@ -266,3 +272,7 @@ class ResourceHandler:
     @staticmethod
     def get_id_to_resource(gateway_id: int) -> Dict[int, Resource]:
         return {r.id: r for r in Resource.objects.filter(gateway_id=gateway_id)}
+
+    @staticmethod
+    def get_valid_ids(gateway_id: int, ids: List[int]) -> List[int]:
+        return list(Resource.objects.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))

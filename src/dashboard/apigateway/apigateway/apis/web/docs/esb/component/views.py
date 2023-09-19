@@ -35,7 +35,7 @@ COMPONENT_SEARCH_LIMIT = 30
     decorator=swagger_auto_schema(
         query_serializer=ComponentSearchInputSLZ,
         responses={status.HTTP_200_OK: ComponentSearchOutputSLZ(many=True)},
-        tags=["Docs.ESB.Component"],
+        tags=["WebAPI.Docs.ESB.Component"],
     ),
 )
 class ComponentSearchApi(generics.ListAPIView):
@@ -59,7 +59,7 @@ class ComponentSearchApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ComponentOutputSLZ(many=True)},
-        tags=["Docs.ESB.Component"],
+        tags=["WebAPI.Docs.ESB.Component"],
     ),
 )
 class ComponentListApi(generics.ListAPIView):

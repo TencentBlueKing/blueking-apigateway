@@ -19,7 +19,6 @@
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 
-from apigateway.common.constants import ChoiceEnum
 from apigateway.core.constants import ScopeTypeEnum
 
 
@@ -32,6 +31,6 @@ class AccessStrategyTypeEnum(StructuredEnum):
     CIRCUIT_BREAKER = EnumField("circuit_breaker", label="断路器")
 
 
-class AccessStrategyBindScopeEnum(ChoiceEnum):
-    STAGE = ScopeTypeEnum.STAGE.value
-    RESOURCE = ScopeTypeEnum.RESOURCE.value
+class AccessStrategyBindScopeEnum(StructuredEnum):
+    STAGE = EnumField(ScopeTypeEnum.STAGE.value)
+    RESOURCE = EnumField(ScopeTypeEnum.RESOURCE.value)

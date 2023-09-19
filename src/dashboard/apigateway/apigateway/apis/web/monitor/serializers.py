@@ -17,13 +17,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import operator
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apps.label.models import APILabel
 from apigateway.apps.monitor.constants import DETECT_METHOD_CHOICES, AlarmStatusEnum, NoticeRoleEnum, NoticeWayEnum
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
+from apigateway.biz.gateway_label import GatewayLabelHandler
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
 
 
@@ -64,7 +65,7 @@ class AlarmStrategyConfigSLZ(serializers.Serializer):
 
 class AlarmStrategyInputSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    api_label_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
+    gateway_label_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
     config = AlarmStrategyConfigSLZ()
 
     class Meta:
@@ -75,7 +76,7 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
             "name",
             "alarm_type",
             "alarm_subtype",
-            "api_label_ids",
+            "gateway_label_ids",
             "config",
         ]
         lookup_field = "id"
@@ -84,13 +85,17 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
         # does not support writable nested fields by default
         return json.dumps(value)
 
-    def validate_api_label_ids(self, value):
+    def validate_gateway_label_ids(self, value):
         gateway = self.context["request"].gateway
-        return list(APILabel.objects.filter(gateway=gateway, id__in=value or []).values_list("id", flat=True))
+        not_exist_ids = set(value) - set(GatewayLabelHandler.get_valid_ids(gateway.id, value))
+        if not_exist_ids:
+            raise serializers.ValidationError(_("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
+
+        return value
 
 
 class AlarmStrategyListOutputSLZ(serializers.ModelSerializer):
-    api_label_names = serializers.SerializerMethodField()
+    gateway_labels = serializers.SerializerMethodField()
 
     class Meta:
         model = AlarmStrategy
@@ -101,12 +106,12 @@ class AlarmStrategyListOutputSLZ(serializers.ModelSerializer):
             "alarm_subtype",
             "enabled",
             "updated_time",
-            "api_label_names",
+            "gateway_labels",
         ]
         lookup_field = "id"
 
-    def get_api_label_names(self, obj):
-        return sorted(obj.api_labels.values_list("name", flat=True))
+    def get_gateway_labels(self, obj):
+        return sorted(obj.api_labels.values("id", "name"), key=operator.itemgetter("name"))
 
 
 class AlarmStrategyUpdateStatusInputSLZ(serializers.ModelSerializer):
@@ -146,7 +151,7 @@ class AlarmRecordQueryOutputSLZ(serializers.ModelSerializer):
 
 class AlarmStrategyQueryInputSLZ(serializers.Serializer):
     query = serializers.CharField(allow_blank=True, required=False)
-    api_label_id = serializers.IntegerField(allow_null=True, required=False)
+    gateway_label_id = serializers.IntegerField(allow_null=True, required=False)
     order_by = serializers.ChoiceField(
         choices=["name", "-name", "updated_time", "-updated_time"],
         allow_blank=True,
@@ -167,7 +172,6 @@ class AlarmStrategySummaryQuerySLZ(serializers.Serializer):
 
 
 class AlarmRecordSummaryQueryOutputSLZ(serializers.Serializer):
-    api_id = serializers.IntegerField(read_only=True)
-    api_name = serializers.CharField(read_only=True)
+    gateway = serializers.DictField(read_only=True)
     alarm_record_count = serializers.IntegerField(read_only=True)
     strategy_summary = serializers.ListField(child=AlarmStrategySummaryQuerySLZ(), read_only=True)

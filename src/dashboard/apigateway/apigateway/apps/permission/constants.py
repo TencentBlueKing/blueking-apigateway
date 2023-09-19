@@ -20,8 +20,6 @@
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
 
-from apigateway.common.constants import ChoiceEnum
-
 
 class ApplyStatusEnum(StructuredEnum):
     PARTIAL_APPROVED = EnumField("partial_approved", label=_("部分通过"))
@@ -32,18 +30,18 @@ class ApplyStatusEnum(StructuredEnum):
 
 # Restricted Enum subclassing
 # https://docs.python.org/3/library/enum.html#restricted-subclassing-of-enumerations
-class PermissionStatusEnum(ChoiceEnum):
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    PENDING = "pending"
-    NEED_APPLY = "need_apply"
-    OWNED = "owned"
-    EXPIRED = "expired"
+class PermissionStatusEnum(StructuredEnum):
+    APPROVED = EnumField("approved")
+    REJECTED = EnumField("rejected")
+    PENDING = EnumField("pending")
+    NEED_APPLY = EnumField("need_apply")
+    OWNED = EnumField("owned")
+    EXPIRED = EnumField("expired")
 
 
-class PermissionActionEnum(ChoiceEnum):
-    APPLY = "apply"
-    RENEW = "renew"
+class PermissionActionEnum(StructuredEnum):
+    APPLY = EnumField("apply")
+    RENEW = EnumField("renew")
 
 
 class PermissionLevelEnum(StructuredEnum):
@@ -59,17 +57,17 @@ class PermissionApplyExpireDaysEnum(StructuredEnum):
     TWELVE_MONTH = EnumField(360, label=_("12个月"))
 
 
-class GrantTypeEnum(ChoiceEnum):
+class GrantTypeEnum(StructuredEnum):
     # 初始化方式主动授权
-    INITIALIZE = "initialize"
+    INITIALIZE = EnumField("initialize")
     # 申请审批方式授权
-    APPLY = "apply"
+    APPLY = EnumField("apply")
     # 续期
-    RENEW = "renew"
+    RENEW = EnumField("renew")
     # 自动续期
-    AUTO_RENEW = "auto_renew"
+    AUTO_RENEW = EnumField("auto_renew")
     # 资源权限同步自按网关权限
-    SYNC = "sync"
+    SYNC = EnumField("sync")
 
 
 class GrantDimensionEnum(StructuredEnum):

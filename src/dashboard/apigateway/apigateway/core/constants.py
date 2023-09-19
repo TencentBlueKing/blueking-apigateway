@@ -22,8 +22,6 @@ from enum import Enum
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
 
-from apigateway.common.constants import ChoiceEnumMixin
-
 
 class GatewayStatusEnum(StructuredEnum):
     INACTIVE = EnumField(0, "已停用")
@@ -104,12 +102,12 @@ class StageStatusEnum(StructuredEnum):
     ACTIVE = EnumField(1, "ACTIVE")
 
 
-class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
-    SUCCESS = "success"  # 发布成功
-    FAILURE = "failure"  # 发布失败
-    PENDING = "pending"  # 待发布
-    RELEASING = "releasing"  # 发布中
-    UNRELEASED = "unreleased"  # 未发布
+class ReleaseStatusEnum(StructuredEnum):
+    SUCCESS = EnumField("success")  # 发布成功
+    FAILURE = EnumField("failure")  # 发布失败
+    PENDING = EnumField("pending")  # 待发布
+    RELEASING = EnumField("releasing")  # 发布中
+    UNRELEASED = EnumField("unreleased")  # 未发布
 
 
 class PublishEventEnum(StructuredEnum):
@@ -124,7 +122,8 @@ class PublishEventEnum(StructuredEnum):
     LOAD_CONFIGURATION = EnumField("load_configuration", "load configuration")
 
 
-class PublishEventNameTypeEnum(ChoiceEnumMixin, Enum):
+# 因为 get_event_step 依赖字段顺序，所以继承 Enum，以便于 get_event_step 获取 step
+class PublishEventNameTypeEnum(Enum):
     VALIDATE_CONFIGURATION = PublishEventEnum.VALIDATE_CONFIGURATION.value
     GENERATE_TASK = PublishEventEnum.GENERATE_TASK.value
     DISTRIBUTE_CONFIGURATION = PublishEventEnum.DISTRIBUTE_CONFIGURATION.value
@@ -145,11 +144,11 @@ class PublishEventStatusEnum(StructuredEnum):
     DOING = EnumField("doing", "doing")  # 执行中
 
 
-class PublishEventStatusTypeEnum(ChoiceEnumMixin, Enum):
-    SUCCESS = PublishEventStatusEnum.SUCCESS.value
-    FAILURE = PublishEventStatusEnum.FAILURE.value
-    PENDING = PublishEventStatusEnum.PENDING.value
-    DOING = PublishEventStatusEnum.DOING.value
+class PublishEventStatusTypeEnum(StructuredEnum):
+    SUCCESS = EnumField(PublishEventStatusEnum.SUCCESS.value)
+    FAILURE = EnumField(PublishEventStatusEnum.FAILURE.value)
+    PENDING = EnumField(PublishEventStatusEnum.PENDING.value)
+    DOING = EnumField(PublishEventStatusEnum.DOING.value)
 
 
 class PublishSourceEnum(StructuredEnum):

@@ -96,7 +96,7 @@ class TestDocImportBySwaggerApi:
             },
         )
 
-        assert resp.status_code == 200
+        assert resp.status_code == 204
 
 
 class TestDocExportApi:

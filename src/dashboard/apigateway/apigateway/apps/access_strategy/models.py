@@ -134,7 +134,7 @@ class AccessStrategyBinding(TimestampedModelMixin, OperatorModelMixin):
 
     scope_type = models.CharField(
         max_length=32,
-        choices=AccessStrategyBindScopeEnum.choices(),
+        choices=AccessStrategyBindScopeEnum.get_choices(),
         blank=False,
         null=False,
         db_index=True,

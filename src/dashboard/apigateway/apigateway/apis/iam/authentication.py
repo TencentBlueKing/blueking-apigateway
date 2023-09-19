@@ -24,7 +24,7 @@ from rest_framework.authentication import BasicAuthentication
 from rest_framework.exceptions import AuthenticationFailed as RESTAuthenticationFailed
 
 from apigateway.apis.iam.exceptions import AuthenticationFailed
-from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
+from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_5_MINUTES
 
 
 class IAMBasicAuthentication(BasicAuthentication):
@@ -53,7 +53,7 @@ class IAMBasicAuthentication(BasicAuthentication):
 
         return ({"username": userid, "password": password}, None)
 
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_SHORT.value))
+    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_5_MINUTES))
     def _get_iam_token(self) -> Tuple[bool, str, str]:
         iam_client = IAM(
             app_code=settings.BK_APP_CODE,

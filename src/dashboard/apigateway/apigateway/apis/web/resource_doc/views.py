@@ -69,7 +69,7 @@ class DocArchiveParseApi(generics.CreateAPIView):
 class DocImportByArchiveApi(generics.CreateAPIView):
     @swagger_auto_schema(
         request_body=DocImportByArchiveInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.ResourceDoc"],
     )
     @transaction.atomic
@@ -92,13 +92,13 @@ class DocImportByArchiveApi(generics.CreateAPIView):
         )
         importer.import_docs(docs=docs)
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class DocImportBySwaggerApi(generics.CreateAPIView):
     @swagger_auto_schema(
         request_body=DocImportBySwaggerInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.ResourceDoc"],
     )
     @transaction.atomic
@@ -124,7 +124,7 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
         )
         importer.import_docs(docs=docs)
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 class DocExportApi(generics.CreateAPIView):

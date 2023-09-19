@@ -18,7 +18,6 @@
 #
 
 import datetime
-import re
 
 from rest_framework import serializers
 
@@ -50,7 +49,3 @@ class TimestampField(serializers.IntegerField):
 
         assert isinstance(value, datetime.datetime), "Only accept datetime"
         return timestamp(value)
-
-
-# 单位为秒的持续时间
-DURATION_IN_SECOND_PATTERN = re.compile(r"^(\d+)s$")

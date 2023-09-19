@@ -258,7 +258,7 @@ class GatewayHandler:
         )
 
     @staticmethod
-    def get_feature_flag(gateway_id: int) -> Dict[str, bool]:
+    def get_feature_flags(gateway_id: int) -> Dict[str, bool]:
         feature_flags = copy.deepcopy(settings.GLOBAL_GATEWAY_FEATURE_FLAG)
         feature_flags.update(GatewayFeatureFlagContext().get_config(gateway_id, {}))
         return feature_flags

@@ -206,7 +206,6 @@ class TestGatewayRetrieveOutputSLZ:
         slz = GatewayRetrieveOutputSLZ(
             instance=fake_gateway,
             context={
-                "feature_flags": {"FOO": True},
                 "auth_config": GatewayAuthConfig(
                     gateway_type=GatewayTypeEnum.CLOUDS_API.value,
                     allow_update_gateway_auth=True,
@@ -229,7 +228,6 @@ class TestGatewayRetrieveOutputSLZ:
             "api_domain": "http://bkapi.demo.com",
             "docs_url": "http://apigw.demo.com/docs/",
             "public_key_fingerprint": calculate_fingerprint(jwt.public_key),
-            "feature_flags": {"FOO": True},
             "is_official": False,
         }
 

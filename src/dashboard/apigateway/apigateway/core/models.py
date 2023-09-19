@@ -593,7 +593,7 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     status = models.CharField(
         _("发布状态"),
         max_length=16,
-        choices=ReleaseStatusEnum.choices(),
+        choices=ReleaseStatusEnum.get_choices(),
         default=ReleaseStatusEnum.PENDING.value,
     )
     # 废弃同上
@@ -767,7 +767,7 @@ class MicroGatewayReleaseHistory(models.Model):
     status = models.CharField(
         _("发布状态"),
         max_length=16,
-        choices=ReleaseStatusEnum.choices(),
+        choices=ReleaseStatusEnum.get_choices(),
         default=ReleaseStatusEnum.PENDING.value,
     )
     details = JSONField(blank=True, null=True)

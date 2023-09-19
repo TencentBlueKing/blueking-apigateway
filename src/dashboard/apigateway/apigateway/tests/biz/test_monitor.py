@@ -53,8 +53,10 @@ class TestResourceMonitorHandler:
                 },
                 "expected": [
                     {
-                        "api_id": self.gateway.id,
-                        "api_name": self.gateway.name,
+                        "gateway": {
+                            "id": self.gateway.id,
+                            "name": self.gateway.name,
+                        },
                         "alarm_record_count": 2,
                         "strategy_summary": [
                             {

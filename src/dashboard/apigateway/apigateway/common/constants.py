@@ -16,26 +16,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from enum import Enum
 from typing import Any, Dict, Optional
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 
-
-class ChoiceEnumMixin:
-    @classmethod
-    def choices(cls):
-        return [(i.value, i.name) for i in cls]
-
-
-class ChoiceEnum(ChoiceEnumMixin, Enum):
-    pass
-
-
-class CacheTimeLevel(Enum):
-    CACHE_TIME_SHORT = 5 * 60
-    CACHE_TIME_MEDIUM = 3600
-    CACHE_TIME_LONG = 24 * 3600
+CACHE_TIME_5_MINUTES = 5 * 60
+CACHE_TIME_24_HOURS = 24 * 3600
 
 
 class ExtendEnumField(EnumField):

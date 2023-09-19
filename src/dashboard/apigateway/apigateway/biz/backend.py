@@ -102,3 +102,7 @@ class BackendHandler:
             return False
 
         return not Proxy.objects.filter(backend=backend).exists()
+
+    @staticmethod
+    def get_id_to_instance(gateway_id: int) -> Dict[int, Backend]:
+        return {backend.id: backend for backend in Backend.objects.filter(gateway_id=gateway_id)}
