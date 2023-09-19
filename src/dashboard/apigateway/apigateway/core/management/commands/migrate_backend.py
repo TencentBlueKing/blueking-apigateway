@@ -89,8 +89,8 @@ class Command(BaseCommand):
                     proxy.save()
                     continue
 
-                stage_config = self._gen_resource_config_map(stages, stage_timeout, config)
-                backend_id = self._match_existing_backend(backend_stage_config, stage_config)
+                resource_stage_config = self._gen_resource_config_map(stages, stage_timeout, config)
+                backend_id = self._match_existing_backend(backend_stage_config, resource_stage_config)
                 if backend_id is not None:
                     proxy.backend_id = backend_id
                     proxy.save()
@@ -102,7 +102,7 @@ class Command(BaseCommand):
                 proxy.backend = backend
                 proxy.save()
 
-                backend_stage_config[backend.id] = stage_config
+                backend_stage_config[backend.id] = resource_stage_config
 
     def _get_max_resource_backend_count(self, gateway: Gateway):
         count = 0
@@ -113,9 +113,9 @@ class Command(BaseCommand):
 
         return count
 
-    def _match_existing_backend(self, backend_stage_config, stage_config):
-        for backend_id, backend_stage_config in backend_stage_config.items():
-            if stage_config == backend_stage_config:
+    def _match_existing_backend(self, backend_stage_config, resource_stage_config):
+        for backend_id, stage_config in backend_stage_config.items():
+            if stage_config == resource_stage_config:
                 return backend_id
 
         return None
