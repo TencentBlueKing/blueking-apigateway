@@ -39,7 +39,6 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import (
-    APIHostingTypeEnum,
     ProxyTypeEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusTypeEnum,
@@ -145,7 +144,6 @@ def fake_gateway(faker):
         _maintainers=FAKE_USERNAME,
         status=1,
         is_public=True,
-        hosting_type=0,
     )
 
     GatewayAuthContext().save(gateway.pk, {})
@@ -155,9 +153,6 @@ def fake_gateway(faker):
 
 @pytest.fixture()
 def fake_gateway_for_micro_gateway(fake_gateway):
-    fake_gateway.hosting_type = APIHostingTypeEnum.MICRO.value
-    fake_gateway.save()
-
     return fake_gateway
 
 
