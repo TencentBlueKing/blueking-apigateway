@@ -82,10 +82,10 @@ class ReleaseHandler:
             return ReleaseHistoryStatusEnum.DOING.value
 
         # 如已经结束
-        if last_event.status == ReleaseHistoryStatusEnum.SUCCESS.value:
+        if last_event.status == PublishEventStatusEnum.SUCCESS.value:
             return ReleaseHistoryStatusEnum.SUCCESS.value
 
-        if last_event.status == ReleaseHistoryStatusEnum.FAILURE.value:
+        if last_event.status == PublishEventStatusEnum.FAILURE.value:
             return ReleaseHistoryStatusEnum.FAILURE.value
 
         return ReleaseHistoryStatusEnum.DOING.value
