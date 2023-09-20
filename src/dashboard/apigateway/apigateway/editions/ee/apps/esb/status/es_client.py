@@ -17,21 +17,19 @@
 # to the current version of the project delivered to anyone in the future.
 #
 """
-请求Elasticsearch辅助Client
+请求 Elasticsearch 辅助 Client
 """
-from typing import ClassVar
+from typing import ClassVar, Type
 
 from django.conf import settings
 
-from apigateway.apps.access_log.constants import ESClientTypeEnum
-from apigateway.apps.access_log.es_clients import BaseESClient, BKLogESClient, RawESClient
+from apigateway.common.es.clients import BaseESClient, BKLogESClient, ESClientTypeEnum, RawESClient
 
 
 class BaseSearchClient:
-
     _es_index = settings.BK_ESB_ACCESS_LOG_CONFIG["es_index"]
     _es_time_field_name = settings.BK_ESB_ACCESS_LOG_CONFIG["es_time_field_name"]
-    _es_client_class: ClassVar[BaseESClient]
+    _es_client_class: ClassVar[Type[BaseESClient]]
 
     def __init__(self):
         self._es_client = self._es_client_class(self._es_index)
@@ -250,7 +248,7 @@ def get_search_es_client():
     if es_client_type == ESClientTypeEnum.BK_LOG.value:
         return BKLogSearchClient()
 
-    elif es_client_type == ESClientTypeEnum.ELASTICSEARCH.value:
+    if es_client_type == ESClientTypeEnum.ELASTICSEARCH.value:
         return RawESSearchClient()
 
     raise ValueError(f"unsupported es_client_type: {es_client_type}")

@@ -36,11 +36,11 @@ urlpatterns = [
     ),
     path("", include("apigateway.apis.open.released.urls")),
     path("", include("apigateway.apis.open.support.urls")),
+    path("", include("apigateway.apis.open.resource_doc.urls")),
     path("", include("apigateway.apis.open.permission.urls")),
     path("", include("apigateway.apis.open.stage.urls")),
     path("", include("apigateway.apis.open.resource.urls")),
     path("", include("apigateway.apis.open.resource_version.urls")),
-    path("", include("apigateway.apis.open.access_strategy.urls")),
     path("", include("apigateway.apis.open.monitor.urls")),
 ]
 

@@ -8,7 +8,6 @@
             <strong> {{ $t('最近发布：') }} </strong>
             {{ $t('环境') }}【{{latestRelease.stage_names.join(', ')}}】，
             {{ $t('版本') }} <strong>{{latestRelease.resource_version_display}}</strong> ，
-            <!-- {{ $t('由') }} {{latestRelease.created_by}} {{ $t('于') }} {{latestRelease.created_time}} {{ $t('发布') }}， -->
             {{ latestReleaseText }}
             <template v-if="latestRelease.status === 'success'">
               <span class="ag-success"> {{ $t('发布成功') }} </span>，
@@ -35,7 +34,7 @@
       :model="releaseParams"
       :rules="rules"
       ref="releaseForm">
-      <bk-form-item :label="$t('环境')" :property="'stage_ids'" :required="true">
+      <bk-form-item :label="$t('环境')" :property="'stage_ids'" :required="true" :error-display-type="'normal'">
         <bk-select
           v-model="releaseParams.stage_ids"
           :searchable="true"
@@ -49,7 +48,7 @@
             :name="option.name">
           </bk-option>
         </bk-select>
-        <span class="ag-tip f12 vm" style="margin-bottom: -10px;">
+        <span slot="tip" class="ag-tip f12 vm" style="margin-bottom: -10px;">
           <i class="apigateway-icon icon-ag-info"></i>
           {{ $t('发布前，可在') }}
           <router-link class="ag-text-link" target="_blank" :to="{ name: 'apigwStage', params: { id: apigwId } }"> {{ $t('环境管理') }} </router-link>
@@ -100,7 +99,7 @@
         </template>
       </bk-form-item>
 
-      <bk-form-item :label="$t('发布版本')" :property="'resource_version_id'" :required="true">
+      <bk-form-item :label="$t('发布版本')" :property="'resource_version_id'" :required="true" :error-display-type="'normal'">
         <bk-select
           v-model="releaseParams.resource_version_id"
           searchable
@@ -113,13 +112,13 @@
           </bk-option>
         </bk-select>
         <bk-button theme="primary" class="create-btn" @click="handleCreate" :disabled="$route.query.versionId"> {{ $t('生成版本') }} </bk-button>
-        <span class="ag-tip f12 vm" style="margin-bottom: -10px;">
+        <span slot="tip" class="ag-tip f12 vm" style="margin-bottom: -10px;">
           <i class="apigateway-icon icon-ag-info"></i>
           {{ $t('版本发布到环境后，版本中的资源及资源文档更新才会生效') }}
         </span>
       </bk-form-item>
 
-      <bk-form-item :label="$t('发布日志')" :required="true" :property="'comment'">
+      <bk-form-item :label="$t('发布日志')" :required="true" :property="'comment'" :error-display-type="'normal'">
         <bk-input type="textarea" v-model="releaseParams.comment"></bk-input>
       </bk-form-item>
 
@@ -248,8 +247,7 @@
       :is-show.sync="diffSidesliderConf.isShow"
       :title="diffSidesliderConf.title"
       :width="diffSidesliderConf.width"
-      :quick-close="true"
-      :before-close="handleBeforeClose">
+      :quick-close="true">
       <div slot="content" class="p20">
         <version-diff
           ref="versionDiffRef"
@@ -278,14 +276,12 @@
   import { catchErrorHandler } from '@/common/util'
   import versionCreateDialog from '@/components/create-version'
   import versionDiff from '@/components/version-diff'
-  import sidebarMixin from '@/mixins/sidebar-mixin'
 
   export default {
     components: {
       versionCreateDialog,
       versionDiff
     },
-    mixins: [sidebarMixin],
     data () {
       return {
         isPageLoading: false,
@@ -624,15 +620,6 @@
         this.diffSidesliderConf.sourceTag = `${this.$t('环境 ')}${data.name}${this.$t('当前版本')}`
         this.diffSidesliderConf.isShow = true
         this.diffSourceId = data.resource_version_id
-        this.$nextTick(() => {
-          if (this.$refs.versionDiffRef) {
-            this.initSidebarFormData(this.$refs.versionDiffRef.searchParams || {})
-          }
-        })
-      },
-
-      async handleBeforeClose () {
-        return this.$isSidebarClosed(JSON.stringify(this.$refs.versionDiffRef.searchParams || {}))
       }
     }
   }

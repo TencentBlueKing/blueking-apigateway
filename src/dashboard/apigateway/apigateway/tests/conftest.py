@@ -30,19 +30,27 @@ from django.contrib.auth import get_user_model
 from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum, AccessStrategyTypeEnum
-from apigateway.apps.access_strategy.models import AccessStrategy, AccessStrategyBinding, IPGroup
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import APISDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.contexts import APIAuthContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.factories import SchemaFactory
-from apigateway.core.constants import APIHostingTypeEnum, ProxyTypeEnum
+from apigateway.core.constants import (
+    APIHostingTypeEnum,
+    ProxyTypeEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusTypeEnum,
+)
 from apigateway.core.models import (
+    Backend,
+    BackendConfig,
     Gateway,
     MicroGateway,
+    Proxy,
+    PublishEvent,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -52,17 +60,16 @@ from apigateway.core.models import (
     SslCertificate,
     SslCertificateBinding,
     Stage,
-    StageItem,
-    StageItemConfig,
 )
 from apigateway.schema import instances
 from apigateway.schema.data.meta_schema import init_meta_schemas
-from apigateway.tests.utils.testing import get_response_json
+from apigateway.tests.utils.testing import dummy_time, get_response_json
 from apigateway.utils.redis_utils import REDIS_CLIENTS, get_default_redis_client
 
 UserModel = get_user_model()
 
 FAKE_USERNAME = "admin"
+
 
 # pytest fixtures
 
@@ -127,9 +134,7 @@ def fake_anonymous_user(mocker):
 
 @pytest.fixture
 def fake_request(request_factory):
-    request = request_factory.get("")
-
-    return request
+    return request_factory.get("")
 
 
 @pytest.fixture
@@ -143,7 +148,7 @@ def fake_gateway(faker):
         hosting_type=0,
     )
 
-    APIAuthContext().save(gateway.pk, {})
+    GatewayAuthContext().save(gateway.pk, {})
 
     return gateway
 
@@ -158,19 +163,43 @@ def fake_gateway_for_micro_gateway(fake_gateway):
 
 @pytest.fixture
 def fake_stage(fake_gateway, faker):
-    return G(Stage, api=fake_gateway, status=1, name=faker.pystr(), description=faker.bothify("????????"))
+    return G(Stage, gateway=fake_gateway, status=1, name=faker.pystr(), description=faker.bothify("????????"))
 
 
 @pytest.fixture
-def fake_resource(faker, fake_gateway):
+def fake_backend(fake_gateway, fake_stage, faker):
+    backend = G(
+        Backend,
+        gateway=fake_gateway,
+        name=faker.pystr(),
+    )
+
+    G(
+        BackendConfig,
+        gateway=fake_gateway,
+        stage=fake_stage,
+        backend=backend,
+        config={
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+        },
+    )
+
+    return backend
+
+
+@pytest.fixture
+def fake_resource(faker, fake_gateway, fake_backend):
     resource = G(
         Resource,
-        api=fake_gateway,
+        gateway=fake_gateway,
         name=faker.color_name(),
         method=faker.http_method(),
         path=faker.uri_path(),
     )
-    ResourceHandler().save_auth_config(
+    ResourceHandler.save_auth_config(
         resource.id,
         {
             "skip_auth_verification": False,
@@ -179,21 +208,22 @@ def fake_resource(faker, fake_gateway):
             "resource_perm_required": True,
         },
     )
-    ResourceHandler().save_proxy_config(
-        resource,
-        ProxyTypeEnum.HTTP.value,
-        {
-            "method": faker.http_method(),
-            "path": faker.uri_path(),
-            "match_subpath": False,
-            "timeout": faker.random_int(),
-            "upstreams": {
-                "loadbalance": "roundrobin",
-                "hosts": [{"host": f"http://{faker.domain_name()}", "weight": 100}],
-            },
-            "transform_headers": {},
-        },
+    G(
+        Proxy,
+        type=ProxyTypeEnum.HTTP.value,
+        resource=resource,
+        backend=fake_backend,
+        _config=json.dumps(
+            {
+                "method": faker.http_method(),
+                "path": faker.uri_path(),
+                "match_subpath": False,
+                "timeout": faker.random_int(),
+            }
+        ),
+        schema=SchemaFactory().get_proxy_schema(ProxyTypeEnum.HTTP.value),
     )
+
     return resource
 
 
@@ -201,9 +231,11 @@ def fake_resource(faker, fake_gateway):
 def fake_resource1(faker, fake_resource):
     resource = deepcopy(fake_resource)
     resource.pk = None
+    resource.is_public = True
     resource.name = faker.bothify("?????")
     resource.save()
-    ResourceHandler().save_auth_config(
+
+    ResourceHandler.save_auth_config(
         resource.id,
         {
             "skip_auth_verification": False,
@@ -212,6 +244,12 @@ def fake_resource1(faker, fake_resource):
             "resource_perm_required": True,
         },
     )
+
+    proxy = deepcopy(Proxy.objects.get(resource_id=fake_resource.id))
+    proxy.pk = None
+    proxy.resource = resource
+    proxy.save()
+
     return resource
 
 
@@ -221,15 +259,22 @@ def fake_resource2(faker, fake_resource):
     resource.pk = None
     resource.name = faker.bothify("?????")
     resource.save()
-    ResourceHandler().save_auth_config(resource.id, {})
+
+    ResourceHandler.save_auth_config(resource.id, {})
+
+    proxy = deepcopy(Proxy.objects.get(resource_id=fake_resource.id))
+    proxy.pk = None
+    proxy.resource = resource
+    proxy.save()
+
     return resource
 
 
 @pytest.fixture
 def fake_micro_gateway(fake_gateway_for_micro_gateway, faker):
-    gateway = G(
+    return G(
         MicroGateway,
-        api=fake_gateway_for_micro_gateway,
+        gateway=fake_gateway_for_micro_gateway,
         name=faker.color_name(),
         is_shared=False,
         _config=json.dumps(
@@ -251,7 +296,6 @@ def fake_micro_gateway(fake_gateway_for_micro_gateway, faker):
             }
         ),
     )
-    return gateway
 
 
 @pytest.fixture
@@ -268,7 +312,7 @@ def fake_shared_gateway(fake_micro_gateway, settings):
     """共享网关"""
     gateway = G(
         MicroGateway,
-        api=fake_micro_gateway.api,
+        gateway=fake_micro_gateway.gateway,
         name=fake_micro_gateway.name,
         is_shared=True,
         _config=fake_micro_gateway._config,
@@ -280,20 +324,37 @@ def fake_shared_gateway(fake_micro_gateway, settings):
 
 @pytest.fixture
 def fake_resource_version(faker, fake_gateway, fake_resource1, fake_resource2):
-    resource_version = G(ResourceVersion, api=fake_gateway, name=faker.pystr(), version=faker.pystr())
-    resource_version.data = ResourceVersionHandler().make_version(fake_gateway)
+    resource_version = G(ResourceVersion, gateway=fake_gateway, name=faker.pystr(), version=faker.pystr())
+    resource_version.data = ResourceVersionHandler.make_version(fake_gateway)
     resource_version.save()
     return resource_version
 
 
 @pytest.fixture
 def fake_release(fake_gateway, fake_stage, fake_resource_version):
-    return G(Release, api=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+    return G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
 
 @pytest.fixture
 def fake_release_history(fake_gateway, fake_stage, fake_resource_version):
-    return G(ReleaseHistory, api=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+    return G(
+        ReleaseHistory,
+        gateway=fake_gateway,
+        stage=fake_stage,
+        resource_version=fake_resource_version,
+        created_time=dummy_time.time,
+    )
+
+
+@pytest.fixture
+def fake_publish_event(fake_release_history):
+    return G(
+        PublishEvent,
+        publish=fake_release_history,
+        name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
+        status=PublishEventStatusTypeEnum.DOING.value,
+        created_time=dummy_time.time,
+    )
 
 
 @pytest.fixture
@@ -301,12 +362,43 @@ def fake_released_resource(fake_gateway, fake_resource1, fake_resource_version, 
     resource_id_to_data = {item["id"]: item for item in fake_resource_version.data}
     return G(
         ReleasedResource,
-        api=fake_gateway,
+        gateway=fake_gateway,
         resource_version_id=fake_resource_version.id,
         resource_id=fake_resource1.id,
         resource_name=fake_resource1.name,
         resource_method=fake_resource1.method,
         resource_path=fake_resource1.path,
+        data=resource_id_to_data[fake_resource1.id],
+    )
+
+
+@pytest.fixture
+def fake_resource_doc1(fake_resource1):
+    return G(ResourceDoc, gateway=fake_resource1.gateway, resource_id=fake_resource1.id)
+
+
+@pytest.fixture
+def fake_resource_doc2(fake_resource2):
+    return G(ResourceDoc, gateway=fake_resource2.gateway, resource_id=fake_resource2.id)
+
+
+@pytest.fixture
+def fake_resource_doc_version(fake_gateway, fake_resource_version, fake_resource_doc1, fake_resource_doc2):
+    resource_doc_version = G(ResourceDocVersion, gateway=fake_gateway, resource_version=fake_resource_version)
+    resource_doc_version.data = ResourceDocVersion.objects.make_version(fake_gateway.id)
+    resource_doc_version.save()
+    return resource_doc_version
+
+
+@pytest.fixture
+def fake_released_resource_doc(fake_gateway, fake_resource_version, fake_resource_doc_version, fake_resource1):
+    resource_id_to_data = {item["resource_id"]: item for item in fake_resource_doc_version.data}
+    return G(
+        ReleasedResourceDoc,
+        gateway=fake_gateway,
+        resource_version_id=fake_resource_version.id,
+        resource_id=fake_resource1.id,
+        language="zh",
         data=resource_id_to_data[fake_resource1.id],
     )
 
@@ -348,11 +440,6 @@ def unique_backend_service_name(unique_id):
 
 
 @pytest.fixture
-def unique_stage_item_name(unique_id):
-    return f"a{unique_id[:19]}".lower()
-
-
-@pytest.fixture
 def fake_tgz_file(faker):
     fp = tempfile.TemporaryFile()
     fp.write(faker.tar(compression="gz"))
@@ -385,10 +472,11 @@ def celery_task_eager_mode(settings):
 def fake_sdk(fake_gateway, fake_resource_version):
     return G(
         APISDK,
-        api=fake_gateway,
+        gateway=fake_gateway,
         resource_version=fake_resource_version,
-        language="magic",
+        language="python",
         is_recommended=True,
+        is_public=True,
         _config="{}",
     )
 
@@ -406,13 +494,15 @@ def request_to_view():
 @pytest.fixture()
 def request_view(request_factory):
     def fn(method, view_name, path_params=None, gateway=None, user=None, **kwargs):
+        path = reverse(view_name, kwargs=path_params)
+        resolved = resolve(path)
+
         handler = getattr(request_factory, method.lower())
-        request = handler(path="", **kwargs)
+        request = handler(path=path, **kwargs)
         request.gateway = gateway
         if user is not None:
             request.user = user
-        path = reverse(view_name, kwargs=path_params)
-        resolved = resolve(path)
+
         response = resolved.func(request, *resolved.args, **resolved.kwargs)
         response.json = partial(get_response_json, response)
 
@@ -477,103 +567,6 @@ def mock_rest_framework_settings(settings):
     settings.REST_FRAMEWORK.update({"DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S"})
 
 
-@pytest.fixture()
-def rate_limit_access_strategy(fake_gateway, faker):
-    return G(
-        AccessStrategy,
-        api=fake_gateway,
-        type=AccessStrategyTypeEnum.RATE_LIMIT.value,
-        schema=SchemaFactory().get_access_strategy_schema(AccessStrategyTypeEnum.RATE_LIMIT.value),
-        _config=json.dumps(
-            {
-                "rates": {
-                    "__default": {
-                        "tokens": faker.pyint(),
-                        "period": faker.pyint(),
-                    },
-                    "app": {
-                        "tokens": faker.pyint(),
-                        "period": faker.pyint(),
-                    },
-                }
-            }
-        ),
-    )
-
-
-@pytest.fixture()
-def rate_limit_access_strategy_stage_binding(fake_stage, rate_limit_access_strategy):
-    return G(
-        AccessStrategyBinding,
-        type=rate_limit_access_strategy.type,
-        access_strategy=rate_limit_access_strategy,
-        scope_type=AccessStrategyBindScopeEnum.STAGE.value,
-        scope_id=fake_stage.pk,
-    )
-
-
-@pytest.fixture()
-def rate_limit_access_strategy_resource_binding(fake_resource, rate_limit_access_strategy):
-    return G(
-        AccessStrategyBinding,
-        type=rate_limit_access_strategy.type,
-        access_strategy=rate_limit_access_strategy,
-        scope_type=AccessStrategyBindScopeEnum.RESOURCE.value,
-        scope_id=fake_resource.pk,
-    )
-
-
-@pytest.fixture()
-def ip_group(fake_gateway, faker):
-    return G(
-        IPGroup,
-        api=fake_gateway,
-        _ips=faker.ipv4(),
-    )
-
-
-@pytest.fixture()
-def ip_access_control_access_strategy(fake_gateway, ip_group):
-    return G(
-        AccessStrategy,
-        api=fake_gateway,
-        type=AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value,
-        schema=SchemaFactory().get_access_strategy_schema(AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value),
-        _config=json.dumps({"type": "allow", "ip_group_list": [ip_group.pk]}),
-    )
-
-
-@pytest.fixture()
-def ip_access_control_access_strategy_stage_binding(fake_stage, ip_access_control_access_strategy):
-    return G(
-        AccessStrategyBinding,
-        type=ip_access_control_access_strategy.type,
-        access_strategy=ip_access_control_access_strategy,
-        scope_type=AccessStrategyBindScopeEnum.STAGE.value,
-        scope_id=fake_stage.pk,
-    )
-
-
-@pytest.fixture()
-def cors_access_strategy(fake_gateway):
-    return G(
-        AccessStrategy,
-        api=fake_gateway,
-        type=AccessStrategyTypeEnum.CORS.value,
-        schema=SchemaFactory().get_access_strategy_schema(AccessStrategyTypeEnum.CORS.value),
-        _config=json.dumps(
-            {
-                "allowed_origins": ["http://demo.example.com"],
-                "allowed_methods": ["GET", "POST", "OPTIONS"],
-                "allowed_headers": ["X-Token"],
-                "exposed_headers": ["X-Token"],
-                "max_age": 0,
-                "allow_credentials": True,
-            }
-        ),
-    )
-
-
 @shared_task(name="testing.mock")
 def celery_mock_task_for_testing(celery_task_mocker=None, *args, **kwargs):
     if celery_task_mocker:
@@ -586,50 +579,16 @@ def celery_mock_task():
 
 
 @pytest.fixture
-def fake_node_data(unique_stage_item_name):
-    return {
-        "name": unique_stage_item_name,
-        "type": "node",
-        "description": "this is a test",
-        "config": {
-            "nodes": [
-                {
-                    "host": "1.0.0.1:8000",
-                    "weight": 100,
-                },
-            ]
-        },
-    }
-
-
-@pytest.fixture
-def fake_stage_item(fake_gateway):
-    return G(StageItem, api=fake_gateway)
-
-
-@pytest.fixture
-def fake_stage_item_config(fake_stage_item):
-    stage = G(Stage, api=fake_stage_item.api)
-    return G(
-        StageItemConfig,
-        api=fake_stage_item.api,
-        stage=stage,
-        stage_item=fake_stage_item,
-        config={"nodes": [{"host": "1.0.0.1", "weight": 100}]},
-    )
-
-
-@pytest.fixture
 def fake_ssl_certificate(fake_gateway):
-    return G(SslCertificate, api=fake_gateway)
+    return G(SslCertificate, gateway=fake_gateway)
 
 
 @pytest.fixture
 def fake_ssl_certificate_binding(fake_ssl_certificate):
-    stage = G(Stage, api=fake_ssl_certificate.api)
+    stage = G(Stage, gateway=fake_ssl_certificate.gateway)
     return G(
         SslCertificateBinding,
-        api=fake_ssl_certificate.api,
+        gateway=fake_ssl_certificate.gateway,
         scope_type="stage",
         scope_id=stage.id,
         ssl_certificate=fake_ssl_certificate,
@@ -671,6 +630,7 @@ def echo_plugin_type(echo_plugin_type_schema):
     return G(
         PluginType,
         code="echo",
+        name="echo",
         schema=echo_plugin_type_schema,
         is_public=True,
     )
@@ -702,7 +662,7 @@ def echo_plugin_en_form(echo_plugin_type):
 def echo_plugin(echo_plugin_type, fake_gateway, faker):
     return G(
         PluginConfig,
-        api=fake_gateway,
+        gateway=fake_gateway,
         name="echo-plugin",
         type=echo_plugin_type,
         yaml=json.dumps(
@@ -717,7 +677,7 @@ def echo_plugin(echo_plugin_type, fake_gateway, faker):
 def echo_plugin_stage_binding(echo_plugin, fake_stage):
     return G(
         PluginBinding,
-        api=echo_plugin.api,
+        gateway=echo_plugin.gateway,
         config=echo_plugin,
         scope_type=PluginBindingScopeEnum.STAGE.value,
         scope_id=fake_stage.pk,
@@ -728,7 +688,7 @@ def echo_plugin_stage_binding(echo_plugin, fake_stage):
 def echo_plugin_resource_binding(echo_plugin, fake_resource):
     return G(
         PluginBinding,
-        api=echo_plugin.api,
+        gateway=echo_plugin.gateway,
         config=echo_plugin,
         scope_type=PluginBindingScopeEnum.RESOURCE.value,
         scope_id=fake_resource.pk,
@@ -884,9 +844,71 @@ def mock_board(settings):
             "sdk_package_prefix": "blueking.component.open",
             "sdk_description": "access open apis",
             "sdk_doc_templates": {
-                "python_sdk_usage_example": "test.md",
+                "python_sdk_usage_example": "python_sdk_usage_example_v2.md",
             },
         },
     }
 
     return "open"
+
+
+@pytest.fixture
+def fake_resource_doc(faker, fake_resource):
+    return G(
+        ResourceDoc,
+        gateway=fake_resource.gateway,
+        resource_id=fake_resource.id,
+        language=faker.random_element(
+            ["en", "zh"],
+        ),
+    )
+
+
+@pytest.fixture
+def fake_resource_swagger():
+    return json.dumps(
+        {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {
+                "version": "1.0.0",
+                "title": "API Gateway Swagger",
+            },
+            "schemes": ["http"],
+            "paths": {
+                "/http/get/mapping/{userId}": {
+                    "get": {
+                        "operationId": "http_get_mapping_user_id",
+                        "description": "test",
+                        "tags": ["pet"],
+                        "schemes": ["http"],
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "allowApplyPermission": True,
+                            "matchSubpath": True,
+                            "backend": {
+                                "name": "default",
+                                "path": "/hello/",
+                                "method": "get",
+                                "matchSubpath": True,
+                                "timeout": 30,
+                            },
+                        },
+                    },
+                }
+            },
+        }
+    )
+
+
+@pytest.fixture
+def fake_resource_data(faker):
+    return ResourceData(
+        resource=None,
+        name=faker.pystr(),
+        description=faker.pystr(),
+        method="GET",
+        path=faker.pystr(),
+        auth_config=ResourceAuthConfig(),
+        backend_config=ResourceBackendConfig(method="GET", path=faker.pystr()),
+    )

@@ -17,65 +17,108 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
-from django.conf import settings
+from django.db import transaction
 from django.utils.translation import gettext as _
+from rest_framework import serializers
 
-from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum
-from apigateway.apps.access_strategy.models import AccessStrategyBinding
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
-from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
-from apigateway.core.constants import DEFAULT_STAGE_NAME, ContextScopeTypeEnum, StageStatusEnum
-from apigateway.core.models import Context, MicroGateway, Release, ReleaseHistory, Stage
+from apigateway.biz.release import ReleaseHandler
+from apigateway.common.release.publish import trigger_gateway_publish
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, DEFAULT_STAGE_NAME, PublishSourceEnum, StageStatusEnum
+from apigateway.core.models import Backend, BackendConfig, MicroGateway, Release, Stage
 from apigateway.utils.time import now_datetime
 
 
 class StageHandler:
     @staticmethod
+    @transaction.atomic
+    def create(data: Dict[str, Any], created_by: str) -> Stage:
+        stage = Stage(
+            gateway=data["gateway"],
+            name=data["name"],
+            description=data["description"],
+            created_by=created_by,
+            updated_by=created_by,
+        )
+        stage.save()
+
+        # 创建后端配置
+        backend_configs = []
+        for backend in data["backends"]:
+            backend_config = BackendConfig(
+                gateway=data["gateway"],
+                backend_id=backend["id"],
+                stage=stage,
+                config=backend["config"],
+                created_by=created_by,
+                updated_by=created_by,
+            )
+            backend_configs.append(backend_config)
+
+        BackendConfig.objects.bulk_create(backend_configs)
+
+        return stage
+
+    @staticmethod
+    @transaction.atomic
+    def update(stage: Stage, data: Dict[str, Any], updated_by: str) -> Stage:
+        stage.description = data["description"]
+        stage.updated_by = updated_by
+        stage.save()
+
+        backends = {
+            backend_config.backend_id: backend_config
+            for backend_config in BackendConfig.objects.filter(gateway=stage.gateway, stage=stage)
+        }
+
+        for backend_config in data["backends"]:
+            backend = backends[backend_config["id"]]
+            backend.config = backend_config["config"]
+            backend.updated_by = updated_by
+
+        BackendConfig.objects.bulk_update(backends.values(), fields=["config", "updated_by"])
+
+        # 触发环境发布
+        trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, updated_by, stage.gateway_id, stage.id, is_sync=True)
+
+        return stage
+
+    @staticmethod
+    def delete(stage: Stage):
+        # 删除stage CR  先删除crd，发布过程需要用到
+        trigger_gateway_publish(PublishSourceEnum.STAGE_DELETE, "admin", stage.gateway_id, stage.id, is_sync=True)
+
+        with transaction.atomic():
+            BackendConfig.objects.filter(gateway=stage.gateway, stage=stage).delete()
+
+            # 2. delete release
+
+            Release.objects.delete_by_stage_ids([stage.id])
+
+            # 4. delete stages
+            stage.delete()
+
+            # 5. delete release-history
+
+            ReleaseHandler.clean_no_stage_related_release_history(stage.gateway.id)
+
+    @staticmethod
+    def set_status(stage: Stage, status: int, updated_by: str):
+        stage.status = status
+        stage.updated_by = updated_by
+        stage.save()
+
+        if status == StageStatusEnum.INACTIVE.value:
+            # 触发环境发布
+            trigger_gateway_publish(
+                PublishSourceEnum.STAGE_DISABLE, updated_by, stage.gateway_id, stage.id, is_sync=True
+            )
+
+    @staticmethod
     def delete_by_gateway_id(gateway_id):
-        stage_ids = list(Stage.objects.filter(api_id=gateway_id).values_list("id", flat=True))
-        if not stage_ids:
-            return
-
-        StageHandler().delete_stages(gateway_id, stage_ids)
-
-    @staticmethod
-    def delete_stages(gateway_id, stage_ids):
-        # 1. delete proxy http config/rate-limit config
-
-        Context.objects.delete_by_scope_ids(
-            scope_type=ContextScopeTypeEnum.STAGE.value,
-            scope_ids=stage_ids,
-        )
-
-        # 2. delete release
-
-        Release.objects.delete_by_stage_ids(stage_ids)
-
-        # 3. delete access-strategy-binding
-
-        AccessStrategyBinding.objects.delete_by_scope_ids(
-            scope_type=AccessStrategyBindScopeEnum.STAGE.value,
-            scope_ids=stage_ids,
-        )
-
-        # 4. delete stages
-        Stage.objects.filter(id__in=stage_ids).delete()
-
-        # 5. delete release-history
-
-        ReleaseHistory.objects.delete_without_stage_related(gateway_id)
-
-    @staticmethod
-    def save_related_data(stage, proxy_http_config: dict, rate_limit_config: Optional[dict]):
-        # 1. save proxy http config
-        StageProxyHTTPContext().save(stage.id, proxy_http_config)
-
-        # 2. save rate-limit config
-        if rate_limit_config is not None:
-            StageRateLimitContext().save(stage.id, rate_limit_config)
+        for stage in Stage.objects.filter(gateway_id=gateway_id):
+            StageHandler.delete(stage)
 
     @staticmethod
     def create_default(gateway, created_by):
@@ -83,7 +126,7 @@ class StageHandler:
         创建默认 stage，网关创建时，需要创建一个默认环境
         """
         stage = Stage.objects.create(
-            api=gateway,
+            gateway=gateway,
             name=DEFAULT_STAGE_NAME,
             description="正式环境",
             description_en="Prod",
@@ -95,33 +138,37 @@ class StageHandler:
             updated_time=now_datetime(),
         )
 
-        # 保存关联数据
-        StageHandler().save_related_data(
-            stage,
-            proxy_http_config={
-                "timeout": 30,
-                "upstreams": settings.DEFAULT_STAGE_UPSTREAMS,
-                "transform_headers": {
-                    "set": {},
-                    "delete": [],
-                },
-            },
-            rate_limit_config=settings.DEFAULT_STAGE_RATE_LIMIT_CONFIG,
+        backend = Backend.objects.create(
+            gateway=gateway,
+            name=DEFAULT_BACKEND_NAME,
         )
+
+        backend_config = BackendConfig(
+            gateway=gateway,
+            backend=backend,
+            stage=stage,
+            config={
+                "type": "node",
+                "timeout": 30,
+                "loadbalance": "roundrobin",
+                "hosts": [{"scheme": "http", "host": "", "weight": 100}],
+            },
+        )
+        backend_config.save()
 
         return stage
 
     # TODO: move into get_id_to_micro_gateway_fields?
     @staticmethod
     def get_id_to_micro_gateway_id(gateway_id: int) -> Dict[int, Optional[str]]:
-        return dict(Stage.objects.filter(api_id=gateway_id).values_list("id", "micro_gateway_id"))
+        return dict(Stage.objects.filter(gateway_id=gateway_id).values_list("id", "micro_gateway_id"))
 
     @staticmethod
     def get_id_to_micro_gateway_fields(gateway_id: int) -> Dict[int, Optional[Dict[str, Any]]]:
         id_to_micro_gateway_id = StageHandler().get_id_to_micro_gateway_id(gateway_id)
         result: Dict[int, Optional[Dict[str, Any]]] = {i: None for i in id_to_micro_gateway_id}
 
-        valid_micro_gateway_ids = set(i for i in id_to_micro_gateway_id.values() if i is not None)
+        valid_micro_gateway_ids = {i for i in id_to_micro_gateway_id.values() if i is not None}
         if not valid_micro_gateway_ids:
             return result
 
@@ -133,27 +180,18 @@ class StageHandler:
         return result
 
     @staticmethod
-    def add_create_audit_log(gateway, stage, username: str):
-        record_audit_log(
-            username=username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway.id,
-            op_object_type=OpObjectTypeEnum.STAGE.value,
-            op_object_id=stage.id,
-            op_object=stage.name,
-            comment=_("创建环境"),
-        )
+    def get_stage_ids(gateway, stage_names: List[str]) -> List[int]:
+        name_to_id_map = Stage.objects.get_name_id_map(gateway)
 
-    @staticmethod
-    def add_update_audit_log(gateway, stage, username: str):
-        record_audit_log(
-            username=username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway.id,
-            op_object_type=OpObjectTypeEnum.STAGE.value,
-            op_object_id=stage.id,
-            op_object=stage.name,
-            comment=_("更新环境"),
-        )
+        # 如果未指定 stage_names，则默认处理网关下所有环境
+        if not stage_names:
+            return list(name_to_id_map.values())
+
+        stage_ids = set()
+        for stage_name in stage_names:
+            if stage_name not in name_to_id_map:
+                raise serializers.ValidationError(
+                    {"stage_names": _("环境【{stage_name}】不存在。").format(stage_name=stage_name)}
+                )
+            stage_ids.add(name_to_id_map[stage_name])
+        return list(stage_ids)

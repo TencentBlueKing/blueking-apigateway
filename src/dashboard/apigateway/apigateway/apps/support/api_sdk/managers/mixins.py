@@ -33,7 +33,7 @@ class SDKManagerMixin:
 
     def get_version(self, resource_version):
         """根据网关和资源版本，生成SDK版本号"""
-        count = APISDK.objects.get_resource_version_sdk_count(  # type: ignore
+        count = APISDK.objects.get_resource_version_language_sdk_count(  # type: ignore
             resource_version.id,
             ProgrammingLanguageEnum.PYTHON.value,
         )
@@ -50,17 +50,17 @@ class SDKManagerMixin:
 
     def get_is_latest(self, resource_version):
         return APISDK.objects.should_be_set_to_public_latest(  # type: ignore
-            resource_version.api,
+            resource_version.gateway,
             resource_version.id,
             self.is_public,
         )
 
     def get_context(self, resource_version: ResourceVersion) -> SDKContext:
-        api_name = resource_version.api.name
+        gateway_name = resource_version.gateway.name
 
         return SDKContext(
-            name=f"bkapi-{ shortcuts.to_lower_dash_case(api_name) }",
-            package=api_name,
+            name=f"bkapi-{ shortcuts.to_lower_dash_case(gateway_name) }",
+            package=gateway_name,
             resource_version=resource_version,
             language=self.language,
             is_public=self.is_public,

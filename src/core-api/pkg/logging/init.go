@@ -20,11 +20,15 @@ package logging
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"go.uber.org/zap"
+
+	"github.com/tchap/zapext/v2/zapsentry"
 	"go.uber.org/zap/zapcore"
 
 	"core/pkg/config"
@@ -48,13 +52,39 @@ func newZapSugarLogger() *zap.SugaredLogger {
 }
 
 // InitLogger ...
-func InitLogger(logger *config.Logger) {
+func InitLogger(config *config.Config) {
 	loggerInitOnce.Do(func() {
-		defaultLogger = newZapJSONLogger(&logger.Default).Sugar()
+		options := make([]zap.Option, 0, 3)
+		if len(config.Sentry.DSN) != 0 {
+			// init sentryCore
+			sentryCore, err := newSentryLogCore(config)
+			if err != nil {
+				log.Printf("new sentry log core fail: %s\n", err.Error())
+			} else {
+				options = append(options, zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+					return zapcore.NewTee(sentryCore, core)
+				}))
+			}
+		}
+		options = append(options, zap.AddCaller())
+
+		defaultLogger = newZapJSONLogger(&config.Logger.Default, options).Sugar()
 
 		// json logger
-		apiLogger = newZapJSONLogger(&logger.API)
+		apiLogger = newZapJSONLogger(&config.Logger.API, options)
 	})
+}
+
+// newSentryLogCore
+func newSentryLogCore(cfg *config.Config) (zapcore.Core, error) {
+	rawCore := zapsentry.NewCore(zapcore.Level(cfg.Sentry.ReportLogLevel), sentry.CurrentHub().Client())
+	sentryCore := zapcore.RegisterHooks(rawCore, func(entry zapcore.Entry) error {
+		if entry.Level == zapcore.FatalLevel {
+			sentry.CurrentHub().Client().Flush(2 * time.Second)
+		}
+		return nil
+	})
+	return sentryCore, nil
 }
 
 // parseZapLogLevel takes a string level and returns the zap log level constant.
@@ -78,7 +108,7 @@ func parseZapLogLevel(lvl string) (zapcore.Level, error) {
 	return l, fmt.Errorf("not a valid logrus Level: %q", lvl)
 }
 
-func newZapJSONLogger(cfg *config.LogConfig) *zap.Logger {
+func newZapJSONLogger(cfg *config.LogConfig, options []zap.Option) *zap.Logger {
 	writer, err := getWriter(cfg.Writer, cfg.Settings)
 	if err != nil {
 		panic(err)
@@ -95,6 +125,10 @@ func newZapJSONLogger(cfg *config.LogConfig) *zap.Logger {
 		}
 	}
 
+	encoderConfig := zap.NewProductionEncoderConfig()
+	// 设置时间格式
+	encoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
+
 	// 设置日志级别
 	l, err := parseZapLogLevel(cfg.Level)
 	if err != nil {
@@ -103,11 +137,11 @@ func newZapJSONLogger(cfg *config.LogConfig) *zap.Logger {
 	}
 
 	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		zapcore.NewJSONEncoder(encoderConfig),
 		w,
 		l,
 	)
-	return zap.New(core)
+	return zap.New(core, options...)
 }
 
 // GetLogger will return the default logger

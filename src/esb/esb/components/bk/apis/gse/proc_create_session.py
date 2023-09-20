@@ -25,7 +25,6 @@ from common.constants import API_TYPE_OP
 from common.forms import BaseComponentForm
 from components.component import Component, SetupConfMixin
 from lib.gse.procServer import ttypes
-
 from .toolkit import configs, tools
 
 

@@ -17,22 +17,36 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import itertools
-import operator
+import copy
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
+from django.conf import settings
+from django.db.models import Count
 from django.utils.translation import gettext as _
 
-from apigateway.apps.access_strategy.models import AccessStrategy
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.common.contexts import APIAuthContext
+from apigateway.apps.support.models import ReleasedResourceDoc
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
+from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.biz.iam import IAMHandler
+from apigateway.biz.release import ReleaseHandler
+from apigateway.common.audit.shortcuts import record_audit_log
+from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
-from apigateway.core.constants import APITypeEnum, ContextScopeTypeEnum
-from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, SslCertificate, Stage
+from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
+from apigateway.core.models import (
+    Backend,
+    BackendConfig,
+    Context,
+    Gateway,
+    Release,
+    Resource,
+    SslCertificate,
+    Stage,
+)
 from apigateway.utils.dict import deep_update
 
 from .resource import ResourceHandler
@@ -42,27 +56,43 @@ from .stage import StageHandler
 
 class GatewayHandler:
     @staticmethod
-    def search_gateway_stages(gateway_ids: List[int]):
-        """
-        查询网关环境
-        """
-        stages = Stage.objects.filter(api_id__in=gateway_ids).values("id", "name", "api_id").order_by("api_id")
-        stage_ids = [stage["id"] for stage in stages]
+    def list_gateways_by_user(username: str) -> List[Gateway]:
+        """获取用户有权限的的网关列表"""
+        # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
+        queryset = Gateway.objects.filter(_maintainers__contains=username)
+        return [gateway for gateway in queryset if gateway.has_permission(username)]
 
-        stage_release_status = Release.objects.get_stage_release_status(stage_ids)
+    @staticmethod
+    def get_stages_with_release_status(gateway_ids: List[int]) -> Dict[int, list]:
+        """
+        查询网关环境，并添加环境发布状态
 
-        api_stage_groups = itertools.groupby(stages, key=operator.itemgetter("api_id"))
-        api_stages = defaultdict(list)
-        for api_id, group in api_stage_groups:
-            for stage in group:
-                api_stages[api_id].append(
-                    {
-                        "stage_id": stage["id"],
-                        "stage_name": stage["name"],
-                        "stage_release_status": stage_release_status.get(stage["id"], False),
-                    }
-                )
-        return api_stages
+        :return: e.g.
+        {
+            1: [
+                {
+                    "id": 10,
+                    "name": "prod",
+                    "released": True,
+                }
+            ]
+        }
+        """
+        stages = Stage.objects.filter(gateway_id__in=gateway_ids).values("id", "name", "gateway_id")
+        released_stage_ids = ReleaseHandler.get_released_stage_ids(gateway_ids)
+        stage_release_status = dict.fromkeys(released_stage_ids, True)
+
+        gateway_id_to_stages = defaultdict(list)
+        for stage in stages:
+            gateway_id_to_stages[stage["gateway_id"]].append(
+                {
+                    "id": stage["id"],
+                    "name": stage["name"],
+                    "released": stage_release_status.get(stage["id"], False),
+                }
+            )
+
+        return gateway_id_to_stages
 
     @staticmethod
     def get_current_gateway_auth_config(gateway_id: int) -> dict:
@@ -71,7 +101,7 @@ class GatewayHandler:
         """
 
         try:
-            return APIAuthContext().get_config(gateway_id)
+            return GatewayAuthContext().get_config(gateway_id)
         except Context.DoesNotExist:
             return {}
 
@@ -80,14 +110,14 @@ class GatewayHandler:
         gateway_id: int,
         user_auth_type: Optional[str] = None,
         user_conf: Optional[dict] = None,
-        api_type: Optional[APITypeEnum] = None,
+        api_type: Optional[GatewayTypeEnum] = None,
         allow_update_api_auth: Optional[bool] = None,
         unfiltered_sensitive_keys: Optional[List[str]] = None,
     ):
         """
         存储网关认证配置
 
-        :param gateway_id: 网关id
+        :param gateway_id: 网关 id
         :param user_auth_type:
         :param user_conf: 用户类型为 default 的用户的认证配置
         :param api_type: 网关类型，只有 ESB 才能被设置为 SUPER_OFFICIAL_API 网关，网关会将所有请求参数透传给其后端服务
@@ -112,14 +142,14 @@ class GatewayHandler:
             new_config["unfiltered_sensitive_keys"] = unfiltered_sensitive_keys
 
         if not new_config:
-            return
+            return None
 
         current_config = GatewayHandler().get_current_gateway_auth_config(gateway_id)
 
         # 因用户配置为 dict，参数 user_conf 仅传递了部分用户配置，因此需合并当前配置与传入配置
         api_auth_config = APIAuthConfig.parse_obj(deep_update(current_config, new_config))
 
-        return APIAuthContext().save(gateway_id, api_auth_config.config)
+        return GatewayAuthContext().save(gateway_id, api_auth_config.config)
 
     @staticmethod
     def save_related_data(
@@ -129,10 +159,10 @@ class GatewayHandler:
         related_app_code: Optional[str] = None,
         user_config: Optional[dict] = None,
         unfiltered_sensitive_keys: Optional[List[str]] = None,
-        api_type: Optional[APITypeEnum] = None,
+        api_type: Optional[GatewayTypeEnum] = None,
     ):
-        # 1. save api auth_config
-        GatewayHandler().save_auth_config(
+        # 1. save gateway auth_config
+        GatewayHandler.save_auth_config(
             gateway.id,
             user_auth_type=user_auth_type,
             user_conf=user_config,
@@ -142,7 +172,7 @@ class GatewayHandler:
 
         # 2. save jwt
 
-        JWT.objects.create_jwt(gateway)
+        GatewayJWTHandler.create_jwt(gateway)
 
         # 3. create default stage
 
@@ -154,15 +184,21 @@ class GatewayHandler:
 
         # 5. create related app
         if related_app_code:
+            GatewayRelatedAppHandler.add_related_app(gateway.id, related_app_code)
 
-            APIRelatedApp.objects.create(api=gateway, bk_app_code=related_app_code)
+        # 6. 在权限中心注册分级管理员，创建用户组
+        if settings.USE_BK_IAM_PERMISSION:
+            IAMHandler.register_grade_manager_and_builtin_user_groups(gateway)
 
     @staticmethod
     def delete_gateway(gateway_id: int):
-        # 1. delete api context
+        # 0. 删除权限中心中网关的分级管理员和用户组
+        IAMHandler.delete_grade_manager_and_builtin_user_groups(gateway_id)
+
+        # 1. delete gateway context
 
         Context.objects.delete_by_scope_ids(
-            scope_type=ContextScopeTypeEnum.API.value,
+            scope_type=ContextScopeTypeEnum.GATEWAY.value,
             scope_ids=[gateway_id],
         )
 
@@ -170,21 +206,20 @@ class GatewayHandler:
 
         Release.objects.delete_by_gateway_id(gateway_id)
 
+        # delete backend config
+        BackendConfig.objects.filter(gateway_id=gateway_id).delete()
+
         # 3. delete stage
 
-        StageHandler().delete_by_gateway_id(gateway_id)
+        StageHandler.delete_by_gateway_id(gateway_id)
 
         # 4. delete resource
 
-        ResourceHandler().delete_by_gateway_id(gateway_id)
+        ResourceHandler.delete_by_gateway_id(gateway_id)
 
         # 5. delete resource-version
 
-        ResourceVersionHandler().delete_by_gateway_id(gateway_id)
-
-        # 6. delete access_strategy
-
-        AccessStrategy.objects.delete_by_gateway_id(gateway_id)
+        ResourceVersionHandler.delete_by_gateway_id(gateway_id)
 
         # plugin bindings
 
@@ -194,31 +229,63 @@ class GatewayHandler:
 
         SslCertificate.objects.delete_by_gateway_id(gateway_id)
 
-        # delete api
+        # delete backend
+
+        Backend.objects.filter(gateway_id=gateway_id).delete()
+
+        # delete gateway
         Gateway.objects.filter(id=gateway_id).delete()
 
     @staticmethod
-    def add_create_audit_log(gateway: Gateway, username: str):
+    def record_audit_log_success(
+        username: str, gateway_id: int, op_type: OpTypeEnum, instance_id: int, instance_name: str
+    ):
+        comment = {
+            OpTypeEnum.CREATE: _("创建网关"),
+            OpTypeEnum.MODIFY: _("更新网关"),
+            OpTypeEnum.DELETE: _("删除网关"),
+        }.get(op_type, "-")
+
         record_audit_log(
             username=username,
-            op_type=OpTypeEnum.CREATE.value,
+            op_type=op_type.value,
             op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway.id,
-            op_object_type=OpObjectTypeEnum.API.value,
-            op_object_id=gateway.id,
-            op_object=gateway.name,
-            comment=_("创建网关"),
+            op_object_group=gateway_id,
+            op_object_type=OpObjectTypeEnum.GATEWAY.value,
+            op_object_id=instance_id,
+            op_object=instance_name,
+            comment=comment,
         )
 
     @staticmethod
-    def add_update_audit_log(gateway: Gateway, username: str):
-        record_audit_log(
-            username=username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway.id,
-            op_object_type=OpObjectTypeEnum.API.value,
-            op_object_id=gateway.id,
-            op_object=gateway.name,
-            comment=_("更新网关"),
+    def get_feature_flags(gateway_id: int) -> Dict[str, bool]:
+        feature_flags = copy.deepcopy(settings.GLOBAL_GATEWAY_FEATURE_FLAG)
+        feature_flags.update(GatewayFeatureFlagContext().get_config(gateway_id, {}))
+        return feature_flags
+
+    @staticmethod
+    def get_docs_url(gateway: Gateway) -> str:
+        # 如果无可展示的资源文档，则不提供文档地址
+        if ReleasedResourceDoc.objects.filter(gateway=gateway).exists():
+            return settings.API_DOCS_URL_TMPL.format(api_name=gateway.name)
+        return ""
+
+    @staticmethod
+    def get_api_domain(gateway: Gateway) -> str:
+        return settings.BK_API_URL_TMPL.format(api_name=gateway.name)
+
+    @staticmethod
+    def get_resource_count(gateway_ids: List[int]) -> Dict[int, int]:
+        """获取网关资源数量"""
+        resource_count = (
+            Resource.objects.filter(gateway_id__in=gateway_ids)
+            .values("gateway_id")
+            .annotate(count=Count("gateway_id"))
+        )
+        return {i["gateway_id"]: i["count"] for i in resource_count}
+
+    @staticmethod
+    def get_max_resource_count(gateway_name: str):
+        return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
+            gateway_name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
         )

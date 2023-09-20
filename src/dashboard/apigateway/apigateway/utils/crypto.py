@@ -19,9 +19,9 @@
 import base64
 import hashlib
 import itertools
+from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
-from attrs import define
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
@@ -82,13 +82,13 @@ class KeyValidator:
             raise RSAKeyValidationError("public key not match")
 
 
-@define(slots=False)
+@dataclass
 class CertificateChecker:
     key: str
     cert: str
     ca_cert: Optional[str] = None
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         self._x509_cert = self._load_pem_x509_certificate(self.cert, name="cert")
         self._x509_ca_cert = self._load_pem_x509_certificate(self.ca_cert, name="ca_cert")
 
@@ -150,7 +150,7 @@ class CertificateChecker:
             self._extract_alternative_names(),
         ):
             if name not in snis:
-                snis.append(name)
+                snis.append(name)  # ruff: noqa: PERF401
 
         return snis
 

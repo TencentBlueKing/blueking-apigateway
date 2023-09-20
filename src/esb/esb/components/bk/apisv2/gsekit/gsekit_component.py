@@ -20,7 +20,6 @@ import re
 
 from common.constants import API_TYPE_OP
 from components.component import ConfComponent
-
 from .toolkit import configs
 
 

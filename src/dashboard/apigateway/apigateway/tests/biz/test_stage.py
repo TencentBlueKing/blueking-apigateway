@@ -32,10 +32,10 @@ class TestStageHandler:
     def test_get_id_to_micro_gateway_id(self):
         gateway = G(Gateway)
 
-        micro_gateway = G(MicroGateway, api=gateway)
+        micro_gateway = G(MicroGateway, gateway=gateway)
 
-        s1 = G(Stage, api=gateway)
-        s2 = G(Stage, api=gateway, micro_gateway=micro_gateway)
+        s1 = G(Stage, gateway=gateway)
+        s2 = G(Stage, gateway=gateway, micro_gateway=micro_gateway)
 
         result = StageHandler().get_id_to_micro_gateway_id(gateway.id)
         assert result == {
@@ -46,10 +46,10 @@ class TestStageHandler:
     def test_get_id_to_micro_gateway_fields(self):
         gateway = G(Gateway)
 
-        micro_gateway = G(MicroGateway, api=gateway)
+        micro_gateway = G(MicroGateway, gateway=gateway)
 
-        s1 = G(Stage, api=gateway)
-        s2 = G(Stage, api=gateway, micro_gateway=micro_gateway)
+        s1 = G(Stage, gateway=gateway)
+        s2 = G(Stage, gateway=gateway, micro_gateway=micro_gateway)
 
         result = StageHandler().get_id_to_micro_gateway_fields(gateway.id)
         assert result == {
@@ -61,3 +61,25 @@ class TestStageHandler:
         }
 
     pass
+
+    @pytest.mark.parametrize(
+        "stage_names, expected, will_error",
+        [
+            ([], [1, 2], False),
+            (["prod"], [1], False),
+            (["stag"], None, True),
+        ],
+    )
+    def test_get_stage_ids(self, mocker, fake_request, fake_gateway, stage_names, expected, will_error):
+        mocker.patch(
+            "apigateway.biz.stage.Stage.objects.get_name_id_map",
+            return_value={"prod": 1, "test": 2},
+        )
+
+        if will_error:
+            with pytest.raises(Exception):
+                StageHandler.get_stage_ids(fake_gateway, stage_names)
+            return
+
+        result = StageHandler.get_stage_ids(fake_gateway, stage_names)
+        assert expected == sorted(result)

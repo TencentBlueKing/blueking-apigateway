@@ -16,51 +16,45 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
-from ddf import G
-
-from apigateway.apis.open.resource import views
-from apigateway.core.models import Resource
-from apigateway.tests.utils.testing import get_response_json
-
-pytestmark = pytest.mark.django_db
 
 
-class TestResourceSyncV1ViewSet:
-    def test_sync(self, request_factory, fake_gateway, mocker):
-        r1 = G(Resource, api=fake_gateway)
-        r2 = G(Resource, api=fake_gateway)
-
+class TestResourceSyncApi:
+    def test_sync(self, request_view, fake_gateway, mocker, fake_resource_swagger, ignore_related_app_permission):
         mocker.patch(
-            "apigateway.apis.open.resource.views.GatewayRelatedAppPermission.has_permission",
-            return_value=True,
-        )
-
-        mocker.patch(
-            "apigateway.apis.open.resource.views.ResourcesImporter",
+            "apigateway.apis.open.resource.views.ResourcesImporter.from_resources",
             return_value=mocker.MagicMock(
-                load_import_resources_by_swagger=mocker.MagicMock(return_value=None),
-                import_resources=mocker.MagicMock(return_value=None),
-                allow_overwrite=True,
-                imported_resources=[
-                    {"id": 1, "_is_created": True},
-                    {"id": r1.id, "_is_updated": True},
-                ],
-                get_deleted_resources=mocker.MagicMock(return_value=[{"id": r2.id}]),
+                get_selected_resource_data_list=mocker.MagicMock(
+                    return_value=[
+                        mocker.MagicMock(
+                            resource=mocker.MagicMock(id=1),
+                            metadata={"is_created": True},
+                        ),
+                        mocker.MagicMock(
+                            resource=mocker.MagicMock(id=2),
+                            metadata={"is_created": False},
+                        ),
+                    ]
+                ),
+                get_deleted_resources=mocker.MagicMock(return_value=[{"id": 3}]),
             ),
         )
 
-        request = request_factory.post("", data={"content": "test", "delete": True})
-        request.gateway = fake_gateway
-        request.user = mocker.MagicMock(username="admin")
+        resp = request_view(
+            method="POST",
+            view_name="openapi.resource.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "content": fake_resource_swagger,
+                "delete": True,
+            },
+            gateway=fake_gateway,
+        )
+        result = resp.json()
 
-        view = views.ResourceSyncV1ViewSet.as_view({"post": "sync"})
-        response = view(request, gateway_name=fake_gateway.name)
-        result = get_response_json(response)
-
-        assert result["code"] == 0, result
+        assert resp.status_code == 200
+        assert result["code"] == 0
         assert result["data"] == {
             "added": [{"id": 1}],
-            "updated": [{"id": r1.id}],
-            "deleted": [{"id": r2.id}],
+            "updated": [{"id": 2}],
+            "deleted": [{"id": 3}],
         }

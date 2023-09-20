@@ -16,9 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, Dict, List
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Tuple
 
-from attrs import define, field
 from bkapi.bcs_api_gateway.client import Client as BcsApiGatewayClient
 
 from apigateway.components.bcs import get_bcs_api_gateway_client
@@ -30,7 +30,7 @@ from apigateway.utils.yaml import yaml_dumps
 logger = logging.getLogger(__name__)
 
 
-@define(slots=False)
+@dataclass
 class ReleaseInfo:
     name: str
     namespace: str
@@ -53,12 +53,12 @@ class ReleaseInfo:
         )
 
 
-@define(slots=False)
+@dataclass
 class ReleaseHelper:
-    client: BcsApiGatewayClient = field(factory=get_bcs_api_gateway_client)
+    client: BcsApiGatewayClient = field(default_factory=get_bcs_api_gateway_client)
     access_token: str = ""
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         if self.access_token and self.access_token != "":
             self.client.update_bkapi_authorization(access_token=self.access_token)
 
@@ -218,7 +218,7 @@ class ReleaseHelper:
         namespace: str,
         values: dict,
         operator: str,
-    ) -> ReleaseInfo:
+    ) -> Tuple[bool, ReleaseInfo]:
         """Ensure release upgrade with the given parameters."""
 
         try:
@@ -228,7 +228,7 @@ class ReleaseHelper:
             found = False
 
         if found:
-            return self.upgrade_release(
+            return True, self.upgrade_release(
                 cluster_id=cluster_id,
                 project_id=project_id,
                 repository=repository,
@@ -240,7 +240,7 @@ class ReleaseHelper:
                 operator=operator,
             )
 
-        return self.install_release(
+        return False, self.install_release(
             cluster_id=cluster_id,
             project_id=project_id,
             repository=repository,

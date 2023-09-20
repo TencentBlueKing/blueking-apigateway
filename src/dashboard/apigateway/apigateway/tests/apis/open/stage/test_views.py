@@ -32,9 +32,9 @@ class TestStageViewSet:
         request = request_factory.get("/")
         request.gateway = fake_gateway
 
-        s1 = G(Stage, name="prod", api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
-        s2 = G(Stage, name="test", api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
-        G(Stage, name="stag", api=fake_gateway, status=StageStatusEnum.ACTIVE.value, is_public=False)
+        s1 = G(Stage, name="prod", gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        s2 = G(Stage, name="test", gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        G(Stage, name="stag", gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value, is_public=False)
 
         # have 2 active stages
         view = views.StageViewSet.as_view({"get": "list"})
@@ -42,6 +42,7 @@ class TestStageViewSet:
         result = get_response_json(response)
 
         assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == [
             {
                 "id": s1.id,
@@ -64,6 +65,7 @@ class TestStageViewSet:
         result = get_response_json(response)
 
         assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == [
             {
                 "id": s1.id,
@@ -76,7 +78,7 @@ class TestStageViewSet:
         request = request_factory.get("")
         request.gateway = fake_gateway
 
-        stage = G(Stage, name="prod", api=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        stage = G(Stage, name="prod", gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
 
         response = request_to_view(
             request, view_name="openapi.stage.list_by_gateway_name", path_params={"gateway_name": fake_gateway.name}
@@ -85,6 +87,7 @@ class TestStageViewSet:
         result = get_response_json(response)
 
         assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == [
             {
                 "id": stage.id,
@@ -97,9 +100,9 @@ class TestStageViewSet:
 class TestStageV1ViewSet:
     def list_stages_with_resource_version(self, request_to_view, request_factory, fake_release):
         request = request_factory.get("")
-        request.gateway = fake_release.api
+        request.gateway = fake_release.gateway
 
-        G(Stage, name="test", api=request.gateway, status=StageStatusEnum.ACTIVE.value)
+        G(Stage, name="test", gateway=request.gateway, status=StageStatusEnum.ACTIVE.value)
 
         response = request_to_view(
             request,
@@ -133,7 +136,12 @@ class TestStageSyncViewSet:
             return_value=True,
         )
 
-        api = G(Gateway, name=unique_gateway_name, is_public=False)
+        mocker.patch(
+            "apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.alter_plugin",
+            return_value=True,
+        )
+
+        gateway = G(Gateway, name=unique_gateway_name, is_public=False)
 
         request = request_factory.post(
             f"/api/v1/apis/{unique_gateway_name}/stages/sync/",
@@ -164,12 +172,12 @@ class TestStageSyncViewSet:
                 },
             },
         )
-        request.gateway = api
+        request.gateway = gateway
 
         view = views.StageSyncViewSet.as_view({"post": "sync"})
         response = view(request, gateway_name=unique_gateway_name)
 
         result = get_response_json(response)
-        stage = Stage.objects.get(api=api, name="prod")
+        stage = Stage.objects.get(gateway=gateway, name="prod")
         assert result["code"] == 0
         assert stage.status == 0

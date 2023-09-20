@@ -19,56 +19,21 @@
 import re
 from enum import Enum
 
-from blue_krill.data_types.enum import EnumField, FeatureFlag, FeatureFlagField, StructuredEnum
+from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
 
-from apigateway.common.constants import ChoiceEnumMixin
+
+class GatewayStatusEnum(StructuredEnum):
+    INACTIVE = EnumField(0, "已停用")
+    ACTIVE = EnumField(1, "启用中")
 
 
-class UserAuthTypeEnum(ChoiceEnumMixin, Enum):
-    IEOD = "ieod"
-    TENCENT = "tencent"
-    DEFAULT = "default"
-
-
-class APIStatusEnum(ChoiceEnumMixin, Enum):
-    INACTIVE = 0
-    ACTIVE = 1
-
-
+# TODO: delete it in 1.14
 class APIHostingTypeEnum(StructuredEnum):
     """网关托管类型，影响特性集"""
 
     DEFAULT = EnumField(0, "apigateway-ng")
     MICRO = EnumField(1, _("微网关"))
-
-
-class GatewayFeatureFlag(FeatureFlag):
-    """通用网关特性开关"""
-
-    ENABLE_I18N_SUPPORT = FeatureFlagField("ENABLE_I18N_SUPPORT", "是否启用国际化支持", False)
-
-
-class DefaultGatewayFeatureFlag(GatewayFeatureFlag):
-    """共享网关（普通网关）的特性集"""
-
-    MICRO_GATEWAY_ENABLED = FeatureFlagField("MICRO_GATEWAY_ENABLED", "微网关实例", False)
-    ACCESS_STRATEGY_ENABLED = FeatureFlagField("ACCESS_STRATEGY_ENABLED", "访问策略", True)
-    PLUGIN_ENABLED = FeatureFlagField("PLUGIN_ENABLED", "插件", False)
-    STAGE_RATE_LIMIT_ENABLED = FeatureFlagField("STAGE_RATE_LIMIT_ENABLED", "环境流量控制", True)
-    RESOURCE_DISABLE_STAGE_ENABLED = FeatureFlagField("RESOURCE_DISABLE_STAGE_ENABLED", "资源禁用环境", True)
-    RESOURCE_WITH_MOCK_ENABLED = FeatureFlagField("RESOURCE_WITH_MOCK_ENABLED", "资源后端类型为Mock", True)
-
-
-class MicroGatewayFeatureFlag(GatewayFeatureFlag):
-    """专享网关（微网关）的特性集"""
-
-    MICRO_GATEWAY_ENABLED = FeatureFlagField("MICRO_GATEWAY_ENABLED", "微网关实例", True)
-    ACCESS_STRATEGY_ENABLED = FeatureFlagField("ACCESS_STRATEGY_ENABLED", "访问策略", True)
-    PLUGIN_ENABLED = FeatureFlagField("PLUGIN_ENABLED", "插件", True)
-    STAGE_RATE_LIMIT_ENABLED = FeatureFlagField("STAGE_RATE_LIMIT_ENABLED", "环境流量控制", False)
-    RESOURCE_DISABLE_STAGE_ENABLED = FeatureFlagField("RESOURCE_DISABLE_STAGE_ENABLED", "资源禁用环境", False)
-    RESOURCE_WITH_MOCK_ENABLED = FeatureFlagField("RESOURCE_WITH_MOCK_ENABLED", "资源后端类型为Mock", True)
 
 
 class MicroGatewayStatusEnum(StructuredEnum):
@@ -98,42 +63,10 @@ class BackendConfigTypeEnum(StructuredEnum):
     EXISTED = EnumField("existed", _("已存在的后端服务"))
 
 
-class StageItemTypeEnum(StructuredEnum):
-    """环境配置项类型"""
-
-    NODE = EnumField(BackendUpstreamTypeEnum.NODE.value, _("节点"))
-    SERVICE_DISCOVERY = EnumField(BackendUpstreamTypeEnum.SERVICE_DISCOVERY.value, _("服务发现注册中心"))
-
-
-class StageItemConfigStatusEnum(StructuredEnum):
-    """环境配置项状态"""
-
-    CONFIGURED = EnumField("configured", _("已配置"))
-    NOT_CONFIGURED = EnumField("not_configured", _("待配置"))
-
-
 class ServiceDiscoveryTypeEnum(StructuredEnum):
     """服务发现注册中心类型"""
 
     GO_MICRO_ETCD = EnumField("go_micro_etcd", "Go Micro - Etcd")
-
-
-class PassHostEnum(StructuredEnum):
-    """请求发给上游时的 host 设置选型"""
-
-    PASS = EnumField("pass", _("保持与客户端请求一致的主机名"))
-    NODE = EnumField("node", _("使用目标节点列表中的主机名或 IP"))
-    REWRITE = EnumField("rewrite", _("自定义 Host 请求头"))
-
-
-class SchemeEnum(StructuredEnum):
-    """与后端服务通信时使用的 scheme"""
-
-    # 7 层代理
-    HTTP = EnumField("http", "HTTP")
-    HTTPS = EnumField("https", "HTTPs")
-    GRPC = EnumField("grpc", "gRPC")
-    GRPCS = EnumField("grpcs", "gRPCs")
 
 
 class EtcdSecureTypeEnum(StructuredEnum):
@@ -158,35 +91,119 @@ class SSLCertificateBindingScopeTypeEnum(StructuredEnum):
     BACKEND_SERVICE_DISCOVERY_CONFIG = EnumField("backend_service_discovery_config", _("后端服务发现配置"))
 
 
-class APITypeEnum(ChoiceEnumMixin, Enum):
-    # 超级官方API
-    SUPER_OFFICIAL_API = 0
-    # 官方云API
-    OFFICIAL_API = 1
-    # 云API
-    CLOUDS_API = 10
+class GatewayTypeEnum(StructuredEnum):
+    SUPER_OFFICIAL_API = EnumField(0, "超级官方API")
+    OFFICIAL_API = EnumField(1, "官方云API")
+    CLOUDS_API = EnumField(10, "云API")
+
+
+class StageStatusEnum(StructuredEnum):
+    INACTIVE = EnumField(0, "INACTIVE")
+    ACTIVE = EnumField(1, "ACTIVE")
+
+
+class ReleaseStatusEnum(StructuredEnum):
+    SUCCESS = EnumField("success")  # 发布成功
+    FAILURE = EnumField("failure")  # 发布失败
+    PENDING = EnumField("pending")  # 待发布
+    RELEASING = EnumField("releasing")  # 发布中
+    UNRELEASED = EnumField("unreleased")  # 未发布
+
+
+class PublishEventEnum(StructuredEnum):
+    # dashboard
+    VALIDATE_CONFIGURATION = EnumField("validata_configuration", "validate configuration")
+    GENERATE_TASK = EnumField("generate_release_task", "generate release task")
+    DISTRIBUTE_CONFIGURATION = EnumField("distribute_configuration", "distribute configuration")
+    # operator
+    PARSE_CONFIGURATION = EnumField("parse_configuration", "parse configuration")
+    APPLY_CONFIGURATION = EnumField("apply_configuration", "apply configuration")
+    # apisix
+    LOAD_CONFIGURATION = EnumField("load_configuration", "load configuration")
+
+
+# 因为 get_event_step 依赖字段顺序，所以继承 Enum，以便于 get_event_step 获取 step
+class PublishEventNameTypeEnum(Enum):
+    VALIDATE_CONFIGURATION = PublishEventEnum.VALIDATE_CONFIGURATION.value
+    GENERATE_TASK = PublishEventEnum.GENERATE_TASK.value
+    DISTRIBUTE_CONFIGURATION = PublishEventEnum.DISTRIBUTE_CONFIGURATION.value
+    PARSE_CONFIGURATION = PublishEventEnum.PARSE_CONFIGURATION.value
+    APPLY_CONFIGURATION = PublishEventEnum.APPLY_CONFIGURATION.value
+    LOAD_CONFIGURATION = PublishEventEnum.LOAD_CONFIGURATION.value
 
     @classmethod
-    def is_official(cls, value: int) -> bool:
-        return value in [cls.SUPER_OFFICIAL_API.value, cls.OFFICIAL_API.value]
-
-    @property
-    def sort_key(self):
-        if self._value_ in [self.SUPER_OFFICIAL_API.value, self.OFFICIAL_API.value]:
-            return "a"
-        return "b"
+    def get_event_step(cls, name: str) -> int:
+        # 获取事件所属的step，如：name="load configuration"==>5
+        return [i.value for i in cls].index(name)
 
 
-class StageStatusEnum(ChoiceEnumMixin, Enum):
-    INACTIVE = 0
-    ACTIVE = 1
+class PublishEventStatusEnum(StructuredEnum):
+    SUCCESS = EnumField("success", "success")  # 执行成功
+    FAILURE = EnumField("failure", "failure")  # 执行失败
+    PENDING = EnumField("pending", "pending")  # 待执行
+    DOING = EnumField("doing", "doing")  # 执行中
 
 
-class ReleaseStatusEnum(ChoiceEnumMixin, Enum):
-    SUCCESS = "success"  # 发布成功
-    FAILURE = "failure"  # 发布失败
-    PENDING = "pending"  # 待发布
-    RELEASING = "releasing"  # 发布中
+class PublishEventStatusTypeEnum(StructuredEnum):
+    SUCCESS = EnumField(PublishEventStatusEnum.SUCCESS.value)
+    FAILURE = EnumField(PublishEventStatusEnum.FAILURE.value)
+    PENDING = EnumField(PublishEventStatusEnum.PENDING.value)
+    DOING = EnumField(PublishEventStatusEnum.DOING.value)
+
+
+class PublishSourceEnum(StructuredEnum):
+    # gateway
+    GATEWAY_ENABLE = EnumField("gateway_enable", "网关启用")
+    GATEWAY_DISABLE = EnumField("gateway_disable", "网关停用")
+
+    # version
+    VERSION_PUBLISH = EnumField("version_publish", "版本发布")
+
+    # plugin
+    PLUGIN_BIND = EnumField("plugin_bind", "插件绑定")
+    PLUGIN_UPDATE = EnumField("plugin_update", "插件更新")
+    PLUGIN_UNBIND = EnumField("plugin_unbind", "插件解绑")
+
+    # stage
+    STAGE_DISABLE = EnumField("stage_disable", "环境下架")
+    STAGE_DELETE = EnumField("stage_delete", "环境删除")
+    STAGE_UPDATE = EnumField("stage_update", "环境更新")
+
+    # backend
+    BACKEND_UPDATE = EnumField("backend_update", "服务更新")
+
+    # cli
+    CLI_SYNC = EnumField("cli_sync", "命令行同步")
+
+
+# 触发发布类型
+class TriggerPublishTypeEnum(StructuredEnum):
+    TRIGGER_ROLLING_UPDATE_RELEASE = EnumField("trigger_rolling_update_release", "滚动更新发布")
+    TRIGGER_REVOKE_DISABLE_RELEASE = EnumField("trigger_revoke_disable_release", "停用/下架发布")
+    TRIGGER_REVOKE_DELETE_RELEASE = EnumField("trigger_revoke_delete_release", "删除发布")
+
+
+#  不同发布来源对应不同的触发发布类型
+PublishSourceTriggerPublishTypeMapping = {
+    # 滚动更新发布
+    PublishSourceEnum.GATEWAY_ENABLE: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.STAGE_UPDATE: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.PLUGIN_UPDATE: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.PLUGIN_BIND: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.PLUGIN_UNBIND: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.BACKEND_UPDATE: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    PublishSourceEnum.CLI_SYNC: TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE,
+    # 停用/下架发布
+    PublishSourceEnum.GATEWAY_DISABLE: TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE,
+    PublishSourceEnum.STAGE_DISABLE: TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE,
+    # 删除发布
+    PublishSourceEnum.STAGE_DELETE: TriggerPublishTypeEnum.TRIGGER_REVOKE_DELETE_RELEASE,
+}
+
+
+class ResourceVersionSchemaEnum(StructuredEnum):
+    V1 = EnumField("1.0", "旧模型版本")
+    V2 = EnumField("2.0", "新模型版本")
 
 
 class ProxyTypeEnum(StructuredEnum):
@@ -195,23 +212,23 @@ class ProxyTypeEnum(StructuredEnum):
 
 
 class ScopeTypeEnum(StructuredEnum):
-    API = EnumField("api", _("网关"))
+    GATEWAY = EnumField("api", _("网关"))
     STAGE = EnumField("stage", _("环境"))
     RESOURCE = EnumField("resource", _("资源"))
 
 
-class ContextScopeTypeEnum(ChoiceEnumMixin, Enum):
-    API = ScopeTypeEnum.API.value
-    STAGE = ScopeTypeEnum.STAGE.value
-    RESOURCE = ScopeTypeEnum.RESOURCE.value
+class ContextScopeTypeEnum(StructuredEnum):
+    GATEWAY = EnumField(ScopeTypeEnum.GATEWAY.value)
+    STAGE = EnumField(ScopeTypeEnum.STAGE.value)
+    RESOURCE = EnumField(ScopeTypeEnum.RESOURCE.value)
 
 
-class ContextTypeEnum(ChoiceEnumMixin, Enum):
-    API_AUTH = "api_auth"
-    RESOURCE_AUTH = "resource_auth"
-    STAGE_PROXY_HTTP = "stage_proxy_http"
-    STAGE_RATE_LIMIT = "stage_rate_limit"
-    API_FEATURE_FLAG = "api_feature_flag"
+class ContextTypeEnum(StructuredEnum):
+    GATEWAY_AUTH = EnumField("api_auth")
+    RESOURCE_AUTH = EnumField("resource_auth")
+    STAGE_PROXY_HTTP = EnumField("stage_proxy_http")
+    STAGE_RATE_LIMIT = EnumField("stage_rate_limit")
+    GATEWAY_FEATURE_FLAG = EnumField("api_feature_flag")
 
 
 class LoadBalanceTypeEnum(StructuredEnum):
@@ -235,112 +252,30 @@ RESOURCE_METHOD_CHOICES = HTTP_METHOD_CHOICES + [
 ]
 
 
-# 资源导出 Swagger 配置中的扩展字段名
-class SwaggerExtensionEnum(ChoiceEnumMixin, Enum):
-    METHOD_ANY = "x-bk-apigateway-method-any"
-    RESOURCE = "x-bk-apigateway-resource"
-
-
-VALID_METHOD_IN_SWAGGER_PATHITEM = [
-    "get",
-    "put",
-    "post",
-    "delete",
-    "options",
-    "head",
-    "patch",
-    SwaggerExtensionEnum.METHOD_ANY.value,
-]
-
-
-class ExportTypeEnum(ChoiceEnumMixin, Enum):
-    # 全部资源
-    ALL = "all"
-    # 已筛选资源
-    FILTERED = "filtered"
-    # 已选资源
-    SELECTED = "selected"
-
-
-class SwaggerFormatEnum(StructuredEnum):
-    YAML = EnumField("yaml", label="YAML")
-    JSON = EnumField("json", label="JSON")
-
-
-# 每个资源允许关联的最大标签个数
-MAX_LABEL_COUNT_PER_RESOURCE = 10
+class BackendTypeEnum(StructuredEnum):
+    HTTP = EnumField("http", label="HTTP")
+    GRPC = EnumField("grpc", label="GRPC")
 
 
 DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100
-
-# 网关名
-API_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
+DEFAULT_BACKEND_NAME = "default"
 
 # Stage
 STAGE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,19}$")
-STAGE_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,49}$")
 STAGE_VAR_REFERENCE_PATTERN = re.compile(r"env\.([a-zA-Z][a-zA-Z0-9_]{0,49})")
 STAGE_VAR_PATTERN = re.compile(r"\{%s\}" % STAGE_VAR_REFERENCE_PATTERN.pattern)
-STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")
 # 为降低正则表达式复杂度，此 IPV6 正则并不完全准确，且作为访问地址，其应放在中括号中，例如：[2001:db8:3333:4444:5555:6666:7777:8888]:8000
 DOMAIN_WITH_IPV6_PATTERN = re.compile(r"^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$")
-DOMAIN_WITH_HTTP_AND_IPV6_PATTERN = re.compile(
-    r"^http(s)?:\/\/\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?\/?$"
-)
 # 不带 scheme 的服务地址
 HOST_WITHOUT_SCHEME_PATTERN = re.compile(
     r"^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$"
     + "|"
     + DOMAIN_WITH_IPV6_PATTERN.pattern
 )
-STAGE_ITEM_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{0,49}$")
 
-# 路径变量正则
-PATH_PATTERN = re.compile(r"^/[\w{}/.-]*$")
-PATH_VAR_PATTERN = re.compile(r"\{(.*?)\}")
-# 通常的路径变量，如 {project_id}
-NORMAL_PATH_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,29}$")
-# 环境中包含环境变量，如 {env.prefix}
-STAGE_PATH_VAR_NAME_PATTERN = re.compile(r"^%s$" % STAGE_VAR_REFERENCE_PATTERN.pattern)
-
-# 资源正则
-RESOURCE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,255}$")
 # 资源路径转换为名称正则
 PATH_TO_NAME_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 
-DOMAIN_PATTERN = re.compile(
-    r"^(?=^.{3,255}$)http(s)?:\/\/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?\/?$"
-    + "|"
-    + DOMAIN_WITH_HTTP_AND_IPV6_PATTERN.pattern
-)
-RESOURCE_DOMAIN_PATTERN = re.compile(
-    r"%s|%s|^http(s)?:\/\/\{%s\}$"
-    % (DOMAIN_PATTERN.pattern, DOMAIN_WITH_HTTP_AND_IPV6_PATTERN.pattern, STAGE_VAR_REFERENCE_PATTERN.pattern)
-)
-
-HEADER_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9-]{1,100}$")
-
-# Semver
-SEMVER_PATTERN = re.compile(
-    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
-    r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-)
-
-# bk app code
-APP_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
-
 # Micro gateway
 MICRO_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,19}$")
-
-# 后端服务名称
-BACKEND_SERVICE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
-
-# 单位为秒的持续时间
-DURATION_IN_SECOND_PATTERN = re.compile(r"^(\d+)s$")
-
-# 超时时间设置
-MAX_BACKEND_TIMEOUT_IN_SECOND = 600
-MAX_CONNECT_TIMEOUT_IN_SECOND = 600
-MAX_SEND_TIMEOUT_IN_SECOND = 600
-MAX_READ_TIMEOUT_IN_SECOND = 600

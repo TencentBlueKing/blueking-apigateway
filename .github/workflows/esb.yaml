@@ -1,0 +1,40 @@
+name: esb ci
+
+on:
+  push:
+    branches: [ master, pre_*, ft_*, release/* ]
+    paths: ['src/esb/**']
+  pull_request:
+    branches: [ master, pre_*, ft_*, release/* ]
+    paths: ['src/esb/**']
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.7"]
+        # reference: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
+        os: [ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+        cache-dependency-path: 'src/esb/esb/requirements_dev.txt'
+
+    - name: Install dependencies
+      run: pip install -r src/esb/esb/requirements_dev.txt -i https://pypi.org/simple/
+
+    - name: Lint
+      run: make lint
+      working-directory: src/esb
+
+    - name: Test
+      run: make test
+      working-directory: src/esb

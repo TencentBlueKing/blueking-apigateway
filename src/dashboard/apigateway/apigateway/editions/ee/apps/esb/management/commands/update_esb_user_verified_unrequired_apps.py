@@ -57,5 +57,5 @@ class Command(BaseCommand):
         wlist.update(re.findall(r"[^,;]+", obj.wlist))
         wlist.update(bk_app_codes)
 
-        obj.wlist = ",".join(sorted(list(wlist)))
+        obj.wlist = ",".join(sorted(wlist))
         obj.save(update_fields=["wlist"])

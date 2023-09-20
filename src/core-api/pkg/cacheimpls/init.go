@@ -38,7 +38,6 @@ func newRandomDuration(seconds int) backend.RandomExtraExpirationDurationFunc {
 // NOTE: 如果 retrieve* 失败, 会cache 5s, 避免对 db 的频繁操作(并且有singleflight, 保证只有一个请求会去 db 拉数据)
 
 var (
-
 	// NOTE: 以下几个cache, 业务逻辑侧会保证 id/name -> obj 是确定的不会变的
 
 	// instance_id => micro_gateway, will never change
@@ -46,7 +45,7 @@ var (
 	microGatewayCache = memory.NewCache(
 		"micro_gateway",
 		DisableCache,
-		retrieveMicroGateway,
+		tracedFuncWrapper("micro_gateway", retrieveMicroGateway),
 		12*time.Hour,
 		newRandomDuration(30),
 	)
@@ -54,7 +53,7 @@ var (
 	microGatewayCredentialsCache = memory.NewCache(
 		"micro_gateway_credentials",
 		DisableCache,
-		retrieveAndVerifyMicroGatewayCredentials,
+		tracedFuncWrapper("micro_gateway_credentials", retrieveAndVerifyMicroGatewayCredentials),
 		1*time.Minute,
 		newRandomDuration(10),
 	)
@@ -63,7 +62,7 @@ var (
 	gatewayCache = memory.NewCache(
 		"gateway",
 		DisableCache,
-		retrieveGatewayByName,
+		tracedFuncWrapper("gateway", retrieveGatewayByName),
 		12*time.Hour,
 		newRandomDuration(30),
 	)
@@ -72,7 +71,7 @@ var (
 	jwtPublicKeyCache = memory.NewCache(
 		"jwt_public_key",
 		DisableCache,
-		retrieveJWTPublicKey,
+		tracedFuncWrapper("jwt_public_key", retrieveJWTPublicKey),
 		12*time.Hour,
 		newRandomDuration(30),
 	)
@@ -81,7 +80,7 @@ var (
 	resourceVersionMappingCache = memory.NewCache(
 		"resource_version_mapping",
 		DisableCache,
-		retrieveResourceVersionMapping,
+		tracedFuncWrapper("resource_version_mapping", retrieveResourceVersionMapping),
 		12*time.Hour,
 		newRandomDuration(30),
 	)
@@ -126,7 +125,7 @@ var (
 	stageCache = memory.NewCache(
 		"stage",
 		DisableCache,
-		retrieveStageByGatewayIDStageName,
+		tracedFuncWrapper("stage", retrieveStageByGatewayIDStageName),
 		5*time.Minute,
 		newRandomDuration(30),
 	)
@@ -136,7 +135,15 @@ var (
 	releaseCache = memory.NewCache(
 		"release",
 		DisableCache,
-		retrieveStageByGatewayIDStageID,
+		tracedFuncWrapper("release", retrieveStageByGatewayIDStageID),
+		1*time.Minute,
+		newRandomDuration(10),
+	)
+
+	releaseHistoryCache = memory.NewCache(
+		"release_history",
+		DisableCache,
+		tracedFuncWrapper("release_history", retrieveReleaseHistory),
 		1*time.Minute,
 		newRandomDuration(10),
 	)
@@ -145,7 +152,7 @@ var (
 	appGatewayPermissionCache = memory.NewCache(
 		"app_gateway_permission",
 		DisableCache,
-		retrieveAppGatewayPermission,
+		tracedFuncWrapper("app_gateway_permission", retrieveAppGatewayPermission),
 		1*time.Minute,
 		newRandomDuration(10),
 	)
@@ -153,7 +160,7 @@ var (
 	appResourcePermissionCache = memory.NewCache(
 		"app_resource_permission",
 		DisableCache,
-		retrieveAppResourcePermission,
+		tracedFuncWrapper("app_resource_permission", retrieveAppResourcePermission),
 		1*time.Minute,
 		newRandomDuration(10),
 	)

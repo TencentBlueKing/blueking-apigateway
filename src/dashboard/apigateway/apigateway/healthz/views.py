@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -25,8 +24,6 @@ from django.http import HttpResponse
 from django.views.generic import View
 from requests.exceptions import HTTPError, RequestException
 
-from apigateway.apps.access_log.helpers import get_es_client_class
-from apigateway.common.error_codes import APIError
 from apigateway.utils.redis_utils import get_redis_pool
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
@@ -50,20 +47,19 @@ class HealthzView(View):
             self._check_settings,
             self._check_database,
             self._check_redis,
-            # self._check_external_dependency_url,
-            # self._check_bk_paasv3,
-            # self._check_elasticsearch,
         ]
 
         for checker in checkers:
             try:
                 checker()
             except CheckError as err:
-                return FailJsonResponse(f"Error: {err}")
+                return FailJsonResponse(status=500, code="UNKNOWN", messge=f"Error: {err}")
             except CheckWarning as err:
-                return OKJsonResponse(f"Warning: some checks fail and do not affect core functions. {err}")
+                return OKJsonResponse(
+                    data={"message": f"Warning: some checks fail and do not affect core functions. {err}"}
+                )
 
-        return OKJsonResponse("OK")
+        return OKJsonResponse()
 
     def _check_settings(self):
         """检查 django settings 配置"""
@@ -74,7 +70,6 @@ class HealthzView(View):
             "BK_APP_SECRET",
             "BK_PAAS3_API_URL",
             "BK_COMPONENT_API_URL",
-            # "BK_COMPONENT_API_INNER_URL",
         ]
         empty_keys = [key for key in not_allow_empty_keys if not getattr(settings, key, None)]
         if empty_keys:
@@ -100,21 +95,6 @@ class HealthzView(View):
             client.get(key)
         except Exception as err:
             raise CheckError(f"Redis check failed [{config['host']}:{config['port']}], error: {err}")
-
-    def _check_elasticsearch(self):
-        client_class = get_es_client_class()
-        client = client_class(
-            request_id="not-exist-request-id",
-            time_range=1,
-        )
-        try:
-            client.search_logs()
-        except APIError as err:
-            es_client_type = settings.ACCESS_LOG_CONFIG["es_client_type"]
-            raise CheckWarning(
-                "Query request api logs failed, please check the project log for more error details, "
-                f"client_type: {es_client_type}, error: {err.code.message}"
-            )
 
     def _check_external_dependency_url(self):
         url_keys = [

@@ -28,4 +28,4 @@ class Command(BaseCommand):
         step = "1d"
 
         handler = StatisticsHandler()
-        handler.stats(start.float_timestamp, end.float_timestamp, step)
+        handler.stats(start.int_timestamp, end.int_timestamp, step)

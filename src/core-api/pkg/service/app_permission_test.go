@@ -19,15 +19,16 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"time"
 
-	"core/pkg/cacheimpls"
-	"core/pkg/database/dao"
-
-	"github.com/agiledragon/gomonkey/v2"
+	gomonkey "github.com/agiledragon/gomonkey/v2"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/cacheimpls"
+	"core/pkg/database/dao"
 )
 
 var _ = Describe("AppPermissionService", func() {
@@ -68,12 +69,12 @@ var _ = Describe("AppPermissionService", func() {
 		It("getGatewayID fail", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetMicroGateway,
-				func(instanceID string) (dao.MicroGateway, error) {
+				func(ctx context.Context, instanceID string) (dao.MicroGateway, error) {
 					return dao.MicroGateway{}, errors.New("get GetMicroGateway fail")
 				},
 			)
 
-			_, err := getGatewayID(instanceID, gatewayName)
+			_, err := getGatewayID(context.Background(), instanceID, gatewayName)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "get GetMicroGateway fail")
 		})
@@ -81,14 +82,14 @@ var _ = Describe("AppPermissionService", func() {
 		It("getGatewayID ok, not shared", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetMicroGateway,
-				func(instanceID string) (dao.MicroGateway, error) {
+				func(ctx context.Context, instanceID string) (dao.MicroGateway, error) {
 					return dao.MicroGateway{
 						IsShared:  false,
 						GatewayID: 123,
 					}, nil
 				},
 			)
-			id, err := getGatewayID(instanceID, gatewayName)
+			id, err := getGatewayID(context.Background(), instanceID, gatewayName)
 			assert.NoError(GinkgoT(), err)
 			assert.Equal(GinkgoT(), int64(123), id)
 		})
@@ -96,7 +97,7 @@ var _ = Describe("AppPermissionService", func() {
 		It("getGatewayID ok, shared, GetGatewayByName fail", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetMicroGateway,
-				func(instanceID string) (dao.MicroGateway, error) {
+				func(ctx context.Context, instanceID string) (dao.MicroGateway, error) {
 					return dao.MicroGateway{
 						IsShared:  true,
 						GatewayID: 123,
@@ -106,12 +107,12 @@ var _ = Describe("AppPermissionService", func() {
 
 			patches.ApplyFunc(
 				cacheimpls.GetGatewayByName,
-				func(string) (dao.Gateway, error) {
+				func(context.Context, string) (dao.Gateway, error) {
 					return dao.Gateway{}, errors.New("get GetGatewayByName fail")
 				},
 			)
 
-			_, err := getGatewayID(instanceID, gatewayName)
+			_, err := getGatewayID(context.Background(), instanceID, gatewayName)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "get GetGatewayByName fail")
 		})
@@ -119,7 +120,7 @@ var _ = Describe("AppPermissionService", func() {
 		It("getGatewayID ok, shared, GetGatewayByName ok", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetMicroGateway,
-				func(instanceID string) (dao.MicroGateway, error) {
+				func(ctx context.Context, instanceID string) (dao.MicroGateway, error) {
 					return dao.MicroGateway{
 						IsShared:  true,
 						GatewayID: 123,
@@ -129,13 +130,13 @@ var _ = Describe("AppPermissionService", func() {
 
 			patches.ApplyFunc(
 				cacheimpls.GetGatewayByName,
-				func(string) (dao.Gateway, error) {
+				func(context.Context, string) (dao.Gateway, error) {
 					return dao.Gateway{
 						ID: 456,
 					}, nil
 				},
 			)
-			id, err := getGatewayID(instanceID, gatewayName)
+			id, err := getGatewayID(context.Background(), instanceID, gatewayName)
 			assert.NoError(GinkgoT(), err)
 			assert.Equal(GinkgoT(), int64(456), id)
 		})
@@ -158,12 +159,12 @@ var _ = Describe("AppPermissionService", func() {
 		It("GetStage fail", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetStage,
-				func(gatewayID int64, stageName string) (dao.Stage, error) {
+				func(ctx context.Context, gatewayID int64, stageName string) (dao.Stage, error) {
 					return dao.Stage{}, errors.New("get GetStage fail")
 				},
 			)
 
-			_, err := getStageID(gatewayID, stageName)
+			_, err := getStageID(context.Background(), gatewayID, stageName)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "get GetStage fail")
 		})
@@ -171,11 +172,11 @@ var _ = Describe("AppPermissionService", func() {
 		It("GetStage ok", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetStage,
-				func(gatewayID int64, stageName string) (dao.Stage, error) {
+				func(ctx context.Context, gatewayID int64, stageName string) (dao.Stage, error) {
 					return dao.Stage{ID: 1}, nil
 				},
 			)
-			id, err := getStageID(gatewayID, stageName)
+			id, err := getStageID(context.Background(), gatewayID, stageName)
 			assert.NoError(GinkgoT(), err)
 			assert.Equal(GinkgoT(), int64(1), id)
 		})
@@ -200,12 +201,12 @@ var _ = Describe("AppPermissionService", func() {
 		It("GetRelease fail", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetRelease,
-				func(int64, int64) (dao.Release, error) {
+				func(context.Context, int64, int64) (dao.Release, error) {
 					return dao.Release{}, errors.New("get GetRelease fail")
 				},
 			)
 
-			_, _, err := getResourceIDByName(gatewayID, stageID, resourceName)
+			_, _, err := getResourceIDByName(context.Background(), gatewayID, stageID, resourceName)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "get GetRelease fail")
 		})
@@ -213,7 +214,7 @@ var _ = Describe("AppPermissionService", func() {
 		It("GetRelease ok, GetResourceVersionMapping fail", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetRelease,
-				func(int64, int64) (dao.Release, error) {
+				func(context.Context, int64, int64) (dao.Release, error) {
 					return dao.Release{
 						ID:                1,
 						ResourceVersionID: 2,
@@ -223,12 +224,12 @@ var _ = Describe("AppPermissionService", func() {
 
 			patches.ApplyFunc(
 				cacheimpls.GetResourceVersionMapping,
-				func(int64) (map[string]int64, error) {
+				func(context.Context, int64) (map[string]int64, error) {
 					return nil, errors.New("get GetResourceVersionMapping fail")
 				},
 			)
 
-			_, _, err := getResourceIDByName(gatewayID, stageID, resourceName)
+			_, _, err := getResourceIDByName(context.Background(), gatewayID, stageID, resourceName)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "get GetResourceVersionMapping fail")
 		})
@@ -236,7 +237,7 @@ var _ = Describe("AppPermissionService", func() {
 		It("getGatewayID ok, shared, GetGatewayByName ok", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetRelease,
-				func(int64, int64) (dao.Release, error) {
+				func(context.Context, int64, int64) (dao.Release, error) {
 					return dao.Release{
 						ID:                1,
 						ResourceVersionID: 2,
@@ -246,14 +247,14 @@ var _ = Describe("AppPermissionService", func() {
 
 			patches.ApplyFunc(
 				cacheimpls.GetResourceVersionMapping,
-				func(int64) (map[string]int64, error) {
+				func(context.Context, int64) (map[string]int64, error) {
 					return map[string]int64{
 						resourceName: 456,
 					}, nil
 				},
 			)
 
-			resourceID, ok, err := getResourceIDByName(gatewayID, stageID, resourceName)
+			resourceID, ok, err := getResourceIDByName(context.Background(), gatewayID, stageID, resourceName)
 			assert.NoError(GinkgoT(), err)
 			assert.True(GinkgoT(), ok)
 			assert.Equal(GinkgoT(), int64(456), resourceID)
@@ -278,19 +279,19 @@ var _ = Describe("AppPermissionService", func() {
 
 			patches.ApplyFunc(
 				getGatewayID,
-				func(instanceID, gatewayName string) (int64, error) {
+				func(ctx context.Context, instanceID, gatewayName string) (int64, error) {
 					return gatewayID, nil
 				},
 			)
 			patches.ApplyFunc(
 				getStageID,
-				func(gatewayID int64, stageName string) (int64, error) {
+				func(ctx context.Context, gatewayID int64, stageName string) (int64, error) {
 					return stageID, nil
 				},
 			)
 			patches.ApplyFunc(
 				getResourceIDByName,
-				func(gatewayID, stageID int64, resourceName string) (int64, bool, error) {
+				func(ctx context.Context, gatewayID, stageID int64, resourceName string) (int64, bool, error) {
 					return resourceID, true, nil
 				},
 			)
@@ -303,13 +304,13 @@ var _ = Describe("AppPermissionService", func() {
 		It("GetAppGatewayPermissionExpiredAt fail", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetAppGatewayPermissionExpiredAt,
-				func(string, int64) (int64, error) {
+				func(context.Context, string, int64) (int64, error) {
 					return 0, errors.New("get GetAppGatewayPermissionExpiredAt fail")
 				},
 			)
 
 			svc := &appPermissionService{}
-			_, err := svc.Query(instanceID, gatewayName, stageName, resourceName, appCode)
+			_, err := svc.Query(context.Background(), instanceID, gatewayName, stageName, resourceName, appCode)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "get GetAppGatewayPermissionExpiredAt fail")
 		})
@@ -317,19 +318,19 @@ var _ = Describe("AppPermissionService", func() {
 		It("GetAppResourcePermissionExpiredAt fail", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetAppGatewayPermissionExpiredAt,
-				func(string, int64) (int64, error) {
+				func(context.Context, string, int64) (int64, error) {
 					return 123, nil
 				},
 			)
 			patches.ApplyFunc(
 				cacheimpls.GetAppResourcePermissionExpiredAt,
-				func(string, int64, int64) (int64, error) {
+				func(context.Context, string, int64, int64) (int64, error) {
 					return 0, errors.New("get GetAppResourcePermissionExpiredAt fail")
 				},
 			)
 
 			svc := &appPermissionService{}
-			_, err := svc.Query(instanceID, gatewayName, stageName, resourceName, appCode)
+			_, err := svc.Query(context.Background(), instanceID, gatewayName, stageName, resourceName, appCode)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "get GetAppResourcePermissionExpiredAt fail")
 		})
@@ -337,19 +338,26 @@ var _ = Describe("AppPermissionService", func() {
 		It("ok", func() {
 			patches.ApplyFunc(
 				cacheimpls.GetAppGatewayPermissionExpiredAt,
-				func(string, int64) (int64, error) {
+				func(context.Context, string, int64) (int64, error) {
 					return 123, nil
 				},
 			)
 			patches.ApplyFunc(
 				cacheimpls.GetAppResourcePermissionExpiredAt,
-				func(string, int64, int64) (int64, error) {
+				func(context.Context, string, int64, int64) (int64, error) {
 					return 456, nil
 				},
 			)
 
 			svc := &appPermissionService{}
-			permissions, err := svc.Query(instanceID, gatewayName, stageName, resourceName, appCode)
+			permissions, err := svc.Query(
+				context.Background(),
+				instanceID,
+				gatewayName,
+				stageName,
+				resourceName,
+				appCode,
+			)
 			assert.NoError(GinkgoT(), err)
 
 			assert.Equal(GinkgoT(), int64(123), permissions[gatewayName+":-:"+appCode])
@@ -360,19 +368,26 @@ var _ = Describe("AppPermissionService", func() {
 			expiredAt := time.Now().Unix() + 1000
 			patches.ApplyFunc(
 				cacheimpls.GetAppGatewayPermissionExpiredAt,
-				func(string, int64) (int64, error) {
+				func(context.Context, string, int64) (int64, error) {
 					return expiredAt, nil
 				},
 			)
 			patches.ApplyFunc(
 				cacheimpls.GetAppResourcePermissionExpiredAt,
-				func(string, int64, int64) (int64, error) {
+				func(context.Context, string, int64, int64) (int64, error) {
 					return 456, nil
 				},
 			)
 
 			svc := &appPermissionService{}
-			permissions, err := svc.Query(instanceID, gatewayName, stageName, resourceName, appCode)
+			permissions, err := svc.Query(
+				context.Background(),
+				instanceID,
+				gatewayName,
+				stageName,
+				resourceName,
+				appCode,
+			)
 			assert.NoError(GinkgoT(), err)
 
 			assert.Equal(GinkgoT(), expiredAt, permissions[gatewayName+":-:"+appCode])

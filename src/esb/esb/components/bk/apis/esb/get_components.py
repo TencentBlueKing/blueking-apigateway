@@ -26,7 +26,6 @@ from common.forms import BaseComponentForm
 from components.component import Component
 from esb.bkcore.constants import LegacyPermissionLevel
 from esb.bkcore.models import AppComponentPermission, ESBChannel, System
-
 from .toolkit import configs
 
 

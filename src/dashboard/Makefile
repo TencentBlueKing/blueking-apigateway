@@ -11,7 +11,9 @@ init:
 
 .PHONY: lint
 lint:
-	cd ../../ && pre-commit run --files src/dashboard
+	black --config=pyproject.toml .
+	ruff --config=pyproject.toml --force-exclude --fix .
+	mypy --config-file=pyproject.toml .
 
 
 # ====== dependencies ======
@@ -34,6 +36,16 @@ update: VERSION requirements
 
 .PHONY: test
 test:
+	cd apigateway && . apigateway/conf/unittest_env && pytest \
+		--ds apigateway.settings \
+		--reuse-db \
+		-n auto \
+		--dist loadscope \
+		apigateway/tests
+	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
+
+.PHONY: test-cov
+test-cov:
 	cd apigateway && . apigateway/conf/unittest_env && pytest \
 		--ds apigateway.settings \
 		--cov=. \
@@ -145,7 +157,7 @@ apigateway/fixtures/plugins.yaml: FORCE
 	cd apigateway && python manage.py dump_plugin_data -f apigateway/fixtures/plugins.yaml
 
 .PHONY: dump_fixtures
-dump_fixtures: apigateway/apigateway/fixtures/plugins.yaml
+dump_fixtures: apigateway/fixtures/plugins.yaml
 
 .PHONY: load_fixtures
 load_fixtures:

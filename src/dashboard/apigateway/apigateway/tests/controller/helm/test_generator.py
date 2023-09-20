@@ -285,8 +285,7 @@ spec: {$ context.deeply_mappings['model']['deeply'] | to_spec_yaml(prefix='.Valu
 
     @pytest.fixture
     def output_dir(self, tmpdir):
-        output_dir = tmpdir.mkdir("output")
-        return output_dir
+        return tmpdir.mkdir("output")
 
     @pytest.fixture(autouse=True)
     def make_generator(self, template_dir, output_dir, context_model):

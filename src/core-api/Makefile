@@ -13,6 +13,8 @@ init:
 	go install mvdan.cc/gofumpt@latest
 	# for golines
 	go install github.com/segmentio/golines@latest
+	# for goimports
+	go install -v github.com/incu6us/goimports-reviser/v3@latest
 
 .PHONY: dep
 dep:
@@ -38,7 +40,8 @@ check-license:
 .PHONY: fmt
 fmt:
 	golines ./ -m 120 -w --base-formatter gofmt --no-reformat-tags
-	gofumpt -l -w .
+	gofumpt  -l -w .
+	goimports-reviser -rm-unused -set-alias -format ./...
 
 
 .PHONY: test
@@ -51,7 +54,7 @@ cov:
 
 .PHONY: build
 build:
-	go build -o bk-apigateway-core-api
+	go build -ldflags "-X core/pkg/version.Version=${VERSION} -X core/pkg/version.Commit=`git rev-parse HEAD` -X core/pkg/version.BuildTime=`date +%Y-%m-%d_%I:%M:%S` -X 'core/pkg/version.GoVersion=`go version`'" -o bk-apigateway-core-api
 
 .PHONY: serve
 serve: build

@@ -16,13 +16,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
 import datetime
-from typing import Optional
 
 from rest_framework import serializers
 
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
-from apigateway.core.constants import DURATION_IN_SECOND_PATTERN
 from apigateway.utils.time import timestamp, utctime
 
 
@@ -50,20 +49,3 @@ class TimestampField(serializers.IntegerField):
 
         assert isinstance(value, datetime.datetime), "Only accept datetime"
         return timestamp(value)
-
-
-class DurationInSecondField(serializers.IntegerField):
-    # 使用 to_internal_value 时，无法验证 min_value，因此，覆盖 run_validation
-    def run_validation(self, data: Optional[int]) -> str:
-        data = super().run_validation(data)
-        return f"{data}s" if data is not None else ""
-
-    def to_representation(self, value: str) -> Optional[int]:
-        if not value:
-            return None
-
-        match = DURATION_IN_SECOND_PATTERN.match(value)
-        if not match:
-            raise serializers.ValidationError("invalid data", code="invalid")
-
-        return int(match.group(1))

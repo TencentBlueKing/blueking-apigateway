@@ -19,15 +19,16 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
 
-	"core/pkg/database/dao"
-
 	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/database/dao"
 )
 
 func TestAppGatewayPermissionKey_Key(t *testing.T) {
@@ -42,24 +43,24 @@ func TestGetAppGatewayPermissionExpiredAt(t *testing.T) {
 	expiration := 5 * time.Minute
 
 	// valid
-	retrieveFunc := func(key cache.Key) (interface{}, error) {
+	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return dao.AppGatewayPermission{}, nil
 	}
 	mockCache := memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	appGatewayPermissionCache = mockCache
 
-	_, err := GetAppGatewayPermissionExpiredAt("hello", 1)
+	_, err := GetAppGatewayPermissionExpiredAt(context.Background(), "hello", 1)
 	assert.NoError(t, err)
 
 	// error
-	retrieveFunc = func(key cache.Key) (interface{}, error) {
+	retrieveFunc = func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	appGatewayPermissionCache = mockCache
 
-	_, err = GetAppGatewayPermissionExpiredAt("hello", 1)
+	_, err = GetAppGatewayPermissionExpiredAt(context.Background(), "hello", 1)
 	assert.Error(t, err)
 }

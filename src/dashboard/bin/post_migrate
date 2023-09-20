@@ -20,6 +20,8 @@ sync_bk_apigateway() {
     python manage.py sync_apigw_config --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
     python manage.py sync_apigw_stage --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
     python manage.py sync_apigw_resources --delete --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-resources.yaml"
+    python manage.py sync_resource_docs_by_archive --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
+    python manage.py grant_apigw_permissions --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
     python manage.py fetch_apigw_public_key --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend
     python manage.py create_version_and_release_apigw --generate-sdks --api-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
     echo "API gateway bk-apigateway sync definition end"
@@ -43,7 +45,7 @@ sync_bk_esb() {
     python manage.py sync_apigw_config --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
     python manage.py sync_apigw_stage --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
     python manage.py update_esb_gateway_config
-    python manage.py sync_to_gateway_and_release --async
+    python manage.py sync_to_gateway_and_release
     python manage.py grant_apigw_permissions --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
     python manage.py fetch_apigw_public_key --api-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend
     echo "API gateway bk-esb sync definition end"
@@ -73,3 +75,7 @@ sync_bk_apigateway
 sync_bk_esb
 sync_bk_esb_buffet
 sync_bk_apigateway_inner
+
+# 1.13 同步所有网关数据, 确保数据最新; 这个需要在1.14中删除
+python manage.py sync_releases_to_shared_micro_gateway_parallel
+# 1.13 同步所有网关数据, 确保数据最新; 这个需要在1.14中删除

@@ -19,13 +19,14 @@
 package dao
 
 import (
+	"context"
 	"testing"
-
-	"core/pkg/database"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/database"
 )
 
 func Test_microGatewayManager_Get(t *testing.T) {
@@ -50,7 +51,7 @@ func Test_microGatewayManager_Get(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs(instanceID).WillReturnRows(mockRows)
 
 		manager := &microGatewayManager{DB: db}
-		p, err := manager.Get(instanceID)
+		p, err := manager.Get(context.Background(), instanceID)
 
 		assert.NoError(t, err, "query from db fail.")
 		assert.Equal(t, record, p)

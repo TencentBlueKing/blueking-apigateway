@@ -48,7 +48,7 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
             context={"system_counts": SystemDocCategory.objects.calculate_system_count_per_doc_category()},
         )
 
-        return OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
         response_serializer=serializers.DocCategorySLZ,
@@ -57,7 +57,7 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
         request_body=serializers.DocCategorySLZ,
@@ -73,7 +73,7 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK", data={"id": slz.instance.id})
+        return OKJsonResponse(data={"id": slz.instance.id})
 
     @swagger_auto_schema(
         request_body=serializers.DocCategorySLZ,
@@ -88,7 +88,7 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK")
+        return OKJsonResponse()
 
     @swagger_auto_schema(tags=["ESB.DocCategory"])
     @transaction.atomic
@@ -97,8 +97,8 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
 
         allow, message = DocCategory.objects.allow_delete([instance.id])
         if not allow:
-            raise error_codes.FORBIDDEN.format(message=message, replace=True)
+            raise error_codes.FAILED_PRECONDITION.format(message=message, replace=True)
 
         DocCategory.objects.delete_custom_doc_category(instance.id)
 
-        return OKJsonResponse("OK")
+        return OKJsonResponse()

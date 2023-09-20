@@ -22,9 +22,9 @@ from apigateway.core.models import SslCertificateBinding, Stage
 
 class TestSSLCertificateBindScopesViewSet:
     def test_bind(self, request_view, fake_ssl_certificate):
-        fake_gateway = fake_ssl_certificate.api
-        s1 = G(Stage, api=fake_gateway)
-        s2 = G(Stage, api=fake_gateway)
+        fake_gateway = fake_ssl_certificate.gateway
+        s1 = G(Stage, gateway=fake_gateway)
+        s2 = G(Stage, gateway=fake_gateway)
 
         response = request_view(
             "POST",
@@ -33,26 +33,27 @@ class TestSSLCertificateBindScopesViewSet:
             path_params={"gateway_id": fake_gateway.id},
             data={"scope_type": "stage", "scope_ids": [s1.id, s2.id], "ssl_certificate_id": fake_ssl_certificate.id},
         )
-        result = response.json()
-        assert result["code"] == 0
+        assert response.status_code == 200
+        _ = response.json()
         assert (
-            SslCertificateBinding.objects.filter(api=fake_gateway, ssl_certificate=fake_ssl_certificate).count() == 2
+            SslCertificateBinding.objects.filter(gateway=fake_gateway, ssl_certificate=fake_ssl_certificate).count()
+            == 2
         )
 
     def test_unbind(self, request_view, fake_ssl_certificate):
-        fake_gateway = fake_ssl_certificate.api
-        s1 = G(Stage, api=fake_gateway)
-        s2 = G(Stage, api=fake_gateway)
+        fake_gateway = fake_ssl_certificate.gateway
+        s1 = G(Stage, gateway=fake_gateway)
+        s2 = G(Stage, gateway=fake_gateway)
         G(
             SslCertificateBinding,
-            api=fake_gateway,
+            gateway=fake_gateway,
             ssl_certificate=fake_ssl_certificate,
             scope_type="stage",
             scope_id=s1.id,
         )
         G(
             SslCertificateBinding,
-            api=fake_gateway,
+            gateway=fake_gateway,
             ssl_certificate=fake_ssl_certificate,
             scope_type="stage",
             scope_id=s2.id,
@@ -65,14 +66,15 @@ class TestSSLCertificateBindScopesViewSet:
             path_params={"gateway_id": fake_gateway.id},
             data={"scope_type": "stage", "scope_ids": [s2.id], "ssl_certificate_id": fake_ssl_certificate.id},
         )
-        result = response.json()
-        assert result["code"] == 0
+        assert response.status_code == 200
+        _ = response.json()
         assert (
-            SslCertificateBinding.objects.filter(api=fake_gateway, ssl_certificate=fake_ssl_certificate).count() == 1
+            SslCertificateBinding.objects.filter(gateway=fake_gateway, ssl_certificate=fake_ssl_certificate).count()
+            == 1
         )
 
     def test_list(self, request_view, fake_ssl_certificate_binding):
-        fake_gateway = fake_ssl_certificate_binding.api
+        fake_gateway = fake_ssl_certificate_binding.gateway
         fake_ssl_certificate = fake_ssl_certificate_binding.ssl_certificate
 
         response = request_view(
@@ -85,15 +87,16 @@ class TestSSLCertificateBindScopesViewSet:
             },
         )
 
+        assert response.status_code == 200
+
         result = response.json()
-        assert result["code"] == 0
         assert len(result["data"]["results"]) == 1
 
 
 class TestScopeBindSSLCertificateViewSet:
     def test_bind(self, request_view, fake_ssl_certificate):
-        fake_gateway = fake_ssl_certificate.api
-        s = G(Stage, api=fake_gateway)
+        fake_gateway = fake_ssl_certificate.gateway
+        s = G(Stage, gateway=fake_gateway)
 
         response = request_view(
             "POST",
@@ -102,18 +105,21 @@ class TestScopeBindSSLCertificateViewSet:
             path_params={"gateway_id": fake_gateway.id},
             data={"scope_type": "stage", "scope_id": s.id, "ssl_certificate_ids": [fake_ssl_certificate.id]},
         )
-        result = response.json()
-        assert result["code"] == 0
+
+        assert response.status_code == 200
+
+        _ = response.json()
         assert (
-            SslCertificateBinding.objects.filter(api=fake_gateway, ssl_certificate=fake_ssl_certificate).count() == 1
+            SslCertificateBinding.objects.filter(gateway=fake_gateway, ssl_certificate=fake_ssl_certificate).count()
+            == 1
         )
 
     def test_unbind(self, request_view, fake_ssl_certificate):
-        fake_gateway = fake_ssl_certificate.api
-        s = G(Stage, api=fake_gateway)
+        fake_gateway = fake_ssl_certificate.gateway
+        s = G(Stage, gateway=fake_gateway)
         G(
             SslCertificateBinding,
-            api=fake_gateway,
+            gateway=fake_gateway,
             ssl_certificate=fake_ssl_certificate,
             scope_type="stage",
             scope_id=s.id,
@@ -126,10 +132,10 @@ class TestScopeBindSSLCertificateViewSet:
             path_params={"gateway_id": fake_gateway.id},
             data={"scope_type": "stage", "scope_id": s.id, "ssl_certificate_ids": [fake_ssl_certificate.id]},
         )
-        result = response.json()
-        assert result["code"] == 0
+        _ = response.json()
         assert (
-            SslCertificateBinding.objects.filter(api=fake_gateway, ssl_certificate=fake_ssl_certificate).count() == 0
+            SslCertificateBinding.objects.filter(gateway=fake_gateway, ssl_certificate=fake_ssl_certificate).count()
+            == 0
         )
 
 
@@ -147,5 +153,4 @@ class TestCheckCertViewSet:
         )
 
         result = response.json()
-        assert result["code"] == 0
         assert result["data"]["snis"] == ["bkapi.example.com"]

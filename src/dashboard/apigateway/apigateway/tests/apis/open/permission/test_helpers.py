@@ -251,9 +251,9 @@ class TestResourcePermission:
 
 class TestAppPermissionBuilder:
     def test_build(self, mocker, fake_gateway, unique_id):
-        r = G(Resource, api=fake_gateway)
-        G(AppAPIPermission, api=fake_gateway, bk_app_code=unique_id, expires=None)
-        G(AppResourcePermission, api=fake_gateway, bk_app_code=unique_id, resource_id=r.id)
+        r = G(Resource, gateway=fake_gateway)
+        G(AppAPIPermission, gateway=fake_gateway, bk_app_code=unique_id, expires=None)
+        G(AppResourcePermission, gateway=fake_gateway, bk_app_code=unique_id, resource_id=r.id)
 
         mocker.patch(
             "apigateway.apis.open.permission.helpers.ResourceVersionHandler.get_released_public_resources",
@@ -280,15 +280,7 @@ class TestAppPermissionBuilder:
             ],
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.Resource.objects.get_id_to_fields_map",
-            return_value={
-                r.id: {
-                    "api_name": "test",
-                }
-            },
-        )
-        mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResource.objects.get_latest_doc_link",
+            "apigateway.apis.open.permission.helpers.ReleasedResourceHandler.get_latest_doc_link",
             return_value={
                 r.id: "test",
             },
@@ -299,7 +291,7 @@ class TestAppPermissionBuilder:
             {
                 "id": r.id,
                 "name": "test1-2",
-                "api_name": "test",
+                "api_name": fake_gateway.name,
                 "description": "desc",
                 "description_en": "desc_en",
                 "permission_status": "owned",

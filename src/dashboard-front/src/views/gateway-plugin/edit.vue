@@ -9,7 +9,7 @@
         :name="'baseInfo'">
         <bk-form
           ref="form"
-          :label-width="150"
+          :label-width="180"
           :model="curPlugin"
           class="pl20 pr20"
           style="max-width: 1280px;">
@@ -17,14 +17,16 @@
             :label="$t('名称')"
             :required="true"
             :rules="rules.name"
-            :property="'name'">
+            :property="'name'"
+            :error-display-type="'normal'">
             <bk-input :placeholder="$t('请输入')" v-model="curPlugin.name"></bk-input>
           </bk-form-item>
           <bk-form-item
             :label="$t('插件')"
             :required="true"
             :rules="rules.type"
-            :property="'type'">
+            :property="'type'"
+            :error-display-type="'normal'">
             <bk-select v-model="curPlugin.type_id" @selected="typeSelect" :disabled="typeDisabled">
               <bk-option
                 v-for="option in typeList"
@@ -66,6 +68,7 @@
             class="mt20"
             v-model="schemaFormData"
             ref="bkForm"
+            :label-width="180"
             :schema="formConfig.schema"
             :layout="formConfig.layout"
             :rules="formConfig.rules">

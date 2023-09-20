@@ -21,9 +21,11 @@ package dao
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
 import (
-	"core/pkg/database"
+	"context"
 
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 // TODO: split into thinx and x, for better performance
@@ -37,7 +39,7 @@ type ResourceVersion struct {
 
 // ResourceVersionManager ...
 type ResourceVersionManager interface {
-	Get(id int64) (ResourceVersion, error)
+	Get(ctx context.Context, id int64) (ResourceVersion, error)
 }
 
 // NewResourceVersionManager ...
@@ -52,13 +54,13 @@ type resourceVersionManager struct {
 }
 
 // Get ...
-func (m resourceVersionManager) Get(id int64) (ResourceVersion, error) {
+func (m resourceVersionManager) Get(ctx context.Context, id int64) (ResourceVersion, error) {
 	ResourceVersion := ResourceVersion{}
 	query := `SELECT
 		id,
 		data
 		FROM core_resource_version
 		WHERE id = ?`
-	err := database.SqlxGet(m.DB, &ResourceVersion, query, id)
+	err := database.SqlxGet(ctx, m.DB, &ResourceVersion, query, id)
 	return ResourceVersion, err
 }

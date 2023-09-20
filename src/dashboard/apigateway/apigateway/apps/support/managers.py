@@ -16,77 +16,35 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import itertools
-import operator
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Count
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.core.constants import APIStatusEnum
-
-
-class ResourceDocManager(models.Manager):
-    def doc_exists(self, gateway_id):
-        return self.filter(api_id=gateway_id).exists()
-
-    def delete_by_resource_ids(self, resource_ids):
-        self.filter(resource_id__in=resource_ids).delete()
-
-    def get_latest_resource_doc(self, gateway_id):
-        return self.filter(api_id=gateway_id).order_by("-updated_time").first()
-
-    def get_doc_key_to_id(self, gateway_id: int) -> Dict[str, int]:
-        return {
-            f"{doc['resource_id']}:{doc['language']}": doc["id"]
-            for doc in self.filter(api_id=gateway_id).values("id", "resource_id", "language")
-        }
-
-    def get_doc_languages_of_resources(self, gateway_id: int, resource_ids: List[int]) -> Dict[int, List[str]]:
-        data = (
-            self.filter(api_id=gateway_id, resource_id__in=resource_ids)
-            .values("resource_id", "language")
-            .order_by("resource_id")
-        )
-        return {
-            resource_id: [item["language"] for item in group]
-            for resource_id, group in itertools.groupby(data, key=operator.itemgetter("resource_id"))
-        }
-
-    def filter_docs(self, gateway_id: int, resource_ids: Optional[List[int]] = None):
-        qs = self.filter(api_id=gateway_id)
-
-        if resource_ids is not None:
-            qs = qs.filter(resource_id__in=resource_ids)
-
-        return qs
-
-
-class ResourceDocSwaggerManager(models.Manager):
-    def get_resource_doc_id_to_id(self, gateway_id: int) -> Dict[int, int]:
-        return dict(self.filter(api_id=gateway_id).values_list("resource_doc_id", "id"))
+from apigateway.core.constants import GatewayStatusEnum
 
 
 class ResourceDocVersionManager(models.Manager):
     def make_version(self, gateway_id):
         from apigateway.apps.support.models import ResourceDoc
 
-        docs = ResourceDoc.objects.filter(api_id=gateway_id).all()
+        docs = ResourceDoc.objects.filter(gateway_id=gateway_id).all()
         return [d.snapshot(as_dict=True) for d in docs]
 
     def get_by_resource_version_id(self, gateway_id: int, resource_version_id: int):
-        return self.filter(api_id=gateway_id, resource_version_id=resource_version_id).first()
+        return self.filter(gateway_id=gateway_id, resource_version_id=resource_version_id).first()
 
     def get_latest_version(self, gateway_id):
-        return self.filter(api_id=gateway_id).order_by("-id").first()
+        return self.filter(gateway_id=gateway_id).order_by("-id").first()
 
     def get_doc_data_by_rv_or_new(self, gateway_id: int, resource_version_id: Optional[int]) -> List[Any]:
         """获取版本中文档内容"""
         if resource_version_id:
             try:
-                return self.get(api_id=gateway_id, resource_version_id=resource_version_id).data
+                return self.get(gateway_id=gateway_id, resource_version_id=resource_version_id).data
             except self.model.DoesNotExist:
                 return []
 
@@ -112,27 +70,6 @@ class ResourceDocVersionManager(models.Manager):
 
         return result
 
-    def need_new_version(self, gateway_id):
-        """
-        是否需要创建新的资源文档版本
-        """
-        from apigateway.apps.support.models import ResourceDoc
-
-        latest_version = self.get_latest_version(gateway_id)
-        latest_resource_doc = ResourceDoc.objects.get_latest_resource_doc(gateway_id)
-
-        if not (latest_version or latest_resource_doc):
-            return False
-
-        if not latest_version:
-            return True
-
-        if latest_resource_doc and latest_resource_doc.updated_time > latest_version.created_time:
-            return True
-
-        # 文档不可直接删除，资源删除导致的文档删除，在判断“是否需要创建资源版本”时校验
-        return False
-
 
 class ReleasedResourceDocManager(models.Manager):
     def save_released_resource_doc(self, resource_doc_version, force: bool = False) -> None:
@@ -151,7 +88,7 @@ class ReleasedResourceDocManager(models.Manager):
 
         resource_doc_to_add = [
             self.model(
-                api_id=resource_doc_version.api_id,
+                gateway_id=resource_doc_version.gateway_id,
                 resource_version_id=resource_doc_version.resource_version_id,
                 resource_id=doc["resource_id"],
                 language=doc.get("language", DocLanguageEnum.ZH.value),
@@ -166,14 +103,14 @@ class ReleasedResourceDocManager(models.Manager):
         from apigateway.core.models import Release
 
         resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
-        self.filter(api_id=gateway_id).exclude(resource_version_id__in=resource_version_ids).delete()
+        self.filter(gateway_id=gateway_id).exclude(resource_version_id__in=resource_version_ids).delete()
 
     def get_latest_released_resource_doc(self, gateway_id: int, resource_id: int) -> dict:
         """获取最新的已发布资源文档"""
         # TODO: 暂时仅支持展示中文文档
         resource_doc = (
             self.filter(
-                api_id=gateway_id,
+                gateway_id=gateway_id,
                 resource_id=resource_id,
                 language=DocLanguageEnum.ZH.value,
             )
@@ -190,7 +127,7 @@ class ReleasedResourceDocManager(models.Manager):
         language=DocLanguageEnum.ZH.value,
     ) -> Optional[dict]:
         doc = self.filter(
-            api_id=gateway_id,
+            gateway_id=gateway_id,
             resource_version_id=resource_version_id,
             resource_id=resource_id,
             language=language,
@@ -198,7 +135,7 @@ class ReleasedResourceDocManager(models.Manager):
         return doc.data if doc else {}
 
     def get_doc_updated_time(self, gateway_id: int, resource_version_id: int, resource_id: int) -> Dict[str, str]:
-        qs = self.filter(api_id=gateway_id, resource_version_id=resource_version_id, resource_id=resource_id)
+        qs = self.filter(gateway_id=gateway_id, resource_version_id=resource_version_id, resource_id=resource_id)
         return {doc.language: doc.data["updated_time"] for doc in qs}
 
 
@@ -212,7 +149,7 @@ class APISDKManager(models.Manager):
         resource_version_id=None,
         fuzzy=False,
     ):
-        queryset = self.filter(api=gateway)
+        queryset = self.filter(gateway=gateway)
 
         if language:
             queryset = queryset.filter(language=language)
@@ -232,10 +169,18 @@ class APISDKManager(models.Manager):
         return queryset
 
     def get_latest_sdk(self, gateway_id, language):
-        return self.filter(api_id=gateway_id, language=language).order_by("-id").first()
+        return self.filter(gateway_id=gateway_id, language=language).order_by("-id").first()
 
-    def get_resource_version_sdk_count(self, resource_version_id, language):
+    def get_resource_version_language_sdk_count(self, resource_version_id, language):
         return self.filter(resource_version_id=resource_version_id, language=language).count()
+
+    def get_resource_version_sdk_count_map(self, resource_version_ids: List[int]):
+        queryset = (
+            self.filter(resource_version_id__in=resource_version_ids)
+            .values("resource_version_id")
+            .annotate(count=Count("id"))
+        )
+        return {item["resource_version_id"]: item["count"] for item in queryset}
 
     def should_be_set_to_public_latest(
         self, gateway_id: int, resource_version_id: int, is_uploaded_to_pypi: bool
@@ -244,7 +189,7 @@ class APISDKManager(models.Manager):
         if not is_uploaded_to_pypi:
             return False
 
-        public_latest_sdk = self.filter(is_recommended=True, api_id=gateway_id).first()
+        public_latest_sdk = self.filter(is_recommended=True, gateway_id=gateway_id).first()
         # 最新 SDK 的版本比当前版本更新，则当前SDK非最新SDK
         if (
             public_latest_sdk
@@ -262,18 +207,18 @@ class APISDKManager(models.Manager):
         queryset = self.filter(
             is_recommended=True,
             language=language,
-            api__is_public=True,
-            api__status=APIStatusEnum.ACTIVE.value,
+            gateway__is_public=True,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
         )
         if gateway_id is not None:
-            queryset = queryset.filter(api_id=gateway_id)
+            queryset = queryset.filter(gateway_id=gateway_id)
 
         return queryset
 
     def filter_resource_version_ids_has_sdk(self, gateway_id: int, resource_version_ids: List[int]) -> List[int]:
         """过滤出有SDK的资源版本ID"""
         return list(
-            self.filter(api_id=gateway_id, resource_version_id__in=resource_version_ids)
+            self.filter(gateway_id=gateway_id, resource_version_id__in=resource_version_ids)
             .order_by("resource_version_id")
             .distinct()
             .values_list("resource_version_id", flat=True)
@@ -282,7 +227,7 @@ class APISDKManager(models.Manager):
     def filter_resource_version_public_latest_sdk(self, gateway_id: int, resource_version_ids: List[int]) -> dict:
         """过滤出指定的资源版本公开且最新的SDK(一个版本可能生成多个SDK，取其中最新且公开的SDK)"""
         queryset = self.filter(
-            api_id=gateway_id,
+            gateway_id=gateway_id,
             resource_version_id__in=resource_version_ids,
             is_public=True,
         ).order_by("id")

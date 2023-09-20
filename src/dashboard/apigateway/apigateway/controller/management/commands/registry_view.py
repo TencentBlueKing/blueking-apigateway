@@ -28,7 +28,7 @@ from apigateway.core import models
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("-g", "--micro-gateway-name", default=None, type=str, help="micro-gateway name")
-        parser.add_argument("-a", "--api-name", required=True, type=str, help="api gateway name")
+        parser.add_argument("-a", "--gateway-name", required=True, type=str, help="gateway name")
         parser.add_argument("-s", "--stage-name", required=True, type=str, help="stage name")
         parser.add_argument("-n", "--name", default="", type=str, help="Name of the resource")
         parser.add_argument("-k", "--kind", required=True, type=str, help="Kind of the resource")
@@ -40,19 +40,20 @@ class Command(BaseCommand):
 
         raise CommandError("Resource kind not found")
 
-    def handle(self, micro_gateway_name: str, api_name: str, stage_name: str, name: str, kind: str, *args, **kwargs):
-        gateway = models.Gateway.objects.get(name=api_name)
-        stage = models.Stage.objects.get(name=stage_name, api=gateway)
+    def handle(
+        self, micro_gateway_name: str, gateway_name: str, stage_name: str, name: str, kind: str, *args, **kwargs
+    ):
+        gateway = models.Gateway.objects.get(name=gateway_name)
+        stage = models.Stage.objects.get(name=stage_name, gateway=gateway)
         micro_gateway = self._get_micro_gateway(micro_gateway_name)
 
         key_prefix = KeyPrefixHandler().get_release_key_prefix(micro_gateway.name, gateway.name, stage.name)
         resource_type = self.get_resource_type_by_kind(kind)
 
         registry = EtcdRegistry(key_prefix)
-        resources = []
-        for resource in registry.iter_by_type(resource_type):
-            if name in resource.metadata.name:
-                resources.append(resource.dict())
+        resources = [
+            resource.dict() for resource in registry.iter_by_type(resource_type) if name in resource.metadata.name
+        ]
 
         pprint(resources)
 

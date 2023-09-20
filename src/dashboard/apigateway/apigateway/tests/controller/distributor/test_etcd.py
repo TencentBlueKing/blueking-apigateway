@@ -51,10 +51,7 @@ class TestEtcdDistributor:
     ):
         distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config)
         mocker.patch.object(distributor, "_get_registry", return_value=self.registry)
-        assert distributor.distribute(
-            release=edge_release,
-            micro_gateway=micro_gateway,
-        )
+        assert distributor.distribute(release=edge_release, micro_gateway=micro_gateway)
 
         for m in ignored_models:
             assert len(list(self.registry.iter_by_type(m))) == 0
@@ -98,7 +95,7 @@ class TestEtcdDistributor:
         ignored_models,
         revoked_models,
         fake_gateway,
-        fake_stage,
+        fake_release,
         micro_gateway,
     ):
         for resource in ignored_models + revoked_models:
@@ -107,7 +104,7 @@ class TestEtcdDistributor:
         distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config)
         mocker.patch.object(distributor, "_get_registry", return_value=self.registry)
 
-        assert distributor.revoke(stage=fake_stage, micro_gateway=micro_gateway)
+        assert distributor.revoke(release=fake_release, micro_gateway=micro_gateway)
 
         for m in ignored_models:
             assert len(list(self.registry.iter_by_type(type(m)))) == 0

@@ -16,8 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import enum
-
-from attrs import define, field
+from dataclasses import dataclass
 
 from apigateway.utils.measurement import MeasurementPoint
 
@@ -43,22 +42,39 @@ class MicroGatewayStatus(enum.IntFlag):
         return cls(int(value))
 
 
-@define
+@dataclass
 class MicroGatewayStatusMeasurementPoint(MeasurementPoint):
     """网关状态测量点"""
 
     measurement = "gateway-status"
-    # 网关汇总状态，当这个值不为0时，表示网关异常，请根据状态位以及细化的状态来判断具体的异常
-    status: MicroGatewayStatus = field(converter=MicroGatewayStatus.convert)  # type: ignore
+    # 网关汇总状态，当这个值不为 0 时，表示网关异常，请根据状态位以及细化的状态来判断具体的异常
+    status: MicroGatewayStatus
     # 副本数量
-    replicas: int = field(converter=int)
+    replicas: int
     # 控制面异常数量
-    control_plane_failures: int = field(converter=int)
+    control_plane_failures: int
     # 控制面状态码
-    control_plane_status: int = field(converter=int)
+    control_plane_status: int
     # 数据面异常数量
-    data_plane_failures: int = field(converter=int)
+    data_plane_failures: int
     # 数据面状态码
-    data_plane_status: int = field(converter=int)
+    data_plane_status: int
     # 正常副本数量
-    success_replicas: int = field(converter=int)
+    success_replicas: int
+
+    def __post_init__(self):
+        super().__post_init__()
+        if not isinstance(self.status, MicroGatewayStatus):
+            self.status = MicroGatewayStatus.convert(self.status)
+
+        for field_name in (
+            "replicas",
+            "control_plane_failures",
+            "control_plane_status",
+            "data_plane_failures",
+            "data_plane_status",
+            "success_replicas",
+        ):
+            value = getattr(self, field_name)
+            if not isinstance(value, int):
+                setattr(self, field_name, int(value))

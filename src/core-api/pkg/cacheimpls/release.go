@@ -19,12 +19,13 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 	"strconv"
 
-	"core/pkg/database/dao"
-
 	"github.com/TencentBlueKing/gopkg/cache"
+
+	"core/pkg/database/dao"
 )
 
 // ReleaseKey is the key of release
@@ -38,21 +39,21 @@ func (k ReleaseKey) Key() string {
 	return strconv.FormatInt(k.GatewayID, 10) + ":" + strconv.FormatInt(k.StageID, 10)
 }
 
-func retrieveStageByGatewayIDStageID(k cache.Key) (interface{}, error) {
+func retrieveStageByGatewayIDStageID(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(ReleaseKey)
 
 	manager := dao.NewReleaseManager()
-	return manager.Get(key.GatewayID, key.StageID)
+	return manager.Get(ctx, key.GatewayID, key.StageID)
 }
 
 // GetRelease will get the release from cache by gatewayID and stageID
-func GetRelease(gatewayID, stageID int64) (release dao.Release, err error) {
+func GetRelease(ctx context.Context, gatewayID, stageID int64) (release dao.Release, err error) {
 	key := ReleaseKey{
 		GatewayID: gatewayID,
 		StageID:   stageID,
 	}
 	var value interface{}
-	value, err = releaseCache.Get(key)
+	value, err = cacheGet(ctx, releaseCache, key)
 	if err != nil {
 		return
 	}

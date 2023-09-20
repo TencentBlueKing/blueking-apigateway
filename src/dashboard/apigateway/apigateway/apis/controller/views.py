@@ -15,47 +15,27 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 import logging
 import time
-from hashlib import md5
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Optional
 
-import redis
-from django.db.models.signals import post_save
-from django.http.response import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
-from rest_framework.viewsets import GenericViewSet
+from rest_framework import generics, status
 
 from apigateway.apis.controller.permissions import MicroGatewayInstancePermission
-from apigateway.apis.controller.serializers import (
-    MicroGatewayApiPermissionSLZ,
-    MicroGatewayAppPermissionQuerySLZ,
-    MicroGatewayAppPermissionSLZ,
-    MicroGatewayInfoSLZ,
-    MicroGatewayNewestGatewayPermissionQuerySLZ,
-    MicroGatewayNewestResourcePermissionQuerySLZ,
-    MicroGatewayResourcePermissionSLZ,
-    MicroGatewayStatusSLZ,
-)
-from apigateway.apps.permission.models import AppAPIPermission, AppResourcePermission
+from apigateway.apis.controller.serializers import MicroGatewayInfoOutputSLZ, MicroGatewayStatusInputSLZ
 from apigateway.controller.constants import MicroGatewayStatusCodeEnum
 from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
-from apigateway.core.models import Gateway, MicroGateway, Release, Stage
-from apigateway.utils.redis_utils import get_default_redis_client, get_redis_key
+from apigateway.core.models import Gateway, MicroGateway
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.swagger import GenericResponseSwaggerAutoSchema
 
 logger = logging.getLogger(__name__)
 
 PERMISSION_CACHE_DURATION = 60
 
 
-class BaseMicroGatewayViewSet(GenericViewSet):
-    permission_classes = [MicroGatewayInstancePermission]
-
+class MicroGatewayApiMixin:
     def get_micro_gateway(self, instance_id):
         return get_object_or_404(MicroGateway, pk=instance_id)
 
@@ -65,20 +45,20 @@ class BaseMicroGatewayViewSet(GenericViewSet):
         if micro_gateway.is_shared and bk_gateway_name:
             qs = qs.filter(name=bk_gateway_name)
         else:
-            qs = qs.filter(id=micro_gateway.api_id)
+            qs = qs.filter(id=micro_gateway.gateway_id)
 
         return get_object_or_404(qs)
 
 
-class MicroGatewayStatusViewSet(BaseMicroGatewayViewSet):
-    serializer_class = MicroGatewayStatusSLZ
+class MicroGatewayStatusUpdateApi(generics.UpdateAPIView, MicroGatewayApiMixin):
+    permission_classes = [MicroGatewayInstancePermission]
+    serializer_class = MicroGatewayStatusInputSLZ
 
     @swagger_auto_schema(
         operation_description="上报微网关的状态",
-        auto_schema=GenericResponseSwaggerAutoSchema,
         tags=["OpenAPI.MicroGateway"],
     )
-    def refresh(self, request, instance_id):
+    def put(self, request, instance_id):
         """
         更新微网关状态，因为微网关上报的状态是直接上报多个副本的状态的，因此这个接口需要汇总出一个状态
         以下条件全部满足时，认为是成功的：
@@ -169,280 +149,30 @@ class MicroGatewayStatusViewSet(BaseMicroGatewayViewSet):
         return OKJsonResponse()
 
 
-class MicroGatewayPermissionViewSet(BaseMicroGatewayViewSet):
-    """查询微网关权限信息"""
-
-    def _get_released_resource_name_mappings(self, release: Release) -> Dict[int, str]:
-        return {resource["id"]: resource["name"] for resource in release.resource_version.data}
-
-    def _get_resource_permissions(
-        self,
-        api_gateway: Gateway,
-        stage: Stage,
-        app_code_list: Optional[List[str]],
-    ) -> List[Dict[str, Any]]:
-        """根据 Resource Version 来获取真实生效的资源名称"""
-        resource_permissions: List[Dict[str, Any]] = []
-
-        release = Release.objects.filter(api=api_gateway, stage=stage).last()
-        if not release:
-            return resource_permissions
-
-        name_mappings = self._get_released_resource_name_mappings(release)
-        for permission in AppResourcePermission.objects.filter_permission(api_gateway, bk_app_codes=app_code_list):
-            # 因为 resource_version 为下发生效的真实版本，因此没有匹配的权限无需下发
-            if permission.resource_id not in name_mappings:
-                continue
-
-            resource_permissions.append(
-                {
-                    "created_time": permission.created_time,
-                    "updated_time": permission.updated_time,
-                    "expires": permission.expires,
-                    "bk_app_code": permission.bk_app_code,
-                    "resource_name": name_mappings[permission.resource_id],
-                }
-            )
-
-        return resource_permissions
-
-    def _get_api_permissions(self, api_gateway: Gateway, app_code_list: Optional[List[str]]):
-        qs = AppAPIPermission.objects.filter_permission(api_gateway, bk_app_codes=app_code_list)
-
-        return qs
-
-    def _get_cache_key(
-        self, micro_gateway: MicroGateway, api_gateway: Gateway, stage: Stage, app_code_list: Optional[List[str]]
-    ) -> str:
-        key = get_redis_key(f"permission::{micro_gateway.pk}::{api_gateway.pk}::{stage.name}")
-        if not app_code_list:
-            return key
-
-        app_md5 = md5()
-        for i in app_code_list:
-            app_md5.update(i.encode())
-
-        return f"{key}::{app_md5.hexdigest()}"
-
-    def _get_permissions_from_db(
-        self,
-        api_gateway: Gateway,
-        stage: Stage,
-        app_code_list: Optional[List[str]],
-    ) -> Dict[str, Any]:
-        result_slz = MicroGatewayAppPermissionSLZ(
-            {
-                "gateway_name": api_gateway.name,
-                "stage_name": stage.name,
-                "resource_permissions": self._get_resource_permissions(api_gateway, stage, app_code_list),
-                "api_permissions": self._get_api_permissions(api_gateway, app_code_list),
-            },
-        )
-        return result_slz.data
-
-    def _get_permissions_from_cache(self, client: redis.Redis, cache_key: str) -> Tuple[Optional[Dict[str, Any]], int]:
-        pipeline = client.pipeline()
-        pipeline.get(cache_key)
-        pipeline.ttl(cache_key)
-        try:
-            cached, ttl = pipeline.execute()
-        except Exception:
-            logger.exception("query from cache %s failed, skip", cache_key)
-            return None, 0
-
-        if not cached:
-            return None, 0
-
-        try:
-            loaded = json.loads(cached)
-        except Exception:
-            logger.exception("load cached result %s failed", cache_key)
-            return None, 0
-
-        return loaded, ttl
-
-    def _set_permissions_into_cache(self, client: redis.Redis, cache_key: str, queried: Dict[str, Any], expires: int):
-        try:
-            client.set(cache_key, json.dumps(queried), ex=expires)
-        except Exception:
-            logger.exception("abort set permissions into cache %s, error: %s", cache_key)
-
-    def _get_stage_by_name(self, api_gateway: Gateway, stage_name: str) -> Stage:
-        return get_object_or_404(Stage, api=api_gateway, name=stage_name)
-
-    @swagger_auto_schema(
-        operation_description="获取微网关的所有权限信息",
-        query_serializer=MicroGatewayAppPermissionQuerySLZ,
-        responses={status.HTTP_200_OK: MicroGatewayAppPermissionSLZ},
-        tags=["OpenAPI.MicroGateway"],
-    )
-    def list(self, request, instance_id):
-        slz = MicroGatewayAppPermissionQuerySLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
-
-        gateway_name = slz.validated_data["gateway_name"]
-        stage_name = slz.validated_data["stage_name"]
-        app_code_list = slz.validated_data.get("target_app_code")
-        micro_gateway = self.get_micro_gateway(instance_id)
-        api_gateway = self.get_related_gateway(micro_gateway, gateway_name)
-        stage = self._get_stage_by_name(api_gateway, stage_name)
-
-        # NOTE: key should contains stage.name, while the _get_permissions_from_db() use stage as a parameter
-        cache_key = self._get_cache_key(micro_gateway, api_gateway, stage, app_code_list)
-        redis_client = get_default_redis_client()
-
-        cached, _ = self._get_permissions_from_cache(redis_client, cache_key)
-        if cached is not None:
-            return OKJsonResponse(data=cached)
-
-        queried = self._get_permissions_from_db(api_gateway, stage, app_code_list)
-        # 考虑到微网关一般都是多副本的，权限查询请求容易有热点
-        # 因此将权限查询结果缓存到 redis 一分钟，优化查询速度
-        self._set_permissions_into_cache(redis_client, cache_key, queried, PERMISSION_CACHE_DURATION)
-
-        return OKJsonResponse(data=queried)
-
-
-class MicroGatewayNewestPermissionViewSet(BaseMicroGatewayViewSet):
-    @classmethod
-    def get_related_gateway_permission_fast_cache_key(cls, api_gateway_id: int, app_code: str) -> str:
-        return get_redis_key(f"fast-permission::{api_gateway_id}::api::{app_code}")
-
-    @classmethod
-    def get_resource_permission_fast_cache_key(cls, api_gateway_id: int, resource_name: str, app_code: str) -> str:
-        return get_redis_key(f"fast-permission::{api_gateway_id}::resource::{resource_name}::{app_code}")
-
-    @classmethod
-    def _set_fast_permission_cache(cls, cache_key: str, cache_value: Dict[str, Any]):
-        redis_client = get_default_redis_client()
-        redis_client.setex(cache_key, 2 * PERMISSION_CACHE_DURATION, json.dumps(cache_value))
-
-    @classmethod
-    def _fast_set_api_permission_cache(cls, instance: AppAPIPermission, created: bool, **kwargs):
-        slz = MicroGatewayApiPermissionSLZ(instance)
-
-        cls._set_fast_permission_cache(
-            cls.get_related_gateway_permission_fast_cache_key(instance.api_id, instance.bk_app_code),
-            slz.data,
-        )
-
-    @classmethod
-    def _fast_set_resource_permission_cache(cls, instance: AppResourcePermission, created: bool, **kwargs):
-        resource = instance.resource
-        if not resource:
-            return
-
-        slz = MicroGatewayResourcePermissionSLZ(instance)
-        cache_value = slz.data
-        cache_value["resource_name"] = resource.name
-
-        cls._set_fast_permission_cache(
-            cls.get_resource_permission_fast_cache_key(instance.api_id, resource.name, instance.bk_app_code),
-            cache_value,
-        )
-
-    @swagger_auto_schema(
-        operation_description="获取微网关的新添加网关维度权限信息",
-        query_serializer=MicroGatewayNewestGatewayPermissionQuerySLZ,
-        responses={status.HTTP_200_OK: MicroGatewayAppPermissionSLZ},
-        tags=["OpenAPI.MicroGateway"],
-    )
-    def list_newest_gateway_permissions(self, request, instance_id):
-        slz = MicroGatewayNewestGatewayPermissionQuerySLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
-
-        gateway_name = slz.validated_data["gateway_name"]
-        stage_name = slz.validated_data.get("stage_name")
-        app_code_list = slz.validated_data["target_app_code"]
-        micro_gateway = self.get_micro_gateway(instance_id)
-        api_gateway = self.get_related_gateway(micro_gateway, gateway_name)
-
-        if gateway_name != api_gateway.name:
-            return HttpResponseForbidden()
-
-        redis_client = get_default_redis_client()
-        pipeline = redis_client.pipeline()
-        for app_code in app_code_list:
-            pipeline.get(self.get_related_gateway_permission_fast_cache_key(api_gateway.pk, app_code))
-
-        result_slz = MicroGatewayAppPermissionSLZ(
-            {
-                "gateway_name": api_gateway.name,
-                "stage_name": stage_name,
-                "api_permissions": [json.loads(i) for i in pipeline.execute() if i],
-            },
-        )
-
-        return OKJsonResponse(data=result_slz.data)
-
-    @swagger_auto_schema(
-        operation_description="获取微网关的新添加资源维度权限信息",
-        query_serializer=MicroGatewayNewestResourcePermissionQuerySLZ,
-        responses={status.HTTP_200_OK: MicroGatewayAppPermissionSLZ},
-        tags=["OpenAPI.MicroGateway"],
-    )
-    def list_newest_resource_permissions(self, request, instance_id):
-        slz = MicroGatewayNewestResourcePermissionQuerySLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
-
-        gateway_name = slz.validated_data["gateway_name"]
-        stage_name = slz.validated_data.get("stage_name")
-        resource_name = slz.validated_data["resource_name"]
-        app_code_list = slz.validated_data["target_app_code"]
-        micro_gateway = self.get_micro_gateway(instance_id)
-        api_gateway = self.get_related_gateway(micro_gateway, gateway_name)
-
-        if gateway_name != api_gateway.name:
-            return HttpResponseForbidden()
-
-        redis_client = get_default_redis_client()
-        pipeline = redis_client.pipeline()
-        for app_code in app_code_list:
-            pipeline.get(self.get_resource_permission_fast_cache_key(api_gateway.pk, resource_name, app_code))
-
-        result_slz = MicroGatewayAppPermissionSLZ(
-            {
-                "gateway_name": api_gateway.name,
-                "stage_name": stage_name,
-                "resource_permissions": [json.loads(i) for i in pipeline.execute() if i],
-            },
-        )
-
-        return OKJsonResponse(data=result_slz.data)
-
-
-post_save.connect(
-    MicroGatewayNewestPermissionViewSet._fast_set_api_permission_cache,
-    sender=AppAPIPermission,
-)
-post_save.connect(
-    MicroGatewayNewestPermissionViewSet._fast_set_resource_permission_cache,
-    sender=AppResourcePermission,
-)
-
-
-class MicroGatewayInfoViewSet(BaseMicroGatewayViewSet):
+class MicroGatewayInfoRetrieveApi(generics.RetrieveAPIView, MicroGatewayApiMixin):
     """查询微网关实例信息"""
+
+    permission_classes = [MicroGatewayInstancePermission]
 
     @swagger_auto_schema(
         operation_description="获取微网关信息",
-        responses={status.HTTP_200_OK: MicroGatewayInfoSLZ},
+        responses={status.HTTP_200_OK: MicroGatewayInfoOutputSLZ},
         tags=["OpenAPI.MicroGateway"],
     )
     def get(self, request, instance_id):
         micro_gateway = self.get_micro_gateway(instance_id)
-        related_gateways = micro_gateway.query_related_api_gateways()
+        related_gateways = micro_gateway.query_related_gateways()
 
-        slz = MicroGatewayInfoSLZ(
+        slz = MicroGatewayInfoOutputSLZ(
             {
                 "name": micro_gateway.name,
                 "related_infos": [
                     {
-                        "gateway_name": api_gateway.name,
+                        "gateway_name": gateway.name,
                         "stage_name": stage.name,
                     }
-                    for api_gateway in related_gateways
-                    for stage in api_gateway.stage_set.all()
+                    for gateway in related_gateways
+                    for stage in gateway.stage_set.all()
                 ],
             }
         )

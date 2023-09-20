@@ -50,7 +50,7 @@ class AppAPIPermission(TimestampedModelMixin):
     """
 
     bk_app_code = models.CharField(max_length=32, db_index=True)
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     expires = models.DateTimeField(default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天"))
 
     objects = managers.AppAPIPermissionManager()
@@ -61,7 +61,7 @@ class AppAPIPermission(TimestampedModelMixin):
     class Meta:
         verbose_name = _("蓝鲸应用访问网关权限")
         verbose_name_plural = _("蓝鲸应用访问网关权限")
-        unique_together = ("bk_app_code", "api")
+        unique_together = ("bk_app_code", "gateway")
         db_table = "permission_app_api"
 
     @property
@@ -100,11 +100,11 @@ class AppResourcePermission(TimestampedModelMixin):
     """
 
     bk_app_code = models.CharField(max_length=32, db_index=True)
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     # NOTE: resource 若为 ForeignKey，若资源删除，则权限被级联删除，但是发布版本中的资源配置存在，会导致应用无权限访问对应资源
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
     expires = models.DateTimeField(default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天"))
-    grant_type = models.CharField(max_length=16, choices=GrantTypeEnum.choices(), db_index=True)
+    grant_type = models.CharField(max_length=16, choices=GrantTypeEnum.get_choices(), db_index=True)
 
     objects = managers.AppResourcePermissionManager()
 
@@ -114,7 +114,7 @@ class AppResourcePermission(TimestampedModelMixin):
     class Meta:
         verbose_name = _("蓝鲸应用访问资源权限")
         verbose_name_plural = _("蓝鲸应用访问资源权限")
-        unique_together = ("bk_app_code", "api", "resource_id")
+        unique_together = ("bk_app_code", "gateway", "resource_id")
         db_table = "permission_app_resource"
 
     @property
@@ -142,7 +142,7 @@ class AppResourcePermission(TimestampedModelMixin):
 
     @cached_property
     def resource(self) -> Optional[Resource]:
-        return Resource.objects.filter(api_id=self.api_id, id=self.resource_id).first()
+        return Resource.objects.filter(gateway_id=self.gateway_id, id=self.resource_id).first()
 
 
 class AppPermissionApply(TimestampedModelMixin):
@@ -152,7 +152,7 @@ class AppPermissionApply(TimestampedModelMixin):
 
     bk_app_code = models.CharField(max_length=32, db_index=True)
     applied_by = models.CharField(max_length=32)
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     _resource_ids = models.TextField(db_column="resource_ids")
     reason = models.CharField(max_length=512, blank=True, default="")
     expire_days = models.IntegerField(default=PermissionApplyExpireDaysEnum.SIX_MONTH.value)
@@ -164,8 +164,6 @@ class AppPermissionApply(TimestampedModelMixin):
     )
     status = models.CharField(max_length=16, choices=ApplyStatusEnum.get_choices(), db_index=True)
     apply_record_id = models.IntegerField(null=True, blank=True)
-
-    objects = managers.AppPermissionApplyManager()
 
     def __str__(self):
         return f"<AppPermissionApply: {self.id}>"
@@ -198,7 +196,7 @@ class AppPermissionRecord(models.Model):
     expire_days = models.IntegerField(default=PermissionApplyExpireDaysEnum.SIX_MONTH.value)
     handled_by = models.CharField(max_length=32, blank=True, default="")
     handled_time = models.DateTimeField(blank=True, null=True)
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     _resource_ids = models.TextField(db_column="resource_ids", blank=True, default="")
     _handled_resource_ids = models.TextField(db_column="handled_resource_ids", blank=True, default="{}")
     grant_dimension = models.CharField(
@@ -249,7 +247,7 @@ class AppPermissionApplyStatus(TimestampedModelMixin):
 
     apply = models.ForeignKey(AppPermissionApply, on_delete=models.CASCADE, blank=True, null=True)
     bk_app_code = models.CharField(max_length=32, db_index=True)
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE, blank=True, null=True)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE, blank=True, null=True)
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE, blank=True, null=True)
     grant_dimension = models.CharField(
         max_length=32,
@@ -267,5 +265,5 @@ class AppPermissionApplyStatus(TimestampedModelMixin):
     class Meta:
         verbose_name = _("蓝鲸应用访问资源权限申请状态")
         verbose_name_plural = _("蓝鲸应用访问资源权限申请状态")
-        unique_together = ("bk_app_code", "api", "resource")
+        unique_together = ("bk_app_code", "gateway", "resource")
         db_table = "permission_app_apply_status"

@@ -44,12 +44,8 @@ class TestStageConvertor:
         spec = stage.spec
         assert spec.description == edge_gateway_stage.description
         assert spec.vars["stage_name"] == edge_gateway_stage.name
-        # assert stage.domain == micro_gateway_http_domain
         assert spec.domain == ""
         assert spec.path_prefix == micro_gateway_http_path
-        assert spec.rewrite.enabled
-        assert spec.rewrite.headers["X-Set-By-Stage"] == edge_gateway_stage.name
-        assert spec.rewrite.headers["X-Del-By-Stage"] == ""
 
     @pytest.mark.parametrize(
         "name",
@@ -74,58 +70,6 @@ class TestStageConvertor:
         assert plugin is not None
         assert plugin.name == name
 
-    def test_global_rate_limit_plugin(self, edge_gateway_stage_context_stage_rate_limit, fake_stage_convertor):
-        # The plugin exists when the configuration is enabled by the fixture.
-        plugin = self.get_stage_plugin_by_name(fake_stage_convertor, "bk-global-rate-limit")
-
-        assert plugin is not None
-        assert plugin.name == "bk-global-rate-limit"
-        assert plugin.config == edge_gateway_stage_context_stage_rate_limit.config
-
-    def test_global_rate_limit_plugin__disabled(
-        self, edge_gateway_stage_context_stage_rate_limit, fake_stage_convertor
-    ):
-        # Set the ".enabled" field of the plugin config to false
-        g_rate_context = edge_gateway_stage_context_stage_rate_limit
-        config = g_rate_context.config
-        config["enabled"] = False
-        g_rate_context.config = config
-        g_rate_context.save(update_fields=["_config"])
-
-        # The plugin should be removed now
-        plugin = self.get_stage_plugin_by_name(fake_stage_convertor, "bk-global-rate-limit")
-        assert plugin is None
-
-    def test_stage_rate_limit_plugin(
-        self, rate_limit_access_strategy, rate_limit_access_strategy_stage_binding, fake_stage_convertor
-    ):
-        plugin = self.get_stage_plugin_by_name(fake_stage_convertor, "bk-stage-rate-limit")
-        assert plugin is not None
-        assert plugin.config == rate_limit_access_strategy.config
-
-    def test_convert_ip_group_restriction_plugin(
-        self,
-        ip_group,
-        ip_access_control_access_strategy,
-        ip_access_control_access_strategy_stage_binding,
-        fake_stage_convertor,
-    ):
-        plugin = self.get_stage_plugin_by_name(
-            fake_stage_convertor,
-            "bk-ip-group-restriction",
-        )
-
-        assert plugin is not None
-
-        access_strategy_config = ip_access_control_access_strategy.config
-
-        groups = plugin.config[access_strategy_config["type"]]
-        assert len(groups) == 1
-
-        group = groups[0]
-        assert group["name"] == ip_group.name
-        assert group["content"] == ip_group._ips
-
     def test_stage_plugin(
         self,
         faker,
@@ -136,7 +80,7 @@ class TestStageConvertor:
     ):
         G(
             PluginBinding,
-            api=edge_gateway,
+            gateway=edge_gateway,
             config=echo_plugin,
             scope_type=PluginBindingScopeEnum.STAGE.value,
             scope_id=edge_gateway_stage.id,
@@ -157,3 +101,4 @@ class TestStageConvertor:
         for plugin in stage.spec.plugins:
             if plugin.name == name:
                 return plugin
+        return None

@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from django.utils.functional import cached_property
 
@@ -35,7 +35,8 @@ from apigateway.controller.crds.v1beta1.models.gateway_resource import (
 )
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService
 from apigateway.core.constants import ProxyTypeEnum
-from apigateway.core.models import MicroGateway
+from apigateway.core.models import BackendConfig, MicroGateway
+from apigateway.utils.time import now_str
 
 
 class HttpResourceConvertor(BaseConvertor):
@@ -44,9 +45,13 @@ class HttpResourceConvertor(BaseConvertor):
         release_data: ReleaseData,
         micro_gateway: MicroGateway,
         gateway_service: List[BkGatewayService],
+        publish_id: Union[int, None] = None,
+        revoke_flag: Union[bool, None] = False,
     ):
         super().__init__(release_data, micro_gateway)
         self._gateway_services = gateway_service
+        self._publish_id = publish_id
+        self._revoke_flag = revoke_flag
 
     @cached_property
     def _default_stage_service_key(self) -> str:
@@ -59,12 +64,16 @@ class HttpResourceConvertor(BaseConvertor):
 
     def convert(self) -> List[BkGatewayResource]:
         resources: List[BkGatewayResource] = []
-
-        for resource in self._release_data.resource_version.data:
-            crd = self._convert_http_resource(resource)
-            if crd:
-                resources.append(crd)
-
+        if not self._revoke_flag:
+            for resource in self._release_data.resource_version.data:
+                crd = self._convert_http_resource(resource)
+                if crd:
+                    resources.append(crd)
+        # 如果是版本发布需要加上版本路由，版本发布需要新增一个版本路由，方便查询发布结果探测
+        if self._publish_id:
+            version_route_crd = self._convert_http_resource(self._get_release_version_route_resource())
+            if version_route_crd:
+                resources.append(version_route_crd)
         return resources
 
     def _convert_http_resource(self, resource: Dict[str, Any]) -> Optional[BkGatewayResource]:
@@ -76,9 +85,11 @@ class HttpResourceConvertor(BaseConvertor):
 
         resource_proxy = json.loads(resource["proxy"]["config"])
 
+        backend_id = resource["proxy"].get("backend_id", 0)
+
         service_name = ""
-        upstream = self._convert_http_resource_upstream(resource_proxy)
-        # operator 会将环境级别的插件绑定到service，如果资源没有定义上游，依然绑定服务
+        upstream = self._convert_http_resource_upstream(resource_proxy, backend_id)
+        # operator 会将环境级别的插件绑定到 service，如果资源没有定义上游，依然绑定服务
         service_name = self._default_stage_service_key
 
         methods = []
@@ -103,8 +114,68 @@ class HttpResourceConvertor(BaseConvertor):
             ),
         )
 
-    def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any]) -> Optional[Upstream]:
-        upstreams = resource_proxy.get("upstreams")
+    def _get_release_version_route_resource(self) -> dict:
+        uri = "/__apigw_version"
+        name = "apigw_builtin__mock_release_version"
+        mock_config = {
+            "code": 200,
+            "body": json.dumps(
+                {
+                    "publish_id": self._publish_id,
+                    "start_time": now_str(),
+                }
+            ),
+            "headers": {"Content-Type": "application/json"},
+        }
+        auth_config = {
+            "skip_auth_verification": True,
+            "auth_verified_required": False,
+            "app_verified_required": False,
+            "resource_perm_required": False,
+        }
+        return {
+            "id": -1,
+            "name": name,
+            "description": "获取发布信息，用于检查版本发布结果",
+            "description_en": "Get release information for checking version release result",
+            "method": "GET",
+            "path": uri,
+            "match_subpath": False,
+            "is_public": False,
+            "allow_apply_permission": False,
+            "proxy": {
+                "type": ProxyTypeEnum.MOCK.value,
+                "config": json.dumps(mock_config),
+            },
+            "contexts": {
+                "resource_auth": {
+                    "scope_type": "resource",
+                    "type": "resource_auth",
+                    "config": json.dumps(auth_config),
+                }
+            },
+            "disabled_stages": [],
+            "api_labels": [],
+        }
+
+    def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any], backend_id: int) -> Optional[Upstream]:
+        # 如果是 v2，需要从 backend_config 里面去拿 upstreams
+
+        upstreams = None
+
+        if self._release_data.is_schema_v2:
+            upstreams = (
+                BackendConfig.objects.filter(
+                    backend_id=backend_id,
+                    gateway_id=self._release_data.gateway.pk,
+                    stage_id=self._release_data.stage.pk,
+                )
+                .values_list("config", flat=True)
+                .first()
+            )
+        else:
+            upstreams = resource_proxy.get("upstreams")
+
         if not upstreams:
             return None
 
@@ -123,7 +194,7 @@ class HttpResourceConvertor(BaseConvertor):
 
     def _convert_http_resource_timeout(self, resource_proxy: Dict[str, Any]) -> TimeoutConfig:
         # 资源没有配置则使用环境的
-        timeout = resource_proxy.get("timeout") or self._release_data.stage_proxy_config.get("timeout") or 60
+        timeout = resource_proxy.get("timeout") or self._release_data.stage_backend_config.get("timeout") or 60
 
         return TimeoutConfig(
             connect=timeout,
@@ -132,7 +203,12 @@ class HttpResourceConvertor(BaseConvertor):
         )
 
     def _convert_http_resource_rewrite(self, resource_proxy: Dict[str, Any]) -> ResourceRewrite:
-        headers = self._convert_http_rewrite_headers(self._release_data.stage_proxy_config.get("transform_headers"))
+        # FIXME: 1.13 去掉这个逻辑
+        if self._release_data.is_schema_v2:
+            return ResourceRewrite(
+                enabled=False,
+            )
+        headers = self._convert_http_rewrite_headers(self._release_data.stage_backend_config.get("transform_headers"))
         headers.update(self._convert_http_rewrite_headers(resource_proxy.get("transform_headers")))
 
         return ResourceRewrite(

@@ -13,7 +13,8 @@
               :model="keyItem">
               <bk-form-item
                 :rules="rules.key"
-                :property="'key'">
+                :property="'key'"
+                :error-display-type="'normal'">
                 <bk-input
                   type="text"
                   :placeholder="keyPlaceholder || $t('键')"

@@ -8,7 +8,7 @@
         v-model="keyword"
         :placeholder="$t('请输入环境名称，按Enter搜索')"
         :right-icon="'bk-icon icon-search'"
-        style="width: 300px;"
+        style="width: 327px;"
         @enter="handleSearch">
       </bk-input>
     </div>
@@ -397,14 +397,7 @@
       },
 
       handleSearch (event) {
-        console.log(event)
         this.getApigwStages()
-      },
-
-      handleRename (data) {
-        this.curStage = JSON.parse(JSON.stringify(data))
-        this.stageDialogConf.title = this.$t('重命名标签')
-        this.stageDialogConf.visiable = true
       },
 
       handleEditStage (data) {

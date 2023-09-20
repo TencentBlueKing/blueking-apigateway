@@ -19,18 +19,28 @@
 from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
-from apigateway.apis.open.resource.serializers import ResourceListV1SLZ
 from apigateway.core.utils import get_path_display, get_resource_url
 
 
-class ReleasedResourceSLZ(serializers.Serializer):
+class ResourceV1SLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    description = SerializerTranslatedField(
+        default_field="description_i18n", translated_fields={"en": "description_en"}
+    )
+    description_en = serializers.CharField(default=None, required=False, write_only=True)
+    method = serializers.CharField()
+    path = serializers.CharField()
+
+
+class ReleasedResourceOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     method = serializers.CharField(read_only=True)
     path = serializers.CharField(read_only=True)
 
 
-class ReleasedResourceListV1SLZ(ResourceListV1SLZ):
+class ReleasedResourceListV1OutputSLZ(ResourceV1SLZ):
     app_verified_required = serializers.BooleanField()
     resource_perm_required = serializers.BooleanField()
     user_verified_required = serializers.BooleanField()
@@ -41,7 +51,7 @@ class ReleasedResourceListV1SLZ(ResourceListV1SLZ):
         return self.context["resource_labels"].get(obj["id"], [])
 
 
-class ListReleasedResourceV2SLZ(ResourceListV1SLZ):
+class ReleasedResourceListV1InputSLZ(ResourceV1SLZ):
     app_verified_required = serializers.BooleanField()
     resource_perm_required = serializers.BooleanField()
     user_verified_required = serializers.BooleanField()

@@ -23,7 +23,6 @@ from common.base_utils import get_not_empty_value
 from common.constants import API_TYPE_Q, HTTP_METHOD
 from common.forms import BaseComponentForm
 from components.component import Component
-
 from .toolkit import configs, tools
 
 

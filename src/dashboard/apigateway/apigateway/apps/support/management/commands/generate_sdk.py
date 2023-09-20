@@ -26,7 +26,7 @@ from apigateway.core.models import Gateway, ResourceVersion
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument("--api_name", type=str, dest="api_name", required=True, help="API Name")
+        parser.add_argument("--gateway_name", type=str, dest="gateway_name", required=True, help="Gateway Name")
         parser.add_argument("--resource_version", type=str, dest="resource_version", required=True)
         parser.add_argument("--language", required=True)
         parser.add_argument("--include_private_resources", default=False)
@@ -37,7 +37,7 @@ class Command(BaseCommand):
 
     def handle(
         self,
-        api_name,
+        gateway_name,
         resource_version,
         language,
         output_dir,
@@ -48,11 +48,11 @@ class Command(BaseCommand):
         *args,
         **options,
     ):
-        gateway = Gateway.objects.filter(name=api_name).first()
+        gateway = Gateway.objects.filter(name=gateway_name).first()
         if not gateway:
-            raise CommandError(f"网关{api_name}不存在")
+            raise CommandError(f"网关{gateway_name}不存在")
 
-        resource_version = ResourceVersion.objects.get(api=gateway, name=resource_version)
+        resource_version = ResourceVersion.objects.get(gateway=gateway, name=resource_version)
         if not resource_version:
             raise CommandError(f"版本{resource_version}不存在")
 
@@ -62,10 +62,7 @@ class Command(BaseCommand):
         with SDKHelper(resource_version=resource_version, output_dir=output_dir) as helper:
             context = helper.create_context(
                 language=language,
-                include_private_resources=include_private_resources,
-                is_public=is_public,
                 version=version,
-                operator=operator,
             )
 
         if context.files:

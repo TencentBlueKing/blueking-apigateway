@@ -120,9 +120,9 @@ class TestMicroGatewayViewSet:
         result = get_response_json(response)
 
         if will_error:
-            assert result["code"] != 0, result
+            assert response.status_code != 200, result
         else:
-            assert result["code"] == 0, result
+            assert response.status_code == 200, result
 
         if need_deploy:
             mock_deploy_micro_gateway.assert_called_once_with(
@@ -134,7 +134,7 @@ class TestMicroGatewayViewSet:
     def test_list(self, mock_micro_gateway_config):
         micro_gateway = G(
             MicroGateway,
-            api=self.gateway,
+            gateway=self.gateway,
             _config=json.dumps(mock_micro_gateway_config),
             schema=SchemaFactory().get_micro_gateway_schema(),
         )
@@ -143,14 +143,15 @@ class TestMicroGatewayViewSet:
         request = self.factory.get("")
         response = view(request, gateway_id=self.gateway.id)
 
+        assert response.status_code == 200
+
         result = get_response_json(response)
-        assert result["code"] == 0
         assert len(result["data"]["results"]) == 1
 
     def test_update(self, request_view, fake_gateway, fake_admin_user, mock_micro_gateway_config, faker):
         micro_gateway = G(
             MicroGateway,
-            api=self.gateway,
+            gateway=self.gateway,
             _config=json.dumps(mock_micro_gateway_config),
             schema=SchemaFactory().get_micro_gateway_schema(),
         )
@@ -190,8 +191,9 @@ class TestMicroGatewayViewSet:
             user=fake_admin_user,
         )
 
-        result = get_response_json(response)
-        assert result["code"] == 0, result
+        assert response.status_code == 200
+
+        _ = get_response_json(response)
 
         micro_gateway = MicroGateway.objects.get(id=micro_gateway.id)
         assert micro_gateway.name == expected_name
@@ -199,7 +201,7 @@ class TestMicroGatewayViewSet:
     def test_retrieve(self, mock_micro_gateway_config):
         micro_gateway = G(
             MicroGateway,
-            api=self.gateway,
+            gateway=self.gateway,
             _config=json.dumps(mock_micro_gateway_config),
             schema=SchemaFactory().get_micro_gateway_schema(),
         )
@@ -208,17 +210,19 @@ class TestMicroGatewayViewSet:
         request = self.factory.get("")
         response = view(request, gateway_id=self.gateway.id, id=micro_gateway.id)
 
-        result = get_response_json(response)
-        assert result["code"] == 0
+        assert response.status_code == 200
+
+        _ = get_response_json(response)
 
     def test_destroy(self):
-        micro_gateway = G(MicroGateway, api=self.gateway)
+        micro_gateway = G(MicroGateway, gateway=self.gateway)
         micro_gateway_id = micro_gateway.id
 
         request = self.factory.delete("")
         view = MicroGatewayViewSet.as_view({"delete": "destroy"})
         response = view(request, gateway_id=self.gateway.id, id=micro_gateway.id)
 
-        result = get_response_json(response)
-        assert result["code"] == 0
+        _ = get_response_json(response)
+
+        assert response.status_code == 200
         assert not MicroGateway.objects.filter(id=micro_gateway_id).exists()

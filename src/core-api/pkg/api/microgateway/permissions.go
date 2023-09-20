@@ -22,10 +22,10 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/gin-gonic/gin"
+
 	"core/pkg/service"
 	"core/pkg/util"
-
-	"github.com/gin-gonic/gin"
 )
 
 type queryPermissionSerializer struct {
@@ -55,6 +55,7 @@ func QueryPermission(c *gin.Context) {
 
 	svc := service.NewAppPermissionService()
 	permissions, err := svc.Query(
+		c.Request.Context(),
 		util.GetInstanceID(c),
 		query.BkGatewayName,
 		query.BkStageName,

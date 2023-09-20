@@ -33,7 +33,7 @@
           </bk-select>
         </bk-form-item>
         <bk-form-item :label="$t('查询条件')" class="ag-form-item-inline">
-          <search-input v-model="keyword" @search="handleSearch" class="top-search-input" />
+          <search-input v-model="keyword" @search="handleSearch" :class="['top-search-input', localLanguage === 'en' ? 'top-search-input-en' : '']" />
           <span v-bk-tooltips="searchUsage.config" class="search-usage">
             {{`${searchUsage.showed ? $t('隐藏示例') : $t('显示示例')}`}}
           </span>
@@ -226,6 +226,9 @@
       },
       formatterValue () {
         return params => this.$t(`{value} 次`, { value: params.value.toLocaleString() })
+      },
+      localLanguage () {
+        return this.$store.state.localLanguage
       }
     },
     created () {
@@ -676,7 +679,7 @@
         }
     }
 
-    @media (max-width: 1660px) {
+    @media (max-width: 1753px) {
         .search-form {
             width: 700px !important;
 
@@ -687,6 +690,9 @@
 
             .top-search-input {
                 width: 526px;
+            }
+            .top-search-input-en {
+                width: 460px;
             }
         }
     }

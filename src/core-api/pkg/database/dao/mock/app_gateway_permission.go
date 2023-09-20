@@ -5,8 +5,10 @@
 package mock
 
 import (
-	dao "core/pkg/database/dao"
+	context "context"
 	reflect "reflect"
+
+	dao "core/pkg/database/dao"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -35,16 +37,16 @@ func (m *MockAppGatewayPermissionManager) EXPECT() *MockAppGatewayPermissionMana
 }
 
 // Get mocks base method.
-func (m *MockAppGatewayPermissionManager) Get(bkAppCode string, gatewayID int64) (dao.AppGatewayPermission, error) {
+func (m *MockAppGatewayPermissionManager) Get(ctx context.Context, bkAppCode string, gatewayID int64) (dao.AppGatewayPermission, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", bkAppCode, gatewayID)
+	ret := m.ctrl.Call(m, "Get", ctx, bkAppCode, gatewayID)
 	ret0, _ := ret[0].(dao.AppGatewayPermission)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockAppGatewayPermissionManagerMockRecorder) Get(bkAppCode, gatewayID interface{}) *gomock.Call {
+func (mr *MockAppGatewayPermissionManagerMockRecorder) Get(ctx, bkAppCode, gatewayID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppGatewayPermissionManager)(nil).Get), bkAppCode, gatewayID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppGatewayPermissionManager)(nil).Get), ctx, bkAppCode, gatewayID)
 }

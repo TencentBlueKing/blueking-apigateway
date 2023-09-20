@@ -17,38 +17,34 @@
 #
 from django.db import models
 
-from apigateway.apps.label.managers import APILabelManager, ResourceLabelManager
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway, Resource
 
 
 class APILabel(TimestampedModelMixin, OperatorModelMixin):
     """
-    API labels, a label set
+    Gateway labels, a label set
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     name = models.CharField(max_length=32)
 
-    objects = APILabelManager()
-
     class Meta:
-        unique_together = ("api", "name")
+        unique_together = ("gateway", "name")
         db_table = "label_api"
 
     def __str__(self):
-        return f"<APILabel: {self.id}/{self.name}>"
+        return f"<GatewayLabel: {self.id}/{self.name}>"
 
 
 class ResourceLabel(TimestampedModelMixin):
     """
     Resource label
+    resource - api_label
     """
 
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
     api_label = models.ForeignKey(APILabel, on_delete=models.CASCADE)
-
-    objects = ResourceLabelManager()
 
     class Meta:
         unique_together = ("resource", "api_label")

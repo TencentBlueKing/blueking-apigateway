@@ -19,7 +19,7 @@
 from django.test import TestCase
 from rest_framework import serializers
 
-from apigateway.utils.serializers import CustomFieldsSerializer, set_default_to_context
+from apigateway.utils.serializers import CustomFieldsSerializer
 
 
 class UserSerializer(CustomFieldsSerializer):
@@ -41,29 +41,3 @@ class TestCustomFieldsSerializer(TestCase):
         for test in data:
             slz = UserSerializer(add_fields=test["add_fields"])
             self.assertEqual([field_name for field_name, _ in slz.fields.items()], test["expected"])
-
-
-def test_set_default_to_context():
-    class ColorSLZ(serializers.Serializer):
-        color = serializers.CharField()
-
-        def validate(self, data):
-            data["existed"] = data["color"] in self._get_existed_colors()
-            return data
-
-        @set_default_to_context(context_key="existed_colors")
-        def _get_existed_colors(self):
-            self.context.setdefault("count", 0)
-            self.context["count"] = self.context["count"] + 1
-
-            return {"green": True}
-
-    slz = ColorSLZ(data={"color": "red"})
-    slz.is_valid(raise_exception=True)
-    assert slz.validated_data == {"color": "red", "existed": False}
-    assert slz.context["count"] == 1
-
-    slz = ColorSLZ(data=[{"color": "red"}, {"color": "green"}], many=True)
-    slz.is_valid(raise_exception=True)
-    assert slz.validated_data == [{"color": "red", "existed": False}, {"color": "green", "existed": True}]
-    assert slz.context["count"] == 1

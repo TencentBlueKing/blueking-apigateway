@@ -22,39 +22,52 @@
 import logging
 from enum import Enum
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.apps.esb.exceptions import EsbGatewayNotFound
 from apigateway.apps.esb.utils import get_esb_gateway
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.core.constants import APITypeEnum
+from apigateway.core.constants import GatewayTypeEnum
 
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
+    """
+    更新 esb 网关的认证配置
+
+    - 更新网关类型：SUPER_OFFICIAL_API
+    - 更新配置：不允许修改网关资源的认证配置
+    """
+
     def handle(self, *args, **options):
+        print(f"gateway(name={settings.BK_ESB_GATEWAY_NAME}) update auth config start")
+
         try:
             esb_gateway = get_esb_gateway()
         except EsbGatewayNotFound as err:
             raise CommandError(str(err))
 
         esb_gateway_auth_config = {
-            "api_type": APITypeEnum.SUPER_OFFICIAL_API,
+            "api_type": GatewayTypeEnum.SUPER_OFFICIAL_API,
             "allow_update_api_auth": False,
         }
 
         current_auth_config = GatewayHandler().get_current_gateway_auth_config(esb_gateway.id)
         if not self._should_update_auth_config(current_auth_config, esb_gateway_auth_config):
+            print(f"gateway(name={settings.BK_ESB_GATEWAY_NAME}) auth config not changed, skip")
             return
 
-        GatewayHandler().save_auth_config(esb_gateway.id, **esb_gateway_auth_config)
+        GatewayHandler.save_auth_config(esb_gateway.id, **esb_gateway_auth_config)
+
+        print(f"gateway(name={settings.BK_ESB_GATEWAY_NAME}) auth config updated")
 
     def _should_update_auth_config(self, current_config, new_config) -> bool:
         """检查配置是否有差异，若有差异，则需要更新"""
         for key, value in new_config.items():
             if isinstance(value, Enum):
-                value = value.value
+                value = value.value  # ruff: noqa: PLW2901
 
             if value != current_config.get(key):
                 return True

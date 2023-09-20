@@ -28,7 +28,7 @@ from apigateway.apps.esb.exceptions import EsbGatewayNotFound
 from apigateway.apps.esb.utils import get_esb_gateway
 from apigateway.apps.permission.models import AppAPIPermission
 from apigateway.apps.permission.utils import calculate_expires
-from apigateway.core.constants import APP_CODE_PATTERN
+from apigateway.biz.constants import APP_CODE_PATTERN
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class Command(BaseCommand):
 
             AppAPIPermission.objects.get_or_create(
                 bk_app_code=bk_app_code,
-                api=esb_gateway,
+                gateway=esb_gateway,
                 defaults={
                     "expires": calculate_expires(None),
                 },

@@ -20,6 +20,4 @@ from django.conf import settings
 
 
 def get_etcd_client() -> etcd3.Etcd3Client:
-    client = etcd3.client(**settings.ETCD_CONFIG)
-
-    return client
+    return etcd3.client(**settings.ETCD_CONFIG)

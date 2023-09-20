@@ -51,7 +51,7 @@ class SignatureValidator(SignatureGenerator):
             self.error = None
 
         if self.error and raise_exception:
-            raise error_codes.INVALID_ARGS.format(self.error)
+            raise error_codes.INVALID_ARGUMENT.format(self.error)
 
         return not bool(self.error)
 
@@ -103,7 +103,6 @@ class SignatureValidator(SignatureGenerator):
         except Exception:
             raise ValueError("bk_timestamp is illegal, must be a timestamp integer")
 
-        # 有效期为 24h
         if timestamp < int(time.time()) - self.timestamp_expire_seconds:
             raise ValueError("bk_timestamp has expired")
         return timestamp

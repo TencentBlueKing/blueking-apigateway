@@ -15,10 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from dataclasses import dataclass, field
 from logging import getLogger
 from typing import List
 
-from attrs import define, field
 from bkapi.bcs_api_gateway.client import Client as BcsApiGatewayClient
 from django.conf import settings
 
@@ -33,29 +33,29 @@ class BcsApiGatewayApiRequestError(ApiRequestError):
     """BcsApiGateway API 请求错误"""
 
 
-@define(slots=False)
+@dataclass
 class ProjectInfo:
     project_id: str
     project_name: str
 
 
-@define(slots=False)
+@dataclass
 class ClusterInfo:
     cluster_id: str
 
 
-@define(slots=False)
+@dataclass
 class NamespaceInfo:
     namespace: str
 
 
-@define(slots=False)
+@dataclass
 class BcsHelper:
     access_token: str = ""
-    bcs_client: BcsApiGatewayClient = field(factory=get_bcs_api_gateway_client)
-    bcs_admin_client: BcsApiGatewayClient = field(factory=get_bcs_api_gateway_admin_client)
+    bcs_client: BcsApiGatewayClient = field(default_factory=get_bcs_api_gateway_client)
+    bcs_admin_client: BcsApiGatewayClient = field(default_factory=get_bcs_api_gateway_admin_client)
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         self.bcs_client.update_bkapi_authorization(
             bk_app_code=settings.BK_APP_CODE,
             bk_app_secret=settings.BK_APP_SECRET,

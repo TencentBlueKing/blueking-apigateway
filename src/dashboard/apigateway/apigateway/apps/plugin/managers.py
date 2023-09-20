@@ -25,32 +25,15 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 
 
 class PluginConfigManager(models.Manager):
-    def with_type(self, code: str):
-        return self.filter(type__code=code)
+    pass
 
 
 class PluginBindingManager(models.Manager):
     def delete_by_gateway_id(self, gateway_id):
-        self.filter(api_id=gateway_id).delete()
+        self.filter(gateway_id=gateway_id).delete()
 
     def bulk_delete(self, objs):
         return self.filter(id__in=[i.pk for i in objs]).delete()
-
-    def bulk_update_or_create(self, objs, fields):
-        to_updates = []
-        to_creates = []
-
-        for obj in objs:
-            if obj.pk is not None:
-                to_updates.append(obj)
-            else:
-                to_creates.append(obj)
-
-        if to_updates:
-            self.bulk_update(to_updates, fields=fields)
-
-        if to_creates:
-            self.bulk_create(to_creates)
 
     def create_or_update_bindings(
         self,
@@ -65,7 +48,7 @@ class PluginBindingManager(models.Manager):
         """将插件 plugin 绑定到指定 scopes"""
         for scope_id in scope_ids:
             binding, created = self.get_or_create(
-                api=gateway,
+                gateway=gateway,
                 scope_type=scope_type,
                 scope_id=scope_id,
                 type=type_,
@@ -81,53 +64,13 @@ class PluginBindingManager(models.Manager):
                 binding.updated_by = username
                 binding.save()
 
-    def delete_unspecified_bindings(
-        self,
-        gateway,
-        scope_type: str,
-        scope_ids: List[int],
-        plugin=None,
-        config=None,
-        type_=None,
-    ) -> None:
-        qs = self.filter(api=gateway, scope_type=scope_type).exclude(scope_id__in=scope_ids)
-
-        if plugin:
-            qs = qs.filter(plugin=plugin, type=type_)
-
-        if config:
-            qs = qs.filter(config=config)
-
-        qs.delete()
-
-    def delete_bindings(self, gateway_id: int, plugin_ids: List[int] = None, config_ids: List[int] = None):
-        queryset = self.filter(api_id=gateway_id)
-        if plugin_ids is not None:
-            queryset = queryset.filter(plugin_id__in=plugin_ids)
-        if config_ids is not None:
-            queryset = queryset.filter(config_id__in=config_ids)
-        queryset.delete()
-
-    def delete_by_scopes(self, scope_type: str, scope_ids: List[int]):
-        self.filter(scope_type=scope_type, scope_id__in=scope_ids).delete()
-
-    def get_valid_scope_ids(self, gateway_id: int, scope_type: str, scope_ids: List[int]) -> List[int]:
-        from apigateway.core.models import Resource, Stage
-
-        if scope_type == PluginBindingScopeEnum.STAGE.value:
-            return list(Stage.objects.filter(api_id=gateway_id, id__in=scope_ids).values_list("id", flat=True))
-        elif scope_type == PluginBindingScopeEnum.RESOURCE.value:
-            return list(Resource.objects.filter(api_id=gateway_id, id__in=scope_ids).values_list("id", flat=True))
-
-        raise ValueError(f"unsupported scope_type: {scope_type}")
-
     def query_scope_id_to_bindings(
         self,
         gateway_id: int,
         scope_type: PluginBindingScopeEnum,
         scope_ids: Optional[List[int]] = None,
-    ) -> Dict[str, Any]:
-        qs = self.filter(api_id=gateway_id, scope_type=scope_type.value)
+    ) -> Dict[int, Any]:
+        qs = self.filter(gateway_id=gateway_id, scope_type=scope_type.value)
         if scope_ids is not None:
             qs = qs.filter(scope_id__in=scope_ids)
 

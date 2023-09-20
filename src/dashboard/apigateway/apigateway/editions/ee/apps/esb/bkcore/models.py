@@ -36,7 +36,6 @@ from apigateway.utils.time import NeverExpiresTime
 
 
 class ModelWithBoard(models.Model):
-
     board = models.CharField(max_length=64, default="default", blank=True, db_index=True)
 
     class Meta:
@@ -157,7 +156,7 @@ class ComponentResourceBinding(ModelWithBoard):
     def component_key(self) -> Optional[str]:
         if self.component_id:
             return str(self.component_id)
-        elif self.component_path:
+        if self.component_path:
             return f"{self.component_method}:{self.component_path}"
 
         return None
@@ -283,7 +282,6 @@ class AppPermissionApplyStatus(ModelWithBoard, TimestampedModelMixin):
 
 
 class ComponentDoc(ModelWithBoard, TimestampedModelMixin):
-
     component = models.ForeignKey(ESBChannel, on_delete=models.CASCADE)
     language = models.CharField(max_length=32, choices=LanguageEnum.get_django_choices())
     content = models.TextField(blank=True, default="")
@@ -320,7 +318,7 @@ class ComponentReleaseHistory(ModelWithBoard, TimestampedModelMixin, OperatorMod
     status = models.CharField(
         _("发布状态"),
         max_length=16,
-        choices=ReleaseStatusEnum.choices(),
+        choices=ReleaseStatusEnum.get_choices(),
         default=ReleaseStatusEnum.PENDING.value,
     )
     message = models.TextField(blank=True, default="")
@@ -407,7 +405,7 @@ class AccessToken(TimestampedModelMixin):
 
 
 class AppAccount(models.Model):
-    """应用帐号"""
+    """应用账号"""
 
     app_code = models.CharField(_("蓝鲸应用编码"), max_length=30, unique=True)
     app_token = models.CharField(_("应用Token"), max_length=128)

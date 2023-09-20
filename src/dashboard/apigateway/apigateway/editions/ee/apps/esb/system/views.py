@@ -56,7 +56,7 @@ class SystemViewSet(viewsets.ModelViewSet):
             },
         )
 
-        return OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
         response_serializer=serializers.SystemSLZ,
@@ -72,7 +72,7 @@ class SystemViewSet(viewsets.ModelViewSet):
                 ),
             },
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(
         request_body=serializers.SystemSLZ,
@@ -101,7 +101,7 @@ class SystemViewSet(viewsets.ModelViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse("OK", data={"id": slz.instance.id})
+        return OKJsonResponse(data={"id": slz.instance.id})
 
     @swagger_auto_schema(
         request_body=serializers.SystemSLZ,
@@ -127,7 +127,7 @@ class SystemViewSet(viewsets.ModelViewSet):
                 updated_by=request.user.username,
             )
 
-        return OKJsonResponse("OK")
+        return OKJsonResponse()
 
     @swagger_auto_schema(tags=["ESB.System"])
     @transaction.atomic
@@ -136,8 +136,8 @@ class SystemViewSet(viewsets.ModelViewSet):
 
         allow, message = ComponentSystem.objects.allow_delete([instance.id])
         if not allow:
-            raise error_codes.FORBIDDEN.format(message=message, replace=True)
+            raise error_codes.FAILED_PRECONDITION.format(message=message, replace=True)
 
         ComponentSystem.objects.delete_custom_systems([instance.id])
 
-        return OKJsonResponse("OK")
+        return OKJsonResponse()

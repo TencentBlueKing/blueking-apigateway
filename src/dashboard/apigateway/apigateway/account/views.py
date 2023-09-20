@@ -20,8 +20,6 @@ from rest_framework.views import APIView
 
 from apigateway.utils.responses import OKJsonResponse
 
-from .utils import get_user_avatar
-
 
 class UserAPIView(APIView):
     """
@@ -33,7 +31,7 @@ class UserAPIView(APIView):
         user = request.user
         data = {
             "chinese_name": getattr(user, "chinese_name", ""),
-            "avatar_url": user.avatar_url if getattr(user, "avatar_url", "") else get_user_avatar(user.username),
+            "avatar_url": getattr(user, "avatar_url", ""),
             "username": user.username,
         }
-        return OKJsonResponse("OK", data=data)
+        return OKJsonResponse(data=data)

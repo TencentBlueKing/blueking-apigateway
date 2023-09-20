@@ -18,7 +18,7 @@
 """
 微网关实例处理器
 """
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from typing import Any, Dict
 
 from blue_krill.async_utils.django_utils import delay_on_commit
@@ -29,22 +29,28 @@ from apigateway.controller.tasks import deploy_micro_gateway
 from apigateway.core.constants import MicroGatewayStatusEnum
 
 
-class BaseMicroGatwayHandler(metaclass=ABCMeta):
+class BaseMicroGatewayHandler(metaclass=ABCMeta):
+    @abstractmethod
     def deploy(self, micro_gateway_id: int, access_token: str, username: str = ""):
         """部署微网关"""
 
+    @abstractmethod
     def get_initial_status(self) -> MicroGatewayStatusEnum:
-        return MicroGatewayStatusEnum.PENDING
+        raise NotImplementedError
 
+    @abstractmethod
     def get_initial_bcs_info(self) -> Dict[str, Any]:
-        return {}
+        raise NotImplementedError
 
 
-class NeedDeployMicroGatewayHandler(BaseMicroGatwayHandler):
+class NeedDeployMicroGatewayHandler(BaseMicroGatewayHandler):
     """新部署的微网关实例"""
 
     def deploy(self, micro_gateway_id: int, access_token: str, username: str = ""):
         delay_on_commit(deploy_micro_gateway, micro_gateway_id, access_token, username)
+
+    def get_initial_status(self) -> MicroGatewayStatusEnum:
+        return MicroGatewayStatusEnum.PENDING
 
     def get_initial_bcs_info(self) -> Dict[str, Any]:
         """新部署微网关实例时，使用默认配置的 chart"""
@@ -54,11 +60,17 @@ class NeedDeployMicroGatewayHandler(BaseMicroGatwayHandler):
         }
 
 
-class RelateDeployedMicroGatewayHandler(BaseMicroGatwayHandler):
+class RelateDeployedMicroGatewayHandler(BaseMicroGatewayHandler):
     """接入已部署的微网关实例"""
+
+    def deploy(self, micro_gateway_id: int, access_token: str, username: str = ""):
+        """部署微网关"""
 
     def get_initial_status(self) -> MicroGatewayStatusEnum:
         return MicroGatewayStatusEnum.INSTALLED
+
+    def get_initial_bcs_info(self) -> Dict[str, Any]:
+        return {}
 
 
 class MicroGatewayHandlerFactory:
@@ -68,7 +80,7 @@ class MicroGatewayHandlerFactory:
     }
 
     @classmethod
-    def get_handler(cls, create_way: MicroGatewayCreateWayEnum) -> BaseMicroGatwayHandler:
+    def get_handler(cls, create_way: MicroGatewayCreateWayEnum) -> BaseMicroGatewayHandler:
         try:
             handler_cls = cls._mapping[create_way]
 

@@ -24,12 +24,12 @@ import (
 	"strings"
 	"time"
 
-	"core/pkg/logging"
-
 	"github.com/TencentBlueKing/gopkg/stringx"
 	"github.com/jmoiron/sqlx"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
+
+	"core/pkg/logging"
 )
 
 // ArgsTruncateLength ...

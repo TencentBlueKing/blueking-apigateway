@@ -16,10 +16,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+from dataclasses import dataclass
 from typing import Optional
 from urllib.parse import urlparse
 
-from attrs import define
 from bkapi.bcs_api_gateway.client import Client as BcsApiGatewayClient
 from django.conf import settings
 
@@ -32,7 +32,7 @@ from apigateway.utils.exception import check_result_code
 logger = logging.getLogger(__name__)
 
 
-@define(slots=False)
+@dataclass
 class ChartRepoInfo:
     project_name: str
     name: str
@@ -42,18 +42,18 @@ class ChartRepoInfo:
     password: str
 
 
-@define(slots=False)
+@dataclass
 class ChartInfo:
     name: str
     version: str
 
 
-@define(slots=False)
+@dataclass
 class ChartHelper:
     client: Optional[BcsApiGatewayClient] = None
     access_token: str = ""
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         if not self.client:
             self.client = get_bcs_api_gateway_client()
         if self.access_token and self.access_token != "":
@@ -129,8 +129,4 @@ class ChartHelper:
             return False
 
         data = result["data"]
-        for i in data["data"]:
-            if i.get("version") == version:
-                return True
-
-        return False
+        return any(i.get("version") == version for i in data["data"])

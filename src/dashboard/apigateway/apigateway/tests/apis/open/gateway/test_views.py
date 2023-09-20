@@ -23,8 +23,8 @@ from django_dynamic_fixture import G
 from rest_framework.serializers import ValidationError
 
 from apigateway.apis.open.gateway import views
-from apigateway.common.contexts import APIAuthContext
-from apigateway.core.models import JWT, APIRelatedApp, Gateway, Release, Stage
+from apigateway.common.contexts import GatewayAuthContext
+from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release, Stage
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, get_response_json
 
 pytestmark = pytest.mark.django_db
@@ -42,7 +42,7 @@ class TestAPIViewSet:
     @pytest.fixture(autouse=True)
     def setup_fixture(self, meta_schemas):
         self.factory = APIRequestFactory()
-        self.api_auth_context = APIAuthContext()
+        self.api_auth_context = GatewayAuthContext()
 
     def test_list(self):
         gateway_1 = create_gateway(name="api_1", status=1, is_public=True)
@@ -52,11 +52,11 @@ class TestAPIViewSet:
         self.api_auth_context.save(gateway_1.id, {"user_auth_type": "ieod", "api_type": 10})
         self.api_auth_context.save(gateway_2.id, {"user_auth_type": "ieod", "api_type": 10})
 
-        s1 = G(Stage, api=gateway_1, status=1)
-        s2 = G(Stage, api=gateway_2, status=1)
+        s1 = G(Stage, gateway=gateway_1, status=1)
+        s2 = G(Stage, gateway=gateway_2, status=1)
 
-        G(Release, api=gateway_1, stage=s1)
-        G(Release, api=gateway_2, stage=s2)
+        G(Release, gateway=gateway_1, stage=s1)
+        G(Release, gateway=gateway_2, stage=s2)
 
         data = [
             {
@@ -110,11 +110,11 @@ class TestAPIViewSet:
         ]
 
         for test in data:
-            api_id = test["id"]
-            request = self.factory.get(f"/api/v1/apis/{api_id}/", data=test)
+            gateway_id = test["id"]
+            request = self.factory.get(f"/api/v1/apis/{gateway_id}/", data=test)
 
             view = views.GatewayViewSet.as_view({"get": "retrieve"})
-            response = view(request, id=api_id)
+            response = view(request, id=gateway_id)
 
             result = get_response_json(response)
             assert result["code"] == 0, result
@@ -131,7 +131,7 @@ class TestAPIPublicKeyViewSet:
         )
 
         gateway = G(Gateway, name=unique_gateway_name)
-        G(JWT, api=gateway, public_key="test")
+        G(JWT, gateway=gateway, public_key="test")
 
         request = request_factory.get(f"/api/v1/apis/{unique_gateway_name}/public_key/")
         request.gateway = gateway
@@ -177,10 +177,10 @@ class TestAPISyncViewSet:
         assert gateway.is_public is True
 
 
-class TestAPIRelatedAppViewSet:
+class TestGatewayRelatedAppViewSet:
     def test_add_related_apps_ok(self, mocker, request_factory, disable_app_permission):
         request = request_factory.post(
-            "/related-apps/",
+            "/backend/api/v1/demo/related-apps/",
             data={"target_app_codes": ["test1", "test2"]},
         )
         request.gateway = G(Gateway)
@@ -194,11 +194,11 @@ class TestAPIRelatedAppViewSet:
         response = view(request, gateway_name=request.gateway.name)
         result = get_response_json(response)
         assert result["code"] == 0
-        assert APIRelatedApp.objects.filter(api=request.gateway).count() == 2
+        assert GatewayRelatedApp.objects.filter(gateway=request.gateway).count() == 2
 
     def test_add_related_apps_error(self, mocker, request_factory, disable_app_permission):
         request = request_factory.post(
-            "/related-apps/",
+            "/backend/api/v1/demo/related-apps/",
             data={"target_app_codes": ["test1", "test2"]},
         )
         request.gateway = G(Gateway)
@@ -211,3 +211,4 @@ class TestAPIRelatedAppViewSet:
         response = view(request, gateway_name=request.gateway.name)
         result = get_response_json(response)
         assert result["code"] != 0
+        assert response.status_code != 200

@@ -84,7 +84,9 @@ dev-image:
 
 .PHONY: lint
 lint:
-	cd ../../ && pre-commit run --files src/esb
+	black --config=pyproject.toml .
+	ruff --config=pyproject.toml --force-exclude --fix .
+	mypy --config-file=pyproject.toml .
 
 .PHONY: clean
 clean:

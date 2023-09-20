@@ -1,5 +1,5 @@
 <template>
-  <div class="app-content">
+  <div class="app-content online-test">
     <div class="panel-content">
       <div class="request-panel">
         <div class="panel-title"> {{ $t('请求') }} </div>
@@ -17,7 +17,7 @@
               </bk-option>
             </bk-select>
           </bk-form-item>
-          <bk-form-item :required="true" :label="$t('请求资源')">
+          <bk-form-item :required="true" :label="$t('请求资源')" :error-display-type="'normal'">
             <bk-select
               :clearable="false"
               searchable
@@ -32,11 +32,11 @@
             <div class="resource-empty" v-show="!isPageLoading && resourceEmpty">
               {{ $t('未找到可用的请求资源，因为当前选择环境未发布版本，请先发布版本到该环境') }}
             </div>
-            <p class="ag-tip mt5">
+            <p class="ag-tip mt5" slot="tip">
               <i class="apigateway-icon icon-ag-info"></i>{{ $t('资源必须发布到对应环境，才支持选择及调试') }}
             </p>
           </bk-form-item>
-          <bk-form-item :required="true" :label="$t('请求方法')">
+          <bk-form-item :required="true" :label="$t('请求方法')" :error-display-type="'normal'">
             <bk-select
               :clearable="false"
               v-model="formData.method"
@@ -971,5 +971,8 @@
         font-size: 12px;
         color: #63656E;
         line-height: 16px;
+    }
+    .online-test /deep/ .panel-content .request-panel[data-v-c1d2eab6] .kv-wrapper .values .biz-key-item {
+      align-items: unset;
     }
 </style>

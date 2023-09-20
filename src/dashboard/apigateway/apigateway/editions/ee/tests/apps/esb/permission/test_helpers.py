@@ -61,14 +61,14 @@ class TestPermissionManager:
             ApplyStatusEnum.REJECTED.value: [c2.id],
         }
 
-        assert 1 == AppPermissionApplyStatus.objects.filter(component_id__in=[c1.id, c2.id]).count()
+        assert AppPermissionApplyStatus.objects.filter(component_id__in=[c1.id, c2.id]).count() == 1
         assert (
-            1
-            == AppComponentPermission.objects.filter(
+            AppComponentPermission.objects.filter(
                 board=record.board,
                 bk_app_code=record.bk_app_code,
                 component_id__in=[c1.id, c2.id],
             ).count()
+            == 1
         )
 
     def test_handle_apply_status(self):
@@ -82,7 +82,7 @@ class TestPermissionManager:
         manager = PermissionManager()
         manager._handle_apply_status(record, rejected_component_ids=[c2.id])
 
-        assert 1 == AppPermissionApplyStatus.objects.filter(component_id__in=[c1.id, c2.id]).count()
+        assert AppPermissionApplyStatus.objects.filter(component_id__in=[c1.id, c2.id]).count() == 1
 
         apply_status = AppPermissionApplyStatus.objects.get(component_id=c2.id)
         assert apply_status.record is None

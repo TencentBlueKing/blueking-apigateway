@@ -29,3 +29,7 @@ def check_result_code(name: str, exception_type: Type[Exception], code: Optional
         return
 
     raise exception_type(f"{name} error, code {code}, message {message}")
+
+
+class LockTimeout(Exception):
+    """Lock timeout error"""

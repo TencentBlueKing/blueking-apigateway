@@ -20,10 +20,26 @@ import pytest
 from apigateway.controller.registry.base import Registry
 
 
+class DummyRegistry(Registry):
+    registry_type = "dummy"
+
+    def apply_resource(self, resource):
+        pass
+
+    def sync_resources_by_key_prefix(self, resources):
+        pass
+
+    def delete_resources_by_key_prefix(self):
+        pass
+
+    def iter_by_type(self, resource_type):
+        pass
+
+
 class TestRegistry:
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.registry = Registry(key_prefix="/testing")
+        self.registry = DummyRegistry(key_prefix="/testing")
 
     @pytest.mark.parametrize(
         "key_prefix, expected",
@@ -33,7 +49,7 @@ class TestRegistry:
         ],
     )
     def test_init(self, key_prefix, expected):
-        registry = Registry(key_prefix=key_prefix)
+        registry = DummyRegistry(key_prefix=key_prefix)
         assert registry.key_prefix == expected
 
     def test_get_kind_key_prefix(self, fake_custom_resource):

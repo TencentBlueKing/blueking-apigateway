@@ -15,17 +15,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import List
+
 from django.contrib import admin
 
 from apigateway.core.models import (
     JWT,
-    APIRelatedApp,
-    BackendService,
+    Backend,
+    BackendConfig,
     Context,
     Gateway,
+    GatewayRelatedApp,
     MicroGateway,
     MicroGatewayReleaseHistory,
     Proxy,
+    PublishEvent,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -34,8 +38,6 @@ from apigateway.core.models import (
     SslCertificate,
     SslCertificateBinding,
     Stage,
-    StageItem,
-    StageItemConfig,
     StageResourceDisabled,
 )
 
@@ -55,27 +57,15 @@ class GatewayAdmin(admin.ModelAdmin):
 
 
 class StageAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "api", "status", "created_by", "updated_by", "created_time", "updated_time"]
+    list_display = ["id", "name", "gateway", "status", "created_by", "updated_by", "created_time", "updated_time"]
     search_fields = ["id", "name"]
-    list_filter = ["api"]
-
-
-class StageItemAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "api", "type", "updated_time"]
-    search_fields = ["id", "name"]
-    list_filter = ["api"]
-
-
-class StageItemConfigAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "stage", "stage_item"]
-    search_fields = ["id"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
 
 
 class ResourceAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "method", "path", "api", "proxy_id", "is_public"]
+    list_display = ["id", "name", "method", "path", "gateway", "proxy_id", "is_public"]
     search_fields = ["id", "name", "path"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
 
 
 class StageResourceDisabledAdmin(admin.ModelAdmin):
@@ -89,29 +79,42 @@ class ProxyAdmin(admin.ModelAdmin):
 
 
 class ResourceVersionAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "title", "api", "created_by", "created_time"]
+    list_display = ["id", "name", "title", "gateway", "created_by", "created_time"]
     search_fields = ["name"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
     exclude = ["_data"]
 
 
 class ReleaseAdmin(admin.ModelAdmin):
-    list_display = ["api", "stage", "resource_version"]
-    list_filter = ["api"]
+    list_display = ["gateway", "stage", "resource_version"]
+    list_filter = ["gateway"]
     raw_id_fields = ["resource_version"]
 
 
 class ReleasedResourceAdmin(admin.ModelAdmin):
-    list_display = ["api", "resource_version_id", "resource_id", "resource_name", "resource_method", "resource_path"]
-    list_filter = ["api"]
+    list_display = [
+        "gateway",
+        "resource_version_id",
+        "resource_id",
+        "resource_name",
+        "resource_method",
+        "resource_path",
+    ]
+    list_filter = ["gateway"]
     search_fields = ["resource_version_id", "resource_id", "resource_name"]
 
 
 class ReleaseHistoryAdmin(admin.ModelAdmin):
-    list_display = ["api", "resource_version", "status", "created_by", "created_time"]
-    list_filter = ["api", "created_time"]
+    list_display = ["gateway", "resource_version", "status", "created_by", "created_time"]
+    list_filter = ["gateway", "created_time"]
     filter_horizontal = ["stages"]
     raw_id_fields = ["resource_version"]
+
+
+class PublishEventAdmin(admin.ModelAdmin):
+    list_display = ["gateway_id", "stage_id", "publish_id", "name", "status", "created_by", "created_time"]
+    list_filter = ["gateway_id"]
+    search_fields = ["gateway_id", "publish_id"]
 
 
 class ContextAdmin(admin.ModelAdmin):
@@ -121,49 +124,53 @@ class ContextAdmin(admin.ModelAdmin):
 
 
 class JWTAdmin(admin.ModelAdmin):
-    list_display = ["api"]
-    search_fields = ["api__id"]
+    list_display = ["gateway"]
+    search_fields = ["gateway__id"]
     exclude = ["private_key"]
 
 
-class APIRelatedAppAdmin(admin.ModelAdmin):
-    list_display = ["api", "bk_app_code"]
-    search_fields = ["api__id", "bk_app_code"]
-    list_filter = ["api"]
+class GatewayRelatedAppAdmin(admin.ModelAdmin):
+    list_display = ["gateway", "bk_app_code"]
+    search_fields = ["gateway__id", "bk_app_code"]
+    list_filter = ["gateway"]
 
 
 class MicroGatewayAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "name", "is_shared", "status", "updated_time"]
+    list_display = ["id", "gateway", "name", "is_shared", "status", "updated_time"]
 
 
 class MicroGatewayReleaseHistoryAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "stage", "micro_gateway", "status"]
-    list_filter = ["api"]
+    list_display = ["id", "gateway", "stage", "micro_gateway", "status"]
+    list_filter = ["gateway"]
     raw_id_fields = ["release_history"]
 
 
-class BackendServiceAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "api", "upstream_type", "updated_time"]
+class BackendAdmin(admin.ModelAdmin):
+    list_display = ["id", "gateway", "type", "name", "description"]
     search_fields = ["name"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
+
+
+class BackendConfigAdmin(admin.ModelAdmin):
+    list_display = ["id", "gateway", "backend", "stage", "config"]
+    search_fields: List[str] = []
+    list_filter = ["gateway", "backend", "stage"]
 
 
 class SslCertificateAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "name", "type", "expires", "updated_time"]
+    list_display = ["id", "gateway", "name", "type", "expires", "updated_time"]
     search_fields = ["name"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
 
 
 class SslCertificateBindingAdmin(admin.ModelAdmin):
-    list_display = ["id", "api", "scope_type", "scope_id", "ssl_certificate_id"]
+    list_display = ["id", "gateway", "scope_type", "scope_id", "ssl_certificate_id"]
     search_fields = ["scope_id", "ssl_certificate_id"]
-    list_filter = ["api"]
+    list_filter = ["gateway"]
 
 
 admin.site.register(Gateway, GatewayAdmin)
 admin.site.register(Stage, StageAdmin)
-admin.site.register(StageItem, StageItemAdmin)
-admin.site.register(StageItemConfig, StageItemConfigAdmin)
 admin.site.register(Resource, ResourceAdmin)
 admin.site.register(StageResourceDisabled, StageResourceDisabledAdmin)
 admin.site.register(Proxy, ProxyAdmin)
@@ -171,11 +178,13 @@ admin.site.register(ResourceVersion, ResourceVersionAdmin)
 admin.site.register(Release, ReleaseAdmin)
 admin.site.register(ReleasedResource, ReleasedResourceAdmin)
 admin.site.register(ReleaseHistory, ReleaseHistoryAdmin)
+admin.site.register(PublishEvent, PublishEventAdmin)
 admin.site.register(Context, ContextAdmin)
 admin.site.register(JWT, JWTAdmin)
-admin.site.register(APIRelatedApp, APIRelatedAppAdmin)
+admin.site.register(GatewayRelatedApp, GatewayRelatedAppAdmin)
 admin.site.register(MicroGateway, MicroGatewayAdmin)
 admin.site.register(MicroGatewayReleaseHistory, MicroGatewayReleaseHistoryAdmin)
-admin.site.register(BackendService, BackendServiceAdmin)
+admin.site.register(Backend, BackendAdmin)
+admin.site.register(BackendConfig, BackendConfigAdmin)
 admin.site.register(SslCertificate, SslCertificateAdmin)
 admin.site.register(SslCertificateBinding, SslCertificateBindingAdmin)

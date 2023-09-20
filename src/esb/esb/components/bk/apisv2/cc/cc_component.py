@@ -20,7 +20,6 @@
 from common.constants import API_TYPE_OP
 from common.errors import error_codes
 from components.component import ConfComponent
-
 from .toolkit import configs, tools
 
 

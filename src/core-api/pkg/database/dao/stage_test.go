@@ -19,13 +19,14 @@
 package dao
 
 import (
+	"context"
 	"testing"
-
-	"core/pkg/database"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/database"
 )
 
 func Test_stageManager_GetByName(t *testing.T) {
@@ -50,7 +51,7 @@ func Test_stageManager_GetByName(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs(gatewayID, name).WillReturnRows(mockRows)
 
 		manager := &stageManager{DB: db}
-		p, err := manager.GetByName(gatewayID, name)
+		p, err := manager.GetByName(context.Background(), gatewayID, name)
 
 		assert.NoError(t, err, "query from db fail.")
 		assert.Equal(t, record, p)

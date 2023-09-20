@@ -21,102 +21,10 @@ import pytest
 
 from apigateway.utils.dict import (
     deep_update,
-    from_exist_keys,
     get_item_by_path,
-    new_dict,
     set_item_by_path,
     update_existing,
 )
-
-
-@pytest.mark.parametrize(
-    "params, expected",
-    [
-        (
-            # include exist
-            {
-                "data": {"a": 1, "b": 2, "c": 3},
-                "include": ["a", "c", "d"],
-            },
-            {"a": 1, "c": 3},
-        ),
-        (
-            # exclude exist
-            {
-                "data": {"a": 1, "b": 2, "c": 3},
-                "exclude": ["a", "c", "d"],
-            },
-            {"b": 2},
-        ),
-        (
-            # exclude_none is true
-            {
-                "data": {"a": None, "b": 2, "c": None},
-                "exclude_none": True,
-            },
-            {"b": 2},
-        ),
-        (
-            # include and exclude exist
-            {
-                "data": {"a": 1, "b": 2, "c": 3},
-                "include": set(["a", "c"]),
-                "exclude": set(["b", "d"]),
-            },
-            {"a": 1, "c": 3},
-        ),
-        (
-            # include exist and exclude_none is true
-            {
-                "data": {"a": 1, "b": 2, "c": None},
-                "include": set(["b"]),
-                "exclude_none": True,
-            },
-            {"b": 2},
-        ),
-    ],
-)
-def test_new_dict(params, expected):
-    result = new_dict(**params)
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    "data, keys, expected",
-    [
-        (
-            {
-                "a": 1,
-                "b": 2,
-            },
-            ["a"],
-            {
-                "a": 1,
-            },
-        ),
-        (
-            {
-                "a": 1,
-                "b": 2,
-            },
-            ["a", "c"],
-            {
-                "a": 1,
-            },
-        ),
-        (
-            {
-                "a": 1,
-                "b": 2,
-            },
-            ["c", "d"],
-            {},
-        ),
-    ],
-)
-def test_from_exist_keys(data, keys, expected):
-    result = from_exist_keys(data, keys)
-    assert result == expected
 
 
 @pytest.mark.parametrize(
@@ -186,7 +94,7 @@ def test_update_existing(mapping, update, expected):
 
 def test_update_existing_is_not_mutating():
     mapping = {"key": {"inner_key": 1}}
-    updated_mapping = update_existing(mapping, **{"key": 0})
+    updated_mapping = update_existing(mapping, key=0)
     assert updated_mapping == {"key": 0}
     assert mapping == {"key": {"inner_key": 1}}
 

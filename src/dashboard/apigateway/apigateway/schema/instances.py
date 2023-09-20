@@ -25,25 +25,16 @@ from apigateway.schema.constants import SchemaTypeEnum
 from apigateway.schema.models import Schema
 from apigateway.utils.singleton import Singleton
 
-SCHEMA_NAME_CONTEXT_API_BKAUTH = "ContextAPIBKAuth"
+SCHEMA_NAME_CONTEXT_GATEWAY_BKAUTH = "ContextAPIBKAuth"
 SCHEMA_NAME_CONTEXT_RESOURCE_BKAUTH = "ContextResourceBKAuth"
 SCHEMA_NAME_CONTEXT_STAGE_PROXY_HTTP = "ContextStageProxyHTTP"
-SCHEMA_NAME_CONTEXT_STAGE_RATE_LIMIT = "ContextStageRateLimit"
-SCHEMA_NAME_CONTEXT_API_FEATURE_FLAG = "ContextAPIFeatureFlag"
+SCHEMA_NAME_CONTEXT_GATEWAY_FEATURE_FLAG = "ContextAPIFeatureFlag"
 SCHEMA_NAME_PROXY_HTTP = "ProxyHTTP"
 SCHEMA_NAME_PROXY_MOCK = "ProxyMock"
-SCHEMA_NAME_ACCESS_STRATEGY_IP_ACCESS_CONTROL = "AccessStrategyIPAccessControl"
-SCHEMA_NAME_ACCESS_STRATEGY_RATE_LIMIT = "AccessStrategyRateLimit"
-SCHEMA_NAME_ACCESS_STRATEGY_USER_VERIFIED_UNREQUIRED_APPS = "AccessStrategyUserVerifiedUnrequiredApps"
-SCHEMA_NAME_ACCESS_STRATEGY_ERROR_STATUS_CODE_200 = "AccessStrategyErrorStatusCode200"
-SCHEMA_NAME_ACCESS_STRATEGY_CORS = "AccessStrategyCORS"
-SCHEMA_NAME_ACCESS_STRATEGY_CIRCUIT_BREAKER = "AccessStrategyCircuitBreaker"
 SCHEMA_NAME_MONITOR_ALARM_FILTER = "MonitorAlarmFilter"
 SCHEMA_NAME_MONITOR_ALARM_STRATEGY = "MonitorAlarmStrategy"
 SCHEMA_NAME_API_SDK = "APISDK"
 SCHEMA_NAME_MICRO_GATEWAY = "MicroGateway"
-SCHEMA_NAME_PLUGIN_IP_RESTRICTION = "PluginIpRestriction"
-SCHEMA_NAME_PLUGIN_VERIFIED_USER_EXEMPTED_APPS = "PluginVerifiedUserExemptedApps"
 
 
 class NewMetaSchemaMixin:
@@ -70,7 +61,7 @@ class NewMetaSchemaMixin:
 
 
 # =============== CONTEXT ===============
-class ContextAPIBKAuth(NewMetaSchemaMixin, metaclass=Singleton):
+class ContextGatewayBKAuth(NewMetaSchemaMixin, metaclass=Singleton):
     version = "1"
     schema = """
 {
@@ -180,9 +171,9 @@ class ContextAPIBKAuth(NewMetaSchemaMixin, metaclass=Singleton):
     }
 }
     """
-    name = SCHEMA_NAME_CONTEXT_API_BKAUTH
+    name = SCHEMA_NAME_CONTEXT_GATEWAY_BKAUTH
     type = SchemaTypeEnum.CONTEXT.value
-    description = "api bkauth property schema"
+    description = "Gateway auth property schema"
 
 
 class ContextResourceBKAuth(NewMetaSchemaMixin, metaclass=Singleton):
@@ -325,52 +316,7 @@ class ContextStageProxyHTTP(NewMetaSchemaMixin, metaclass=Singleton):
     description = "HTTP proxy schema"
 
 
-class ContextStageRateLimit(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["enabled", "rate"],
-  "properties": {
-    "enabled": {
-       "type": "boolean"
-    },
-    "rate": {
-      "type": "object",
-      "required": [
-        "tokens",
-        "period"
-      ],
-      "properties": {
-        "tokens": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "period": {
-          "type": "integer",
-          "minimum": 0
-        }
-      }
-    }
-  }
-}
-    """
-    example = """
-{
-    "enabled": true,
-    "rate": {
-       "tokens": 5000,
-       "period": 60,
-    }
-}
-    """
-    name = SCHEMA_NAME_CONTEXT_STAGE_RATE_LIMIT
-    type = SchemaTypeEnum.CONTEXT.value
-    description = "RateLimit for stage global"
-
-
-class ContextAPIFeatureFlag(NewMetaSchemaMixin, metaclass=Singleton):
+class ContextGatewayFeatureFlag(NewMetaSchemaMixin, metaclass=Singleton):
     version = "1"
     schema = """
 {
@@ -385,9 +331,9 @@ class ContextAPIFeatureFlag(NewMetaSchemaMixin, metaclass=Singleton):
 }
     """
     example = """{"MY_FEATURE": true}"""
-    name = SCHEMA_NAME_CONTEXT_API_FEATURE_FLAG
+    name = SCHEMA_NAME_CONTEXT_GATEWAY_FEATURE_FLAG
     type = SchemaTypeEnum.CONTEXT.value
-    description = "API feature flags"
+    description = "Gateway feature flags"
 
 
 # =============== PROXY ===============
@@ -399,8 +345,7 @@ class ProxyHTTP(NewMetaSchemaMixin, metaclass=Singleton):
   "type": "object",
   "required": [
     "method",
-    "path",
-    "transform_headers"
+    "path"
   ],
   "properties": {
     "method": {
@@ -503,342 +448,6 @@ class ProxyMock(NewMetaSchemaMixin, metaclass=Singleton):
     name = SCHEMA_NAME_PROXY_MOCK
     type = SchemaTypeEnum.PROXY.value
     description = "Mock proxy schema"
-
-
-# =============== STRATEGY ===============
-class AccessStrategyIPAccessControl(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": [
-    "type",
-    "ip_group_list"
-  ],
-  "properties": {
-    "type": {
-      "type": "string"
-    },
-    "ip_group_list": {
-      "type": "array",
-      "items": {
-        "type": "integer",
-        "minimum": 0
-      }
-    }
-  }
-}
-
-    """
-    example = """
-{
-    "type": "allow/deny",
-    "ip_group_list": [1, 2, 3, 4]
-}
-
-    """
-    name = SCHEMA_NAME_ACCESS_STRATEGY_IP_ACCESS_CONTROL
-    type = SchemaTypeEnum.ACCESS_STRATEGY.value
-    description = "IP access control"
-
-
-class AccessStrategyRateLimit(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["rates"],
-  "properties": {
-    "rates": {
-      "type": "object",
-      "additionalProperties": {
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/rate"
-        }
-      }
-    }
-  },
-  "definitions": {
-    "rate": {
-      "type": "object",
-      "required": [
-        "tokens",
-        "period"
-      ],
-      "properties": {
-        "tokens": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "period": {
-          "type": "integer",
-          "minimum": 0
-        }
-      }
-    }
-  }
-}
-
-    """
-    example = """
-{
-    "rates": {
-        "app1": [
-            {
-                "tokens": 200,
-                "period": 60,
-            },
-            {
-                "tokens": 200,
-                "period": 6,
-            },
-        ],
-        "app3": [
-            {
-                "tokens": 200,
-                "period": 60,
-            },
-        ],
-
-    }
-}
-
-    """
-    name = SCHEMA_NAME_ACCESS_STRATEGY_RATE_LIMIT
-    type = SchemaTypeEnum.ACCESS_STRATEGY.value
-    description = "RateLimit for stage/resource - app"
-
-
-class AccessStrategyUserVerifiedUnrequiredApps(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["bk_app_code_list"],
-  "properties": {
-    "bk_app_code_list": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    }
-  }
-}
-    """
-    example = """
-{
-    "bk_app_code_list": ["test"]
-}
-    """
-    name = SCHEMA_NAME_ACCESS_STRATEGY_USER_VERIFIED_UNREQUIRED_APPS
-    type = SchemaTypeEnum.ACCESS_STRATEGY.value
-    description = "User verified not required apps"
-
-
-class AccessStrategyErrorStatusCode200(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-  }
-}
-    """
-    example = """
-{
-}
-    """
-    name = SCHEMA_NAME_ACCESS_STRATEGY_ERROR_STATUS_CODE_200
-    type = SchemaTypeEnum.ACCESS_STRATEGY.value
-    description = "Gateway error using http status code 200"
-
-
-class AccessStrategyCORS(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "allowed_origins": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "allowed_methods": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "allowed_headers": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "exposed_headers": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "max_age": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "allow_credentials": {
-      "type": "boolean"
-    },
-    "options_passthrough": {
-      "type": "boolean"
-    }
-  }
-}
-    """
-    example = """
-{
-    "allowed_origins": ["http://example.com"],
-    "allowed_methods": ["GET", "POST", "HEAD", "OPTIONS"],
-    "allowed_headers": ["Origin", "Accept", "Content-Type", "X-Requested-With"],
-    "exposed_headers": [],
-    "max_age": 86400,
-    "allow_credentials": true,
-    "options_passthrough": true
-}
-    """
-    name = SCHEMA_NAME_ACCESS_STRATEGY_CORS
-    type = SchemaTypeEnum.ACCESS_STRATEGY.value
-    description = "cors"
-
-
-class AccessStrategyCircuitBreaker(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "window": {
-      "type": "object",
-      "required": [
-        "duration",
-        "buckets"
-      ],
-      "properties": {
-        "duration": {
-          "type": "string"
-        },
-        "buckets": {
-          "type": "integer",
-          "mininum": 1
-        }
-      }
-    },
-    "conditions": {
-      "type": "object",
-      "properties": {
-        "http_error": {
-          "type": "boolean"
-        },
-        "status_code": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
-        },
-        "timeout": {
-          "type": "boolean"
-        },
-        "network_error": {
-          "type": "boolean"
-        }
-      }
-    },
-    "strategy": {
-      "type": "object",
-      "required": [
-        "type"
-      ],
-      "properties": {
-        "type": {
-          "type": "string"
-        },
-        "options": {
-          "type": "object",
-          "properties": {
-            "threshold": {
-              "type": "integer"
-            },
-            "rate": {
-              "type": "number"
-            },
-            "min_samples": {
-              "type": "integer"
-            }
-          }
-        }
-      }
-    },
-    "back_off": {
-      "type": "object",
-      "required": [
-        "type"
-      ],
-      "properties": {
-        "type": {
-          "type": "string"
-        },
-        "options": {
-          "type": "object",
-          "properties": {
-            "interval": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    }
-  }
-}
-    """
-    example = """
-{
-    "window": {
-        "duration": "10s",
-        "buckets": 10
-    },
-    "conditions": {
-        "http_error": true,
-        "status_code": [500, 502, 503, 504],
-        "timeout": true,
-        "network_error": true
-    },
-    "strategy": {
-        "type": "threshold",
-        "options": {
-            "threshold": 10,
-            "rate": 0,
-            "min_samples": 10
-        }
-    },
-    "back_off": {
-        "type": "fixed",
-        "options": {
-            "interval": "10s"
-        }
-    }
-}
-    """
-    name = SCHEMA_NAME_ACCESS_STRATEGY_CIRCUIT_BREAKER
-    type = SchemaTypeEnum.ACCESS_STRATEGY.value
-    description = "circuit breaker"
 
 
 class MonitorAlarmFilter(NewMetaSchemaMixin, metaclass=Singleton):
@@ -1112,133 +721,3 @@ class MicroGateway(NewMetaSchemaMixin, metaclass=Singleton):
     name = SCHEMA_NAME_MICRO_GATEWAY
     type = SchemaTypeEnum.MICRO_GATEWAY.value
     description = "micro gateway"
-
-
-# =============== Plugin ===============
-class PluginIpRestriction(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "whitelist": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "anyOf": [
-          {
-            "title": "IPv4",
-            "format": "ipv4",
-            "type": "string"
-          },
-          {
-            "title": "IPv4/CIDR",
-            "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
-            "type": "string"
-          },
-          {
-            "title": "IPv6",
-            "format": "ipv6",
-            "type": "string"
-          },
-          {
-            "title": "IPv6/CIDR",
-            "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
-            "type": "string"
-          }
-        ]
-      }
-    },
-    "blacklist": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "anyOf": [
-          {
-            "title": "IPv4",
-            "format": "ipv4",
-            "type": "string"
-          },
-          {
-            "title": "IPv4/CIDR",
-            "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
-            "type": "string"
-          },
-          {
-            "title": "IPv6",
-            "format": "ipv6",
-            "type": "string"
-          },
-          {
-            "title": "IPv6/CIDR",
-            "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
-            "type": "string"
-          }
-        ]
-      }
-    }
-  },
-  "oneOf": [
-    {"required": ["whitelist"]},
-    {"required": ["blacklist"]}
-  ]
-}
-    """  # noqa
-    example = """
-{
-    "whitelist": ["1.1.1.1"]
-}
-
-    """
-    name = SCHEMA_NAME_PLUGIN_IP_RESTRICTION
-    type = SchemaTypeEnum.PLUGIN.value
-    description = "IP Restriction"
-
-
-class PluginVerifiedUserExemptedApps(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "exempted_apps": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "bk_app_code": {
-            "type": "string"
-          },
-          "dimension": {
-            "type": "string"
-          },
-          "resource_ids": {
-            "type": "array",
-            "items": {
-              "type": "integer"
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-    """
-    example = """
-{
-    "exempted_apps": [
-      {
-        "bk_app_code": "apigateway",
-        "dimension": "api",
-        "resource_ids": []
-      }
-    ]
-}
-
-    """
-    name = SCHEMA_NAME_PLUGIN_VERIFIED_USER_EXEMPTED_APPS
-    type = SchemaTypeEnum.PLUGIN.value
-    description = "Verified user exempted apps"

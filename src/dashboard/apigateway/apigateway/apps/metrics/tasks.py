@@ -19,7 +19,7 @@
 import arrow
 from celery import shared_task
 
-from apigateway.apps.metrics.statistics import StatisticsHandler
+from .statistics import StatisticsHandler
 
 
 @shared_task(name="apigateway.apps.metrics.tasks.statistics_request_by_day")
@@ -31,4 +31,4 @@ def statistics_request_by_day():
     step = "1d"
 
     handler = StatisticsHandler()
-    handler.stats(start.float_timestamp, end.float_timestamp, step)
+    handler.stats(start.int_timestamp, end.int_timestamp, step)

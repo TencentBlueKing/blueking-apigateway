@@ -20,9 +20,9 @@ import pytest
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.open.gateway import serializers
-from apigateway.common.contexts import APIAuthContext
-from apigateway.core.constants import APIStatusEnum
-from apigateway.core.models import APIRelatedApp, Gateway
+from apigateway.common.contexts import GatewayAuthContext
+from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.models import Gateway, GatewayRelatedApp
 
 pytestmark = pytest.mark.django_db
 
@@ -91,7 +91,7 @@ class TestGatewaySyncSLZ:
                     "description": "desc",
                     "is_public": True,
                     "api_type": 10,
-                    "status": APIStatusEnum.ACTIVE.value,
+                    "status": GatewayStatusEnum.ACTIVE.value,
                     "user_auth_type": "default",
                     "hosting_type": 1,
                     "maintainers": [],
@@ -109,7 +109,7 @@ class TestGatewaySyncSLZ:
                     "name": "test",
                     "description": "desc",
                     "is_public": True,
-                    "status": APIStatusEnum.ACTIVE.value,
+                    "status": GatewayStatusEnum.ACTIVE.value,
                     "user_auth_type": "default",
                     "hosting_type": 0,
                     "maintainers": [],
@@ -121,7 +121,7 @@ class TestGatewaySyncSLZ:
                     "name": "test",
                     "description": "desc",
                     "is_public": False,
-                    "status": APIStatusEnum.INACTIVE.value,
+                    "status": GatewayStatusEnum.INACTIVE.value,
                     "maintainers": ["admin"],
                 },
                 {
@@ -129,7 +129,7 @@ class TestGatewaySyncSLZ:
                     "description": "desc",
                     "maintainers": ["admin"],
                     "is_public": False,
-                    "status": APIStatusEnum.INACTIVE.value,
+                    "status": GatewayStatusEnum.INACTIVE.value,
                     "user_auth_type": "default",
                     "hosting_type": 1,
                 },
@@ -140,7 +140,7 @@ class TestGatewaySyncSLZ:
                     "name": "test",
                     "description": "desc",
                     "is_public": False,
-                    "status": APIStatusEnum.INACTIVE.value,
+                    "status": GatewayStatusEnum.INACTIVE.value,
                     "maintainers": [],
                     "user_config": {
                         "from_bk_token": True,
@@ -152,7 +152,7 @@ class TestGatewaySyncSLZ:
                     "description": "desc",
                     "maintainers": [],
                     "is_public": False,
-                    "status": APIStatusEnum.INACTIVE.value,
+                    "status": GatewayStatusEnum.INACTIVE.value,
                     "user_auth_type": "default",
                     "user_config": {
                         "from_bk_token": True,
@@ -174,7 +174,7 @@ class TestGatewaySyncSLZ:
                     "description": "desc",
                     "is_public": True,
                     "api_type": 1,
-                    "status": APIStatusEnum.ACTIVE.value,
+                    "status": GatewayStatusEnum.ACTIVE.value,
                     "user_auth_type": "default",
                     "hosting_type": 1,
                     "maintainers": [],
@@ -207,6 +207,7 @@ class TestGatewaySyncSLZ:
             slz.is_valid(raise_exception=True)
 
     def test_create(self, settings, unique_gateway_name):
+        settings.USE_BK_IAM_PERMISSION = False
         settings.SPECIAL_API_AUTH_CONFIGS = {
             unique_gateway_name: {
                 "unfiltered_sensitive_keys": ["bk_token"],
@@ -229,8 +230,8 @@ class TestGatewaySyncSLZ:
         slz.save(created_by="", updated_by="")
 
         assert Gateway.objects.filter(name=unique_gateway_name).exists()
-        assert APIRelatedApp.objects.filter(api=slz.instance, bk_app_code=bk_app_code).exists()
-        api_auth = APIAuthContext().get_config(slz.instance.id)
+        assert GatewayRelatedApp.objects.filter(gateway=slz.instance, bk_app_code=bk_app_code).exists()
+        api_auth = GatewayAuthContext().get_config(slz.instance.id)
         assert api_auth["unfiltered_sensitive_keys"] == ["bk_token"]
         assert api_auth["api_type"] == 10
 
@@ -248,8 +249,8 @@ class TestGatewaySyncSLZ:
         )
         slz.is_valid(raise_exception=True)
         slz.save(created_by="", updated_by="")
-        api_auth = APIAuthContext().get_config(slz.instance.id)
-        api_auth["api_type"] == 1
+        api_auth = GatewayAuthContext().get_config(slz.instance.id)
+        assert api_auth["api_type"] == 1
 
     def test_update(self, settings, fake_gateway, unique_gateway_name):
         settings.SPECIAL_API_AUTH_CONFIGS = {
@@ -276,7 +277,7 @@ class TestGatewaySyncSLZ:
         assert gateway.description == "desc"
         assert gateway.is_public is False
         assert gateway.maintainers == ["admin", "admin2"]
-        api_auth = APIAuthContext().get_config(gateway.id)
+        api_auth = GatewayAuthContext().get_config(gateway.id)
         assert api_auth["unfiltered_sensitive_keys"] == ["bk_red"]
         assert api_auth["api_type"] == 10
 
@@ -291,7 +292,7 @@ class TestGatewaySyncSLZ:
         )
         slz.is_valid(raise_exception=True)
         slz.save(created_by="", updated_by="")
-        api_auth = APIAuthContext().get_config(gateway.id)
+        api_auth = GatewayAuthContext().get_config(gateway.id)
         assert api_auth["api_type"] == 1
 
     @pytest.mark.parametrize(

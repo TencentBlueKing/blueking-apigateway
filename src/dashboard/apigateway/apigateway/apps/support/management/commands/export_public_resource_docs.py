@@ -27,22 +27,22 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.apps.support.constants import DocArchiveTypeEnum
-from apigateway.apps.support.resource_doc.exceptions import NoResourceDocError
-from apigateway.apps.support.resource_doc.export_doc.generators import DocArchiveGenerator
-from apigateway.apps.support.utils import ArchiveFileFactory
-from apigateway.core.constants import APIStatusEnum
+from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
+from apigateway.biz.resource_doc.exceptions import NoResourceDocError
+from apigateway.biz.resource_doc.exporter.generators import DocArchiveGenerator
+from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Resource
 
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument("--api-names", dest="api_names", type=str, nargs="*")
+        parser.add_argument("--gateway-names", dest="gateway_names", type=str, nargs="*")
         parser.add_argument("--file-type", dest="file_type", default="tgz", choices=DocArchiveTypeEnum.get_values())
         parser.add_argument("--output", dest="output", type=str, help="output filename")
 
-    def handle(self, api_names: List[str], file_type: str, output: str, **options) -> None:
+    def handle(self, gateway_names: List[str], file_type: str, output: str, **options) -> None:
         output = self._validate_output(output, file_type)
-        gateway_name_to_id = self._get_export_gateways(api_names)
+        gateway_name_to_id = self._get_export_gateways(gateway_names)
         archivefile = ArchiveFileFactory.from_file_type(file_type)
 
         doc_files = []
@@ -50,12 +50,12 @@ class Command(BaseCommand):
             for gateway_name, gateway_id in gateway_name_to_id.items():
                 doc_dir = os.path.join(temp_dir, gateway_name)
                 os.makedirs(doc_dir)
+
+                public_resource_ids = list(
+                    Resource.objects.filter(gateway_id=gateway_id, is_public=True).values_list("id", flat=True)
+                )
                 try:
-                    files = DocArchiveGenerator().generate(
-                        doc_dir,
-                        gateway_id,
-                        resource_ids=Resource.objects.filter_public_resource_ids(gateway_id),
-                    )
+                    files = DocArchiveGenerator().generate(doc_dir, gateway_id, resource_ids=public_resource_ids)
                 except NoResourceDocError:
                     os.rmdir(doc_dir)
                     continue
@@ -80,14 +80,14 @@ class Command(BaseCommand):
 
     def _get_export_gateways(self, gateway_names: List[str]) -> Dict[str, int]:
         gateway_name_to_id = dict(
-            Gateway.objects.filter(status=APIStatusEnum.ACTIVE.value, is_public=True).values_list("name", "id")
+            Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True).values_list("name", "id")
         )
 
         if not gateway_names:
             return gateway_name_to_id
 
-        not_exist_api = set(gateway_names) - set(gateway_name_to_id.keys())
-        if not_exist_api:
-            raise CommandError(f"以下网关不存在，请检查：{', '.join(sorted(list(not_exist_api)))}")
+        not_exist_gateway = set(gateway_names) - set(gateway_name_to_id.keys())
+        if not_exist_gateway:
+            raise CommandError(f"以下网关不存在，请检查：{', '.join(sorted(not_exist_gateway))}")
 
         return {name: gateway_name_to_id[name] for name in gateway_names}

@@ -25,12 +25,11 @@ class ResourceURLHandler:
     @staticmethod
     def get_resource_url_tmpl(gateway_name: str, stage_name: str) -> str:
         gateway = Gateway.objects.get(name=gateway_name)
-        if gateway.is_micro_gateway:
-            # 微网关
-            stage = Stage.objects.get(api=gateway, name=stage_name)
-            micro_gateway: MicroGateway = stage.micro_gateway
-            if micro_gateway:
-                http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(micro_gateway.config)
-                return f"{http_info.http_url.rstrip('/')}/{{resource_path}}"
+        # 微网关
+        stage = Stage.objects.get(gateway=gateway, name=stage_name)
+        micro_gateway: MicroGateway = stage.micro_gateway
+        if micro_gateway:
+            http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(micro_gateway.config)
+            return f"{http_info.http_url.rstrip('/')}/{{resource_path}}"
 
         return settings.API_RESOURCE_URL_TMPL

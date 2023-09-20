@@ -5,8 +5,10 @@
 package mock
 
 import (
-	dao "core/pkg/database/dao"
+	context "context"
 	reflect "reflect"
+
+	dao "core/pkg/database/dao"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -35,16 +37,16 @@ func (m *MockStageManager) EXPECT() *MockStageManagerMockRecorder {
 }
 
 // GetByName mocks base method.
-func (m *MockStageManager) GetByName(gatewayID int64, stageName string) (dao.Stage, error) {
+func (m *MockStageManager) GetByName(ctx context.Context, gatewayID int64, stageName string) (dao.Stage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByName", gatewayID, stageName)
+	ret := m.ctrl.Call(m, "GetByName", ctx, gatewayID, stageName)
 	ret0, _ := ret[0].(dao.Stage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByName indicates an expected call of GetByName.
-func (mr *MockStageManagerMockRecorder) GetByName(gatewayID, stageName interface{}) *gomock.Call {
+func (mr *MockStageManagerMockRecorder) GetByName(ctx, gatewayID, stageName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockStageManager)(nil).GetByName), gatewayID, stageName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockStageManager)(nil).GetByName), ctx, gatewayID, stageName)
 }

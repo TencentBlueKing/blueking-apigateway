@@ -45,7 +45,7 @@ class RemoteRequestError(Exception):
 
 
 class RemoteAPIResultError(Exception):
-    def __init__(self, name: str, response: Response, message):
+    def __init__(self, name: str, response: Response, message: str):
         self.name = name
         self.response = response
         self.message = message
@@ -59,7 +59,7 @@ class RemoteAPIResultError(Exception):
         request_id = self.response.headers.get("X-Bkapi-Request-Id", "")
         parts.append(f"Request=[{request.method} {request.url}, request_id={request_id}]")
 
-        parts.append(f"Response=[status_code={self.response.status_code}, message={self.message}]")
+        parts.append(f"Response=[status_code={self.response.status_code}, {self.message}]")
 
         return " ".join(parts)
 

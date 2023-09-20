@@ -38,8 +38,7 @@ class TestTgzPackager:
         file = files[0]
         archive = TgzArchiveFile()
 
-        with TemporaryDirectory() as target_dir:
-            with open(file, "rb") as fp:
-                structures = archive.extractall(target_dir, fp)
+        with TemporaryDirectory() as target_dir, open(file, "rb") as fp:
+            structures = archive.extractall(target_dir, fp)
 
         assert not output_dir_files - structures.keys()

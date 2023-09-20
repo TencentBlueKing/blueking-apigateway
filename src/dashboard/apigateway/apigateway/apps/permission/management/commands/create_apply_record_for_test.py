@@ -30,15 +30,15 @@ from apigateway.core.models import Resource
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument("--api-id", type=int, dest="api_id")
+        parser.add_argument("--gateway-id", type=int, dest="gateway_id")
         parser.add_argument("--count", type=int, dest="count", default=10, help="record count")
         parser.add_argument("--bk-app-code", dest="bk_app_code", default="apigw-test")
         parser.add_argument("--dry-run", dest="dry_run", action="store_true", help="dry run")
 
-    def handle(self, api_id: int, count: int, bk_app_code: str, dry_run: bool, **options) -> None:
-        resource_ids = list(Resource.objects.filter(api_id=api_id).values_list("id", flat=True))
+    def handle(self, gateway_id: int, count: int, bk_app_code: str, dry_run: bool, **options) -> None:
+        resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
         if not resource_ids:
-            print(f"warning: api[id={api_id}] has no resources")
+            print(f"warning: gateway[id={gateway_id}] has no resources")
             return
 
         for _ in range(count):
@@ -49,13 +49,13 @@ class Command(BaseCommand):
 
             if dry_run:
                 print(
-                    f"create record: api_id={api_id}, bk_app_code={bk_app_code}, "
+                    f"create record: gateway_id={gateway_id}, bk_app_code={bk_app_code}, "
                     f"applied_by=admin, resource_ids={apply_resource_ids}"
                 )
                 continue
 
             AppPermissionApply.objects.create(
-                api_id=api_id,
+                gateway_id=gateway_id,
                 bk_app_code=bk_app_code,
                 applied_by="admin",
                 resource_ids=apply_resource_ids,

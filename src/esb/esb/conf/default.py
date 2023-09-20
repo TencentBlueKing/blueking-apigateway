@@ -19,15 +19,10 @@
 import os
 
 from tencent_apigateway_common.env import Env
-from tencent_apigateway_common.secure.dj_environ import SecureEnv
 
 from conf.log_utils import get_logging_config, makedirs_when_not_exists
 
 env = Env()
-
-sec_env = SecureEnv()
-sec_env.set_secure_key(env.bytes("ENCRYPT_KEY"))
-
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -155,7 +150,7 @@ DATABASES = {
         "ENGINE": env.str("BK_ESB_DATABASE_ENGINE", "django.db.backends.mysql"),
         "NAME": env.str("BK_ESB_DATABASE_NAME"),
         "USER": env.str("BK_ESB_DATABASE_USER", ""),
-        "PASSWORD": env.str("BK_ESB_DATABASE_PASSWORD_UNENCRYPTED", "") or sec_env.str("BK_ESB_DATABASE_PASSWORD", ""),
+        "PASSWORD": env.str("BK_ESB_DATABASE_PASSWORD", ""),
         "HOST": env.str("BK_ESB_DATABASE_HOST", ""),
         "PORT": env.int("BK_ESB_DATABASE_PORT", 3306),
         "TEST_CHARSET": env.str("DATABASE_TEST_CHARSET", "utf8"),
@@ -168,8 +163,7 @@ DATABASES = {
         "ENGINE": env.str("BK_PAAS2_DATABASE_ENGINE", "django.db.backends.mysql"),
         "NAME": env.str("BK_PAAS2_DATABASE_NAME", "open_paas"),
         "USER": env.str("BK_PAAS2_DATABASE_USER", ""),
-        "PASSWORD": env.str("BK_PAAS2_DATABASE_PASSWORD_UNENCRYPTED", "")
-        or sec_env.str("BK_PAAS2_DATABASE_PASSWORD", ""),
+        "PASSWORD": env.str("BK_PAAS2_DATABASE_PASSWORD", ""),
         "HOST": env.str("BK_PAAS2_DATABASE_HOST", ""),
         "PORT": env.int("BK_PAAS2_DATABASE_PORT", 3306),
         "TEST_CHARSET": env.str("DATABASE_TEST_CHARSET", "utf8"),
@@ -256,7 +250,7 @@ HOST_CC_V3 = env.str("BK_CMDB_V3_URL", "")
 # host for job, default 80 for http/8443 for https
 HOST_JOB = env.str("BK_JOB_URL", "")
 
-# JOB是否启用SSL验证
+# JOB 是否启用 SSL 验证
 JOB_SSL = env.bool("JOB_SSL", True)
 
 # host for gse, default 80 for http/8443 for https
@@ -276,7 +270,7 @@ GSE_PMS_HOST = env.str("BK_GSE_PMS_URL", "")
 # host for gse config
 BK_GSE_CONFIG_ADDR = env.str("BK_GSE_CONFIG_URL", "")
 
-# host for DATA，数据平台监控告警系统, default 80 for http/8443 for https
+# host for DATA，数据平台监控告警系统，default 80 for http/8443 for https
 HOST_DATA = env.str("BK_DATA_URL", "")
 
 # host for DATA BKSQL service
@@ -305,6 +299,7 @@ DATAV3_DATALABAPI_HOST = env.str("BK_DATA_V3_DATALABAPI_URL", "")
 DATAV3_AIOPSAPI_HOST = env.str("BK_DATA_V3_AIOPSAPI_URL", "")
 DATAV3_RESOURCECENTERAPI_HOST = env.str("BK_DATA_V3_RESOURCECENTERAPI_URL", "")
 DATAV3_QUERYENGINEAPI_HOST = env.str("BK_DATA_V3_QUERYENGINEAPI_URL", "")
+DATAV3_LANGSERVER_HOST = env.str("BK_DATA_V3_LANGSERVER_URL", "")
 
 # host for fta,  default 80 for http/8443 for https
 HOST_FTA = env.str("BK_FTA_URL", "")

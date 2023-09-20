@@ -16,22 +16,18 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from enum import Enum
-
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
 
-from apigateway.common.constants import ChoiceEnumMixin
+
+class DocTypeEnum(StructuredEnum):
+    MARKDOWN = EnumField("markdown")
 
 
-class DocTypeEnum(ChoiceEnumMixin, Enum):
-    MARKDOWN = "markdown"
-
-
-class ProgrammingLanguageEnum(ChoiceEnumMixin, Enum):
-    UNKNOWN = "unknown"
-    PYTHON = "python"
-    GOLANG = "golang"
+class ProgrammingLanguageEnum(StructuredEnum):
+    UNKNOWN = EnumField("unknown")
+    PYTHON = EnumField("python")
+    GOLANG = EnumField("golang")
 
 
 class DocLanguageEnum(StructuredEnum):

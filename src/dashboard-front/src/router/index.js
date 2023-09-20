@@ -297,7 +297,7 @@ const routes = [
             }
           },
           {
-            path: 'apigw-api/:apigwId/:stage/:resourceId/doc',
+            path: 'apigw-api/:apigwId/:resourceId/doc',
             alias: '',
             name: 'apigwAPIDetailDoc',
             component: ApigwAPIDetailDoc,
@@ -805,7 +805,7 @@ const routes = [
           title: i18n.t('同步组件配置到 API 网关'),
           loader: 'table-loader',
           parentRoute: 'apigwAccess',
-          matchRoute: 'syncApigwAccess'
+          matchRoute: 'apigwAccess'
         }
       },
 
@@ -817,7 +817,7 @@ const routes = [
           title: i18n.t('组件同步历史'),
           loader: 'table-loader',
           parentRoute: 'apigwAccess',
-          matchRoute: 'syncHistory'
+          matchRoute: 'apigwAccess'
         }
       },
 

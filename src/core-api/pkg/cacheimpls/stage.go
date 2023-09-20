@@ -19,12 +19,13 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 	"strconv"
 
-	"core/pkg/database/dao"
-
 	"github.com/TencentBlueKing/gopkg/cache"
+
+	"core/pkg/database/dao"
 )
 
 // StageKey is the key of stage
@@ -38,22 +39,22 @@ func (k StageKey) Key() string {
 	return strconv.FormatInt(k.GatewayID, 10) + ":" + k.Name
 }
 
-func retrieveStageByGatewayIDStageName(k cache.Key) (interface{}, error) {
+func retrieveStageByGatewayIDStageName(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(StageKey)
 
 	manager := dao.NewStageManager()
 
-	return manager.GetByName(key.GatewayID, key.Name)
+	return manager.GetByName(ctx, key.GatewayID, key.Name)
 }
 
 // GetStage will get the stage from cache by gatewayID and stageName
-func GetStage(gatewayID int64, name string) (stage dao.Stage, err error) {
+func GetStage(ctx context.Context, gatewayID int64, name string) (stage dao.Stage, err error) {
 	key := StageKey{
 		GatewayID: gatewayID,
 		Name:      name,
 	}
 	var value interface{}
-	value, err = stageCache.Get(key)
+	value, err = cacheGet(ctx, stageCache, key)
 	if err != nil {
 		return
 	}

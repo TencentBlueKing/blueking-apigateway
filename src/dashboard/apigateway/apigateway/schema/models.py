@@ -39,7 +39,7 @@ class Schema(TimestampedModelMixin):
     """
 
     name = models.CharField(max_length=64)
-    type = models.CharField(max_length=32, choices=SchemaTypeEnum.choices(), blank=False, null=False)
+    type = models.CharField(max_length=32, choices=SchemaTypeEnum.get_choices(), blank=False, null=False)
     version = models.CharField(max_length=10, blank=False, null=False)
 
     _schema = models.TextField(db_column="schema", blank=False, null=False)
@@ -79,7 +79,7 @@ class Schema(TimestampedModelMixin):
         return json.dumps(data)
 
     def save(self, *args, **kwargs):
-        if self.type not in dict(SchemaTypeEnum.choices()):
+        if self.type not in dict(SchemaTypeEnum.get_choices()):
             raise ValueError("type should be one of SchemaTypeEnum")
         super().save(*args, **kwargs)
 
@@ -96,4 +96,4 @@ class Schema(TimestampedModelMixin):
             json.loads(data)
             self._schema = data
         else:
-            raise ValueError("data should be dict or str")
+            raise TypeError("data should be dict or str")

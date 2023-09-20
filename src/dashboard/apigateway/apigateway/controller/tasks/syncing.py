@@ -18,123 +18,112 @@
 import logging
 import uuid
 
-from blue_krill.async_utils.django_utils import delay_on_commit
 from celery import shared_task
-from django.conf import settings
 
+from apigateway.common.event.event import PublishEventReporter
+from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.combine import CombineDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
-from apigateway.core.constants import APIHostingTypeEnum, APIStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, MicroGateway, Release, Stage
-from apigateway.utils.redis_utils import get_default_redis_client, get_redis_key
+from apigateway.core.models import MicroGateway, Release, ReleaseHistory
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(ignore_result=True)
-def rolling_update_release(gateway_id):
+def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     """滚动同步微网关配置，不会生成新的版本"""
-    # 剔除非微网关托管的网关
-    logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
-    gateway = Gateway.objects.get(pk=gateway_id)
-    if gateway.hosting_type != APIHostingTypeEnum.MICRO.value:
-        logger.info("rolling_update_release: gateway(id=%d) not exist or is not a micro-gateway, skip", gateway_id)
-        return False
 
-    if gateway.status != APIStatusEnum.ACTIVE.value:
-        logger.info("rolling_update_release: gateway(id=%d) is not active, skip", gateway_id)
-        return False
+    release = Release.objects.get(id=release_id)
+
+    is_cli_sync = publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID
+    release_history = None if is_cli_sync else ReleaseHistory.objects.get(id=release_id)
+
+    # 事件上报要以release维度的stage来上报
+    if release_history:
+        release_history.stage = release.stage
+
+    PublishEventReporter.report_create_publish_task_success_event(release_history)
+
+    logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
 
     shared_gateway = MicroGateway.objects.get_default_shared_gateway()
     distributor = CombineDistributor()
 
     release_task_id = str(uuid.uuid4())
 
-    has_failure = False
-    for release in Release.objects.filter(api_id=gateway.id).prefetch_related("stage"):
-        procedure_logger = ReleaseProcedureLogger(
-            "rolling_update_release",
-            logger=logger,
-            gateway=release.api,
-            stage=release.stage,
-            micro_gateway=shared_gateway,
-            release_task_id=release_task_id,
-        )
-
-        stage = release.stage
-        if not stage:
-            procedure_logger.warning(f"release(id={release.pk}) has not stage, ignored")
-            continue
-        elif stage.status != StageStatusEnum.ACTIVE.value:
-            procedure_logger.warning("stage is not active, ignored")
-            continue
-
-        procedure_logger.info("distribute begin")
-        if not distributor.distribute(release, micro_gateway=shared_gateway, release_task_id=release_task_id):
-            procedure_logger.info("distribute failed")
-            has_failure = True
-        else:
-            procedure_logger.info("distribute succeeded")
-
-    return not has_failure
-
-
-@shared_task(ignore_result=True)
-def release_updated_check():
-    """检查微网关是否需要同步"""
-    client = get_default_redis_client()
-    key = get_redis_key(settings.APIGW_REVERSION_UPDATE_SET_KEY)
-
-    pipe = client.pipeline()
-    pipe.smembers(key)
-    pipe.delete(key)
-    gateway_ids, _ = pipe.execute()
-
-    if not gateway_ids:
-        return False
-
-    matched_gateway_ids = Gateway.objects.query_micro_and_active_ids(map(int, gateway_ids))
-    logger.info(
-        "release_check, gateway received count=%d, release count=%d", len(gateway_ids), len(matched_gateway_ids)
+    procedure_logger = ReleaseProcedureLogger(
+        "rolling_update_release",
+        logger=logger,
+        gateway=release.gateway,
+        stage=release.stage,
+        micro_gateway=shared_gateway,
+        release_task_id=release_task_id,
+        publish_id=publish_id,
     )
 
-    if not matched_gateway_ids:
-        return False
+    PublishEventReporter.report_distribute_configuration_doing_event(release_history)
 
-    for gateway_id in matched_gateway_ids:
-        logger.info("release_check apply rolling_update_release task for gateway(id=%d)", gateway_id)
-        delay_on_commit(rolling_update_release, gateway_id)
+    procedure_logger.info("distribute begin")
+    is_success, err_msg = distributor.distribute(
+        release,
+        micro_gateway=shared_gateway,
+        release_task_id=release_task_id,
+        publish_id=publish_id,
+    )
+    if not is_success:
+        msg = f"distribute failed: {err_msg}"
+        if not is_cli_sync:
+            PublishEventReporter.report_distribute_configuration_failure_event(release_history, err_msg)
+        procedure_logger.info(msg)
+    else:
+        PublishEventReporter.report_distribute_configuration_success_event(release_history)
+        procedure_logger.info("distribute succeeded")
 
-    return True
+    return is_success
 
 
 @shared_task(ignore_result=True)
-def revoke_release_by_stage(stage_id):
+def revoke_release(release_id: int, publish_id: int):
     """删除环境的已发布的资源"""
-    stage = Stage.objects.get(pk=stage_id)
+
+    release = Release.objects.get(id=release_id)
+
     shared_gateway = MicroGateway.objects.get_default_shared_gateway()
+
+    distributor = CombineDistributor()
+    if publish_id == DELETE_PUBLISH_ID:
+        is_success, err_msg = distributor.revoke(release, shared_gateway, str(uuid.uuid4()), publish_id=publish_id)
+        if not is_success:
+            logger.error(err_msg)
+        return is_success
+
+    release_history = ReleaseHistory.objects.get(id=publish_id)
+
+    # 上报事件需要按照release stage维度上报
+    release_history.stage = release.stage
+
+    PublishEventReporter.report_create_publish_task_success_event(release_history)
 
     procedure_logger = ReleaseProcedureLogger(
         "revoke_release",
         logger=logger,
-        gateway=stage.api,
-        stage=stage,
+        gateway=release.gateway,
+        stage=release.stage,
         micro_gateway=shared_gateway,
+        publish_id=release_history.pk,
     )
+    PublishEventReporter.report_distribute_configuration_doing_event(release_history)
 
-    distributor = CombineDistributor()
     procedure_logger.info("revoke begin")
-    distributor.revoke(stage, shared_gateway, procedure_logger.release_task_id)
 
-
-@shared_task(ignore_result=True)
-def revoke_release(gateway_id):
-    """删除网关的已发布的资源"""
-
-    gateway = Gateway.objects.get(pk=gateway_id)
-    if not gateway.is_micro_gateway:
-        logger.warning("revoke_release gateway=%s(%d) is not a micro-gateway, ignored", gateway.name, gateway.id)
-        return
-
-    for stage_id in gateway.stage_set.all().values_list("pk", flat=True):
-        revoke_release_by_stage.delay(stage_id=stage_id)
+    is_success, err_msg = distributor.revoke(
+        release, shared_gateway, procedure_logger.release_task_id, publish_id=release_history.pk
+    )
+    if not is_success:
+        msg = f"revoke failed: {err_msg}"
+        PublishEventReporter.report_distribute_configuration_failure_event(release_history, err_msg)
+        procedure_logger.info(msg)
+    else:
+        PublishEventReporter.report_distribute_configuration_success_event(release_history)
+        procedure_logger.info("revoke succeeded")
+    return is_success

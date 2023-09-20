@@ -116,7 +116,7 @@ class Command(BaseCommand):
         if allow_deletion:
             return newest
 
-        merged = [i for i in newest]
+        merged = list(newest)
 
         for m in dumped:
             if m.pk:

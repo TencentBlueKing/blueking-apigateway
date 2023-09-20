@@ -33,7 +33,6 @@ from urllib.parse import quote
 
 from celery.schedules import crontab
 from tencent_apigateway_common.env import Env
-from tencent_apigateway_common.secure.dj_environ import SecureEnv
 
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
@@ -43,9 +42,6 @@ from apigateway.conf.utils import get_default_keepalive_options
 env = Env()
 
 ENCRYPT_KEY = env.str("ENCRYPT_KEY")
-
-sec_env = SecureEnv()
-sec_env.set_secure_key(ENCRYPT_KEY)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -68,9 +64,6 @@ LOG_LINK_SECRET = ENCRYPT_KEY
 
 # use the same nonce, should not be changed at all!!!!!!
 CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
-
-# 网关公钥，服务部分接口接入网关，配置此网关的公钥，以校验网关 jwt
-APIGW_PUBLIC_KEY = sec_env.str("APIGW_PUBLIC_KEY", "")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", False)
@@ -108,10 +101,13 @@ INSTALLED_APPS = [
     "apigateway.apps.feature",
     "apigateway.apps.esb",
     "apigateway.apps.esb.bkcore",
-    "apigateway.apps.docs.feedback",
     "apigw_manager.apigw",
     "apigateway.controller",
     "apigateway.healthz",
+    "apigateway.iam",
+    # TODO: 待启用 IAM 鉴权后，需启用以下两个 django app
+    # "apigateway.iam.apigw_iam_migration",
+    # "iam.contrib.iam_migration",
     # 开源版旧版 ESB 数据
     "apigateway.legacy_esb",
     "apigateway.legacy_esb.paas2",
@@ -162,7 +158,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "wsgi.application"
-
 
 DATABASE_ROUTERS = [
     "apigateway.utils.db_router.DBRouter",
@@ -234,7 +229,7 @@ LANGUAGE_COOKIE_DOMAIN = env.str("DASHBOARD_LANGUAGE_COOKIE_DOMAIN", None) or CS
 # django translation, 避免循环引用
 gettext = lambda s: s  # noqa
 
-# 站点URL
+# 站点 URL
 SITE_URL = "/"
 
 # Static files (CSS, JavaScript, Images)
@@ -267,15 +262,16 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
         "apigateway.common.permissions.GatewayPermission",
     ),
-    "DEFAULT_PAGINATION_CLASS": "apigateway.utils.paginator.StandardLimitOffsetPagination",
+    "DEFAULT_PAGINATION_CLASS": "apigateway.common.pagination.StandardLimitOffsetPagination",
     "PAGE_SIZE": 10,
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",),
     "DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S %z",
+    "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
 }
 
 SWAGGER_SETTINGS = {
-    "DEFAULT_AUTO_SCHEMA_CLASS": "apigateway.utils.swagger.ResponseSwaggerAutoSchema",
+    "DEFAULT_AUTO_SCHEMA_CLASS": "apigateway.common.swagger.BkStandardResponseSwaggerAutoSchema",
 }
 
 # https://docs.djangoproject.com/en/3.2/ref/checks/
@@ -290,9 +286,8 @@ DATABASES = {
         "ENGINE": env.str("BK_APIGW_DATABASE_ENGINE", "django.db.backends.mysql"),
         "NAME": env.str("BK_APIGW_DATABASE_NAME", BK_APP_CODE),
         "USER": env.str("BK_APIGW_DATABASE_USER", BK_APP_CODE),
-        "PASSWORD": env.str("BK_APIGW_DATABASE_PASSWORD_UNENCRYPTED", "")
-        or sec_env.str("BK_APIGW_DATABASE_PASSWORD", ""),
-        "HOST": env.str("BK_APIGW_DATABASE_HOST"),
+        "PASSWORD": env.str("BK_APIGW_DATABASE_PASSWORD", ""),
+        "HOST": env.str("BK_APIGW_DATABASE_HOST", "localhost"),
         "PORT": env.int("BK_APIGW_DATABASE_PORT", 3306),
         "OPTIONS": {
             "isolation_level": env.str("BK_APIGW_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
@@ -300,10 +295,10 @@ DATABASES = {
     },
     "bkcore": {
         "ENGINE": env.str("BK_ESB_DATABASE_ENGINE", "django.db.backends.mysql"),
-        "NAME": env.str("BK_ESB_DATABASE_NAME"),
+        "NAME": env.str("BK_ESB_DATABASE_NAME", "bk_esb"),
         "USER": env.str("BK_ESB_DATABASE_USER", BK_APP_CODE),
-        "PASSWORD": env.str("BK_ESB_DATABASE_PASSWORD_UNENCRYPTED", "") or sec_env.str("BK_ESB_DATABASE_PASSWORD", ""),
-        "HOST": env.str("BK_ESB_DATABASE_HOST"),
+        "PASSWORD": env.str("BK_ESB_DATABASE_PASSWORD", ""),
+        "HOST": env.str("BK_ESB_DATABASE_HOST", "localhost"),
         "PORT": env.int("BK_ESB_DATABASE_PORT", 3306),
         "OPTIONS": {
             "isolation_level": env.str("BK_ESB_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
@@ -313,8 +308,7 @@ DATABASES = {
         "ENGINE": env.str("BK_PAAS2_DATABASE_ENGINE", "django.db.backends.mysql"),
         "NAME": env.str("BK_PAAS2_DATABASE_NAME", ""),
         "USER": env.str("BK_PAAS2_DATABASE_USER", ""),
-        "PASSWORD": env.str("BK_PAAS2_DATABASE_PASSWORD_UNENCRYPTED", "")
-        or sec_env.str("BK_PAAS2_DATABASE_PASSWORD", ""),
+        "PASSWORD": env.str("BK_PAAS2_DATABASE_PASSWORD", ""),
         "HOST": env.str("BK_PAAS2_DATABASE_HOST", ""),
         "PORT": env.int("BK_PAAS2_DATABASE_PORT", 3306),
         "OPTIONS": {
@@ -331,7 +325,7 @@ if not BK_PAAS2_ENABLED:
 # redis 配置
 REDIS_HOST = env.str("BK_APIGW_REDIS_HOST", "localhost")
 REDIS_PORT = env.int("BK_APIGW_REDIS_PORT", 6379)
-REDIS_PASSWORD = env.str("BK_APIGW_REDIS_PASSWORD_UNENCRYPTED", "") or sec_env.str("BK_APIGW_REDIS_PASSWORD")
+REDIS_PASSWORD = env.str("BK_APIGW_REDIS_PASSWORD", "")
 REDIS_PREFIX = env.str("BK_APIGW_REDIS_PREFIX", "apigw::")
 REDIS_MAX_CONNECTIONS = env.int("BK_APIGW_REDIS_MAX_CONNECTIONS", 100)
 REDIS_DB = env.int("BK_APIGW_REDIS_DB", 0)
@@ -343,6 +337,9 @@ REDIS_SENTINEL_PASSWORD = env.str("BK_APIGW_REDIS_SENTINEL_PASSWORD", "")
 REDIS_SENTINEL_ADDR_STR = env.str("BK_APIGW_REDIS_SENTINEL_ADDR", "")
 # parse sentinel address from "host1:port1,host2:port2" to [("host1", port1), ("host2", port2)]
 REDIS_SENTINEL_ADDR_LIST = [tuple(addr.split(":")) for addr in REDIS_SENTINEL_ADDR_STR.split(",") if addr]
+# redis lock 配置
+REDIS_PUBLISH_LOCK_TIMEOUT = env.int("BK_APIGW_PUBLISH_LOCK_TIMEOUT", 5)
+REDIS_PUBLISH_LOCK_RETRY_GET_TIMES = env.int("BK_APIGW_PUBLISH_LOCK_RETRY_GET_TIMES", 1)
 
 DEFAULT_REDIS_CONFIG = CHANNEL_REDIS_CONFIG = {
     "host": REDIS_HOST,
@@ -423,7 +420,7 @@ CELERY_BEAT_SCHEDULE.update(
     }
 )
 
-if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", False):
+if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
     CELERY_BEAT_SCHEDULE.update(
         {
             "apigateway.apps.metrics.tasks.statistics_request_by_day": {
@@ -436,7 +433,6 @@ if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", False):
             },
         }
     )
-
 
 # log 配置
 LOG_LEVEL = env.str("LOG_LEVEL", "WARNING")
@@ -452,9 +448,7 @@ RAVEN_CONFIG = {
 # Elasticsearch 配置
 BK_APIGW_ES_USER = env.str("BK_APIGW_ES_USER", BK_APP_CODE)
 # 密码中可能包含特殊字符
-BK_APIGW_ES_PASSWORD = quote(
-    env.str("BK_APIGW_ES_PASSWORD_UNENCRYPTED", "") or sec_env.str("BK_APIGW_ES_PASSWORD", "")
-)
+BK_APIGW_ES_PASSWORD = quote(env.str("BK_APIGW_ES_PASSWORD", ""))
 BK_APIGW_ES_HOST = env.list("BK_APIGW_ES_HOST", default=[])
 BK_APIGW_ES_PORT = env.str("BK_APIGW_ES_PORT", "9200")
 ELASTICSEARCH_HOSTS = []
@@ -470,6 +464,9 @@ DEFAULT_ES_SEARCH_TIMEOUT = env.int("DEFAULT_ES_SEARCH_TIMEOUT", 30)
 DEFAULT_ES_HTTP_TIMEOUT = env.int("DEFAULT_ES_HTTP_TIMEOUT", 30)
 DEFAULT_ES_AGGS_TERM_SIZE = env.int("DEFAULT_ES_AGGS_TERM_SIZE", 1000)
 
+# 清理任务相关配置
+CLEAN_PUBLISH_EVENT_INTERVAL_DAYS = env.int("CLEAN_PUBLISH_EVENT_INTERVAL_DAYS", 365)
+
 # bkrepo 配置
 BKREPO_ENDPOINT_URL = env.str("BKREPO_ENDPOINT_URL", "")
 BKREPO_USERNAME = env.str("BKREPO_USERNAME", "bk_apigateway")
@@ -483,14 +480,14 @@ PYPI_MIRRORS_CONFIG = {
         "repository_url": env.str("DEFAULT_PYPI_REPOSITORY_URL", ""),
         "index_url": env.str("DEFAULT_PYPI_INDEX_URL", ""),
         "username": env.str("DEFAULT_PYPI_USERNAME", ""),
-        "password": env.str("DEFAULT_PYPI_PASSWORD_UNENCRYPTED", "") or sec_env.str("DEFAULT_PYPI_PASSWORD", ""),
+        "password": env.str("DEFAULT_PYPI_PASSWORD", ""),
     }
 }
 
 PYPI_MIRRORS_REPOSITORY = env.str("PYPI_INDEX_URL", "https://pypi.org/simple/")
 
 # 模板变量
-BK_API_URL_TMPL = env.str("BK_API_URL_TMPL", "")
+BK_API_URL_TMPL = env.str("BK_API_URL_TMPL", "").rstrip("/")
 BK_COMPONENT_API_URL = env.str("BK_COMPONENT_API_URL", "")
 API_RESOURCE_URL_TMPL = env.str("API_RESOURCE_URL_TMPL", "")
 API_DOCS_URL_TMPL = env.str("API_DOCS_URL_TMPL", "")
@@ -500,6 +497,8 @@ BK_API_INNER_URL_TMPL = env.str("BK_API_INNER_URL_TMPL", "") or BK_API_URL_TMPL
 BK_COMPONENT_API_INNER_URL = env.str("BK_COMPONENT_API_INNER_URL", "") or BK_COMPONENT_API_URL
 BK_PAAS3_API_URL = BK_API_INNER_URL_TMPL.format(api_name="bkpaas3")
 BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
+
+DASHBOARD_URL = env.str("DASHBOARD_URL", "").rstrip("/")
 
 DASHBOARD_FE_URL = env.str("DASHBOARD_FE_URL", "").rstrip("/")
 # 将前端 URL 默认添加到 CORS 白名单，可不配置环境变量 CORS_ORIGIN_REGEX_WHITELIST
@@ -572,9 +571,13 @@ BCS_PUBLIC_CHART_REPOSITORY = "public-repo"
 # BCS 为网关分配的认证 Token
 BCS_API_GATEWAY_TOKEN = env.str("BCS_API_GATEWAY_TOKEN", "")
 
+# 网关部署集群所属业务ID，影响从蓝鲸监控拉取 Prometheus 数据等功能；开源环境默认部署在蓝鲸业务(业务 ID=2)
+BCS_CLUSTER_BK_BIZ_ID = env.str("BCS_CLUSTER_BK_BIZ_ID", "2")
+
 # edge controller 配置
 EDGE_CONTROLLER_API_NAME = "bk-apigateway"
-# 托管的微网关实例，实例部署所用 chart 由网关生成，此 chart 中，endpoints + base_path 应为微网关实例访问网关数据的网关接口地址前缀
+# 托管的微网关实例，实例部署所用 chart 由网关生成，
+# 此 chart 中，endpoints + base_path 应为微网关实例访问网关数据的网关接口地址前缀
 EDGE_CONTROLLER_API_BASE_PATH = env.str("EDGE_CONTROLLER_API_BASE_PATH", "/")
 
 # plugin metadata config
@@ -592,6 +595,7 @@ PLUGIN_METADATA_CONFIG = {
             "app_code": "$bk_app_code",
             "client_ip": "$remote_addr",
             "request_id": "$bk_request_id",
+            "x_request_id": "$x_request_id",
             "request_duration": "$bk_log_request_duration",
             # 网关信息
             "api_id": "$bk_gateway_id",
@@ -677,18 +681,39 @@ DEFAULT_GATEWAY_HOSTING_TYPE = env.int("DEFAULT_GATEWAY_HOSTING_TYPE", 1)
 
 # prometheus 配置
 PROMETHEUS_METRIC_NAME_PREFIX = env.str("PROMETHEUS_METRIC_NAME_PREFIX", "bk_apigateway_")
+PROMETHEUS_DEFAULT_LABELS = [
+    # example: foo=bar => [("foo", "=", "bar")]
+    (key, "=", value)
+    for key, value in env.dict("PROMETHEUS_DEFAULT_LABELS", default={}).items()
+]
 
 # DB 操作大小配置
 RELEASED_RESOURCE_CREATE_BATCH_SIZE = env.int("RELEASED_RESOURCE_CREATE_BATCH_SIZE", 50)
 RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE = env.int("RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE", 50)
 
-# 网关下对象的最大数量
+# 网关资源数量限制
 MAX_STAGE_COUNT_PER_GATEWAY = env.int("MAX_STAGE_COUNT_PER_GATEWAY", 20)
-MAX_RESOURCE_COUNT_PER_GATEWAY = env.int("MAX_RESOURCE_COUNT_PER_GATEWAY", 2000)
-MAX_RESOURCE_COUNT_SPECIFIED_GATEWAY = {
-    "bk-esb": 5000,
+API_GATEWAY_RESOURCE_LIMITS = {
+    "max_gateway_count_per_app": env.int("MAX_GATEWAY_COUNT_PER_APP", 10),  # 每个 app 最多创建的网关数量
+    "max_resource_count_per_gateway": env.int("MAX_RESOURCE_COUNT_PER_GATEWAY", 1000),  # 每个网关最多创建的 api 数量
+    # 配置 app 的特殊规则
+    "max_gateway_count_per_app_whitelist": {
+        "bk_sops": 1000000,  # 标准运维网关数量无限制
+        "data": 1000000,
+    },
+    # 配置网关的特殊规则
+    "max_resource_count_per_gateway_whitelist": {
+        "bk-esb": 5000,
+        "bk-base": 2000,
+    },
 }
-MAX_API_LABEL_COUNT_PER_GATEWAY = env.int("MAX_API_LABEL_COUNT_PER_GATEWAY", 100)
+for k, v in env.dict("MAX_GATEWAY_COUNT_PER_APP_WHITELIST", default={}).items():
+    API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"][k] = int(v)
+for k, v in env.dict("MAX_RESOURCE_COUNT_PER_GATEWAY_WHITELIST", default={}).items():
+    API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"][k] = int(v)
+
+# 网关下对象的最大数量
+MAX_LABEL_COUNT_PER_GATEWAY = env.int("MAX_LABEL_COUNT_PER_GATEWAY", 100)
 
 MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION = env.int("MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION", 99)
 
@@ -703,8 +728,6 @@ BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {
 }
 
 BK_API_DEFAULT_STAGE_MAPPINGS = env.dict("BK_API_DEFAULT_STAGE_MAPPINGS", default={})
-
-PYTHON_SDK_MANAGER_CLASS = "apigateway.apps.docs.esb.sdk.manager.SimplePythonSDKManager"
 
 FAKE_SEND_NOTICE = env.bool("FAKE_SEND_NOTICE", default=False)
 
@@ -726,13 +749,31 @@ OTEL_INSTRUMENT_CELERY = env.bool("DASHBOARD_OTEL_INSTRUMENT_CELERY", default=Fa
 OTEL_INSTRUMENT_REDIS = env.bool("DASHBOARD_OTEL_INSTRUMENT_REDIS", default=False)
 
 # bkpaas-auth 配置
-BK_PAAS_LOGIN_URL = env.str("BK_PAAS_LOGIN_URL", "")
 BKAUTH_BACKEND_TYPE = "bk_token"
-BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_PAAS_LOGIN_URL}/api/v3/is_login/"
+BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/is_login/"
 
 BKAUTH_TOKEN_APP_CODE = BK_APP_CODE
 BKAUTH_TOKEN_SECRET_KEY = BK_APP_SECRET
 BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"
+
+# bk-iam 配置
+BK_IAM_SYSTEM_ID = "bk_apigateway"
+BK_IAM_USE_APIGATEWAY = True
+BK_IAM_GATEWAY_STAGE = BK_API_DEFAULT_STAGE_MAPPINGS.get("bk-iam", "prod")
+BK_IAM_APIGATEWAY_URL = f"{BK_API_URL_TMPL.format(api_name='bk-iam')}/{BK_IAM_GATEWAY_STAGE}"
+BK_IAM_MIGRATION_JSON_PATH = "data/iam"
+BK_IAM_MIGRATION_APP_NAME = "apigateway.iam.apigw_iam_migration"
+BK_IAM_RESOURCE_API_HOST = env.str("BK_IAM_RESOURCE_API_HOST", DASHBOARD_URL)
+# 跳过注册权限模型到权限中心（注意：仅跳过注册权限模型，不关注权限校验是否依赖权限中心）
+BK_IAM_SKIP = env.bool("BK_IAM_SKIP", False)
+# 使用权限中心数据进行鉴权（创建网关时，会创建分级管理员、用户组，校验权限时依赖权限中心）
+# TODO: 待启用 IAM 鉴权时，将默认值改为 True
+USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
+
+# 使用 bkmonitorv3 网关 API，还是 monitor_v3 组件 API
+USE_BKAPI_BKMONITORV3 = env.bool("USE_BKAPI_BKMONITORV3", False)
+# 是否使用 bklog 网关 API
+USE_BKAPI_BK_LOG = env.bool("USE_BKAPI_BK_LOG", False)
 
 # ==============================================================================
 # Feature Flag
@@ -742,16 +783,16 @@ BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v
 DEFAULT_FEATURE_FLAG = {
     "ENABLE_MONITOR": env.bool("FEATURE_FLAG_ENABLE_MONITOR", False),
     "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", True),
-    "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", False),
+    "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True),
     "ALLOW_UPLOAD_SDK_TO_REPOSITORY": env.bool("FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY", False),
     "MENU_ITEM_HELP": env.bool("FEATURE_FLAG_MENU_ITEM_HELP", False),
     "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
+    "MENU_ITEM_ESB_API_DOC": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API_DOC", True),
     "SYNC_ESB_TO_APIGW_ENABLED": env.bool("FEATURE_FLAG_SYNC_ESB_TO_APIGW_ENABLED", True),
     # api-support
     "ENABLE_SDK": env.bool("FEATURE_FLAG_ENABLE_SDK", False),
     "ALLOW_CREATE_APPCHAT": env.bool("FEATURE_FLAG_ALLOW_CREATE_APPCHAT", False),
     "MENU_ITEM_TOOLS": env.bool("FEATURE_FLAG_MENU_ITEM_TOOLS", False),
-    "ENABLE_FEEDBACK": env.bool("FEATURE_FLAG_ENABLE_FEEDBACK", False),
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
@@ -759,12 +800,10 @@ DEFAULT_USER_FEATURE_FLAG = {
     "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
 }
 
-# 具体网关默认功能开关，将与 core.constants 中共享网关、专享网关等功能开关配置合并，
-# 支持不同类型的网关，有不同的功能特性集
+# 网关功能开关
 GLOBAL_GATEWAY_FEATURE_FLAG = {
     "OFFICIAL_API_TIPS_ENABLED": env.bool("OFFICIAL_API_TIPS_ENABLED", True),
     "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
-    "ACCESS_STRATEGY_ENABLED": env.bool("FEATURE_FLAG_ACCESS_STRATEGY_ENABLED", False),
     "PLUGIN_ENABLED": env.bool("FEATURE_FLAG_PLUGIN_ENABLED", True),
     "STAGE_RATE_LIMIT_ENABLED": env.bool("FEATURE_FLAG_STAGE_RATE_LIMIT_ENABLED", False),
     "RESOURCE_WITH_MOCK_ENABLED": env.bool("FEATURE_FLAG_RESOURCE_WITH_MOCK_ENABLED", False),

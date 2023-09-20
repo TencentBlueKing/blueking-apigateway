@@ -1,0 +1,169 @@
+{
+  "system_id": "bk_apigateway",
+  "operations": [
+    {
+      "operation": "upsert_action_groups",
+      "data": [
+        {
+          "name": "网关",
+          "name_en": "Gateway",
+          "sub_groups": [
+            {
+              "name": "网关管理",
+              "name_en": "Gateway Management",
+              "actions": [
+                {
+                  "id": "create_gateway"
+                },
+                {
+                  "id": "manage_gateway"
+                },
+                {
+                  "id": "view_gateway"
+                },
+                {
+                  "id": "manage_members"
+                },
+                {
+                  "id": "manage_sdk"
+                },
+                {
+                  "id": "api_test"
+                },
+                {
+                  "id": "manage_label"
+                }
+              ]
+            },
+            {
+              "name": "环境管理",
+              "name_en": "Stage Management",
+              "actions": [
+                {
+                  "id": "create_stage"
+                },
+                {
+                  "id": "edit_stage"
+                },
+                {
+                  "id": "release_stage"
+                },
+                {
+                  "id": "delete_stage"
+                },
+                {
+                  "id": "view_stage"
+                }
+              ]
+            },
+            {
+              "name": "资源管理",
+              "name_en": "Resource Management",
+              "actions": [
+                {
+                  "id": "create_resource"
+                },
+                {
+                  "id": "edit_resource"
+                },
+                {
+                  "id": "delete_resource"
+                },
+                {
+                  "id": "view_resource"
+                },
+                {
+                  "id": "manage_resource_doc"
+                }
+              ]
+            },
+            {
+              "name": "插件配置",
+              "name_en": "Plugin Config",
+              "actions": [
+                {
+                  "id": "create_plugin_config"
+                },
+                {
+                  "id": "edit_plugin_config"
+                },
+                {
+                  "id": "delete_plugin_config"
+                },
+                {
+                  "id": "view_plugin_config"
+                },
+                {
+                  "id": "bind_plugin_config"
+                }
+              ]
+            },
+            {
+              "name": "版本",
+              "name_en": "Version",
+              "actions": [
+                {
+                  "id": "view_version"
+                }
+              ]
+            },
+            {
+              "name": "权限管理",
+              "name_en": "Permission Management",
+              "actions": [
+                {
+                  "id": "approve_permission"
+                },
+                {
+                  "id": "grant_permission"
+                },
+                {
+                  "id": "revoke_permission"
+                },
+                {
+                  "id": "view_permission"
+                }
+              ]
+            },
+            {
+              "name": "运行数据",
+              "name_en": "Statistics",
+              "actions": [
+                {
+                  "id": "view_log"
+                },
+                {
+                  "id": "view_statistics"
+                }
+              ]
+            },
+            {
+              "name": "审计",
+              "name_en": "Audit",
+              "actions": [
+                {
+                  "id": "view_audit"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "组件",
+          "name_en": "Components",
+          "sub_groups": [
+            {
+              "name": "组件管理",
+              "name_en": "Components Management",
+              "actions": [
+                {
+                  "id": "manage_components"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

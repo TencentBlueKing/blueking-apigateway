@@ -37,67 +37,55 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
-from apigateway.apps.monitor.views import AlarmRecordSummaryViewSet
+from apigateway.apis.web.monitor.views import AlarmRecordSummaryListApi
 
 urlpatterns = [
+    # /metrics
     path("", include("django_prometheus.urls")),
-    path("backend/admin42/", admin.site.urls),
+    # /healthz
     path("backend/", include("apigateway.healthz.urls")),
+    # /admin42
+    path("backend/admin42/", admin.site.urls),
+    # /userinfo
     path("backend/accounts/", include("apigateway.account.urls")),
-    path("backend/api/v1/", include("apigateway.apis.open.urls")),
+    # esb
+    path("backend/esb/", include("apigateway.apps.esb.urls")),
+    # iam provider
+    path("backend/api/iam/", include("apigateway.apis.iam.urls")),
     # edge-controller
     path("backend/api/v1/edge-controller/", include("apigateway.apis.controller.urls")),
-    # apps: core
-    path("backend/apis/", include("apigateway.apps.gateway.urls")),
-    path("backend/apis/<int:gateway_id>/", include("apigateway.apps.stage_item.urls")),
-    path("backend/apis/<int:gateway_id>/stages/", include("apigateway.apps.stage.urls")),
-    path("backend/apis/<int:gateway_id>/resources/", include("apigateway.apps.resource.urls")),
-    path("backend/apis/<int:gateway_id>/resource_versions/", include("apigateway.apps.resource_version.urls")),
-    path("backend/apis/<int:gateway_id>/releases/", include("apigateway.apps.release.urls")),
-    path("backend/apis/<int:gateway_id>/backend-services/", include("apigateway.apps.backend_service.urls")),
-    path("backend/apis/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
-    # apps: normal
-    path("backend/apis/<int:gateway_id>/tests/", include("apigateway.apps.api_test.urls")),
-    path("backend/apis/<int:gateway_id>/labels/", include("apigateway.apps.label.urls")),
-    path("backend/apis/<int:gateway_id>/logs/", include("apigateway.apps.access_log.urls")),
-    path("backend/apis/<int:gateway_id>/metrics/", include("apigateway.apps.metrics.urls")),
-    path("backend/apis/<int:gateway_id>/monitors/", include("apigateway.apps.monitor.urls")),
-    path("backend/apis/<int:gateway_id>/audits/", include("apigateway.apps.audit.urls")),
-    path("backend/apis/<int:gateway_id>/permissions/", include("apigateway.apps.permission.urls")),
-    path("backend/apis/<int:gateway_id>/support/", include("apigateway.apps.support.urls")),
-    path("backend/apis/<int:gateway_id>/access_strategies/", include("apigateway.apps.access_strategy.urls")),
-    path("backend/apis/<int:gateway_id>/plugins/", include("apigateway.apps.plugin.urls")),
-    path("backend/apis/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
-    path("backend/esb/", include("apigateway.apps.esb.urls")),
-    path("backend/users/", include("apigateway.apps.user.urls")),
-    path("backend/feature/", include("apigateway.apps.feature.urls")),
-    # FIXME: change this to a new url in future
-    # monitors
-    path(
-        "backend/apis/monitors/alarm/records/summary/",
-        AlarmRecordSummaryViewSet.as_view({"get": "list"}),
-        name="monitors.alamr_records.summary",
-    ),
-    # switch language
+    # open api
+    path("backend/api/v1/", include("apigateway.apis.open.urls")),
+    # api-support backend/docs urls
+    path("backend/docs/", include("apigateway.apis.web.docs.urls")),
+    # web api
     path("backend/i18n/setlang/", set_language, name="set_language"),
-    # NOTE: merge api-support -- begin
-    # TODO: 下一个版本可删除 docs/backend 开头的路径
-    # TODO: the frontend should change url to backend/accounts/
-    path("docs/backend/accounts/", include("apigateway.account.urls")),
-    # TODO: the frontend should change url to backend/i18n/setlang/
-    path("docs/backend/i18n/setlang/", set_language, name="set_language_2"),
-    # TODO: change the urls, and frontend should switch to new urls
-    path("docs/backend/apigateway/", include("apigateway.apps.docs.gateway.urls")),
-    path("docs/backend/esb/", include("apigateway.apps.docs.esb.urls")),
-    path("docs/backend/feature/", include("apigateway.apps.docs.feature.urls")),
-    path("docs/backend/feedback/", include("apigateway.apps.docs.feedback.urls")),
-    # NOTE: merge api-support -- end
-    # NOTE: api-support backend/docs urls -- begin
-    path("backend/docs/apigateway/", include("apigateway.apps.docs.gateway.urls")),
-    path("backend/docs/esb/", include("apigateway.apps.docs.esb.urls")),
-    path("backend/docs/feature/", include("apigateway.apps.docs.feature.urls")),
-    path("backend/docs/feedback/", include("apigateway.apps.docs.feedback.urls")),
-    # NOTE: api-support backend/docs urls -- end
+    path("backend/feature/", include("apigateway.apis.web.feature.urls")),
+    path("backend/gateways/", include("apigateway.apis.web.gateway.urls")),
+    path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
+    path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
+    path("backend/gateways/<int:gateway_id>/resources/", include("apigateway.apis.web.resource.urls")),
+    path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    path("backend/gateways/<int:gateway_id>/metrics/", include("apigateway.apis.web.metrics.urls")),
+    path("backend/gateways/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
+    path("backend/gateways/<int:gateway_id>/permissions/", include("apigateway.apis.web.permission.urls")),
+    path("backend/gateways/<int:gateway_id>/backends/", include("apigateway.apis.web.backend.urls")),
+    path("backend/gateways/<int:gateway_id>/stages/", include("apigateway.apis.web.stage.urls")),
+    path("backend/gateways/<int:gateway_id>/docs/", include("apigateway.apis.web.resource_doc.urls")),
+    path("backend/gateways/<int:gateway_id>/releases/", include("apigateway.apis.web.release.urls")),
+    path("backend/gateways/<int:gateway_id>/plugins/", include("apigateway.apis.web.plugin.urls")),
+    path("backend/gateways/<int:gateway_id>/resource_versions/", include("apigateway.apis.web.resource_version.urls")),
+    path("backend/gateways/<int:gateway_id>/support/", include("apigateway.apis.web.support.urls")),
+    path("backend/gateways/<int:gateway_id>/audits/", include("apigateway.apis.web.audit.urls")),
+    # TODO: refactor or remove
+    path("backend/gateways/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
+    path("backend/gateways/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
+    # todo 不应该放在顶层，后续要想办法挪到下层
+    path(
+        "backend/gateways/monitors/alarm/records/summary/",
+        AlarmRecordSummaryListApi.as_view(),
+        name="monitors.alarm_records.summary",
+    ),
 ]
 
 # add drf-yasg automatically generated documents

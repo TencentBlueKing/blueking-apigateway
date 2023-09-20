@@ -20,13 +20,13 @@ from django.conf import settings
 from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
+from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apps.esb.helpers import BoardConfigManager
 from apigateway.apps.esb.utils import get_related_boards
-from apigateway.core.constants import UserAuthTypeEnum
 
 
 class SystemQueryV1SLZ(serializers.Serializer):
-    user_auth_type = serializers.ChoiceField(choices=UserAuthTypeEnum.choices())
+    user_auth_type = serializers.ChoiceField(choices=UserAuthTypeEnum.get_choices())
 
     def to_internal_value(self, data):
         data = super().to_internal_value(data)

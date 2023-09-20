@@ -19,22 +19,13 @@
 
 from apigateway.schema.instances import (
     APISDK,
-    AccessStrategyCircuitBreaker,
-    AccessStrategyCORS,
-    AccessStrategyErrorStatusCode200,
-    AccessStrategyIPAccessControl,
-    AccessStrategyRateLimit,
-    AccessStrategyUserVerifiedUnrequiredApps,
-    ContextAPIBKAuth,
-    ContextAPIFeatureFlag,
+    ContextGatewayBKAuth,
+    ContextGatewayFeatureFlag,
     ContextResourceBKAuth,
     ContextStageProxyHTTP,
-    ContextStageRateLimit,
     MicroGateway,
     MonitorAlarmFilter,
     MonitorAlarmStrategy,
-    PluginIpRestriction,
-    PluginVerifiedUserExemptedApps,
     ProxyHTTP,
     ProxyMock,
 )
@@ -42,25 +33,16 @@ from apigateway.schema.instances import (
 
 def init_meta_schemas():
     meta_schema_instances = [
-        ContextAPIBKAuth(),
+        ContextGatewayBKAuth(),
         ContextResourceBKAuth(),
         ContextStageProxyHTTP(),
-        ContextStageRateLimit(),
-        ContextAPIFeatureFlag(),
+        ContextGatewayFeatureFlag(),
         ProxyHTTP(),
         ProxyMock(),
-        AccessStrategyIPAccessControl(),
-        AccessStrategyRateLimit(),
-        AccessStrategyUserVerifiedUnrequiredApps(),
-        AccessStrategyErrorStatusCode200(),
-        AccessStrategyCORS(),
-        AccessStrategyCircuitBreaker(),
         MonitorAlarmFilter(),
         MonitorAlarmStrategy(),
         APISDK(),
         MicroGateway(),
-        PluginIpRestriction(),
-        PluginVerifiedUserExemptedApps(),
     ]
 
     return [d.new_meta_schema() for d in meta_schema_instances]

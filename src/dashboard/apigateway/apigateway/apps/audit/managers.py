@@ -20,31 +20,4 @@ from django.db import models
 
 
 class AuditEventLogManager(models.Manager):
-    def filter_log(
-        self,
-        queryset,
-        time_start=None,
-        time_end=None,
-        op_object_type=None,
-        op_type=None,
-        username=None,
-        fuzzy=False,
-    ):
-        if time_start:
-            queryset = queryset.filter(op_time__gte=time_start)
-        if time_end:
-            queryset = queryset.filter(op_time__lte=time_end)
-
-        if op_object_type:
-            queryset = queryset.filter(op_object_type=op_object_type)
-
-        if op_type:
-            queryset = queryset.filter(op_type=op_type)
-
-        if username:
-            if fuzzy:
-                queryset = queryset.filter(username__icontains=username)
-            else:
-                queryset = queryset.filter(username=username)
-
-        return queryset
+    pass

@@ -21,7 +21,6 @@ from django import forms
 from common.constants import API_TYPE_Q, HTTP_METHOD
 from common.forms import BaseComponentForm
 from components.component import Component
-
 from .toolkit import configs
 
 

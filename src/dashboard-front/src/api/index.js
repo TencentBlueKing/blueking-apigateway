@@ -29,6 +29,7 @@ import RequestQueue from './request-queue'
 import { bus } from '../common/bus'
 import UrlParse from 'url-parse'
 import queryString from 'query-string'
+import i18n from '@/language/i18n.js'
 
 // axios 实例
 const axiosInstance = axios.create({
@@ -197,8 +198,7 @@ function handleReject (error, config) {
       bus.$emit('show-404-page', nextError.response)
       return Promise.resolve({ data: {} })
     } else if (status === 500) {
-      nextError.message = '系统出现异常'
-      return Promise.resolve({ data: {} })
+      nextError.message = i18n.t('系统出现异常')
     } else if (status === 400) {
       nextError.message = data.message
       return Promise.reject(nextError)

@@ -17,10 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
-from apigateway.core.models import APIRelatedApp, Gateway
+from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.models import Gateway, GatewayRelatedApp
+from apigateway.utils.django import get_object_or_None
 
 
 class GatewayPermission(permissions.BasePermission):
@@ -57,10 +60,7 @@ class GatewayPermission(permissions.BasePermission):
             return None
 
         filter_kwargs = {"id": view.kwargs[lookup_url_kwarg]}
-        try:
-            return Gateway.objects.get(**filter_kwargs)
-        except Gateway.DoesNotExist:
-            raise Http404
+        return get_object_or_404(Gateway, **filter_kwargs)
 
 
 class GatewayRelatedAppPermission(permissions.BasePermission):
@@ -86,7 +86,7 @@ class GatewayRelatedAppPermission(permissions.BasePermission):
         if getattr(view, "api_permission_exempt", False):
             return True
 
-        return APIRelatedApp.objects.allow_app_manage_api(request.gateway.id, request.app.app_code)
+        return GatewayRelatedApp.objects.filter(gateway=request.gateway, bk_app_code=request.app.app_code).exists()
 
     def get_gateway_object(self, view):
         """
@@ -99,7 +99,35 @@ class GatewayRelatedAppPermission(permissions.BasePermission):
             return None
 
         filter_kwargs = {"name": view.kwargs[lookup_url_kwarg]}
-        try:
-            return Gateway.objects.get(**filter_kwargs)
-        except Gateway.DoesNotExist:
+        return get_object_or_None(Gateway, **filter_kwargs)
+
+
+class GatewayDisplayablePermission(permissions.BasePermission):
+    """
+    校验网关是否可公开展示
+    - 网关已启用
+    - 网关允许公开
+    """
+
+    message = gettext_lazy("网关不存在")
+
+    def has_permission(self, request, view):
+        gateway_obj = self._get_displayable_gateway(view)
+        if not gateway_obj:
+            raise Http404
+
+        request.gateway = gateway_obj
+        return True
+
+    def _get_displayable_gateway(self, view):
+        lookup_url_kwarg = "gateway_name"
+
+        if lookup_url_kwarg not in view.kwargs:
             return None
+
+        gateway_name = view.kwargs[lookup_url_kwarg]
+        return Gateway.objects.filter(
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            name=gateway_name,
+        ).first()

@@ -19,14 +19,15 @@
 package cacheimpls
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"strconv"
 
+	"github.com/TencentBlueKing/gopkg/cache"
+
 	"core/pkg/database/dao"
 	"core/pkg/logging"
-
-	"github.com/TencentBlueKing/gopkg/cache"
 )
 
 // AppGatewayPermissionKey is the key of app-gateway permission
@@ -40,12 +41,12 @@ func (k AppGatewayPermissionKey) Key() string {
 	return k.AppCode + ":" + strconv.FormatInt(k.GatewayID, 10)
 }
 
-func retrieveAppGatewayPermission(k cache.Key) (interface{}, error) {
+func retrieveAppGatewayPermission(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(AppGatewayPermissionKey)
 
 	manager := dao.NewAppGatewayPermissionManager()
 
-	perm, err := manager.Get(key.AppCode, key.GatewayID)
+	perm, err := manager.Get(ctx, key.AppCode, key.GatewayID)
 	// if not permission records, cache `nil`
 	if errors.Is(err, sql.ErrNoRows) {
 		logging.GetLogger().Debugw("retrieveAppGatewayPermission",
@@ -59,6 +60,7 @@ func retrieveAppGatewayPermission(k cache.Key) (interface{}, error) {
 
 // GetAppGatewayPermissionExpiredAt get the expired time of the app-gateway permission
 func GetAppGatewayPermissionExpiredAt(
+	ctx context.Context,
 	appCode string,
 	gatewayID int64,
 ) (int64, error) {
@@ -66,7 +68,7 @@ func GetAppGatewayPermissionExpiredAt(
 		AppCode:   appCode,
 		GatewayID: gatewayID,
 	}
-	value, err := appGatewayPermissionCache.Get(key)
+	value, err := cacheGet(ctx, appGatewayPermissionCache, key)
 	if err != nil {
 		return 0, err
 	}

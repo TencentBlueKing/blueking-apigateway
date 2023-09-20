@@ -22,13 +22,16 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/getsentry/raven-go"
+	"github.com/gin-gonic/contrib/sentry"
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
 	"core/pkg/api/microgateway"
 	"core/pkg/config"
 	"core/pkg/database"
 	"core/pkg/middleware"
-
-	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func checkDatabase(dbConfig *config.Database) error {
@@ -75,12 +78,22 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	// metrics
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	// router.GET("/version", handler.Version)
-
+	// trace
+	if cfg.Tracing.GinAPIEnabled() {
+		// set gin otel
+		router.Use(otelgin.Middleware(cfg.Tracing.ServiceName))
+	}
 	microGatewayRouter := router.Group("/api/v1/micro-gateway")
+
+	// metrics
+	microGatewayRouter.Use(middleware.Metrics())
+	// recovery sentry
+	microGatewayRouter.Use(sentry.Recovery(raven.DefaultClient, false))
+
 	microGatewayRouter.Use(middleware.APILogger())
 	microGatewayRouter.Use(middleware.MicroGatewayInstanceMiddleware())
 	microGatewayRouter.GET("/:micro_gateway_instance_id/permissions/", microgateway.QueryPermission)
 	microGatewayRouter.GET("/:micro_gateway_instance_id/public_keys/", microgateway.QueryPublicKey)
-
+	microGatewayRouter.POST("/:micro_gateway_instance_id/release/:publish_id/events/", microgateway.ReportPublishEvent)
 	return router
 }

@@ -61,7 +61,7 @@ class LegacyESBSynchronizer:
                 continue
 
             if dry_run:
-                logger.info(f"create or update app: {legacy_app_code}")
+                logger.info("create or update app: %s", legacy_app_code)
                 continue
 
             AppAccount.objects.update_or_create(
@@ -89,7 +89,7 @@ class LegacyESBSynchronizer:
         wlist = set()
         wlist.update(delimiter.findall(legacy_obj.wlist))
         wlist.update(delimiter.findall(new_obj.wlist))
-        new_obj.wlist = ",".join(sorted(list(wlist)))
+        new_obj.wlist = ",".join(sorted(wlist))
         new_obj.save(update_fields=["wlist"])
 
     def _sync_jwt_key(self, dry_run: bool):
@@ -116,7 +116,7 @@ class LegacyESBSynchronizer:
         if dry_run:
             new_obj = FunctionController.objects.filter(func_code=legacy_obj.func_code).first()
             if not (new_obj and legacy_obj.wlist == new_obj.wlist):
-                logger.info(f"create or update function_controller: {legacy_obj.func_code}")
+                logger.info("create or update function_controller: %s", legacy_obj.func_code)
                 return legacy_obj, new_obj, True
 
         new_obj, created = FunctionController.objects.get_or_create(

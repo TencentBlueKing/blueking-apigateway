@@ -23,7 +23,6 @@ from common.constants import API_TYPE_Q
 from components.component import Component
 from esb.bkcore.models import ESBChannel
 from esb.utils.esb_config import EsbConfigParser
-
 from .toolkit import configs
 
 

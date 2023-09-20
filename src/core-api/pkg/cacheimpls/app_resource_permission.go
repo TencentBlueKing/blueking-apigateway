@@ -19,14 +19,15 @@
 package cacheimpls
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"strconv"
 
+	"github.com/TencentBlueKing/gopkg/cache"
+
 	"core/pkg/database/dao"
 	"core/pkg/logging"
-
-	"github.com/TencentBlueKing/gopkg/cache"
 )
 
 // AppResourcePermissionKey is the key of app-resource permission
@@ -41,12 +42,12 @@ func (k AppResourcePermissionKey) Key() string {
 	return k.AppCode + ":" + strconv.FormatInt(k.GatewayID, 10) + ":" + strconv.FormatInt(k.ResourceID, 10)
 }
 
-func retrieveAppResourcePermission(k cache.Key) (interface{}, error) {
+func retrieveAppResourcePermission(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(AppResourcePermissionKey)
 
 	manager := dao.NewAppResourcePermissionManager()
 
-	perm, err := manager.Get(key.AppCode, key.GatewayID, key.ResourceID)
+	perm, err := manager.Get(ctx, key.AppCode, key.GatewayID, key.ResourceID)
 
 	// if not permission records, cache `nil`
 	if errors.Is(err, sql.ErrNoRows) {
@@ -61,6 +62,7 @@ func retrieveAppResourcePermission(k cache.Key) (interface{}, error) {
 
 // GetAppResourcePermissionExpiredAt get the expired time of the app-resource permission
 func GetAppResourcePermissionExpiredAt(
+	ctx context.Context,
 	appCode string,
 	gatewayID int64,
 	resourceID int64,
@@ -70,7 +72,7 @@ func GetAppResourcePermissionExpiredAt(
 		GatewayID:  gatewayID,
 		ResourceID: resourceID,
 	}
-	value, err := appResourcePermissionCache.Get(key)
+	value, err := cacheGet(ctx, appResourcePermissionCache, key)
 	if err != nil {
 		return 0, err
 	}

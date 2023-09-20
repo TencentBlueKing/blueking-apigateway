@@ -24,7 +24,7 @@ from apigateway.apis.open.support import views
 from apigateway.apps.support.api_sdk.helper import SDKInfo
 from apigateway.apps.support.models import APISDK
 from apigateway.core.models import Gateway, ResourceVersion
-from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, get_response_json
+from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
 
@@ -37,163 +37,13 @@ def has_related_app_permission(mocker):
     )
 
 
-class TestResourceDocViewSet:
-    @pytest.mark.parametrize(
-        "mocked_resource_version_id, mocked_released_resource, mocked_resource_doc, will_error, expected",
-        [
-            # ok
-            (
-                1,
-                {
-                    "id": 1,
-                    "is_public": True,
-                    "name": "test",
-                    "path": "/test/",
-                    "match_subpath": False,
-                    "disabled_stages": [],
-                },
-                {
-                    "content": "test",
-                },
-                False,
-                {
-                    "resource": {
-                        "id": 1,
-                        "is_public": True,
-                        "name": "test",
-                        "path": "/test/",
-                        "match_subpath": False,
-                        "disabled_stages": [],
-                    },
-                    "doc": {
-                        "content": "test",
-                    },
-                    "resource_url": "http://bking.test.com/prod/test/",
-                },
-            ),
-            # resource_version_id is none
-            (
-                None,
-                {
-                    "id": 1,
-                    "is_public": True,
-                    "name": "test",
-                    "path": "/test/",
-                    "match_subpath": False,
-                    "disabled_stages": [],
-                },
-                {
-                    "content": "test",
-                },
-                True,
-                None,
-            ),
-            # released_resource is none
-            (
-                1,
-                None,
-                {
-                    "content": "test",
-                },
-                True,
-                None,
-            ),
-            # released_resource is_public is False
-            (
-                1,
-                None,
-                {
-                    "content": "test",
-                },
-                True,
-                None,
-            ),
-            (
-                1,
-                {
-                    "id": 1,
-                    "is_public": True,
-                    "name": "test",
-                    "path": "/test/",
-                    "match_subpath": False,
-                    "disabled_stages": ["prod"],
-                },
-                {
-                    "content": "test",
-                },
-                True,
-                None,
-            ),
-        ],
-    )
-    def test_get_doc(
-        self,
-        mocker,
-        settings,
-        request_factory,
-        fake_gateway,
-        mocked_resource_version_id,
-        mocked_released_resource,
-        mocked_resource_doc,
-        will_error,
-        expected,
-    ):
-        settings.API_RESOURCE_URL_TMPL = "http://bking.test.com/{stage_name}/{resource_path}"
-
-        get_released_resource_version_id_mock = mocker.patch(
-            "apigateway.apis.open.support.views.Release.objects.get_released_resource_version_id",
-            return_value=mocked_resource_version_id,
-        )
-        get_released_resource_mock = mocker.patch(
-            "apigateway.apis.open.support.views.ReleasedResource.objects.get_released_resource",
-            return_value=mocked_released_resource,
-        )
-        get_released_resource_doc_mock = mocker.patch(
-            "apigateway.apis.open.support.views.ReleasedResourceDoc.objects.get_released_resource_doc",
-            return_value=mocked_resource_doc,
-        )
-
-        request = request_factory.get("/")
-        request.gateway = fake_gateway
-        stage_name = "prod"
-        resource_name = mocked_released_resource and mocked_released_resource["name"]
-
-        view = views.ResourceDocViewSet.as_view({"get": "get_doc"})
-        response = view(request, gateway_id=fake_gateway.id, stage_name=stage_name, resource_name=resource_name)
-        result = get_response_json(response)
-
-        if will_error:
-            response.status_code == 404
-            assert result["code"] == 40000
-            return
-
-        assert result["code"] == 0
-        assert result["data"] == expected
-
-        get_released_resource_version_id_mock.assert_called_once_with(
-            fake_gateway.id,
-            stage_name,
-        )
-        get_released_resource_mock.assert_called_once_with(
-            fake_gateway.id,
-            mocked_resource_version_id,
-            resource_name,
-        )
-        get_released_resource_doc_mock.assert_called_once_with(
-            fake_gateway.id,
-            mocked_resource_version_id,
-            mocked_released_resource["id"],
-            language="zh",
-        )
-
-
 class TestAPISDKV1ViewSet:
     def test_list_latest_sdk(self, mocker, request_factory, faker):
         fake_gateway = G(Gateway, is_public=True, status=1)
-        resource_version = G(ResourceVersion, api=fake_gateway)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
         sdk = G(
             APISDK,
-            api=fake_gateway,
+            gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
             is_recommended=True,
@@ -202,13 +52,11 @@ class TestAPISDKV1ViewSet:
         )
 
         mocker.patch(
-            "apigateway.apis.open.support.views.Gateway.objects.filter_id_object_map",
-            return_value={
-                fake_gateway.id: fake_gateway,
-            },
+            "apigateway.apis.open.support.views.Gateway.objects.all",
+            return_value=[fake_gateway],
         )
         mocker.patch(
-            "apigateway.apis.open.support.views.APIAuthContext.filter_scope_id_config_map",
+            "apigateway.apis.open.support.views.GatewayAuthContext.filter_scope_id_config_map",
             return_value={
                 fake_gateway.id: {
                     "user_auth_type": "test",
@@ -278,50 +126,6 @@ class TestAPISDKV1ViewSet:
         }
 
 
-class TestResourceDocImportViewSet:
-    @pytest.fixture(autouse=True)
-    def setup_fixture(self, faker):
-        self.factory = APIRequestFactory()
-        self.gateway = create_gateway(name=faker.uuid4())
-
-    def test_import_by_archive(self, has_related_app_permission, mocker, fake_zip_file):
-        mocker.patch(
-            "apigateway.apis.open.support.views.ArchiveImportDocManager.import_docs",
-            return_value=None,
-        )
-
-        request = self.factory.post(
-            "",
-            data={"file": fake_zip_file},
-            format="multipart",
-        )
-        request.gateway = self.gateway
-
-        view = views.ResourceDocImportViewSet.as_view({"post": "import_by_archive"})
-        response = view(request, gateway_name=self.gateway.name)
-
-        result = get_response_json(response)
-        assert result["code"] == 0, result
-
-    def test_import_by_swagger(self, has_related_app_permission, mocker, faker):
-        mocker.patch(
-            "apigateway.apis.open.support.views.SwaggerImportDocManager.import_docs",
-            return_value=None,
-        )
-
-        request = self.factory.post(
-            "",
-            data={"language": "zh", "swagger": faker.pystr()},
-        )
-        request.gateway = self.gateway
-
-        view = views.ResourceDocImportViewSet.as_view({"post": "import_by_swagger"})
-        response = view(request, gateway_name=self.gateway.name)
-
-        result = get_response_json(response)
-        assert result["code"] == 0
-
-
 class TestSDKGenerateViewSet:
     def test_generate(
         self,
@@ -333,7 +137,7 @@ class TestSDKGenerateViewSet:
         rf,
         request_to_view,
     ):
-        MockSDKHelper = mocker.patch("apigateway.apis.open.support.views.SDKHelper")
+        MockSDKHelper = mocker.patch("apigateway.apis.open.support.views.SDKHelper")  # ruff: noqa: N806
         helper = MockSDKHelper.return_value.__enter__.return_value
 
         request = rf.post(

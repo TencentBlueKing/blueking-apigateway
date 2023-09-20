@@ -554,3 +554,27 @@ export function isTableFilter (filters) {
 export function renderHeader (h, { column }) {
   return h('p', { class: 'table-header-tips-cls', directives: [{ name: 'bk-overflow-tips' }] }, [column.label])
 }
+
+/**
+ *  jsonp请求
+ *
+ * @param {url} str 请求地址
+ * @param {params} str 请求参数
+ * @param {callback} str 回调名
+ *
+ */
+export function jsonpRequest (url, params, callbackName) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    if (callbackName) {
+      callbackName = callbackName + Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
+    }
+    Object.assign(params, callbackName ? { callback: callbackName } : {})
+    const arr = Object.keys(params).map(key => `${key}=${params[key]}`)
+    script.src = `${url}?${arr.join('&')}`
+    document.body.appendChild(script)
+    window[callbackName] = (data) => {
+      resolve(data)
+    }
+  })
+}

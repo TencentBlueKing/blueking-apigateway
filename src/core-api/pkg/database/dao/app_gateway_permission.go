@@ -21,11 +21,12 @@ package dao
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
 import (
+	"context"
 	"time"
 
-	"core/pkg/database"
-
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 // TODO: split into thinx and x, for better performance
@@ -41,7 +42,11 @@ type AppGatewayPermission struct {
 
 // AppGatewayPermissionManager ...
 type AppGatewayPermissionManager interface {
-	Get(bkAppCode string, gatewayID int64) (AppGatewayPermission, error)
+	Get(ctx context.Context, bkAppCode string, gatewayID int64) (AppGatewayPermission, error)
+}
+
+type appGatewayPermissionManager struct {
+	DB *sqlx.DB
 }
 
 // NewAppGatewayPermissionManager ...
@@ -51,12 +56,12 @@ func NewAppGatewayPermissionManager() AppGatewayPermissionManager {
 	}
 }
 
-type appGatewayPermissionManager struct {
-	DB *sqlx.DB
-}
-
 // Get ...
-func (m appGatewayPermissionManager) Get(bkAppCode string, gatewayID int64) (AppGatewayPermission, error) {
+func (m appGatewayPermissionManager) Get(
+	ctx context.Context,
+	bkAppCode string,
+	gatewayID int64,
+) (AppGatewayPermission, error) {
 	perm := AppGatewayPermission{}
 	query := `SELECT
 		id,
@@ -66,6 +71,6 @@ func (m appGatewayPermissionManager) Get(bkAppCode string, gatewayID int64) (App
 		FROM permission_app_api
 		WHERE bk_app_code = ?
 		AND api_id = ?`
-	err := database.SqlxGet(m.DB, &perm, query, bkAppCode, gatewayID)
+	err := database.SqlxGet(ctx, m.DB, &perm, query, bkAppCode, gatewayID)
 	return perm, err
 }

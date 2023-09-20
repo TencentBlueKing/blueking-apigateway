@@ -26,7 +26,6 @@ from django.utils.encoding import force_text
 from common.constants import API_TYPE_OP
 from common.forms import BaseComponentForm, DefaultBooleanField, ListField
 from components.component import Component, SetupConfMixin
-
 from .toolkit import configs, tools
 
 

@@ -23,11 +23,6 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.access_strategy.constants import AccessStrategyBindScopeEnum, AccessStrategyTypeEnum
-from apigateway.apps.access_strategy.managers import (
-    AccessStrategyBindingManager,
-    AccessStrategyManager,
-    IPGroupManager,
-)
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway
 from apigateway.schema.models import Schema
@@ -42,6 +37,7 @@ from apigateway.schema.models import Schema
 logger = logging.getLogger(__name__)
 
 
+# FIXME: remove in 1.14
 class IPGroup(TimestampedModelMixin, OperatorModelMixin):
     """
     IPGroup, manager the ip list
@@ -52,8 +48,6 @@ class IPGroup(TimestampedModelMixin, OperatorModelMixin):
     name = models.CharField(max_length=64, blank=False, null=False)
     _ips = models.TextField(db_column="ips")
     comment = models.CharField(max_length=512, blank=True, default="")
-
-    objects = IPGroupManager()
 
     def __str__(self):
         return f"<IPGroup: {self.api}/{self.name}>"
@@ -71,14 +65,14 @@ class IPGroup(TimestampedModelMixin, OperatorModelMixin):
 
         # split with \n\r, then ignore blank line and `# comment`
         lines = re.split(r"[\n\r]+", self._ips)
-        valid_lines = [line for line in lines if line and (not line.startswith("#"))]
-        return valid_lines
+        return [line for line in lines if line and (not line.startswith("#"))]
 
     @ips.setter
     def ips(self, data):
         self._ips = data
 
 
+# FIXME: remove in 1.14
 class AccessStrategy(ConfigModelMixin):
     """
     access strategy
@@ -93,10 +87,8 @@ class AccessStrategy(ConfigModelMixin):
 
     comment = models.CharField(max_length=512, blank=True, default="")
 
-    objects = AccessStrategyManager()
-
     def __str__(self):
-        return f"<AccessStrategy: {self.api}/{self.name}/{self.type}>"
+        return f"<AccessStrategy: {self.pk}/{self.api}/{self.name}/{self.type}>"
 
     class Meta:
         verbose_name = _("访问策略")
@@ -110,10 +102,10 @@ class AccessStrategy(ConfigModelMixin):
 
         # check the config value
         try:
-            self.config
-        except Exception as e:
+            _ = self.config
+        except Exception:
             logger.exception("the config field is not a valid json")
-            raise e
+            raise
 
         super().save(*args, **kwargs)
 
@@ -124,10 +116,11 @@ class AccessStrategy(ConfigModelMixin):
         config = self.config
         config["ip_group_list"].extend(ip_group_list)
         # 去重
-        config["ip_group_list"] = sorted(list(set(config["ip_group_list"])))
+        config["ip_group_list"] = sorted(set(config["ip_group_list"]))
         self.config = config
 
 
+# FIXME: remove in 1.14
 class AccessStrategyBinding(TimestampedModelMixin, OperatorModelMixin):
     """
     strategy binding
@@ -141,7 +134,7 @@ class AccessStrategyBinding(TimestampedModelMixin, OperatorModelMixin):
 
     scope_type = models.CharField(
         max_length=32,
-        choices=AccessStrategyBindScopeEnum.choices(),
+        choices=AccessStrategyBindScopeEnum.get_choices(),
         blank=False,
         null=False,
         db_index=True,
@@ -150,8 +143,6 @@ class AccessStrategyBinding(TimestampedModelMixin, OperatorModelMixin):
     type = models.CharField(max_length=32, choices=AccessStrategyTypeEnum.get_choices(), blank=False, null=False)
 
     access_strategy = models.ForeignKey(AccessStrategy, on_delete=models.PROTECT)
-
-    objects = AccessStrategyBindingManager()
 
     def __str__(self):
         return f"<AccessStrategyBinding: {self.scope_type}/{self.scope_id}/{self.type}>"

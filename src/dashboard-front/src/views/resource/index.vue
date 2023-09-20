@@ -184,7 +184,7 @@
                   <p v-else>--</p>
                 </template>
               </bk-table-column>
-              <bk-table-column width="90" :label="$t('操作')">
+              <bk-table-column width="90" :label="$t('操作')" :class-name="`${!isSubOperation ? 'sub-operation' : '' }`">
                 <template slot-scope="resourceItem">
                   <bk-button :disabled="!resourceItem.row.stage_release_status" :text="true" @click="handleShowReleaseResource(resourceItem, resourceItem.row)"> {{ $t('查看资源') }} </bk-button>
                 </template>
@@ -200,10 +200,10 @@
         min-width="160"
         key="name"
         prop="name"
-        :show-overflow-tooltip="true">
+        :show-overflow-tooltip="false">
         <template slot-scope="props">
           <div class="ag-flex">
-            <span class="ag-auto-text">
+            <span class="ag-auto-text" v-bk-overflow-tips>
               <span>{{props.row.name || '--'}}</span>
             </span>
             <div>
@@ -254,7 +254,7 @@
         key="doc">
         <template slot-scope="props">
           <template v-if="!props.row.resource_doc_languages.length">
-            <bk-popover content="添加文档" ext-cls="popover-tips-cls">
+            <bk-popover :content="$t('添加文档')" ext-cls="popover-tips-cls">
               <span
                 class="ml10"
                 @click.stop="handleShowDoc(props.row, 'zh')">
@@ -413,7 +413,12 @@
             @click.stop="handleEditResource(props.row)">
             {{ $t('编辑') }}
           </bk-button>
-          <bk-dropdown-menu ref="dropdown" align="right" position-fixed>
+          <bk-dropdown-menu
+            ref="dropdown"
+            align="right"
+            position-fixed
+            @show="isSubOperation = true"
+            @hide="isSubOperation = false">
             <i class="bk-icon icon-more ag-more-btn ml10 icon-more-hover" slot="dropdown-trigger"></i>
             <ul class="bk-dropdown-list" slot="dropdown-content" style="width: 80px; ">
               <!-- <li>
@@ -587,8 +592,7 @@
       :is-show.sync="diffSidesliderConf.isShow"
       :title="diffSidesliderConf.title"
       :width="diffSidesliderConf.width"
-      :quick-close="true"
-      :before-close="handleDiffBeforeClose">
+      :quick-close="true">
       <div slot="content" class="p20">
         <version-diff ref="diffRef" :apigw-id="apigwId" :source-id="diffSourceId" :target-id="diffTargetId"></version-diff>
       </div>
@@ -723,7 +727,6 @@
   import versionDiff from '@/components/version-diff'
   import _ from 'lodash'
   import { bkTableSettingContent } from 'bk-magic-vue'
-  import sidebarMixin from '@/mixins/sidebar-mixin'
 
   Vue.use(mavonEditor)
   export default {
@@ -733,7 +736,6 @@
       versionDiff,
       bkTableSettingContent
     },
-    mixins: [sidebarMixin],
     data () {
       const fields = [{
         id: 'requestMethod',
@@ -927,7 +929,8 @@
           keyword: '',
           isAbnormal: false
         },
-        isEnter: false
+        isEnter: false,
+        isSubOperation: false
       }
     },
     computed: {
@@ -1352,10 +1355,6 @@
         this.diffSidesliderConf.isShow = true
         this.diffSourceId = ''
         this.diffTargetId = ''
-        this.$nextTick(() => {
-          // 收集 diff 初始状态
-          this.initSidebarFormData(this.$refs.diffRef.searchParams || {})
-        })
       },
 
       handleBatchDelete () {
@@ -2103,9 +2102,6 @@
       },
       removeEvent () {
         window.removeEventListener('click', this.hideSelected)
-      },
-      handleDiffBeforeClose () {
-        return this.$isSidebarClosed(JSON.stringify(this.$refs.diffRef.searchParams || {}))
       }
     }
   }
@@ -2451,5 +2447,8 @@
             background-color: #ccc;
         }
     }
+}
+.ag-expand-table .sub-operation{
+    z-index: 99;
 }
 </style>

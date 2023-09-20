@@ -19,15 +19,16 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
 
-	"core/pkg/database/dao"
-
 	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/database/dao"
 )
 
 func TestGatewayNameKey_Key(t *testing.T) {
@@ -41,24 +42,24 @@ func TestGetGatewayByName(t *testing.T) {
 	expiration := 5 * time.Minute
 
 	// valid
-	retrieveFunc := func(key cache.Key) (interface{}, error) {
+	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return dao.Gateway{}, nil
 	}
 	mockCache := memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	gatewayCache = mockCache
 
-	_, err := GetGatewayByName("hello")
+	_, err := GetGatewayByName(context.Background(), "hello")
 	assert.NoError(t, err)
 
 	// error
-	retrieveFunc = func(key cache.Key) (interface{}, error) {
+	retrieveFunc = func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
 		"mockCache", false, retrieveFunc, expiration, nil)
 	gatewayCache = mockCache
 
-	_, err = GetGatewayByName("hello")
+	_, err = GetGatewayByName(context.Background(), "hello")
 	assert.Error(t, err)
 }

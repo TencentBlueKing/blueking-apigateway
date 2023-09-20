@@ -21,9 +21,11 @@ package dao
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
 import (
-	"core/pkg/database"
+	"context"
 
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 // TODO: split into thinx and x, for better performance
@@ -41,7 +43,11 @@ type Release struct {
 
 // ReleaseManager ...
 type ReleaseManager interface {
-	Get(gatewayID int64, stageID int64) (Release, error)
+	Get(ctx context.Context, gatewayID int64, stageID int64) (Release, error)
+}
+
+type releaseManager struct {
+	DB *sqlx.DB
 }
 
 // NewReleaseManager ...
@@ -51,12 +57,8 @@ func NewReleaseManager() ReleaseManager {
 	}
 }
 
-type releaseManager struct {
-	DB *sqlx.DB
-}
-
 // Get ...
-func (m releaseManager) Get(gatewayID int64, stageID int64) (Release, error) {
+func (m releaseManager) Get(ctx context.Context, gatewayID int64, stageID int64) (Release, error) {
 	Release := Release{}
 	query := `SELECT
 		id,
@@ -66,6 +68,6 @@ func (m releaseManager) Get(gatewayID int64, stageID int64) (Release, error) {
 		FROM core_release
 		WHERE api_id = ?
 		AND stage_id = ?`
-	err := database.SqlxGet(m.DB, &Release, query, gatewayID, stageID)
+	err := database.SqlxGet(ctx, m.DB, &Release, query, gatewayID, stageID)
 	return Release, err
 }

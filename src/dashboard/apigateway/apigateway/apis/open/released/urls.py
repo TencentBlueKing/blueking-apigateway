@@ -16,24 +16,27 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
 from apigateway.apis.open.released import views
 
 urlpatterns = [
     path(
         "apis/<int:gateway_id>/released/stages/<slug:stage_name>/resources/",
-        views.ReleasedResourceViewSet.as_view({"get": "list"}),
-        name="openapi.released.stage_resources",
+        include(
+            [
+                path("", views.ReleasedResourceListApi.as_view(), name="openapi.released.stage_resource"),
+                path(
+                    "<slug:resource_name>/",
+                    views.ReleasedResourceRetrieveApi.as_view(),
+                    name="openapi.released.resources.detail",
+                ),
+            ]
+        ),
     ),
     path(
         "apis/<slug:gateway_name>/released/stages/<slug:stage_name>/resources/",
-        views.ReleasedResourceViewSet.as_view({"get": "list_by_gateway_name"}),
+        views.ReleasedResourceListByGatewayNameApi.as_view(),
         name="openapi.released.stage_resources_by_gateway_name",
-    ),
-    path(
-        "apis/<int:gateway_id>/released/stages/<slug:stage_name>/resources/<slug:resource_name>/",
-        views.ReleasedResourceViewSet.as_view({"get": "retrieve"}),
-        name="openapi.released.resources.detail",
     ),
 ]

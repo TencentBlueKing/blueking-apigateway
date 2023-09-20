@@ -64,8 +64,16 @@ class ErrorCode:
         self.message = message
         self.status_code = status_code
 
-    def as_json(self):
-        return {"result": False, "code": self.code, "message": self.message, "data": None}
+    def as_json(self, is_legacy=False):
+        if is_legacy:
+            return {"result": False, "code": self.code, "message": self.message, "data": None}
+
+        return {
+            "error": {
+                "code": self.code_name,
+                "message": self.message,
+            }
+        }
 
 
 class ErrorCodeCollection:
@@ -89,34 +97,16 @@ class ErrorCodeCollection:
 error_codes = ErrorCodeCollection()
 error_codes.add_codes(
     [
-        # 通用错误
-        ErrorCode("COMMON_ERROR", 40000, _("请求失败")),
-        ErrorCode("VALIDATE_ERROR", 40002, _("校验失败")),
-        ErrorCode("COMPONENT_ERROR", 40003, _("请求第三方接口失败")),
-        ErrorCode("REMOTE_REQUEST_ERROR", 40003, _("请求第三方接口错误")),
-        ErrorCode("JSON_FORMAT_ERROR", 40004, _("Json格式错误")),
-        ErrorCode("METHOD_NOT_ALLOWED", 40005, _("不支持当前的请求方法")),
-        ErrorCode("INVALID_ARGS", 40006, _("参数错误")),
-        ErrorCode("SDK_ERROR", 50100, _("网关SDK生成或上传失败")),
-        ErrorCode("RESOURCE_DOC_EXPORT_ERROR", 50101, _("网关文档导出失败")),
-        ErrorCode("RESOURCE_DOC_IMPORT_ERROR", 50102, _("资源文档导入失败")),
-        # ESB 对应的网关不存在
-        ErrorCode("COMPONENT_GATEWAY_NOT_FOUND", 50203, _("组件对应的网关 [name={api_name}] 不存在")),
-        ErrorCode("COMPONENT_METHOD_INVALID", 50204, _("组件请求方法配置错误")),
-        # 未登录
-        ErrorCode("UNAUTHORIZED", 40101, _("用户未登录或登录态失效，请使用登录链接重新登录"), status_code=status.HTTP_401_UNAUTHORIZED),
-        ErrorCode("FORBIDDEN", 40403, _("没有访问权限")),
-        ErrorCode("NOT_FOUND_ERROR", 40404, _("数据不存在"), status_code=status.HTTP_404_NOT_FOUND),
-        # Elasticsearch错误
-        ErrorCode("ES_HOST_EMPTY_ERROR", 40501, _("系统未配置 Elasticsearch 地址")),
-        ErrorCode("ES_CONNECTION_ERROR", 40502, _("连接 Elasticsearch {es_hosts_display} 出现错误: {err}，请检查服务是否正常")),
-        ErrorCode(
-            "ES_CONNECTION_TIMEOUT", 40503, _("请求 Elasticsearch {es_hosts_display} 超时（read timeout={timeout}），请稍后重试")
-        ),
-        ErrorCode(
-            "ES_INDEX_NOT_FOUND", 40505, _("请求 Elasticsearch {es_hosts_display} 出现错误，elasticsearch index {index} 不存在")
-        ),
-        ErrorCode("ES_AUTHENTICATION_ERROR", 40506, _("请求 Elasticsearch {es_hosts_display} 认证失败，请检查认证信息是否正确")),
-        ErrorCode("ES_SEARCH_ERROR", 40507, _("请求 Elasticsearch {es_hosts_display} 出现错误: {err}，请联系系统负责人处理")),
+        # TODO:
+        # - remove all the `code`;
+        # - 细化 validate_error
+        ErrorCode("INVALID_ARGUMENT", 40002, _("校验失败"), status_code=status.HTTP_400_BAD_REQUEST),
+        ErrorCode("FAILED_PRECONDITION", 40403, _("请求无法在当前系统状态下执行"), status_code=status.HTTP_400_BAD_REQUEST),
+        ErrorCode("UNAUTHENTICATED", 40101, _("用户未登录或登录态失效，请使用登录链接重新登录"), status_code=status.HTTP_401_UNAUTHORIZED),
+        ErrorCode("IAM_NO_PERMISSION", 40403, _("没有访问权限"), status_code=status.HTTP_403_FORBIDDEN),
+        ErrorCode("NOT_FOUND", 40000, _("数据不存在"), status_code=status.HTTP_404_NOT_FOUND),
+        ErrorCode("METHOD_NOT_ALLOWED", 40005, _("不支持当前的请求方法"), status_code=status.HTTP_405_METHOD_NOT_ALLOWED),
+        ErrorCode("INTERNAL", 50103, _("处理请求时发生内部错误"), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR),
+        ErrorCode("UNKNOWN", 40000, _("请求失败"), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR),
     ]
 )

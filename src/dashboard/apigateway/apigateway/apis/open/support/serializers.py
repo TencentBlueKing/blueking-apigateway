@@ -18,25 +18,25 @@
 #
 from rest_framework import serializers
 
-from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
-from apigateway.common.funcs import get_resource_version_display
+from apigateway.apps.support.constants import ProgrammingLanguageEnum
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway
 
 
 class APISDKQueryV1SLZ(serializers.Serializer):
     api_name = serializers.CharField(allow_null=True, default=None)
     api_id = serializers.IntegerField(allow_null=True, default=None)
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
 
     def validate_api_id(self, value):
         if value:
             return value
 
-        api_name = self.initial_data.get("api_name")
-        if not api_name:
+        gateway_name = self.initial_data.get("gateway_name")
+        if not gateway_name:
             return value
 
-        gateway = Gateway.objects.filter(name=api_name).last()
+        gateway = Gateway.objects.filter(name=gateway_name).last()
         if not gateway:
             return value
 
@@ -46,7 +46,7 @@ class APISDKQueryV1SLZ(serializers.Serializer):
 class SDKGenerateV1SLZ(serializers.Serializer):
     resource_version = serializers.CharField(max_length=128, help_text="资源版本")
     languages = serializers.ListField(
-        child=serializers.ChoiceField(choices=ProgrammingLanguageEnum.choices()),
+        child=serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices()),
         help_text="需要生成SDK的语言列表",
         default=[ProgrammingLanguageEnum.PYTHON.value],
     )
@@ -55,7 +55,7 @@ class SDKGenerateV1SLZ(serializers.Serializer):
 
 
 class APISDKV1SLZ(serializers.Serializer):
-    api_id = serializers.IntegerField(source="instance.api_id")
+    api_id = serializers.IntegerField(source="instance.gateway_id")
     api_name = serializers.SerializerMethodField()
     api_description = serializers.SerializerMethodField()
     user_auth_type = serializers.SerializerMethodField()
@@ -77,13 +77,13 @@ class APISDKV1SLZ(serializers.Serializer):
     released_stages = serializers.SerializerMethodField()
 
     def get_api_name(self, obj):
-        return self.context["api_id_map"][obj.instance.api_id].name
+        return self.context["gateway_id_map"][obj.instance.gateway_id].name
 
     def get_api_description(self, obj):
-        return self.context["api_id_map"][obj.instance.api_id].description
+        return self.context["gateway_id_map"][obj.instance.gateway_id].description
 
     def get_user_auth_type(self, obj):
-        return self.context["api_id_config_map"][obj.instance.api_id]["user_auth_type"]
+        return self.context["gateway_id_config_map"][obj.instance.gateway_id]["user_auth_type"]
 
     def get_resource_version_name(self, obj):
         return self.context["resource_versions"][obj.instance.resource_version_id]["name"]
@@ -93,16 +93,7 @@ class APISDKV1SLZ(serializers.Serializer):
 
     def get_resource_version_display(self, obj):
         resource_version_data = self.context["resource_versions"][obj.instance.resource_version_id]
-        return get_resource_version_display(resource_version_data)
+        return ResourceVersionHandler.get_resource_version_display(resource_version_data)
 
     def get_released_stages(self, obj):
         return self.context["released_stages"].get(obj.instance.resource_version_id, [])
-
-
-class ImportResourceDocsByArchiveV1SLZ(serializers.Serializer):
-    file = serializers.FileField(required=True, help_text="导入的归档文档文件")
-
-
-class ImportResourceDocsBySwaggerV1SLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=DocLanguageEnum.get_django_choices())
-    swagger = serializers.CharField()

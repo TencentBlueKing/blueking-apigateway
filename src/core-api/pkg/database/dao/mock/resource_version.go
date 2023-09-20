@@ -5,8 +5,10 @@
 package mock
 
 import (
-	dao "core/pkg/database/dao"
+	context "context"
 	reflect "reflect"
+
+	dao "core/pkg/database/dao"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -35,16 +37,16 @@ func (m *MockResourceVersionManager) EXPECT() *MockResourceVersionManagerMockRec
 }
 
 // Get mocks base method.
-func (m *MockResourceVersionManager) Get(id int64) (dao.ResourceVersion, error) {
+func (m *MockResourceVersionManager) Get(ctx context.Context, id int64) (dao.ResourceVersion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", id)
+	ret := m.ctrl.Call(m, "Get", ctx, id)
 	ret0, _ := ret[0].(dao.ResourceVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockResourceVersionManagerMockRecorder) Get(id interface{}) *gomock.Call {
+func (mr *MockResourceVersionManagerMockRecorder) Get(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockResourceVersionManager)(nil).Get), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockResourceVersionManager)(nil).Get), ctx, id)
 }

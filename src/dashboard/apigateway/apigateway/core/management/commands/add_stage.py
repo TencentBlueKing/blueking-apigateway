@@ -21,7 +21,7 @@ import logging
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apigateway.apps.stage.serializers import StageSLZ
+from apigateway.apis.open.stage.serializers import StageSLZ
 from apigateway.core.models import Gateway, Stage
 from apigateway.utils.django import get_object_or_None
 
@@ -36,13 +36,13 @@ class Command(BaseCommand):
     """
 
     def add_arguments(self, parser):
-        parser.add_argument("--api", dest="api_name", required=True, help="gateway name")
+        parser.add_argument("--gateway", dest="gateway_name", required=True, help="gateway name")
         parser.add_argument("--name", type=str, dest="name", required=True)
 
     @transaction.atomic
-    def handle(self, api_name: str, name: str, **options):
-        gateway = Gateway.objects.get(name=api_name)
-        stage = get_object_or_None(Stage, api=gateway, name=name)
+    def handle(self, gateway_name: str, name: str, **options):
+        gateway = Gateway.objects.get(name=gateway_name)
+        stage = get_object_or_None(Stage, gateway=gateway, name=name)
 
         if stage:
             print(f"Stage [name={name}] exists and ignore")
@@ -70,11 +70,11 @@ class Command(BaseCommand):
                 },
             },
             context={
-                "api": gateway,
+                "gateway": gateway,
             },
         )
 
         slz.is_valid(raise_exception=True)
         slz.save(created_by="admin", updated_by="admin")
 
-        logger.info(f"Add stage [name={name}] success")
+        logger.info("Add stage [name=%s] success", name)

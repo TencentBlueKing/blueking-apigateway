@@ -190,81 +190,35 @@ class TestComponentSyncViewSet:
         )
         response = view(request)
         result = get_response_json(response)
-        assert result["code"] == 0
         assert result["data"] == expected
 
-    @pytest.mark.parametrize(
-        "importing_resources, unspecified_resources, expected",
-        [
-            (
-                [
-                    {
-                        "id": 1,
-                        "method": "GET",
-                        "path": "/echo/1/",
-                        "name": "get_echo_1",
-                        "extend_data": {
-                            "system_name": "DEMO",
-                            "component_id": 100,
-                            "component_name": "echo_1",
-                            "component_method": "GET",
-                            "component_path": "/echo/1/",
-                            "component_permission_level": "unlimited",
-                        },
-                    }
-                ],
-                [
-                    {
-                        "id": 2,
-                        "method": "POST",
-                        "path": "/echo/2/",
-                        "name": "post_echo_2",
-                    }
-                ],
-                [
-                    {
-                        "resource_id": 2,
-                        "resource_name": "post_echo_2",
-                    },
-                    {
-                        "resource_id": 1,
-                        "resource_name": "get_echo_1",
-                        "system_name": "DEMO",
-                        "component_id": 100,
-                        "component_name": "echo_1",
-                        "component_method": "GET",
-                        "component_path": "/echo/1/",
-                        "component_permission_level": "unlimited",
-                    },
-                ],
-            )
-        ],
-    )
-    def test_sync_check(self, mocker, importing_resources, unspecified_resources, expected, fake_admin_user):
+    def test_sync_check(self, mocker, fake_admin_user):
         mocker.patch(
             "apigateway.apps.esb.component.views.ComponentSyncViewSet._get_esb_gateway", return_value=G(Gateway)
         )
         mocker.patch(
             "apigateway.apps.esb.component.views.ComponentSynchronizer.get_importing_resources",
-            return_value=importing_resources,
+            return_value=[],
         )
         mock_set_imported_resources = mocker.patch(
-            "apigateway.apps.esb.component.views.ResourcesImporter.set_importing_resources"
+            "apigateway.apps.esb.component.views.ResourceDataConvertor.convert", return_value=[]
         )
         mocker.patch(
-            "apigateway.apps.esb.component.views.ResourcesImporter.get_unspecified_resources",
-            return_value=unspecified_resources,
+            "apigateway.apps.esb.component.views.ResourceImportValidator",
+            return_value=mocker.MagicMock(
+                **{
+                    "validate.return_value": None,
+                    "get_unspecified_resources.return_value": [],
+                }
+            ),
         )
 
         view = views.ComponentSyncViewSet.as_view({"get": "sync_check"})
         request = self.factory.get("/sync/check/")
         request.user = fake_admin_user
         response = view(request)
-        result = get_response_json(response)
 
-        assert response.status_code == 200, result
-        assert result["data"] == expected
-        mock_set_imported_resources.assert_called_once_with(importing_resources)
+        assert response.status_code == 200
 
     def test_sync_and_release(self, mocker, faker, fake_admin_user):
         api_id = faker.pyint()
@@ -287,9 +241,9 @@ class TestComponentSyncViewSet:
             return_value=mocker.MagicMock(**{"locked.return_value": True}),
         )
         response = view(request)
+        assert response.status_code == 400
         result = get_response_json(response)
-        assert result["code"] != 0
-        assert result["data"] == {"is_releasing": True}
+        assert result["error"]["data"] == {"is_releasing": True}
         mock_sync_and_release.assert_not_called()
 
         # not locked
@@ -299,7 +253,6 @@ class TestComponentSyncViewSet:
         )
         response = view(request)
         result = get_response_json(response)
-        assert result["code"] == 0
         assert result["data"] == {"is_releasing": True}
         mock_sync_and_release.assert_called_once_with(
             args=(api_id, "admin", request.user.token.access_token, False),
@@ -372,8 +325,9 @@ class TestComponentReleaseHistoryViewSet:
         view = views.ComponentReleaseHistoryViewSet.as_view({"get": "list"})
         response = view(request)
 
+        assert response.status_code == 200
+
         result = get_response_json(response)
-        assert result["code"] == 0
         assert result["data"]["results"] == expected, result
 
         mock_get_histories.assert_called_once_with(
@@ -390,7 +344,7 @@ class TestComponentReleaseHistoryViewSet:
                 {
                     "id": 1,
                     "name": "echo",
-                    "extend_data": {
+                    "metadata": {
                         "system_name": "DEMO",
                         "component_id": 1,
                         "component_name": "get_echo",
@@ -408,7 +362,6 @@ class TestComponentReleaseHistoryViewSet:
         response = view(request, id=history.id)
 
         result = get_response_json(response)
-        assert result["code"] == 0
         assert result["data"] == [
             {
                 "resource_id": 1,

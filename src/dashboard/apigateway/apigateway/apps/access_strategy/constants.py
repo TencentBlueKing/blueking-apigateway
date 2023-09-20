@@ -16,18 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import re
-from typing import Dict
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 
-from apigateway.common.constants import ChoiceEnum
 from apigateway.core.constants import ScopeTypeEnum
-
-
-class IPAccessControlTypeEnum(ChoiceEnum):
-    ALLOW = "allow"
-    DENY = "deny"
 
 
 class AccessStrategyTypeEnum(StructuredEnum):
@@ -39,34 +31,6 @@ class AccessStrategyTypeEnum(StructuredEnum):
     CIRCUIT_BREAKER = EnumField("circuit_breaker", label="断路器")
 
 
-# 访问策略类型 -> 插件类型，用于二者类型的转换
-STRATEGY_TYPE_TO_PLUGIN_TYPE: Dict[str, str] = {
-    AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value: "bk-ip-group-restriction",
-    AccessStrategyTypeEnum.RATE_LIMIT.value: "bk-rate-limit",
-    AccessStrategyTypeEnum.USER_VERIFIED_UNREQUIRED_APPS.value: "bk-verified-user-exempted-apps",
-    AccessStrategyTypeEnum.ERROR_STATUS_CODE_200.value: "bk-status-rewrite",
-    AccessStrategyTypeEnum.CORS.value: "bk-cors",
-}
-
-# 插件类型 -> 访问策略类型
-PLUGIN_TYPE_TO_STRATEGY_TYPE: Dict[str, str] = {value: key for key, value in STRATEGY_TYPE_TO_PLUGIN_TYPE.items()}
-
-
-class AccessStrategyBindScopeEnum(ChoiceEnum):
-    STAGE = ScopeTypeEnum.STAGE.value
-    RESOURCE = ScopeTypeEnum.RESOURCE.value
-
-
-class CircuitBreakerStrategyTypeEnum(ChoiceEnum):
-    # CONSECUTIVE_FAIL = "consecutive_fail"
-    THRESHOLD = "threshold"
-    # FAILURES_RATE = "failures_rate"
-
-
-class CircuitBreakerBackOffTypeEnum(ChoiceEnum):
-    FIXED = "fixed"
-    # EXPONENTIAL = "exponential"
-
-
-# `:[]` 用于支持 ipv6
-ALLOWED_ORIGIN_PATTERN = re.compile(r"^\*$|^http(s)?://[-a-zA-Z0-9:\[\]\*\.]+(:(\d+|\*))?$")
+class AccessStrategyBindScopeEnum(StructuredEnum):
+    STAGE = EnumField(ScopeTypeEnum.STAGE.value)
+    RESOURCE = EnumField(ScopeTypeEnum.RESOURCE.value)

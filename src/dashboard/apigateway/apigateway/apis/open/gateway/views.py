@@ -27,12 +27,13 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.gateway import serializers
-from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
-from apigateway.common.contexts import APIAuthContext
+from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_5_MINUTES
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayRelatedAppPermission
-from apigateway.core.constants import APIStatusEnum
-from apigateway.core.models import JWT, APIRelatedApp, Gateway, Release
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release
+from apigateway.utils.responses import V1OKJsonResponse
 
 
 class GatewayViewSet(viewsets.ModelViewSet):
@@ -42,7 +43,7 @@ class GatewayViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Gateway.objects.all()
 
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_SHORT.value))
+    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_5_MINUTES))
     def _filter_available_gateways(
         self,
         queryset,
@@ -55,12 +56,8 @@ class GatewayViewSet(viewsets.ModelViewSet):
         获取可用的网关列表
         """
         if name:
-            if fuzzy:
-                # 模糊匹配，查询名称中包含 name 的网关
-                queryset = queryset.filter(name__contains=name)
-            else:
-                # 精确匹配，查询名称为 name 的网关
-                queryset = queryset.filter(name=name)
+            # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
+            queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
 
         if query and fuzzy:
             queryset = queryset.filter(Q(name__icontains=query) | Q(description__icontains=query))
@@ -68,7 +65,7 @@ class GatewayViewSet(viewsets.ModelViewSet):
         gateway_ids = list(queryset.values_list("id", flat=True))
         # 过滤出用户类型为指定类型的网关
         if user_auth_type:
-            scope_id_config_map = APIAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids)
+            scope_id_config_map = GatewayAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids)
             gateway_ids = [
                 scope_id
                 for scope_id, config in scope_id_config_map.items()
@@ -92,7 +89,7 @@ class GatewayViewSet(viewsets.ModelViewSet):
 
         queryset = self.get_queryset()
         # 过滤出状态为 active，且公开的网关
-        queryset = queryset.filter(status=APIStatusEnum.ACTIVE.value, is_public=True)
+        queryset = queryset.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
 
         gateway_queryset = self._filter_available_gateways(
             queryset,
@@ -108,16 +105,18 @@ class GatewayViewSet(viewsets.ModelViewSet):
             gateway_queryset,
             many=True,
             context={
-                "api_auth_contexts": APIAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
+                "api_auth_contexts": GatewayAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
             },
         )
-        return OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("name")))
+        return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("name")))
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.GatewayV1DetailSLZ()}, tags=["OpenAPI.Gateway"])
+    @swagger_auto_schema(
+        responses={status.HTTP_200_OK: serializers.GatewayRetrieveV1OutputSLZ()}, tags=["OpenAPI.Gateway"]
+    )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = serializers.GatewayV1DetailSLZ(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        slz = serializers.GatewayRetrieveV1OutputSLZ(instance)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class GatewayPublicKeyViewSet(viewsets.ViewSet):
@@ -126,8 +125,8 @@ class GatewayPublicKeyViewSet(viewsets.ViewSet):
 
     @swagger_auto_schema(tags=["OpenAPI.Gateway"])
     def get_public_key(self, request, gateway_name: str, *args, **kwargs):
-        jwt = JWT.objects.get(api=request.gateway)
-        return OKJsonResponse(
+        jwt = JWT.objects.get(gateway=request.gateway)
+        return V1OKJsonResponse(
             "OK",
             data={
                 "issuer": getattr(settings, "JWT_ISSUER", ""),
@@ -158,7 +157,7 @@ class GatewaySyncViewSet(viewsets.ViewSet):
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "id": slz.instance.id,
@@ -176,7 +175,7 @@ class GatewayUpdateStatusViewSet(viewsets.ViewSet):
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
-        return OKJsonResponse()
+        return V1OKJsonResponse()
 
 
 class GatewayRelatedAppViewSet(viewsets.ViewSet):
@@ -189,6 +188,7 @@ class GatewayRelatedAppViewSet(viewsets.ViewSet):
         slz.is_valid(raise_exception=True)
 
         for bk_app_code in slz.validated_data["target_app_codes"]:
-            APIRelatedApp.objects.get_or_create(api=request.gateway, bk_app_code=bk_app_code)
+            if not GatewayRelatedApp.objects.filter(gateway_id=request.gateway.id, bk_app_code=bk_app_code).exists():
+                GatewayRelatedAppHandler.add_related_app(request.gateway.id, bk_app_code)
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")

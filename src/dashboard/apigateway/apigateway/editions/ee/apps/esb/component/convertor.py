@@ -31,7 +31,7 @@ from apigateway.apps.esb.bkcore.models import ComponentResourceBinding
 from apigateway.apps.permission.constants import PermissionLevelEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.esb_components import get_client_by_username
-from apigateway.core.constants import HTTP_METHOD_ANY, ProxyTypeEnum
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY
 
 logger = logging.getLogger(__name__)
 
@@ -59,16 +59,12 @@ class Component(BaseModel):
             "name": self.binding_resource_name,
             "description": self.description,
             "is_public": self.is_public,
-            "proxy_type": ProxyTypeEnum.HTTP.value,
-            "proxy_configs": {
-                ProxyTypeEnum.HTTP.value: {
-                    "method": self.resource_method,
-                    "path": self.full_path,
-                    "match_subpath": False,
-                    "timeout": 0,
-                    "upstreams": {},
-                    "transform_headers": {},
-                }
+            "backend_name": DEFAULT_BACKEND_NAME,
+            "backend_config": {
+                "method": self.resource_method,
+                "path": self.full_path,
+                "match_subpath": False,
+                "timeout": 0,
             },
             "auth_config": {
                 # 不需要权限校验的组件，在网关层也不需要认证应用，而是将应用认证结果传递给 ESB，由 ESB 处理
@@ -78,8 +74,7 @@ class Component(BaseModel):
             },
             "allow_apply_permission": self.is_public,
             "labels": [self.system_name],
-            "disabled_stages": [],
-            "extend_data": {
+            "metadata": {
                 "system_name": self.system_name,
                 "component_id": self.id,
                 "component_name": self.name,
@@ -99,7 +94,7 @@ class Component(BaseModel):
     def component_key(self) -> str:
         if self.id:
             return str(self.id)
-        elif self.path:
+        if self.path:
             return f"{self.method}:{self.path}"
 
         raise ValueError("component id or method+path cannot be empty at the same time")
@@ -121,7 +116,7 @@ class ComponentConvertor:
         result = client.esb.get_synchronized_components()
         if not result["result"]:
             logger.error("failed to fetch components from esb, message=%s", result["message"])
-            raise error_codes.COMPONENT_ERROR.format(message=_("拉取待同步组件列表失败，请稍后重试。"), replace=True)
+            raise error_codes.INTERNAL.format(message=_("拉取待同步组件列表失败，请稍后重试。"), replace=True)
         return result["data"]
 
     def _parse_components(self, components: List[Dict[str, Any]]) -> List[Component]:
@@ -131,8 +126,8 @@ class ComponentConvertor:
             try:
                 parsed_components.append(Component.parse_obj(component))
             except ValidationError:
-                logger.exception(f"component configuration error, please check: {json.dumps(component)}")
-                raise error_codes.COMPONENT_ERROR.format(message=_("组件配置错误，请进行检查。"))
+                logger.exception("component configuration error, please check: %s", json.dumps(component))
+                raise error_codes.INTERNAL.format(message=_("组件配置错误，请进行检查。"))
         return parsed_components
 
     def _validate_components(self, components: List[Dict[str, Any]]):
@@ -144,7 +139,7 @@ class ComponentConvertor:
 
             # method = "" 为 GET/POST 方法
             if "" in method_to_component:
-                raise error_codes.COMPONENT_METHOD_INVALID.format(
+                raise error_codes.INVALID_ARGUMENT.format(
                     _("同一组件路径下，请求方法包含 'GET/POST' 及其它请求方法，请将请求方法为 'GET/POST' 的组件，拆分为请求方法分别为 GET、POST 的两个组件。"),
                 )
 

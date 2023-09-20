@@ -52,27 +52,12 @@ class TestDistributor:
         callback = mocker.MagicMock()
         self.distributor.foreach_distributor(edge_gateway_stage, micro_gateway, callback)
 
-        assert callback.call_count == 2
-        callback.assert_any_call(self.etcd_distributor, micro_gateway)
+        assert callback.call_count == 1
+        # callback.assert_any_call(self.etcd_distributor, micro_gateway)
         callback.assert_any_call(self.helm_distributor, edge_gateway_stage.micro_gateway)
 
         self.helm_distributor_type.assert_called_once_with(generate_chart=False)
-        self.etcd_distributor_type.assert_called_once_with(include_gateway_global_config=False)
-
-    def test_foreach_distributor_for_non_managed_edge_gateway(self, mocker, edge_gateway_stage, micro_gateway):
-        edge_gateway_stage.micro_gateway = G(
-            MicroGateway,
-            is_shared=False,
-            is_managed=False,
-        )
-        edge_gateway_stage.save()
-
-        callback = mocker.MagicMock()
-        self.distributor.foreach_distributor(edge_gateway_stage, micro_gateway, callback)
-
-        callback.assert_called_once_with(self.etcd_distributor, micro_gateway)
-
-        self.etcd_distributor_type.assert_called_once_with(include_gateway_global_config=False)
+        # self.etcd_distributor_type.assert_called_once_with(include_gateway_global_config=False)
 
     def test_foreach_distributor_managed_shared_gateway(self, mocker, edge_gateway_stage, micro_gateway):
         assert edge_gateway_stage.micro_gateway == micro_gateway

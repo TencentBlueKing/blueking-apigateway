@@ -16,13 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import os
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-
-from apigateway.common.constants import ChoiceEnum
 
 
 class ApplyStatusEnum(StructuredEnum):
@@ -34,18 +30,18 @@ class ApplyStatusEnum(StructuredEnum):
 
 # Restricted Enum subclassing
 # https://docs.python.org/3/library/enum.html#restricted-subclassing-of-enumerations
-class PermissionStatusEnum(ChoiceEnum):
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    PENDING = "pending"
-    NEED_APPLY = "need_apply"
-    OWNED = "owned"
-    EXPIRED = "expired"
+class PermissionStatusEnum(StructuredEnum):
+    APPROVED = EnumField("approved")
+    REJECTED = EnumField("rejected")
+    PENDING = EnumField("pending")
+    NEED_APPLY = EnumField("need_apply")
+    OWNED = EnumField("owned")
+    EXPIRED = EnumField("expired")
 
 
-class PermissionActionEnum(ChoiceEnum):
-    APPLY = "apply"
-    RENEW = "renew"
+class PermissionActionEnum(StructuredEnum):
+    APPLY = EnumField("apply")
+    RENEW = EnumField("renew")
 
 
 class PermissionLevelEnum(StructuredEnum):
@@ -61,17 +57,17 @@ class PermissionApplyExpireDaysEnum(StructuredEnum):
     TWELVE_MONTH = EnumField(360, label=_("12个月"))
 
 
-class GrantTypeEnum(ChoiceEnum):
+class GrantTypeEnum(StructuredEnum):
     # 初始化方式主动授权
-    INITIALIZE = "initialize"
+    INITIALIZE = EnumField("initialize")
     # 申请审批方式授权
-    APPLY = "apply"
+    APPLY = EnumField("apply")
     # 续期
-    RENEW = "renew"
+    RENEW = EnumField("renew")
     # 自动续期
-    AUTO_RENEW = "auto_renew"
+    AUTO_RENEW = EnumField("auto_renew")
     # 资源权限同步自按网关权限
-    SYNC = "sync"
+    SYNC = EnumField("sync")
 
 
 class GrantDimensionEnum(StructuredEnum):
@@ -87,7 +83,3 @@ class GrantDimensionEnum(StructuredEnum):
 DEFAULT_PERMISSION_EXPIRE_DAYS = 180
 # 可续期的过期天数，权限有效期小于此值，允许续期，否则，不允许
 RENEWABLE_EXPIRE_DAYS = 30
-
-PERMISSION_MAIL_NOTIFY_COUNTDOWN_SECONDS = 10
-
-APIGW_LOGO_PATH = os.path.join(settings.BASE_DIR, "static/img/api_gateway.png")

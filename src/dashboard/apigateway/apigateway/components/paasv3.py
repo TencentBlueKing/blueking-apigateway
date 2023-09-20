@@ -16,19 +16,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 import logging
-from typing import Any, Optional
+from operator import itemgetter
+from typing import Any, Dict, Iterable, List, Optional
 
 from bkapi.paasv3.shortcuts import get_client_by_username
-from bkapi_client_core.utils import to_curl
 from cachetools import TTLCache, cached
 from django.conf import settings
-from django.utils.translation import gettext as _
-from requests import Response
 
-from apigateway.common.constants import CACHE_MAXSIZE, CacheTimeLevel
-from apigateway.common.error_codes import error_codes
+from apigateway.components.handler import RequestAPIHandler
 from apigateway.components.utils import inject_accept_language
 from apigateway.utils.list import chunk_list
 
@@ -36,42 +32,19 @@ logger = logging.getLogger(__name__)
 
 
 class PaaSV3Component:
+    """API 网关 paasv3 相关接口"""
+
     def __init__(self):
-        self._client = get_client_by_username(username="", endpoint=settings.BK_PAAS3_API_URL)
+        self._client = get_client_by_username(username="admin", endpoint=settings.BK_PAAS3_API_URL)
         self._client.session.register_hook("request", inject_accept_language)
+        self._request_handler = RequestAPIHandler("bkpaas3")
 
-    def _parse_response(self, response: Optional[Response]) -> Any:
-        if response is None:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("请求 bkpaas3 获取应用信息失败，请联系系统负责人处理或稍后重试。"), replace=True)
-
-        try:
-            result = response.json()
-        except (TypeError, json.JSONDecodeError):
-            logger.warning(
-                "request bkpaas3 error, request: %s, response: %s", to_curl(response.request), response.text
-            )
-            raise error_codes.REMOTE_REQUEST_ERROR.format(_("请求 bkpaas3 获取应用信息失败，接口响应数据非 JSON 格式。"), replace=True)
-
-        if not result["result"]:
-            logger.warning(
-                "request bkpaas3 error, request: %s, response: %s", to_curl(response.request), response.text
-            )
-            raise error_codes.REMOTE_REQUEST_ERROR.format(
-                _("请求 bkpaas3 获取应用信息失败，{code_slug}，{message}。").format(
-                    code_slug=result.get("code_slug", "Error"),
-                    message=result.get("message"),
-                ),
-                replace=True,
-            )
-
-        return result["data"]
-
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CacheTimeLevel.CACHE_TIME_SHORT.value))
-    def get_app(self, app_code):
+    @cached(cache=TTLCache(maxsize=2000, ttl=300))
+    def get_app(self, app_code: str) -> Optional[Dict[str, Any]]:
         data = self.get_apps([app_code])
         return data.get(app_code)
 
-    def get_apps(self, app_code_list):
+    def get_apps(self, app_code_list: List[str]) -> Dict[str, Any]:
         """
         :param app_code_list: 蓝鲸应用 bk_app_code 列表
         """
@@ -84,11 +57,15 @@ class PaaSV3Component:
                 "id": app_codes,
                 "format": "bk_std_json",
             }
-            response = self._client.api.uni_apps_query_by_id.request(params)
-            apps = self._parse_response(response)
-            result_data.extend(apps)
+            api_result, response = self._request_handler.call_api(
+                self._client.api.uni_apps_query_by_id,
+                data=params,
+            )
+            data = self._request_handler.parse_api_result(api_result, response, {"code": 0}, itemgetter("data"))
+            result_data.extend(data)
 
-        return {app["code"]: app for app in filter(None, result_data)} or {}
+        apps: Iterable[Dict] = filter(None, result_data)
+        return {app["code"]: app for app in apps} or {}
 
 
 paasv3_component = PaaSV3Component()

@@ -19,7 +19,6 @@
 
 from common.constants import API_TYPE_Q
 from components.component import Component
-
 from .toolkit import configs
 
 

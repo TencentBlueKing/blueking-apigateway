@@ -25,7 +25,7 @@ from typing import List, Optional
 from django.conf import settings
 from pydantic import BaseModel, Field
 
-from apigateway.core.constants import APITypeEnum
+from apigateway.core.constants import GatewayTypeEnum
 from apigateway.utils.dict import update_existing
 
 
@@ -72,7 +72,7 @@ class APIAuthConfig(BaseModel):
     """
 
     user_auth_type: str
-    api_type: int = APITypeEnum.CLOUDS_API.value
+    api_type: int = GatewayTypeEnum.CLOUDS_API.value
     unfiltered_sensitive_keys: List[str] = Field(default_factory=list)
     allow_update_api_auth: bool = getattr(settings, "DEFAULT_ALLOW_UPDATE_API_AUTH", False)
     include_system_headers: Optional[List[str]] = None

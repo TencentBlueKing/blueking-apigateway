@@ -16,16 +16,18 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from django.db import models
-from django.db.models.signals import post_delete, pre_save
-from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
-from jsonschema import validate
 from tencent_apigateway_common.i18n.field import I18nProperty
 
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeEnum
+from apigateway.apps.plugin.constants import (
+    PluginBindingScopeEnum,
+    PluginStyleEnum,
+    PluginTypeEnum,
+    PluginTypeScopeEnum,
+)
 from apigateway.apps.plugin.managers import (
     PluginBindingManager,
     PluginConfigManager,
@@ -60,11 +62,17 @@ class PluginType(models.Model):
         help_text="plugin config json schema",
         on_delete=models.SET_NULL,
     )
+    # stage/resource/stage_and_resource
+    scope = models.CharField(
+        max_length=32,
+        choices=PluginTypeScopeEnum.get_choices(),
+        default=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value,
+    )
 
     objects = PluginTypeManager()
 
     def __str__(self) -> str:
-        return f"<PluginType {self.name}({self.pk})>"
+        return f"<PluginType {self.pk}/{self.name}>"
 
     def natural_key(self):
         return (self.code,)
@@ -106,31 +114,19 @@ class PluginForm(models.Model):
         unique_together = ("language", "type")
 
     def __str__(self) -> str:
-        return f"<PluginForm {self.type.name}({self.pk})>"
+        return f"<PluginForm {self.pk}/{self.type.name}>"
 
     def natural_key(self):
         return (self.language, self.type.code)
-
-    @classmethod
-    def fake_object(cls, type: PluginType):
-        return cls(
-            pk=None,
-            language="",
-            type=type,
-            notes="",
-            style=PluginStyleEnum.RAW.value,
-            default_value="",
-            config={},
-        )
 
 
 class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
     """网关开启的插件及其配置"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
-    name = models.CharField(max_length=64, db_index=True)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
+    name = models.CharField(max_length=64, blank=True, null=True)
     type = models.ForeignKey(PluginType, null=True, on_delete=models.PROTECT)
-    description_i18n = I18nProperty(models.TextField(blank=True, default=""))
+    description_i18n = I18nProperty(models.TextField(default=None, blank=True, null=True))
     description = description_i18n.default_field()
     description_en = description_i18n.field("en")
     yaml = models.TextField(blank=True, default=None, null=True)
@@ -141,7 +137,6 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
         db_table = "plugin_config"
         verbose_name = _("插件配置")
         verbose_name_plural = _("插件配置")
-        unique_together = ("api", "name", "type")
 
     @property
     def config(self) -> Dict[str, Any]:
@@ -154,29 +149,17 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
 
     @config.setter
     def config(self, yaml_: str):
-        loaded_config = yaml_loads(yaml_)
-        self._validate_config(loaded_config)
         self.yaml = yaml_
 
-    def _validate_config(self, config: Dict[str, Any]):
-        if not isinstance(config, dict):
-            raise ValueError("config must be a dict")
-
-        schema = self.type and self.type.schema
-        if not schema:
-            return
-
-        validate(config, schema=schema.schema)
-
     def __str__(self) -> str:
-        return f"<PluginConfig {self.name}({self.pk})>"
+        return f"<PluginConfig {self.pk}/{self.type.code}>"
 
 
+# ====================================================
+
+# FIXME: delete it in 1.14
 class Plugin(ConfigModelMixin):
     """废弃模型，保留是为了迁移数据"""
-
-    # 是否允许通过信号同步到 PluginConfig
-    disable_syncing = False
 
     api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
     name = models.CharField(max_length=64, db_index=True)
@@ -185,6 +168,7 @@ class Plugin(ConfigModelMixin):
 
     target = models.ForeignKey(PluginConfig, on_delete=models.SET_NULL, null=True)
     schema = models.ForeignKey(Schema, blank=True, null=True, on_delete=models.PROTECT)
+
     # config from ConfigModelMixin
 
     def __str__(self):
@@ -197,25 +181,26 @@ class Plugin(ConfigModelMixin):
         unique_together = ("api", "name", "type")
 
 
+# ====================================================
+
+
 class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
     """插件绑定
 
     同一个插件，只能绑定到一个同类型的对象，比如环境、资源
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     scope_type = models.CharField(
         max_length=32,
         choices=PluginBindingScopeEnum.get_choices(),
-        db_index=True,
     )
-    scope_id = models.IntegerField(db_index=True)
+    scope_id = models.IntegerField()
+    config = models.ForeignKey(PluginConfig, on_delete=models.PROTECT, null=True)
 
-    # TODO: 删除旧模型后可直接删除下面两个废弃字段
+    # FIXME: remove in 1.14
     type = models.CharField(max_length=32, choices=PluginTypeEnum.get_choices(), null=True)
     plugin = models.ForeignKey(Plugin, on_delete=models.SET_NULL, null=True)
-
-    config = models.ForeignKey(PluginConfig, on_delete=models.PROTECT, null=True)
 
     objects = PluginBindingManager()
 
@@ -223,87 +208,21 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
         verbose_name = _("插件绑定")
         verbose_name_plural = _("插件绑定")
         db_table = "plugin_binding"
+        unique_together = ("scope_id", "scope_type", "config")
 
     def get_config(self):
-        if self.config is not None:
-            return self.config.config
-
-        return self.plugin.config
+        return self.config.config
 
     def get_type(self):
-        if self.config is not None:
-            return self.config.type.code
+        return self.config.type.code
 
-        return self.plugin.type
+    def snapshot(self):
+        return {
+            "id": self.id,
+            "type": self.get_type(),
+            "name": self.config.type.name,
+            "config": self.get_config(),
+        }
 
-
-# 处理特殊插件映射，暂无需增加
-legacy_plugin_type_mappings = {
-    PluginTypeEnum.IP_RESTRICTION.value: "bk-ip-restriction",
-    PluginTypeEnum.CORS.value: "bk-cors",
-    PluginTypeEnum.RATE_LIMIT.value: "bk-rate-limit",
-}
-
-
-def _get_plugin_type_by_plugin_instance(instance: Plugin) -> Optional[PluginType]:
-    """迁移模型后可删除"""
-    return PluginType.objects.filter(code=legacy_plugin_type_mappings.get(instance.type, instance.type)).last()
-
-
-@receiver(pre_save, sender=Plugin)
-def _sync_plugin_config(sender, instance: Plugin, **kwargs):
-    """同步插件配置更新，迁移模型后可删除"""
-    if instance.disable_syncing:
-        return
-
-    plugin_config = instance.target
-    if plugin_config is None:
-        plugin_type = _get_plugin_type_by_plugin_instance(instance)
-        if plugin_type is None:
-            logger.error("plugin type %s not found, you should initial it first", instance.type)
-            return
-
-        plugin_config, _ = PluginConfig.objects.get_or_create(
-            api_id=instance.api_id,
-            name=instance.name,
-            type=plugin_type,
-            defaults={"created_by": instance.created_by},
-        )
-        instance.target = plugin_config
-
-    plugin_config.name = instance.name
-    plugin_config.description = instance.description
-    plugin_config.updated_by = instance.updated_by
-    plugin_config.config = instance._config
-
-    plugin_config.save()
-
-
-@receiver(post_delete, sender=Plugin)
-def _delete_plugin_config(sender, instance: Plugin, **kwargs):
-    """同步删除关联插件配置，数据迁移时需要先删除这个的钩子，迁移模型后可删除"""
-    if instance.disable_syncing:
-        return
-
-    if instance.target is None:
-        return
-
-    instance.target.delete()
-
-
-@receiver(pre_save, sender=PluginBinding)
-def _sync_plugin_binding(sender, instance: PluginBinding, **kwargs):
-    """同步绑定插件配置，迁移模型后可删除"""
-
-    if instance.plugin is None:
-        return
-
-    if instance.plugin.disable_syncing:
-        return
-
-    if instance.plugin.target is None:
-        instance.config = None
-    elif PluginConfig.objects.filter(pk=instance.plugin.target.pk).exists():
-        instance.config_id = instance.plugin.target.pk
-    else:
-        instance.config = None
+    def __str__(self) -> str:
+        return f"<PluginBinding {self.pk}/{self.scope_type}/{self.scope_id}/{self.config.type}>"

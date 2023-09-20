@@ -26,21 +26,26 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
 
-from apigateway.apis.open.permission.helpers import AppPermissionBuilder, ResourcePermissionBuilder
+from apigateway.apis.open.permission.helpers import (
+    AppPermissionBuilder,
+    AppPermissionHelper,
+    ResourcePermissionBuilder,
+)
 from apigateway.apps.permission.constants import (
     ApplyStatusEnum,
     GrantDimensionEnum,
     GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
 )
-from apigateway.apps.permission.helpers import AppPermissionHelper, PermissionDimensionManager
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord, AppResourcePermission
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Gateway, Resource
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 from apigateway.utils.time import now_datetime
 
 from . import serializers
@@ -58,12 +63,12 @@ class ResourceViewSet(viewsets.ViewSet):
     )
     def list(self, request, *args, **kwargs):
         if not request.gateway.is_active_and_public:
-            return OKJsonResponse("OK", data=[])
+            return V1OKJsonResponse("OK", data=[])
 
         slz = serializers.AppPermissionResourceQuerySLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        resources = ResourceVersionHandler().get_released_public_resources(request.gateway.id)
+        resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
 
         # 过滤掉不允许主动申请权限的资源
         resources = list(filter(lambda x: x["allow_apply_permission"], resources))
@@ -77,22 +82,22 @@ class ResourceViewSet(viewsets.ViewSet):
             sorted(resource_permissions, key=operator.itemgetter("permission_level", "name")),
             many=True,
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
-
+    serializer_class = serializers.AppAPIPermissionQuerySLZ
     api_permission_exempt = True
 
     def allow_apply_by_gateway(self, request, *args, **kwargs):
-        slz = serializers.AppAPIPermissionQuerySLZ(data=request.query_params)
+        slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         allow, reason = PermissionDimensionManager.get_manager(GrantDimensionEnum.API.value).allow_apply_permission(
             request.gateway.id, slz.validated_data["target_app_code"]
         )
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "allow_apply_by_api": allow,
@@ -127,7 +132,7 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
             applied_time=now_datetime(),
             reason=data["reason"],
             expire_days=data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
-            api=request.gateway,
+            gateway=request.gateway,
             resource_ids=data.get("resource_ids", []),
             grant_dimension=data["grant_dimension"],
             status=ApplyStatusEnum.PENDING.value,
@@ -136,7 +141,7 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
         instance = AppPermissionApply.objects.create(
             bk_app_code=data["target_app_code"],
             applied_by=request.user.username,
-            api=request.gateway,
+            gateway=request.gateway,
             resource_ids=data.get("resource_ids", []),
             grant_dimension=data["grant_dimension"],
             status=ApplyStatusEnum.PENDING.value,
@@ -151,15 +156,15 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
             gateway=request.gateway,
             apply=instance,
             status=ApplyStatusEnum.PENDING.value,
-            resources=Resource.objects.filter_by_ids(request.gateway, ids=data.get("resource_ids", [])),
+            resources=Resource.objects.filter(gateway=request.gateway, id__in=data.get("resource_ids") or []),
         )
 
         try:
             apply_async_on_commit(send_mail_for_perm_apply, args=[instance.id])
         except Exception:
-            logger.exception("send mail to api manager fail. apply_record_id=%s", instance.id)
+            logger.exception("send mail to gateway manager fail. apply_record_id=%s", instance.id)
 
-        return OKJsonResponse(
+        return V1OKJsonResponse(
             "OK",
             data={
                 "record_id": record.id,
@@ -206,9 +211,10 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
 
         data = slz.validated_data
 
-        resource_ids = Resource.objects.get_resource_ids_by_names(
-            gateway_id=request.gateway.id,
-            resource_names=data.get("resource_names"),
+        resource_ids = list(
+            Resource.objects.filter(gateway=request.gateway, name__in=data.get("resource_names") or []).values_list(
+                "id", flat=True
+            )
         )
 
         permission_model = AppPermissionHelper().get_permission_model(data["grant_dimension"])
@@ -220,7 +226,7 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
             grant_type=GrantTypeEnum.INITIALIZE.value,
         )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class RevokeAppPermissionViewSet(viewsets.ViewSet):
@@ -235,12 +241,12 @@ class RevokeAppPermissionViewSet(viewsets.ViewSet):
         data = slz.validated_data
 
         permission_model = AppPermissionHelper().get_permission_model(data["grant_dimension"])
-        permission_model.objects.delete_permission(
+        permission_model.objects.filter(
             gateway=request.gateway,
-            bk_app_codes=data["target_app_codes"],
-        )
+            bk_app_code__in=data["target_app_codes"],
+        ).delete()
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppPermissionRenewAPIView(APIView):
@@ -261,7 +267,7 @@ class AppPermissionRenewAPIView(APIView):
 
         data = slz.validated_data
 
-        for gateway_id, resource_ids in Resource.objects.group_by_api_id(data["resource_ids"]).items():
+        for gateway_id, resource_ids in ResourceHandler.group_by_gateway_id(data["resource_ids"]).items():
             gateway = Gateway.objects.get(id=gateway_id)
             # 如果应用-资源权限不存在，则将按网关的权限同步到应用-资源权限
             AppResourcePermission.objects.sync_from_gateway_permission(
@@ -270,7 +276,7 @@ class AppPermissionRenewAPIView(APIView):
                 resource_ids=resource_ids,
             )
 
-            AppResourcePermission.objects.renew_permission(
+            AppResourcePermission.objects.renew_by_resource_ids(
                 gateway=gateway,
                 bk_app_code=data["target_app_code"],
                 resource_ids=resource_ids,
@@ -278,7 +284,7 @@ class AppPermissionRenewAPIView(APIView):
                 expire_days=data["expire_days"],
             )
 
-        return OKJsonResponse("OK")
+        return V1OKJsonResponse("OK")
 
 
 class AppPermissionViewSet(viewsets.ViewSet):
@@ -291,12 +297,14 @@ class AppPermissionViewSet(viewsets.ViewSet):
 
         permissions = AppPermissionBuilder(data["target_app_code"]).build()
         slz = serializers.AppPermissionResourceSLZ(permissions, many=True)
-        return OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("api_name", "name")))
+        return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("api_name", "name")))
 
 
 class AppPermissionRecordViewSet(viewsets.GenericViewSet):
+    serializer_class = serializers.AppPermissionRecordQuerySLZ
+
     def list(self, request, *args, **kwargs):
-        slz = serializers.AppPermissionRecordQuerySLZ(data=request.query_params)
+        slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -311,12 +319,11 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
             status=data.get("apply_status"),
             query=data.get("query"),
             order_by="-id",
-            fuzzy=False,
         )
 
         page = self.paginate_queryset(queryset)
         slz = serializers.AppPermissionRecordSLZ(page, many=True)
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
+        return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
 
     def retrieve(self, request, record_id: int, *args, **kwargs):
         slz = serializers.AppPermissionRecordQuerySLZ(data=request.query_params)
@@ -327,12 +334,12 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
         try:
             record = AppPermissionRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
         except AppPermissionRecord.DoesNotExist:
-            raise error_codes.NOT_FOUND_ERROR
+            raise error_codes.NOT_FOUND
 
         slz = serializers.AppPermissionRecordDetailSLZ(
             record,
             context={
-                "resource_id_map": Resource.objects.filter_id_object_map(record.api.id),
+                "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=record.gateway.id),
             },
         )
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

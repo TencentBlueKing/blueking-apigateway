@@ -31,7 +31,7 @@ class TestHelmDistributor:
         self.chart_helper = mocker.MagicMock()
 
         self.release_helper = mocker.MagicMock()
-        self.release_helper.ensure_release.return_value = ReleaseInfo.from_api({})
+        self.release_helper.ensure_release.return_value = True, ReleaseInfo.from_api({})
 
     def test_distribute_with_generate_chart(self, mocker, faker, edge_release, micro_gateway):
         distributor = HelmDistributor(
@@ -42,11 +42,10 @@ class TestHelmDistributor:
         )
 
         bcs_info = MicroGatewayBcsInfo.from_micro_gateway_config(micro_gateway.config)
-        assert distributor.distribute(
-            release=edge_release,
-            micro_gateway=micro_gateway,
-        )
+        is_success, err_msg = distributor.distribute(release=edge_release, micro_gateway=micro_gateway)
 
+        assert is_success
+        assert err_msg == ""
         self.chart_helper.get_project_repo_info.assert_called_once_with(bcs_info.project_name)
 
         repo_info = self.chart_helper.get_project_repo_info()
@@ -73,11 +72,9 @@ class TestHelmDistributor:
         )
 
         bcs_info = MicroGatewayBcsInfo.from_micro_gateway_config(micro_gateway.config)
-        assert distributor.distribute(
-            release=edge_release,
-            micro_gateway=micro_gateway,
-        )
-
+        is_success, err_msg = distributor.distribute(release=edge_release, micro_gateway=micro_gateway)
+        assert is_success
+        assert err_msg == ""
         self.chart_helper.push_chart.assert_not_called()
 
         self.release_helper.ensure_release.assert_called_once_with(

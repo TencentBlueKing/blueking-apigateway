@@ -21,20 +21,17 @@ from django.db.models import Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
-from rest_framework.renderers import BrowsableAPIRenderer
 
 from apigateway.apps.ssl_certificate import serializers
 from apigateway.core.models import SslCertificate, SslCertificateBinding
-from apigateway.core.signals import reversion_update_signal
 from apigateway.utils.crypto import CertificateChecker
-from apigateway.utils.responses import OKJsonResponse, ResponseRender
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
+from apigateway.utils.responses import OKJsonResponse
 
 
 @method_decorator(
     name="retrieve",
     decorator=swagger_auto_schema(
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
         responses={status.HTTP_200_OK: serializers.SSLCertificateSLZ},
         operation_description="retrieve ssl certificate",
     ),
@@ -42,7 +39,7 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 @method_decorator(
     name="create",
     decorator=swagger_auto_schema(
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
         request_body=serializers.SSLCertificateSLZ,
         responses={status.HTTP_200_OK: serializers.SSLCertificateSLZ},
         operation_description="create ssl certificate",
@@ -51,7 +48,7 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 @method_decorator(
     name="update",
     decorator=swagger_auto_schema(
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
         request_body=serializers.SSLCertificateSLZ,
         responses={status.HTTP_200_OK: serializers.SSLCertificateSLZ},
         operation_description="update ssl certificate",
@@ -60,24 +57,22 @@ from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 @method_decorator(
     name="destroy",
     decorator=swagger_auto_schema(
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
         responses={status.HTTP_200_OK: ""},
         operation_description="delete ssl certificate",
     ),
 )
 class SSLCertificateViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
-    renderer_classes = [ResponseRender, BrowsableAPIRenderer]
     serializer_class = serializers.SSLCertificateSLZ
 
     def get_queryset(self):
-        return SslCertificate.objects.filter(api=self.request.gateway)
+        return SslCertificate.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QuerySSLCertificateSLZ,
         responses={status.HTTP_200_OK: serializers.ListSSLCertificateSLZ(many=True)},
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     def list(self, request, *args, **kwargs):
         slz = serializers.QuerySSLCertificateSLZ(data=request.query_params)
@@ -94,7 +89,7 @@ class SSLCertificateViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
 
         slz = serializers.ListSSLCertificateSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user.username, updated_by=self.request.user.username)
@@ -112,17 +107,17 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=serializers.BindOrUnbindScopesSLZ,
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     @transaction.atomic
     def bind(self, request, *args, **kwargs):
         """证书，绑定 scope 对象"""
-        slz = serializers.BindOrUnbindScopesSLZ(data=request.data, context={"api_id": self.request.gateway.id})
+        slz = serializers.BindOrUnbindScopesSLZ(data=request.data, context={"gateway_id": self.request.gateway.id})
         slz.is_valid(raise_exception=True)
 
         for scope_id in slz.validated_data["scope_ids"]:
             binding, created = SslCertificateBinding.objects.update_or_create(
-                api=self.request.gateway,
+                gateway=self.request.gateway,
                 scope_type=slz.validated_data["scope_type"],
                 scope_id=scope_id,
                 ssl_certificate_id=slz.validated_data["ssl_certificate_id"],
@@ -136,49 +131,44 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
 
         # 仅绑定用户当前指定的对象，删除未指定的绑定
         SslCertificateBinding.objects.filter(
-            api=self.request.gateway,
+            gateway=self.request.gateway,
             scope_type=slz.validated_data["scope_type"],
             ssl_certificate_id=slz.validated_data["ssl_certificate_id"],
         ).exclude(scope_id__in=slz.validated_data["scope_ids"]).delete()
-
-        reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="bind")
 
         return OKJsonResponse()
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=serializers.BindOrUnbindScopesSLZ,
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     @transaction.atomic
     def unbind(self, request, *args, **kwargs):
         """证书，解绑 scope 对象"""
-        slz = serializers.BindOrUnbindScopesSLZ(data=request.data, context={"api_id": self.request.gateway.id})
+        slz = serializers.BindOrUnbindScopesSLZ(data=request.data, context={"gateway_id": self.request.gateway.id})
         slz.is_valid(raise_exception=True)
 
         SslCertificateBinding.objects.filter(
-            api=self.request.gateway,
+            gateway=self.request.gateway,
             ssl_certificate_id=slz.validated_data["ssl_certificate_id"],
             scope_type=slz.validated_data["scope_type"],
             scope_id__in=slz.validated_data["scope_ids"],
         ).delete()
 
-        reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="unbind")
-
         return OKJsonResponse()
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QuerySSLCertificateBindingSLZ,
         responses={status.HTTP_200_OK: serializers.ListSSLCertificateBindingSLZ(many=True)},
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     def list(self, request, *args, **kwargs):
         slz = serializers.QuerySSLCertificateBindingSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         queryset = SslCertificateBinding.objects.filter(
-            api=self.request.gateway, scope_type=slz.validated_data["scope_type"]
+            gateway=self.request.gateway, scope_type=slz.validated_data["scope_type"]
         )
         if slz.validated_data.get("scope_id"):
             queryset = queryset.filter(scope_id=slz.validated_data["scope_id"])
@@ -189,27 +179,27 @@ class SSLCertificateBindScopesViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
 
         serializer = serializers.ListSSLCertificateBindingSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(serializer.data))
+        return self.get_paginated_response(serializer.data)
 
 
 class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=serializers.BindOrUnbindSSLCertificatesSLZ,
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     @transaction.atomic
     def bind(self, request, *args, **kwargs):
         """scope 对象，绑定证书"""
         slz = serializers.BindOrUnbindSSLCertificatesSLZ(
-            data=request.data, context={"api_id": self.request.gateway.id}
+            data=request.data, context={"gateway_id": self.request.gateway.id}
         )
         slz.is_valid(raise_exception=True)
 
         valid_scope_id = slz.validated_data["scope_id"]
         for ssl_certificate_id in slz.validated_data["ssl_certificate_ids"]:
             binding, created = SslCertificateBinding.objects.update_or_create(
-                api=self.request.gateway,
+                gateway=self.request.gateway,
                 scope_type=slz.validated_data["scope_type"],
                 scope_id=valid_scope_id,
                 ssl_certificate_id=ssl_certificate_id,
@@ -223,36 +213,32 @@ class ScopeBindSSLCertificateViewSet(viewsets.ViewSet):
 
         # 仅绑定用户当前指定的对象，删除未指定的绑定
         SslCertificateBinding.objects.filter(
-            api=self.request.gateway,
+            gateway=self.request.gateway,
             scope_type=slz.validated_data["scope_type"],
             scope_id=valid_scope_id,
         ).exclude(ssl_certificate_id__in=slz.validated_data["ssl_certificate_ids"]).delete()
-
-        reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="bind")
 
         return OKJsonResponse()
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         request_body=serializers.BindOrUnbindSSLCertificatesSLZ,
-        tags=["SSLCertificate"],
+        tags=["WebAPI.SSLCertificate"],
     )
     @transaction.atomic
     def unbind(self, request, *args, **kwargs):
         """scope 对象，解绑证书"""
         slz = serializers.BindOrUnbindSSLCertificatesSLZ(
-            data=request.data, context={"api_id": self.request.gateway.id}
+            data=request.data, context={"gateway_id": self.request.gateway.id}
         )
         slz.is_valid(raise_exception=True)
 
         SslCertificateBinding.objects.filter(
-            api=self.request.gateway,
+            gateway=self.request.gateway,
             scope_type=slz.validated_data["scope_type"],
             scope_id=slz.validated_data["scope_id"],
             ssl_certificate_id__in=slz.validated_data["ssl_certificate_ids"],
         ).delete()
-
-        reversion_update_signal.send(sender=SslCertificateBinding, instance_id=None, action="unbind")
 
         return OKJsonResponse()
 

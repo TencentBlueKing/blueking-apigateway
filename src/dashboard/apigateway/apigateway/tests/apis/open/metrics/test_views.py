@@ -33,11 +33,11 @@ class TestStatisticsV1ViewSet(TestCase):
         cls.factory = APIRequestFactory()
 
     def test_query_api_request(self):
-        api = G(Gateway, name="test", _maintainers="admin1;admin2")
+        gateway = G(Gateway, name="test", _maintainers="admin1;admin2")
 
         G(
             StatisticsAPIRequestByDay,
-            api_id=api.id,
+            api_id=gateway.id,
             start_time=dummy_time.time,
             total_count=1,
             failed_count=1,
@@ -45,7 +45,7 @@ class TestStatisticsV1ViewSet(TestCase):
         G(
             StatisticsAppRequestByDay,
             bk_app_code="test",
-            api_id=api.id,
+            api_id=gateway.id,
             start_time=dummy_time.time,
             total_count=1,
             failed_count=1,
@@ -65,13 +65,14 @@ class TestStatisticsV1ViewSet(TestCase):
 
             result = get_response_json(response)
             self.assertEqual(result["code"], 0, json.dumps(result))
+            self.assertEqual(response.status_code, 200, json.dumps(result))
             self.assertEqual(
                 result["data"],
                 [
                     {
-                        "api_id": api.id,
-                        "api_name": api.name,
-                        "api_maintainers": api.maintainers,
+                        "api_id": gateway.id,
+                        "api_name": gateway.name,
+                        "api_maintainers": gateway.maintainers,
                         "total_count": 1,
                         "failed_count": 1,
                         "bk_app_code_list": ["test"],

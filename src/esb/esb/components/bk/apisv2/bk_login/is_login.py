@@ -22,13 +22,12 @@ from django import forms
 from common.constants import API_TYPE_Q, HTTP_METHOD
 from common.forms import BaseComponentForm
 from components.component import Component
-
 from .toolkit import configs, tools
 
 
 class IsLogin(Component):
     suggest_method = HTTP_METHOD.GET
-    label = u"用户登录态验证"
+    label = "用户登录态验证"
     label_en = "check is login"
 
     sys_name = configs.SYSTEM_NAME
@@ -43,4 +42,7 @@ class IsLogin(Component):
             host=configs.host,
             path="/login/api/v2/is_login/",
             params=self.form_data,
+            headers={
+                "x-verified-bk-app-code": self.request.app_code,
+            },
         )

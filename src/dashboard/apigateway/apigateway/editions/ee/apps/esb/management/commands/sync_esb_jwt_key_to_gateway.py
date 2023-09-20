@@ -26,7 +26,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils.encoding import smart_bytes
 
 from apigateway.apps.esb.bkcore.models import FunctionController
-from apigateway.core.models import JWT, Gateway
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
+from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class Command(BaseCommand):
                 logger.warning("Gateway %s not found, cannot sync esb jwt key", name)
                 continue
 
-            is_changed = JWT.objects.is_jwt_key_changed(
+            is_changed = GatewayJWTHandler.is_jwt_key_changed(
                 gateway,
                 smart_bytes(esb_jwt_key["private_key"]),
                 smart_bytes(esb_jwt_key["public_key"]),
@@ -56,7 +57,7 @@ class Command(BaseCommand):
                 continue
 
             if not dry_run:
-                JWT.objects.update_jwt_key(
+                GatewayJWTHandler.update_jwt_key(
                     gateway,
                     smart_bytes(esb_jwt_key["private_key"]),
                     smart_bytes(esb_jwt_key["public_key"]),

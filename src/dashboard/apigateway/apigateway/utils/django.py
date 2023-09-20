@@ -23,7 +23,7 @@ from django.shortcuts import get_object_or_404
 from jsonfield import JSONField as BaseJSONField
 
 
-def get_object_or_None(klass, *args, **kwargs):
+def get_object_or_None(klass, *args, **kwargs):  # ruff: noqa: N802
     try:
         return get_object_or_404(klass, *args, **kwargs)
     except Http404:

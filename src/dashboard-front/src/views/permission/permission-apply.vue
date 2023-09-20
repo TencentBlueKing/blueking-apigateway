@@ -112,6 +112,8 @@
       <bk-table-column :label="$t('申请时间')" prop="created_time" :render-header="$renderHeader"></bk-table-column>
       <bk-table-column :label="$t('审批状态')" prop="status" :render-header="$renderHeader">
         <template slot-scope="props">
+          <round-loading v-if="props.row['status'] === 'pending'" />
+          <span v-else :class="['dot', props.row['status']]"></span>
           {{statusMap[props.row['status']]}}
         </template>
       </bk-table-column>
@@ -516,7 +518,6 @@
 
       handleApplyApprove (props) {
         const data = props.row
-        console.log(props.store.states.expandRows)
         this.curPermission = data
         this.curAction = {
           ids: [data.id],
@@ -777,6 +778,22 @@
         p {
             font-size: 12px;
             color: #63656E;
+        }
+    }
+
+    .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 3px;
+        &.approved {
+            background: #e6f6eb;
+            border: 1px solid #43c472;
+        }
+        &.rejected {
+          background: #FFE6E6;
+          border: 1px solid #EA3636;
         }
     }
 </style>

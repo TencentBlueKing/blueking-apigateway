@@ -23,10 +23,13 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/uptrace/opentelemetry-go-extra/otelsql"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+
 	"core/pkg/config"
 	"core/pkg/logging"
-
-	"github.com/jmoiron/sqlx"
 )
 
 // ! set the default https://making.pusher.com/production-ready-connection-pooling-in-go/
@@ -42,6 +45,11 @@ const (
 	defaultConnMaxLifetime = 10 * time.Minute
 )
 
+const (
+	// sql errCode
+	DuplicateErrCode uint16 = 1062
+)
+
 // DBClient MySQL DB Instance
 type DBClient struct {
 	name string
@@ -53,6 +61,7 @@ type DBClient struct {
 	maxOpenConns    int
 	maxIdleConns    int
 	connMaxLifetime time.Duration
+	traceEnabled    bool
 }
 
 // TestConnection ...
@@ -69,11 +78,17 @@ func (db *DBClient) TestConnection() (err error) {
 // Connect connect to db, and update some settings
 func (db *DBClient) Connect() error {
 	var err error
-	db.DB, err = sqlx.Connect("mysql", db.dataSource)
+	if db.traceEnabled {
+		db.DB, err = otelsqlx.Open("mysql", db.dataSource,
+			otelsql.WithAttributes(semconv.DBSystemMySQL),
+			otelsql.WithDBName(db.name),
+		)
+	} else {
+		db.DB, err = sqlx.Connect("mysql", db.dataSource)
+	}
 	if err != nil {
 		return err
 	}
-
 	db.DB.SetMaxOpenConns(db.maxOpenConns)
 	db.DB.SetMaxIdleConns(db.maxIdleConns)
 	db.DB.SetConnMaxLifetime(db.connMaxLifetime)
@@ -87,6 +102,11 @@ func (db *DBClient) Connect() error {
 		db.name, db.maxOpenConns, db.maxIdleConns, db.connMaxLifetime)
 
 	return nil
+}
+
+// SetTraceEnabled Set db trace
+func (db *DBClient) SetTraceEnabled(enabled bool) {
+	db.traceEnabled = enabled
 }
 
 // Close close db connection

@@ -21,7 +21,7 @@ from rest_framework import status, viewsets
 
 from apigateway.apps.metrics.models import StatisticsAPIRequestByDay, StatisticsAppRequestByDay
 from apigateway.core.models import Gateway
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 from . import serializers
 
@@ -44,19 +44,19 @@ class StatisticsV1ViewSet(viewsets.ModelViewSet):
         end_time = slz.validated_data["end_time"]
 
         # 获取网关请求数据
-        api_request_data = StatisticsAPIRequestByDay.objects.filter_and_aggregate_by_api(
+        api_request_data = StatisticsAPIRequestByDay.objects.filter_and_aggregate_by_gateway(
             start_time=start_time,
             end_time=end_time,
         )
 
         # 获取应用请求数据
-        app_request_data = StatisticsAppRequestByDay.objects.filter_app_and_aggregate_by_api(
+        app_request_data = StatisticsAppRequestByDay.objects.filter_app_and_aggregate_by_gateway(
             start_time=start_time,
             end_time=end_time,
         )
 
         # 获取网关
-        gateway_id_map = Gateway.objects.filter_id_object_map(ids=api_request_data.keys())
+        gateway_id_map = {gateway.id: gateway for gateway in Gateway.objects.filter(id__in=api_request_data.keys())}
 
         slz = serializers.StatisticsAPIRequestV1SLZ(
             api_request_data.values(),
@@ -67,4 +67,4 @@ class StatisticsV1ViewSet(viewsets.ModelViewSet):
             },
         )
 
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)

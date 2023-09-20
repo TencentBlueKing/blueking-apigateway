@@ -113,12 +113,12 @@
       @confirm="handleConfirm"
       @cancel="closeDocCategoryDialog">
       <bk-form :label-width="90" :model="docCategoryDialog" :rules="rules" ref="validateForm" form-type="vertical">
-        <bk-form-item :label="$t('名称')" :required="true" :property="'name'">
+        <bk-form-item :label="$t('名称')" :required="true" :property="'name'" :error-display-type="'normal'">
           <bk-input v-model="docCategoryDialog.name" :placeholder="$t('请输入分类名称')" :disabled="curDocCategory.is_official"></bk-input>
         </bk-form-item>
-        <bk-form-item :label="$t('优先级')" :required="true" :property="'priority'">
+        <bk-form-item :label="$t('优先级')" :required="true" :property="'priority'" :error-display-type="'normal'">
           <bk-input v-model="docCategoryDialog.priority" :placeholder="$t('请输入优先级，范围1 - 9999')" type="number" :max="9999" :min="1" :show-controls="true"></bk-input>
-          <p class="ag-tip mt10">
+          <p class="ag-tip mt10" slot="tip">
             <i class="apigateway-icon icon-ag-info"></i> {{ $t('文档展示时，将按照优先级从大到小排序') }}
           </p>
         </bk-form-item>
@@ -182,17 +182,6 @@
             }
           ]
         }
-      }
-    },
-    computed: {
-      isEdit () {
-        return Object.keys(this.curDocCategory).length > 0
-      },
-      isDisabled () {
-        return this.curDocCategory.is_official
-      },
-      sliderTitle () {
-        return this.isEdit ? this.$t('编辑文档分类') : this.$t('新建文档分类')
       }
     },
     watch: {

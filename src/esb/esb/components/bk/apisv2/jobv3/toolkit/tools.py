@@ -22,7 +22,6 @@ from builtins import object
 
 from common.bkerrors import bk_error_codes
 from common.log import logger
-
 from . import configs
 
 

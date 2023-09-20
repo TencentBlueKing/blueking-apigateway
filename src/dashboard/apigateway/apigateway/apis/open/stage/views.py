@@ -17,16 +17,20 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.http import Http404
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.stage import serializers
-from apigateway.apps.stage.serializers import StageSLZ
+from apigateway.apis.open.stage.serializers import StageSLZ
+from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.biz.released_resource import ReleasedResourceHandler
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import StageStatusEnum
-from apigateway.core.models import Release, Stage
+from apigateway.core.models import Stage
 from apigateway.utils.django import get_object_or_None
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import V1OKJsonResponse
 
 
 class StageViewSet(viewsets.ModelViewSet):
@@ -35,7 +39,7 @@ class StageViewSet(viewsets.ModelViewSet):
     api_permission_exempt = True
 
     def get_queryset(self):
-        return Stage.objects.filter(api=self.request.gateway)
+        return Stage.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.StageV1SLZ(many=True)},
@@ -52,7 +56,7 @@ class StageViewSet(viewsets.ModelViewSet):
         )
 
         slz = self.get_serializer(queryset, many=True)
-        return OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=slz.data)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.StageV1SLZ(many=True)},
@@ -77,11 +81,13 @@ class StageV1ViewSet(viewsets.ViewSet):
         tags=["OpenAPI.Stage"],
     )
     def list_stages_with_resource_version(self, request, gateway_name: str, *args, **kwargs):
-        queryset = Stage.objects.filter(api=self.request.gateway)
+        queryset = Stage.objects.filter(gateway=self.request.gateway)
         slz = serializers.StageWithResourceVersionV1SLZ(
-            queryset, many=True, context={"stage_release": Release.objects.get_stage_release(gateway=request.gateway)}
+            queryset,
+            many=True,
+            context={"stage_release": ReleasedResourceHandler.get_stage_release(gateway=request.gateway)},
         )
-        return OKJsonResponse(data=slz.data)
+        return V1OKJsonResponse(data=slz.data)
 
 
 class StageSyncViewSet(viewsets.ViewSet):
@@ -89,7 +95,7 @@ class StageSyncViewSet(viewsets.ViewSet):
 
     @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.Stage"])
     def sync(self, request, gateway_name: str, *args, **kwargs):
-        instance = get_object_or_None(Stage, api=request.gateway, name=request.data.get("name", ""))
+        instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))
         slz = StageSLZ(
             instance,
             data=request.data,
@@ -99,12 +105,23 @@ class StageSyncViewSet(viewsets.ViewSet):
         )
         slz.is_valid(raise_exception=True)
 
-        slz.save(
+        stage = slz.save(
             created_by=request.user.username,
             updated_by=request.user.username,
         )
 
-        return OKJsonResponse(
+        record_audit_log(
+            username=request.user.username,
+            op_type=OpTypeEnum.CREATE.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=request.gateway.id,
+            op_object_type=OpObjectTypeEnum.STAGE.value,
+            op_object_id=stage.id,
+            op_object=stage.name,
+            comment=_("创建环境"),
+        )
+
+        return V1OKJsonResponse(
             "OK",
             data={
                 "id": slz.instance.id,

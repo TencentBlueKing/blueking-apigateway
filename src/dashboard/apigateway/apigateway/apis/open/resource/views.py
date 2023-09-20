@@ -18,80 +18,67 @@
 #
 from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
+from rest_framework import generics, status
 
-from apigateway.apis.open.resource import serializers
-from apigateway.apps.resource.importer import ResourcesImporter
-from apigateway.apps.resource.views import ResourceViewSet
+from apigateway.apis.web.resource.serializers import ResourceImportInputSLZ
+from apigateway.apps.label.models import APILabel
+from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.common.permissions import GatewayRelatedAppPermission
-from apigateway.core.models import Resource
-from apigateway.utils.paginator import LimitOffsetPaginator
-from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
+from apigateway.core.models import Resource, Stage
+from apigateway.utils.responses import V1OKJsonResponse
+
+from .serializers import ResourceSyncOutputSLZ
 
 
-class ResourceV1ViewSet(ResourceViewSet):
-    api_permission_exempt = True
-
-    @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
-        responses={status.HTTP_200_OK: serializers.ResourceListV1SLZ(many=True)},
-        tags=["OpenAPI.Resource"],
-    )
-    def list(self, request, *args, **kwargs):
-        resources = Resource.objects.filter(api_id=request.gateway.id)
-        resource_count = resources.count()
-        paginator = LimitOffsetPaginator(count=resource_count, offset=0, limit=resource_count)
-
-        slz = serializers.ResourceListV1SLZ(resources, many=True)
-        return OKJsonResponse("OK", data=paginator.get_paginated_data(slz.data))
-
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.ResourceListV1SLZ()},
-        tags=["OpenAPI.Resource"],
-    )
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        slz = serializers.ResourceListV1SLZ(instance)
-        return OKJsonResponse("OK", data=slz.data)
-
-
-class ResourceSyncV1ViewSet(ResourceViewSet):
+class ResourceSyncApi(generics.CreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
 
+    def get_queryset(self):
+        return Resource.objects.filter(gateway=self.request.gateway)
+
+    @swagger_auto_schema(
+        request_body=ResourceImportInputSLZ,
+        responses={status.HTTP_200_OK: ResourceSyncOutputSLZ},
+        tags=["OpenAPI.Resource"],
+    )
     @transaction.atomic
-    def sync(self, request, *args, **kwargs):
-        slz = serializers.ResourceSyncSLZ(data=request.data)
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-
-        # 1. 获取导入的资源配置
-        importer = ResourcesImporter(
-            gateway=request.gateway,
-            allow_overwrite=True,
-            need_delete_unspecified_resources=data["delete"],
-            username=request.user.username,
-        )
-        importer.load_importing_resources_by_swagger(content=data["content"])
-
-        # 2. 导入资源
-        importer.import_resources()
-
-        # 3. 分析出已创建或更新的资源
-        added_resources = []
-        updated_resources = []
-        for resource in importer.imported_resources:
-            if resource.get("_is_created"):
-                added_resources.append({"id": resource["id"]})
-            elif resource.get("_is_updated"):
-                updated_resources.append({"id": resource["id"]})
-
-        return OKJsonResponse(
-            "OK",
-            data={
-                "added": added_resources,
-                "updated": updated_resources,
-                "deleted": importer.get_deleted_resources(),
+    def post(self, request, *args, **kwargs):
+        slz = ResourceImportInputSLZ(
+            data=request.data,
+            context={
+                "stages": Stage.objects.filter(gateway=request.gateway),
+                "exist_label_names": list(
+                    APILabel.objects.filter(gateway=request.gateway).values_list("name", flat=True)
+                ),
             },
         )
+        slz.is_valid(raise_exception=True)
+
+        importer = ResourcesImporter.from_resources(
+            gateway=request.gateway,
+            resources=slz.validated_data["resources"],
+            # 同步全部资源
+            selected_resources=None,
+            need_delete_unspecified_resources=slz.validated_data["delete"],
+            username=request.user.username,
+        )
+        importer.import_resources()
+
+        # 分析出已创建或更新的资源
+        added = []
+        updated = []
+        for resource_data in importer.get_selected_resource_data_list():
+            if resource_data.metadata.get("is_created"):
+                added.append({"id": resource_data.resource.id})
+            else:
+                updated.append({"id": resource_data.resource.id})
+
+        slz = ResourceSyncOutputSLZ(
+            {
+                "added": added,
+                "updated": updated,
+                "deleted": importer.get_deleted_resources(),
+            }
+        )
+
+        return V1OKJsonResponse(data=slz.data)

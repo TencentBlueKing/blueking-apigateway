@@ -129,7 +129,7 @@ class Command(BaseCommand):
                 new_resource_permissions.append(
                     AppResourcePermission(
                         bk_app_code=permission["bk_app_code"],
-                        api=esb_gateway,
+                        gateway=esb_gateway,
                         resource_id=permission["resource_id"],
                         # 永久有效，目前组件权限中的有效期，实际并未使用
                         expires=calculate_expires(None),
@@ -143,5 +143,5 @@ class Command(BaseCommand):
         return dict(ComponentResourceBinding.objects.values_list("component_id", "resource_id"))
 
     def _get_current_resource_permissions(self, esb_gateway: Gateway) -> Dict[str, bool]:
-        permissions = AppResourcePermission.objects.filter(api=esb_gateway).values("bk_app_code", "resource_id")
+        permissions = AppResourcePermission.objects.filter(gateway=esb_gateway).values("bk_app_code", "resource_id")
         return {f"{permission['bk_app_code']}:{permission['resource_id']}": True for permission in permissions}

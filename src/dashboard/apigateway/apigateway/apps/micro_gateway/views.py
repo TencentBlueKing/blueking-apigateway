@@ -22,14 +22,13 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.micro_gateway import serializers
 from apigateway.apps.micro_gateway.constants import MicroGatewayCreateWayEnum
 from apigateway.apps.micro_gateway.handlers import MicroGatewayHandlerFactory
+from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.models import MicroGateway, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.swagger import PaginatedResponseSwaggerAutoSchema
 
 
 class MicroGatewayViewSet(viewsets.ModelViewSet):
@@ -37,7 +36,7 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
 
     def get_queryset(self):
-        return MicroGateway.objects.filter(api=self.request.gateway)
+        return MicroGateway.objects.filter(gateway=self.request.gateway)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""}, request_body=serializers.MicroGatewaySLZ, tags=["MicroGateway"]
@@ -68,10 +67,9 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
             comment=_("创建微网关实例"),
         )
 
-        return OKJsonResponse("OK", data={"id": slz.instance.id})
+        return OKJsonResponse(data={"id": slz.instance.id})
 
     @swagger_auto_schema(
-        auto_schema=PaginatedResponseSwaggerAutoSchema,
         query_serializer=serializers.QueryMicroGatewaySLZ,
         responses={status.HTTP_200_OK: serializers.ListMicroGatewaySLZ(many=True)},
         tags=["MicroGateway"],
@@ -99,7 +97,7 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
             },
         )
 
-        return OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
+        return self.get_paginated_response(slz.data)
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ""}, request_body=serializers.UpdateMicroGatewaySLZ(), tags=["MicroGateway"]
@@ -132,13 +130,13 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
             comment=_("更新微网关实例"),
         )
 
-        return OKJsonResponse("OK")
+        return OKJsonResponse()
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: serializers.MicroGatewaySLZ()}, tags=["MicroGateway"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)
-        return OKJsonResponse("OK", data=slz.data)
+        return OKJsonResponse(data=slz.data)
 
     @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["MicroGateway"])
     @transaction.atomic
@@ -161,4 +159,4 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
             comment=_("删除微网关实例"),
         )
 
-        return OKJsonResponse("OK")
+        return OKJsonResponse()

@@ -2,17 +2,17 @@
   <div class="app-content">
     <div class="ag-create-header" v-if="!apigwId"> {{ $t('创建网关') }} </div>
     <bk-form ref="form" :label-width="labelWidth" :model="curApigw" :rules="rules" style="width: 800px;" v-show="!isPageLoading">
-      <bk-form-item :label="$t('名称')" :required="true" :property="'name'">
+      <bk-form-item :label="$t('名称')" :required="true" :property="'name'" :error-display-type="'normal'">
         <bk-input
           v-model="curApigw.name"
           :placeholder="$t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
           :disabled="!!apigwId">
         </bk-input>
-        <p class="ag-tip mt5">
+        <p slot="tip" class="ag-tip mt5">
           <i class="apigateway-icon icon-ag-info"></i> {{ $t('网关唯一标识，创建后不可修改') }}
         </p>
       </bk-form-item>
-      <bk-form-item :label="$t('描述')" :required="true" :property="'description'">
+      <bk-form-item :label="$t('描述')" :required="true" :property="'description'" :error-display-type="'normal'">
         <bk-input v-model="curApigw.description" :placeholder="$t('请输入描述')"></bk-input>
       </bk-form-item>
       <bk-form-item
@@ -32,9 +32,9 @@
         :desc-type="'icon'">
         <bk-switcher v-model="curApigw.is_public" theme="primary"></bk-switcher>
       </bk-form-item>
-      <bk-form-item :label="$t('维护人员')" :required="true" :property="'maintainers'">
+      <bk-form-item :label="$t('维护人员')" :required="true" :property="'maintainers'" :error-display-type="'normal'">
         <user v-model="curApigw.maintainers"></user>
-        <p class="ag-tip mt10">
+        <p slot="tip" class="ag-tip mt10">
           <i class="apigateway-icon icon-ag-info"></i> {{ $t('仅维护人员有管理网关的权限') }}
         </p>
       </bk-form-item>
@@ -64,7 +64,6 @@
 <script>
   import { catchErrorHandler } from '@/common/util'
   import User from '@/components/user'
-  // import cookie from 'cookie'
 
   export default {
     components: {
@@ -74,12 +73,6 @@
       return {
         isPageLoading: true,
         isDataLoading: false,
-        customDesc: {
-          width: 120,
-          theme: 'light',
-          content: `hello<a href="#">world</a>`,
-          placement: 'top'
-        },
         curApigw: {
           name: '',
           description: '',
@@ -128,7 +121,6 @@
             }
           ]
         },
-        shares: '',
         MICRO_GATEWAY_ENABLED: false
 
       }
@@ -157,12 +149,7 @@
     },
     methods: {
       init () {
-        // this.curUser = cookie.parse(document.cookie)['bk_uid'] || ''
         this.initCurapigw()
-      },
-
-      handlerChange (value) {
-        console.log(value)
       },
 
       async getFeature () {

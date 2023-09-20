@@ -23,9 +23,9 @@ from ddf import G
 from pytest import fixture
 
 from apigateway.apps.plugin.models import PluginConfig, PluginType
-from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.contexts import StageProxyHTTPContext, StageRateLimitContext
+from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.controller.crds.base import KubernetesResource
 from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
@@ -36,18 +36,18 @@ from apigateway.controller.crds.v1beta1.convertors.resource import HttpResourceC
 from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvertor
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
 from apigateway.controller.registry.dict import DictRegistry
-from apigateway.core.constants import APIHostingTypeEnum, ProxyTypeEnum, StageStatusEnum
-from apigateway.core.models import JWT, MicroGateway, Release, ResourceVersion
+from apigateway.core.constants import APIHostingTypeEnum, StageStatusEnum
+from apigateway.core.models import MicroGateway, Proxy, Release, ResourceVersion
 from apigateway.utils.yaml import yaml_dumps
 
 
 @fixture
-def edge_gateway(faker, fake_gateway):
+def edge_gateway(fake_gateway):
     fake_gateway.hosting_type = APIHostingTypeEnum.MICRO.value
     fake_gateway.is_public = True
     fake_gateway.save()
 
-    JWT.objects.create_jwt(fake_gateway)
+    GatewayJWTHandler.create_jwt(fake_gateway)
 
     return fake_gateway
 
@@ -159,51 +159,33 @@ def edge_gateway_stage_context_proxy_http(faker, edge_gateway_stage, backend_ser
 
 
 @fixture
-def edge_gateway_stage_context_stage_rate_limit(faker, edge_gateway_stage, backend_service_http_host):
-    context = StageRateLimitContext()
-    instance, _ = context.save(
-        edge_gateway_stage.id,
-        {
-            "enabled": True,
-            "rate": {
-                "period": 60,
-                "tokens": 100,
-            },
-        },
-    )
-    return instance
-
-
-@fixture
 def edge_resource_overwrite_stage(fake_resource1):
     return fake_resource1
 
 
 @fixture
 def edge_resource_overwrite_stage_proxy(faker, edge_resource_overwrite_stage, backend_service_http_host):
-    instance, _ = ResourceHandler().save_proxy_config(
-        edge_resource_overwrite_stage,
-        ProxyTypeEnum.HTTP.value,
-        {
-            "method": faker.http_method(),
-            "path": faker.uri_path(),
-            "match_subpath": False,
-            "timeout": faker.random_int(),
-            "upstreams": {
-                "loadbalance": "roundrobin",
-                "hosts": [{"host": backend_service_http_host, "weight": 100}],
-            },
-            "transform_headers": {
-                "set": {
-                    "X-Set-By-Resource": edge_resource_overwrite_stage.name,
-                },
-                "delete": [
-                    "X-Del-By-Resource",
-                ],
-            },
+    proxy = Proxy.objects.get(resource=edge_resource_overwrite_stage)
+    proxy.config = {
+        "method": faker.http_method(),
+        "path": faker.uri_path(),
+        "match_subpath": False,
+        "timeout": faker.random_int(),
+        "upstreams": {
+            "loadbalance": "roundrobin",
+            "hosts": [{"host": backend_service_http_host, "weight": 100}],
         },
-    )
-    return instance
+        "transform_headers": {
+            "set": {
+                "X-Set-By-Resource": edge_resource_overwrite_stage.name,
+            },
+            "delete": [
+                "X-Del-By-Resource",
+            ],
+        },
+    }
+    proxy.save()
+    return proxy
 
 
 @fixture
@@ -213,22 +195,20 @@ def edge_resource_inherit_stage(fake_resource2):
 
 @fixture
 def edge_resource_inherit_stage_proxy(faker, edge_resource_inherit_stage):
-    instance, _ = ResourceHandler().save_proxy_config(
-        edge_resource_inherit_stage,
-        ProxyTypeEnum.HTTP.value,
-        {
-            "method": faker.http_method(),
-            "path": faker.uri_path(),
-            "match_subpath": False,
-            "timeout": 0,
-            "upstreams": {},
-            "transform_headers": {
-                "set": {},
-                "delete": [],
-            },
+    proxy = Proxy.objects.get(resource=edge_resource_inherit_stage)
+    proxy.config = {
+        "method": faker.http_method(),
+        "path": faker.uri_path(),
+        "match_subpath": False,
+        "timeout": 0,
+        "upstreams": {},
+        "transform_headers": {
+            "set": {},
+            "delete": [],
         },
-    )
-    return instance
+    }
+    proxy.save()
+    return proxy
 
 
 @fixture
@@ -252,8 +232,8 @@ def edge_resource_version(faker, edge_gateway, edge_resources):
         ResourceVersion,
         name=faker.color_name(),
         title=faker.numerify("v!.!.%"),
-        api=edge_gateway,
-        _data=json.dumps(ResourceVersionHandler().make_version(edge_gateway)),
+        gateway=edge_gateway,
+        _data=json.dumps(ResourceVersionHandler.make_version(edge_gateway)),
     )
 
 
@@ -262,6 +242,7 @@ def edge_resource_overwrite_stage_snapshot(edge_resource_version, edge_resource_
     for i in edge_resource_version.data:
         if i["id"] == edge_resource_overwrite_stage.id:
             return i
+    return None
 
 
 @fixture
@@ -269,6 +250,7 @@ def edge_resource_inherit_stage_snapshot(edge_resource_version, edge_resource_in
     for i in edge_resource_version.data:
         if i["id"] == edge_resource_inherit_stage.id:
             return i
+    return None
 
 
 @fixture
@@ -287,9 +269,14 @@ def fake_release_data(edge_release):
     return ReleaseData(edge_release)
 
 
+class DummyConvertor(BaseConvertor):
+    def convert(self):
+        pass
+
+
 @fixture
 def fake_base_convertor(fake_release_data, micro_gateway):
-    return BaseConvertor(fake_release_data, micro_gateway)
+    return DummyConvertor(fake_release_data, micro_gateway)
 
 
 @fixture
@@ -359,7 +346,7 @@ def edge_plugin_type():
 def edge_plugin_config(edge_gateway, edge_plugin_type):
     return G(
         PluginConfig,
-        api=edge_gateway,
+        gateway=edge_gateway,
         type=edge_plugin_type,
         yaml=yaml_dumps({"rates": {"__default": [{"period": 60, "tokens": 100}]}}),
     )

@@ -19,13 +19,14 @@
 package dao
 
 import (
+	"context"
 	"testing"
-
-	"core/pkg/database"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/database"
 )
 
 func Test_resourceVersionManager_Get(t *testing.T) {
@@ -47,7 +48,7 @@ func Test_resourceVersionManager_Get(t *testing.T) {
 		mock.ExpectQuery(mockQuery).WithArgs(id).WillReturnRows(mockRows)
 
 		manager := &resourceVersionManager{DB: db}
-		p, err := manager.Get(id)
+		p, err := manager.Get(context.Background(), id)
 
 		assert.NoError(t, err, "query from db fail.")
 		assert.Equal(t, record, p)

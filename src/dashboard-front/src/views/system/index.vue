@@ -131,19 +131,19 @@
       :is-show.sync="isSliderShow"
       :width="750"
       :title="sliderTitle"
-      @hidden="handleHidden"
       :quick-close="true"
-      :before-close="handleBeforeClose">
+      :before-close="handleBeforeClose"
+      @hidden="handleHidden">
       <div slot="content" style="padding: 20px;" v-bkloading="{ isLoading: detailLoading, opacity: 1 }">
         <bk-form :label-width="160" :rules="rules" ref="form" :model="formData" v-show="!detailLoading">
-          <bk-form-item :label="$t('名称')" :required="true" property="name">
+          <bk-form-item :label="$t('名称')" :required="true" property="name" :error-display-type="'normal'">
             <bk-input v-model="formData.name" :placeholder="$t('由英文字母、下划线(_)或数字组成，并且以字母开头，长度小于64个字符')" :disabled="isDisabled"></bk-input>
             <p class="tips" slot="tip"><i class="apigateway-icon icon-ag-info"></i> {{ $t('系统唯一标识') }} </p>
           </bk-form-item>
-          <bk-form-item :label="$t('描述')" :required="true" property="description">
+          <bk-form-item :label="$t('描述')" :required="true" property="description" :error-display-type="'normal'">
             <bk-input :disabled="isDisabled" :maxlength="128" v-model="formData.description" :placeholder="$t('不超过128个字符')"></bk-input>
           </bk-form-item>
-          <bk-form-item :label="$t('文档分类')" :required="true" property="doc_category_id">
+          <bk-form-item :label="$t('文档分类')" :required="true" property="doc_category_id" :error-display-type="'normal'">
             <template v-if="isDisabled">
               <bk-input v-model="curSystem.doc_category_name" disabled></bk-input>
             </template>
@@ -243,11 +243,6 @@
           count: 0,
           limit: 10
         },
-        stageDialogConf: {
-          isLoading: false,
-          visiable: false,
-          title: this.$t('新建标签')
-        },
         curSystem: {},
         deleteDialogConf: {
           visiable: false,
@@ -274,7 +269,31 @@
           keyword: '',
           isAbnormal: false
         },
-        filterDocCategory: []
+        filterDocCategory: [],
+        isFilter: false,
+        rules: {
+          name: [
+            {
+              required: true,
+              message: this.$t('必填项'),
+              trigger: 'blur'
+            }
+          ],
+          description: [
+            {
+              required: true,
+              message: this.$t('必填项'),
+              trigger: 'blur'
+            }
+          ],
+          doc_category_id: [
+            {
+              required: true,
+              message: this.$t('必填项'),
+              trigger: 'blur'
+            }
+          ]
+        }
       }
     },
     computed: {
@@ -308,30 +327,6 @@
     },
     created () {
       this.init()
-      this.isFilter = false
-      this.rules = {
-        name: [
-          {
-            required: true,
-            message: this.$t('必填项'),
-            trigger: 'blur'
-          }
-        ],
-        description: [
-          {
-            required: true,
-            message: this.$t('必填项'),
-            trigger: 'blur'
-          }
-        ],
-        doc_category_id: [
-          {
-            required: true,
-            message: this.$t('必填项'),
-            trigger: 'blur'
-          }
-        ]
-      }
     },
     methods: {
       init () {

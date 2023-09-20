@@ -16,17 +16,30 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import base64
-from typing import List
+from typing import Dict, List, Optional, Union
 
 from django.utils.encoding import force_bytes, force_str
 
+from apigateway.controller.crds.base import KubernetesResourceMetadata
+from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor, UrlInfo
 from apigateway.controller.crds.v1beta1.models.base import PluginConfig
-from apigateway.controller.crds.v1beta1.models.gateway_stage import BkGatewayStage, BkGatewayStageSpec, StageRewrite
+from apigateway.controller.crds.v1beta1.models.gateway_stage import BkGatewayStage, BkGatewayStageSpec
 from apigateway.core.micro_gateway_config import MicroGatewayHTTPInfo
+from apigateway.core.models import MicroGateway
 
 
 class StageConvertor(BaseConvertor):
+    def __init__(self, release_data: ReleaseData, micro_gateway: MicroGateway, publish_id: Union[int, None] = None):
+        super().__init__(release_data, micro_gateway)
+        self._publish_id = publish_id
+
+    def _common_metadata(self, name: str, labels: Optional[Dict[str, str]] = None) -> KubernetesResourceMetadata:
+        labels = labels or {}
+        if self._publish_id:
+            labels["publish_id"] = str(self._publish_id)
+        return super()._common_metadata(name, labels)
+
     def convert(self) -> BkGatewayStage:
         # FIXME: 如何处理 http/https 协议
         http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(self._micro_gateway.config)
@@ -41,12 +54,6 @@ class StageConvertor(BaseConvertor):
             spec=BkGatewayStageSpec(
                 name=self._release_data.stage.name,
                 description=self._release_data.stage.description,
-                rewrite=StageRewrite(
-                    enabled=True,
-                    headers=self._convert_http_rewrite_headers(
-                        self._release_data.stage_proxy_config.get("transform_headers")
-                    ),
-                ),
                 vars=self._release_data.stage.vars,
                 path_prefix=path_prefix,
                 plugins=plugins,
@@ -91,13 +98,13 @@ class StageConvertor(BaseConvertor):
         ]
 
         # Only append this plugin config if it's enabled
-        #
-        # TODO: Upgrade the plugin schema and remove the “enabled” field entirely,
         # it’s better to take advantage of the “_meta.disabled” field directly instead
         # of implementing our own similar mechanics.
         global_rate_limit_config = self._release_data.stage_rate_limit_config
         if global_rate_limit_config and global_rate_limit_config.get("enabled", False):
-            plugins.append(PluginConfig(name="bk-global-rate-limit", config=global_rate_limit_config))
+            if "enabled" in global_rate_limit_config:
+                del global_rate_limit_config["enabled"]
+            plugins.append(PluginConfig(name="bk-stage-global-rate-limit", config=global_rate_limit_config))
 
         return plugins
 

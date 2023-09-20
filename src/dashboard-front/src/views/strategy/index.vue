@@ -188,7 +188,8 @@
             :label="$t('名称')"
             :required="true"
             :rules="IPGroupRule.name"
-            :property="'name'">
+            :property="'name'"
+            :error-display-type="'normal'">
             <bk-input :placeholder="$t('请输入')" v-model="curIPGroup.name"></bk-input>
           </bk-form-item>
           <bk-form-item :label="$t('IP列表')"
@@ -519,10 +520,8 @@
             {
               validator (value) {
                 const ipReg = /^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}$/
-                console.log(value.split(/[\s\n]/))
                 const ips = value.split(/[\s\n]/)
                 for (const ip of ips) {
-                  console.log(ip)
                   if (!ipReg.test(ip)) {
                     return false
                   }
@@ -1197,7 +1196,6 @@
           })
 
           if (this.bindChangeResources.length) {
-            console.log(this.bindChangeResources, 'xxxxx')
             this.tableIndex++
             setTimeout(() => {
               this.unbindResourceConf.isShow = true
@@ -1380,5 +1378,9 @@
             font-size: 12px;
             color: #63656E;
         }
+    }
+
+    .ag-strategy-tab {
+        background: transparent;
     }
 </style>

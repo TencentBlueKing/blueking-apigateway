@@ -1,7 +1,7 @@
 <template>
   <div class="bk-login-dialog" v-if="isShow">
     <div class="bk-login-wrapper">
-      <iframe :src="iframeSrc" scrolling="no" border="0" :width="iframeWidth" :height="iframeHeight"></iframe>
+      <iframe :src="iframeSrc" scrolling="no" border="0" :width="400" :height="400"></iframe>
     </div>
   </div>
 </template>
@@ -12,8 +12,6 @@
     data () {
       return {
         iframeSrc: '',
-        iframeWidth: 700,
-        iframeHeight: 510,
         isShow: false
       }
     },
@@ -23,20 +21,13 @@
       },
       showLoginModal (data) {
         const callbackUrl = `${location.origin}/static/login_success.html?is_ajax=1`
-        const url = `${window.GLOBAL_CONFIG.LOGIN_URL}/plain?size=big&c_url=${callbackUrl}`
+        const loginUrl = window.GLOBAL_CONFIG.LOGIN_URL
+        const url = `${loginUrl.endsWith('/') ? loginUrl : `${loginUrl}/`}plain/?c_url=${callbackUrl}`
         if (!url) {
           console.warn('The response don\'t return login_url')
           return
         }
         this.iframeSrc = url
-        const iframeWidth = data.width
-        if (iframeWidth) {
-          this.iframeWidth = iframeWidth
-        }
-        const iframeHeight = data.height
-        if (iframeHeight) {
-          this.iframeHeight = iframeHeight
-        }
         setTimeout(() => {
           this.isShow = true
         }, 1000)

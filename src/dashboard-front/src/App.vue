@@ -128,6 +128,7 @@
                 ext-cls="ag-select-apigw"
                 :clearable="false"
                 :searchable="true"
+                :search-placeholder="$t('请输入关键字搜索')"
                 :style="{ 'min-width': '240px', 'opacity': menuOpened ? 1 : 0 }"
                 @toggle="handleApigwToggle"
                 @selected="handleApigwSelect">
@@ -167,7 +168,6 @@
           :unique-opened="true"
           :toggle-active="nav.toggle"
           v-bind="themeColor">
-          <!-- v-if="apigwId !== undefined" -->
           <template>
             <bk-navigation-menu-item
               v-for="item in nav.list"
@@ -249,7 +249,7 @@
 </template>
 <script>
   import { mapGetters } from 'vuex'
-  import { sortByKey } from '@/common/util'
+  import { sortByKey, jsonpRequest } from '@/common/util'
   import { bus } from '@/common/bus'
   import { bk_logout as bkLogout } from '../static/js/bklogout'
   import i18n from '@/language/i18n.js'
@@ -482,7 +482,7 @@
               name: i18n.t('组件API文档'),
               id: 5,
               url: 'componentAPI',
-              enabled: true
+              enabled: this.GLOBAL_CONFIG.PLATFORM_FEATURE.MENU_ITEM_ESB_API_DOC
             },
             {
               name: this.$t('网关API SDK'),
@@ -595,9 +595,6 @@
         if (!this.curApigwFeature.feature_flags) return false
         return this.curApigwFeature.feature_flags.ACCESS_STRATEGY_ENABLED
       },
-      curHeaderNav () {
-        return this.header.list[this.header.active] || {}
-      },
       isIndex () {
         return this.$route.name === 'index'
       },
@@ -644,14 +641,12 @@
       localLanguage () {
         return this.$store.state.localLanguage
       },
-      iconClass () {
-        return this.localLanguage === 'en' ? 'bk-icon icon-english lang-icon icon-style' : 'bk-icon icon-chinese lang-icon icon-style'
-      },
       curLanguage () {
         return jsCookie.get('blueking_language') || 'zh-hans'
       },
       themeColor () {
         return {
+          'item-default-color': '#63656E',
           'item-active-bg-color': '#E1ECFF',
           'item-active-color': '#3A84FF',
           'item-active-icon-color': '#3A84FF',
@@ -992,7 +987,7 @@
           this.$router.push({
             name: routeName,
             params: {
-              id: routeName === 'index' ? '' : this.apigwId
+              id: ['index', 'apigwAccess'].includes(routeName) ? '' : this.apigwId
             }
           })
         }
@@ -1085,6 +1080,14 @@
               'X-CSRFToken': CSRFToken
             }
           })
+          if (window.BK_COMPONENT_API_URL) {
+            jsonpRequest(
+              `${window.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fe_update_user_language/`,
+              {
+                language
+              }
+            )
+          }
           this.$router.go(0)
         } catch (e) {
           console.error(e)
@@ -1559,7 +1562,7 @@
             right: 18px;
             z-index: 99;
             font-size: 14px;
-            color: #C4C6CC;
+            color: #979BA5;
             transition: .3s;
             pointer-events: none;
             &.up {
@@ -1805,10 +1808,6 @@
     }
     .monitor-navigation-admin .nav-item:hover,
     .monitor-navigation-admin .nav-item a:hover {
-        /* a {
-            color: #3A84FF;
-        }
-        color: #3A84FF; */
         cursor: pointer;
         background-color: #F5F7FA;
     }
@@ -1831,10 +1830,6 @@
         transform: translateY(1px);
     }
     .active-language-item {
-        /* a {
-            color: #3A84FF;
-        }
-        color: #3A84FF; */
         cursor: pointer;
         background-color: #F5F7FA;
     }

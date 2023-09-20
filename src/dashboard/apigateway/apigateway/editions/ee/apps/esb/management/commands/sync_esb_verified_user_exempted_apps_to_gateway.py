@@ -66,12 +66,12 @@ class Command(BaseCommand):
         return re.findall(r"[^,;]+", obj.wlist)
 
     def _filter_or_create_plugins(self, esb_gateway: Gateway, plugin_type: PluginType) -> List[PluginConfig]:
-        queryset = PluginConfig.objects.filter(api=esb_gateway, type=plugin_type)
+        queryset = PluginConfig.objects.filter(gateway=esb_gateway, type=plugin_type)
         if queryset.exists():
             return list(queryset)
 
         plugin_config = PluginConfig.objects.create(
-            api=esb_gateway,
+            gateway=esb_gateway,
             name=self.default_plugin_name,
             type=plugin_type,
             yaml="exempted_apps: []",

@@ -21,9 +21,9 @@ package server
 import (
 	"testing"
 
-	"core/pkg/config"
-
 	"github.com/stretchr/testify/assert"
+
+	"core/pkg/config"
 )
 
 func TestNewRouter(t *testing.T) {

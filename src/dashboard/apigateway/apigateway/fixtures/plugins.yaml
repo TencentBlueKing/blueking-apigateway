@@ -99,6 +99,7 @@
     name: 跨域资源共享（CORS）
     name_en: Cross-Origin Resource Sharing (CORS)
     is_public: true
+    scope: stage_and_resource
     schema:
     - bk-cors
     - plugin
@@ -116,25 +117,38 @@
         "schema": {
           "type": "object",
           "required": [
-            "allow_origins",
             "allow_methods",
             "allow_headers",
             "max_age"
           ],
           "properties": {
             "allow_origins": {
-              "description": "允许跨域访问的 Origin，格式为 scheme://host:port，示例如 https://somedomain.com:8081。如果你有多个 Origin，请使用 , 分隔。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Origin 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Origin 均通过，但请注意这样存在安全隐患。",
+              "description": "允许跨域访问的 Origin，格式为 scheme://host:port，示例如 https://example.com:8081。如果你有多个 Origin，请使用 , 分隔。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Origin 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Origin 均通过，但请注意这样存在安全隐患。allow_origins、allow_origins_by_regex 只能一个有效。",
               "type": "string",
-              "pattern": "^(\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
-              "default": "*",
-              "ui:rules": [
-                "required"
-              ]
+              "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
+              "maxLength": 4096,
+              "default": ""
+            },
+            "allow_origins_by_regex": {
+              "description": "使用正则表示的允许跨域访问的 Origin，示例如 '^https://.*\\.example\\.com:8081$'，此正则允许 https://a.example.com:8081, https://b.example.com:8081。allow_origins、allow_origins_by_regex 只能一个有效。",
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^(\\^)?[-a-zA-Z0-9:/\\[\\]\\{\\}\\(\\)\\.\\*\\+\\?\\|\\\\]+(\\$)?$"
+              },
+              "ui:component": {
+                "name": "bfArray"
+              }
             },
             "allow_methods": {
               "description": "允许跨域访问的 Method，比如：GET，POST 等。如果你有多个 Method，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Method 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Method 都通过，但请注意这样存在安全隐患。",
               "type": "string",
-              "default": "*",
+              "default": "**",
+              "pattern": "^(\\*|\\*\\*|(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)(,(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE))*)$",
+              "maxLength": 100,
               "ui:rules": [
                 "required"
               ]
@@ -142,7 +156,9 @@
             "allow_headers": {
               "description": "允许跨域访问时请求方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Header 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Header 都通过，但请注意这样存在安全隐患。",
               "type": "string",
-              "default": "*",
+              "default": "**",
+              "pattern": "^(\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+              "maxLength": 4096,
               "ui:rules": [
                 "required"
               ]
@@ -150,7 +166,9 @@
             "expose_headers": {
               "description": "允许跨域访问时响应方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许任意 Header 。你也可以在启用了 allow_credential 后使用 ** 强制允许任意 Header，但请注意这样存在安全隐患。",
               "type": "string",
-              "default": "*"
+              "pattern": "^(|\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+              "maxLength": 4096,
+              "default": ""
             },
             "max_age": {
               "description": "浏览器缓存 CORS 结果的最大时间，单位为秒。在这个时间范围内，浏览器会复用上一次的检查结果，-1 表示不缓存。请注意各个浏览器允许的最大时间不同。",
@@ -170,7 +188,7 @@
             "allow_credential": {
               "description": "是否允许跨域访问的请求方携带凭据（如 Cookie 等）。根据 CORS 规范，如果设置该选项为 true，那么将不能在其他属性中使用 *。",
               "type": "boolean",
-              "default": false
+              "default": true
             }
           }
         },
@@ -191,25 +209,37 @@
         "schema": {
           "type": "object",
           "required": [
-            "allow_origins",
             "allow_methods",
             "allow_headers",
             "max_age"
           ],
           "properties": {
             "allow_origins": {
-              "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues.",
+              "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues. allow_origins, allow_origins_by_regex can only be one valid at a time.",
               "type": "string",
-              "pattern": "^(\\*|\\*\\*|null|\\w+://[^,]+(,\\w+://[^,]+)*)$",
-              "default": "*",
-              "ui:rules": [
-                "required"
-              ]
+              "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
+              "default": ""
+            },
+            "allow_origins_by_regex": {
+              "description": "Origin that allows CORS using regular expressions. You can use regex to allow specific origins when no credentials, for example, '^https://.*\\.example\\.com:8081$', this regular expression allows https://a.example.com:8081, https://b.example.com:8081. allow_origins, allow_origins_by_regex can only be one valid at a time.",
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^(\\^)?[-a-zA-Z0-9:/\\[\\]\\{\\}\\(\\)\\.\\*\\+\\?\\|\\\\]+(\\$)?$"
+              },
+              "ui:component": {
+                "name": "bfArray"
+              }
             },
             "allow_methods": {
               "description": "Request methods to enable CORS on. For example GET, POST. Use , to add multiple methods. If allow_credential is set to false, you can enable CORS for all methods by using *. If allow_credential is set to true, you can forcefully allow CORS on all methods by using ** but it will pose some security issues.",
               "type": "string",
-              "default": "*",
+              "default": "**",
+              "pattern": "^(\\*|\\*\\*|(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)(,(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE))*)$",
+              "maxLength": 100,
               "ui:rules": [
                 "required"
               ]
@@ -217,7 +247,9 @@
             "allow_headers": {
               "description": "Headers in the request allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all request headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all request headers by using ** but it will pose some security issues.",
               "type": "string",
-              "default": "*",
+              "default": "**",
+              "pattern": "^(\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+              "maxLength": 4096,
               "ui:rules": [
                 "required"
               ]
@@ -225,7 +257,9 @@
             "expose_headers": {
               "description": "Headers in the response allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all response headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all response headers by using ** but it will pose some security issues.",
               "type": "string",
-              "default": "*"
+              "pattern": "^(|\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+              "maxLength": 4096,
+              "default": ""
             },
             "max_age": {
               "description": "Maximum time in seconds the result is cached. If the time is within this limit, the browser will check the cached result. Set to -1 to disable caching. Note that the maximum value is browser dependent.",
@@ -238,20 +272,249 @@
                 "name": "bfInput",
                 "props": {
                   "min": -1,
-                  "unit": "秒"
+                  "unit": "Seconds"
                 }
               }
             },
             "allow_credential": {
               "description": "When set to true, allows requests to include credentials like cookies. According to CORS specification, if you set this to true, you cannot use '*' to allow all for the other attributes.",
               "type": "boolean",
-              "default": false
+              "default": true
             }
           }
         },
         "layout": [],
         "formData": {},
         "rules": {}
+      }
+- model: schema.schema
+  fields:
+    created_time: 2023-07-07 11:48:21.010753+00:00
+    updated_time: 2023-07-07 11:48:21.010788+00:00
+    name: bk-header-rewrite
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "description": "new headers for request",
+        "minProperties": 1,
+        "additionalProperties": false,
+        "properties": {
+          "set": {
+            "type": "object",
+            "minProperties": 1,
+            "patternProperties": {
+              "^[^:]+$": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            }
+          },
+          "remove": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[^:]+$"
+            }
+          }
+        }
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-header-rewrite
+    name: Header 转换
+    name_en: Header transformation
+    is_public: true
+    scope: stage_and_resource
+    schema:
+    - bk-header-rewrite
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - bk-header-rewrite
+    notes: Header 转换插件可以让你轻松地为后端服务的请求添加或删除请求头。
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "properties": {
+            "set": {
+              "description": "设置的请求头",
+              "items": {
+                "properties": {
+                  "key": {
+                    "title": "键",
+                    "description": "您可以设置请求头的键，请求头的键中不能包含冒号（:）。",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[!-~&&[^:]]+$",
+                    "ui:rules": [
+                      "required"
+                    ]
+                  },
+                  "value": {
+                    "title": "值",
+                    "description": "您可以设置请求头的值，请求头的值中不能包含（$）符号。",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[^$]+$",
+                    "ui:rules": [
+                      "required"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "minItems": 0,
+              "title": "设置",
+              "type": "array",
+              "ui:component": {
+                "name": "bfArray"
+              },
+              "ui:rules": [
+                {
+                  "validator": "{{ $self.getValue('set').length || $self.getValue('remove').length }}",
+                  "message": "请求头设置或删除至少需要配置一个"
+                }
+              ]
+            },
+            "remove": {
+              "description": "删除的请求头",
+              "items": {
+                "properties": {
+                  "key": {
+                    "title": "键",
+                    "description": "您可以删除请求头的键，请求头的键中不能包含冒号（:）。",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[!-~&&[^:]]+$",
+                    "ui:rules": [
+                      "required"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "minItems": 0,
+              "title": "删除",
+              "type": "array",
+              "uniqueItems": true,
+              "ui:component": {
+                "name": "bfArray"
+              },
+              "ui:rules": [
+                {
+                  "validator": "{{ $self.getValue('set').length || $self.getValue('remove').length }}",
+                  "message": "请求头设置或删除至少需要配置一个"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        }
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - bk-header-rewrite
+    notes: Header transformation plugins allow you to easily add or remove request
+      headers for backend services.
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "properties": {
+            "set": {
+              "description": "set headers",
+              "items": {
+                "properties": {
+                  "key": {
+                    "title": "key",
+                    "description": "You can set the key of the request header, but colons (:) cannot appear in the key of the request header.",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[!-~&&[^:]]+$",
+                    "ui:rules": [
+                      "required"
+                    ]
+                  },
+                  "value": {
+                    "title": "value",
+                    "description": "You can set the value of the request header, but colons ($) cannot appear in the value of the request header.",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[^$]+$",
+                    "ui:rules": [
+                      "required"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "minItems": 0,
+              "title": "set",
+              "type": "array",
+              "ui:component": {
+                "name": "bfArray"
+              },
+              "ui:rules": [
+                {
+                  "validator": "{{ $self.getValue('set').length || $self.getValue('remove').length }}",
+                  "message": "At least one operation is required when setting or removing request headers."
+                }
+              ]
+            },
+            "remove": {
+              "description": "remove headers",
+              "items": {
+                "properties": {
+                  "key": {
+                    "title": "key",
+                    "description": "You can remove the key of the request header, but colons (:) cannot appear in the key of the request header.",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[!-~&&[^:]]+$",
+                    "ui:rules": [
+                      "required"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "minItems": 0,
+              "title": "remove",
+              "type": "array",
+              "uniqueItems": true,
+              "ui:component": {
+                "name": "bfArray"
+              },
+              "ui:rules": [
+                {
+                  "validator": "{{ $self.getValue('set').length || $self.getValue('remove').length }}",
+                  "message": "At least one operation is required when setting or removing request headers."
+                }
+              ]
+            }
+          },
+          "type": "object"
+        }
       }
 - model: schema.schema
   fields:
@@ -375,6 +638,7 @@
     name: IP 访问保护
     name_en: IP restriction
     is_public: true
+    scope: stage_and_resource
     schema:
     - bk-ip-restriction
     - plugin
@@ -387,6 +651,7 @@
     notes: |-
       该插件可以通过将 IP 地址列入白名单或黑名单来限制对资源的访问。
       支持对单个 IP 地址、多个 IP 地址和类似 1.1.1.0/24 的 CIDR（无类别域间路由）范围的限制。
+      每行一条数据, 并且支持空行及注释行（以 # 开头）。
     style: dynamic
     default_value: ''
     config: |-
@@ -401,42 +666,14 @@
               "title": "白名单",
               "properties": {
                 "whitelist": {
-                  "type": "array",
-                  "minItems": 1,
-                  "items": {
-                    "anyOf": [
-                      {
-                        "title": "IPv4",
-                        "format": "ipv4",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv4/CIDR",
-                        "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv6",
-                        "format": "ipv6",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv6/CIDR",
-                        "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
-                        "type": "string"
-                      }
-                    ],
-                    "ui:composition": {
-                      "style": {
-                        "background": "#F5F7FA",
-                        "padding": "20px 30px 20px 0"
-                      }
-                    },
-                    "ui:anyOf": {
-                      "name": "select",
-                      "props": {
-                        "title": "地址类型"
-                      }
+                  "type": "string",
+                  "maxLength": 51200,
+                  "minLength": 7,
+                  "title": "白名单",
+                  "ui:component": {
+                    "props": {
+                      "type": "textarea",
+                      "rows": 10
                     }
                   }
                 }
@@ -449,42 +686,14 @@
               "title": "黑名单",
               "properties": {
                 "blacklist": {
-                  "type": "array",
-                  "minItems": 1,
-                  "items": {
-                    "anyOf": [
-                      {
-                        "title": "IPv4",
-                        "format": "ipv4",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv4/CIDR",
-                        "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv6",
-                        "format": "ipv6",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv6/CIDR",
-                        "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
-                        "type": "string"
-                      }
-                    ],
-                    "ui:composition": {
-                      "style": {
-                        "background": "#F5F7FA",
-                        "padding": "20px 30px 20px 0"
-                      }
-                    },
-                    "ui:anyOf": {
-                      "name": "select",
-                      "props": {
-                        "title": "地址类型"
-                      }
+                  "type": "string",
+                  "maxLength": 51200,
+                  "minLength": 7,
+                  "title": "黑名单",
+                  "ui:component": {
+                    "props": {
+                      "type": "textarea",
+                      "rows": 10
                     }
                   }
                 }
@@ -509,6 +718,7 @@
     notes: |-
       This plugin allows you to restrict access to a Resource by either whitelisting or blacklisting IP addresses.
       Single IPs, multiple IPs or even IP ranges in CIDR notation like 1.1.1.0/24 can be used.
+      One piece of data per line, and supports blank lines and comment lines (beginning with #).
     style: dynamic
     default_value: ''
     config: |-
@@ -523,42 +733,14 @@
               "title": "White list",
               "properties": {
                 "whitelist": {
-                  "type": "array",
-                  "minItems": 1,
-                  "items": {
-                    "anyOf": [
-                      {
-                        "title": "IPv4",
-                        "format": "ipv4",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv4/CIDR",
-                        "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv6",
-                        "format": "ipv6",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv6/CIDR",
-                        "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
-                        "type": "string"
-                      }
-                    ],
-                    "ui:composition": {
-                      "style": {
-                        "background": "#F5F7FA",
-                        "padding": "20px 30px 20px 0"
-                      }
-                    },
-                    "ui:anyOf": {
-                      "name": "select",
-                      "props": {
-                        "title": "Format"
-                      }
+                  "type": "string",
+                  "maxLength": 51200,
+                  "minLength": 7,
+                  "title": "whitelist",
+                  "ui:component": {
+                    "props": {
+                      "type": "textarea",
+                      "rows": 10
                     }
                   }
                 }
@@ -571,42 +753,14 @@
               "title": "Black list",
               "properties": {
                 "blacklist": {
-                  "type": "array",
-                  "minItems": 1,
-                  "items": {
-                    "anyOf": [
-                      {
-                        "title": "IPv4",
-                        "format": "ipv4",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv4/CIDR",
-                        "pattern": "^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([12]?[0-9]|3[0-2])$",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv6",
-                        "format": "ipv6",
-                        "type": "string"
-                      },
-                      {
-                        "title": "IPv6/CIDR",
-                        "pattern": "^([a-fA-F0-9]{0,4}:){1,8}(:[a-fA-F0-9]{0,4}){0,8}([a-fA-F0-9]{0,4})?/[0-9]{1,3}$",
-                        "type": "string"
-                      }
-                    ],
-                    "ui:composition": {
-                      "style": {
-                        "background": "#F5F7FA",
-                        "padding": "20px 30px 20px 0"
-                      }
-                    },
-                    "ui:anyOf": {
-                      "name": "select",
-                      "props": {
-                        "title": "Format"
-                      }
+                  "type": "string",
+                  "maxLength": 51200,
+                  "minLength": 7,
+                  "title": "blacklist",
+                  "ui:component": {
+                    "props": {
+                      "type": "textarea",
+                      "rows": 10
                     }
                   }
                 }
@@ -688,6 +842,7 @@
     name: 频率控制
     name_en: Rate Limit
     is_public: true
+    scope: stage_and_resource
     schema:
     - bk-rate-limit
     - plugin
@@ -1210,17 +1365,10 @@
 - model: plugin.plugintype
   fields:
     code: bk-verified-user-exempted-apps
-    name: 免用户认证应用白名单
-    name_en: Exempted user auth apps white list
-    is_public: true
+    name: 免用户认证应用白名单(不推荐)
+    name_en: Exempted user auth apps white list (not recommended)
+    is_public: false
     schema:
     - bk-verified-user-exempted-apps
     - plugin
     - '0'
-- model: plugin.plugintype
-  fields:
-    code: ip-restriction
-    name: IP 保护（旧）
-    name_en: legacy ip restriction
-    is_public: false
-    schema: null

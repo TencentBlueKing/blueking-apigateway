@@ -23,7 +23,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from django.template import Context, Template
 
-from apigateway.apps.monitor.clients.bkdata import BKDataSearchClient
+from apigateway.apps.monitor.clients.bk_log import LogSearchClient
 from apigateway.apps.monitor.constants import DEFAULT_SENDER, AlarmStatusEnum, AlarmTypeEnum
 from apigateway.apps.monitor.flow.helpers import AlertHandler, MonitorEvent
 from apigateway.apps.monitor.flow.matcher import Matcher
@@ -40,7 +40,9 @@ class AlarmRecordCreator(AlertHandler):
         """创建监控告警记录"""
         if not event.should_alert:
             logger.warning(
-                f"monitor event should not be alerted, event_id={event.id}, strategy_id={event.strategy_id}"
+                "monitor event should not be alerted, event_id=%s, strategy_id=%s",
+                event.id,
+                event.strategy_id,
             )
             return None
 
@@ -61,19 +63,19 @@ class APIExistFilter(AlertHandler):
     """网关必须存在"""
 
     def _do(self, event: MonitorEvent) -> Optional[MonitorEvent]:
-        api_id = int(event.event_dimensions["api_id"])
+        gateway_id = int(event.event_dimensions["api_id"])
 
-        gateway = Gateway.objects.filter(id=api_id).first()
+        gateway = Gateway.objects.filter(id=gateway_id).first()
         if not gateway:
             AlarmRecord.objects.update_alarm(
                 event.alarm_record_id,
                 status=AlarmStatusEnum.SKIPPED.value,
-                comment=f"网关[id={api_id}]不存在",
+                comment=f"网关[id={gateway_id}]不存在",
             )
             return None
 
         AlarmRecord.objects.update_alarm(event.alarm_record_id, gateway=gateway)
-        event.update_extend_fields({"api": gateway})
+        event.update_extend_fields({"gateway": gateway})
         return event
 
 
@@ -82,17 +84,13 @@ class RelatedLogRecordsFetcher(AlertHandler):
         self.es_index = es_index
         self.output_fields = output_fields
 
-    def _get_bkdata_records(self, event: MonitorEvent):
-        client = BKDataSearchClient(self.es_index, self.output_fields)
+    def _get_request_log_records(self, event: MonitorEvent):
+        client = LogSearchClient(self.es_index, self.output_fields)
         # source_time 按分钟聚合，不包含秒信息
         return client.search(time_utils.timestamp(event.event_begin_time), event.event_dimensions)
 
-    def _filter_bkdata_records(self, alarm_type: AlarmTypeEnum, records: Iterable[Dict[str, Any]]) -> list:
-        filtered_records = []
-        for record in records:
-            if self._is_record_need_alert(alarm_type, record["_source"]):
-                filtered_records.append(record)
-        return filtered_records
+    def _filter_request_log_records(self, alarm_type: AlarmTypeEnum, records: Iterable[Dict[str, Any]]) -> list:
+        return [record for record in records if self._is_record_need_alert(alarm_type, record["_source"])]
 
     def _is_record_need_alert(self, alarm_type: AlarmTypeEnum, record_source: dict):
         filter_conditions = AlarmFilterConfig.objects.get_filter_config(alarm_type.value)
@@ -101,18 +99,19 @@ class RelatedLogRecordsFetcher(AlertHandler):
         return True
 
     def _do(self, event: MonitorEvent) -> Optional[MonitorEvent]:
-        ok, message, records = self._get_bkdata_records(event)
+        ok, message, records = self._get_request_log_records(event)
         if not ok:
             logger.error(
-                f"get monitor events from bkdata fail. source_time: {event.event_begin_time}, "
-                f"match_dimension: {event.event_dimensions}"
+                "get monitor events failed. source_time: %s, match_dimension: %s",
+                event.event_begin_time,
+                event.event_dimensions,
             )
             AlarmRecord.objects.update_alarm(
-                event.alarm_record_id, status=AlarmStatusEnum.SKIPPED.value, comment=f"从数据平台获取告警事件源记录失败，{message}"
+                event.alarm_record_id, status=AlarmStatusEnum.SKIPPED.value, comment=f"获取告警事件源记录失败，{message}"
             )
             return None
 
-        filtered_records = self._filter_bkdata_records(event.alarm_type, records)  # type: ignore
+        filtered_records = self._filter_request_log_records(event.alarm_type, records)
         if not filtered_records:
             AlarmRecord.objects.update_alarm(
                 event.alarm_record_id, status=AlarmStatusEnum.SKIPPED.value, comment="所有告警源记录被过滤，此告警不需要发送告警通知"

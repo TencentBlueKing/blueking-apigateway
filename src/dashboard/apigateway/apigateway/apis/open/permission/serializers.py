@@ -30,10 +30,10 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
     PermissionStatusEnum,
 )
-from apigateway.apps.permission.helpers import PermissionDimensionManager
 from apigateway.apps.permission.models import AppPermissionRecord
+from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.common.fields import TimestampField
-from apigateway.core.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.utils import time
 
 
@@ -53,7 +53,7 @@ class AppPermissionResourceSLZ(serializers.Serializer):
     description_en = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     expires_in = serializers.SerializerMethodField()
     permission_level = serializers.CharField()
-    permission_status = serializers.ChoiceField(choices=PermissionStatusEnum.choices())
+    permission_status = serializers.ChoiceField(choices=PermissionStatusEnum.get_choices())
     permission_action = serializers.SerializerMethodField()
     doc_link = serializers.CharField()
 
@@ -241,7 +241,7 @@ class AppPermissionRecordSLZ(serializers.ModelSerializer):
         ]
 
     def get_api_name(self, obj):
-        return obj.api.name
+        return obj.gateway.name
 
     def get_apply_status(self, obj):
         return obj.status
@@ -252,7 +252,7 @@ class AppPermissionRecordSLZ(serializers.ModelSerializer):
     def get_handled_by(self, obj):
         if obj.handled_by:
             return [obj.handled_by]
-        return obj.api.maintainers
+        return obj.gateway.maintainers
 
     def get_comment(self, obj):
         return obj.comment or ""

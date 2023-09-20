@@ -21,7 +21,8 @@ from typing import List, Optional
 
 from django.core.management.base import BaseCommand, CommandError
 
-import apigateway.controller.tasks.syncing as syncing
+from apigateway.common.release import publish
+from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 
 logger = logging.getLogger(__name__)
@@ -36,25 +37,27 @@ def sync_gateway(gateway):
     connection.close()
 
     print(f"syncing release for gateway {gateway.name} ...")
-    ok = syncing.rolling_update_release(gateway.id)
+    ok = publish.trigger_gateway_publish(PublishSourceEnum.CLI_SYNC, author="cli", gateway_id=gateway.id, is_sync=True)
     if not ok:
         print(f"[ERROR] syncing release for gateway {gateway.name} failed")
         return gateway.name
-    else:
-        print(f"[INFO] syncing release for gateway {gateway.name} success")
-        return None
+
+    print(f"[INFO] syncing release for gateway {gateway.name} success")
+    return None
 
 
 class Command(BaseCommand):
     """同步已发布的资源到共享网关，只对存在且Activate状态的stage进行同步处理，非Activate stage与曾被删除的stage将忽略"""
 
     def add_arguments(self, parser):
-        parser.add_argument("--api-names", dest="api_names", nargs="*", help="api names, default is all micro apis")
+        parser.add_argument(
+            "--gateway-names", dest="gateway_names", nargs="*", help="gateway names, default is all micro apis"
+        )
 
-    def handle(self, api_names: Optional[List[str]], *args, **options):
-        gateways = Gateway.objects.filter_micro_and_active_queryset()
-        if api_names:
-            gateways = gateways.filter(name__in=api_names)
+    def handle(self, gateway_names: Optional[List[str]], *args, **options):
+        gateways = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value)
+        if gateway_names:
+            gateways = gateways.filter(name__in=gateway_names)
 
         failed_gateway_names = []
         with Pool(POOL_SIZE) as pool:

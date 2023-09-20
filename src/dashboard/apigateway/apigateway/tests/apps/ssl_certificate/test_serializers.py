@@ -38,7 +38,7 @@ class TestSSLCertificateSLZ:
                 "ca_cert": fake_tls_cacert,
             },
             context={
-                "api": fake_gateway,
+                "gateway": fake_gateway,
             },
         )
         slz.is_valid(raise_exception=True)
@@ -47,13 +47,13 @@ class TestSSLCertificateSLZ:
         assert isinstance(slz.validated_data["expires"], datetime.datetime)
 
         slz.save()
-        instance = SslCertificate.objects.get(api=fake_gateway, id=slz.instance.id)
+        instance = SslCertificate.objects.get(gateway=fake_gateway, id=slz.instance.id)
         assert instance.snis == ["bkapi.example.com"]
 
 
 class TestBindOrUnbindScopesSLZ:
     def test_validate(self, fake_ssl_certificate_binding):
-        fake_gateway = fake_ssl_certificate_binding.api
+        fake_gateway = fake_ssl_certificate_binding.gateway
         fake_ssl_certificate = fake_ssl_certificate_binding.ssl_certificate
 
         slz = serializers.BindOrUnbindScopesSLZ(
@@ -62,7 +62,7 @@ class TestBindOrUnbindScopesSLZ:
                 "scope_type": "stage",
                 "scope_ids": [fake_ssl_certificate_binding.scope_id, 0],
             },
-            context={"api_id": fake_gateway.id},
+            context={"gateway_id": fake_gateway.id},
         )
         slz.is_valid(raise_exception=True)
         assert slz.validated_data == {
@@ -77,7 +77,7 @@ class TestBindOrUnbindScopesSLZ:
                 "scope_type": "stage",
                 "scope_ids": [1],
             },
-            context={"api_id": fake_gateway.id},
+            context={"gateway_id": fake_gateway.id},
         )
         with pytest.raises(ValidationError):
             slz.is_valid(raise_exception=True)
@@ -85,7 +85,7 @@ class TestBindOrUnbindScopesSLZ:
 
 class TestBindOrUnbindSSLCertificatesSLZ:
     def test_validate(self, fake_ssl_certificate_binding):
-        fake_gateway = fake_ssl_certificate_binding.api
+        fake_gateway = fake_ssl_certificate_binding.gateway
         fake_ssl_certificate = fake_ssl_certificate_binding.ssl_certificate
 
         slz = serializers.BindOrUnbindSSLCertificatesSLZ(
@@ -94,7 +94,7 @@ class TestBindOrUnbindSSLCertificatesSLZ:
                 "scope_id": fake_ssl_certificate_binding.scope_id,
                 "ssl_certificate_ids": [fake_ssl_certificate.id, 0],
             },
-            context={"api_id": fake_gateway.id},
+            context={"gateway_id": fake_gateway.id},
         )
         slz.is_valid(raise_exception=True)
         assert slz.validated_data == {
@@ -109,7 +109,7 @@ class TestBindOrUnbindSSLCertificatesSLZ:
                 "scope_type": "stage",
                 "scope_id": 0,
             },
-            context={"api_id": fake_gateway.id},
+            context={"gateway_id": fake_gateway.id},
         )
         with pytest.raises(ValidationError):
             slz.is_valid(raise_exception=True)

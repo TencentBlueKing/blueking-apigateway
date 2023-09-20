@@ -24,10 +24,10 @@ from typing import Any, ClassVar, Dict, List
 
 from bkapi_client_generator import GenerateFailed, generate_client
 
-from apigateway.apps.resource.swagger.swagger import ResourceSwaggerExporter
 from apigateway.apps.support.api_sdk import exceptions
 from apigateway.apps.support.api_sdk.models import Generator
-from apigateway.core.constants import SwaggerFormatEnum
+from apigateway.biz.constants import SwaggerFormatEnum
+from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
 from apigateway.utils.file import write_to_file
 
 logger = logging.getLogger(__name__)
@@ -56,8 +56,8 @@ class SwaggerTemplateGenerator(Generator):
     def generate(self, output_dir: str, resources: List[Dict[str, Any]]):
         exporter = ResourceSwaggerExporter(
             api_version=self.context.version,
-            title=self.context.resource_version.api.name,
-            description=self.context.resource_version.api.description,
+            title=self.context.resource_version.gateway.name,
+            description=self.context.resource_version.gateway.description,
             include_bk_apigateway_resource=False,
         )
 

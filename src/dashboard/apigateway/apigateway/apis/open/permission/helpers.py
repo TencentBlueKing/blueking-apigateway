@@ -27,8 +27,20 @@ from pydantic import BaseModel, parse_obj_as
 
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionLevelEnum, PermissionStatusEnum
 from apigateway.apps.permission.models import AppAPIPermission, AppPermissionApplyStatus, AppResourcePermission
+from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ReleasedResource, Resource
+
+
+class AppPermissionHelper:
+    def get_permission_model(self, dimension: str):
+        if dimension == GrantDimensionEnum.API.value:
+            return AppAPIPermission
+
+        if dimension == GrantDimensionEnum.RESOURCE.value:
+            return AppResourcePermission
+
+        raise ValueError(f"unsupported dimension: {dimension}")
 
 
 class ResourcePermission(BaseModel):
@@ -125,7 +137,7 @@ class ResourcePermissionBuilder:
     def build(self, resources: list) -> list:
         resources = copy.copy(resources)
         resource_ids = [resource["id"] for resource in resources]
-        doc_links = ReleasedResource.objects.get_latest_doc_link(resource_ids)
+        doc_links = ReleasedResourceHandler.get_latest_doc_link(resource_ids)
 
         for resource in resources:
             resource["api_name"] = self.gateway.name
@@ -142,7 +154,7 @@ class ResourcePermissionBuilder:
         return [perm.as_dict() for perm in resource_permissions]
 
     def _get_api_permission(self):
-        return AppAPIPermission.objects.filter_permission(
+        return AppAPIPermission.objects.filter(
             gateway=self.gateway,
             bk_app_code=self.target_app_code,
         ).first()
@@ -150,7 +162,7 @@ class ResourcePermissionBuilder:
     def _get_resource_permission_map(self):
         return {
             perm.resource_id: perm
-            for perm in AppResourcePermission.objects.filter_permission(
+            for perm in AppResourcePermission.objects.filter(
                 gateway=self.gateway,
                 bk_app_code=self.target_app_code,
             )
@@ -159,7 +171,7 @@ class ResourcePermissionBuilder:
     def _get_api_permission_apply_status(self):
         apply_status = AppPermissionApplyStatus.objects.filter(
             bk_app_code=self.target_app_code,
-            api_id=self.gateway.id,
+            gateway_id=self.gateway.id,
             grant_dimension=GrantDimensionEnum.API.value,
         ).first()
 
@@ -173,7 +185,7 @@ class ResourcePermissionBuilder:
             apply_status.resource_id: apply_status.status
             for apply_status in AppPermissionApplyStatus.objects.filter(
                 bk_app_code=self.target_app_code,
-                api_id=self.gateway.id,
+                gateway_id=self.gateway.id,
                 grant_dimension=GrantDimensionEnum.RESOURCE.value,
             )
         }
@@ -190,9 +202,9 @@ class AppPermissionBuilder:
         resource_permission_map = self._get_resource_permission_map()
 
         resource_map: defaultdict = defaultdict(dict)
-        for api_id in api_permission_map.keys():
-            for resource in ResourceVersionHandler().get_released_public_resources(api_id):
-                resource.update({"api_permission": api_permission_map.get(api_id)})
+        for gateway_id in api_permission_map:
+            for resource in ResourceVersionHandler.get_released_public_resources(gateway_id):
+                resource.update({"api_permission": api_permission_map.get(gateway_id)})
                 resource_map[resource["id"]] = resource
 
         for resource in ReleasedResource.objects.filter_latest_released_resources(
@@ -201,10 +213,13 @@ class AppPermissionBuilder:
             resource.update({"resource_permission": resource_permission_map.get(resource["id"])})
             resource_map[resource["id"]].update(resource)
 
-        resource_id_to_fields_map = Resource.objects.get_id_to_fields_map(list(resource_map.keys()))
-        doc_links = ReleasedResource.objects.get_latest_doc_link(list(resource_map.keys()))
+        resource_id_to_gateway_name = dict(
+            Resource.objects.filter(id__in=list(resource_map.keys())).values_list("id", "gateway__name")
+        )
+
+        doc_links = ReleasedResourceHandler.get_latest_doc_link(list(resource_map.keys()))
         for resource_id, resource in resource_map.items():
-            resource["api_name"] = resource_id_to_fields_map.get(resource_id, {}).get("api_name", "")
+            resource["api_name"] = resource_id_to_gateway_name.get(resource_id, "")
             resource["doc_link"] = doc_links.get(resource_id, "")
 
         resource_permissions = parse_obj_as(List[ResourcePermission], list(resource_map.values()))
@@ -212,7 +227,7 @@ class AppPermissionBuilder:
 
     def _get_api_permission_map(self) -> Dict[int, AppAPIPermission]:
         return {
-            perm.api_id: perm
+            perm.gateway_id: perm
             for perm in AppAPIPermission.objects.filter_public_permission_by_app(bk_app_code=self.target_app_code)
         }
 

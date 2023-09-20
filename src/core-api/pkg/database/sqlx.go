@@ -19,43 +19,61 @@
 package database
 
 import (
+	"context"
+	"database/sql"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
-type queryFunc func(db *sqlx.DB, dest interface{}, query string, args ...interface{}) error
+type (
+	queryFunc func(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error
+	execFunc  func(ctx context.Context, db *sqlx.DB, query string, args ...any) (sql.Result, error)
+)
 
 func queryTimer(f queryFunc) queryFunc {
-	return func(db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {
+	return func(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {
 		start := time.Now()
 		defer logSlowSQL(start, query, args)
 		// NOTE: must be args...
-		return f(db, dest, query, args...)
+		return f(ctx, db, dest, query, args...)
 	}
 }
 
-func sqlxSelectFunc(db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {
+func execTimer(f execFunc) execFunc {
+	return func(ctx context.Context, db *sqlx.DB, query string, args ...any) (sql.Result, error) {
+		start := time.Now()
+		defer logSlowSQL(start, query, args)
+		// NOTE: must be args...
+		return f(ctx, db, query, args...)
+	}
+}
+
+func sqlxSelectFunc(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {
 	query, args, err := sqlx.In(query, args...)
 	if err != nil {
 		return err
 	}
-	err = db.Select(dest, query, args...)
+	err = db.SelectContext(ctx, dest, query, args...)
 	return err
 }
 
-func sqlxGetFunc(db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {
+func sqlxGetFunc(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {
 	query, args, err := sqlx.In(query, args...)
 	if err != nil {
 		return err
 	}
-	err = db.Get(dest, query, args...)
+	err = db.GetContext(ctx, dest, query, args...)
 
 	if err == nil {
 		return nil
 	}
 
 	return err
+}
+
+func sqlxExecFunc(ctx context.Context, db *sqlx.DB, query string, args ...any) (sql.Result, error) {
+	return db.ExecContext(ctx, query, args...)
 }
 
 // note: if you want to add more functions, please take a look at
@@ -65,4 +83,5 @@ func sqlxGetFunc(db *sqlx.DB, dest interface{}, query string, args ...interface{
 var (
 	SqlxSelect = queryTimer(sqlxSelectFunc)
 	SqlxGet    = queryTimer(sqlxGetFunc)
+	SqxExec    = execTimer(sqlxExecFunc)
 )

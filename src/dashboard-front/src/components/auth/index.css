@@ -59,8 +59,8 @@
         display: inline-block;
         background: #fff;
         border: 0;
-        width: 700px;
-        height: 510px;
+        width: 400px;
+        height: 400px;
         padding-right: 5px;
         margin: -225px auto auto -225px;
         top: 50%;
@@ -70,8 +70,6 @@
         border-radius: 4px;
         iframe {
             text-align: center;
-            margin-left: 0;
-            margin-top: -5px;
             border: none;
         }
     }

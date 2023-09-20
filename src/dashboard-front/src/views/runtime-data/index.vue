@@ -12,7 +12,6 @@
 
     watch: {
       '$route' (newVal, oldVal) {
-        console.log(newVal, oldVal)
         if (newVal.name !== oldVal.name) {
           this.renderKey++
         } else if (newVal.params.id !== oldVal.params.id) {

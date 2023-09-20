@@ -42,22 +42,27 @@ class TestComponentSynchronizer:
         assert result == [{"id": 1, "method": "GET"}]
         mock_to_resources.assert_called_once()
 
-    def test_sync_to_resources(self, mocker):
+    def test_sync_to_resources(self, mocker, fake_resource, fake_backend, fake_resource_data):
         mocker.patch(
             "apigateway.apps.esb.component.sync.ComponentSynchronizer.get_importing_resources",
             return_value=[{"id": 1, "method": "GET"}],
         )
-        mock_set_imported_resources = mocker.patch(
-            "apigateway.apps.esb.component.sync.ResourcesImporter.set_importing_resources", return_value=None
-        )
-        mocker.patch("apigateway.apps.esb.component.sync.ResourcesImporter.import_resources", return_value=None)
         mocker.patch(
-            "apigateway.apps.esb.component.sync.ComponentResourceBinding.objects.sync",
-            return_value=None,
+            "apigateway.apps.esb.component.sync.ResourcesImporter.from_resources",
+            return_value=mocker.MagicMock(
+                **{
+                    "import_resources.return_value": None,
+                    "get_deleted_resources.return_value": [],
+                    "get_selected_resource_data_list.return_value": [
+                        fake_resource_data.copy(update={"resource": fake_resource, "backend": fake_backend}, deep=True)
+                    ],
+                }
+            ),
+        )
+        mocker.patch(
+            "apigateway.apps.esb.component.sync.ComponentResourceBindingHandler.sync",
         )
 
         synchronizer = ComponentSynchronizer()
         result = synchronizer.sync_to_resources(G(Gateway), "admin")
-        assert result == [{"id": 1, "method": "GET"}]
-
-        mock_set_imported_resources.assert_called_once_with([{"id": 1, "method": "GET"}])
+        assert len(result) == 1

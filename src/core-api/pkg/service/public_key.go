@@ -21,13 +21,15 @@ package service
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
 import (
+	"context"
+
 	"core/pkg/cacheimpls"
 	"core/pkg/database/dao"
 )
 
 // GatewayPublicKeyService is the interface of gateway public key service
 type GatewayPublicKeyService interface {
-	Get(instanceID, gatewayName string) (string, error)
+	Get(ctx context.Context, instanceID, gatewayName string) (string, error)
 }
 
 type gatewayPublicKeyService struct {
@@ -42,17 +44,15 @@ func NewGatewayPublicKeyService() GatewayPublicKeyService {
 }
 
 // Get will get the gateway public key from cache by instanceID and gatewayName
-func (s *gatewayPublicKeyService) Get(
-	instanceID, gatewayName string,
-) (string, error) {
+func (s *gatewayPublicKeyService) Get(ctx context.Context, instanceID, gatewayName string) (string, error) {
 	// get gatewayID
-	gatewayID, err := getGatewayID(instanceID, gatewayName)
+	gatewayID, err := getGatewayID(ctx, instanceID, gatewayName)
 	if err != nil {
 		return "", err
 	}
 
 	// query jwt
-	publicKey, err := cacheimpls.GetJWTPublicKey(gatewayID)
+	publicKey, err := cacheimpls.GetJWTPublicKey(ctx, gatewayID)
 	if err != nil {
 		return "", err
 	}

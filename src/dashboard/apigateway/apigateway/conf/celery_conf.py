@@ -38,13 +38,13 @@ CELERY_IMPORTS = (
 )
 
 CELERY_BEAT_SCHEDULE = {
-    "add-every-minute": {
-        "task": "apigateway.apps.monitor.tasks.add",
-        "schedule": crontab(),
-    },
-    "apigateway.controller.tasks.syncing.release_updated_check": {
-        "task": "apigateway.controller.tasks.syncing.release_updated_check",
-        "schedule": crontab(minute="*/1"),
+    # "add-every-minute": {
+    #     "task": "apigateway.apps.monitor.tasks.add",
+    #     "schedule": crontab(),
+    # },
+    "apigateway.controller.tasks.clean_task.delete_old_publish_events": {
+        "task": "apigateway.controller.clean_task.delete_old_publish_events",
+        "schedule": crontab(day_of_week="*", hour=0, minute=0),
     },
 }
 

@@ -34,7 +34,7 @@
           <div class="import-top" v-if="docType === 'swagger'">
             <bk-button icon="plus" class="import-btn" :key="uploadButtonKey">
               {{ $t('导入 Swagger 文件') }}
-              <input ref="fileInput" type="file" name="upload" class="file-input" @change="handleFileInput">
+              <input ref="fileInput" type="file" name="upload" class="file-input" accept=".yaml,.json,.yml" @change="handleFileInput">
             </bk-button>
             <!-- <span class="import-tip">（json /yaml 格式）</span> -->
 
@@ -50,7 +50,7 @@
           <div class="import-top" v-else>
             <bk-button icon="plus" class="import-btn" :key="uploadButtonKey">
               {{ $t('导入文档压缩包') }}
-              <input ref="fileArchive" type="file" name="upload" class="file-input" @change="handleFileArchive">
+              <input ref="fileArchive" type="file" name="upload" class="file-input" accept=".gz,.tgz,.zip" @change="handleFileArchive">
             </bk-button>
           </div>
         </bk-form-item>
@@ -111,7 +111,8 @@
       <p class="f14 ag-table-header">
         {{ $t('请确认以下文档变更：') }}
         <span v-html="addInfo"></span>
-        <span v-html="coverInfo"></span>
+        <span v-html="changeInfo"></span>
+        <span v-html="unchangedInfo"></span>
         <span v-html="resourceInfo"></span>
         <bk-input
           class="fr"
@@ -341,7 +342,7 @@
             text: this.$t('资源不存在')
           }
         ],
-        typeFiltersEmums: { 'create': this.$t('新建'), 'merge': this.$t('覆盖') },
+        typeFiltersEmums: { 'create': '新建', 'merge': '覆盖' },
         archiveTip: {
           theme: 'dark',
           allowHtml: true,
@@ -393,9 +394,9 @@
         const results = this.selectedResourceDocs.filter(item => item.id && !item.resource_doc_id)
         return results.length
       },
-      updateNum () {
+      updateDocList () {
         const results = this.selectedResourceDocs.filter(item => item.id && item.resource_doc_id)
-        return results.length
+        return results
       },
       noExistNum () {
         const results = this.resourceList.filter(item => !item.id)
@@ -404,8 +405,11 @@
       addInfo () {
         return this.$t(`新建 <strong style="color: #2DCB56;"> {createNum} </strong> 条，`, { createNum: this.createNum })
       },
-      coverInfo () {
-        return this.$t(`覆盖 <strong style="color: #3a84ff;"> {updateNum} </strong> 条，`, { updateNum: this.updateNum })
+      changeInfo () {
+        return this.$t(`变更 <strong style="color: #2DCB56;"> {updateNum} </strong> 条，`, { updateNum: this.updateDocList.filter(v => v.is_change).length })
+      },
+      unchangedInfo () {
+        return this.$t(`未变更 <strong style="color: #63656E"> {updateNum} </strong> 条，`, { updateNum: this.updateDocList.filter(v => !v.is_change).length })
       },
       resourceInfo () {
         return this.$t(`资源不存在 <strong style="color: #EA3536;"> {noExistNum} </strong> 条`, { noExistNum: this.noExistNum })
@@ -414,8 +418,6 @@
 
     watch: {
       selectOperateType (value, oldVal) {
-        console.log('value', value)
-        console.log('this.selectTypeValue', this.selectTypeValue)
         this.selectedResourceDocs = []
         if (!value.length) {
           if (!this.selectedResourceDocsCopy.length) {
@@ -436,7 +438,6 @@
         }
 
         if (value.join('') === 'merge') {
-          console.log('this.selectTypeValue', this.selectTypeValue)
           if (this.selectTypeValue === 'merge') {
             this.originResourceList.filter(e => e.typeText === '覆盖').forEach(item => {
               this.$refs.groupTableRef && this.$refs.groupTableRef.toggleRowSelection(item, true)
@@ -446,7 +447,8 @@
                 name: item.name,
                 id: item.id,
                 resource_doc_id: item.resource_doc_id,
-                filename: item.filename || ''
+                filename: item.filename || '',
+                is_change: item.resource_doc_content_changed
               })
             })
           }
@@ -455,7 +457,6 @@
               this.$refs.groupTableRef && this.$refs.groupTableRef.toggleRowSelection(item, false)
             })
             const data = this.originResourceList.filter(e => !!e.id && !!e.resource_doc_id)
-            console.log('data1111', data)
             this.handChangeData(data)
           }
         }
@@ -470,7 +471,8 @@
                 name: item.name,
                 id: item.id,
                 resource_doc_id: item.resource_doc_id,
-                filename: item.filename || ''
+                filename: item.filename || '',
+                is_change: item.resource_doc_content_changed
               })
             })
           }
@@ -485,7 +487,6 @@
 
         if (value.length === 2) {
           let data = this.originResourceList
-          console.log('this.selectTypeValue', this.selectTypeValue)
           if (this.selectTypeValue === 'merge') {
             data = this.originResourceList.filter(e => !!e.id && !!e.resource_doc_id)
           } else if (this.selectTypeValue === 'create') {
@@ -508,14 +509,14 @@
                 name: item.name,
                 id: item.id,
                 resource_doc_id: item.resource_doc_id,
-                filename: item.filename || ''
+                filename: item.filename || '',
+                is_change: item.resource_doc_content_changed
               })
             }
           })
 
           this.selectedResourceDocsCopy = [...this.selectedResourceDocs]
         }
-        console.log('this.selectedResourceDocs', this.selectedResourceDocs)
       },
       pathUrl (value) {
         if (!value) {
@@ -583,11 +584,18 @@
         const self = this
         if (fileInput.files && fileInput.files.length) {
           const file = fileInput.files[0]
+          const reg = '.*\\.(json|yaml|yml)'
+          if (!file.name.match(reg)) {
+            this.$bkMessage({
+              theme: 'error',
+              message: this.$t('仅支持 json, yaml 格式')
+            })
+            return
+          }
           if (window.FileReader) {
             const reader = new FileReader()
             reader.onloadend = function (event) {
               if (event.target.readyState === FileReader.DONE) {
-                console.log(event.target)
                 self.content = event.target.result
                 self.resource.content = event.target.result
                 setTimeout(() => {
@@ -607,6 +615,14 @@
         const fileArchive = this.$refs.fileArchive
         if (fileArchive.files && fileArchive.files.length) {
           this.file = fileArchive.files[0]
+          // 校验压缩文件后缀
+          if (!/\.(tar\.gz|tgz|zip)$/i.test(this.file.name)) {
+            this.$bkMessage({
+              theme: 'error',
+              message: this.$t('只支持.tar.gz、.tgz、.zip 压缩格式')
+            })
+            return
+          }
           const formData = new FormData()
           formData.append('file', this.file)
           const CSRFToken = cookie.parse(document.cookie)[DASHBOARD_CSRF_COOKIE_NAME || `${window.PROJECT_CONFIG.BKPAAS_APP_ID}_csrftoken`]
@@ -641,10 +657,17 @@
                 message: this.$t('系统出现异常')
               })
             } else {
-              this.$bkMessage({
-                theme: 'error',
-                message: data.message
-              })
+              if (data) {
+                this.$bkMessage({
+                  theme: 'error',
+                  message: data.message
+                })
+              } else {
+                this.$bkMessage({
+                  theme: 'error',
+                  message: this.$t('未知错误')
+                })
+              }
             }
           }).finally(() => {
             this.uploadButtonKey++
@@ -771,7 +794,8 @@
                   name: item.name,
                   id: item.id,
                   resource_doc_id: item.resource_doc_id,
-                  filename: item.filename || ''
+                  filename: item.filename || '',
+                  is_change: item.resource_doc_content_changed
                 })
               }
             })
@@ -793,7 +817,8 @@
                     name: item.name,
                     id: item.id,
                     resource_doc_id: item.resource_doc_id,
-                    filename: item.filename || ''
+                    filename: item.filename || '',
+                    is_change: item.resource_doc_content_changed
                   })
                 }
               }
@@ -845,7 +870,8 @@
             name: item.name,
             id: item.id,
             resource_doc_id: item.resource_doc_id,
-            filename: item.filename || ''
+            filename: item.filename || '',
+            is_change: item.resource_doc_content_changed
           })
           return prev
         }, [])
@@ -853,7 +879,6 @@
       },
 
       handlViewerFocus () {
-        console.log(this.$refs.bodyCodeViewer.$ace)
         this.$refs.bodyCodeViewer.$ace.focus()
       },
 

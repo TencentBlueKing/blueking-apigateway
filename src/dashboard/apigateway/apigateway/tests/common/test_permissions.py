@@ -33,16 +33,16 @@ class TestGatewayRelatedAppPermission:
         permission_classes = [GatewayRelatedAppPermission]
 
         def retrieve(self, request, api_name: str, *args, **kwargs):
-            return OKJsonResponse("OK")
+            return OKJsonResponse()
 
     @pytest.mark.parametrize(
-        "mock_api, allow_api_not_exist, api_permission_exempt, mock_allow_manage, expected",
+        "mock_gateway, allow_api_not_exist, api_permission_exempt, mock_allow_manage, expected",
         [
             (None, True, False, False, True),
             (None, False, False, False, Http404),
-            ("api", False, True, False, True),
-            ("api", False, False, False, False),
-            ("api", False, False, True, True),
+            ("gateway", False, True, False, True),
+            ("gateway", False, False, False, False),
+            ("gateway", False, False, True, True),
         ],
     )
     def test_has_permission(
@@ -50,7 +50,7 @@ class TestGatewayRelatedAppPermission:
         fake_request,
         fake_gateway,
         mocker,
-        mock_api,
+        mock_gateway,
         allow_api_not_exist,
         api_permission_exempt,
         mock_allow_manage,
@@ -58,10 +58,10 @@ class TestGatewayRelatedAppPermission:
     ):
         permission = GatewayRelatedAppPermission()
 
-        mocker.patch.object(permission, "get_gateway_object", return_value=fake_gateway if mock_api else None)
+        mocker.patch.object(permission, "get_gateway_object", return_value=fake_gateway if mock_gateway else None)
         mocker.patch(
-            "apigateway.common.permissions.permissions.APIRelatedApp.objects.allow_app_manage_api",
-            return_value=mock_allow_manage,
+            "apigateway.common.permissions.permissions.GatewayRelatedApp.objects.filter",
+            return_value=mocker.MagicMock(exists=mocker.MagicMock(return_value=mock_allow_manage)),
         )
         fake_request.app = mock.MagicMock(app_code="test")
 

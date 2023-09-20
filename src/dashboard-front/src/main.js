@@ -71,7 +71,7 @@ if (!Vue.prototype.GLOBAL_CONFIG) {
   }
 }
 Vue.prototype.$renderHeader = renderHeader
-console.log('Vue.prototype.GLOBAL_CONFIG', Vue.prototype.GLOBAL_CONFIG)
+document.title = i18n.t('API Gateway | 腾讯蓝鲸智云')
 auth.requestCurrentUser().then(async (user) => {
   injectCSRFTokenToHeaders()
   if (user.isAuthenticated) {
@@ -92,6 +92,30 @@ auth.requestCurrentUser().then(async (user) => {
   } else {
     auth.redirectToLogin()
   }
-}, _ => {
-  auth.redirectToLogin()
+}, err => {
+  let title = ''
+  let message = ''
+  let status = err.response.status
+  const { data } = err.response
+  if (status === 500) {
+    status = 500
+    title = '服务异常'
+    message = data.detail || err.detail || err.message || '访问后端服务出现错误，请稍后再试。'
+  } else if (status === 403 && data.code === 1302403) {
+    status = 403
+    title = '无该应用访问权限'
+    message = data.detail || err.detail || err.message
+  } else {
+    // 重新登录
+    auth.redirectToLogin()
+  }
+
+  global.paasVue = new Vue({
+    el: '#app',
+    methods: {},
+    template: `<bk-exception class="exception-wrap-item" scene="page" type="${status}" style="position: fixed; top: 40%; transform: translateY(-50%);">
+                        <span>${title}</span>
+                        <div class="text-subtitle f12 mt20 mb20" style="color: #979BA5;">${message}</div>
+                    </bk-exception>`
+  })
 })

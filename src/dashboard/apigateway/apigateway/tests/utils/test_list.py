@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.utils.list import chunk_list
+from apigateway.utils.list import chunk_list, get_duplicate_items
 
 
 @pytest.mark.parametrize(
@@ -33,4 +33,22 @@ from apigateway.utils.list import chunk_list
 )
 def test_chunk_list(lst, n, expected):
     result = list(chunk_list(lst, n))
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "items, expected",
+    [
+        (
+            ["foo", "bar", "foo"],
+            ["foo"],
+        ),
+        (
+            [1, 2, 3, 2],
+            [2],
+        ),
+    ],
+)
+def test_get_duplicate_items(items, expected):
+    result = get_duplicate_items(items)
     assert result == expected

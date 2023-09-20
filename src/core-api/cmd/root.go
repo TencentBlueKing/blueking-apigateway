@@ -22,18 +22,16 @@ import (
 	"fmt"
 	"os"
 
-	"core/pkg/server"
-
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	// Register mysql resource
-	_ "github.com/go-sql-driver/mysql"
+	"core/pkg/server"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "apigateway-core",
+	Use:   "core-api",
 	Short: "The core service for bk-apigateway",
 	Long:  `The core service for bk-apigateway, it provide a lower-level API for apisix plugin and outer service`,
 	// Uncomment the following line if your bare application
@@ -84,9 +82,10 @@ func Start() {
 	}
 	initConfig()
 
-	// 1.
-	initLogger()
+	// 1. init components
+	initTracing()
 	initSentry()
+	initLogger()
 	initMetrics()
 	initDatabase()
 

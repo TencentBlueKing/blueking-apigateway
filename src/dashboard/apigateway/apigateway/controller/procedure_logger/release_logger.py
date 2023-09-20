@@ -34,15 +34,17 @@ class ReleaseProcedureLogger(ProcedureLogger):
         stage: Optional[Stage] = None,
         micro_gateway: Optional[MicroGateway] = None,
         release_task_id: Optional[str] = None,
+        publish_id: Optional[int] = None,
     ):
         """
-        :param release_task_id: 发布任务ID，触发发布任务时，可以设置一个 uuid 字符串，其将会打印到日志中，便于过滤日志
+        :param release_task_id: 发布任务 ID，触发发布任务时，可以设置一个 uuid 字符串，其将会打印到日志中，便于过滤日志
         """
         super().__init__(name, logger)
         self._gateway = gateway
         self._stage = stage
         self._micro_gateway = micro_gateway
         self.release_task_id = release_task_id or str(uuid.uuid4())
+        self._publish_id = publish_id
 
     @property
     def _message_prefix(self):
@@ -56,6 +58,8 @@ class ReleaseProcedureLogger(ProcedureLogger):
         if self._micro_gateway:
             parts.append(f"micro_gateway={self._micro_gateway.pk}")
 
+        if self._publish_id:
+            parts.append(f"publish_id={self._publish_id}")
         parts.append(f"release_task_id={self.release_task_id}")
 
         return f"procedure {self.name}: {', '.join(parts)}"

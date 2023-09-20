@@ -20,7 +20,8 @@ import logging
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apigateway.core.models import APIRelatedApp, Gateway
+from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
 
 logger = logging.getLogger(__name__)
@@ -30,14 +31,14 @@ class Command(BaseCommand):
     """添加网关绑定到应用"""
 
     def add_arguments(self, parser):
-        parser.add_argument("--api-name", type=str, dest="api_name", required=True)
+        parser.add_argument("--gateway-name", type=str, dest="gateway_name", required=True)
         parser.add_argument("--app-code", type=str, dest="bk_app_code", required=True)
 
-    def handle(self, api_name: str, bk_app_code: str, **options):
-        gateway = get_object_or_None(Gateway, name=api_name)
+    def handle(self, gateway_name: str, bk_app_code: str, **options):
+        gateway = get_object_or_None(Gateway, name=gateway_name)
         if not gateway:
-            raise CommandError(f"gateway not found: gateway_name={api_name}")
+            raise CommandError(f"gateway not found: gateway_name={gateway_name}")
 
-        APIRelatedApp.objects.add_related_app(gateway.id, bk_app_code)
+        GatewayRelatedAppHandler.add_related_app(gateway.id, bk_app_code)
 
-        logger.info(f"add related app success: gateway_name={api_name}, app_code={bk_app_code}")
+        logger.info("add related app success: gateway_name=%s, app_code=%s", gateway_name, bk_app_code)

@@ -19,11 +19,12 @@
 package cacheimpls
 
 import (
+	"context"
 	"errors"
 
-	"core/pkg/database/dao"
-
 	"github.com/TencentBlueKing/gopkg/cache"
+
+	"core/pkg/database/dao"
 )
 
 // MicroGatewayKey is the key of micro gateway
@@ -36,19 +37,19 @@ func (k MicroGatewayKey) Key() string {
 	return k.InstanceID
 }
 
-func retrieveMicroGateway(k cache.Key) (interface{}, error) {
+func retrieveMicroGateway(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(MicroGatewayKey)
 
 	instanceID := key.InstanceID
 	manager := dao.NewMicroGatewayManager()
-	return manager.Get(instanceID)
+	return manager.Get(ctx, instanceID)
 }
 
 // GetMicroGateway will get the micro gateway object from cache by instanceID
-func GetMicroGateway(instanceID string) (microGateway dao.MicroGateway, err error) {
+func GetMicroGateway(ctx context.Context, instanceID string) (microGateway dao.MicroGateway, err error) {
 	key := MicroGatewayKey{InstanceID: instanceID}
 	var value interface{}
-	value, err = microGatewayCache.Get(key)
+	value, err = cacheGet(ctx, microGatewayCache, key)
 	if err != nil {
 		return
 	}
@@ -65,7 +66,8 @@ func GetMicroGateway(instanceID string) (microGateway dao.MicroGateway, err erro
 // MicroGatewayConfig is the config of micro gateway, it configured on dashboard, saved into db as a json
 // the schema is like {secret_key: {jwt_auth: xxxxx}}
 // here we use the jwt_auth as the credentials of the micro gateway with the instance id
-// Note: The original credentials were a JWT token, and after refactoring we changed to the instance_id + token in the header.
+// Note: The original credentials were a JWT token, and after refactoring we changed to the instance_id + token in the
+// header.
 type MicroGatewayConfig struct {
 	JwtAuth JwtAuth `json:"jwt_auth"`
 }

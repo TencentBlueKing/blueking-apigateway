@@ -17,14 +17,16 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from ddf import G
 
 from apigateway.apis.open.released import views
+from apigateway.core.models import Stage
 from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
 
 
-class TestReleasedResourceViewSet:
+class TestReleasedResourceRetrieveApi:
     @pytest.mark.parametrize(
         "mocked_resource_version_id, mocked_resource, will_error, expected",
         [
@@ -99,20 +101,19 @@ class TestReleasedResourceViewSet:
             return_value=mocked_resource,
         )
 
-        request = request_factory.get("/")
+        request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
         stage_name = "prod"
         resource_name = mocked_resource and mocked_resource["name"]
 
-        view = views.ReleasedResourceViewSet.as_view({"get": "retrieve"})
+        view = views.ReleasedResourceRetrieveApi.as_view()
         response = view(request, gateway_id=fake_gateway.id, stage_name=stage_name, resource_name=resource_name)
         result = get_response_json(response)
 
         if will_error:
-            response.status_code == 404
+            assert response.status_code == 404
             assert result["code"] == 40000
             return
-
         assert result["code"] == 0
         assert result["data"] == expected
 
@@ -126,6 +127,8 @@ class TestReleasedResourceViewSet:
             resource_name,
         )
 
+
+class TestReleasedResourceListApi:
     @pytest.mark.parametrize(
         "stage_name, mocked_resources, mocked_labels, expected",
         [
@@ -203,14 +206,14 @@ class TestReleasedResourceViewSet:
             return_value=mocked_resources,
         )
         get_labels_mock = mocker.patch(
-            "apigateway.apis.open.released.views.ResourceLabel.objects.get_labels",
+            "apigateway.apis.open.released.views.ResourceLabelHandler.get_labels",
             return_value=mocked_labels,
         )
 
-        request = request_factory.get("/")
+        request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
 
-        view = views.ReleasedResourceViewSet.as_view({"get": "list"})
+        view = views.ReleasedResourceListApi.as_view()
         response = view(request, stage_name)
         result = get_response_json(response)
 
@@ -223,6 +226,8 @@ class TestReleasedResourceViewSet:
         )
         get_labels_mock.assert_called_once_with([r["id"] for r in mocked_resources])
 
+
+class TestReleasedResourceListByGatewayNameApi:
     @pytest.mark.parametrize(
         "stage_name, mocked_resources, expected",
         [
@@ -302,7 +307,10 @@ class TestReleasedResourceViewSet:
             return_value=mocked_resources,
         )
 
-        request = request_factory.get("")
+        # fake a stage with name => for get_resource_url_tmpl
+        G(Stage, gateway=fake_gateway, status=1, name=stage_name, description="fake description")
+
+        request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
 
         response = request_to_view(

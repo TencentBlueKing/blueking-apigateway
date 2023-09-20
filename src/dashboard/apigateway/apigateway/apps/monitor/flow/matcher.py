@@ -49,10 +49,7 @@ class Matcher:
 
     def evaluate(self, data, conditions):
         """只要有一项条件匹配，即认为数据匹配"""
-        for condition in conditions:
-            if self.evaluate_with_and(data, condition):
-                return True
-        return False
+        return any(self.evaluate_with_and(data, condition) for condition in conditions)
 
     def evaluate_with_and(self, data, condition):
         """评估数据是否匹配，condition 中的所有条件都满足，则认为匹配"""
@@ -77,7 +74,7 @@ class MatchFunction:
 
     def _in(self, data_value, condition_value):
         if not isinstance(condition_value, list):
-            raise ValueError(f"condition value must be list for method [in], value={condition_value}")
+            raise TypeError(f"condition value must be list for method [in], value={condition_value}")
 
         return data_value in condition_value
 
@@ -86,10 +83,7 @@ class MatchFunction:
             return False
 
         if isinstance(condition_value, list):
-            for cond_value in condition_value:
-                if cond_value in data_value:
-                    return True
-            return False
+            return any(cond_value in data_value for cond_value in condition_value)
 
         return condition_value in data_value
 

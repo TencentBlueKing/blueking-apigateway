@@ -37,6 +37,8 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="apigateway.apps.esb.tasks.sync_and_release_esb_components", ignore_result=True)
 def sync_and_release_esb_components(api_id: int, username: str, access_token: str, lock_blocking: bool):
+    logger.info("sync_and_release_esb_components task start")
+
     release_lock = get_release_lock()
     # 用户页面操作，采用非阻塞模式，用户并发发布，让其中一个失败
     # 项目发布时，采用阻塞模式，保证当前的组件能够发布
@@ -62,11 +64,10 @@ def sync_and_release_esb_components(api_id: int, username: str, access_token: st
         logger.info("sync and release components success")
     except Exception as err:
         logger.exception("failed to sync and release components")
-        if isinstance(err, ValidationError):
-            message = one_line_error(err)
-        else:
-            message = str(err)
+        message = one_line_error(err) if isinstance(err, ValidationError) else str(err)
         releaser.mark_release_fail(message)
+
+        raise
     else:
         releaser.mark_release_success()
     finally:

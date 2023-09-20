@@ -2,12 +2,6 @@ fail_fast: true
 repos:
   - repo: local
     hooks:
-      - id: isort
-        name: isort
-        language: python
-        types: [python]
-        entry: isort --settings-path=src/dashboard/pyproject.toml
-        files: src/dashboard/
       - id: black
         name: black
         language: python
@@ -18,13 +12,13 @@ repos:
         name: ruff
         language: python
         types: [python]
-        entry: ruff --config=src/dashboard/pyproject.toml --force-exclude --fix
-        files: src/dashboard/
+        entry: bash -c 'cd src/dashboard && ruff --config=pyproject.toml --force-exclude --fix .'
+        files: ^src/dashboard/
       - id: mypy
         name: mypy
         language: python
         types: [python]
-        entry: mypy --config=src/dashboard/pyproject.toml
+        entry: mypy --config-file=src/dashboard/pyproject.toml
         files: src/dashboard/
   - repo: local
     hooks:
@@ -44,13 +38,13 @@ repos:
         name: ruff
         language: python
         types: [python]
-        entry: ruff --config=src/esb/pyproject.toml --force-exclude --fix
-        files: src/esb/
+        entry: bash -c 'cd src/esb && ruff --config=pyproject.toml --force-exclude --fix .'
+        files: ^src/esb/
       - id: mypy
         name: mypy
         language: python
         types: [python]
-        entry: mypy --config=src/esb/pyproject.toml
+        entry: mypy --config-file=src/esb/pyproject.toml
         files: src/esb/
   - repo: local
     hooks:

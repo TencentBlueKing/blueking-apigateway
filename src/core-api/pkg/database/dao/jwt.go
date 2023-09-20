@@ -21,9 +21,11 @@ package dao
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
 import (
-	"core/pkg/database"
+	"context"
 
 	"github.com/jmoiron/sqlx"
+
+	"core/pkg/database"
 )
 
 // JWT ...
@@ -33,7 +35,11 @@ type JWT struct {
 
 // JWTManager ...
 type JWTManager interface {
-	Get(gatewayID int64) (JWT, error)
+	Get(ctx context.Context, gatewayID int64) (JWT, error)
+}
+
+type jwtManager struct {
+	DB *sqlx.DB
 }
 
 // NewJWTManager ...
@@ -43,17 +49,13 @@ func NewJWTManager() JWTManager {
 	}
 }
 
-type jwtManager struct {
-	DB *sqlx.DB
-}
-
 // Get ...
-func (m jwtManager) Get(gatewayID int64) (JWT, error) {
+func (m jwtManager) Get(ctx context.Context, gatewayID int64) (JWT, error) {
 	JWT := JWT{}
 	query := `SELECT
 		public_key
 		FROM core_jwt
 		WHERE api_id = ?`
-	err := database.SqlxGet(m.DB, &JWT, query, gatewayID)
+	err := database.SqlxGet(ctx, m.DB, &JWT, query, gatewayID)
 	return JWT, err
 }

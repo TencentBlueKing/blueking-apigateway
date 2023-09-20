@@ -16,12 +16,45 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.http import FileResponse, JsonResponse
+
+from typing import Any, Dict, List, Union
+
+from django.http import FileResponse, HttpResponse, JsonResponse
 from rest_framework import status
-from rest_framework.renderers import JSONRenderer
 
 
 class FailJsonResponse(JsonResponse):
+    def __init__(
+        self,
+        status: int,
+        code: str,
+        message: str,
+        details: Union[List[Dict[str, Any]], None] = None,
+        data: Union[Dict, List, None] = None,
+    ):
+        body = {
+            "error": {
+                "code": code,
+                "message": message,
+                "details": details or [],
+                "data": data or {},
+            }
+        }
+
+        super(FailJsonResponse, self).__init__(body, status=status)
+
+
+def OKJsonResponse(status: int = status.HTTP_200_OK, data: Union[Dict, List, None] = None):  # ruff: noqa: N802
+    if status == 204:
+        return HttpResponse(status=204)
+
+    body = {"data": data}
+    return JsonResponse(body, status=status)
+
+
+class V1FailJsonResponse(JsonResponse):
+    """for legacy open api only!!!"""
+
     def __init__(self, message, **kwargs):
         data = {}
         if kwargs:
@@ -38,10 +71,12 @@ class FailJsonResponse(JsonResponse):
             }
         )
 
-        super(FailJsonResponse, self).__init__(data, status=status.HTTP_400_BAD_REQUEST)
+        super(V1FailJsonResponse, self).__init__(data, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OKJsonResponse(JsonResponse):
+class V1OKJsonResponse(JsonResponse):
+    """for legacy open api only!!!"""
+
     def __init__(self, message="OK", **kwargs):
         data = {}
         if kwargs:
@@ -58,7 +93,7 @@ class OKJsonResponse(JsonResponse):
             }
         )
 
-        super(OKJsonResponse, self).__init__(data)
+        super(V1OKJsonResponse, self).__init__(data)
 
 
 class DownloadableResponse(FileResponse):
@@ -73,37 +108,3 @@ class DownloadableResponse(FileResponse):
         self["Access-Control-Allow-Headers"] = "Content-Type,Content-Disposition"
         self["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
         self["Access-Control-Expose-Headers"] = "Content-Type,Content-Disposition"
-
-
-class ResponseRender(JSONRenderer):
-    """将 DRF 返回的结构进行标准化转换，兼容 error handler 处理结果"""
-
-    def render(self, data, accepted_media_type=None, renderer_context=None):
-        response = renderer_context["response"]
-        if response.status_code == status.HTTP_204_NO_CONTENT:
-            # status 204 no-content，如果设置了 content-length，可能导致客户端卡死，
-            # 并且，现在采用的接口规范，所有请求都返回一个 json 格式消息: {"code": 0, "message": ""}
-            response.status_code = status.HTTP_200_OK
-
-        result = {
-            "message": "",
-            "data": None,
-        }
-
-        if response.status_code < 400:
-            # ok response from drf or django views
-
-            result["code"] = 0
-            result["result"] = True
-            result["data"] = data
-
-        elif "code" in data:
-            # custom error handler wrapped response
-            result = data
-
-        else:
-            # failure response
-            result["code"] = response.status_code * 100
-            result["result"] = False
-
-        return super().render(result, accepted_media_type, renderer_context)

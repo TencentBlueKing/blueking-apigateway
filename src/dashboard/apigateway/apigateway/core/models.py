@@ -21,7 +21,6 @@ import logging
 import uuid
 from typing import List
 
-from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
@@ -31,23 +30,25 @@ from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin
 from apigateway.core import managers
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
-    PATH_TO_NAME_PATTERN,
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
-    APIStatusEnum,
     BackendConfigTypeEnum,
+    BackendTypeEnum,
     BackendUpstreamTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
+    GatewayStatusEnum,
     LoadBalanceTypeEnum,
     MicroGatewayStatusEnum,
-    PassHostEnum,
     ProxyTypeEnum,
+    PublishEventEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusEnum,
+    PublishSourceEnum,
     ReleaseStatusEnum,
-    SchemeEnum,
+    ResourceVersionSchemaEnum,
     SSLCertificateBindingScopeTypeEnum,
     SSLCertificateTypeEnum,
-    StageItemTypeEnum,
     StageStatusEnum,
 )
 from apigateway.core.utils import get_path_display
@@ -64,9 +65,9 @@ NOTE:
 
 class Gateway(TimestampedModelMixin, OperatorModelMixin):
     """
-    API, a system
+    Gateway, a system
     the name is unique and will be part of the path in APIGateway
-    /api/{api.name}/{stage.name}/{resource.path}/
+    /api/{gateway.name}/{stage.name}/{resource.path}/
     """
 
     name = models.CharField(max_length=64, unique=True)
@@ -77,7 +78,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     _maintainers = models.CharField(db_column="maintainers", max_length=1024, default="")
 
     # status
-    status = models.IntegerField(choices=APIStatusEnum.choices())
+    status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
 
     is_public = models.BooleanField(default=False)
     # 不同的托管类型决定特性集
@@ -86,14 +87,12 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         default=APIHostingTypeEnum.DEFAULT.value,
     )
 
-    objects = managers.GatewayManager()
-
     def __str__(self):
-        return f"<API: {self.pk}/{self.name}>"
+        return f"<Gateway: {self.pk}/{self.name}>"
 
     class Meta:
-        verbose_name = "API"
-        verbose_name_plural = "API"
+        verbose_name = "Gateway"
+        verbose_name_plural = "Gateway"
         db_table = "core_api"
 
     @property
@@ -114,36 +113,11 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     @property
     def is_active(self):
-        return self.status == APIStatusEnum.ACTIVE.value
+        return self.status == GatewayStatusEnum.ACTIVE.value
 
     @property
     def is_active_and_public(self):
         return self.is_public and self.is_active
-
-    @property
-    def docs_url(self):
-        return settings.API_DOCS_URL_TMPL.format(api_name=self.name)
-
-    @property
-    def domain(self):
-        return settings.BK_API_URL_TMPL.format(api_name=self.name)
-
-    @property
-    def is_micro_gateway(self) -> bool:
-        """是否为微网关实例"""
-        return self.hosting_type == APIHostingTypeEnum.MICRO.value
-
-    @property
-    def max_stage_count(self) -> int:
-        return settings.MAX_STAGE_COUNT_PER_GATEWAY
-
-    @property
-    def max_resource_count(self) -> int:
-        return settings.MAX_RESOURCE_COUNT_SPECIFIED_GATEWAY.get(self.name, settings.MAX_RESOURCE_COUNT_PER_GATEWAY)
-
-    @property
-    def max_api_label_count(self) -> int:
-        return settings.MAX_API_LABEL_COUNT_PER_GATEWAY
 
 
 class Stage(TimestampedModelMixin, OperatorModelMixin):
@@ -153,7 +127,7 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     e.g. prod/stage
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT, db_column="api_id")
     name = models.CharField(max_length=64)
     description_i18n = I18nProperty(models.CharField(max_length=512, blank=True, null=True))
     description = description_i18n.default_field()
@@ -162,9 +136,9 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     # 环境对应的微网关实例，不同环境允许使用不同网关实例，提供隔离能力
     micro_gateway = models.ForeignKey("MicroGateway", on_delete=models.SET_NULL, null=True, default=None, blank=True)
 
-    _vars = models.TextField(db_column="vars")
+    _vars = models.TextField(db_column="vars", default="{}")
 
-    status = models.IntegerField(choices=StageStatusEnum.choices(), default=StageStatusEnum.INACTIVE.value)
+    status = models.IntegerField(choices=StageStatusEnum.get_choices(), default=StageStatusEnum.INACTIVE.value)
 
     is_public = models.BooleanField(default=True)
 
@@ -176,7 +150,7 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     class Meta:
         verbose_name = "Stage"
         verbose_name_plural = "Stage"
-        unique_together = ("api", "name")
+        unique_together = ("gateway", "name")
         db_table = "core_stage"
 
     @property
@@ -203,9 +177,9 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     """
     The specific endpoint registered to APIGateway.
 
-    api-method-path should be unique
+    gateway-method-path should be unique
 
-    NOTE: do unique check for api/method/path
+    NOTE: do unique check for gateway/method/path
     """
 
     name = models.CharField(max_length=256, default="", blank=True, null=True)
@@ -213,7 +187,7 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     description = description_i18n.default_field(default="")
     description_en = description_i18n.field("en")
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     method = models.CharField(max_length=10, choices=RESOURCE_METHOD_CHOICES, blank=False, null=False)
     path = models.CharField(max_length=2048, blank=False, null=False)
     match_subpath = models.BooleanField(default=False)
@@ -224,79 +198,13 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     is_public = models.BooleanField(default=True)
     allow_apply_permission = models.BooleanField(default=True)
 
-    objects = managers.ResourceManager()
-
     def __str__(self):
         return f"<Resource: {self.pk}/{self.name}>"
 
     class Meta:
         verbose_name = "Resource"
         verbose_name_plural = "Resource"
-        # unique_together = (
-        #     ('api', 'method', 'path'),
-        # )
         db_table = "core_resource"
-
-    # def snapshot(
-    #     self,
-    #     as_dict=False,
-    #     proxy_map=None,
-    #     context_map=None,
-    #     disabled_stage_map=None,
-    #     api_label_map=None,
-    # ):
-    #     """
-    #     - can add field
-    #     - should not delete field!!!!!!!!!
-    #     """
-    #     from apigateway.apps.label.models import ResourceLabel
-    #
-    #     data = {
-    #         "id": self.pk,
-    #         "name": self.name,
-    #         "description": self.description,
-    #         "description_en": self.description_en,
-    #         "method": self.method,
-    #         "path": self.path,
-    #         "match_subpath": self.match_subpath,
-    #         "is_public": self.is_public,
-    #         "allow_apply_permission": self.allow_apply_permission,
-    #         "created_time": time.format(self.created_time),
-    #         "updated_time": time.format(self.updated_time),
-    #     }
-    #
-    #     if proxy_map is None:
-    #         data["proxy"] = Proxy.objects.get(id=self.proxy_id).snapshot(as_dict=True)
-    #     else:
-    #         data["proxy"] = proxy_map[self.proxy_id]
-    #
-    #     if context_map is None:
-    #         contexts = Context.objects.filter(
-    #             scope_type=ContextScopeTypeEnum.RESOURCE.value,
-    #             scope_id=self.pk,
-    #         ).all()
-    #         data["contexts"] = {c.type: c.snapshot(as_dict=True) for c in contexts}
-    #     else:
-    #         data["contexts"] = context_map[self.pk]
-    #
-    #     if disabled_stage_map is None:
-    #         data["disabled_stages"] = list(
-    #             StageResourceDisabled.objects.filter(resource=self).values_list("stage__name", flat=True)
-    #         )
-    #     else:
-    #         data["disabled_stages"] = disabled_stage_map.get(self.pk, [])
-    #
-    #     if api_label_map is None:
-    #         data["api_labels"] = list(
-    #             ResourceLabel.objects.filter(resource_id=self.pk).values_list("api_label_id", flat=True)
-    #         )
-    #     else:
-    #         data["api_labels"] = api_label_map.get(self.pk, [])
-    #
-    #     if as_dict:
-    #         return data
-    #
-    #     return json.dumps(data)
 
     @property
     def identity(self):
@@ -304,12 +212,6 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
         资源标识
         """
         return f"{self.method} {self.path_display}"
-
-    @property
-    def action_name(self):
-        if self.name:
-            return self.name
-        return "_".join([self.method.lower(), *PATH_TO_NAME_PATTERN.findall(self.path.lower())])
 
     @property
     def path_display(self):
@@ -322,20 +224,20 @@ class Proxy(ConfigModelMixin):
     - type is http, then the schema can be  proxy_http-1 or proxy_http-2
     - type is mock, then the schema can be  proxy_mock-1 or proxy_mock-2
 
-    # 从http 1.0升级到http2.0
-    # 此时这里type=http, 只能存一条, 所以schema需要变更为proxy_http-2
+    # 从 http 1.0 升级到 http2.0
+    # 此时这里 type=http, 只能存一条，所以 schema 需要变更为 proxy_http-2
     """
 
     resource = models.ForeignKey(Resource, on_delete=models.PROTECT)
     type = models.CharField(max_length=20, choices=ProxyTypeEnum.get_choices(), blank=False, null=False)
 
+    backend = models.ForeignKey("Backend", null=True, default=None, on_delete=models.PROTECT)
+
+    # TODO: 1.14 待删除
     backend_config_type = models.CharField(max_length=32, default=BackendConfigTypeEnum.DEFAULT.value)
     backend_service = models.ForeignKey("BackendService", on_delete=models.SET_NULL, null=True, default=None)
-
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
     # config = from ConfigModelMixin
-
-    objects = managers.ProxyManager()
 
     def __str__(self):
         return f"<Proxy: {self.pk}/{self.type}>"
@@ -354,6 +256,7 @@ class Proxy(ConfigModelMixin):
         data = {
             "id": self.pk,
             "type": self.type,
+            "backend_id": self.backend_id,
             # save the string
             # "config": self._config,
             "config": json.dumps(self.config, separators=(",", ":")),
@@ -376,10 +279,10 @@ class Proxy(ConfigModelMixin):
 
         # check the config value
         try:
-            self.config
-        except Exception as e:
+            _ = self.config
+        except Exception:
             logger.exception("the config field is not a valid json")
-            raise e
+            raise
 
         super().save(*args, **kwargs)
 
@@ -387,7 +290,7 @@ class Proxy(ConfigModelMixin):
 class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
     """
     The status of a stage-resource
-    Enabled by default for api-stage-resource, but you can disabled part of them.
+    Enabled by default for gateway-stage-resource, but you can disabled part of them.
     """
 
     # can be delete cascade
@@ -407,20 +310,20 @@ class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_stage_resource_disabled"
 
 
+# TODO delete it 1.14
 class StageItem(TimestampedModelMixin, OperatorModelMixin):
     """Stage 配置项"""
 
     api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
-    type = models.CharField(max_length=64, choices=StageItemTypeEnum.get_choices())
+    type = models.CharField(max_length=64)
     name = models.CharField(max_length=128)
     description = models.TextField(blank=True, default="")
-
-    objects = managers.StageItemManager()
 
     class Meta:
         db_table = "core_stage_item"
 
 
+# TODO delete it 1.14
 class StageItemConfig(TimestampedModelMixin, OperatorModelMixin):
     """Stage 配置项数据"""
 
@@ -429,11 +332,40 @@ class StageItemConfig(TimestampedModelMixin, OperatorModelMixin):
     stage_item = models.ForeignKey(StageItem, on_delete=models.CASCADE)
     config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
 
-    objects = managers.StageItemConfigManager()
-
     class Meta:
         unique_together = ("api", "stage", "stage_item")
         db_table = "core_stage_item_config"
+
+
+# ============================================ backend ============================================
+
+
+class Backend(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    type = models.CharField(
+        max_length=20,
+        choices=BackendTypeEnum.get_choices(),
+        default=BackendTypeEnum.HTTP.value,
+        blank=False,
+        null=False,
+    )
+    name = models.CharField(max_length=64)
+    description = models.CharField(max_length=512, default="")
+
+    class Meta:
+        unique_together = ("gateway", "name")
+        db_table = "core_backend"
+
+
+class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    backend = models.ForeignKey(Backend, on_delete=models.PROTECT)
+    stage = models.ForeignKey(Stage, on_delete=models.PROTECT)
+    config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
+
+    class Meta:
+        unique_together = ("gateway", "backend", "stage")
+        db_table = "core_backend_config"
 
 
 # ============================================ context ============================================
@@ -448,13 +380,13 @@ class Context(ConfigModelMixin):
 
     scope_type = models.CharField(
         max_length=32,
-        choices=ContextScopeTypeEnum.choices(),
+        choices=ContextScopeTypeEnum.get_choices(),
         blank=False,
         null=False,
         db_index=True,
     )
     scope_id = models.IntegerField(blank=False, null=False, db_index=True)
-    type = models.CharField(max_length=32, choices=ContextTypeEnum.choices(), blank=False, null=False)
+    type = models.CharField(max_length=32, choices=ContextTypeEnum.get_choices(), blank=False, null=False)
 
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
     # config = from ConfigModelMixin
@@ -498,24 +430,24 @@ class Context(ConfigModelMixin):
         return json.dumps(data)
 
     def save(self, *args, **kwargs):
-        if self.type not in dict(ContextTypeEnum.choices()):
+        if self.type not in dict(ContextTypeEnum.get_choices()):
             raise ValueError("type should be one of ContextTypeEnum")
 
         # check the config value
         try:
-            self.config
-        except Exception as e:
+            _ = self.config
+        except Exception:
             logger.exception("the config field is not a valid json")
-            raise e
+            raise
 
         super().save(*args, **kwargs)
 
     def should_do_publish(self):
         """
         NOTE: for resource context, is static, will be online after release be published
-        but the context of api/stage, is dynamic, will be online after the settings be saved
+        but the context of gateway/stage, is dynamic, will be online after the settings be saved
         """
-        return self.scope_type in (ContextScopeTypeEnum.API.value, ContextScopeTypeEnum.STAGE.value)
+        return self.scope_type in (ContextScopeTypeEnum.GATEWAY.value, ContextScopeTypeEnum.STAGE.value)
 
 
 # ============================================ version and release ============================================
@@ -524,12 +456,20 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     Resource version
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
     name = models.CharField(_("[Deprecated] 版本名"), max_length=128, unique=True)
+    # todo: 1.14 删除
     title = models.CharField(max_length=128, blank=True, default="", null=True)
     comment = models.CharField(max_length=512, blank=True, null=True)
     _data = models.TextField(db_column="data")
+    # 用于不同数据格式解析版本数据兼容历史数据
+    schema_version = models.CharField(
+        max_length=32,
+        choices=ResourceVersionSchemaEnum.get_choices(),
+        default=ResourceVersionSchemaEnum.V1.value,
+    )
+
     created_time = models.DateTimeField(null=True, blank=True)
 
     objects = managers.ResourceVersionManager()
@@ -569,7 +509,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
         return f"{self.version}({self.title})"
 
     def __str__(self):
-        return f"<ResourceVersion: {self.api}/{self.version}>"
+        return f"<ResourceVersion: {self.gateway}/{self.version}>"
 
     class Meta:
         verbose_name = "ResourceVersion"
@@ -583,7 +523,7 @@ class Release(TimestampedModelMixin, OperatorModelMixin):
     only one activate resource_version per stage
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
 
     # only one stage-resource_version
     stage = models.OneToOneField(Stage, on_delete=models.PROTECT)
@@ -594,7 +534,7 @@ class Release(TimestampedModelMixin, OperatorModelMixin):
     objects = managers.ReleaseManager()
 
     def __str__(self):
-        return f"<Release: {self.api}/{self.stage}/{self.resource_version}>"
+        return f"<Release: {self.gateway}/{self.stage}/{self.resource_version}>"
 
     class Meta:
         verbose_name = "Release"
@@ -605,7 +545,7 @@ class Release(TimestampedModelMixin, OperatorModelMixin):
 class ReleasedResource(TimestampedModelMixin):
     """当前已发布版本中的资源信息"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_version_id = models.IntegerField(blank=False, null=False, db_index=True)
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
     resource_name = models.CharField(max_length=256, default="", blank=True, null=False)
@@ -621,8 +561,12 @@ class ReleasedResource(TimestampedModelMixin):
     class Meta:
         verbose_name = "ReleasedResource"
         verbose_name_plural = "ReleasedResource"
-        unique_together = ("api", "resource_version_id", "resource_id")
+        unique_together = ("gateway", "resource_version_id", "resource_id")
         db_table = "core_released_resource"
+
+    @property
+    def is_public(self) -> bool:
+        return self.data.get("is_public", False)
 
 
 class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
@@ -631,27 +575,34 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     Store the release history records
     """
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
 
     # only one stage-resource_version
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
     stages = models.ManyToManyField(Stage)
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
-
     comment = models.CharField(max_length=512, blank=True, null=True)
 
+    # 发布来源
+    source = models.CharField(
+        max_length=64,
+        choices=PublishSourceEnum.get_choices(),
+        default=PublishSourceEnum.VERSION_PUBLISH.value,
+    )
+    # todo:1.14 删掉该字段废弃，由 publish_event 来决定最终状态
     status = models.CharField(
         _("发布状态"),
         max_length=16,
-        choices=ReleaseStatusEnum.choices(),
+        choices=ReleaseStatusEnum.get_choices(),
         default=ReleaseStatusEnum.PENDING.value,
     )
+    # 废弃同上
     message = models.TextField(blank=True, default="")
 
     objects = managers.ReleaseHistoryManager()
 
     def __str__(self):
-        return f"<Release: {self.api}/{self.stage}/{self.resource_version}>"
+        return f"<Release: {self.gateway}/{self.stage}/{self.resource_version}>"
 
     class Meta:
         verbose_name = "ReleaseHistory"
@@ -659,17 +610,71 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_release_history"
 
 
+class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
+    """
+    publish event
+    Store the publish events records
+    """
+
+    id = models.AutoField(primary_key=True)
+    gateway = models.ForeignKey(Gateway, related_name="+", on_delete=models.CASCADE)
+    stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
+    publish = models.ForeignKey(ReleaseHistory, related_name="+", on_delete=models.CASCADE, db_column="publish_id")
+    name = models.CharField(
+        max_length=64,
+        blank=True,
+        null=False,
+        choices=PublishEventEnum.get_choices(),
+    )
+    step = models.IntegerField(blank=False, null=False)
+    status = models.CharField(
+        max_length=32,
+        choices=PublishEventStatusEnum.get_choices(),
+    )
+    _detail = models.TextField(help_text="detail", null=True, default="{}", db_column="detail")
+
+    objects = managers.PublishEventManager()
+
+    @property
+    def detail(self):
+        if self._detail:
+            return json.loads(self._detail)
+        return {}
+
+    @detail.setter
+    def detail(self, detail: dict):
+        self._detail = json.dumps(detail)
+
+    @property
+    def is_running(self):
+        return self.status == PublishEventStatusEnum.DOING.value or (
+            # 如果不是最后一个事件，如果是 success 的话说明也是 running
+            self.status == PublishEventStatusEnum.SUCCESS.value
+            and self.name != PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
+        )
+
+    def __str__(self):
+        return f"<PublishEvent: {self.gateway_id}/{self.stage_id}/{self.publish_id}/{self.name}>/{self.status}"
+
+    class Meta:
+        verbose_name = "PublishEvent"
+        verbose_name_plural = "PublishEvent"
+        db_table = "core_publish_event"
+        index_together = ("gateway_id", "publish_id")
+        unique_together = ("gateway_id", "publish_id", "stage_id", "step", "status")
+
+
 # ============================================ auth ============================================
 
 
 class JWT(TimestampedModelMixin, OperatorModelMixin):
     """
-    jwt for each api
+    jwt for each gateway
     """
 
-    # api = models.ForeignKey(API, on_delete=models.PROTECT, unique=True)
-    api = models.OneToOneField(
+    gateway = models.OneToOneField(
         Gateway,
+        db_column="api_id",
         on_delete=models.CASCADE,
         primary_key=True,
     )
@@ -679,10 +684,8 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
 
     encrypted_private_key = models.TextField(blank=False, null=False, default="")
 
-    objects = managers.JWTManager()
-
     def __str__(self):
-        return f"<JWT: {self.api}>"
+        return f"<JWT: {self.gateway}>"
 
     class Meta:
         verbose_name = "JWT"
@@ -690,16 +693,14 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_jwt"
 
 
-class APIRelatedApp(TimestampedModelMixin):
+class GatewayRelatedApp(TimestampedModelMixin):
     """网关关联的蓝鲸应用"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     bk_app_code = models.CharField(max_length=32, db_index=True)
 
-    objects = managers.APIRelatedAppManager()
-
     def __str__(self):
-        return f"<APIRelatedApp: {self.bk_app_code}/{self.api_id}>"
+        return f"<GatewayRelatedApp: {self.bk_app_code}/{self.gateway_id}>"
 
     class Meta:
         db_table = "core_api_related_app"
@@ -713,7 +714,7 @@ class MicroGateway(ConfigModelMixin):
 
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
 
-    api = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
 
     name = models.CharField(max_length=256, blank=False, null=False, db_index=True)
     description_i18n = I18nProperty(models.TextField(blank=True, null=True, default=None))
@@ -743,9 +744,9 @@ class MicroGateway(ConfigModelMixin):
         """微网关实例 ID"""
         return str(self.pk)
 
-    def query_related_api_gateways(self):
+    def query_related_gateways(self):
         if not self.is_shared:
-            return Gateway.objects.filter(id=self.api_id)
+            return Gateway.objects.filter(id=self.gateway_id)
 
         return Gateway.objects.filter(
             hosting_type=APIHostingTypeEnum.MICRO.value,
@@ -755,16 +756,18 @@ class MicroGateway(ConfigModelMixin):
 class MicroGatewayReleaseHistory(models.Model):
     """微网关资源发布历史，不同于 ReleaseHistory，这里关注的是单个实例"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     # 因为实例和环境的绑定关系可能会修改，所以这里不能是强关联
     stage = models.ForeignKey(Stage, null=True, on_delete=models.SET_NULL)
     micro_gateway = models.ForeignKey(MicroGateway, on_delete=models.CASCADE)
     release_history = models.ForeignKey(ReleaseHistory, on_delete=models.CASCADE)
     message = models.TextField(blank=True, null=True, default="")
+
+    # todo: 废弃：1.14 删除
     status = models.CharField(
         _("发布状态"),
         max_length=16,
-        choices=ReleaseStatusEnum.choices(),
+        choices=ReleaseStatusEnum.get_choices(),
         default=ReleaseStatusEnum.PENDING.value,
     )
     details = JSONField(blank=True, null=True)
@@ -773,6 +776,7 @@ class MicroGatewayReleaseHistory(models.Model):
         db_table = "core_micro_gateway_release_history"
 
 
+# TODO delete it 1.14
 class BackendService(TimestampedModelMixin, OperatorModelMixin):
     """网关后端服务"""
 
@@ -790,13 +794,11 @@ class BackendService(TimestampedModelMixin, OperatorModelMixin):
     upstream_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     upstream_extra_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
 
-    pass_host = models.CharField(max_length=32, default=PassHostEnum.PASS.value)
+    pass_host = models.CharField(max_length=32, default="pass")
     upstream_host = models.CharField(max_length=512, default="")
-    scheme = models.CharField(max_length=32, default=SchemeEnum.HTTP.value)
+    scheme = models.CharField(max_length=32, default="http")
     timeout = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     ssl_enabled = models.BooleanField(default=False)
-
-    objects = managers.BackendServiceManager()
 
     class Meta:
         db_table = "core_backend_service"
@@ -805,7 +807,7 @@ class BackendService(TimestampedModelMixin, OperatorModelMixin):
 class SslCertificate(TimestampedModelMixin, OperatorModelMixin):
     """SSL 证书"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     type = models.CharField(
         max_length=32,
         choices=SSLCertificateTypeEnum.get_choices(),
@@ -830,7 +832,7 @@ class SslCertificate(TimestampedModelMixin, OperatorModelMixin):
 class SslCertificateBinding(TimestampedModelMixin, OperatorModelMixin):
     """证书绑定"""
 
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     scope_type = models.CharField(
         max_length=32,
         choices=SSLCertificateBindingScopeTypeEnum.get_choices(),
@@ -846,4 +848,4 @@ class SslCertificateBinding(TimestampedModelMixin, OperatorModelMixin):
 
     class Meta:
         db_table = "core_ssl_certificate_binding"
-        unique_together = ("api", "scope_type", "scope_id", "ssl_certificate")
+        unique_together = ("gateway", "scope_type", "scope_id", "ssl_certificate")

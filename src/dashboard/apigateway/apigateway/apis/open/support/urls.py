@@ -21,33 +21,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # TODO: for api-support, should be removed after the frontend merge is completed
-    path(
-        "apis/<int:gateway_id>/support/resources/<int:resource_id>/doc/",
-        views.ResourceDocViewSet.as_view({"get": "retrieve"}),
-        name="openapi.support.resource_doc",
-    ),
-    path(
-        "apis/<int:gateway_id>/support/stages/<slug:stage_name>/resources/<slug:resource_name>/doc/",
-        views.ResourceDocViewSet.as_view({"get": "get_doc"}),
-        name="openapi.support.resource_doc.stage",
-    ),
-    path(
-        "apis/<int:gateway_id>/support/stages/sdks/",
-        views.APISDKV1ViewSet.as_view({"get": "list_stage_sdks"}),
-        name="openapi.support.sdk.stage",
-    ),
     # for apigw-manager
-    path(
-        "apis/<slug:gateway_name>/resource-docs/import/by-archive/",
-        views.ResourceDocImportViewSet.as_view({"post": "import_by_archive"}),
-        name="openapi.support.resource_doc.import_by_archive",
-    ),
-    path(
-        "apis/<slug:gateway_name>/resource-docs/import/by-swagger/",
-        views.ResourceDocImportViewSet.as_view({"post": "import_by_swagger"}),
-        name="openapi.support.resource_doc.import_by_swagger",
-    ),
     path(
         "apis/<slug:gateway_name>/sdk/",
         views.SDKGenerateViewSet.as_view({"post": "generate"}),

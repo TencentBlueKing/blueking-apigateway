@@ -41,7 +41,7 @@ class SysAllSummaryView(APIView):
         for info in result:
             info["basic_info"] = system_basic_info[info["system_name"]]
 
-        return OKJsonResponse("OK", data=result)
+        return OKJsonResponse(data=result)
 
 
 class SysEventsTimeline(APIView):
@@ -83,7 +83,7 @@ class SysEventsTimeline(APIView):
             event["mts_end"] = event["mts"] + self.time_interval_seconds * 1000
 
         events = self._add_system_info(events)
-        return OKJsonResponse("OK", data=events)
+        return OKJsonResponse(data=events)
 
     def _parse_aggregations_data(self, data):
         if "aggregations" not in data:
@@ -137,7 +137,8 @@ class SysEventsTimeline(APIView):
                     # 对于这段时间总请求数大于 5 的才当做可用率下降，否则当做普通错误
                     if in_availability_dropped:
                         continue
-                    elif (
+
+                    if (
                         time_piece["requests"]["count"] > 5
                         and time_piece["requests"]["error_count"] > 1
                         and (i == 0 or data[i - 1]["rate_availability"]["value"] == 1)
@@ -164,7 +165,7 @@ class SysEventsTimeline(APIView):
     def _save_real_timeline_events(self, events):
         """将实时计算的事件插入数据库"""
         for live_event in events:
-            key = dict(system_name=live_event["system_name"], ts_happened_at=live_event["mts"] / 1000)
+            key = {"system_name": live_event["system_name"], "ts_happened_at": live_event["mts"] / 1000}
             # 判断事件不存在，插入事件
             # 最近一分钟的事件不要插入，因为这个数据会被更新
             if (
@@ -195,7 +196,7 @@ class SysUnstableSystemsView(APIView):
         # 筛选出有问题的系统摘要
         [complement_summary(d) for d in result]
         ret = [x for x in result if x["unstable"]]
-        return OKJsonResponse("OK", data=ret)
+        return OKJsonResponse(data=ret)
 
 
 class SysSummaryView(APIView):
@@ -221,7 +222,7 @@ class SysSummaryView(APIView):
         # 获取系统基本信息
         system_basic_info = get_system_basic_info([system_name])
         data["basic_info"] = system_basic_info[system_name]
-        return OKJsonResponse("OK", data=data)
+        return OKJsonResponse(data=data)
 
 
 class SysDateHistogramView(APIView):
@@ -264,7 +265,7 @@ class SysDateHistogramView(APIView):
             ]
             result.append(summary)
         # 为方便js中判定data为空，无数据时，设值为None
-        return OKJsonResponse("OK", data=result[0] if result else None)
+        return OKJsonResponse(data=result[0] if result else None)
 
 
 class SysDetailsGroupByView(APIView):
@@ -298,7 +299,7 @@ class SysDetailsGroupByView(APIView):
             result.sort(key=lambda x: (x["rate_availability"]["value"], -x["requests"]["count"]))
         elif order == "requests_desc":
             result.sort(key=lambda x: x["requests"]["count"], reverse=True)
-        return OKJsonResponse("OK", data=result[:size])
+        return OKJsonResponse(data=result[:size])
 
 
 class SysErrorsView(APIView):
@@ -322,7 +323,6 @@ class SysErrorsView(APIView):
             data_list.append(value)
 
         return OKJsonResponse(
-            "OK",
             data={
                 "data": {
                     "data_list": data_list,
@@ -342,8 +342,7 @@ def es_get_system_stats(time_since=None, system_name=None, mts_start=None, mts_e
     )
     result = []
     if "aggregations" in data:
-        for bucket_data in data["aggregations"]["systems"]["buckets"]:
-            result.append(process_bucket_data(bucket_data))
+        result = [process_bucket_data(bucket_data) for bucket_data in data["aggregations"]["systems"]["buckets"]]
 
     # 可用率最低，响应时间越慢的系统将会被放在最前面
     result.sort(key=lambda x: (x["rate_availability"]["value"], -x["perc95_resp_time"]["value"]))

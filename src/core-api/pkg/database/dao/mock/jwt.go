@@ -5,8 +5,10 @@
 package mock
 
 import (
-	dao "core/pkg/database/dao"
+	context "context"
 	reflect "reflect"
+
+	dao "core/pkg/database/dao"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -35,16 +37,16 @@ func (m *MockJWTManager) EXPECT() *MockJWTManagerMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockJWTManager) Get(gatewayID int64) (dao.JWT, error) {
+func (m *MockJWTManager) Get(ctx context.Context, gatewayID int64) (dao.JWT, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", gatewayID)
+	ret := m.ctrl.Call(m, "Get", ctx, gatewayID)
 	ret0, _ := ret[0].(dao.JWT)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockJWTManagerMockRecorder) Get(gatewayID interface{}) *gomock.Call {
+func (mr *MockJWTManagerMockRecorder) Get(ctx, gatewayID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockJWTManager)(nil).Get), gatewayID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockJWTManager)(nil).Get), ctx, gatewayID)
 }

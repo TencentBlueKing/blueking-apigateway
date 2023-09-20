@@ -21,13 +21,15 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/getsentry/raven-go"
+	sentry "github.com/getsentry/sentry-go"
+	"github.com/spf13/viper"
+
 	"core/pkg/config"
 	"core/pkg/database"
 	"core/pkg/logging"
 	"core/pkg/metric"
-
-	"github.com/getsentry/sentry-go"
-	"github.com/spf13/viper"
+	"core/pkg/trace"
 )
 
 var globalConfig *config.Config
@@ -51,7 +53,7 @@ func initConfig() {
 }
 
 func initLogger() {
-	logging.InitLogger(&globalConfig.Logger)
+	logging.InitLogger(globalConfig)
 }
 
 func initDatabase() {
@@ -60,13 +62,13 @@ func initDatabase() {
 		panic("database apigateway should be configured")
 	}
 
-	database.InitDBClients(&defaultDBConfig)
+	database.InitDBClients(&defaultDBConfig, globalConfig.Tracing)
 
 	logging.GetLogger().Info("init Database success")
 }
 
 func initSentry() {
-	if globalConfig.Sentry.Enable {
+	if len(globalConfig.Sentry.DSN) != 0 {
 		err := sentry.Init(sentry.ClientOptions{
 			Dsn: globalConfig.Sentry.DSN,
 		})
@@ -75,14 +77,34 @@ func initSentry() {
 			return
 		}
 		logging.GetLogger().Info("init Sentry success")
+
+		// init gin sentry
+		err = raven.SetDSN(globalConfig.Sentry.DSN)
+		if err != nil {
+			logging.GetLogger().Errorf("init gin Sentry fail: %s", err)
+			return
+		}
+		logging.GetLogger().Info("init gin Sentry success")
 	} else {
 		logging.GetLogger().Info("Sentry is not enabled, will not init it")
 	}
-
-	// util.InitErrorReport(globalConfig.Sentry.Enable)
 }
 
 func initMetrics() {
 	metric.InitMetrics()
 	logging.GetLogger().Info("init Metrics success")
+}
+
+func initTracing() {
+	if !globalConfig.Tracing.Enable {
+		logging.GetLogger().Info("tracing is not enabled, will not init it")
+		return
+	}
+	logging.GetLogger().Info("enabling tracing")
+	err := trace.InitTrace(globalConfig.Tracing)
+	if err != nil {
+		logging.GetLogger().Errorf("init tracing fail: %+v", err)
+		return
+	}
+	logging.GetLogger().Info("init tracing success")
 }

@@ -16,14 +16,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+from dataclasses import dataclass
 
-from attrs import define
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
-@define
+@dataclass
 class KeyPrefixHandler:
     api_version: str = "v1beta1"
     prefix: str = settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX

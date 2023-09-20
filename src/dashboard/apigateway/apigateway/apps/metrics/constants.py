@@ -16,30 +16,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from enum import Enum
-
-from apigateway.common.constants import ChoiceEnumMixin
-
-JOB_NAME = "apigateway"
+from blue_krill.data_types.enum import EnumField, StructuredEnum
 
 
-class MetricsEnum(ChoiceEnumMixin, Enum):
-    REQUESTS = "requests"
-    FAILED_REQUESTS = "failed_requests"
-    RESPONSE_TIME_95TH = "response_time_95th"
-    RESPONSE_TIME_90TH = "response_time_90th"
-    RESPONSE_TIME_80TH = "response_time_80th"
-    RESPONSE_TIME_50TH = "response_time_50th"
+class MetricsEnum(StructuredEnum):
+    REQUESTS = EnumField("requests")
+    FAILED_REQUESTS = EnumField("failed_requests")
+    RESPONSE_TIME_95TH = EnumField("response_time_95th")
+    RESPONSE_TIME_90TH = EnumField("response_time_90th")
+    RESPONSE_TIME_80TH = EnumField("response_time_80th")
+    RESPONSE_TIME_50TH = EnumField("response_time_50th")
 
 
-class DimensionEnum(ChoiceEnumMixin, Enum):
-    ALL = "all"
-    APP = "app"
-    RESOURCE = "resource"
+class DimensionEnum(StructuredEnum):
+    ALL = EnumField("all")
+    APP = EnumField("app")
+    RESOURCE = EnumField("resource")
     # 资源+非200状态码
-    RESOURCE_NON200_STATUS = "resource_non200_status"
-
-
-class StatisticsIntervalEnum(ChoiceEnumMixin, Enum):
-    HOUR = "hour"
-    DAY = "day"
+    RESOURCE_NON200_STATUS = EnumField("resource_non200_status")

@@ -20,8 +20,13 @@ import json
 import pytest
 from ddf import G
 
-from apigateway.biz.released_resource import ReleasedResourceData, get_released_resource_data
-from apigateway.core.models import Gateway
+from apigateway.biz.released_resource import (
+    ReleasedResourceData,
+    ReleasedResourceHandler,
+    get_released_resource_data,
+)
+from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
+from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
 
@@ -74,26 +79,123 @@ class TestReleasedResource:
     )
     def test_init(self, config, expected):
         data = ReleasedResourceData(
-            **{
-                "id": 1,
-                "method": "GET",
-                "path": "/foo",
-                "match_subpath": False,
-                "contexts": {"resource_auth": {"config": json.dumps(config)}},
-            }
+            id=1,
+            name="foo",
+            method="GET",
+            path="/foo",
+            match_subpath=False,
+            contexts={"resource_auth": {"config": json.dumps(config)}},
         )
         assert data.verified_user_required == expected["verified_user_required"]
         assert data.resource_perm_required == expected["resource_perm_required"]
 
+    def test_get_released_resource_data(self, fake_gateway, fake_stage, fake_resource1, fake_released_resource):
+        result = get_released_resource_data(fake_gateway, fake_stage, fake_resource1.id)
+        assert result is not None
 
-def test_get_released_resource_data(fake_gateway, fake_stage, fake_resource1, fake_released_resource):
-    result = get_released_resource_data(fake_gateway, fake_stage, fake_resource1.id)
-    assert result is not None
+        # resource_version_id is None
+        result = get_released_resource_data(G(Gateway), fake_stage, fake_resource1.id)
+        assert result is None
 
-    # resource_version_id is None
-    result = get_released_resource_data(G(Gateway), fake_stage, fake_resource1.id)
-    assert result is None
+        # released_resource is None
+        result = get_released_resource_data(fake_gateway, fake_stage, 0)
+        assert result is None
 
-    # released_resource is None
-    result = get_released_resource_data(fake_gateway, fake_stage, 0)
-    assert result is None
+
+class TestReleasedResourceHandler:
+    def test_clear_unreleased_resource(self, fake_gateway, fake_stage):
+        rv1 = G(ResourceVersion, gateway=fake_gateway)
+        rv2 = G(ResourceVersion, gateway=fake_gateway)
+
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv1)
+
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, data={})
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv2.id, data={})
+
+        ReleasedResourceHandler.clear_unreleased_resource(fake_gateway.id)
+
+        assert ReleasedResource.objects.filter(resource_version_id=rv1.id).exists()
+        assert not ReleasedResource.objects.filter(resource_version_id=rv2.id).exists()
+
+    def test_get_resource_released_stage_count(self, fake_gateway):
+        s1 = G(Stage, gateway=fake_gateway)
+        s2 = G(Stage, gateway=fake_gateway)
+
+        r1 = G(Resource, gateway=fake_gateway)
+        r2 = G(Resource, gateway=fake_gateway)
+
+        rv1 = G(ResourceVersion, gateway=fake_gateway)
+        rv2 = G(ResourceVersion, gateway=fake_gateway)
+
+        G(Release, gateway=fake_gateway, stage=s1, resource_version=rv1)
+        G(Release, gateway=fake_gateway, stage=s2, resource_version=rv2)
+
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r1.id, data={})
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r2.id, data={})
+        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv2.id, resource_id=r2.id, data={})
+
+        result = ReleasedResourceHandler.get_resource_released_stage_count(
+            gateway_id=fake_gateway.id,
+            resource_ids=[r1.id, r2.id],
+        )
+        assert result == {
+            r1.id: 1,
+            r2.id: 2,
+        }
+
+    def test_get_stage_release(self, fake_gateway):
+        stage_prod = G(Stage, gateway=fake_gateway, name="prod", status=1)
+        stage_test = G(Stage, gateway=fake_gateway, name="test", status=1)
+
+        resource_version = G(ResourceVersion, gateway=fake_gateway, name="test-01", title="test", version="1.0.1")
+        G(
+            Release,
+            gateway=fake_gateway,
+            stage=stage_prod,
+            resource_version=resource_version,
+            updated_time=dummy_time.time,
+        )
+
+        data = [
+            {
+                "stage_ids": [stage_prod.id, stage_test.id],
+                "expected": {
+                    stage_prod.id: {
+                        "release_status": True,
+                        "release_time": dummy_time.time,
+                        "resource_version_id": resource_version.id,
+                        "resource_version_name": "test-01",
+                        "resource_version_title": "test",
+                        "resource_version_display": "1.0.1(test)",
+                        "resource_version": {
+                            "version": "1.0.1",
+                        },
+                    },
+                },
+            }
+        ]
+        for test in data:
+            result = ReleasedResourceHandler.get_stage_release(fake_gateway, test["stage_ids"])
+            assert result == test["expected"]
+
+    def test_get_public_released_resource_data_list(self, fake_gateway, fake_stage, fake_release):
+        result = ReleasedResourceHandler.get_public_released_resource_data_list(fake_gateway.id, fake_stage.name)
+        assert len(result) >= 1
+
+        result = ReleasedResourceHandler.get_public_released_resource_data_list(fake_gateway.id, "")
+        assert len(result) == 0
+
+    def test_get_released_resource(self, fake_gateway, fake_stage, fake_released_resource):
+        result = ReleasedResourceHandler.get_released_resource(
+            fake_gateway.id, "", fake_released_resource.resource_name
+        )
+        assert result is None
+
+        result = ReleasedResourceHandler.get_released_resource(fake_gateway.id, fake_stage.name, "")
+        assert result is None
+
+        result = ReleasedResourceHandler.get_released_resource(
+            fake_gateway.id, fake_stage.name, fake_released_resource.resource_name
+        )
+        assert result
+        assert isinstance(result, ReleasedResource)

@@ -36,14 +36,14 @@ class Command(BaseCommand):
         logger.info("check ok")
 
     def check_extra_headers(self):
-        USABLE_HEADER_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9-_]{1,100}$")
+        usable_header_key_pattern = re.compile(r"^[a-zA-Z0-9-_]{1,100}$")
         id_to_invalid_header_keys = defaultdict(list)
         id_to_underscore_header_keys = defaultdict(list)
 
         buffet_components = legacy_models.ESBBuffetComponent.objects.all()
         for component in buffet_components:
             for key in component.extra_headers_dict:
-                if not USABLE_HEADER_KEY_PATTERN.match(key):
+                if not usable_header_key_pattern.match(key):
                     id_to_invalid_header_keys[component.id].append(key)
                     continue
 
@@ -64,14 +64,12 @@ class Command(BaseCommand):
 
         if id_to_underscore_header_keys:
             logger.error(
-                "以下自助接入组件的 extra_headers 中存在包含下划线(_)的请求头，迁移时，会将下划线自动转换为中折线(-)，迁移前请确认可否默认转换\n%s"
-                % (
-                    "\n".join(
-                        [
-                            f"id={id_}, invalid_header_keys: {', '.join(header_keys)}"
-                            for id_, header_keys in id_to_underscore_header_keys.items()
-                        ]
-                    )
-                )
+                "以下自助接入组件的 extra_headers 中存在包含下划线(_)的请求头，迁移时，会将下划线自动转换为中折线(-)，迁移前请确认可否默认转换\n%s",
+                "\n".join(
+                    [
+                        f"id={id_}, invalid_header_keys: {', '.join(header_keys)}"
+                        for id_, header_keys in id_to_underscore_header_keys.items()
+                    ]
+                ),
             )
             sys.exit(1)

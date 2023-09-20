@@ -23,6 +23,5 @@ class CoreConfig(AppConfig):
     name = "apigateway.core"
 
     def ready(self):
-        from . import signals  # noqa
 
         prometheus.enable()
