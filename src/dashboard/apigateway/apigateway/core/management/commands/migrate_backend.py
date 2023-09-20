@@ -74,7 +74,7 @@ class Command(BaseCommand):
             stage_timeout[stage.id] = config["timeout"]
 
         # config 与已创建 backend 映射
-        backend_stage_config: Dict[int, Dict[int, Any]] = self._gen_backend_config_map(gateway)
+        backend_stage_config: Dict[int, Dict[int, Any]] = self._get_backend_stage_config_map(gateway)
 
         resource_backend_count = self._get_max_resource_backend_count(gateway)
         # 迁移resource的proxy上游配置
@@ -89,7 +89,7 @@ class Command(BaseCommand):
                     proxy.save()
                     continue
 
-                resource_stage_config = self._gen_resource_config_map(stages, stage_timeout, config)
+                resource_stage_config = self._get_resource_stage_config_map(stages, stage_timeout, config)
                 backend_id = self._match_existing_backend(backend_stage_config, resource_stage_config)
                 if backend_id is not None:
                     proxy.backend_id = backend_id
@@ -106,10 +106,10 @@ class Command(BaseCommand):
 
     def _get_max_resource_backend_count(self, gateway: Gateway):
         count = 0
-        backends = Backend.objects.filter(gateway=gateway, name__startswith="backend-").only("name")
-        for backend in backends:
-            if backend.name.split("-")[-1].isdigit() and int(backend.name.split("-")[-1]) > count:
-                count = int(backend.name.split("-")[-1])
+        names = Backend.objects.filter(gateway=gateway, name__startswith="backend-").values_list("name", flat=True)
+        for name in names:
+            if name.split("-")[-1].isdigit() and int(name.split("-")[-1]) > count:
+                count = int(name.split("-")[-1])
 
         return count
 
@@ -146,7 +146,7 @@ class Command(BaseCommand):
 
         return backend
 
-    def _gen_resource_config_map(
+    def _get_resource_stage_config_map(
         self,
         stages: List[Stage],
         stage_timeout: Dict[int, int],
@@ -167,7 +167,8 @@ class Command(BaseCommand):
                         _host = _host.replace("{env." + key + "}", vars[key])
 
                 hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
-            hosts.sort(key=lambda x: "{}://{}#{}".format(x["scheme"], x["host"], x["weight"]))
+
+            hosts = self._sort_hosts(hosts)
 
             stage_config[stage.id] = {
                 "type": "node",
@@ -178,17 +179,21 @@ class Command(BaseCommand):
 
         return stage_config
 
-    def _gen_backend_config_map(self, gateway: Gateway) -> Dict[int, Dict[int, Any]]:
+    def _get_backend_stage_config_map(self, gateway: Gateway) -> Dict[int, Dict[int, Any]]:
         backend_stage_config: Dict[int, Dict[int, Any]] = defaultdict(dict)
 
         for backend in Backend.objects.filter(gateway=gateway):
             for backend_config in BackendConfig.objects.filter(gateway=gateway, backend=backend):
                 config = backend_config.config
-                config["hosts"].sort(key=lambda x: "{}://{}#{}".format(x["scheme"], x["host"], x["weight"]))
+                config["hosts"] = self._sort_hosts(config["hosts"])
 
                 backend_stage_config[backend.id][backend_config.stage_id] = config
 
         return backend_stage_config
+
+    def _sort_hosts(self, hosts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        # 排序host, == 对比时顺序一致
+        return sorted(hosts, key=lambda x: "{}://{}#{}".format(x["scheme"], x["host"], x["weight"]))
 
     def _handle_stage_backend(
         self, gateway: Gateway, stage: Stage, backend: Backend, proxy_http_config: Dict[str, Any]
