@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from datetime import datetime
 
 from django.http import Http404
 from django.utils.translation import gettext_lazy as _
@@ -24,7 +23,10 @@ from rest_framework import serializers
 
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
-from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusEnum
+from apigateway.core.constants import (
+    PublishEventNameTypeEnum,
+    PublishEventStatusEnum,
+)
 from apigateway.core.models import PublishEvent, ReleaseHistory, ResourceVersion, Stage
 
 
@@ -78,22 +80,8 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
             # 兼容历史数据
             return obj.status
 
-        # 如果状态是Doing并且该状态已经过去了10min,这种也认失败
-        now = datetime.now().timestamp()
-        if event.status == PublishEventStatusEnum.DOING.value and now - event.created_time.timestamp() > 600:
-            return PublishEventStatusEnum.FAILURE.value
-
-        # 如果是成功但不是最后一个节点并且该状态已经过去了10min,这种也认失败
-        if (
-            event.status == PublishEventStatusEnum.SUCCESS.value and not event.is_last
-        ) and now - event.created_time.timestamp() > 600:
-            return PublishEventStatusEnum.FAILURE.value
-
-        # 如果还在执行中
-        if ReleaseHandler.is_running(event):
-            return PublishEventStatusEnum.DOING.value
-
-        return event.status
+        # 通过最新的event获取release_history状态
+        return ReleaseHandler.get_status(event)
 
     def get_duration(self, obj: ReleaseHistory) -> int:
         # 获取最新事件

@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from datetime import datetime
 from typing import Any, Dict, List
 
 from django.db.models import Max
@@ -22,6 +23,7 @@ from django.db.models import Max
 from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishEventStatusEnum,
+    ReleaseHistoryStatusEnum,
     StageStatusEnum,
 )
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory
@@ -60,6 +62,33 @@ class ReleaseHandler:
             last_event.status == PublishEventStatusEnum.SUCCESS.value  # 如果不是最后一个事件,如果是success的话说明也是running
             and not last_event.is_last
         )
+
+    @staticmethod
+    def get_status(last_event: PublishEvent):
+        """通过end event来返回release_history状态"""
+        # 如果状态是Doing并且该状态已经过去了10min,这种也认失败
+        now = datetime.now().timestamp()
+        if last_event.status == PublishEventStatusEnum.DOING.value and now - last_event.created_time.timestamp() > 600:
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        # 如果是成功但不是最后一个节点并且该状态已经过去了10min,这种也认失败
+        if (
+            last_event.status == PublishEventStatusEnum.SUCCESS.value and not last_event.is_last
+        ) and now - last_event.created_time.timestamp() > 600:
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        # 如果还在执行中
+        if ReleaseHandler.is_running(last_event):
+            return ReleaseHistoryStatusEnum.DOING.value
+
+        # 如已经结束
+        if last_event.status == ReleaseHistoryStatusEnum.SUCCESS.value:
+            return ReleaseHistoryStatusEnum.SUCCESS.value
+
+        if last_event.status == ReleaseHistoryStatusEnum.FAILURE.value:
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        return ReleaseHistoryStatusEnum.DOING.value
 
     @staticmethod
     def batch_get_stage_release_status(stage_ids: List[int]) -> Dict[int, Dict[str, Any]]:
