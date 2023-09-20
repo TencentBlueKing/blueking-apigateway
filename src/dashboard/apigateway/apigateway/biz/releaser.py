@@ -89,7 +89,7 @@ class BaseGatewayReleaser:
         """
         return cls(
             gateway=gateway,
-            stage=Stage.objects.filter(id=stage_id).get(),
+            stage=Stage.objects.get(id=stage_id),
             resource_version=ResourceVersion.objects.get(id=resource_version_id),
             comment=comment,
             access_token=access_token,

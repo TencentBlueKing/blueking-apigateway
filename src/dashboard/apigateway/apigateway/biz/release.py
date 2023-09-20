@@ -19,7 +19,11 @@ from typing import Any, Dict, List
 
 from django.db.models import Max
 
-from apigateway.core.constants import GatewayStatusEnum, PublishEventStatusEnum, StageStatusEnum
+from apigateway.core.constants import (
+    GatewayStatusEnum,
+    PublishEventStatusEnum,
+    StageStatusEnum,
+)
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory
 
 
@@ -48,6 +52,14 @@ class ReleaseHandler:
     def list_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:
         """通过 release_history_id 查询所有发布事件"""
         return PublishEvent.objects.filter(publish_id=release_history_id).order_by("step", "status").all()
+
+    @staticmethod
+    def is_running(last_event: PublishEvent):
+        """通过最新的一个event判断当前发布是否还在继续执行"""
+        return last_event.status == PublishEventStatusEnum.DOING.value or (
+            last_event.status == PublishEventStatusEnum.SUCCESS.value  # 如果不是最后一个事件,如果是success的话说明也是running
+            and not last_event.is_last
+        )
 
     @staticmethod
     def batch_get_stage_release_status(stage_ids: List[int]) -> Dict[int, Dict[str, Any]]:
@@ -83,7 +95,7 @@ class ReleaseHandler:
             else:
                 # 如果最新事件状态是成功，但不是最后一个节点，返回发布中
                 latest_event = publish_id_to_latest_event_map[publish_id]
-                if latest_event.is_running:
+                if ReleaseHandler.is_running(latest_event):
                     state["status"] = PublishEventStatusEnum.DOING.value
                 else:
                     state["status"] = latest_event.status

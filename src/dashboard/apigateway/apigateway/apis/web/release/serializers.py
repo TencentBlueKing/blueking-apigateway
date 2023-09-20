@@ -17,12 +17,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from datetime import datetime
-from typing import Any, Dict
 
 from django.http import Http404
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from apigateway.biz.release import ReleaseHandler
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusEnum
 from apigateway.core.models import PublishEvent, ReleaseHistory, ResourceVersion, Stage
@@ -54,21 +54,20 @@ class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
     time_end = TimestampField(allow_null=True, required=False)
 
 
+class ReleaseStageSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="环境id")
+    name = serializers.CharField(allow_blank=True, required=False, help_text="环境name")
+
+
 class ReleaseHistoryOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="发布历史id")
-    stage = serializers.SerializerMethodField(read_only=True, help_text="发布环境信息")
+    stage = ReleaseStageSLZ()
     resource_version_display = serializers.SerializerMethodField(read_only=True, help_text="发布资源版本")
     created_time = serializers.DateTimeField(read_only=True, help_text="发布创建事件")
     created_by = serializers.CharField(read_only=True, help_text="发布人")
     source = serializers.CharField(read_only=True, help_text="发布来源")
     duration = serializers.SerializerMethodField(read_only=True, help_text="发布耗时(s)")
     status = serializers.SerializerMethodField(read_only=True, help_text="发布状态")
-
-    def get_stage(self, obj: ReleaseHistory) -> Dict[str, Any]:
-        return {
-            "id": obj.stage.id,
-            "name": obj.stage.name,
-        }
 
     def get_resource_version_display(self, obj: ReleaseHistory) -> str:
         return obj.resource_version.object_display
@@ -79,7 +78,7 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
             # 兼容历史数据
             return obj.status
 
-        # 如果没有在执行并且状态是Doing并且该状态已经过去了10min,这种也认失败
+        # 如果状态是Doing并且该状态已经过去了10min,这种也认失败
         now = datetime.now().timestamp()
         if event.status == PublishEventStatusEnum.DOING.value and now - event.created_time.timestamp() > 600:
             return PublishEventStatusEnum.FAILURE.value
@@ -91,7 +90,7 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
             return PublishEventStatusEnum.FAILURE.value
 
         # 如果还在执行中
-        if event.is_running:
+        if ReleaseHandler.is_running(event):
             return PublishEventStatusEnum.DOING.value
 
         return event.status
