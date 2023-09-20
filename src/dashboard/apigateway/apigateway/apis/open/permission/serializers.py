@@ -37,15 +37,15 @@ from apigateway.common.fields import TimestampField
 from apigateway.utils import time
 
 
-class AppPermissionResourceQuerySLZ(serializers.Serializer):
+class AppPermissionResourceInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(max_length=32, required=True)
 
 
-class AppAPIPermissionQuerySLZ(serializers.Serializer):
+class AppGatewayPermissionInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(max_length=32, required=True)
 
 
-class AppPermissionResourceSLZ(serializers.Serializer):
+class AppPermissionResourceOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(label="ID", read_only=True)
     name = serializers.CharField()
     api_name = serializers.CharField()
@@ -90,7 +90,7 @@ class AppPermissionResourceSLZ(serializers.Serializer):
         return False
 
 
-class PaaSAppPermissionApplySLZ(serializers.Serializer):
+class PaaSAppPermissionApplyInputSLZ(serializers.Serializer):
     """
     PaaS中应用申请访问网关API的权限
     - 提供给 paas 开发者中心的接口
@@ -120,7 +120,7 @@ class PaaSAppPermissionApplySLZ(serializers.Serializer):
         return data
 
 
-class AppPermissionApplyV1SLZ(serializers.Serializer):
+class AppPermissionApplyV1InputSLZ(serializers.Serializer):
     """
     普通应用直接申请访问网关API的权限
     - 提供给普通应用的接口
@@ -164,7 +164,7 @@ class AppPermissionApplyV1SLZ(serializers.Serializer):
             raise serializers.ValidationError(reason)
 
 
-class GrantAppPermissionSLZ(serializers.Serializer):
+class GrantAppPermissionInputSLZ(serializers.Serializer):
     """
     网关关联应用，主动为应用授权访问网关API的权限
     """
@@ -178,7 +178,7 @@ class GrantAppPermissionSLZ(serializers.Serializer):
     )
 
 
-class RevokeAppPermissionSLZ(serializers.Serializer):
+class RevokeAppPermissionInputSLZ(serializers.Serializer):
     """回收应用访问网关的权限"""
 
     target_app_codes = serializers.ListField(
@@ -187,7 +187,7 @@ class RevokeAppPermissionSLZ(serializers.Serializer):
     grant_dimension = serializers.ChoiceField(choices=[GrantDimensionEnum.API.value])
 
 
-class AppPermissionRenewSLZ(serializers.Serializer):
+class AppPermissionRenewInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
     resource_ids = serializers.ListField(
         child=serializers.IntegerField(),
@@ -201,12 +201,12 @@ class AppPermissionRenewSLZ(serializers.Serializer):
     )
 
 
-class AppPermissionQuerySLZ(serializers.Serializer):
+class AppPermissionInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
     expire_days_range = serializers.IntegerField(min_value=0, allow_null=True, required=False)
 
 
-class AppPermissionRecordQuerySLZ(serializers.Serializer):
+class AppPermissionRecordInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
     applied_by = serializers.CharField(allow_blank=True, required=False)
     applied_time_start = TimestampField(allow_null=True, required=False)
@@ -258,7 +258,7 @@ class AppPermissionRecordSLZ(serializers.ModelSerializer):
         return obj.comment or ""
 
 
-class AppPermissionRecordDetailSLZ(AppPermissionRecordSLZ):
+class AppPermissionRecordOutputSLZ(AppPermissionRecordSLZ):
     resources = serializers.SerializerMethodField()
 
     class Meta:

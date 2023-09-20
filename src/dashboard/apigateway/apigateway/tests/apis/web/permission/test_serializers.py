@@ -130,7 +130,10 @@ class TestAppGatewayPermissionOutputSLZ(TestCase):
         ]
 
         for test in data:
-            slz = serializers.AppGatewayPermissionOutputSLZ(instance=test["instance"])
+            context = {}
+            if test["instance"] == app_resource_permission:
+                context["resource_map"] = {app_resource_permission.resource_id: resource}
+            slz = serializers.AppGatewayPermissionOutputSLZ(instance=test["instance"], context=context)
             self.assertEqual(slz.data, test["expected"])
 
 

@@ -22,7 +22,6 @@ import pytest
 from ddf import G
 
 from apigateway.apis.open.permission import views
-from apigateway.apis.open.permission.helpers import AppPermissionHelper
 from apigateway.apps.permission import models
 from apigateway.tests.utils.testing import get_response_json
 
@@ -283,7 +282,7 @@ class TestAppPermissionGrantViewSet:
         result = get_response_json(response)
         assert result["code"] == 0, result
 
-        permission_model = AppPermissionHelper().get_permission_model("api")
+        permission_model = views.get_permission_model("api")
         assert permission_model.objects.filter(gateway=fake_gateway, bk_app_code="test").exists()
 
 
@@ -308,6 +307,6 @@ class TestRevokeAppPermissionViewSet:
         result = get_response_json(response)
         assert result["code"] == 0, result
 
-        permission_model = AppPermissionHelper().get_permission_model("api")
+        permission_model = views.get_permission_model("api")
         assert not permission_model.objects.filter(gateway=fake_gateway, bk_app_code__in=["app1", "app2"]).exists()
         assert permission_model.objects.filter(gateway=fake_gateway, bk_app_code__in=["app3"]).exists()

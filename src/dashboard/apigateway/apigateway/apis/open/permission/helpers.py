@@ -19,7 +19,6 @@
 import copy
 import math
 from collections import defaultdict
-from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 from django.utils.functional import cached_property
@@ -30,17 +29,6 @@ from apigateway.apps.permission.models import AppAPIPermission, AppPermissionApp
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ReleasedResource, Resource
-
-
-class AppPermissionHelper:
-    def get_permission_model(self, dimension: str):
-        if dimension == GrantDimensionEnum.API.value:
-            return AppAPIPermission
-
-        if dimension == GrantDimensionEnum.RESOURCE.value:
-            return AppResourcePermission
-
-        raise ValueError(f"unsupported dimension: {dimension}")
 
 
 class ResourcePermission(BaseModel):
@@ -123,12 +111,11 @@ class ResourcePermission(BaseModel):
         return expires_in
 
 
-@dataclass
 class ResourcePermissionBuilder:
-    gateway: Gateway
-    target_app_code: str
+    def __init__(self, gateway: Gateway, target_app_code: str):
+        self.gateway = gateway
+        self.target_app_code = target_app_code
 
-    def __post_init__(self):
         self.api_permission = self._get_api_permission()
         self.resource_permission_map = self._get_resource_permission_map()
         self.api_permission_apply_status = self._get_api_permission_apply_status()
@@ -191,11 +178,11 @@ class ResourcePermissionBuilder:
         }
 
 
-@dataclass
 class AppPermissionBuilder:
     """获取应用的网关资源权限"""
 
-    target_app_code: str
+    def __init__(self, target_app_code: str):
+        self.target_app_code = target_app_code
 
     def build(self) -> list:
         api_permission_map = self._get_api_permission_map()

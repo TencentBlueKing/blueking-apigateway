@@ -28,7 +28,6 @@ from rest_framework.views import APIView
 
 from apigateway.apis.open.permission.helpers import (
     AppPermissionBuilder,
-    AppPermissionHelper,
     ResourcePermissionBuilder,
 )
 from apigateway.apps.permission.constants import (
@@ -37,7 +36,12 @@ from apigateway.apps.permission.constants import (
     GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
 )
-from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord, AppResourcePermission
+from apigateway.apps.permission.models import (
+    AppAPIPermission,
+    AppPermissionApply,
+    AppPermissionRecord,
+    AppResourcePermission,
+)
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.resource import ResourceHandler
@@ -53,19 +57,29 @@ from . import serializers
 logger = logging.getLogger(__name__)
 
 
+def get_permission_model(dimension: str):
+    if dimension == GrantDimensionEnum.API.value:
+        return AppAPIPermission
+
+    if dimension == GrantDimensionEnum.RESOURCE.value:
+        return AppResourcePermission
+
+    raise ValueError(f"unsupported dimension: {dimension}")
+
+
 class ResourceViewSet(viewsets.ViewSet):
     api_permission_exempt = True
 
     @swagger_auto_schema(
-        query_serializer=serializers.AppPermissionResourceQuerySLZ,
-        responses={status.HTTP_200_OK: serializers.AppPermissionResourceSLZ(many=True)},
+        query_serializer=serializers.AppPermissionResourceInputSLZ,
+        responses={status.HTTP_200_OK: serializers.AppPermissionResourceOutputSLZ(many=True)},
         tags=["OpenAPI.Permission"],
     )
     def list(self, request, *args, **kwargs):
         if not request.gateway.is_active_and_public:
             return V1OKJsonResponse("OK", data=[])
 
-        slz = serializers.AppPermissionResourceQuerySLZ(data=request.query_params)
+        slz = serializers.AppPermissionResourceInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
@@ -78,7 +92,7 @@ class ResourceViewSet(viewsets.ViewSet):
             slz.validated_data["target_app_code"],
         ).build(resources)
 
-        slz = serializers.AppPermissionResourceSLZ(
+        slz = serializers.AppPermissionResourceOutputSLZ(
             sorted(resource_permissions, key=operator.itemgetter("permission_level", "name")),
             many=True,
         )
@@ -86,7 +100,7 @@ class ResourceViewSet(viewsets.ViewSet):
 
 
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
-    serializer_class = serializers.AppAPIPermissionQuerySLZ
+    serializer_class = serializers.AppGatewayPermissionInputSLZ
     api_permission_exempt = True
 
     def allow_apply_by_gateway(self, request, *args, **kwargs):
@@ -181,7 +195,7 @@ class PaaSAppPermissionApplyAPIView(BaseAppPermissinApplyAPIView):
     api_permission_exempt = True
 
     def get_serializer_class(self):
-        return serializers.PaaSAppPermissionApplySLZ
+        return serializers.PaaSAppPermissionApplyInputSLZ
 
 
 class AppPermissionApplyV1APIView(BaseAppPermissinApplyAPIView):
@@ -197,7 +211,7 @@ class AppPermissionApplyV1APIView(BaseAppPermissinApplyAPIView):
     api_permission_exempt = True
 
     def get_serializer_class(self):
-        return serializers.AppPermissionApplyV1SLZ
+        return serializers.AppPermissionApplyV1InputSLZ
 
 
 class AppPermissionGrantViewSet(viewsets.ViewSet):
@@ -206,7 +220,7 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
     permission_classes = [GatewayRelatedAppPermission]
 
     def grant(self, request, *args, **kwargs):
-        slz = serializers.GrantAppPermissionSLZ(data=request.data)
+        slz = serializers.GrantAppPermissionInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -217,7 +231,7 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
             )
         )
 
-        permission_model = AppPermissionHelper().get_permission_model(data["grant_dimension"])
+        permission_model = get_permission_model(data["grant_dimension"])
         permission_model.objects.save_permissions(
             gateway=request.gateway,
             resource_ids=resource_ids,
@@ -235,12 +249,12 @@ class RevokeAppPermissionViewSet(viewsets.ViewSet):
     permission_classes = [GatewayRelatedAppPermission]
 
     def revoke(self, request, *args, **kwargs):
-        slz = serializers.RevokeAppPermissionSLZ(data=request.data)
+        slz = serializers.RevokeAppPermissionInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
 
-        permission_model = AppPermissionHelper().get_permission_model(data["grant_dimension"])
+        permission_model = get_permission_model(data["grant_dimension"])
         permission_model.objects.filter(
             gateway=request.gateway,
             bk_app_code__in=data["target_app_codes"],
@@ -257,7 +271,7 @@ class AppPermissionRenewAPIView(APIView):
     api_permission_exempt = True
 
     def post(self, request, *args, **kwargs):
-        slz = serializers.AppPermissionRenewSLZ(
+        slz = serializers.AppPermissionRenewInputSLZ(
             data=request.data,
             context={
                 "request": request,
@@ -290,18 +304,18 @@ class AppPermissionRenewAPIView(APIView):
 class AppPermissionViewSet(viewsets.ViewSet):
     def list(self, request, *args, **kwargs):
         """已申请权限列表"""
-        slz = serializers.AppPermissionQuerySLZ(data=request.query_params)
+        slz = serializers.AppPermissionInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
 
         permissions = AppPermissionBuilder(data["target_app_code"]).build()
-        slz = serializers.AppPermissionResourceSLZ(permissions, many=True)
+        slz = serializers.AppPermissionResourceOutputSLZ(permissions, many=True)
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("api_name", "name")))
 
 
 class AppPermissionRecordViewSet(viewsets.GenericViewSet):
-    serializer_class = serializers.AppPermissionRecordQuerySLZ
+    serializer_class = serializers.AppPermissionRecordInputSLZ
 
     def list(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.query_params)
@@ -326,7 +340,7 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
         return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
 
     def retrieve(self, request, record_id: int, *args, **kwargs):
-        slz = serializers.AppPermissionRecordQuerySLZ(data=request.query_params)
+        slz = serializers.AppPermissionRecordInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -336,7 +350,7 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
         except AppPermissionRecord.DoesNotExist:
             raise error_codes.NOT_FOUND
 
-        slz = serializers.AppPermissionRecordDetailSLZ(
+        slz = serializers.AppPermissionRecordOutputSLZ(
             record,
             context={
                 "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=record.gateway.id),

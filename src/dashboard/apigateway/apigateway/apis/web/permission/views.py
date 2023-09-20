@@ -97,7 +97,10 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
 
-        serializer = AppResourcePermissionOutputSLZ(page, many=True)
+        resources = Resource.objects.filter(id__in=[perm.resource_id for perm in page])
+        serializer = AppResourcePermissionOutputSLZ(
+            page, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
+        )
         return self.get_paginated_response(serializer.data)
 
     def create(self, request, *args, **kwargs):
@@ -147,7 +150,10 @@ class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generic
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
             queryset = self.get_queryset().filter(id__in=data["permission_ids"])
 
-        slz = AppResourcePermissionOutputSLZ(queryset, many=True)
+        resources = Resource.objects.filter(id__in=[perm.resource_id for perm in queryset])
+        slz = AppResourcePermissionOutputSLZ(
+            queryset, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
+        )
         content = self._get_csv_content(slz.data)
 
         response = DownloadableResponse(content, filename=f"{self.request.gateway.name}-permissions.csv")
