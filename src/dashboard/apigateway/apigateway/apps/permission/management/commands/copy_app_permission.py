@@ -18,7 +18,7 @@
 #
 from django.core.management.base import BaseCommand
 
-from apigateway.apps.permission.models import AppAPIPermission, AppResourcePermission
+from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 
 
 class Command(BaseCommand):
@@ -28,8 +28,8 @@ class Command(BaseCommand):
         parser.add_argument("--dry-run", dest="dry_run", action="store_true", help="dry run")
 
     def _copy_api_permission(self, src_app, dst_app):
-        for src_perm in AppAPIPermission.objects.filter(bk_app_code=src_app):
-            dst_perm, created = AppAPIPermission.objects.get_or_create(
+        for src_perm in AppGatewayPermission.objects.filter(bk_app_code=src_app):
+            dst_perm, created = AppGatewayPermission.objects.get_or_create(
                 bk_app_code=dst_app,
                 gateway_id=src_perm.gateway_id,
                 defaults={
@@ -56,10 +56,10 @@ class Command(BaseCommand):
                 dst_perm.save(update_fields=["expires"])
 
     def _copy_api_permission_dry_run(self, src_app, dst_app):
-        for src_perm in AppAPIPermission.objects.filter(bk_app_code=src_app):
+        for src_perm in AppGatewayPermission.objects.filter(bk_app_code=src_app):
             try:
-                dst_perm = AppAPIPermission.objects.get(bk_app_code=dst_app, gateway_id=src_perm.gateway_id)
-            except AppAPIPermission.DoesNotExist:
+                dst_perm = AppGatewayPermission.objects.get(bk_app_code=dst_app, gateway_id=src_perm.gateway_id)
+            except AppGatewayPermission.DoesNotExist:
                 print(
                     f"add new perm: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, expires={src_perm.expires}"
                 )

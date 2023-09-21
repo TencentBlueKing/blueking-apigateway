@@ -44,32 +44,16 @@ class AppGatewayPermissionOutputSLZ(serializers.Serializer):
     renewable = serializers.SerializerMethodField()
 
     def get_resource_id(self, obj):
-        if not hasattr(obj, "resource_id"):
-            return 0
-
-        resource = self.context.get("resource_map", {}).get(obj.resource_id)
-        return resource.id if resource else 0
+        return 0
 
     def get_resource_name(self, obj):
-        if not hasattr(obj, "resource_id"):
-            return ""
-
-        resource = self.context.get("resource_map", {}).get(obj.resource_id)
-        return resource.name if resource else ""
+        return ""
 
     def get_resource_path(self, obj):
-        if not hasattr(obj, "resource_id"):
-            return ""
-
-        resource = self.context.get("resource_map", {}).get(obj.resource_id)
-        return resource.path_display if resource else ""
+        return ""
 
     def get_resource_method(self, obj):
-        if not hasattr(obj, "resource_id"):
-            return ""
-
-        resource = self.context.get("resource_map", {}).get(obj.resource_id)
-        return resource.method if resource else ""
+        return ""
 
     def get_expires(self, obj):
         expires = None if (not obj.expires or NeverExpiresTime.is_never_expired(obj.expires)) else obj.expires
@@ -157,7 +141,21 @@ class AppPermissionApplyOutputSLZ(serializers.ModelSerializer):
 
 
 class AppResourcePermissionOutputSLZ(AppGatewayPermissionOutputSLZ):
-    pass
+    def get_resource_id(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.id if resource else 0
+
+    def get_resource_name(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.name if resource else ""
+
+    def get_resource_path(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.path_display if resource else ""
+
+    def get_resource_method(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.method if resource else ""
 
 
 class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):

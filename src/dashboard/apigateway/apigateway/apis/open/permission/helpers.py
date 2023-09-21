@@ -25,7 +25,7 @@ from django.utils.functional import cached_property
 from pydantic import BaseModel, parse_obj_as
 
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionLevelEnum, PermissionStatusEnum
-from apigateway.apps.permission.models import AppAPIPermission, AppPermissionApplyStatus, AppResourcePermission
+from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionApplyStatus, AppResourcePermission
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ReleasedResource, Resource
@@ -43,7 +43,7 @@ class ResourcePermission(BaseModel):
     description_en: Optional[str] = None
     resource_perm_required: bool
     doc_link: str
-    api_permission: Optional[AppAPIPermission] = None
+    api_permission: Optional[AppGatewayPermission] = None
     resource_permission: Optional[AppResourcePermission] = None
     api_permission_apply_status: Optional[str] = ""
     resource_permission_apply_status: Optional[str] = ""
@@ -141,7 +141,7 @@ class ResourcePermissionBuilder:
         return [perm.as_dict() for perm in resource_permissions]
 
     def _get_api_permission(self):
-        return AppAPIPermission.objects.filter(
+        return AppGatewayPermission.objects.filter(
             gateway=self.gateway,
             bk_app_code=self.target_app_code,
         ).first()
@@ -212,10 +212,10 @@ class AppPermissionBuilder:
         resource_permissions = parse_obj_as(List[ResourcePermission], list(resource_map.values()))
         return [perm.as_dict() for perm in resource_permissions]
 
-    def _get_api_permission_map(self) -> Dict[int, AppAPIPermission]:
+    def _get_api_permission_map(self) -> Dict[int, AppGatewayPermission]:
         return {
             perm.gateway_id: perm
-            for perm in AppAPIPermission.objects.filter_public_permission_by_app(bk_app_code=self.target_app_code)
+            for perm in AppGatewayPermission.objects.filter_public_permission_by_app(bk_app_code=self.target_app_code)
         }
 
     def _get_resource_permission_map(self) -> Dict[int, AppResourcePermission]:

@@ -31,7 +31,7 @@ from apigateway.apps.permission.utils import calculate_expires
 from apigateway.utils.time import now_datetime, to_datetime_from_now
 
 
-class AppAPIPermissionManager(models.Manager):
+class AppGatewayPermissionManager(models.Manager):
     def filter_public_permission_by_app(self, bk_app_code: str):
         return self.filter(bk_app_code=bk_app_code, gateway__is_public=True)
 
@@ -121,9 +121,9 @@ class AppResourcePermissionManager(models.Manager):
             )
 
     def sync_from_gateway_permission(self, gateway, bk_app_code, resource_ids):
-        from apigateway.apps.permission.models import AppAPIPermission
+        from apigateway.apps.permission.models import AppGatewayPermission
 
-        api_perm = AppAPIPermission.objects.filter(bk_app_code=bk_app_code, gateway_id=gateway.id).first()
+        api_perm = AppGatewayPermission.objects.filter(bk_app_code=bk_app_code, gateway_id=gateway.id).first()
         if not api_perm or api_perm.has_expired:
             return
 

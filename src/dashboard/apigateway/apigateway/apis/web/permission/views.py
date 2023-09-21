@@ -31,7 +31,7 @@ from rest_framework import generics, status
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
-    AppAPIPermission,
+    AppGatewayPermission,
     AppPermissionApply,
     AppPermissionRecord,
     AppResourcePermission,
@@ -275,7 +275,7 @@ class AppGatewayPermissionQuerySetMixin:
     ),
 )
 class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, generics.ListCreateAPIView):
-    queryset = AppAPIPermission.objects.order_by("-id")
+    queryset = AppGatewayPermission.objects.order_by("-id")
     filterset_class = AppGatewayPermissionFilter
 
     def list(self, request, *args, **kwargs):
@@ -297,7 +297,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
 
         data = slz.validated_data
 
-        AppAPIPermission.objects.save_permissions(
+        AppGatewayPermission.objects.save_permissions(
             gateway=request.gateway,
             resource_ids=data["resource_ids"],
             bk_app_code=data["bk_app_code"],
@@ -317,7 +317,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
     ),
 )
 class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.CreateAPIView):
-    queryset = AppAPIPermission.objects.order_by("-id")
+    queryset = AppGatewayPermission.objects.order_by("-id")
 
     def create(self, request, *args, **kwargs):
         """
@@ -377,7 +377,7 @@ class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
         """获取有权限的应用列表"""
 
         app_codes = list(
-            AppAPIPermission.objects.filter(gateway=request.gateway)
+            AppGatewayPermission.objects.filter(gateway=request.gateway)
             .order_by("bk_app_code")
             .distinct()
             .values_list("bk_app_code", flat=True)
@@ -404,7 +404,7 @@ class AppGatewayPermissionRenewApi(generics.CreateAPIView):
 
         data = slz.validated_data
 
-        AppAPIPermission.objects.renew_by_ids(
+        AppGatewayPermission.objects.renew_by_ids(
             gateway=request.gateway,
             ids=data["ids"],
         )
@@ -421,7 +421,7 @@ class AppGatewayPermissionRenewApi(generics.CreateAPIView):
     ),
 )
 class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.DestroyAPIView):
-    queryset = AppAPIPermission.objects.order_by("-id")
+    queryset = AppGatewayPermission.objects.order_by("-id")
 
     @transaction.atomic
     def delete(self, request, *args, **kwargs):

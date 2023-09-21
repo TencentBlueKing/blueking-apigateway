@@ -26,7 +26,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.apps.esb.exceptions import EsbGatewayNotFound
 from apigateway.apps.esb.utils import get_esb_gateway
-from apigateway.apps.permission.models import AppAPIPermission
+from apigateway.apps.permission.models import AppGatewayPermission
 from apigateway.apps.permission.utils import calculate_expires
 from apigateway.biz.constants import APP_CODE_PATTERN
 
@@ -47,7 +47,7 @@ class Command(BaseCommand):
             if not APP_CODE_PATTERN.match(bk_app_code):
                 raise CommandError(f"bk_app_code [{bk_app_code}] does not match the required pattern")
 
-            AppAPIPermission.objects.get_or_create(
+            AppGatewayPermission.objects.get_or_create(
                 bk_app_code=bk_app_code,
                 gateway=esb_gateway,
                 defaults={

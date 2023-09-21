@@ -288,9 +288,9 @@ class TestAppPermissionGrantViewSet:
 
 class TestRevokeAppPermissionViewSet:
     def test_revoke(self, request_factory, fake_gateway):
-        G(models.AppAPIPermission, gateway=fake_gateway, bk_app_code="app1")
-        G(models.AppAPIPermission, gateway=fake_gateway, bk_app_code="app2")
-        G(models.AppAPIPermission, gateway=fake_gateway, bk_app_code="app3")
+        G(models.AppGatewayPermission, gateway=fake_gateway, bk_app_code="app1")
+        G(models.AppGatewayPermission, gateway=fake_gateway, bk_app_code="app2")
+        G(models.AppGatewayPermission, gateway=fake_gateway, bk_app_code="app3")
 
         request = request_factory.delete(
             "",

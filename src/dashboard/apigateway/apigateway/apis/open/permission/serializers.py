@@ -37,7 +37,7 @@ from apigateway.common.fields import TimestampField
 from apigateway.utils import time
 
 
-class AppPermissionResourceInputSLZ(serializers.Serializer):
+class AppResourcePermissionInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(max_length=32, required=True)
 
 
@@ -45,7 +45,7 @@ class AppGatewayPermissionInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(max_length=32, required=True)
 
 
-class AppPermissionResourceOutputSLZ(serializers.Serializer):
+class AppResourcePermissionOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(label="ID", read_only=True)
     name = serializers.CharField()
     api_name = serializers.CharField()

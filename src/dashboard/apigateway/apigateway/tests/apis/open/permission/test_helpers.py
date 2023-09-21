@@ -23,7 +23,7 @@ import pytest
 from ddf import G
 
 from apigateway.apis.open.permission.helpers import AppPermissionBuilder, ResourcePermission
-from apigateway.apps.permission.models import AppAPIPermission, AppResourcePermission
+from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.core.models import Resource
 
 pytestmark = pytest.mark.django_db
@@ -149,9 +149,9 @@ class TestResourcePermission:
     )
     def test_permission_status(self, mocker, mocked_resource, params, expected):
         if "api_permission_expires_in" in params:
-            params["api_permission"] = G(AppAPIPermission)
+            params["api_permission"] = G(AppGatewayPermission)
             mocker.patch(
-                "apigateway.apps.permission.models.AppAPIPermission.expires_in",
+                "apigateway.apps.permission.models.AppGatewayPermission.expires_in",
                 new_callable=mock.PropertyMock(return_value=params["api_permission_expires_in"]),
             )
 
@@ -230,9 +230,9 @@ class TestResourcePermission:
     )
     def test_expires_in(self, mocker, mocked_resource, params, expected):
         if "api_permission_expires_in" in params:
-            params["api_permission"] = G(AppAPIPermission)
+            params["api_permission"] = G(AppGatewayPermission)
             mocker.patch(
-                "apigateway.apps.permission.models.AppAPIPermission.expires_in",
+                "apigateway.apps.permission.models.AppGatewayPermission.expires_in",
                 new_callable=mock.PropertyMock(return_value=params["api_permission_expires_in"]),
             )
 
@@ -252,7 +252,7 @@ class TestResourcePermission:
 class TestAppPermissionBuilder:
     def test_build(self, mocker, fake_gateway, unique_id):
         r = G(Resource, gateway=fake_gateway)
-        G(AppAPIPermission, gateway=fake_gateway, bk_app_code=unique_id, expires=None)
+        G(AppGatewayPermission, gateway=fake_gateway, bk_app_code=unique_id, expires=None)
         G(AppResourcePermission, gateway=fake_gateway, bk_app_code=unique_id, resource_id=r.id)
 
         mocker.patch(

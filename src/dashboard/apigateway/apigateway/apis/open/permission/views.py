@@ -37,7 +37,7 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.apps.permission.models import (
-    AppAPIPermission,
+    AppGatewayPermission,
     AppPermissionApply,
     AppPermissionRecord,
     AppResourcePermission,
@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 def get_permission_model(dimension: str):
     if dimension == GrantDimensionEnum.API.value:
-        return AppAPIPermission
+        return AppGatewayPermission
 
     if dimension == GrantDimensionEnum.RESOURCE.value:
         return AppResourcePermission
@@ -71,15 +71,15 @@ class ResourceViewSet(viewsets.ViewSet):
     api_permission_exempt = True
 
     @swagger_auto_schema(
-        query_serializer=serializers.AppPermissionResourceInputSLZ,
-        responses={status.HTTP_200_OK: serializers.AppPermissionResourceOutputSLZ(many=True)},
+        query_serializer=serializers.AppResourcePermissionInputSLZ,
+        responses={status.HTTP_200_OK: serializers.AppResourcePermissionOutputSLZ(many=True)},
         tags=["OpenAPI.Permission"],
     )
     def list(self, request, *args, **kwargs):
         if not request.gateway.is_active_and_public:
             return V1OKJsonResponse("OK", data=[])
 
-        slz = serializers.AppPermissionResourceInputSLZ(data=request.query_params)
+        slz = serializers.AppResourcePermissionInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
@@ -92,7 +92,7 @@ class ResourceViewSet(viewsets.ViewSet):
             slz.validated_data["target_app_code"],
         ).build(resources)
 
-        slz = serializers.AppPermissionResourceOutputSLZ(
+        slz = serializers.AppResourcePermissionOutputSLZ(
             sorted(resource_permissions, key=operator.itemgetter("permission_level", "name")),
             many=True,
         )
@@ -310,7 +310,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
         data = slz.validated_data
 
         permissions = AppPermissionBuilder(data["target_app_code"]).build()
-        slz = serializers.AppPermissionResourceOutputSLZ(permissions, many=True)
+        slz = serializers.AppResourcePermissionOutputSLZ(permissions, many=True)
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("api_name", "name")))
 
 

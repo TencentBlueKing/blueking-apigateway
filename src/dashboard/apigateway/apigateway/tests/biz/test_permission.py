@@ -23,7 +23,7 @@ from ddf import G
 
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import (
-    AppAPIPermission,
+    AppGatewayPermission,
     AppPermissionApply,
     AppPermissionApplyStatus,
     AppResourcePermission,
@@ -107,7 +107,7 @@ class TestAPIPermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
-        assert AppAPIPermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
+        assert AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
         assert AppPermissionApplyStatus.objects.filter(gateway=fake_gateway).count() == 0
 
     def test_handle_permission_apply_rejected(self, fake_gateway):
@@ -124,7 +124,7 @@ class TestAPIPermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
-        assert AppAPIPermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
+        assert AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
         assert AppPermissionApplyStatus.objects.filter(gateway=fake_gateway).count() == 0
 
     def test_save_permission_apply_status(self, fake_gateway):
@@ -191,13 +191,13 @@ class TestAPIPermissionDimensionManager:
         assert result is True
 
         # 已拥有权限，权限永久有效
-        G(AppAPIPermission, gateway=fake_gateway, bk_app_code=target_app_code, expires=None)
+        G(AppGatewayPermission, gateway=fake_gateway, bk_app_code=target_app_code, expires=None)
         result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code)
         assert result is False
 
         # 已拥有权限，权限将过期
         mocker.patch(
-            "apigateway.apps.permission.models.AppAPIPermission.allow_apply_permission",
+            "apigateway.apps.permission.models.AppGatewayPermission.allow_apply_permission",
             new_callable=mock.PropertyMock(return_value=True),
         )
         result, _ = manager.allow_apply_permission(fake_gateway, target_app_code)

@@ -26,7 +26,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.open.permission import serializers
 from apigateway.apps.permission.constants import RENEWABLE_EXPIRE_DAYS
-from apigateway.apps.permission.models import AppAPIPermission, AppPermissionApplyStatus
+from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionApplyStatus
 from apigateway.utils import time
 from apigateway.utils.time import to_datetime_from_now
 
@@ -62,7 +62,7 @@ class TestAppPermissionResourceSLZ:
         ],
     )
     def test_to_representation(self, mocker, params, expected):
-        slz = serializers.AppPermissionResourceOutputSLZ(
+        slz = serializers.AppResourcePermissionOutputSLZ(
             params, context={"request": mock.MagicMock(gateway=mock.MagicMock(name="test"))}
         )
         assert slz.data == expected
@@ -78,7 +78,7 @@ class TestAppPermissionResourceSLZ:
         ],
     )
     def test_get_expires_in(self, expires_in, expected):
-        slz = serializers.AppPermissionResourceOutputSLZ()
+        slz = serializers.AppResourcePermissionOutputSLZ()
         result = slz.get_expires_in({"expires_in": expires_in})
         assert result == expected
 
@@ -109,7 +109,7 @@ class TestAppPermissionResourceSLZ:
         ],
     )
     def test_get_permission_action(self, obj, expected):
-        slz = serializers.AppPermissionResourceOutputSLZ()
+        slz = serializers.AppResourcePermissionOutputSLZ()
         result = slz.get_permission_action(obj)
         assert result == expected
 
@@ -124,7 +124,7 @@ class TestAppPermissionResourceSLZ:
         ],
     )
     def test_need_to_apply_permission(self, permission_status, expected):
-        slz = serializers.AppPermissionResourceOutputSLZ()
+        slz = serializers.AppResourcePermissionOutputSLZ()
         result = slz._need_to_apply_permission(permission_status)
         assert result == expected
 
@@ -139,7 +139,7 @@ class TestAppPermissionResourceSLZ:
         ],
     )
     def test_need_to_renew_permission(self, permission_status, expires_in, expected):
-        slz = serializers.AppPermissionResourceOutputSLZ()
+        slz = serializers.AppResourcePermissionOutputSLZ()
         result = slz._need_to_renew_permission(permission_status, expires_in)
         assert result == expected
 
@@ -231,7 +231,7 @@ class TestAppPermissionApplyV1SLZ:
         )
 
         permission = G(
-            AppAPIPermission,
+            AppGatewayPermission,
             gateway=fake_gateway,
             bk_app_code=bk_app_code,
             expires=to_datetime_from_now(days=180),
