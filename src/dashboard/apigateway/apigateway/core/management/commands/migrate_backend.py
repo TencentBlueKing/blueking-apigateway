@@ -33,7 +33,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # 遍历gateway, 迁移proxy配置
-        qs = Gateway.objects.all()
+        qs = Gateway.objects.all().order_by("id")
 
         logger.info("start migrate gateway backend, all gateway count %s", qs.count())
 
@@ -77,7 +77,7 @@ class Command(BaseCommand):
 
         resource_backend_count = 0
         # 迁移resource的proxy上游配置
-        qs = Proxy.objects.filter(resource__gateway=gateway).all()
+        qs = Proxy.objects.filter(resource__gateway=gateway).all().order_by("id")
         paginator = Paginator(qs, 100)
         for i in paginator.page_range:
             for proxy in paginator.page(i):
@@ -141,7 +141,7 @@ class Command(BaseCommand):
 
             hosts = []
             for host in proxy_http_config["upstreams"]["hosts"]:
-                scheme, _host = host["host"].split("://")
+                scheme, _host = host["host"].rstrip("/").split("://")
 
                 # 渲染host中的环境变量
                 matches = re.findall(r"\{env.(\w+)\}", _host)
@@ -184,7 +184,7 @@ class Command(BaseCommand):
         hosts = []
         for host in proxy_http_config["upstreams"]["hosts"]:
             if host["host"]:
-                scheme, _host = host["host"].split("://")
+                scheme, _host = host["host"].rstrip("/").split("://")
                 hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
             else:
                 hosts.append({"scheme": "http", "host": "", "weight": host["weight"]})
