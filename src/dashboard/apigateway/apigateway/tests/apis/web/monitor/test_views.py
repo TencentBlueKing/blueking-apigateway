@@ -69,7 +69,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
             },
         ]
         for test in data:
-            request = self.factory.post(f"/apis/{self.gateway.id}/monitors/alarm/strategies/", data=test)
+            request = self.factory.post(f"/accounts/gateways/{self.gateway.id}/monitors/alarm/strategies/", data=test)
 
             view = AlarmStrategyListCreateApi.as_view()
             response = view(request, gateway_id=self.gateway.id)
@@ -452,7 +452,7 @@ class TestAlarmRecordSummaryListApi(TestCase):
         ]
 
         for test in data:
-            request = self.factory.get("/apis/monitors/alarm/records/summary/", data=test["params"])
+            request = self.factory.get("/gateways/monitors/alarm/records/summary/", data=test["params"])
 
             view = AlarmRecordSummaryListApi.as_view()
             response = view(request)

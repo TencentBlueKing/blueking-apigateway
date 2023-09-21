@@ -166,7 +166,7 @@ class TestReleasedResourceHandler:
                         "resource_version_id": resource_version.id,
                         "resource_version_name": "test-01",
                         "resource_version_title": "test",
-                        "resource_version_display": "1.0.1(test)",
+                        "resource_version_display": "1.0.1",
                         "resource_version": {
                             "version": "1.0.1",
                         },

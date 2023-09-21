@@ -37,8 +37,6 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
-from apigateway.apis.web.monitor.views import AlarmRecordSummaryListApi
-
 urlpatterns = [
     # /metrics
     path("", include("django_prometheus.urls")),
@@ -75,17 +73,12 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/releases/", include("apigateway.apis.web.release.urls")),
     path("backend/gateways/<int:gateway_id>/plugins/", include("apigateway.apis.web.plugin.urls")),
     path("backend/gateways/<int:gateway_id>/resource_versions/", include("apigateway.apis.web.resource_version.urls")),
-    path("backend/gateways/<int:gateway_id>/support/", include("apigateway.apis.web.support.urls")),
+    path("backend/gateways/<int:gateway_id>/sdks/", include("apigateway.apis.web.sdk.urls")),
     path("backend/gateways/<int:gateway_id>/audits/", include("apigateway.apis.web.audit.urls")),
     # TODO: refactor or remove
     path("backend/gateways/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     path("backend/gateways/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     # todo 不应该放在顶层，后续要想办法挪到下层
-    path(
-        "backend/gateways/monitors/alarm/records/summary/",
-        AlarmRecordSummaryListApi.as_view(),
-        name="monitors.alarm_records.summary",
-    ),
 ]
 
 # add drf-yasg automatically generated documents

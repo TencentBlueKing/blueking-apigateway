@@ -17,45 +17,17 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import arrow
-import pytest
 from django_dynamic_fixture import G
-from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.resource_version import serializers
 from apigateway.core.models import Gateway, ResourceVersion
-from apigateway.tests.utils.testing import dummy_time
-from apigateway.utils import time as time_utils
 
 
 class TestResourceVersionInfoSLZ:
-    def test_validate_version_unique(self, fake_gateway):
-        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
-
-        with pytest.raises(ValidationError):
-            slz = serializers.ResourceVersionInfoSLZ()
-            slz._validate_version_unique(fake_gateway, "1.0.0")
-
-        # same instance
-        slz = serializers.ResourceVersionInfoSLZ(instance=resource_version)
-        assert slz._validate_version_unique(fake_gateway, "1.0.0") is None
-
-        # version not exist
-        slz = serializers.ResourceVersionInfoSLZ()
-        assert slz._validate_version_unique(fake_gateway, "1.0.1") is None
-
-    def test_create(self, mocker, fake_gateway):
-        mocker.patch(
-            "apigateway.apis.web.resource_version.serializers.time_utils.now_datetime",
-            return_value=dummy_time.time,
-        )
-        mocker.patch(
-            "apigateway.apis.web.resource_version.serializers.ResourceVersionInfoSLZ._validate_resource_count",
-            return_value=None,
-        )
-        slz = serializers.ResourceVersionInfoSLZ(
+    def test_create(self, fake_gateway, fake_resource):
+        slz = serializers.ResourceVersionCreateInputSLZ(
             data={
                 "version": "1.0.2",
-                "title": "test",
                 "comment": "",
             },
             context={
@@ -65,11 +37,6 @@ class TestResourceVersionInfoSLZ:
         slz.is_valid()
         assert not slz.errors
 
-        instance = slz.save(data=[])
-        time_str = time_utils.format(dummy_time.time, fmt="YYYYMMDDHHmmss")
-        assert instance.name.startswith(f"{fake_gateway.name}_{time_str}_")
-        assert instance.version == "1.0.2"
-
 
 class TestResourceVersionListOutputSLZ:
     def test_to_representation(self):
@@ -78,13 +45,10 @@ class TestResourceVersionListOutputSLZ:
             ResourceVersion,
             gateway=gateway,
             version="1.0.1",
-            title="test",
             created_time=arrow.get("2019-01-01 12:30:00").datetime,
         )
 
-        queryset = ResourceVersion.objects.filter(gateway=gateway).values(
-            "id", "version", "name", "title", "comment", "created_time"
-        )
+        queryset = ResourceVersion.objects.filter(gateway=gateway).values("id", "version", "comment", "created_time")
 
         slz = serializers.ResourceVersionListOutputSLZ(
             instance=queryset,
@@ -102,7 +66,6 @@ class TestResourceVersionListOutputSLZ:
                         },
                     ]
                 },
-                "resource_version_ids_has_sdk": [],
                 "resource_version_ids_sdk_count": {},
             },
         )
@@ -110,11 +73,8 @@ class TestResourceVersionListOutputSLZ:
             {
                 "id": resource_version.id,
                 "version": resource_version.version,
-                "name": resource_version.name,
-                "title": resource_version.title,
                 "comment": resource_version.comment,
-                "resource_version_display": "1.0.1(test)",
-                "has_sdk": False,
+                "resource_version_display": "1.0.1",
                 "sdk_count": 0,
                 "released_stages": [
                     {

@@ -20,9 +20,9 @@ import json
 
 from django_dynamic_fixture import G
 
-from apigateway.apis.web.support.serializers import SDKListOutputSLZ
+from apigateway.apis.web.sdk.serializers import GatewaySDKListOutputSLZ
 from apigateway.apps.support.api_sdk.models import SDKFactory
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import dummy_time
@@ -32,7 +32,7 @@ class TestSDKListOutputSLZ:
     def test_to_representation(self, fake_gateway):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
         sdk_1 = G(
-            APISDK,
+            GatewaySDK,
             gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
@@ -46,13 +46,13 @@ class TestSDKListOutputSLZ:
             url="http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
         )
         sdks = [SDKFactory.create(model=sdk_1)]
-        slz = SDKListOutputSLZ(
+        slz = GatewaySDKListOutputSLZ(
             instance=sdks,
             many=True,
         )
+        print(slz.data)
         assert slz.data == [
             {
-                "config": {"is_uploaded_to_pypi": True},
                 "id": sdk_1.id,
                 "language": "python",
                 "name": "bkapigw-test",
@@ -61,10 +61,10 @@ class TestSDKListOutputSLZ:
                 "created_by": "test",
                 "updated_time": dummy_time.str,
                 "download_url": "http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
-                "is_uploaded_to_pypi": True,
-                "resource_version_id": resource_version.id,
-                "resource_version_name": resource_version.name,
-                "resource_version_title": resource_version.title,
-                "resource_version_display": "1.0.1(test)",
+                "resource_version": {
+                    "id": resource_version.id,
+                    "version": resource_version.version,
+                    "resource_version_display": "1.0.1(test)",
+                },
             },
         ]

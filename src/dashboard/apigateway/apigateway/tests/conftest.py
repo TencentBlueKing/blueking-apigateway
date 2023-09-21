@@ -32,14 +32,13 @@ from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
-from apigateway.apps.support.models import APISDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
+from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import (
-    APIHostingTypeEnum,
     ProxyTypeEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusTypeEnum,
@@ -145,7 +144,6 @@ def fake_gateway(faker):
         _maintainers=FAKE_USERNAME,
         status=1,
         is_public=True,
-        hosting_type=0,
     )
 
     GatewayAuthContext().save(gateway.pk, {})
@@ -155,9 +153,6 @@ def fake_gateway(faker):
 
 @pytest.fixture()
 def fake_gateway_for_micro_gateway(fake_gateway):
-    fake_gateway.hosting_type = APIHostingTypeEnum.MICRO.value
-    fake_gateway.save()
-
     return fake_gateway
 
 
@@ -471,7 +466,7 @@ def celery_task_eager_mode(settings):
 @pytest.fixture()
 def fake_sdk(fake_gateway, fake_resource_version):
     return G(
-        APISDK,
+        GatewaySDK,
         gateway=fake_gateway,
         resource_version=fake_resource_version,
         language="python",

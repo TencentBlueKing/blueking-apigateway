@@ -48,7 +48,6 @@ class GatewayAdmin(admin.ModelAdmin):
         "name",
         "status",
         "is_public",
-        "hosting_type",
         "created_by",
         "created_time",
         "updated_time",

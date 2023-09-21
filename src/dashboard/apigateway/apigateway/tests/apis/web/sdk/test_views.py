@@ -22,18 +22,18 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.support.api_sdk.models import SDKContext
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import dummy_time
 
 
-class TestAPISDKListCreateApi:
+class TestGatewaySDKListCreateApi:
     def test_list(self, request_view, fake_gateway, settings):
 
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
         sdk_1 = G(
-            APISDK,
+            GatewaySDK,
             gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
@@ -47,7 +47,7 @@ class TestAPISDKListCreateApi:
         )
 
         sdk_2 = G(
-            APISDK,
+            GatewaySDK,
             gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
@@ -70,7 +70,6 @@ class TestAPISDKListCreateApi:
                     "count": 2,
                     "results": [
                         {
-                            "config": {"is_uploaded_to_pypi": False},
                             "id": sdk_2.id,
                             "language": "python",
                             "name": "bkapigw-test",
@@ -79,14 +78,13 @@ class TestAPISDKListCreateApi:
                             "updated_time": dummy_time.str,
                             "created_by": None,
                             "download_url": "",
-                            "is_uploaded_to_pypi": False,
-                            "resource_version_id": resource_version.id,
-                            "resource_version_name": resource_version.name,
-                            "resource_version_title": resource_version.title,
-                            "resource_version_display": "1.0.1(test)",
+                            "resource_version": {
+                                "id": resource_version.id,
+                                "version": resource_version.version,
+                                "resource_version_display": "1.0.1(test)",
+                            },
                         },
                         {
-                            "config": {"is_uploaded_to_pypi": True},
                             "id": sdk_1.id,
                             "language": "python",
                             "name": "bkapigw-test",
@@ -95,11 +93,11 @@ class TestAPISDKListCreateApi:
                             "created_by": None,
                             "updated_time": dummy_time.str,
                             "download_url": "http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
-                            "is_uploaded_to_pypi": True,
-                            "resource_version_id": resource_version.id,
-                            "resource_version_name": resource_version.name,
-                            "resource_version_title": resource_version.title,
-                            "resource_version_display": "1.0.1(test)",
+                            "resource_version": {
+                                "id": resource_version.id,
+                                "version": resource_version.version,
+                                "resource_version_display": "1.0.1(test)",
+                            },
                         },
                     ],
                 },
@@ -109,7 +107,7 @@ class TestAPISDKListCreateApi:
         for test in data:
             resp = request_view(
                 method="GET",
-                view_name="support.api_sdk.list_create",
+                view_name="gateway.sdk.list_create",
                 gateway=fake_gateway,
                 path_params={"gateway_id": fake_gateway.id},
                 data=test["params"],
@@ -151,16 +149,15 @@ class TestAPISDKListCreateApi:
                     "language": "python",
                     "version_number": "2",
                     "resource_version_id": resource_version.id,
-                    "resource_version_name": resource_version.name,
-                    "resource_version_title": resource_version.title,
-                    "resource_version_display": "1.0.1(test)",
+                    "resource_version": resource_version.version,
+                    "resource_version_display": "1.0.1",
                 },
             },
         ]
         for test in data:
             resp = request_view(
                 method="POST",
-                view_name="support.api_sdk.list_create",
+                view_name="gateway.sdk.list_create",
                 gateway=fake_gateway,
                 path_params={"gateway_id": fake_gateway.id},
                 data=test["params"],
@@ -168,7 +165,6 @@ class TestAPISDKListCreateApi:
 
             result = resp.json()
             assert result["data"]["name"] == test["expected"]["name"]
-            assert result["data"]["is_uploaded_to_pypi"] == test["expected"]["is_uploaded_to_pypi"]
             assert result["data"]["language"] == test["expected"]["language"]
-            assert result["data"]["resource_version_id"] == test["expected"]["resource_version_id"]
-            assert result["data"]["resource_version_name"] == test["expected"]["resource_version_name"]
+            assert result["data"]["resource_version"]["id"] == test["expected"]["resource_version_id"]
+            assert result["data"]["resource_version"]["version"] == test["expected"]["resource_version"]

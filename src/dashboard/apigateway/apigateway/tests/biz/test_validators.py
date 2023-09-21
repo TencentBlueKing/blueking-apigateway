@@ -25,9 +25,10 @@ from apigateway.biz.validators import (
     BKAppCodeValidator,
     MaxCountPerGatewayValidator,
     ResourceIDValidator,
+    ResourceVersionValidator,
 )
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.models import Gateway, Resource, Stage
+from apigateway.core.models import Gateway, Resource, ResourceVersion, Stage
 
 
 class TestMaxCountPerGatewayValidator:
@@ -137,3 +138,26 @@ class TestBKAppCodeValidator:
         slz = self.RecordSLZ(data={"bk_app_code": "invalid#"})
         with pytest.raises(ValidationError):
             slz.is_valid(raise_exception=True)
+
+
+class TestResourceVersionValidator:
+    def test_validate(self, fake_gateway, fake_resource):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
+        validator = ResourceVersionValidator()
+        with pytest.raises(ValidationError):
+            validator(
+                {
+                    "gateway": fake_gateway,
+                    "version": "1.0.0",
+                }
+            )
+
+        assert (
+            validator(
+                {
+                    "gateway": fake_gateway,
+                    "version": "1.0.1",
+                }
+            )
+            is None
+        )

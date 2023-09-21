@@ -93,7 +93,6 @@ class TestGatewaySyncSLZ:
                     "api_type": 10,
                     "status": GatewayStatusEnum.ACTIVE.value,
                     "user_auth_type": "default",
-                    "hosting_type": 1,
                     "maintainers": [],
                 },
                 False,
@@ -103,7 +102,6 @@ class TestGatewaySyncSLZ:
                     "name": "test",
                     "description": "desc",
                     "is_public": True,
-                    "hosting_type": 0,
                 },
                 {
                     "name": "test",
@@ -111,7 +109,6 @@ class TestGatewaySyncSLZ:
                     "is_public": True,
                     "status": GatewayStatusEnum.ACTIVE.value,
                     "user_auth_type": "default",
-                    "hosting_type": 0,
                     "maintainers": [],
                 },
                 False,
@@ -131,7 +128,6 @@ class TestGatewaySyncSLZ:
                     "is_public": False,
                     "status": GatewayStatusEnum.INACTIVE.value,
                     "user_auth_type": "default",
-                    "hosting_type": 1,
                 },
                 False,
             ),
@@ -158,7 +154,6 @@ class TestGatewaySyncSLZ:
                         "from_bk_token": True,
                         "from_username": True,
                     },
-                    "hosting_type": 1,
                 },
                 False,
             ),
@@ -176,7 +171,6 @@ class TestGatewaySyncSLZ:
                     "api_type": 1,
                     "status": GatewayStatusEnum.ACTIVE.value,
                     "user_auth_type": "default",
-                    "hosting_type": 1,
                     "maintainers": [],
                 },
                 False,
@@ -194,7 +188,6 @@ class TestGatewaySyncSLZ:
         ],
     )
     def test_validate(self, settings, data, expected, will_error):
-        settings.DEFAULT_GATEWAY_HOSTING_TYPE = 1
         settings.DEFAULT_USER_AUTH_TYPE = "default"
         slz = serializers.GatewaySyncSLZ(data=data)
 

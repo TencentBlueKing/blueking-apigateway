@@ -84,7 +84,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     # 不同的托管类型决定特性集
     hosting_type = models.IntegerField(
         choices=APIHostingTypeEnum.get_choices(),
-        default=APIHostingTypeEnum.DEFAULT.value,
+        default=APIHostingTypeEnum.MICRO.value,
     )
 
     def __str__(self):
@@ -458,6 +458,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
+    # todo: 1.14 删除
     name = models.CharField(_("[Deprecated] 版本名"), max_length=128, unique=True)
     # todo: 1.14 删除
     title = models.CharField(max_length=128, blank=True, default="", null=True)

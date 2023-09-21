@@ -17,7 +17,8 @@
 #
 import logging
 import re
-from typing import Any, Dict, List, Tuple
+from collections import defaultdict
+from typing import Any, Dict, List
 
 from django.core.management.base import BaseCommand
 from django.core.paginator import Paginator
@@ -73,9 +74,9 @@ class Command(BaseCommand):
             stage_timeout[stage.id] = config["timeout"]
 
         # config 与已创建 backend 映射
-        config_backend: Dict[Tuple, Backend] = {}
+        backend_stage_config: Dict[int, Dict[int, Any]] = self._get_backend_stage_config_map(gateway)
 
-        resource_backend_count = 0
+        resource_backend_count = self._get_max_resource_backend_count(gateway)
         # 迁移resource的proxy上游配置
         qs = Proxy.objects.filter(resource__gateway=gateway).all()
         paginator = Paginator(qs, 100)
@@ -88,47 +89,42 @@ class Command(BaseCommand):
                     proxy.save()
                     continue
 
-                # 已有相同的backend
-                config_hash_tuple = self._get_config_hash_tuple(config)
-                if config_hash_tuple in config_backend:
-                    backend = config_backend[config_hash_tuple]
-                    # 关联resource与backend
-                    proxy.backend = backend
+                resource_stage_config = self._get_resource_stage_config_map(stages, stage_timeout, config)
+                backend_id = self._match_existing_backend(backend_stage_config, resource_stage_config)
+                if backend_id is not None:
+                    proxy.backend_id = backend_id
                     proxy.save()
                     continue
 
                 resource_backend_count += 1
-                backend = self._handle_resource_backend(gateway, stages, stage_timeout, config, resource_backend_count)
+                backend = self._handle_resource_backend(gateway, resource_backend_count, resource_stage_config)
                 # 关联resource与backend
                 proxy.backend = backend
                 proxy.save()
 
-                config_backend[config_hash_tuple] = backend
+                backend_stage_config[backend.id] = resource_stage_config
 
-        # 清理未使用的backend
-        used_backend_ids = list(
-            Proxy.objects.filter(resource__gateway=gateway).values_list("backend_id", flat=True).distinct()
-        )
-        used_backend_ids.append(default_backend.id)
+    def _get_max_resource_backend_count(self, gateway: Gateway):
+        count = 0
+        names = Backend.objects.filter(gateway=gateway, name__startswith="backend-").values_list("name", flat=True)
+        for name in names:
+            if name.split("-")[-1].isdigit() and int(name.split("-")[-1]) > count:
+                count = int(name.split("-")[-1])
 
-        # 查询排除了已使用的backend, 并且名称中包含backend-的backend, 用于清理上一次迁移现在重复的backend
-        delete_backend_ids = list(
-            Backend.objects.exclude(id__in=used_backend_ids)
-            .filter(gateway=gateway, name__startswith="backend-")
-            .values_list("id", flat=True)
-        )
+        return count
 
-        if delete_backend_ids:
-            BackendConfig.objects.filter(backend_id__in=delete_backend_ids).delete()
-            Backend.objects.filter(id__in=delete_backend_ids).delete()
+    def _match_existing_backend(self, backend_stage_config, resource_stage_config):
+        for backend_id, stage_config in backend_stage_config.items():
+            if stage_config == resource_stage_config:
+                return backend_id
+
+        return None
 
     def _handle_resource_backend(
         self,
         gateway: Gateway,
-        stages: List[Stage],
-        stage_timeout: Dict[int, int],
-        proxy_http_config: Dict[str, Any],
         resource_backend_count: int,
+        stage_config: Dict[int, Any],
     ) -> Backend:
         backend = Backend.objects.create(
             gateway=gateway,
@@ -136,6 +132,27 @@ class Command(BaseCommand):
         )
 
         backend_configs = []
+        for stage_id, config in stage_config.items():
+            backend_config = BackendConfig(
+                gateway=gateway,
+                backend=backend,
+                stage_id=stage_id,
+                config=config,
+            )
+            backend_configs.append(backend_config)
+
+        if backend_configs:
+            BackendConfig.objects.bulk_create(backend_configs)
+
+        return backend
+
+    def _get_resource_stage_config_map(
+        self,
+        stages: List[Stage],
+        stage_timeout: Dict[int, int],
+        proxy_http_config: Dict[str, Any],
+    ) -> Dict[int, Dict[str, Any]]:
+        stage_config = {}
         for stage in stages:
             vars = stage.vars
 
@@ -151,32 +168,32 @@ class Command(BaseCommand):
 
                 hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
 
-            config = {
+            hosts = self._sort_hosts(hosts)
+
+            stage_config[stage.id] = {
                 "type": "node",
                 "timeout": stage_timeout[stage.id],
                 "loadbalance": proxy_http_config["upstreams"]["loadbalance"],
                 "hosts": hosts,
             }
 
-            backend_config = BackendConfig(
-                gateway=gateway,
-                backend=backend,
-                stage=stage,
-                config=config,
-            )
-            backend_configs.append(backend_config)
+        return stage_config
 
-        if backend_configs:
-            BackendConfig.objects.bulk_create(backend_configs)
+    def _get_backend_stage_config_map(self, gateway: Gateway) -> Dict[int, Dict[int, Any]]:
+        backend_stage_config: Dict[int, Dict[int, Any]] = defaultdict(dict)
 
-        return backend
+        for backend in Backend.objects.filter(gateway=gateway):
+            for backend_config in BackendConfig.objects.filter(gateway=gateway, backend=backend):
+                config = backend_config.config
+                config["hosts"] = self._sort_hosts(config["hosts"])
 
-    def _get_config_hash_tuple(self, proxy_http_config: Dict[str, Any]):
-        hosts = sorted(proxy_http_config["upstreams"]["hosts"], key=lambda x: x["host"])
-        return (
-            proxy_http_config["upstreams"]["loadbalance"],
-            tuple([(host["host"], host["weight"]) for host in hosts]),
-        )
+                backend_stage_config[backend.id][backend_config.stage_id] = config
+
+        return backend_stage_config
+
+    def _sort_hosts(self, hosts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        # 排序host, == 对比时顺序一致
+        return sorted(hosts, key=lambda x: "{}://{}#{}".format(x["scheme"], x["host"], x["weight"]))
 
     def _handle_stage_backend(
         self, gateway: Gateway, stage: Stage, backend: Backend, proxy_http_config: Dict[str, Any]
