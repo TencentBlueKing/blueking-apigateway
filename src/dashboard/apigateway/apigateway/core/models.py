@@ -579,7 +579,9 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
 
     # only one stage-resource_version
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
+    # todo:1.14
     stages = models.ManyToManyField(Stage)
+
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
     comment = models.CharField(max_length=512, blank=True, null=True)
 
@@ -646,12 +648,8 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
         self._detail = json.dumps(detail)
 
     @property
-    def is_running(self):
-        return self.status == PublishEventStatusEnum.DOING.value or (
-            # 如果不是最后一个事件，如果是 success 的话说明也是 running
-            self.status == PublishEventStatusEnum.SUCCESS.value
-            and self.name != PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
-        )
+    def is_last(self):
+        return self.name == PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
 
     def __str__(self):
         return f"<PublishEvent: {self.gateway_id}/{self.stage_id}/{self.publish_id}/{self.name}>/{self.status}"

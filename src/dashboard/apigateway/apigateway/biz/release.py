@@ -15,12 +15,18 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from datetime import datetime
 from typing import Any, Dict, List
 
 from django.db.models import Max
 
-from apigateway.core.constants import GatewayStatusEnum, PublishEventStatusEnum, StageStatusEnum
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory, Stage
+from apigateway.core.constants import (
+    GatewayStatusEnum,
+    PublishEventStatusEnum,
+    ReleaseHistoryStatusEnum,
+    StageStatusEnum,
+)
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory
 
 
 class ReleaseHandler:
@@ -35,7 +41,7 @@ class ReleaseHandler:
         )
 
     @staticmethod
-    def get_publish_id_to_latest_publish_event_map(release_history_ids: List[int]) -> Dict[int, PublishEvent]:
+    def get_release_history_id_to_latest_publish_event_map(release_history_ids: List[int]) -> Dict[int, PublishEvent]:
         """通过 release_history_ids 查询最新的一个发布事件"""
         # 需要按照 "publish_id", "step", "status" 升序 (django 默认 ASC) 排列，正确排列每个事件节点的不同状态事件
         publish_events = PublishEvent.objects.filter(publish_id__in=release_history_ids).order_by(
@@ -48,6 +54,41 @@ class ReleaseHandler:
     def list_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:
         """通过 release_history_id 查询所有发布事件"""
         return PublishEvent.objects.filter(publish_id=release_history_id).order_by("step", "status").all()
+
+    @staticmethod
+    def is_running(last_event: PublishEvent):
+        """通过最新的一个event判断当前发布是否还在继续执行"""
+        return last_event.status == PublishEventStatusEnum.DOING.value or (
+            last_event.status == PublishEventStatusEnum.SUCCESS.value  # 如果不是最后一个事件,如果是success的话说明也是running
+            and not last_event.is_last
+        )
+
+    @staticmethod
+    def get_status(last_event: PublishEvent):
+        """通过end event来返回release_history状态"""
+        # 如果状态是Doing并且该状态已经过去了10min,这种也认失败
+        now = datetime.now().timestamp()
+        if last_event.status == PublishEventStatusEnum.DOING.value and now - last_event.created_time.timestamp() > 600:
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        # 如果是成功但不是最后一个节点并且该状态已经过去了10min,这种也认失败
+        if (
+            last_event.status == PublishEventStatusEnum.SUCCESS.value and not last_event.is_last
+        ) and now - last_event.created_time.timestamp() > 600:
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        # 如果还在执行中
+        if ReleaseHandler.is_running(last_event):
+            return ReleaseHistoryStatusEnum.DOING.value
+
+        # 如已经结束
+        if last_event.status == PublishEventStatusEnum.SUCCESS.value:
+            return ReleaseHistoryStatusEnum.SUCCESS.value
+
+        if last_event.status == PublishEventStatusEnum.FAILURE.value:
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        return ReleaseHistoryStatusEnum.DOING.value
 
     @staticmethod
     def batch_get_stage_release_status(stage_ids: List[int]) -> Dict[int, Dict[str, Any]]:
@@ -65,7 +106,7 @@ class ReleaseHandler:
         latest_release_histories = ReleaseHistory.objects.filter(id__in=latest_release_history_ids).all()
 
         # 查询发布历史对应的最新发布事件
-        publish_id_to_latest_event_map = ReleaseHandler.get_publish_id_to_latest_publish_event_map(
+        publish_id_to_latest_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
             latest_release_history_ids
         )
 
@@ -83,7 +124,7 @@ class ReleaseHandler:
             else:
                 # 如果最新事件状态是成功，但不是最后一个节点，返回发布中
                 latest_event = publish_id_to_latest_event_map[publish_id]
-                if latest_event.is_running:
+                if ReleaseHandler.is_running(latest_event):
                     state["status"] = PublishEventStatusEnum.DOING.value
                 else:
                     state["status"] = latest_event.status
@@ -91,17 +132,3 @@ class ReleaseHandler:
             stage_publish_status[stage_id] = state
 
         return stage_publish_status
-
-    @staticmethod
-    def clean_no_stage_related_release_history(gateway_id):
-        """
-        删除无 stages 关联的数据
-
-        因与 stages 为 ManyToMany 关联，删除 stage 时，
-        仅自动清理了 stage 与 release-history 的关联数据，
-        需要清理一次 release-history 本身的无效数据
-        """
-
-        stage_ids = Stage.objects.get_ids(gateway_id)
-
-        ReleaseHistory.objects.filter(gateway_id=gateway_id).exclude(stages__id__in=stage_ids).delete()

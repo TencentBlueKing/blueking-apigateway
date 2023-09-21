@@ -60,7 +60,8 @@ class TestReleaseCreateApi:
                 resource_version=fake_resource_version,
                 created_time=dummy_time.time,
             )
-            mocker.patch("apigateway.biz.releaser.BatchReleaser.release", return_value=release_history)
+            # TODO: mock the releaser
+            mocker.patch("apigateway.biz.releaser.Releaser.release", return_value=release_history)
 
             data = {
                 "gateway_id": fake_gateway.id,
@@ -93,13 +94,10 @@ class TestReleaseHistoryListApi:
         resource_version = G(ResourceVersion, gateway=fake_gateway)
 
         history = G(ReleaseHistory, gateway=fake_gateway, stage=stage_1, resource_version=resource_version)
-        history.stages.add(stage_1)
 
         history = G(
             ReleaseHistory, gateway=fake_gateway, stage=stage_2, resource_version=resource_version, created_by="admin"
         )
-
-        history.stages.add(stage_2)
 
         data = [
             {
@@ -145,7 +143,6 @@ class TestReleaseHistoryRetrieveApi:
             resource_version=resource_version,
             created_time=dummy_time.time,
         )
-        history.stages.add(stage)
 
         event_1 = G(
             PublishEvent,
@@ -161,15 +158,14 @@ class TestReleaseHistoryRetrieveApi:
             {
                 "gateway": fake_gateway,
                 "expected": {
-                    "publish_id": history.id,
-                    "stage_names": [stage.name],
+                    "id": history.id,
+                    "stage": {"id": stage.id, "name": stage.name},
                     "created_time": dummy_time.str,
                     "resource_version_display": resource_version.object_display,
                     "created_by": history.created_by,
                     "source": history.source,
-                    "status": f"{event_1.name} {event_1.status}",
-                    "cost": (event_1.created_time - history.created_time).total_seconds(),
-                    "is_running": False,
+                    "status": f"{event_1.status}",
+                    "duration": (event_1.created_time - history.created_time).total_seconds(),
                 },
             },
             {
@@ -189,7 +185,7 @@ class TestReleaseHistoryRetrieveApi:
             assert result["data"] == test["expected"]
 
 
-class TestPublishEventsRetrieveAPI:
+class TestReleaseHistoryEventsRetrieveAPI:
     def test_retrieve(self, request_view, fake_gateway):
         stage = G(Stage, gateway=fake_gateway)
         resource_version = G(ResourceVersion, gateway=fake_gateway)
@@ -201,7 +197,6 @@ class TestPublishEventsRetrieveAPI:
             resource_version=resource_version,
             created_time=dummy_time.time,
         )
-        history.stages.add(stage)
 
         event_1 = G(
             PublishEvent,
@@ -213,8 +208,8 @@ class TestPublishEventsRetrieveAPI:
 
         resp = request_view(
             method="GET",
-            view_name="gateway.publish.events",
-            path_params={"gateway_id": fake_gateway.id, "publish_id": history.id},
+            view_name="gateway.release_histories.events",
+            path_params={"gateway_id": fake_gateway.id, "history_id": history.id},
         )
 
         result = resp.json()

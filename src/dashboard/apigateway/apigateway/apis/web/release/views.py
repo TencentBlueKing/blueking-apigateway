@@ -26,19 +26,18 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.biz.releaser import BatchReleaser, ReleaseError
+from apigateway.biz.releaser import ReleaseError, Releaser
 from apigateway.common.error_codes import error_codes
-from apigateway.core.models import Release, ReleasedResource, ReleaseHistory
+from apigateway.core.models import Release, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
 from .serializers import (
-    PublishEventQueryOutputSLZ,
+    ReleaseHistoryEventRetrieveOutputSLZ,
     ReleaseHistoryOutputSLZ,
     ReleaseHistoryQueryInputSLZ,
     ReleaseInputSLZ,
@@ -97,39 +96,6 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         )
 
 
-class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
-    lookup_field = "stage_id"
-
-    def get_queryset(self):
-        return Release.objects.filter(gateway=self.request.gateway)
-
-    @method_decorator(
-        name="get",
-        decorator=swagger_auto_schema(tags=["WebAPI.Release"]),
-    )
-    def get(self, request, *args, **kwargs):
-        try:
-            resource_version_id = request.query_params.get("resource_version_id")
-            resource_id = request.query_params.get("resource_id")
-            released_resource = ReleasedResource.objects.get(
-                gateway_id=request.gateway.id,
-                resource_version_id=resource_version_id,
-                resource_id=resource_id,
-            )
-        except ReleasedResource.DoesNotExist:
-            raise Http404
-
-        resource_data = released_resource.data
-        resource_data.update(
-            doc_updated_time=ReleasedResourceDoc.objects.get_doc_updated_time(
-                gateway_id=request.gateway.id,
-                resource_version_id=resource_version_id,
-                resource_id=resource_id,
-            )
-        )
-        return OKJsonResponse(data=resource_data)
-
-
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
@@ -153,7 +119,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
         stage_id = slz.validated_data["stage_id"]
         gateway_id = request.gateway.id
 
-        releaser = BatchReleaser(access_token=get_user_access_token_from_request(request))
+        releaser = Releaser(access_token=get_user_access_token_from_request(request))
         try:
             with Lock(
                 f"{gateway_id}_{stage_id}",
@@ -162,7 +128,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
             ):
                 history = releaser.release(
                     request.gateway,
-                    [slz.validated_data["stage_id"]],
+                    slz.validated_data["stage_id"],
                     slz.validated_data["resource_version_id"],
                     slz.validated_data.get("comment", ""),
                     request.user.username,
@@ -177,7 +143,9 @@ class ReleaseCreateApi(generics.CreateAPIView):
         slz = ReleaseHistoryOutputSLZ(
             history,
             context={
-                "publish_events_map": ReleaseHandler.get_publish_id_to_latest_publish_event_map([history.id]),
+                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                    [history.id]
+                ),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -219,7 +187,7 @@ class ReleaseHistoryListApi(generics.ListAPIView):
             page,
             many=True,
             context={
-                "publish_events_map": ReleaseHandler.get_publish_id_to_latest_publish_event_map(
+                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
                     [release_history.id for release_history in page]
                 ),
             },
@@ -248,7 +216,9 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
         slz = slz_class(
             instance,
             context={
-                "publish_events_map": ReleaseHandler.get_publish_id_to_latest_publish_event_map([instance.id]),
+                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                    [instance.id]
+                ),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -258,13 +228,13 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="查询发布事件(日志)",
-        responses={status.HTTP_200_OK: PublishEventQueryOutputSLZ()},
+        responses={status.HTTP_200_OK: ReleaseHistoryEventRetrieveOutputSLZ()},
         tags=["WebAPI.Release"],
     ),
 )
-class PublishEventsRetrieveAPI(generics.RetrieveAPIView):
-    serializer_class = PublishEventQueryOutputSLZ
-    lookup_url_kwarg = "publish_id"
+class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
+    serializer_class = ReleaseHistoryEventRetrieveOutputSLZ
+    lookup_url_kwarg = "history_id"
 
     def get_queryset(self):
         return ReleaseHistory.objects.filter(gateway=self.request.gateway)
@@ -274,8 +244,10 @@ class PublishEventsRetrieveAPI(generics.RetrieveAPIView):
         slz = self.get_serializer(
             release_history,
             context={
-                "publish_events": ReleaseHandler.list_publish_events_by_release_history_id(release_history.id),
-                "publish_events_map": ReleaseHandler.get_publish_id_to_latest_publish_event_map([release_history.id]),
+                "release_history_events": ReleaseHandler.list_publish_events_by_release_history_id(release_history.id),
+                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                    [release_history.id]
+                ),
             },
         )
         return OKJsonResponse(data=slz.data)

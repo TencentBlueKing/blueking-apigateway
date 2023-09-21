@@ -446,14 +446,14 @@ class ReleaseHistoryManager(models.Manager):
         # query 不是模型字段，仅支持模糊匹配，如需精确匹配，可使用具体字段
         if query and fuzzy:
             queryset = queryset.filter(
-                Q(stages__name__contains=query)
+                Q(stage__name__contains=query)
                 | Q(resource_version__name__contains=query)
                 | Q(resource_version__title__contains=query)
                 | Q(resource_version__version__contains=query)
             )
 
         if stage_id:
-            queryset = queryset.filter(stages__id=stage_id)
+            queryset = queryset.filter(stage_id=stage_id)
 
         if created_by:
             if fuzzy:

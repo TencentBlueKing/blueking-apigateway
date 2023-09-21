@@ -705,12 +705,10 @@ class TestReleaseHistoryManager(TestCase):
         resource_version_2 = G(ResourceVersion, gateway=gateway, name="test-20191225-bbbbb")
 
         history = G(ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1)
-        history.stages.add(stage_prod)
 
         history = G(
             ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1, created_by="admin"
         )
-        history.stages.add(stage_prod)
 
         history = G(
             ReleaseHistory,
@@ -719,10 +717,8 @@ class TestReleaseHistoryManager(TestCase):
             resource_version=resource_version_1,
             created_time=dummy_time.time,
         )
-        history.stages.add(stage_prod)
 
         history = G(ReleaseHistory, gateway=gateway, stage=stage_test, resource_version=resource_version_2)
-        history.stages.add(stage_test)
 
         data = [
             # query, stage_name

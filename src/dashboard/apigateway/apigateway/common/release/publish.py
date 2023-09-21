@@ -93,9 +93,6 @@ def _trigger_rolling_publish(
             # 如果不是手动同步就需要生成发布历史
             release_history = _save_release_history(release, source, author)
 
-            # event上报需要按照release的stage维度来上报
-            release_history.stage = release.stage
-
             publish_id = release_history.pk
 
         # 发布 check
@@ -132,11 +129,6 @@ def _trigger_revoke_publish_for_disable(
     for release in release_list:
         # 创建发布历史
         release_history = _save_release_history(release, source, author)
-
-        # 发布事件上报的event需要按照release的stage维度来上报
-
-        release_history.stage = release.stage
-
         # 发布 check
         ok, msg = _is_gateway_ok_for_releasing(release, source)
         # 上报发布配置校验事件
@@ -145,8 +137,6 @@ def _trigger_revoke_publish_for_disable(
             PublishEventReporter.report_config_validate_fail_event(release_history, msg)
             continue
 
-        # 只能以release的stage来上报
-        release_history.stage = release.stage
         PublishEventReporter.report_config_validate_success_event(release_history)
         PublishEventReporter.report_create_publish_task_doing_event(release_history)
 
