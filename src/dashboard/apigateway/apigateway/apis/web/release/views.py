@@ -134,7 +134,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
                     request.user.username,
                 )
         except LockTimeout as err:
-            logger.exception("release failed.")
+            logger.exception("retrieve lock timeout")
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
         except ReleaseError as err:
             logger.exception("release failed.")
