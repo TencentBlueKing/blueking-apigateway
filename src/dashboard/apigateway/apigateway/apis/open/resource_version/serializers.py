@@ -72,10 +72,8 @@ class ResourceVersionCreateV1InputSLZ(serializers.Serializer):
     title = serializers.CharField(required=False)
     comment = serializers.CharField(required=False)
 
-    def validate(self, data):
-        validator = ResourceVersionValidator()
-        validator(data)
-        return data
+    class Meta:
+        validators = [ResourceVersionValidator()]
 
 
 class ResourceVersionQueryV1InputSLZ(serializers.Serializer):

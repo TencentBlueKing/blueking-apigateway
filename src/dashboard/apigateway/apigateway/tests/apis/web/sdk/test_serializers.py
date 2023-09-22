@@ -64,7 +64,6 @@ class TestSDKListOutputSLZ:
                 "resource_version": {
                     "id": resource_version.id,
                     "version": resource_version.version,
-                    "resource_version_display": "1.0.1(test)",
                 },
             },
         ]

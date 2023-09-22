@@ -159,10 +159,6 @@ class ResourceVersionValidator:
         if not Resource.objects.filter(gateway_id=gateway.id).exists():
             raise serializers.ValidationError(_("请先创建资源，然后再生成版本。"))
 
-        # 判断是否创建资源
-        if not Resource.objects.filter(gateway_id=gateway.id).exists():
-            raise serializers.ValidationError(_("请先创建资源，然后再生成版本。"))
-
         # 是否绑定backend
         if Proxy.objects.filter(resource__gateway=gateway, backend__isnull=True).exists():
             raise serializers.ValidationError(_("存在资源未绑定后端服务. "))

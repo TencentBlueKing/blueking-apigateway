@@ -37,6 +37,8 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
+from apigateway.apis.web.monitor.views import AlarmRecordSummaryListApi
+
 urlpatterns = [
     # /metrics
     path("", include("django_prometheus.urls")),
@@ -79,6 +81,11 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     path("backend/gateways/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     # todo 不应该放在顶层，后续要想办法挪到下层
+    path(
+        "backend/gateways/monitors/alarm/records/summary/",
+        AlarmRecordSummaryListApi.as_view(),
+        name="monitors.alarm_records.summary",
+    ),
 ]
 
 # add drf-yasg automatically generated documents

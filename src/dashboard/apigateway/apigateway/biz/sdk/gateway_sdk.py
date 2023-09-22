@@ -21,7 +21,6 @@ from django.db.models import Count
 
 from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Release
 
 
@@ -57,13 +56,7 @@ class GatewaySDKHandler:
                     },
                     "resource_version": {
                         "id": release["resource_version__id"],
-                        "display": ResourceVersionHandler.get_resource_version_display(
-                            {
-                                "version": release["resource_version__version"],
-                                "name": release["resource_version__name"],
-                                "title": release["resource_version__title"],
-                            }
-                        ),
+                        "display": release["resource_version__version"],
                     },
                     "sdk": SDKFactory.create(sdk).as_dict() if sdk else None,
                 }

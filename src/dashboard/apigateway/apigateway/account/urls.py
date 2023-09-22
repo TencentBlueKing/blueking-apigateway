@@ -18,13 +18,7 @@
 from django.urls import path
 
 from . import views
-from ..apis.web.monitor.views import AlarmRecordSummaryListApi
 
 urlpatterns = [
     path("userinfo/", views.UserAPIView.as_view(), name="accounts.userinfo"),
-    path(
-        "gateways/monitors/alarm/records/summary/",
-        AlarmRecordSummaryListApi.as_view(),
-        name="accounts.monitors.alarm_records.summary",
-    ),
 ]

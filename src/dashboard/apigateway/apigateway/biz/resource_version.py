@@ -38,7 +38,6 @@ from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Backend, Gateway, Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
-from apigateway.utils.string import random_string
 
 
 class ResourceVersionHandler:
@@ -224,19 +223,6 @@ class ResourceVersionHandler:
 
         # 取最大的 version
         return max(version["version"] for version in versions)
-
-    @staticmethod
-    def get_resource_version_display(data: Dict[str, Any]) -> str:
-        return f"{data['version']}"
-
-    @staticmethod
-    def generate_version_name(gateway_name: str, now: datetime.datetime) -> str:
-        """生成新的版本名称"""
-        return "{gateway_name}_{now_str}_{random_str}".format(
-            gateway_name=gateway_name,
-            now_str=time_utils.format(now, fmt="YYYYMMDDHHmmss"),
-            random_str=random_string(5),
-        )
 
     @staticmethod
     def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:

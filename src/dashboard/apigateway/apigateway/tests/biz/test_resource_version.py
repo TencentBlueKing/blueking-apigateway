@@ -26,8 +26,6 @@ from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.core.models import Resource, ResourceVersion, Stage
-from apigateway.tests.utils.testing import dummy_time
-from apigateway.utils import time as time_utils
 from apigateway.utils.time import now_datetime
 
 
@@ -146,11 +144,6 @@ class TestResourceVersionHandler:
 
         get_released_resource_version_ids_mock.assert_called_once_with(gateway_id, stage_name)
         get_resources_mock.assert_called()
-
-    def test_generate_version_name(self):
-        result = ResourceVersionHandler.generate_version_name("test", dummy_time.time)
-        time_str = time_utils.format(dummy_time.time, fmt="YYYYMMDDHHmmss")
-        assert result.startswith(f"test_{time_str}_")
 
     def test_get_latest_created_time(self, fake_gateway):
         result = ResourceVersionHandler.get_latest_created_time(fake_gateway.id)

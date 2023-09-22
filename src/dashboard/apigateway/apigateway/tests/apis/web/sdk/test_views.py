@@ -81,7 +81,6 @@ class TestGatewaySDKListCreateApi:
                             "resource_version": {
                                 "id": resource_version.id,
                                 "version": resource_version.version,
-                                "resource_version_display": "1.0.1(test)",
                             },
                         },
                         {
@@ -96,7 +95,6 @@ class TestGatewaySDKListCreateApi:
                             "resource_version": {
                                 "id": resource_version.id,
                                 "version": resource_version.version,
-                                "resource_version_display": "1.0.1(test)",
                             },
                         },
                     ],
@@ -150,7 +148,6 @@ class TestGatewaySDKListCreateApi:
                     "version_number": "2",
                     "resource_version_id": resource_version.id,
                     "resource_version": resource_version.version,
-                    "resource_version_display": "1.0.1",
                 },
             },
         ]

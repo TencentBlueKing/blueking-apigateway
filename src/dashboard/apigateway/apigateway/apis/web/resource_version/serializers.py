@@ -19,7 +19,6 @@
 from rest_framework import serializers
 
 from apigateway.biz.constants import SEMVER_PATTERN
-from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.models import ResourceVersion
@@ -30,10 +29,8 @@ class ResourceVersionCreateInputSLZ(serializers.Serializer):
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=True)
     comment = serializers.CharField(allow_blank=True, required=False)
 
-    def validate(self, data):
-        validator = ResourceVersionValidator()
-        validator(data)
-        return data
+    class Meta:
+        validators = [ResourceVersionValidator()]
 
 
 class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):
@@ -52,7 +49,6 @@ class ResourceVersionListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField()
     released_stages = serializers.SerializerMethodField()
     sdk_count = serializers.SerializerMethodField()
-    resource_version_display = serializers.SerializerMethodField()
     version = serializers.SerializerMethodField()
     comment = serializers.CharField()
     created_time = serializers.DateTimeField()
@@ -65,9 +61,6 @@ class ResourceVersionListOutputSLZ(serializers.Serializer):
 
     def get_version(self, obj):
         return obj.get("version")
-
-    def get_resource_version_display(self, obj):
-        return ResourceVersionHandler.get_resource_version_display(obj)
 
 
 class NeedNewVersionOutputSLZ(serializers.Serializer):

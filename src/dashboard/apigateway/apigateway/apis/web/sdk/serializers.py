@@ -67,7 +67,6 @@ class GatewaySDKQueryInputSLZ(serializers.Serializer):
 class ResourceVersionInfoSlz(serializers.Serializer):
     id = serializers.IntegerField()
     version = serializers.CharField()
-    resource_version_display = serializers.CharField(source="object_display")
 
 
 class GatewaySDKListOutputSLZ(serializers.Serializer):
@@ -82,4 +81,4 @@ class GatewaySDKListOutputSLZ(serializers.Serializer):
     resource_version = ResourceVersionInfoSlz(source="instance.resource_version")
 
     class Meta:
-        ref_name = "apigateway.apps.support.models"
+        ref_name = "apigateway.apis.web.sdk.serializers.GatewaySDKListOutputSLZ"

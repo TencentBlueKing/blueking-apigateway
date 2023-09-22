@@ -25,7 +25,7 @@ from apigateway.biz.released_resource import (
     ReleasedResourceHandler,
     get_released_resource_data,
 )
-from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
+from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
@@ -116,32 +116,6 @@ class TestReleasedResourceHandler:
 
         assert ReleasedResource.objects.filter(resource_version_id=rv1.id).exists()
         assert not ReleasedResource.objects.filter(resource_version_id=rv2.id).exists()
-
-    def test_get_resource_released_stage_count(self, fake_gateway):
-        s1 = G(Stage, gateway=fake_gateway)
-        s2 = G(Stage, gateway=fake_gateway)
-
-        r1 = G(Resource, gateway=fake_gateway)
-        r2 = G(Resource, gateway=fake_gateway)
-
-        rv1 = G(ResourceVersion, gateway=fake_gateway)
-        rv2 = G(ResourceVersion, gateway=fake_gateway)
-
-        G(Release, gateway=fake_gateway, stage=s1, resource_version=rv1)
-        G(Release, gateway=fake_gateway, stage=s2, resource_version=rv2)
-
-        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r1.id, data={})
-        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, resource_id=r2.id, data={})
-        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv2.id, resource_id=r2.id, data={})
-
-        result = ReleasedResourceHandler.get_resource_released_stage_count(
-            gateway_id=fake_gateway.id,
-            resource_ids=[r1.id, r2.id],
-        )
-        assert result == {
-            r1.id: 1,
-            r2.id: 2,
-        }
 
     def test_get_stage_release(self, fake_gateway):
         stage_prod = G(Stage, gateway=fake_gateway, name="prod", status=1)
