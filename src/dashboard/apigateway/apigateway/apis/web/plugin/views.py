@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict
+from typing import Any, Dict
 
 from django.db import transaction
 from django.db.models import Q
@@ -184,6 +184,53 @@ class PluginTypeCodeValidationMixin:
             )
 
 
+class PluginConfigBindingPostModificationMixin:
+    request: Any
+
+    def post_modification(
+        self,
+        source: PublishSourceEnum,
+        op_type: str,
+        scope_type: str,
+        scope_id: int,
+        instance_id: int,
+        instance_name: str,
+    ):
+        # if scope_type is stage, should publish
+        if scope_type == PluginBindingScopeEnum.STAGE.value:
+            # 触发环境发布
+            trigger_gateway_publish(
+                source,
+                self.request.user.username,
+                self.request.gateway.id,
+                scope_id,
+                is_sync=False,
+            )
+        elif scope_type == PluginBindingScopeEnum.RESOURCE.value:
+            # update the resource updated_time
+            Resource.objects.get(id=scope_id).save()
+
+        comment = ""
+        if op_type == OpTypeEnum.CREATE.value:
+            comment = _("创建插件")
+        elif op_type == OpTypeEnum.MODIFY.value:
+            comment = _("更新插件")
+        elif op_type == OpTypeEnum.DELETE.value:
+            comment = _("删除插件")
+
+        # audit
+        record_audit_log(
+            username=self.request.user.username,
+            op_type=op_type,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=self.request.gateway.id,
+            op_object_type=OpObjectTypeEnum.PLUGIN.value,
+            op_object_id=instance_id,
+            op_object=instance_name,
+            comment=comment,
+        )
+
+
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
@@ -193,7 +240,12 @@ class PluginTypeCodeValidationMixin:
         operation_description="create the plugin config, and bind to the scope_type/scope_id",
     ),
 )
-class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, PluginTypeCodeValidationMixin):
+class PluginConfigCreateApi(
+    generics.CreateAPIView,
+    ScopeValidationMixin,
+    PluginTypeCodeValidationMixin,
+    PluginConfigBindingPostModificationMixin,
+):
     serializer_class = PluginConfigCreateInputSLZ
     renderer_classes = [BkStandardApiJSONRenderer]
 
@@ -228,28 +280,13 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
             config=serializer.instance,
         ).save()
 
-        request = self.request
-        # if scope_type is stage, should publish
-        if scope_type == PluginBindingScopeEnum.STAGE.value:
-            # 触发环境发布
-            trigger_gateway_publish(
-                PublishSourceEnum.PLUGIN_BIND,
-                request.user.username,
-                request.gateway.id,
-                scope_id,
-                is_sync=False,
-            )
-
-        # audit
-        record_audit_log(
-            username=request.user.username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.PLUGIN.value,
-            op_object_id=serializer.instance.id,
-            op_object=serializer.instance.name,
-            comment=_("创建插件"),
+        self.post_modification(
+            PublishSourceEnum.PLUGIN_BIND,
+            OpTypeEnum.CREATE.value,
+            scope_type,
+            scope_id,
+            serializer.instance.id,
+            serializer.instance.name,
         )
 
 
@@ -275,7 +312,10 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
     ),
 )
 class PluginConfigRetrieveUpdateDestroyApi(
-    generics.RetrieveUpdateDestroyAPIView, ScopeValidationMixin, PluginTypeCodeValidationMixin
+    generics.RetrieveUpdateDestroyAPIView,
+    ScopeValidationMixin,
+    PluginTypeCodeValidationMixin,
+    PluginConfigBindingPostModificationMixin,
 ):
     serializer_class = PluginConfigRetrieveUpdateInputSLZ
     renderer_classes = [BkStandardApiJSONRenderer]
@@ -295,30 +335,17 @@ class PluginConfigRetrieveUpdateDestroyApi(
         self.validate_code(type_id=serializer.validated_data["type_id"])
 
         super().perform_update(serializer)
-        request = self.request
 
         # if scope_type is stage, should publish
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
-        if scope_type == PluginBindingScopeEnum.STAGE.value:
-            # 触发环境发布
-            trigger_gateway_publish(
-                PublishSourceEnum.PLUGIN_UPDATE,
-                request.user.username,
-                request.gateway.id,
-                scope_id,
-                is_sync=False,
-            )
-
-        record_audit_log(
-            username=request.user.username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.PLUGIN.value,
-            op_object_id=serializer.instance.id,
-            op_object=serializer.instance.name,
-            comment=_("更新插件"),
+        self.post_modification(
+            PublishSourceEnum.PLUGIN_UPDATE,
+            OpTypeEnum.MODIFY.value,
+            scope_type,
+            scope_id,
+            serializer.instance.id,
+            serializer.instance.name,
         )
 
     @transaction.atomic
@@ -336,30 +363,17 @@ class PluginConfigRetrieveUpdateDestroyApi(
         instance_name = instance.name
 
         super().perform_destroy(instance)
-        request = self.request
 
         # if scope_type is stage, should publish
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
-        if scope_type == PluginBindingScopeEnum.STAGE.value:
-            # 触发环境发布
-            trigger_gateway_publish(
-                PublishSourceEnum.PLUGIN_UPDATE,
-                request.user.username,
-                request.gateway.id,
-                scope_id,
-                is_sync=False,
-            )
-
-        record_audit_log(
-            username=request.user.username,
-            op_type=OpTypeEnum.DELETE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.PLUGIN.value,
-            op_object_id=instance_id,
-            op_object=instance_name,
-            comment=_("删除插件"),
+        self.post_modification(
+            PublishSourceEnum.PLUGIN_UNBIND,
+            OpTypeEnum.DELETE.value,
+            scope_type,
+            scope_id,
+            instance_id,
+            instance_name,
         )
 
 
