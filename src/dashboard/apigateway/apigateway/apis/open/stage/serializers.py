@@ -278,15 +278,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             instance.gateway_id, PluginBindingScopeEnum.STAGE.value, instance.id, stage_config
         )
 
-        # 3. 需要发布
-        trigger_gateway_publish(
-            PublishSourceEnum.STAGE_UPDATE,
-            validated_data.get("updated_by", ""),
-            instance.gateway_id,
-            instance.id,
-            is_sync=True,
-        )
-
         return instance
 
     def validate_micro_gateway_id(self, value) -> Optional[uuid.UUID]:
