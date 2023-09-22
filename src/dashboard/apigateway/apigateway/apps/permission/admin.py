@@ -18,7 +18,7 @@
 from django.contrib import admin
 
 from apigateway.apps.permission.models import (
-    AppAPIPermission,
+    AppGatewayPermission,
     AppPermissionApply,
     AppPermissionApplyStatus,
     AppPermissionRecord,
@@ -75,7 +75,7 @@ class AppPermissionApplyStatusAdmin(admin.ModelAdmin):
     list_filter = ["gateway", "status"]
 
 
-admin.site.register(AppAPIPermission, AppAPIPermissionAdmin)
+admin.site.register(AppGatewayPermission, AppAPIPermissionAdmin)
 admin.site.register(AppResourcePermission, AppResourcePermissionAdmin)
 admin.site.register(AppPermissionApply, AppPermissionApplyAdmin)
 admin.site.register(AppPermissionRecord, AppPermissionRecordAdmin)

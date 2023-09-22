@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.db.models import QuerySet
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
@@ -30,7 +29,6 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator
-from apigateway.core.models import Resource
 from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
 
@@ -46,16 +44,16 @@ class AppGatewayPermissionOutputSLZ(serializers.Serializer):
     renewable = serializers.SerializerMethodField()
 
     def get_resource_id(self, obj):
-        return obj.resource.id if hasattr(obj, "resource") else 0
+        return 0
 
     def get_resource_name(self, obj):
-        return obj.resource.name if hasattr(obj, "resource") else ""
+        return ""
 
     def get_resource_path(self, obj):
-        return obj.resource.path_display if hasattr(obj, "resource") else ""
+        return ""
 
     def get_resource_method(self, obj):
-        return obj.resource.method if hasattr(obj, "resource") else ""
+        return ""
 
     def get_expires(self, obj):
         expires = None if (not obj.expires or NeverExpiresTime.is_never_expired(obj.expires)) else obj.expires
@@ -143,17 +141,21 @@ class AppPermissionApplyOutputSLZ(serializers.ModelSerializer):
 
 
 class AppResourcePermissionOutputSLZ(AppGatewayPermissionOutputSLZ):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def get_resource_id(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.id if resource else 0
 
-        # 填充resource
-        if isinstance(self.instance, (QuerySet, list)) and self.instance:
-            resources = Resource.objects.filter(id__in=[perm.resource_id for perm in self.instance])
-            resources_map = {resource.id: resource for resource in resources}
-            for perm in self.instance:
-                resource = resources_map.get(perm.resource_id)
-                if resource:
-                    perm.resource = resource
+    def get_resource_name(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.name if resource else ""
+
+    def get_resource_path(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.path_display if resource else ""
+
+    def get_resource_method(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.method if resource else ""
 
 
 class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):

@@ -22,7 +22,7 @@ from django_filters import rest_framework as filters
 
 from apigateway.apps.permission.constants import GrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
-    AppAPIPermission,
+    AppGatewayPermission,
     AppPermissionApply,
     AppPermissionRecord,
     AppResourcePermission,
@@ -74,7 +74,7 @@ class AppGatewayPermissionFilter(filters.FilterSet):
     )
 
     class Meta:
-        model = AppAPIPermission
+        model = AppGatewayPermission
         fields = [
             "bk_app_code",
             "query",

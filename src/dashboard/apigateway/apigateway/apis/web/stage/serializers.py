@@ -18,6 +18,7 @@
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
+from packaging import version
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
@@ -77,7 +78,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
         new_resource_version = self.context["new_resource_version"]
         stage_resource_version = self.get_resource_version(obj)
 
-        if not stage_resource_version or new_resource_version > stage_resource_version:
+        if not stage_resource_version or version.parse(new_resource_version) > version.parse(stage_resource_version):
             return new_resource_version
 
         return ""

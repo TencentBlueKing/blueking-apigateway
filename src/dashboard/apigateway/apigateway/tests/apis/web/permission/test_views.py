@@ -131,7 +131,7 @@ class TestAppGatewayPermissionViewSet:
         fake_gateway = fake_resource.gateway
 
         G(
-            models.AppAPIPermission,
+            models.AppGatewayPermission,
             gateway=fake_gateway,
             bk_app_code="test",
         )
@@ -174,7 +174,7 @@ class TestAppGatewayPermissionViewSet:
                 },
                 "expected": {
                     "expires": dummy_time.time,
-                    "permission_model": models.AppAPIPermission,
+                    "permission_model": models.AppGatewayPermission,
                 },
             },
             {
@@ -185,7 +185,7 @@ class TestAppGatewayPermissionViewSet:
                 },
                 "expected": {
                     "expires": None,
-                    "permission_model": models.AppAPIPermission,
+                    "permission_model": models.AppGatewayPermission,
                 },
             },
         ]
@@ -293,7 +293,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
         resource = G(Resource, gateway=self.gateway)
 
         perm_1 = G(
-            models.AppAPIPermission,
+            models.AppGatewayPermission,
             gateway=self.gateway,
             bk_app_code="test",
         )
@@ -315,7 +315,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
             result = get_response_json(response)
             self.assertEqual(response.status_code, 201, result)
 
-            permission_model = models.AppAPIPermission
+            permission_model = models.AppGatewayPermission
             perm_record = permission_model.objects.filter(
                 gateway=self.gateway,
                 id=test["params"]["ids"][0],
@@ -328,7 +328,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
         resource = G(Resource, gateway=self.gateway)
 
         perm_1 = G(
-            models.AppAPIPermission,
+            models.AppGatewayPermission,
             gateway=self.gateway,
             bk_app_code="test",
         )
@@ -350,7 +350,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
 
             self.assertEqual(response.status_code, 204)
 
-            permission_model = models.AppAPIPermission
+            permission_model = models.AppGatewayPermission
             self.assertFalse(
                 permission_model.objects.filter(
                     gateway=self.gateway,
