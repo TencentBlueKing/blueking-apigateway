@@ -52,6 +52,7 @@ class TestAPICreateSLZ:
                     "name": "test",
                     "description": "test",
                     "maintainers": ["admin", "guest"],
+                    "developers": ["t1", "t2"],
                     "status": 1,
                     "is_public": True,
                     "user_auth_type": "ieod",
@@ -60,6 +61,7 @@ class TestAPICreateSLZ:
                     "name": "test",
                     "description": "test",
                     "maintainers": ["admin", "guest"],
+                    "developers": ["t1", "t2"],
                     "status": 1,
                     "is_public": True,
                     "hosting_type": 0,
@@ -83,6 +85,7 @@ class TestAPICreateSLZ:
                     "name": "test",
                     "description": "test",
                     "maintainers": ["admin", "guest"],
+                    "developers": [],
                     "status": 1,
                     "is_public": True,
                     "hosting_type": 1,
@@ -211,11 +214,13 @@ class TestAPIUpdateSLZ(TestCase):
             # ok
             {
                 "maintainers": ["admin"],
+                "developers": ["foo"],
                 "description": "test",
                 "is_public": True,
                 "will_error": False,
                 "expected": {
                     "maintainers": ["admin"],
+                    "developers": ["foo"],
                     "description": "test",
                     "is_public": True,
                 },
@@ -228,6 +233,7 @@ class TestAPIUpdateSLZ(TestCase):
                 "will_error": False,
                 "expected": {
                     "maintainers": ["admin"],
+                    "developers": [],
                     "description": "test",
                     "is_public": True,
                 },
@@ -241,6 +247,7 @@ class TestAPIUpdateSLZ(TestCase):
                 "will_error": False,
                 "expected": {
                     "maintainers": ["admin"],
+                    "developers": [],
                     "description": "test",
                     "is_public": True,
                 },
@@ -331,6 +338,7 @@ class TestAPIDetailSLZ:
                 "description": self.api.description,
                 "description_en": self.api.description_en,
                 "maintainers": self.api.maintainers,
+                "developers": self.api.developers,
                 "status": self.api.status,
                 "is_public": self.api.is_public,
                 "hosting_type": self.api.hosting_type,

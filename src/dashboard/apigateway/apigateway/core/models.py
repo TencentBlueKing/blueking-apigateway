@@ -77,6 +77,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     description_en = description_i18n.field("en")
 
     _maintainers = models.CharField(db_column="maintainers", max_length=1024, default="")
+    _developers = models.CharField(db_column="developers", max_length=1024, blank=True, null=True, default="")
 
     # status
     status = models.IntegerField(choices=APIStatusEnum.choices())
@@ -107,6 +108,16 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     @maintainers.setter
     def maintainers(self, data: List[str]):
         self._maintainers = ";".join(data)
+
+    @property
+    def developers(self) -> List[str]:
+        if not self._developers:
+            return []
+        return self._developers.split(";")
+
+    @developers.setter
+    def developers(self, data: List[str]):
+        self._developers = ";".join(data)
 
     def has_permission(self, username):
         """
