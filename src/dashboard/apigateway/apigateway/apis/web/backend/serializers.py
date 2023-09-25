@@ -20,36 +20,13 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
+from apigateway.apis.web.serializers import BaseBackendConfigSLZ
+from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, HOST_WITHOUT_SCHEME_PATTERN, BackendTypeEnum
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
 
-from .constants import (
-    BACKEND_CONFIG_SCHEME_MAP,
-    BACKEND_NAME_PATTERN,
-    BackendConfigSchemeEnum,
-    BackendConfigTypeEnum,
-    LoadBalanceTypeEnum,
-)
-
-
-class HostSLZ(serializers.Serializer):
-    scheme = serializers.ChoiceField(choices=BackendConfigSchemeEnum.get_choices())
-    host = serializers.RegexField(HOST_WITHOUT_SCHEME_PATTERN)
-    weight = serializers.IntegerField(min_value=1, required=False)
-
-    class Meta:
-        ref_name = "apis.web.backend.HostSLZ"
-
-
-class BaseBackendConfigSLZ(serializers.Serializer):
-    type = serializers.ChoiceField(
-        choices=BackendConfigTypeEnum.get_choices(), default=BackendConfigTypeEnum.NODE.value
-    )
-    timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
-    loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices())
-    hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
+from .constants import BACKEND_NAME_PATTERN
 
 
 class BackendConfigSLZ(BaseBackendConfigSLZ):

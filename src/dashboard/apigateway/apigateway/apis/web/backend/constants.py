@@ -18,34 +18,4 @@
 #
 import re
 
-from blue_krill.data_types.enum import EnumField, StructuredEnum
-
-from apigateway.core.constants import BackendTypeEnum
-
 BACKEND_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9-]{0,19}$")
-
-
-class BackendConfigTypeEnum(StructuredEnum):
-    NODE = EnumField("node", label="节点")
-    # NOTE: 当前不支持
-    SERVICE_DISCOVERY = EnumField("service_discovery", label="服务发现")
-
-
-class LoadBalanceTypeEnum(StructuredEnum):
-    RR = EnumField("roundrobin", "RR")
-    WRR = EnumField("weighted-roundrobin", "Weighted-RR")
-
-
-class BackendConfigSchemeEnum(StructuredEnum):
-    # for http type backend
-    HTTP = EnumField("http", label="HTTP")
-    HTTPS = EnumField("https", label="HTTPS")
-    # for grpc type backend
-    GRPC = EnumField("grpc", label="GRPC")
-    GRPCS = EnumField("grpcs", label="GRPCS")
-
-
-BACKEND_CONFIG_SCHEME_MAP = {
-    BackendTypeEnum.HTTP.value: [BackendConfigSchemeEnum.HTTP.value, BackendConfigSchemeEnum.HTTPS.value],
-    BackendTypeEnum.GRPC.value: [BackendConfigSchemeEnum.GRPC.value, BackendConfigSchemeEnum.GRPCS.value],
-}
