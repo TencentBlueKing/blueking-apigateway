@@ -21,7 +21,7 @@ import pytest
 from ddf import G
 
 from apigateway.apps.support.models import (
-    APISDK,
+    GatewaySDK,
     ReleasedResourceDoc,
 )
 from apigateway.core.models import ResourceVersion
@@ -38,8 +38,8 @@ class TestAPISDKManager:
         rv_2 = G(ResourceVersion, gateway=gateway)
         rv_3 = G(ResourceVersion, gateway=gateway)
 
-        G(APISDK, gateway=gateway, resource_version=rv_1)
-        G(APISDK, gateway=gateway, resource_version=rv_3)
+        G(GatewaySDK, gateway=gateway, resource_version=rv_1)
+        G(GatewaySDK, gateway=gateway, resource_version=rv_3)
 
         data = [
             {
@@ -56,7 +56,7 @@ class TestAPISDKManager:
             },
         ]
         for test in data:
-            result = APISDK.objects.filter_resource_version_ids_has_sdk(
+            result = GatewaySDK.objects.filter_resource_version_ids_has_sdk(
                 gateway.id,
                 test["params"]["resource_version_ids"],
             )
@@ -70,42 +70,42 @@ class TestAPISDKManager:
         rv_3 = G(ResourceVersion, gateway=gateway)
 
         G(
-            APISDK,
+            GatewaySDK,
             gateway=gateway,
             resource_version=rv_1,
             language="python",
             is_public=True,
         )
         G(
-            APISDK,
+            GatewaySDK,
             gateway=gateway,
             resource_version=rv_1,
             language="python",
             is_public=False,
         )
         sdk3 = G(
-            APISDK,
+            GatewaySDK,
             gateway=gateway,
             resource_version=rv_1,
             language="python",
             is_public=True,
         )
         G(
-            APISDK,
+            GatewaySDK,
             gateway=gateway,
             resource_version=rv_2,
             language="python",
             is_public=False,
         )
         sdk5 = G(
-            APISDK,
+            GatewaySDK,
             gateway=gateway,
             resource_version=rv_3,
             language="python",
             is_public=True,
         )
 
-        result = APISDK.objects.filter_resource_version_public_latest_sdk(
+        result = GatewaySDK.objects.filter_resource_version_public_latest_sdk(
             gateway.id,
             resource_version_ids=[rv_1.id, rv_2.id, rv_3.id],
         )

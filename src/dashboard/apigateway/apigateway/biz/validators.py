@@ -21,7 +21,7 @@ from rest_framework import serializers
 
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN
-from apigateway.core.models import ResourceVersion
+from apigateway.core.models import Proxy, Resource, ResourceVersion
 
 from .constants import APP_CODE_PATTERN, STAGE_VAR_FOR_PATH_PATTERN
 
@@ -142,3 +142,27 @@ class StageVarsValuesValidator:
                         key=key,
                     )
                 )
+
+
+class ResourceVersionValidator:
+    """
+    资源版本创建时校验网关资源版本(open/api)
+    """
+
+    def __call__(self, attrs):
+
+        gateway = attrs["gateway"]
+
+        version = attrs.get("version", attrs.get("name"))  # 兼容一下open
+
+        # 校验网关下资源数量，网关下资源数量为0时，不允许创建网关版本
+        if not Resource.objects.filter(gateway_id=gateway.id).exists():
+            raise serializers.ValidationError(_("请先创建资源，然后再生成版本。"))
+
+        # 是否绑定backend
+        if Proxy.objects.filter(resource__gateway=gateway, backend__isnull=True).exists():
+            raise serializers.ValidationError(_("存在资源未绑定后端服务. "))
+
+        # ResourceVersion 中数据量较大，因此，不使用 UniqueTogetherValidator
+        if ResourceVersion.objects.filter(gateway=gateway, version=version).exists():
+            raise serializers.ValidationError(_("版本 {version} 已存在。").format(version=version))

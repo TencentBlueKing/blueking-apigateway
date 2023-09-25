@@ -18,9 +18,9 @@
 #
 from django.urls import path
 
-from apigateway.apis.web.support.views import APISDKListCreateApi
+from apigateway.apis.web.sdk.views import GatewaySDKListCreateApi
 
 urlpatterns = [
     # 资源 SDK
-    path("sdks/", APISDKListCreateApi.as_view(), name="support.api_sdk.list_create"),
+    path("", GatewaySDKListCreateApi.as_view(), name="gateway.sdk.list_create"),
 ]

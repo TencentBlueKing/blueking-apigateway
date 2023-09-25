@@ -22,7 +22,7 @@ from ddf import G
 
 from apigateway.apis.open.support import views
 from apigateway.apps.support.api_sdk.helper import SDKInfo
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.tests.utils.testing import get_response_json
 
@@ -42,7 +42,7 @@ class TestAPISDKV1ViewSet:
         fake_gateway = G(Gateway, is_public=True, status=1)
         resource_version = G(ResourceVersion, gateway=fake_gateway)
         sdk = G(
-            APISDK,
+            GatewaySDK,
             gateway=fake_gateway,
             resource_version=resource_version,
             language="python",
@@ -116,7 +116,7 @@ class TestAPISDKV1ViewSet:
             "sdk_install_command": "",
             "resource_version_name": "test",
             "resource_version_title": "title",
-            "resource_version_display": "1.0.1(title)",
+            "resource_version_display": "1.0.1",
             "released_stages": [
                 {
                     "id": 1,

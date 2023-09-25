@@ -21,7 +21,6 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.biz.resource_version import ResourceVersionHandler
 
 
 class SDKListInputSLZ(serializers.Serializer):
@@ -54,7 +53,7 @@ class SDKListOutputSLZ(serializers.Serializer):
         resource_version = self.context["resource_versions"][obj.resource_version_id]
         return {
             "id": resource_version["id"],
-            "display": ResourceVersionHandler.get_resource_version_display(resource_version),
+            "display": resource_version["version"],
         }
 
     def get_released_stages(self, obj):

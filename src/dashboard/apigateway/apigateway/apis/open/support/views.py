@@ -28,7 +28,7 @@ from apigateway.apis.open.support import serializers
 from apigateway.apps.support.api_sdk import exceptions
 from apigateway.apps.support.api_sdk.helper import SDKHelper
 from apigateway.apps.support.api_sdk.models import SDKFactory
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.common.permissions import GatewayRelatedAppPermission
@@ -44,7 +44,7 @@ class APISDKV1ViewSet(viewsets.ModelViewSet):
     api_permission_exempt = True
 
     def get_queryset(self):
-        return APISDK.objects.all()
+        return GatewaySDK.objects.all()
 
     def list_latest_sdks(self, request, *args, **kwargs):
         slz = serializers.APISDKQueryV1SLZ(data=request.query_params)
@@ -52,7 +52,7 @@ class APISDKV1ViewSet(viewsets.ModelViewSet):
 
         data = slz.validated_data
 
-        queryset = APISDK.objects.filter_recommended_sdks(
+        queryset = GatewaySDK.objects.filter_recommended_sdks(
             data["language"],
             gateway_id=data.get("api_id"),
         )

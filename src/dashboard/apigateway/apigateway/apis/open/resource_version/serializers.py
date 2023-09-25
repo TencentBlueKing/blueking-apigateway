@@ -23,6 +23,7 @@ from rest_framework import serializers
 
 from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.stage import StageHandler
+from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.models import ResourceVersion
 
@@ -63,6 +64,16 @@ class ReleaseV1InputSLZ(serializers.Serializer):
             return resource_version_id
 
         raise serializers.ValidationError({"version": "请指定待发布的版本"})
+
+
+class ResourceVersionCreateV1InputSLZ(serializers.Serializer):
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
+    version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=True)
+    title = serializers.CharField(required=False)
+    comment = serializers.CharField(required=False)
+
+    class Meta:
+        validators = [ResourceVersionValidator()]
 
 
 class ResourceVersionQueryV1InputSLZ(serializers.Serializer):

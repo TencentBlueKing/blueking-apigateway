@@ -38,7 +38,6 @@ from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Backend, Gateway, Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
-from apigateway.utils.string import random_string
 
 
 class ResourceVersionHandler:
@@ -116,27 +115,20 @@ class ResourceVersionHandler:
     @staticmethod
     def delete_by_gateway_id(gateway_id: int):
         # delete gateway release
-        Release.objects.delete_by_gateway_id(gateway_id)
+        Release.objects.filter(gateway_id=gateway_id).delete()
 
         # delete resource version
         ResourceVersion.objects.filter(gateway_id=gateway_id).delete()
 
     @classmethod
     def create_resource_version(cls, gateway: Gateway, data: Dict[str, Any], username: str = "") -> ResourceVersion:
-        # validate data
-        cls._validate_resource_version_data(gateway, data.get("version", ""))
-
         now = time_utils.now_datetime()
 
-        # todo: name 是否直接可以去掉？created_time：与版本名中时间保持一致，方便 SDK 使用此时间作为版本号
-        name = ResourceVersionHandler.generate_version_name(gateway.name, now)
         data.update(
             {
-                "name": name,
                 "data": ResourceVersionHandler.make_version(gateway),
                 "gateway": gateway,
-                # TODO: 待 version 改为必填后，下面的 version 赋值去掉
-                "version": data.get("version") or name,
+                "version": data.get("version"),
                 "created_time": now,
                 "schema_version": ResourceVersionSchemaEnum.V2.value,
             }
@@ -231,22 +223,6 @@ class ResourceVersionHandler:
 
         # 取最大的 version
         return max(version["version"] for version in versions)
-
-    @staticmethod
-    def get_resource_version_display(data: Dict[str, Any]) -> str:
-        if not data["version"]:
-            return f"{data['name']}({data['title']})"
-
-        return f"{data['version']}({data['title']})"
-
-    @staticmethod
-    def generate_version_name(gateway_name: str, now: datetime.datetime) -> str:
-        """生成新的版本名称"""
-        return "{gateway_name}_{now_str}_{random_str}".format(
-            gateway_name=gateway_name,
-            now_str=time_utils.format(now, fmt="YYYYMMDDHHmmss"),
-            random_str=random_string(5),
-        )
 
     @staticmethod
     def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:

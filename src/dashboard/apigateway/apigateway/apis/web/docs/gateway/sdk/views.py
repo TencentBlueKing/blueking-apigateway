@@ -21,7 +21,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from tencent_apigateway_common.django.translation import get_current_language_code
 
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.sdk.models import DummySDKDocContext
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Release, ResourceVersion
@@ -45,7 +45,7 @@ class SDKListApi(generics.ListAPIView):
         slz.is_valid(raise_exception=True)
 
         sdks = list(
-            APISDK.objects.filter(
+            GatewaySDK.objects.filter(
                 gateway__is_public=True,
                 gateway__status=GatewayStatusEnum.ACTIVE.value,
                 is_recommended=True,

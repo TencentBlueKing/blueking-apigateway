@@ -21,7 +21,7 @@ from django.conf import settings
 from apigateway.apps.support.api_sdk.exceptions import TooManySDKVersion
 from apigateway.apps.support.api_sdk.models import SDKContext
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.core.models import ResourceVersion
 from apigateway.utils import time as time_utils
 
@@ -33,7 +33,7 @@ class SDKManagerMixin:
 
     def get_version(self, resource_version):
         """根据网关和资源版本，生成SDK版本号"""
-        count = APISDK.objects.get_resource_version_language_sdk_count(  # type: ignore
+        count = GatewaySDK.objects.get_resource_version_language_sdk_count(  # type: ignore
             resource_version.id,
             ProgrammingLanguageEnum.PYTHON.value,
         )
@@ -49,7 +49,7 @@ class SDKManagerMixin:
         return f"{created_time_str}{suffix}"
 
     def get_is_latest(self, resource_version):
-        return APISDK.objects.should_be_set_to_public_latest(  # type: ignore
+        return GatewaySDK.objects.should_be_set_to_public_latest(  # type: ignore
             resource_version.gateway,
             resource_version.id,
             self.is_public,
