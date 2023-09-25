@@ -23,7 +23,6 @@ import operator
 from typing import Any, Dict, List, Optional
 
 from django.db.models import Q
-from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.label.models import APILabel, ResourceLabel
@@ -206,9 +205,9 @@ class ResourceHandler:
         instance_name: str,
     ):
         comment = {
-            OpTypeEnum.CREATE: _("创建资源"),
-            OpTypeEnum.MODIFY: _("更新资源"),
-            OpTypeEnum.DELETE: _("删除资源"),
+            OpTypeEnum.CREATE: "创建资源",
+            OpTypeEnum.MODIFY: "更新资源",
+            OpTypeEnum.DELETE: "删除资源",
         }.get(op_type, "-")
 
         record_audit_log(

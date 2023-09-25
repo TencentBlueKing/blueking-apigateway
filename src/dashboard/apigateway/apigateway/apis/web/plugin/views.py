@@ -20,7 +20,6 @@ from typing import Any, Dict
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
-from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.generics import get_object_or_404
@@ -190,7 +189,7 @@ class PluginConfigBindingPostModificationMixin:
     def post_modification(
         self,
         source: PublishSourceEnum,
-        op_type: str,
+        op_type: OpTypeEnum,
         scope_type: str,
         scope_id: int,
         instance_id: int,
@@ -210,18 +209,16 @@ class PluginConfigBindingPostModificationMixin:
             # update the resource updated_time
             Resource.objects.get(id=scope_id).save()
 
-        comment = ""
-        if op_type == OpTypeEnum.CREATE.value:
-            comment = _("创建插件")
-        elif op_type == OpTypeEnum.MODIFY.value:
-            comment = _("更新插件")
-        elif op_type == OpTypeEnum.DELETE.value:
-            comment = _("删除插件")
+        comment = {
+            OpTypeEnum.CREATE: "创建插件",
+            OpTypeEnum.MODIFY: "更新插件",
+            OpTypeEnum.DELETE: "删除插件",
+        }.get(op_type, "-")
 
         # audit
         record_audit_log(
             username=self.request.user.username,
-            op_type=op_type,
+            op_type=op_type.value,
             op_status=OpStatusEnum.SUCCESS.value,
             op_object_group=self.request.gateway.id,
             op_object_type=OpObjectTypeEnum.PLUGIN.value,
@@ -282,7 +279,7 @@ class PluginConfigCreateApi(
 
         self.post_modification(
             PublishSourceEnum.PLUGIN_BIND,
-            OpTypeEnum.CREATE.value,
+            OpTypeEnum.CREATE,
             scope_type,
             scope_id,
             serializer.instance.id,
@@ -341,7 +338,7 @@ class PluginConfigRetrieveUpdateDestroyApi(
         scope_id = self.kwargs["scope_id"]
         self.post_modification(
             PublishSourceEnum.PLUGIN_UPDATE,
-            OpTypeEnum.MODIFY.value,
+            OpTypeEnum.MODIFY,
             scope_type,
             scope_id,
             serializer.instance.id,
@@ -369,7 +366,7 @@ class PluginConfigRetrieveUpdateDestroyApi(
         scope_id = self.kwargs["scope_id"]
         self.post_modification(
             PublishSourceEnum.PLUGIN_UNBIND,
-            OpTypeEnum.DELETE.value,
+            OpTypeEnum.DELETE,
             scope_type,
             scope_id,
             instance_id,
