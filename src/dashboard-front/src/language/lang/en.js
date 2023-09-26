@@ -1214,6 +1214,6 @@ export default {
     "访问后端服务出现错误，请稍后再试。": "Access backend service error, please try again later.",
     "未知错误": "Unknown error",
     "次": "request(s)",
-    "开发者": "Developer",
-    "仅影响 HomePage 中运维开发分数的计算": "Only affects the calculation of operation and maintenance development scores in HomePage"
+    "开发者": "Developers",
+    "仅影响 HomePage 中运维开发分数的计算": "Only affects the calculation of the DevOps development score in the HomePage."
 }
