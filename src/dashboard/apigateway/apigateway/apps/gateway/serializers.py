@@ -38,6 +38,7 @@ class GatewayCreateSLZ(serializers.ModelSerializer):
         validators=[ReservedAPINameValidator()],
     )
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
     user_auth_type = serializers.ChoiceField(
         choices=UserAuthTypeEnum.choices(),
         default=settings.DEFAULT_USER_AUTH_TYPE,
@@ -53,6 +54,7 @@ class GatewayCreateSLZ(serializers.ModelSerializer):
             "name",
             "description",
             "maintainers",
+            "developers",
             "status",
             "is_public",
             "user_auth_type",
@@ -93,12 +95,14 @@ class GatewayCreateSLZ(serializers.ModelSerializer):
 
 class GatewayUpdateSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
 
     class Meta:
         model = Gateway
         fields = (
             "description",
             "maintainers",
+            "developers",
             "is_public",
         )
         lookup_field = "id"
@@ -113,6 +117,7 @@ class GatewayUpdateStatusSLZ(serializers.ModelSerializer):
 
 class GatewayDetailSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
     public_key = serializers.CharField(label="网关公钥", source="jwt.public_key")
     user_auth_type = serializers.SerializerMethodField()
     allow_update_api_auth = serializers.SerializerMethodField()
@@ -137,6 +142,7 @@ class GatewayDetailSLZ(serializers.ModelSerializer):
             "description",
             "description_en",
             "maintainers",
+            "developers",
             "status",
             "is_public",
             "hosting_type",
