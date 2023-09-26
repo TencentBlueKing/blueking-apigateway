@@ -213,7 +213,6 @@
           statusForFe: false,
           is_public: true,
           maintainers: [],
-          maintainersForFe: [],
           developers: []
         },
         delApigwDialog: {
