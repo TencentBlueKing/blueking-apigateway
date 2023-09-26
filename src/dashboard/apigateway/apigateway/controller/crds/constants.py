@@ -74,3 +74,7 @@ class HttpResourceMethodEnum(str, YamlRepresenterEnum):
     OPTIONS = "OPTIONS"
     TRACE = "TRACE"
     CONNECT = "CONNECT"
+
+
+# 发布路由版本资源ID
+RELEASE_VERSION_ROUTE_ID = -1

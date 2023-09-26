@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Union
 from django.utils.functional import cached_property
 
 from apigateway.controller.crds.constants import (
+    RELEASE_VERSION_ROUTE_ID,
     ResourceRewriteHeadersStrategyEnum,
     UpstreamSchemeEnum,
     UpstreamTypeEnum,
@@ -74,7 +75,9 @@ class HttpResourceConvertor(BaseConvertor):
         return resources
 
     def _convert_http_resource(self, resource: Dict[str, Any]) -> Optional[BkGatewayResource]:
-        if resource["proxy"]["type"] not in [ProxyTypeEnum.HTTP.value, ProxyTypeEnum.MOCK.value]:
+        resource_type = resource["proxy"]["type"]
+
+        if resource_type not in [ProxyTypeEnum.HTTP.value, ProxyTypeEnum.MOCK.value]:
             return None
 
         if self._release_data.stage.name in resource["disabled_stages"]:
@@ -82,10 +85,16 @@ class HttpResourceConvertor(BaseConvertor):
 
         resource_proxy = json.loads(resource["proxy"]["config"])
 
-        service_name = ""
         upstream = self._convert_http_resource_upstream(resource_proxy)
+        rewrite = self._convert_http_resource_rewrite(resource_proxy)
+
         # operator 会将环境级别的插件绑定到service，如果资源没有定义上游，依然绑定服务
         service_name = self._default_stage_service_key
+
+        # 如果是mock类型，不需要service和rewrite
+        if resource_type == ProxyTypeEnum.MOCK.value:
+            service_name = ""
+            rewrite = ResourceRewrite(enabled=False)
 
         methods = []
         if resource["method"] != "ANY":
@@ -102,7 +111,7 @@ class HttpResourceConvertor(BaseConvertor):
                 match_subpath=resource_proxy.get("match_subpath", False),
                 # 此处会覆盖 upstream 定义的超时，最终以这里为准
                 timeout=self._convert_http_resource_timeout(resource_proxy),
-                rewrite=self._convert_http_resource_rewrite(resource_proxy),
+                rewrite=rewrite,
                 service=service_name,
                 upstream=upstream,
                 plugins=self._convert_http_resource_plugins(resource),
@@ -122,17 +131,11 @@ class HttpResourceConvertor(BaseConvertor):
             ),
             "headers": {"Content-Type": "application/json"},
         }
-        auth_config = {
-            "skip_auth_verification": True,
-            "auth_verified_required": False,
-            "app_verified_required": False,
-            "resource_perm_required": False,
-        }
         resource = {
-            "id": -1,
+            "id": RELEASE_VERSION_ROUTE_ID,
             "name": name,
-            "description": "获取发布信息，用于检查版本发布结果",
-            "description_en": "Get release information for checking version release result",
+            "description": "get release information for checking version release result",
+            "description_en": "get release information for checking version release result",
             "method": "GET",
             "path": uri,
             "match_subpath": False,
@@ -141,13 +144,6 @@ class HttpResourceConvertor(BaseConvertor):
             "proxy": {
                 "type": ProxyTypeEnum.MOCK.value,
                 "config": json.dumps(mock_config),
-            },
-            "contexts": {
-                "resource_auth": {
-                    "scope_type": "resource",
-                    "type": "resource_auth",
-                    "config": json.dumps(auth_config),
-                }
             },
             "disabled_stages": [],
             "api_labels": [],
@@ -195,23 +191,26 @@ class HttpResourceConvertor(BaseConvertor):
         )
 
     def _convert_http_resource_plugins(self, resource: Dict[str, Any]) -> List[PluginConfig]:
-        resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
+        plugins = []
 
-        plugins = [
-            PluginConfig(
-                name="bk-resource-context",
-                config={
-                    "bk_resource_id": resource["id"],
-                    "bk_resource_name": resource["name"],
-                    "bk_resource_auth": {
-                        "verified_app_required": resource_auth_config.get("app_verified_required", True),
-                        "verified_user_required": resource_auth_config.get("auth_verified_required", True),
-                        "resource_perm_required": resource_auth_config.get("resource_perm_required", True),
-                        "skip_user_verification": resource_auth_config.get("skip_auth_verification", False),
+        # 非发布版本探测路由的resource才需要bk-resource-context
+        if resource["id"] != RELEASE_VERSION_ROUTE_ID:
+            resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
+            plugins = [
+                PluginConfig(
+                    name="bk-resource-context",
+                    config={
+                        "bk_resource_id": resource["id"],
+                        "bk_resource_name": resource["name"],
+                        "bk_resource_auth": {
+                            "verified_app_required": resource_auth_config.get("app_verified_required", True),
+                            "verified_user_required": resource_auth_config.get("auth_verified_required", True),
+                            "resource_perm_required": resource_auth_config.get("resource_perm_required", True),
+                            "skip_user_verification": resource_auth_config.get("skip_auth_verification", False),
+                        },
                     },
-                },
-            ),
-        ]
+                ),
+            ]
 
         if resource["proxy"]["type"] == ProxyTypeEnum.MOCK.value:
             proxy_config = json.loads(resource["proxy"]["config"])
