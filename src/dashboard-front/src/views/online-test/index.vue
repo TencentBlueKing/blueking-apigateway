@@ -380,8 +380,7 @@
           statusForFe: false,
           is_public: true,
           user_auth_type: '',
-          maintainers: [],
-          maintainersForFe: []
+          maintainers: []
         },
         testAppCode: BK_TEST_APP_CODE,
         cookieNames: [],
