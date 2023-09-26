@@ -38,6 +38,17 @@
           <i class="apigateway-icon icon-ag-info"></i> {{ $t('仅维护人员有管理网关的权限') }}
         </p>
       </bk-form-item>
+      <bk-form-item
+        v-if="GLOBAL_CONFIG.PLATFORM_FEATURE.GATEWAY_DEVELOPERS_ENABLED"
+        :label="$t('开发者')"
+        :property="'developers'"
+        :error-display-type="'normal'"
+      >
+        <user v-model="curApigw.developers"></user>
+        <p slot="tip" class="ag-tip mt10">
+          <i class="apigateway-icon icon-ag-info"></i> {{ $t('仅影响 HomePage 中运维开发分数的计算') }}
+        </p>
+      </bk-form-item>
       <div class="ag-span"></div>
       <!-- 去除用户类型 -->
       <bk-form-item>
@@ -79,7 +90,8 @@
           status: 1,
           statusBoolean: true,
           is_public: true,
-          maintainers: []
+          maintainers: [],
+          developers: []
         },
         rules: {
           name: [
@@ -178,7 +190,8 @@
             status: 1,
             statusBoolean: true,
             is_public: true,
-            maintainers: [this.curUser.username]
+            maintainers: [this.curUser.username],
+            developers: []
           }
           this.isPageLoading = false
           this.$store.commit('setMainContentLoading', false)

@@ -67,11 +67,27 @@
           <bk-col :span="2">
             <div class="ag-form-label"> {{ $t('是否公开') }} </div>
           </bk-col>
-          <bk-col :span="10">
+          <bk-col :span="4">
             <div class="ag-form-content">
               <span class="is-public">{{ curApigw.is_public ? $t('是') : $t('否') }}</span>
             </div>
           </bk-col>
+          <template v-if="GLOBAL_CONFIG.PLATFORM_FEATURE.GATEWAY_DEVELOPERS_ENABLED">
+            <bk-col :span="2">
+              <div class="ag-form-label"> {{ $t('开发者') }} </div>
+            </bk-col>
+            <bk-col :span="4">
+              <div class="ag-form-content">
+                <bk-popover placement="right" v-if="curApigw.developers && curApigw.developers.length">
+                  <p class="ag-field-text" style="max-width: 200px; margin-top: -3px;">{{curApigw.developers.join('; ')}}</p>
+                  <div slot="content" style="white-space: normal; max-width: 300px;">
+                    {{curApigw.developers.join('; ')}}
+                  </div>
+                </bk-popover>
+                <span v-else>--</span>
+              </div>
+            </bk-col>
+          </template>
         </bk-row>
         <bk-row>
           <bk-col :span="2">
@@ -197,7 +213,8 @@
           statusForFe: false,
           is_public: true,
           maintainers: [],
-          maintainersForFe: []
+          maintainersForFe: [],
+          developers: []
         },
         delApigwDialog: {
           visiable: false,
