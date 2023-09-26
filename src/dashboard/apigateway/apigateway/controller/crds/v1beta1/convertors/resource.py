@@ -146,7 +146,7 @@ class HttpResourceConvertor(BaseConvertor):
             )
         ]
         return BkGatewayResource(
-            metadata=self._common_metadata(resource["name"]),
+            metadata=self._common_metadata(str(resource["name"])),
             spec=BkGatewayResourceSpec(
                 name=resource["name"],
                 id=resource["id"],
