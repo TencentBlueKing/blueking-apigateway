@@ -77,6 +77,19 @@ func (p publishEventService) Report(ctx context.Context, event Event) error {
 	if err != nil {
 		return fmt.Errorf("gateway[%s] get Stage[%s] info failed, err: %w", event.Gateway, event.Stage, err)
 	}
+
+	// Is the event present in the cache
+	key := cacheimpls.PublishEventKey{
+		GatewayID: releaseHistory.GatewayID,
+		StageID:   stageInfo.ID,
+		PublishID: event.PublishID,
+		Step:      constant.GetStep(event.Name),
+		Status:    event.Status,
+	}
+	if cacheimpls.PublishEventExists(ctx, key) {
+		return fmt.Errorf("event[%+v] has been reported", event)
+	}
+
 	// create event
 	publishEvent := dao.PublishEvent{
 		GatewayID:   releaseHistory.GatewayID,
@@ -93,5 +106,8 @@ func (p publishEventService) Report(ctx context.Context, event Event) error {
 	if err != nil {
 		return fmt.Errorf("create event failed, err: %w", err)
 	}
+
+	// set cache
+	cacheimpls.PublishEventSet(ctx, key)
 	return nil
 }

@@ -49,3 +49,23 @@ func cacheGet(ctx context.Context, cache memory.Cache, key cache.Key) (interface
 	}
 	return cache.Get(startCtx, key)
 }
+
+// cacheExists
+func cacheExists(ctx context.Context, cache memory.Cache, key cache.Key) bool {
+	startCtx, span := trace.StartTrace(ctx, "cache_exit")
+	if span != nil {
+		span.SetAttributes(attribute.String("key", key.Key()))
+		defer span.End()
+	}
+	return cache.Exists(startCtx, key)
+}
+
+// cacheExists
+func cacheSet(ctx context.Context, cache memory.Cache, key cache.Key, data interface{}) {
+	startCtx, span := trace.StartTrace(ctx, "cache_set")
+	if span != nil {
+		span.SetAttributes(attribute.String("key", key.Key()))
+		defer span.End()
+	}
+	cache.Set(startCtx, key, data)
+}
