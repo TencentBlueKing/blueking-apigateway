@@ -21,10 +21,7 @@ package cacheimpls
 import (
 	"context"
 	"testing"
-	"time"
 
-	"github.com/TencentBlueKing/gopkg/cache"
-	"github.com/TencentBlueKing/gopkg/cache/memory"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,16 +37,6 @@ func TestPublishEvent_Key(t *testing.T) {
 }
 
 func TestPublishEventExistsAndSet(t *testing.T) {
-	expiration := 5 * time.Minute
-
-	// valid
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return struct {
-		}{}, nil
-	}
-	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
-	publishEventCache = mockCache
 
 	key := PublishEventKey{
 		GatewayID: 1,
