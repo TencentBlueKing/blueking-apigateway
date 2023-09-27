@@ -19,9 +19,11 @@
 package cacheimpls
 
 import (
+	"context"
 	"math/rand"
 	"time"
 
+	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
 	"github.com/TencentBlueKing/gopkg/cache/memory/backend"
 )
@@ -82,6 +84,18 @@ var (
 		DisableCache,
 		tracedFuncWrapper("resource_version_mapping", retrieveResourceVersionMapping),
 		12*time.Hour,
+		newRandomDuration(30),
+	)
+
+	// event_cache: gateway_id:stage_id:publish_id:event_name => bool
+	publishEventCache = memory.NewCache(
+		"event_filter",
+		DisableCache,
+		tracedFuncWrapper("event_filter", func(ctx context.Context, key cache.Key) (interface{}, error) {
+			return struct {
+			}{}, nil
+		}),
+		10*time.Minute,
 		newRandomDuration(30),
 	)
 
