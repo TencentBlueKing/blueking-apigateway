@@ -19,13 +19,12 @@
 package cacheimpls
 
 import (
-	"context"
 	"math/rand"
 	"time"
 
-	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
 	"github.com/TencentBlueKing/gopkg/cache/memory/backend"
+	gocache "github.com/patrickmn/go-cache"
 )
 
 // DisableCache will turn off the cache, all query will go to db
@@ -87,17 +86,8 @@ var (
 		newRandomDuration(30),
 	)
 
-	// event_cache: gateway_id:stage_id:publish_id:event_name => bool
-	publishEventCache = memory.NewCache(
-		"event_filter",
-		DisableCache,
-		tracedFuncWrapper("event_filter", func(ctx context.Context, key cache.Key) (interface{}, error) {
-			return struct {
-			}{}, nil
-		}),
-		10*time.Minute,
-		newRandomDuration(30),
-	)
+	// event_cache: gateway_id:stage_id:publish_id:step:status
+	publishEventCache = gocache.New(10*time.Minute, 15*time.Minute)
 
 	// NOTE: 权限-缓存的变更来源
 	// part1: 权限本身的操作

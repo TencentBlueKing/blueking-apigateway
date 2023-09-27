@@ -21,10 +21,12 @@ func (k PublishEventKey) Key() string {
 
 // PublishEventExists will heck if event exists
 func PublishEventExists(ctx context.Context, key PublishEventKey) bool {
-	return cacheExists(ctx, publishEventCache, key)
+	k := key.Key()
+	_, ok := publishEventCache.Get(k)
+	return ok
 }
 
 // PublishEventSet will set event in cache
 func PublishEventSet(ctx context.Context, key PublishEventKey) {
-	cacheSet(ctx, publishEventCache, key, struct{}{})
+	publishEventCache.Set(key.Key(), struct{}{}, 0)
 }
