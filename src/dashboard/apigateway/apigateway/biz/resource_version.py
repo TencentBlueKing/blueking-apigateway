@@ -17,9 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+import json
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
+from cachetools import TTLCache, cached
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
@@ -35,8 +37,9 @@ from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.common.audit.shortcuts import record_audit_log
-from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
-from apigateway.core.models import Backend, Gateway, Proxy, Release, Resource, ResourceVersion, Stage
+from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
+from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
+from apigateway.core.models import Gateway, Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
 
 
@@ -62,9 +65,6 @@ class ResourceVersionHandler:
             for resource_id, labels in ResourceLabelHandler.get_labels_by_gateway(gateway).items()
         }
 
-        # backend
-        backend_ids = list(Backend.objects.filter(gateway_id=gateway.id).values_list("id", flat=True))
-
         # plugin
         resource_id_to_plugin_bindings = PluginBinding.objects.query_scope_id_to_bindings(
             gateway.id, PluginBindingScopeEnum.RESOURCE, resource_ids
@@ -83,7 +83,6 @@ class ResourceVersionHandler:
                 context_map=context_map,
                 disabled_stage_map=disabled_stage_map,
                 api_label_map=gateway_label_map,
-                backends=backend_ids,
                 plugin_map=resource_plugins_map,
             )
             for r in resource_queryset
@@ -227,6 +226,37 @@ class ResourceVersionHandler:
     @staticmethod
     def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:
         return ResourceVersion.objects.filter(gateway_id=gateway_id).values_list("created_time", flat=True).last()
+
+    # TODO: 缓存优化：可使用 django cache(with database backend) or dogpile 缓存
+    # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
+    @staticmethod
+    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS))
+    def get_used_stage_vars(gateway_id, id):
+        resource_version = ResourceVersion.objects.filter(gateway_id=gateway_id, id=id).first()
+        if not resource_version:
+            return None
+
+        used_in_path = set()
+        used_in_host = set()
+        for resource in resource_version.data:
+            if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
+                continue
+
+            proxy_config = json.loads(resource["proxy"]["config"])
+
+            proxy_path = proxy_config["path"]
+            used_in_path.update(STAGE_VAR_PATTERN.findall(proxy_path))
+
+            proxy_upstreams = proxy_config.get("upstreams")
+            if proxy_upstreams:
+                # 覆盖环境配置
+                used_in_host.update(
+                    STAGE_VAR_PATTERN.findall(";".join([host["host"] for host in proxy_upstreams["hosts"]]))
+                )
+        return {
+            "in_path": list(used_in_path),
+            "in_host": list(used_in_host),
+        }
 
 
 class ResourceDocVersionHandler:

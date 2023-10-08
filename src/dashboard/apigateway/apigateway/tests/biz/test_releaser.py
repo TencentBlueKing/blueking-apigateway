@@ -168,7 +168,7 @@ class TestBaseGatewayReleaser:
         self, mocker, fake_gateway, fake_stage, fake_resource_version, vars, mock_used_stage_vars, will_error
     ):
         mocker.patch(
-            "apigateway.core.managers.ResourceVersionManager.get_used_stage_vars",
+            "apigateway.biz.validators.ResourceVersionHandler.get_used_stage_vars",
             return_value=mock_used_stage_vars,
         )
 

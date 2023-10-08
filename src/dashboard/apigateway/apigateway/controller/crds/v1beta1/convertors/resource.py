@@ -35,7 +35,7 @@ from apigateway.controller.crds.v1beta1.models.gateway_resource import (
 )
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService
 from apigateway.core.constants import ProxyTypeEnum
-from apigateway.core.models import BackendConfig, MicroGateway
+from apigateway.core.models import MicroGateway
 from apigateway.utils.time import now_str
 
 
@@ -159,22 +159,7 @@ class HttpResourceConvertor(BaseConvertor):
         }
 
     def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any], backend_id: int) -> Optional[Upstream]:
-        # 如果是 v2，需要从 backend_config 里面去拿 upstreams
-
-        upstreams = None
-
-        if self._release_data.is_schema_v2:
-            upstreams = (
-                BackendConfig.objects.filter(
-                    backend_id=backend_id,
-                    gateway_id=self._release_data.gateway.pk,
-                    stage_id=self._release_data.stage.pk,
-                )
-                .values_list("config", flat=True)
-                .first()
-            )
-        else:
-            upstreams = resource_proxy.get("upstreams")
+        upstreams = self._release_data.get_resources_upstream(resource_proxy, backend_id)
 
         if not upstreams:
             return None
@@ -204,7 +189,7 @@ class HttpResourceConvertor(BaseConvertor):
 
     def _convert_http_resource_rewrite(self, resource_proxy: Dict[str, Any]) -> ResourceRewrite:
         # FIXME: 1.13 去掉这个逻辑
-        if self._release_data.is_schema_v2:
+        if self._release_data.resource_version.is_schema_v2:
             return ResourceRewrite(
                 enabled=False,
             )
