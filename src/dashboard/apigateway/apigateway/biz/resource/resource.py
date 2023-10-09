@@ -89,7 +89,6 @@ class ResourceHandler:
         context_map=None,
         disabled_stage_map=None,
         api_label_map=None,
-        backends=None,
         plugin_map=None,
     ):
         """
@@ -138,9 +137,6 @@ class ResourceHandler:
             )
         else:
             data["api_labels"] = api_label_map.get(resource.pk, [])
-
-        if backends:
-            data["backend_ids"] = backends
 
         if plugin_map:
             data["plugins"] = plugin_map.get(resource.pk, [])

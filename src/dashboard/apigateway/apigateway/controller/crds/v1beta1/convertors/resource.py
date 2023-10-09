@@ -35,7 +35,7 @@ from apigateway.controller.crds.v1beta1.models.gateway_resource import (
 )
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService
 from apigateway.core.constants import ProxyTypeEnum
-from apigateway.core.models import BackendConfig, MicroGateway
+from apigateway.core.models import MicroGateway
 from apigateway.utils.time import now_str
 
 
@@ -71,9 +71,7 @@ class HttpResourceConvertor(BaseConvertor):
                     resources.append(crd)
         # 如果是版本发布需要加上版本路由，版本发布需要新增一个版本路由，方便查询发布结果探测
         if self._publish_id:
-            version_route_crd = self._convert_http_resource(self._get_release_version_route_resource())
-            if version_route_crd:
-                resources.append(version_route_crd)
+            resources.append(self._get_release_version_route_resource_crd())
         return resources
 
     def _convert_http_resource(self, resource: Dict[str, Any]) -> Optional[BkGatewayResource]:
@@ -114,9 +112,7 @@ class HttpResourceConvertor(BaseConvertor):
             ),
         )
 
-    def _get_release_version_route_resource(self) -> dict:
-        uri = "/__apigw_version"
-        name = "apigw_builtin__mock_release_version"
+    def _get_release_version_route_resource_crd(self) -> BkGatewayResource:
         mock_config = {
             "code": 200,
             "body": json.dumps(
@@ -127,19 +123,13 @@ class HttpResourceConvertor(BaseConvertor):
             ),
             "headers": {"Content-Type": "application/json"},
         }
-        auth_config = {
-            "skip_auth_verification": True,
-            "auth_verified_required": False,
-            "app_verified_required": False,
-            "resource_perm_required": False,
-        }
-        return {
+        resource = {
             "id": -1,
-            "name": name,
+            "name": "apigw_builtin__mock_release_version",
             "description": "获取发布信息，用于检查版本发布结果",
-            "description_en": "Get release information for checking version release result",
+            "description_en": "get release information for checking version release result",
             "method": "GET",
-            "path": uri,
+            "path": "/__apigw_version",
             "match_subpath": False,
             "is_public": False,
             "allow_apply_permission": False,
@@ -147,34 +137,36 @@ class HttpResourceConvertor(BaseConvertor):
                 "type": ProxyTypeEnum.MOCK.value,
                 "config": json.dumps(mock_config),
             },
-            "contexts": {
-                "resource_auth": {
-                    "scope_type": "resource",
-                    "type": "resource_auth",
-                    "config": json.dumps(auth_config),
-                }
-            },
             "disabled_stages": [],
             "api_labels": [],
         }
+        plugins = [
+            PluginConfig(
+                name="bk-mock",
+                config={
+                    "response_status": mock_config["code"],
+                    "response_example": mock_config["body"],
+                    "response_headers": mock_config["headers"],
+                },
+            )
+        ]
+        return BkGatewayResource(
+            metadata=self._common_metadata(str(resource["name"])),
+            spec=BkGatewayResourceSpec(
+                name=resource["name"],
+                id=resource["id"],
+                description=resource["description"],
+                uri=resource["path"],
+                methods=[resource["method"]],
+                match_subpath=False,
+                timeout=self._convert_http_resource_timeout({"timeout": 60}),
+                rewrite=ResourceRewrite(enabled=False),
+                plugins=plugins,
+            ),
+        )
 
     def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any], backend_id: int) -> Optional[Upstream]:
-        # 如果是 v2，需要从 backend_config 里面去拿 upstreams
-
-        upstreams = None
-
-        if self._release_data.is_schema_v2:
-            upstreams = (
-                BackendConfig.objects.filter(
-                    backend_id=backend_id,
-                    gateway_id=self._release_data.gateway.pk,
-                    stage_id=self._release_data.stage.pk,
-                )
-                .values_list("config", flat=True)
-                .first()
-            )
-        else:
-            upstreams = resource_proxy.get("upstreams")
+        upstreams = self._release_data.get_resources_upstream(resource_proxy, backend_id)
 
         if not upstreams:
             return None
@@ -204,7 +196,7 @@ class HttpResourceConvertor(BaseConvertor):
 
     def _convert_http_resource_rewrite(self, resource_proxy: Dict[str, Any]) -> ResourceRewrite:
         # FIXME: 1.13 去掉这个逻辑
-        if self._release_data.is_schema_v2:
+        if self._release_data.resource_version.is_schema_v2:
             return ResourceRewrite(
                 enabled=False,
             )

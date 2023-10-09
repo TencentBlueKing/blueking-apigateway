@@ -237,6 +237,7 @@ class Proxy(ConfigModelMixin):
     backend_config_type = models.CharField(max_length=32, default=BackendConfigTypeEnum.DEFAULT.value)
     backend_service = models.ForeignKey("BackendService", on_delete=models.SET_NULL, null=True, default=None)
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
+
     # config = from ConfigModelMixin
 
     def __str__(self):
@@ -508,6 +509,10 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
             return f"{self.name}({self.title})"
 
         return f"{self.version}({self.title})"
+
+    @property
+    def is_schema_v2(self):
+        return self.schema_version == ResourceVersionSchemaEnum.V2.value
 
     def __str__(self):
         return f"<ResourceVersion: {self.gateway}/{self.version}>"

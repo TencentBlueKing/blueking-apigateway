@@ -33,7 +33,6 @@ from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     ContextScopeTypeEnum,
     ContextTypeEnum,
-    ResourceVersionSchemaEnum,
 )
 from apigateway.core.models import BackendConfig, Context, Gateway, Release, ResourceVersion, Stage
 
@@ -51,10 +50,6 @@ class ReleaseData:
     @cached_property
     def stage(self) -> Stage:
         return self._release.stage
-
-    @cached_property
-    def is_schema_v2(self) -> bool:
-        return self._release.resource_version.schema_version == ResourceVersionSchemaEnum.V2.value
 
     @cached_property
     def resource_version(self) -> ResourceVersion:
@@ -75,30 +70,11 @@ class ReleaseData:
         }
 
     @cached_property
-    def _stage_backend(self) -> BackendConfig:
-        """
-        :return: A dict contains all the backend objects at "stage" scope, the key is
-            the type of backend, such as "http/grpc".
-        """
-        return (
-            BackendConfig.objects.filter(
-                gateway_id=self.gateway.pk, stage_id=self.stage.pk, backend__name=DEFAULT_BACKEND_NAME
-            )
-            .prefetch_related("backend")
-            .get()
-        )
-
-    @cached_property
     def stage_backend_config(self) -> Dict[str, Any]:
-        if self.is_schema_v2:
-            return self._stage_backend.config
         return json.loads(self._stage_contexts[ContextTypeEnum.STAGE_PROXY_HTTP.value]["config"])
 
     @cached_property
     def stage_upstreams(self) -> Dict[str, Any]:
-        if self.is_schema_v2:
-            return self.stage_backend_config
-
         return self.stage_backend_config.get("upstreams")
 
     @cached_property
@@ -165,6 +141,64 @@ class ReleaseData:
                         binding_scope_type=PluginBindingScopeEnum.RESOURCE.value,
                     )
                     for binding in bindings
+                ]
+            )
+
+        return resource_id_to_plugins
+
+    def get_resources_upstream(self, resource_proxy: Dict[str, Any], backend_id: int):
+        return resource_proxy.get("upstreams")
+
+
+class ReleaseDataV2(ReleaseData):
+    @cached_property
+    def _stage_backend(self) -> BackendConfig:
+        """
+        :return: A dict contains all the backend objects at "stage" scope, the key is
+            the type of backend, such as "http/grpc".
+        """
+        return (
+            BackendConfig.objects.filter(
+                gateway_id=self.gateway.pk, stage_id=self.stage.pk, backend__name=DEFAULT_BACKEND_NAME
+            )
+            .prefetch_related("backend")
+            .get()
+        )
+
+    @property
+    def stage_upstreams(self) -> Dict[str, Any]:
+        return self.stage_backend_config
+
+    @property
+    def stage_backend_config(self) -> Dict[str, Any]:
+        return self._stage_backend.config
+
+    def get_resources_upstream(self, resource_proxy: Dict[str, Any], backend_id: int) -> Dict[str, Any]:
+        return (
+            BackendConfig.objects.filter(
+                backend_id=backend_id,
+                gateway_id=self.gateway.pk,
+                stage_id=self.stage.pk,
+            )
+            .values_list("config", flat=True)
+            .first()
+        )
+
+    @property
+    def _resources_plugins(self) -> Dict[int, List[PluginData]]:
+        resource_id_to_plugins: Dict[int, List[PluginData]] = defaultdict(list)
+
+        # 插件
+        resource_configs = self.resource_version.data
+        for resource in resource_configs:
+            resource_id_to_plugins[resource["id"]].extend(
+                [
+                    PluginData(
+                        type_code=binding["type"],
+                        config=PluginConvertorFactory.get_convertor(binding["type"]).convert(binding["config"]),
+                        binding_scope_type=PluginBindingScopeEnum.RESOURCE.value,
+                    )
+                    for binding in resource.get("plugins", [])
                 ]
             )
 
