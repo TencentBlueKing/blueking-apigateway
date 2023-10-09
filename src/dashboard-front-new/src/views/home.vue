@@ -48,6 +48,42 @@ const { t } = useI18n();
           </bk-button>
         </div>
       </div>
+
+      <div class="table-item flex-row align-items-center">
+        <div class="flex-1 of4 name">bktest.paaS.xxx.com</div>
+        <div class="flex-1 of1">xxx</div>
+        <div class="flex-1 of2 env">
+          <div class="flex-row env">
+            <bk-tag>MagicBox</bk-tag>
+            <bk-tag>dev</bk-tag>
+            <bk-tag>MagicBox</bk-tag>
+            <bk-tag>dev</bk-tag>
+          </div>
+        </div>
+        <div class="flex-1 of1 text-c">0</div>
+        <div class="flex-1 of2 ft-12">
+          <bk-button
+            text
+            theme="primary"
+          >
+            环境概览
+          </bk-button>
+          <bk-button
+            text
+            theme="primary"
+            class="pl20"
+          >
+            资源配额
+          </bk-button>
+          <bk-button
+            text
+            theme="primary"
+            class="pl20"
+          >
+            流水日志
+          </bk-button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
