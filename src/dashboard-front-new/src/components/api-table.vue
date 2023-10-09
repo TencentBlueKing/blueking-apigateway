@@ -1,48 +1,24 @@
 <script setup lang="ts">
 const columns = [
   {
-    label: '序号',
+    label: '网关名',
     type: 'index',
-    sort: {
-      value: 'asc',
-    },
-    width: 50,
-    minWidth: 80,
   },
   {
-    label: '名称/内网IP',
+    label: '创建着',
     field: 'ip',
   },
   {
-    label: '来源',
+    label: '环境列表',
     field: 'source',
-    width: 80,
-    filter: {
-      list: [
-        {
-          text: 'QQ',
-          value: 'QQ',
-        },
-        {
-          text: '微信',
-          value: '微信',
-        },
-        {
-          text: 'Email',
-          value: 'Email',
-        },
-      ],
-    },
   },
   {
-    label: '创建时间',
+    label: '资源数量',
     field: 'create_time',
-    sort: 'custom',
   },
   {
-    label: '状态',
+    label: '操作',
     field: 'status',
-    sort: true,
   },
 ];
 const tableData =  [

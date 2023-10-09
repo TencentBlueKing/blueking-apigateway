@@ -1,39 +1,179 @@
 <script setup lang="ts">
 import {
   ref,
+  computed,
 } from 'vue';
+import UserInfo from '@/components/user-info.vue';
+import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { useUser } from '@/store';
 import { getUser } from '@/http';
 import { Message } from 'bkui-vue';
 
-console.log('window', window);
+const { t } = useI18n();
+const router = useRouter();
+
 // 加载完用户数据才会展示页面
-const isLoading = ref(true);
+const userLoading = ref(false);
 // 获取用户数据
 const user = useUser();
 getUser()
   .then((data) => {
     user.setUser(data);
-    isLoading.value = false;
+    userLoading.value = true;
   })
   .catch(() => {
     Message('获取用户信息失败，请检查后再试');
   });
+
+const headerList = ref([
+  {
+    name: t('我的网关'),
+    id: 1,
+    url: 'home',
+    enabled: true,
+  },
+  {
+    name: t('组件管理'),
+    id: 4,
+    url: 'apigwDoc',
+    enabled: true,
+  },
+]);
+
+const apigwId = computed(() => {
+  if (route.params.id !== undefined) {
+    return route.params.id;
+  }
+  return undefined;
+});
+
+const isExternalLink  = (url) => {
+  return /^https?:\/\//.test(url);
+};
+
+const handleToPage = (routeName, index, link) => {
+  console.log('routeName', routeName);
+  // 文档组件API
+  if (routeName === 'componentAPI') {
+    if (BK_PAAS2_ESB_DOC_URL) {
+      window.open(BK_PAAS2_ESB_DOC_URL);
+      return;
+    }
+  }
+  // 常用工具
+  if (link !== undefined) {
+    window.open(routeName);
+    return;
+  }
+  if (routeName === 'apigwSystem') {
+    this.$router.push({
+      name: 'apigwSystem',
+    });
+    return;
+  }
+  goPage(routeName);
+};
+
+const goPage = (routeName) => {
+  if (routeName) {
+    router.push({
+      name: routeName,
+      params: {
+        id: ['home', 'apigwDoc'].includes(routeName) ? '' : apigwId.value,
+      },
+    });
+  }
+};
+
 </script>
 
 <template>
-  <bk-loading
-    :loading="isLoading"
-    :class="{
-      'main-loading': isLoading
-    }"
+  <bk-navigation
+    class="navigation-content"
+    navigation-type="top-bottom"
+    :need-menu="false"
+    :default-open="true"
   >
-    <router-view v-if="!isLoading"></router-view>
-  </bk-loading>
+    <template #side-icon>
+      <!-- v-if="localLanguage === 'en'" -->
+      <img src="@/images/APIgataway-c.png" class="api-logo">
+      <!-- <img v-else src="@/images/APIgataway-c.png" class="api-logo"> -->
+    </template>
+    <div class="content">
+      <router-view></router-view>
+    </div>
+    <template #header>
+      <div
+        class="header"
+      >
+        <div class="header-nav">
+          <div
+            v-for="(item, index) in headerList"
+            :key="item.id"
+            class="header-nav-item"
+          >
+            <span
+              v-if="!isExternalLink(item.url)"
+              @click="handleToPage(item.url, index, item.link)">{{item.name}}</span>
+            <a :href="item.url" target="_blank" v-else>{{item.name}}</a>
+          </div>
+        </div>
+        <user-info v-if="userLoading" />
+      </div>
+    </template>
+  </bk-navigation>
 </template>
 
 <style lang="scss" scoped>
-  .main-loading {
-    margin-top: 25vw;
+.navigation-content {
+  :deep(.bk-navigation-wrapper) {
+    .container-content{
+      padding: 0px !important;
+    }
   }
+
+  .content {
+    font-size: 24px;
+    height: calc(100% - 20px);
+    margin-bottom: 20px;
+  }
+
+  .api-logo{
+    height: 22px;
+    cursor: pointer;
+  }
+
+  .header{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #96A2B9;
+    .header-nav {
+      display: flex;
+      padding: 0;
+      margin: 0;
+      &-item {
+          list-style: none;
+          margin-right: 40px;
+          color: #96A2B9;
+          &.item-active {
+              color: #FFFFFF !important;
+          }
+          &:hover {
+              cursor: pointer;
+              color: #D3D9E4;
+          }
+          a {
+              color: #96A2B9;
+              &:hover {
+                  color: #D3D9E4;
+              }
+          }
+      }
+    }
+  }
+}
 </style>

@@ -3,14 +3,21 @@ import {
   createWebHistory,
 } from 'vue-router';
 
-const HomeDemo = () => import(/* webpackChunkName: "HomeDemo" */ '../views/home-demo.vue');
+const Home = () => import(/* webpackChunkName: "Home" */ '@/views/home.vue');
+const ApigwDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/components/doc/index.vue');
 
 export default createRouter({
   history: createWebHistory(window.SITE_URL),
   routes: [
     {
       path: '/',
-      component: HomeDemo,
+      name: 'home',
+      component: Home,
+    },
+    {
+      path: '/apigw-api',
+      name: 'apigwDoc',
+      component: ApigwDoc,
     },
   ],
 });
