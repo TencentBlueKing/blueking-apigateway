@@ -5,13 +5,15 @@ import {
 } from 'vue';
 import UserInfo from '@/components/user-info.vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useUser } from '@/store';
 import { getUser } from '@/http';
 import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
 const router = useRouter();
+const route = useRoute();
+const { BK_PAAS2_ESB_DOC_URL } = window;
 
 // 加载完用户数据才会展示页面
 const userLoading = ref(false);
@@ -32,12 +34,14 @@ const headerList = ref([
     id: 1,
     url: 'home',
     enabled: true,
+    link: '',
   },
   {
     name: t('组件管理'),
     id: 4,
     url: 'apigwDoc',
     enabled: true,
+    link: '',
   },
 ]);
 
@@ -48,11 +52,11 @@ const apigwId = computed(() => {
   return undefined;
 });
 
-const isExternalLink  = (url) => {
+const isExternalLink  = (url?: string) => {
   return /^https?:\/\//.test(url);
 };
 
-const handleToPage = (routeName, index, link) => {
+const handleToPage = (routeName: string, index: number, link: string) => {
   console.log('routeName', routeName);
   // 文档组件API
   if (routeName === 'componentAPI') {
@@ -67,7 +71,7 @@ const handleToPage = (routeName, index, link) => {
     return;
   }
   if (routeName === 'apigwSystem') {
-    this.$router.push({
+    router.push({
       name: 'apigwSystem',
     });
     return;
@@ -75,7 +79,7 @@ const handleToPage = (routeName, index, link) => {
   goPage(routeName);
 };
 
-const goPage = (routeName) => {
+const goPage = (routeName: string) => {
   if (routeName) {
     router.push({
       name: routeName,
