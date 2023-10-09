@@ -68,9 +68,7 @@ class HttpResourceConvertor(BaseConvertor):
                 resources.append(crd)
         # 如果是版本发布需要加上版本路由，版本发布需要新增一个版本路由，方便查询发布结果探测
         if self._publish_id:
-            version_route_crd = self._convert_http_resource(self._get_release_version_route_resource())
-            if version_route_crd:
-                resources.append(version_route_crd)
+            resources.append(self._get_release_version_route_resource_crd())
         return resources
 
     def _convert_http_resource(self, resource: Dict[str, Any]) -> Optional[BkGatewayResource]:
@@ -109,9 +107,7 @@ class HttpResourceConvertor(BaseConvertor):
             ),
         )
 
-    def _get_release_version_route_resource(self) -> dict:
-        uri = "/__apigw_version"
-        name = "apigw_builtin__mock_release_version"
+    def _get_release_version_route_resource_crd(self) -> BkGatewayResource:
         mock_config = {
             "code": 200,
             "body": json.dumps(
@@ -122,19 +118,13 @@ class HttpResourceConvertor(BaseConvertor):
             ),
             "headers": {"Content-Type": "application/json"},
         }
-        auth_config = {
-            "skip_auth_verification": True,
-            "auth_verified_required": False,
-            "app_verified_required": False,
-            "resource_perm_required": False,
-        }
         resource = {
             "id": -1,
-            "name": name,
+            "name": "apigw_builtin__mock_release_version",
             "description": "获取发布信息，用于检查版本发布结果",
-            "description_en": "Get release information for checking version release result",
+            "description_en": "get release information for checking version release result",
             "method": "GET",
-            "path": uri,
+            "path": "/__apigw_version",
             "match_subpath": False,
             "is_public": False,
             "allow_apply_permission": False,
@@ -142,17 +132,33 @@ class HttpResourceConvertor(BaseConvertor):
                 "type": ProxyTypeEnum.MOCK.value,
                 "config": json.dumps(mock_config),
             },
-            "contexts": {
-                "resource_auth": {
-                    "scope_type": "resource",
-                    "type": "resource_auth",
-                    "config": json.dumps(auth_config),
-                }
-            },
             "disabled_stages": [],
             "api_labels": [],
         }
-        return resource
+        plugins = [
+            PluginConfig(
+                name="bk-mock",
+                config={
+                    "response_status": mock_config["code"],
+                    "response_example": mock_config["body"],
+                    "response_headers": mock_config["headers"],
+                },
+            )
+        ]
+        return BkGatewayResource(
+            metadata=self._common_metadata(str(resource["name"])),
+            spec=BkGatewayResourceSpec(
+                name=resource["name"],
+                id=resource["id"],
+                description=resource["description"],
+                uri=resource["path"],
+                methods=[resource["method"]],
+                match_subpath=False,
+                timeout=self._convert_http_resource_timeout({"timeout": 60}),
+                rewrite=ResourceRewrite(enabled=False),
+                plugins=plugins,
+            ),
+        )
 
     def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any]) -> Optional[Upstream]:
         upstreams = resource_proxy.get("upstreams")
