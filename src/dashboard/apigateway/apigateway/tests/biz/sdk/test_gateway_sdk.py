@@ -17,7 +17,7 @@
 #
 from ddf import G
 
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 
 
@@ -42,9 +42,9 @@ class TestGatewaySDKHandler:
         assert result == []
 
     def test_get_resource_version_latest_public_sdk(self, fake_gateway, fake_resource_version):
-        G(APISDK, gateway=fake_gateway, is_public=True, resource_version=fake_resource_version, language="zh")
+        G(GatewaySDK, gateway=fake_gateway, is_public=True, resource_version=fake_resource_version, language="zh")
         latest_sdk = G(
-            APISDK, gateway=fake_gateway, is_public=True, resource_version=fake_resource_version, language="zh"
+            GatewaySDK, gateway=fake_gateway, is_public=True, resource_version=fake_resource_version, language="zh"
         )
 
         assert GatewaySDKHandler._get_resource_version_latest_public_sdk(

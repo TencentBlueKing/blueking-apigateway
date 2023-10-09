@@ -22,7 +22,7 @@ from typing import Dict, Optional
 
 from apigateway.apps.support.api_sdk.managers import SDKManagerFactory
 from apigateway.apps.support.api_sdk.models import SDKContext
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.utils import time as time_utils
@@ -31,7 +31,7 @@ from apigateway.utils import time as time_utils
 @dataclass
 class SDKInfo:
     context: SDKContext
-    sdk: APISDK
+    sdk: GatewaySDK
 
     def get_packaged_files(self) -> Dict[str, str]:
         return {os.path.basename(file_path): file_path for file_path in self.context.files}
@@ -84,7 +84,7 @@ class SDKHelper:
 
         now = time_utils.now_datetime()
         # `instance` is a `APISDK` object.
-        instance = APISDK.objects.create(
+        instance = GatewaySDK.objects.create(
             gateway=context.resource_version.gateway,
             resource_version=context.resource_version,
             language=context.language.value,

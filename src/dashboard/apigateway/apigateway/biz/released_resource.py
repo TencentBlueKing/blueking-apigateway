@@ -16,13 +16,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import StageStatusEnum
-from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
+from apigateway.core.models import Gateway, Release, ReleasedResource, Stage
 from apigateway.core.utils import get_path_display, get_resource_doc_link
 
 
@@ -109,57 +107,6 @@ class ReleasedResourceHandler:
 
     # TODO 待重构
     @staticmethod
-    def get_resource_released_stage_count(gateway_id: int, resource_ids: List[int]) -> Dict[int, int]:
-        """获取资源已发布环境的数量"""
-        resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
-        released_stage_count = Release.objects.get_released_stage_count(resource_version_ids)
-
-        resource_released_stage_count: dict = defaultdict(int)
-
-        queryset = ReleasedResource.objects.filter(gateway_id=gateway_id, resource_id__in=resource_ids).values(
-            "resource_id", "resource_version_id"
-        )
-        for resource in queryset:
-            resource_id = resource["resource_id"]
-            resource_version_id = resource["resource_version_id"]
-            resource_released_stage_count[resource_id] += released_stage_count.get(resource_version_id, 0)
-
-        return resource_released_stage_count
-
-    # TODO 待重构
-    @staticmethod
-    def get_resource_released_stages(gateway_id: int, resource_id: int) -> Dict[int, dict]:
-        """获取资源已发布的环境信息"""
-
-        rv_id_to_released_resource_map = ReleasedResource.objects.get_resource_version_id_to_obj_map(
-            gateway_id, resource_id
-        )
-        released_stage_id_map = Release.objects.get_stage_id_to_fields_map(
-            gateway_id, rv_id_to_released_resource_map.keys()
-        )
-        resource_version_id_map = ResourceVersion.objects.get_id_to_fields_map(
-            gateway_id,
-            rv_id_to_released_resource_map.keys(),
-        )
-
-        resource_released_stages = {}
-        for stage_id, stage_release in released_stage_id_map.items():
-            resource_version_id = stage_release["resource_version_id"]
-            resource_version = resource_version_id_map[resource_version_id]
-            released_resource = rv_id_to_released_resource_map[resource_version_id]
-            resource_released_stages[stage_id] = {
-                "stage_id": stage_id,
-                "resource_version_id": resource_version["id"],
-                "resource_version_name": resource_version["name"],
-                "resource_version_title": resource_version["title"],
-                "resource_version_display": ResourceVersionHandler.get_resource_version_display(resource_version),
-                "released_resource": released_resource,
-            }
-
-        return resource_released_stages
-
-    # TODO 待重构
-    @staticmethod
     def get_stage_release(gateway, stage_ids=None):
         """
         获取环境部署信息
@@ -186,13 +133,7 @@ class ReleasedResourceHandler:
                 "resource_version": {
                     "version": release["resource_version__version"],
                 },
-                "resource_version_display": ResourceVersionHandler.get_resource_version_display(
-                    {
-                        "version": release["resource_version__version"],
-                        "name": release["resource_version__name"],
-                        "title": release["resource_version__title"],
-                    }
-                ),
+                "resource_version_display": release["resource_version__version"],
             }
             for release in stage_release
         }

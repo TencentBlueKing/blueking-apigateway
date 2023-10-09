@@ -21,7 +21,6 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.resource_version.serializers import ResourceVersionInfoSLZ
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.releaser import ReleaseError, Releaser
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -30,7 +29,12 @@ from apigateway.core.models import Release, ResourceVersion, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 
-from .serializers import ReleaseV1InputSLZ, ResourceVersionListV1OutputSLZ, ResourceVersionQueryV1InputSLZ
+from .serializers import (
+    ReleaseV1InputSLZ,
+    ResourceVersionCreateV1InputSLZ,
+    ResourceVersionListV1OutputSLZ,
+    ResourceVersionQueryV1InputSLZ,
+)
 
 
 @method_decorator(
@@ -43,12 +47,13 @@ from .serializers import ReleaseV1InputSLZ, ResourceVersionListV1OutputSLZ, Reso
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        request_body=ResourceVersionInfoSLZ,
+        request_body=ResourceVersionCreateV1InputSLZ,
         tags=["OpenAPI.ResourceVersion"],
     ),
 )
 class ResourceVersionListCreateApi(generics.ListCreateAPIView):
     permission_classes = [GatewayRelatedAppPermission]
+    serializer_class = ResourceVersionCreateV1InputSLZ
 
     def list(self, request, *args, **kwargs):
         slz = ResourceVersionQueryV1InputSLZ(data=request.query_params)
@@ -64,9 +69,10 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
 
     @transaction.atomic
     def create(self, request, gateway_name: str, *args, **kwargs):
-        # manager = ResourceVersionManager()
-        # instance = manager.create_resource_version(request.gateway, request.data, request.user.username)
-        instance = ResourceVersionHandler.create_resource_version(request.gateway, request.data, request.user.username)
+        slz = self.get_serializer(data=request.data, context={"request": request})
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+        instance = ResourceVersionHandler.create_resource_version(request.gateway, data, request.user.username)
 
         # 创建文档版本
         if ResourceDoc.objects.filter(gateway=request.gateway).exists():

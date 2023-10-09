@@ -33,13 +33,11 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     STAGE_NAME_PATTERN,
     LoadBalanceTypeEnum,
-    PublishSourceEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, MicroGateway, Stage
 
@@ -230,14 +228,12 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             scheme, _host = host["host"].rstrip("/").split("://")
             hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
 
-        config = {
+        return {
             "type": "node",
             "timeout": proxy_http_config["timeout"],
             "loadbalance": proxy_http_config["upstreams"]["loadbalance"],
             "hosts": hosts,
         }
-
-        return config
 
     def update(self, instance, validated_data):
         validated_data.pop("name", None)

@@ -17,7 +17,7 @@
 #
 from django.contrib import admin
 
-from apigateway.apps.support.models import APISDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
+from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 
 
 class ResourceDocAdmin(admin.ModelAdmin):
@@ -58,5 +58,5 @@ class APISDKAdmin(admin.ModelAdmin):
 
 admin.site.register(ResourceDoc, ResourceDocAdmin)
 admin.site.register(ResourceDocVersion, ResourceDocVersionAdmin)
-admin.site.register(APISDK, APISDKAdmin)
+admin.site.register(GatewaySDK, APISDKAdmin)
 admin.site.register(ReleasedResourceDoc, ReleasedResourceDocAdmin)

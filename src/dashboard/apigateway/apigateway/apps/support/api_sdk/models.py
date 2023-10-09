@@ -21,7 +21,7 @@ from typing import Any, ClassVar, Dict, List, Type
 from tencent_apigateway_common.pypi.pip import PipHelper
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.pypi import RepositoryConfig
 
@@ -47,7 +47,7 @@ class SDKContext:
 
 @dataclass
 class SDK:
-    instance: APISDK
+    instance: GatewaySDK
 
     language = ProgrammingLanguageEnum.UNKNOWN
 
@@ -76,7 +76,7 @@ class SDK:
         return self.instance.created_time
 
     @classmethod
-    def from_model(cls, instance: APISDK):
+    def from_model(cls, instance: GatewaySDK):
         return cls(instance=instance)
 
     def as_dict(self) -> Dict[str, Any]:
@@ -191,6 +191,6 @@ class SDKFactory:
     }
 
     @classmethod
-    def create(cls, model: APISDK) -> SDK:
+    def create(cls, model: GatewaySDK) -> SDK:
         sdk_cls = cls._mappings.get(model.language, SDK)
         return sdk_cls.from_model(model)

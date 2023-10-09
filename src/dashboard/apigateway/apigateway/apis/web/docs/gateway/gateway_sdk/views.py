@@ -23,7 +23,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from tencent_apigateway_common.django.translation import get_current_language_code
 
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.biz.sdk.models import SDKDocContext
 from apigateway.common.permissions import GatewayDisplayablePermission
@@ -73,7 +73,7 @@ class SDKUsageExampleApi(generics.RetrieveAPIView):
         slz.is_valid(raise_exception=True)
         programming_language = slz.validated_data["language"]
 
-        sdk = APISDK.objects.filter(
+        sdk = GatewaySDK.objects.filter(
             gateway_id=request.gateway.id,
             is_recommended=True,
             language=programming_language,
