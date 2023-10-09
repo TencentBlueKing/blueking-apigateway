@@ -46,7 +46,7 @@ class ServiceConvertor(BaseConvertor):
         for node in upstreams.get("hosts", []):
             host = node["host"]
             if "scheme" in node:
-                host = node["scheme"] + "//" + host
+                host = node["scheme"] + "://" + host
             url_info = UrlInfo(host)
 
             try:
