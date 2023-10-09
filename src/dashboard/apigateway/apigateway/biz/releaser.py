@@ -19,7 +19,6 @@
 from dataclasses import dataclass
 
 from blue_krill.async_utils.django_utils import delay_on_commit
-from django.db.models import Count
 from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
@@ -184,22 +183,26 @@ class BaseGatewayReleaser:
     def _validate_stage_plugins(self, stage: Stage):
         """校验待发布环境的plugin配置"""
 
-        # 环境绑定的插件，同一类型，只能绑定一个即同一个PluginConfig只能绑定一个环境
-        count = (
+        # 环境绑定的插件，同一类型，只能绑定一个即同一个类型的PluginConfig只能绑定一个环境
+        stage_plugins = (
             PluginBinding.objects.filter(
                 scope_id=stage.id,
                 scope_type=PluginBindingScopeEnum.STAGE.value,
             )
-            .values("config__type")
-            .annotate(count=Count("id"))
+            .prefetch_related("config")
+            .all()
         )
-        if count > 1:
-            raise ReleaseValidationError(
-                _("网关环境【{stage_name} 存在绑定多个相同类型的插件。").format(
-                    # noqa: E501
-                    stage_name=stage.name,
+        stage_plugin_type_set = set()
+        for stage_plugin in stage_plugins:
+            if stage_plugin.config.type.code in stage_plugin_type_set:
+                raise ReleaseValidationError(
+                    _("网关环境【{stage_name}】存在绑定多个相同类型[{plugin_code}]的插件。").format(
+                        # noqa: E501
+                        stage_name=stage.name,
+                        plugin_code=stage_plugin.config.type.code,
+                    )
                 )
-            )
+            stage_plugin_type_set.add(stage_plugin.config.type.code)
 
     def _validate_stage_upstreams(self, gateway_id: int, stage: Stage, resource_version_id: int):
         """检查环境的代理配置，如果未配置任何有效的上游主机地址（Hosts），则报错。

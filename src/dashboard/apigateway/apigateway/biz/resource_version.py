@@ -231,7 +231,7 @@ class ResourceVersionHandler:
     # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
     @staticmethod
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS))
-    def get_used_stage_vars(gateway_id, id):
+    def get_used_stage_vars(gateway_id: int, id: int):
         resource_version = ResourceVersion.objects.filter(gateway_id=gateway_id, id=id).first()
         if not resource_version:
             return None
@@ -250,9 +250,9 @@ class ResourceVersionHandler:
             proxy_upstreams = proxy_config.get("upstreams")
             if proxy_upstreams:
                 # 覆盖环境配置
-                used_in_host.update(
-                    STAGE_VAR_PATTERN.findall(";".join([host["host"] for host in proxy_upstreams["hosts"]]))
-                )
+                for host in proxy_upstreams["hosts"]:
+                    for match in STAGE_VAR_PATTERN.findall(host["host"]):
+                        used_in_host.add(match)
         return {
             "in_path": list(used_in_path),
             "in_host": list(used_in_host),

@@ -21,6 +21,8 @@ import json
 import pytest
 from ddf import G
 
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.biz.releaser import (
     BaseGatewayReleaser,
     MicroGatewayReleaseHistory,
@@ -214,6 +216,37 @@ class TestBaseGatewayReleaser:
                 assert (
                     releaser._validate_stage_upstreams(fake_gateway.id, fake_stage, fake_resource_version.id) is None
                 )
+
+    def test_validate_stage_plugins(
+        self,
+        fake_stage,
+        fake_gateway,
+        fake_resource_version,
+        echo_plugin_type,
+        echo_plugin_stage_binding,
+        faker,
+    ):
+        echo_plugin2 = G(
+            PluginConfig,
+            gateway=fake_gateway,
+            name="echo-plugin",
+            type=echo_plugin_type,
+            yaml=json.dumps(
+                {
+                    faker.random_element(["before_body", "body", "after_body"]): faker.pystr(),
+                }
+            ),
+        )
+        echo_plugin_stage_binding2 = G(
+            PluginBinding,
+            gateway=echo_plugin2.gateway,
+            config=echo_plugin2,
+            scope_type=PluginBindingScopeEnum.STAGE.value,
+            scope_id=fake_stage.pk,
+        )
+        releaser = BaseGatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+        with pytest.raises(ReleaseValidationError):
+            releaser._validate_stage_plugins(fake_stage)
 
     def test_activate_stages(self, fake_gateway, fake_resource_version):
         s1 = G(Stage, gateway=fake_gateway, status=0)

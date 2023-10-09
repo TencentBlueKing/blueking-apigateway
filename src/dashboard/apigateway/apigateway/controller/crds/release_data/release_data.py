@@ -165,11 +165,11 @@ class ReleaseDataV2(ReleaseData):
             .get()
         )
 
-    @cached_property
+    @property
     def stage_upstreams(self) -> Dict[str, Any]:
         return self.stage_backend_config
 
-    @cached_property
+    @property
     def stage_backend_config(self) -> Dict[str, Any]:
         return self._stage_backend.config
 
@@ -184,7 +184,7 @@ class ReleaseDataV2(ReleaseData):
             .first()
         )
 
-    @cached_property
+    @property
     def _resources_plugins(self) -> Dict[int, List[PluginData]]:
         resource_id_to_plugins: Dict[int, List[PluginData]] = defaultdict(list)
 
