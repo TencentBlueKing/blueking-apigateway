@@ -20,8 +20,8 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
+from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage

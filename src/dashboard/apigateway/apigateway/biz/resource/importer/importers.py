@@ -30,6 +30,8 @@ from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY
 from apigateway.core.models import Backend, Gateway, Resource
 
+from .legacy_synchronizers import LegacyTransformHeadersToPluginSynchronizer, LegacyUpstreamToBackendSynchronizer
+
 logger = logging.getLogger(__name__)
 
 
@@ -329,8 +331,14 @@ class ResourcesImporter:
         # 3. 补全标签 ID 数据
         self._complete_label_ids()
 
-        # 4. 创建或更新资源
+        # 4. [legacy upstreams] 创建或更新 backend，并替换资源对应的 backend
+        self._create_or_update_backends()
+
+        # 5. 创建或更新资源
         self._create_or_update_resources()
+
+        # 6. [legacy transform-headers] 将 transform-headers 转换为 plugin，并绑定到资源
+        self._create_or_update_header_rewrite_plugins()
 
     def get_selected_resource_data_list(self) -> List[ResourceData]:
         return self.resource_data_list
@@ -387,3 +395,13 @@ class ResourcesImporter:
             username=self.username,
         )
         return saver.save()
+
+    def _create_or_update_backends(self):
+        """根据 backend_config 中的 legacy_upstreams 创建 backend，并替换 resource_data_list 中资源关联的 backend"""
+        synchronizer = LegacyUpstreamToBackendSynchronizer(self.gateway, self.resource_data_list, self.username)
+        synchronizer.sync_backends_and_replace_resource_backend()
+
+    def _create_or_update_header_rewrite_plugins(self):
+        """根据 backend_config 中的 legacy_transform_headers 创建 bk-header-rewrite 插件，并绑定到资源"""
+        synchronizer = LegacyTransformHeadersToPluginSynchronizer(self.gateway, self.resource_data_list, self.username)
+        synchronizer.sync_plugins()

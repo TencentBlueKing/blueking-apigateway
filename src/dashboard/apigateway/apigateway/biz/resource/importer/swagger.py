@@ -23,7 +23,6 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 import jsonschema
-from django.utils.translation import gettext as _
 
 from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.common.exceptions import SchemaValidationError
@@ -197,14 +196,18 @@ class ResourceSwaggerImporter:
         """
         适配后端配置
         """
-        if backend.get("upstreams") or backend.get("transformHeaders"):
-            raise ValueError(_("当前版本，不支持 backend 中配置 upstreams, transformHeaders，请更新至最新版本资源 yaml 配置。"))
+        backend_type = backend["type"].lower()
+        if backend_type != ProxyTypeEnum.HTTP.value:
+            raise ValueError(f"unsupported backend type: {backend['type']}")
 
         return {
             "method": backend["method"].upper(),
             "path": backend["path"],
             "match_subpath": backend.get("matchSubpath", False),
             "timeout": backend.get("timeout", 0),
+            # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
+            "legacy_upstreams": backend.get("upstreams"),
+            "legacy_transform_headers": backend.get("transformHeaders"),
         }
 
     def _adapt_description(self, summary: Optional[str], description: Optional[str]):
