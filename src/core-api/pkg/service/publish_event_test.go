@@ -128,7 +128,7 @@ var _ = Describe("PublishEventService", func() {
 			assert.Contains(GinkgoT(), err.Error(), "get Stage[test] info failed")
 		})
 
-		It("error: duplicate report", func() {
+		It("error: duplicate report by db", func() {
 			releaseHistory.CreatedTime = time.Now()
 			patches.ApplyFunc(
 				cacheimpls.GetReleaseHistory,
@@ -151,6 +151,34 @@ var _ = Describe("PublishEventService", func() {
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "create event failed, err:")
 		})
+
+		It("ok: duplicate report by cache", func() {
+			releaseHistory.CreatedTime = time.Now()
+			patches.ApplyFunc(
+				cacheimpls.GetReleaseHistory,
+				func(ctx context.Context, publishID int64) (dao.ReleaseHistory, error) {
+					return releaseHistory, nil
+				},
+			)
+			patches.ApplyFunc(
+				cacheimpls.GetStage,
+				func(ctx context.Context, gatewayID int64, name string) (dao.Stage, error) {
+					return stage, nil
+				},
+			)
+			patches.ApplyFunc(
+				cacheimpls.PublishEventExists,
+				func(ctx context.Context, key cacheimpls.PublishEventKey) bool {
+					return true
+				},
+			)
+
+			err := svc.Report(ctx, event)
+			assert.Error(GinkgoT(), err)
+			assert.Contains(GinkgoT(), err.Error(), "has been reported")
+
+		})
+
 		It("ok: report success", func() {
 			releaseHistory.CreatedTime = time.Now()
 			patches.ApplyFunc(
@@ -169,6 +197,17 @@ var _ = Describe("PublishEventService", func() {
 				int64(1),
 				nil)
 			err := svc.Report(ctx, event)
+
+			key := cacheimpls.PublishEventKey{
+				GatewayID: releaseHistory.GatewayID,
+				StageID:   stage.ID,
+				PublishID: event.PublishID,
+				Step:      constant.GetStep(event.Name),
+				Status:    event.Status,
+			}
+
+			assert.Equal(GinkgoT(), true, cacheimpls.PublishEventExists(ctx, key))
+
 			assert.NoError(GinkgoT(), err)
 		})
 	})
