@@ -1,10 +1,37 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import {
+  ref,
+} from 'vue';
 const { t } = useI18n();
+
+const filterKey = ref('updated_time');
+
+const filterData = ref([
+  { value: 'created_time', label: t('创建时间') },
+  { value: 'updated_time', label: t('更新时间') },
+  { value: 'name', label: t('字母 A-Z') },
+]);
 </script>
 
 <template>
   <div class="home-container">
+    <div class="title-container flex-row justify-content-between">
+      <div class="flex-1 left">{{ t('我的网关') }} (3)</div>
+      <div class="flex-1 flex-row">
+        <bk-button
+          theme="primary"
+        >
+          {{ t('新建网关') }}
+        </bk-button>
+        <bk-input class="ml10 mr10 search-input" placeholder="请输入网关名"></bk-input>
+        <bk-select
+          v-model="filterKey"
+        >
+          <bk-option v-for="(item, index) in filterData" :key="index" :value="item.value" :label="item.label" />
+        </bk-select>
+      </div>
+    </div>
     <div class="table-container">
       <div class="table-header flex-row">
         <div class="flex-1 of4">{{t('网关名')}}</div>
@@ -93,7 +120,15 @@ const { t } = useI18n();
   width: 80%;
   margin: 0 auto;
   font-size: 14px;
-  padding-top: 27px;
+  .title-container{
+    width: 100%;
+    padding: 28px 16px;
+    .left{
+      font-size: 20px;
+      color: #313238;
+      flex: 0 0 60%;
+    }
+  }
   .table-container{
     width: 100%;
     .table-header{

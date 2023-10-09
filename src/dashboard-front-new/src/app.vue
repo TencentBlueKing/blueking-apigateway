@@ -57,7 +57,7 @@ const isExternalLink  = (url?: string) => {
 };
 
 const handleToPage = (routeName: string, index: number, link: string) => {
-  console.log('routeName', routeName);
+  console.log('routeName', routeName, link);
   // 文档组件API
   if (routeName === 'componentAPI') {
     if (BK_PAAS2_ESB_DOC_URL) {
@@ -66,7 +66,7 @@ const handleToPage = (routeName: string, index: number, link: string) => {
     }
   }
   // 常用工具
-  if (link !== undefined) {
+  if (!!link) {
     window.open(routeName);
     return;
   }
@@ -138,7 +138,7 @@ const goPage = (routeName: string) => {
   }
 
   .content {
-    font-size: 24px;
+    font-size: 14px;
     height: calc(100% - 20px);
     margin-bottom: 20px;
   }
