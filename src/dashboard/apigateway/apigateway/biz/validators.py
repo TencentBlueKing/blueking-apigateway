@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.db.models import Count
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
@@ -24,6 +25,7 @@ from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN
 from apigateway.core.models import Proxy, Resource, ResourceVersion
 
 from .constants import APP_CODE_PATTERN, STAGE_VAR_FOR_PATH_PATTERN
+from .resource_version import ResourceVersionHandler
 
 
 class MaxCountPerGatewayValidator(GetGatewayFromContextMixin):
@@ -110,7 +112,7 @@ class StageVarsValuesValidator:
         stage_vars = attrs["vars"]
         resource_version_id = attrs["resource_version_id"]
 
-        used_stage_vars = ResourceVersion.objects.get_used_stage_vars(gateway.id, resource_version_id)
+        used_stage_vars = ResourceVersionHandler.get_used_stage_vars(gateway.id, resource_version_id)
         if not used_stage_vars:
             return
 
@@ -162,6 +164,16 @@ class ResourceVersionValidator:
         # 是否绑定backend
         if Proxy.objects.filter(resource__gateway=gateway, backend__isnull=True).exists():
             raise serializers.ValidationError(_("存在资源未绑定后端服务. "))
+
+        # 是否存在绑定多个backend
+        if (
+            Proxy.objects.filter(resource__gateway=gateway)
+            .values("resource")
+            .annotate(backend_count=Count("backend"))
+            .filter(backend_count__gt=1)
+            .exists()
+        ):
+            raise serializers.ValidationError(_("存在同一资源绑定多个后端服务. "))
 
         # ResourceVersion 中数据量较大，因此，不使用 UniqueTogetherValidator
         if ResourceVersion.objects.filter(gateway=gateway, version=version).exists():

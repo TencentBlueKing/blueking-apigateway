@@ -33,8 +33,6 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import InstanceDeleteError
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
-    STAGE_VAR_PATTERN,
-    ProxyTypeEnum,
     SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
@@ -108,37 +106,6 @@ class ResourceVersionManager(models.Manager):
         网关最新的版本
         """
         return self.filter(gateway_id=gateway_id).last()
-
-    # TODO: 缓存优化：可使用 django cache(with database backend) or dogpile 缓存
-    # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS))
-    def get_used_stage_vars(self, gateway_id, id):
-        resource_version = self.filter(gateway_id=gateway_id, id=id).first()
-        if not resource_version:
-            return None
-
-        used_in_path = set()
-        used_in_host = set()
-        for resource in resource_version.data:
-            if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
-                continue
-
-            proxy_config = json.loads(resource["proxy"]["config"])
-
-            proxy_path = proxy_config["path"]
-            used_in_path.update(STAGE_VAR_PATTERN.findall(proxy_path))
-
-            proxy_upstreams = proxy_config.get("upstreams")
-            if proxy_upstreams:
-                # 覆盖环境配置
-                used_in_host.update(
-                    STAGE_VAR_PATTERN.findall(";".join([host["host"] for host in proxy_upstreams["hosts"]]))
-                )
-
-        return {
-            "in_path": list(used_in_path),
-            "in_host": list(used_in_host),
-        }
 
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS))
     def get_resources(self, gateway_id: int, id: int) -> Dict[int, dict]:

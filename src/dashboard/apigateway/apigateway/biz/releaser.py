@@ -24,6 +24,8 @@ from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.validators import StageVarsValuesValidator
@@ -31,8 +33,10 @@ from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.tasks import release_gateway_by_helm, release_gateway_by_registry
+from apigateway.core import constants
 from apigateway.core.constants import PublishSourceEnum, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import (
+    BackendConfig,
     Gateway,
     MicroGateway,
     MicroGatewayReleaseHistory,
@@ -154,8 +158,51 @@ class BaseGatewayReleaser:
 
     def _validate(self):
         """校验待发布数据"""
-        self._validate_stage_upstreams(self.gateway.id, self.stage, self.resource_version.id)
+        if self.resource_version.is_schema_v2:
+            self._validate_stage_backends(self.stage)
+            self._validate_stage_plugins(self.stage)
+        else:
+            self._validate_stage_upstreams(self.gateway.id, self.stage, self.resource_version.id)
+
         self._validate_stage_vars(self.stage, self.resource_version.id)
+
+    def _validate_stage_backends(self, stage: Stage):
+        """校验待发布环境的backend配置"""
+        backend_configs = BackendConfig.objects.filter(stage=stage)
+        for backend_config in backend_configs:
+            for host in backend_config.config["hosts"]:
+                if not constants.HOST_WITHOUT_SCHEME_PATTERN.match(host):
+                    raise ReleaseValidationError(
+                        _("网关环境【{stage_name}】中的配置Scheme【{scheme}】不合法。请在网关 `基本设置 -> 后端服务` 中进行配置。").format(
+                            # noqa: E501
+                            stage_name=stage.name,
+                            scheme=host,
+                        )
+                    )
+
+    def _validate_stage_plugins(self, stage: Stage):
+        """校验待发布环境的plugin配置"""
+
+        # 环境绑定的插件，同一类型，只能绑定一个即同一个类型的PluginConfig只能绑定一个环境
+        stage_plugins = (
+            PluginBinding.objects.filter(
+                scope_id=stage.id,
+                scope_type=PluginBindingScopeEnum.STAGE.value,
+            )
+            .prefetch_related("config")
+            .all()
+        )
+        stage_plugin_type_set = set()
+        for stage_plugin in stage_plugins:
+            if stage_plugin.config.type.code in stage_plugin_type_set:
+                raise ReleaseValidationError(
+                    _("网关环境【{stage_name}】存在绑定多个相同类型[{plugin_code}]的插件。").format(
+                        # noqa: E501
+                        stage_name=stage.name,
+                        plugin_code=stage_plugin.config.type.code,
+                    )
+                )
+            stage_plugin_type_set.add(stage_plugin.config.type.code)
 
     def _validate_stage_upstreams(self, gateway_id: int, stage: Stage, resource_version_id: int):
         """检查环境的代理配置，如果未配置任何有效的上游主机地址（Hosts），则报错。

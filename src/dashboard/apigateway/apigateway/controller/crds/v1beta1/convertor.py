@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from typing import Iterable, List, Optional
 
 from apigateway.controller.crds.base import KubernetesResource
-from apigateway.controller.crds.release_data.release_data import ReleaseData
+from apigateway.controller.crds.release_data.release_data import ReleaseData, ReleaseDataV2
 from apigateway.controller.crds.v1beta1.convertors.gateway_config import GatewayConfigConvertor
 from apigateway.controller.crds.v1beta1.convertors.plugin_metadata import PluginMetadataConvertor
 from apigateway.controller.crds.v1beta1.convertors.resource import HttpResourceConvertor
@@ -69,7 +69,10 @@ class CustomResourceConvertor:
     _plugin_metadata: List[BkGatewayPluginMetadata] = field(init=False, default_factory=list)
 
     def __post_init__(self):
-        self._release_data = ReleaseData(self.release)
+        if self.release.resource_version.is_schema_v2:
+            self._release_data = ReleaseDataV2(self.release)
+        else:
+            self._release_data = ReleaseData(self.release)
 
     def convert(self):
         self._iter_convert()

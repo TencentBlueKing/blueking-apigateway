@@ -25,7 +25,7 @@ from django_dynamic_fixture import G
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
-from apigateway.core.models import Resource, ResourceVersion, Stage
+from apigateway.core.models import Gateway, Resource, ResourceVersion, Stage
 from apigateway.utils.time import now_datetime
 
 
@@ -159,6 +159,99 @@ class TestResourceVersionHandler:
         resource_version_3 = G(ResourceVersion, gateway=fake_gateway, version="2.0.0", created_time=now_datetime())
         result = ResourceVersionHandler.get_latest_version_by_gateway(fake_gateway.id)
         assert result == resource_version_3.version
+
+    def test_get_used_stage_vars(self):
+        gateway = G(Gateway)
+
+        data = [
+            # resource version not exist
+            {
+                "resource_version": None,
+                "expected": None,
+            },
+            # proxy type is mock
+            {
+                "resource_version": G(
+                    ResourceVersion,
+                    gateway=gateway,
+                    _data=json.dumps(
+                        [
+                            {
+                                "proxy": {
+                                    "type": "mock",
+                                }
+                            }
+                        ]
+                    ),
+                ),
+                "expected": {
+                    "in_path": [],
+                    "in_host": [],
+                },
+            },
+            # vars in path/host
+            {
+                "resource_version": G(
+                    ResourceVersion,
+                    gateway=gateway,
+                    _data=json.dumps(
+                        [
+                            {
+                                "proxy": {
+                                    "type": "http",
+                                    "config": json.dumps(
+                                        {
+                                            "path": "/hello/{env.region}/",
+                                            "upstreams": {
+                                                "hosts": [
+                                                    {"host": "https://{env.domain}"},
+                                                ]
+                                            },
+                                        }
+                                    ),
+                                }
+                            }
+                        ]
+                    ),
+                ),
+                "expected": {
+                    "in_path": ["region"],
+                    "in_host": ["domain"],
+                },
+            },
+            # vars in path/host
+            {
+                "resource_version": G(
+                    ResourceVersion,
+                    gateway=gateway,
+                    _data=json.dumps(
+                        [
+                            {
+                                "proxy": {
+                                    "type": "http",
+                                    "config": json.dumps(
+                                        {
+                                            "path": "/hello/{env.region}/",
+                                            "upstreams": {},
+                                        }
+                                    ),
+                                }
+                            }
+                        ]
+                    ),
+                ),
+                "expected": {
+                    "in_path": ["region"],
+                    "in_host": [],
+                },
+            },
+        ]
+        for test in data:
+            result = ResourceVersionHandler.get_used_stage_vars(
+                gateway_id=gateway.id,
+                id=test["resource_version"].id if test["resource_version"] else 0,
+            )
+            assert result == test["expected"]
 
 
 class TestResourceDocVersionHandler:
