@@ -57,6 +57,9 @@ class AppResourcePermissionOutputSLZ(serializers.Serializer):
     permission_action = serializers.SerializerMethodField()
     doc_link = serializers.CharField()
 
+    class Meta:
+        ref_name = "apigateway.apis.open.permission.serializers.AppResourcePermissionOutputSLZ"
+
     def get_expires_in(self, obj):
         if math.isinf(obj["expires_in"]):
             return None
