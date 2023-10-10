@@ -430,3 +430,8 @@
 .pr50 {
   padding-right: 50px !important;
 }
+
+.common-form-tips{
+  font-size: 12px !important;
+  color: #979BA5 !important;
+}

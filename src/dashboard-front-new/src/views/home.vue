@@ -6,6 +6,13 @@ import {
 const { t } = useI18n();
 
 const filterKey = ref('updated_time');
+const isShowAdd = ref(false);
+const formData = ref({
+  name: '',
+  user: '',
+  desc: '',
+  isopen: false,
+});
 
 const curYear = (new Date()).getFullYear();
 
@@ -14,6 +21,11 @@ const filterData = ref([
   { value: 'updated_time', label: t('更新时间') },
   { value: 'name', label: t('字母 A-Z') },
 ]);
+
+// 新建网关弹窗
+const showAddDialog = () => {
+  isShowAdd.value = true;
+};
 </script>
 
 <template>
@@ -23,6 +35,7 @@ const filterData = ref([
       <div class="flex-1 flex-row">
         <bk-button
           theme="primary"
+          @click="showAddDialog"
         >
           {{ t('新建网关') }}
         </bk-button>
@@ -91,6 +104,58 @@ const filterData = ref([
       </div>
       Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved.
     </div>
+
+    <bk-dialog
+      v-model:is-show="isShowAdd"
+      width="600"
+      :title="t('新建网关')"
+      theme="primary"
+      quick-close>
+      <bk-form ref="formRef" form-type="vertical" :model="formData">
+        <bk-form-item
+          label="名称"
+          property="name"
+          required
+        >
+          <bk-input
+            v-model="formData.name"
+            placeholder="请输入"
+            clearable
+          />
+        </bk-form-item>
+        <bk-form-item
+          label="维护人员"
+          property="name"
+          required
+        >
+          <bk-input
+            v-model="formData.name"
+            placeholder="请输入"
+            clearable
+          />
+        </bk-form-item>
+        <bk-form-item
+          label="描述"
+          property="name"
+          required
+        >
+          <bk-input
+            type="textarea"
+            v-model="formData.name"
+            placeholder="请输入"
+            clearable
+          />
+        </bk-form-item>
+        <bk-form-item
+          label="是否公开"
+          property="isopen"
+          required
+        >
+          <bk-switcher v-model="formData.isopen" />
+          <span class="common-form-tips">公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏</span>
+        </bk-form-item>
+      </bk-form>
+    </bk-dialog>
   </div>
 </template>
 
