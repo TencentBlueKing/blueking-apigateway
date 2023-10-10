@@ -7,6 +7,8 @@ const { t } = useI18n();
 
 const filterKey = ref('updated_time');
 
+const curYear = (new Date()).getFullYear();
+
 const filterData = ref([
   { value: 'created_time', label: t('创建时间') },
   { value: 'updated_time', label: t('更新时间') },
@@ -41,10 +43,17 @@ const filterData = ref([
         <div class="flex-1 of2">操作</div>
       </div>
       <div class="table-item flex-row align-items-center">
-        <div class="flex-1 of4 name">bktest.paaS.xxx.com</div>
+        <div class="flex-1 flex-row align-items-center of4">
+          <div class="name-logo mr10">
+            B
+          </div>
+          <span class="name">bktest.paaS.xxx.com</span>
+          <bk-tag theme="info" class="ml10">{{ t('官方') }}</bk-tag>
+          <bk-tag theme="warning">{{ t('专享') }}</bk-tag>
+        </div>
         <div class="flex-1 of1">xxx</div>
         <div class="flex-1 of2 env">
-          <div class="flex-row env">
+          <div class="flex-row">
             <bk-tag>MagicBox</bk-tag>
             <bk-tag>dev</bk-tag>
             <bk-tag>MagicBox</bk-tag>
@@ -52,43 +61,7 @@ const filterData = ref([
           </div>
         </div>
         <div class="flex-1 of1 text-c">0</div>
-        <div class="flex-1 of2 ft-12">
-          <bk-button
-            text
-            theme="primary"
-          >
-            环境概览
-          </bk-button>
-          <bk-button
-            text
-            theme="primary"
-            class="pl20"
-          >
-            资源配额
-          </bk-button>
-          <bk-button
-            text
-            theme="primary"
-            class="pl20"
-          >
-            流水日志
-          </bk-button>
-        </div>
-      </div>
-
-      <div class="table-item flex-row align-items-center">
-        <div class="flex-1 of4 name">bktest.paaS.xxx.com</div>
-        <div class="flex-1 of1">xxx</div>
-        <div class="flex-1 of2 env">
-          <div class="flex-row env">
-            <bk-tag>MagicBox</bk-tag>
-            <bk-tag>dev</bk-tag>
-            <bk-tag>MagicBox</bk-tag>
-            <bk-tag>dev</bk-tag>
-          </div>
-        </div>
-        <div class="flex-1 of1 text-c">0</div>
-        <div class="flex-1 of2 ft-12">
+        <div class="flex-1 of2">
           <bk-button
             text
             theme="primary"
@@ -112,6 +85,12 @@ const filterData = ref([
         </div>
       </div>
     </div>
+    <div class="footer-container">
+      <div>
+        <bk-link theme="primary">技术支持</bk-link> | <bk-link theme="primary">产品官网</bk-link>
+      </div>
+      Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved.
+    </div>
   </div>
 </template>
 
@@ -131,6 +110,7 @@ const filterData = ref([
   }
   .table-container{
     width: 100%;
+    height: calc(100vh - 192px);
     .table-header{
       width: 100%;
       color: #979BA5;
@@ -145,6 +125,17 @@ const filterData = ref([
       padding: 0 16px;
       margin: 12px 0px;
       cursor: pointer;
+      .name-logo{
+        width: 48px;
+        height: 48px;
+        line-height: 48px;
+        text-align: center;
+        background: #F0F5FF;
+        border-radius: 4px;
+        color: #3A84FF;
+        font-size: 26px;
+        font-weight: 700;
+      }
       .name{
         font-weight: 700;
         color: #313238;
@@ -165,6 +156,11 @@ const filterData = ref([
       .of4{
         flex: 0 0 40%;
       }
+  }
+
+  .footer-container{
+    text-align: center;
+    height: 52px;
   }
 }
 </style>

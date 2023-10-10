@@ -21,6 +21,7 @@ const userLoading = ref(false);
 const user = useUser();
 getUser()
   .then((data) => {
+    console.log('data', data);
     user.setUser(data);
     userLoading.value = true;
   })
@@ -139,8 +140,7 @@ const goPage = (routeName: string) => {
 
   .content {
     font-size: 14px;
-    height: calc(100% - 20px);
-    margin-bottom: 20px;
+    height: 100%;
   }
 
   .api-logo{
