@@ -1,6 +1,8 @@
 import type { IFetchConfig } from './index';
 import RequestError from './request-error';
 
+const { BK_LOGIN_URL } = window;
+
 // 请求成功执行拦截器
 export default async (response: any, config: IFetchConfig) => {
   console.log('response', response);
@@ -28,6 +30,9 @@ export default async (response: any, config: IFetchConfig) => {
     throw new RequestError(code, message || '系统错误', data);
   } else {
     // 处理 http 非 200 异常
+    if (response.status === 401) {
+      window.location.href = `${BK_LOGIN_URL}/?c_url=${window.location.href}`;
+    }
     throw new RequestError(code || -1, message || '系统错误', data);
   }
 };

@@ -3,4 +3,5 @@ declare interface Window {
   BK_DASHBOARD_URL: string
   BK_PAAS2_ESB_URL: string
   BK_PAAS2_ESB_DOC_URL: string
+  BK_LOGIN_URL: string
 }
