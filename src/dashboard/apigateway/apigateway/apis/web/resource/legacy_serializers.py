@@ -19,6 +19,7 @@
 # 1.13 版本：兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
 import re
 
+from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.core.constants import DEFAULT_LB_HOST_WEIGHT, STAGE_VAR_REFERENCE_PATTERN, LoadBalanceTypeEnum
@@ -38,7 +39,25 @@ class LegacyUpstreamsSLZ(serializers.Serializer):
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices(), required=False)
     hosts = serializers.ListField(child=LegacyResourceHostSLZ(), allow_empty=False, required=False)
 
+    def validate(self, data):
+        if "hosts" in data and not data.get("loadbalance"):
+            raise serializers.ValidationError(_("hosts 存在时，需要指定 loadbalance 类型。"))
+
+        return data
+
 
 class LegacyTransformHeadersSLZ(serializers.Serializer):
     set = serializers.DictField(label="设置", child=serializers.CharField(), required=False, allow_empty=True)
     delete = serializers.ListField(label="删除", child=serializers.CharField(), required=False, allow_empty=True)
+
+    def _validate_headers_key(self, value):
+        for key in value:
+            if not HEADER_KEY_PATTERN.match(key):
+                raise serializers.ValidationError(_("Header 键由字母、数字、连接符（-）组成，长度小于100个字符。"))
+        return value
+
+    def validate_set(self, value):
+        return self._validate_headers_key(value)
+
+    def validate_delete(self, value):
+        return self._validate_headers_key(value)

@@ -19,7 +19,6 @@
 import logging
 import re
 from collections import defaultdict
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginTypeCodeEnum
@@ -79,7 +78,7 @@ class LegacyUpstream:
         return re.sub(STAGE_VAR_PATTERN, replace, host)
 
 
-class BackendCreator:
+class LegacyBackendCreator:
     def __init__(self, gateway: Gateway, username: str):
         self.gateway = gateway
         self.username = username
@@ -98,7 +97,7 @@ class BackendCreator:
         if backend_id:
             return self._existing_backends[backend_id]
 
-        new_backend_name = self._get_new_backend_name()
+        new_backend_name = self._generate_new_backend_name()
         backend = self._create_backend_and_backend_configs(new_backend_name, stage_id_to_backend_config)
 
         # 用新创建的 backend 更新辅助数据
@@ -107,15 +106,17 @@ class BackendCreator:
 
         return backend
 
-    def _match_existing_backend(self, backend_configs: Dict[int, Dict]) -> Optional[int]:
+    def _match_existing_backend(self, stage_id_to_backend_config: Dict[int, Dict]) -> Optional[int]:
         for backend_id, existing_backend_configs in self._existing_backend_configs.items():
-            if backend_configs == existing_backend_configs:
+            if stage_id_to_backend_config == existing_backend_configs:
                 return backend_id
 
         return None
 
     def _get_existing_backend_configs(self) -> Dict[int, Dict[int, Dict]]:
-        # 获取 backend_id -> stage_id -> config 的对应关系
+        """仅获取名称以 backend- 开头的后端服务的配置；即根据后端配置匹配后端服务时，仅匹配同一规则创建的后端服务"""
+
+        # 对应关系：backend_id -> stage_id -> config
         backend_configs: Dict[int, Dict[int, Dict]] = defaultdict(dict)
 
         for backend_config in BackendConfig.objects.filter(
@@ -129,7 +130,7 @@ class BackendCreator:
 
         return backend_configs
 
-    def _get_new_backend_name(self) -> str:
+    def _generate_new_backend_name(self) -> str:
         self._max_legacy_backend_number += 1
         return f"{LEGACY_BACKEND_NAME_PREFIX}{self._max_legacy_backend_number}"
 
@@ -185,7 +186,7 @@ class LegacyUpstreamToBackendSynchronizer:
         return any(resource_data.backend_config.legacy_upstreams for resource_data in self.resource_data_list)
 
     def _sync_backends_and_replace_resource_backend(self):
-        backend_matcher = BackendCreator(self.gateway)
+        backend_creator = LegacyBackendCreator(self.gateway)
         stages = list(Stage.objects.filter(gateway=self.gateway))
         stage_id_to_timeout = self._get_stage_id_to_default_timeout()
 
@@ -195,7 +196,7 @@ class LegacyUpstreamToBackendSynchronizer:
 
             legacy_upstream = LegacyUpstream(resource_data.backend_config.legacy_upstreams)
             stage_id_to_backend_config = legacy_upstream.get_stage_id_to_backend_config(stages, stage_id_to_timeout)
-            backend = backend_matcher.match_or_create_backend(stage_id_to_backend_config)
+            backend = backend_creator.match_or_create_backend(stage_id_to_backend_config)
             resource_data.backend = backend
 
     def _get_stage_id_to_default_timeout(self) -> Dict[int, int]:
@@ -206,11 +207,6 @@ class LegacyUpstreamToBackendSynchronizer:
                 backend__name=DEFAULT_BACKEND_NAME,
             )
         }
-
-
-@dataclass
-class LegacyTransformHeaders:
-    transform_headers: Dict[str, List]
 
 
 class LegacyTransformHeadersToPluginSynchronizer:
@@ -238,41 +234,43 @@ class LegacyTransformHeadersToPluginSynchronizer:
             if transform_headers is None:
                 continue
 
+            assert resource_data.resource
+
             plugin_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(transform_headers)
             if not plugin_config:
-                if resource_data.resource_id in exist_bindings:
-                    delete_bindings.append(exist_bindings[resource_data.resource_id])
+                if resource_data.resource.id in exist_bindings:
+                    delete_bindings.append(exist_bindings[resource_data.resource.id])
                 continue
 
-            if resource_data.resource_id not in exist_bindings:
-                add_bindings[resource_data.resource_id] = PluginConfig(
+            if resource_data.resource.id not in exist_bindings:
+                add_bindings[resource_data.resource.id] = PluginConfig(
                     gateway=self.gateway,
-                    name=f"sync::resource::{resource_data.resource_id}",
+                    name=self._generate_plugin_name(resource_data.resource.id),
                     type=self._plugin_type,
                     yaml=yaml_dumps(plugin_config),
                 )
             else:
-                plugin_config_obj = exist_bindings[resource_data.resource_id].config
+                plugin_config_obj = exist_bindings[resource_data.resource.id].config
                 plugin_config_obj.yaml = yaml_dumps(plugin_config)
                 update_plugin_configs.append(plugin_config_obj)
 
         if add_bindings:
             PluginConfig.objects.bulk_create(add_bindings.values(), batch_size=100)
 
-            configs = {
+            plugin_configs = {
                 config.name: config
                 for config in PluginConfig.objects.filter(gateway=self.gateway, type=self._plugin_type)
             }
 
             bindings = []
             for resource_id in add_bindings:
-                config = configs[f"sync::resource::{resource_id}"]
+                plugin_config = plugin_configs[self._generate_plugin_name(resource_id)]
                 bindings.append(
                     PluginBinding(
                         gateway=self.gateway,
                         scope_type=PluginBindingScopeEnum.RESOURCE.value,
                         scope_id=resource_id,
-                        config=config,
+                        config=plugin_config,
                     )
                 )
             PluginBinding.objects.bulk_create(bindings, batch_size=100)
@@ -284,3 +282,6 @@ class LegacyTransformHeadersToPluginSynchronizer:
             PluginBinding.objects.filter(
                 gateway=self.gateway, id__in=[binding.id for binding in delete_bindings]
             ).delete()
+
+    def _generate_plugin_name(self, resource_id: int) -> str:
+        return f"bk-header-rewrite::resource::{resource_id}"

@@ -332,13 +332,13 @@ class ResourcesImporter:
         self._complete_label_ids()
 
         # 4. [legacy upstreams] 创建或更新 backend，并替换资源对应的 backend
-        self._create_or_update_backends()
+        self._sync_legacy_upstreams_to_backend_and_replace_resource_backend()
 
         # 5. 创建或更新资源
         self._create_or_update_resources()
 
-        # 6. [legacy transform-headers] 将 transform-headers 转换为 plugin，并绑定到资源
-        self._create_or_update_header_rewrite_plugins()
+        # 6. [legacy transform-headers] 将 transform-headers 转换为 bk-header-rewrite 插件，并绑定到资源
+        self._sync_legacy_transform_headers_to_plugins()
 
     def get_selected_resource_data_list(self) -> List[ResourceData]:
         return self.resource_data_list
@@ -396,12 +396,12 @@ class ResourcesImporter:
         )
         return saver.save()
 
-    def _create_or_update_backends(self):
+    def _sync_legacy_upstreams_to_backend_and_replace_resource_backend(self):
         """根据 backend_config 中的 legacy_upstreams 创建 backend，并替换 resource_data_list 中资源关联的 backend"""
         synchronizer = LegacyUpstreamToBackendSynchronizer(self.gateway, self.resource_data_list, self.username)
         synchronizer.sync_backends_and_replace_resource_backend()
 
-    def _create_or_update_header_rewrite_plugins(self):
+    def _sync_legacy_transform_headers_to_plugins(self):
         """根据 backend_config 中的 legacy_transform_headers 创建 bk-header-rewrite 插件，并绑定到资源"""
         synchronizer = LegacyTransformHeadersToPluginSynchronizer(self.gateway, self.resource_data_list, self.username)
         synchronizer.sync_plugins()

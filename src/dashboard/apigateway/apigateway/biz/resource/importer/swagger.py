@@ -196,7 +196,7 @@ class ResourceSwaggerImporter:
         """
         适配后端配置
         """
-        backend_type = backend["type"].lower()
+        backend_type = backend.get("type", ProxyTypeEnum.HTTP.value).lower()
         if backend_type != ProxyTypeEnum.HTTP.value:
             raise ValueError(f"unsupported backend type: {backend['type']}")
 
