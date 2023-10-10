@@ -29,7 +29,7 @@ python manage.py sync_schema
 python manage.py sync_managers_to_user
 
 # 微网关初始化
-python manage.py sync_gateway --name "${DEFAULT_MICRO_GATEWAY_API_NAME}" --hosting-type 1
+python manage.py sync_gateway --name "${DEFAULT_MICRO_GATEWAY_API_NAME}"
 python manage.py add_stage --gateway "${DEFAULT_MICRO_GATEWAY_API_NAME}" --name "${DEFAULT_MICRO_GATEWAY_STAGE_NAME}"
 python manage.py add_related_app --gateway-name "${DEFAULT_MICRO_GATEWAY_API_NAME}" --app-code "${BK_APP_CODE}"
 python manage.py sync_default_micro_gateway \
