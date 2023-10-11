@@ -43,6 +43,9 @@ class AppGatewayPermissionOutputSLZ(serializers.Serializer):
     grant_type = serializers.ChoiceField(choices=GrantTypeEnum.get_choices(), default=GrantTypeEnum.INITIALIZE.value)
     renewable = serializers.SerializerMethodField()
 
+    class Meta:
+        ref_name = "apigateway.apis.web.permission.serializers.AppGatewayPermissionOutputSLZ"
+
     def get_resource_id(self, obj):
         return 0
 
