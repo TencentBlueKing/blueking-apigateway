@@ -21,24 +21,24 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
 class ResourceListInputSLZ(serializers.Serializer):
-    stage_name = serializers.CharField()
+    stage_name = serializers.CharField(help_text="网关环境名称")
 
 
 class ResourceOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
+    id = serializers.IntegerField(read_only=True, help_text="资源 ID")
+    name = serializers.CharField(read_only=True, help_text="资源名称")
     description = SerializerTranslatedField(
-        translated_fields={"en": "description_en"}, allow_blank=True, read_only=True
+        translated_fields={"en": "description_en"}, allow_blank=True, read_only=True, help_text="资源描述"
     )
-    method = serializers.CharField(read_only=True)
-    path = serializers.CharField(read_only=True)
-    verified_user_required = serializers.BooleanField(read_only=True)
-    verified_app_required = serializers.BooleanField(read_only=True)
-    resource_perm_required = serializers.BooleanField(read_only=True)
-    labels = serializers.SerializerMethodField()
+    method = serializers.CharField(read_only=True, help_text="资源前端请求方法")
+    path = serializers.CharField(read_only=True, help_text="资源前端请求路径")
+    verified_user_required = serializers.BooleanField(read_only=True, help_text="是否需要认证用户")
+    verified_app_required = serializers.BooleanField(read_only=True, help_text="是否需要认证应用")
+    resource_perm_required = serializers.BooleanField(read_only=True, help_text="是否验证应用访问资源的权限")
+    labels = serializers.SerializerMethodField(help_text="资源标签列表")
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.resource"
+        ref_name = "apigateway.apis.web.docs.gateway.resource.ResourceOutputSLZ"
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])

@@ -24,27 +24,28 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 
 
 class SDKListInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKListInputSLZ"
 
 
 class GatewaySLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    description = SerializerTranslatedField(translated_fields={"en": "description_en"}, read_only=True)
+    id = serializers.IntegerField(read_only=True, help_text="网关 ID")
+    name = serializers.CharField(read_only=True, help_text="网关名称")
+    description = SerializerTranslatedField(
+        translated_fields={"en": "description_en"}, read_only=True, help_text="网关描述"
+    )
 
 
 class SDKListOutputSLZ(serializers.Serializer):
-    gateway = GatewaySLZ()
-    sdk = serializers.SerializerMethodField()
-    resource_version = serializers.SerializerMethodField()
-    # 资源版本已发布的环境
-    released_stages = serializers.SerializerMethodField()
+    gateway = GatewaySLZ(help_text="网关")
+    sdk = serializers.SerializerMethodField(help_text="SDK")
+    resource_version = serializers.SerializerMethodField(help_text="资源版本")
+    released_stages = serializers.SerializerMethodField(help_text="资源版本已发布的环境")
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.sdk"
+        ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKListOutputSLZ"
 
     def get_sdk(self, obj):
         return SDKFactory.create(obj).as_dict()
@@ -61,14 +62,14 @@ class SDKListOutputSLZ(serializers.Serializer):
 
 
 class SDKDocInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKDocInputSLZ"
 
 
 class SDKDocOutputSLZ(serializers.Serializer):
-    content = serializers.CharField(allow_blank=True)
+    content = serializers.CharField(allow_blank=True, help_text="文档内容")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKDocOutputSLZ"

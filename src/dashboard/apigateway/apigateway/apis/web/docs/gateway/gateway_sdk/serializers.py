@@ -22,49 +22,49 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 
 
 class SDKListInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk"
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.SDKListInputSLZ"
 
 
 class StageSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
+    id = serializers.IntegerField(read_only=True, help_text="网关环境 ID")
+    name = serializers.CharField(read_only=True, help_text="网关环境名称")
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk"
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.StageSLZ"
 
 
 class ResourceVersionSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    display = serializers.CharField(read_only=True)
+    id = serializers.IntegerField(read_only=True, help_text="资源版本 ID")
+    version = serializers.CharField(read_only=True, help_text="资源版本号")
 
 
 class SDKSLZ(serializers.Serializer):
-    name = serializers.CharField(read_only=True)
-    version = serializers.CharField(read_only=True)
-    url = serializers.CharField(read_only=True)
-    install_command = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True, help_text="SDK 名称")
+    version = serializers.CharField(read_only=True, help_text="SDK 版本号")
+    url = serializers.CharField(read_only=True, help_text="SDK 下载链接")
+    install_command = serializers.CharField(read_only=True, help_text="SDK 安装命令")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.SDKSLZ"
 
 
 class StageSDKOutputSLZ(serializers.Serializer):
-    stage = StageSLZ()
-    resource_version = ResourceVersionSLZ()
-    sdk = SDKSLZ(allow_null=True)
+    stage = StageSLZ(help_text="网关环境")
+    resource_version = ResourceVersionSLZ(help_text="资源版本")
+    sdk = SDKSLZ(allow_null=True, help_text="SDK")
 
 
 class SDKUsageExampleInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
-    stage_name = serializers.CharField()
-    resource_name = serializers.CharField()
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
+    stage_name = serializers.CharField(help_text="网关环境名称")
+    resource_name = serializers.CharField(help_text="资源名称")
 
 
 class SDKUsageExampleOutputSLZ(serializers.Serializer):
-    content = serializers.CharField(allow_blank=True)
+    content = serializers.CharField(allow_blank=True, help_text="文档内容")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.SDKUsageExampleOutputSLZ"
