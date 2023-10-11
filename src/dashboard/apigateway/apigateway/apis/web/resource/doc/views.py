@@ -33,6 +33,7 @@ from .serializers import DocInputSLZ, DocOutputSLZ
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取指定资源的资源文档，包括中文、英文两份文档，如果文档未创建，返回文档模版",
         responses={status.HTTP_200_OK: DocOutputSLZ(many=True)},
         tags=["WebAPI.Resource.Doc"],
     ),
@@ -40,7 +41,10 @@ from .serializers import DocInputSLZ, DocOutputSLZ
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""}, request_body=DocInputSLZ, tags=["WebAPI.Resource.Doc"]
+        operation_description="创建资源文档",
+        responses={status.HTTP_201_CREATED: ""},
+        request_body=DocInputSLZ,
+        tags=["WebAPI.Resource.Doc"],
     ),
 )
 class DocListCreateApi(generics.ListCreateAPIView):
@@ -111,12 +115,17 @@ class DocListCreateApi(generics.ListCreateAPIView):
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=DocInputSLZ, tags=["WebAPI.Resource.Doc"]
+        operation_description="更新资源文档",
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        request_body=DocInputSLZ,
+        tags=["WebAPI.Resource.Doc"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.Resource.Doc"]),
+    decorator=swagger_auto_schema(
+        operation_description="删除资源文档", responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.Resource.Doc"]
+    ),
 )
 class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
     serializer_class = DocInputSLZ

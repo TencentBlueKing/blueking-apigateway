@@ -33,6 +33,7 @@ from .serializers import GatewayOutputSLZ
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关列表，仅显示公开的、已发布的网关",
         responses={status.HTTP_200_OK: GatewayOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Gateway"],
     ),
@@ -71,6 +72,7 @@ class GatewayListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关详情，仅显示公开的、已发布的网关",
         responses={status.HTTP_200_OK: GatewayOutputSLZ},
         tags=["WebAPI.Docs.Gateway"],
     ),

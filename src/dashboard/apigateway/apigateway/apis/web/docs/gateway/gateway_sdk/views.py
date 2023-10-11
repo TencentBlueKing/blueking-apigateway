@@ -35,6 +35,7 @@ from .serializers import SDKListInputSLZ, SDKUsageExampleInputSLZ, SDKUsageExamp
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关 SDK 列表",
         query_serializer=SDKListInputSLZ,
         responses={status.HTTP_200_OK: StageSDKOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Gateway.SDK"],
@@ -59,6 +60,7 @@ class SDKListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关 SDK 调用示例",
         query_serializer=SDKUsageExampleInputSLZ,
         responses={status.HTTP_200_OK: SDKUsageExampleOutputSLZ},
         tags=["WebAPI.Docs.Gateway.SDK"],

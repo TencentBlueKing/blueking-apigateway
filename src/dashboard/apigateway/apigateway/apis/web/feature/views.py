@@ -30,6 +30,7 @@ from apigateway.utils.responses import OKJsonResponse
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取全局特性开关",
         responses={status.HTTP_200_OK: ""},
         operation_description="获取 feature flag 功能开关列表",
         tags=["WebAPI.Feature"],
