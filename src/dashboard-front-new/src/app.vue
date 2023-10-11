@@ -21,7 +21,6 @@ const userLoading = ref(false);
 const user = useUser();
 getUser()
   .then((data) => {
-    console.log('data', data);
     user.setUser(data);
     userLoading.value = true;
   })

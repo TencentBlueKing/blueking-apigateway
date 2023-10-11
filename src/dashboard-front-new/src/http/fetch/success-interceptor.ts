@@ -33,6 +33,7 @@ export default async (response: any, config: IFetchConfig) => {
     if (response.status === 401) {
       window.location.href = `${BK_LOGIN_URL}/?c_url=${window.location.href}`;
     }
+    console.log(111, response);
     throw new RequestError(code || -1, message || '系统错误', data);
   }
 };

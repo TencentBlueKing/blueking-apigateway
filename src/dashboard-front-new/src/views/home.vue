@@ -1,19 +1,34 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import { createGateway, getGatewaysList } from '@/http';
+import { Message } from 'bkui-vue';
 import {
   ref,
 } from 'vue';
 const { t } = useI18n();
 
 const filterKey = ref('updated_time');
-const isShowAdd = ref(false);
+const dialogData = ref({
+  isShowAdd: false,
+  loading: false,
+});
 const formData = ref({
   name: '',
-  user: '',
-  desc: '',
-  isopen: false,
+  maintainers: ['admin'],
+  description: '',
+  is_public: false,
 });
 
+const tableData = ref([]);
+
+// 分页状态
+const pagination = ref({
+  offset: 0,
+  limit: 10,
+  count: 0,
+});
+
+// 当前年份
 const curYear = (new Date()).getFullYear();
 
 const filterData = ref([
@@ -24,8 +39,43 @@ const filterData = ref([
 
 // 新建网关弹窗
 const showAddDialog = () => {
-  isShowAdd.value = true;
+  formData.value = {
+    name: '',
+    maintainers: ['admin'],
+    description: '',
+    is_public: false,
+  };
+  dialogData.value.isShowAdd = true;
 };
+
+// 创建网关确认
+const handleConfirmCreate = async () => {
+  dialogData.value.loading = true;
+  try {
+    await createGateway(formData.value);
+    Message({
+      message: t('创建成功'),
+      theme: 'success',
+    });
+  } catch (error) {} finally {
+    dialogData.value.loading = false;
+  }
+};
+
+// 获取列表数据
+const getGatewaysListData = async () => {
+  try {
+    const res = await getGatewaysList({
+      limit: pagination.value.limit,
+      offset: pagination.value.limit * pagination.value.offset,
+    });
+    console.log('res', res);
+    tableData.value = res.results;
+  } catch (error) {}
+};
+
+getGatewaysListData();
+
 </script>
 
 <template>
@@ -55,25 +105,25 @@ const showAddDialog = () => {
         <div class="flex-1 of1 text-c">资源数量</div>
         <div class="flex-1 of2">操作</div>
       </div>
-      <div class="table-item flex-row align-items-center">
+      <div class="table-item flex-row align-items-center" v-for="item in tableData" :key="item.id">
         <div class="flex-1 flex-row align-items-center of4">
-          <div class="name-logo mr10">
-            B
+          <div class="name-logo mr10" :class="item.status ? '' : 'deact'">
+            {{ item.name[0].toUpperCase() }}
           </div>
-          <span class="name">bktest.paaS.xxx.com</span>
-          <bk-tag theme="info" class="ml10">{{ t('官方') }}</bk-tag>
-          <bk-tag theme="warning">{{ t('专享') }}</bk-tag>
+          <span class="name mr10" :class="item.status ? '' : 'deact-name'">{{ item.name }}</span>
+          <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
+          <bk-tag theme="warning" v-if="item.is_public">{{ t('公开') }}</bk-tag>
+          <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
         </div>
-        <div class="flex-1 of1">xxx</div>
+        <div class="flex-1 of1">{{ item.created_by }}</div>
         <div class="flex-1 of2 env">
           <div class="flex-row">
-            <bk-tag>MagicBox</bk-tag>
-            <bk-tag>dev</bk-tag>
-            <bk-tag>MagicBox</bk-tag>
-            <bk-tag>dev</bk-tag>
+            <bk-tag v-for="envItem in item.stages" :key="envItem.id">
+              {{ envItem.name }}
+            </bk-tag>
           </div>
         </div>
-        <div class="flex-1 of1 text-c">0</div>
+        <div class="flex-1 of1 text-c" :class="item.resource_count ? 'default-c' : ''">{{ item.resource_count }}</div>
         <div class="flex-1 of2">
           <bk-button
             text
@@ -106,11 +156,13 @@ const showAddDialog = () => {
     </div>
 
     <bk-dialog
-      v-model:is-show="isShowAdd"
+      v-model:is-show="dialogData.isShowAdd"
       width="600"
       :title="t('新建网关')"
       theme="primary"
-      quick-close>
+      quick-close
+      :is-loading="dialogData.loading"
+      @confirm="handleConfirmCreate">
       <bk-form ref="formRef" form-type="vertical" :model="formData">
         <bk-form-item
           label="名称"
@@ -129,7 +181,7 @@ const showAddDialog = () => {
           required
         >
           <bk-input
-            v-model="formData.name"
+            v-model="formData.maintainers"
             placeholder="请输入"
             clearable
           />
@@ -141,7 +193,7 @@ const showAddDialog = () => {
         >
           <bk-input
             type="textarea"
-            v-model="formData.name"
+            v-model="formData.description"
             placeholder="请输入"
             clearable
           />
@@ -151,7 +203,7 @@ const showAddDialog = () => {
           property="isopen"
           required
         >
-          <bk-switcher v-model="formData.isopen" />
+          <bk-switcher v-model="formData.is_public" />
           <span class="common-form-tips">公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏</span>
         </bk-form-item>
       </bk-form>
@@ -226,6 +278,14 @@ const showAddDialog = () => {
   .footer-container{
     text-align: center;
     height: 52px;
+  }
+
+  .deact{
+    background: #EAEBF0 !important;
+    color: #fff !important;
+    &-name{
+      color: #979BA5 !important;
+    }
   }
 }
 </style>

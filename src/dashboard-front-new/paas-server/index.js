@@ -35,7 +35,7 @@ const GLOBAL_VAR = {
   // 内部版对应ieod，外部版对应tencent，混合云版对应clouds
   BKPAAS_ENGINE_REGION: process.env.BKPAAS_ENGINE_REGION || '',
   // APP CODE
-  BKPAAS_APP_ID: process.env.BKPAAS_APP_ID || '',
+  BK_PAAS_APP_ID: process.env.BK_PAAS_APP_ID || '',
   BKPAAS_APP_SECRET: process.env.BKPAAS_APP_SECRET || '',
   BK_LOGIN_URL: process.env.BK_LOGIN_URL || '',
 };
