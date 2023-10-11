@@ -74,6 +74,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         validators=[ReservedGatewayNameValidator()],
     )
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
 
     class Meta:
         model = Gateway
@@ -81,6 +82,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
             "name",
             "description",
             "maintainers",
+            "developers",
             "is_public",
         )
         lookup_field = "id"
@@ -109,6 +111,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
 
 class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
     public_key = serializers.CharField(label="网关公钥", source="jwt.public_key")
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, allow_null=True)
     is_official = serializers.SerializerMethodField()
@@ -124,6 +127,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "name",
             "description",
             "maintainers",
+            "developers",
             "status",
             "is_public",
             "created_by",
@@ -156,12 +160,14 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
 
     class Meta:
         model = Gateway
         fields = (
             "description",
             "maintainers",
+            "developers",
             "is_public",
         )
         lookup_field = "id"
