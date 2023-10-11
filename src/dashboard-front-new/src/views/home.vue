@@ -2,15 +2,24 @@
 import { useI18n } from 'vue-i18n';
 import { createGateway, getGatewaysList } from '@/http';
 import { Message } from 'bkui-vue';
+import { IPagination, IDialog } from '@/types';
 import {
   ref,
 } from 'vue';
 const { t } = useI18n();
 
-const filterKey = ref('updated_time');
-const dialogData = ref({
-  isShowAdd: false,
+const filterKey = ref<string>('updated_time');
+// 弹窗
+const dialogData = ref<IDialog>({
+  isShow: false,
+  title: t('新建网关'),
   loading: false,
+});
+// 分页状态
+const pagination = ref<IPagination>({
+  offset: 0,
+  limit: 10,
+  count: 0,
 });
 const formData = ref({
   name: '',
@@ -20,13 +29,6 @@ const formData = ref({
 });
 
 const tableData = ref([]);
-
-// 分页状态
-const pagination = ref({
-  offset: 0,
-  limit: 10,
-  count: 0,
-});
 
 // 当前年份
 const curYear = (new Date()).getFullYear();
@@ -45,7 +47,7 @@ const showAddDialog = () => {
     description: '',
     is_public: false,
   };
-  dialogData.value.isShowAdd = true;
+  dialogData.value.isShow = true;
 };
 
 // 创建网关确认
@@ -69,7 +71,6 @@ const getGatewaysListData = async () => {
       limit: pagination.value.limit,
       offset: pagination.value.limit * pagination.value.offset,
     });
-    console.log('res', res);
     tableData.value = res.results;
   } catch (error) {}
 };
@@ -156,9 +157,9 @@ getGatewaysListData();
     </div>
 
     <bk-dialog
-      v-model:is-show="dialogData.isShowAdd"
+      v-model:is-show="dialogData.isShow"
       width="600"
-      :title="t('新建网关')"
+      :title="dialogData.title"
       theme="primary"
       quick-close
       :is-loading="dialogData.loading"
