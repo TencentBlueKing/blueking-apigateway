@@ -52,7 +52,7 @@ from .serializers import (
         query_serializer=PluginTypeQueryInputSLZ,
         responses={status.HTTP_200_OK: PluginTypeOutputSLZ(many=True)},
         tags=["WebAPI.Plugin"],
-        operation_description="list the available plugin types",
+        operation_description="获取某个环境或资源下，可配置的插件列表; 需要指定 scope_type 和 scope_id; 可以传递 keyword 进行搜索",
     ),
 )
 class PluginTypeListApi(generics.ListAPIView):
@@ -125,7 +125,7 @@ class PluginTypeListApi(generics.ListAPIView):
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: PluginFormOutputSLZ()},
         tags=["WebAPI.Plugin"],
-        operation_description="retrieve the plugin form data by plugin type",
+        operation_description="获取插件类型对应的动态表单",
     ),
 )
 class PluginFormRetrieveApi(generics.RetrieveAPIView):
@@ -234,7 +234,7 @@ class PluginConfigBindingPostModificationMixin:
         responses={status.HTTP_201_CREATED: ""},
         request_body=PluginConfigCreateInputSLZ,
         tags=["WebAPI.Plugin"],
-        operation_description="create the plugin config, and bind to the scope_type/scope_id",
+        operation_description="创建一个插件，并且绑定到对应的 scope_type + scope_id",
     ),
 )
 class PluginConfigCreateApi(
@@ -291,6 +291,7 @@ class PluginConfigCreateApi(
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: PluginConfigRetrieveUpdateInputSLZ()},
+        operation_description="获取插件的配置",
         tags=["WebAPI.Plugin"],
     ),
 )
@@ -298,6 +299,7 @@ class PluginConfigCreateApi(
     name="put",
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: PluginConfigRetrieveUpdateInputSLZ()},
+        operation_description="更新插件的配置",
         tags=["WebAPI.Plugin"],
     ),
 )
@@ -305,6 +307,7 @@ class PluginConfigCreateApi(
     name="delete",
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
+        operation_description="删除插件的配置",
         tags=["WebAPI.Plugin"],
     ),
 )
@@ -377,6 +380,7 @@ class PluginConfigRetrieveUpdateDestroyApi(
 class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: PluginBindingListOutputSLZ()},
+        operation_description="获取某个插件绑定的环境列表和资源列表",
         tags=["WebAPI.Plugin"],
     )
     def get(self, request, *args, **kwargs):
@@ -411,6 +415,7 @@ class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
 class ScopePluginConfigListApi(generics.ListAPIView, ScopeValidationMixin):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ScopePluginConfigListOutputSLZ(many=True)},
+        operation_description="获取某个环境或资源绑定的插件列表 (插件类型 + 插件配置)",
         tags=["WebAPI.Plugin"],
     )
     def get(self, request, *args, **kwargs):
