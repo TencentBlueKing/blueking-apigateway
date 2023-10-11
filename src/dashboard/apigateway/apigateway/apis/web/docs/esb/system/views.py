@@ -32,6 +32,7 @@ from .serializers import SystemListOutputSLZ, SystemRetrieveOutputSLZ
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取组件系统列表",
         responses={status.HTTP_200_OK: SystemListOutputSLZ(many=True)},
         tags=["WebAPI.Docs.ESB.System"],
     ),
@@ -47,6 +48,7 @@ class SystemListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取组件系统信息",
         responses={status.HTTP_200_OK: SystemRetrieveOutputSLZ},
         tags=["WebAPI.Docs.ESB.System"],
     ),

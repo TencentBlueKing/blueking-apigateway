@@ -33,6 +33,7 @@ from .serializers import SDKDocInputSLZ, SDKDocOutputSLZ, SDKListInputSLZ, SDKLi
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取所有网关 SDK，单个 SDK 仅返回最新版本 SDK 信息",
         query_serializer=SDKListInputSLZ,
         responses={status.HTTP_200_OK: SDKListOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Gateway.SDK"],
@@ -73,6 +74,7 @@ class SDKListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取指定语言（python）的网关 SDK 说明文档",
         query_serializer=SDKDocInputSLZ,
         responses={status.HTTP_200_OK: SDKDocOutputSLZ},
         tags=["WebAPI.Docs.Gateway.SDK"],
