@@ -78,6 +78,7 @@ class QueryRangeApi(generics.ListAPIView):
     @swagger_auto_schema(
         query_serializer=MetricsQueryInputSLZ,
         responses={status.HTTP_200_OK: ""},
+        operation_description="查询 metrics",
         tags=["WebAPI.Metrics"],
     )
     def get(self, request, *args, **kwargs):
