@@ -120,6 +120,7 @@ getGatewaysListData();
         <div class="flex-1 of2 env">
           <div class="flex-row">
             <bk-tag v-for="envItem in item.stages" :key="envItem.id">
+              <i :class="['ag-dot',{ 'success': envItem.released }]"></i>
               {{ envItem.name }}
             </bk-tag>
           </div>
@@ -263,6 +264,18 @@ getGatewaysListData();
       }
       .env{
         overflow: hidden;
+        .ag-dot{
+          width: 8px;
+          height: 8px;
+          display: inline-block;
+          vertical-align: middle;
+          border-radius: 50%;
+          border: 1px solid #C4C6CC;
+        }
+        .success{
+          background: #e5f6ea;
+          border: 1px solid #3fc06d;
+        }
       }
     }
     .of1{
