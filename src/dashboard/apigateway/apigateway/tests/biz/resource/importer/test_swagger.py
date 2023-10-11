@@ -687,6 +687,8 @@ class TestResourceSwaggerImporter:
                             "method": "GET",
                             "match_subpath": True,
                             "timeout": 30,
+                            "legacy_transform_headers": None,
+                            "legacy_upstreams": None,
                         },
                         "auth_config": {
                             "auth_verified_required": False,
@@ -738,6 +740,8 @@ class TestResourceSwaggerImporter:
                             "path": "/echo/",
                             "match_subpath": False,
                             "timeout": 0,
+                            "legacy_transform_headers": None,
+                            "legacy_upstreams": None,
                         },
                         "auth_config": {
                             "auth_verified_required": True,
@@ -789,6 +793,8 @@ class TestResourceSwaggerImporter:
                             "path": "/echo/",
                             "match_subpath": False,
                             "timeout": 0,
+                            "legacy_transform_headers": None,
+                            "legacy_upstreams": None,
                         },
                         "auth_config": {
                             "auth_verified_required": True,

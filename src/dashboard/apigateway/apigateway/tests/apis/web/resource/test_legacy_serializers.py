@@ -13,13 +13,13 @@ class TestLegacyResourceHostSLZ:
         "data, expected, expected_error",
         [
             (
-                {"host": "http://demo.com"},
-                {"host": "http://demo.com", "weight": 100},
+                {"host": "http://{env.foo}"},
+                {"host": "http://{env.foo}", "weight": 100},
                 None,
             ),
             (
-                {"host": "http://demo.com", "weight": 10},
-                {"host": "http://demo.com", "weight": 10},
+                {"host": "http://{env.foo}", "weight": 10},
+                {"host": "http://{env.foo}", "weight": 10},
                 None,
             ),
             (
@@ -28,7 +28,7 @@ class TestLegacyResourceHostSLZ:
                 ValidationError,
             ),
             (
-                {"host": "demo.com", "weight": 10},
+                {"host": "{env.foo}", "weight": 10},
                 None,
                 ValidationError,
             ),
@@ -55,12 +55,12 @@ class TestLegacyUpstreamsSLZ:
                 None,
             ),
             (
-                {"hosts": [{"host": "http://demo.com"}], "loadbalance": "roundrobin"},
-                {"hosts": [{"host": "http://demo.com"}], "loadbalance": "roundrobin"},
+                {"hosts": [{"host": "http://{env.foo}"}], "loadbalance": "roundrobin"},
+                {"hosts": [{"host": "http://{env.foo}", "weight": 100}], "loadbalance": "roundrobin"},
                 None,
             ),
             (
-                {"hosts": [{"host": "http://demo.com"}]},
+                {"hosts": [{"host": "http://{env.foo}"}]},
                 None,
                 ValidationError,
             ),

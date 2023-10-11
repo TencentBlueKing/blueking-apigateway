@@ -165,7 +165,7 @@ class TestLegacyBackendCreator:
                             "timeout": 50,
                             "loadbalance": "roundrobin",
                             "hosts": [
-                                {"scheme": "http", "host": "foo.com", "weight": 10},
+                                {"scheme": "https", "host": "foo.com", "weight": 10},
                             ],
                         },
                     },
@@ -234,6 +234,7 @@ class TestLegacyBackendCreator:
         assert result == "backend-1"
 
         creator._max_legacy_backend_number = 100
+        result = creator._generate_new_backend_name()
         assert result == "backend-101"
 
     def test_create_backend_and_backend_configs(self, fake_gateway, fake_stage):
@@ -295,13 +296,17 @@ class TestLegacyUpstreamToBackendSynchronizer:
         assert fake_resource_data.backend is None
 
     def test_sync_backends_and_replace_resource_backend__has_upstreams(
-        self, fake_gateway, fake_stage, fake_resource_data
+        self,
+        fake_gateway,
+        fake_stage,
+        fake_resource_data,
     ):
+        backend = G(Backend, name=DEFAULT_BACKEND_NAME, gateway=fake_gateway)
         G(
             BackendConfig,
-            name=DEFAULT_BACKEND_NAME,
             gateway=fake_gateway,
             stage=fake_stage,
+            backend=backend,
             config={
                 "type": "node",
                 "timeout": 30,
@@ -329,7 +334,7 @@ class TestLegacyUpstreamToBackendSynchronizer:
 
 
 class TestLegacyTransformHeadersToPluginSynchronizer:
-    def test_plugin_config(self, fake_gateway, fake_resource, fake_resource_data):
+    def test_plugin_config(self, fake_gateway, fake_resource, fake_resource_data, fake_plugin_type_bk_header_rewrite):
         fake_resource_data.resource = fake_resource
         synchronizer = LegacyTransformHeadersToPluginSynchronizer(fake_gateway, [fake_resource_data], "admin")
 
@@ -339,24 +344,24 @@ class TestLegacyTransformHeadersToPluginSynchronizer:
 
         # add
         fake_resource_data.backend_config.legacy_transform_headers = {
-            "set": ["x-token"],
+            "set": {"x-token": "test"},
             "delete": ["x-token"],
         }
         synchronizer.sync_plugins()
         plugin_config = PluginConfig.objects.get(gateway=fake_gateway, type__code="bk-header-rewrite")
-        assert plugin_config.config == {"set": ["x-token"], "delete": ["x-token"]}
+        assert plugin_config.config == {"set": [{"key": "x-token", "value": "test"}], "remove": [{"key": "x-token"}]}
         assert PluginBinding.objects.filter(
             gateway=fake_gateway, scope_type="resource", scope_id=fake_resource.id
         ).exists()
 
         # update
         fake_resource_data.backend_config.legacy_transform_headers = {
-            "set": ["x-foo"],
+            "set": {"x-foo": "test"},
             "delete": ["x-bar"],
         }
         synchronizer.sync_plugins()
         plugin_config = PluginConfig.objects.get(gateway=fake_gateway, type__code="bk-header-rewrite")
-        assert plugin_config.config == {"set": ["x-foo"], "delete": ["x-bar"]}
+        assert plugin_config.config == {"set": [{"key": "x-foo", "value": "test"}], "remove": [{"key": "x-bar"}]}
         assert PluginBinding.objects.filter(
             gateway=fake_gateway, scope_type="resource", scope_id=fake_resource.id
         ).exists()

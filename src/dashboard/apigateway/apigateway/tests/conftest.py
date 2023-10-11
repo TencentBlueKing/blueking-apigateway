@@ -30,7 +30,7 @@ from django.contrib.auth import get_user_model
 from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
@@ -687,6 +687,18 @@ def echo_plugin_resource_binding(echo_plugin, fake_resource):
         config=echo_plugin,
         scope_type=PluginBindingScopeEnum.RESOURCE.value,
         scope_id=fake_resource.pk,
+    )
+
+
+@pytest.fixture()
+def fake_plugin_type_bk_header_rewrite():
+    return PluginType.objects.get_or_create(
+        code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
+        defaults={
+            "name": PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
+            "is_public": True,
+            "schema": None,
+        },
     )
 
 

@@ -134,7 +134,11 @@ class LegacyBackendCreator:
         self._max_legacy_backend_number += 1
         return f"{LEGACY_BACKEND_NAME_PREFIX}{self._max_legacy_backend_number}"
 
-    def _create_backend_and_backend_configs(self, backend_name: str, stage_id_to_backend_config: Dict[int, Dict]):
+    def _create_backend_and_backend_configs(
+        self,
+        backend_name: str,
+        stage_id_to_backend_config: Dict[int, Dict],
+    ) -> Backend:
         backend = Backend.objects.create(
             gateway=self.gateway, name=backend_name, created_by=self.username, updated_by=self.username
         )
@@ -151,6 +155,8 @@ class LegacyBackendCreator:
             for stage_id, config in stage_id_to_backend_config.items()
         ]
         BackendConfig.objects.bulk_create(backend_configs)
+
+        return backend
 
     def _sort_hosts(self, hosts: List[Dict[str, Dict]]) -> List[Dict[str, Dict]]:
         # 排序 host，使用 "==" 对比配置时顺序一致
@@ -186,7 +192,7 @@ class LegacyUpstreamToBackendSynchronizer:
         return any(resource_data.backend_config.legacy_upstreams for resource_data in self.resource_data_list)
 
     def _sync_backends_and_replace_resource_backend(self):
-        backend_creator = LegacyBackendCreator(self.gateway)
+        backend_creator = LegacyBackendCreator(self.gateway, self.username)
         stages = list(Stage.objects.filter(gateway=self.gateway))
         stage_id_to_timeout = self._get_stage_id_to_default_timeout()
 
@@ -214,15 +220,18 @@ class LegacyTransformHeadersToPluginSynchronizer:
         self.gateway = gateway
         self.resource_data_list = resource_data_list
         self.username = username
-        self._plugin_type = PluginType.objects.get(code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value)
 
     def sync_plugins(self):
+        if not self._has_legacy_transform_headers():
+            return
+
+        plugin_type = PluginType.objects.get(code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value)
         exist_bindings = {
             binding.scope_id: binding
             for binding in PluginBinding.objects.filter(
                 gateway=self.gateway,
                 scope_type=PluginBindingScopeEnum.RESOURCE.value,
-                config__type=self._plugin_type,
+                config__type=plugin_type,
             ).prefetch_related("config")
         }
 
@@ -246,7 +255,7 @@ class LegacyTransformHeadersToPluginSynchronizer:
                 add_bindings[resource_data.resource.id] = PluginConfig(
                     gateway=self.gateway,
                     name=self._generate_plugin_name(resource_data.resource.id),
-                    type=self._plugin_type,
+                    type=plugin_type,
                     yaml=yaml_dumps(plugin_config),
                 )
             else:
@@ -258,8 +267,7 @@ class LegacyTransformHeadersToPluginSynchronizer:
             PluginConfig.objects.bulk_create(add_bindings.values(), batch_size=100)
 
             plugin_configs = {
-                config.name: config
-                for config in PluginConfig.objects.filter(gateway=self.gateway, type=self._plugin_type)
+                config.name: config for config in PluginConfig.objects.filter(gateway=self.gateway, type=plugin_type)
             }
 
             bindings = []
@@ -282,6 +290,15 @@ class LegacyTransformHeadersToPluginSynchronizer:
             PluginBinding.objects.filter(
                 gateway=self.gateway, id__in=[binding.id for binding in delete_bindings]
             ).delete()
+            PluginConfig.objects.filter(
+                gateway=self.gateway, id__in=[binding.config.id for binding in delete_bindings]
+            ).delete()
 
     def _generate_plugin_name(self, resource_id: int) -> str:
         return f"bk-header-rewrite::resource::{resource_id}"
+
+    def _has_legacy_transform_headers(self) -> bool:
+        return any(
+            resource_data.backend_config.legacy_transform_headers is not None
+            for resource_data in self.resource_data_list
+        )

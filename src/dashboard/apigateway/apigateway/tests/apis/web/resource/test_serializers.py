@@ -76,6 +76,8 @@ class TestHttpBackendConfigSLZ:
                 {
                     "method": "GET",
                     "path": "/test",
+                    "legacy_upstreams": None,
+                    "legacy_transform_headers": None,
                 },
             ),
             (
@@ -97,8 +99,8 @@ class TestHttpBackendConfigSLZ:
                     "method": "GET",
                     "path": "/test",
                     "legacy_upstreams": {
-                        "hosts": [{"host": "http://demo.com", "loadbalance": "roundrobin"}],
-                        "weight": 20,
+                        "hosts": [{"host": "http://{env.foo}", "weight": 20}],
+                        "loadbalance": "roundrobin",
                     },
                     "legacy_transform_headers": {"set": {"x-token": "test"}, "delete": ["x-token"]},
                 },
@@ -106,8 +108,8 @@ class TestHttpBackendConfigSLZ:
                     "method": "GET",
                     "path": "/test",
                     "legacy_upstreams": {
-                        "hosts": [{"host": "http://demo.com", "loadbalance": "roundrobin"}],
-                        "weight": 20,
+                        "hosts": [{"host": "http://{env.foo}", "weight": 20}],
+                        "loadbalance": "roundrobin",
                     },
                     "legacy_transform_headers": {"set": {"x-token": "test"}, "delete": ["x-token"]},
                 },
