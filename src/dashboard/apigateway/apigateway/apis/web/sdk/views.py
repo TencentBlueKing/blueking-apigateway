@@ -41,12 +41,16 @@ from apigateway.utils.responses import OKJsonResponse
         query_serializer=serializers.GatewaySDKQueryInputSLZ(),
         responses={status.HTTP_200_OK: serializers.GatewaySDKListOutputSLZ(many=True)},
         tags=["WebAPI.SDK"],
+        operation_description="sdk列表查询接口",
     ),
 )
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""}, request_body=serializers.GatewaySDKGenerateInputSLZ, tags=["WebAPI.SDK"]
+        responses={status.HTTP_200_OK: ""},
+        request_body=serializers.GatewaySDKGenerateInputSLZ,
+        tags=["WebAPI.SDK"],
+        operation_description="sdk创建接口",
     ),
 )
 class GatewaySDKListCreateApi(generics.ListCreateAPIView):

@@ -32,8 +32,8 @@ from apigateway.core.models import PublishEvent, ReleaseHistory, ResourceVersion
 
 class ReleaseInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    stage_id = serializers.IntegerField(required=True)
-    resource_version_id = serializers.IntegerField(required=True)
+    stage_id = serializers.IntegerField(required=True, help_text="环境id")
+    resource_version_id = serializers.IntegerField(required=True, help_text="资源版本id")
 
     def validate_stage_id(self, value):
         if not Stage.objects.filter(gateway=self.context["gateway"], id=value).exists():
@@ -49,11 +49,11 @@ class ReleaseInputSLZ(serializers.Serializer):
 
 
 class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
-    query = serializers.CharField(allow_blank=True, required=False)
-    stage_id = serializers.IntegerField(allow_null=True, required=False)
-    created_by = serializers.CharField(allow_blank=True, required=False)
-    time_start = TimestampField(allow_null=True, required=False)
-    time_end = TimestampField(allow_null=True, required=False)
+    query = serializers.CharField(allow_blank=True, required=False, help_text="查询参数关键字")
+    stage_id = serializers.IntegerField(allow_null=True, required=False, help_text="环境id")
+    created_by = serializers.CharField(allow_blank=True, required=False, help_text="创建者")
+    time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")
+    time_end = TimestampField(allow_null=True, required=False, help_text="结束时间")
 
 
 class ReleaseStageSLZ(serializers.Serializer):
