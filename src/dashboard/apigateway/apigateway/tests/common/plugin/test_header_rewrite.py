@@ -17,6 +17,7 @@
 #
 import pytest
 
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 
 
@@ -34,3 +35,45 @@ class TestHeaderRewriteConvertor:
     )
     def test_transform_headers_to_plugin_config(self, transform_headers, expected):
         assert HeaderRewriteConvertor.transform_headers_to_plugin_config(transform_headers) == expected
+
+    def test_sync_plugins(self, fake_gateway, fake_resource, fake_plugin_type_bk_header_rewrite):
+        HeaderRewriteConvertor.sync_plugins(fake_gateway.id, "resource", {}, "admin")
+        assert not PluginConfig.objects.filter(gateway=fake_gateway).exists()
+        assert not PluginBinding.objects.filter(gateway=fake_gateway).exists()
+
+        # add
+        scope_id_to_plugin_config = {
+            fake_resource.id: {
+                "set": [{"key": "x-token", "value": "test"}],
+                "remove": [{"key": "x-token"}],
+            }
+        }
+        HeaderRewriteConvertor.sync_plugins(fake_gateway.id, "resource", scope_id_to_plugin_config, "admin")
+
+        plugin_config = PluginConfig.objects.get(gateway=fake_gateway, type__code="bk-header-rewrite")
+        assert plugin_config.config == {"set": [{"key": "x-token", "value": "test"}], "remove": [{"key": "x-token"}]}
+        assert PluginBinding.objects.filter(
+            gateway=fake_gateway, scope_type="resource", scope_id=fake_resource.id
+        ).exists()
+
+        # update
+        scope_id_to_plugin_config = {
+            fake_resource.id: {
+                "set": [{"key": "x-foo", "value": "test"}],
+                "remove": [{"key": "x-bar"}],
+            }
+        }
+        HeaderRewriteConvertor.sync_plugins(fake_gateway.id, "resource", scope_id_to_plugin_config, "admin")
+
+        plugin_config = PluginConfig.objects.get(gateway=fake_gateway, type__code="bk-header-rewrite")
+        assert plugin_config.config == {"set": [{"key": "x-foo", "value": "test"}], "remove": [{"key": "x-bar"}]}
+        assert PluginBinding.objects.filter(
+            gateway=fake_gateway, scope_type="resource", scope_id=fake_resource.id
+        ).exists()
+
+        # delete
+        scope_id_to_plugin_config = {fake_resource.id: None}
+        HeaderRewriteConvertor.sync_plugins(fake_gateway.id, "resource", scope_id_to_plugin_config, "admin")
+
+        assert not PluginConfig.objects.filter(gateway=fake_gateway).exists()
+        assert not PluginBinding.objects.filter(gateway=fake_gateway).exists()

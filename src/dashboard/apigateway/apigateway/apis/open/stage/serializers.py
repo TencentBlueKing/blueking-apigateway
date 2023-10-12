@@ -238,8 +238,11 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         # 4. create or update header rewrite plugin config
         stage_transform_headers = proxy_http_config.get("transform_headers") or {}
         stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
-        HeaderRewriteConvertor.alter_plugin(
-            instance.gateway_id, PluginBindingScopeEnum.STAGE.value, instance.id, stage_config
+        HeaderRewriteConvertor.sync_plugins(
+            instance.gateway_id,
+            PluginBindingScopeEnum.STAGE.value,
+            {instance.id: stage_config},
+            self.context["request"].user.username,
         )
 
         return instance
@@ -292,8 +295,11 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         # 3. create or update header rewrite plugin config
         stage_transform_headers = proxy_http_config.get("transform_headers") or {}
         stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
-        HeaderRewriteConvertor.alter_plugin(
-            instance.gateway_id, PluginBindingScopeEnum.STAGE.value, instance.id, stage_config
+        HeaderRewriteConvertor.sync_plugins(
+            instance.gateway_id,
+            PluginBindingScopeEnum.STAGE.value,
+            {instance.id: stage_config},
+            self.context["request"].user.username,
         )
 
         return instance
