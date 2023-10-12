@@ -17,6 +17,7 @@ const { BK_PAAS2_ESB_DOC_URL } = window;
 
 // 加载完用户数据才会展示页面
 const userLoading = ref(false);
+const activeIndex = ref(0);
 // 获取用户数据
 const user = useUser();
 getUser()
@@ -38,7 +39,7 @@ const headerList = ref([
   },
   {
     name: t('组件管理'),
-    id: 4,
+    id: 2,
     url: 'apigwDoc',
     enabled: true,
     link: '',
@@ -57,7 +58,7 @@ const isExternalLink  = (url?: string) => {
 };
 
 const handleToPage = (routeName: string, index: number, link: string) => {
-  console.log('routeName', routeName, link);
+  activeIndex.value = index;
   // 文档组件API
   if (routeName === 'componentAPI') {
     if (BK_PAAS2_ESB_DOC_URL) {
@@ -116,6 +117,7 @@ const goPage = (routeName: string) => {
             v-for="(item, index) in headerList"
             :key="item.id"
             class="header-nav-item"
+            :class="{ 'item-active': index === activeIndex }"
           >
             <span
               v-if="!isExternalLink(item.url)"
