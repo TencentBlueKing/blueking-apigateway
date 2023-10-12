@@ -273,6 +273,7 @@ init();
   width: 80%;
   margin: 0 auto;
   font-size: 14px;
+  min-width: 1200px;
   .title-container{
     width: 100%;
     padding: 28px 16px;
