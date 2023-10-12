@@ -34,6 +34,7 @@ from .serializers import DocInputSLZ, DocOutputSLZ
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关资源的文档",
         query_serializer=DocInputSLZ,
         responses={status.HTTP_200_OK: DocOutputSLZ},
         tags=["WebAPI.Docs.ResourceDoc"],

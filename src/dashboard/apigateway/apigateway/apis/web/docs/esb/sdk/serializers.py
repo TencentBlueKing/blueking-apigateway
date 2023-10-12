@@ -22,50 +22,50 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 
 
 class SDKListInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.esb.sdk.SDKListInputSLZ"
 
 
 class SDKRetrieveInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
 
 
 class SDKDocInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.esb.sdk.SDKDocInputSLZ"
 
 
 class SDKDocOutputSLZ(serializers.Serializer):
-    content = serializers.CharField()
+    content = serializers.CharField(help_text="文档内容")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.esb.sdk.SDKDocOutputSLZ"
 
 
 class SDKUsageExampleInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
-    system_name = serializers.CharField()
-    component_name = serializers.CharField()
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
+    system_name = serializers.CharField(help_text="组件所属系统名称")
+    component_name = serializers.CharField(help_text="组件名称")
 
 
 class SDKUsageExampleOutputSLZ(serializers.Serializer):
-    content = serializers.CharField()
+    content = serializers.CharField(help_text="文档内容")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.esb.sdk.SDKUsageExampleOutputSLZ"
 
 
 class SDKOutputSLZ(serializers.Serializer):
-    board_label = serializers.CharField()
-    sdk_name = serializers.CharField()
-    sdk_description = serializers.CharField()
-    sdk_version_number = serializers.CharField()
-    sdk_download_url = serializers.CharField()
-    sdk_install_command = serializers.CharField()
+    board_label = serializers.CharField(help_text="组件 board 标签")
+    sdk_name = serializers.CharField(help_text="SDK 名称")
+    sdk_description = serializers.CharField(help_text="SDK 描述")
+    sdk_version_number = serializers.CharField(help_text="SDK 版本号")
+    sdk_download_url = serializers.CharField(help_text="SDK 下载链接")
+    sdk_install_command = serializers.CharField(help_text="SDK 安装命令")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.esb.sdk.SDKOutputSLZ"

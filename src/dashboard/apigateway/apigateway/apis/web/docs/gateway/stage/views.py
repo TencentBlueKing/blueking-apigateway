@@ -31,6 +31,7 @@ from .serializers import StageOutputSLZ
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关公开、可用的环境列表",
         responses={status.HTTP_200_OK: StageOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Stage"],
     ),

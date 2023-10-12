@@ -45,6 +45,7 @@ from .serializers import (
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ResourceVersionListOutputSLZ(many=True)},
         tags=["WebAPI.ResourceVersion"],
+        operation_description="资源版本列表查询接口",
     ),
 )
 @method_decorator(
@@ -53,6 +54,7 @@ from .serializers import (
         responses={status.HTTP_201_CREATED: ""},
         request_body=ResourceVersionCreateInputSLZ,
         tags=["WebAPI.ResourceVersion"],
+        operation_description="资源版本创建接口",
     ),
 )
 class ResourceVersionListCreateApi(generics.ListCreateAPIView):
@@ -110,7 +112,10 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
 
     @method_decorator(
         name="get",
-        decorator=swagger_auto_schema(tags=["WebAPI.ResourceVersion"]),
+        decorator=swagger_auto_schema(
+            tags=["WebAPI.ResourceVersion"],
+            operation_description="资源版本详情查询接口",
+        ),
     )
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -133,7 +138,9 @@ class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
     @method_decorator(
         name="get",
         decorator=swagger_auto_schema(
-            responses={status.HTTP_200_OK: NeedNewVersionOutputSLZ()}, tags=["WebAPI.ResourceVersion"]
+            responses={status.HTTP_200_OK: NeedNewVersionOutputSLZ()},
+            tags=["WebAPI.ResourceVersion"],
+            operation_description="是否需要创建新资源版本查询接口",
         ),
     )
     def get(self, request, *args, **kwargs):
@@ -165,6 +172,7 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
             query_serializer=ResourceVersionDiffQueryInputSLZ(),
             responses={status.HTTP_200_OK: ResourceVersionDiffOutputSLZ()},
             tags=["WebAPI.ResourceVersion"],
+            operation_description="资源版本对比接口",
         ),
     )
     def get(self, request, *args, **kwargs):

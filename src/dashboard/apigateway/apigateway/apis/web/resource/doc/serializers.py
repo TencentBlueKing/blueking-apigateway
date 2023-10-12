@@ -29,6 +29,15 @@ class DocInputSLZ(serializers.ModelSerializer):
         model = ResourceDoc
         fields = ["language", "content"]
 
+        extra_kwargs = {
+            "language": {
+                "help_text": "文档语言，en：英文，zh：中文",
+            },
+            "content": {
+                "help_text": "文档内容",
+            },
+        }
+
     def validate_language(self, value):
         gateway_id = self.context["gateway_id"]
         resource_id = self.context["resource_id"]
@@ -51,4 +60,16 @@ class DocOutputSLZ(serializers.ModelSerializer):
             "content",
         ]
         read_only_fields = fields
-        ref_name = "apigateway.apis.web.resource.doc"
+        ref_name = "apigateway.apis.web.resource.doc.DocOutputSLZ"
+
+        extra_kwargs = {
+            "id": {
+                "help_text": "文档 ID",
+            },
+            "language": {
+                "help_text": "文档语言，en：英文，zh：中文",
+            },
+            "content": {
+                "help_text": "文档内容",
+            },
+        }
