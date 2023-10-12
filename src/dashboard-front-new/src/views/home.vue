@@ -28,7 +28,7 @@ const initDialogData: IinitDialogData = {
 
 const initPagination: IPagination = {
   offset: 0,
-  limit: 20,
+  limit: 100,
   count: 0,
 };
 
@@ -159,47 +159,49 @@ init();
         <div class="flex-1 of1 text-c">资源数量</div>
         <div class="flex-1 of2">操作</div>
       </div>
-      <div class="table-item flex-row align-items-center" v-for="item in gatewaysList" :key="item.id">
-        <div class="flex-1 flex-row align-items-center of4">
-          <div class="name-logo mr10" :class="item.status ? '' : 'deact'">
-            {{ item.name[0].toUpperCase() }}
+      <div class="table-list">
+        <div class="table-item flex-row align-items-center" v-for="item in gatewaysList" :key="item.id">
+          <div class="flex-1 flex-row align-items-center of4">
+            <div class="name-logo mr10" :class="item.status ? '' : 'deact'">
+              {{ item.name[0].toUpperCase() }}
+            </div>
+            <span class="name mr10" :class="item.status ? '' : 'deact-name'">{{ item.name }}</span>
+            <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
+            <bk-tag theme="warning" v-if="item.is_public">{{ t('公开') }}</bk-tag>
+            <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
           </div>
-          <span class="name mr10" :class="item.status ? '' : 'deact-name'">{{ item.name }}</span>
-          <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
-          <bk-tag theme="warning" v-if="item.is_public">{{ t('公开') }}</bk-tag>
-          <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
-        </div>
-        <div class="flex-1 of1">{{ item.created_by }}</div>
-        <div class="flex-1 of2 env">
-          <div class="flex-row">
-            <bk-tag v-for="envItem in item.stages" :key="envItem.id">
-              <i :class="['ag-dot',{ 'success': envItem.released }]"></i>
-              {{ envItem.name }}
-            </bk-tag>
+          <div class="flex-1 of1">{{ item.created_by }}</div>
+          <div class="flex-1 of2 env">
+            <div class="flex-row">
+              <bk-tag v-for="envItem in item.stages" :key="envItem.id">
+                <i :class="['ag-dot',{ 'success': envItem.released }]"></i>
+                {{ envItem.name }}
+              </bk-tag>
+            </div>
           </div>
-        </div>
-        <div class="flex-1 of1 text-c" :class="item.resource_count ? 'default-c' : ''">{{ item.resource_count }}</div>
-        <div class="flex-1 of2">
-          <bk-button
-            text
-            theme="primary"
-          >
-            环境概览
-          </bk-button>
-          <bk-button
-            text
-            theme="primary"
-            class="pl20"
-          >
-            资源配额
-          </bk-button>
-          <bk-button
-            text
-            theme="primary"
-            class="pl20"
-          >
-            流水日志
-          </bk-button>
+          <div class="flex-1 of1 text-c" :class="item.resource_count ? 'default-c' : ''">{{ item.resource_count }}</div>
+          <div class="flex-1 of2">
+            <bk-button
+              text
+              theme="primary"
+            >
+              环境概览
+            </bk-button>
+            <bk-button
+              text
+              theme="primary"
+              class="pl20"
+            >
+              资源配额
+            </bk-button>
+            <bk-button
+              text
+              theme="primary"
+              class="pl20"
+            >
+              流水日志
+            </bk-button>
+          </div>
         </div>
       </div>
     </div>
@@ -287,49 +289,57 @@ init();
       width: 100%;
       color: #979BA5;
       padding: 0 16px;
+      margin-bottom: 16px;
     }
-    .table-item{
-      width: 100%;
-      height: 80px;
-      background: #FFFFFF;
-      box-shadow: 0 2px 4px 0 #1919290d;
-      border-radius: 2px;
-      padding: 0 16px;
-      margin: 12px 0px;
-      cursor: pointer;
-      .name-logo{
-        width: 48px;
-        height: 48px;
-        line-height: 48px;
-        text-align: center;
-        background: #F0F5FF;
-        border-radius: 4px;
-        color: #3A84FF;
-        font-size: 26px;
-        font-weight: 700;
-      }
-      .name{
-        font-weight: 700;
-        color: #313238;
-        &:hover{
-          color: #3a84ff;
+    .table-list{
+      height: calc(100% - 45px);
+      overflow-y: auto;
+      .table-item{
+        width: 100%;
+        height: 80px;
+        background: #FFFFFF;
+        box-shadow: 0 2px 4px 0 #1919290d;
+        border-radius: 2px;
+        padding: 0 16px;
+        margin: 12px 0px;
+        cursor: pointer;
+        .name-logo{
+          width: 48px;
+          height: 48px;
+          line-height: 48px;
+          text-align: center;
+          background: #F0F5FF;
+          border-radius: 4px;
+          color: #3A84FF;
+          font-size: 26px;
+          font-weight: 700;
+        }
+        .name{
+          font-weight: 700;
+          color: #313238;
+          &:hover{
+            color: #3a84ff;
+          }
+        }
+        .env{
+          overflow: hidden;
+          .ag-dot{
+            width: 8px;
+            height: 8px;
+            display: inline-block;
+            vertical-align: middle;
+            border-radius: 50%;
+            border: 1px solid #C4C6CC;
+          }
+          .success{
+            background: #e5f6ea;
+            border: 1px solid #3fc06d;
+          }
         }
       }
-      .env{
-        overflow: hidden;
-        .ag-dot{
-          width: 8px;
-          height: 8px;
-          display: inline-block;
-          vertical-align: middle;
-          border-radius: 50%;
-          border: 1px solid #C4C6CC;
-        }
-        .success{
-          background: #e5f6ea;
-          border: 1px solid #3fc06d;
-        }
-      }
+      .table-item:nth-of-type(1) {
+        margin-top: 0px
+       };
     }
     .of1{
         flex: 0 0 10%;
