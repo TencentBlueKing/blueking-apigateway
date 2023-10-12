@@ -25,11 +25,13 @@ from apigateway.common.fields import TimestampField
 
 
 class AuditEventLogQueryInputSLZ(serializers.Serializer):
-    time_start = TimestampField(allow_null=True, required=False)
-    time_end = TimestampField(allow_null=True, required=False)
-    op_object_type = serializers.ChoiceField(choices=OpObjectTypeEnum.get_choices(), allow_blank=True, required=False)
-    op_type = serializers.ChoiceField(choices=OP_TYPE_CHOICES, allow_blank=True, required=False)
-    username = serializers.CharField(allow_blank=True, required=False)
+    time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")
+    time_end = TimestampField(allow_null=True, required=False, help_text="结束时间")
+    op_object_type = serializers.ChoiceField(
+        choices=OpObjectTypeEnum.get_choices(), allow_blank=True, required=False, help_text="操作对象类型"
+    )
+    op_type = serializers.ChoiceField(choices=OP_TYPE_CHOICES, allow_blank=True, required=False, help_text="操作类型")
+    username = serializers.CharField(allow_blank=True, required=False, help_text="操作者")
 
 
 class AuditEventLogOutputSLZ(serializers.ModelSerializer):
