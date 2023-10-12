@@ -54,7 +54,7 @@ class SDKListOutputSLZ(serializers.Serializer):
         resource_version = self.context["resource_versions"][obj.resource_version_id]
         return {
             "id": resource_version["id"],
-            "display": resource_version["version"],
+            "version": resource_version["version"],
         }
 
     def get_released_stages(self, obj):
