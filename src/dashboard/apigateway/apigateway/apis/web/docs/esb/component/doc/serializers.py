@@ -20,6 +20,6 @@ from rest_framework import serializers
 
 
 class ComponentDocOutputSLZ(serializers.Serializer):
-    type = serializers.CharField()
-    content = serializers.CharField()
-    updated_time = serializers.DateTimeField(allow_null=True, required=False)
+    type = serializers.CharField(help_text="文档类型，如 markdown")
+    content = serializers.CharField(help_text="文档内容")
+    updated_time = serializers.DateTimeField(allow_null=True, required=False, help_text="文档更新时间")

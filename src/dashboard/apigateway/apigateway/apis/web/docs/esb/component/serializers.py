@@ -23,25 +23,27 @@ from apigateway.apps.permission.constants import PermissionLevelEnum
 
 
 class ComponentSearchInputSLZ(serializers.Serializer):
-    query = serializers.CharField(required=False, allow_blank=True)
+    query = serializers.CharField(required=False, allow_blank=True, help_text="查询关键字，支持模糊匹配组件名称、组件描述、组件系统名称")
 
 
 class ComponentSearchOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = SerializerTranslatedField(translated_fields={"en": "description_en"}, default_field="description")
-    system_name = serializers.CharField(source="system.name")
+    id = serializers.IntegerField(help_text="组件 ID")
+    name = serializers.CharField(help_text="组件名称")
+    description = SerializerTranslatedField(
+        translated_fields={"en": "description_en"}, default_field="description", help_text="组件描述"
+    )
+    system_name = serializers.CharField(source="system.name", help_text="组件所属系统名称")
 
 
 class ComponentOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
+    id = serializers.IntegerField(read_only=True, help_text="组件 ID")
+    name = serializers.CharField(read_only=True, help_text="组件名称")
     description = SerializerTranslatedField(
-        translated_fields={"en": "description_en"}, default_field="description", read_only=True
+        translated_fields={"en": "description_en"}, default_field="description", read_only=True, help_text="组件描述"
     )
-    verified_app_required = serializers.SerializerMethodField()
-    verified_user_required = serializers.SerializerMethodField()
-    component_permission_required = serializers.SerializerMethodField()
+    verified_app_required = serializers.SerializerMethodField(help_text="是否需要认证应用")
+    verified_user_required = serializers.SerializerMethodField(help_text="是否需要认证用户")
+    component_permission_required = serializers.SerializerMethodField(help_text="是否需要验证应用访问组件的权限")
 
     def get_verified_app_required(self, obj):
         return True

@@ -33,25 +33,30 @@ from .validators import ReservedGatewayNameValidator
 
 
 class GatewayListInputSLZ(serializers.Serializer):
-    query = serializers.CharField(allow_blank=True, required=False)
+    query = serializers.CharField(allow_blank=True, required=False, help_text="网关筛选条件，支持模糊匹配网关名称")
     order_by = serializers.ChoiceField(
         choices=["-updated_time", "updated_time", "-created_time", "created_time", "name", "-name"],
         default="-updated_time",
+        help_text="排序方式",
     )
 
 
 class GatewayListOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    description = SerializerTranslatedField(allow_blank=True, default_field="description_i18n", read_only=True)
-    status = serializers.ChoiceField(choices=GatewayStatusEnum.get_choices(), read_only=True)
-    is_public = serializers.BooleanField(read_only=True)
-    created_by = serializers.CharField(allow_blank=True, allow_null=True, read_only=True)
-    created_time = serializers.DateTimeField(allow_null=True, read_only=True)
-    updated_time = serializers.DateTimeField(allow_null=True, read_only=True)
-    is_official = serializers.SerializerMethodField()
-    resource_count = serializers.SerializerMethodField()
-    stages = serializers.SerializerMethodField()
+    id = serializers.IntegerField(read_only=True, help_text="网关 ID")
+    name = serializers.CharField(read_only=True, help_text="网关名称")
+    description = SerializerTranslatedField(
+        allow_blank=True, default_field="description_i18n", read_only=True, help_text="网关描述"
+    )
+    status = serializers.ChoiceField(
+        choices=GatewayStatusEnum.get_choices(), read_only=True, help_text="网关状态，0: 已停用，1：启用中"
+    )
+    is_public = serializers.BooleanField(read_only=True, help_text="是否公开，true：公开，false：不公开")
+    created_by = serializers.CharField(allow_blank=True, allow_null=True, read_only=True, help_text="创建人")
+    created_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="创建时间")
+    updated_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="更新时间")
+    is_official = serializers.SerializerMethodField(help_text="是否为官方网关，true：官方网关，false：非官方网关")
+    resource_count = serializers.SerializerMethodField(help_text="网关下资源的数量")
+    stages = serializers.SerializerMethodField(help_text="网关环境列表，其中的 released 表示环境是否已发布")
 
     def get_is_official(self, obj):
         if obj.id not in self.context["gateway_auth_configs"]:
@@ -72,9 +77,12 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         label="网关名称",
         max_length=64,
         validators=[ReservedGatewayNameValidator()],
+        help_text="网关名称",
     )
-    maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
-    developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
+    maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
+    developers = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
+    )
 
     class Meta:
         model = Gateway
@@ -86,6 +94,15 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
             "is_public",
         )
         lookup_field = "id"
+
+        extra_kwargs = {
+            "description": {
+                "help_text": "网关描述",
+            },
+            "is_public": {
+                "help_text": "是否公开，true：公开，false:不公开",
+            },
+        }
 
         # 使用 UniqueTogetherValidator，方便错误提示信息统一处理
         # 使用 UniqueValidator，错误提示中包含了字段名："参数校验失败: Name: 网关名称已经存在"
@@ -110,15 +127,19 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
 
 
 class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
-    maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
-    developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
-    public_key = serializers.CharField(label="网关公钥", source="jwt.public_key")
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, allow_null=True)
-    is_official = serializers.SerializerMethodField()
-    api_domain = serializers.SerializerMethodField()
-    docs_url = serializers.SerializerMethodField()
-    public_key_fingerprint = serializers.SerializerMethodField()
-    allow_update_gateway_auth = serializers.SerializerMethodField()
+    maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
+    developers = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
+    )
+    public_key = serializers.CharField(label="网关公钥", source="jwt.public_key", help_text="网关公钥")
+    description = SerializerTranslatedField(
+        default_field="description_i18n", allow_blank=True, allow_null=True, help_text="网关描述"
+    )
+    is_official = serializers.SerializerMethodField(help_text="是否为官方网关，true：官方网关，false：非官方网关")
+    api_domain = serializers.SerializerMethodField(help_text="网关访问域名")
+    docs_url = serializers.SerializerMethodField(help_text="文档地址")
+    public_key_fingerprint = serializers.SerializerMethodField(help_text="公钥(指纹)")
+    allow_update_gateway_auth = serializers.SerializerMethodField(help_text="是否允许更新网关认证配置")
 
     class Meta:
         model = Gateway
@@ -142,6 +163,27 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
         read_only_fields = fields
         lookup_field = "id"
 
+        extra_kwargs = {
+            "id": {
+                "help_text": "网关ID",
+            },
+            "name": {
+                "help_text": "网关名称",
+            },
+            "status": {
+                "help_text": "网关状态，0：已停用，1：启用中",
+            },
+            "is_public": {
+                "help_text": "是否公开, true: 公开,false: 不公开",
+            },
+            "created_by": {
+                "help_text": "创建人",
+            },
+            "created_time": {
+                "help_text": "创建时间",
+            },
+        }
+
     def get_api_domain(self, obj):
         return GatewayHandler.get_api_domain(obj)
 
@@ -159,8 +201,10 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
-    maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
-    developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
+    maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
+    developers = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
+    )
 
     class Meta:
         model = Gateway
@@ -172,6 +216,15 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
         )
         lookup_field = "id"
 
+        extra_kwargs = {
+            "description": {
+                "help_text": "网关描述",
+            },
+            "is_public": {
+                "help_text": "是否公开，true：公开，false：不公开",
+            },
+        }
+
 
 class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
     class Meta:
@@ -179,6 +232,12 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
         fields = ("status",)
         lookup_field = "id"
 
+        extra_kwargs = {
+            "status": {
+                "help_text": "网关状态，0：停用，1：启用",
+            },
+        }
+
 
 class GatewayFeatureFlagsOutputSLZ(serializers.Serializer):
-    feature_flags = serializers.DictField()
+    feature_flags = serializers.DictField(help_text="网关特性集")
