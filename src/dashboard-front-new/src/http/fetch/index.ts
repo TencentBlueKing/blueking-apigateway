@@ -2,10 +2,12 @@ import { deepMerge } from '@/common/util';
 import successInterceptor from './success-interceptor';
 import errorInterceptor from './error-interceptor';
 import RequestError from './request-error';
+import cookie from 'cookie';
+
 
 export interface IFetchConfig extends RequestInit {
   responseType?: 'json' | 'text' | 'arrayBuffer' | 'blob' | 'formData',
-  globalError?: Boolean
+  globalError?: Boolean,
 }
 
 type HttpMethod = (url: string, payload?: any, config?: IFetchConfig) => Promise<any>;
@@ -21,7 +23,7 @@ interface IHttp {
 }
 
 // Content-Type
-const contentTypeMap = {
+const contentTypeMap: any = {
   json: 'application/json',
   text: 'text/plain',
   formData: 'multipart/form-data',
@@ -69,6 +71,7 @@ const getFetchUrl = (url: string, method: string, payload = {}) => {
     // get 请求需要将参数拼接到url上
     if (methodsWithoutData.includes(method)) {
       Object.keys(payload).forEach((key) => {
+        // @ts-ignore
         const value = payload[key];
         if (!['', undefined, null].includes(value)) {
           urlObject.searchParams.append(key, value);
@@ -88,6 +91,15 @@ allMethods.forEach((method) => {
     get() {
       return async (url: string, payload: any, config: IFetchConfig = {}) => {
         const fetchConfig: IFetchConfig = getFetchConfig(method, payload, config);
+        // 向 http header 注入 CSRFToken，CSRFToken key 值与后端一起协商制定
+        const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME || `${window.BK_PAAS_APP_ID}_csrftoken`];
+        if (CSRFToken !== undefined) {
+          // @ts-ignore
+          fetchConfig.headers['X-CSRFToken'] = CSRFToken;
+        } else {
+          console.warn('Can not find csrftoken in document.cookie');
+          return;
+        }
         try {
           const fetchUrl = getFetchUrl(url, method, payload);
           const response = await fetch(fetchUrl, fetchConfig);
