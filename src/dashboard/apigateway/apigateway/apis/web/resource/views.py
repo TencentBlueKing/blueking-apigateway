@@ -30,6 +30,8 @@ from rest_framework import generics, status
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.label.models import APILabel
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginBinding
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
@@ -412,6 +414,14 @@ class ResourceExportApi(generics.CreateAPIView):
                 "backends": BackendHandler.get_id_to_instance(gateway_id=request.gateway.id),
                 "proxies": {
                     proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=selected_resource_ids)
+                },
+                "plugin_bindings": {
+                    binding.scope_id: binding
+                    for binding in PluginBinding.objects.filter(
+                        gateway=request.gateway,
+                        scope_type=PluginBindingScopeEnum.RESOURCE.value,
+                        scope_id=selected_resource_ids,
+                    ).prefetch_related("config", "config__type")
                 },
                 "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(selected_resource_ids),
             },
