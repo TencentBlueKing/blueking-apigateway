@@ -3,80 +3,85 @@
     <bk-navigation
       class="navigation-main-content"
       :default-open="collapse"
-      :navigation-type="navigationType"
+      navigation-type="left-right"
       @toggle="handleCollapse"
     >
       <template #menu>
         <bk-menu
           :collapse="collapse"
-          :opened-keys="['环境管理', '内容']"
-          active-key="资源配置"
+          :opened-keys="openedKeys"
+          :active-key="activeMenuKey"
         >
           <bk-submenu
-            key="环境管理"
-            title="环境管理"
+            v-for="menu in menuData"
+            :key="menu.name"
+            :title="menu.title"
           >
-            <bk-menu-item key="资源配置">
-              资源配置
-            </bk-menu-item>
-            <bk-menu-item key="腾讯云">
-              腾讯云
-            </bk-menu-item>
-            <bk-menu-item key="微众银行">
-              微众银行
-            </bk-menu-item>
-            <bk-menu-item key="腾讯体育">
-              腾讯体育
-            </bk-menu-item>
-            <bk-menu-item key="腾讯看点">
-              腾讯看点
-            </bk-menu-item>
-          </bk-submenu>
-          <bk-submenu
-            key="内容"
-            title="内容"
-          >
-            <bk-menu-item key="腾讯影业">
-              腾讯影业
-            </bk-menu-item>
-            <bk-menu-item key="腾讯新闻">
-              腾讯新闻
-            </bk-menu-item>
-            <bk-menu-item key="腾讯动漫">
-              腾讯动漫
-            </bk-menu-item>
-            <bk-menu-item key="阅文集团">
-              阅文集团
-            </bk-menu-item>
-            <bk-menu-item key="腾讯电竞">
-              腾讯电竞
+            <bk-menu-item v-for="child in menu.children" :key="child.name" @click="handleGoPage(child.name)">
+              {{ child.title }}
             </bk-menu-item>
           </bk-submenu>
         </bk-menu>
       </template>
-      <template #side-icon>
-        test
+      <template #side-header>
+        <bk-select class="header-select">
+          <bk-option value="test" label="test" />
+        </bk-select>
       </template>
-      <div class="content-demo">
-        这里填写内容
+      <div class="content-view">
+        <router-view></router-view>
       </div>
       <template #header>
         <div
           class="header"
         >
-          这里是头部导航
+          {{ headerTitle }}
         </div>
       </template>
     </bk-navigation>
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
+<script setup lang="ts">
+import { ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { menuData } from '@/common/menu';
+
+const route = useRoute();
+const router = useRouter();
 const collapse = ref(true);
-const navigationType = ref('left-right');
-const handleCollapse = (v) => {
+// 选中的菜单
+const activeMenuKey = ref('');
+const openedKeys = menuData.map(e => e.name);
+
+// 当前网关Id
+const apigwId = ref('');
+
+// 页面header名
+const headerTitle = ref('');
+const handleCollapse = (v: boolean) => {
   collapse.value = !v;
+};
+
+// 监听当前路由
+watch(
+  () => route,
+  (val: any) => {
+    activeMenuKey.value = val.meta.matchRoute;
+    apigwId.value = val.params.id;
+    headerTitle.value = val.meta.title;
+  },
+  { immediate: true, deep: true },
+);
+
+const handleGoPage = (routeName: string) => {
+  console.log('routeName', routeName);
+  router.push({
+    name: routeName,
+    params: {
+      id: apigwId.value,
+    },
+  });
 };
 </script>
 <style lang="scss" scoped>
@@ -89,6 +94,12 @@ const handleCollapse = (v) => {
   :deep(.navigation-nav) {
       .nav-slider{
         background: #fff !important;
+        .bk-navigation-title{
+          flex-basis: 51px !important;
+        }
+        .nav-slider-list{
+          border-top: 1px solid #f0f1f5;
+        }
       }
       .bk-menu{
         background: #fff !important;
@@ -118,10 +129,15 @@ const handleCollapse = (v) => {
       }
     }
 
+    :deep(.navigation-container) {
+      .container-header{
+      }
+    }
+
   &-content {
     border: 1px solid #ddd;
 
-    .content-demo {
+    .content-view {
       font-size: 24px;
     }
 
@@ -131,5 +147,11 @@ const handleCollapse = (v) => {
       font-size: 16px;
     }
   }
+  :deep(.header-select){
+      width: 240px;
+      .bk-input--text{
+        background: rgb(245, 247, 250);
+      }
+    }
 }
 </style>

@@ -10,3 +10,9 @@ export interface IDialog {
   title: string
   loading?: boolean
 }
+
+export interface IMenu {
+  name: string
+  title: string
+  children?: IMenu[]
+}
