@@ -4,11 +4,13 @@ import { createGateway, getGatewaysList } from '@/http';
 import { useUser } from '@/store/user';
 import { Message } from 'bkui-vue';
 import { IPagination, IDialog } from '@/types';
+import { useRouter } from 'vue-router';
 import {
   ref,
 } from 'vue';
 const { t } = useI18n();
 const user = useUser();
+const router = useRouter();
 
 // 新增网关弹窗字段interface
 interface IinitDialogData {
@@ -129,6 +131,15 @@ const getGatewaysListData = async () => {
   } catch (error) {}
 };
 
+const handleGoPage = (routeName: string, apigwId: number) => {
+  router.push({
+    name: routeName,
+    params: {
+      id: apigwId,
+    },
+  });
+};
+
 init();
 </script>
 
@@ -165,7 +176,11 @@ init();
             <div class="name-logo mr10" :class="item.status ? '' : 'deact'">
               {{ item.name[0].toUpperCase() }}
             </div>
-            <span class="name mr10" :class="item.status ? '' : 'deact-name'">{{ item.name }}</span>
+            <span
+              class="name mr10" :class="item.status ? '' : 'deact-name'"
+              @click="handleGoPage('apigwResource', item.id)">
+              {{ item.name }}
+            </span>
             <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
             <bk-tag theme="warning" v-if="item.is_public">{{ t('公开') }}</bk-tag>
             <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
@@ -238,10 +253,11 @@ init();
           property="maintainers"
           required
         >
-          <bk-input
+          <bk-tag-input
             v-model="formData.maintainers"
-            placeholder="请输入"
-            clearable
+            allow-create
+            has-delete-icon
+            allow-auto-match
           />
         </bk-form-item>
         <bk-form-item
