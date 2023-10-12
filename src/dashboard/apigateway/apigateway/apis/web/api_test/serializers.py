@@ -25,12 +25,12 @@ from apigateway.core.constants import HTTP_METHOD_CHOICES
 
 
 class AuthorizationSLZ(serializers.Serializer):
-    bk_app_code = serializers.CharField(allow_blank=True, required=False)
-    bk_app_secret = serializers.CharField(allow_blank=True, required=False)
-    bk_ticket = serializers.CharField(allow_blank=True, required=False)
-    bk_token = serializers.CharField(allow_blank=True, required=False)
-    uin = serializers.CharField(allow_blank=True, required=False)
-    skey = serializers.CharField(allow_blank=True, required=False)
+    bk_app_code = serializers.CharField(allow_blank=True, required=False, help_text="蓝鲸应用编码")
+    bk_app_secret = serializers.CharField(allow_blank=True, required=False, help_text="蓝鲸应用密钥")
+    bk_ticket = serializers.CharField(allow_blank=True, required=False, help_text="蓝鲸用户票据")
+    bk_token = serializers.CharField(allow_blank=True, required=False, help_text="蓝鲸用户票据")
+    uin = serializers.CharField(allow_blank=True, required=False, help_text="uin")
+    skey = serializers.CharField(allow_blank=True, required=False, help_text="skey")
 
     def validate_uin(self, value):
         try:
@@ -43,17 +43,17 @@ class AuthorizationSLZ(serializers.Serializer):
 
 
 class APITestInputSLZ(serializers.Serializer):
-    stage_id = serializers.IntegerField()
-    resource_id = serializers.IntegerField()
-    method = serializers.ChoiceField(choices=HTTP_METHOD_CHOICES)
-    subpath = serializers.CharField(allow_blank=True, required=False)
-    headers = serializers.DictField(child=serializers.CharField(), allow_empty=True)
-    path_params = serializers.DictField(child=serializers.CharField(), allow_empty=True)
-    query_params = serializers.DictField(child=serializers.CharField(), allow_empty=True)
-    body = serializers.CharField(allow_blank=True, required=False)
-    use_test_app = serializers.BooleanField()
-    use_user_from_cookies = serializers.BooleanField(required=False, default=False)
-    authorization = AuthorizationSLZ(required=False, allow_null=True)
+    stage_id = serializers.IntegerField(help_text="环境 ID")
+    resource_id = serializers.IntegerField(help_text="资源 ID")
+    method = serializers.ChoiceField(choices=HTTP_METHOD_CHOICES, help_text="HTTP 方法")
+    subpath = serializers.CharField(allow_blank=True, required=False, help_text="子路径")
+    headers = serializers.DictField(child=serializers.CharField(), allow_empty=True, help_text="请求头")
+    path_params = serializers.DictField(child=serializers.CharField(), allow_empty=True, help_text="路径参数")
+    query_params = serializers.DictField(child=serializers.CharField(), allow_empty=True, help_text="查询参数")
+    body = serializers.CharField(allow_blank=True, required=False, help_text="请求体")
+    use_test_app = serializers.BooleanField(help_text="是否使用测试应用")
+    use_user_from_cookies = serializers.BooleanField(required=False, default=False, help_text="是否使用 cookies 中的用户信息")
+    authorization = AuthorizationSLZ(required=False, allow_null=True, help_text="认证信息")
 
     def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         data.setdefault("authorization", {})
@@ -64,8 +64,8 @@ class APITestInputSLZ(serializers.Serializer):
 
 
 class APITestOutputSLZ(serializers.Serializer):
-    status_code = serializers.IntegerField()
-    proxy_time = serializers.IntegerField()
-    size = serializers.FloatField()
-    body = serializers.CharField()
-    headers = serializers.DictField()
+    status_code = serializers.IntegerField(help_text="HTTP 状态码")
+    proxy_time = serializers.IntegerField(help_text="网关代理耗时")
+    size = serializers.FloatField(help_text="响应体大小")
+    body = serializers.CharField(help_text="响应体内容")
+    headers = serializers.DictField(help_text="响应头")

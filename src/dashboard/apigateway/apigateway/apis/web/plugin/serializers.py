@@ -35,11 +35,11 @@ from apigateway.controller.crds.release_data.plugin import PluginConvertorFactor
 
 
 class PluginTypeOutputSLZ(serializers.ModelSerializer):
-    name = serializers.CharField(source="name_i18n")
+    name = serializers.CharField(source="name_i18n", help_text="插件类型名称")
 
-    notes = serializers.SerializerMethodField()
-    related_scope_count = serializers.SerializerMethodField()
-    is_bound = serializers.SerializerMethodField()
+    notes = serializers.SerializerMethodField(help_text="插件类型备注")
+    related_scope_count = serializers.SerializerMethodField(help_text="插件类型绑定的环境及资源数量")
+    is_bound = serializers.SerializerMethodField(help_text="插件类型是否已绑定到当前环境或资源")
 
     class Meta:
         model = PluginType
@@ -67,15 +67,17 @@ class PluginTypeOutputSLZ(serializers.ModelSerializer):
 
 
 class PluginTypeQueryInputSLZ(serializers.Serializer):
-    keyword = serializers.CharField(required=False)
-    scope_type = serializers.ChoiceField(choices=PluginBindingScopeEnum.get_choices(), required=True)
-    scope_id = serializers.IntegerField(required=True)
+    keyword = serializers.CharField(required=False, help_text="名称关键字")
+    scope_type = serializers.ChoiceField(
+        choices=PluginBindingScopeEnum.get_choices(), required=True, help_text="范围类型：stage or resource"
+    )
+    scope_id = serializers.IntegerField(required=True, help_text="范围 id: stage_id or resource_id")
 
 
 class PluginFormOutputSLZ(serializers.ModelSerializer):
-    type_code = serializers.CharField(source="type.code", read_only=True)
-    type_name = serializers.CharField(source="type.name_i18n", read_only=True)
-    config = serializers.DictField()
+    type_code = serializers.CharField(source="type.code", read_only=True, help_text="插件类型编码")
+    type_name = serializers.CharField(source="type.name_i18n", read_only=True, help_text="插件类型名称")
+    config = serializers.DictField(help_text="插件配置")
 
     class Meta:
         model = PluginForm
@@ -93,9 +95,9 @@ class PluginFormOutputSLZ(serializers.ModelSerializer):
 
 
 class PluginConfigBaseSLZ(serializers.ModelSerializer):
-    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all())
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault(), help_text="网关")
+    type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all(), help_text="插件类型")
+    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, help_text="描述")
 
     class Meta:
         model = PluginConfig
@@ -175,17 +177,17 @@ class PluginConfigCreateInputSLZ(PluginConfigBaseSLZ):
 
 
 class BindingScopeObjectSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
+    id = serializers.IntegerField(help_text="id")
+    name = serializers.CharField(help_text="名称")
 
 
 class PluginBindingListOutputSLZ(serializers.Serializer):
-    stages = serializers.ListField(child=BindingScopeObjectSLZ())
-    resources = serializers.ListField(child=BindingScopeObjectSLZ())
+    stages = serializers.ListField(child=BindingScopeObjectSLZ(), help_text="环境列表")
+    resources = serializers.ListField(child=BindingScopeObjectSLZ(), help_text="资源列表")
 
 
 class ScopePluginConfigListOutputSLZ(serializers.Serializer):
-    code = serializers.CharField()
-    name = serializers.CharField()
-    config = serializers.DictField()
-    config_id = serializers.IntegerField()
+    code = serializers.CharField(help_text="插件类型编码")
+    name = serializers.CharField(help_text="插件类型名称")
+    config = serializers.DictField(help_text="插件配置")
+    config_id = serializers.IntegerField(help_text="插件配置 id")
