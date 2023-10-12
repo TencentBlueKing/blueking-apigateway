@@ -106,7 +106,7 @@ const goPage = (routeName: string) => {
       <!-- <img v-else src="@/images/APIgataway-c.png" class="api-logo"> -->
     </template>
     <div class="content">
-      <router-view></router-view>
+      <router-view v-if="userLoading"></router-view>
     </div>
     <template #header>
       <div
