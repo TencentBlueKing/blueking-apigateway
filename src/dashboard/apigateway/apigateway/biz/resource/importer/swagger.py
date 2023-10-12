@@ -238,7 +238,7 @@ class ResourceSwaggerImporter:
 class ResourceSwaggerExporter:
     def __init__(
         self,
-        api_version: str = "0.2",
+        api_version: str = "2.0",
         include_bk_apigateway_resource: bool = True,
         title: str = "API Gateway Resources",
         description: str = "",
