@@ -334,7 +334,7 @@ class TestLegacyUpstreamToBackendSynchronizer:
 
 
 class TestLegacyTransformHeadersToPluginSynchronizer:
-    def test_plugin_config(self, fake_gateway, fake_resource, fake_resource_data, fake_plugin_type_bk_header_rewrite):
+    def test_sync_plugins(self, fake_gateway, fake_resource, fake_resource_data, fake_plugin_type_bk_header_rewrite):
         fake_resource_data.resource = fake_resource
         synchronizer = LegacyTransformHeadersToPluginSynchronizer(fake_gateway, [fake_resource_data], "admin")
 

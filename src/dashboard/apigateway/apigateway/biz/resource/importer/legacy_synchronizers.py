@@ -21,13 +21,11 @@ import re
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginTypeCodeEnum
-from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.resource.models import ResourceData
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, STAGE_VAR_PATTERN
 from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
-from apigateway.utils.yaml import yaml_dumps
 
 logger = logging.getLogger(__name__)
 
@@ -225,19 +223,7 @@ class LegacyTransformHeadersToPluginSynchronizer:
         if not self._has_legacy_transform_headers():
             return
 
-        plugin_type = PluginType.objects.get(code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value)
-        exist_bindings = {
-            binding.scope_id: binding
-            for binding in PluginBinding.objects.filter(
-                gateway=self.gateway,
-                scope_type=PluginBindingScopeEnum.RESOURCE.value,
-                config__type=plugin_type,
-            ).prefetch_related("config")
-        }
-
-        add_bindings = {}
-        update_plugin_configs = []
-        delete_bindings = []
+        scope_id_to_plugin_config = {}
         for resource_data in self.resource_data_list:
             transform_headers = resource_data.backend_config.legacy_transform_headers
             if transform_headers is None:
@@ -246,56 +232,14 @@ class LegacyTransformHeadersToPluginSynchronizer:
             assert resource_data.resource
 
             plugin_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(transform_headers)
-            if not plugin_config:
-                if resource_data.resource.id in exist_bindings:
-                    delete_bindings.append(exist_bindings[resource_data.resource.id])
-                continue
+            scope_id_to_plugin_config[resource_data.resource.id] = plugin_config
 
-            if resource_data.resource.id not in exist_bindings:
-                add_bindings[resource_data.resource.id] = PluginConfig(
-                    gateway=self.gateway,
-                    name=self._generate_plugin_name(resource_data.resource.id),
-                    type=plugin_type,
-                    yaml=yaml_dumps(plugin_config),
-                )
-            else:
-                plugin_config_obj = exist_bindings[resource_data.resource.id].config
-                plugin_config_obj.yaml = yaml_dumps(plugin_config)
-                update_plugin_configs.append(plugin_config_obj)
-
-        if add_bindings:
-            PluginConfig.objects.bulk_create(add_bindings.values(), batch_size=100)
-
-            plugin_configs = {
-                config.name: config for config in PluginConfig.objects.filter(gateway=self.gateway, type=plugin_type)
-            }
-
-            bindings = []
-            for resource_id in add_bindings:
-                plugin_config = plugin_configs[self._generate_plugin_name(resource_id)]
-                bindings.append(
-                    PluginBinding(
-                        gateway=self.gateway,
-                        scope_type=PluginBindingScopeEnum.RESOURCE.value,
-                        scope_id=resource_id,
-                        config=plugin_config,
-                    )
-                )
-            PluginBinding.objects.bulk_create(bindings, batch_size=100)
-
-        if update_plugin_configs:
-            PluginConfig.objects.bulk_update(update_plugin_configs, fields=["yaml"], batch_size=100)
-
-        if delete_bindings:
-            PluginBinding.objects.filter(
-                gateway=self.gateway, id__in=[binding.id for binding in delete_bindings]
-            ).delete()
-            PluginConfig.objects.filter(
-                gateway=self.gateway, id__in=[binding.config.id for binding in delete_bindings]
-            ).delete()
-
-    def _generate_plugin_name(self, resource_id: int) -> str:
-        return f"bk-header-rewrite::resource::{resource_id}"
+        HeaderRewriteConvertor.sync_plugins(
+            gateway_id=self.gateway.id,
+            scope_type=PluginBindingScopeEnum.RESOURCE.value,
+            scope_id_to_plugin_config=scope_id_to_plugin_config,
+            username=self.username,
+        )
 
     def _has_legacy_transform_headers(self) -> bool:
         return any(
