@@ -43,16 +43,17 @@ from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME
 
 
 class ResourceQueryInputSLZ(serializers.Serializer):
-    name = serializers.CharField(allow_blank=True, required=False)
-    path = serializers.CharField(allow_blank=True, required=False)
-    method = serializers.CharField(allow_blank=True, required=False)
-    label_ids = serializers.CharField(allow_blank=True, required=False)
-    backend_id = serializers.IntegerField(allow_null=True, required=False)
-    query = serializers.CharField(allow_blank=True, required=False)
+    name = serializers.CharField(allow_blank=True, required=False, help_text="资源名称，完整匹配")
+    path = serializers.CharField(allow_blank=True, required=False, help_text="资源前端请求路径，完整匹配")
+    method = serializers.CharField(allow_blank=True, required=False, help_text="资源请求方法，完整匹配")
+    label_ids = serializers.CharField(allow_blank=True, required=False, help_text="标签 ID，多个以逗号 , 分割")
+    backend_id = serializers.IntegerField(allow_null=True, required=False, help_text="后端服务 ID")
+    query = serializers.CharField(allow_blank=True, required=False, help_text="资源筛选条件，支持模糊匹配资源名称，前端请求路径")
     order_by = serializers.ChoiceField(
         choices=["-id", "name", "-name", "path", "-path", "updated_time", "-updated_time"],
         allow_blank=True,
         required=False,
+        help_text="排序字段",
     )
 
     def validate_label_ids(self, value):
@@ -66,11 +67,11 @@ class ResourceQueryInputSLZ(serializers.Serializer):
 
 
 class ResourceListOutputSLZ(serializers.ModelSerializer):
-    path = serializers.CharField(source="path_display", read_only=True)
-    labels = serializers.SerializerMethodField()
-    docs = serializers.SerializerMethodField()
-    backend = serializers.SerializerMethodField()
-    has_updated = serializers.SerializerMethodField(help_text="相对上次发布，有更新")
+    path = serializers.CharField(source="path_display", read_only=True, help_text="前端请求路径")
+    labels = serializers.SerializerMethodField(help_text="标签列表")
+    docs = serializers.SerializerMethodField(help_text="资源文档列表")
+    backend = serializers.SerializerMethodField(help_text="后端服务")
+    has_updated = serializers.SerializerMethodField(help_text="相对上次发布，是否有更新，true：有更新，false：无更新")
 
     class Meta:
         model = Resource
@@ -88,6 +89,27 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
             "has_updated",
         ]
         read_only_fields = fields
+
+        extra_kwargs = {
+            "id": {
+                "help_text": "资源 ID",
+            },
+            "name": {
+                "help_text": "资源名称",
+            },
+            "description": {
+                "help_text": "资源描述",
+            },
+            "method": {
+                "help_text": "资源请求方法",
+            },
+            "created_time": {
+                "help_text": "资源创建时间",
+            },
+            "updated_time": {
+                "help_text": "资源更新时间",
+            },
+        }
 
     def get_backend(self, obj):
         proxy = self.context["proxies"][obj.id]
@@ -109,27 +131,33 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
 
 
 class ResourceAuthConfigSLZ(serializers.Serializer):
-    auth_verified_required = serializers.BooleanField(required=False)
-    app_verified_required = serializers.BooleanField(required=False)
-    resource_perm_required = serializers.BooleanField(required=False)
+    auth_verified_required = serializers.BooleanField(required=False, help_text="是否需要认证用户，true：需要，false：不需要")
+    app_verified_required = serializers.BooleanField(required=False, help_text="是否需要认证应用，true：需要，false：不需要")
+    resource_perm_required = serializers.BooleanField(required=False, help_text="是否需要校验资源权限，true：需要，false：不需要")
 
 
 class HttpBackendConfigSLZ(serializers.Serializer):
-    method = serializers.ChoiceField(choices=RESOURCE_METHOD_CHOICES)
-    path = serializers.RegexField(PATH_PATTERN)
-    match_subpath = serializers.BooleanField(required=False)
-    timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, required=False)
+    method = serializers.ChoiceField(choices=RESOURCE_METHOD_CHOICES, help_text="请求方法")
+    path = serializers.RegexField(PATH_PATTERN, help_text="请求路径")
+    match_subpath = serializers.BooleanField(required=False, help_text="是否匹配所有子路径")
+    timeout = serializers.IntegerField(
+        max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, required=False, help_text="超时时间"
+    )
 
 
 class ResourceInputSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True)
-    path = serializers.RegexField(PATH_PATTERN, max_length=2048)
-    auth_config = ResourceAuthConfigSLZ()
-    backend_id = serializers.IntegerField()
-    backend_config = HttpBackendConfigSLZ()
+    name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True, help_text="资源名称")
+    path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="前端请求路径")
+    auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
+    backend_id = serializers.IntegerField(help_text="后端服务 ID")
+    backend_config = HttpBackendConfigSLZ(help_text="后端配置")
     label_ids = serializers.ListField(
-        child=serializers.IntegerField(), allow_empty=True, required=False, max_length=MAX_LABEL_COUNT_PER_RESOURCE
+        child=serializers.IntegerField(),
+        allow_empty=True,
+        required=False,
+        max_length=MAX_LABEL_COUNT_PER_RESOURCE,
+        help_text="标签 ID 列表",
     )
 
     class Meta:
@@ -154,6 +182,27 @@ class ResourceInputSLZ(serializers.ModelSerializer):
             "label_ids",
         ]
         lookup_field = "id"
+
+        extra_kwargs = {
+            "description": {
+                "help_text": "资源描述",
+            },
+            "description_en": {
+                "help_text": "资源英文描述，根据网关功能开关 ENABLE_I18N_SUPPORT 判断是否允许编辑此字段",
+            },
+            "method": {
+                "help_text": "资源请求方法",
+            },
+            "match_subpath": {
+                "help_text": "是否匹配所有子路径",
+            },
+            "is_public": {
+                "help_text": "是否公开，true：公开，false：不公开",
+            },
+            "allow_apply_permission": {
+                "help_text": "是否允许应用在开发者中心申请访问资源的权限",
+            },
+        }
 
         validators = [
             MaxCountPerGatewayValidator(
@@ -235,10 +284,10 @@ class ResourceInputSLZ(serializers.ModelSerializer):
 
 
 class ResourceOutputSLZ(serializers.ModelSerializer):
-    auth_config = serializers.SerializerMethodField()
-    backend_id = serializers.SerializerMethodField()
-    backend_config = serializers.SerializerMethodField()
-    labels = serializers.SerializerMethodField()
+    auth_config = serializers.SerializerMethodField(help_text="认证配置")
+    backend_id = serializers.SerializerMethodField(help_text="后端服务 ID")
+    backend_config = serializers.SerializerMethodField(help_text="后端配置")
+    labels = serializers.SerializerMethodField(help_text="标签列表")
 
     class Meta:
         model = Resource
@@ -259,6 +308,36 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+        extra_kwargs = {
+            "id": {
+                "help_text": "资源 ID",
+            },
+            "name": {
+                "help_text": "资源名称",
+            },
+            "description": {
+                "help_text": "资源描述",
+            },
+            "description_en": {
+                "help_text": "资源英文描述",
+            },
+            "method": {
+                "help_text": "请求方法",
+            },
+            "path": {
+                "help_text": "请求路径",
+            },
+            "match_subpath": {
+                "help_text": "是否匹配所有子路径",
+            },
+            "is_public": {
+                "help_text": "是否公开",
+            },
+            "allow_apply_permission": {
+                "help_text": "是否允许应用在开发者中心申请访问资源的权限",
+            },
+        }
+
     def get_auth_config(self, obj):
         return self.context["auth_config"]
 
@@ -273,9 +352,9 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
 
 
 class ResourceBatchUpdateInputSLZ(serializers.Serializer):
-    ids = serializers.ListField(child=serializers.IntegerField(min_value=1))
-    is_public = serializers.BooleanField()
-    allow_apply_permission = serializers.BooleanField()
+    ids = serializers.ListField(child=serializers.IntegerField(min_value=1), help_text="资源 ID 列表")
+    is_public = serializers.BooleanField(help_text="是否公开，true：公开，false：不公开")
+    allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
 
     def validate_ids(self, value):
         gateway_id = self.context["gateway_id"]
@@ -287,7 +366,7 @@ class ResourceBatchUpdateInputSLZ(serializers.Serializer):
 
 
 class ResourceBatchDestroyInputSLZ(serializers.Serializer):
-    ids = serializers.ListField(child=serializers.IntegerField(min_value=1))
+    ids = serializers.ListField(child=serializers.IntegerField(min_value=1), help_text="资源 ID 列表")
 
     def validate_ids(self, value):
         gateway_id = self.context["gateway_id"]
@@ -300,7 +379,10 @@ class ResourceBatchDestroyInputSLZ(serializers.Serializer):
 
 class ResourceLabelUpdateInputSLZ(serializers.Serializer):
     label_ids = serializers.ListField(
-        child=serializers.IntegerField(), allow_empty=True, max_length=MAX_LABEL_COUNT_PER_RESOURCE
+        child=serializers.IntegerField(),
+        allow_empty=True,
+        max_length=MAX_LABEL_COUNT_PER_RESOURCE,
+        help_text="标签 ID 列表",
     )
 
     def validate_label_ids(self, value):
@@ -313,13 +395,17 @@ class ResourceLabelUpdateInputSLZ(serializers.Serializer):
 
 
 class ResourceDataSLZ(serializers.ModelSerializer):
-    name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True)
-    path = serializers.RegexField(PATH_PATTERN, max_length=2048)
-    auth_config = ResourceAuthConfigSLZ()
-    backend_name = serializers.CharField()
-    backend_config = HttpBackendConfigSLZ()
+    name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True, help_text="资源名称")
+    path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="请求路径")
+    auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
+    backend_name = serializers.CharField(help_text="后端服务名称")
+    backend_config = HttpBackendConfigSLZ(help_text="后端配置")
     labels = serializers.ListField(
-        child=serializers.CharField(), allow_empty=True, required=False, max_length=MAX_LABEL_COUNT_PER_RESOURCE
+        child=serializers.CharField(),
+        allow_empty=True,
+        required=False,
+        max_length=MAX_LABEL_COUNT_PER_RESOURCE,
+        help_text="标签列表",
     )
 
     class Meta:
@@ -343,6 +429,30 @@ class ResourceDataSLZ(serializers.ModelSerializer):
             "labels",
         ]
 
+        extra_kwargs = {
+            "description": {
+                "help_text": "资源描述",
+            },
+            "description_en": {
+                "help_text": "资源英文描述",
+            },
+            "method": {
+                "help_text": "请求方法",
+            },
+            "path": {
+                "help_text": "请求路径",
+            },
+            "match_subpath": {
+                "help_text": "是否匹配所有子路径",
+            },
+            "is_public": {
+                "help_text": "是否公开",
+            },
+            "allow_apply_permission": {
+                "help_text": "是否允许应用在开发者中心申请访问资源的权限",
+            },
+        }
+
         validators = [
             PathVarsValidator(),
             BackendPathVarsValidator(),
@@ -357,15 +467,15 @@ class ResourceDataSLZ(serializers.ModelSerializer):
 class SelectedResourceSLZ(serializers.Serializer):
     """导入时选中的资源"""
 
-    name = serializers.CharField()
+    name = serializers.CharField(help_text="资源名称")
 
 
 class ResourceImportInputSLZ(serializers.Serializer):
-    content = serializers.CharField(allow_blank=False, required=True)
+    content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")
     selected_resources = serializers.ListField(
-        child=SelectedResourceSLZ(), allow_empty=False, allow_null=True, required=False
+        child=SelectedResourceSLZ(), allow_empty=False, allow_null=True, required=False, help_text="导入时选中的资源列表"
     )
-    delete = serializers.BooleanField(default=False)
+    delete = serializers.BooleanField(default=False, help_text="是否删除未选中的资源，即已存在，但是未在 content 中的资源")
 
     def validate(self, data):
         data["resources"] = self._validate_content(data["content"])
@@ -409,16 +519,18 @@ class ResourceImportInputSLZ(serializers.Serializer):
 
 
 class ResourceImportCheckInputSLZ(ResourceImportInputSLZ):
-    doc_language = serializers.ChoiceField(choices=DocLanguageEnum.get_choices(), allow_blank=True, required=False)
+    doc_language = serializers.ChoiceField(
+        choices=DocLanguageEnum.get_choices(), allow_blank=True, required=False, help_text="文档语言，en: 英文，zh: 中文"
+    )
 
 
 class ResourceImportCheckOutputSLZ(serializers.Serializer):
-    id = serializers.SerializerMethodField()
-    name = serializers.CharField(read_only=True)
-    description = serializers.CharField(read_only=True)
-    method = serializers.CharField(read_only=True)
-    path = serializers.SerializerMethodField()
-    doc = serializers.SerializerMethodField()
+    id = serializers.SerializerMethodField(help_text="资源 ID")
+    name = serializers.CharField(read_only=True, help_text="资源名称")
+    description = serializers.CharField(read_only=True, help_text="资源描述")
+    method = serializers.CharField(read_only=True, help_text="请求方法")
+    path = serializers.SerializerMethodField(help_text="请求路径")
+    doc = serializers.SerializerMethodField(help_text="资源文档")
 
     def get_id(self, obj):
         return obj.resource and obj.resource.id
@@ -437,27 +549,33 @@ class ResourceExportInputSLZ(serializers.Serializer):
         help_text="值为 all，不需其它参数；值为 filtered，支持 query/path/method/label_name 参数；值为 selected，支持 resource_ids 参数",
     )
     file_type = serializers.ChoiceField(
-        choices=SwaggerFormatEnum.get_choices(),
-        default=SwaggerFormatEnum.YAML.value,
+        choices=SwaggerFormatEnum.get_choices(), default=SwaggerFormatEnum.YAML.value, help_text="导出的文件类型，如 yaml/json"
     )
-    resource_filter_condition = ResourceQueryInputSLZ(required=False)
-    resource_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=True, required=False)
+    resource_filter_condition = ResourceQueryInputSLZ(
+        required=False, help_text="资源筛选条件，export_type 为 filtered 时，应提供当前的筛选条件"
+    )
+    resource_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=True,
+        required=False,
+        help_text="导出的资源 ID 列表，export_type 为 selected 时，应提供当前选择的资源 ID 列表",
+    )
 
 
 class ResourceExportOutputSLZ(serializers.Serializer):
-    name = serializers.CharField()
-    description = serializers.CharField()
-    description_en = serializers.CharField()
-    method = serializers.CharField()
-    path = serializers.CharField()
-    match_subpath = serializers.BooleanField()
-    is_public = serializers.BooleanField()
-    allow_apply_permission = serializers.BooleanField()
+    name = serializers.CharField(help_text="资源名称")
+    description = serializers.CharField(help_text="资源描述")
+    description_en = serializers.CharField(help_text="资源英文描述")
+    method = serializers.CharField(help_text="请求方法")
+    path = serializers.CharField(help_text="请求路径")
+    match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
+    is_public = serializers.BooleanField(help_text="是否公开")
+    allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
 
-    labels = serializers.SerializerMethodField()
-    backend_name = serializers.SerializerMethodField()
-    backend_config = serializers.SerializerMethodField()
-    auth_config = serializers.SerializerMethodField()
+    labels = serializers.SerializerMethodField(help_text="标签列表")
+    backend_name = serializers.SerializerMethodField(help_text="后端服务名称")
+    backend_config = serializers.SerializerMethodField(help_text="后端配置")
+    auth_config = serializers.SerializerMethodField(help_text="认证配置")
 
     def get_labels(self, obj):
         labels = self.context["labels"].get(obj.id, [])
@@ -484,14 +602,16 @@ class BackendPathCheckInputSLZ(serializers.Serializer):
         error_messages={
             "invalid": gettext_lazy("斜线(/)开头的合法URL路径，不包含http(s)开头的域名。"),
         },
+        help_text="请求路径",
     )
-    backend_id = serializers.IntegerField()
+    backend_id = serializers.IntegerField(help_text="后端服务 ID")
     backend_path = serializers.RegexField(
         PATH_PATTERN,
         label="Path",
         error_messages={
             "invalid": gettext_lazy("斜线(/)开头的合法URL路径，不包含http(s)开头的域名。"),
         },
+        help_text="后端服务的 path",
     )
 
     class Meta:
@@ -506,10 +626,12 @@ class BackendPathCheckInputSLZ(serializers.Serializer):
 
 
 class BackendPathCheckOutputSLZ(serializers.Serializer):
-    stage = serializers.DictField(read_only=True)
-    backend_urls = serializers.ListField(child=serializers.CharField(read_only=True), allow_empty=True)
+    stage = serializers.DictField(read_only=True, help_text="环境信息")
+    backend_urls = serializers.ListField(
+        child=serializers.CharField(read_only=True), allow_empty=True, help_text="后端地址列表"
+    )
 
 
 class ResourceWithVerifiedUserRequiredOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
+    id = serializers.IntegerField(read_only=True, help_text="资源 ID")
+    name = serializers.CharField(read_only=True, help_text="资源名称")
