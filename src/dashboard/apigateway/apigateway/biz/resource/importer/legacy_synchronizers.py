@@ -112,15 +112,10 @@ class LegacyBackendCreator:
         return None
 
     def _get_existing_backend_configs(self) -> Dict[int, Dict[int, Dict]]:
-        """仅获取名称以 backend- 开头的后端服务的配置；即根据后端配置匹配后端服务时，仅匹配同一规则创建的后端服务"""
-
         # 对应关系：backend_id -> stage_id -> config
         backend_configs: Dict[int, Dict[int, Dict]] = defaultdict(dict)
 
-        for backend_config in BackendConfig.objects.filter(
-            gateway=self.gateway,
-            backend__name__startswith=LEGACY_BACKEND_NAME_PREFIX,
-        ):
+        for backend_config in BackendConfig.objects.filter(gateway=self.gateway):
             config = backend_config.config
             config["hosts"] = self._sort_hosts(config["hosts"])
 

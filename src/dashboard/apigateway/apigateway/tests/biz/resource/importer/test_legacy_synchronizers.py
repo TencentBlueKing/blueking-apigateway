@@ -201,10 +201,9 @@ class TestLegacyBackendCreator:
         b1 = G(Backend, name="default", gateway=fake_gateway)
         b2 = G(Backend, name="backend-1", gateway=fake_gateway)
 
-        G(BackendConfig, backend=b1, gateway=fake_gateway, stage=fake_stage)
         G(
             BackendConfig,
-            backend=b2,
+            backend=b1,
             gateway=fake_gateway,
             stage=fake_stage,
             config={
@@ -214,18 +213,38 @@ class TestLegacyBackendCreator:
                 "hosts": [{"scheme": "http", "host": "foo.com", "weight": 100}],
             },
         )
+        G(
+            BackendConfig,
+            backend=b2,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            config={
+                "type": "node",
+                "timeout": 50,
+                "loadbalance": "roundrobin",
+                "hosts": [{"scheme": "http", "host": "bar.com", "weight": 100}],
+            },
+        )
 
         creator = LegacyBackendCreator(fake_gateway, "admin")
         result = creator._get_existing_backend_configs()
         assert result == {
-            b2.id: {
+            b1.id: {
                 fake_stage.id: {
                     "type": "node",
                     "timeout": 50,
                     "loadbalance": "roundrobin",
                     "hosts": [{"scheme": "http", "host": "foo.com", "weight": 100}],
                 }
-            }
+            },
+            b2.id: {
+                fake_stage.id: {
+                    "type": "node",
+                    "timeout": 50,
+                    "loadbalance": "roundrobin",
+                    "hosts": [{"scheme": "http", "host": "bar.com", "weight": 100}],
+                }
+            },
         }
 
     def test_generate_new_backend_name(self, fake_gateway):
