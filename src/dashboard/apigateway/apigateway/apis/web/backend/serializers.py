@@ -35,10 +35,14 @@ class BackendConfigSLZ(BaseBackendConfigSLZ):
 
 class BackendInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    name = serializers.RegexField(BACKEND_NAME_PATTERN)
-    description = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, required=False)
-    type = serializers.ChoiceField(choices=BackendTypeEnum.get_choices(), default=BackendTypeEnum.HTTP.value)
-    configs = serializers.ListField(child=BackendConfigSLZ(), allow_empty=False)
+    name = serializers.RegexField(BACKEND_NAME_PATTERN, help_text="后端服务名称")
+    description = serializers.CharField(
+        allow_blank=True, allow_null=True, max_length=512, required=False, help_text="描述"
+    )
+    type = serializers.ChoiceField(
+        choices=BackendTypeEnum.get_choices(), default=BackendTypeEnum.HTTP.value, help_text="类型"
+    )
+    configs = serializers.ListField(child=BackendConfigSLZ(), allow_empty=False, help_text="配置")
 
     class Meta:
         validators = [
@@ -84,8 +88,8 @@ class BackendInputSLZ(serializers.Serializer):
 
 
 class BackendListOutputSLZ(serializers.ModelSerializer):
-    resource_count = serializers.SerializerMethodField()
-    deletable = serializers.SerializerMethodField()
+    resource_count = serializers.SerializerMethodField(help_text="资源数量")
+    deletable = serializers.SerializerMethodField(help_text="是否可删除")
 
     class Meta:
         model = Backend
@@ -103,9 +107,9 @@ class BackendListOutputSLZ(serializers.ModelSerializer):
 
 class BackendRetrieveOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = serializers.CharField()
-    configs = serializers.SerializerMethodField()
+    name = serializers.CharField(help_text="名称")
+    description = serializers.CharField(help_text="描述")
+    configs = serializers.SerializerMethodField(help_text="配置")
 
     def get_configs(self, obj):
         backend_configs = BackendConfig.objects.filter(backend=obj).prefetch_related("stage")

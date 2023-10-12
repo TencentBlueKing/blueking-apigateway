@@ -26,32 +26,32 @@ from apigateway.core.models import ResourceVersion
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=True)
-    comment = serializers.CharField(allow_blank=True, required=False)
+    version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=True, help_text="版本号")
+    comment = serializers.CharField(allow_blank=True, required=False, help_text="版本日志")
 
     class Meta:
         validators = [ResourceVersionValidator()]
 
 
 class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    version = serializers.CharField()
-    comment = serializers.CharField()
-    data = serializers.SerializerMethodField()
-    created_time = serializers.DateTimeField()
-    created_by = serializers.CharField()
+    id = serializers.IntegerField(help_text="id")
+    version = serializers.CharField(help_text="版本号")
+    comment = serializers.CharField(help_text="版本日志")
+    data = serializers.SerializerMethodField(help_text="版本数据")
+    created_time = serializers.DateTimeField(help_text="创建时间")
+    created_by = serializers.CharField(help_text="创建人")
 
     def get_data(self, obj: ResourceVersion):
         return obj.data_display
 
 
 class ResourceVersionListOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    released_stages = serializers.SerializerMethodField()
-    sdk_count = serializers.SerializerMethodField()
-    version = serializers.SerializerMethodField()
-    comment = serializers.CharField()
-    created_time = serializers.DateTimeField()
+    id = serializers.IntegerField(help_text="id")
+    released_stages = serializers.SerializerMethodField(help_text="已发布的环境列表")
+    sdk_count = serializers.SerializerMethodField(help_text="生成skd数量")
+    version = serializers.SerializerMethodField(help_text="版本号")
+    comment = serializers.CharField(help_text="版本日志")
+    created_time = serializers.DateTimeField(help_text="创建时间")
 
     def get_released_stages(self, obj):
         return self.context["released_stages"].get(obj["id"], [])
@@ -64,20 +64,20 @@ class ResourceVersionListOutputSLZ(serializers.Serializer):
 
 
 class NeedNewVersionOutputSLZ(serializers.Serializer):
-    need_new_version = serializers.BooleanField()
+    need_new_version = serializers.BooleanField(help_text="是否需要生成版本")
 
 
 class ResourceVersionDiffQueryInputSLZ(serializers.Serializer):
-    source_resource_version_id = serializers.IntegerField(allow_null=True)
-    target_resource_version_id = serializers.IntegerField(allow_null=True)
+    source_resource_version_id = serializers.IntegerField(allow_null=True, help_text="对比源的版本号id")
+    target_resource_version_id = serializers.IntegerField(allow_null=True, help_text="对比目标的版本号id")
 
 
 class ResourceVersionResourceSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    method = serializers.CharField()
-    path = serializers.CharField()
-    diff = serializers.DictField(allow_null=True)
+    id = serializers.IntegerField(help_text="id")
+    name = serializers.CharField(help_text="资源名称")
+    method = serializers.CharField(help_text="请求方法")
+    path = serializers.CharField(help_text="请求路径")
+    diff = serializers.DictField(help_text="对比差异", allow_null=True)
 
 
 class ResourceVersionDiffOutputSLZ(serializers.Serializer):

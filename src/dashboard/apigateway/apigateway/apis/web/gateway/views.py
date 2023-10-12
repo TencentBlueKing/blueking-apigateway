@@ -48,6 +48,7 @@ from .serializers import (
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关列表",
         responses={status.HTTP_200_OK: GatewayListOutputSLZ(many=True)},
         tags=["WebAPI.Gateway"],
     ),
@@ -55,7 +56,10 @@ from .serializers import (
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        request_body=GatewayCreateInputSLZ, responses={status.HTTP_201_CREATED: ""}, tags=["WebAPI.Gateway"]
+        operation_description="创建网关",
+        request_body=GatewayCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: ""},
+        tags=["WebAPI.Gateway"],
     ),
 )
 class GatewayListCreateApi(generics.ListCreateAPIView):
@@ -129,6 +133,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取指定网关的信息",
         responses={status.HTTP_200_OK: GatewayRetrieveOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
@@ -136,6 +141,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
+        operation_description="更新网关",
         request_body=GatewayUpdateInputSLZ,
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Gateway"],
@@ -144,6 +150,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 @method_decorator(
     name="patch",
     decorator=swagger_auto_schema(
+        operation_description="更新网关部分信息",
         request_body=GatewayUpdateInputSLZ,
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Gateway"],
@@ -152,6 +159,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 @method_decorator(
     name="delete",
     decorator=swagger_auto_schema(
+        operation_description="删除网关",
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Gateway"],
     ),
@@ -215,6 +223,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
+        operation_description="更新网关状态，如启用、停用",
         request_body=GatewayUpdateStatusInputSLZ,
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Gateway"],
@@ -253,6 +262,7 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关特性开关",
         responses={status.HTTP_200_OK: GatewayFeatureFlagsOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),

@@ -47,8 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(tags=["WebAPI.Release"]),
+    name="get", decorator=swagger_auto_schema(tags=["WebAPI.Release"], operation_description="获取环境下可用的资源列表接口(在线调试)")
 )
 class ReleaseAvailableResourceListApi(generics.ListAPIView):
     lookup_field = "stage_id"
@@ -102,6 +101,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         request_body=ReleaseInputSLZ,
         responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ()},
         tags=["WebAPI.Release"],
+        operation_description="版本发布接口",
     ),
 )
 class ReleaseCreateApi(generics.CreateAPIView):
@@ -157,6 +157,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
         query_serializer=ReleaseHistoryQueryInputSLZ(),
         responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ(many=True)},
         tags=["WebAPI.Release"],
+        operation_description="发布历史列表获取接口",
     ),
 )
 class ReleaseHistoryListApi(generics.ListAPIView):
@@ -197,7 +198,11 @@ class ReleaseHistoryListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ()}, tags=["WebAPI.Release"]),
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ()},
+        tags=["WebAPI.Release"],
+        operation_description="发布详情接口",
+    ),
 )
 class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
     serializer_class = ReleaseHistoryOutputSLZ
@@ -227,9 +232,9 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="查询发布事件(日志)",
         responses={status.HTTP_200_OK: ReleaseHistoryEventRetrieveOutputSLZ()},
         tags=["WebAPI.Release"],
+        operation_description="查询发布事件(日志)",
     ),
 )
 class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):

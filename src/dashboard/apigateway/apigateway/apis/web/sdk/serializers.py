@@ -27,14 +27,9 @@ from apigateway.utils.time import now_datetime
 
 class GatewaySDKGenerateInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    resource_version_id = serializers.IntegerField(required=True)
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
-    version = serializers.CharField(
-        label="版本",
-        default="",
-        allow_null=True,
-        allow_blank=True,
-    )
+    resource_version_id = serializers.IntegerField(required=True, help_text="资源版本号id")
+    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="sdk语言")
+    version = serializers.CharField(label="版本", default="", allow_null=True, allow_blank=True, help_text="sdk版本号")
 
     def validate(self, data):
         # 用户指定版本号的情况下，需要检查一下版本是否存在
@@ -59,26 +54,28 @@ class GatewaySDKGenerateInputSLZ(serializers.Serializer):
 
 
 class GatewaySDKQueryInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), required=False)
-    version_number = serializers.CharField(required=False, allow_blank=True)
-    resource_version_id = serializers.IntegerField(allow_null=True, required=False)
+    language = serializers.ChoiceField(
+        choices=ProgrammingLanguageEnum.get_choices(), required=False, help_text="sdk语言"
+    )
+    version_number = serializers.CharField(required=False, allow_blank=True, help_text="sdk版本号")
+    resource_version_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源版本号id")
 
 
 class ResourceVersionInfoSlz(serializers.Serializer):
-    id = serializers.IntegerField()
-    version = serializers.CharField()
+    id = serializers.IntegerField(help_text="资源版本号id")
+    version = serializers.CharField(help_text="资源版本")
 
 
 class GatewaySDKListOutputSLZ(serializers.Serializer):
-    download_url = serializers.CharField(source="instance.url")
-    id = serializers.IntegerField(source="instance.id")
-    language = serializers.CharField(source="language.value")
-    version_number = serializers.CharField(source="instance.version_number")
-    created_time = serializers.DateTimeField(source="instance.created_time")
-    updated_time = serializers.DateTimeField(source="instance.updated_time")
-    created_by = serializers.CharField(source="instance.created_by")
-    name = serializers.CharField(source="instance.name")
-    resource_version = ResourceVersionInfoSlz(source="instance.resource_version")
+    download_url = serializers.CharField(source="instance.url", help_text="sdk下载url")
+    id = serializers.IntegerField(source="instance.id", help_text="sdk id")
+    language = serializers.CharField(source="language.value", help_text="sdk语言")
+    version_number = serializers.CharField(source="instance.version_number", help_text="sdk版本号")
+    created_time = serializers.DateTimeField(source="instance.created_time", help_text="sdk创建时间")
+    updated_time = serializers.DateTimeField(source="instance.updated_time", help_text="sdk更新时间")
+    created_by = serializers.CharField(source="instance.created_by", help_text="skd创建者")
+    name = serializers.CharField(source="instance.name", help_text="sdk名称")
+    resource_version = ResourceVersionInfoSlz(source="instance.resource_version", help_text="sdk资源版本信息")
 
     class Meta:
         ref_name = "apigateway.apis.web.sdk.serializers.GatewaySDKListOutputSLZ"

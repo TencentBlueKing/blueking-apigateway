@@ -43,6 +43,7 @@ from .serializers import (
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取所有的组件 SDK 列表，单个 SDK 仅返回最新版本 SDK 信息",
         query_serializer=SDKListInputSLZ,
         responses={status.HTTP_200_OK: SDKOutputSLZ(many=True)},
         tags=["WebAPI.Docs.ESB.SDK"],
@@ -69,6 +70,7 @@ class SDKListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取指定语言（python） 组件 SDK 的信息",
         query_serializer=SDKRetrieveInputSLZ,
         responses={status.HTTP_200_OK: SDKOutputSLZ},
         tags=["WebAPI.Docs.ESB.SDK"],
@@ -92,6 +94,7 @@ class SDKRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取指定组件的指定语言（python） SDK 的调用示例",
         query_serializer=SDKUsageExampleInputSLZ,
         responses={status.HTTP_200_OK: SDKUsageExampleOutputSLZ},
         tags=["WebAPI.Docs.ESB.SDK"],
@@ -128,6 +131,7 @@ class SDKUsageExampleApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取指定语言（python）组件 SDK 的调用样例",
         query_serializer=SDKDocInputSLZ,
         responses={status.HTTP_200_OK: SDKDocOutputSLZ},
         tags=["WebAPI.Docs.ESB.SDK"],

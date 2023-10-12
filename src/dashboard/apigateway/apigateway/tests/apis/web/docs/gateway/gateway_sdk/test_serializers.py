@@ -32,7 +32,7 @@ class TestStageSDKOutputSLZ:
                     },
                     "resource_version": {
                         "id": 2,
-                        "display": "1.0.0(foo)",
+                        "version": "1.0.0",
                     },
                     "sdk": {
                         "language": "python",
@@ -49,7 +49,7 @@ class TestStageSDKOutputSLZ:
                     },
                     "resource_version": {
                         "id": 2,
-                        "display": "1.0.0(foo)",
+                        "version": "1.0.0",
                     },
                     "sdk": {
                         "version": "1.0.0",
@@ -67,7 +67,7 @@ class TestStageSDKOutputSLZ:
                     },
                     "resource_version": {
                         "id": 2,
-                        "display": "1.0.0(foo)",
+                        "version": "1.0.0",
                     },
                     "sdk": None,
                 },
@@ -78,7 +78,7 @@ class TestStageSDKOutputSLZ:
                     },
                     "resource_version": {
                         "id": 2,
-                        "display": "1.0.0(foo)",
+                        "version": "1.0.0",
                     },
                     "sdk": None,
                 },

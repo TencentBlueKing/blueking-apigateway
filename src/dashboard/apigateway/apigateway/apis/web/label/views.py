@@ -32,6 +32,7 @@ from .serializers import GatewayLabelInputSLZ, GatewayLabelOutputSLZ
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关标签列表",
         responses={status.HTTP_200_OK: GatewayLabelOutputSLZ(many=True)},
         tags=["WebAPI.GatewayLabel"],
     ),
@@ -39,7 +40,10 @@ from .serializers import GatewayLabelInputSLZ, GatewayLabelOutputSLZ
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""}, request_body=GatewayLabelInputSLZ, tags=["WebAPI.GatewayLabel"]
+        operation_description="新建网关标签",
+        responses={status.HTTP_201_CREATED: ""},
+        request_body=GatewayLabelInputSLZ,
+        tags=["WebAPI.GatewayLabel"],
     ),
 )
 class GatewayLabelListCreateApi(generics.ListCreateAPIView):
@@ -76,18 +80,25 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: GatewayLabelOutputSLZ()}, tags=["WebAPI.GatewayLabel"]
+        operation_description="获取指定的网关标签",
+        responses={status.HTTP_200_OK: GatewayLabelOutputSLZ()},
+        tags=["WebAPI.GatewayLabel"],
     ),
 )
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""}, request_body=GatewayLabelInputSLZ, tags=["WebAPI.GatewayLabel"]
+        operation_description="更新网关标签",
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        request_body=GatewayLabelInputSLZ,
+        tags=["WebAPI.GatewayLabel"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.GatewayLabel"]),
+    decorator=swagger_auto_schema(
+        operation_description="删除网关标签", responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.GatewayLabel"]
+    ),
 )
 class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = GatewayLabelInputSLZ

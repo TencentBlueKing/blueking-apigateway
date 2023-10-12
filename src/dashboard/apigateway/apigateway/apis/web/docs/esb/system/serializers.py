@@ -22,30 +22,34 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
 class SystemSLZ(serializers.Serializer):
-    name = serializers.CharField(read_only=True)
-    description = serializers.CharField(allow_blank=True, read_only=True)
+    name = serializers.CharField(read_only=True, help_text="系统名称")
+    description = serializers.CharField(allow_blank=True, read_only=True, help_text="系统描述")
 
     class Meta:
         ref_name = "apis.web.docs.esb.system.SystemSLZ"
 
 
 class SystemCategorySLZ(serializers.Serializer):
-    id = serializers.CharField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    systems = serializers.ListField(child=SystemSLZ(), read_only=True)
+    id = serializers.CharField(read_only=True, help_text="系统分类 ID")
+    name = serializers.CharField(read_only=True, help_text="系统分类名称")
+    systems = serializers.ListField(child=SystemSLZ(), read_only=True, help_text="系统列表")
 
 
 class SystemListOutputSLZ(serializers.Serializer):
-    board = serializers.CharField(read_only=True)
-    board_label = serializers.CharField(read_only=True)
-    categories = serializers.ListField(child=SystemCategorySLZ(), read_only=True)
+    board = serializers.CharField(read_only=True, help_text="所属 board")
+    board_label = serializers.CharField(read_only=True, help_text="所属 board 的 label")
+    categories = serializers.ListField(child=SystemCategorySLZ(), read_only=True, help_text="系统分类列表")
 
 
 class SystemRetrieveOutputSLZ(serializers.Serializer):
-    name = serializers.CharField()
-    description = SerializerTranslatedField(translated_fields={"en": "description_en"}, default_field="description")
-    comment = SerializerTranslatedField(translated_fields={"en": "comment_en"}, default_field="comment")
-    maintainers = serializers.SerializerMethodField()
+    name = serializers.CharField(help_text="系统名称")
+    description = SerializerTranslatedField(
+        translated_fields={"en": "description_en"}, default_field="description", help_text="系统描述"
+    )
+    comment = SerializerTranslatedField(
+        translated_fields={"en": "comment_en"}, default_field="comment", allow_blank=True, help_text="系统备注"
+    )
+    maintainers = serializers.SerializerMethodField(help_text="系统维护人")
 
     def get_maintainers(self, obj):
         return settings.ESB_MANAGERS

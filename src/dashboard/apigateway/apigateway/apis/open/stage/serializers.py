@@ -213,7 +213,29 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
         backend_config.save()
 
-        # 3. create or update header rewrite plugin config
+        # 3. create other backend config with empty host
+        backends = Backend.objects.filter(gateway=instance.gateway).exclude(name=DEFAULT_BACKEND_NAME)
+        backend_configs = []
+        config = {
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "", "weight": 100}],
+        }
+
+        for backend in backends:
+            backend_config = BackendConfig(
+                gateway=instance.gateway,
+                backend=backend,
+                stage=instance,
+                config=config,
+            )
+            backend_configs.append(backend_config)
+
+        if backend_configs:
+            BackendConfig.objects.bulk_create(backend_configs)
+
+        # 4. create or update header rewrite plugin config
         stage_transform_headers = proxy_http_config.get("transform_headers") or {}
         stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
         HeaderRewriteConvertor.alter_plugin(

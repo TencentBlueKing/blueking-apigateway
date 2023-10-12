@@ -56,7 +56,7 @@ class GatewaySDKHandler:
                     },
                     "resource_version": {
                         "id": release["resource_version__id"],
-                        "display": release["resource_version__version"],
+                        "version": release["resource_version__version"],
                     },
                     "sdk": SDKFactory.create(sdk).as_dict() if sdk else None,
                 }

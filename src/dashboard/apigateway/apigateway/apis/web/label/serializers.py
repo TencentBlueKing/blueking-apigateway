@@ -26,8 +26,8 @@ from apigateway.common.fields import CurrentGatewayDefault
 
 
 class GatewayLabelOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
+    id = serializers.IntegerField(read_only=True, help_text="标签 ID")
+    name = serializers.CharField(read_only=True, help_text="标签名称")
 
 
 class GatewayLabelInputSLZ(serializers.ModelSerializer):
@@ -40,6 +40,15 @@ class GatewayLabelInputSLZ(serializers.ModelSerializer):
             "id",
             "name",
         ]
+
+        extra_kwargs = {
+            "id": {
+                "help_text": "标签 ID",
+            },
+            "name": {
+                "help_text": "标签名称",
+            },
+        }
 
         validators = [
             UniqueTogetherValidator(

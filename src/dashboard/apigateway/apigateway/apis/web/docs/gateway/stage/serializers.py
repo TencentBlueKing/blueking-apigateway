@@ -21,9 +21,9 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
 class StageOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
+    id = serializers.IntegerField(help_text="网关环境 ID")
+    name = serializers.CharField(help_text="网关环境名称")
+    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, help_text="网关环境描述")
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.stage"
+        ref_name = "apigateway.apis.web.docs.gateway.stage.StageOutputSLZ"
