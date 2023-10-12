@@ -2,13 +2,13 @@
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the 'License'); you may not use this file except
+# Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
 #
 #     http://opensource.org/licenses/MIT
 #
 # Unless required by applicable law or agreed to in writing, software distributed under
-# the License is distributed on an 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
 # either express or implied. See the License for the specific language governing permissions and
 # limitations under the License.
 #
@@ -23,8 +23,9 @@ import jsonfield.fields
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ('core', '0032_gateway__developers'),
+        ('core', '0032_auto_20230818_1200'),
     ]
 
     operations = [
@@ -36,10 +37,7 @@ class Migration(migrations.Migration):
                 ('updated_time', models.DateTimeField(auto_now=True, null=True)),
                 ('created_by', models.CharField(blank=True, max_length=32, null=True)),
                 ('updated_by', models.CharField(blank=True, max_length=32, null=True)),
-                (
-                    'type',
-                    models.CharField(choices=[('HTTP', 'HTTP'), ('GRPC', 'GRPC')], default='HTTP', max_length=20),
-                ),
+                ('type', models.CharField(choices=[('HTTP', 'HTTP'), ('GRPC', 'GRPC')], default='HTTP', max_length=20)),
                 ('name', models.CharField(max_length=64)),
                 ('description', models.CharField(max_length=512)),
                 ('gateway', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='core.gateway')),
