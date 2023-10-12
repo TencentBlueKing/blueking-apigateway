@@ -23,46 +23,48 @@ import jsonfield.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0032_auto_20230818_1200'),
+        ("core", "0032_gateway__developers"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Backend',
+            name="Backend",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_time', models.DateTimeField(auto_now_add=True, null=True)),
-                ('updated_time', models.DateTimeField(auto_now=True, null=True)),
-                ('created_by', models.CharField(blank=True, max_length=32, null=True)),
-                ('updated_by', models.CharField(blank=True, max_length=32, null=True)),
-                ('type', models.CharField(choices=[('HTTP', 'HTTP'), ('GRPC', 'GRPC')], default='HTTP', max_length=20)),
-                ('name', models.CharField(max_length=64)),
-                ('description', models.CharField(max_length=512)),
-                ('gateway', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='core.gateway')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_time", models.DateTimeField(auto_now_add=True, null=True)),
+                ("updated_time", models.DateTimeField(auto_now=True, null=True)),
+                ("created_by", models.CharField(blank=True, max_length=32, null=True)),
+                ("updated_by", models.CharField(blank=True, max_length=32, null=True)),
+                (
+                    "type",
+                    models.CharField(choices=[("HTTP", "HTTP"), ("GRPC", "GRPC")], default="HTTP", max_length=20),
+                ),
+                ("name", models.CharField(max_length=64)),
+                ("description", models.CharField(max_length=512)),
+                ("gateway", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to="core.gateway")),
             ],
             options={
-                'db_table': 'core_backend',
-                'unique_together': {('gateway', 'name')},
+                "db_table": "core_backend",
+                "unique_together": {("gateway", "name")},
             },
         ),
         migrations.CreateModel(
-            name='BackendConfig',
+            name="BackendConfig",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_time', models.DateTimeField(auto_now_add=True, null=True)),
-                ('updated_time', models.DateTimeField(auto_now=True, null=True)),
-                ('created_by', models.CharField(blank=True, max_length=32, null=True)),
-                ('updated_by', models.CharField(blank=True, max_length=32, null=True)),
-                ('config', jsonfield.fields.JSONField(blank=True, default=dict, dump_kwargs={'indent': None})),
-                ('backend', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='core.backend')),
-                ('gateway', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='core.gateway')),
-                ('stage', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='core.stage')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_time", models.DateTimeField(auto_now_add=True, null=True)),
+                ("updated_time", models.DateTimeField(auto_now=True, null=True)),
+                ("created_by", models.CharField(blank=True, max_length=32, null=True)),
+                ("updated_by", models.CharField(blank=True, max_length=32, null=True)),
+                ("config", jsonfield.fields.JSONField(blank=True, default=dict, dump_kwargs={"indent": None})),
+                ("backend", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to="core.backend")),
+                ("gateway", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to="core.gateway")),
+                ("stage", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to="core.stage")),
             ],
             options={
-                'db_table': 'core_backend_config',
-                'unique_together': {('gateway', 'backend', 'stage')},
+                "db_table": "core_backend_config",
+                "unique_together": {("gateway", "backend", "stage")},
             },
         ),
     ]

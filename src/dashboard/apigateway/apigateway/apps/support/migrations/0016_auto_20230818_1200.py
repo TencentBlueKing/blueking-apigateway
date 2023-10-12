@@ -22,58 +22,65 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0032_auto_20230818_1200'),
-        ('support', '0015_auto_20230227_2006'),
+        ("core", "0032_gateway__developers"),
+        ("support", "0015_auto_20230227_2006"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='apisdk',
-            old_name='api',
-            new_name='gateway',
+            model_name="apisdk",
+            old_name="api",
+            new_name="gateway",
         ),
         migrations.RenameField(
-            model_name='releasedresourcedoc',
-            old_name='api',
-            new_name='gateway',
+            model_name="releasedresourcedoc",
+            old_name="api",
+            new_name="gateway",
         ),
         migrations.RenameField(
-            model_name='resourcedocversion',
-            old_name='api',
-            new_name='gateway',
+            model_name="resourcedocversion",
+            old_name="api",
+            new_name="gateway",
         ),
         migrations.AlterField(
-            model_name='apisdk',
-            name='gateway',
-            field=models.ForeignKey(db_column='api_id', on_delete=django.db.models.deletion.CASCADE, to='core.gateway'),
+            model_name="apisdk",
+            name="gateway",
+            field=models.ForeignKey(
+                db_column="api_id", on_delete=django.db.models.deletion.CASCADE, to="core.gateway"
+            ),
         ),
         migrations.AlterField(
-            model_name='apisdk',
-            name='language',
-            field=models.CharField(choices=[('unknown', 'Unknown'), ('python', 'Python'), ('golang', 'Golang')], max_length=32),
+            model_name="apisdk",
+            name="language",
+            field=models.CharField(
+                choices=[("unknown", "Unknown"), ("python", "Python"), ("golang", "Golang")], max_length=32
+            ),
         ),
         migrations.AlterField(
-            model_name='releasedresourcedoc',
-            name='gateway',
-            field=models.ForeignKey(db_column='api_id', on_delete=django.db.models.deletion.CASCADE, to='core.gateway'),
+            model_name="releasedresourcedoc",
+            name="gateway",
+            field=models.ForeignKey(
+                db_column="api_id", on_delete=django.db.models.deletion.CASCADE, to="core.gateway"
+            ),
         ),
         migrations.AlterField(
-            model_name='resourcedocversion',
-            name='gateway',
-            field=models.ForeignKey(db_column='api_id', on_delete=django.db.models.deletion.CASCADE, to='core.gateway'),
+            model_name="resourcedocversion",
+            name="gateway",
+            field=models.ForeignKey(
+                db_column="api_id", on_delete=django.db.models.deletion.CASCADE, to="core.gateway"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='apisdk',
-            unique_together={('gateway', 'language', 'version_number')},
+            name="apisdk",
+            unique_together={("gateway", "language", "version_number")},
         ),
         migrations.AlterUniqueTogether(
-            name='releasedresourcedoc',
-            unique_together={('gateway', 'resource_version_id', 'resource_id', 'language')},
+            name="releasedresourcedoc",
+            unique_together={("gateway", "resource_version_id", "resource_id", "language")},
         ),
         migrations.AlterUniqueTogether(
-            name='resourcedocversion',
-            unique_together={('gateway', 'resource_version')},
+            name="resourcedocversion",
+            unique_together={("gateway", "resource_version")},
         ),
     ]
