@@ -1,13 +1,66 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { createGateway, getGatewaysList } from '@/http';
+import { useUser } from '@/store/user';
 import { Message } from 'bkui-vue';
 import { IPagination, IDialog } from '@/types';
 import {
   ref,
 } from 'vue';
 const { t } = useI18n();
+const user = useUser();
 
+// 新增网关弹窗字段interface
+interface IinitDialogData {
+  name: string
+  maintainers: string[]
+  description?: string
+  is_public: boolean
+}
+
+// dialog弹窗数据
+const initDialogData: IinitDialogData = {
+  name: '',
+  maintainers: [user.user.username],   // 默认当前填入当前用户
+  description: '',
+  is_public: false,
+};
+
+const initPagination: IPagination = {
+  offset: 0,
+  limit: 20,
+  count: 0,
+};
+
+const rules = {
+  name: [
+    {
+      required: true,
+      message: t('请填写名称'),
+      trigger: 'blur',
+    },
+    {
+      validator: (value: string) => value.length >= 3,
+      message: t('不能小于3个字符'),
+      trigger: 'blur',
+    },
+    {
+      validator: (value: string) => value.length <= 30,
+      message: t('不能多于30个字符'),
+      trigger: 'blur',
+    },
+    {
+      validator: (value: string) => {
+        const reg = /^[a-z][a-z0-9-]*$/;
+        return reg.test(value);
+      },
+      message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
+      trigger: 'blur',
+    },
+  ],
+};
+
+const formRef = ref(null);
 const filterKey = ref<string>('updated_time');
 // 弹窗
 const dialogData = ref<IDialog>({
@@ -16,19 +69,12 @@ const dialogData = ref<IDialog>({
   loading: false,
 });
 // 分页状态
-const pagination = ref<IPagination>({
-  offset: 0,
-  limit: 10,
-  count: 0,
-});
-const formData = ref({
-  name: '',
-  maintainers: ['admin'],
-  description: '',
-  is_public: false,
-});
+const pagination = ref<IPagination>(initPagination);
+// 新增网关字段
+const formData = ref<IinitDialogData>(initDialogData);
 
-const tableData = ref([]);
+// 网关列表数据
+const gatewaysList = ref([]);
 
 // 当前年份
 const curYear = (new Date()).getFullYear();
@@ -39,27 +85,35 @@ const filterData = ref([
   { value: 'name', label: t('字母 A-Z') },
 ]);
 
+// 页面初始化
+const init = () => {
+  pagination.value = initPagination;
+  getGatewaysListData();
+};
+
 // 新建网关弹窗
 const showAddDialog = () => {
-  formData.value = {
-    name: '',
-    maintainers: ['admin'],
-    description: '',
-    is_public: false,
-  };
+  // 打开弹窗初始化弹窗数据
+  formData.value = initDialogData;
   dialogData.value.isShow = true;
+  dialogData.value.loading = false;
 };
 
 // 创建网关确认
 const handleConfirmCreate = async () => {
-  dialogData.value.loading = true;
   try {
+    // 校验
+    await formRef.value.validate();
+    dialogData.value.loading = true;
     await createGateway(formData.value);
     Message({
       message: t('创建成功'),
       theme: 'success',
     });
-  } catch (error) {} finally {
+    dialogData.value.isShow = false;
+    init();
+  } catch (error) {
+  } finally {
     dialogData.value.loading = false;
   }
 };
@@ -71,12 +125,11 @@ const getGatewaysListData = async () => {
       limit: pagination.value.limit,
       offset: pagination.value.limit * pagination.value.offset,
     });
-    tableData.value = res.results;
+    gatewaysList.value = res.results;
   } catch (error) {}
 };
 
-getGatewaysListData();
-
+init();
 </script>
 
 <template>
@@ -106,7 +159,7 @@ getGatewaysListData();
         <div class="flex-1 of1 text-c">资源数量</div>
         <div class="flex-1 of2">操作</div>
       </div>
-      <div class="table-item flex-row align-items-center" v-for="item in tableData" :key="item.id">
+      <div class="table-item flex-row align-items-center" v-for="item in gatewaysList" :key="item.id">
         <div class="flex-1 flex-row align-items-center of4">
           <div class="name-logo mr10" :class="item.status ? '' : 'deact'">
             {{ item.name[0].toUpperCase() }}
@@ -158,14 +211,15 @@ getGatewaysListData();
     </div>
 
     <bk-dialog
-      v-model:is-show="dialogData.isShow"
+      :is-show="dialogData.isShow"
       width="600"
       :title="dialogData.title"
       theme="primary"
       quick-close
       :is-loading="dialogData.loading"
-      @confirm="handleConfirmCreate">
-      <bk-form ref="formRef" form-type="vertical" :model="formData">
+      @confirm="handleConfirmCreate"
+      @closed="dialogData.isShow = false">
+      <bk-form ref="formRef" form-type="vertical" :model="formData" :rules="rules">
         <bk-form-item
           label="名称"
           property="name"
@@ -173,13 +227,13 @@ getGatewaysListData();
         >
           <bk-input
             v-model="formData.name"
-            placeholder="请输入"
+            :placeholder="$t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
             clearable
           />
         </bk-form-item>
         <bk-form-item
           label="维护人员"
-          property="name"
+          property="maintainers"
           required
         >
           <bk-input
@@ -190,8 +244,7 @@ getGatewaysListData();
         </bk-form-item>
         <bk-form-item
           label="描述"
-          property="name"
-          required
+          property="description"
         >
           <bk-input
             type="textarea"
@@ -202,7 +255,7 @@ getGatewaysListData();
         </bk-form-item>
         <bk-form-item
           label="是否公开"
-          property="isopen"
+          property="is_public"
           required
         >
           <bk-switcher v-model="formData.is_public" />

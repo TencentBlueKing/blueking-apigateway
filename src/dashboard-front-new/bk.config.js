@@ -14,6 +14,9 @@ module.exports = {
     return {
       devServer: {
         setupMiddlewares: mockServer,
+        client: {
+          overlay: false,
+        },
       },
     };
   },
