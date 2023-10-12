@@ -25,9 +25,9 @@ from .constants import BackendConfigSchemeEnum, BackendConfigTypeEnum, LoadBalan
 
 
 class HostSLZ(serializers.Serializer):
-    scheme = serializers.ChoiceField(choices=BackendConfigSchemeEnum.get_choices())
-    host = serializers.RegexField(HOST_WITHOUT_SCHEME_PATTERN)
-    weight = serializers.IntegerField(min_value=1, required=False)
+    scheme = serializers.ChoiceField(choices=BackendConfigSchemeEnum.get_choices(), help_text="协议")
+    host = serializers.RegexField(HOST_WITHOUT_SCHEME_PATTERN, help_text="主机")
+    weight = serializers.IntegerField(min_value=1, required=False, help_text="权重")
 
     class Meta:
         ref_name = "apis.web.HostSLZ"
@@ -35,8 +35,8 @@ class HostSLZ(serializers.Serializer):
 
 class BaseBackendConfigSLZ(serializers.Serializer):
     type = serializers.ChoiceField(
-        choices=BackendConfigTypeEnum.get_choices(), default=BackendConfigTypeEnum.NODE.value
+        choices=BackendConfigTypeEnum.get_choices(), default=BackendConfigTypeEnum.NODE.value, help_text="类型"
     )
-    timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
-    loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices())
-    hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
+    timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1, help_text="超时时间")
+    loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices(), help_text="负载均衡")
+    hosts = serializers.ListField(child=HostSLZ(), allow_empty=False, help_text="主机列表")
