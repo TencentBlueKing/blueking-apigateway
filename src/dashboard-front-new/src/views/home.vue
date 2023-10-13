@@ -266,15 +266,6 @@ const handleGoPage = (routeName: string, apigwId: number) => {
   });
 };
 
-const handleGoPage = (routeName: string, apigwId: number) => {
-  router.push({
-    name: routeName,
-    params: {
-      id: apigwId,
-    },
-  });
-};
-
 init();
 </script>
 
