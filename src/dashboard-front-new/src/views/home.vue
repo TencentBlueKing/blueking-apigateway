@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { createGateway, getGatewaysList } from '@/http';
+import { createGateway } from '@/http';
 import { useUser } from '@/store/user';
 import { Message } from 'bkui-vue';
-import { IPagination, IDialog } from '@/types';
+import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
+import { useGetApiList } from '@/hooks';
 import {
   ref,
 } from 'vue';
 const { t } = useI18n();
 const user = useUser();
 const router = useRouter();
+
+// 获取网关数据方法
+const {
+  getGatewaysListData,
+} = useGetApiList();
 
 // 新增网关弹窗字段interface
 interface IinitDialogData {
@@ -26,12 +32,6 @@ const initDialogData: IinitDialogData = {
   maintainers: [user.user.username],   // 默认当前填入当前用户
   description: '',
   is_public: false,
-};
-
-const initPagination: IPagination = {
-  offset: 0,
-  limit: 100,
-  count: 0,
 };
 
 const rules = {
@@ -70,13 +70,11 @@ const dialogData = ref<IDialog>({
   title: t('新建网关'),
   loading: false,
 });
-// 分页状态
-const pagination = ref<IPagination>(initPagination);
 // 新增网关字段
 const formData = ref<IinitDialogData>(initDialogData);
 
 // 网关列表数据
-const gatewaysList = ref([]);
+const gatewaysList = ref<any>([]);
 
 // 当前年份
 const curYear = (new Date()).getFullYear();
@@ -88,9 +86,8 @@ const filterData = ref([
 ]);
 
 // 页面初始化
-const init = () => {
-  pagination.value = initPagination;
-  getGatewaysListData();
+const init = async () => {
+  gatewaysList.value = await getGatewaysListData();
 };
 
 // 新建网关弹窗
@@ -118,17 +115,6 @@ const handleConfirmCreate = async () => {
   } finally {
     dialogData.value.loading = false;
   }
-};
-
-// 获取列表数据
-const getGatewaysListData = async () => {
-  try {
-    const res = await getGatewaysList({
-      limit: pagination.value.limit,
-      offset: pagination.value.limit * pagination.value.offset,
-    });
-    gatewaysList.value = res.results;
-  } catch (error) {}
 };
 
 const handleGoPage = (routeName: string, apigwId: number) => {
