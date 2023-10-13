@@ -7,6 +7,7 @@ import {
 const Home = () => import(/* webpackChunkName: "Home" */ '@/views/home.vue');
 const ApigwMain = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/main.vue');
 const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/index.vue');
+const ApigwEnv = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/env/index.vue');
 const ApigwDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/components/doc/index.vue');
 
 
@@ -30,11 +31,11 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '/:id/stage',
-        name: 'apigwDoc',
-        component: ApigwDoc,
+        name: 'apigwEnv',
+        component: ApigwEnv,
         meta: {
           title: '环境管理',
-          matchRoute: 'apigwDoc',
+          matchRoute: 'apigwEnv',
         },
       },
       {
