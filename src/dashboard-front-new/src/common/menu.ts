@@ -6,7 +6,7 @@ export const menuData: IMenu[]  = [
     title: '环境管理',
     children: [
       {
-        name: 'apigwDoc',
+        name: 'apigwStageOverview',
         title: '环境概览',
       },
       {
