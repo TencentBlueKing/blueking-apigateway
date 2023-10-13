@@ -71,7 +71,6 @@ const handleCollapse = (v: boolean) => {
   collapse.value = !v;
 };
 
-
 // 监听当前路由
 watch(
   () => route,
