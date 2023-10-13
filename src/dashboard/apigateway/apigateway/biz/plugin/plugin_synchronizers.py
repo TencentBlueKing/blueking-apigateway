@@ -15,12 +15,18 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict, List
+from typing import Dict, List, Tuple
+
+from pydantic import BaseModel
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
 from apigateway.biz.plugin_binding import PluginBindingHandler
-from apigateway.biz.resource.models import PluginConfigData
+
+
+class PluginConfigData(BaseModel):
+    type: str
+    yaml: str
 
 
 class PluginSynchronizer:
@@ -33,7 +39,7 @@ class PluginSynchronizer:
     ):
         code_to_plugin_type = {plugin_type.code: plugin_type for plugin_type in PluginType.objects.all()}
 
-        remaining_key_to_binding = {
+        remaining_key_to_binding: Dict[str, PluginBinding] = {
             f"{binding.scope_id}:{binding.config.type.code}": binding
             for binding in PluginBinding.objects.filter(
                 gateway_id=gateway_id,
@@ -42,7 +48,8 @@ class PluginSynchronizer:
             ).prefetch_related("config", "config__type")
         }
 
-        add_bindings = []
+        # list[(scope_id, plugin_config)]
+        add_bindings: List[Tuple[int, PluginConfig]] = []
         update_plugin_configs = []
         for scope_id, plugin_config_data_list in scope_id_to_plugin_configs.items():
             for plugin_config_data in plugin_config_data_list:
@@ -59,9 +66,9 @@ class PluginSynchronizer:
                 else:
                     plugin_type = code_to_plugin_type[plugin_config_data.type]
                     add_bindings.append(
-                        {
-                            "scope_id": scope_id,
-                            "plugin_config": PluginConfig(
+                        (
+                            scope_id,
+                            PluginConfig(
                                 gateway_id=gateway_id,
                                 name=self._generate_plugin_name(
                                     scope_type,
@@ -70,23 +77,25 @@ class PluginSynchronizer:
                                 ),
                                 type=plugin_type,
                                 yaml=plugin_config_data.yaml,
+                                created_by=username,
                             ),
-                        }
+                        )
                     )
 
         if add_bindings:
-            PluginConfig.objects.bulk_create([binding["plugin_config"] for binding in add_bindings], batch_size=100)
+            PluginConfig.objects.bulk_create([plugin_config for _, plugin_config in add_bindings], batch_size=100)
 
             plugin_configs = {config.name: config for config in PluginConfig.objects.filter(gateway_id=gateway_id)}
             bindings = []
-            for binding in add_bindings:
-                plugin_name = binding["plugin_config"].name
+            for scope_id, plugin_config in add_bindings:
+                # add_bindings 中的 plugin_config 对象 id 为空，因此，需要重新获取
                 bindings.append(
                     PluginBinding(
                         gateway_id=gateway_id,
                         scope_type=scope_type.value,
-                        scope_id=binding["scope_id"],
-                        config=plugin_configs[plugin_name],
+                        scope_id=scope_id,
+                        config=plugin_configs[plugin_config.name],
+                        created_by=username,
                     )
                 )
             PluginBinding.objects.bulk_create(bindings, batch_size=100)
@@ -96,7 +105,8 @@ class PluginSynchronizer:
 
         if remaining_key_to_binding:
             # 已创建且当前存在的 binding 已被 pop 出去，剩余的即为需要删除的 binding
-            PluginBindingHandler.delete_by_bindings(remaining_key_to_binding.values())
+            PluginBindingHandler.delete_by_bindings(gateway_id, list(remaining_key_to_binding.values()))
 
     def _generate_plugin_name(self, scope_type: PluginBindingScopeEnum, scope_id: int, type_id: int) -> str:
+        # 因 plugin_type code 可能较长，故使用 type_id
         return f"type:{type_id}:{scope_type.value}:{scope_id}"

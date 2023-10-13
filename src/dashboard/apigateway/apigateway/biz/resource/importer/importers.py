@@ -28,11 +28,11 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_label import GatewayLabelHandler
-from apigateway.biz.plugin.plugin_synchronizers import PluginSynchronizer
+from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.models import PluginConfigData, ResourceAuthConfig, ResourceBackendConfig, ResourceData
+from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource.savers import ResourcesSaver
-from apigateway.common.plugin.yaml_validator import PluginYamlValidator
+from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.utils.list import get_duplicate_items
@@ -116,7 +116,7 @@ class ResourceDataConvertor:
                     auth_config=ResourceAuthConfig.parse_obj(resource.get("auth_config", {})),
                     backend=backend,
                     backend_config=ResourceBackendConfig.parse_obj(resource["backend_config"]),
-                    plugin_configs=parse_obj_as(List[PluginConfigData], resource["plugin_configs"]),
+                    plugin_configs=parse_obj_as(Optional[List[PluginConfigData]], resource.get("plugin_configs")),
                     # 在导入时，根据 metadata 中的 labels 创建 GatewayLabel，并补全 label_ids 数据
                     label_ids=[],
                     metadata=metadata,
@@ -332,7 +332,7 @@ class ResourceImportValidator:
         - 1. 插件配置，必须符合插件类型的 schema 约束
         """
         plugin_types = {plugin_type.code: plugin_type for plugin_type in PluginType.objects.all()}
-        yaml_validator = PluginYamlValidator()
+        yaml_validator = PluginConfigYamlValidator()
 
         for resource_data in self.resource_data_list:
             if resource_data.plugin_configs is None:
@@ -501,7 +501,7 @@ class ResourcesImporter:
         synchronizer = PluginSynchronizer()
         synchronizer.sync(
             gateway_id=self.gateway.id,
-            scope_type=PluginBindingScopeEnum.RESOURCE.value,
+            scope_type=PluginBindingScopeEnum.RESOURCE,
             scope_id_to_plugin_configs=scope_id_to_plugin_configs,
         )
 

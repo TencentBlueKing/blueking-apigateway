@@ -308,7 +308,7 @@ class ResourceSwaggerExporter:
                     # TODO: 测试，如果 plugin_config.yaml 换行，导出的 yaml 格式是否符合预期
                     "yaml": plugin_config.yaml,
                 }
-                for plugin_config in resource["plugin_configs"]
+                for plugin_config in resource.get("plugin_configs", [])
             ],
             "authConfig": self._adapt_auth_config(resource["auth_config"]),
             "descriptionEn": resource.get("description_en"),

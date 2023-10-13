@@ -105,7 +105,7 @@ class ReleaseData:
             [
                 PluginData(
                     type_code=binding.get_type(),
-                    config=PluginConvertorFactory.get_convertor(binding.get_type()).convert(binding.config),
+                    config=PluginConvertorFactory.get_convertor(binding.get_type()).convert(binding.config.config),
                     binding_scope_type=PluginBindingScopeEnum.STAGE.value,
                 )
                 for binding in stage_id_to_plugin_bindings.get(self.stage.pk, [])
@@ -137,7 +137,7 @@ class ReleaseData:
                 [
                     PluginData(
                         type_code=binding.get_type(),
-                        config=PluginConvertorFactory.get_convertor(binding.get_type()).convert(binding.config),
+                        config=PluginConvertorFactory.get_convertor(binding.get_type()).convert(binding.config.config),
                         binding_scope_type=PluginBindingScopeEnum.RESOURCE.value,
                     )
                     for binding in bindings

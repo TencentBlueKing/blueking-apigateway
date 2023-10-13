@@ -695,6 +695,7 @@ class TestResourceSwaggerImporter:
                             "app_verified_required": True,
                             "resource_perm_required": True,
                         },
+                        "plugin_configs": None,
                     }
                 ],
             ),
@@ -748,6 +749,7 @@ class TestResourceSwaggerImporter:
                             "app_verified_required": True,
                             "resource_perm_required": True,
                         },
+                        "plugin_configs": None,
                     }
                 ],
             ),
@@ -801,6 +803,7 @@ class TestResourceSwaggerImporter:
                             "app_verified_required": True,
                             "resource_perm_required": True,
                         },
+                        "plugin_configs": None,
                     }
                 ],
             ),
@@ -976,6 +979,7 @@ class TestResourceSwaggerExporter:
                     "appVerifiedRequired": True,
                     "resourcePermissionRequired": True,
                 },
+                "pluginConfigs": [],
             },
             "responses": {"default": {"description": ""}},
         }

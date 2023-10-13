@@ -51,7 +51,7 @@ class TestPluginConfig:
             fake_plugin_config.config = yaml_dumps({"foo": 1})
 
             convertor = PluginConvertorFactory("")
-            _data = convertor.convert(fake_plugin_config)
+            _data = convertor.convert(fake_plugin_config.config)
             validate(_data, schema=fake_plugin_config.type.schema.schema)
 
 

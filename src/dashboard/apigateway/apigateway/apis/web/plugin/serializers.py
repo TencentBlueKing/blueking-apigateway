@@ -28,7 +28,7 @@ from apigateway.apis.web.plugin.convertor import PluginConfigYamlConvertor
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.common.plugin.yaml_validator import PluginYamlValidator
+from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
 
 
 class PluginTypeOutputSLZ(serializers.ModelSerializer):
@@ -131,9 +131,10 @@ class PluginConfigBaseSLZ(serializers.ModelSerializer):
         plugin.name = validated_data["name"]
         plugin.description_i18n = validated_data["description"]
 
-        validator = PluginYamlValidator()
+        validator = PluginConfigYamlValidator()
         try:
-            validator.validate(plugin.type.code, validated_data["yaml"], plugin.type and plugin.type.schema)
+            schema = plugin.type and plugin.type.schema and plugin.type.schema.schema
+            validator.validate(plugin.type.code, validated_data["yaml"], schema)
         except Exception as err:
             raise ValidationError({api_settings.NON_FIELD_ERRORS_KEY: f"{err}"})
 

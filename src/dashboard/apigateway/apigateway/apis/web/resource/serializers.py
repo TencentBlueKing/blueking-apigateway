@@ -419,11 +419,11 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
         help_text="标签列表",
     )
     plugin_configs = serializers.ListField(
-        child=PluginConfig(),
+        child=PluginConfigImportSLZ(),
         allow_empty=True,
         allow_null=True,
         required=False,
-        help_text="插件配置",
+        help_text="插件配置列表",
     )
 
     class Meta:
@@ -502,6 +502,9 @@ class ResourceImportInputSLZ(serializers.Serializer):
         return data
 
     def _validate_content(self, content: str):
+        # 将 swagger 内容转换为内部资源数据；
+        # 此部分主要使用 SLZ 做数据转换 + 单字段值有效性校验（如正则）,
+        # 不做复杂的业务逻辑校验，业务逻辑校验统一放到 ResourceImportValidator 处理
         try:
             importer = ResourceSwaggerImporter(content)
         except Exception as err:

@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
 from apigateway.core.models import Backend, Resource
 
 
@@ -36,11 +37,6 @@ class ResourceBackendConfig(BaseModel):
     # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
     legacy_upstreams: Optional[dict] = Field(default=None, exclude=True)
     legacy_transform_headers: Optional[dict] = Field(default=None, exclude=True)
-
-
-class PluginConfigData(BaseModel):
-    type: str
-    yaml: str
 
 
 class ResourceData(BaseModel):
