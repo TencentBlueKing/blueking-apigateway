@@ -38,6 +38,11 @@ class ResourceBackendConfig(BaseModel):
     legacy_transform_headers: Optional[dict] = Field(default=None, exclude=True)
 
 
+class PluginConfigData(BaseModel):
+    type: str
+    yaml: str
+
+
 class ResourceData(BaseModel):
     resource: Optional[Resource] = Field(default=None)
     # basic
@@ -56,6 +61,8 @@ class ResourceData(BaseModel):
     backend_config: ResourceBackendConfig = Field(...)
     # label
     label_ids: List[int] = Field(default_factory=list)
+    # plugin configs
+    plugin_configs: Optional[List[PluginConfigData]] = Field(default=None)
     # 扩展数据
     metadata: Dict[str, Any] = Field(default_factory=dict)
 

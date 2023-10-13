@@ -27,7 +27,7 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apis.web.resource.serializers import (
     BackendPathCheckInputSLZ,
     HttpBackendConfigSLZ,
-    ResourceDataSLZ,
+    ResourceDataImportSLZ,
     ResourceExportOutputSLZ,
     ResourceImportInputSLZ,
     ResourceInputSLZ,
@@ -226,7 +226,7 @@ class TestResourceInputSLZ:
         assert result == backend
 
 
-class TestResourceDataSLZ:
+class TestResourceDataImportSLZ:
     @pytest.mark.parametrize(
         "description_en, expected",
         [
@@ -236,7 +236,7 @@ class TestResourceDataSLZ:
         ],
     )
     def validate_description_en(self, description_en, expected):
-        slz = ResourceDataSLZ()
+        slz = ResourceDataImportSLZ()
         result = slz.validate_description_en(description_en)
         assert result == expected
 

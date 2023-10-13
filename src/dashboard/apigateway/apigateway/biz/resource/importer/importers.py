@@ -19,16 +19,23 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
+from django.conf import settings
 from django.utils.translation import gettext as _
+from pydantic import parse_obj_as
 
 from apigateway.apps.label.models import APILabel
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_label import GatewayLabelHandler
+from apigateway.biz.plugin.plugin_synchronizers import PluginSynchronizer
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
+from apigateway.biz.resource.models import PluginConfigData, ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource.savers import ResourcesSaver
+from apigateway.common.plugin.yaml_validator import PluginYamlValidator
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY
 from apigateway.core.models import Backend, Gateway, Resource
+from apigateway.utils.list import get_duplicate_items
 
 from .legacy_synchronizers import LegacyTransformHeadersToPluginSynchronizer, LegacyUpstreamToBackendSynchronizer
 
@@ -63,6 +70,12 @@ class ResourceDataConvertor:
                     "match_subpath": False,
                     "timeout": 0
                 },
+                "plugin_configs": [
+                    {
+                        "type": "bk-cors",
+                        "yaml": "xxx",
+                    }
+                ]
             }
         """
         self.gateway = gateway
@@ -103,6 +116,7 @@ class ResourceDataConvertor:
                     auth_config=ResourceAuthConfig.parse_obj(resource.get("auth_config", {})),
                     backend=backend,
                     backend_config=ResourceBackendConfig.parse_obj(resource["backend_config"]),
+                    plugin_configs=parse_obj_as(List[PluginConfigData], resource["plugin_configs"]),
                     # 在导入时，根据 metadata 中的 labels 创建 GatewayLabel，并补全 label_ids 数据
                     label_ids=[],
                     metadata=metadata,
@@ -152,6 +166,9 @@ class ResourceImportValidator:
         self._validate_name()
         self._validate_match_subpath()
         self._validate_resource_count()
+        self._validate_label_count()
+        self._validate_plugin_type()
+        self._validate_plugin_config()
 
     def _get_unchanged_resources(self) -> List[Dict[str, Any]]:
         """
@@ -267,6 +284,77 @@ class ResourceImportValidator:
         if count > max_resource_count:
             raise ValueError(_("每个网关最多创建 {count} 个资源。").format(count=max_resource_count))
 
+    def _validate_label_count(self):
+        label_names = set()
+        for resource_data in self.resource_data_list:
+            label_names.update(resource_data.metadata.get("labels", []))
+
+        if not label_names:
+            return
+
+        exist_label_names = set(APILabel.objects.filter(gateway=self.gateway).values_list("name", flat=True))
+        if len(label_names | exist_label_names) > settings.MAX_LABEL_COUNT_PER_GATEWAY:
+            raise ValueError(_("每个网关最多创建 {max_count} 个标签。").format(max_count=settings.MAX_LABEL_COUNT_PER_GATEWAY))
+
+    def _validate_plugin_type(self):
+        """
+        校验插件类型
+        - 1. 资源绑定的插件，插件类型不能重复
+        - 2. 插件类型必须已存在
+        """
+        types = set()
+        for resource_data in self.resource_data_list:
+            if resource_data.plugin_configs is None:
+                continue
+
+            resource_plugin_types = [config.type for config in resource_data.plugin_configs]
+            duplicate_types = get_duplicate_items(resource_plugin_types)
+            if duplicate_types:
+                raise ValueError(
+                    _("资源绑定的插件类型重复，资源名称：{resource_name}，重复的插件类型：{duplicate_types}").format(
+                        resource_name=resource_data.name,
+                        duplicate_types=", ".join(duplicate_types),
+                    )
+                )
+            types.update(resource_plugin_types)
+
+        if not types:
+            return
+
+        exist_plugin_types = set(PluginType.objects.all().values_list("code", flat=True))
+        not_exist_types = types - exist_plugin_types
+        if not_exist_types:
+            raise ValueError(_("插件类型 {not_exist_types} 不存在。").format(not_exist_types=", ".join(not_exist_types)))
+
+    def _validate_plugin_config(self):
+        """
+        校验插件配置
+        - 1. 插件配置，必须符合插件类型的 schema 约束
+        """
+        plugin_types = {plugin_type.code: plugin_type for plugin_type in PluginType.objects.all()}
+        yaml_validator = PluginYamlValidator()
+
+        for resource_data in self.resource_data_list:
+            if resource_data.plugin_configs is None:
+                continue
+
+            for plugin_config_data in resource_data.plugin_configs:
+                plugin_type = plugin_types[plugin_config_data.type]
+                try:
+                    yaml_validator.validate(
+                        plugin_type.code,
+                        plugin_config_data.yaml,
+                        plugin_type.schema and plugin_type.schema.schema,
+                    )
+                except Exception as err:
+                    raise ValueError(
+                        _("资源的插件配置校验失败，资源名称：{resource_name}，插件类型：{plugin_type_code}，错误信息：{err}。").format(
+                            resource_name=resource_data.name,
+                            plugin_type_code=plugin_type.code,
+                            err=err,
+                        )
+                    )
+
 
 class ResourcesImporter:
     def __init__(
@@ -340,6 +428,9 @@ class ResourcesImporter:
         # 6. [legacy transform-headers] 将 transform-headers 转换为 bk-header-rewrite 插件，并绑定到资源
         self._sync_legacy_transform_headers_to_plugins()
 
+        # 7. 导入插件
+        self._sync_plugins()
+
     def get_selected_resource_data_list(self) -> List[ResourceData]:
         return self.resource_data_list
 
@@ -395,6 +486,24 @@ class ResourcesImporter:
             username=self.username,
         )
         return saver.save()
+
+    def _sync_plugins(self):
+        scope_id_to_plugin_configs: Dict[int, List[PluginConfigData]] = {}
+        for resource_data in self.resource_data_list:
+            if resource_data.plugin_configs is None:
+                continue
+
+            scope_id_to_plugin_configs[resource_data.resource.id] = resource_data.plugin_configs
+
+        if not scope_id_to_plugin_configs:
+            return
+
+        synchronizer = PluginSynchronizer()
+        synchronizer.sync(
+            gateway_id=self.gateway.id,
+            scope_type=PluginBindingScopeEnum.RESOURCE.value,
+            scope_id_to_plugin_configs=scope_id_to_plugin_configs,
+        )
 
     def _sync_legacy_upstreams_to_backend_and_replace_resource_backend(self):
         """根据 backend_config 中的 legacy_upstreams 创建 backend，并替换 resource_data_list 中资源关联的 backend"""

@@ -27,8 +27,8 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.common.contexts import GatewayAuthContext
+from apigateway.common.plugin.plugin_convertors import PluginConvertorFactory
 from apigateway.controller.crds.release_data.base import PluginData
-from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     ContextScopeTypeEnum,

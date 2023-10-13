@@ -21,7 +21,7 @@ import pytest
 from jsonschema import validate
 
 from apigateway.apps.plugin.models import PluginConfig
-from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
+from apigateway.common.plugin.plugin_convertors import PluginConvertorFactory
 from apigateway.schema.models import Schema
 from apigateway.utils.yaml import yaml_dumps
 

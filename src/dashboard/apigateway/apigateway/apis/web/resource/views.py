@@ -388,9 +388,6 @@ class ResourceImportApi(generics.CreateAPIView):
             data=request.data,
             context={
                 "stages": Stage.objects.filter(gateway=request.gateway),
-                "exist_label_names": list(
-                    APILabel.objects.filter(gateway=request.gateway).values_list("name", flat=True)
-                ),
             },
         )
         slz.is_valid(raise_exception=True)
@@ -435,14 +432,11 @@ class ResourceExportApi(generics.CreateAPIView):
                 "proxies": {
                     proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=selected_resource_ids)
                 },
-                "plugin_bindings": {
-                    binding.scope_id: binding
-                    for binding in PluginBinding.objects.filter(
-                        gateway=request.gateway,
-                        scope_type=PluginBindingScopeEnum.RESOURCE.value,
-                        scope_id=selected_resource_ids,
-                    ).prefetch_related("config", "config__type")
-                },
+                "resource_id_to_bindings": PluginBinding.objects.query_scope_id_to_bindings(
+                    gateway_id=request.gateway.id,
+                    scope_type=PluginBindingScopeEnum.RESOURCE,
+                    scope_ids=selected_resource_ids,
+                ),
                 "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(selected_resource_ids),
             },
         )

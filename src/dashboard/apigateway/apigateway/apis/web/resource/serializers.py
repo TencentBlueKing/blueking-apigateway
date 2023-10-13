@@ -16,9 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
@@ -26,6 +25,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apis.web.resource.validators import BackendPathVarsValidator, PathVarsValidator
+from apigateway.apps.plugin.models import PluginConfig
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SwaggerFormatEnum
 from apigateway.biz.gateway import GatewayHandler
@@ -400,7 +400,12 @@ class ResourceLabelUpdateInputSLZ(serializers.Serializer):
         return value
 
 
-class ResourceDataSLZ(serializers.ModelSerializer):
+class PluginConfigImportSLZ(serializers.Serializer):
+    type = serializers.CharField(help_text="插件类型")
+    yaml = serializers.CharField(allow_blank=True, help_text="插件 yaml 格式配置")
+
+
+class ResourceDataImportSLZ(serializers.ModelSerializer):
     name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True, help_text="资源名称")
     path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="请求路径")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
@@ -412,6 +417,13 @@ class ResourceDataSLZ(serializers.ModelSerializer):
         required=False,
         max_length=MAX_LABEL_COUNT_PER_RESOURCE,
         help_text="标签列表",
+    )
+    plugin_configs = serializers.ListField(
+        child=PluginConfig(),
+        allow_empty=True,
+        allow_null=True,
+        required=False,
+        help_text="插件配置",
     )
 
     class Meta:
@@ -433,6 +445,8 @@ class ResourceDataSLZ(serializers.ModelSerializer):
             "backend_config",
             # 标签
             "labels",
+            # 插件配置
+            "plugin_configs",
         ]
 
         extra_kwargs = {
@@ -485,8 +499,6 @@ class ResourceImportInputSLZ(serializers.Serializer):
 
     def validate(self, data):
         data["resources"] = self._validate_content(data["content"])
-        self._validate_label_count(data["resources"])
-
         return data
 
     def _validate_content(self, content: str):
@@ -500,7 +512,7 @@ class ResourceImportInputSLZ(serializers.Serializer):
         except SchemaValidationError as err:
             raise serializers.ValidationError({"content": _("导入内容不符合 swagger 2.0 协议，{err}。").format(err=err)})
 
-        slz = ResourceDataSLZ(
+        slz = ResourceDataImportSLZ(
             data=importer.get_resources(),
             many=True,
             context={
@@ -509,19 +521,6 @@ class ResourceImportInputSLZ(serializers.Serializer):
         )
         slz.is_valid(raise_exception=True)
         return slz.validated_data
-
-    def _validate_label_count(self, resources: List[Dict[str, Any]]):
-        label_names = set()
-        for resource in resources:
-            label_names.update(resource.get("labels", []))
-
-        if not label_names:
-            return
-
-        if len(label_names | set(self.context["exist_label_names"])) > settings.MAX_LABEL_COUNT_PER_GATEWAY:
-            raise serializers.ValidationError(
-                _("每个网关最多创建 {max_count} 个标签。").format(max_count=settings.MAX_LABEL_COUNT_PER_GATEWAY)
-            )
 
 
 class ResourceImportCheckInputSLZ(ResourceImportInputSLZ):
@@ -581,6 +580,7 @@ class ResourceExportOutputSLZ(serializers.Serializer):
     labels = serializers.SerializerMethodField(help_text="标签列表")
     backend_name = serializers.SerializerMethodField(help_text="后端服务名称")
     backend_config = serializers.SerializerMethodField(help_text="后端配置")
+    plugin_configs = serializers.SerializerMethodField(help_text="插件配置")
     auth_config = serializers.SerializerMethodField(help_text="认证配置")
 
     def get_labels(self, obj):
@@ -597,6 +597,9 @@ class ResourceExportOutputSLZ(serializers.Serializer):
 
     def get_auth_config(self, obj):
         return self.context["auth_configs"][obj.id]
+
+    def get_plugin_configs(self, obj) -> List[PluginConfig]:
+        return [binding.config for binding in self.context["resource_id_to_bindings"].get(obj.id, [])]
 
 
 class BackendPathCheckInputSLZ(serializers.Serializer):

@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,3 +15,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import List
+
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig
+
+
+class PluginBindingHandler:
+    @staticmethod
+    def delete_by_bindings(gateway_id: int, bindings: List[PluginBinding]):
+        PluginBinding.objects.filter(gateway_id=gateway_id, id__in=[binding.id for binding in bindings]).delete()
+        PluginConfig.objects.filter(gateway_id=gateway_id, id__in=[binding.config.id for binding in bindings]).delete()

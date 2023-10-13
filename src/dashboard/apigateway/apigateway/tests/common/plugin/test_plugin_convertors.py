@@ -20,7 +20,7 @@ from ddf import G
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginConfig
-from apigateway.controller.crds.release_data.plugin import (
+from apigateway.common.plugin.plugin_convertors import (
     BkCorsConvertor,
     DefaultPluginConvertor,
     HeaderWriteConvertor,

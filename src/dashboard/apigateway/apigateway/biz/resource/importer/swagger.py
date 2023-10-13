@@ -177,6 +177,8 @@ class ResourceSwaggerImporter:
                     "auth_config": self._adapt_auth_config(extension_resource.get("authConfig", {})),
                     "backend_name": backend.get("name", DEFAULT_BACKEND_NAME),
                     "backend_config": self._adapt_backend(backend),
+                    # pluginConfigs 不存在或为 None，表示不处理此资源的插件配置的导入
+                    "plugin_configs": extension_resource.get("pluginConfigs"),
                 }
 
                 resources.append(resource)
@@ -300,6 +302,14 @@ class ResourceSwaggerExporter:
                 resource.get("proxy_type", ""),
                 resource.get("proxy_configs", {}),
             ),
+            "pluginConfigs": [
+                {
+                    "type": plugin_config.type.code,
+                    # TODO: 测试，如果 plugin_config.yaml 换行，导出的 yaml 格式是否符合预期
+                    "yaml": plugin_config.yaml,
+                }
+                for plugin_config in resource["plugin_configs"]
+            ],
             "authConfig": self._adapt_auth_config(resource["auth_config"]),
             "descriptionEn": resource.get("description_en"),
         }

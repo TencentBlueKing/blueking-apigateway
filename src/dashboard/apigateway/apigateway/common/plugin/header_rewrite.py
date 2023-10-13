@@ -94,7 +94,8 @@ class HeaderRewriteConvertor:
 
             bindings = []
             for scope_id in add_bindings:
-                plugin_config = plugin_configs[cls._generate_plugin_name(scope_type, scope_id)]
+                plugin_name = add_bindings[scope_id].name
+                plugin_config = plugin_configs[plugin_name]
                 bindings.append(
                     PluginBinding(
                         gateway_id=gateway_id,
