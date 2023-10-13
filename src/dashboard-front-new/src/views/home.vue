@@ -1,148 +1,3 @@
-<script setup lang="ts">
-import { useI18n } from 'vue-i18n';
-import { createGateway, getGatewaysList } from '@/http';
-import { useUser } from '@/store/user';
-import { Message } from 'bkui-vue';
-import { IPagination, IDialog } from '@/types';
-import { useRouter } from 'vue-router';
-import {
-  ref,
-} from 'vue';
-const { t } = useI18n();
-const user = useUser();
-const router = useRouter();
-
-// 新增网关弹窗字段interface
-interface IinitDialogData {
-  name: string
-  maintainers: string[]
-  description?: string
-  is_public: boolean
-}
-
-// dialog弹窗数据
-const initDialogData: IinitDialogData = {
-  name: '',
-  maintainers: [user.user.username],   // 默认当前填入当前用户
-  description: '',
-  is_public: false,
-};
-
-const initPagination: IPagination = {
-  offset: 0,
-  limit: 100,
-  count: 0,
-};
-
-const rules = {
-  name: [
-    {
-      required: true,
-      message: t('请填写名称'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => value.length >= 3,
-      message: t('不能小于3个字符'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => value.length <= 30,
-      message: t('不能多于30个字符'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => {
-        const reg = /^[a-z][a-z0-9-]*$/;
-        return reg.test(value);
-      },
-      message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
-      trigger: 'blur',
-    },
-  ],
-};
-
-const formRef = ref(null);
-const filterKey = ref<string>('updated_time');
-// 弹窗
-const dialogData = ref<IDialog>({
-  isShow: false,
-  title: t('新建网关'),
-  loading: false,
-});
-// 分页状态
-const pagination = ref<IPagination>(initPagination);
-// 新增网关字段
-const formData = ref<IinitDialogData>(initDialogData);
-
-// 网关列表数据
-const gatewaysList = ref([]);
-
-// 当前年份
-const curYear = (new Date()).getFullYear();
-
-const filterData = ref([
-  { value: 'created_time', label: t('创建时间') },
-  { value: 'updated_time', label: t('更新时间') },
-  { value: 'name', label: t('字母 A-Z') },
-]);
-
-// 页面初始化
-const init = () => {
-  pagination.value = initPagination;
-  getGatewaysListData();
-};
-
-// 新建网关弹窗
-const showAddDialog = () => {
-  // 打开弹窗初始化弹窗数据
-  formData.value = initDialogData;
-  dialogData.value.isShow = true;
-  dialogData.value.loading = false;
-};
-
-// 创建网关确认
-const handleConfirmCreate = async () => {
-  try {
-    // 校验
-    await formRef.value.validate();
-    dialogData.value.loading = true;
-    await createGateway(formData.value);
-    Message({
-      message: t('创建成功'),
-      theme: 'success',
-    });
-    dialogData.value.isShow = false;
-    init();
-  } catch (error) {
-  } finally {
-    dialogData.value.loading = false;
-  }
-};
-
-// 获取列表数据
-const getGatewaysListData = async () => {
-  try {
-    const res = await getGatewaysList({
-      limit: pagination.value.limit,
-      offset: pagination.value.limit * pagination.value.offset,
-    });
-    gatewaysList.value = res.results;
-  } catch (error) {}
-};
-
-const handleGoPage = (routeName: string, apigwId: number) => {
-  router.push({
-    name: routeName,
-    params: {
-      id: apigwId,
-    },
-  });
-};
-
-init();
-</script>
-
 <template>
   <div class="home-container">
     <div class="title-container flex-row justify-content-between">
@@ -283,6 +138,145 @@ init();
     </bk-dialog>
   </div>
 </template>
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+import { createGateway } from '@/http';
+import { useUser } from '@/store/user';
+import { Message } from 'bkui-vue';
+import { IDialog } from '@/types';
+import { useRouter } from 'vue-router';
+import { useGetApiList } from '@/hooks';
+import {
+  ref,
+} from 'vue';
+const { t } = useI18n();
+const user = useUser();
+const router = useRouter();
+
+// 获取网关数据方法
+const {
+  getGatewaysListData,
+} = useGetApiList();
+
+// 新增网关弹窗字段interface
+interface IinitDialogData {
+  name: string
+  maintainers: string[]
+  description?: string
+  is_public: boolean
+}
+
+// dialog弹窗数据
+const initDialogData: IinitDialogData = {
+  name: '',
+  maintainers: [user.user.username],   // 默认当前填入当前用户
+  description: '',
+  is_public: false,
+};
+
+const rules = {
+  name: [
+    {
+      required: true,
+      message: t('请填写名称'),
+      trigger: 'blur',
+    },
+    {
+      validator: (value: string) => value.length >= 3,
+      message: t('不能小于3个字符'),
+      trigger: 'blur',
+    },
+    {
+      validator: (value: string) => value.length <= 30,
+      message: t('不能多于30个字符'),
+      trigger: 'blur',
+    },
+    {
+      validator: (value: string) => {
+        const reg = /^[a-z][a-z0-9-]*$/;
+        return reg.test(value);
+      },
+      message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
+      trigger: 'blur',
+    },
+  ],
+};
+
+const formRef = ref(null);
+const filterKey = ref<string>('updated_time');
+// 弹窗
+const dialogData = ref<IDialog>({
+  isShow: false,
+  title: t('新建网关'),
+  loading: false,
+});
+// 新增网关字段
+const formData = ref<IinitDialogData>(initDialogData);
+
+// 网关列表数据
+const gatewaysList = ref<any>([]);
+
+// 当前年份
+const curYear = (new Date()).getFullYear();
+
+const filterData = ref([
+  { value: 'created_time', label: t('创建时间') },
+  { value: 'updated_time', label: t('更新时间') },
+  { value: 'name', label: t('字母 A-Z') },
+]);
+
+// 页面初始化
+const init = async () => {
+  gatewaysList.value = await getGatewaysListData();
+};
+
+// 新建网关弹窗
+const showAddDialog = () => {
+  // 打开弹窗初始化弹窗数据
+  formData.value = initDialogData;
+  dialogData.value.isShow = true;
+  dialogData.value.loading = false;
+};
+
+// 创建网关确认
+const handleConfirmCreate = async () => {
+  try {
+    // 校验
+    await formRef.value.validate();
+    dialogData.value.loading = true;
+    await createGateway(formData.value);
+    Message({
+      message: t('创建成功'),
+      theme: 'success',
+    });
+    dialogData.value.isShow = false;
+    init();
+  } catch (error) {
+  } finally {
+    dialogData.value.loading = false;
+  }
+};
+
+const handleGoPage = (routeName: string, apigwId: number) => {
+  router.push({
+    name: routeName,
+    params: {
+      id: apigwId,
+    },
+  });
+};
+
+const handleGoPage = (routeName: string, apigwId: number) => {
+  router.push({
+    name: routeName,
+    params: {
+      id: apigwId,
+    },
+  });
+};
+
+init();
+</script>
 
 <style lang="scss" scoped>
 .home-container{

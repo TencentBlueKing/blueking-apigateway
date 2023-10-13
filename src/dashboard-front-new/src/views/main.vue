@@ -24,8 +24,10 @@
         </bk-menu>
       </template>
       <template #side-header>
-        <bk-select class="header-select">
-          <bk-option value="test" label="test" />
+        <bk-select class="header-select" v-model="apigwId" @change="handleGoPage(activeMenuKey)">
+          <bk-option
+            v-for="item in gatewaysList" :key="item.id" :id="item.id" :name="item.name"
+          />
         </bk-select>
       </template>
       <div class="content-view">
@@ -43,19 +45,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { menuData } from '@/common/menu';
+import { useGetApiList } from '@/hooks';
 
 const route = useRoute();
 const router = useRouter();
+// 获取网关数据方法
+const {
+  getGatewaysListData,
+} = useGetApiList();
 const collapse = ref(true);
 // 选中的菜单
 const activeMenuKey = ref('');
+const gatewaysList = ref<any>([]);
 const openedKeys = menuData.map(e => e.name);
 
 // 当前网关Id
-const apigwId = ref('');
+const apigwId = ref(0);
 
 // 页面header名
 const headerTitle = ref('');
@@ -68,14 +76,17 @@ watch(
   () => route,
   (val: any) => {
     activeMenuKey.value = val.meta.matchRoute;
-    apigwId.value = val.params.id;
+    apigwId.value = Number(val.params.id);
     headerTitle.value = val.meta.title;
   },
   { immediate: true, deep: true },
 );
 
+onMounted(async () => {
+  gatewaysList.value = await getGatewaysListData();
+});
+
 const handleGoPage = (routeName: string) => {
-  console.log('routeName', routeName);
   router.push({
     name: routeName,
     params: {
