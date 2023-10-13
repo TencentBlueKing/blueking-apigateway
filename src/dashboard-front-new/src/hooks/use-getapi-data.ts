@@ -9,8 +9,8 @@ const initPagination: IPagination = {
 };
 const pagination = ref<IPagination>(initPagination);
 
-export function useGetApiList() {
-  async function getGatewaysListData() {
+export const useGetApiList = () => {
+  const getGatewaysListData = async () => {
     try {
       const res = await getGatewaysList({
         limit: pagination.value.limit,
@@ -23,4 +23,4 @@ export function useGetApiList() {
   return {
     getGatewaysListData,
   };
-}
+};
