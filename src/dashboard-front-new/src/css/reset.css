@@ -234,3 +234,8 @@ em,
 i {
   font-style: normal;
 }
+
+.bk-table .bk-table-footer {
+  background: #fff !important;
+  padding-left: 20px;
+}

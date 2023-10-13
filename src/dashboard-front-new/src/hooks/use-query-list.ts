@@ -1,0 +1,82 @@
+/*
+ * 列表分页、查询hooks
+ * 需要传入获取列表的方法名apiMethod、当前列表的过滤条件filterData
+ */
+
+import {
+  ref,
+  onMounted,
+  watch,
+} from 'vue';
+import { useRoute } from 'vue-router';
+import { IPagination } from '@/types';
+
+
+export function useQueryList(apiMethod: Function, filterData?: any) {
+  const route = useRoute();
+  const apigwId = route.params.id;
+  const initPagination: IPagination = {
+    offset: 0,
+    limit: 10,
+    count: 0,
+  };
+
+  const pagination = ref<IPagination>({ ...initPagination });
+  const isLoading = ref(false);
+  const tableData = ref([]);
+
+  // 获取列表数据的方法
+  const getList = async () => {
+    const method = apiMethod;
+    isLoading.value = true;
+    // 列表参数
+    const paramsData = {
+      offset: pagination.value.offset,
+      limit: pagination.value.limit,
+      ...filterData.value,
+    };
+    try {
+      const res = await method(apigwId, paramsData);
+      tableData.value = res.results;
+      pagination.value.count = res.count;
+    } catch (error) {
+
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  // 页码变化发生的事件
+  const handlePageChange = (current: number) => {
+    pagination.value.offset = pagination.value.limit * (current - 1);
+    getList();
+  };
+
+  // 条数变化发生的事件
+  const handlePageSizeChange = (limit: number) => {
+    pagination.value.limit = limit;
+    getList();
+  };
+
+  // 监听筛选条件的变化
+  watch(
+    () => filterData,
+    () => {
+      pagination.value = { ...initPagination };
+      getList();
+    },
+    { deep: true },
+  );
+
+  onMounted(getList);
+
+
+  return {
+    tableData,
+    pagination,
+    isLoading,
+    handlePageChange,
+    handlePageSizeChange,
+    getList,
+  };
+}
