@@ -7,8 +7,10 @@ import {
 const Home = () => import(/* webpackChunkName: "Home" */ '@/views/home.vue');
 const ApigwMain = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/main.vue');
 const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/index.vue');
-const ApigwEnv = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/env/index.vue');
 const ApigwDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/components/doc/index.vue');
+const apigwStageOverview = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/index.vue');
+const apigwStageDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/stage-detail.vue');
+const apigwReleaseHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/published/index.vue');
 
 
 const routes: RouteRecordRaw[] = [
@@ -31,11 +33,29 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '/:id/stage',
-        name: 'apigwEnv',
-        component: ApigwEnv,
+        name: 'apigwStageOverview',
+        component: apigwStageOverview,
         meta: {
           title: '环境管理',
-          matchRoute: 'apigwEnv',
+          matchRoute: 'apigwStageOverview',
+        },
+      },
+      {
+        path: '/:id/stage/detail',
+        name: 'apigwStageDetail',
+        component: apigwStageDetail,
+        meta: {
+          title: '环境概览',
+          matchRoute: 'apigwStageOverview',
+        },
+      },
+      {
+        path: '/:id/published',
+        name: 'apigwReleaseHistory',
+        component: apigwReleaseHistory,
+        meta: {
+          title: '发布记录',
+          matchRoute: 'apigwReleaseHistory',
         },
       },
       {
