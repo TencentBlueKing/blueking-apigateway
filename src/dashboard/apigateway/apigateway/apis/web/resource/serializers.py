@@ -40,6 +40,7 @@ from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
 
 from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
+from .legacy_serializers import LegacyTransformHeadersSLZ, LegacyUpstreamsSLZ
 
 
 class ResourceQueryInputSLZ(serializers.Serializer):
@@ -142,6 +143,11 @@ class HttpBackendConfigSLZ(serializers.Serializer):
     match_subpath = serializers.BooleanField(required=False, help_text="是否匹配所有子路径")
     timeout = serializers.IntegerField(
         max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, required=False, help_text="超时时间"
+    )
+    # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
+    legacy_upstreams = LegacyUpstreamsSLZ(allow_null=True, required=False, help_text="旧版 upstreams，管理端不需要处理")
+    legacy_transform_headers = LegacyTransformHeadersSLZ(
+        allow_null=True, required=False, help_text="旧版 transform_headers，管理端不需要处理"
     )
 
 

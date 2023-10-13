@@ -21,7 +21,7 @@ from ddf import G
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource.savers import ResourceProxyDuplicateError, ResourcesSaver
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ProxyTypeEnum
-from apigateway.core.models import Context, Proxy, Resource
+from apigateway.core.models import Backend, Context, Proxy, Resource
 
 
 class TestResourceSavers:
@@ -85,15 +85,24 @@ class TestResourceSavers:
         assert resource_data_list[1].resource == resource_2
 
     def test_save_proxies(self, fake_gateway, fake_resource_data):
+        backend_1 = G(Backend, gateway=fake_gateway)
+        backend_2 = G(Backend, gateway=fake_gateway)
+
         resource_1 = G(Resource, gateway=fake_gateway, name="foo1", method="GET")
         resource_2 = G(Resource, gateway=fake_gateway, name="foo2", method="POST")
 
         resource_data_list = [
-            fake_resource_data.copy(update={"resource": resource_1}, deep=True),
+            fake_resource_data.copy(update={"resource": resource_1, "backend": backend_1}, deep=True),
         ]
         saver = ResourcesSaver(fake_gateway, resource_data_list, "admin")
         saver._save_proxies(resource_ids=[resource_1.id])
         assert Proxy.objects.filter(resource__gateway=fake_gateway).count() == 1
+        assert Proxy.objects.get(resource=resource_1).backend_id == backend_1.id
+
+        # 测试 proxy backend 是否被更新
+        resource_data_list[0].backend = backend_2
+        saver._save_proxies(resource_ids=[resource_1.id])
+        assert Proxy.objects.get(resource=resource_1).backend_id == backend_2.id
 
         resource_data_list = [
             fake_resource_data.copy(update={"resource": resource_1}, deep=True),

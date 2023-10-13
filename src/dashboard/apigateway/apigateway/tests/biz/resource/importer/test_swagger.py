@@ -687,6 +687,8 @@ class TestResourceSwaggerImporter:
                             "method": "GET",
                             "match_subpath": True,
                             "timeout": 30,
+                            "legacy_transform_headers": None,
+                            "legacy_upstreams": None,
                         },
                         "auth_config": {
                             "auth_verified_required": False,
@@ -738,6 +740,8 @@ class TestResourceSwaggerImporter:
                             "path": "/echo/",
                             "match_subpath": False,
                             "timeout": 0,
+                            "legacy_transform_headers": None,
+                            "legacy_upstreams": None,
                         },
                         "auth_config": {
                             "auth_verified_required": True,
@@ -789,6 +793,8 @@ class TestResourceSwaggerImporter:
                             "path": "/echo/",
                             "match_subpath": False,
                             "timeout": 0,
+                            "legacy_transform_headers": None,
+                            "legacy_upstreams": None,
                         },
                         "auth_config": {
                             "auth_verified_required": True,
@@ -810,26 +816,58 @@ class TestResourceSwaggerImporter:
         assert importer._adapt_method("get") == "GET"
         assert importer._adapt_method("x-bk-apigateway-method-any") == "ANY"
 
-    def test_adapt_backend(self, fake_swagger_content):
+    def test_adapt_backend__error(self, fake_swagger_content):
         importer = ResourceSwaggerImporter(fake_swagger_content)
 
         with pytest.raises(ValueError):
-            importer._adapt_backend({"upstreams": {"foo": "bar"}})
+            importer._adapt_backend({"type": "MOCK"})
 
-        result = importer._adapt_backend(
-            {
-                "type": "HTTP",
-                "method": "get",
-                "path": "/foo",
-                "matchSubpath": True,
-            },
-        )
-        assert result == {
-            "method": "GET",
-            "path": "/foo",
-            "match_subpath": True,
-            "timeout": 0,
-        }
+    @pytest.mark.parametrize(
+        "backend, expected",
+        [
+            (
+                {
+                    "type": "HTTP",
+                    "method": "get",
+                    "path": "/foo",
+                    "matchSubpath": True,
+                },
+                {
+                    "method": "GET",
+                    "path": "/foo",
+                    "match_subpath": True,
+                    "timeout": 0,
+                    "legacy_upstreams": None,
+                    "legacy_transform_headers": None,
+                },
+            ),
+            (
+                {
+                    "type": "HTTP",
+                    "method": "get",
+                    "path": "/foo",
+                    "matchSubpath": True,
+                    "upstreams": {"loadbalance": "roundrobin", "hosts": [{"host": "http://foo.com", "weight": 100}]},
+                    "transformHeaders": {"set": {"x-token": "test"}, "delete": ["x-token"]},
+                },
+                {
+                    "method": "GET",
+                    "path": "/foo",
+                    "match_subpath": True,
+                    "timeout": 0,
+                    "legacy_upstreams": {
+                        "loadbalance": "roundrobin",
+                        "hosts": [{"host": "http://foo.com", "weight": 100}],
+                    },
+                    "legacy_transform_headers": {"set": {"x-token": "test"}, "delete": ["x-token"]},
+                },
+            ),
+        ],
+    )
+    def test_adapt_backend(self, fake_swagger_content, backend, expected):
+        importer = ResourceSwaggerImporter(fake_swagger_content)
+        result = importer._adapt_backend(backend)
+        assert result == expected
 
     @pytest.mark.parametrize(
         "auth_config, expected",

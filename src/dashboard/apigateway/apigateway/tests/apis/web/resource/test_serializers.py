@@ -26,6 +26,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.resource.serializers import (
     BackendPathCheckInputSLZ,
+    HttpBackendConfigSLZ,
     ResourceDataSLZ,
     ResourceExportOutputSLZ,
     ResourceImportInputSLZ,
@@ -61,6 +62,64 @@ class TestResourceListOutputSLZ:
     def test_has_updated(self, fake_resource, context, expected):
         slz = ResourceListOutputSLZ(fake_resource, context=context)
         assert slz.get_has_updated(fake_resource) is expected
+
+
+class TestHttpBackendConfigSLZ:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "method": "GET",
+                    "path": "/test",
+                },
+                {
+                    "method": "GET",
+                    "path": "/test",
+                    "legacy_upstreams": None,
+                    "legacy_transform_headers": None,
+                },
+            ),
+            (
+                {
+                    "method": "GET",
+                    "path": "/test",
+                    "legacy_upstreams": None,
+                    "legacy_transform_headers": None,
+                },
+                {
+                    "method": "GET",
+                    "path": "/test",
+                    "legacy_upstreams": None,
+                    "legacy_transform_headers": None,
+                },
+            ),
+            (
+                {
+                    "method": "GET",
+                    "path": "/test",
+                    "legacy_upstreams": {
+                        "hosts": [{"host": "http://{env.foo}", "weight": 20}],
+                        "loadbalance": "roundrobin",
+                    },
+                    "legacy_transform_headers": {"set": {"x-token": "test"}, "delete": ["x-token"]},
+                },
+                {
+                    "method": "GET",
+                    "path": "/test",
+                    "legacy_upstreams": {
+                        "hosts": [{"host": "http://{env.foo}", "weight": 20}],
+                        "loadbalance": "roundrobin",
+                    },
+                    "legacy_transform_headers": {"set": {"x-token": "test"}, "delete": ["x-token"]},
+                },
+            ),
+        ],
+    )
+    def test_validate(self, data, expected):
+        slz = HttpBackendConfigSLZ(data=data)
+        slz.is_valid(raise_exception=True)
+        assert slz.data == expected
 
 
 class TestResourceInputSLZ:

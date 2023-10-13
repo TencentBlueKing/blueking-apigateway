@@ -33,6 +33,9 @@ class ResourceBackendConfig(BaseModel):
     path: str
     match_subpath: bool = Field(default=False)
     timeout: int = Field(default=0)
+    # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
+    legacy_upstreams: Optional[dict] = Field(default=None, exclude=True)
+    legacy_transform_headers: Optional[dict] = Field(default=None, exclude=True)
 
 
 class ResourceData(BaseModel):
