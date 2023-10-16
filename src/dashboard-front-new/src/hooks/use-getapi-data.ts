@@ -1,3 +1,4 @@
+// 获取网关列表的hooks, 多个地方用到
 import { ref } from 'vue';
 import { getGatewaysList } from '@/http';
 import { IPagination } from '@/types';

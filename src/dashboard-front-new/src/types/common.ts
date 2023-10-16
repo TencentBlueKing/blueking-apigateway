@@ -16,3 +16,8 @@ export interface IMenu {
   title: string
   children?: IMenu[]
 }
+
+export interface IMethodList {
+  id: string
+  name: string
+}
