@@ -3,17 +3,14 @@
   <bk-form ref="backRef" :model="backConfigData" :rules="rules" class="back-config-container">
     <bk-form-item
       :label="t('服务')"
-      v-model="backConfigData.method"
+      v-model="backConfigData.backend_id"
       property="method"
       required
     >
       <bk-select
         :input-search="false"
-        multiple
-        filterable
-        multiple-mode="tag"
         class="w700">
-        <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
+        <bk-option v-for="item in servicesData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
     </bk-form-item>
     <bk-form-item
@@ -67,16 +64,19 @@
 <script setup lang="ts">
 import { ref, defineExpose } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { getBackendsListData } from '@/http';
 import { useCommon } from '../../../store';
 
 const { t } = useI18n();
 const common = useCommon();
 const backConfigData = ref({
+  backend_id: '',
   path: '',
   method: '',
   match_subpath: false,
 });
 const methodData = ref(common.methodList);
+const servicesData = ref([]);
 
 const rules = {
   path: [
@@ -105,6 +105,13 @@ const rules = {
     },
   ],
 };
+
+const init = async () => {
+  const res = await getBackendsListData(common.apigwId);
+  console.log('res', res);
+  servicesData.value = res.results;
+};
+init();
 
 defineExpose({
   backConfigData,

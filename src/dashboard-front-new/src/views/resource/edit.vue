@@ -42,7 +42,7 @@ import FrontConfig from './comps/front-config.vue';
 import BackConfig from './comps/back-config.vue';
 const { t } = useI18n();
 
-const activeIndex =  ref([0]);
+const activeIndex =  ref(['baseInfo', 'frontConfig', 'backConfig']);
 const baseInfoRef = ref(null);
 
 onMounted(() => {
@@ -62,7 +62,6 @@ onMounted(() => {
         }
         .panel-content{
             width: 1100px;
-            margin-left: 150px;
         }
       }
     }
