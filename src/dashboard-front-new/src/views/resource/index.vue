@@ -9,6 +9,7 @@
         <div class="mr10">
           <bk-button
             theme="primary"
+            @click="handleCreateResource"
           >
             {{ t('新建') }}
           </bk-button>
@@ -123,10 +124,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { useQueryList } from '@/hooks';
 import { getResourceListData } from '@/http';
 const dropdownList = ref(['生产环境', '预发布环境', '测试环境', '正式环境', '开发环境', '调试环境']);
 const { t } = useI18n();
+
+const router = useRouter();
 
 const filterData = ref({ query: '' });
 
@@ -138,6 +142,12 @@ const {
   handlePageChange,
   handlePageSizeChange,
 } = useQueryList(getResourceListData, filterData);
+
+const handleCreateResource = () => {
+  router.push({
+    name: 'apigwResourceCreate',
+  });
+};
 </script>
 <style lang="scss" scoped>
 .resource-container{

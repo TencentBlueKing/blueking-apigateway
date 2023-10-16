@@ -7,7 +7,7 @@ import {
 const Home = () => import(/* webpackChunkName: "Home" */ '@/views/home.vue');
 const ApigwMain = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/main.vue');
 const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/index.vue');
-const ApigwDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/components/doc/index.vue');
+const ApigwResourceEdit = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/edit.vue');
 const apigwStageOverview = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/index.vue');
 const apigwStageDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/stage-detail.vue');
 const apigwReleaseHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/published/index.vue');
@@ -64,6 +64,15 @@ const routes: RouteRecordRaw[] = [
         component: ApigwResource,
         meta: {
           title: '资源配置',
+          matchRoute: 'apigwResource',
+        },
+      },
+      {
+        path: '/:id/resource/create',
+        name: 'apigwResourceCreate',
+        component: ApigwResourceEdit,
+        meta: {
+          title: '新建资源',
           matchRoute: 'apigwResource',
         },
       },

@@ -49,9 +49,12 @@ import { ref, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { menuData } from '@/common/menu';
 import { useGetApiList } from '@/hooks';
+import { useCommon } from '@/store';
 
 const route = useRoute();
 const router = useRouter();
+// 全局公共字段存储
+const common = useCommon();
 // 获取网关数据方法
 const {
   getGatewaysListData,
@@ -78,6 +81,8 @@ watch(
     activeMenuKey.value = val.meta.matchRoute;
     apigwId.value = Number(val.params.id);
     headerTitle.value = val.meta.title;
+    // 设置全局网关id
+    common.setApigwId(apigwId.value);
   },
   { immediate: true, deep: true },
 );

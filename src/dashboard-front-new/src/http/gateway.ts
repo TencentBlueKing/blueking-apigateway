@@ -8,3 +8,6 @@ export const getGatewaysList = (data: any) => fetch.get(`${BK_DASHBOARD_URL}/gat
 
 // 新建网关
 export const createGateway = (data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/`, data);
+
+// 获取网关标签
+export const getGatewayLabels = (id: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${id}/labels/`);
