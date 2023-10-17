@@ -4,4 +4,7 @@ import fetch from './fetch';
 const { BK_DASHBOARD_URL } = window;
 
 // 获取后端服务列表
-export const getBackendsListData = (id: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${id}/backends/`);
+export const getBackendsListData = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/backends/`);
+
+// 获取后端服务详情
+export const getBackendsDetailData = (apigwId: number, backendId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/backends/${backendId}`);

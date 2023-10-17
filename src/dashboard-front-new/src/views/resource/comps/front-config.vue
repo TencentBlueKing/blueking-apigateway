@@ -9,9 +9,6 @@
     >
       <bk-select
         :input-search="false"
-        multiple
-        filterable
-        multiple-mode="tag"
         class="w700">
         <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
