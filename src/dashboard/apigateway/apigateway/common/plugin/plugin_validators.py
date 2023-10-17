@@ -33,20 +33,20 @@ class PluginConfigYamlValidator:
     - 2. 符合 apisix 额外校验规则 (plugin_checkers 中规则)
     """
 
-    def validate(self, plugin_type_code: str, yaml_: str, schema: Optional[Dict] = None):
+    def validate(self, plugin_type_code: str, payload: str, schema: Optional[Dict] = None):
         """
         :param plugin_type_code: 插件类型
-        :param yaml_: 插件 yaml 格式配置字符串
+        :param payload: 插件 yaml 格式配置字符串
         :param schema: 插件 schema 规则
         """
         # 校验 schema 规则
         if schema:
             convertor = PluginConvertorFactory.get_convertor(plugin_type_code)
             try:
-                validate(convertor.convert(yaml_loads(yaml_)), schema=schema)
+                validate(convertor.convert(yaml_loads(payload)), schema=schema)
             except JsonSchemaValidationError as err:
                 raise ValueError(f"{err.message}, path {list(err.absolute_path)}")
 
         # 校验 apisix 额外规则
         checker = PluginConfigYamlChecker(plugin_type_code)
-        checker.check(yaml_)
+        checker.check(payload)

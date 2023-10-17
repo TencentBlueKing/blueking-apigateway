@@ -26,7 +26,7 @@ from apigateway.utils.ip import parse_ip_content_to_list
 
 
 class PluginConvertor(ABC):
-    plugin_type_code: ClassVar[str]
+    plugin_type_code: ClassVar[PluginTypeCodeEnum]
 
     @abstractmethod
     def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
@@ -44,7 +44,7 @@ class DefaultPluginConvertor(PluginConvertor):
 
 
 class HeaderWriteConvertor(PluginConvertor):
-    plugin_type_code: ClassVar[str] = PluginTypeCodeEnum.BK_HEADER_REWRITE.value
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_HEADER_REWRITE
 
     def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -54,7 +54,7 @@ class HeaderWriteConvertor(PluginConvertor):
 
 
 class IPRestrictionConvertor(PluginConvertor):
-    plugin_type_code: ClassVar[str] = PluginTypeCodeEnum.BK_IP_RESTRICTION.value
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_IP_RESTRICTION
 
     def _parse_config_to_ips(self, item: Union[str, list]) -> List[str]:
         if isinstance(item, str):
@@ -88,7 +88,7 @@ class IPRestrictionConvertor(PluginConvertor):
 
 
 class BkCorsConvertor(PluginConvertor):
-    plugin_type_code: ClassVar[str] = PluginTypeCodeEnum.BK_CORS.value
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_CORS
 
     def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
         # allow_origins 要求必须满足正则条件，不能为空字符串，且其不存在时，在 apisix 默认值为 *，
@@ -103,7 +103,7 @@ class BkCorsConvertor(PluginConvertor):
 
 
 class PluginConvertorFactory:
-    plugin_convertors: ClassVar[Dict[str, PluginConvertor]] = {
+    plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c
         for c in [
             HeaderWriteConvertor(),
@@ -114,4 +114,4 @@ class PluginConvertorFactory:
 
     @classmethod
     def get_convertor(cls, plugin_type_code: str) -> PluginConvertor:
-        return cls.plugin_convertors.get(plugin_type_code, DefaultPluginConvertor())
+        return cls.plugin_convertors.get(PluginTypeCodeEnum(plugin_type_code), DefaultPluginConvertor())

@@ -432,7 +432,7 @@ class ResourceExportApi(generics.CreateAPIView):
                 "proxies": {
                     proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=selected_resource_ids)
                 },
-                "resource_id_to_bindings": PluginBinding.objects.query_scope_id_to_bindings(
+                "resource_id_to_plugin_bindings": PluginBinding.objects.query_scope_id_to_bindings(
                     gateway_id=request.gateway.id,
                     scope_type=PluginBindingScopeEnum.RESOURCE,
                     scope_ids=selected_resource_ids,

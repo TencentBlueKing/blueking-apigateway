@@ -40,7 +40,8 @@ class PluginSynchronizer:
         code_to_plugin_type = {plugin_type.code: plugin_type for plugin_type in PluginType.objects.all()}
 
         remaining_key_to_binding: Dict[str, PluginBinding] = {
-            f"{binding.scope_id}:{binding.config.type.code}": binding
+            # key 中添加 scope_type，为方便定位问题，scope_id + type_code 本身为唯一
+            f"{scope_type.value}:{binding.scope_id}:{binding.config.type.code}": binding
             for binding in PluginBinding.objects.filter(
                 gateway_id=gateway_id,
                 scope_type=scope_type.value,
@@ -53,7 +54,7 @@ class PluginSynchronizer:
         update_plugin_configs = []
         for scope_id, plugin_config_data_list in scope_id_to_plugin_configs.items():
             for plugin_config_data in plugin_config_data_list:
-                key = f"{scope_id}:{plugin_config_data.type}"
+                key = f"{scope_type.value}:{scope_id}:{plugin_config_data.type}"
                 # scope 对象已绑定此类型插件，需更新插件配置
                 if key in remaining_key_to_binding:
                     # remaining_bindings 中去除已绑定的插件，剩余的即为待删除的插件绑定

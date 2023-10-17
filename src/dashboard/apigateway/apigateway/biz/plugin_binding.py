@@ -23,5 +23,8 @@ from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 class PluginBindingHandler:
     @staticmethod
     def delete_by_bindings(gateway_id: int, bindings: List[PluginBinding]):
-        PluginBinding.objects.filter(gateway_id=gateway_id, id__in=[binding.id for binding in bindings]).delete()
-        PluginConfig.objects.filter(gateway_id=gateway_id, id__in=[binding.config.id for binding in bindings]).delete()
+        plugin_binding_ids = [binding.id for binding in bindings]
+        plugin_config_ids = [binding.config.id for binding in bindings]
+
+        PluginBinding.objects.filter(gateway_id=gateway_id, id__in=plugin_binding_ids).delete()
+        PluginConfig.objects.filter(gateway_id=gateway_id, id__in=plugin_config_ids).delete()

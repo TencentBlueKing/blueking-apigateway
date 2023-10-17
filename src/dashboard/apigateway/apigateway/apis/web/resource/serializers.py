@@ -602,7 +602,7 @@ class ResourceExportOutputSLZ(serializers.Serializer):
         return self.context["auth_configs"][obj.id]
 
     def get_plugin_configs(self, obj) -> List[PluginConfig]:
-        return [binding.config for binding in self.context["resource_id_to_bindings"].get(obj.id, [])]
+        return [binding.config for binding in self.context["resource_id_to_plugin_bindings"].get(obj.id, [])]
 
 
 class BackendPathCheckInputSLZ(serializers.Serializer):

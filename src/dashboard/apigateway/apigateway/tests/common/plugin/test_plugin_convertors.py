@@ -177,8 +177,8 @@ class TestBkCorsConvertor:
 
 class TestPluginConvertorFactory:
     def test_get_convertor(self):
-        convertor = PluginConvertorFactory.get_convertor(PluginTypeCodeEnum.BK_IP_RESTRICTION.value)
+        convertor = PluginConvertorFactory.get_convertor(PluginTypeCodeEnum.BK_IP_RESTRICTION)
         assert isinstance(convertor, IPRestrictionConvertor)
 
-        convertor = PluginConvertorFactory.get_convertor(PluginTypeCodeEnum.BK_RATE_LIMIT.value)
+        convertor = PluginConvertorFactory.get_convertor(PluginTypeCodeEnum.BK_RATE_LIMIT)
         assert isinstance(convertor, DefaultPluginConvertor)

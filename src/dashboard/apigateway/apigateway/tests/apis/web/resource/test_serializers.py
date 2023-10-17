@@ -284,7 +284,7 @@ class TestResourceExportOutputSLZ:
                 "proxies": proxies,
                 "backends": backends,
                 "auth_configs": {fake_resource.id: {"foo": True}},
-                "resource_id_to_bindings": {fake_resource.id: [echo_plugin_resource_binding]},
+                "resource_id_to_plugin_bindings": {fake_resource.id: [echo_plugin_resource_binding]},
             },
         )
         assert len(slz.data) == 1
