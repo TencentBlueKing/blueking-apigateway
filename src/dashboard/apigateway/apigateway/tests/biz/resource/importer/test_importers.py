@@ -320,17 +320,24 @@ class TestResourceImportValidator:
                 None,
             ),
             (
-                {"plugin_configs": [PluginConfigData(type="echo", yaml=yaml_dumps({"body": "foo"}))]},
+                {
+                    "plugin_configs": [
+                        PluginConfigData(
+                            type="bk-header-rewrite",
+                            yaml=yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+                        )
+                    ]
+                },
                 None,
             ),
             (
-                {"plugin_configs": [PluginConfigData(type="echo", yaml=yaml_dumps({}))]},
+                {"plugin_configs": [PluginConfigData(type="bk-header-rewrite", yaml=yaml_dumps({}))]},
                 ValueError,
             ),
         ],
     )
     def test_validate_plugin_config(
-        self, fake_gateway, fake_resource_data, echo_plugin_type, plugin_configs, expected
+        self, fake_gateway, fake_resource_data, fake_plugin_type_bk_header_rewrite, plugin_configs, expected
     ):
         resource_data_list = [
             fake_resource_data.copy(update=plugin_configs, deep=True),
@@ -477,12 +484,12 @@ class TestResourcesImporter:
         assert resource_data_list[0].label_ids == [label_1.id]
         assert resource_data_list[1].label_ids == [label_2.id]
 
-    def test_sync_plugins(self, fake_gateway, fake_resource_data, echo_plugin_type):
+    def test_sync_plugins(self, fake_gateway, fake_resource_data, fake_plugin_type_bk_header_rewrite):
         resource_1 = G(Resource, gateway=fake_gateway, method="GET")
         resource_2 = G(Resource, gateway=fake_gateway, method="POST")
 
-        plugin_config_1 = G(PluginConfig, gateway=fake_gateway, type=echo_plugin_type)
-        plugin_config_2 = G(PluginConfig, gateway=fake_gateway, type=echo_plugin_type)
+        plugin_config_1 = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type_bk_header_rewrite)
+        plugin_config_2 = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type_bk_header_rewrite)
         G(
             PluginBinding,
             gateway=fake_gateway,
@@ -505,7 +512,12 @@ class TestResourcesImporter:
             fake_resource_data.copy(
                 update={
                     "resource": resource_2,
-                    "plugin_configs": [PluginConfigData(type="echo", yaml=yaml_dumps({"body": "foo"}))],
+                    "plugin_configs": [
+                        PluginConfigData(
+                            type="bk-header-rewrite",
+                            yaml=yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+                        )
+                    ],
                     "name": "bar",
                     "method": "POST",
                 },
@@ -518,5 +530,6 @@ class TestResourcesImporter:
 
         assert PluginBinding.objects.filter(scope_type="resource", scope_id=resource_1.id).count() == 1
         assert PluginBinding.objects.get(scope_type="resource", scope_id=resource_2.id).config.config == {
-            "body": "foo"
+            "set": [{"key": "foo", "value": "bar"}],
+            "remove": [],
         }

@@ -76,25 +76,25 @@ class TestStageConvertor:
         edge_gateway,
         edge_gateway_stage,
         fake_stage_convertor,
-        echo_plugin,
+        fake_plugin_bk_header_rewrite,
     ):
         G(
             PluginBinding,
             gateway=edge_gateway,
-            config=echo_plugin,
+            config=fake_plugin_bk_header_rewrite,
             scope_type=PluginBindingScopeEnum.STAGE.value,
             scope_id=edge_gateway_stage.id,
         )
 
         plugin_config = self.get_stage_plugin_by_name(
             fake_stage_convertor,
-            echo_plugin.type.code,
+            "bk-stage-header-rewrite",
         )
 
         assert plugin_config is not None
 
-        assert plugin_config.name == echo_plugin.type.code
-        assert plugin_config.config == echo_plugin.config
+        assert plugin_config.name == "bk-stage-header-rewrite"
+        assert plugin_config.config
 
     def get_stage_plugin_by_name(self, convertor, name):
         stage = convertor.convert()

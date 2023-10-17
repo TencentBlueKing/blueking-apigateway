@@ -22,18 +22,26 @@ from apigateway.utils.yaml import yaml_dumps
 
 
 class TestPluginConfigYamlValidator:
-    def test_validate(self, mocker, echo_plugin_type, echo_plugin_type_schema):
+    def test_validate(self, mocker, fake_plugin_bk_header_rewrite, fake_plugin_type_bk_header_rewrite_schema):
         validator = PluginConfigYamlValidator()
 
-        validator.validate("echo", yaml_dumps({"body": "foo"}), echo_plugin_type_schema.schema)
-        validator.validate("echo", yaml_dumps({}), None)
+        validator.validate(
+            "bk-header-rewrite",
+            yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+            fake_plugin_type_bk_header_rewrite_schema.schema,
+        )
+        validator.validate("bk-header-rewrite", yaml_dumps({"set": [], "remove": [{"key": "foo:bar"}]}), None)
 
         with pytest.raises(ValueError):
-            validator.validate("echo", yaml_dumps({}), echo_plugin_type_schema.schema)
+            validator.validate(
+                "bk-header-rewrite",
+                yaml_dumps({"set": [], "remove": [{"key": "foo:bar"}]}),
+                fake_plugin_type_bk_header_rewrite_schema.schema,
+            )
 
         mocker.patch(
             "apigateway.common.plugin.plugin_validators.PluginConfigYamlChecker.check",
             side_effect=ValueError(),
         )
         with pytest.raises(ValueError):
-            validator.validate("echo", yaml_dumps({}), None)
+            validator.validate("bk-header-rewrite", yaml_dumps({"set": [], "remove": [{"key": "foo:bar"}]}), None)
