@@ -338,7 +338,7 @@ def mock_etcd_registry(mocker):
 
 @pytest.fixture
 def edge_plugin_type():
-    return G(PluginType, schema=None)
+    return G(PluginType, code="bk-rate-limit", schema=None)
 
 
 @fixture

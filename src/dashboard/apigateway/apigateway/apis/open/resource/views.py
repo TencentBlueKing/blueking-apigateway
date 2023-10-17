@@ -21,7 +21,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.resource.serializers import ResourceImportInputSLZ
-from apigateway.apps.label.models import APILabel
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Resource, Stage
@@ -47,9 +46,6 @@ class ResourceSyncApi(generics.CreateAPIView):
             data=request.data,
             context={
                 "stages": Stage.objects.filter(gateway=request.gateway),
-                "exist_label_names": list(
-                    APILabel.objects.filter(gateway=request.gateway).values_list("name", flat=True)
-                ),
             },
         )
         slz.is_valid(raise_exception=True)

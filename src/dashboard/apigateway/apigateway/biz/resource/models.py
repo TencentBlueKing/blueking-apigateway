@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
 from apigateway.core.models import Backend, Resource
 
 
@@ -56,6 +57,8 @@ class ResourceData(BaseModel):
     backend_config: ResourceBackendConfig = Field(...)
     # label
     label_ids: List[int] = Field(default_factory=list)
+    # plugin configs
+    plugin_configs: Optional[List[PluginConfigData]] = Field(default=None)
     # 扩展数据
     metadata: Dict[str, Any] = Field(default_factory=dict)
 

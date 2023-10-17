@@ -53,12 +53,12 @@ class TestHttpResourceConvertor:
         edge_resource_inherit_stage,
         edge_resource_inherit_stage_snapshot,
         fake_http_resource_convertor,
-        echo_plugin,
+        fake_plugin_bk_header_rewrite,
     ):
         G(
             PluginBinding,
             gateway=edge_gateway,
-            config=echo_plugin,
+            config=fake_plugin_bk_header_rewrite,
             scope_type=PluginBindingScopeEnum.RESOURCE.value,
             scope_id=edge_resource_inherit_stage.id,
         )
@@ -66,13 +66,12 @@ class TestHttpResourceConvertor:
         plugin_config = self.get_resource_plugin_by_name(
             fake_http_resource_convertor,
             edge_resource_inherit_stage_snapshot,
-            echo_plugin.type.code,
+            "bk-resource-header-rewrite",
         )
 
         assert plugin_config is not None
-
-        assert plugin_config.name == echo_plugin.type.code
-        assert plugin_config.config == echo_plugin.config
+        assert plugin_config.name == "bk-resource-header-rewrite"
+        assert plugin_config.config
 
     def test_convert_http_resources_with_edge_resource_inherit_stage(
         self,

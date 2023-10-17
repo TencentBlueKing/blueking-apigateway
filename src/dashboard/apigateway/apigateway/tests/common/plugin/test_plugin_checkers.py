@@ -19,7 +19,7 @@ from contextlib import nullcontext as does_not_raise
 
 import pytest
 
-from apigateway.apis.web.plugin.checker import (
+from apigateway.common.plugin.plugin_checkers import (
     BkCorsChecker,
     BkIPRestrictionChecker,
     HeaderRewriteChecker,

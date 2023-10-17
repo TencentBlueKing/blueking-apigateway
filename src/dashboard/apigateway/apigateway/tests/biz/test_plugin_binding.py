@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,3 +15,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig
+from apigateway.biz.plugin_binding import PluginBindingHandler
+
+
+class TestPluginBindingHandler:
+    def test_delete_by_bindings(self, fake_gateway, echo_plugin_resource_binding):
+        assert PluginConfig.objects.filter(gateway=fake_gateway).exists()
+        assert PluginBinding.objects.filter(gateway=fake_gateway).exists()
+
+        PluginBindingHandler.delete_by_bindings(fake_gateway.id, [echo_plugin_resource_binding])
+
+        assert not PluginConfig.objects.filter(gateway=fake_gateway).exists()
+        assert not PluginBinding.objects.filter(gateway=fake_gateway).exists()

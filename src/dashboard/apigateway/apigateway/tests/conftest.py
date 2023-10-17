@@ -64,6 +64,7 @@ from apigateway.schema import instances
 from apigateway.schema.data.meta_schema import init_meta_schemas
 from apigateway.tests.utils.testing import dummy_time, get_response_json
 from apigateway.utils.redis_utils import REDIS_CLIENTS, get_default_redis_client
+from apigateway.utils.yaml import yaml_dumps
 
 UserModel = get_user_model()
 
@@ -691,14 +692,54 @@ def echo_plugin_resource_binding(echo_plugin, fake_resource):
 
 
 @pytest.fixture()
-def fake_plugin_type_bk_header_rewrite():
-    return PluginType.objects.get_or_create(
+def fake_plugin_type_bk_header_rewrite_schema():
+    # apisix bk-header-rewrite plugin schema
+    return G(
+        Schema,
+        name="bk_header_rewrite_schema",
+        _schema=json.dumps(
+            {
+                "$comment": "this is a mark for our injected plugin schema",
+                "type": "object",
+                "description": "new headers for request",
+                "minProperties": 1,
+                "additionalProperties": False,
+                "properties": {
+                    "set": {
+                        "type": "object",
+                        "patternProperties": {"^[^:]+$": {"oneOf": [{"type": "string"}, {"type": "number"}]}},
+                    },
+                    "remove": {"type": "array", "items": {"type": "string", "pattern": "^[^:]+$"}},
+                },
+            }
+        ),
+    )
+
+
+@pytest.fixture()
+def fake_plugin_type_bk_header_rewrite(fake_plugin_type_bk_header_rewrite_schema):
+    return G(
+        PluginType,
         code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
-        defaults={
-            "name": PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
-            "is_public": True,
-            "schema": None,
-        },
+        name=PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
+        is_public=True,
+        schema=fake_plugin_type_bk_header_rewrite_schema,
+    )
+
+
+@pytest.fixture
+def fake_plugin_bk_header_rewrite(fake_plugin_type_bk_header_rewrite, fake_gateway, faker):
+    return G(
+        PluginConfig,
+        gateway=fake_gateway,
+        name="bk-header-rewrite",
+        type=fake_plugin_type_bk_header_rewrite,
+        yaml=yaml_dumps(
+            {
+                "set": [{"key": "foo", "value": "bar"}],
+                "remove": [{"key": "baz"}],
+            }
+        ),
     )
 
 

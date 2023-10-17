@@ -19,19 +19,16 @@
 from typing import Any, Dict
 
 from django.utils.translation import gettext as _
-from jsonschema import ValidationError as SchemaValidationError
-from jsonschema import validate
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
-from apigateway.apis.web.plugin.checker import PluginConfigYamlChecker
 from apigateway.apis.web.plugin.convertor import PluginConfigYamlConvertor
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
+from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
 
 
 class PluginTypeOutputSLZ(serializers.ModelSerializer):
@@ -134,25 +131,14 @@ class PluginConfigBaseSLZ(serializers.ModelSerializer):
         plugin.name = validated_data["name"]
         plugin.description_i18n = validated_data["description"]
 
+        validator = PluginConfigYamlValidator()
         try:
-            plugin.config = validated_data["yaml"]
-            # 转换数据，校验 apisix schema
-            schema = plugin.type and plugin.type.schema
-            if schema:
-                convertor = PluginConvertorFactory.get_convertor(plugin.type.code)
-                _data = convertor.convert(plugin)
-                validate(_data, schema=schema.schema)
-        except SchemaValidationError as err:
-            raise ValidationError(
-                {api_settings.NON_FIELD_ERRORS_KEY: f"{err.message}, path {list(err.absolute_path)}"}
-            )
-
-        checker = PluginConfigYamlChecker(plugin.type.code)
-        try:
-            checker.check(validated_data["yaml"])
+            schema = plugin.type and plugin.type.schema and plugin.type.schema.schema
+            validator.validate(plugin.type.code, validated_data["yaml"], schema)
         except Exception as err:
             raise ValidationError({api_settings.NON_FIELD_ERRORS_KEY: f"{err}"})
 
+        plugin.config = validated_data["yaml"]
         plugin.save()
         return plugin
 

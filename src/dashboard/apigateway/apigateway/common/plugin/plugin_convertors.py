@@ -22,34 +22,31 @@ from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, List, Union
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
-from apigateway.apps.plugin.models import PluginConfig
 from apigateway.utils.ip import parse_ip_content_to_list
 
 
 class PluginConvertor(ABC):
-    plugin_type_code: ClassVar[str]
+    plugin_type_code: ClassVar[PluginTypeCodeEnum]
 
     @abstractmethod
-    def convert(self, plugin_config: PluginConfig) -> Dict[str, Any]:
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
         pass
 
 
 class DefaultPluginConvertor(PluginConvertor):
-    def convert(self, plugin_config: PluginConfig) -> Dict[str, Any]:
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """convert to apisix plugin config
         default is the PluginConfig.config(`yaml.loads(yaml_)`)
 
         if need covert, overwrite this method
         """
-        return plugin_config.config
+        return config
 
 
 class HeaderWriteConvertor(PluginConvertor):
-    plugin_type_code: ClassVar[str] = PluginTypeCodeEnum.BK_HEADER_REWRITE.value
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_HEADER_REWRITE
 
-    def convert(self, plugin_config: PluginConfig) -> Dict[str, Any]:
-        config = plugin_config.config
-
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "set": {item["key"]: item["value"] for item in config["set"]},
             "remove": [item["key"] for item in config["remove"]],
@@ -57,7 +54,7 @@ class HeaderWriteConvertor(PluginConvertor):
 
 
 class IPRestrictionConvertor(PluginConvertor):
-    plugin_type_code: ClassVar[str] = PluginTypeCodeEnum.BK_IP_RESTRICTION.value
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_IP_RESTRICTION
 
     def _parse_config_to_ips(self, item: Union[str, list]) -> List[str]:
         if isinstance(item, str):
@@ -69,12 +66,10 @@ class IPRestrictionConvertor(PluginConvertor):
             return list(set(item))
         return None
 
-    def convert(self, plugin_config: PluginConfig) -> Dict[str, Any]:
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """generate config for bk-ip-restriction
         note: either one of whitelist or blacklist attribute must be specified. They cannot be used together!
         """
-        config = plugin_config.config
-
         whitelist = []
         # here we need to compatible with old version data, the item is ip or ip_content
         whitelist_data = config.get("whitelist")
@@ -93,11 +88,9 @@ class IPRestrictionConvertor(PluginConvertor):
 
 
 class BkCorsConvertor(PluginConvertor):
-    plugin_type_code: ClassVar[str] = PluginTypeCodeEnum.BK_CORS.value
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_CORS
 
-    def convert(self, plugin_config: PluginConfig) -> Dict[str, Any]:
-        config = plugin_config.config
-
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
         # allow_origins 要求必须满足正则条件，不能为空字符串，且其不存在时，在 apisix 默认值为 *，
         # 若 allow_credential=true，apisix schema 校验会失败，因此为空时，将其设置为 "null"
         config["allow_origins"] = config.get("allow_origins") or "null"
@@ -111,7 +104,7 @@ class BkCorsConvertor(PluginConvertor):
 
 class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
-        c.plugin_type_code: c  # type: ignore
+        c.plugin_type_code: c
         for c in [
             HeaderWriteConvertor(),
             IPRestrictionConvertor(),
@@ -120,5 +113,5 @@ class PluginConvertorFactory:
     }
 
     @classmethod
-    def get_convertor(cls, plugin_type_code: PluginTypeCodeEnum) -> PluginConvertor:
-        return cls.plugin_convertors.get(plugin_type_code, DefaultPluginConvertor())
+    def get_convertor(cls, plugin_type_code: str) -> PluginConvertor:
+        return cls.plugin_convertors.get(PluginTypeCodeEnum(plugin_type_code), DefaultPluginConvertor())

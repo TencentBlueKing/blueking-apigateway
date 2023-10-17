@@ -388,6 +388,21 @@
                 }
               ]
             },
+            "pluginConfigs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "yaml": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
             "authConfig": {
               "type": "object",
               "additionalProperties": false,

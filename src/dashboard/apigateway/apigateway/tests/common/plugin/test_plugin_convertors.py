@@ -16,18 +16,16 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from ddf import G
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
-from apigateway.apps.plugin.models import PluginConfig
-from apigateway.controller.crds.release_data.plugin import (
+from apigateway.common.plugin.plugin_convertors import (
     BkCorsConvertor,
     DefaultPluginConvertor,
     HeaderWriteConvertor,
     IPRestrictionConvertor,
     PluginConvertorFactory,
 )
-from apigateway.utils.yaml import yaml_dumps
+from apigateway.utils.yaml import yaml_loads
 
 
 class TestDefaultPluginConvertor:
@@ -45,9 +43,7 @@ class TestDefaultPluginConvertor:
         ],
     )
     def test_convert(self, yaml_, expected):
-        G(PluginConfig, id=1, yaml=yaml_)
-
-        config = self.convertor.convert(PluginConfig.objects.get(id=1))
+        config = self.convertor.convert(yaml_loads(yaml_))
         assert config == expected
 
 
@@ -95,9 +91,7 @@ class TestIPRestrictionConvertor:
         ],
     )
     def test_convert(self, yaml_, expected):
-        G(PluginConfig, id=1, yaml=yaml_)
-
-        config = self.convertor.convert(PluginConfig.objects.get(id=1))
+        config = self.convertor.convert(yaml_loads(yaml_))
         assert config == expected
 
     @pytest.mark.parametrize(
@@ -110,10 +104,8 @@ class TestIPRestrictionConvertor:
         ],
     )
     def test_convert_error(self, yaml_, expected):
-        G(PluginConfig, id=1, yaml=yaml_)
-
         with pytest.raises(ValueError):
-            self.convertor.convert(PluginConfig.objects.get(id=1))
+            self.convertor.convert(yaml_loads(yaml_))
 
 
 class TestHeaderWriteConvertor:
@@ -131,9 +123,7 @@ class TestHeaderWriteConvertor:
         ],
     )
     def test_convert(self, data, expected):
-        G(PluginConfig, id=1, yaml=yaml_dumps(data))
-
-        config = self.convertor.convert(PluginConfig.objects.get(id=1))
+        config = self.convertor.convert(data)
         assert config == expected
 
 
@@ -180,17 +170,15 @@ class TestBkCorsConvertor:
         ],
     )
     def test_convert(self, data, expected):
-        plugin_config = G(PluginConfig, yaml=yaml_dumps(data))
-
         convertor = BkCorsConvertor()
-        result = convertor.convert(plugin_config)
+        result = convertor.convert(data)
         assert result == expected
 
 
 class TestPluginConvertorFactory:
     def test_get_convertor(self):
-        convertor = PluginConvertorFactory.get_convertor(PluginTypeCodeEnum.BK_IP_RESTRICTION.value)
+        convertor = PluginConvertorFactory.get_convertor(PluginTypeCodeEnum.BK_IP_RESTRICTION)
         assert isinstance(convertor, IPRestrictionConvertor)
 
-        convertor = PluginConvertorFactory.get_convertor(PluginTypeCodeEnum.BK_RATE_LIMIT.value)
+        convertor = PluginConvertorFactory.get_convertor(PluginTypeCodeEnum.BK_RATE_LIMIT)
         assert isinstance(convertor, DefaultPluginConvertor)

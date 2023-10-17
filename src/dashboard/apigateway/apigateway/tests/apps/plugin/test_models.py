@@ -21,7 +21,7 @@ import pytest
 from jsonschema import validate
 
 from apigateway.apps.plugin.models import PluginConfig
-from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
+from apigateway.common.plugin.plugin_convertors import PluginConvertorFactory
 from apigateway.schema.models import Schema
 from apigateway.utils.yaml import yaml_dumps
 
@@ -51,7 +51,7 @@ class TestPluginConfig:
             fake_plugin_config.config = yaml_dumps({"foo": 1})
 
             convertor = PluginConvertorFactory("")
-            _data = convertor.convert(fake_plugin_config)
+            _data = convertor.convert(fake_plugin_config.config)
             validate(_data, schema=fake_plugin_config.type.schema.schema)
 
 

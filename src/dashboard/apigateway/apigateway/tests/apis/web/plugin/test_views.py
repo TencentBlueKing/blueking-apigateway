@@ -18,6 +18,8 @@
 import pytest
 from django.utils.translation import override
 
+from apigateway.utils.yaml import yaml_dumps
+
 
 class TestPluginTypeListApi:
     def test_list(self, request_view, fake_gateway, echo_plugin_type):
@@ -91,13 +93,19 @@ class TestPluginConfigCreateApi:
     @pytest.mark.parametrize(
         "config_tmpl, status_code",
         [
-            ["{config}", 201],  # success
+            [yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}), 201],  # success
             ["", 400],  # config is None
             ["foo: bar", 400],  # config validate failure by schema
         ],
     )
     def test_create(
-        self, request_view, fake_gateway, fake_stage, echo_plugin, echo_plugin_type, config_tmpl, status_code
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_plugin_type_bk_header_rewrite,
+        config_tmpl,
+        status_code,
     ):
         response = request_view(
             "POST",
@@ -107,13 +115,13 @@ class TestPluginConfigCreateApi:
                 "gateway_id": fake_gateway.id,
                 "scope_type": "stage",
                 "scope_id": fake_stage.id,
-                "code": echo_plugin_type.code,
+                "code": fake_plugin_type_bk_header_rewrite.code,
             },
             data={
-                "type_id": echo_plugin_type.pk,
+                "type_id": fake_plugin_type_bk_header_rewrite.pk,
                 "description": "description",
                 "name": "name",
-                "yaml": config_tmpl.format(config=echo_plugin.yaml),
+                "yaml": config_tmpl,
             },
         )
         assert response.status_code == status_code
@@ -144,7 +152,7 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
     @pytest.mark.parametrize(
         "config_tmpl, status_code",
         [
-            ["{config}", 200],  # success
+            [yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}), 200],  # success
             ["", 400],  # config is None
             ["foo: bar", 400],  # config validate failure by schema
         ],
@@ -154,9 +162,8 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
         request_view,
         fake_gateway,
         fake_stage,
-        echo_plugin,
-        echo_plugin_type,
-        echo_plugin_stage_binding,
+        fake_plugin_bk_header_rewrite,
+        fake_plugin_type_bk_header_rewrite,
         config_tmpl,
         status_code,
     ):
@@ -168,14 +175,14 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
                 "gateway_id": fake_gateway.id,
                 "scope_type": "stage",
                 "scope_id": fake_stage.id,
-                "code": echo_plugin_type.code,
-                "id": echo_plugin.id,
+                "code": fake_plugin_type_bk_header_rewrite.code,
+                "id": fake_plugin_bk_header_rewrite.id,
             },
             data={
-                "type_id": echo_plugin_type.pk,
+                "type_id": fake_plugin_type_bk_header_rewrite.pk,
                 "description": "description",
                 "name": "name",
-                "yaml": config_tmpl.format(config=echo_plugin.yaml),
+                "yaml": config_tmpl,
             },
         )
 
@@ -184,8 +191,7 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
         if status_code == 200:
             result = response.json()
             plugin = result["data"]
-            assert plugin["id"] == echo_plugin.pk
-        # assert result["code"] == code
+            assert plugin["id"] == fake_plugin_bk_header_rewrite.pk
 
     def test_delete(
         self, request_view, fake_gateway, fake_stage, echo_plugin, echo_plugin_type, echo_plugin_stage_binding
