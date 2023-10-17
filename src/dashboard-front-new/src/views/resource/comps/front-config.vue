@@ -3,12 +3,11 @@
   <bk-form ref="frontRef" :model="frontConfigData" :rules="rules" class="front-config-container">
     <bk-form-item
       :label="t('请求方法')"
-      v-model="frontConfigData.method"
       property="method"
-      required
-    >
+      required>
       <bk-select
         :input-search="false"
+        v-model="frontConfigData.method"
         class="w700">
         <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>

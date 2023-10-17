@@ -36,7 +36,8 @@
       <bk-button
         theme="primary"
         class="ml20"
-        @click="handleSubmit">
+        @click="handleSubmit"
+        :loading="submitLoading">
         {{ t('提交') }}
       </bk-button>
       <bk-button
@@ -54,21 +55,48 @@ import BaseInfo from './comps/base-info.vue';
 import FrontConfig from './comps/front-config.vue';
 import BackConfig from './comps/back-config.vue';
 import { useRouter } from 'vue-router';
+import { useCommon } from '@/store';
+import { createResources } from '@/http';
+import { Message } from 'bkui-vue';
 const { t } = useI18n();
 const router = useRouter();
+const common = useCommon();
 
 // 默认展开
 const activeIndex =  ref(['baseInfo', 'frontConfig', 'backConfig']);
 const baseInfoRef = ref(null);
 const frontConfigRef = ref(null);
 const backConfigRef = ref(null);
+const submitLoading = ref(false);
 
 // 提交
-const handleSubmit = () => {
+const handleSubmit = async () => {
   const baseFormData = baseInfoRef.value.formData;
   const frontFormData = frontConfigRef.value.frontConfigData;
   const backFormData = backConfigRef.value.backConfigData;
-  console.log('baseFormData', baseFormData.value, frontFormData.value, backFormData);
+  try {
+    submitLoading.value = true;
+    const params = {
+      ...baseFormData,
+      ...frontFormData,
+      backend_id: backFormData.backend_id,
+      backend_config: {
+        method: backFormData.method,
+        path: backFormData.path,
+        match_subpath: backFormData.match_subpath,
+      },
+    };
+    await createResources(common.apigwId, params);
+    Message({
+      message: t('新建成功'),
+      theme: 'success',
+    });
+    router.push({
+      name: 'apigwResource',
+    });
+  } catch (error) {} finally {
+    submitLoading.value = false;
+  }
 };
 
 // 取消
