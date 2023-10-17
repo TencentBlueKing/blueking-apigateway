@@ -9,8 +9,11 @@ const ApigwMain = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/main.
 const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/index.vue');
 const ApigwResourceEdit = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/edit.vue');
 const apigwStageOverview = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/index.vue');
-const apigwStageDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/stage-detail.vue');
+const apigwStageDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/index.vue');
 const apigwReleaseHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/published/index.vue');
+const apigwStageResourceInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/resource-info.vue');
+const apigwStagePluginManage = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/plugin-manage.vue');
+const apigwStageVariableManage = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/variable-manage.vue');
 
 
 const routes: RouteRecordRaw[] = [
@@ -38,16 +41,50 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '环境管理',
           matchRoute: 'apigwStageOverview',
+          isCustomTopbar: 'stageOverview',
         },
       },
       {
-        path: '/:id/stage/detail',
+        path: '/:id/stage/detail-mode',
         name: 'apigwStageDetail',
         component: apigwStageDetail,
         meta: {
           title: '环境概览',
           matchRoute: 'apigwStageOverview',
+          isCustomTopbar: 'stageOverview',
         },
+        children: [
+          {
+            path: '',
+            name: 'apigwStageResourceInfo',
+            component: apigwStageResourceInfo,
+            meta: {
+              title: '环境概览',
+              matchRoute: 'apigwStageOverview',
+              isCustomTopbar: 'stageOverview',
+            },
+          },
+          {
+            path: 'plugin-manage',
+            name: 'apigwStagePluginManage',
+            component: apigwStagePluginManage,
+            meta: {
+              title: '环境概览',
+              matchRoute: 'apigwStageOverview',
+              isCustomTopbar: 'stageOverview',
+            },
+          },
+          {
+            path: 'variable-manage',
+            name: 'apigwStageVariableManage',
+            component: apigwStageVariableManage,
+            meta: {
+              title: '环境概览',
+              matchRoute: 'apigwStageOverview',
+              isCustomTopbar: 'stageOverview',
+            },
+          },
+        ],
       },
       {
         path: '/:id/published',

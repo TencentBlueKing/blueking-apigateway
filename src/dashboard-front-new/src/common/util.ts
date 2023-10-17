@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { Message } from 'bkui-vue';
 
 // 获取 cookie object
 export function getCookies(strCookie = document.cookie): any {
@@ -93,4 +94,26 @@ export function json2Query(param: any, key?: any) {
     }
   }
   return paramStr.substr(1);
+}
+
+/**
+ * 复制
+ * @param {Object} value 复制内容
+ */
+export function copy(value: string) {
+  const el = document.createElement('textarea');
+  el.value = value;
+  el.setAttribute('readonly', '');
+  el.style.position = 'absolute';
+  el.style.left = '-9999px';
+  document.body.appendChild(el);
+  const selected = document.getSelection().rangeCount > 0 ? document.getSelection().getRangeAt(0) : false;
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  if (selected) {
+    document.getSelection().removeAllRanges();
+    document.getSelection().addRange(selected);
+  }
+  Message({ theme: 'primary', message: '复制成功', delay: 2000, dismissable: false });
 }

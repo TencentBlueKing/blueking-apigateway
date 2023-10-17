@@ -1,6 +1,6 @@
 <template>
   <div class="card-list">
-    <div class="card-wrapper" v-for="(stageData, index) in stageList" :key="index" @click="handleToDetail(stageData)">
+    <div class="card-item" v-for="(stageData, index) in stageList" :key="index" @click="handleToDetail(stageData)">
       <div class="title">
         <span :class="['dot', stageData.release.status]"></span>
         {{ stageData.name }}
@@ -10,7 +10,7 @@
           <div class="label">{{ `${t('访问地址')}：` }}</div>
           <div class="value url">
             <p class="link">--</p>
-            <i class="apigateway-icon icon-ag-copy-info"></i>
+            <i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy('--')"></i>
           </div>
         </div>
         <div class="apigw-form-item">
@@ -34,18 +34,24 @@
         </div>
       </div>
     </div>
-    <div class="card-wrapper add-stage">
+    <div class="card-item add-stage" @click="handleAddStage">
       <i class="apigateway-icon icon-ag-add-small"></i>
     </div>
+
+    <!-- 环境侧边栏 -->
+    <add-stage-sideslider ref="stageSidesliderRef" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { toRefs } from 'vue';
+import { ref, toRefs } from 'vue';
 import { IStageData } from '../types/stage';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
+import { copy } from '@/common/util';
+import addStageSideslider from './add-stage-sideslider.vue';
 const router = useRouter();
+const route = useRoute();
 const { t } = useI18n();
 
 const props = defineProps<{
@@ -56,15 +62,23 @@ const props = defineProps<{
 const { stageList } = toRefs(props);
 
 // 环境详情
-const handleToDetail = (data) => {
-  console.log(data);
+const handleToDetail = (data: IStageData) => {
 
   router.push({
     name: 'apigwStageDetail',
     params: {
-      id: 1
+      id: route.params.id,
+    },
+    query: {
+      stageId: data.id,
     }
   });
+}
+
+// 新建环境
+const stageSidesliderRef = ref(null)
+const handleAddStage = () => {
+  stageSidesliderRef.value.handleShowSideslider();
 }
 
 </script>
@@ -72,11 +86,27 @@ const handleToDetail = (data) => {
 <style lang="scss" scoped>
 .card-list {
   min-width: 1280px;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 10px; /* 设置盒子之间的间隔 */
 }
 
-.card-wrapper {
-  flex: 1;
+/* 分辨率大于1920时 */
+@media (min-width: 1921px) {
+  .card-list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* 适应更小的分辨率，每行最多显示三个盒子 */
+@media (max-width: 1920px) {
+  .card-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.card-item {
+  width: 100%;
   font-size: 12px;
   height: 223px;
   background: #ffffff;
@@ -137,8 +167,9 @@ const handleToDetail = (data) => {
           i {
             cursor: pointer;
             color: #3A84FF;
-            margin-left: 6px;
+            margin-left: 3px;
             font-size: 12px;
+            padding: 3px;
           }
         }
       }

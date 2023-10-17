@@ -98,7 +98,7 @@ allMethods.forEach((method) => {
           fetchConfig.headers['X-CSRFToken'] = CSRFToken;
         } else {
           console.warn('Can not find csrftoken in document.cookie');
-          return;
+          // return;
         }
         try {
           const fetchUrl = getFetchUrl(url, method, payload);
