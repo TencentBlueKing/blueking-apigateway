@@ -50,25 +50,12 @@ const rules = {
   path: [
     {
       required: true,
-      message: t('请填写名称'),
+      message: t('必填项'),
       trigger: 'blur',
     },
     {
-      validator: (value: string) => value.length >= 3,
-      message: t('不能小于3个字符'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => value.length <= 30,
-      message: t('不能多于30个字符'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => {
-        const reg = /^[a-z][a-z0-9-]*$/;
-        return reg.test(value);
-      },
-      message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
+      validator: (value: string) => /^\/[\w{}/.-]*$/.test(value),
+      message: t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名'),
       trigger: 'blur',
     },
   ],
@@ -84,7 +71,8 @@ defineExpose({
         height: 32px;
     }
     .w700{
-      width: 700px;
+      max-width: 700px;
+      width: 70%;
     }
   }
   </style>

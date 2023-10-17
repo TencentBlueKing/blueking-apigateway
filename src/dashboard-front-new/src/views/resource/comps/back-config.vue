@@ -63,6 +63,7 @@
           outline
           class="ml10"
           @click="handleCheckPath"
+          :disabled="!backConfigData.backend_id || !backConfigData.path"
         >
           {{ t('校验并查看地址') }}
         </bk-button>
@@ -72,16 +73,15 @@
       </div>
       <div class="common-form-tips">后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在{}中，比如：/users/{id}/{env.type}/。
         更多详情</div>
-      <div>
+      <div v-if="servicesCheckData.length">
         <bk-alert
           theme="success"
           class="w700 mt10"
           :title="t('路径校验通过，路径合法，请求将被转发到以下地址')"
         />
         <bk-table
-          v-if="servicesCheckData.length"
           class="w700 mt10"
-          :data="servicesConfigs"
+          :data="servicesCheckData"
           :border="['outer']"
         >
           <bk-table-column
@@ -94,15 +94,15 @@
           <bk-table-column
             :label="t('请求类型')"
           >
-            <template>
-              {{backConfigData.method || '--'}}
+            <template #default="{ data }">
+              {{backConfigData.method || data?.stage?.name}}
             </template>
           </bk-table-column>
           <bk-table-column
             :label="t('请求地址')"
           >
             <template #default="{ data }">
-              {{data?.backend_urls && data?.backend_urls[0]}}
+              {{data?.backend_urls[0]}}
             </template>
           </bk-table-column>
         </bk-table>
@@ -136,25 +136,12 @@ const rules = {
   path: [
     {
       required: true,
-      message: t('请填写名称'),
+      message: t('必填项'),
       trigger: 'blur',
     },
     {
-      validator: (value: string) => value.length >= 3,
-      message: t('不能小于3个字符'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => value.length <= 30,
-      message: t('不能多于30个字符'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => {
-        const reg = /^[a-z][a-z0-9-]*$/;
-        return reg.test(value);
-      },
-      message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
+      validator: (value: string) => /^\/[\w{}/.-]*$/.test(value),
+      message: t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名'),
       trigger: 'blur',
     },
   ],
@@ -202,10 +189,12 @@ defineExpose({
           height: 32px;
       }
       .w700{
-        width: 700px !important;
-      }
+          max-width: 700px !important;
+          width: 70% !important;
+        }
       .w568{
-        width: 568px !important;
+        max-width: 568px !important;
+        width: 55% !important;
       }
     }
     </style>
