@@ -34,7 +34,10 @@
         <router-view></router-view>
       </div>
       <template #header>
+        <!-- 环境概览 -->
+        <stage-top-bar v-if="route.meta.isCustomTopbar === 'stageOverview'" />
         <div
+          v-else
           class="header"
         >
           {{ headerTitle }}
@@ -50,6 +53,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { menuData } from '@/common/menu';
 import { useGetApiList } from '@/hooks';
 import { useCommon } from '@/store';
+import stageTopBar from '@/components/stage-top-bar.vue';
 
 const route = useRoute();
 const router = useRouter();

@@ -1,20 +1,16 @@
 <template>
   <div class="stage-overview-wrapper">
-    <stage-card-list :stage-list="stageList" />
+    <stage-card-list :stage-list="stageStore.stageList" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { getStageList }  from '@/http';
 import stageCardList from './comps/stage-card-list.vue';
+import { useStage } from '@/store';
 
 // 环境列表
-const stageList = ref([]);
-// 获取环境列表
-getStageList({ id: 1 }).then((data) => {
-  stageList.value = data;
-});
+const stageStore = useStage();
 
 </script>
 

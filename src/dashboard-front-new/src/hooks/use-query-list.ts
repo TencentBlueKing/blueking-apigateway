@@ -12,7 +12,7 @@ import { useRoute } from 'vue-router';
 import { IPagination } from '@/types';
 
 
-export function useQueryList(apiMethod: Function, filterData?: any) {
+export function useQueryList(apiMethod: Function, filterData?: any, id?: number) {
   const route = useRoute();
   const apigwId = route.params.id;
   const initPagination: IPagination = {
@@ -36,8 +36,8 @@ export function useQueryList(apiMethod: Function, filterData?: any) {
       ...filterData.value,
     };
     try {
-      const res = await method(apigwId, paramsData);
-      tableData.value = res.results;
+      const res = id ? await method(apigwId, id, paramsData) : await method(apigwId, paramsData);
+      tableData.value = res.results || res.data;
       pagination.value.count = res.count;
     } catch (error) {
 
