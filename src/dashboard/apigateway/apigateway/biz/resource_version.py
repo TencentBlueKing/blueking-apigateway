@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache, cached
 from django.utils.translation import gettext as _
+from packaging import version
 from rest_framework import serializers
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
@@ -221,7 +222,7 @@ class ResourceVersionHandler:
             return ""
 
         # 取最大的 version
-        return max(version["version"] for version in versions)
+        return max([ver["version"] for ver in versions], key=version.parse)
 
     @staticmethod
     def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:
