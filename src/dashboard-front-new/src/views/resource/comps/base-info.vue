@@ -85,8 +85,13 @@ const formData = ref({
   name: '',
   description: '',
   label_ids: [],
-  auth_config: {},
+  auth_config: {
+    auth_verified_required: false,
+    app_verified_required: false,
+    resource_perm_required: false,
+  },
   is_public: false,
+  allow_apply_permission: false,
 });
 
 const labelsData = ref([]);
@@ -135,6 +140,7 @@ defineExpose({
     height: 32px;
 }
 .w700{
-    width: 700px;
+  max-width: 700px;
+  width: 70%;
 }
 </style>
