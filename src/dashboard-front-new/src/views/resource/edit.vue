@@ -49,7 +49,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BaseInfo from './comps/base-info.vue';
 import FrontConfig from './comps/front-config.vue';
@@ -61,6 +61,8 @@ import { Message } from 'bkui-vue';
 const { t } = useI18n();
 const router = useRouter();
 const common = useCommon();
+
+const { apigwId } = common; // 网关id
 
 // 默认展开
 const activeIndex =  ref(['baseInfo', 'frontConfig', 'backConfig']);
@@ -86,7 +88,7 @@ const handleSubmit = async () => {
         match_subpath: backFormData.match_subpath,
       },
     };
-    await createResources(common.apigwId, params);
+    await createResources(apigwId, params);
     Message({
       message: t('新建成功'),
       theme: 'success',
@@ -103,12 +105,6 @@ const handleSubmit = async () => {
 const handleCancel = () => {
   router.back();
 };
-
-onMounted(() => {
-  setTimeout(() => {
-    console.log(11111, baseInfoRef.value.formData);
-  }, 1000);
-});
 </script>
 <style lang="scss" scoped>
   .edit-container{

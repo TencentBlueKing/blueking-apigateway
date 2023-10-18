@@ -8,13 +8,13 @@ import {
   onMounted,
   watch,
 } from 'vue';
-import { useRoute } from 'vue-router';
 import { IPagination } from '@/types';
+import { useCommon } from '@/store';
 
 
 export function useQueryList(apiMethod: Function, filterData?: any, id?: number) {
-  const route = useRoute();
-  const apigwId = route.params.id;
+  const common = useCommon();
+  const { apigwId } = common;
   const initPagination: IPagination = {
     offset: 0,
     limit: 10,
@@ -68,7 +68,9 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
     { deep: true },
   );
 
-  onMounted(getList);
+  onMounted(() => {
+    getList();
+  });
 
 
   return {

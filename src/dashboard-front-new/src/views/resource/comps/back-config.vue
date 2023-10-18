@@ -71,8 +71,9 @@
           {{ t('追加匹配的子路径') }}
         </bk-checkbox>
       </div>
-      <div class="common-form-tips">后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在{}中，比如：/users/{id}/{env.type}/。
-        更多详情</div>
+      <div class="common-form-tips">{{ t('后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在{}中，比如：/users/{id}/{env.type}/。') }}
+        <a :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank" class="ag-primary">{{ t('更多详情') }}</a>
+      </div>
       <div v-if="servicesCheckData.length">
         <bk-alert
           theme="success"
@@ -129,9 +130,11 @@ const methodData = ref(common.methodList);
 const servicesData = ref([]);
 // 服务详情
 const servicesConfigs = ref([]);
-
+// window 全局变量
+const GLOBAL_CONFIG = ref(window.GLOBAL_CONFIG);
 // 校验列表
 const servicesCheckData = ref([]);
+
 const rules = {
   path: [
     {

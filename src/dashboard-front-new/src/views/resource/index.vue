@@ -116,6 +116,15 @@
         <bk-table-column
           :label="t('操作')"
         >
+          <template #default="{ data }">
+            <bk-button
+              text
+              theme="primary"
+              @click="handleEditResource(data)"
+            >
+              {{ t('编辑') }}
+            </bk-button>
+          </template>
         </bk-table-column>
       </bk-table>
     </bk-loading>
@@ -134,6 +143,8 @@ const router = useRouter();
 
 const filterData = ref({ query: '' });
 
+console.log('进入了');
+
 // 列表hooks
 const {
   tableData,
@@ -143,9 +154,20 @@ const {
   handlePageSizeChange,
 } = useQueryList(getResourceListData, filterData);
 
+// 新建资源
 const handleCreateResource = () => {
   router.push({
     name: 'apigwResourceCreate',
+  });
+};
+
+// 编辑资源
+const handleEditResource = (data: any) => {
+  router.push({
+    name: 'apigwResourceEdit',
+    params: {
+      resourceId: data.id,
+    },
   });
 };
 </script>

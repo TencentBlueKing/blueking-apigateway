@@ -4,6 +4,7 @@ import router from './router';
 import App from './app.vue';
 import i18n from './language/i18n';
 import './css/index.css';
+import globalConfig from '@/constant/config';
 
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
@@ -12,8 +13,9 @@ import 'bkui-vue/dist/style.css';
 // 图标
 import './assets/iconfont/style.css';
 
-createApp(App)
-  .use(i18n)
+window.GLOBAL_CONFIG = globalConfig;
+
+createApp(App).use(i18n)
   .use(router)
   .use(createPinia())
   .use(bkui)

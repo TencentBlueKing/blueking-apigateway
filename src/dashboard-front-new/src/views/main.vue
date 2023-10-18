@@ -17,21 +17,21 @@
             :key="menu.name"
             :title="menu.title"
           >
-            <bk-menu-item v-for="child in menu.children" :key="child.name" @click="handleGoPage(child.name)">
+            <bk-menu-item v-for="child in menu.children" :key="child.name" @click="handleGoPage(child.name, apigwId)">
               {{ child.title }}
             </bk-menu-item>
           </bk-submenu>
         </bk-menu>
       </template>
       <template #side-header>
-        <bk-select class="header-select" v-model="apigwId" @change="handleGoPage(activeMenuKey)">
+        <bk-select class="header-select" v-model="apigwId" @change="handleGoPage(activeMenuKey, apigwId)">
           <bk-option
             v-for="item in gatewaysList" :key="item.id" :id="item.id" :name="item.name"
           />
         </bk-select>
       </template>
       <div class="content-view">
-        <router-view></router-view>
+        <router-view :key="apigwId"></router-view>
       </div>
       <template #header>
         <!-- 环境概览 -->
@@ -95,11 +95,12 @@ onMounted(async () => {
   gatewaysList.value = await getGatewaysListData();
 });
 
-const handleGoPage = (routeName: string) => {
+const handleGoPage = (routeName: string, apigwId?: number) => {
+  common.setApigwId(apigwId);
   router.push({
     name: routeName,
     params: {
-      id: apigwId.value,
+      id: apigwId,
     },
   });
 };
