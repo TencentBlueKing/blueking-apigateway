@@ -932,12 +932,14 @@ class TestResourceSwaggerExporter:
             "labels": ["testing"],
             "is_public": True,
             "allow_apply_permission": True,
-            "backend_name": "default",
-            "backend_config": {
-                "method": "POST",
-                "path": "/users",
-                "match_subpath": False,
-                "timeout": 0,
+            "backend": {
+                "name": "default",
+                "config": {
+                    "method": "POST",
+                    "path": "/users",
+                    "match_subpath": False,
+                    "timeout": 0,
+                },
             },
             "auth_config": {
                 "auth_verified_required": True,
@@ -968,11 +970,11 @@ class TestResourceSwaggerExporter:
                 "allowApplyPermission": fake_resource_dict["allow_apply_permission"],
                 "matchSubpath": fake_resource_dict["match_subpath"],
                 "backend": {
-                    "name": fake_resource_dict["backend_name"],
-                    "method": fake_resource_dict["backend_config"]["method"].lower(),
-                    "path": fake_resource_dict["backend_config"]["path"],
-                    "matchSubpath": fake_resource_dict["backend_config"]["match_subpath"],
-                    "timeout": fake_resource_dict["backend_config"]["timeout"],
+                    "name": fake_resource_dict["backend"]["name"],
+                    "method": fake_resource_dict["backend"]["config"]["method"].lower(),
+                    "path": fake_resource_dict["backend"]["config"]["path"],
+                    "matchSubpath": fake_resource_dict["backend"]["config"]["match_subpath"],
+                    "timeout": fake_resource_dict["backend"]["config"]["timeout"],
                 },
                 "authConfig": {
                     "userVerifiedRequired": fake_resource_dict["auth_config"]["auth_verified_required"],
@@ -1005,8 +1007,10 @@ class TestResourceSwaggerExporter:
         [
             (
                 {
-                    "backend_name": "foo",
-                    "backend_config": {"method": "GET", "path": "/foo"},
+                    "backend": {
+                        "name": "foo",
+                        "config": {"method": "GET", "path": "/foo"},
+                    },
                     "proxy_type": "http",
                     "proxy_configs": {},
                 },
@@ -1021,8 +1025,7 @@ class TestResourceSwaggerExporter:
             ),
             (
                 {
-                    "backend_name": "",
-                    "backend_config": {},
+                    "backend": {},
                     "proxy_type": "http",
                     "proxy_configs": {
                         "http": {
@@ -1053,8 +1056,7 @@ class TestResourceSwaggerExporter:
 
     def test_adapt_backend__error(self):
         data = {
-            "backend_name": "",
-            "backend_config": {},
+            "backend": {},
             "proxy_type": "mock",
             "proxy_configs": {},
         }

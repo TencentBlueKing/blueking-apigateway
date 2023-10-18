@@ -292,13 +292,14 @@ class ResourceSwaggerExporter:
         return paths
 
     def _generate_bk_apigateway_resource(self, operation: Dict[str, Any], resource: Dict[str, Any]):
+        backend = resource.get("backend", {})
+
         operation[SwaggerExtensionEnum.RESOURCE.value] = {
             "isPublic": resource["is_public"],
             "allowApplyPermission": resource["allow_apply_permission"],
             "matchSubpath": resource.get("match_subpath", False),
             "backend": self._adapt_backend(
-                resource.get("backend_name", ""),
-                resource.get("backend_config", {}),
+                backend,
                 resource.get("proxy_type", ""),
                 resource.get("proxy_configs", {}),
             ),
@@ -320,29 +321,29 @@ class ResourceSwaggerExporter:
 
         return method.lower()
 
-    def _adapt_backend(self, backend_name: str, backend_config: Dict, proxy_type: str, proxy_configs: Dict) -> Dict:
-        backend = {}
+    def _adapt_backend(self, backend: Dict, proxy_type: str, proxy_configs: Dict) -> Dict:
+        result = {}
 
-        if backend_name:
-            backend["name"] = backend_name
+        if backend.get("name"):
+            result["name"] = backend["name"]
 
         if proxy_type:
-            backend["type"] = proxy_type.upper()
+            result["type"] = proxy_type.upper()
 
-        if backend_config:
-            backend.update(
+        if backend.get("config"):
+            result.update(
                 {
-                    "method": backend_config["method"].lower(),
-                    "path": backend_config["path"],
-                    "matchSubpath": backend_config.get("match_subpath", False),
-                    "timeout": backend_config.get("timeout", 0),
+                    "method": backend["config"]["method"].lower(),
+                    "path": backend["config"]["path"],
+                    "matchSubpath": backend["config"].get("match_subpath", False),
+                    "timeout": backend["config"].get("timeout", 0),
                 }
             )
-            return backend
+            return result
 
         if proxy_type == ProxyTypeEnum.HTTP.value:
             http_config = proxy_configs[ProxyTypeEnum.HTTP.value]
-            backend.update(
+            result.update(
                 {
                     "method": http_config["method"].lower(),
                     "path": http_config["path"],
@@ -355,7 +356,7 @@ class ResourceSwaggerExporter:
         else:
             raise ValueError(f"unsupported proxy_type: {proxy_type}")
 
-        return backend
+        return result
 
     def _adapt_auth_config(self, auth_config: Dict) -> Dict:
         config = {
