@@ -78,6 +78,12 @@ const handleCollapse = (v: boolean) => {
   collapse.value = !v;
 };
 
+// 设置网关名
+const handleSetApigwName = () => {
+  const apigwName = gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {};
+  common.setApigwName(apigwName.name);
+};
+
 // 监听当前路由
 watch(
   () => route,
@@ -87,12 +93,16 @@ watch(
     headerTitle.value = val.meta.title;
     // 设置全局网关id
     common.setApigwId(apigwId.value);
+    // 设置全局网关名称
+    handleSetApigwName();
   },
   { immediate: true, deep: true },
 );
 
 onMounted(async () => {
   gatewaysList.value = await getGatewaysListData();
+  // 初始化设置一次
+  handleSetApigwName();
 });
 
 const handleGoPage = (routeName: string) => {

@@ -181,7 +181,7 @@ const handleRelease = () => {
 
 <style lang="scss" scoped>
 .detail-mode {
-  min-width: 1280px;
+  min-width: calc(1280px - 260px);
   padding: 24px;
   font-size: 12px;
   .stagae-info {

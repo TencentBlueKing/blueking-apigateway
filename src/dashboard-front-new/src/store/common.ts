@@ -3,6 +3,8 @@ import { defineStore } from 'pinia';
 export const useCommon = defineStore('common', {
   state: () => ({
     apigwId: 0,
+    // 网关名
+    apigwName: '',
     methodList: [
       {
         id: 'GET',
@@ -42,6 +44,9 @@ export const useCommon = defineStore('common', {
   actions: {
     setApigwId(apigwId: number) {
       this.apigwId = apigwId;
+    },
+    setApigwName(name: string) {
+      this.apigwName = name;
     },
   },
 });
