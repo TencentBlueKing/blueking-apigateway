@@ -20,12 +20,15 @@ import pytest
 from ddf import G
 
 from apigateway.apps.label.models import APILabel
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig
+from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
 from apigateway.biz.resource.importer import (
     ResourceDataConvertor,
     ResourceImportValidator,
     ResourcesImporter,
 )
 from apigateway.core.models import Backend, Resource
+from apigateway.utils.yaml import yaml_dumps
 
 
 class TestResourceDataConvertor:
@@ -223,6 +226,131 @@ class TestResourceImportValidator:
         with pytest.raises(ValueError):
             validator._validate_resource_count()
 
+    @pytest.mark.parametrize(
+        "resources, labels, expected",
+        [
+            (
+                [{"labels": ["foo", "bar"]}],
+                ["green", "blue"],
+                ValueError,
+            ),
+            (
+                [{"labels": ["foo", "bar"]}, {"labels": []}],
+                [],
+                ValueError,
+            ),
+            (
+                [{"labels": ["foo"]}, {"labels": []}],
+                ["foo"],
+                None,
+            ),
+            (
+                [{}, {"labels": []}],
+                ["green", "blue"],
+                None,
+            ),
+        ],
+    )
+    def test_validate_label_count(self, settings, fake_gateway, fake_resource_data, resources, labels, expected):
+        settings.MAX_LABEL_COUNT_PER_GATEWAY = 1
+
+        resource_data_list = [
+            fake_resource_data.copy(update={"metadata": resource}, deep=True) for resource in resources
+        ]
+        for name in labels:
+            G(APILabel, gateway=fake_gateway, name=name)
+
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+
+        if expected is None:
+            validator._validate_label_count()
+            return
+
+        with pytest.raises(expected):
+            validator._validate_label_count()
+
+    @pytest.mark.parametrize(
+        "plugin_configs, expected",
+        [
+            (
+                {
+                    "plugin_configs": None,
+                },
+                None,
+            ),
+            (
+                {"plugin_configs": [PluginConfigData(type="echo", yaml="")]},
+                None,
+            ),
+            (
+                {
+                    "plugin_configs": [
+                        PluginConfigData(type="echo", yaml=""),
+                        PluginConfigData(type="echo", yaml=""),
+                    ]
+                },
+                ValueError,
+            ),
+            (
+                {"plugin_configs": [PluginConfigData(type="not-exist-code", yaml="")]},
+                ValueError,
+            ),
+        ],
+    )
+    def test_validate_plugin_type(self, fake_gateway, fake_resource_data, echo_plugin_type, plugin_configs, expected):
+        resource_data_list = [
+            fake_resource_data.copy(update=plugin_configs, deep=True),
+        ]
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+
+        if expected is None:
+            validator._validate_plugin_type()
+            return
+
+        with pytest.raises(expected):
+            validator._validate_plugin_type()
+
+    @pytest.mark.parametrize(
+        "plugin_configs, expected",
+        [
+            (
+                {
+                    "plugin_configs": None,
+                },
+                None,
+            ),
+            (
+                {
+                    "plugin_configs": [
+                        PluginConfigData(
+                            type="bk-header-rewrite",
+                            yaml=yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+                        )
+                    ]
+                },
+                None,
+            ),
+            (
+                {"plugin_configs": [PluginConfigData(type="bk-header-rewrite", yaml=yaml_dumps({}))]},
+                ValueError,
+            ),
+        ],
+    )
+    def test_validate_plugin_config(
+        self, fake_gateway, fake_resource_data, fake_plugin_type_bk_header_rewrite, plugin_configs, expected
+    ):
+        resource_data_list = [
+            fake_resource_data.copy(update=plugin_configs, deep=True),
+        ]
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+
+        if expected is None:
+            validator._validate_plugin_config()
+            return
+
+        with pytest.raises(expected):
+            validator._validate_plugin_config()
+
 
 class TestResourcesImporter:
     def test_init__error(self, fake_gateway, fake_resource_data):
@@ -355,3 +483,53 @@ class TestResourcesImporter:
 
         assert resource_data_list[0].label_ids == [label_1.id]
         assert resource_data_list[1].label_ids == [label_2.id]
+
+    def test_sync_plugins(self, fake_gateway, fake_resource_data, fake_plugin_type_bk_header_rewrite):
+        resource_1 = G(Resource, gateway=fake_gateway, method="GET")
+        resource_2 = G(Resource, gateway=fake_gateway, method="POST")
+
+        plugin_config_1 = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type_bk_header_rewrite)
+        plugin_config_2 = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type_bk_header_rewrite)
+        G(
+            PluginBinding,
+            gateway=fake_gateway,
+            config=plugin_config_1,
+            scope_type="resource",
+            scope_id=resource_1.id,
+        )
+        G(
+            PluginBinding,
+            gateway=fake_gateway,
+            config=plugin_config_2,
+            scope_type="resource",
+            scope_id=resource_2.id,
+        )
+
+        resource_data_list = [
+            fake_resource_data.copy(
+                update={"resource": resource_1, "plugin_configs": None, "name": "foo", "method": "GET"}, deep=True
+            ),
+            fake_resource_data.copy(
+                update={
+                    "resource": resource_2,
+                    "plugin_configs": [
+                        PluginConfigData(
+                            type="bk-header-rewrite",
+                            yaml=yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+                        )
+                    ],
+                    "name": "bar",
+                    "method": "POST",
+                },
+                deep=True,
+            ),
+        ]
+
+        importer = ResourcesImporter(fake_gateway, resource_data_list)
+        importer._sync_plugins()
+
+        assert PluginBinding.objects.filter(scope_type="resource", scope_id=resource_1.id).count() == 1
+        assert PluginBinding.objects.get(scope_type="resource", scope_id=resource_2.id).config.config == {
+            "set": [{"key": "foo", "value": "bar"}],
+            "remove": [],
+        }

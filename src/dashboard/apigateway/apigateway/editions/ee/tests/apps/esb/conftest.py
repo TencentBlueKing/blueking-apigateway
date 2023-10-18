@@ -58,7 +58,6 @@ def fake_gateway(faker):
         _maintainers=FAKE_USERNAME,
         status=1,
         is_public=True,
-        hosting_type=0,
     )
 
     GatewayAuthContext().save(gateway.pk, {})

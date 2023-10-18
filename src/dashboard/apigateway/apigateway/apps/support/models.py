@@ -141,7 +141,7 @@ class ReleasedResourceDoc(TimestampedModelMixin):
         db_table = "support_released_resource_doc"
 
 
-class APISDK(ConfigModelMixin):
+class GatewaySDK(ConfigModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=128, blank=True, default="", help_text=_("SDK 名称"))
@@ -174,7 +174,7 @@ class APISDK(ConfigModelMixin):
     @atomic
     def mark_is_recommended(self):
         # 清理之前的标记
-        APISDK.objects.filter(
+        GatewaySDK.objects.filter(
             is_recommended=True,
             gateway=self.gateway,
         ).update(is_public_latest=False, is_recommended=False)

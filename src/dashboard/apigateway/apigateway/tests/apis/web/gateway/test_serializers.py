@@ -112,12 +112,14 @@ class TestGatewayCreateInputSLZ:
                     "name": "test",
                     "description": "test",
                     "maintainers": ["guest"],
+                    "developers": ["t1", "t2"],
                     "is_public": True,
                 },
                 {
                     "name": "test",
                     "description": "test",
                     "maintainers": ["guest", "admin"],
+                    "developers": ["t1", "t2"],
                     "is_public": True,
                 },
             ),
@@ -219,6 +221,7 @@ class TestGatewayRetrieveOutputSLZ:
             "name": fake_gateway.name,
             "description": fake_gateway.description,
             "maintainers": fake_gateway.maintainers,
+            "developers": fake_gateway.developers,
             "status": fake_gateway.status,
             "is_public": fake_gateway.is_public,
             "created_by": fake_gateway.created_by,
@@ -241,11 +244,13 @@ class TestGatewayUpdateInputSLZ:
             (
                 {
                     "maintainers": ["admin"],
+                    "developers": ["foo"],
                     "description": "test",
                     "is_public": True,
                 },
                 {
                     "maintainers": ["admin"],
+                    "developers": ["foo"],
                     "description": "test",
                     "is_public": True,
                 },
@@ -260,6 +265,7 @@ class TestGatewayUpdateInputSLZ:
                 },
                 {
                     "maintainers": ["admin"],
+                    "developers": [],
                     "description": "test",
                     "is_public": True,
                 },

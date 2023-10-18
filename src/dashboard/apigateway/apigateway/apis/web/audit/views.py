@@ -30,6 +30,7 @@ from .serializers import AuditEventLogOutputSLZ, AuditEventLogQueryInputSLZ
     decorator=swagger_auto_schema(
         query_serializer=AuditEventLogQueryInputSLZ,
         responses={status.HTTP_200_OK: AuditEventLogOutputSLZ(many=True)},
+        operation_description="操作审计列表",
         tags=["WebAPI.Audit"],
     ),
 )

@@ -46,6 +46,7 @@ from .serializers import (
     decorator=swagger_auto_schema(
         query_serializer=AlarmStrategyQueryInputSLZ,
         responses={status.HTTP_200_OK: AlarmStrategyListOutputSLZ(many=True)},
+        operation_description="获取告警策略列表",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -53,6 +54,7 @@ from .serializers import (
     name="post",
     decorator=swagger_auto_schema(
         responses={status.HTTP_201_CREATED: ""},
+        operation_description="创建告警策略",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -99,6 +101,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取告警策略",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -106,6 +109,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
     name="put",
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
+        operation_description="更新告警策略",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -113,6 +117,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
     name="delete",
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
+        operation_description="删除告警策略",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -155,6 +160,7 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=AlarmStrategyUpdateStatusInputSLZ,
+        operation_description="更新告警策略状态",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -163,6 +169,7 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=AlarmStrategyUpdateStatusInputSLZ,
+        operation_description="更新告警策略状态",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -192,6 +199,7 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
     decorator=swagger_auto_schema(
         query_serializer=AlarmRecordQueryInputSLZ,
         responses={status.HTTP_200_OK: AlarmRecordQueryOutputSLZ(many=True)},
+        operation_description="获取告警记录列表",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -216,6 +224,7 @@ class AlarmRecordListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: AlarmRecordQueryOutputSLZ()},
+        operation_description="获取某条告警记录详情",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -239,6 +248,7 @@ class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
     decorator=swagger_auto_schema(
         query_serializer=AlarmRecordSummaryQueryInputSLZ,
         responses={status.HTTP_200_OK: AlarmRecordSummaryQueryOutputSLZ(many=True)},
+        operation_description="获取告警记录统计",
         tags=["WebAPI.Monitor"],
     ),
 )

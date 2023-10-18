@@ -15,12 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict
+from typing import Any, Dict
 
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
-from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.generics import get_object_or_404
@@ -53,7 +52,7 @@ from .serializers import (
         query_serializer=PluginTypeQueryInputSLZ,
         responses={status.HTTP_200_OK: PluginTypeOutputSLZ(many=True)},
         tags=["WebAPI.Plugin"],
-        operation_description="list the available plugin types",
+        operation_description="获取某个环境或资源下，可配置的插件列表; 需要指定 scope_type 和 scope_id; 可以传递 keyword 进行搜索",
     ),
 )
 class PluginTypeListApi(generics.ListAPIView):
@@ -126,7 +125,7 @@ class PluginTypeListApi(generics.ListAPIView):
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: PluginFormOutputSLZ()},
         tags=["WebAPI.Plugin"],
-        operation_description="retrieve the plugin form data by plugin type",
+        operation_description="获取插件类型对应的动态表单",
     ),
 )
 class PluginFormRetrieveApi(generics.RetrieveAPIView):
@@ -184,16 +183,66 @@ class PluginTypeCodeValidationMixin:
             )
 
 
+class PluginConfigBindingPostModificationMixin:
+    request: Any
+
+    def post_modification(
+        self,
+        source: PublishSourceEnum,
+        op_type: OpTypeEnum,
+        scope_type: str,
+        scope_id: int,
+        instance_id: int,
+        instance_name: str,
+    ):
+        # if scope_type is stage, should publish
+        if scope_type == PluginBindingScopeEnum.STAGE.value:
+            # 触发环境发布
+            trigger_gateway_publish(
+                source,
+                self.request.user.username,
+                self.request.gateway.id,
+                scope_id,
+                is_sync=False,
+            )
+        elif scope_type == PluginBindingScopeEnum.RESOURCE.value:
+            # update the resource updated_time
+            Resource.objects.get(id=scope_id).save()
+
+        comment = {
+            OpTypeEnum.CREATE: "创建插件",
+            OpTypeEnum.MODIFY: "更新插件",
+            OpTypeEnum.DELETE: "删除插件",
+        }.get(op_type, "-")
+
+        # audit
+        record_audit_log(
+            username=self.request.user.username,
+            op_type=op_type.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=self.request.gateway.id,
+            op_object_type=OpObjectTypeEnum.PLUGIN.value,
+            op_object_id=instance_id,
+            op_object=instance_name,
+            comment=comment,
+        )
+
+
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
         responses={status.HTTP_201_CREATED: ""},
         request_body=PluginConfigCreateInputSLZ,
         tags=["WebAPI.Plugin"],
-        operation_description="create the plugin config, and bind to the scope_type/scope_id",
+        operation_description="创建一个插件，并且绑定到对应的 scope_type + scope_id",
     ),
 )
-class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, PluginTypeCodeValidationMixin):
+class PluginConfigCreateApi(
+    generics.CreateAPIView,
+    ScopeValidationMixin,
+    PluginTypeCodeValidationMixin,
+    PluginConfigBindingPostModificationMixin,
+):
     serializer_class = PluginConfigCreateInputSLZ
     renderer_classes = [BkStandardApiJSONRenderer]
 
@@ -228,28 +277,13 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
             config=serializer.instance,
         ).save()
 
-        request = self.request
-        # if scope_type is stage, should publish
-        if scope_type == PluginBindingScopeEnum.STAGE.value:
-            # 触发环境发布
-            trigger_gateway_publish(
-                PublishSourceEnum.PLUGIN_BIND,
-                request.user.username,
-                request.gateway.id,
-                scope_id,
-                is_sync=False,
-            )
-
-        # audit
-        record_audit_log(
-            username=request.user.username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.PLUGIN.value,
-            op_object_id=serializer.instance.id,
-            op_object=serializer.instance.name,
-            comment=_("创建插件"),
+        self.post_modification(
+            PublishSourceEnum.PLUGIN_BIND,
+            OpTypeEnum.CREATE,
+            scope_type,
+            scope_id,
+            serializer.instance.id,
+            serializer.instance.name,
         )
 
 
@@ -257,6 +291,7 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: PluginConfigRetrieveUpdateInputSLZ()},
+        operation_description="获取插件的配置",
         tags=["WebAPI.Plugin"],
     ),
 )
@@ -264,6 +299,7 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
     name="put",
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: PluginConfigRetrieveUpdateInputSLZ()},
+        operation_description="更新插件的配置",
         tags=["WebAPI.Plugin"],
     ),
 )
@@ -271,11 +307,15 @@ class PluginConfigCreateApi(generics.CreateAPIView, ScopeValidationMixin, Plugin
     name="delete",
     decorator=swagger_auto_schema(
         responses={status.HTTP_204_NO_CONTENT: ""},
+        operation_description="删除插件的配置",
         tags=["WebAPI.Plugin"],
     ),
 )
 class PluginConfigRetrieveUpdateDestroyApi(
-    generics.RetrieveUpdateDestroyAPIView, ScopeValidationMixin, PluginTypeCodeValidationMixin
+    generics.RetrieveUpdateDestroyAPIView,
+    ScopeValidationMixin,
+    PluginTypeCodeValidationMixin,
+    PluginConfigBindingPostModificationMixin,
 ):
     serializer_class = PluginConfigRetrieveUpdateInputSLZ
     renderer_classes = [BkStandardApiJSONRenderer]
@@ -295,30 +335,17 @@ class PluginConfigRetrieveUpdateDestroyApi(
         self.validate_code(type_id=serializer.validated_data["type_id"])
 
         super().perform_update(serializer)
-        request = self.request
 
         # if scope_type is stage, should publish
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
-        if scope_type == PluginBindingScopeEnum.STAGE.value:
-            # 触发环境发布
-            trigger_gateway_publish(
-                PublishSourceEnum.PLUGIN_UPDATE,
-                request.user.username,
-                request.gateway.id,
-                scope_id,
-                is_sync=False,
-            )
-
-        record_audit_log(
-            username=request.user.username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.PLUGIN.value,
-            op_object_id=serializer.instance.id,
-            op_object=serializer.instance.name,
-            comment=_("更新插件"),
+        self.post_modification(
+            PublishSourceEnum.PLUGIN_UPDATE,
+            OpTypeEnum.MODIFY,
+            scope_type,
+            scope_id,
+            serializer.instance.id,
+            serializer.instance.name,
         )
 
     @transaction.atomic
@@ -336,36 +363,24 @@ class PluginConfigRetrieveUpdateDestroyApi(
         instance_name = instance.name
 
         super().perform_destroy(instance)
-        request = self.request
 
         # if scope_type is stage, should publish
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
-        if scope_type == PluginBindingScopeEnum.STAGE.value:
-            # 触发环境发布
-            trigger_gateway_publish(
-                PublishSourceEnum.PLUGIN_UPDATE,
-                request.user.username,
-                request.gateway.id,
-                scope_id,
-                is_sync=False,
-            )
-
-        record_audit_log(
-            username=request.user.username,
-            op_type=OpTypeEnum.DELETE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.PLUGIN.value,
-            op_object_id=instance_id,
-            op_object=instance_name,
-            comment=_("删除插件"),
+        self.post_modification(
+            PublishSourceEnum.PLUGIN_UNBIND,
+            OpTypeEnum.DELETE,
+            scope_type,
+            scope_id,
+            instance_id,
+            instance_name,
         )
 
 
 class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: PluginBindingListOutputSLZ()},
+        operation_description="获取某个插件绑定的环境列表和资源列表",
         tags=["WebAPI.Plugin"],
     )
     def get(self, request, *args, **kwargs):
@@ -400,6 +415,7 @@ class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
 class ScopePluginConfigListApi(generics.ListAPIView, ScopeValidationMixin):
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ScopePluginConfigListOutputSLZ(many=True)},
+        operation_description="获取某个环境或资源绑定的插件列表 (插件类型 + 插件配置)",
         tags=["WebAPI.Plugin"],
     )
     def get(self, request, *args, **kwargs):

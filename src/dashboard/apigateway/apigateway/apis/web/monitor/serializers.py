@@ -29,26 +29,29 @@ from apigateway.common.fields import CurrentGatewayDefault, TimestampField
 
 
 class DetectConfigSLZ(serializers.Serializer):
-    duration = serializers.IntegerField(min_value=1)
-    method = serializers.ChoiceField(choices=DETECT_METHOD_CHOICES)
-    count = serializers.IntegerField(min_value=0)
+    duration = serializers.IntegerField(min_value=1, help_text="持续时间")
+    method = serializers.ChoiceField(choices=DETECT_METHOD_CHOICES, help_text="检测方法")
+    count = serializers.IntegerField(min_value=0, help_text="次数")
 
 
 class ConvergeConfigSLZ(serializers.Serializer):
-    duration = serializers.IntegerField(min_value=0)
+    duration = serializers.IntegerField(min_value=0, help_text="持续时间")
 
 
 class NoticeConfigSLZ(serializers.Serializer):
     notice_way = serializers.ListField(
         child=serializers.ChoiceField(choices=NoticeWayEnum.get_choices()),
+        help_text="通知方式",
     )
     notice_role = serializers.ListField(
         child=serializers.ChoiceField(choices=NoticeRoleEnum.get_choices()),
         allow_empty=True,
+        help_text="通知组",
     )
     notice_extra_receiver = serializers.ListField(
         child=serializers.CharField(),
         allow_empty=True,
+        help_text="其他通知对象",
     )
 
     def validate(self, data):
@@ -58,15 +61,17 @@ class NoticeConfigSLZ(serializers.Serializer):
 
 
 class AlarmStrategyConfigSLZ(serializers.Serializer):
-    detect_config = DetectConfigSLZ()
-    converge_config = ConvergeConfigSLZ()
-    notice_config = NoticeConfigSLZ()
+    detect_config = DetectConfigSLZ(help_text="检测配置")
+    converge_config = ConvergeConfigSLZ(help_text="收敛配置")
+    notice_config = NoticeConfigSLZ(help_text="通知配置")
 
 
 class AlarmStrategyInputSLZ(serializers.ModelSerializer):
-    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    gateway_label_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
-    config = AlarmStrategyConfigSLZ()
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault(), help_text="网关")
+    gateway_label_ids = serializers.ListField(
+        child=serializers.IntegerField(), allow_empty=True, help_text="网关标签 id 列表"
+    )
+    config = AlarmStrategyConfigSLZ(help_text="告警策略配置")
 
     class Meta:
         model = AlarmStrategy
@@ -95,7 +100,7 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
 
 
 class AlarmStrategyListOutputSLZ(serializers.ModelSerializer):
-    gateway_labels = serializers.SerializerMethodField()
+    gateway_labels = serializers.SerializerMethodField(help_text="网关标签列表")
 
     class Meta:
         model = AlarmStrategy
@@ -124,14 +129,16 @@ class AlarmStrategyUpdateStatusInputSLZ(serializers.ModelSerializer):
 
 
 class AlarmRecordQueryInputSLZ(serializers.Serializer):
-    time_start = TimestampField(allow_null=True, required=False)
-    time_end = TimestampField(allow_null=True, required=False)
-    alarm_strategy_id = serializers.IntegerField(allow_null=True, required=False)
-    status = serializers.ChoiceField(choices=AlarmStatusEnum.get_choices(), allow_blank=True, required=False)
+    time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")
+    time_end = TimestampField(allow_null=True, required=False, help_text="结束时间")
+    alarm_strategy_id = serializers.IntegerField(allow_null=True, required=False, help_text="告警策略 id")
+    status = serializers.ChoiceField(
+        choices=AlarmStatusEnum.get_choices(), allow_blank=True, required=False, help_text="告警状态"
+    )
 
 
 class AlarmRecordQueryOutputSLZ(serializers.ModelSerializer):
-    alarm_strategy_names = serializers.SerializerMethodField()
+    alarm_strategy_names = serializers.SerializerMethodField(help_text="告警策略名称列表")
 
     class Meta:
         model = AlarmRecord
@@ -150,28 +157,29 @@ class AlarmRecordQueryOutputSLZ(serializers.ModelSerializer):
 
 
 class AlarmStrategyQueryInputSLZ(serializers.Serializer):
-    query = serializers.CharField(allow_blank=True, required=False)
-    gateway_label_id = serializers.IntegerField(allow_null=True, required=False)
+    query = serializers.CharField(allow_blank=True, required=False, help_text="查询关键字")
+    gateway_label_id = serializers.IntegerField(allow_null=True, required=False, help_text="网关标签 id")
     order_by = serializers.ChoiceField(
         choices=["name", "-name", "updated_time", "-updated_time"],
         allow_blank=True,
         required=False,
+        help_text="排序字段",
     )
 
 
 class AlarmRecordSummaryQueryInputSLZ(serializers.Serializer):
-    time_start = TimestampField(allow_null=True, required=False)
-    time_end = TimestampField(allow_null=True, required=False)
+    time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")
+    time_end = TimestampField(allow_null=True, required=False, help_text="结束时间")
 
 
 class AlarmStrategySummaryQuerySLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    alarm_record_count = serializers.IntegerField(read_only=True)
-    latest_alarm_record = serializers.DictField(read_only=True)
+    id = serializers.IntegerField(read_only=True, help_text="策略 id")
+    name = serializers.CharField(read_only=True, help_text="策略名称")
+    alarm_record_count = serializers.IntegerField(read_only=True, help_text="告警记录总数")
+    latest_alarm_record = serializers.DictField(read_only=True, help_text="最新告警记录")
 
 
 class AlarmRecordSummaryQueryOutputSLZ(serializers.Serializer):
-    gateway = serializers.DictField(read_only=True)
-    alarm_record_count = serializers.IntegerField(read_only=True)
-    strategy_summary = serializers.ListField(child=AlarmStrategySummaryQuerySLZ(), read_only=True)
+    gateway = serializers.DictField(read_only=True, help_text="网关")
+    alarm_record_count = serializers.IntegerField(read_only=True, help_text="告警记录总数")
+    strategy_summary = serializers.ListField(child=AlarmStrategySummaryQuerySLZ(), read_only=True, help_text="策略汇总")

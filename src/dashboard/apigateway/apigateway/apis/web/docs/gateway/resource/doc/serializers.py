@@ -20,10 +20,10 @@ from rest_framework import serializers
 
 
 class DocInputSLZ(serializers.Serializer):
-    stage_name = serializers.CharField()
+    stage_name = serializers.CharField(help_text="网关环境名称")
 
 
 class DocOutputSLZ(serializers.Serializer):
-    type = serializers.CharField()
-    content = serializers.CharField()
-    updated_time = serializers.DateTimeField()
+    type = serializers.CharField(help_text="文档类型，如 markdown")
+    content = serializers.CharField(help_text="文档内容")
+    updated_time = serializers.DateTimeField(help_text="文档更新时间")

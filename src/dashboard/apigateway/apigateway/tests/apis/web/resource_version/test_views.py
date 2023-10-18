@@ -22,16 +22,14 @@ import operator
 
 from django_dynamic_fixture import G
 
-from apigateway.apps.support.models import APISDK, ResourceDoc, ResourceDocVersion
+from apigateway.apps.support.models import GatewaySDK, ResourceDoc, ResourceDocVersion
 from apigateway.core.models import Release, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time
 
 
 class TestResourceVersionListCreateApi:
     def test_create(self, request_view, fake_gateway, fake_resource1):
-        data = {
-            "comment": "test",
-        }
+        data = {"comment": "test", "version": "1.1.0"}
 
         resp = request_view(
             method="POST",
@@ -48,14 +46,13 @@ class TestResourceVersionListCreateApi:
             ResourceVersion,
             gateway=fake_gateway,
             version="1.0.1",
-            title="test",
             created_time=dummy_time.time,
         )
         stage_prod = G(Stage, gateway=fake_gateway, status=1)
         stage_test = G(Stage, gateway=fake_gateway, status=1)
         G(Release, gateway=fake_gateway, stage=stage_prod, resource_version=resource_version)
         G(Release, gateway=fake_gateway, stage=stage_test, resource_version=resource_version)
-        G(APISDK, gateway=fake_gateway, resource_version=resource_version)
+        G(GatewaySDK, gateway=fake_gateway, resource_version=resource_version)
 
         resp = request_view(
             method="GET",
@@ -75,11 +72,7 @@ class TestResourceVersionListCreateApi:
             {
                 "id": resource_version.id,
                 "version": resource_version.version,
-                "name": resource_version.name,
-                "title": resource_version.title,
                 "comment": resource_version.comment,
-                "resource_version_display": "1.0.1(test)",
-                "has_sdk": True,
                 "sdk_count": 1,
                 "created_time": dummy_time.str,
             },
@@ -134,8 +127,6 @@ class TestResourceVersionRetrieveApi:
         assert result["data"] == {
             "id": resource_version.id,
             "version": resource_version.version,
-            "name": resource_version.name,
-            "title": resource_version.title,
             "comment": resource_version.comment,
             "data": [
                 {
@@ -231,7 +222,6 @@ class TestResourceVersionNeedNewVersionRetrieveApi:
             )
 
             result = resp.json()
-            print(result)
             if test.get("will_error"):
                 assert result["error"] is not None
                 continue

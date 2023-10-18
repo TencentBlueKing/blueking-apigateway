@@ -43,7 +43,7 @@ def generate_expire_time() -> datetime.datetime:
     return to_datetime_from_now(days=DEFAULT_PERMISSION_EXPIRE_DAYS)
 
 
-class AppAPIPermission(TimestampedModelMixin):
+class AppGatewayPermission(TimestampedModelMixin):
     """
     蓝鲸应用访问网关权限
     网关对应用授权网关所有资源的访问权限
@@ -53,10 +53,10 @@ class AppAPIPermission(TimestampedModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     expires = models.DateTimeField(default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天"))
 
-    objects = managers.AppAPIPermissionManager()
+    objects = managers.AppGatewayPermissionManager()
 
     def __str__(self):
-        return f"<AppAPIPermission: {self.id}>"
+        return f"<AppGatewayPermission: {self.id}>"
 
     class Meta:
         verbose_name = _("蓝鲸应用访问网关权限")

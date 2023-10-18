@@ -31,6 +31,7 @@ from apigateway.utils.responses import OKJsonResponse
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
+        operation_description="获取 feature flag 全局特性开关列表",
         tags=["WebAPI.Feature"],
     ),
 )

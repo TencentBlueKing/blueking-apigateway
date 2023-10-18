@@ -40,38 +40,38 @@ class TestAppAPIPermissionManager:
         gateway_1 = G(Gateway, is_public=True)
         gateway_2 = G(Gateway, is_public=False)
 
-        G(models.AppAPIPermission, gateway=gateway_1, bk_app_code=unique_id)
-        G(models.AppAPIPermission, gateway=gateway_2, bk_app_code=unique_id)
+        G(models.AppGatewayPermission, gateway=gateway_1, bk_app_code=unique_id)
+        G(models.AppGatewayPermission, gateway=gateway_2, bk_app_code=unique_id)
 
-        assert models.AppAPIPermission.objects.filter_public_permission_by_app(unique_id).count() == 1
+        assert models.AppGatewayPermission.objects.filter_public_permission_by_app(unique_id).count() == 1
 
     def test_renew_by_ids(self):
         perm_1 = G(
-            models.AppAPIPermission,
+            models.AppGatewayPermission,
             gateway=self.gateway,
             bk_app_code="test-1",
             expires=dummy_time.time,
         )
         perm_2 = G(
-            models.AppAPIPermission,
+            models.AppGatewayPermission,
             gateway=self.gateway,
             bk_app_code="test-2",
             expires=to_datetime_from_now(170),
         )
         perm_3 = G(
-            models.AppAPIPermission,
+            models.AppGatewayPermission,
             gateway=self.gateway,
             bk_app_code="test-3",
             expires=to_datetime_from_now(days=720),
         )
 
-        models.AppAPIPermission.objects.renew_by_ids(
+        models.AppGatewayPermission.objects.renew_by_ids(
             self.gateway,
             ids=[perm_1.id, perm_2.id, perm_3.id],
         )
-        perm_1 = models.AppAPIPermission.objects.get(id=perm_1.id)
-        perm_2 = models.AppAPIPermission.objects.get(id=perm_2.id)
-        perm_3 = models.AppAPIPermission.objects.get(id=perm_3.id)
+        perm_1 = models.AppGatewayPermission.objects.get(id=perm_1.id)
+        perm_2 = models.AppGatewayPermission.objects.get(id=perm_2.id)
+        perm_3 = models.AppGatewayPermission.objects.get(id=perm_3.id)
         assert to_datetime_from_now(days=179) < perm_1.expires < to_datetime_from_now(days=181)
         assert to_datetime_from_now(days=179) < perm_2.expires < to_datetime_from_now(days=181)
         assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(days=721)
@@ -206,7 +206,7 @@ class TestAppResourcePermissionManager:
 
         # api-perm expired
         api_perm = G(
-            models.AppAPIPermission,
+            models.AppGatewayPermission,
             gateway=gateway,
             bk_app_code=bk_app_code,
             expires=now_datetime() - datetime.timedelta(seconds=10),

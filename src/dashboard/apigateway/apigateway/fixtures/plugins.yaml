@@ -304,7 +304,6 @@
         "properties": {
           "set": {
             "type": "object",
-            "minProperties": 1,
             "patternProperties": {
               "^[^:]+$": {
                 "oneOf": [
@@ -320,7 +319,6 @@
           },
           "remove": {
             "type": "array",
-            "minItems": 1,
             "items": {
               "type": "string",
               "pattern": "^[^:]+$"

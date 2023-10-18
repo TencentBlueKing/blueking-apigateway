@@ -33,6 +33,7 @@ COMPONENT_SEARCH_LIMIT = 30
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description=f"查询组件 API，根据筛选条件模糊搜索，仅返回前 {COMPONENT_SEARCH_LIMIT} 条记录",
         query_serializer=ComponentSearchInputSLZ,
         responses={status.HTTP_200_OK: ComponentSearchOutputSLZ(many=True)},
         tags=["WebAPI.Docs.ESB.Component"],
@@ -58,6 +59,7 @@ class ComponentSearchApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="查询指定组件系统下的组件 API 列表，仅返回公开的组件",
         responses={status.HTTP_200_OK: ComponentOutputSLZ(many=True)},
         tags=["WebAPI.Docs.ESB.Component"],
     ),

@@ -43,6 +43,7 @@ class BackendQuerySetMixin:
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取后端服务列表",
         responses={status.HTTP_200_OK: BackendListOutputSLZ(many=True)},
         tags=["WebAPI.Backend"],
     ),
@@ -50,6 +51,7 @@ class BackendQuerySetMixin:
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
+        operation_description="创建后端服务",
         responses={status.HTTP_201_CREATED: ""},
         request_body=BackendInputSLZ,
         tags=["WebAPI.Backend"],
@@ -105,6 +107,7 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取后端服务详情",
         responses={status.HTTP_200_OK: BackendRetrieveOutputSLZ()},
         tags=["WebAPI.Backend"],
     ),
@@ -112,6 +115,7 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
 @method_decorator(
     name="put",
     decorator=swagger_auto_schema(
+        operation_description="更新后端服务",
         responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=BackendInputSLZ,
         tags=["WebAPI.Backend"],
@@ -120,6 +124,7 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
 @method_decorator(
     name="delete",
     decorator=swagger_auto_schema(
+        operation_description="删除后端服务",
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Backend"],
     ),

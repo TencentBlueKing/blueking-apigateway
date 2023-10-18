@@ -23,7 +23,6 @@ from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db.models import Count
-from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.monitor.models import AlarmStrategy
@@ -37,16 +36,7 @@ from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
-from apigateway.core.models import (
-    Backend,
-    BackendConfig,
-    Context,
-    Gateway,
-    Release,
-    Resource,
-    SslCertificate,
-    Stage,
-)
+from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, SslCertificate, Stage
 from apigateway.utils.dict import deep_update
 
 from .resource import ResourceHandler
@@ -241,9 +231,9 @@ class GatewayHandler:
         username: str, gateway_id: int, op_type: OpTypeEnum, instance_id: int, instance_name: str
     ):
         comment = {
-            OpTypeEnum.CREATE: _("创建网关"),
-            OpTypeEnum.MODIFY: _("更新网关"),
-            OpTypeEnum.DELETE: _("删除网关"),
+            OpTypeEnum.CREATE: "创建网关",
+            OpTypeEnum.MODIFY: "更新网关",
+            OpTypeEnum.DELETE: "删除网关",
         }.get(op_type, "-")
 
         record_audit_log(

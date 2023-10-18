@@ -17,15 +17,15 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from dataclasses import dataclass
-from typing import List
 
 from blue_krill.async_utils.django_utils import delay_on_commit
-from celery.canvas import group
 from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.validators import StageVarsValuesValidator
@@ -33,8 +33,10 @@ from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.tasks import release_gateway_by_helm, release_gateway_by_registry
+from apigateway.core import constants
 from apigateway.core.constants import PublishSourceEnum, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import (
+    BackendConfig,
     Gateway,
     MicroGateway,
     MicroGatewayReleaseHistory,
@@ -65,7 +67,7 @@ class SharedMicroGatewayNotFound(Exception):
 @dataclass
 class BaseGatewayReleaser:
     gateway: Gateway
-    stages: List[Stage]
+    stage: Stage
     resource_version: ResourceVersion
     comment: str = ""
     access_token: str = ""
@@ -75,7 +77,7 @@ class BaseGatewayReleaser:
     def from_data(
         cls,
         gateway: Gateway,
-        stage_ids: List[int],
+        stage_id: int,
         resource_version_id: int,
         comment: str,
         access_token: str,
@@ -83,7 +85,7 @@ class BaseGatewayReleaser:
     ):
         """
         :param gateway: 待操作的网关
-        :param stage_ids: 发布的环境 id 列表
+        :param stage_id: 发布的环境 id
         :param resource_version_id: 发布的版本 id
         :param comment: 发布备注
         :param access_token: access_token
@@ -91,7 +93,7 @@ class BaseGatewayReleaser:
         """
         return cls(
             gateway=gateway,
-            stages=list(Stage.objects.filter(id__in=stage_ids)),
+            stage=Stage.objects.get(id=stage_id),
             resource_version=ResourceVersion.objects.get(id=resource_version_id),
             comment=comment,
             access_token=access_token,
@@ -99,16 +101,14 @@ class BaseGatewayReleaser:
         )
 
     def _save_release_history(self) -> ReleaseHistory:
-        history = ReleaseHistory.objects.create(
+        return ReleaseHistory.objects.create(
             gateway_id=self.gateway.id,
-            stage_id=self.stages[0].id,
+            stage_id=self.stage.id,
             source=PublishSourceEnum.VERSION_PUBLISH.value,
             resource_version_id=self.resource_version.id,
             comment=self.comment,
             created_by=self.username,
         )
-        history.stages.set(self.stages)
-        return history
 
     def release(self):
         self._pre_release()
@@ -117,33 +117,28 @@ class BaseGatewayReleaser:
         history = self._save_release_history()
         PublishEventReporter.report_config_validate_success_event(history)
 
-        # save release
-        release_instances = []
-        for stage in self.stages:
-            # save release
-            instance = Release.objects.save_release(
-                gateway=self.gateway,
-                stage=stage,
-                resource_version=self.resource_version,
-                comment=self.comment,
-                username=self.username,
-            )
-            release_instances.append(instance)
+        instance = Release.objects.save_release(
+            gateway=self.gateway,
+            stage=self.stage,
+            resource_version=self.resource_version,
+            comment=self.comment,
+            username=self.username,
+        )
 
-            # record audit log
-            record_audit_log(
-                username=self.username,
-                op_type=OpTypeEnum.CREATE.value,
-                op_status=OpStatusEnum.SUCCESS.value,
-                op_object_group=self.gateway.id,
-                op_object_type=OpObjectTypeEnum.RELEASE.value,
-                op_object_id=instance.id,
-                op_object=f"{stage.name}:{instance.resource_version.name}",
-                comment=_("版本发布"),
-            )
+        # record audit log
+        record_audit_log(
+            username=self.username,
+            op_type=OpTypeEnum.CREATE.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=self.gateway.id,
+            op_object_type=OpObjectTypeEnum.RELEASE.value,
+            op_object_id=instance.id,
+            op_object=f"{self.stage.name}:{instance.resource_version.name}",
+            comment=_("版本发布"),
+        )
 
-        # 批量发布，仅对微网关生效
-        self._do_release(release_instances, history)
+        # 发布，仅对微网关生效
+        self._do_release(instance, history)
 
         self._post_release()
 
@@ -156,18 +151,58 @@ class BaseGatewayReleaser:
         try:
             self._validate()
         except (ValidationError, ReleaseValidationError, NonRelatedMicroGatewayError) as err:
-            message = err.detail[0] if isinstance(err, ValidationError) else str(err)
-
-            # 上报发布校验失败事件：todo: 支持批量环境发布
+            message = str(err)
             history = self._save_release_history()
             PublishEventReporter.report_config_validate_fail_event(history, message)
             raise ReleaseError(message) from err
 
     def _validate(self):
         """校验待发布数据"""
-        for stage in self.stages:
-            self._validate_stage_upstreams(self.gateway.id, stage, self.resource_version.id)
-            self._validate_stage_vars(stage, self.resource_version.id)
+        if self.resource_version.is_schema_v2:
+            self._validate_stage_backends(self.stage)
+            self._validate_stage_plugins(self.stage)
+        else:
+            self._validate_stage_upstreams(self.gateway.id, self.stage, self.resource_version.id)
+
+        self._validate_stage_vars(self.stage, self.resource_version.id)
+
+    def _validate_stage_backends(self, stage: Stage):
+        """校验待发布环境的backend配置"""
+        backend_configs = BackendConfig.objects.filter(stage=stage)
+        for backend_config in backend_configs:
+            for host in backend_config.config["hosts"]:
+                if not constants.HOST_WITHOUT_SCHEME_PATTERN.match(host):
+                    raise ReleaseValidationError(
+                        _("网关环境【{stage_name}】中的配置Scheme【{scheme}】不合法。请在网关 `基本设置 -> 后端服务` 中进行配置。").format(
+                            # noqa: E501
+                            stage_name=stage.name,
+                            scheme=host,
+                        )
+                    )
+
+    def _validate_stage_plugins(self, stage: Stage):
+        """校验待发布环境的plugin配置"""
+
+        # 环境绑定的插件，同一类型，只能绑定一个即同一个类型的PluginConfig只能绑定一个环境
+        stage_plugins = (
+            PluginBinding.objects.filter(
+                scope_id=stage.id,
+                scope_type=PluginBindingScopeEnum.STAGE.value,
+            )
+            .prefetch_related("config")
+            .all()
+        )
+        stage_plugin_type_set = set()
+        for stage_plugin in stage_plugins:
+            if stage_plugin.config.type.code in stage_plugin_type_set:
+                raise ReleaseValidationError(
+                    _("网关环境【{stage_name}】存在绑定多个相同类型[{plugin_code}]的插件。").format(
+                        # noqa: E501
+                        stage_name=stage.name,
+                        plugin_code=stage_plugin.config.type.code,
+                    )
+                )
+            stage_plugin_type_set.add(stage_plugin.config.type.code)
 
     def _validate_stage_upstreams(self, gateway_id: int, stage: Stage, resource_version_id: int):
         """检查环境的代理配置，如果未配置任何有效的上游主机地址（Hosts），则报错。
@@ -176,7 +211,8 @@ class BaseGatewayReleaser:
         """
         if not StageProxyHTTPContext().contain_hosts(stage.id):
             raise ReleaseValidationError(
-                _("网关环境【{stage_name}】中代理配置 Hosts 未配置，请在网关 `基本设置 -> 环境管理` 中进行配置。").format(  # noqa: E501
+                _("网关环境【{stage_name}】中代理配置 Hosts 未配置，请在网关 `基本设置 -> 环境管理` 中进行配置。").format(
+                    # noqa: E501
                     stage_name=stage.name,
                 )
             )
@@ -192,14 +228,13 @@ class BaseGatewayReleaser:
             }
         )
 
-    def _do_release(self, releases: List[Release], release_history: ReleaseHistory):  # ruff: noqa: B027
+    def _do_release(self, releases: Release, release_history: ReleaseHistory):  # ruff: noqa: B027
         """发布资源版本"""
 
     def _post_release(self):
         # 发布后，将环境状态更新为可用
         # activate stages
-        stage_ids = [stage.id for stage in self.stages]
-        Stage.objects.filter(id__in=stage_ids).update(status=StageStatusEnum.ACTIVE.value)
+        Stage.objects.filter(id=self.stage.id).update(status=StageStatusEnum.ACTIVE.value)
 
         # update_and_clear_released_resources
         ReleasedResource.objects.save_released_resource(self.resource_version)
@@ -277,26 +312,22 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
         return self._create_release_task_for_micro_gateway(release, release_history)
 
-    def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
-        tasks = []
-        for release in releases:
-            task = self._create_release_task(release, release_history)
-            # 任意一个任务失败都表示发布失败
-            tasks.append(task)
-
+    def _do_release(self, release: Release, release_history: ReleaseHistory):
+        task = self._create_release_task(release, release_history)
+        # 任意一个任务失败都表示发布失败
         # 使用 celery 的编排能力，并发发布多个微网关，并且在发布完成后，更新微网关发布历史的状态
-        delay_on_commit(group(*tasks))
+        delay_on_commit(task)
 
 
-class BatchReleaser:
+class Releaser:
     access_token: str = ""
 
     def __init__(self, access_token):
         self.access_token = access_token
 
     def release(
-        self, gateway: Gateway, stage_ids: List[int], resource_version_id: int, comment: str, username: str = ""
+        self, gateway: Gateway, stage_id: int, resource_version_id: int, comment: str, username: str = ""
     ) -> ReleaseHistory:
         return MicroGatewayReleaser.from_data(
-            gateway, stage_ids, resource_version_id, comment, self.access_token, username
+            gateway, stage_id, resource_version_id, comment, self.access_token, username
         ).release()

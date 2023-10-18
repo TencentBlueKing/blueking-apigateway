@@ -64,14 +64,10 @@ class TestResourceVersionListCreateApi:
         result = response.json()
         assert result["data"]["count"] == 0
 
-    def test_create(self, request_view, fake_gateway, mocker):
+    def test_create(self, request_view, fake_gateway, fake_resource, mocker):
         mocker.patch(
             "apigateway.biz.resource_version.ResourceVersionHandler.make_version",
             return_value=[{"name": "test"}],
-        )
-        mocker.patch(
-            "apigateway.biz.resource_version.ResourceVersionHandler._validate_resource_version_data",
-            return_value=None,
         )
 
         resp = request_view(
@@ -79,7 +75,7 @@ class TestResourceVersionListCreateApi:
             view_name="openapi.resource_versions.list_create",
             path_params={"gateway_name": fake_gateway.name},
             data={
-                "title": "test",
+                "version": "1.1.0",
             },
             gateway=fake_gateway,
         )
@@ -127,7 +123,7 @@ class TestResourceVersionReleaseApi:
             "apigateway.apis.open.resource_version.views.Release.objects.get_stage_ids_unreleased_the_version",
             return_value=unreleased_stage_ids,
         )
-        mocker.patch("apigateway.apis.open.resource_version.views.BatchReleaser.release")
+        mocker.patch("apigateway.apis.open.resource_version.views.Releaser.release")
 
         response = request_view(
             "POST",

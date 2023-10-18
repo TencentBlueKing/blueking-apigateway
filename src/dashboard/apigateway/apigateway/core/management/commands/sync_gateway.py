@@ -18,12 +18,10 @@
 #
 import logging
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from apigateway.apis.open.gateway.serializers import GatewaySyncSLZ
-from apigateway.core.constants import APIHostingTypeEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
 
@@ -39,22 +37,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--name", type=str, dest="name", required=True)
-        parser.add_argument(
-            "--hosting-type",
-            type=int,
-            default=APIHostingTypeEnum(settings.DEFAULT_GATEWAY_HOSTING_TYPE).value,
-            dest="hosting_type",
-        )
 
     @transaction.atomic
-    def handle(self, name: str, hosting_type: bool, **options):
+    def handle(self, name: str, **options):
         gateway = get_object_or_None(Gateway, name=name)
         slz = GatewaySyncSLZ(
             gateway,
-            data={
-                "name": name,
-                "hosting_type": hosting_type,
-            },
+            data={"name": name},
         )
 
         slz.is_valid(raise_exception=True)

@@ -19,8 +19,6 @@ import datetime
 from collections import defaultdict
 from typing import Dict, List, Optional
 
-from django.utils.translation import gettext as _
-
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
@@ -40,9 +38,9 @@ class ResourceDocHandler:
         instance_name: str,
     ):
         comment = {
-            OpTypeEnum.CREATE: _("创建资源文档"),
-            OpTypeEnum.MODIFY: _("更新资源文档"),
-            OpTypeEnum.DELETE: _("删除资源文档"),
+            OpTypeEnum.CREATE: "创建资源文档",
+            OpTypeEnum.MODIFY: "更新资源文档",
+            OpTypeEnum.DELETE: "删除资源文档",
         }.get(op_type, "-")
 
         record_audit_log(

@@ -28,7 +28,7 @@ from apigateway.apps.permission.constants import (
     GrantTypeEnum,
 )
 from apigateway.apps.permission.models import (
-    AppAPIPermission,
+    AppGatewayPermission,
     AppPermissionApply,
     AppPermissionApplyStatus,
     AppPermissionRecord,
@@ -119,7 +119,7 @@ class APIPermissionDimensionManager(PermissionDimensionManager):
         part_resource_ids=None,
     ) -> AppPermissionRecord:
         if status == ApplyStatusEnum.APPROVED.value:
-            AppAPIPermission.objects.save_permissions(
+            AppGatewayPermission.objects.save_permissions(
                 gateway=gateway,
                 bk_app_code=apply.bk_app_code,
                 grant_type=GrantTypeEnum.APPLY.value,
@@ -188,7 +188,7 @@ class APIPermissionDimensionManager(PermissionDimensionManager):
         if is_pending:
             return False, _("权限申请中，请联系网关负责人审批。")
 
-        api_perm = AppAPIPermission.objects.filter(
+        api_perm = AppGatewayPermission.objects.filter(
             gateway_id=gateway_id,
             bk_app_code=bk_app_code,
         ).first()

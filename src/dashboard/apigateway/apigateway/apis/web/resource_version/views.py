@@ -23,18 +23,20 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, serializers, status
 
-from apigateway.apps.support.models import APISDK, ResourceDoc, ResourceDocVersion
+from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
+from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
     NeedNewVersionOutputSLZ,
+    ResourceVersionCreateInputSLZ,
     ResourceVersionDiffOutputSLZ,
     ResourceVersionDiffQueryInputSLZ,
-    ResourceVersionInfoSLZ,
     ResourceVersionListOutputSLZ,
+    ResourceVersionRetrieveOutputSLZ,
 )
 
 
@@ -43,18 +45,19 @@ from .serializers import (
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ResourceVersionListOutputSLZ(many=True)},
         tags=["WebAPI.ResourceVersion"],
+        operation_description="资源版本列表查询接口",
     ),
 )
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        request_body=ResourceVersionInfoSLZ,
+        responses={status.HTTP_201_CREATED: ""},
+        request_body=ResourceVersionCreateInputSLZ,
         tags=["WebAPI.ResourceVersion"],
+        operation_description="资源版本创建接口",
     ),
 )
 class ResourceVersionListCreateApi(generics.ListCreateAPIView):
-    serializer_class = ResourceVersionInfoSLZ
     lookup_field = "id"
 
     def get_queryset(self):
@@ -63,7 +66,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         data = (
             ResourceVersion.objects.filter(gateway=request.gateway)
-            .values("id", "version", "name", "title", "comment", "created_time")
+            .values("id", "version", "comment", "created_time")
             .order_by("-id")
         )
 
@@ -75,11 +78,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
             many=True,
             context={
                 "released_stages": Release.objects.get_released_stages(request.gateway, resource_version_ids),
-                "resource_version_ids_has_sdk": APISDK.objects.filter_resource_version_ids_has_sdk(
-                    request.gateway.id,
-                    resource_version_ids,
-                ),
-                "resource_version_ids_sdk_count": APISDK.objects.get_resource_version_sdk_count_map(
+                "resource_version_ids_sdk_count": GatewaySDKHandler.get_resource_version_sdk_count_map(
                     resource_version_ids
                 ),
             },
@@ -88,7 +87,10 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        instance = ResourceVersionHandler.create_resource_version(request.gateway, request.data, request.user.username)
+        slz = ResourceVersionCreateInputSLZ(data=request.data, context={"gateway": request.gateway})
+        slz.is_valid(raise_exception=True)
+
+        instance = ResourceVersionHandler.create_resource_version(request.gateway, slz.data, request.user.username)
 
         # 创建文档版本
         if ResourceDoc.objects.filter(gateway=request.gateway).exists():
@@ -102,7 +104,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
 
 
 class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
-    serializer_class = ResourceVersionInfoSLZ
+    serializer_class = ResourceVersionRetrieveOutputSLZ
     lookup_field = "id"
 
     def get_queryset(self):
@@ -110,7 +112,10 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
 
     @method_decorator(
         name="get",
-        decorator=swagger_auto_schema(tags=["WebAPI.ResourceVersion"]),
+        decorator=swagger_auto_schema(
+            tags=["WebAPI.ResourceVersion"],
+            operation_description="资源版本详情查询接口",
+        ),
     )
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -133,7 +138,9 @@ class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
     @method_decorator(
         name="get",
         decorator=swagger_auto_schema(
-            responses={status.HTTP_200_OK: NeedNewVersionOutputSLZ()}, tags=["WebAPI.ResourceVersion"]
+            responses={status.HTTP_200_OK: NeedNewVersionOutputSLZ()},
+            tags=["WebAPI.ResourceVersion"],
+            operation_description="是否需要创建新资源版本查询接口",
         ),
     )
     def get(self, request, *args, **kwargs):
@@ -165,6 +172,7 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
             query_serializer=ResourceVersionDiffQueryInputSLZ(),
             responses={status.HTTP_200_OK: ResourceVersionDiffOutputSLZ()},
             tags=["WebAPI.ResourceVersion"],
+            operation_description="资源版本对比接口",
         ),
     )
     def get(self, request, *args, **kwargs):
@@ -183,15 +191,17 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
             request.gateway, data.get("target_resource_version_id")
         )
 
-        return OKJsonResponse(
-            data=ResourceDifferHandler.diff_resource_version_data(
-                source_resource_data,
-                target_resource_data,
-                source_resource_doc_updated_time=ResourceDocVersion.objects.get_doc_updated_time(
-                    request.gateway.id, data.get("source_resource_version_id")
-                ),
-                target_resource_doc_updated_time=ResourceDocVersion.objects.get_doc_updated_time(
-                    request.gateway.id, data.get("target_resource_version_id")
-                ),
+        data = ResourceDifferHandler.diff_resource_version_data(
+            source_resource_data,
+            target_resource_data,
+            source_resource_doc_updated_time=ResourceDocVersion.objects.get_doc_updated_time(
+                request.gateway.id, data.get("source_resource_version_id")
             ),
+            target_resource_doc_updated_time=ResourceDocVersion.objects.get_doc_updated_time(
+                request.gateway.id, data.get("target_resource_version_id")
+            ),
+        )
+
+        return OKJsonResponse(
+            data=data,
         )

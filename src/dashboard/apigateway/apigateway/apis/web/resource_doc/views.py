@@ -48,6 +48,7 @@ from .serializers import (
 
 class DocArchiveParseApi(generics.CreateAPIView):
     @swagger_auto_schema(
+        operation_description="导入资源文档前，检查归档文件是否正确",
         request_body=DocArchiveParseInputSLZ,
         responses={status.HTTP_200_OK: DocArchiveParseOutputSLZ},
         tags=["WebAPI.ResourceDoc"],
@@ -68,6 +69,7 @@ class DocArchiveParseApi(generics.CreateAPIView):
 
 class DocImportByArchiveApi(generics.CreateAPIView):
     @swagger_auto_schema(
+        operation_description="根据归档文件导入资源文档",
         request_body=DocImportByArchiveInputSLZ,
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.ResourceDoc"],
@@ -97,6 +99,7 @@ class DocImportByArchiveApi(generics.CreateAPIView):
 
 class DocImportBySwaggerApi(generics.CreateAPIView):
     @swagger_auto_schema(
+        operation_description="根据 swagger 描述文件导入资源文档",
         request_body=DocImportBySwaggerInputSLZ,
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.ResourceDoc"],
@@ -129,6 +132,7 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
 
 class DocExportApi(generics.CreateAPIView):
     @swagger_auto_schema(
+        operation_description="导出资源文档",
         request_body=DocExportInputSLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.ResourceDoc"],

@@ -110,6 +110,12 @@ class ReleaseStatusEnum(StructuredEnum):
     UNRELEASED = EnumField("unreleased")  # 未发布
 
 
+class ReleaseHistoryStatusEnum(StructuredEnum):
+    SUCCESS = EnumField("success", "success")  # 执行成功
+    FAILURE = EnumField("failure", "failure")  # 执行失败
+    DOING = EnumField("doing", "doing")  # 执行中
+
+
 class PublishEventEnum(StructuredEnum):
     # dashboard
     VALIDATE_CONFIGURATION = EnumField("validata_configuration", "validate configuration")
