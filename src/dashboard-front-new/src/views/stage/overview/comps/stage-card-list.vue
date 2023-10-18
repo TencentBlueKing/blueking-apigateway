@@ -85,10 +85,10 @@ const handleAddStage = () => {
 
 <style lang="scss" scoped>
 .card-list {
-  min-width: 1280px;
+  min-width: calc(1280px - 260px);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-gap: 10px; /* 设置盒子之间的间隔 */
+  grid-gap: 18px; /* 设置盒子之间的间隔 */
 }
 
 /* 分辨率大于1920时 */
@@ -106,18 +106,12 @@ const handleAddStage = () => {
 }
 
 .card-item {
-  width: 100%;
   font-size: 12px;
   height: 223px;
   background: #ffffff;
   padding: 0 24px;
   box-shadow: 0 2px 4px 0 #1919290d;
   border-radius: 2px;
-  margin-right: 18px;
-
-  &:last-child {
-    margin-right: 0;
-  }
 
   .title {
     height: 52px;
