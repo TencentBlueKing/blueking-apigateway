@@ -8,12 +8,12 @@
       <bk-select
         :input-search="false"
         class="w700"
-        v-model="backConfigData.backend_id" @change="handleServiceChange">
+        v-model="backConfigData.id" @change="handleServiceChange">
         <bk-option v-for="item in servicesData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
     </bk-form-item>
     <bk-table
-      v-if="backConfigData.backend_id"
+      v-if="backConfigData.id"
       class="table-layout w700"
       :data="servicesConfigs"
       :border="['outer']"
@@ -28,6 +28,9 @@
       <bk-table-column
         :label="t('后端服务地址')"
       >
+        <template #default="{ data }">
+          {{data?.hosts[0].scheme}}://{{ data?.hosts[0].host }}
+        </template>
       </bk-table-column>
       <bk-table-column
         :label="t('超时时间')"
@@ -41,7 +44,7 @@
     >
       <bk-select
         :input-search="false"
-        v-model="backConfigData.method"
+        v-model="backConfigData.config.method"
         class="w700">
         <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
@@ -53,7 +56,7 @@
     >
       <div class="flex-row aligin-items-center">
         <bk-input
-          v-model="backConfigData.path"
+          v-model="backConfigData.config.path"
           :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
           clearable
           class="w568"
@@ -63,11 +66,11 @@
           outline
           class="ml10"
           @click="handleCheckPath"
-          :disabled="!backConfigData.backend_id || !backConfigData.path"
+          :disabled="!backConfigData.id || !backConfigData.config.path"
         >
           {{ t('校验并查看地址') }}
         </bk-button>
-        <bk-checkbox class="ml40" v-model="backConfigData.match_subpath">
+        <bk-checkbox class="ml40" v-model="backConfigData.config.match_subpath">
           {{ t('追加匹配的子路径') }}
         </bk-checkbox>
       </div>
@@ -96,7 +99,7 @@
             :label="t('请求类型')"
           >
             <template #default="{ data }">
-              {{backConfigData.method || data?.stage?.name}}
+              {{backConfigData.config.method || data?.stage?.name}}
             </template>
           </bk-table-column>
           <bk-table-column
@@ -112,18 +115,27 @@
   </bk-form>
 </template>
 <script setup lang="ts">
-import { ref, defineExpose } from 'vue';
+import { ref, defineExpose, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
 import { useCommon } from '../../../store';
 
+const props = defineProps({
+  detail: {
+    type: Object,
+    default: {},
+  },
+});
+
 const { t } = useI18n();
 const common = useCommon();
 const backConfigData = ref({
-  backend_id: '',
-  path: '',
-  method: '',
-  match_subpath: false,
+  id: '',
+  config: {
+    path: '',
+    method: '',
+    match_subpath: false,
+  },
 });
 const methodData = ref(common.methodList);
 // 服务列表下拉框数据
@@ -160,8 +172,8 @@ const handleServiceChange = async (backendId: number) => {
 const handleCheckPath = async () => {
   try {
     const params = {
-      backend_id: backConfigData.value.backend_id,
-      backend_path: backConfigData.value.path,
+      backend_id: backConfigData.value.id,
+      backend_path: backConfigData.value.config.path,
     };
     const res = await backendsPathCheck(common.apigwId, params);
     servicesCheckData.value = res;
@@ -170,6 +182,18 @@ const handleCheckPath = async () => {
 
   }
 };
+
+watch(
+  () => props.detail,
+  (val: any) => {
+    if (Object.keys(val).length) {
+      const { backend } = val;
+      backConfigData.value = { ...backend };
+      handleServiceChange(backend.id);
+    }
+  },
+  { immediate: true },
+);
 
 const init = async () => {
   const res = await getBackendsListData(common.apigwId);

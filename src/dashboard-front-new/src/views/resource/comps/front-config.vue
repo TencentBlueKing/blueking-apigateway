@@ -32,9 +32,16 @@
   </bk-form>
 </template>
 <script setup lang="ts">
-import { ref, defineExpose } from 'vue';
+import { ref, defineExpose, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '../../../store';
+
+const props = defineProps({
+  detail: {
+    type: Object,
+    default: {},
+  },
+});
 
 const { t } = useI18n();
 const common = useCommon();
@@ -59,6 +66,18 @@ const rules = {
     },
   ],
 };
+
+watch(
+  () => props.detail,
+  (val: any) => {
+    if (Object.keys(val).length) {
+      const { path, method, match_subpath } = val;
+      frontConfigData.value = { path, method, match_subpath };
+      console.log('formData', frontConfigData.value);
+    }
+  },
+  { immediate: true },
+);
 
 defineExpose({
   frontConfigData,

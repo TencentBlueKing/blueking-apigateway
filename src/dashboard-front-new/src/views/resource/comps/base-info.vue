@@ -25,10 +25,10 @@
     </bk-form-item>
     <bk-form-item
       :label="t('标签')"
-      v-model="formData.label_ids"
     >
       <bk-select
         class="w700"
+        v-model="formData.label_ids"
         :input-search="false"
         multiple
         filterable
@@ -74,10 +74,17 @@
   </bk-form>
 </template>
 <script setup lang="ts">
-import { ref, defineExpose } from 'vue';
+import { ref, defineExpose, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getGatewayLabels } from '@/http';
 import { useCommon } from '@/store';
+
+const props = defineProps({
+  detail: {
+    type: Object,
+    default: {},
+  },
+});
 
 const { t } = useI18n();
 const common = useCommon();
@@ -94,6 +101,7 @@ const formData = ref({
   allow_apply_permission: false,
 });
 
+console.log('formData1', props.detail);
 const labelsData = ref([]);
 
 const rules = {
@@ -123,6 +131,19 @@ const rules = {
     },
   ],
 };
+
+watch(
+  () => props.detail,
+  (val: any) => {
+    if (Object.keys(val).length) {
+      const { name, description, auth_config, is_public, allow_apply_permission, labels } = val;
+      const label_ids = labels.map((e: {id: number, name: string}) => e.id);
+      formData.value = { name, description, auth_config, is_public, allow_apply_permission, label_ids };
+      console.log('formData', formData.value);
+    }
+  },
+  { immediate: true },
+);
 
 const init = async () => {
   const res = await getGatewayLabels(common.apigwId);

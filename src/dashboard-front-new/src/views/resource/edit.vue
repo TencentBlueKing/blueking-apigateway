@@ -9,7 +9,7 @@
         <span class="panel-title">{{ t('基础信息') }}</span>
         <template #content>
           <div class="panel-content">
-            <BaseInfo ref="baseInfoRef"></BaseInfo>
+            <BaseInfo ref="baseInfoRef" :detail="resourceDetail"></BaseInfo>
           </div>
         </template>
       </bk-collapse-panel>
@@ -18,7 +18,7 @@
         <span class="panel-title">{{ t('前端配置') }}</span>
         <template #content>
           <div class="panel-content">
-            <FrontConfig ref="frontConfigRef"></FrontConfig>
+            <FrontConfig ref="frontConfigRef" :detail="resourceDetail"></FrontConfig>
           </div>
         </template>
       </bk-collapse-panel>
@@ -27,7 +27,7 @@
         <span class="panel-title">{{ t('后端配置') }}</span>
         <template #content>
           <div class="panel-content">
-            <BackConfig ref="backConfigRef"></BackConfig>
+            <BackConfig ref="backConfigRef" :detail="resourceDetail"></BackConfig>
           </div>
         </template>
       </bk-collapse-panel>
@@ -54,12 +54,13 @@ import { useI18n } from 'vue-i18n';
 import BaseInfo from './comps/base-info.vue';
 import FrontConfig from './comps/front-config.vue';
 import BackConfig from './comps/back-config.vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useCommon } from '@/store';
-import { createResources } from '@/http';
+import { createResources, getResourceDetailData, updateResources } from '@/http';
 import { Message } from 'bkui-vue';
 const { t } = useI18n();
 const router = useRouter();
+const route = useRoute();
 const common = useCommon();
 
 const { apigwId } = common; // 网关id
@@ -70,6 +71,24 @@ const baseInfoRef = ref(null);
 const frontConfigRef = ref(null);
 const backConfigRef = ref(null);
 const submitLoading = ref(false);
+const resourceId = ref<any>(0);
+const resourceDetail = ref<any>({});
+
+const init = () => {
+  if (route.params.resourceId) {
+    resourceId.value = route.params.resourceId;
+    // 获取资源详情
+    getResourceDetails();
+  }
+};
+const getResourceDetails = async () => {
+  try {
+    const res = await getResourceDetailData(apigwId, resourceId.value);
+    resourceDetail.value = res;
+  } catch (error) {
+
+  }
+};
 
 // 提交
 const handleSubmit = async () => {
@@ -81,22 +100,25 @@ const handleSubmit = async () => {
     const params = {
       ...baseFormData,
       ...frontFormData,
-      backend_id: backFormData.backend_id,
-      backend_config: {
-        method: backFormData.method,
-        path: backFormData.path,
-        match_subpath: backFormData.match_subpath,
-      },
+      backend: backFormData,
     };
-    await createResources(apigwId, params);
+    console.log('params', params);
+    debugger;
+    if (resourceId.value) {
+      await updateResources(apigwId, resourceId.value, params);
+    } else {
+      await createResources(apigwId, params);
+    }
     Message({
-      message: t('新建成功'),
+      message: t(`${resourceId.value ? '更新' : '新建'}成功`),
       theme: 'success',
     });
     router.push({
       name: 'apigwResource',
     });
-  } catch (error) {} finally {
+  } catch (error) {
+    console.log('error', error);
+  } finally {
     submitLoading.value = false;
   }
 };
@@ -105,6 +127,8 @@ const handleSubmit = async () => {
 const handleCancel = () => {
   router.back();
 };
+
+init();
 </script>
 <style lang="scss" scoped>
   .edit-container{
