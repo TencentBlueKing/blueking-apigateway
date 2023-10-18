@@ -36,7 +36,6 @@ from .validators import StageVarsValidator
 class StageOutputSLZ(serializers.ModelSerializer):
     release = serializers.SerializerMethodField(help_text="发布信息")
     resource_version = serializers.SerializerMethodField(help_text="资源版本")
-    resource_version_id = serializers.SerializerMethodField(help_text="资源版本ID")
     publish_id = serializers.SerializerMethodField(help_text="发布ID")
     new_resource_version = serializers.SerializerMethodField(help_text="新资源版本")
     description = SerializerTranslatedField(
@@ -60,7 +59,6 @@ class StageOutputSLZ(serializers.ModelSerializer):
             # by method
             "release",
             "resource_version",
-            "resource_version_id",
             "publish_id",
             "new_resource_version",
         )
@@ -76,17 +74,17 @@ class StageOutputSLZ(serializers.ModelSerializer):
         }
 
     def get_resource_version(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("resource_version", {}).get("version", "")
-
-    def get_resource_version_id(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("resource_version_id", 0)
+        return {
+            "version": self.context["stage_release"].get(obj.id, {}).get("resource_version", {}).get("version", ""),
+            "id": self.context["stage_release"].get(obj.id, {}).get("resource_version_id", 0),
+        }
 
     def get_publish_id(self, obj):
         return self.context["stage_publish_status"].get(obj.id, {}).get("publish_id", 0)
 
     def get_new_resource_version(self, obj):
         new_resource_version = self.context["new_resource_version"]
-        stage_resource_version = self.get_resource_version(obj)
+        stage_resource_version = self.get_resource_version(obj)["version"]
 
         if not stage_resource_version or version.parse(new_resource_version) > version.parse(stage_resource_version):
             return new_resource_version
