@@ -30,16 +30,15 @@ from django.contrib.auth import get_user_model
 from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
-from apigateway.apps.support.models import APISDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
+from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import (
-    APIHostingTypeEnum,
     ProxyTypeEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusTypeEnum,
@@ -65,6 +64,7 @@ from apigateway.schema import instances
 from apigateway.schema.data.meta_schema import init_meta_schemas
 from apigateway.tests.utils.testing import dummy_time, get_response_json
 from apigateway.utils.redis_utils import REDIS_CLIENTS, get_default_redis_client
+from apigateway.utils.yaml import yaml_dumps
 
 UserModel = get_user_model()
 
@@ -145,7 +145,6 @@ def fake_gateway(faker):
         _maintainers=FAKE_USERNAME,
         status=1,
         is_public=True,
-        hosting_type=0,
     )
 
     GatewayAuthContext().save(gateway.pk, {})
@@ -155,9 +154,6 @@ def fake_gateway(faker):
 
 @pytest.fixture()
 def fake_gateway_for_micro_gateway(fake_gateway):
-    fake_gateway.hosting_type = APIHostingTypeEnum.MICRO.value
-    fake_gateway.save()
-
     return fake_gateway
 
 
@@ -471,7 +467,7 @@ def celery_task_eager_mode(settings):
 @pytest.fixture()
 def fake_sdk(fake_gateway, fake_resource_version):
     return G(
-        APISDK,
+        GatewaySDK,
         gateway=fake_gateway,
         resource_version=fake_resource_version,
         language="python",
@@ -692,6 +688,58 @@ def echo_plugin_resource_binding(echo_plugin, fake_resource):
         config=echo_plugin,
         scope_type=PluginBindingScopeEnum.RESOURCE.value,
         scope_id=fake_resource.pk,
+    )
+
+
+@pytest.fixture()
+def fake_plugin_type_bk_header_rewrite_schema():
+    # apisix bk-header-rewrite plugin schema
+    return G(
+        Schema,
+        name="bk_header_rewrite_schema",
+        _schema=json.dumps(
+            {
+                "$comment": "this is a mark for our injected plugin schema",
+                "type": "object",
+                "description": "new headers for request",
+                "minProperties": 1,
+                "additionalProperties": False,
+                "properties": {
+                    "set": {
+                        "type": "object",
+                        "patternProperties": {"^[^:]+$": {"oneOf": [{"type": "string"}, {"type": "number"}]}},
+                    },
+                    "remove": {"type": "array", "items": {"type": "string", "pattern": "^[^:]+$"}},
+                },
+            }
+        ),
+    )
+
+
+@pytest.fixture()
+def fake_plugin_type_bk_header_rewrite(fake_plugin_type_bk_header_rewrite_schema):
+    return G(
+        PluginType,
+        code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
+        name=PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
+        is_public=True,
+        schema=fake_plugin_type_bk_header_rewrite_schema,
+    )
+
+
+@pytest.fixture
+def fake_plugin_bk_header_rewrite(fake_plugin_type_bk_header_rewrite, fake_gateway, faker):
+    return G(
+        PluginConfig,
+        gateway=fake_gateway,
+        name="bk-header-rewrite",
+        type=fake_plugin_type_bk_header_rewrite,
+        yaml=yaml_dumps(
+            {
+                "set": [{"key": "foo", "value": "bar"}],
+                "remove": [{"key": "baz"}],
+            }
+        ),
     )
 
 

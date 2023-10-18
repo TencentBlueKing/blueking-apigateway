@@ -17,9 +17,10 @@
 #
 from typing import Dict, List
 
+from django.db.models import Count
+
 from apigateway.apps.support.api_sdk.models import SDKFactory
-from apigateway.apps.support.models import APISDK
-from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.core.models import Release
 
 
@@ -55,13 +56,7 @@ class GatewaySDKHandler:
                     },
                     "resource_version": {
                         "id": release["resource_version__id"],
-                        "display": ResourceVersionHandler.get_resource_version_display(
-                            {
-                                "version": release["resource_version__version"],
-                                "name": release["resource_version__name"],
-                                "title": release["resource_version__title"],
-                            }
-                        ),
+                        "version": release["resource_version__version"],
                     },
                     "sdk": SDKFactory.create(sdk).as_dict() if sdk else None,
                 }
@@ -72,8 +67,8 @@ class GatewaySDKHandler:
     @staticmethod
     def _get_resource_version_latest_public_sdk(
         gateway_id: int, resource_version_ids: List[int], language: str
-    ) -> Dict[int, APISDK]:
-        queryset = APISDK.objects.filter(
+    ) -> Dict[int, GatewaySDK]:
+        queryset = GatewaySDK.objects.filter(
             gateway_id=gateway_id,
             resource_version_id__in=resource_version_ids,
             is_public=True,
@@ -86,3 +81,12 @@ class GatewaySDKHandler:
             sdks[sdk.resource_version_id] = sdk
 
         return sdks
+
+    @staticmethod
+    def get_resource_version_sdk_count_map(resource_version_ids: List[int]):
+        queryset = (
+            GatewaySDK.objects.filter(resource_version_id__in=resource_version_ids)
+            .values("resource_version_id")
+            .annotate(count=Count("id"))
+        )
+        return {item["resource_version_id"]: item["count"] for item in queryset}

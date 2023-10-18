@@ -76,6 +76,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     description_en = description_i18n.field("en")
 
     _maintainers = models.CharField(db_column="maintainers", max_length=1024, default="")
+    _developers = models.CharField(db_column="developers", max_length=1024, blank=True, null=True, default="")
 
     # status
     status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
@@ -84,7 +85,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     # 不同的托管类型决定特性集
     hosting_type = models.IntegerField(
         choices=APIHostingTypeEnum.get_choices(),
-        default=APIHostingTypeEnum.DEFAULT.value,
+        default=APIHostingTypeEnum.MICRO.value,
     )
 
     def __str__(self):
@@ -104,6 +105,16 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     @maintainers.setter
     def maintainers(self, data: List[str]):
         self._maintainers = ";".join(data)
+
+    @property
+    def developers(self) -> List[str]:
+        if not self._developers:
+            return []
+        return self._developers.split(";")
+
+    @developers.setter
+    def developers(self, data: List[str]):
+        self._developers = ";".join(data)
 
     def has_permission(self, username):
         """
@@ -237,6 +248,7 @@ class Proxy(ConfigModelMixin):
     backend_config_type = models.CharField(max_length=32, default=BackendConfigTypeEnum.DEFAULT.value)
     backend_service = models.ForeignKey("BackendService", on_delete=models.SET_NULL, null=True, default=None)
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
+
     # config = from ConfigModelMixin
 
     def __str__(self):
@@ -458,6 +470,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
+    # todo: 1.14 删除
     name = models.CharField(_("[Deprecated] 版本名"), max_length=128, unique=True)
     # todo: 1.14 删除
     title = models.CharField(max_length=128, blank=True, default="", null=True)
@@ -507,6 +520,10 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
             return f"{self.name}({self.title})"
 
         return f"{self.version}({self.title})"
+
+    @property
+    def is_schema_v2(self):
+        return self.schema_version == ResourceVersionSchemaEnum.V2.value
 
     def __str__(self):
         return f"<ResourceVersion: {self.gateway}/{self.version}>"
@@ -579,7 +596,9 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
 
     # only one stage-resource_version
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
+    # todo:1.14
     stages = models.ManyToManyField(Stage)
+
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
     comment = models.CharField(max_length=512, blank=True, null=True)
 
@@ -646,12 +665,8 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
         self._detail = json.dumps(detail)
 
     @property
-    def is_running(self):
-        return self.status == PublishEventStatusEnum.DOING.value or (
-            # 如果不是最后一个事件，如果是 success 的话说明也是 running
-            self.status == PublishEventStatusEnum.SUCCESS.value
-            and self.name != PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
-        )
+    def is_last(self):
+        return self.name == PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
 
     def __str__(self):
         return f"<PublishEvent: {self.gateway_id}/{self.stage_id}/{self.publish_id}/{self.name}>/{self.status}"

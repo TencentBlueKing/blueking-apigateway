@@ -21,7 +21,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from tencent_apigateway_common.django.translation import get_current_language_code
 
-from apigateway.apps.support.models import APISDK
+from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.sdk.models import DummySDKDocContext
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Release, ResourceVersion
@@ -33,6 +33,7 @@ from .serializers import SDKDocInputSLZ, SDKDocOutputSLZ, SDKListInputSLZ, SDKLi
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取所有网关 SDK，单个 SDK 仅返回最新版本 SDK 信息",
         query_serializer=SDKListInputSLZ,
         responses={status.HTTP_200_OK: SDKListOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Gateway.SDK"],
@@ -45,7 +46,7 @@ class SDKListApi(generics.ListAPIView):
         slz.is_valid(raise_exception=True)
 
         sdks = list(
-            APISDK.objects.filter(
+            GatewaySDK.objects.filter(
                 gateway__is_public=True,
                 gateway__status=GatewayStatusEnum.ACTIVE.value,
                 is_recommended=True,
@@ -73,6 +74,7 @@ class SDKListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取指定语言（python）的网关 SDK 说明文档",
         query_serializer=SDKDocInputSLZ,
         responses={status.HTTP_200_OK: SDKDocOutputSLZ},
         tags=["WebAPI.Docs.Gateway.SDK"],

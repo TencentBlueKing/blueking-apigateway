@@ -7,6 +7,10 @@ interface IErrorInfo {
 
 // 请求成功执行拦截器
 export default async (response: any, config: IFetchConfig) => {
+  // 处理204没有返回值的情况
+  if (response.status === 204) {
+    return Promise.resolve(response);
+  }
   const responseInfo =  await response[config.responseType]();
   if (response.ok) {
     const reg = RegExp(/20/);

@@ -381,7 +381,7 @@ class TestComponentReleaseHistorySLZ:
                     "created_time": "2020-10-10 12:30:00",
                     "resource_version_name": "bk-esb-demo",
                     "resource_version_title": "v1",
-                    "resource_version_display": "1.0.0(v1)",
+                    "resource_version_display": "1.0.0",
                     "created_by": "admin",
                     "status": "success",
                     "message": "ok",

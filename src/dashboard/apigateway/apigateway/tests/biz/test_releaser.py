@@ -21,12 +21,14 @@ import json
 import pytest
 from ddf import G
 
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.biz.releaser import (
     BaseGatewayReleaser,
-    BatchReleaser,
     MicroGatewayReleaseHistory,
     MicroGatewayReleaser,
     ReleaseError,
+    Releaser,
     ReleaseValidationError,
 )
 from apigateway.core.constants import ReleaseStatusEnum
@@ -45,7 +47,7 @@ def get_release_data(gateway):
     )
 
     return {
-        "stage_ids": [stage.id],
+        "stage_id": stage.id,
         "resource_version_id": resource_version.id,
         "comment": "",
     }
@@ -55,7 +57,7 @@ class TestBaseGatewayReleaser:
     def test_from_data(self, fake_gateway, fake_stage, fake_resource_version):
         releaser = BaseGatewayReleaser.from_data(
             fake_gateway,
-            [fake_stage.id],
+            fake_stage.id,
             fake_resource_version.id,
             "",
             access_token="access_token",
@@ -64,13 +66,13 @@ class TestBaseGatewayReleaser:
 
         # 资源版本 不存在
         with pytest.raises(ResourceVersion.DoesNotExist):
-            BaseGatewayReleaser.from_data(fake_gateway, [fake_stage.id], 0, "", access_token="access_token")
+            BaseGatewayReleaser.from_data(fake_gateway, fake_stage.id, 0, "", access_token="access_token")
 
     def test_release(self, mocker, fake_gateway):
         release_data = get_release_data(fake_gateway)
         releaser = BaseGatewayReleaser.from_data(
             fake_gateway,
-            release_data["stage_ids"],
+            release_data["stage_id"],
             release_data["resource_version_id"],
             release_data.get("comment", ""),
             access_token="access_token",
@@ -89,16 +91,14 @@ class TestBaseGatewayReleaser:
 
         releaser.release()
         resource_version_ids = list(
-            Release.objects.filter(stage_id__in=release_data["stage_ids"])
+            Release.objects.filter(stage_id=release_data["stage_id"])
             .distinct()
             .values_list("resource_version_id", flat=True)
         )
         assert len(resource_version_ids) == 1
         assert resource_version_ids[0] == release_data["resource_version_id"]
         # assert ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.SUCCESS.value).exists()
-        assert Stage.objects.filter(id__in=release_data["stage_ids"], status=1).count() == len(
-            release_data["stage_ids"]
-        )
+        assert Stage.objects.filter(id=release_data["stage_id"], status=1).count() == 1
 
         mock_release.assert_called()
         # mock_post_release.assert_called()
@@ -170,15 +170,13 @@ class TestBaseGatewayReleaser:
         self, mocker, fake_gateway, fake_stage, fake_resource_version, vars, mock_used_stage_vars, will_error
     ):
         mocker.patch(
-            "apigateway.core.managers.ResourceVersionManager.get_used_stage_vars",
+            "apigateway.biz.validators.ResourceVersionHandler.get_used_stage_vars",
             return_value=mock_used_stage_vars,
         )
 
         fake_stage.vars = vars
         fake_stage.save(update_fields=["_vars"])
-        releaser = BaseGatewayReleaser(
-            gateway=fake_gateway, stages=[fake_stage], resource_version=fake_resource_version
-        )
+        releaser = BaseGatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
         if will_error:
             with pytest.raises(Exception):
@@ -208,7 +206,7 @@ class TestBaseGatewayReleaser:
             return_value=contain_hosts_ret,
         ):
             releaser = BaseGatewayReleaser(
-                gateway=fake_gateway, stages=[fake_stage], resource_version=fake_resource_version
+                gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version
             )
 
             if not succeeded:
@@ -219,14 +217,44 @@ class TestBaseGatewayReleaser:
                     releaser._validate_stage_upstreams(fake_gateway.id, fake_stage, fake_resource_version.id) is None
                 )
 
+    def test_validate_stage_plugins(
+        self,
+        fake_stage,
+        fake_gateway,
+        fake_resource_version,
+        echo_plugin_type,
+        echo_plugin_stage_binding,
+        faker,
+    ):
+        echo_plugin2 = G(
+            PluginConfig,
+            gateway=fake_gateway,
+            name="echo-plugin",
+            type=echo_plugin_type,
+            yaml=json.dumps(
+                {
+                    faker.random_element(["before_body", "body", "after_body"]): faker.pystr(),
+                }
+            ),
+        )
+        echo_plugin_stage_binding2 = G(
+            PluginBinding,
+            gateway=echo_plugin2.gateway,
+            config=echo_plugin2,
+            scope_type=PluginBindingScopeEnum.STAGE.value,
+            scope_id=fake_stage.pk,
+        )
+        releaser = BaseGatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+        with pytest.raises(ReleaseValidationError):
+            releaser._validate_stage_plugins(fake_stage)
+
     def test_activate_stages(self, fake_gateway, fake_resource_version):
         s1 = G(Stage, gateway=fake_gateway, status=0)
-        s2 = G(Stage, gateway=fake_gateway, status=1)
 
-        releaser = BaseGatewayReleaser(gateway=fake_gateway, stages=[s1, s2], resource_version=fake_resource_version)
+        releaser = BaseGatewayReleaser(gateway=fake_gateway, stage=s1, resource_version=fake_resource_version)
         releaser._post_release()
 
-        assert Stage.objects.filter(id__in=[s1.id, s2.id], status=1).count() == 2
+        assert Stage.objects.filter(id__in=[s1.id], status=1).count() == 1
 
 
 class TestMicroGatewayReleaser:
@@ -237,7 +265,7 @@ class TestMicroGatewayReleaser:
         # self.releaser = BaseGatewayReleaser.from_data(
         self.releaser = MicroGatewayReleaser.from_data(
             self.gateway,
-            release_data["stage_ids"],
+            release_data["stage_id"],
             release_data["resource_version_id"],
             release_data["comment"],
             access_token="access_token",
@@ -262,12 +290,12 @@ class TestMicroGatewayReleaser:
         )
         releaser = MicroGatewayReleaser(
             gateway=fake_gateway,
-            stages=[fake_stage],
+            stage=fake_stage,
             resource_version=fake_resource_version,
             access_token="access_token",
         )
 
-        releaser._do_release([fake_release], fake_release_history)
+        releaser._do_release(fake_release, fake_release_history)
 
         mock_release_gateway_by_helm.si.assert_called_once_with(
             access_token="access_token",
@@ -304,11 +332,9 @@ class TestMicroGatewayReleaser:
             "apigateway.biz.releaser.release_gateway_by_registry",
             wraps=celery_mock_task,
         )
-        releaser = MicroGatewayReleaser(
-            gateway=fake_gateway, stages=[fake_stage], resource_version=fake_resource_version
-        )
+        releaser = MicroGatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
-        releaser._do_release([fake_release], fake_release_history)
+        releaser._do_release(fake_release, fake_release_history)
 
         mock_release_gateway_by_registry.si.assert_called_once_with(
             micro_gateway_id=fake_shared_gateway.id,
@@ -329,11 +355,11 @@ class TestMicroGatewayReleaser:
         ).exists()
 
 
-class TestBatchReleaser:
+class TestReleaser:
     def test_release(self, mocker, fake_gateway):
         mock_release = mocker.patch("apigateway.biz.releaser.BaseGatewayReleaser.release")
         release_data = get_release_data(fake_gateway)
-        BatchReleaser(access_token="access_token").release(
-            fake_gateway, release_data["stage_ids"], release_data["resource_version_id"], release_data["comment"]
+        Releaser(access_token="access_token").release(
+            fake_gateway, release_data["stage_id"], release_data["resource_version_id"], release_data["comment"]
         )
         mock_release.assert_called_once_with()

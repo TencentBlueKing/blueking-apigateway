@@ -48,7 +48,6 @@ class GatewayAdmin(admin.ModelAdmin):
         "name",
         "status",
         "is_public",
-        "hosting_type",
         "created_by",
         "created_time",
         "updated_time",
@@ -107,7 +106,7 @@ class ReleasedResourceAdmin(admin.ModelAdmin):
 class ReleaseHistoryAdmin(admin.ModelAdmin):
     list_display = ["gateway", "resource_version", "status", "created_by", "created_time"]
     list_filter = ["gateway", "created_time"]
-    filter_horizontal = ["stages"]
+    search_fields = ["stage_id"]
     raw_id_fields = ["resource_version"]
 
 

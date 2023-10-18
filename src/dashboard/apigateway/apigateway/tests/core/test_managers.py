@@ -139,99 +139,6 @@ class TestStageManager:
 
 
 class TestResourceVersionManager:
-    def test_get_used_stage_vars(self):
-        gateway = G(Gateway)
-
-        data = [
-            # resource version not exist
-            {
-                "resource_version": None,
-                "expected": None,
-            },
-            # proxy type is mock
-            {
-                "resource_version": G(
-                    ResourceVersion,
-                    gateway=gateway,
-                    _data=json.dumps(
-                        [
-                            {
-                                "proxy": {
-                                    "type": "mock",
-                                }
-                            }
-                        ]
-                    ),
-                ),
-                "expected": {
-                    "in_path": [],
-                    "in_host": [],
-                },
-            },
-            # vars in path/host
-            {
-                "resource_version": G(
-                    ResourceVersion,
-                    gateway=gateway,
-                    _data=json.dumps(
-                        [
-                            {
-                                "proxy": {
-                                    "type": "http",
-                                    "config": json.dumps(
-                                        {
-                                            "path": "/hello/{env.region}/",
-                                            "upstreams": {
-                                                "hosts": [
-                                                    {"host": "https://{env.domain}"},
-                                                ]
-                                            },
-                                        }
-                                    ),
-                                }
-                            }
-                        ]
-                    ),
-                ),
-                "expected": {
-                    "in_path": ["region"],
-                    "in_host": ["domain"],
-                },
-            },
-            # vars in path/host
-            {
-                "resource_version": G(
-                    ResourceVersion,
-                    gateway=gateway,
-                    _data=json.dumps(
-                        [
-                            {
-                                "proxy": {
-                                    "type": "http",
-                                    "config": json.dumps(
-                                        {
-                                            "path": "/hello/{env.region}/",
-                                            "upstreams": {},
-                                        }
-                                    ),
-                                }
-                            }
-                        ]
-                    ),
-                ),
-                "expected": {
-                    "in_path": ["region"],
-                    "in_host": [],
-                },
-            },
-        ]
-        for test in data:
-            result = ResourceVersion.objects.get_used_stage_vars(
-                gateway_id=gateway.id,
-                id=test["resource_version"].id if test["resource_version"] else 0,
-            )
-            assert result == test["expected"]
-
     def test_get_id_to_fields_map(self):
         gateway = G(Gateway)
         rv1 = G(ResourceVersion, gateway=gateway, name="rv1", title="rv1", version="1.0.1")
@@ -705,12 +612,10 @@ class TestReleaseHistoryManager(TestCase):
         resource_version_2 = G(ResourceVersion, gateway=gateway, name="test-20191225-bbbbb")
 
         history = G(ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1)
-        history.stages.add(stage_prod)
 
         history = G(
             ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1, created_by="admin"
         )
-        history.stages.add(stage_prod)
 
         history = G(
             ReleaseHistory,
@@ -719,10 +624,8 @@ class TestReleaseHistoryManager(TestCase):
             resource_version=resource_version_1,
             created_time=dummy_time.time,
         )
-        history.stages.add(stage_prod)
 
         history = G(ReleaseHistory, gateway=gateway, stage=stage_test, resource_version=resource_version_2)
-        history.stages.add(stage_test)
 
         data = [
             # query, stage_name

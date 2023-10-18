@@ -31,6 +31,7 @@ from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关环境下已发布的资源列表",
         query_serializer=ResourceListInputSLZ,
         responses={status.HTTP_200_OK: ResourceOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Resource"],

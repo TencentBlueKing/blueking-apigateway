@@ -36,14 +36,13 @@ from apigateway.controller.crds.v1beta1.convertors.resource import HttpResourceC
 from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvertor
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
 from apigateway.controller.registry.dict import DictRegistry
-from apigateway.core.constants import APIHostingTypeEnum, StageStatusEnum
+from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import MicroGateway, Proxy, Release, ResourceVersion
 from apigateway.utils.yaml import yaml_dumps
 
 
 @fixture
 def edge_gateway(fake_gateway):
-    fake_gateway.hosting_type = APIHostingTypeEnum.MICRO.value
     fake_gateway.is_public = True
     fake_gateway.save()
 
@@ -339,7 +338,7 @@ def mock_etcd_registry(mocker):
 
 @pytest.fixture
 def edge_plugin_type():
-    return G(PluginType, schema=None)
+    return G(PluginType, code="bk-rate-limit", schema=None)
 
 
 @fixture

@@ -20,36 +20,13 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
+from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
+from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, HOST_WITHOUT_SCHEME_PATTERN, BackendTypeEnum
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
 
-from .constants import (
-    BACKEND_CONFIG_SCHEME_MAP,
-    BACKEND_NAME_PATTERN,
-    BackendConfigSchemeEnum,
-    BackendConfigTypeEnum,
-    LoadBalanceTypeEnum,
-)
-
-
-class HostSLZ(serializers.Serializer):
-    scheme = serializers.ChoiceField(choices=BackendConfigSchemeEnum.get_choices())
-    host = serializers.RegexField(HOST_WITHOUT_SCHEME_PATTERN)
-    weight = serializers.IntegerField(min_value=1, required=False)
-
-    class Meta:
-        ref_name = "apis.web.backend.HostSLZ"
-
-
-class BaseBackendConfigSLZ(serializers.Serializer):
-    type = serializers.ChoiceField(
-        choices=BackendConfigTypeEnum.get_choices(), default=BackendConfigTypeEnum.NODE.value
-    )
-    timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
-    loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices())
-    hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
+from .constants import BACKEND_NAME_PATTERN
 
 
 class BackendConfigSLZ(BaseBackendConfigSLZ):
@@ -58,10 +35,14 @@ class BackendConfigSLZ(BaseBackendConfigSLZ):
 
 class BackendInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    name = serializers.RegexField(BACKEND_NAME_PATTERN)
-    description = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, required=False)
-    type = serializers.ChoiceField(choices=BackendTypeEnum.get_choices(), default=BackendTypeEnum.HTTP.value)
-    configs = serializers.ListField(child=BackendConfigSLZ(), allow_empty=False)
+    name = serializers.RegexField(BACKEND_NAME_PATTERN, help_text="后端服务名称")
+    description = serializers.CharField(
+        allow_blank=True, allow_null=True, max_length=512, required=False, help_text="描述"
+    )
+    type = serializers.ChoiceField(
+        choices=BackendTypeEnum.get_choices(), default=BackendTypeEnum.HTTP.value, help_text="类型"
+    )
+    configs = serializers.ListField(child=BackendConfigSLZ(), allow_empty=False, help_text="配置")
 
     class Meta:
         validators = [
@@ -107,8 +88,8 @@ class BackendInputSLZ(serializers.Serializer):
 
 
 class BackendListOutputSLZ(serializers.ModelSerializer):
-    resource_count = serializers.SerializerMethodField()
-    deletable = serializers.SerializerMethodField()
+    resource_count = serializers.SerializerMethodField(help_text="资源数量")
+    deletable = serializers.SerializerMethodField(help_text="是否可删除")
 
     class Meta:
         model = Backend
@@ -126,9 +107,9 @@ class BackendListOutputSLZ(serializers.ModelSerializer):
 
 class BackendRetrieveOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = serializers.CharField()
-    configs = serializers.SerializerMethodField()
+    name = serializers.CharField(help_text="名称")
+    description = serializers.CharField(help_text="描述")
+    configs = serializers.SerializerMethodField(help_text="配置")
 
     def get_configs(self, obj):
         backend_configs = BackendConfig.objects.filter(backend=obj).prefetch_related("stage")

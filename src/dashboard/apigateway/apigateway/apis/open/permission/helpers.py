@@ -19,28 +19,16 @@
 import copy
 import math
 from collections import defaultdict
-from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 from django.utils.functional import cached_property
 from pydantic import BaseModel, parse_obj_as
 
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionLevelEnum, PermissionStatusEnum
-from apigateway.apps.permission.models import AppAPIPermission, AppPermissionApplyStatus, AppResourcePermission
+from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionApplyStatus, AppResourcePermission
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ReleasedResource, Resource
-
-
-class AppPermissionHelper:
-    def get_permission_model(self, dimension: str):
-        if dimension == GrantDimensionEnum.API.value:
-            return AppAPIPermission
-
-        if dimension == GrantDimensionEnum.RESOURCE.value:
-            return AppResourcePermission
-
-        raise ValueError(f"unsupported dimension: {dimension}")
 
 
 class ResourcePermission(BaseModel):
@@ -55,7 +43,7 @@ class ResourcePermission(BaseModel):
     description_en: Optional[str] = None
     resource_perm_required: bool
     doc_link: str
-    api_permission: Optional[AppAPIPermission] = None
+    api_permission: Optional[AppGatewayPermission] = None
     resource_permission: Optional[AppResourcePermission] = None
     api_permission_apply_status: Optional[str] = ""
     resource_permission_apply_status: Optional[str] = ""
@@ -123,12 +111,11 @@ class ResourcePermission(BaseModel):
         return expires_in
 
 
-@dataclass
 class ResourcePermissionBuilder:
-    gateway: Gateway
-    target_app_code: str
+    def __init__(self, gateway: Gateway, target_app_code: str):
+        self.gateway = gateway
+        self.target_app_code = target_app_code
 
-    def __post_init__(self):
         self.api_permission = self._get_api_permission()
         self.resource_permission_map = self._get_resource_permission_map()
         self.api_permission_apply_status = self._get_api_permission_apply_status()
@@ -154,7 +141,7 @@ class ResourcePermissionBuilder:
         return [perm.as_dict() for perm in resource_permissions]
 
     def _get_api_permission(self):
-        return AppAPIPermission.objects.filter(
+        return AppGatewayPermission.objects.filter(
             gateway=self.gateway,
             bk_app_code=self.target_app_code,
         ).first()
@@ -191,11 +178,11 @@ class ResourcePermissionBuilder:
         }
 
 
-@dataclass
 class AppPermissionBuilder:
     """获取应用的网关资源权限"""
 
-    target_app_code: str
+    def __init__(self, target_app_code: str):
+        self.target_app_code = target_app_code
 
     def build(self) -> list:
         api_permission_map = self._get_api_permission_map()
@@ -225,10 +212,10 @@ class AppPermissionBuilder:
         resource_permissions = parse_obj_as(List[ResourcePermission], list(resource_map.values()))
         return [perm.as_dict() for perm in resource_permissions]
 
-    def _get_api_permission_map(self) -> Dict[int, AppAPIPermission]:
+    def _get_api_permission_map(self) -> Dict[int, AppGatewayPermission]:
         return {
             perm.gateway_id: perm
-            for perm in AppAPIPermission.objects.filter_public_permission_by_app(bk_app_code=self.target_app_code)
+            for perm in AppGatewayPermission.objects.filter_public_permission_by_app(bk_app_code=self.target_app_code)
         }
 
     def _get_resource_permission_map(self) -> Dict[int, AppResourcePermission]:

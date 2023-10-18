@@ -23,7 +23,6 @@ import operator
 from typing import Any, Dict, List, Optional
 
 from django.db.models import Q
-from django.utils.translation import gettext as _
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.label.models import APILabel, ResourceLabel
@@ -90,7 +89,6 @@ class ResourceHandler:
         context_map=None,
         disabled_stage_map=None,
         api_label_map=None,
-        backends=None,
         plugin_map=None,
     ):
         """
@@ -139,9 +137,6 @@ class ResourceHandler:
             )
         else:
             data["api_labels"] = api_label_map.get(resource.pk, [])
-
-        if backends:
-            data["backend_ids"] = backends
 
         if plugin_map:
             data["plugins"] = plugin_map.get(resource.pk, [])
@@ -206,9 +201,9 @@ class ResourceHandler:
         instance_name: str,
     ):
         comment = {
-            OpTypeEnum.CREATE: _("创建资源"),
-            OpTypeEnum.MODIFY: _("更新资源"),
-            OpTypeEnum.DELETE: _("删除资源"),
+            OpTypeEnum.CREATE: "创建资源",
+            OpTypeEnum.MODIFY: "更新资源",
+            OpTypeEnum.DELETE: "删除资源",
         }.get(op_type, "-")
 
         record_audit_log(

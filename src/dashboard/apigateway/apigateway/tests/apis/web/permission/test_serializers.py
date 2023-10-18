@@ -82,21 +82,11 @@ class TestAppGatewayPermissionOutputSLZ(TestCase):
         resource = G(Resource, gateway=gateway, path="/echo/", method="GET")
 
         app_api_permission = G(
-            models.AppAPIPermission,
+            models.AppGatewayPermission,
             gateway=gateway,
             bk_app_code="test",
             expires=None,
         )
-
-        app_resource_permission = G(
-            models.AppResourcePermission,
-            gateway=gateway,
-            resource_id=resource.id,
-            bk_app_code="test",
-            expires=dummy_time.time,
-            grant_type="apply",
-        )
-        app_resource_permission.resource = resource
 
         data = [
             {
@@ -112,7 +102,30 @@ class TestAppGatewayPermissionOutputSLZ(TestCase):
                     "grant_type": "initialize",
                     "renewable": False,
                 },
-            },
+            }
+        ]
+
+        for test in data:
+            slz = serializers.AppGatewayPermissionOutputSLZ(instance=test["instance"])
+            self.assertEqual(slz.data, test["expected"])
+
+
+class TestAppResourcePermissionOutputSLZ(TestCase):
+    def test_to_representation(self):
+        gateway = G(Gateway)
+        resource = G(Resource, gateway=gateway, path="/echo/", method="GET")
+
+        app_resource_permission = G(
+            models.AppResourcePermission,
+            gateway=gateway,
+            resource_id=resource.id,
+            bk_app_code="test",
+            expires=dummy_time.time,
+            grant_type="apply",
+        )
+        app_resource_permission.resource = resource
+
+        data = [
             {
                 "instance": app_resource_permission,
                 "expected": {
@@ -130,7 +143,10 @@ class TestAppGatewayPermissionOutputSLZ(TestCase):
         ]
 
         for test in data:
-            slz = serializers.AppGatewayPermissionOutputSLZ(instance=test["instance"])
+            context = {}
+            if test["instance"] == app_resource_permission:
+                context["resource_map"] = {app_resource_permission.resource_id: resource}
+            slz = serializers.AppResourcePermissionOutputSLZ(instance=test["instance"], context=context)
             self.assertEqual(slz.data, test["expected"])
 
 

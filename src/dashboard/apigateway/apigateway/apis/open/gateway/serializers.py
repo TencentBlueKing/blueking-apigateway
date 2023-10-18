@@ -30,7 +30,6 @@ from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.validators import BKAppCodeListValidator
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
-    APIHostingTypeEnum,
     GatewayStatusEnum,
     GatewayTypeEnum,
 )
@@ -91,10 +90,6 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         default=settings.DEFAULT_USER_AUTH_TYPE,
     )
     user_config = UserConfigSLZ(required=False)
-    hosting_type = serializers.IntegerField(
-        required=False,
-        default=settings.DEFAULT_GATEWAY_HOSTING_TYPE,
-    )
 
     class Meta:
         model = Gateway
@@ -108,7 +103,6 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "api_type",
             "user_auth_type",
             "user_config",
-            "hosting_type",
         ]
         extra_kwargs = {
             "description_en": {
@@ -119,7 +113,6 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
     def to_internal_value(self, data):
         data.setdefault("maintainers", [])
-        data.setdefault("hosting_type", APIHostingTypeEnum(settings.DEFAULT_GATEWAY_HOSTING_TYPE).value)
         data.setdefault("user_auth_type", UserAuthTypeEnum(settings.DEFAULT_USER_AUTH_TYPE).value)
         return super().to_internal_value(data)
 

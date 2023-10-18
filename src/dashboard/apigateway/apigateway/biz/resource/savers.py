@@ -73,7 +73,10 @@ class ResourcesSaver:
         for resource_data in self.resource_data_list:
             if resource_data.resource:
                 resource = resource_data.resource
-                resource.__dict__.update(updated_by=self.username, **resource_data.basic_data)
+                resource.updated_by = self.username
+                for key, value in resource_data.basic_data.items():
+                    setattr(resource, key, value)
+
                 update_resources.append(resource)
             else:
                 resource = Resource(
@@ -140,12 +143,11 @@ class ResourcesSaver:
 
             proxy = proxies.get(resource_data.resource.id)
             if proxy:
-                proxy.__dict__.update(
-                    type=ProxyTypeEnum.HTTP.value,
-                    backend=resource_data.backend,
-                    schema=schema,
-                    _config=resource_data.backend_config.json(),
-                )
+                proxy.type = ProxyTypeEnum.HTTP.value
+                proxy.backend = resource_data.backend
+                proxy.schema = schema
+                proxy._config = resource_data.backend_config.json()
+
                 update_proxies.append(proxy)
             else:
                 proxy = Proxy(
@@ -188,7 +190,8 @@ class ResourcesSaver:
             auth_config.update(resource_data.auth_config.dict())
 
             if context:
-                context.__dict__.update(_config=json.dumps(auth_config))
+                context._config = json.dumps(auth_config)
+
                 update_contexts.append(context)
             else:
                 context = Context(

@@ -26,7 +26,8 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.resource.serializers import (
     BackendPathCheckInputSLZ,
-    ResourceDataSLZ,
+    HttpBackendConfigSLZ,
+    ResourceDataImportSLZ,
     ResourceExportOutputSLZ,
     ResourceImportInputSLZ,
     ResourceInputSLZ,
@@ -61,6 +62,64 @@ class TestResourceListOutputSLZ:
     def test_has_updated(self, fake_resource, context, expected):
         slz = ResourceListOutputSLZ(fake_resource, context=context)
         assert slz.get_has_updated(fake_resource) is expected
+
+
+class TestHttpBackendConfigSLZ:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "method": "GET",
+                    "path": "/test",
+                },
+                {
+                    "method": "GET",
+                    "path": "/test",
+                    "legacy_upstreams": None,
+                    "legacy_transform_headers": None,
+                },
+            ),
+            (
+                {
+                    "method": "GET",
+                    "path": "/test",
+                    "legacy_upstreams": None,
+                    "legacy_transform_headers": None,
+                },
+                {
+                    "method": "GET",
+                    "path": "/test",
+                    "legacy_upstreams": None,
+                    "legacy_transform_headers": None,
+                },
+            ),
+            (
+                {
+                    "method": "GET",
+                    "path": "/test",
+                    "legacy_upstreams": {
+                        "hosts": [{"host": "http://{env.foo}", "weight": 20}],
+                        "loadbalance": "roundrobin",
+                    },
+                    "legacy_transform_headers": {"set": {"x-token": "test"}, "delete": ["x-token"]},
+                },
+                {
+                    "method": "GET",
+                    "path": "/test",
+                    "legacy_upstreams": {
+                        "hosts": [{"host": "http://{env.foo}", "weight": 20}],
+                        "loadbalance": "roundrobin",
+                    },
+                    "legacy_transform_headers": {"set": {"x-token": "test"}, "delete": ["x-token"]},
+                },
+            ),
+        ],
+    )
+    def test_validate(self, data, expected):
+        slz = HttpBackendConfigSLZ(data=data)
+        slz.is_valid(raise_exception=True)
+        assert slz.data == expected
 
 
 class TestResourceInputSLZ:
@@ -167,7 +226,7 @@ class TestResourceInputSLZ:
         assert result == backend
 
 
-class TestResourceDataSLZ:
+class TestResourceDataImportSLZ:
     @pytest.mark.parametrize(
         "description_en, expected",
         [
@@ -177,15 +236,13 @@ class TestResourceDataSLZ:
         ],
     )
     def validate_description_en(self, description_en, expected):
-        slz = ResourceDataSLZ()
+        slz = ResourceDataImportSLZ()
         result = slz.validate_description_en(description_en)
         assert result == expected
 
 
 class TestResourceImportInputSLZ:
     def test_validate(self, fake_stage, fake_resource_swagger):
-        fake_gateway = fake_stage.gateway
-
         data = {
             "content": fake_resource_swagger,
             "selected_resources": [{"name": "foo"}],
@@ -213,41 +270,9 @@ class TestResourceImportInputSLZ:
         with pytest.raises(ValidationError):
             slz._validate_content(content)
 
-    @pytest.mark.parametrize(
-        "resources, context, expected",
-        [
-            (
-                [{"labels": ["foo", "bar"]}],
-                {"exist_label_names": ["green", "blue"]},
-                ValidationError,
-            ),
-            (
-                [{"labels": ["foo", "bar"]}, {"labels": []}],
-                {"exist_label_names": []},
-                ValidationError,
-            ),
-            (
-                [{"name": "test"}, {"labels": []}],
-                {"exist_label_names": ["green", "blue"]},
-                None,
-            ),
-        ],
-    )
-    def test_validate_label_count(self, settings, resources, context, expected):
-        settings.MAX_LABEL_COUNT_PER_GATEWAY = 1
-
-        slz = ResourceImportInputSLZ(context=context)
-
-        if expected is None:
-            slz._validate_label_count(resources)
-            return
-
-        with pytest.raises(expected):
-            slz._validate_label_count(resources)
-
 
 class TestResourceExportOutputSLZ:
-    def test_to_representation(self, fake_resource):
+    def test_to_representation(self, fake_resource, echo_plugin_resource_binding):
         proxies = {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource__in=[fake_resource])}
         backends = {backend.id: backend for backend in Backend.objects.filter(gateway=fake_resource.gateway)}
 
@@ -259,6 +284,7 @@ class TestResourceExportOutputSLZ:
                 "proxies": proxies,
                 "backends": backends,
                 "auth_configs": {fake_resource.id: {"foo": True}},
+                "resource_id_to_plugin_bindings": {fake_resource.id: [echo_plugin_resource_binding]},
             },
         )
         assert len(slz.data) == 1

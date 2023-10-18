@@ -113,6 +113,15 @@ const routes: RouteRecordRaw[] = [
           matchRoute: 'apigwResource',
         },
       },
+      {
+        path: '/:id/resource/:resourceId/edit',
+        name: 'apigwResourceEdit',
+        component: ApigwResourceEdit,
+        meta: {
+          title: '编辑资源',
+          matchRoute: 'apigwResource',
+        },
+      },
     ],
   },
 ];

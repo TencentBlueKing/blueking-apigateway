@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 import pytest
 from ddf import G
 from rest_framework import serializers
@@ -25,9 +27,12 @@ from apigateway.biz.validators import (
     BKAppCodeValidator,
     MaxCountPerGatewayValidator,
     ResourceIDValidator,
+    ResourceVersionValidator,
 )
+from apigateway.common.factories import SchemaFactory
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.models import Gateway, Resource, Stage
+from apigateway.core.constants import ProxyTypeEnum
+from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
 
 class TestMaxCountPerGatewayValidator:
@@ -137,3 +142,66 @@ class TestBKAppCodeValidator:
         slz = self.RecordSLZ(data={"bk_app_code": "invalid#"})
         with pytest.raises(ValidationError):
             slz.is_valid(raise_exception=True)
+
+
+class TestResourceVersionValidator:
+    def test_validate(self, faker, fake_stage, fake_gateway, fake_resource):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
+        validator = ResourceVersionValidator()
+        with pytest.raises(ValidationError):
+            validator(
+                {
+                    "gateway": fake_gateway,
+                    "version": "1.0.0",
+                }
+            )
+
+        assert (
+            validator(
+                {
+                    "gateway": fake_gateway,
+                    "version": "1.0.1",
+                }
+            )
+            is None
+        )
+        backend2 = G(
+            Backend,
+            gateway=fake_gateway,
+            name=faker.pystr(),
+        )
+
+        G(
+            BackendConfig,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            backend=backend2,
+            config={
+                "type": "node",
+                "timeout": 30,
+                "loadbalance": "roundrobin",
+                "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+            },
+        )
+        G(
+            Proxy,
+            type=ProxyTypeEnum.MOCK.value,
+            resource=fake_resource,
+            backend=backend2,
+            _config=json.dumps(
+                {
+                    "method": faker.http_method(),
+                    "path": faker.uri_path(),
+                    "match_subpath": False,
+                    "timeout": faker.random_int(),
+                }
+            ),
+            schema=SchemaFactory().get_proxy_schema(ProxyTypeEnum.HTTP.value),
+        )
+        with pytest.raises(ValidationError):
+            validator(
+                {
+                    "gateway": fake_gateway,
+                    "version": "1.0.0",
+                }
+            )

@@ -99,9 +99,6 @@ def revoke_release(release_id: int, publish_id: int):
 
     release_history = ReleaseHistory.objects.get(id=publish_id)
 
-    # 上报事件需要按照release stage维度上报
-    release_history.stage = release.stage
-
     PublishEventReporter.report_create_publish_task_success_event(release_history)
 
     procedure_logger = ReleaseProcedureLogger(

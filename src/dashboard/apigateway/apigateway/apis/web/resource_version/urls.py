@@ -33,7 +33,7 @@ urlpatterns = [
         name="gateway.resource_version.retrieve",
     ),
     path(
-        "need_new_version/",
+        "need-new-version/",
         ResourceVersionNeedNewVersionRetrieveApi.as_view(),
         name="gateway.resource_version.need_new_version",
     ),

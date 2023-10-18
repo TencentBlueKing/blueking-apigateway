@@ -31,7 +31,7 @@ from rest_framework import generics, status
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
-    AppAPIPermission,
+    AppGatewayPermission,
     AppPermissionApply,
     AppPermissionRecord,
     AppResourcePermission,
@@ -74,6 +74,7 @@ class AppResourcePermissionQuerySetMixin:
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取资源权限列表",
         responses={status.HTTP_200_OK: AppResourcePermissionOutputSLZ(many=True)},
         tags=["WebAPI.Permission"],
     ),
@@ -81,6 +82,7 @@ class AppResourcePermissionQuerySetMixin:
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
+        operation_description="资源权限主动授权",
         responses={status.HTTP_201_CREATED: ""},
         request_body=AppPermissionInputSLZ,
         tags=["WebAPI.Permission"],
@@ -97,7 +99,10 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
 
-        serializer = AppResourcePermissionOutputSLZ(page, many=True)
+        resources = Resource.objects.filter(id__in=[perm.resource_id for perm in page])
+        serializer = AppResourcePermissionOutputSLZ(
+            page, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
+        )
         return self.get_paginated_response(serializer.data)
 
     def create(self, request, *args, **kwargs):
@@ -123,6 +128,7 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
+        operation_description="资源权限导出",
         request_body=AppPermissionExportInputSLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.Permission"],
@@ -147,7 +153,10 @@ class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generic
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
             queryset = self.get_queryset().filter(id__in=data["permission_ids"])
 
-        slz = AppResourcePermissionOutputSLZ(queryset, many=True)
+        resources = Resource.objects.filter(id__in=[perm.resource_id for perm in queryset])
+        slz = AppResourcePermissionOutputSLZ(
+            queryset, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
+        )
         content = self._get_csv_content(slz.data)
 
         response = DownloadableResponse(content, filename=f"{self.request.gateway.name}-permissions.csv")
@@ -183,6 +192,7 @@ class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generic
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取有资源权限的应用列表",
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.Permission"],
     ),
@@ -204,7 +214,10 @@ class AppResourcePermissionAppCodeListApi(generics.ListAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""}, request_body=AppPermissionIDsSLZ, tags=["WebAPI.Permission"]
+        operation_description="资源权限续期",
+        responses={status.HTTP_201_CREATED: ""},
+        request_body=AppPermissionIDsSLZ,
+        tags=["WebAPI.Permission"],
     ),
 )
 class AppResourcePermissionRenewApi(generics.CreateAPIView):
@@ -229,6 +242,7 @@ class AppResourcePermissionRenewApi(generics.CreateAPIView):
 @method_decorator(
     name="delete",
     decorator=swagger_auto_schema(
+        operation_description="删除资源权限",
         responses={status.HTTP_204_NO_CONTENT: ""},
         query_serializer=AppPermissionIDsSLZ,
         tags=["WebAPI.Permission"],
@@ -256,6 +270,7 @@ class AppGatewayPermissionQuerySetMixin:
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关权限列表",
         responses={status.HTTP_200_OK: AppGatewayPermissionOutputSLZ(many=True)},
         tags=["WebAPI.Permission"],
     ),
@@ -263,13 +278,14 @@ class AppGatewayPermissionQuerySetMixin:
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
+        operation_description="网关权限主动授权",
         responses={status.HTTP_201_CREATED: ""},
         request_body=AppPermissionInputSLZ,
         tags=["WebAPI.Permission"],
     ),
 )
 class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, generics.ListCreateAPIView):
-    queryset = AppAPIPermission.objects.order_by("-id")
+    queryset = AppGatewayPermission.objects.order_by("-id")
     filterset_class = AppGatewayPermissionFilter
 
     def list(self, request, *args, **kwargs):
@@ -291,7 +307,7 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
 
         data = slz.validated_data
 
-        AppAPIPermission.objects.save_permissions(
+        AppGatewayPermission.objects.save_permissions(
             gateway=request.gateway,
             resource_ids=data["resource_ids"],
             bk_app_code=data["bk_app_code"],
@@ -305,13 +321,14 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
+        operation_description="网关权限导出",
         request_body=AppPermissionExportInputSLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.Permission"],
     ),
 )
 class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.CreateAPIView):
-    queryset = AppAPIPermission.objects.order_by("-id")
+    queryset = AppGatewayPermission.objects.order_by("-id")
 
     def create(self, request, *args, **kwargs):
         """
@@ -362,6 +379,7 @@ class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取网关权限有权限的应用列表",
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.Permission"],
     ),
@@ -371,7 +389,7 @@ class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
         """获取有权限的应用列表"""
 
         app_codes = list(
-            AppAPIPermission.objects.filter(gateway=request.gateway)
+            AppGatewayPermission.objects.filter(gateway=request.gateway)
             .order_by("bk_app_code")
             .distinct()
             .values_list("bk_app_code", flat=True)
@@ -382,6 +400,7 @@ class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
+        operation_description="网关权限续期",
         responses={status.HTTP_201_CREATED: ""},
         request_body=AppPermissionIDsSLZ,
         tags=["WebAPI.Permission"],
@@ -398,7 +417,7 @@ class AppGatewayPermissionRenewApi(generics.CreateAPIView):
 
         data = slz.validated_data
 
-        AppAPIPermission.objects.renew_by_ids(
+        AppGatewayPermission.objects.renew_by_ids(
             gateway=request.gateway,
             ids=data["ids"],
         )
@@ -409,13 +428,14 @@ class AppGatewayPermissionRenewApi(generics.CreateAPIView):
 @method_decorator(
     name="delete",
     decorator=swagger_auto_schema(
+        operation_description="网关权限删除",
         responses={status.HTTP_204_NO_CONTENT: ""},
         request_body=AppPermissionIDsSLZ,
         tags=["WebAPI.Permission"],
     ),
 )
 class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.DestroyAPIView):
-    queryset = AppAPIPermission.objects.order_by("-id")
+    queryset = AppGatewayPermission.objects.order_by("-id")
 
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
@@ -436,6 +456,7 @@ class AppPermissionApplyQuerySetMixin:
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取权限申请单列表",
         responses={status.HTTP_200_OK: AppPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.Permission"],
     ),
@@ -457,6 +478,7 @@ class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAP
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取权限申请单详情",
         responses={status.HTTP_200_OK: AppPermissionApplyOutputSLZ()},
         tags=["WebAPI.Permission"],
     ),
@@ -473,6 +495,7 @@ class AppPermissionApplyRetrieveApi(AppPermissionApplyQuerySetMixin, generics.Re
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取权限申请记录列表",
         responses={status.HTTP_200_OK: AppPermissionRecordOutputSLZ(many=True)},
         tags=["WebAPI.Permission"],
     ),
@@ -504,6 +527,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="获取权限申请记录详情",
         responses={status.HTTP_200_OK: AppPermissionRecordOutputSLZ()},
         tags=["WebAPI.Permission"],
     ),
@@ -528,6 +552,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
+        operation_description="审批操作",
         responses={status.HTTP_201_CREATED: ""},
         request_body=AppPermissionApplyApprovalInputSLZ,
         tags=["WebAPI.Permission"],

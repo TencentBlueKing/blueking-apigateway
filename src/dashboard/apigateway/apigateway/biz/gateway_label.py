@@ -17,8 +17,6 @@
 #
 from typing import List
 
-from django.utils.translation import gettext as _
-
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.label.models import APILabel
 from apigateway.common.audit.shortcuts import record_audit_log
@@ -35,9 +33,9 @@ class GatewayLabelHandler:
         instance_name: str,
     ):
         comment = {
-            OpTypeEnum.CREATE: _("创建网关标签"),
-            OpTypeEnum.MODIFY: _("更新网关标签"),
-            OpTypeEnum.DELETE: _("删除网关标签"),
+            OpTypeEnum.CREATE: "创建网关标签",
+            OpTypeEnum.MODIFY: "更新网关标签",
+            OpTypeEnum.DELETE: "删除网关标签",
         }.get(op_type, "-")
 
         record_audit_log(

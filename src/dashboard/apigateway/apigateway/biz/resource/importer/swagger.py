@@ -23,7 +23,6 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 import jsonschema
-from django.utils.translation import gettext as _
 
 from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.common.exceptions import SchemaValidationError
@@ -178,6 +177,8 @@ class ResourceSwaggerImporter:
                     "auth_config": self._adapt_auth_config(extension_resource.get("authConfig", {})),
                     "backend_name": backend.get("name", DEFAULT_BACKEND_NAME),
                     "backend_config": self._adapt_backend(backend),
+                    # pluginConfigs 不存在或为 None，表示不处理此资源的插件配置的导入
+                    "plugin_configs": extension_resource.get("pluginConfigs"),
                 }
 
                 resources.append(resource)
@@ -197,14 +198,18 @@ class ResourceSwaggerImporter:
         """
         适配后端配置
         """
-        if backend.get("upstreams") or backend.get("transformHeaders"):
-            raise ValueError(_("当前版本，不支持 backend 中配置 upstreams, transformHeaders，请更新至最新版本资源 yaml 配置。"))
+        backend_type = backend.get("type", ProxyTypeEnum.HTTP.value).lower()
+        if backend_type != ProxyTypeEnum.HTTP.value:
+            raise ValueError(f"unsupported backend type: {backend['type']}")
 
         return {
             "method": backend["method"].upper(),
             "path": backend["path"],
             "match_subpath": backend.get("matchSubpath", False),
             "timeout": backend.get("timeout", 0),
+            # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
+            "legacy_upstreams": backend.get("upstreams"),
+            "legacy_transform_headers": backend.get("transformHeaders"),
         }
 
     def _adapt_description(self, summary: Optional[str], description: Optional[str]):
@@ -235,7 +240,7 @@ class ResourceSwaggerImporter:
 class ResourceSwaggerExporter:
     def __init__(
         self,
-        api_version: str = "0.2",
+        api_version: str = "2.0",
         include_bk_apigateway_resource: bool = True,
         title: str = "API Gateway Resources",
         description: str = "",
@@ -297,6 +302,14 @@ class ResourceSwaggerExporter:
                 resource.get("proxy_type", ""),
                 resource.get("proxy_configs", {}),
             ),
+            "pluginConfigs": [
+                {
+                    "type": plugin_config.type.code,
+                    # TODO: 测试，如果 plugin_config.yaml 换行，导出的 yaml 格式是否符合预期
+                    "yaml": plugin_config.yaml,
+                }
+                for plugin_config in resource.get("plugin_configs", [])
+            ],
             "authConfig": self._adapt_auth_config(resource["auth_config"]),
             "descriptionEn": resource.get("description_en"),
         }

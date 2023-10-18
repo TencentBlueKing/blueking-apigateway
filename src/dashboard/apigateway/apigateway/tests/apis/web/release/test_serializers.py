@@ -24,9 +24,9 @@ from django.http import Http404
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.release import serializers
-from apigateway.apis.web.release.serializers import PublishEventQueryOutputSLZ, ReleaseHistoryOutputSLZ
+from apigateway.apis.web.release.serializers import ReleaseHistoryEventRetrieveOutputSLZ, ReleaseHistoryOutputSLZ
 from apigateway.biz.release import ReleaseHandler
-from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
+from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusEnum, PublishEventStatusTypeEnum
 from apigateway.core.models import Gateway, PublishEvent, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, create_request, dummy_time
 
@@ -162,7 +162,6 @@ class TestReleaseHistoryOutputSLZ:
             resource_version=resource_version,
             created_time=dummy_time.time,
         )
-        release_history.stages.add(stage)
         event_1 = G(
             PublishEvent,
             publish=release_history,
@@ -174,53 +173,54 @@ class TestReleaseHistoryOutputSLZ:
         slz = ReleaseHistoryOutputSLZ(
             release_history,
             context={
-                "publish_events_map": ReleaseHandler.get_publish_id_to_latest_publish_event_map([release_history.id]),
+                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                    [release_history.id]
+                ),
             },
         )
         assert slz.data == {
-            "publish_id": release_history.id,
-            "stage_names": [stage.name],
+            "id": release_history.id,
+            "stage": {"id": stage.id, "name": stage.name},
             "created_time": dummy_time.str,
             "created_by": release_history.created_by,
             "resource_version_display": "1.0.0(测试)",
-            "status": f"{event_1.name} {event_1.status}",
+            "status": f"{event_1.status}",
             "source": release_history.source,
-            "cost": (event_1.created_time - release_history.created_time).total_seconds(),
-            "is_running": False,
+            "duration": (event_1.created_time - release_history.created_time).total_seconds(),
         }
 
 
 class TestPublishEventQueryOutputSLZ:
     def test_to_representation(self, fake_stage, fake_release_history, fake_publish_event):
-        fake_release_history.stages.add(fake_stage)
-        slz = PublishEventQueryOutputSLZ(
+        slz = ReleaseHistoryEventRetrieveOutputSLZ(
             fake_release_history,
             context={
-                "publish_events_map": ReleaseHandler.get_publish_id_to_latest_publish_event_map(
+                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
                     [fake_release_history.id]
                 ),
-                "publish_events": ReleaseHandler.list_publish_events_by_release_history_id(fake_release_history.id),
+                "release_history_events": ReleaseHandler.list_publish_events_by_release_history_id(
+                    fake_release_history.id
+                ),
             },
         )
         assert slz.data == {
-            "publish_id": fake_release_history.id,
-            "stage_names": [fake_stage.name],
+            "id": fake_release_history.id,
+            "stage": {"id": fake_stage.id, "name": fake_stage.name},
             "resource_version_display": fake_release_history.resource_version.object_display,
             "created_time": dummy_time.str,
             "created_by": fake_release_history.created_by,
             "source": fake_release_history.source,
-            "cost": 0,
-            "status": f"{fake_publish_event.name} {fake_publish_event.status}",
-            "is_running": True,
+            "status": PublishEventStatusEnum.FAILURE.value,
+            "duration": 0,
             "events": [
                 {
-                    "event_id": fake_publish_event.id,
-                    "publish_id": fake_release_history.id,
+                    "id": fake_publish_event.id,
+                    "release_history_id": fake_release_history.id,
                     "name": fake_publish_event.name,
                     "step": fake_publish_event.step,
                     "status": fake_publish_event.status,
                     "created_time": dummy_time.str,
-                    "detail": "{}",
+                    "detail": {},
                 }
             ],
         }

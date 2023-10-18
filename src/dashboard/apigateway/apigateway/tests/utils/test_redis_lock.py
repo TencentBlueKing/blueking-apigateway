@@ -29,6 +29,7 @@ from apigateway.utils.redis_utils import Lock
 class MockRedisClient:
     def __init__(self):
         self.data = {}
+        self.key = ""
 
     def setnx(self, key, value):
         if key in self.data:
@@ -47,7 +48,11 @@ class MockRedisClient:
         return self.data.get(key)
 
     def lock(self, key, timeout):
-        return self.setnx(key, "")
+        self.key = key
+        return self
+
+    def acquire(self, blocking=None, blocking_timeout=None, token=None):
+        return self.setnx(self.key, "")
 
 
 # 定义 Redis 客户端的 fixture

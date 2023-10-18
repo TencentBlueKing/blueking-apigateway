@@ -18,12 +18,13 @@
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
+from packaging import version
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
-from apigateway.apis.web.backend.constants import BACKEND_CONFIG_SCHEME_MAP
-from apigateway.apis.web.backend.serializers import BaseBackendConfigSLZ
+from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
+from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import STAGE_NAME_PATTERN, ReleaseStatusEnum, StageStatusEnum
@@ -33,12 +34,17 @@ from .validators import StageVarsValidator
 
 
 class StageOutputSLZ(serializers.ModelSerializer):
-    release = serializers.SerializerMethodField()
-    resource_version = serializers.SerializerMethodField()
-    publish_id = serializers.SerializerMethodField()
-    new_resource_version = serializers.SerializerMethodField()
+    release = serializers.SerializerMethodField(help_text="发布信息")
+    resource_version = serializers.SerializerMethodField(help_text="资源版本")
+    publish_id = serializers.SerializerMethodField(help_text="发布ID")
+    new_resource_version = serializers.SerializerMethodField(help_text="新资源版本")
     description = SerializerTranslatedField(
-        default_field="description_i18n", allow_blank=True, allow_null=True, max_length=512, required=False
+        default_field="description_i18n",
+        allow_blank=True,
+        allow_null=True,
+        max_length=512,
+        required=False,
+        help_text="描述",
     )
 
     class Meta:
@@ -68,16 +74,19 @@ class StageOutputSLZ(serializers.ModelSerializer):
         }
 
     def get_resource_version(self, obj):
-        return self.context["stage_release"].get(obj.id, {}).get("resource_version", {}).get("version", "")
+        return {
+            "version": self.context["stage_release"].get(obj.id, {}).get("resource_version", {}).get("version", ""),
+            "id": self.context["stage_release"].get(obj.id, {}).get("resource_version_id", 0),
+        }
 
     def get_publish_id(self, obj):
         return self.context["stage_publish_status"].get(obj.id, {}).get("publish_id", 0)
 
     def get_new_resource_version(self, obj):
         new_resource_version = self.context["new_resource_version"]
-        stage_resource_version = self.get_resource_version(obj)
+        stage_resource_version = self.get_resource_version(obj)["version"]
 
-        if not stage_resource_version or new_resource_version > stage_resource_version:
+        if not stage_resource_version or version.parse(new_resource_version) > version.parse(stage_resource_version):
             return new_resource_version
 
         return ""
@@ -85,14 +94,16 @@ class StageOutputSLZ(serializers.ModelSerializer):
 
 class BackendSLZ(serializers.Serializer):
     id = serializers.IntegerField()
-    config = BaseBackendConfigSLZ()
+    config = BaseBackendConfigSLZ(help_text="配置")
 
 
 class StageInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    name = serializers.RegexField(STAGE_NAME_PATTERN)
-    description = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, required=False)
-    backends = serializers.ListField(child=BackendSLZ(), allow_empty=False)
+    name = serializers.RegexField(STAGE_NAME_PATTERN, help_text="名称")
+    description = serializers.CharField(
+        allow_blank=True, allow_null=True, max_length=512, required=False, help_text="描述"
+    )
+    backends = serializers.ListField(child=BackendSLZ(), allow_empty=False, help_text="后端服务")
 
     class Meta:
         validators = [
@@ -158,8 +169,8 @@ class StageVarsSLZ(serializers.Serializer):
 
 class StageBackendOutputSLZ(serializers.Serializer):
     id = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
-    config = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField(help_text="名称")
+    config = serializers.SerializerMethodField(help_text="配置")
 
     def get_id(self, obj):
         return obj.backend.id
@@ -182,8 +193,8 @@ class BackendConfigInputSLZ(BaseBackendConfigSLZ):
 
 
 class StagePartialInputSLZ(serializers.Serializer):
-    description = serializers.CharField(allow_blank=True, allow_null=True, max_length=512)
+    description = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, help_text="描述")
 
 
 class StageStatusInputSLZ(serializers.Serializer):
-    status = serializers.ChoiceField(choices=[(StageStatusEnum.INACTIVE.value, "INACTIVE")])
+    status = serializers.ChoiceField(choices=[(StageStatusEnum.INACTIVE.value, "INACTIVE")], help_text="状态")

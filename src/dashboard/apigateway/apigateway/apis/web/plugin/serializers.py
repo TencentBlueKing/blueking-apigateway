@@ -19,27 +19,24 @@
 from typing import Any, Dict
 
 from django.utils.translation import gettext as _
-from jsonschema import ValidationError as SchemaValidationError
-from jsonschema import validate
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
-from apigateway.apis.web.plugin.checker import PluginConfigYamlChecker
 from apigateway.apis.web.plugin.convertor import PluginConfigYamlConvertor
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.controller.crds.release_data.plugin import PluginConvertorFactory
+from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
 
 
 class PluginTypeOutputSLZ(serializers.ModelSerializer):
-    name = serializers.CharField(source="name_i18n")
+    name = serializers.CharField(source="name_i18n", help_text="插件类型名称")
 
-    notes = serializers.SerializerMethodField()
-    related_scope_count = serializers.SerializerMethodField()
-    is_bound = serializers.SerializerMethodField()
+    notes = serializers.SerializerMethodField(help_text="插件类型备注")
+    related_scope_count = serializers.SerializerMethodField(help_text="插件类型绑定的环境及资源数量")
+    is_bound = serializers.SerializerMethodField(help_text="插件类型是否已绑定到当前环境或资源")
 
     class Meta:
         model = PluginType
@@ -67,15 +64,17 @@ class PluginTypeOutputSLZ(serializers.ModelSerializer):
 
 
 class PluginTypeQueryInputSLZ(serializers.Serializer):
-    keyword = serializers.CharField(required=False)
-    scope_type = serializers.ChoiceField(choices=PluginBindingScopeEnum.get_choices(), required=True)
-    scope_id = serializers.IntegerField(required=True)
+    keyword = serializers.CharField(required=False, help_text="名称关键字")
+    scope_type = serializers.ChoiceField(
+        choices=PluginBindingScopeEnum.get_choices(), required=True, help_text="范围类型：stage or resource"
+    )
+    scope_id = serializers.IntegerField(required=True, help_text="范围 id: stage_id or resource_id")
 
 
 class PluginFormOutputSLZ(serializers.ModelSerializer):
-    type_code = serializers.CharField(source="type.code", read_only=True)
-    type_name = serializers.CharField(source="type.name_i18n", read_only=True)
-    config = serializers.DictField()
+    type_code = serializers.CharField(source="type.code", read_only=True, help_text="插件类型编码")
+    type_name = serializers.CharField(source="type.name_i18n", read_only=True, help_text="插件类型名称")
+    config = serializers.DictField(help_text="插件配置")
 
     class Meta:
         model = PluginForm
@@ -93,9 +92,9 @@ class PluginFormOutputSLZ(serializers.ModelSerializer):
 
 
 class PluginConfigBaseSLZ(serializers.ModelSerializer):
-    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all())
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault(), help_text="网关")
+    type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all(), help_text="插件类型")
+    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, help_text="描述")
 
     class Meta:
         model = PluginConfig
@@ -132,25 +131,14 @@ class PluginConfigBaseSLZ(serializers.ModelSerializer):
         plugin.name = validated_data["name"]
         plugin.description_i18n = validated_data["description"]
 
+        validator = PluginConfigYamlValidator()
         try:
-            plugin.config = validated_data["yaml"]
-            # 转换数据，校验 apisix schema
-            schema = plugin.type and plugin.type.schema
-            if schema:
-                convertor = PluginConvertorFactory.get_convertor(plugin.type.code)
-                _data = convertor.convert(plugin)
-                validate(_data, schema=schema.schema)
-        except SchemaValidationError as err:
-            raise ValidationError(
-                {api_settings.NON_FIELD_ERRORS_KEY: f"{err.message}, path {list(err.absolute_path)}"}
-            )
-
-        checker = PluginConfigYamlChecker(plugin.type.code)
-        try:
-            checker.check(validated_data["yaml"])
+            schema = plugin.type and plugin.type.schema and plugin.type.schema.schema
+            validator.validate(plugin.type.code, validated_data["yaml"], schema)
         except Exception as err:
             raise ValidationError({api_settings.NON_FIELD_ERRORS_KEY: f"{err}"})
 
+        plugin.config = validated_data["yaml"]
         plugin.save()
         return plugin
 
@@ -175,17 +163,17 @@ class PluginConfigCreateInputSLZ(PluginConfigBaseSLZ):
 
 
 class BindingScopeObjectSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
+    id = serializers.IntegerField(help_text="id")
+    name = serializers.CharField(help_text="名称")
 
 
 class PluginBindingListOutputSLZ(serializers.Serializer):
-    stages = serializers.ListField(child=BindingScopeObjectSLZ())
-    resources = serializers.ListField(child=BindingScopeObjectSLZ())
+    stages = serializers.ListField(child=BindingScopeObjectSLZ(), help_text="环境列表")
+    resources = serializers.ListField(child=BindingScopeObjectSLZ(), help_text="资源列表")
 
 
 class ScopePluginConfigListOutputSLZ(serializers.Serializer):
-    code = serializers.CharField()
-    name = serializers.CharField()
-    config = serializers.DictField()
-    config_id = serializers.IntegerField()
+    code = serializers.CharField(help_text="插件类型编码")
+    name = serializers.CharField(help_text="插件类型名称")
+    config = serializers.DictField(help_text="插件配置")
+    config_id = serializers.IntegerField(help_text="插件配置 id")

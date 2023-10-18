@@ -117,7 +117,7 @@ class Lock(object):
         try_get_times = self.try_get_times
         while try_get_times > 0:
             # 尝试获取锁
-            if self.client.lock(self.key, self.timeout):
+            if self.client.lock(self.key, self.timeout).acquire(blocking=False):
                 return
             # 获取锁失败，等待一段时间后重试
             try_get_times -= 1
