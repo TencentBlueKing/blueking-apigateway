@@ -119,6 +119,7 @@ import { ref, defineExpose, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
 import { useCommon } from '../../../store';
+import { useGetGlobalProperties } from '@/hooks';
 
 const props = defineProps({
   detail: {
@@ -143,10 +144,11 @@ const methodData = ref(common.methodList);
 const servicesData = ref([]);
 // 服务详情
 const servicesConfigs = ref([]);
-// window 全局变量
-const GLOBAL_CONFIG = ref(window.GLOBAL_CONFIG);
 // 校验列表
 const servicesCheckData = ref([]);
+// 全局变量
+const globalProperties = useGetGlobalProperties();
+const { GLOBAL_CONFIG } = globalProperties;
 
 const rules = {
   'config.path': [
