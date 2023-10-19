@@ -122,6 +122,15 @@ const routes: RouteRecordRaw[] = [
           matchRoute: 'apigwResource',
         },
       },
+      {
+        path: '/:id/resource/:resourceId/clone',
+        name: 'apigwResourceClone',
+        component: ApigwResourceEdit,
+        meta: {
+          title: '克隆资源',
+          matchRoute: 'apigwResource',
+        },
+      },
     ],
   },
 ];

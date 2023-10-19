@@ -18,7 +18,7 @@
         <span class="panel-title">{{ t('前端配置') }}</span>
         <template #content>
           <div class="panel-content">
-            <FrontConfig ref="frontConfigRef" :detail="resourceDetail"></FrontConfig>
+            <FrontConfig ref="frontConfigRef" :detail="resourceDetail" :is-clone="isClone"></FrontConfig>
           </div>
         </template>
       </bk-collapse-panel>
@@ -49,7 +49,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BaseInfo from './comps/base-info.vue';
 import FrontConfig from './comps/front-config.vue';
@@ -58,6 +58,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useCommon } from '@/store';
 import { createResources, getResourceDetailData, updateResources } from '@/http';
 import { Message } from 'bkui-vue';
+
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
@@ -73,6 +74,10 @@ const backConfigRef = ref(null);
 const submitLoading = ref(false);
 const resourceId = ref<any>(0);
 const resourceDetail = ref<any>({});
+
+const isClone = computed(() => {
+  return route.name === 'apigwResourceClone';
+});
 
 const init = () => {
   if (route.params.resourceId) {
@@ -92,6 +97,9 @@ const getResourceDetails = async () => {
 
 // 提交
 const handleSubmit = async () => {
+  await baseInfoRef.value?.validate();
+  await frontConfigRef.value?.validate();
+  await backConfigRef.value?.validate();
   const baseFormData = baseInfoRef.value.formData;
   const frontFormData = frontConfigRef.value.frontConfigData;
   const backFormData = backConfigRef.value.backConfigData;

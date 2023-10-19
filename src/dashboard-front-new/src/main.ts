@@ -13,9 +13,10 @@ import 'bkui-vue/dist/style.css';
 // 图标
 import './assets/iconfont/style.css';
 
-window.GLOBAL_CONFIG = globalConfig;
+const app = createApp(App);
+app.config.globalProperties.GLOBAL_CONFIG = globalConfig;
 
-createApp(App).use(i18n)
+app.use(i18n)
   .use(router)
   .use(createPinia())
   .use(bkui)

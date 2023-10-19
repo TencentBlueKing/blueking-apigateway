@@ -86,6 +86,7 @@ const props = defineProps({
   },
 });
 
+const formRef = ref(null);
 const { t } = useI18n();
 const common = useCommon();
 const formData = ref({
@@ -112,21 +113,11 @@ const rules = {
       trigger: 'blur',
     },
     {
-      validator: (value: string) => value.length >= 3,
-      message: t('不能小于3个字符'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => value.length <= 30,
-      message: t('不能多于30个字符'),
-      trigger: 'blur',
-    },
-    {
       validator: (value: string) => {
-        const reg = /^[a-z][a-z0-9-]*$/;
+        const reg = /^[a-zA-Z][a-zA-Z0-9_]{0,255}$|^$/;
         return reg.test(value);
       },
-      message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
+      message: '由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符',
       trigger: 'blur',
     },
   ],
@@ -145,15 +136,27 @@ watch(
   { immediate: true },
 );
 
+watch(
+  () => formData.value.is_public,
+  (val: boolean) => {
+    // 必须要公开 才能允许申请权限
+    formData.value.allow_apply_permission = val;
+  },
+);
+
 const init = async () => {
   const res = await getGatewayLabels(common.apigwId);
-  console.log('res', res);
   labelsData.value = res;
 };
-init();
 
+const validate = async () => {
+  await formRef.value?.validate();
+};
+
+init();
 defineExpose({
   formData,
+  validate,
 });
 </script>
 <style lang="scss" scoped>
