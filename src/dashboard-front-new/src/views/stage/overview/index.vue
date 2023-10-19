@@ -1,11 +1,14 @@
 <template>
   <div class="stage-overview-wrapper">
-    <stage-card-list :stage-list="stageStore.stageList" />
+    <bk-loading
+      :loading="stageStore.realStageMainLoading"
+    >
+      <stage-card-list :stage-list="stageStore.stageList" />
+    </bk-loading>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import stageCardList from './comps/stage-card-list.vue';
 import { useStage } from '@/store';
 

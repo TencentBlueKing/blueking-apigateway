@@ -18,7 +18,7 @@
               </div>
               <div class="content">
                 <bk-form
-                  ref="nameForm"
+                  ref="baseInfoRef"
                   :label-width="180"
                   :model="curStageData"
                   form-type="vertical"
@@ -27,7 +27,7 @@
                     :label="t('环境名称')"
                     :required="true"
                     :property="'name'"
-                    :error-display-type="'normal'"
+                    :rules="rules.name"
                   >
                     <bk-input
                       :placeholder="t('请输入 2-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头')"
@@ -45,7 +45,7 @@
                     <div class="address">
                       <label>{{ t('访问地址') }}：</label>
                       <!-- 网关名/环境名 -->
-                      <span>{{ stageAddress }}</span>
+                      <span>{{ stageAddress || '--' }}</span>
                       <i
                         class="apigateway-icon icon-ag-copy-info"
                         @click.self="copy(stageAddress)"
@@ -104,11 +104,10 @@
                         label="后端服务地址"
                         v-for="(hostItem, index) of backend.config.hosts"
                         :required="true"
-                        :property="'backend.' + index + '.host'"
+                        :property="`config.hosts.${index}.host`"
                         :key="index"
-                        class="backend-item-cls"
-                        :class="[{ 'form-item-special': index !== 0 }]"
-                        :error-display-type="'normal'"
+                        :rules="rules.host"
+                        :class="['backend-item-cls', { 'form-item-special': index !== 0 }]"
                       >
                         <div class="host-item mb10">
                           <bk-input
@@ -144,20 +143,8 @@
                                 :max="10000"
                                 v-model="hostItem.weight"
                               ></bk-input>
-                              <!-- <i
-                                v-if="hostItem.isRoles"
-                                class="bk-icon icon-exclamation-circle-shape tooltips-icon"
-                                v-bk-tooltips="hostItem.message"
-                              ></i> -->
                             </template>
                           </bk-input>
-
-                          <!-- <bk-input
-                            :placeholder="$t('格式: http(s)://host:port')"
-                            v-model="hostItem.host"
-                            :key="backend.config.loadbalance"
-                            v-else
-                          ></bk-input> -->
 
                           <i
                             class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
@@ -166,7 +153,7 @@
                           <i
                             class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
                             :class="{ disabled: backend.config.hosts.length < 2 }"
-                            @click="handleDeleteServiceAddress(hostItem, index)"
+                            @click="handleDeleteServiceAddress(backend.name, index)"
                           ></i>
                         </div>
                       </bk-form-item>
@@ -224,7 +211,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { getBackendsListData, createStage } from '@/http';
@@ -232,7 +219,7 @@ import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash';
 import { useCommon } from '@/store';
 import { copy } from '@/common/util';
-import { SrvRecord } from 'dns';
+import mitt from '@/common/event-bus';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -245,7 +232,12 @@ interface IHostItem {
 
 const route = useRoute();
 
-const isShow = ref(true);
+const isShow = ref(false);
+import { valueOrDefault } from 'bkui-vue/lib/shared';
+
+// window 全局变量
+const GLOBAL_CONFIG = ref(window.GLOBAL_CONFIG);
+console.log(GLOBAL_CONFIG.value);
 
 // 默认值
 const defaultConfig = {
@@ -289,7 +281,18 @@ const schemeList = [{ value: 'http' }, { value: 'https' }];
 
 // 访问地址
 const stageAddress = computed(() => {
-  return `http://${common.apigwName}/${curStageData.value.name}`;
+  const keys = {
+    api_name: common.apigwName,
+    stage_name: curStageData.value.name,
+    resource_path: '',
+  };
+  
+  let url = GLOBAL_CONFIG.value.STAGE_DOMAIN;
+  for (const name in keys) {
+    const reg = new RegExp(`{${name}}`);
+    url = url.replace(reg, keys[name]);
+  }
+  return url;
 });
 
 // 正则校验
@@ -301,17 +304,12 @@ const rules = {
       trigger: 'blur',
     },
     {
-      max: 20,
-      message: t('不能多于20个字符'),
-      trigger: 'blur',
-    },
-    {
       validator(value: string) {
         const reg = /^[a-zA-Z][a-zA-Z0-9_-]{0,19}$/;
         return reg.test(value);
       },
-      message: t('由字母、数字、连接符（-）、下划线（_）组成，首字符必须是字母，长度小于20个字符'),
-      trigger: 'blur',
+      message: t('请输入 2-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头'),
+      trigger: 'change',
     },
   ],
 
@@ -322,8 +320,11 @@ const rules = {
       trigger: 'blur',
     },
     {
-      regex:
-        /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/,
+      validator(value: string) {
+        const reg =
+          /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
+        return reg.test(value);
+      },
       message: t('请输入合法Host，如：http://example.com'),
       trigger: 'blur',
     },
@@ -348,17 +349,11 @@ const rules = {
   ],
 };
 
-// 权重校验
-const weightValidate = (hostItem: any) => {
-  if (!hostItem.weight) {
-    hostItem.isRoles = true;
-    hostItem.message = t('请输入合法的整数值');
-  } else {
-    hostItem.isRoles = false;
-  }
-};
-
 const isDialogLoading = ref(true);
+
+// 获取对应Ref
+const baseInfoRef = ref(null);
+const backendConfigRef = ref(null);
 
 // 网关id
 const apigwId = +route.params.id;
@@ -382,6 +377,14 @@ const init = async () => {
 };
 init();
 
+watch(isShow, (value) => {
+  if (value) {
+    // 数据重置
+    closeSideslider();
+    init();
+  }
+});
+
 // 关闭侧边栏回调
 const closeSideslider = () => {
   // 数据重置
@@ -403,10 +406,19 @@ const handleShowSideslider = () => {
 };
 
 // 确定
-const handleConfirm = () => {
-  // 表单校验
-  // 请求接口
-  handleConfirmCreate();
+const handleConfirm = async () => {
+  try {
+    // 表单校验
+    await baseInfoRef.value.validate();
+    for (const item of backendConfigRef.value) {
+      await item.validate();
+    }
+
+    // 请求接口
+    handleConfirmCreate();
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 const handleConfirmCreate = async () => {
@@ -416,15 +428,15 @@ const handleConfirmCreate = async () => {
     params.backends.forEach((v: any) => {
       delete v.name;
     });
-    console.log('params--', params);
     await createStage(apigwId, params);
     Message({
       message: t('创建成功'),
       theme: 'success',
     });
     // 重新获取环境列表(全局事件总线实现)
-    // dialog表单数据重置
-    closeSideslider();
+    mitt.emit('get-stage-list');
+    // 关闭dialog
+    isShow.value = false;
   } catch (error) {
     console.error(error);
   }
@@ -433,17 +445,15 @@ const handleConfirmCreate = async () => {
 // 取消关闭侧边栏
 const handleCancel = () => {
   isShow.value = false;
-  //   数据重置
-  curStageData.value.name = '';
-  curStageData.value.description = '';
+  // 数据重置
+  closeSideslider();
 };
 
 // 添加服务地址
 const handleAddServiceAddress = (name: string, index: number) => {
-  console.log('add');
+  console.log('add', curStageData.value);
   curStageData.value.backends.forEach((v) => {
     if (v.name === name) {
-      console.log(v);
       v.config.hosts.push({
         scheme: 'http',
         host: '',
@@ -454,8 +464,13 @@ const handleAddServiceAddress = (name: string, index: number) => {
 };
 
 // 删除服务地址
-const handleDeleteServiceAddress = (host: IHostItem, index: string | number) => {
-  console.log('del');
+const handleDeleteServiceAddress = (name: string, index: number) => {
+  curStageData.value.backends.forEach((v) => {
+    if (v.name === name) {
+      console.log(v);
+      v.config.hosts.splice(index, 1);
+    }
+  });
 };
 
 // 暴露属性
@@ -509,6 +524,9 @@ defineExpose({
             color: #dcdee5;
           }
         }
+        :deep(.bk-form-error) {
+          position: relative;
+        }
       }
     }
   }
@@ -561,9 +579,6 @@ defineExpose({
   border-left: 1px solid #c4c6cc;
 }
 .scheme-select-cls {
-  :deep(.bk-input--text) {
-    background: #fafbfd;
-  }
   color: #63656e;
   width: 120px;
   overflow: hidden;
@@ -579,6 +594,7 @@ defineExpose({
   border-right: 1px solid #c4c6cc;
 }
 .timeout-item-cls {
+  margin-top: 14px;
   width: 240px;
   position: relative;
   :deep(.bk-form-content) {
@@ -599,5 +615,16 @@ defineExpose({
 }
 .backend-item-cls {
   margin-bottom: 8px;
+  :deep(.bk-form-error) {
+    position: relative;
+  }
+  &:last-child {
+    margin-bottom: 24px;
+    background: red;
+  }
+}
+.backend-item-cls:last-child {
+  margin-bottom: 50px !important;
+  background: #3a84ff;
 }
 </style>
