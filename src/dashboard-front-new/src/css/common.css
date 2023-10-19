@@ -440,3 +440,11 @@
   color: #3A84FF;
 }
 
+.apigateway-select-icon{
+  transition: transform .5s !important;
+  font-size: 20px !important;
+  &.is-open {
+    transform: rotate(180deg) !important;
+  }
+}
+
