@@ -30,10 +30,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { getStageList, getStageDetail } from '@/http';
 import { useStage } from '@/store';
+import mitt from '@/common/event-bus';
 const router = useRouter();
 const route = useRoute();
 const stageStore = useStage();
@@ -53,7 +54,6 @@ const modelTypes = ref([
 
 // 获取环境列表
 const apigwId = +route.params.id;
-console.log('top');
 
 // 当前环境
 const curStage = ref(stageStore.curStageData || stageStore.defaultStage);
@@ -66,6 +66,9 @@ const init = async () => {
   getStageDetailFun(curStage.value.id);
 };
 init();
+
+// 事件总线监听重新获取环境列表
+mitt.on('get-stage-list', init);
 
 // 是否为详情模式
 const isDetailMode = computed(() => {
@@ -96,11 +99,9 @@ const switchModelType = (key: string, routeName: string) => {
       stage: curStage.value.name,
     },
   };
-  console.log('rrrrrr1111', data);
   if (key === 'abbreviation') {
     delete data.query;
   }
-  console.log('rrrrrr', data);
 
   // 是否改变路径
   router.push(data);
