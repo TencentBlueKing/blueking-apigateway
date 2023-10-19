@@ -111,6 +111,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '新建资源',
           matchRoute: 'apigwResource',
+          showBackIcon: true,
         },
       },
       {
@@ -120,6 +121,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '编辑资源',
           matchRoute: 'apigwResource',
+          showBackIcon: true,
         },
       },
       {
@@ -129,6 +131,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '克隆资源',
           matchRoute: 'apigwResource',
+          showBackIcon: true,
         },
       },
     ],

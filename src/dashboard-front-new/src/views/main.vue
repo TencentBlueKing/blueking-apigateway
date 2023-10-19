@@ -30,9 +30,6 @@
           />
         </bk-select>
       </template>
-      <div class="content-view">
-        <router-view :key="apigwId" :apigw-id="apigwId"></router-view>
-      </div>
       <template #header>
         <!-- 环境概览 -->
         <stage-top-bar v-if="route.meta.isCustomTopbar === 'stageOverview'" />
@@ -40,9 +37,18 @@
           v-else
           class="header"
         >
-          {{ headerTitle }}
+          <div class="flex-row align-items-center">
+            <i
+              class="icon apigateway-icon icon-ag-return-small"
+              v-if="route.meta.showBackIcon"
+              @click="handleBack"></i>
+            {{ headerTitle }}
+          </div>
         </div>
       </template>
+      <div class="content-view">
+        <router-view :key="apigwId" :apigw-id="apigwId"></router-view>
+      </div>
     </bk-navigation>
   </div>
 </template>
@@ -80,8 +86,8 @@ const handleCollapse = (v: boolean) => {
 
 // 设置网关名
 const handleSetApigwName = () => {
-  const apigwName = gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {};
-  common.setApigwName(apigwName.name);
+  // const apigwName = gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {};
+  // common.setApigwName(apigwName);
 };
 
 // 监听当前路由
@@ -113,6 +119,10 @@ const handleGoPage = (routeName: string, apigwId?: number) => {
       id: apigwId,
     },
   });
+};
+
+const handleBack = () => {
+  router.back();
 };
 </script>
 <style lang="scss" scoped>
@@ -176,6 +186,11 @@ const handleGoPage = (routeName: string, apigwId?: number) => {
       margin-right: auto;
       color: #313238;
       font-size: 16px;
+      .icon-ag-return-small{
+        font-size: 32px;
+        color: #3a84ff;
+        cursor: pointer;
+      }
     }
   }
   :deep(.header-select){
