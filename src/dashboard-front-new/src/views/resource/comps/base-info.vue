@@ -136,9 +136,16 @@ watch(
   { immediate: true },
 );
 
+watch(
+  () => formData.value.is_public,
+  (val: boolean) => {
+    // 必须要公开 才能允许申请权限
+    formData.value.allow_apply_permission = val;
+  },
+);
+
 const init = async () => {
   const res = await getGatewayLabels(common.apigwId);
-  console.log('res', res);
   labelsData.value = res;
 };
 

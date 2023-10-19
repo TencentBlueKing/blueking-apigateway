@@ -45,7 +45,6 @@
         @page-value-change="handlePageChange"
         @selection-change="handleSelectionChange"
         row-hover="auto"
-        header-align="center"
       >
         <bk-table-column
           width="100"
@@ -53,9 +52,16 @@
         />
         <bk-table-column
           :label="t('资源名称')"
-          prop="name"
-          sort
         >
+          <template #default="{ data }">
+            <bk-button
+              text
+              theme="primary"
+              @click="handleEditResource(data.id, 'edit')"
+            >
+              {{data?.name}}
+            </bk-button>
+          </template>
         </bk-table-column>
         <bk-table-column
           :label="t('前端请求方法')"
@@ -86,6 +92,9 @@
           prop="labels"
           sort
         >
+          <template #default="{ data }">
+            {{(data?.labels || []).map((e: any) => e.name).join(',')}}
+          </template>
         </bk-table-column>
         <bk-table-column
           :label="t('更新时间')"
@@ -295,11 +304,16 @@ const handleBatchConfirm = async () => {
     // 批量删除
     await batchDeleteResources(props.apigwId, { ids });
   } else {
-    await batchEditResources(props.apigwId, { ids });
+    const params = {
+      ids,
+      is_public: batchEditData.value.isPublic,
+      allow_apply_permission: batchEditData.value.allowApply,
+    };
+    await batchEditResources(props.apigwId, params);
   }
   dialogData.value.isShow = false;
   Message({
-    message: t('删除成功'),
+    message: t(`${isBatchDelete.value ? '删除' : '编辑'}成功`),
     theme: 'success',
   });
   getList();

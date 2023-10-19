@@ -58,7 +58,7 @@ export const batchDeleteResources = (apigwId: number, data: {ids: number[]}) => 
  * @param resourceIds 网关资源id组
  * @returns
  */
-export const batchEditResources = (apigwId: number, data: {ids: number[]}) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/batch/`, data);
+export const batchEditResources = (apigwId: number, data: {ids: number[], is_public: boolean, allow_apply_permission: boolean}) => fetch.put(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/batch/`, data);
 
 // 校验资源后端地址
 export const backendsPathCheck = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/backend-path/check/?${json2Query(data)}`);
