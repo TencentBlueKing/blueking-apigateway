@@ -17,7 +17,7 @@
           <div class="label">{{ `${t('当前资源版本')}：` }}</div>
           <div class="value">
             <span class="unrelease" v-if="stageData.release.status === 'unreleased'">{{ t('未发布') }}</span>
-            <span v-else>{{ stageData.resource_version || '--' }}</span>
+            <span v-else>{{ stageData.resource_version.version || '--' }}</span>
           </div>
         </div>
         <div class="apigw-form-item">
@@ -45,34 +45,36 @@
 
 <script setup lang="ts">
 import { ref, toRefs } from 'vue';
-import { IStageData } from '../types/stage';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { copy } from '@/common/util';
 import addStageSideslider from './add-stage-sideslider.vue';
+import mitt from '@/common/event-bus';
 const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
 
 const props = defineProps<{
-  stageList: [IStageData];
+  stageList: any[];
 }>();
 
 // 环境列表
 const { stageList } = toRefs(props);
 
 // 环境详情
-const handleToDetail = (data: IStageData) => {
-
-  router.push({
-    name: 'apigwStageDetail',
-    params: {
-      id: route.params.id,
-    },
-    query: {
-      stageId: data.id,
-    }
-  });
+const handleToDetail = (data: any) => {
+  console.log('data', data);
+  mitt.emit('switch-mode', { id: data.id, name: data.name });
+  // 改变tab
+  // router.push({
+  //   name: 'apigwStageDetail',
+  //   params: {
+  //     id: route.params.id,
+  //   },
+  //   query: {
+  //     stage: data.name,
+  //   }
+  // });
 }
 
 // 新建环境

@@ -1,0 +1,49 @@
+.ag-tag {
+    display: inline-block;
+    background: #F0F1F5;
+    color: #63656E;
+    font-size: 12px;
+    vertical-align: middle;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: 2px;
+    white-space: nowrap;
+    padding: 0 4px;
+    height: 20px;
+    line-height: 20px;
+    font-weight: 400;
+
+    &.danger,
+    &.delete {
+    	background-color: #FEDDDC;
+    	color: #EA3536;
+    }
+
+    &.primary,
+    &.post {
+    	background-color: #E1ECFF;
+    	color: #3A84FF;
+    }
+
+    &.success,
+    &.any {
+    	background-color: #DCFFE2;
+    	color: #2DCB56;
+    }
+
+    &.warning,
+    &.put {
+    	background-color: #FFE8C3;
+    	color: #FE9C00;
+    }
+
+    &.get {
+        background-color: #D7FEFF;
+        color: #25A9AD;
+    }
+
+    &.patch {
+        background-color: #DAD6FD ;
+        color: #5949E1;
+    }
+}

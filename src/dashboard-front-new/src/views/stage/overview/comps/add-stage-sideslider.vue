@@ -45,7 +45,7 @@
                     <div class="address">
                       <label>{{ t('访问地址') }}：</label>
                       <!-- 网关名/环境名 -->
-                      <span>{{ stageAddress }}</span>
+                      <span>{{ stageAddress || '--' }}</span>
                       <i
                         class="apigateway-icon icon-ag-copy-info"
                         @click.self="copy(stageAddress)"
@@ -233,6 +233,11 @@ interface IHostItem {
 const route = useRoute();
 
 const isShow = ref(false);
+import { valueOrDefault } from 'bkui-vue/lib/shared';
+
+// window 全局变量
+const GLOBAL_CONFIG = ref(window.GLOBAL_CONFIG);
+console.log(GLOBAL_CONFIG.value);
 
 // 默认值
 const defaultConfig = {
@@ -276,7 +281,18 @@ const schemeList = [{ value: 'http' }, { value: 'https' }];
 
 // 访问地址
 const stageAddress = computed(() => {
-  return `http://${common.apigwName}/${curStageData.value.name}`;
+  const keys = {
+    api_name: common.apigwName,
+    stage_name: curStageData.value.name,
+    resource_path: '',
+  };
+  
+  let url = GLOBAL_CONFIG.value.STAGE_DOMAIN;
+  for (const name in keys) {
+    const reg = new RegExp(`{${name}}`);
+    url = url.replace(reg, keys[name]);
+  }
+  return url;
 });
 
 // 正则校验
@@ -336,8 +352,8 @@ const rules = {
 const isDialogLoading = ref(true);
 
 // 获取对应Ref
-const baseInfoRef = ref(null)
-const backendConfigRef = ref(null)
+const baseInfoRef = ref(null);
+const backendConfigRef = ref(null);
 
 // 网关id
 const apigwId = +route.params.id;
@@ -362,12 +378,12 @@ const init = async () => {
 init();
 
 watch(isShow, (value) => {
-  if (value){
+  if (value) {
     // 数据重置
     closeSideslider();
     init();
   }
-})
+});
 
 // 关闭侧边栏回调
 const closeSideslider = () => {
@@ -397,7 +413,7 @@ const handleConfirm = async () => {
     for (const item of backendConfigRef.value) {
       await item.validate();
     }
-    
+
     // 请求接口
     handleConfirmCreate();
   } catch (error) {
@@ -412,7 +428,6 @@ const handleConfirmCreate = async () => {
     params.backends.forEach((v: any) => {
       delete v.name;
     });
-    console.log('params--', params);
     await createStage(apigwId, params);
     Message({
       message: t('创建成功'),
