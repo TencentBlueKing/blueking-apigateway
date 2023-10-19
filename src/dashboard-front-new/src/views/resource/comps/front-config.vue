@@ -41,8 +41,13 @@ const props = defineProps({
     type: Object,
     default: {},
   },
+  isClone: {
+    type: Boolean,
+    default: false,
+  },
 });
 
+const frontRef = ref(null);
 const { t } = useI18n();
 const common = useCommon();
 const frontConfigData = ref({
@@ -79,8 +84,13 @@ watch(
   { immediate: true },
 );
 
+const validate = async () => {
+  await frontRef.value?.validate();
+};
+
 defineExpose({
   frontConfigData,
+  validate,
 });
 </script>
   <style lang="scss" scoped>

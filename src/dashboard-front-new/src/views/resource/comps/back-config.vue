@@ -51,7 +51,7 @@
     </bk-form-item>
     <bk-form-item
       :label="t('请求路径')"
-      property="path"
+      property="config.path"
       required
     >
       <div class="flex-row aligin-items-center">
@@ -127,6 +127,7 @@ const props = defineProps({
   },
 });
 
+const backRef = ref(null);
 const { t } = useI18n();
 const common = useCommon();
 const backConfigData = ref({
@@ -148,10 +149,10 @@ const GLOBAL_CONFIG = ref(window.GLOBAL_CONFIG);
 const servicesCheckData = ref([]);
 
 const rules = {
-  path: [
+  'config.path': [
     {
       required: true,
-      message: t('必填项'),
+      message: t('请填写请求路径'),
       trigger: 'blur',
     },
     {
@@ -200,10 +201,15 @@ const init = async () => {
   console.log('res', res);
   servicesData.value = res.results;
 };
-init();
 
+const validate = async () => {
+  await backRef.value?.validate();
+};
+
+init();
 defineExpose({
   backConfigData,
+  validate,
 });
 </script>
     <style lang="scss" scoped>

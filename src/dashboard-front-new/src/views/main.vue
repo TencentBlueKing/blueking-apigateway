@@ -31,7 +31,7 @@
         </bk-select>
       </template>
       <div class="content-view">
-        <router-view :key="apigwId"></router-view>
+        <router-view :key="apigwId" :apigw-id="apigwId"></router-view>
       </div>
       <template #header>
         <!-- 环境概览 -->

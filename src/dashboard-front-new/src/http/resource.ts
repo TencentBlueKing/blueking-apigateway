@@ -19,7 +19,7 @@ export const getResourceListData = (apigwId: number, data: any) => fetch.get(`${
 export const createResources = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/`, data);
 
 /**
- *  创建资源
+ *  更新资源
  * @param apigwId 网关id
  * @param resourceId 网关资源id
  * @param data 网关资源数据
@@ -34,6 +34,15 @@ export const updateResources = (apigwId: number, resourceId: number, data: any) 
  * @returns
  */
 export const getResourceDetailData = (apigwId: number, resourceId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/${resourceId}/`);
+
+
+/**
+ *  删除资源
+ * @param apigwId 网关id
+ * @param resourceId 网关资源id
+ * @returns
+ */
+export const deleteResources = (apigwId: number, resourceId: number) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/${resourceId}/`);
 
 // 校验资源后端地址
 export const backendsPathCheck = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/backend-path/check/?${json2Query(data)}`);

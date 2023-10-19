@@ -120,10 +120,33 @@
             <bk-button
               text
               theme="primary"
-              @click="handleEditResource(data)"
+              @click="handleEditResource(data.id, 'edit')"
             >
               {{ t('编辑') }}
             </bk-button>
+
+            <bk-button
+              text
+              theme="primary"
+              class="pl10 pr10"
+              @click="handleEditResource(data.id, 'clone')"
+            >
+              {{ t('克隆') }}
+            </bk-button>
+
+            <bk-pop-confirm
+              :title="t('确认删除该资源？')"
+              content="删除操作无法撤回，请谨慎操作！"
+              width="288"
+              trigger="click"
+              @confirm="handleDeleteResource(data.id)"
+            >
+              <bk-button
+                text
+                theme="primary">
+                {{ t('删除') }}
+              </bk-button>
+            </bk-pop-confirm>
           </template>
         </bk-table-column>
       </bk-table>
@@ -135,7 +158,15 @@ import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useQueryList } from '@/hooks';
-import { getResourceListData } from '@/http';
+import { getResourceListData, deleteResources } from '@/http';
+import { Message } from 'bkui-vue';
+const props = defineProps({
+  apigwId: {
+    type: Number,
+    default: 0,
+  },
+});
+
 const dropdownList = ref(['生产环境', '预发布环境', '测试环境', '正式环境', '开发环境', '调试环境']);
 const { t } = useI18n();
 
@@ -152,6 +183,7 @@ const {
   isLoading,
   handlePageChange,
   handlePageSizeChange,
+  getList,
 } = useQueryList(getResourceListData, filterData);
 
 // 新建资源
@@ -162,13 +194,25 @@ const handleCreateResource = () => {
 };
 
 // 编辑资源
-const handleEditResource = (data: any) => {
+const handleEditResource = (id: number, type: string) => {
+  const name = type === 'edit' ? 'apigwResourceEdit' : 'apigwResourceClone';
   router.push({
-    name: 'apigwResourceEdit',
+    name,
     params: {
-      resourceId: data.id,
+      resourceId: id,
     },
   });
+};
+
+// 删除资源
+const handleDeleteResource = async (id: number) => {
+  console.log('props.apigwId', props);
+  await deleteResources(props.apigwId, id);
+  Message({
+    message: t('删除成功'),
+    theme: 'success',
+  });
+  getList();
 };
 </script>
 <style lang="scss" scoped>
