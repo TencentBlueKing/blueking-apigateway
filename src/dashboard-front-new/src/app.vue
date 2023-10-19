@@ -1,5 +1,4 @@
-<script setup lang="ts">
-import {
+<script setup lang="ts"> import {
   ref,
   computed,
 } from 'vue';
@@ -131,6 +130,9 @@ const goPage = (routeName: string) => {
   </bk-navigation>
 </template>
 
+<style>
+@import './css/app.css';
+</style>
 <style lang="scss" scoped>
 .navigation-content {
   :deep(.bk-navigation-wrapper) {

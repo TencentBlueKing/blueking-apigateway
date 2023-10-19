@@ -35,7 +35,7 @@ const routes: RouteRecordRaw[] = [
     },
     children: [
       {
-        path: '/:id/stage',
+        path: ':id/stage',
         name: 'apigwStageOverview',
         component: apigwStageOverview,
         meta: {
@@ -45,7 +45,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/:id/stage/detail-mode',
+        path: ':id/stage/detail-mode',
         name: 'apigwStageDetail',
         component: apigwStageDetail,
         meta: {

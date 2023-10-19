@@ -6,16 +6,23 @@ export const useStage = defineStore('stage', {
     curStageData: {
       id: null,
     },
-    curStageId: 0,
+    curStageId: -1,
+    stageMainLoading: false,
   }),
   getters: {
     defaultStage(state) {
       return state.stageList[0] || {};
     },
+    realStageMainLoading(state) {
+      return state.stageMainLoading;
+    },
   },
   actions: {
     setStageList(data: any[]) {
       this.stageList = data;
+    },
+    setStageMainLoading(loading: boolean) {
+      this.stageMainLoading = loading;
     },
   },
 });
