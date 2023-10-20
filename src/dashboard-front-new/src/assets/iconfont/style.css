@@ -272,3 +272,6 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-gengduo:before {
 	content: "\e156";
 }
+.icon-ag-ag-arrow-left:before {
+	content: "\e15f";
+}

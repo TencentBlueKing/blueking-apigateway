@@ -179,6 +179,7 @@ const handleBack = () => {
     border: 1px solid #ddd;
 
     .content-view {
+      height: 100%;
       font-size: 14px;
     }
 
