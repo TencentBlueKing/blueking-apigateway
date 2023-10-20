@@ -23,6 +23,7 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
+from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
 from apigateway.biz.validators import BKAppCodeListValidator
 from apigateway.core.constants import (
@@ -33,8 +34,9 @@ from apigateway.core.models import Gateway
 
 
 class GatewayListV1InputSLZ(serializers.Serializer):
-    name = serializers.CharField(required=False, allow_blank=True)
+    user_auth_type = serializers.ChoiceField(choices=UserAuthTypeEnum.get_choices(), allow_blank=True, required=False)
     query = serializers.CharField(required=False, allow_blank=True)
+    name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
 
 
@@ -54,7 +56,8 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
         return self.context["gateway_auth_configs"][obj.id].user_auth_type
 
     def get_maintainers(self, obj):
-        # 网关对外的维护者，主要用于咨询，默认使用开发者；maintainers 为有权限管理网关的管理者
+        # 网关对外的维护者，便于用户咨询网关问题，默认使用开发者；maintainers 为有权限管理网关的管理者
+        # TODO: 是否应该使用开发者，如何让网关管理员知道开发者用于 API 文档中展示为网关的维护者
         return obj.developers or obj.maintainers
 
 
@@ -102,6 +105,9 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
 
     def validate(self, data):
         self._validate_name(data["name"], data.get("api_type"))
+
+        data["gateway_type"] = data.pop("api_type", None)
+
         return data
 
     def _validate_name(self, name: str, api_type: Optional[int]):
@@ -131,7 +137,7 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
         ]
 
 
-class AddRelatedAppsAddInputSLZ(serializers.Serializer):
+class GatewayRelatedAppsAddInputSLZ(serializers.Serializer):
     target_app_codes = serializers.ListField(
         child=serializers.CharField(),
         allow_empty=False,

@@ -32,12 +32,12 @@ class GatewaySyncData(BaseModel):
     description_en: Optional[str] = Field(default=None)
     maintainers: List[str] = Field(default_factory=list)
     status: int = Field(...)
-    is_public: bool = Field(...)
-    api_type: Optional[GatewayTypeEnum] = Field(default=None)
+    is_public: bool = Field(default=False)
+    gateway_type: Optional[GatewayTypeEnum] = Field(default=None)
     user_config: Optional[Dict] = Field(default=None)
 
-    @validator("api_type")
-    def validate_api_type(self, v):
+    @validator("gateway_type")
+    def validate_gateway_type(self, v):
         return GatewayTypeEnum(v) if isinstance(v, int) else v
 
 
@@ -64,7 +64,7 @@ class GatewaySynchronizer:
 
     def _create_gateway(self):
         # 1. save gateway
-        self.gateway = Gateway(
+        self.gateway = gateway = Gateway(
             name=self.gateway_data.name,
             description=self.gateway_data.description,
             description_en=self.gateway_data.description_en,
@@ -74,41 +74,39 @@ class GatewaySynchronizer:
             created_by=self.username,
             updated_by=self.username,
         )
-        self.gateway.save()
-
-        assert self.gateway.id
+        gateway.save()
 
         # 2. save related data
         GatewayHandler.save_related_data(
-            gateway=self.gateway,
+            gateway=gateway,
             user_auth_type=settings.DEFAULT_USER_AUTH_TYPE,
             username=self.username,
             related_app_code=self.bk_app_code,
             user_config=self.gateway_data.user_config,
-            unfiltered_sensitive_keys=self._get_api_unfiltered_sensitive_keys(),
-            api_type=self.gateway_data.api_type,
+            unfiltered_sensitive_keys=self._get_gateway_unfiltered_sensitive_keys(gateway.name),
+            api_type=self.gateway_data.gateway_type,
         )
 
     def _update_gateway(self):
+        gateway = self.gateway
+
         # 1. update gateway
-        self.gateway.description = self.gateway_data.description
-        self.gateway.description_en = self.gateway_data.description_en
+        gateway.description = self.gateway_data.description
+        gateway.description_en = self.gateway_data.description_en
         # 更新网关时，仅新增网关管理员，不删除，以防止删除已更新的管理员数据
-        self.gateway.maintainers = sorted(set(self.gateway_data.maintainers + self.gateway.maintainers))
-        self.gateway.is_public = self.gateway_data.is_public
-        self.gateway.updated_by = self.username
-        self.gateway.save()
+        gateway.maintainers = sorted(set(self.gateway_data.maintainers + gateway.maintainers))
+        gateway.is_public = self.gateway_data.is_public
+        gateway.updated_by = self.username
+        gateway.save()
 
         # 2. update auth config
         GatewayHandler.save_auth_config(
-            self.gateway.id,
+            gateway.id,
             user_conf=self.gateway_data.user_config,
-            unfiltered_sensitive_keys=self._get_api_unfiltered_sensitive_keys(),
-            api_type=self.gateway_data.api_type,
+            unfiltered_sensitive_keys=self._get_gateway_unfiltered_sensitive_keys(gateway.name),
+            api_type=self.gateway_data.gateway_type,
         )
 
-    def _get_api_unfiltered_sensitive_keys(self) -> Optional[List[str]]:
-        assert self.gateway
-
+    def _get_gateway_unfiltered_sensitive_keys(self, gateway_name: str) -> Optional[List[str]]:
         gateway_auth_configs = getattr(settings, "SPECIAL_GATEWAY_AUTH_CONFIGS", None) or {}
-        return gateway_auth_configs.get(self.gateway.name, {}).get("unfiltered_sensitive_keys")
+        return gateway_auth_configs.get(gateway_name, {}).get("unfiltered_sensitive_keys")

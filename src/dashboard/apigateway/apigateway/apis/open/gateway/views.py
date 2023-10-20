@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import operator
-from typing import List, Optional
+from typing import Optional
 
 from django.conf import settings
 from django.db import transaction
@@ -36,13 +36,12 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import JWT, Gateway, GatewayRelatedApp
+from apigateway.core.models import JWT, Gateway
 from apigateway.utils.responses import V1OKJsonResponse
 
 
 class GatewayListApi(generics.ListAPIView):
     serializer_class = serializers.GatewayListV1OutputSLZ
-    lookup_field = "id"
 
     def get_queryset(self):
         return Gateway.objects.all()
@@ -61,6 +60,7 @@ class GatewayListApi(generics.ListAPIView):
         queryset = self._filter_list_queryset(
             name=data.get("name"),
             query=data.get("query"),
+            user_auth_type=data.get("user_auth_type"),
             fuzzy=data.get("fuzzy"),
         )
         gateway_ids = list(queryset.values_list("id", flat=True))
@@ -69,7 +69,7 @@ class GatewayListApi(generics.ListAPIView):
             queryset,
             many=True,
             context={
-                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config(scope_ids=gateway_ids),
+                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids),
             },
         )
         return V1OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("name")))
@@ -78,6 +78,7 @@ class GatewayListApi(generics.ListAPIView):
         self,
         name: Optional[str] = None,
         query: Optional[str] = None,
+        user_auth_type: Optional[str] = None,
         fuzzy: Optional[bool] = None,
     ) -> QuerySet:
         """
@@ -85,7 +86,7 @@ class GatewayListApi(generics.ListAPIView):
         - 1. 已启用
         - 2. 公开
         - 3. 已发布
-        - 4. 满足 name、query 过滤条件
+        - 4. 满足 name、query, user_auth_type 等过滤条件
         """
         queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
 
@@ -96,8 +97,17 @@ class GatewayListApi(generics.ListAPIView):
         if query and fuzzy:
             queryset = queryset.filter(Q(name__icontains=query) | Q(description__icontains=query))
 
-        # 过滤出已发布的网关 ID
+        # 过滤出用户类型为指定类型的网关
         gateway_ids = list(queryset.values_list("id", flat=True))
+        if user_auth_type:
+            gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
+            gateway_ids = [
+                gateway_id
+                for gateway_id, auth_config in gateway_auth_configs.items()
+                if auth_config.user_auth_type == user_auth_type
+            ]
+
+        # 过滤出已发布的网关 ID
         released_gateway_ids = ReleaseHandler.filter_released_gateway_ids(gateway_ids)
 
         return queryset.filter(id__in=released_gateway_ids)
@@ -161,7 +171,7 @@ class GatewaySyncApi(generics.CreateAPIView):
         GatewayHandler.record_audit_log_success(
             username=username,
             gateway_id=gateway.id,
-            op_type=OpTypeEnum.CREATE if slz.instance else OpTypeEnum.MODIFY,
+            op_type=OpTypeEnum.MODIFY if slz.instance else OpTypeEnum.CREATE,
             instance_id=gateway.id,
             instance_name=gateway.name,
         )
@@ -181,7 +191,7 @@ class GatewayUpdateStatusApi(generics.CreateAPIView):
 
     @swagger_auto_schema(request_body=serializers.GatewayUpdateStatusInputSLZ, tags=["OpenAPI.Gateway"])
     def post(self, request, *args, **kwargs):
-        slz = self.get_serializer(self.request.gateway, data=request.data)
+        slz = self.get_serializer(request.gateway, data=request.data)
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
@@ -189,25 +199,20 @@ class GatewayUpdateStatusApi(generics.CreateAPIView):
 
 
 class GatewayRelatedAppAddApi(generics.CreateAPIView):
-    serializer_class = serializers.AddRelatedAppsAddInputSLZ
+    serializer_class = serializers.GatewayRelatedAppsAddInputSLZ
     permission_classes = [GatewayRelatedAppPermission]
 
-    @swagger_auto_schema(request_body=serializers.AddRelatedAppsAddInputSLZ, tags=["OpenAPI.Gateway"])
+    @swagger_auto_schema(request_body=serializers.GatewayRelatedAppsAddInputSLZ, tags=["OpenAPI.Gateway"])
     @transaction.atomic
     def post(self, request, gateway_name: str, *args, **kwargs):
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        exist_app_codes = self._get_exist_app_codes(slz.validated_data["target_app_codes"])
-        for bk_app_code in set(slz.validated_data["target_app_codes"]) - set(exist_app_codes):
+        target_app_codes = slz.validated_data["target_app_codes"]
+
+        related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id, target_app_codes)
+        missing_app_codes = set(target_app_codes) - set(related_app_codes)
+        for bk_app_code in missing_app_codes:
             GatewayRelatedAppHandler.add_related_app(request.gateway.id, bk_app_code)
 
         return V1OKJsonResponse()
-
-    def _get_exist_app_codes(self, bk_app_code_list: List[str]) -> List[str]:
-        return list(
-            GatewayRelatedApp.objects.filter(
-                gateway=self.request.gateway,
-                bk_app_code__in=bk_app_code_list,
-            ).values_list("bk_app_code", flat=True)
-        )
