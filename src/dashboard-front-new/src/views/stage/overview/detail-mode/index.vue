@@ -9,8 +9,8 @@
           <div class="column">
             <div class="apigw-form-item">
               <div class="label">{{ `${t('访问地址')}：` }}</div>
-              <div class="value url">
-                <p class="link">--</p>
+              <div class="value url" >
+                <p class="link" v-overflow-title>--</p>
                 <i
                   class="apigateway-icon icon-ag-copy-info"
                   @click.self.stop="copy('--')"
@@ -31,7 +31,7 @@
             </div>
             <div class="apigw-form-item">
               <div class="label">{{ `${t('描述')}：` }}</div>
-              <div class="value">
+              <div class="value" v-overflow-title>
                 {{ stageData.description || '--' }}
               </div>
             </div>
@@ -64,14 +64,13 @@
             class="mr10"
             @click="handleRelease"
           >
-            发布资源
+            {{ t('发布资源') }}
           </bk-button>
-          <bk-button class="mr10">编辑</bk-button>
-          <bk-dropdown
-            :popover-options="popoverOptions"
-            trigger="click"
-          >
-            <bk-button>更多操作</bk-button>
+          <bk-button class="mr10" @click="handleEditStage">{{ t('编辑') }}</bk-button>
+          <bk-dropdown :popover-options="popoverOptions">
+            <bk-button class="more-cls">
+              <i class="apigateway-icon icon-ag-gengduo"></i>
+            </bk-button>
             <template #content>
               <bk-dropdown-menu extCls="stage-more-actions">
                 <bk-dropdown-item @click="handleStageUnlist(item)">
@@ -118,6 +117,9 @@
       </div>
     </bk-loading>
 
+    <!-- 环境侧边栏 -->
+    <edit-stage-sideslider ref="stageSidesliderRef" />
+
     <!-- 发布资源至环境 -->
     <release-sideslider ref="releaseSidesliderRef" />
   </div>
@@ -130,6 +132,7 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useStage } from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
+import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import { IStageData } from '../types/stage';
 import { deleteStage } from '@/http';
 import { Message } from 'bkui-vue';
@@ -141,6 +144,7 @@ const route = useRoute();
 const router = useRouter();
 
 const releaseSidesliderRef = ref(null);
+const stageSidesliderRef = ref(null)
 
 // 当前环境信息
 const stageData: any = computed(() => {
@@ -229,6 +233,11 @@ const handleStageDelete = async (item) => {
     console.error(error);
   }
 };
+
+// 编辑环境
+const handleEditStage = () => {
+  stageSidesliderRef.value.handleShowSideslider('edit');
+}
 </script>
 
 <style lang="scss" scoped>
@@ -339,6 +348,14 @@ const handleStageDelete = async (item) => {
   :deep(.disabled) {
     color: #c9cacf;
     background: #f5f7fa;
+  }
+}
+
+.more-cls {
+  padding: 5px 7px;
+  i {
+    transform: rotate(90deg);
+    font-size: 16px;
   }
 }
 </style>

@@ -58,12 +58,16 @@ const apigwId = +route.params.id;
 // 当前环境
 const curStage = ref(stageStore.curStageData || stageStore.defaultStage);
 
-const init = async () => {
+const init = async (isUpdate?: Boolean) => {
   stageStore.setStageMainLoading(true);
   try {
     const data = await getStageList(apigwId);
     stageStore.setStageList(data);
-    curStage.value = data[0];
+
+    // 更新停留当前环境
+    if (!isUpdate) {
+      curStage.value = data[0];
+    }
     getStageDetailFun(curStage.value.id);
   } catch (error) {
     console.error(error);
@@ -76,7 +80,9 @@ const init = async () => {
 init();
 
 // 事件总线监听重新获取环境列表
-mitt.on('get-stage-list', init);
+mitt.on('get-stage-list', (isUpdate) => {
+  init(isUpdate);
+});
 // 切换概览模式
 mitt.on('switch-mode', async (data) => {
   await getStageDetailFun(data.id);
