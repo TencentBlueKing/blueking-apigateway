@@ -239,6 +239,7 @@ watch(
 </script>
 <style lang="scss" scoped>
 .detail-container{
+    max-width: 1000px;
     .title{
         color: #313238;
         font-weight: 700;

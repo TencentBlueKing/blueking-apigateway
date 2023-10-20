@@ -32,7 +32,7 @@
         <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input>
       </div>
     </div>
-    <div class="flex-row">
+    <div class="flex-row resource-content">
       <div class="left-wraper" :style="{ width: isDetail ? '370px' : '100%' }">
         <!-- <bk-table
           v-if="isDetail"
@@ -105,10 +105,12 @@
             <bk-table-column
               :label="t('前端请求方法')"
               prop="method"
+              width="120"
               v-if="!isDetail"
             >
             </bk-table-column>
             <bk-table-column
+              width="120"
               :label="t('后端服务')"
             >
               <template #default="{ data }">
@@ -124,6 +126,7 @@
             <bk-table-column
               :label="t('文档')"
               prop="docs"
+              width="100"
               v-if="!isDetail"
             >
             </bk-table-column>
@@ -133,7 +136,7 @@
               v-if="!isDetail"
             >
               <template #default="{ data }">
-                {{(data?.labels || []).map((e: any) => e.name).join(',')}}
+                <bk-tag v-for="item in data?.labels" :key="item.id">{{ item.name }}</bk-tag>
               </template>
             </bk-table-column>
             <bk-table-column
@@ -144,6 +147,7 @@
             </bk-table-column>
             <bk-table-column
               :label="t('操作')"
+              width="140"
               v-if="!isDetail"
             >
               <template #default="{ data }">
@@ -296,7 +300,7 @@ const filterData = ref({ query: '' });
 const isBatchDelete = ref(false);
 
 // 是否展示详情
-const isDetail = ref(true);
+const isDetail = ref(false);
 
 // 当前点击资源ID
 const resourceId = ref(0);
@@ -457,6 +461,7 @@ watch(
 </script>
 <style lang="scss" scoped>
 .resource-container{
+  height: 100%;
   .operate{
     &-input{
       width: 450px;
@@ -465,18 +470,19 @@ watch(
   .dialog-content{
     // max-height: 280px;
   }
+  .resource-content{
+    height: calc(100% - 90px);
+    min-height: 600px;
+    .left-wraper{
+      width: 370px;
+      background: #fff;
+      transition: all .15s;
+    }
 
-  .left-wraper{
-    width: 370px;
-    height: calc(100vh - 240px);
-    background: #fff;
-    transition: all .15s;
-  }
-
-  .right-wraper{
-    height: calc(100vh - 240px);
-    background: #fff;
-    transition: all .15s;
+    .right-wraper{
+      background: #fff;
+      transition: all .15s;
+    }
   }
 }
 </style>
