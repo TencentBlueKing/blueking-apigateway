@@ -2,7 +2,7 @@
   <div class="sideslider-wrapper">
     <bk-sideslider
       v-model:isShow="isShow"
-      :title="t('新建环境')"
+      :title="isAdd ? t('新建环境') : t('编辑环境')"
       quick-close
       width="960"
       ext-cls="stage-sideslider-cls"
@@ -214,30 +214,24 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-import { getBackendsListData, createStage } from '@/http';
+import { getBackendsListData, createStage, getStageDetail, getStageBackends, updateStage } from '@/http';
 import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash';
-import { useCommon } from '@/store';
+import { useCommon, useStage } from '@/store';
 import { copy } from '@/common/util';
 import mitt from '@/common/event-bus';
+import { useGetGlobalProperties } from '@/hooks';
 
 const { t } = useI18n();
 const common = useCommon();
-
-interface IHostItem {
-  scheme: string;
-  host: string;
-  weight: number;
-}
-
+const stageStore = useStage();
 const route = useRoute();
 
 const isShow = ref(false);
-import { valueOrDefault } from 'bkui-vue/lib/shared';
 
-// window 全局变量
-const GLOBAL_CONFIG = ref(window.GLOBAL_CONFIG);
-console.log(GLOBAL_CONFIG.value);
+// 全局变量
+const globalProperties = useGetGlobalProperties();
+const { GLOBAL_CONFIG } = globalProperties;
 
 // 默认值
 const defaultConfig = {
@@ -286,8 +280,8 @@ const stageAddress = computed(() => {
     stage_name: curStageData.value.name,
     resource_path: '',
   };
-  
-  let url = GLOBAL_CONFIG.value.STAGE_DOMAIN;
+
+  let url = GLOBAL_CONFIG.STAGE_DOMAIN;
   for (const name in keys) {
     const reg = new RegExp(`{${name}}`);
     url = url.replace(reg, keys[name]);
@@ -349,6 +343,7 @@ const rules = {
   ],
 };
 
+// 侧边loading
 const isDialogLoading = ref(true);
 
 // 获取对应Ref
@@ -358,14 +353,16 @@ const backendConfigRef = ref(null);
 // 网关id
 const apigwId = +route.params.id;
 
-// 后端服务列表
-const allBackends = ref([]);
+// 默认为新建
+const isAdd = ref(true);
 
-const init = async () => {
+// 新建初始化（新建）
+const addInit = async () => {
+  isDialogLoading.value = true;
   // 获取当前网关下的backends(获取后端服务列表)
   const res = await getBackendsListData(apigwId);
-  allBackends.value = res.results;
-  curStageData.value.backends = allBackends.value.map((item) => {
+  console.log('获取all后端服务列表', res);
+  curStageData.value.backends = res.results.map((item) => {
     // 后端服务配置默认值
     return {
       id: item.id,
@@ -375,15 +372,26 @@ const init = async () => {
   });
   isDialogLoading.value = false;
 };
-init();
 
-watch(isShow, (value) => {
-  if (value) {
-    // 数据重置
-    closeSideslider();
-    init();
+// 获取环境详情（编辑）
+const getStageDetailFun = async () => {
+  try {
+    const data = await getStageDetail(apigwId, stageStore.curStageData.id);
+    curStageData.value.name = data.name;
+    curStageData.value.description = data.description;
+  } catch (error) {
+    console.error(error);
   }
-});
+};
+
+// 获取环境后端服务详情（编辑）
+const getStageBackendList = async () => {
+  isDialogLoading.value = true;
+  const backendList = await getStageBackends(common.apigwId, stageStore.curStageData.id);
+  curStageData.value.backends = backendList;
+  // 数据转换
+  isDialogLoading.value = false;
+};
 
 // 关闭侧边栏回调
 const closeSideslider = () => {
@@ -401,7 +409,20 @@ const closeSideslider = () => {
 };
 
 // 显示侧边栏
-const handleShowSideslider = () => {
+const handleShowSideslider = (type) => {
+  // 数据重置
+  closeSideslider();
+  // 新建环境获取当前网关下的所有后端服务进行配置
+  if (type === 'add') {
+    isAdd.value = true;
+    addInit();
+  } else {
+    isAdd.value = false;
+    // 编辑环境
+    getStageDetailFun();
+    // 获取对应环境下的后端服务列表
+    getStageBackendList();
+  }
   isShow.value = true;
 };
 
@@ -414,13 +435,13 @@ const handleConfirm = async () => {
       await item.validate();
     }
 
-    // 请求接口
-    handleConfirmCreate();
+    isAdd.value ? handleConfirmCreate() : handleConfirmEdit();
   } catch (error) {
     console.error(error);
   }
 };
 
+// 新建环境
 const handleConfirmCreate = async () => {
   try {
     const params = cloneDeep(curStageData.value);
@@ -435,6 +456,29 @@ const handleConfirmCreate = async () => {
     });
     // 重新获取环境列表(全局事件总线实现)
     mitt.emit('get-stage-list');
+    // 关闭dialog
+    isShow.value = false;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+// 编辑环境
+const handleConfirmEdit = async () => {
+  try {
+    const stageId = stageStore.curStageData.id;
+    const params = cloneDeep(curStageData.value);
+    // 删除冗余参数
+    params.backends.forEach((v: any) => {
+      delete v.name;
+    });
+    await updateStage(apigwId, stageId, params)
+    Message({
+      message: t('更新成功'),
+      theme: 'success',
+    });
+    // 重新获取环境列表(全局事件总线实现)
+    mitt.emit('get-stage-list', true);
     // 关闭dialog
     isShow.value = false;
   } catch (error) {

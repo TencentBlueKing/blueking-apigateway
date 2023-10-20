@@ -39,7 +39,7 @@
     </div>
 
     <!-- 环境侧边栏 -->
-    <add-stage-sideslider ref="stageSidesliderRef" />
+    <edit-stage-sideslider ref="stageSidesliderRef" />
   </div>
 </template>
 
@@ -48,7 +48,7 @@ import { ref, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { copy } from '@/common/util';
-import addStageSideslider from './add-stage-sideslider.vue';
+import editStageSideslider from './edit-stage-sideslider.vue';
 import mitt from '@/common/event-bus';
 const router = useRouter();
 const route = useRoute();
@@ -80,7 +80,7 @@ const handleToDetail = (data: any) => {
 // 新建环境
 const stageSidesliderRef = ref(null)
 const handleAddStage = () => {
-  stageSidesliderRef.value.handleShowSideslider();
+  stageSidesliderRef.value.handleShowSideslider('add');
 }
 
 </script>
