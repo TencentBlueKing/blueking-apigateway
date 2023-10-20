@@ -208,7 +208,7 @@ class TestGatewayHandler:
 
     def test_save_related_data(self, mocker, fake_gateway):
         mocker.patch(
-            "apigateway.biz.gateway.APIAuthConfig.config",
+            "apigateway.biz.gateway.gateway.APIAuthConfig.config",
             new_callable=mocker.PropertyMock(
                 return_value={
                     "user_auth_type": "default",
@@ -223,7 +223,7 @@ class TestGatewayHandler:
                 }
             ),
         )
-        GatewayHandler().save_related_data(fake_gateway, "default", "admin", "test")
+        GatewayHandler.save_related_data(fake_gateway, "default", "admin", "test")
 
         assert Context.objects.filter(
             scope_type=ContextScopeTypeEnum.GATEWAY.value,

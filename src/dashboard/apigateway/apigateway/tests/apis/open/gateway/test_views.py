@@ -37,7 +37,7 @@ class TestGatewayListApi:
     def test_list(self, request_view, fake_gateway, mocker):
         mocker.patch(
             "apigateway.apis.open.gateway.views.GatewayListApi._filter_list_queryset",
-            return_value=Gateway.objects.filter(id=fake_gateway),
+            return_value=Gateway.objects.filter(id=fake_gateway.id),
         )
 
         resp = request_view(
@@ -57,7 +57,7 @@ class TestGatewayListApi:
         queryset = view._filter_list_queryset()
         assert queryset.filter(id=fake_gateway.id).exists()
 
-        queryset = view._filter_list_queryset(name=fake_gateway, fuzzy=False)
+        queryset = view._filter_list_queryset(name=fake_gateway.name, fuzzy=False)
         assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
 
         queryset = view._filter_list_queryset(user_auth_type="not-exist")
@@ -100,11 +100,11 @@ class TestGatewayPublicKeyRetrieveApi:
 
 
 class TestGatewaySyncApi:
-    def test_post(self, mocker, request_view, fake_gateway, disable_app_permission):
+    def test_post(self, mocker, request_view, unique_gateway_name, disable_app_permission):
         resp = request_view(
             method="POST",
             view_name="openapi.gateway.sync",
-            path_params={"gateway_name": fake_gateway.name},
+            path_params={"gateway_name": unique_gateway_name},
             data={
                 "description": "desc",
                 "is_public": True,
@@ -115,7 +115,7 @@ class TestGatewaySyncApi:
 
         assert resp.status_code == 200
         assert result["code"] == 0
-        assert result["data"]["id"] == fake_gateway.id
+        assert result["data"]["id"] == Gateway.objects.get(name=unique_gateway_name).id
 
 
 class TestGatewayUpdateStatusApi:
@@ -127,6 +127,7 @@ class TestGatewayUpdateStatusApi:
             data={
                 "status": 0,
             },
+            gateway=fake_gateway,
         )
         result = resp.json()
 
@@ -139,11 +140,12 @@ class TestGatewayRelatedAppAddApi:
     def test_post(self, request_view, fake_gateway, disable_app_permission):
         resp = request_view(
             method="POST",
-            view_name="openapi.gateway.add_related_app",
+            view_name="openapi.gateway.add_related_apps",
             path_params={"gateway_name": fake_gateway.name},
             data={
                 "target_app_codes": ["test1", "test2"],
             },
+            gateway=fake_gateway,
         )
         result = resp.json()
 

@@ -20,6 +20,7 @@ from pydantic import parse_obj_as
 
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway.synchronizer import GatewaySyncData, GatewaySynchronizer
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp
 
@@ -75,15 +76,23 @@ class TestGatewaySyncData:
 
 
 class TestGatewaySynchronizer:
-    def test_sync(self, fake_gateway):
-        synchronizer = GatewaySynchronizer(fake_gateway, GatewaySyncData(name=fake_gateway.name, status=0))
+    def test_sync(self, unique_gateway_name):
+        # create
+        synchronizer = GatewaySynchronizer(None, GatewaySyncData(name=unique_gateway_name, status=0))
         gateway = synchronizer.sync()
 
-        assert gateway.id == fake_gateway.id
+        assert gateway.id == Gateway.objects.get(name=unique_gateway_name).id
+        assert gateway.status == 0
+
+        # update
+        synchronizer = GatewaySynchronizer(gateway, GatewaySyncData(name=unique_gateway_name, status=1))
+        gateway = synchronizer.sync()
+
+        assert gateway.id == Gateway.objects.get(name=unique_gateway_name).id
         assert gateway.status == 0
 
     def test_create(self, settings, unique_gateway_name):
-        settings.DEFAULT_USER_AUTH_TYPE = "foo"
+        settings.DEFAULT_USER_AUTH_TYPE = "default"
         settings.SPECIAL_GATEWAY_AUTH_CONFIGS = {unique_gateway_name: {"unfiltered_sensitive_keys": ["bar"]}}
 
         synchronizer = GatewaySynchronizer(
@@ -96,7 +105,7 @@ class TestGatewaySynchronizer:
                 status=1,
                 is_public=True,
                 gateway_type=GatewayTypeEnum.OFFICIAL_API.value,
-                user_config={"from_token": False},
+                user_config={"from_bk_token": False},
             ),
             bk_app_code="app1",
         )
@@ -112,16 +121,17 @@ class TestGatewaySynchronizer:
         assert gateway.is_public is True
 
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
-        assert auth_config["user_auth_type"] == "foo"
+        assert auth_config["user_auth_type"] == "default"
         assert auth_config["api_type"] == 1
-        assert auth_config["user_config"]["from_token"] is False
+        assert auth_config["user_conf"]["from_bk_token"] is False
         assert auth_config["unfiltered_sensitive_keys"] == ["bar"]
 
         assert GatewayRelatedApp.objects.filter(gateway=gateway).count() == 1
 
     def test_update(self, settings, fake_gateway):
-        settings.DEFAULT_USER_AUTH_TYPE = "foo"
+        settings.DEFAULT_USER_AUTH_TYPE = "default"
         settings.SPECIAL_GATEWAY_AUTH_CONFIGS = {fake_gateway.name: {"unfiltered_sensitive_keys": ["bar"]}}
+        GatewayAuthContext().save(fake_gateway.id, {"user_auth_type": "default"})
 
         synchronizer = GatewaySynchronizer(
             fake_gateway,
@@ -133,11 +143,11 @@ class TestGatewaySynchronizer:
                 status=0,
                 is_public=True,
                 gateway_type=GatewayTypeEnum.OFFICIAL_API.value,
-                user_config={"from_token": False},
+                user_config={"from_bk_token": False},
             ),
             bk_app_code="app1",
         )
-        synchronizer._create_gateway()
+        synchronizer._update_gateway()
         assert synchronizer.gateway.id
 
         gateway = Gateway.objects.get(name=fake_gateway.name)
@@ -149,9 +159,8 @@ class TestGatewaySynchronizer:
         assert gateway.is_public is True
 
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
-        assert auth_config["user_auth_type"] != "foo"
         assert auth_config["api_type"] == 1
-        assert auth_config["user_config"]["from_token"] is False
+        assert auth_config["user_conf"]["from_bk_token"] is False
         assert auth_config["unfiltered_sensitive_keys"] == ["bar"]
 
         assert GatewayRelatedApp.objects.filter(gateway=gateway).count() == 0

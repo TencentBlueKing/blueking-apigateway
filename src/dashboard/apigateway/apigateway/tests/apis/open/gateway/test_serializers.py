@@ -89,8 +89,8 @@ class TestGatewayRetrieveV1OutputSLZ:
     def test_to_representation(self, fake_gateway):
         slz = serializers.GatewayRetrieveV1OutputSLZ(fake_gateway)
         assert slz.data
-        assert "api_type" not in slz.data["api_type"]
-        assert "user_auth_type" not in slz.data["user_auth_type"]
+        assert "api_type" not in slz.data
+        assert "user_auth_type" not in slz.data
 
 
 class TestGatewaySyncInputSLZ:
@@ -110,7 +110,6 @@ class TestGatewaySyncInputSLZ:
                     "is_public": True,
                     "gateway_type": 10,
                     "status": GatewayStatusEnum.ACTIVE.value,
-                    "maintainers": [],
                 },
                 False,
             ),
@@ -125,7 +124,7 @@ class TestGatewaySyncInputSLZ:
                     "description": "desc",
                     "is_public": True,
                     "status": GatewayStatusEnum.ACTIVE.value,
-                    "maintainers": [],
+                    "gateway_type": None,
                 },
                 False,
             ),
@@ -143,6 +142,7 @@ class TestGatewaySyncInputSLZ:
                     "maintainers": ["admin"],
                     "is_public": False,
                     "status": GatewayStatusEnum.INACTIVE.value,
+                    "gateway_type": None,
                 },
                 False,
             ),
@@ -164,6 +164,7 @@ class TestGatewaySyncInputSLZ:
                     "maintainers": [],
                     "is_public": False,
                     "status": GatewayStatusEnum.INACTIVE.value,
+                    "gateway_type": None,
                     "user_config": {
                         "from_bk_token": True,
                         "from_username": True,
@@ -184,7 +185,6 @@ class TestGatewaySyncInputSLZ:
                     "is_public": True,
                     "gateway_type": 1,
                     "status": GatewayStatusEnum.ACTIVE.value,
-                    "maintainers": [],
                 },
                 False,
             ),
