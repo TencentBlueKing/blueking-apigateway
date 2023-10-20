@@ -33,44 +33,7 @@
       </div>
     </div>
     <div class="flex-row resource-content">
-      <div class="left-wraper" :style="{ width: isDetail ? '370px' : '100%' }">
-        <!-- <bk-table
-          v-if="isDetail"
-          class="table-layout-left"
-          :data="tableData"
-          remote-pagination
-          :pagination="pagination"
-          show-overflow-tooltip
-          @page-limit-change="handlePageSizeChange"
-          @page-value-change="handlePageChange"
-          @selection-change="handleSelectionChange"
-          row-hover="auto"
-        >
-          <bk-table-column
-            width="100"
-            type="selection"
-          />
-          <bk-table-column
-            :label="t('资源名称')"
-          >
-            <template #default="{ data }">
-              <bk-button
-                text
-                theme="primary"
-                @click="handleEditResource(data.id, 'edit')"
-              >
-                {{data?.name}}
-              </bk-button>
-            </template>
-          </bk-table-column>
-          <bk-table-column
-            :label="t('后端服务')"
-          >
-            <template #default="{ data }">
-              {{data?.backend?.name}}
-            </template>
-          </bk-table-column>
-        </bk-table> -->
+      <div class="left-wraper" :style="{ width: isDetail ? isShowLeft ? '370px' : '0' : '100%' }">
         <bk-loading
           :loading="isLoading"
         >
@@ -185,6 +148,9 @@
             </bk-table-column>
           </bk-table>
         </bk-loading>
+        <div class="toggle-button" @click="isShowLeft = !isShowLeft">
+          <i class="icon apigateway-icon icon-ag-ag-arrow-left" :class="[{ 'is-left': !isShowLeft }]"></i>
+        </div>
       </div>
       <div class="flex-1 right-wraper ml20" v-if="isDetail">
         <bk-tab
@@ -301,6 +267,8 @@ const isBatchDelete = ref(false);
 
 // 是否展示详情
 const isDetail = ref(false);
+// 是否展示左边列表
+const isShowLeft = ref(true);
 
 // 当前点击资源ID
 const resourceId = ref(0);
@@ -474,9 +442,32 @@ watch(
     height: calc(100% - 90px);
     min-height: 600px;
     .left-wraper{
-      width: 370px;
+      position: relative;
       background: #fff;
       transition: all .15s;
+      .toggle-button{
+        align-items: center;
+        background: #dcdee5;
+        border-bottom-right-radius: 6px;
+        border-top-right-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        font-size: 16px;
+        height: 64px;
+        justify-content: center;
+        position: absolute;
+        right: -14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        .icon {
+          transition: transform .15s !important;
+          &.is-left {
+            transform: rotate(180deg) !important;
+          }
+        }
+      }
     }
 
     .right-wraper{
