@@ -41,10 +41,9 @@ class GatewayListV1InputSLZ(serializers.Serializer):
 
 
 class GatewayListV1OutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
-    description_en = serializers.CharField(required=False, write_only=True)
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     api_type = serializers.SerializerMethodField()
     user_auth_type = serializers.SerializerMethodField()

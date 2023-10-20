@@ -16,18 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from unittest import mock
 
 import pytest
 from django_dynamic_fixture import G
-from rest_framework.serializers import ValidationError
 
 from apigateway.apis.open.gateway import views
-from apigateway.common.contexts import GatewayAuthContext
-from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release, Stage
-from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, get_response_json
-
-pytestmark = pytest.mark.django_db
+from apigateway.biz.gateway_jwt import GatewayJWTHandler
+from apigateway.core.models import Gateway, GatewayRelatedApp, Release
 
 
 @pytest.fixture()
@@ -38,177 +33,120 @@ def disable_app_permission(mocker):
     )
 
 
-class TestAPIViewSet:
-    @pytest.fixture(autouse=True)
-    def setup_fixture(self, meta_schemas):
-        self.factory = APIRequestFactory()
-        self.api_auth_context = GatewayAuthContext()
-
-    def test_list(self):
-        gateway_1 = create_gateway(name="api_1", status=1, is_public=True)
-        gateway_2 = create_gateway(name="api_2", status=1, is_public=False)
-        create_gateway(name="api_3", status=1, is_public=True)
-
-        self.api_auth_context.save(gateway_1.id, {"user_auth_type": "ieod", "api_type": 10})
-        self.api_auth_context.save(gateway_2.id, {"user_auth_type": "ieod", "api_type": 10})
-
-        s1 = G(Stage, gateway=gateway_1, status=1)
-        s2 = G(Stage, gateway=gateway_2, status=1)
-
-        G(Release, gateway=gateway_1, stage=s1)
-        G(Release, gateway=gateway_2, stage=s2)
-
-        data = [
-            {
-                "user_auth_type": "ieod",
-                "expected": [
-                    {
-                        "id": gateway_1.id,
-                        "name": gateway_1.name,
-                        "description": gateway_1.description,
-                        "maintainers": gateway_1.maintainers,
-                        "api_type": 10,
-                        "user_auth_type": "ieod",
-                    }
-                ],
-            },
-        ]
-
-        for test in data:
-            request = self.factory.get("/api/v1/apis/", data=test)
-
-            view = views.GatewayViewSet.as_view({"get": "list"})
-            response = view(request)
-
-            result = get_response_json(response)
-            assert result["code"] == 0, result
-            assert result["data"] == test["expected"]
-
-    def test_retrieve(self):
-        gateway_1 = create_gateway(name="api_1", status=1, is_public=True)
-        gateway_2 = create_gateway(name="api_2", status=1, is_public=False)
-
-        data = [
-            {
-                "id": gateway_1.id,
-                "expected": {
-                    "id": gateway_1.id,
-                    "name": gateway_1.name,
-                    "description": gateway_1.description,
-                    "maintainers": gateway_1.maintainers,
-                },
-            },
-            {
-                "id": gateway_2.id,
-                "expected": {
-                    "id": gateway_2.id,
-                    "name": gateway_2.name,
-                    "description": gateway_2.description,
-                    "maintainers": gateway_2.maintainers,
-                },
-            },
-        ]
-
-        for test in data:
-            gateway_id = test["id"]
-            request = self.factory.get(f"/api/v1/apis/{gateway_id}/", data=test)
-
-            view = views.GatewayViewSet.as_view({"get": "retrieve"})
-            response = view(request, id=gateway_id)
-
-            result = get_response_json(response)
-            assert result["code"] == 0, result
-            assert result["data"] == test["expected"]
-
-
-class TestAPIPublicKeyViewSet:
-    def test_get_public_key(self, mocker, settings, request_factory, unique_gateway_name):
-        settings.JWT_ISSUER = "foo"
-
+class TestGatewayListApi:
+    def test_list(self, request_view, fake_gateway, mocker):
         mocker.patch(
-            "apigateway.apis.open.gateway.views.GatewayRelatedAppPermission.has_permission",
-            return_value=True,
+            "apigateway.apis.open.gateway.views.GatewayListApi._filter_list_queryset",
+            return_value=Gateway.objects.filter(id=fake_gateway),
         )
 
-        gateway = G(Gateway, name=unique_gateway_name)
-        G(JWT, gateway=gateway, public_key="test")
+        resp = request_view(
+            method="GET",
+            view_name="openapi.gateway.list",
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert result["code"] == 0
+        assert len(result["data"]) >= 1
 
-        request = request_factory.get(f"/api/v1/apis/{unique_gateway_name}/public_key/")
-        request.gateway = gateway
+    def test_filter_list_queryset(self, fake_gateway):
+        G(Release, gateway=fake_gateway)
 
-        view = views.GatewayPublicKeyViewSet.as_view({"get": "get_public_key"})
-        response = view(request, gateway_name=unique_gateway_name)
+        view = views.GatewayListApi()
 
-        result = get_response_json(response)
+        queryset = view._filter_list_queryset()
+        assert queryset.filter(id=fake_gateway.id).exists()
+
+        queryset = view._filter_list_queryset(name=fake_gateway, fuzzy=False)
+        assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
+
+        queryset = view._filter_list_queryset(user_auth_type="not-exist")
+        assert queryset.count() == 0
+
+
+class TestGatewayRetrieveApi:
+    def test_retrieve(self, request_view, fake_gateway):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.gateway.retrieve",
+            path_params={"id": fake_gateway.id},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["code"] == 0
+        assert result["data"]
+
+
+class TestGatewayPublicKeyRetrieveApi:
+    def test_get(self, settings, request_view, fake_gateway):
+        settings.JWT_ISSUER = "foo"
+
+        jwt = GatewayJWTHandler.create_jwt(fake_gateway)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.gateway.get_public_key",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
         assert result["code"] == 0
         assert result["data"] == {
             "issuer": "foo",
-            "public_key": "test",
+            "public_key": jwt.public_key,
         }
 
 
-class TestAPISyncViewSet:
-    def test_sync(self, mocker, request_factory, unique_gateway_name):
-        mocker.patch(
-            "apigateway.apis.open.gateway.views.GatewayRelatedAppPermission.has_permission",
-            return_value=True,
-        )
-
-        bk_app_code = "test"
-        gateway = G(Gateway, name=unique_gateway_name, is_public=False)
-
-        request = request_factory.post(
-            f"/api/v1/apis/{unique_gateway_name}/sync/",
+class TestGatewaySyncApi:
+    def test_post(self, mocker, request_view, fake_gateway, disable_app_permission):
+        resp = request_view(
+            method="POST",
+            view_name="openapi.gateway.sync",
+            path_params={"gateway_name": fake_gateway.name},
             data={
-                "name": unique_gateway_name,
                 "description": "desc",
                 "is_public": True,
             },
+            app=mocker.MagicMock(app_code="foo"),
         )
-        request.gateway = gateway
-        request.app = mock.MagicMock(app_code=bk_app_code)
+        result = resp.json()
 
-        view = views.GatewaySyncViewSet.as_view({"post": "sync"})
-        response = view(request, gateway_name=unique_gateway_name)
-
-        result = get_response_json(response)
-        gateway = Gateway.objects.get(name=unique_gateway_name)
+        assert resp.status_code == 200
         assert result["code"] == 0
-        assert gateway.is_public is True
+        assert result["data"]["id"] == fake_gateway.id
 
 
-class TestGatewayRelatedAppViewSet:
-    def test_add_related_apps_ok(self, mocker, request_factory, disable_app_permission):
-        request = request_factory.post(
-            "/backend/api/v1/demo/related-apps/",
-            data={"target_app_codes": ["test1", "test2"]},
+class TestGatewayUpdateStatusApi:
+    def test_post(self, request_view, fake_gateway, disable_app_permission):
+        resp = request_view(
+            method="POST",
+            view_name="openapi.gateway.update_status",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "status": 0,
+            },
         )
-        request.gateway = G(Gateway)
-        view = views.GatewayRelatedAppViewSet.as_view({"post": "add_related_apps"})
+        result = resp.json()
 
-        mocker.patch(
-            "apigateway.apis.open.gateway.serializers.BKAppCodeListValidator.__call__",
-            return_value=None,
-        )
-        view = views.GatewayRelatedAppViewSet.as_view({"post": "add_related_apps"})
-        response = view(request, gateway_name=request.gateway.name)
-        result = get_response_json(response)
+        assert resp.status_code == 200
         assert result["code"] == 0
-        assert GatewayRelatedApp.objects.filter(gateway=request.gateway).count() == 2
+        assert Gateway.objects.get(id=fake_gateway.id).status == 0
 
-    def test_add_related_apps_error(self, mocker, request_factory, disable_app_permission):
-        request = request_factory.post(
-            "/backend/api/v1/demo/related-apps/",
-            data={"target_app_codes": ["test1", "test2"]},
-        )
-        request.gateway = G(Gateway)
-        view = views.GatewayRelatedAppViewSet.as_view({"post": "add_related_apps"})
 
-        mocker.patch(
-            "apigateway.apis.open.gateway.serializers.BKAppCodeListValidator.__call__",
-            side_effect=ValidationError(),
+class TestGatewayRelatedAppAddApi:
+    def test_post(self, request_view, fake_gateway, disable_app_permission):
+        resp = request_view(
+            method="POST",
+            view_name="openapi.gateway.add_related_app",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "target_app_codes": ["test1", "test2"],
+            },
         )
-        response = view(request, gateway_name=request.gateway.name)
-        result = get_response_json(response)
-        assert result["code"] != 0
-        assert response.status_code != 200
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["code"] == 0
+        assert GatewayRelatedApp.objects.filter(gateway=fake_gateway).count() == 2

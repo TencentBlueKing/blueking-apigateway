@@ -84,7 +84,7 @@ class GatewayHandler:
         return gateway_id_to_stages
 
     @staticmethod
-    def get_current_gateway_auth_config(gateway_id: int) -> dict:
+    def get_gateway_auth_config(gateway_id: int) -> dict:
         """
         获取网关当前的认证配置
         """
@@ -133,7 +133,7 @@ class GatewayHandler:
         if not new_config:
             return None
 
-        current_config = GatewayHandler().get_current_gateway_auth_config(gateway_id)
+        current_config = GatewayHandler.get_gateway_auth_config(gateway_id)
 
         # 因用户配置为 dict，参数 user_conf 仅传递了部分用户配置，因此需合并当前配置与传入配置
         api_auth_config = APIAuthConfig.parse_obj(deep_update(current_config, new_config))

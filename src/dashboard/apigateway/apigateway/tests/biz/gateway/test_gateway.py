@@ -15,8 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from unittest import mock
-
 import pytest
 from django.core.exceptions import ObjectDoesNotExist
 from django_dynamic_fixture import G
@@ -181,7 +179,7 @@ class TestGatewayHandler:
         self, mocker, fake_gateway, user_conf, api_type, allow_update_api_auth, unfiltered_sensitive_keys, expected
     ):
         mocker.patch(
-            "apigateway.biz.gateway.GatewayHandler.get_current_gateway_auth_config",
+            "apigateway.biz.gateway.GatewayHandler.get_gateway_auth_config",
             return_value={
                 "user_auth_type": "default",
                 "api_type": GatewayTypeEnum.CLOUDS_API.value,
@@ -211,7 +209,7 @@ class TestGatewayHandler:
     def test_save_related_data(self, mocker, fake_gateway):
         mocker.patch(
             "apigateway.biz.gateway.APIAuthConfig.config",
-            new_callable=mock.PropertyMock(
+            new_callable=mocker.PropertyMock(
                 return_value={
                     "user_auth_type": "default",
                     "api_type": GatewayTypeEnum.CLOUDS_API.value,

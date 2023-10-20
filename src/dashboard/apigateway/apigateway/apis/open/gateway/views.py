@@ -23,6 +23,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.db.models.query import QuerySet
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from pydantic import parse_obj_as
 from rest_framework import generics, status
@@ -40,17 +41,21 @@ from apigateway.core.models import JWT, Gateway
 from apigateway.utils.responses import V1OKJsonResponse
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关列表，网关需公开且已发布",
+        query_serializer=serializers.GatewayListV1InputSLZ,
+        responses={status.HTTP_200_OK: serializers.GatewayListV1OutputSLZ(many=True)},
+        tags=["OpenAPI.Gateway"],
+    ),
+)
 class GatewayListApi(generics.ListAPIView):
     serializer_class = serializers.GatewayListV1OutputSLZ
 
     def get_queryset(self):
         return Gateway.objects.all()
 
-    @swagger_auto_schema(
-        query_serializer=serializers.GatewayListV1InputSLZ,
-        responses={status.HTTP_200_OK: serializers.GatewayListV1OutputSLZ(many=True)},
-        tags=["OpenAPI.Gateway"],
-    )
     def list(self, request, *args, **kwargs):
         slz = serializers.GatewayListV1InputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -113,6 +118,13 @@ class GatewayListApi(generics.ListAPIView):
         return queryset.filter(id__in=released_gateway_ids)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: serializers.GatewayRetrieveV1OutputSLZ()},
+        tags=["OpenAPI.Gateway"],
+    ),
+)
 class GatewayRetrieveApi(generics.RetrieveAPIView):
     serializer_class = serializers.GatewayRetrieveV1OutputSLZ
     lookup_field = "id"
@@ -120,9 +132,6 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
     def get_queryset(self):
         return Gateway.objects.all()
 
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.GatewayRetrieveV1OutputSLZ()}, tags=["OpenAPI.Gateway"]
-    )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = self.get_serializer(instance)

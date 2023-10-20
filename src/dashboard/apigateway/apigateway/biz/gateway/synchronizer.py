@@ -37,7 +37,7 @@ class GatewaySyncData(BaseModel):
     user_config: Optional[Dict] = Field(default=None)
 
     @validator("gateway_type")
-    def validate_gateway_type(self, v):
+    def validate_gateway_type(cls, v):  # noqa: N805
         return GatewayTypeEnum(v) if isinstance(v, int) else v
 
 
