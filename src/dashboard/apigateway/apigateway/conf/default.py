@@ -533,7 +533,7 @@ API_USER_AUTH_CONFIGS = {
 }
 
 # 特殊的网关认证配置，在网关同步时，会更新网关的这些配置
-SPECIAL_API_AUTH_CONFIGS = {
+SPECIAL_GATEWAY_AUTH_CONFIGS = {
     "bk-auth": {
         "unfiltered_sensitive_keys": ["bk_token", "access_token"],
     },

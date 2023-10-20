@@ -70,12 +70,12 @@ class TestAPIQueryV1SLZ:
         ],
     )
     def test_validate(self, params, expected):
-        slz = serializers.GatewayQueryV1SLZ(data=params)
+        slz = serializers.GatewayListV1InputSLZ(data=params)
         slz.is_valid()
         assert slz.validated_data == expected
 
 
-class TestGatewaySyncSLZ:
+class TestGatewaySyncInputSLZ:
     @pytest.mark.parametrize(
         "data, expected, will_error",
         [
@@ -189,7 +189,7 @@ class TestGatewaySyncSLZ:
     )
     def test_validate(self, settings, data, expected, will_error):
         settings.DEFAULT_USER_AUTH_TYPE = "default"
-        slz = serializers.GatewaySyncSLZ(data=data)
+        slz = serializers.GatewaySyncInputSLZ(data=data)
 
         if not will_error:
             slz.is_valid(raise_exception=True)
@@ -201,7 +201,7 @@ class TestGatewaySyncSLZ:
 
     def test_create(self, settings, unique_gateway_name):
         settings.USE_BK_IAM_PERMISSION = False
-        settings.SPECIAL_API_AUTH_CONFIGS = {
+        settings.SPECIAL_GATEWAY_AUTH_CONFIGS = {
             unique_gateway_name: {
                 "unfiltered_sensitive_keys": ["bk_token"],
             }
@@ -209,7 +209,7 @@ class TestGatewaySyncSLZ:
 
         bk_app_code = "test"
 
-        slz = serializers.GatewaySyncSLZ(
+        slz = serializers.GatewaySyncInputSLZ(
             data={
                 "name": unique_gateway_name,
                 "description": "desc",
@@ -229,7 +229,7 @@ class TestGatewaySyncSLZ:
         assert api_auth["api_type"] == 10
 
         api_name = f"bk-{unique_gateway_name}"
-        slz = serializers.GatewaySyncSLZ(
+        slz = serializers.GatewaySyncInputSLZ(
             data={
                 "name": api_name,
                 "description": "desc",
@@ -246,14 +246,14 @@ class TestGatewaySyncSLZ:
         assert api_auth["api_type"] == 1
 
     def test_update(self, settings, fake_gateway, unique_gateway_name):
-        settings.SPECIAL_API_AUTH_CONFIGS = {
+        settings.SPECIAL_GATEWAY_AUTH_CONFIGS = {
             fake_gateway.name: {
                 "unfiltered_sensitive_keys": ["bk_red"],
             }
         }
 
         fake_gateway.maintainers = ["admin"]
-        slz = serializers.GatewaySyncSLZ(
+        slz = serializers.GatewaySyncInputSLZ(
             instance=fake_gateway,
             data={
                 "name": unique_gateway_name,
@@ -274,7 +274,7 @@ class TestGatewaySyncSLZ:
         assert api_auth["unfiltered_sensitive_keys"] == ["bk_red"]
         assert api_auth["api_type"] == 10
 
-        slz = serializers.GatewaySyncSLZ(
+        slz = serializers.GatewaySyncInputSLZ(
             instance=fake_gateway,
             data={
                 "name": f"bk-{unique_gateway_name}",
@@ -313,8 +313,8 @@ class TestGatewaySyncSLZ:
         ],
     )
     def test_get_api_unfiltered_sensitive_keys(self, settings, api_name, special_api_auth_configs, expected):
-        settings.SPECIAL_API_AUTH_CONFIGS = special_api_auth_configs
-        slz = serializers.GatewaySyncSLZ(data={})
+        settings.SPECIAL_GATEWAY_AUTH_CONFIGS = special_api_auth_configs
+        slz = serializers.GatewaySyncInputSLZ(data={})
 
         result = slz._get_api_unfiltered_sensitive_keys(api_name)
         assert result == expected
@@ -331,11 +331,11 @@ class TestGatewaySyncSLZ:
         ],
     )
     def test_validate_api_type(self, name, api_type, expected_error):
-        slz = serializers.GatewaySyncSLZ()
+        slz = serializers.GatewaySyncInputSLZ()
 
         if not expected_error:
-            slz._validate_api_type(name, api_type)
+            slz._validate_name(name, api_type)
             return
 
         with pytest.raises(ValidationError):
-            slz._validate_api_type(name, api_type)
+            slz._validate_name(name, api_type)

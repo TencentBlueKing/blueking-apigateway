@@ -32,16 +32,15 @@ from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.iam import IAMHandler
 from apigateway.biz.release import ReleaseHandler
+from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.stage import StageHandler
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, SslCertificate, Stage
 from apigateway.utils.dict import deep_update
-
-from .resource import ResourceHandler
-from .resource_version import ResourceVersionHandler
-from .stage import StageHandler
 
 
 class GatewayHandler:
