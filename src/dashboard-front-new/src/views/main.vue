@@ -86,8 +86,8 @@ const handleCollapse = (v: boolean) => {
 
 // 设置网关名
 const handleSetApigwName = () => {
-  // const apigwName = gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {};
-  // common.setApigwName(apigwName);
+  const apigwName = gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {};
+  common.setApigwName(apigwName);
 };
 
 // 监听当前路由
@@ -179,7 +179,7 @@ const handleBack = () => {
     border: 1px solid #ddd;
 
     .content-view {
-      font-size: 24px;
+      font-size: 14px;
     }
 
     .header {
