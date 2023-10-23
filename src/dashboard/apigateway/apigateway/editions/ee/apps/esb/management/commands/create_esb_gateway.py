@@ -26,7 +26,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from pydantic import parse_obj_as
 
-from apigateway.biz.gateway.synchronizer import GatewaySyncData, GatewaySynchronizer
+from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
@@ -47,10 +47,10 @@ class Command(BaseCommand):
                 continue
 
             if not dry_run:
-                synchronizer = GatewaySynchronizer(
-                    gateway=gateway,
+                saver = GatewaySaver(
+                    gateway_id=None,
                     gateway_data=parse_obj_as(
-                        GatewaySyncData,
+                        GatewayData,
                         dict(
                             config,
                             name=name,
@@ -61,6 +61,6 @@ class Command(BaseCommand):
                     bk_app_code=settings.BK_APP_CODE,
                     username=settings.GATEWAY_DEFAULT_CREATOR,
                 )
-                synchronizer.sync()
+                saver.save()
 
         logger.info("create esb gateway [name=%s]", name)

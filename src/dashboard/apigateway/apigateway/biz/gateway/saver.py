@@ -26,7 +26,7 @@ from apigateway.core.models import Gateway
 from .gateway import GatewayHandler
 
 
-class GatewaySyncData(BaseModel):
+class GatewayData(BaseModel):
     name: str = Field(...)
     description: str = Field(default="")
     description_en: Optional[str] = Field(default=None)
@@ -41,32 +41,39 @@ class GatewaySyncData(BaseModel):
         return GatewayTypeEnum(v) if isinstance(v, int) else v
 
 
-class GatewaySynchronizer:
+class GatewaySaver:
     def __init__(
         self,
-        gateway: Optional[Gateway],
-        gateway_data: GatewaySyncData,
+        gateway_id: Optional[int],
+        gateway_data: GatewayData,
         bk_app_code: str = "",
         username: str = "",
     ):
-        self.gateway = gateway
         self.gateway_data = gateway_data
         self.bk_app_code = bk_app_code
         self.username = username
 
-    def sync(self) -> Gateway:
-        if not self.gateway:
+        self._gateway = self._get_gateway(gateway_id)
+
+    def _get_gateway(self, gateway_id: Optional[int]) -> Optional[Gateway]:
+        if gateway_id:
+            return Gateway.objects.get(id=gateway_id)
+
+        return None
+
+    def save(self) -> Gateway:
+        if not self._gateway:
             self._create_gateway()
         else:
             self._update_gateway()
 
-        assert self.gateway
+        assert self._gateway
 
-        return self.gateway
+        return self._gateway
 
     def _create_gateway(self):
         # 1. save gateway
-        self.gateway = gateway = Gateway(
+        self._gateway = gateway = Gateway(
             name=self.gateway_data.name,
             description=self.gateway_data.description,
             description_en=self.gateway_data.description_en,
@@ -90,7 +97,7 @@ class GatewaySynchronizer:
         )
 
     def _update_gateway(self):
-        gateway = self.gateway
+        gateway = self._gateway
 
         # 1. update gateway
         gateway.description = self.gateway_data.description
