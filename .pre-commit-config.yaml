@@ -22,12 +22,6 @@ repos:
         files: src/dashboard/
   - repo: local
     hooks:
-      - id: isort
-        name: isort
-        language: python
-        types: [python]
-        entry: isort --settings-path=src/esb/pyproject.toml
-        files: src/esb/
       - id: black
         name: black
         language: python

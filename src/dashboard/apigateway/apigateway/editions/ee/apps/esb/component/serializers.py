@@ -39,7 +39,6 @@ from apigateway.common.fields import TimestampField
 
 
 class ESBChannelSLZ(OfficialWriteFields, serializers.ModelSerializer):
-
     board = serializers.HiddenField(default="")
     system_id = serializers.IntegerField(min_value=1)
     system_name = serializers.CharField(source="system.name", read_only=True)
@@ -164,6 +163,11 @@ class ESBChannelSLZ(OfficialWriteFields, serializers.ModelSerializer):
     def update(self, instance, validated_data):
         if not ESBChannelExtend.objects.get_config_fields(instance.id):
             validated_data.pop("config", None)
+        elif validated_data.get("config"):
+            # 指定 config-fields 的组件，保留未修改的原配置
+            config = instance.config.copy()
+            config.update(validated_data["config"])
+            validated_data["config"] = config
 
         return super().update(instance, validated_data)
 
