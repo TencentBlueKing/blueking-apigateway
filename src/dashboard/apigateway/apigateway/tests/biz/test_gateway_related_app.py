@@ -48,12 +48,7 @@ class TestGatewayRelatedAppHandler:
         GatewayRelatedAppHandler._check_app_gateway_limit("bk_test")
 
     def test_get_related_app_codes(self, fake_gateway):
-        result = GatewayRelatedAppHandler.get_related_app_codes(fake_gateway.id, ["foo", "bar"])
-        assert result == []
-
         G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="foo")
-        result = GatewayRelatedAppHandler.get_related_app_codes(fake_gateway.id, ["foo", "bar"])
-        assert result == ["foo"]
-
-        result = GatewayRelatedAppHandler.get_related_app_codes(fake_gateway.id, ["app1", "app2"])
-        assert result == []
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="bar")
+        result = GatewayRelatedAppHandler.get_related_app_codes(fake_gateway.id)
+        assert sorted(result) == ["bar", "foo"]

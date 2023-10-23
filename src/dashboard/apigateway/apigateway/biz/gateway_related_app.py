@@ -44,10 +44,5 @@ class GatewayRelatedAppHandler:
             )
 
     @staticmethod
-    def get_related_app_codes(gateway_id: int, bk_app_codes: List[str]) -> List[str]:
-        return list(
-            GatewayRelatedApp.objects.filter(
-                gateway_id=gateway_id,
-                bk_app_code__in=bk_app_codes,
-            ).values_list("bk_app_code", flat=True)
-        )
+    def get_related_app_codes(gateway_id: int) -> List[str]:
+        return list(GatewayRelatedApp.objects.filter(gateway_id=gateway_id).values_list("bk_app_code", flat=True))

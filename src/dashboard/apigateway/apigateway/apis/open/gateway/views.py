@@ -19,6 +19,7 @@
 import operator
 from typing import Optional
 
+from cachetools import TTLCache, cached
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
@@ -31,9 +32,10 @@ from rest_framework import generics, status
 from apigateway.apis.open.gateway import serializers
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway.synchronizer import GatewaySyncData, GatewaySynchronizer
+from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.release import ReleaseHandler
+from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_5_MINUTES
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import GatewayStatusEnum
@@ -79,6 +81,7 @@ class GatewayListApi(generics.ListAPIView):
         )
         return V1OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("name")))
 
+    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_5_MINUTES))
     def _filter_list_queryset(
         self,
         name: Optional[str] = None,
@@ -162,19 +165,21 @@ class GatewaySyncApi(generics.CreateAPIView):
     @swagger_auto_schema(request_body=serializers.GatewaySyncInputSLZ, tags=["OpenAPI.Gateway"])
     @transaction.atomic
     def post(self, request, gateway_name: str, *args, **kwargs):
+        gateway = getattr(request, "gateway", None)
+
         request.data["name"] = gateway_name
-        slz = self.get_serializer(getattr(request, "gateway", None), data=request.data)
+        slz = self.get_serializer(gateway, data=request.data)
         slz.is_valid(raise_exception=True)
 
-        # sync gateway
+        # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
-        synchronizer = GatewaySynchronizer(
-            gateway=slz.instance,
-            gateway_data=parse_obj_as(GatewaySyncData, slz.validated_data),
+        saver = GatewaySaver(
+            gateway_id=gateway and gateway.id,
+            gateway_data=parse_obj_as(GatewayData, slz.validated_data),
             bk_app_code=request.app.app_code,
             username=username,
         )
-        gateway = synchronizer.sync()
+        gateway = saver.save()
 
         # record audit log
         GatewayHandler.record_audit_log_success(
@@ -219,7 +224,7 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
 
         target_app_codes = slz.validated_data["target_app_codes"]
 
-        related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id, target_app_codes)
+        related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
         missing_app_codes = set(target_app_codes) - set(related_app_codes)
         for bk_app_code in missing_app_codes:
             GatewayRelatedAppHandler.add_related_app(request.gateway.id, bk_app_code)

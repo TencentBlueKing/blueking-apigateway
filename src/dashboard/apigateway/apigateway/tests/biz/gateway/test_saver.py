@@ -19,13 +19,13 @@ import pytest
 from pydantic import parse_obj_as
 
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway.synchronizer import GatewaySyncData, GatewaySynchronizer
+from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp
 
 
-class TestGatewaySyncData:
+class TestGatewayData:
     @pytest.mark.parametrize(
         "data, expected",
         [
@@ -71,22 +71,22 @@ class TestGatewaySyncData:
         ],
     )
     def test(self, data, expected):
-        gateway_data = parse_obj_as(GatewaySyncData, data)
+        gateway_data = parse_obj_as(GatewayData, data)
         assert gateway_data.dict() == expected
 
 
-class TestGatewaySynchronizer:
-    def test_sync(self, unique_gateway_name):
+class TestGatewaySaver:
+    def test_save(self, unique_gateway_name):
         # create
-        synchronizer = GatewaySynchronizer(None, GatewaySyncData(name=unique_gateway_name, status=0))
-        gateway = synchronizer.sync()
+        saver = GatewaySaver(None, GatewayData(name=unique_gateway_name, status=0))
+        gateway = saver.save()
 
         assert gateway.id == Gateway.objects.get(name=unique_gateway_name).id
         assert gateway.status == 0
 
         # update
-        synchronizer = GatewaySynchronizer(gateway, GatewaySyncData(name=unique_gateway_name, status=1))
-        gateway = synchronizer.sync()
+        saver = GatewaySaver(gateway.id, GatewayData(name=unique_gateway_name, status=1))
+        gateway = saver.save()
 
         assert gateway.id == Gateway.objects.get(name=unique_gateway_name).id
         assert gateway.status == 0
@@ -95,9 +95,9 @@ class TestGatewaySynchronizer:
         settings.DEFAULT_USER_AUTH_TYPE = "default"
         settings.SPECIAL_GATEWAY_AUTH_CONFIGS = {unique_gateway_name: {"unfiltered_sensitive_keys": ["bar"]}}
 
-        synchronizer = GatewaySynchronizer(
+        saver = GatewaySaver(
             None,
-            GatewaySyncData(
+            GatewayData(
                 name=unique_gateway_name,
                 description="desc",
                 description_en="desc en",
@@ -109,11 +109,11 @@ class TestGatewaySynchronizer:
             ),
             bk_app_code="app1",
         )
-        synchronizer._create_gateway()
-        assert synchronizer.gateway.id
+        saver._create_gateway()
+        assert saver._gateway.id
 
         gateway = Gateway.objects.get(name=unique_gateway_name)
-        assert gateway.id == synchronizer.gateway.id
+        assert gateway.id == saver._gateway.id
         assert gateway.description == "desc"
         assert gateway.description_en == "desc en"
         assert gateway.maintainers == ["admin"]
@@ -133,9 +133,9 @@ class TestGatewaySynchronizer:
         settings.SPECIAL_GATEWAY_AUTH_CONFIGS = {fake_gateway.name: {"unfiltered_sensitive_keys": ["bar"]}}
         GatewayAuthContext().save(fake_gateway.id, {"user_auth_type": "default"})
 
-        synchronizer = GatewaySynchronizer(
-            fake_gateway,
-            GatewaySyncData(
+        saver = GatewaySaver(
+            fake_gateway.id,
+            GatewayData(
                 name="",
                 description="desc",
                 description_en="desc en",
@@ -147,11 +147,11 @@ class TestGatewaySynchronizer:
             ),
             bk_app_code="app1",
         )
-        synchronizer._update_gateway()
-        assert synchronizer.gateway.id
+        saver._update_gateway()
+        assert saver._gateway.id
 
         gateway = Gateway.objects.get(name=fake_gateway.name)
-        assert gateway.id == synchronizer.gateway.id
+        assert gateway.id == saver._gateway.id
         assert gateway.description == "desc"
         assert gateway.description_en == "desc en"
         assert gateway.maintainers == ["admin", "admin2"]
@@ -168,7 +168,7 @@ class TestGatewaySynchronizer:
     def test_get_gateway_unfiltered_sensitive_keys(self, settings):
         settings.SPECIAL_GATEWAY_AUTH_CONFIGS = {"foo": {"unfiltered_sensitive_keys": ["bar"]}}
 
-        synchronizer = GatewaySynchronizer(None, GatewaySyncData(name="foo", status=0))
+        saver = GatewaySaver(None, GatewayData(name="foo", status=0))
 
-        assert synchronizer._get_gateway_unfiltered_sensitive_keys("foo") == ["bar"]
-        assert synchronizer._get_gateway_unfiltered_sensitive_keys("bar") is None
+        assert saver._get_gateway_unfiltered_sensitive_keys("foo") == ["bar"]
+        assert saver._get_gateway_unfiltered_sensitive_keys("bar") is None

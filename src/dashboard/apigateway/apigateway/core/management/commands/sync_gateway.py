@@ -22,7 +22,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apigateway.biz.gateway.synchronizer import GatewaySyncData, GatewaySynchronizer
+from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
@@ -43,9 +43,9 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, name: str, **options):
         gateway = get_object_or_None(Gateway, name=name)
-        synchronizer = GatewaySynchronizer(
-            gateway=gateway,
-            gateway_data=GatewaySyncData(
+        saver = GatewaySaver(
+            gateway_id=gateway and gateway.id,
+            gateway_data=GatewayData(
                 name=name,
                 maintainers=[settings.GATEWAY_DEFAULT_CREATOR],
                 status=GatewayStatusEnum.ACTIVE.value,
@@ -53,6 +53,6 @@ class Command(BaseCommand):
             ),
             username=settings.GATEWAY_DEFAULT_CREATOR,
         )
-        synchronizer.sync()
+        saver.save()
 
         logger.info("sync gateway success: name=%s", name)
