@@ -106,3 +106,12 @@ class BackendHandler:
     @staticmethod
     def get_id_to_instance(gateway_id: int) -> Dict[int, Backend]:
         return {backend.id: backend for backend in Backend.objects.filter(gateway_id=gateway_id)}
+
+    @staticmethod
+    def get_backend_configs_by_gateway_and_stage(gateway_id, stage_id):
+        """查询网关环境后端配置"""
+
+        backend_configs = BackendConfig.objects.filter(gateway_id=gateway_id, stage_id=stage_id).prefetch_related(
+            "backend"
+        )
+        return {backend_config.backend_id: backend_config for backend_config in backend_configs}

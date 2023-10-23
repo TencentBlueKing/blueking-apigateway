@@ -42,6 +42,7 @@ from apigateway.core.constants import (
     ProxyTypeEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusTypeEnum,
+    ResourceVersionSchemaEnum,
 )
 from apigateway.core.models import (
     Backend,
@@ -321,6 +322,34 @@ def fake_shared_gateway(fake_micro_gateway, settings):
 @pytest.fixture
 def fake_resource_version(faker, fake_gateway, fake_resource1, fake_resource2):
     resource_version = G(ResourceVersion, gateway=fake_gateway, name=faker.pystr(), version=faker.pystr())
+    resource_version.data = ResourceVersionHandler.make_version(fake_gateway)
+    resource_version.save()
+    return resource_version
+
+
+@pytest.fixture
+def fake_resource_version_v2(faker, fake_gateway, fake_resource):
+    resource_version = G(
+        ResourceVersion,
+        gateway=fake_gateway,
+        name=faker.pystr(),
+        version=faker.pystr(),
+        schema_version=ResourceVersionSchemaEnum.V2.value,
+    )
+    resource_version.data = ResourceVersionHandler.make_version(fake_gateway)
+    resource_version.save()
+    return resource_version
+
+
+@pytest.fixture
+def fake_resource_version_v1(faker, fake_gateway, fake_resource):
+    resource_version = G(
+        ResourceVersion,
+        gateway=fake_gateway,
+        name=faker.pystr(),
+        version=faker.pystr(),
+        schema_version=ResourceVersionSchemaEnum.V1.value,
+    )
     resource_version.data = ResourceVersionHandler.make_version(fake_gateway)
     resource_version.save()
     return resource_version

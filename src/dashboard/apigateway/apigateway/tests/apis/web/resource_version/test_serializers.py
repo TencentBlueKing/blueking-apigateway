@@ -16,10 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
 import arrow
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.resource_version import serializers
+from apigateway.biz.backend import BackendHandler
+from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.core.models import Gateway, ResourceVersion
 
 
@@ -88,3 +91,125 @@ class TestResourceVersionListOutputSLZ:
                 "created_time": "2019-01-01 20:30:00",
             },
         ]
+
+
+class TestResourceVersionRetrieveOutputSLZ:
+    def test_to_representation_v1(
+        self, fake_backend, fake_stage, fake_gateway, fake_resource_version_v1, echo_plugin_stage_binding
+    ):
+        slz = serializers.ResourceVersionRetrieveOutputSLZ(
+            instance=fake_resource_version_v1,
+            context={
+                "resource_backend": BackendHandler.get_id_to_instance(fake_gateway.id),
+                "resource_backend_config": BackendHandler.get_backend_configs_by_gateway_and_stage(
+                    fake_gateway.id, fake_stage.id
+                ),
+                "is_schema_v2": fake_resource_version_v1.is_schema_v2,
+                "resource_stage_plugin_binding": PluginBindingHandler.get_stage_plugin_binding(
+                    fake_gateway.id, fake_stage.id
+                ),
+                "resource_doc_updated_time": {},
+            },
+        )
+        expected_data = {
+            "id": fake_resource_version_v1.id,
+            "version": fake_resource_version_v1.version,
+            "comment": fake_resource_version_v1.comment,
+            "schema_version": fake_resource_version_v1.schema_version,
+            "resources": [
+                {
+                    "name": fake_resource_version_v1.data[0]["name"],
+                    "method": fake_resource_version_v1.data[0]["method"],
+                    "path": fake_resource_version_v1.data[0]["path"],
+                    "description": fake_resource_version_v1.data[0]["description"],
+                    "description_en": fake_resource_version_v1.data[0]["description_en"],
+                    "gateway_labels": fake_resource_version_v1.data[0]["api_labels"],
+                    "match_subpath": fake_resource_version_v1.data[0]["match_subpath"],
+                    "is_public": fake_resource_version_v1.data[0]["is_public"],
+                    "allow_apply_permission": fake_resource_version_v1.data[0]["allow_apply_permission"],
+                    "doc_updated_time": "",
+                    "proxy": {
+                        "config": fake_resource_version_v1.data[0]["proxy"]["config"],
+                        "backend": {
+                            "id": fake_backend.id,
+                            "name": fake_backend.name,
+                            "config": {
+                                "type": "node",
+                                "timeout": 30,
+                                "loadbalance": "roundrobin",
+                                "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+                            },
+                        },
+                    },
+                    "contexts": fake_resource_version_v1.data[0]["contexts"],
+                    "plugins": [],
+                }
+            ],
+            "created_time": fake_resource_version_v1.created_time,
+            "created_by": fake_resource_version_v1.created_by,
+        }
+        assert slz.data == expected_data
+
+    def test_to_representation_v2(
+        self, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2, echo_plugin_stage_binding
+    ):
+        slz = serializers.ResourceVersionRetrieveOutputSLZ(
+            instance=fake_resource_version_v2,
+            context={
+                "resource_backend": BackendHandler.get_id_to_instance(fake_gateway.id),
+                "resource_backend_config": BackendHandler.get_backend_configs_by_gateway_and_stage(
+                    fake_gateway.id, fake_stage.id
+                ),
+                "is_schema_v2": fake_resource_version_v2.is_schema_v2,
+                "resource_stage_plugin_binding": PluginBindingHandler.get_stage_plugin_binding(
+                    fake_gateway.id, fake_stage.id
+                ),
+                "resource_doc_updated_time": {},
+            },
+        )
+        expected_data = {
+            "id": fake_resource_version_v2.id,
+            "version": fake_resource_version_v2.version,
+            "comment": fake_resource_version_v2.comment,
+            "schema_version": fake_resource_version_v2.schema_version,
+            "resources": [
+                {
+                    "name": fake_resource_version_v2.data[0]["name"],
+                    "method": fake_resource_version_v2.data[0]["method"],
+                    "path": fake_resource_version_v2.data[0]["path"],
+                    "description": fake_resource_version_v2.data[0]["description"],
+                    "description_en": fake_resource_version_v2.data[0]["description_en"],
+                    "gateway_labels": fake_resource_version_v2.data[0]["api_labels"],
+                    "match_subpath": fake_resource_version_v2.data[0]["match_subpath"],
+                    "is_public": fake_resource_version_v2.data[0]["is_public"],
+                    "allow_apply_permission": fake_resource_version_v2.data[0]["allow_apply_permission"],
+                    "doc_updated_time": "",
+                    "proxy": {
+                        "config": fake_resource_version_v2.data[0]["proxy"]["config"],
+                        "backend": {
+                            "id": fake_backend.id,
+                            "name": fake_backend.name,
+                            "config": {
+                                "type": "node",
+                                "timeout": 30,
+                                "loadbalance": "roundrobin",
+                                "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+                            },
+                        },
+                    },
+                    "contexts": fake_resource_version_v2.data[0]["contexts"],
+                    "plugins": [
+                        {
+                            "id": echo_plugin_stage_binding.id,
+                            "type": echo_plugin_stage_binding.get_type(),
+                            "name": echo_plugin_stage_binding.config.type.name,
+                            "config": echo_plugin_stage_binding.get_config(),
+                            "binding_type": "stage",
+                        },
+                    ],
+                }
+            ],
+            "created_time": fake_resource_version_v2.created_time,
+            "created_by": fake_resource_version_v2.created_by,
+        }
+        assert slz.data == expected_data
