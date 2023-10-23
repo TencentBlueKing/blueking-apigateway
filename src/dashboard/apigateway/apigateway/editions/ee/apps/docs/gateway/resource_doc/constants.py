@@ -34,7 +34,7 @@ BKAPI_AUTHORIZATION_DESCRIPTION_ZH = """
 **示例：** 使用 curl 命令，请求时携带认证请求头
 
 ```shell
-curl -H 'X-Bkapi-Authorization: {"bk_token": "your_token", "bk_app_code": "demo", "bk_app_secret": "secret"}' "http://example.com/api"
+curl -H 'X-Bkapi-Authorization: {"bk_app_code": "demo", "bk_app_secret": "secret"}' "http://example.com/api"
 ```
 
 **示例：** 使用 Python 语言和 requests 模块
@@ -47,7 +47,6 @@ requests.get(
     "http://example.com/api",
     headers={
         "X-Bkapi-Authorization": json.dumps({
-            "bk_token": "your_token",
             "bk_app_code": "demo",
             "bk_app_secret": "secret"
         })
@@ -80,7 +79,7 @@ Public request parameters are parameters used to identify the application and us
 **Example：** Use `curl` to carry the authorization header
 
 ```shell
-curl -H 'X-Bkapi-Authorization: {"bk_token": "your_token", "bk_app_code": "demo", "bk_app_secret": "secret"}' "http://example.com/api"
+curl -H 'X-Bkapi-Authorization: {"bk_app_code": "demo", "bk_app_secret": "secret"}' "http://example.com/api"
 ```
 
 **Example：** Use Python and the `requests` module
@@ -93,7 +92,6 @@ requests.get(
     "http://example.com/api",
     headers={
         "X-Bkapi-Authorization": json.dumps({
-            "bk_token": "your_token",
             "bk_app_code": "demo",
             "bk_app_secret": "secret"
         })
