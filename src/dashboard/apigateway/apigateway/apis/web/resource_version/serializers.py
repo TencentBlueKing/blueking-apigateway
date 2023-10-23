@@ -109,7 +109,7 @@ class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):
     schema_version = serializers.ChoiceField(
         choices=ResourceVersionSchemaEnum.get_choices(), help_text="版本数据schema版本:1.0(旧)/2.0(新)"
     )
-    resources = serializers.ListField(source="data", child=ResourceInfoSLZ(), allow_empty=True, help_text="发布资源列表")
+    resources = serializers.ListField(source="data", child=ResourceInfoSLZ(), allow_empty=True, help_text="版本资源列表")
     created_time = serializers.DateTimeField(help_text="创建时间")
     created_by = serializers.CharField(help_text="创建人")
 
