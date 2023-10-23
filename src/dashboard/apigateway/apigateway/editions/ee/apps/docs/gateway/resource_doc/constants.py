@@ -34,7 +34,11 @@ BKAPI_AUTHORIZATION_DESCRIPTION_ZH = """
 **示例：** 使用 curl 命令，请求时携带认证请求头
 
 ```shell
+{%- if user_verified_required %}
+curl -H 'X-Bkapi-Authorization: {"bk_app_code": "demo", "bk_app_secret": "secret", "bk_token": "your_token"}' "http://example.com/api"
+{%- else %}
 curl -H 'X-Bkapi-Authorization: {"bk_app_code": "demo", "bk_app_secret": "secret"}' "http://example.com/api"
+{%- endif %}
 ```
 
 **示例：** 使用 Python 语言和 requests 模块
@@ -48,7 +52,10 @@ requests.get(
     headers={
         "X-Bkapi-Authorization": json.dumps({
             "bk_app_code": "demo",
-            "bk_app_secret": "secret"
+            "bk_app_secret": "secret",
+            {%- if user_verified_required %}
+            "bk_token": "your_token",
+            {%- endif %}
         })
     },
 )
@@ -63,7 +70,7 @@ requests.get(
 | bk_app_secret | string  |  否 | 安全秘钥，可以通过`蓝鲸开发者中心 -> 应用基本设置 -> 基本信息 -> 鉴权信息`获取；*网关 SDK 默认已添加* |
 {%- endif %}
 {%- if user_verified_required %}
-| bk_token      | string  |  否 | 用户登录态，登录蓝鲸，对应 Cookies 中 bk_token 字段的值；提供 bk_token 时，不需要再提供 bk_username |
+| bk_token      | string  |  否 | 用户登录态，用于认证用户；登录蓝鲸，对应 Cookies 中 bk_token 字段的值；提供 bk_token 时，不需要再提供 bk_username |
 | bk_username   | string  |  否 | 当前用户用户名；仅用于应用免用户认证的场景中，用于指定当前用户。应用需向网关管理员申请免用户认证白名单，由于用户未经过校验，存在安全风险，请谨慎使用 |
 {%- endif %}
 {%- endif %}
@@ -79,7 +86,11 @@ Public request parameters are parameters used to identify the application and us
 **Example：** Use `curl` to carry the authorization header
 
 ```shell
+{%- if user_verified_required %}
+curl -H 'X-Bkapi-Authorization: {"bk_app_code": "demo", "bk_app_secret": "secret", "bk_token": "your_token"}' "http://example.com/api"
+{%- else %}
 curl -H 'X-Bkapi-Authorization: {"bk_app_code": "demo", "bk_app_secret": "secret"}' "http://example.com/api"
+{%- endif %}
 ```
 
 **Example：** Use Python and the `requests` module
@@ -93,7 +104,10 @@ requests.get(
     headers={
         "X-Bkapi-Authorization": json.dumps({
             "bk_app_code": "demo",
-            "bk_app_secret": "secret"
+            "bk_app_secret": "secret",
+            {%- if user_verified_required %}
+            "bk_token": "your_token",
+            {%- endif %}
         })
     },
 )
@@ -108,7 +122,7 @@ The supported fields of the header `X-Bkapi-Authorization` are shown in the foll
 | bk_app_secret | string  |  No | App Secret, can get from `Developer Center -> App Settings -> Basic Information -> Authentication Information`; *Gateway SDK added by default* |
 {%- endif %}
 {%- if user_verified_required %}
-| bk_token      | string  |  No | User login token, login to BlueKing, corresponding to the value of the bk_token field in Cookies; when providing bk_token, there is no need to provide bk_username |
+| bk_token      | string  |  No | User login token, used to authenticate user; login to BlueKing, corresponding to the value of the bk_token field in Cookies; when providing bk_token, there is no need to provide bk_username |
 | bk_username   | string  |  No | Current user username, user verification exempted apps, use this field to specify the current user; app need to apply to gateway managers for user authentication-free whitelist, since user has not been verified, there are security risks, so please use it with caution |
 {%- endif %}
 {%- endif %}
