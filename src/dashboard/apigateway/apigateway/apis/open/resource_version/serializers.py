@@ -69,8 +69,8 @@ class ReleaseV1InputSLZ(serializers.Serializer):
 class ResourceVersionCreateV1InputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=True)
-    title = serializers.CharField(required=False)
-    comment = serializers.CharField(required=False)
+    title = serializers.CharField(allow_blank=True, allow_null=True, max_length=128, required=False)
+    comment = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, required=False)
 
     class Meta:
         validators = [ResourceVersionValidator()]
