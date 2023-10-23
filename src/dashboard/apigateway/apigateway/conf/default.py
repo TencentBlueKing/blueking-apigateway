@@ -722,6 +722,7 @@ CACHE_VERSION = "v1"
 APIGW_REVERSION_UPDATE_CHANNEL_KEY = "apigateway:reversion:update"
 APIGW_REVERSION_UPDATE_SET_KEY = "apigateway:reversion:update:set"
 
+BK_LOGIN_TICKET_KEY = "bk_token"
 BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {
     "bk_token": "bk_token",
 }
