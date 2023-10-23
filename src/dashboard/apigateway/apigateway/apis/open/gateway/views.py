@@ -168,6 +168,9 @@ class GatewaySyncApi(generics.CreateAPIView):
         gateway = getattr(request, "gateway", None)
 
         request.data["name"] = gateway_name
+        # gateway 为 None，则应为新建；非 None，则应为更新；
+        # slz 中仅校验数据，不保存网关数据，利用 GatewaySaver 处理网关的保存；
+        # 抽象出 GatewaySaver，是因 django command 中需要复用此 saver 中保存网关数据的逻辑
         slz = self.get_serializer(gateway, data=request.data)
         slz.is_valid(raise_exception=True)
 

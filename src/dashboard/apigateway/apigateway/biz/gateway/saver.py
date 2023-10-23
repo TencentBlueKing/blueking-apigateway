@@ -62,6 +62,7 @@ class GatewaySaver:
         return None
 
     def save(self) -> Gateway:
+        # 网关为 None，则新建网关；非 None，则更新网关
         if not self._gateway:
             self._create_gateway()
         else:
