@@ -60,6 +60,8 @@ class GatewaySynchronizer:
         else:
             self._update_gateway()
 
+        assert self.gateway
+
         return self.gateway
 
     def _create_gateway(self):
