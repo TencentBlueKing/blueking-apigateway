@@ -20,13 +20,13 @@ paths:
         allowApplyPermission: false
         matchSubpath: false
         backend:
-          type: MOCK
-          statusCode: 200
-          responseBody: pong
-          headers: {}
+          type: HTTP
+          method: get
+          path: /ping
+          matchSubpath: false
+          timeout: 0
         authConfig:
           userVerifiedRequired: false
           appVerifiedRequired: false
           resourcePermissionRequired: false
-        disabledStages: []
         descriptionEn:
