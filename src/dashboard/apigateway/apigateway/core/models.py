@@ -471,7 +471,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
     # todo: 1.14 删除
-    name = models.CharField(_("[Deprecated] 版本名"), max_length=128, unique=True)
+    name = models.CharField(_("[Deprecated] 版本名"), max_length=128)
     # todo: 1.14 删除
     title = models.CharField(max_length=128, blank=True, default="", null=True)
     comment = models.CharField(max_length=512, blank=True, null=True)
