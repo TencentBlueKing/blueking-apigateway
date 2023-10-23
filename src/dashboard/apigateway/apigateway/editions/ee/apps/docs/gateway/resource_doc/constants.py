@@ -61,6 +61,7 @@ requests.get(
 {%- endif %}
 | access_token  | string  |  否 | 用户或应用 access_token |
 {%- if user_verified_required %}
+| bk_token      | string  |  否 | 用户登录态，登录蓝鲸，对应 Cookies 中 bk_token 字段的值 |
 | bk_username   | string  |  否 | 当前用户用户名，应用免登录态验证白名单中的应用，用此字段指定当前用户 |
 {%- endif %}
 {%- endif %}
@@ -103,6 +104,7 @@ The supported fields of the header `X-Bkapi-Authorization` are shown in the foll
 {%- endif %}
 | access_token  | string  |  No | User or App access_token |
 {%- if user_verified_required %}
+| bk_token      | string  |  No | User login token, login to BlueKing, corresponding to the value of the bk_token field in Cookies |
 | bk_username   | string  |  No | Current user username, user verification exempted apps, use this field to specify the current user  |
 {%- endif %}
 {%- endif %}
