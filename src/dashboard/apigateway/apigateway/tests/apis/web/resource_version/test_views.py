@@ -118,7 +118,7 @@ class TestResourceVersionRetrieveApi:
                     "path": fake_resource_version_v2.data[0]["path"],
                     "description": fake_resource_version_v2.data[0]["description"],
                     "description_en": fake_resource_version_v2.data[0]["description_en"],
-                    "gateway_labels": fake_resource_version_v2.data[0]["api_labels"],
+                    "gateway_label_ids": fake_resource_version_v2.data[0]["api_labels"],
                     "match_subpath": fake_resource_version_v2.data[0]["match_subpath"],
                     "is_public": fake_resource_version_v2.data[0]["is_public"],
                     "allow_apply_permission": fake_resource_version_v2.data[0]["allow_apply_permission"],

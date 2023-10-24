@@ -40,7 +40,7 @@ class ResourceInfoSLZ(serializers.Serializer):
     path = serializers.CharField(help_text="前端请求路径")
     description = serializers.CharField(help_text="资源描述")
     description_en = serializers.CharField(help_text="资源英文描述")
-    gateway_labels = serializers.ListSerializer(
+    gateway_label_ids = serializers.ListSerializer(
         source="api_labels", child=serializers.IntegerField(), help_text="标签列表"
     )
     match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
@@ -65,11 +65,11 @@ class ResourceInfoSLZ(serializers.Serializer):
         backend_id = obj["proxy"].get("backend_id", None)
         if backend_id:
             # 后端服务
-            backend_info = {"id": backend_id, "name": self.context["resource_backend"][backend_id].name}
+            backend_info = {"id": backend_id, "name": self.context["resource_backends"][backend_id].name}
 
             # 后端服务配置
-            if "resource_backend_config" in self.context:
-                backend_info["config"] = self.context["resource_backend_config"][backend_id].config
+            if "resource_backend_configs" in self.context:
+                backend_info["config"] = self.context["resource_backend_configs"][backend_id].config
 
             proxy["backend"] = backend_info
 
@@ -77,29 +77,24 @@ class ResourceInfoSLZ(serializers.Serializer):
 
     def get_plugins(self, obj):
 
-        plugins = []
+        plugins = {}
 
         # v2 才有plugin数据
         if not self.context["is_schema_v2"]:
-            return plugins
+            return list(plugins.values())
 
-        resource_binding_plugin_set = set()
-
-        for plugin in obj.get("plugins", []):
-            plugin["binding_type"] = PluginBindingScopeEnum.RESOURCE.value
-            resource_binding_plugin_set.add(plugin["type"])
-            plugins.append(plugin)
-
-        for plugin_type, plugin_binding in self.context.get("resource_stage_plugin_binding", {}).items():
-            # 资源绑定同类型插件覆盖环境插件配置
-            if plugin_type in resource_binding_plugin_set:
-                continue
-
+        # 列表需要展示资源生效插件，此时需要返回环境绑定的插件信息
+        for plugin_type, plugin_binding in self.context.get("stage_plugin_bindings", {}).items():
             plugin_config = plugin_binding.snapshot()
             plugin_config["binding_type"] = PluginBindingScopeEnum.STAGE.value
-            plugins.append(plugin_config)
+            plugins[plugin_type] = plugin_config
 
-        return plugins
+        # 资源绑定插件覆盖环境绑定插件
+        for plugin in obj.get("plugins", []):
+            plugin["binding_type"] = PluginBindingScopeEnum.RESOURCE.value
+            plugins[plugin["type"]] = plugin
+
+        return list(plugins.values())
 
 
 class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):

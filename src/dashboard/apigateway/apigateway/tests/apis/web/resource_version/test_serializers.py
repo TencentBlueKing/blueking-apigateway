@@ -100,14 +100,12 @@ class TestResourceVersionRetrieveOutputSLZ:
         slz = serializers.ResourceVersionRetrieveOutputSLZ(
             instance=fake_resource_version_v1,
             context={
-                "resource_backend": BackendHandler.get_id_to_instance(fake_gateway.id),
-                "resource_backend_config": BackendHandler.get_backend_configs_by_gateway_and_stage(
+                "resource_backends": BackendHandler.get_id_to_instance(fake_gateway.id),
+                "resource_backend_configs": BackendHandler.get_backend_configs_by_stage(
                     fake_gateway.id, fake_stage.id
                 ),
                 "is_schema_v2": fake_resource_version_v1.is_schema_v2,
-                "resource_stage_plugin_binding": PluginBindingHandler.get_stage_plugin_binding(
-                    fake_gateway.id, fake_stage.id
-                ),
+                "stage_plugin_binding": PluginBindingHandler.get_stage_plugin_bindings(fake_gateway.id, fake_stage.id),
                 "resource_doc_updated_time": {},
             },
         )
@@ -123,7 +121,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                     "path": fake_resource_version_v1.data[0]["path"],
                     "description": fake_resource_version_v1.data[0]["description"],
                     "description_en": fake_resource_version_v1.data[0]["description_en"],
-                    "gateway_labels": fake_resource_version_v1.data[0]["api_labels"],
+                    "gateway_label_ids": fake_resource_version_v1.data[0]["api_labels"],
                     "match_subpath": fake_resource_version_v1.data[0]["match_subpath"],
                     "is_public": fake_resource_version_v1.data[0]["is_public"],
                     "allow_apply_permission": fake_resource_version_v1.data[0]["allow_apply_permission"],
@@ -156,12 +154,12 @@ class TestResourceVersionRetrieveOutputSLZ:
         slz = serializers.ResourceVersionRetrieveOutputSLZ(
             instance=fake_resource_version_v2,
             context={
-                "resource_backend": BackendHandler.get_id_to_instance(fake_gateway.id),
-                "resource_backend_config": BackendHandler.get_backend_configs_by_gateway_and_stage(
+                "resource_backends": BackendHandler.get_id_to_instance(fake_gateway.id),
+                "resource_backend_configs": BackendHandler.get_backend_configs_by_stage(
                     fake_gateway.id, fake_stage.id
                 ),
                 "is_schema_v2": fake_resource_version_v2.is_schema_v2,
-                "resource_stage_plugin_binding": PluginBindingHandler.get_stage_plugin_binding(
+                "stage_plugin_bindings": PluginBindingHandler.get_stage_plugin_bindings(
                     fake_gateway.id, fake_stage.id
                 ),
                 "resource_doc_updated_time": {},
@@ -179,7 +177,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                     "path": fake_resource_version_v2.data[0]["path"],
                     "description": fake_resource_version_v2.data[0]["description"],
                     "description_en": fake_resource_version_v2.data[0]["description_en"],
-                    "gateway_labels": fake_resource_version_v2.data[0]["api_labels"],
+                    "gateway_label_ids": fake_resource_version_v2.data[0]["api_labels"],
                     "match_subpath": fake_resource_version_v2.data[0]["match_subpath"],
                     "is_public": fake_resource_version_v2.data[0]["is_public"],
                     "allow_apply_permission": fake_resource_version_v2.data[0]["allow_apply_permission"],

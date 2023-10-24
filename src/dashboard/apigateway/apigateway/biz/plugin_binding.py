@@ -31,7 +31,7 @@ class PluginBindingHandler:
         PluginConfig.objects.filter(gateway_id=gateway_id, id__in=plugin_config_ids).delete()
 
     @staticmethod
-    def get_stage_plugin_binding(gateway_id: int, stage_id: int) -> dict:
+    def get_stage_plugin_bindings(gateway_id: int, stage_id: int) -> dict:
         """获取环境绑定的插件"""
         stage_plugin_bindings = PluginBinding.objects.filter(
             gateway_id=gateway_id, scope_type=PluginBindingScopeEnum.STAGE.value, scope_id=stage_id

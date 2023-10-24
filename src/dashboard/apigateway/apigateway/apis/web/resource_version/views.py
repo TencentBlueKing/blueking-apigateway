@@ -137,11 +137,11 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
         resource_docs_updated_time = ResourceDocVersion.objects.get_doc_updated_time(request.gateway.id, instance.id)
 
         # 查询网关后端服务
-        resource_backend = BackendHandler.get_id_to_instance(request.gateway.id)
+        resource_backends = BackendHandler.get_id_to_instance(request.gateway.id)
 
         context = {
             "resource_doc_updated_time": resource_docs_updated_time,
-            "resource_backend": resource_backend,
+            "resource_backends": resource_backends,
             "is_schema_v2": instance.is_schema_v2,
         }
 
@@ -149,10 +149,10 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
         stage_id = self.request.query_params.get("stage_id")
 
         if stage_id:
-            backend_config = BackendHandler.get_backend_configs_by_gateway_and_stage(request.gateway.id, stage_id)
-            context["resource_backend_config"] = backend_config
-            stage_plugin_bindings = PluginBindingHandler.get_stage_plugin_binding(request.gateway.id, stage_id)
-            context["resource_stage_plugin_binding"] = stage_plugin_bindings
+            backend_configs = BackendHandler.get_backend_configs_by_stage(request.gateway.id, stage_id)
+            context["resource_backend_configs"] = backend_configs
+            stage_plugin_bindings = PluginBindingHandler.get_stage_plugin_bindings(request.gateway.id, stage_id)
+            context["stage_plugin_bindings"] = stage_plugin_bindings
 
         slz = ResourceVersionRetrieveOutputSLZ(instance, context=context)
 
