@@ -44,8 +44,8 @@ class Command(BaseCommand):
     def handle(self, name: str, **options):
         gateway = get_object_or_None(Gateway, name=name)
         saver = GatewaySaver(
-            gateway_id=gateway and gateway.id,
-            gateway_data=GatewayData(
+            id=gateway and gateway.id,
+            data=GatewayData(
                 name=name,
                 maintainers=[settings.GATEWAY_DEFAULT_CREATOR],
                 status=GatewayStatusEnum.ACTIVE.value,

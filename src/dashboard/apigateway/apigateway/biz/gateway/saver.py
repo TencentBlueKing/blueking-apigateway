@@ -44,16 +44,16 @@ class GatewayData(BaseModel):
 class GatewaySaver:
     def __init__(
         self,
-        gateway_id: Optional[int],
-        gateway_data: GatewayData,
+        id: Optional[int],
+        data: GatewayData,
         bk_app_code: str = "",
         username: str = "",
     ):
-        self.gateway_data = gateway_data
         self.bk_app_code = bk_app_code
         self.username = username
 
-        self._gateway = self._get_gateway(gateway_id)
+        self._gateway = self._get_gateway(id)
+        self._gateway_data = data
 
     def _get_gateway(self, gateway_id: Optional[int]) -> Optional[Gateway]:
         if gateway_id:
@@ -75,12 +75,12 @@ class GatewaySaver:
     def _create_gateway(self):
         # 1. save gateway
         self._gateway = gateway = Gateway(
-            name=self.gateway_data.name,
-            description=self.gateway_data.description,
-            description_en=self.gateway_data.description_en,
-            maintainers=self.gateway_data.maintainers,
-            status=self.gateway_data.status,
-            is_public=self.gateway_data.is_public,
+            name=self._gateway_data.name,
+            description=self._gateway_data.description,
+            description_en=self._gateway_data.description_en,
+            maintainers=self._gateway_data.maintainers,
+            status=self._gateway_data.status,
+            is_public=self._gateway_data.is_public,
             created_by=self.username,
             updated_by=self.username,
         )
@@ -92,29 +92,29 @@ class GatewaySaver:
             user_auth_type=settings.DEFAULT_USER_AUTH_TYPE,
             username=self.username,
             related_app_code=self.bk_app_code,
-            user_config=self.gateway_data.user_config,
+            user_config=self._gateway_data.user_config,
             unfiltered_sensitive_keys=self._get_gateway_unfiltered_sensitive_keys(gateway.name),
-            api_type=self.gateway_data.gateway_type,
+            api_type=self._gateway_data.gateway_type,
         )
 
     def _update_gateway(self):
         gateway = self._gateway
 
         # 1. update gateway
-        gateway.description = self.gateway_data.description
-        gateway.description_en = self.gateway_data.description_en
+        gateway.description = self._gateway_data.description
+        gateway.description_en = self._gateway_data.description_en
         # 更新网关时，仅新增网关管理员，不删除，以防止删除已更新的管理员数据
-        gateway.maintainers = sorted(set(self.gateway_data.maintainers + gateway.maintainers))
-        gateway.is_public = self.gateway_data.is_public
+        gateway.maintainers = sorted(set(self._gateway_data.maintainers + gateway.maintainers))
+        gateway.is_public = self._gateway_data.is_public
         gateway.updated_by = self.username
         gateway.save()
 
         # 2. update auth config
         GatewayHandler.save_auth_config(
             gateway.id,
-            user_conf=self.gateway_data.user_config,
+            user_conf=self._gateway_data.user_config,
             unfiltered_sensitive_keys=self._get_gateway_unfiltered_sensitive_keys(gateway.name),
-            api_type=self.gateway_data.gateway_type,
+            api_type=self._gateway_data.gateway_type,
         )
 
     def _get_gateway_unfiltered_sensitive_keys(self, gateway_name: str) -> Optional[List[str]]:

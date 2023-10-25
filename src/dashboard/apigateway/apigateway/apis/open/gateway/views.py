@@ -177,8 +177,8 @@ class GatewaySyncApi(generics.CreateAPIView):
         # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
         saver = GatewaySaver(
-            gateway_id=gateway and gateway.id,
-            gateway_data=parse_obj_as(GatewayData, slz.validated_data),
+            id=gateway and gateway.id,
+            data=parse_obj_as(GatewayData, slz.validated_data),
             bk_app_code=request.app.app_code,
             username=username,
         )

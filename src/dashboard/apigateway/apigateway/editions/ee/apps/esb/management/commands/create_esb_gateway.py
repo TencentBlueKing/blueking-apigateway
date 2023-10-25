@@ -48,8 +48,8 @@ class Command(BaseCommand):
 
             if not dry_run:
                 saver = GatewaySaver(
-                    gateway_id=None,
-                    gateway_data=parse_obj_as(
+                    id=None,
+                    data=parse_obj_as(
                         GatewayData,
                         dict(
                             config,
