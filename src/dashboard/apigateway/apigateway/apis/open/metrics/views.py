@@ -29,7 +29,7 @@ from . import serializers
 class StatisticsV1ViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.StatisticsAPIRequestV1SLZ
     lookup_field = "id"
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     @swagger_auto_schema(
         query_serializer=serializers.StatisticsAPIRequestQueryV1SLZ,

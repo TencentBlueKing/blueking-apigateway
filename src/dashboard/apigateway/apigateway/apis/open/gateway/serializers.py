@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List, Optional
+from typing import Optional
 
 from django.conf import settings
 from django.utils.translation import gettext as _
@@ -25,45 +25,42 @@ from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
-from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.validators import BKAppCodeListValidator
-from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
     GatewayStatusEnum,
     GatewayTypeEnum,
 )
-from apigateway.core.models import Gateway, ReleaseHistory
+from apigateway.core.models import Gateway
 
 
-class GatewayQueryV1SLZ(serializers.Serializer):
+class GatewayListV1InputSLZ(serializers.Serializer):
     user_auth_type = serializers.ChoiceField(choices=UserAuthTypeEnum.get_choices(), allow_blank=True, required=False)
     query = serializers.CharField(required=False, allow_blank=True)
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
 
 
-class GatewayV1SLZ(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True)
-    description_en = serializers.CharField(required=False, write_only=True)
+class GatewayListV1OutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     api_type = serializers.SerializerMethodField()
     user_auth_type = serializers.SerializerMethodField()
 
     def get_api_type(self, obj):
-        return self.context["api_auth_contexts"][obj.id]["api_type"]
+        return self.context["gateway_auth_configs"][obj.id].gateway_type
 
     def get_user_auth_type(self, obj):
-        return self.context["api_auth_contexts"][obj.id]["user_auth_type"]
+        return self.context["gateway_auth_configs"][obj.id].user_auth_type
 
     def get_maintainers(self, obj):
-        recent_releasers = ReleaseHistory.objects.get_recent_releasers(obj.id)
-        return list(set(recent_releasers) & set(obj.maintainers)) or obj.maintainers
+        # 网关对外的维护者，便于用户咨询网关问题，默认使用开发者；maintainers 为有权限管理网关的管理者
+        # TODO: 是否应该使用开发者，如何让网关管理员知道开发者用于 API 文档中展示为网关的维护者
+        return obj.developers or obj.maintainers
 
 
-class GatewayRetrieveV1OutputSLZ(GatewayV1SLZ):
+class GatewayRetrieveV1OutputSLZ(GatewayListV1OutputSLZ):
     api_type = None
     user_auth_type = None
 
@@ -77,17 +74,13 @@ class UserConfigSLZ(serializers.Serializer):
     from_username = serializers.BooleanField(required=False)
 
 
-class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
+class GatewaySyncInputSLZ(serializers.ModelSerializer):
     name = serializers.RegexField(GATEWAY_NAME_PATTERN, label="网关名称", max_length=64)
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
     status = serializers.ChoiceField(choices=GatewayStatusEnum.get_choices(), default=GatewayStatusEnum.ACTIVE.value)
     # 只允许指定为普通网关或官方网关，不能指定为超级官方网关，超级官方网关会传递敏感参数到后端接口
     api_type = serializers.ChoiceField(
         choices=[GatewayTypeEnum.OFFICIAL_API.value, GatewayTypeEnum.CLOUDS_API.value], required=False
-    )
-    user_auth_type = serializers.ChoiceField(
-        choices=UserAuthTypeEnum.get_choices(),
-        default=settings.DEFAULT_USER_AUTH_TYPE,
     )
     user_config = UserConfigSLZ(required=False)
 
@@ -101,7 +94,6 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "status",
             "is_public",
             "api_type",
-            "user_auth_type",
             "user_config",
         ]
         extra_kwargs = {
@@ -109,108 +101,32 @@ class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                 "required": False,
             }
         }
-        non_model_fields = ["user_auth_type", "user_config"]
-
-    def to_internal_value(self, data):
-        data.setdefault("maintainers", [])
-        data.setdefault("user_auth_type", UserAuthTypeEnum(settings.DEFAULT_USER_AUTH_TYPE).value)
-        return super().to_internal_value(data)
 
     def validate(self, data):
-        self._validate_api_type(data["name"], data.get("api_type"))
+        self._validate_name(data["name"], data.get("api_type"))
+
+        data["gateway_type"] = data.pop("api_type", None)
+
         return data
 
-    def create(self, validated_data):
-        # 1. save gateway
-        api_type = validated_data.pop("api_type", None)
-        instance = super().create(validated_data)
-
-        # 2. save related data
-        GatewayHandler().save_related_data(
-            gateway=instance,
-            user_auth_type=validated_data["user_auth_type"],
-            username=validated_data.get("created_by", ""),
-            related_app_code=self.context.get("bk_app_code"),
-            user_config=validated_data.get("user_config"),
-            unfiltered_sensitive_keys=self._get_api_unfiltered_sensitive_keys(instance.name),
-            api_type=None if api_type is None else GatewayTypeEnum(api_type),
-        )
-
-        # 3. record audit log
-        GatewayHandler.record_audit_log_success(
-            username=validated_data.get("created_by", ""),
-            gateway_id=instance.id,
-            op_type=OpTypeEnum.CREATE,
-            instance_id=instance.id,
-            instance_name=instance.name,
-        )
-
-        return instance
-
-    def update(self, instance, validated_data):
-        # 1. 更新网关数据
-        validated_data.pop("name", None)
-        validated_data.pop("status", None)
-        validated_data.pop("created_by", None)
-
-        api_type = validated_data.pop("api_type", None)
-        validated_data["maintainers"] = sorted(set(validated_data["maintainers"] + instance.maintainers))
-
-        instance = super().update(instance, validated_data)
-
-        # 2. 更新网关配置
-        GatewayHandler.save_auth_config(
-            instance.id,
-            user_auth_type=validated_data["user_auth_type"],
-            user_conf=validated_data.get("user_config"),
-            unfiltered_sensitive_keys=self._get_api_unfiltered_sensitive_keys(instance.name),
-            api_type=None if api_type is None else GatewayTypeEnum(api_type),
-        )
-
-        # 3. 记录操作日志
-        GatewayHandler.record_audit_log_success(
-            username=validated_data.get("updated_by", ""),
-            gateway_id=instance.id,
-            op_type=OpTypeEnum.MODIFY,
-            instance_id=instance.id,
-            instance_name=instance.name,
-        )
-
-        return instance
-
-    def _get_api_unfiltered_sensitive_keys(self, gateway_name: str) -> Optional[List[str]]:
-        api_auth_configs = getattr(settings, "SPECIAL_API_AUTH_CONFIGS", None) or {}
-        if gateway_name not in api_auth_configs:
-            return None
-
-        return api_auth_configs[gateway_name].get("unfiltered_sensitive_keys")
-
-    def _validate_api_type(self, name: str, api_type: Optional[int]):
-        if not (api_type is not None and api_type != GatewayTypeEnum.CLOUDS_API.value):
+    def _validate_name(self, name: str, api_type: Optional[int]):
+        if api_type is None or api_type == GatewayTypeEnum.CLOUDS_API.value:
             return
 
         for prefix in settings.OFFICIAL_GATEWAY_NAME_PREFIXES:
-            if not name.startswith(prefix):
-                raise serializers.ValidationError(
-                    {
-                        "api_type": _("api_type 为 {api_type} 时，网关名 name 需以 {prefix} 开头。").format(
-                            api_type=api_type, prefix=prefix
-                        )
-                    }
+            if name.startswith(prefix):
+                return
+
+        raise serializers.ValidationError(
+            {
+                "name": _("api_type 为 {api_type} 时，网关名 name 需以 {prefix} 开头。").format(
+                    api_type=api_type, prefix=", ".join(settings.OFFICIAL_GATEWAY_NAME_PREFIXES)
                 )
+            }
+        )
 
 
-class AddRelatedAppsSLZ(serializers.Serializer):
-    target_app_codes = serializers.ListField(
-        child=serializers.CharField(),
-        allow_empty=False,
-        required=True,
-        max_length=10,
-        validators=[BKAppCodeListValidator()],
-    )
-
-
-class GatewayUpdateStatusSLZ(serializers.ModelSerializer):
+class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
     status = serializers.ChoiceField(choices=GatewayStatusEnum.get_choices())
 
     class Meta:
@@ -218,3 +134,13 @@ class GatewayUpdateStatusSLZ(serializers.ModelSerializer):
         fields = [
             "status",
         ]
+
+
+class GatewayRelatedAppsAddInputSLZ(serializers.Serializer):
+    target_app_codes = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=False,
+        required=True,
+        max_length=10,
+        validators=[BKAppCodeListValidator()],
+    )

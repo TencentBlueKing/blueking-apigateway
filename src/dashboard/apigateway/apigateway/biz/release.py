@@ -132,3 +132,7 @@ class ReleaseHandler:
             stage_publish_status[stage_id] = state
 
         return stage_publish_status
+
+    @staticmethod
+    def filter_released_gateway_ids(gateway_ids: List[int]) -> List[int]:
+        return list(set(Release.objects.filter(gateway_id__in=gateway_ids).values_list("gateway_id", flat=True)))

@@ -489,7 +489,7 @@ def request_to_view():
 
 @pytest.fixture()
 def request_view(request_factory):
-    def fn(method, view_name, path_params=None, gateway=None, user=None, **kwargs):
+    def fn(method, view_name, path_params=None, gateway=None, user=None, app=None, **kwargs):
         path = reverse(view_name, kwargs=path_params)
         resolved = resolve(path)
 
@@ -498,6 +498,8 @@ def request_view(request_factory):
         request.gateway = gateway
         if user is not None:
             request.user = user
+        if app is not None:
+            request.app = app
 
         response = resolved.func(request, *resolved.args, **resolved.kwargs)
         response.json = partial(get_response_json, response)

@@ -249,9 +249,6 @@ class ReleaseManager(models.Manager):
     def delete_by_stage_ids(self, stage_ids):
         self.filter(stage_id__in=stage_ids).delete()
 
-    def filter_released_gateway_ids(self, gateway_ids):
-        return set(self.filter(gateway_id__in=gateway_ids).values_list("gateway_id", flat=True))
-
     def get_released_resource_version_ids(self, gateway_id: int, stage_name: Optional[str] = None) -> List[int]:
         qs = self.filter(gateway_id=gateway_id)
 
@@ -436,10 +433,6 @@ class ReleaseHistoryManager(models.Manager):
             queryset = queryset.order_by(order_by)
 
         return queryset.distinct()
-
-    def get_recent_releasers(self, gateway_id: int) -> List[str]:
-        qs = self.filter(gateway_id=gateway_id).order_by("-id")[:10]
-        return list(set(qs.values_list("created_by", flat=True)))
 
 
 class PublishEventManager(models.Manager):

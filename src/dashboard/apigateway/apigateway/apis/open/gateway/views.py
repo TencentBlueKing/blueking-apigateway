@@ -23,38 +23,81 @@ from cachetools import TTLCache, cached
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
+from django.db.models.query import QuerySet
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
+from pydantic import parse_obj_as
+from rest_framework import generics, status
 
 from apigateway.apis.open.gateway import serializers
+from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_5_MINUTES
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release
+from apigateway.core.models import JWT, Gateway
 from apigateway.utils.responses import V1OKJsonResponse
 
 
-class GatewayViewSet(viewsets.ModelViewSet):
-    serializer_class = serializers.GatewayV1SLZ
-    lookup_field = "id"
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关列表，网关需公开且已发布",
+        query_serializer=serializers.GatewayListV1InputSLZ,
+        responses={status.HTTP_200_OK: serializers.GatewayListV1OutputSLZ(many=True)},
+        tags=["OpenAPI.Gateway"],
+    ),
+)
+class GatewayListApi(generics.ListAPIView):
+    serializer_class = serializers.GatewayListV1OutputSLZ
 
     def get_queryset(self):
         return Gateway.objects.all()
 
+    def list(self, request, *args, **kwargs):
+        slz = serializers.GatewayListV1InputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        queryset = self._filter_list_queryset(
+            name=data.get("name"),
+            query=data.get("query"),
+            user_auth_type=data.get("user_auth_type"),
+            fuzzy=data.get("fuzzy"),
+        )
+        gateway_ids = list(queryset.values_list("id", flat=True))
+
+        slz = self.get_serializer(
+            queryset,
+            many=True,
+            context={
+                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids),
+            },
+        )
+        return V1OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("name")))
+
     @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_5_MINUTES))
-    def _filter_available_gateways(
+    def _filter_list_queryset(
         self,
-        queryset,
         name: Optional[str] = None,
         query: Optional[str] = None,
         user_auth_type: Optional[str] = None,
         fuzzy: Optional[bool] = None,
-    ):
+    ) -> QuerySet:
         """
         获取可用的网关列表
+        - 1. 已启用
+        - 2. 公开
+        - 3. 已发布
+        - 4. 满足 name、query, user_auth_type 等过滤条件
         """
+        queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
             queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
@@ -62,69 +105,48 @@ class GatewayViewSet(viewsets.ModelViewSet):
         if query and fuzzy:
             queryset = queryset.filter(Q(name__icontains=query) | Q(description__icontains=query))
 
-        gateway_ids = list(queryset.values_list("id", flat=True))
         # 过滤出用户类型为指定类型的网关
+        gateway_ids = list(queryset.values_list("id", flat=True))
         if user_auth_type:
-            scope_id_config_map = GatewayAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids)
+            gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
             gateway_ids = [
-                scope_id
-                for scope_id, config in scope_id_config_map.items()
-                if config["user_auth_type"] == user_auth_type
+                gateway_id
+                for gateway_id, auth_config in gateway_auth_configs.items()
+                if auth_config.user_auth_type == user_auth_type
             ]
-        # 过滤出已发布的网关ID
-        released_gateway_ids = Release.objects.filter_released_gateway_ids(gateway_ids)
+
+        # 过滤出已发布的网关 ID
+        released_gateway_ids = ReleaseHandler.filter_released_gateway_ids(gateway_ids)
 
         return queryset.filter(id__in=released_gateway_ids)
 
-    @swagger_auto_schema(
-        query_serializer=serializers.GatewayQueryV1SLZ,
-        responses={status.HTTP_200_OK: serializers.GatewayV1SLZ(many=True)},
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: serializers.GatewayRetrieveV1OutputSLZ()},
         tags=["OpenAPI.Gateway"],
-    )
-    def list(self, request, *args, **kwargs):
-        slz = serializers.GatewayQueryV1SLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
+    ),
+)
+class GatewayRetrieveApi(generics.RetrieveAPIView):
+    serializer_class = serializers.GatewayRetrieveV1OutputSLZ
+    lookup_field = "id"
 
-        data = slz.validated_data
+    def get_queryset(self):
+        return Gateway.objects.all()
 
-        queryset = self.get_queryset()
-        # 过滤出状态为 active，且公开的网关
-        queryset = queryset.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
-
-        gateway_queryset = self._filter_available_gateways(
-            queryset,
-            name=data.get("name"),
-            query=data.get("query"),
-            user_auth_type=data.get("user_auth_type"),
-            fuzzy=data.get("fuzzy"),
-        )
-        gateway_ids = list(gateway_queryset.values_list("id", flat=True))
-
-        slz_class = self.get_serializer_class()
-        slz = slz_class(
-            gateway_queryset,
-            many=True,
-            context={
-                "api_auth_contexts": GatewayAuthContext().filter_scope_id_config_map(scope_ids=gateway_ids),
-            },
-        )
-        return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("name")))
-
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.GatewayRetrieveV1OutputSLZ()}, tags=["OpenAPI.Gateway"]
-    )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = serializers.GatewayRetrieveV1OutputSLZ(instance)
-        return V1OKJsonResponse("OK", data=slz.data)
+        slz = self.get_serializer(instance)
+        return V1OKJsonResponse(data=slz.data)
 
 
-class GatewayPublicKeyViewSet(viewsets.ViewSet):
+class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
     permission_classes = [GatewayRelatedAppPermission]
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     @swagger_auto_schema(tags=["OpenAPI.Gateway"])
-    def get_public_key(self, request, gateway_name: str, *args, **kwargs):
+    def get(self, request, gateway_name: str, *args, **kwargs):
         jwt = JWT.objects.get(gateway=request.gateway)
         return V1OKJsonResponse(
             "OK",
@@ -135,60 +157,79 @@ class GatewayPublicKeyViewSet(viewsets.ViewSet):
         )
 
 
-class GatewaySyncViewSet(viewsets.ViewSet):
+class GatewaySyncApi(generics.CreateAPIView):
+    serializer_class = serializers.GatewaySyncInputSLZ
     permission_classes = [GatewayRelatedAppPermission]
-    allow_api_not_exist = True
+    allow_gateway_not_exist = True
 
-    @swagger_auto_schema(request_body=serializers.GatewaySyncSLZ, tags=["OpenAPI.Gateway"])
+    @swagger_auto_schema(request_body=serializers.GatewaySyncInputSLZ, tags=["OpenAPI.Gateway"])
     @transaction.atomic
-    def sync(self, request, gateway_name: str, *args, **kwargs):
+    def post(self, request, gateway_name: str, *args, **kwargs):
+        gateway = getattr(request, "gateway", None)
+
         request.data["name"] = gateway_name
-        slz = serializers.GatewaySyncSLZ(
-            getattr(request, "gateway", None),
-            data=request.data,
-            context={
-                "bk_app_code": request.app.app_code,
-            },
-        )
+        # gateway 为 None，则应为新建；非 None，则应为更新；
+        # slz 中仅校验数据，不保存网关数据，利用 GatewaySaver 处理网关的保存；
+        # 抽象出 GatewaySaver，是因 django command 中需要复用此 saver 中保存网关数据的逻辑
+        slz = self.get_serializer(gateway, data=request.data)
         slz.is_valid(raise_exception=True)
 
-        slz.save(
-            created_by=request.user.username or settings.GATEWAY_DEFAULT_CREATOR,
-            updated_by=request.user.username,
+        # save gateway
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        saver = GatewaySaver(
+            id=gateway and gateway.id,
+            data=parse_obj_as(GatewayData, slz.validated_data),
+            bk_app_code=request.app.app_code,
+            username=username,
+        )
+        gateway = saver.save()
+
+        # record audit log
+        GatewayHandler.record_audit_log_success(
+            username=username,
+            gateway_id=gateway.id,
+            op_type=OpTypeEnum.MODIFY if slz.instance else OpTypeEnum.CREATE,
+            instance_id=gateway.id,
+            instance_name=gateway.name,
         )
 
         return V1OKJsonResponse(
             "OK",
             data={
-                "id": slz.instance.id,
-                "name": slz.instance.name,
+                "id": gateway.id,
+                "name": gateway.name,
             },
         )
 
 
-class GatewayUpdateStatusViewSet(viewsets.ViewSet):
+class GatewayUpdateStatusApi(generics.CreateAPIView):
+    serializer_class = serializers.GatewayUpdateStatusInputSLZ
     permission_classes = [GatewayRelatedAppPermission]
 
-    @swagger_auto_schema(request_body=serializers.GatewayUpdateStatusSLZ, tags=["OpenAPI.Gateway"])
-    def update_status(self, request, *args, **kwargs):
-        slz = serializers.GatewayUpdateStatusSLZ(self.request.gateway, data=request.data)
+    @swagger_auto_schema(request_body=serializers.GatewayUpdateStatusInputSLZ, tags=["OpenAPI.Gateway"])
+    def post(self, request, *args, **kwargs):
+        slz = self.get_serializer(request.gateway, data=request.data)
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
         return V1OKJsonResponse()
 
 
-class GatewayRelatedAppViewSet(viewsets.ViewSet):
+class GatewayRelatedAppAddApi(generics.CreateAPIView):
+    serializer_class = serializers.GatewayRelatedAppsAddInputSLZ
     permission_classes = [GatewayRelatedAppPermission]
 
-    @swagger_auto_schema(request_body=serializers.GatewaySyncSLZ, tags=["OpenAPI.Gateway"])
+    @swagger_auto_schema(request_body=serializers.GatewayRelatedAppsAddInputSLZ, tags=["OpenAPI.Gateway"])
     @transaction.atomic
-    def add_related_apps(self, request, gateway_name: str, *args, **kwargs):
-        slz = serializers.AddRelatedAppsSLZ(data=request.data)
+    def post(self, request, gateway_name: str, *args, **kwargs):
+        slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        for bk_app_code in slz.validated_data["target_app_codes"]:
-            if not GatewayRelatedApp.objects.filter(gateway_id=request.gateway.id, bk_app_code=bk_app_code).exists():
-                GatewayRelatedAppHandler.add_related_app(request.gateway.id, bk_app_code)
+        target_app_codes = slz.validated_data["target_app_codes"]
 
-        return V1OKJsonResponse("OK")
+        related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
+        missing_app_codes = set(target_app_codes) - set(related_app_codes)
+        for bk_app_code in missing_app_codes:
+            GatewayRelatedAppHandler.add_related_app(request.gateway.id, bk_app_code)
+
+        return V1OKJsonResponse()

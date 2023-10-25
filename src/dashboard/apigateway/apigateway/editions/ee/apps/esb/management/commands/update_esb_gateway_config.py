@@ -54,7 +54,7 @@ class Command(BaseCommand):
             "allow_update_api_auth": False,
         }
 
-        current_auth_config = GatewayHandler().get_current_gateway_auth_config(esb_gateway.id)
+        current_auth_config = GatewayHandler.get_gateway_auth_config(esb_gateway.id)
         if not self._should_update_auth_config(current_auth_config, esb_gateway_auth_config):
             print(f"gateway(name={settings.BK_ESB_GATEWAY_NAME}) auth config not changed, skip")
             return

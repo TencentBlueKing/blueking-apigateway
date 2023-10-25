@@ -68,7 +68,7 @@ def get_permission_model(dimension: str):
 
 
 class ResourceViewSet(viewsets.ViewSet):
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     @swagger_auto_schema(
         query_serializer=serializers.AppResourcePermissionInputSLZ,
@@ -101,7 +101,7 @@ class ResourceViewSet(viewsets.ViewSet):
 
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
     serializer_class = serializers.AppGatewayPermissionInputSLZ
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     def allow_apply_by_gateway(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.query_params)
@@ -192,7 +192,7 @@ class PaaSAppPermissionApplyAPIView(BaseAppPermissinApplyAPIView):
     - 提供给 paas3 开发者中心的接口
     """
 
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     def get_serializer_class(self):
         return serializers.PaaSAppPermissionApplyInputSLZ
@@ -208,7 +208,7 @@ class AppPermissionApplyV1APIView(BaseAppPermissinApplyAPIView):
 
     # 使用 GatewayRelatedAppPermission 中设置request.gateway 的功能，而不需要校验权限
     permission_classes = [GatewayRelatedAppPermission]
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     def get_serializer_class(self):
         return serializers.AppPermissionApplyV1InputSLZ
@@ -268,7 +268,7 @@ class AppPermissionRenewAPIView(APIView):
     权限续期
     """
 
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     def post(self, request, *args, **kwargs):
         slz = serializers.AppPermissionRenewInputSLZ(
