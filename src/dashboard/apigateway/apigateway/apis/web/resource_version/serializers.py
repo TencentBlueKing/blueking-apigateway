@@ -18,10 +18,11 @@
 #
 from rest_framework import serializers
 
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.models import ResourceVersion
+from apigateway.core.constants import ResourceVersionSchemaEnum
 
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):
@@ -33,16 +34,79 @@ class ResourceVersionCreateInputSLZ(serializers.Serializer):
         validators = [ResourceVersionValidator()]
 
 
+class ResourceInfoSLZ(serializers.Serializer):
+    name = serializers.CharField(help_text="资源名称")
+    method = serializers.CharField(help_text="前端请求方法")
+    path = serializers.CharField(help_text="前端请求路径")
+    description = serializers.CharField(help_text="资源描述")
+    description_en = serializers.CharField(help_text="资源英文描述")
+    gateway_label_ids = serializers.ListSerializer(
+        source="api_labels", child=serializers.IntegerField(), help_text="标签列表"
+    )
+    match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
+    is_public = serializers.BooleanField(help_text="是否公开")
+    allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
+    doc_updated_time = serializers.SerializerMethodField(help_text="资源文档更新时间")
+
+    proxy = serializers.SerializerMethodField(help_text="后端配置")
+
+    contexts = serializers.DictField(help_text="资源认证等相关配置")
+
+    plugins = serializers.SerializerMethodField(help_text="绑定插件")
+
+    def get_doc_updated_time(self, obj):
+        return self.context["resource_doc_updated_time"].get(obj["id"], "")
+
+    def get_proxy(self, obj):
+        proxy = {
+            # 后端配置
+            "config": obj["proxy"]["config"]
+        }
+        backend_id = obj["proxy"].get("backend_id", None)
+        if backend_id:
+            # 后端服务
+            backend_info = {"id": backend_id, "name": self.context["resource_backends"][backend_id].name}
+
+            # 后端服务配置
+            if "resource_backend_configs" in self.context:
+                backend_info["config"] = self.context["resource_backend_configs"][backend_id].config
+
+            proxy["backend"] = backend_info
+
+        return proxy
+
+    def get_plugins(self, obj):
+
+        plugins = {}
+
+        # v2 才有plugin数据
+        if not self.context["is_schema_v2"]:
+            return list(plugins.values())
+
+        # 列表需要展示资源生效插件，此时需要返回环境绑定的插件信息
+        for plugin_type, plugin_binding in self.context.get("stage_plugin_bindings", {}).items():
+            plugin_config = plugin_binding.snapshot()
+            plugin_config["binding_type"] = PluginBindingScopeEnum.STAGE.value
+            plugins[plugin_type] = plugin_config
+
+        # 资源绑定插件覆盖环境绑定插件
+        for plugin in obj.get("plugins", []):
+            plugin["binding_type"] = PluginBindingScopeEnum.RESOURCE.value
+            plugins[plugin["type"]] = plugin
+
+        return list(plugins.values())
+
+
 class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="id")
     version = serializers.CharField(help_text="版本号")
     comment = serializers.CharField(help_text="版本日志")
-    data = serializers.SerializerMethodField(help_text="版本数据")
+    schema_version = serializers.ChoiceField(
+        choices=ResourceVersionSchemaEnum.get_choices(), help_text="版本数据schema版本:1.0(旧)/2.0(新)"
+    )
+    resources = serializers.ListField(source="data", child=ResourceInfoSLZ(), allow_empty=True, help_text="版本资源列表")
     created_time = serializers.DateTimeField(help_text="创建时间")
     created_by = serializers.CharField(help_text="创建人")
-
-    def get_data(self, obj: ResourceVersion):
-        return obj.data_display
 
 
 class ResourceVersionListOutputSLZ(serializers.Serializer):
