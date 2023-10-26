@@ -237,6 +237,7 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
                 "help_text": "网关状态，0：停用，1：启用",
             },
         }
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayUpdateStatusInputSLZ"
 
 
 class GatewayFeatureFlagsOutputSLZ(serializers.Serializer):

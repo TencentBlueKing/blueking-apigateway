@@ -134,6 +134,7 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
         fields = [
             "status",
         ]
+        ref_name = "apigateway.apis.open.gateway.serializers.GatewayUpdateStatusInputSLZ"
 
 
 class GatewayRelatedAppsAddInputSLZ(serializers.Serializer):
