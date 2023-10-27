@@ -148,7 +148,7 @@
             </bk-table-column>
           </bk-table>
         </bk-loading>
-        <div class="toggle-button" @click="isShowLeft = !isShowLeft">
+        <div class="toggle-button" v-if="isDetail" @click="isShowLeft = !isShowLeft">
           <i class="icon apigateway-icon icon-ag-ag-arrow-left" :class="[{ 'is-left': !isShowLeft }]"></i>
         </div>
       </div>
@@ -156,7 +156,6 @@
         <bk-tab
           v-model:active="active"
           type="card-tab"
-          @change="handleTabChange"
         >
           <bk-tab-panel
             v-for="item in panels"
@@ -182,8 +181,8 @@
                 :resource-id="resourceId"
                 :apigw-id="apigwId"
                 ref="componentRef"
-                @done="(v: boolean) => {
-                  isComponentLoading = v
+                @done="(v: boolean | any) => {
+                  isComponentLoading = !!v
                 }"
                 @deleted-success="getList"
               />
@@ -243,6 +242,7 @@ import { getResourceListData, deleteResources, batchDeleteResources, batchEditRe
 import { Message } from 'bkui-vue';
 import agDropdown from '@/components/ag-dropdown.vue';
 import Detail from './detail.vue';
+import PluginManage from '@/views/components/plugin-manage/index.vue';
 import { IDialog } from '@/types';
 const props = defineProps({
   apigwId: {
@@ -291,8 +291,8 @@ const batchEditData = ref({
 // tab 选项卡
 const panels = [
   { name: 'resourceDetail', label: t('资源配置'), component: Detail },
-  { name: 'pluginManage', label: '插件管理', routeName: 'apigwStagePluginManage' },
-  { name: 'resourceDoc', label: '资源文档', routeName: 'apigwStageVariableManage' },
+  { name: 'pluginManage', label: '插件管理', component: PluginManage },
+  { name: 'resourceDoc', label: '资源文档', component: PluginManage },
 ];
 
 const columns = [
@@ -329,15 +329,15 @@ const handlePublicChange = () => {
 };
 
 // 选项卡切换
-const handleTabChange = (name: string) => {
-  const curPanel = panels.find(item => item.name === name);
-  router.push({
-    name: curPanel.routeName,
-    params: {
-      id: props.apigwId,
-    },
-  });
-};
+// const handleTabChange = (name: string) => {
+//   const curPanel = panels.find(item => item.name === name);
+//   router.push({
+//     name: curPanel.routeName,
+//     params: {
+//       id: props.apigwId,
+//     },
+//   });
+// };
 
 // 新建资源
 const handleCreateResource = () => {
