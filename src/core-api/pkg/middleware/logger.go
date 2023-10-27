@@ -71,6 +71,8 @@ func logContextFields(c *gin.Context) []zap.Field {
 
 	duration := time.Since(start)
 
+	latency := float64(duration) / float64(time.Microsecond)
+
 	status := c.Writer.Status()
 	hasError := status != http.StatusOK
 
@@ -81,7 +83,7 @@ func logContextFields(c *gin.Context) []zap.Field {
 		zap.String("params", params),
 		zap.String("body", body),
 		zap.Int("status", status),
-		zap.String("latency", duration.String()),
+		zap.Float64("latency", latency),
 		zap.String("request_id", c.GetString(util.RequestIDKey)),
 		zap.String("instance_id", c.GetString(util.InstanceIDKey)),
 		zap.String("client_ip", c.ClientIP()),
