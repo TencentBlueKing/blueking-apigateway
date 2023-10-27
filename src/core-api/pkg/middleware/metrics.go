@@ -48,6 +48,6 @@ func Metrics() gin.HandlerFunc {
 			"method": c.Request.Method,
 			"path":   c.FullPath(),
 			"status": status,
-		}).Observe(float64(duration / time.Millisecond))
+		}).Observe(float64(duration) / float64(time.Microsecond))
 	}
 }
