@@ -25,8 +25,8 @@
           @on-change="handleBatchOperate"></ag-dropdown>
         <ag-dropdown
           :text="t('导出')"
-          :dropdown-list="batchDropData"
-          @on-change="handleBatchOperate"></ag-dropdown>
+          :dropdown-list="exportDropData"
+          @on-change="handleExport"></ag-dropdown>
       </div>
       <div class="flex-1 flex-row justify-content-end">
         <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input>
@@ -157,6 +157,11 @@
           v-model:active="active"
           type="card-tab"
         >
+          <template #setting>
+            <div class="close-btn" @click="handleShowList">
+              <i class="icon apigateway-icon icon-ag-icon-close"></i>
+            </div>
+          </template>
           <bk-tab-panel
             v-for="item in panels"
             :key="item.name"
@@ -164,12 +169,6 @@
             :label="item.label"
             render-directive="if"
           >
-            <!-- <router-view
-              :ref="item.name"
-              :stage-id="stageData.id"
-              :key="routeIndex"
-              :version-id="stageData.resource_version.id"
-            ></router-view> -->
             <bk-loading
               :opacity="1"
               :loading="isComponentLoading"
@@ -191,8 +190,50 @@
         </bk-tab>
       </div>
     </div>
+    <!-- 批量删除dialog -->
     <bk-dialog
       :is-show="dialogData.isShow"
+      width="600"
+      :title="dialogData.title"
+      theme="primary"
+      quick-close
+      :is-loading="dialogData.loading"
+      @confirm="handleBatchConfirm"
+      @closed="dialogData.isShow = false">
+      <div class="delete-content" v-if="isBatchDelete">
+        <bk-table
+          row-hover="auto"
+          :columns="columns"
+          :data="selections"
+          show-overflow-tooltip
+          max-height="280"
+        />
+        <bk-alert
+          class="mt10 mb10"
+          theme="warning"
+          title="删除资源后，需要生成新的版本，并发布到目标环境才能生效"
+        />
+      </div>
+      <div v-else>
+        <bk-form>
+          <bk-form-item label="基本信息">
+            <bk-checkbox
+              v-model="batchEditData.isPublic"
+              @change="handlePublicChange">
+              {{ t('是否公开') }}
+            </bk-checkbox>
+            <bk-checkbox
+              :disabled="!batchEditData.isPublic"
+              v-model="batchEditData.allowApply">
+              {{ t('允许申请权限') }}
+            </bk-checkbox>
+          </bk-form-item>
+        </bk-form>
+      </div>
+    </bk-dialog>
+    <!-- 导出dialog -->
+    <bk-dialog
+      :is-show="exportDialogConfig.isShow"
       width="600"
       :title="dialogData.title"
       theme="primary"
@@ -234,7 +275,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
@@ -251,16 +292,30 @@ const props = defineProps({
   },
 });
 
+// 导出参数interface
+interface IexportParams {
+  export_type: string
+  query?: string
+  method?: string
+  label_name?: string
+}
+
+const { t } = useI18n();
 // 批量下拉的item
 const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
 // 导入下拉
 const importDropData = ref([{ value: 'config', label: '资源配置' }, { value: 'doc', label: '资源文档' }]);
-
-const { t } = useI18n();
+// 导出下拉
+const exportDropData = ref([{ value: 'all', label: t('全部资源') }, { value: 'filtered', label: t('已筛选资源') }, { value: 'selected', label: t('已选资源') }]);
 
 const router = useRouter();
 
 const filterData = ref({ query: '' });
+
+// 导出参数
+const exportParams: IexportParams = reactive({
+  export_type: '',
+});
 
 // 是否批量
 const isBatchDelete = ref(false);
@@ -277,7 +332,15 @@ const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
 
-const dialogData = ref<IDialog>({
+// 批量删除dialog
+const dialogData: IDialog = reactive({
+  isShow: false,
+  title: t(''),
+  loading: false,
+});
+
+// 导出dialog
+const exportDialogConfig: IDialog = reactive({
   isShow: false,
   title: t(''),
   loading: false,
@@ -328,17 +391,6 @@ const handlePublicChange = () => {
   batchEditData.value.allowApply = batchEditData.value.isPublic;
 };
 
-// 选项卡切换
-// const handleTabChange = (name: string) => {
-//   const curPanel = panels.find(item => item.name === name);
-//   router.push({
-//     name: curPanel.routeName,
-//     params: {
-//       id: props.apigwId,
-//     },
-//   });
-// };
-
 // 新建资源
 const handleCreateResource = () => {
   router.push({
@@ -371,6 +423,7 @@ const handleDeleteResource = async (id: number) => {
 // 展示右边内容
 const handleShowInfo = (id: number) => {
   resourceId.value = id;
+  console.log('isDetail', isDetail.value)
   if (isDetail.value) {
     isComponentLoading.value = true;
     active.value = 'resourceInfo';
@@ -379,18 +432,42 @@ const handleShowInfo = (id: number) => {
   }
 };
 
+// 显示列表
+const handleShowList = () => {
+  isDetail.value = false;
+  isShowLeft.value = true;
+};
+
 // 处理批量编辑或删除
 const handleBatchOperate = async (data: {value: string, label: string}) => {
-  dialogData.value.isShow = true;
+  dialogData.isShow = true;
   // 批量删除
   if (data.value === 'delete') {
     isBatchDelete.value = true;
-    dialogData.value.title = t(`确定要删除以下${selections.value.length}个资源`);
+    dialogData.title = t(`确定要删除以下${selections.value.length}个资源`);
   } else {
     // 批量编辑
     isBatchDelete.value = false;
-    dialogData.value.title = t(`批量编辑资源共${selections.value.length}个`);
+    dialogData.title = t(`批量编辑资源共${selections.value.length}个`);
   }
+};
+
+// 处理导出
+const handleExport = async ({ value }: {value: string}) => {
+  console.log('data', value);
+  switch (value) {
+    case 'all':
+    exportParams.export_type = value
+    exportDialogConfig.isShow = true
+      break;
+  
+    default:
+      break;
+  }
+  exportParams.export_type = value;
+  // this.exportDialogConf.visiable = true;
+  // this.exportFileDocType = 'resource';
+  // this.exportFileType = 'yaml';
 };
 
 const handleBatchConfirm = async () => {
@@ -406,7 +483,7 @@ const handleBatchConfirm = async () => {
     };
     await batchEditResources(props.apigwId, params);
   }
-  dialogData.value.isShow = false;
+  dialogData.isShow = false;
   Message({
     message: t(`${isBatchDelete.value ? '删除' : '编辑'}成功`),
     theme: 'success',
@@ -420,7 +497,6 @@ watch(
   () => tableData.value,
   (v: any) => {
     if (v.length) {
-      console.log(111, v);
       resourceId.value = v[0].id;
     }
   },
@@ -473,6 +549,20 @@ watch(
     .right-wraper{
       background: #fff;
       transition: all .15s;
+      .close-btn{
+        align-items: center;
+        border-radius: 50%;
+        color: #c4c6cc;
+        cursor: pointer;
+        display: flex;
+        font-size: 32px;
+        height: 26px;
+        justify-content: center;
+        position: absolute;
+        right: 5px;
+        top: 5px;
+        width: 26px;
+      }
     }
   }
 }
