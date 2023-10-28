@@ -30,7 +30,7 @@ export const useSelection = () => {
     }
     // 取消选择某一个
     if (!selection.isAll && !selection.checked) {
-      const index = selections.value.findIndex(item => item === selection.row);
+      const index = selections.value.findIndex((item: any) => item === selection.row);
       selections.value.splice(index, 1);
     }
   };

@@ -275,3 +275,6 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-ag-arrow-left:before {
 	content: "\e15f";
 }
+.icon-ag-icon-close:before {
+	content: "\e160";
+}
