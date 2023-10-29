@@ -42,8 +42,8 @@
   "devDependencies": {
     "@blueking/babel-preset-bk": "^2.1.0-beta7",
     "@blueking/cli-service-webpack": "0.0.0-beta.82",
-    "@blueking/eslint-config-bk": "2.1.0-beta.12",
-    "@blueking/stylelint-config-bk": "^2.1.0-beta.9",
+    "@blueking/eslint-config-bk": "^2.1.0-beta.14",
+    "@blueking/stylelint-config-bk": "^2.1.0-beta.10",
     "@types/cookie": "^0.5.2",
     "@types/node": "^20.6.3",
     "enhanced-resolve": "^5.10.0",

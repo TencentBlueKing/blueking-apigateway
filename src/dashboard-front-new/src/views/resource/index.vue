@@ -235,42 +235,28 @@
     <bk-dialog
       :is-show="exportDialogConfig.isShow"
       width="600"
-      :title="dialogData.title"
+      :title="exportDialogConfig.title"
       theme="primary"
       quick-close
-      :is-loading="dialogData.loading"
-      @confirm="handleBatchConfirm"
-      @closed="dialogData.isShow = false">
-      <div class="delete-content" v-if="isBatchDelete">
-        <bk-table
-          row-hover="auto"
-          :columns="columns"
-          :data="selections"
-          show-overflow-tooltip
-          max-height="280"
-        />
-        <bk-alert
-          class="mt10 mb10"
-          theme="warning"
-          title="删除资源后，需要生成新的版本，并发布到目标环境才能生效"
-        />
-      </div>
-      <div v-else>
-        <bk-form>
-          <bk-form-item label="基本信息">
-            <bk-checkbox
-              v-model="batchEditData.isPublic"
-              @change="handlePublicChange">
-              {{ t('是否公开') }}
-            </bk-checkbox>
-            <bk-checkbox
-              :disabled="!batchEditData.isPublic"
-              v-model="batchEditData.allowApply">
-              {{ t('允许申请权限') }}
-            </bk-checkbox>
-          </bk-form-item>
-        </bk-form>
-      </div>
+      :is-loading="exportDialogConfig.loading"
+      @confirm="handleExportDownload"
+      @closed="exportDialogConfig.isShow = false">
+      <span class="rosource-number">{{ t('选择全部资源') }}</span>
+      <bk-form>
+        <bk-form-item label="性别">
+          <bk-radio-group v-model="exportDialogConfig.exportFileDocType">
+            <bk-radio label="resource">{{ t('资源配置') }}</bk-radio>
+            <bk-radio label="docs">{{ t('资源文档') }}</bk-radio>
+          </bk-radio-group>
+        </bk-form-item>
+
+        <bk-form-item label="导出格式">
+          <bk-radio-group v-model="exportDialogConfig.exportFileType">
+            <bk-radio class="mt5" label="yaml"> {{ $t('YAML格式') }} </bk-radio>
+            <bk-radio label="json"> {{ $t('JSON格式') }} </bk-radio>
+          </bk-radio-group>
+        </bk-form-item>
+      </bk-form>
     </bk-dialog>
   </div>
 </template>
@@ -298,6 +284,11 @@ interface IexportParams {
   query?: string
   method?: string
   label_name?: string
+}
+
+interface IexportDialog extends IDialog {
+  exportFileDocType: string
+  exportFileType: string
 }
 
 const { t } = useI18n();
@@ -340,10 +331,12 @@ const dialogData: IDialog = reactive({
 });
 
 // 导出dialog
-const exportDialogConfig: IDialog = reactive({
+const exportDialogConfig: IexportDialog = reactive({
   isShow: false,
-  title: t(''),
+  title: t('请选择导出的格式'),
   loading: false,
+  exportFileDocType: 'resource',
+  exportFileType: 'yaml',
 });
 
 const batchEditData = ref({
@@ -423,7 +416,7 @@ const handleDeleteResource = async (id: number) => {
 // 展示右边内容
 const handleShowInfo = (id: number) => {
   resourceId.value = id;
-  console.log('isDetail', isDetail.value)
+  console.log('isDetail', isDetail.value);
   if (isDetail.value) {
     isComponentLoading.value = true;
     active.value = 'resourceInfo';
@@ -452,22 +445,24 @@ const handleBatchOperate = async (data: {value: string, label: string}) => {
   }
 };
 
-// 处理导出
+// 处理导出弹窗显示
 const handleExport = async ({ value }: {value: string}) => {
   console.log('data', value);
   switch (value) {
     case 'all':
-    exportParams.export_type = value
-    exportDialogConfig.isShow = true
+      exportParams.export_type = value;
+      exportDialogConfig.isShow = true;
       break;
-  
+
     default:
       break;
   }
   exportParams.export_type = value;
-  // this.exportDialogConf.visiable = true;
-  // this.exportFileDocType = 'resource';
-  // this.exportFileType = 'yaml';
+};
+
+// 下载
+const handleExportDownload = async () => {
+
 };
 
 const handleBatchConfirm = async () => {
@@ -501,6 +496,14 @@ watch(
     }
   },
   { immediate: true },
+);
+
+watch(
+  () => exportDialogConfig,
+  (v: any) => {
+    console.log('v', v);
+  },
+  { immediate: true, deep: true },
 );
 </script>
 <style lang="scss" scoped>
@@ -565,5 +568,8 @@ watch(
       }
     }
   }
+}
+.rosource-number{
+  color: #c4c6cc;
 }
 </style>
