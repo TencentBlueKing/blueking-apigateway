@@ -1,4 +1,5 @@
-<script setup lang="ts"> import {
+<script setup lang="ts">
+import {
   ref,
   computed,
 } from 'vue';
@@ -52,9 +53,7 @@ const apigwId = computed(() => {
   return undefined;
 });
 
-const isExternalLink  = (url?: string) => {
-  return /^https?:\/\//.test(url);
-};
+const isExternalLink  = (url?: string) => /^https?:\/\//.test(url);
 
 const handleToPage = (routeName: string, index: number, link: string) => {
   activeIndex.value = index;
