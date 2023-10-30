@@ -178,7 +178,7 @@ class HttpResourceConvertor(BaseConvertor):
         )
 
         for i in upstreams.get("hosts", []):
-            url_info = UrlInfo(i["host"])
+            url_info = UrlInfo(self._release_data.get_upstream_host(i))
             upstream.scheme = UpstreamSchemeEnum(url_info.scheme)
             upstream.nodes.append(UpstreamNode(host=url_info.domain, port=url_info.port, weight=i.get("weight", 1)))
 
