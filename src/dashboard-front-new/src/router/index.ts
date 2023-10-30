@@ -6,8 +6,9 @@ import {
 
 const Home = () => import(/* webpackChunkName: "Home" */ '@/views/home.vue');
 const ApigwMain = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/main.vue');
-const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/index.vue');
-const ApigwResourceEdit = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/edit.vue');
+const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/setting/index.vue');
+const ApigwResourceEdit = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/setting/edit.vue');
+const apigwResourceVersion = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/version/index.vue');
 const apigwStageOverview = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/index.vue');
 const apigwStageDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/index.vue');
 const apigwReleaseHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/published/index.vue');
@@ -132,6 +133,15 @@ const routes: RouteRecordRaw[] = [
           title: '克隆资源',
           matchRoute: 'apigwResource',
           showBackIcon: true,
+        },
+      },
+      {
+        path: '/:id/version',
+        name: 'apigwResourceVersion',
+        component: apigwResourceVersion,
+        meta: {
+          title: '资源版本',
+          matchRoute: 'apigwResourceVersion',
         },
       },
     ],

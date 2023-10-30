@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { ref, defineExpose, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useCommon } from '../../../store';
+import { useCommon } from '../../../../store';
 
 const props = defineProps({
   detail: {
