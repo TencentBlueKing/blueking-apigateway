@@ -24,7 +24,9 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 
 
 class SDKListInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
+    language = serializers.ChoiceField(
+        choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKListInputSLZ"
@@ -62,7 +64,9 @@ class SDKListOutputSLZ(serializers.Serializer):
 
 
 class SDKDocInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
+    language = serializers.ChoiceField(
+        choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKDocInputSLZ"

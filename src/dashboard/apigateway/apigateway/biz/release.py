@@ -59,7 +59,8 @@ class ReleaseHandler:
     def is_running(last_event: PublishEvent):
         """通过最新的一个event判断当前发布是否还在继续执行"""
         return last_event.status == PublishEventStatusEnum.DOING.value or (
-            last_event.status == PublishEventStatusEnum.SUCCESS.value  # 如果不是最后一个事件,如果是success的话说明也是running
+            last_event.status
+            == PublishEventStatusEnum.SUCCESS.value  # 如果不是最后一个事件,如果是success的话说明也是running
             and not last_event.is_last
         )
 

@@ -63,7 +63,7 @@ def one_line_error(error: ValidationError):
         return "format error message failed"
 
 
-def custom_exception_handler(exc, context):  # ruff: noqa: PLR0911
+def custom_exception_handler(exc, context):  # noqa: PLR0911
     is_legacy = False
     request = context.get("request")
     if request and "/backend/api/v1/" in request.path:

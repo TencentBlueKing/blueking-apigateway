@@ -27,7 +27,6 @@ from apigateway.controller.crds.v1beta1.models.base import (
 
 
 class OperatorSpec(GatewayCustomResourceSpec):
-
     discovery_type: str = Field(default="", alias="discoveryType", description="插件类型")
     config_schema: Dict[str, Any] = Field(
         default_factory=dict,

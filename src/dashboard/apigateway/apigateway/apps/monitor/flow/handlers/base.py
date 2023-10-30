@@ -107,14 +107,18 @@ class RelatedLogRecordsFetcher(AlertHandler):
                 event.event_dimensions,
             )
             AlarmRecord.objects.update_alarm(
-                event.alarm_record_id, status=AlarmStatusEnum.SKIPPED.value, comment=f"获取告警事件源记录失败，{message}"
+                event.alarm_record_id,
+                status=AlarmStatusEnum.SKIPPED.value,
+                comment=f"获取告警事件源记录失败，{message}",
             )
             return None
 
         filtered_records = self._filter_request_log_records(event.alarm_type, records)
         if not filtered_records:
             AlarmRecord.objects.update_alarm(
-                event.alarm_record_id, status=AlarmStatusEnum.SKIPPED.value, comment="所有告警源记录被过滤，此告警不需要发送告警通知"
+                event.alarm_record_id,
+                status=AlarmStatusEnum.SKIPPED.value,
+                comment="所有告警源记录被过滤，此告警不需要发送告警通知",
             )
             return None
 

@@ -101,11 +101,20 @@ error_codes.add_codes(
         # - remove all the `code`;
         # - 细化 validate_error
         ErrorCode("INVALID_ARGUMENT", 40002, _("校验失败"), status_code=status.HTTP_400_BAD_REQUEST),
-        ErrorCode("FAILED_PRECONDITION", 40403, _("请求无法在当前系统状态下执行"), status_code=status.HTTP_400_BAD_REQUEST),
-        ErrorCode("UNAUTHENTICATED", 40101, _("用户未登录或登录态失效，请使用登录链接重新登录"), status_code=status.HTTP_401_UNAUTHORIZED),
+        ErrorCode(
+            "FAILED_PRECONDITION", 40403, _("请求无法在当前系统状态下执行"), status_code=status.HTTP_400_BAD_REQUEST
+        ),
+        ErrorCode(
+            "UNAUTHENTICATED",
+            40101,
+            _("用户未登录或登录态失效，请使用登录链接重新登录"),
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        ),
         ErrorCode("IAM_NO_PERMISSION", 40403, _("没有访问权限"), status_code=status.HTTP_403_FORBIDDEN),
         ErrorCode("NOT_FOUND", 40000, _("数据不存在"), status_code=status.HTTP_404_NOT_FOUND),
-        ErrorCode("METHOD_NOT_ALLOWED", 40005, _("不支持当前的请求方法"), status_code=status.HTTP_405_METHOD_NOT_ALLOWED),
+        ErrorCode(
+            "METHOD_NOT_ALLOWED", 40005, _("不支持当前的请求方法"), status_code=status.HTTP_405_METHOD_NOT_ALLOWED
+        ),
         ErrorCode("INTERNAL", 50103, _("处理请求时发生内部错误"), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR),
         ErrorCode("UNKNOWN", 40000, _("请求失败"), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR),
     ]

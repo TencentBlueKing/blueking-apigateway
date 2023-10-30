@@ -147,7 +147,9 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取指定资源信息", responses={status.HTTP_200_OK: ResourceOutputSLZ()}, tags=["WebAPI.Resource"]
+        operation_description="获取指定资源信息",
+        responses={status.HTTP_200_OK: ResourceOutputSLZ()},
+        tags=["WebAPI.Resource"],
     ),
 )
 @method_decorator(

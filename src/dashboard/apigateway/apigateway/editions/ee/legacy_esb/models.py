@@ -77,11 +77,17 @@ class ComponentSystem(LegacyModelMigrator, models.Model):
     description = models.CharField("系统标签", db_column="label", max_length=128, help_text="系统简要说明")
     component_admin = models.CharField("组件开发负责人", max_length=128, default="", blank=True)
     interface_admin = models.CharField("系统接口负责人", max_length=128, default="", blank=True)
-    system_link = models.CharField("系统链接", max_length=1024, default="", blank=True, help_text="标准的HTTP链接，多个以分号分隔")
+    system_link = models.CharField(
+        "系统链接", max_length=1024, default="", blank=True, help_text="标准的HTTP链接，多个以分号分隔"
+    )
     belong_to = models.CharField("系统所属组织", max_length=128, default="", blank=True)
     comment = models.TextField("备注", db_column="remark", default="", blank=True)
-    execute_timeout = models.IntegerField("执行类超时时长", null=True, blank=True, help_text="单位秒，未设置时超时时长为30秒")
-    query_timeout = models.IntegerField("查询类超时时长", null=True, blank=True, help_text="单位秒，未设置时超时时长为30秒")
+    execute_timeout = models.IntegerField(
+        "执行类超时时长", null=True, blank=True, help_text="单位秒，未设置时超时时长为30秒"
+    )
+    query_timeout = models.IntegerField(
+        "查询类超时时长", null=True, blank=True, help_text="单位秒，未设置时超时时长为30秒"
+    )
     doc_category_id = models.IntegerField("文档分类ID", null=True, blank=True)
 
     class Meta:
@@ -167,11 +173,17 @@ class ESBChannel(LegacyModelMigrator, models.Model):
         (3, "特殊权限"),
     )
 
-    description = models.CharField("通道名称", db_column="name", max_length=64, help_text='通道名称，长度限制为64字符，例如"查询服务器列表"')
+    description = models.CharField(
+        "通道名称", db_column="name", max_length=64, help_text='通道名称，长度限制为64字符，例如"查询服务器列表"'
+    )
     path = models.CharField("通道路径", max_length=255, help_text='通道请求路径，例如"/host/get_host_list/"')
     method = models.CharField("请求类型", max_length=32, null=True, default="", blank=True)
-    component_system = models.ForeignKey(ComponentSystem, verbose_name="所属组件系统", null=True, on_delete=models.PROTECT)
-    component_codename = models.CharField("对应组件代号", max_length=255, help_text='组件代号，例如 "generic.host.get_host_list"')
+    component_system = models.ForeignKey(
+        ComponentSystem, verbose_name="所属组件系统", null=True, on_delete=models.PROTECT
+    )
+    component_codename = models.CharField(
+        "对应组件代号", max_length=255, help_text='组件代号，例如 "generic.host.get_host_list"'
+    )
     name = models.CharField("组件英文名", db_column="component_name", max_length=64, default="", blank=True, null=True)
     is_active = models.BooleanField("是否开启", default=True)
     last_modified_time = models.DateTimeField("最后更新", auto_now=True)
@@ -321,7 +333,9 @@ class ESBBuffetComponent(models.Model):
     )
 
     description = models.CharField("名称", db_column="name", max_length=256)
-    system = models.ForeignKey(ComponentSystem, verbose_name="所属系统", null=True, blank=True, on_delete=models.PROTECT)
+    system = models.ForeignKey(
+        ComponentSystem, verbose_name="所属系统", null=True, blank=True, on_delete=models.PROTECT
+    )
 
     dest_url = models.CharField("目标接口地址", max_length=2048)
     dest_http_method = models.CharField("HTTP请求类型", max_length=8, choices=HTTP_METHOD_CHOICES)
@@ -345,7 +359,9 @@ class ESBBuffetComponent(models.Model):
     )
     last_modified_time = models.DateTimeField(auto_now=True)
     created_time = models.DateTimeField(auto_now_add=True)
-    timeout_time = models.IntegerField("超时时长", blank=True, null=True, help_text="单位秒，未设置时以所属组件系统超时时长为准")
+    timeout_time = models.IntegerField(
+        "超时时长", blank=True, null=True, help_text="单位秒，未设置时以所属组件系统超时时长为准"
+    )
     type = models.IntegerField("组件类型", choices=TYPE_CHOICE, default=2)
 
     def __str__(self):

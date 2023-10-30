@@ -47,7 +47,9 @@ class StageVarsValidator(GetGatewayFromContextMixin):
         for key in _vars:
             if not STAGE_VAR_NAME_PATTERN.match(key):
                 raise serializers.ValidationError(
-                    _("变量名【{key}】非法，应由字母、数字、下划线（_）组成，首字符必须是字母，长度小于50个字符。").format(key=key),
+                    _(
+                        "变量名【{key}】非法，应由字母、数字、下划线（_）组成，首字符必须是字母，长度小于50个字符。"
+                    ).format(key=key),
                 )
 
     def _validate_vars_values(self, _vars: dict, gateway, instance):

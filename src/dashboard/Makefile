@@ -11,7 +11,7 @@ init:
 
 .PHONY: lint
 lint:
-	black --config=pyproject.toml .
+	ruff format --config=pyproject.toml  .
 	ruff --config=pyproject.toml --force-exclude --fix .
 	mypy --config-file=pyproject.toml .
 
