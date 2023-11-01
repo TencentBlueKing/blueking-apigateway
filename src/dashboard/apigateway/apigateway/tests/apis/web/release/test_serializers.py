@@ -185,7 +185,7 @@ class TestReleaseHistoryOutputSLZ:
             "stage": {"id": stage.id, "name": stage.name},
             "created_time": dummy_time.str,
             "created_by": release_history.created_by,
-            "resource_version_display": "1.0.0(测试)",
+            "resource_version_display": "1.0.0",
             "status": f"{event_1.status}",
             "source": release_history.source,
             "duration": (event_1.created_time - release_history.created_time).total_seconds(),

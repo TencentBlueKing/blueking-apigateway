@@ -149,6 +149,9 @@ class ReleaseData:
     def get_resources_upstream(self, resource_proxy: Dict[str, Any], backend_id: int):
         return resource_proxy.get("upstreams")
 
+    def get_upstream_host(self, upstream: Dict[str, Any]) -> str:
+        return upstream["host"]
+
 
 class ReleaseDataV2(ReleaseData):
     @cached_property
@@ -183,6 +186,9 @@ class ReleaseDataV2(ReleaseData):
             .values_list("config", flat=True)
             .first()
         )
+
+    def get_upstream_host(self, upstream: Dict[str, Any]) -> str:
+        return upstream["scheme"] + "://" + upstream["host"]
 
     @property
     def _resources_plugins(self) -> Dict[int, List[PluginData]]:

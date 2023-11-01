@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
@@ -27,6 +28,8 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ResourceVersion, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
+from apigateway.utils.exception import LockTimeout
+from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 
 from .serializers import (
@@ -104,12 +107,13 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
+        gateway_id = data["gateway"].id
         stage_ids = data["stage_ids"]
         resource_version = ResourceVersion.objects.get_object_fields(data["resource_version_id"])
 
         # 如果环境已发布某版本，则不重复发布，且计入此次已发布环境
         data["stage_ids"] = Release.objects.get_stage_ids_unreleased_the_version(
-            gateway_id=data["gateway"].id,
+            gateway_id=gateway_id,
             stage_ids=stage_ids,
             resource_version_id=data["resource_version_id"],
         )
@@ -127,15 +131,22 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
         for stage_id in data["stage_ids"]:
             releaser = Releaser(access_token=get_user_access_token_from_request(request))
             try:
-                releaser.release(
-                    request.gateway,
-                    stage_id,
-                    data["resource_version_id"],
-                    data["comment"],
-                    request.user.username,
-                )
+                with Lock(
+                    f"{gateway_id}_{stage_id}",
+                    timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
+                    try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
+                ):
+                    releaser.release(
+                        request.gateway,
+                        stage_id,
+                        data["resource_version_id"],
+                        data["comment"],
+                        request.user.username,
+                    )
+            except LockTimeout as err:
+                return V1FailJsonResponse(str(err))
+
             except ReleaseError as err:
-                # 因设置了 transaction，views 中不能直接抛出异常，否则，将导致数据不会写入 db
                 return V1FailJsonResponse(str(err))
 
         return V1OKJsonResponse(

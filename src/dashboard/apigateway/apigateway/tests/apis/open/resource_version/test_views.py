@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from unittest.mock import MagicMock
+
 import pytest
 from ddf import G
 
@@ -123,6 +125,9 @@ class TestResourceVersionReleaseApi:
             "apigateway.apis.open.resource_version.views.Release.objects.get_stage_ids_unreleased_the_version",
             return_value=unreleased_stage_ids,
         )
+
+        mocker.patch("apigateway.apis.open.resource_version.views.Lock", return_value=MagicMock())
+
         mocker.patch("apigateway.apis.open.resource_version.views.Releaser.release")
 
         response = request_view(
