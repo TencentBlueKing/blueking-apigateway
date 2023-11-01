@@ -1,7 +1,7 @@
 <template>
   <div class="navigation-main">
     <bk-navigation
-      class="navigation-main-content"
+      :class="['navigation-main-content', route.name === 'apigwResourceVersion' ? 'custom-height-navigation' : '']"
       :default-open="collapse"
       navigation-type="left-right"
       @toggle="handleCollapse"
@@ -44,6 +44,8 @@
               @click="handleBack"></i>
             {{ headerTitle }}
           </div>
+          <!-- 资源版本 -->
+          <resource-version-top-bar  v-if="route.meta.isCustomTopbar === 'resourceVersionOverview'" />
         </div>
       </template>
       <div class="content-view">
@@ -60,6 +62,7 @@ import { menuData } from '@/common/menu';
 import { useGetApiList } from '@/hooks';
 import { useCommon } from '@/store';
 import stageTopBar from '@/components/stage-top-bar.vue';
+import resourceVersionTopBar from '@/components/resource-version-top-bar.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -200,5 +203,14 @@ const handleBack = () => {
         background: rgb(245, 247, 250);
       }
     }
+}
+</style>
+<style lang="scss">
+.custom-height-navigation {
+  .container-header {
+    flex-basis: 0px !important;
+    padding-top: 26px !important;
+    height: 102px !important;
+  }
 }
 </style>

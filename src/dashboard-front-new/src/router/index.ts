@@ -142,6 +142,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '资源版本',
           matchRoute: 'apigwResourceVersion',
+          isCustomTopbar: 'resourceVersionOverview',
         },
       },
     ],
