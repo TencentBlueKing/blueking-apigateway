@@ -111,6 +111,7 @@ error_codes.add_codes(
             status_code=status.HTTP_401_UNAUTHORIZED,
         ),
         ErrorCode("IAM_NO_PERMISSION", 40403, _("没有访问权限"), status_code=status.HTTP_403_FORBIDDEN),
+        ErrorCode("NO_PERMISSION", 40403, _("没有相关权限"), status_code=status.HTTP_403_FORBIDDEN),
         ErrorCode("NOT_FOUND", 40000, _("数据不存在"), status_code=status.HTTP_404_NOT_FOUND),
         ErrorCode(
             "METHOD_NOT_ALLOWED", 40005, _("不支持当前的请求方法"), status_code=status.HTTP_405_METHOD_NOT_ALLOWED

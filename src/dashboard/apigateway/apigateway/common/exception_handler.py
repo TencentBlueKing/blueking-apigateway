@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 STATUS_CODE_DEFAULT_ERROR = {
     status.HTTP_400_BAD_REQUEST: error_codes.INVALID_ARGUMENT,
     status.HTTP_401_UNAUTHORIZED: error_codes.UNAUTHENTICATED,
-    status.HTTP_403_FORBIDDEN: error_codes.IAM_NO_PERMISSION,
+    status.HTTP_403_FORBIDDEN: error_codes.NO_PERMISSION,
     status.HTTP_404_NOT_FOUND: error_codes.NOT_FOUND,
     status.HTTP_405_METHOD_NOT_ALLOWED: error_codes.METHOD_NOT_ALLOWED,
     status.HTTP_500_INTERNAL_SERVER_ERROR: error_codes.INTERNAL,
@@ -89,7 +89,7 @@ def custom_exception_handler(exc, context):  # noqa: PLR0911
 
     if isinstance(exc, PermissionDenied):
         set_rollback()
-        error = error_codes.IAM_NO_PERMISSION.format(message=exc.detail, replace=True)
+        error = error_codes.NO_PERMISSION.format(message=exc.detail, replace=True)
         return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
     # Call REST framework's default exception handler to get the standard error response.
