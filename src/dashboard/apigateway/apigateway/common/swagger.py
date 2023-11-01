@@ -20,7 +20,10 @@
 from collections import OrderedDict
 
 from drf_yasg import openapi
+from drf_yasg.generators import OpenAPISchemaGenerator
 from drf_yasg.inspectors import SwaggerAutoSchema
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
 from rest_framework import status
 
 
@@ -65,3 +68,26 @@ class BkStandardResponseSwaggerAutoSchema(SwaggerAutoSchema):
             ),
             required=["count", "results"],
         )
+
+
+class BothHttpAndHttpsSchemaGenerator(OpenAPISchemaGenerator):
+    def get_schema(self, request=None, public=False):
+        schema = super().get_schema(request, public)
+        schema.schemes = ["http", "https"]
+        return schema
+
+
+# add drf-yasg automatically generated documents
+schema_view = get_schema_view(
+    openapi.Info(
+        title="APIGateway-Dashboard API",
+        default_version="v1",
+        description="APIGateway-Dashboard API Document",
+        terms_of_service="http://example.com",
+        contact=openapi.Contact(email="blueking@tencent.com"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    generator_class=BothHttpAndHttpsSchemaGenerator,
+    permission_classes=(permissions.AllowAny,),
+)
