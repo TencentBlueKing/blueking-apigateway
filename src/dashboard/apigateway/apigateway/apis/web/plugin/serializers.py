@@ -22,7 +22,6 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.plugin.convertor import PluginConfigYamlConvertor
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
@@ -94,7 +93,7 @@ class PluginFormOutputSLZ(serializers.ModelSerializer):
 class PluginConfigBaseSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault(), help_text="网关")
     type_id = serializers.PrimaryKeyRelatedField(queryset=PluginType.objects.all(), help_text="插件类型")
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, help_text="描述")
+    # description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, help_text="描述")
 
     class Meta:
         model = PluginConfig
@@ -102,7 +101,7 @@ class PluginConfigBaseSLZ(serializers.ModelSerializer):
             "id",
             "gateway",
             "name",
-            "description",
+            # "description",
             "yaml",
             "type_id",
         ]
