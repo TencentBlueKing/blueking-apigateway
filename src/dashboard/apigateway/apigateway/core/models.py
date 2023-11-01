@@ -519,7 +519,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
         if not self.version:
             return f"{self.name}({self.title})"
 
-        return f"{self.version}"
+        return self.version
 
     @property
     def is_schema_v2(self):

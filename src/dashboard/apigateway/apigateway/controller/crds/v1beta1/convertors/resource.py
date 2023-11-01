@@ -177,10 +177,10 @@ class HttpResourceConvertor(BaseConvertor):
             type=UpstreamTypeEnum.ROUNDROBIN,
         )
 
-        for i in upstreams.get("hosts", []):
-            url_info = UrlInfo(self._release_data.get_upstream_host(i))
+        for host in upstreams.get("hosts", []):
+            url_info = UrlInfo(self._release_data.get_upstream_host(host))
             upstream.scheme = UpstreamSchemeEnum(url_info.scheme)
-            upstream.nodes.append(UpstreamNode(host=url_info.domain, port=url_info.port, weight=i.get("weight", 1)))
+            upstream.nodes.append(UpstreamNode(host=url_info.domain, port=url_info.port, weight=host.get("weight", 1)))
 
         return upstream
 

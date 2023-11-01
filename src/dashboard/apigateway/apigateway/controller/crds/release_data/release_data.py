@@ -150,7 +150,6 @@ class ReleaseData:
         return resource_proxy.get("upstreams")
 
     def get_upstream_host(self, upstream: Dict[str, Any]) -> str:
-
         return upstream["host"]
 
 
