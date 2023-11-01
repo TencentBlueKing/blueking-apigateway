@@ -146,7 +146,9 @@ class ESBChannelSLZ(OfficialWriteFields, serializers.ModelSerializer):
             queryset = ESBChannel.objects.filter(board=board, path=path)
             queryset = self._exclude_current_instance(queryset)
             if queryset.exists():
-                raise serializers.ValidationError(_("当前指定的请求方法为 GET/POST，但相同请求路径下，其它请求方法已存在。"))
+                raise serializers.ValidationError(
+                    _("当前指定的请求方法为 GET/POST，但相同请求路径下，其它请求方法已存在。")
+                )
         else:
             queryset = ESBChannel.objects.filter(board=board, path=path, method="")
             queryset = self._exclude_current_instance(queryset)

@@ -72,9 +72,13 @@ class IAMUserGroupHandler:
         if role == UserRoleEnum.MANAGER:
             return _("API网关 ({gateway_name}) 管理员，拥有网关的全部权限。").format(gateway_name=gateway_name)
         if role == UserRoleEnum.DEVELOPER:
-            return _("API网关 ({gateway_name}) 开发者，拥有网关的开发权限，如管理资源，查看日志，在线测试等。").format(gateway_name=gateway_name)
+            return _("API网关 ({gateway_name}) 开发者，拥有网关的开发权限，如管理资源，查看日志，在线测试等。").format(
+                gateway_name=gateway_name
+            )
         if role == UserRoleEnum.OPERATOR:
-            return _("API网关 ({gateway_name}) 运营者，拥有网关的运营权限，如管理权限，查看日志等。").format(gateway_name=gateway_name)
+            return _("API网关 ({gateway_name}) 运营者，拥有网关的运营权限，如管理权限，查看日志等。").format(
+                gateway_name=gateway_name
+            )
 
         raise ValueError(f"unsupported role: {role.value}")
 

@@ -52,7 +52,9 @@ class APITestInputSLZ(serializers.Serializer):
     query_params = serializers.DictField(child=serializers.CharField(), allow_empty=True, help_text="查询参数")
     body = serializers.CharField(allow_blank=True, required=False, help_text="请求体")
     use_test_app = serializers.BooleanField(help_text="是否使用测试应用")
-    use_user_from_cookies = serializers.BooleanField(required=False, default=False, help_text="是否使用 cookies 中的用户信息")
+    use_user_from_cookies = serializers.BooleanField(
+        required=False, default=False, help_text="是否使用 cookies 中的用户信息"
+    )
     authorization = AuthorizationSLZ(required=False, allow_null=True, help_text="认证信息")
 
     def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:

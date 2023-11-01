@@ -2,11 +2,11 @@ fail_fast: true
 repos:
   - repo: local
     hooks:
-      - id: black
-        name: black
+      - id: format
+        name: ruff-formatter
         language: python
         types: [python]
-        entry: black --config=src/dashboard/pyproject.toml
+        entry: bash -c 'cd src/dashboard && ruff format --config=pyproject.toml  .'
         files: src/dashboard/
       - id: ruff
         name: ruff

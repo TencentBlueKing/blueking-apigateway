@@ -60,8 +60,6 @@ class TestStageHandler:
             },
         }
 
-    pass
-
     @pytest.mark.parametrize(
         "stage_names, expected, will_error",
         [

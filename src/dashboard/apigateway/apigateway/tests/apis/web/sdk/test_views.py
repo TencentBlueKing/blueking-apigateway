@@ -30,7 +30,6 @@ from apigateway.tests.utils.testing import dummy_time
 
 class TestGatewaySDKListCreateApi:
     def test_list(self, request_view, fake_gateway, settings):
-
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
         sdk_1 = G(
             GatewaySDK,
