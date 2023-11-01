@@ -128,7 +128,7 @@ class PluginConfigBaseSLZ(serializers.ModelSerializer):
 
     def _update_plugin(self, plugin: PluginConfig, validated_data: Dict[str, Any]):
         plugin.name = validated_data["name"]
-        plugin.description_i18n = validated_data["description"]
+        # plugin.description_i18n = validated_data["description"]
 
         validator = PluginConfigYamlValidator()
         try:
