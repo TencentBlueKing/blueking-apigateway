@@ -23,5 +23,4 @@ class CoreConfig(AppConfig):
     name = "apigateway.core"
 
     def ready(self):
-
         prometheus.enable()

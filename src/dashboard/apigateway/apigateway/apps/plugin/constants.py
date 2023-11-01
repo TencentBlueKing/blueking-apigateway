@@ -35,7 +35,9 @@ class PluginTypeCodeEnum(StructuredEnum):
     BK_HEADER_REWRITE = EnumField("bk-header-rewrite", label=_("Header 转换"))
     BK_IP_RESTRICTION = EnumField("bk-ip-restriction", label="ip-restriction")
     BK_STATUS_REWRITE = EnumField("bk-status-rewrite", label=_("网关错误使用HTTP状态码200(不推荐)"))
-    BK_VERIFIED_USER_EXEMPTED_APPS = EnumField("bk-verified-user-exempted-apps", label=_("免用户认证应用白名单(不推荐)"))
+    BK_VERIFIED_USER_EXEMPTED_APPS = EnumField(
+        "bk-verified-user-exempted-apps", label=_("免用户认证应用白名单(不推荐)")
+    )
 
 
 class PluginTypeScopeEnum(StructuredEnum):

@@ -87,7 +87,9 @@ class SystemSLZ(ExtensibleFieldMixin, OfficialWriteFields, serializers.ModelSeri
         except DocCategory.DoesNotExist:
             raise serializers.ValidationError(
                 {
-                    "doc_category_id": _("文档分类【id={doc_category_id}】不存在。").format(doc_category_id=doc_category_id),
+                    "doc_category_id": _("文档分类【id={doc_category_id}】不存在。").format(
+                        doc_category_id=doc_category_id
+                    ),
                 }
             )
 

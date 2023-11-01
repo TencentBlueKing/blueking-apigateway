@@ -34,7 +34,6 @@ class ServiceRewrite(KubernetesModel):
 
 
 class BkGatewayServiceSpec(GatewayCustomResourceSpec):
-
     id: Optional[str] = Field(default=None, description="服务 UUID")
     upstream: Upstream = Field(default_factory=Upstream, description="上游配置")
     rewrite: ServiceRewrite = Field(default_factory=ServiceRewrite, description="服务通用请求重写")

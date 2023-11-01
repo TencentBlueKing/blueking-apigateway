@@ -71,7 +71,9 @@ class ResourceIDValidator(GetGatewayFromContextMixin):
 
         count = Resource.objects.filter(gateway_id=gateway.id, id__in=resource_ids).count()
         if count != len(set(resource_ids)):
-            raise serializers.ValidationError(_("网关【id={gateway_id}】下指定的部分资源ID不存在。").format(gateway_id=gateway.id))
+            raise serializers.ValidationError(
+                _("网关【id={gateway_id}】下指定的部分资源ID不存在。").format(gateway_id=gateway.id)
+            )
 
 
 class BKAppCodeListValidator:
@@ -119,11 +121,15 @@ class StageVarsValuesValidator:
         for key in used_stage_vars["in_path"]:
             if key not in stage_vars:
                 raise serializers.ValidationError(
-                    _("环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作路径变量，必须存在。").format(stage_name=stage_name, key=key),
+                    _(
+                        "环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作路径变量，必须存在。"
+                    ).format(stage_name=stage_name, key=key),
                 )
             if not STAGE_VAR_FOR_PATH_PATTERN.match(stage_vars[key]):
                 raise serializers.ValidationError(
-                    _("环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作路径变量，变量值不是一个合法的 URL 路径片段。").format(
+                    _(
+                        "环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作路径变量，变量值不是一个合法的 URL 路径片段。"
+                    ).format(
                         stage_name=stage_name,
                         key=key,
                     ),
@@ -133,13 +139,15 @@ class StageVarsValuesValidator:
             _value = stage_vars.get(key)
             if not _value:
                 raise serializers.ValidationError(
-                    _("环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作 Host 变量，不能为空。").format(
-                        stage_name=stage_name, key=key
-                    ),
+                    _(
+                        "环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作 Host 变量，不能为空。"
+                    ).format(stage_name=stage_name, key=key),
                 )
             if not HOST_WITHOUT_SCHEME_PATTERN.match(_value):
                 raise serializers.ValidationError(
-                    _('环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作 Host 变量，变量值不是一个合法的 Host（不包含"http(s)://"）。').format(
+                    _(
+                        '环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作 Host 变量，变量值不是一个合法的 Host（不包含"http(s)://"）。'
+                    ).format(
                         stage_name=stage_name,
                         key=key,
                     )
@@ -152,7 +160,6 @@ class ResourceVersionValidator:
     """
 
     def __call__(self, attrs):
-
         gateway = attrs["gateway"]
 
         version = attrs.get("version", attrs.get("name"))  # 兼容一下open

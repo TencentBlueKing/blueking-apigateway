@@ -82,7 +82,9 @@ class BkCorsChecker(BaseChecker):
             try:
                 re.compile(re_rule)
             except Exception:
-                raise ValueError(_("allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。").format(re_rule=re_rule))
+                raise ValueError(
+                    _("allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。").format(re_rule=re_rule)
+                )
 
     def _check_duplicate_items(self, data: List[str], key: str):
         duplicate_items = [item for item, count in Counter(data).items() if count >= 2]

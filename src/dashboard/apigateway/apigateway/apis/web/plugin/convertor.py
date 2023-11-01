@@ -76,7 +76,9 @@ class RateLimitYamlConvertor(BasePluginYamlConvertor):
         for item in loaded_data["rates"].get("specials", []):
             bk_app_code = item["bk_app_code"]
             if bk_app_code in result["rates"]:
-                raise ValidationError({"bk_app_code": _(f"蓝鲸应用ID重复: {bk_app_code}").format(bk_app_code=bk_app_code)})
+                raise ValidationError(
+                    {"bk_app_code": _(f"蓝鲸应用ID重复: {bk_app_code}").format(bk_app_code=bk_app_code)}
+                )
 
             result["rates"][bk_app_code] = [{"period": item["period"], "tokens": item["tokens"]}]
 

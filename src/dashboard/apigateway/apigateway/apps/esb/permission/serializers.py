@@ -52,7 +52,11 @@ class ESBAppPermissionListSLZ(serializers.Serializer):
 
     def get_component_name(self, obj):
         component = self._get_component(obj.component_id)
-        return component["name"] if component else _("组件【id={component_id}】已删除。").format(component_id=obj.component_id)
+        return (
+            component["name"]
+            if component
+            else _("组件【id={component_id}】已删除。").format(component_id=obj.component_id)
+        )
 
     def get_component_description(self, obj):
         component = self._get_component(obj.component_id)

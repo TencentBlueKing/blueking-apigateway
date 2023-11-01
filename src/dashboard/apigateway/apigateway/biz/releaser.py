@@ -173,7 +173,9 @@ class BaseGatewayReleaser:
             for host in backend_config.config["hosts"]:
                 if not constants.HOST_WITHOUT_SCHEME_PATTERN.match(host["host"]):
                     raise ReleaseValidationError(
-                        _("网关环境【{stage_name}】中的配置Scheme【{scheme}】不合法。请在网关 `基本设置 -> 后端服务` 中进行配置。").format(
+                        _(
+                            "网关环境【{stage_name}】中的配置Scheme【{scheme}】不合法。请在网关 `基本设置 -> 后端服务` 中进行配置。"
+                        ).format(
                             stage_name=stage.name,
                             scheme=host["scheme"],
                         )
@@ -210,7 +212,9 @@ class BaseGatewayReleaser:
         """
         if not StageProxyHTTPContext().contain_hosts(stage.id):
             raise ReleaseValidationError(
-                _("网关环境【{stage_name}】中代理配置 Hosts 未配置，请在网关 `基本设置 -> 环境管理` 中进行配置。").format(
+                _(
+                    "网关环境【{stage_name}】中代理配置 Hosts 未配置，请在网关 `基本设置 -> 环境管理` 中进行配置。"
+                ).format(
                     # noqa: E501
                     stage_name=stage.name,
                 )
