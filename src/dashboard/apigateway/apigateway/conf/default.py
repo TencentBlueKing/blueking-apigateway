@@ -621,6 +621,8 @@ PLUGIN_METADATA_CONFIG = {
             "proxy_error": "$proxy_error",
             "instance": "$instance_id",
             "timestamp": "$bk_log_request_timestamp",
+            # 临时字段，用于记录请求时，认证参数的位置，便于推动认证参数优化
+            "auth_location": "$auth_params_location",
         }
     },
     "bk-concurrency-limit": {
