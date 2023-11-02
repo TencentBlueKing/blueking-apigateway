@@ -119,7 +119,7 @@ class ResourceContexts(BaseModel, DiffMixin):
 class ResourcePluginConfig(BaseModel, DiffMixin):
     id: int
     name: str
-    type: int
+    type: str
     config: Dict[Text, Any] = Field(default_factory=dict)
 
 
