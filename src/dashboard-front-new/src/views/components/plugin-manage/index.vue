@@ -1,71 +1,51 @@
 <template>
   <div class="plugin-container">
     <!-- 默认展示 -->
-    <bk-exception
-      class="exception-wrap-item"
-      type="empty"
-      :class="{ 'exception-gray': false }"
-    >
-      {{ t("尚未添加插件，") }}
+    <bk-exception class="exception-wrap-item" type="empty" :class="{ 'exception-gray': false }">
+      {{ t('尚未添加插件，') }}
       <bk-button text theme="primary" @click="handlePluginAdd">
-        {{ t("立即添加") }}
+        {{ t('立即添加') }}
       </bk-button>
     </bk-exception>
     <!-- 添加插件 -->
-    <bk-sideslider
-      v-model:isShow="isVisible"
-      :title="t('添加插件')"
-      quick-close
-      ext-cls="plugin-add-slider"
-      width="960"
-    >
+    <bk-sideslider v-model:isShow="isVisible" :title="t('添加插件')" quick-close ext-cls="plugin-add-slider" width="960">
       <template #default>
-        <bk-steps
-          :cur-step="state.curStep"
-          :steps="state.plugintSteps"
-          ext-cls="plugin-add-steps"
-        />
+        <bk-steps :cur-step="state.curStep" :steps="state.plugintSteps" ext-cls="plugin-add-steps" />
         <div class="plugin-add-container">
           <div class="plugins pl20 pr20" v-if="state.curStep === 1">
             <div class="plugin-search">
               <bk-input
-                v-model="searchValue"
-                clearable
-                type="search"
-                :placeholder="t('请输入插件关键字')"
-                @enter="handleSearch"
-                @clear="handleClear"
-              />
+                v-model="searchValue" clearable type="search" :placeholder="t('请输入插件关键字')" @enter="handleSearch"
+                @clear="handleClear" />
             </div>
             <div class="plugin-list">
               <div
-                :class="[item.is_bound ? 'plugin disabled' : 'plugin ']"
-                v-for="item in pluginListDate"
-                :key="item.id"
-                @click="handleChoosePlugin(item)"
-              >
-                <span class="plugin-icon">
-                  {{ pluginCodeFirst(item.code) }}
-                </span>
+                :class="[item.is_bound ? 'plugin disabled' : 'plugin ']" v-for="item in pluginListDate" :key="item.id"
+                @click="handleChoosePlugin(item)">
+                <div class="plungin-head">
+                  <span class="plugin-icon">
+                    {{ pluginCodeFirst(item.code) }}
+                  </span>
+                  <span v-show="item.is_bound" class="binddingText">
+                    {{ t('已添加') }}
+                  </span>
+                </div>
+
                 <p class="plugin-name">{{ item.name }}</p>
                 <div class="binding">
                   <ul class="binding-list">
-                    <li>版本：<span>V1.0.0</span></li>
                     <li>
-                      已绑环境：
+                      {{ t('版本：') }}<span>{{ t('V1.0.0') }}</span>
+                    </li>
+                    <li>
+                      {{ t('已绑环境：') }}
                       <span :class="[item.related_scope_count.stage === 0 ? 'binding-empty' : 'binding-number',]">
                         {{ item.related_scope_count.stage }}
                       </span>
                     </li>
                     <li>
-                      已绑资源：
-                      <span
-                        :class="[
-                          item.related_scope_count.resource === 0
-                            ? 'binding-empty'
-                            : 'binding-number',
-                        ]"
-                      >
+                      {{ t('已绑资源：') }}
+                      <span :class="[item.related_scope_count.resource === 0 ? 'binding-empty' : 'binding-number',]">
                         {{ item.related_scope_count.resource }}
                       </span>
                     </li>
@@ -85,19 +65,19 @@
       <template #footer>
         <div class="slider-footer pl20">
           <div class="fist-step" v-if="state.curStep === 1">
-            <bk-button theme="primary" @click="handelNext" width="50px">{{
-              t("下一步")
-            }}</bk-button>
+            <bk-button theme="primary" @click="handelNext" width="50px" :disabled="!curChoosePlugin">
+              {{ t('下一步') }}
+            </bk-button>
           </div>
           <div class="last-step" v-else>
-            <bk-button theme="primary" @click="handleAdd">{{
-              t("确定")
-            }}</bk-button>
-            <bk-button @click="handlePre" class="pre-btn">{{
-              t("上一步")
-            }}</bk-button>
+            <bk-button theme="primary" @click="handleAdd">
+              {{ t('确定') }}
+            </bk-button>
+            <bk-button @click="handlePre" class="pre-btn">
+              {{ t('上一步') }}
+            </bk-button>
           </div>
-          <bk-button @click="handleCancel">{{ t("取消") }}</bk-button>
+          <bk-button @click="handleCancel">{{ t('取消') }}</bk-button>
         </div>
       </template>
     </bk-sideslider>
@@ -113,7 +93,6 @@ import { useRoute } from 'vue-router';
 import {
   getPluginListData,
   getPluginBindingsList,
-  getPluginForm,
   getScopeBindingPluginList,
 } from '@/http';
 
@@ -137,7 +116,7 @@ const searchValue = ref('');
 const scopeType = ref('');
 const scopeId = ref<number>(-1);
 const pluginListDate = ref<any>({});
-const curChoosePlugin = ref<any>({});
+const curChoosePlugin = ref(null);
 const state = reactive({
   plugintSteps: [
     { title: t('选择插件'), icon: 1 },
@@ -160,9 +139,11 @@ const getPluginListDetails = async (params: any) => {
 };
 
 // 立即添加
-const handlePluginAdd = async () => {
+const handlePluginAdd = () => {
+  curChoosePlugin.value = null;
   isVisible.value = true;
   state.curStep = 1;
+  searchValue.value = '';
   scopeType.value = route.path.includes('stage') ? 'stage' : 'resource';
   scopeId.value = route.path.includes('stage') ? curStageId : props.resourceId;
   const params = {
@@ -213,7 +194,10 @@ const handleAdd = () => {
 };
 // 取消添加
 const handleCancel = () => {
-  // isVisible.value = true;
+  curChoosePlugin.value = null;
+  isVisible.value = false;
+  state.curStep = 1;
+  searchValue.value = '';
 };
 </script>
 
@@ -222,36 +206,44 @@ const handleCancel = () => {
   :deep(.bk-exception-page) {
     height: 420px;
     justify-content: center;
+
     .bk-exception-img {
       width: 220px;
       height: 130px;
     }
+
     .bk-exception-footer {
       margin-top: 0;
     }
   }
 }
+
 .plugin-add-steps {
   width: 400px;
   margin: 20px auto;
 }
+
 .plugin-add-container {
   height: calc(100vh - 170px) !important;
   border-top: 1px solid #e3e3e5;
 }
+
 .plugins {
   background-color: #f5f7fb;
   height: 100%;
 
   .plugin-search {
     padding: 20px 0px;
+
     .bk-input--default {
       width: 608px;
     }
   }
+
   .plugin-list {
     display: flex;
     flex-wrap: wrap;
+
     .plugin {
       cursor: pointer;
       margin-right: 18px;
@@ -261,62 +253,84 @@ const handleCancel = () => {
       background-color: #fff;
       border-radius: 12px;
       box-shadow: 5px 6px 11px -11px gray;
-      .plugin-icon {
-        display: inline-block;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background-color: #e2edfd;
-        color: #3a84f6;
-        text-align: center;
-        line-height: 60px;
-        font-weight: 600;
-        font-size: 26px;
+
+      .plungin-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 15px;
+
+        .plugin-icon {
+          display: inline-block;
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background-color: #e2edfd;
+          color: #3a84f6;
+          text-align: center;
+          line-height: 60px;
+          font-weight: 600;
+          font-size: 26px;
+        }
+
+        .binddingText {
+          color: #b0b2b4;
+        }
       }
+
       .plugin-name {
         font-weight: 900;
         font-size: 15px;
         color: #2e2d32;
       }
+
       .binding {
         .binding-list {
           display: flex;
           justify-content: space-between;
           margin: 5px 0 9px;
           color: #b0b2b4;
+
           .binding-empty {
             color: #64666a;
             font-weight: 600;
           }
+
           .binding-number {
             color: #4482e4;
             font-weight: 600;
           }
         }
       }
+
       .plugin-notes {
-        color: #7f8182;
+        color: 808487;
       }
     }
+
     .plugin:nth-child(3n) {
       margin-right: 0px;
     }
-    .disabled{
+
+    .disabled {
       user-select: none;
       cursor: not-allowed;
     }
   }
 }
+
 .plugin-add-slider {
   :deep(.bk-modal-content) {
     height: calc(100vh - 106px) !important;
   }
+
   .slider-footer {
     display: flex;
+
     .fist-step {
       margin-right: 12px;
     }
+
     .last-step {
       .pre-btn {
         margin-left: 8px;

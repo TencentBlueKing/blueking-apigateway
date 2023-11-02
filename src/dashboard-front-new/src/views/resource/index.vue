@@ -1,32 +1,18 @@
 <template>
   <div class="resource-container p20">
-    <bk-alert
-      theme="warning"
-      title="资源如有更新，需要“生成版本”并“发布到环境”才能生效"
-    />
+    <bk-alert theme="warning" title="资源如有更新，需要“生成版本”并“发布到环境”才能生效" />
     <div class="operate flex-row justify-content-between mt10 mb10">
       <div class="flex-1 flex-row align-items-center">
         <div class="mr10">
-          <bk-button
-            theme="primary"
-            @click="handleCreateResource"
-          >
+          <bk-button theme="primary" @click="handleCreateResource">
             {{ t('新建') }}
           </bk-button>
         </div>
         <ag-dropdown
-          :text="t('批量')"
-          :dropdown-list="batchDropData"
-          @on-change="handleBatchOperate"
+          :text="t('批量')" :dropdown-list="batchDropData" @on-change="handleBatchOperate"
           :is-disabled="!selections.length"></ag-dropdown>
-        <ag-dropdown
-          :text="t('导入')"
-          :dropdown-list="importDropData"
-          @on-change="handleBatchOperate"></ag-dropdown>
-        <ag-dropdown
-          :text="t('导出')"
-          :dropdown-list="exportDropData"
-          @on-change="handleExport"></ag-dropdown>
+        <ag-dropdown :text="t('导入')" :dropdown-list="importDropData" @on-change="handleBatchOperate"></ag-dropdown>
+        <ag-dropdown :text="t('导出')" :dropdown-list="exportDropData" @on-change="handleExport"></ag-dropdown>
       </div>
       <div class="flex-1 flex-row justify-content-end">
         <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input>
@@ -34,113 +20,51 @@
     </div>
     <div class="flex-row resource-content">
       <div class="left-wraper" :style="{ width: isDetail ? isShowLeft ? '370px' : '0' : '100%' }">
-        <bk-loading
-          :loading="isLoading"
-        >
+        <bk-loading :loading="isLoading">
           <bk-table
-            class="table-layout"
-            :data="tableData"
-            remote-pagination
-            :pagination="pagination"
-            show-overflow-tooltip
-            @page-limit-change="handlePageSizeChange"
-            @page-value-change="handlePageChange"
-            @selection-change="handleSelectionChange"
-            row-hover="auto"
-          >
-            <bk-table-column
-              width="80"
-              type="selection"
-            />
-            <bk-table-column
-              :label="t('资源名称')"
-            >
+            class="table-layout" :data="tableData" remote-pagination :pagination="pagination"
+            show-overflow-tooltip @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange"
+            @selection-change="handleSelectionChange" row-hover="auto">
+            <bk-table-column width="80" type="selection" />
+            <bk-table-column :label="t('资源名称')">
               <template #default="{ data }">
-                <bk-button
-                  text
-                  theme="primary"
-                  @click="handleShowInfo(data.id)"
-                >
-                  {{data?.name}}
+                <bk-button text theme="primary" @click="handleShowInfo(data.id)">
+                  {{ data?.name }}
                 </bk-button>
               </template>
             </bk-table-column>
-            <bk-table-column
-              :label="t('前端请求方法')"
-              prop="method"
-              width="120"
-              v-if="!isDetail"
-            >
+            <bk-table-column :label="t('前端请求方法')" prop="method" width="120" v-if="!isDetail">
             </bk-table-column>
-            <bk-table-column
-              width="120"
-              :label="t('后端服务')"
-            >
+            <bk-table-column width="120" :label="t('后端服务')">
               <template #default="{ data }">
-                {{data?.backend?.name}}
+                {{ data?.backend?.name }}
               </template>
             </bk-table-column>
-            <bk-table-column
-              :label="t('前端请求路径')"
-              prop="path"
-              v-if="!isDetail"
-            >
+            <bk-table-column :label="t('前端请求路径')" prop="path" v-if="!isDetail">
             </bk-table-column>
-            <bk-table-column
-              :label="t('文档')"
-              prop="docs"
-              width="100"
-              v-if="!isDetail"
-            >
+            <bk-table-column :label="t('文档')" prop="docs" width="100" v-if="!isDetail">
             </bk-table-column>
-            <bk-table-column
-              :label="t('标签')"
-              prop="labels"
-              v-if="!isDetail"
-            >
+            <bk-table-column :label="t('标签')" prop="labels" v-if="!isDetail">
               <template #default="{ data }">
                 <bk-tag v-for="item in data?.labels" :key="item.id">{{ item.name }}</bk-tag>
               </template>
             </bk-table-column>
-            <bk-table-column
-              :label="t('更新时间')"
-              prop="updated_time"
-              v-if="!isDetail"
-            >
+            <bk-table-column :label="t('更新时间')" prop="updated_time" v-if="!isDetail">
             </bk-table-column>
-            <bk-table-column
-              :label="t('操作')"
-              width="140"
-              v-if="!isDetail"
-            >
+            <bk-table-column :label="t('操作')" width="140" v-if="!isDetail">
               <template #default="{ data }">
-                <bk-button
-                  text
-                  theme="primary"
-                  @click="handleEditResource(data.id, 'edit')"
-                >
+                <bk-button text theme="primary" @click="handleEditResource(data.id, 'edit')">
                   {{ t('编辑') }}
                 </bk-button>
 
-                <bk-button
-                  text
-                  theme="primary"
-                  class="pl10 pr10"
-                  @click="handleEditResource(data.id, 'clone')"
-                >
+                <bk-button text theme="primary" class="pl10 pr10" @click="handleEditResource(data.id, 'clone')">
                   {{ t('克隆') }}
                 </bk-button>
 
                 <bk-pop-confirm
-                  :title="t('确认删除该资源？')"
-                  content="删除操作无法撤回，请谨慎操作！"
-                  width="288"
-                  trigger="click"
-                  @confirm="handleDeleteResource(data.id)"
-                >
-                  <bk-button
-                    text
-                    theme="primary">
+                  :title="t('确认删除该资源？')" content="删除操作无法撤回，请谨慎操作！" width="288" trigger="click"
+                  @confirm="handleDeleteResource(data.id)">
+                  <bk-button text theme="primary">
                     {{ t('删除') }}
                   </bk-button>
                 </bk-pop-confirm>
@@ -153,38 +77,22 @@
         </div>
       </div>
       <div class="flex-1 right-wraper ml20" v-if="isDetail">
-        <bk-tab
-          v-model:active="active"
-          type="card-tab"
-        >
+        <bk-tab v-model:active="active" type="card-tab">
           <template #setting>
             <div class="close-btn" @click="handleShowList">
               <i class="icon apigateway-icon icon-ag-icon-close"></i>
             </div>
           </template>
           <bk-tab-panel
-            v-for="item in panels"
-            :key="item.name"
-            :name="item.name"
-            :label="item.label"
-            render-directive="if"
-          >
-            <bk-loading
-              :opacity="1"
-              :loading="isComponentLoading"
-            >
+            v-for="item in panels" :key="item.name" :name="item.name" :label="item.label"
+            render-directive="if">
+            <bk-loading :opacity="1" :loading="isComponentLoading">
               <!-- deleted-success 删除成功需要请求一次列表数据 更新详情 -->
               <component
-                v-if="item.name === active && resourceId"
-                :is="item.component"
-                :resource-id="resourceId"
-                :apigw-id="apigwId"
-                ref="componentRef"
-                @done="(v: boolean | any) => {
+                v-if="item.name === active && resourceId" :is="item.component" :resource-id="resourceId"
+                :apigw-id="apigwId" ref="componentRef" @done="(v: boolean | any) => {
                   isComponentLoading = !!v
-                }"
-                @deleted-success="getList"
-              />
+                }" @deleted-success="getList" />
             </bk-loading>
           </bk-tab-panel>
         </bk-tab>
@@ -192,39 +100,19 @@
     </div>
     <!-- 批量删除dialog -->
     <bk-dialog
-      :is-show="dialogData.isShow"
-      width="600"
-      :title="dialogData.title"
-      theme="primary"
-      quick-close
-      :is-loading="dialogData.loading"
-      @confirm="handleBatchConfirm"
-      @closed="dialogData.isShow = false">
+      :is-show="dialogData.isShow" width="600" :title="dialogData.title" theme="primary" quick-close
+      :is-loading="dialogData.loading" @confirm="handleBatchConfirm" @closed="dialogData.isShow = false">
       <div class="delete-content" v-if="isBatchDelete">
-        <bk-table
-          row-hover="auto"
-          :columns="columns"
-          :data="selections"
-          show-overflow-tooltip
-          max-height="280"
-        />
-        <bk-alert
-          class="mt10 mb10"
-          theme="warning"
-          title="删除资源后，需要生成新的版本，并发布到目标环境才能生效"
-        />
+        <bk-table row-hover="auto" :columns="columns" :data="selections" show-overflow-tooltip max-height="280" />
+        <bk-alert class="mt10 mb10" theme="warning" title="删除资源后，需要生成新的版本，并发布到目标环境才能生效" />
       </div>
       <div v-else>
         <bk-form>
           <bk-form-item label="基本信息">
-            <bk-checkbox
-              v-model="batchEditData.isPublic"
-              @change="handlePublicChange">
+            <bk-checkbox v-model="batchEditData.isPublic" @change="handlePublicChange">
               {{ t('是否公开') }}
             </bk-checkbox>
-            <bk-checkbox
-              :disabled="!batchEditData.isPublic"
-              v-model="batchEditData.allowApply">
+            <bk-checkbox :disabled="!batchEditData.isPublic" v-model="batchEditData.allowApply">
               {{ t('允许申请权限') }}
             </bk-checkbox>
           </bk-form-item>
@@ -233,13 +121,8 @@
     </bk-dialog>
     <!-- 导出dialog -->
     <bk-dialog
-      :is-show="exportDialogConfig.isShow"
-      width="600"
-      :title="exportDialogConfig.title"
-      theme="primary"
-      quick-close
-      :is-loading="exportDialogConfig.loading"
-      @confirm="handleExportDownload"
+      :is-show="exportDialogConfig.isShow" width="600" :title="exportDialogConfig.title" theme="primary"
+      quick-close :is-loading="exportDialogConfig.loading" @confirm="handleExportDownload"
       @closed="exportDialogConfig.isShow = false">
       <span class="rosource-number">{{ t('选择全部资源') }}</span>
       <bk-form>
@@ -432,7 +315,7 @@ const handleShowList = () => {
 };
 
 // 处理批量编辑或删除
-const handleBatchOperate = async (data: {value: string, label: string}) => {
+const handleBatchOperate = async (data: { value: string, label: string }) => {
   dialogData.isShow = true;
   // 批量删除
   if (data.value === 'delete') {
@@ -446,7 +329,7 @@ const handleBatchOperate = async (data: {value: string, label: string}) => {
 };
 
 // 处理导出弹窗显示
-const handleExport = async ({ value }: {value: string}) => {
+const handleExport = async ({ value }: { value: string }) => {
   console.log('data', value);
   switch (value) {
     case 'all':
@@ -507,24 +390,29 @@ watch(
 );
 </script>
 <style lang="scss" scoped>
-.resource-container{
+.resource-container {
   height: 100%;
-  .operate{
-    &-input{
+
+  .operate {
+    &-input {
       width: 450px;
     }
   }
-  .dialog-content{
+
+  .dialog-content {
     // max-height: 280px;
   }
-  .resource-content{
+
+  .resource-content {
     height: calc(100% - 90px);
     min-height: 600px;
-    .left-wraper{
+
+    .left-wraper {
       position: relative;
       background: #fff;
       transition: all .15s;
-      .toggle-button{
+
+      .toggle-button {
         align-items: center;
         background: #dcdee5;
         border-bottom-right-radius: 6px;
@@ -540,8 +428,10 @@ watch(
         top: 50%;
         transform: translateY(-50%);
         width: 14px;
+
         .icon {
           transition: transform .15s !important;
+
           &.is-left {
             transform: rotate(180deg) !important;
           }
@@ -549,10 +439,11 @@ watch(
       }
     }
 
-    .right-wraper{
+    .right-wraper {
       background: #fff;
       transition: all .15s;
-      .close-btn{
+
+      .close-btn {
         align-items: center;
         border-radius: 50%;
         color: #c4c6cc;
@@ -563,13 +454,14 @@ watch(
         justify-content: center;
         position: absolute;
         right: 5px;
-        top: 14px;
+        top: 5px;
         width: 26px;
       }
     }
   }
 }
-.rosource-number{
+
+.rosource-number {
   color: #c4c6cc;
 }
 </style>

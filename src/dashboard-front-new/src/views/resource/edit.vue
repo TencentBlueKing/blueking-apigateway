@@ -2,7 +2,7 @@
   <div class="edit-container">
     <bk-collapse class="collapse-cls p20" v-model="activeIndex" use-card-theme>
       <bk-collapse-panel name="baseInfo">
-        <span class="panel-title">{{ t("基础信息") }}</span>
+        <span class="panel-title">{{ t('基础信息') }}</span>
         <template #content>
           <div class="panel-content">
             <BaseInfo ref="baseInfoRef" :detail="resourceDetail"></BaseInfo>
@@ -11,7 +11,7 @@
       </bk-collapse-panel>
 
       <bk-collapse-panel name="frontConfig">
-        <span class="panel-title">{{ t("前端配置") }}</span>
+        <span class="panel-title">{{ t('前端配置') }}</span>
         <template #content>
           <div class="panel-content">
             <FrontConfig ref="frontConfigRef" :detail="resourceDetail" :is-clone="isClone"></FrontConfig>
@@ -20,7 +20,7 @@
       </bk-collapse-panel>
 
       <bk-collapse-panel name="backConfig">
-        <span class="panel-title">{{ t("后端配置") }}</span>
+        <span class="panel-title">{{ t('后端配置') }}</span>
         <template #content>
           <div class="panel-content">
             <BackConfig ref="backConfigRef" :detail="resourceDetail"></BackConfig>
@@ -30,10 +30,10 @@
     </bk-collapse>
     <div class="edit-footer">
       <bk-button theme="primary" class="ml20" @click="handleSubmit" :loading="submitLoading">
-        {{ t("提交") }}
+        {{ t('提交') }}
       </bk-button>
       <bk-button class="ml10" @click="handleCancel">
-        {{ t("取消") }}
+        {{ t('取消') }}
       </bk-button>
     </div>
   </div>
@@ -46,7 +46,11 @@ import FrontConfig from './comps/front-config.vue';
 import BackConfig from './comps/back-config.vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useCommon } from '@/store';
-import { createResources, getResourceDetailData, updateResources } from '@/http';
+import {
+  createResources,
+  getResourceDetailData,
+  updateResources,
+} from '@/http';
 import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
@@ -80,7 +84,7 @@ const getResourceDetails = async () => {
   try {
     const res = await getResourceDetailData(apigwId, resourceId.value);
     resourceDetail.value = res;
-  } catch (error) {}
+  } catch (error) { }
 };
 
 // 提交
@@ -131,16 +135,19 @@ init();
   :deep(.collapse-cls) {
     .bk-collapse-item {
       background: #fff;
+
       .panel-title {
         color: #63656e;
         font-weight: 700;
       }
+
       .panel-content {
         max-width: 1100px;
         width: 100%;
       }
     }
   }
+
   .edit-footer {
     background: #fff;
     height: 52px;
@@ -148,6 +155,7 @@ init();
     border: 1px solid #dcdee5;
   }
 }
+
 .bk-collapse-demo {
   box-shadow: 0 0 8px 0px #ccc;
 }
