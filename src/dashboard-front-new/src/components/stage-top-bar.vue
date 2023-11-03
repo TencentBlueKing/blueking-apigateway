@@ -107,6 +107,7 @@ const getStageDetailFun = (id: number) => {
   getStageDetail(apigwId, id).then((data) => {
     stageStore.curStageData = data;
     curStage.value = data;
+    stageStore.curStageId = data.id;
     setTimeout(() => {
       stageStore.setStageMainLoading(false);
     }, 300);
