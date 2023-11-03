@@ -102,6 +102,10 @@ allMethods.forEach((method) => {
         }
         try {
           const fetchUrl = getFetchUrl(url, method, payload);
+          // blob下载
+          if (fetchConfig.responseType === 'blob') {
+            return fetch(fetchUrl, fetchConfig);
+          }
           const response = await fetch(fetchUrl, fetchConfig);
           return await successInterceptor(response, fetchConfig);
         } catch (err) {
