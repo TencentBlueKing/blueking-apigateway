@@ -131,6 +131,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
     path: Text
     match_subpath: bool = False
     is_public: bool = True
+    allow_apply_permission: bool = True
     proxy: Union[ResourceHTTPProxy, ResourceMockProxy]
     contexts: ResourceContexts
     disabled_stages: List[Text] = Field(default_factory=list)
