@@ -21,3 +21,9 @@ export interface IMethodList {
   id: string
   name: string
 }
+// drop下拉菜单interface
+export interface IDropList {
+  value: string
+  label: string
+  disabled?: boolean
+}
