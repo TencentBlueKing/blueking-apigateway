@@ -1,6 +1,10 @@
 <template>
   <div class="edit-container">
-    <bk-collapse class="collapse-cls p20" v-model="activeIndex" use-card-theme>
+    <bk-collapse
+      class="collapse-cls p20"
+      v-model="activeIndex"
+      use-card-theme
+    >
       <bk-collapse-panel name="baseInfo">
         <span class="panel-title">{{ t('基础信息') }}</span>
         <template #content>
@@ -14,7 +18,7 @@
         <span class="panel-title">{{ t('前端配置') }}</span>
         <template #content>
           <div class="panel-content">
-            <FrontConfig ref="frontConfigRef" :detail="resourceDetail" :is-clone="isClone"></FrontConfig>
+            <FrontConfig ref="frontConfigRef" :detail="resourceDetail"></FrontConfig>
           </div>
         </template>
       </bk-collapse-panel>
@@ -29,30 +33,31 @@
       </bk-collapse-panel>
     </bk-collapse>
     <div class="edit-footer">
-      <bk-button theme="primary" class="ml20" @click="handleSubmit" :loading="submitLoading">
+      <bk-button
+        theme="primary"
+        class="ml20"
+        @click="handleSubmit"
+        :loading="submitLoading">
         {{ t('提交') }}
       </bk-button>
-      <bk-button class="ml10" @click="handleCancel">
+      <bk-button
+        class="ml10"
+        @click="handleCancel">
         {{ t('取消') }}
       </bk-button>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BaseInfo from './comps/base-info.vue';
 import FrontConfig from './comps/front-config.vue';
 import BackConfig from './comps/back-config.vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useCommon } from '@/store';
-import {
-  createResources,
-  getResourceDetailData,
-  updateResources,
-} from '@/http';
+import { createResources, getResourceDetailData, updateResources } from '@/http';
 import { Message } from 'bkui-vue';
-
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
@@ -61,17 +66,13 @@ const common = useCommon();
 const { apigwId } = common; // 网关id
 
 // 默认展开
-const activeIndex = ref(['baseInfo', 'frontConfig', 'backConfig']);
+const activeIndex =  ref(['baseInfo', 'frontConfig', 'backConfig']);
 const baseInfoRef = ref(null);
 const frontConfigRef = ref(null);
 const backConfigRef = ref(null);
 const submitLoading = ref(false);
 const resourceId = ref<any>(0);
 const resourceDetail = ref<any>({});
-
-const isClone = computed(() => {
-  return route.name === 'apigwResourceClone';
-});
 
 const init = () => {
   if (route.params.resourceId) {
@@ -84,14 +85,13 @@ const getResourceDetails = async () => {
   try {
     const res = await getResourceDetailData(apigwId, resourceId.value);
     resourceDetail.value = res;
-  } catch (error) { }
+  } catch (error) {
+
+  }
 };
 
 // 提交
 const handleSubmit = async () => {
-  await baseInfoRef.value?.validate();
-  await frontConfigRef.value?.validate();
-  await backConfigRef.value?.validate();
   const baseFormData = baseInfoRef.value.formData;
   const frontFormData = frontConfigRef.value.frontConfigData;
   const backFormData = backConfigRef.value.backConfigData;
@@ -131,32 +131,28 @@ const handleCancel = () => {
 init();
 </script>
 <style lang="scss" scoped>
-.edit-container {
-  :deep(.collapse-cls) {
-    .bk-collapse-item {
-      background: #fff;
-
-      .panel-title {
-        color: #63656e;
-        font-weight: 700;
-      }
-
-      .panel-content {
-        max-width: 1100px;
-        width: 100%;
+  .edit-container{
+    :deep(.collapse-cls){
+      .bk-collapse-item{
+        background: #fff;
+        .panel-title{
+            color: #63656e;
+            font-weight: 700;
+        }
+        .panel-content{
+            max-width: 1100px;
+            width: 100%;
+        }
       }
     }
+    .edit-footer{
+      background: #fff;
+      height: 52px;
+      line-height: 52px;
+      border: 1px solid #DCDEE5;
+    }
   }
-
-  .edit-footer {
-    background: #fff;
-    height: 52px;
-    line-height: 52px;
-    border: 1px solid #dcdee5;
-  }
-}
-
-.bk-collapse-demo {
-  box-shadow: 0 0 8px 0px #ccc;
-}
-</style>
+    .bk-collapse-demo {
+      box-shadow: 0 0 8px 0px #ccc;
+    }
+  </style>
