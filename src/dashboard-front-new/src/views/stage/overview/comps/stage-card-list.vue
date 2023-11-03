@@ -75,13 +75,13 @@ const handleToDetail = (data: any) => {
   //     stage: data.name,
   //   }
   // });
-}
+};
 
 // 新建环境
-const stageSidesliderRef = ref(null)
+const stageSidesliderRef = ref(null);
 const handleAddStage = () => {
   stageSidesliderRef.value.handleShowSideslider('add');
-}
+};
 
 </script>
 
@@ -114,6 +114,7 @@ const handleAddStage = () => {
   padding: 0 24px;
   box-shadow: 0 2px 4px 0 #1919290d;
   border-radius: 2px;
+  cursor: pointer;
 
   .title {
     height: 52px;
