@@ -75,6 +75,7 @@ class APIAuthConfig(BaseModel):
     api_type: int = GatewayTypeEnum.CLOUDS_API.value
     unfiltered_sensitive_keys: List[str] = Field(default_factory=list)
     allow_update_api_auth: bool = getattr(settings, "DEFAULT_ALLOW_UPDATE_API_AUTH", False)
+    allow_auth_from_params: Optional[bool] = None
     include_system_headers: Optional[List[str]] = None
     rtx_conf: dict = Field(default_factory=dict)
     uin_conf: dict = Field(default_factory=dict)
@@ -91,6 +92,9 @@ class APIAuthConfig(BaseModel):
 
         if self.include_system_headers:
             config["include_system_headers"] = self.include_system_headers
+
+        if self.allow_auth_from_params is not None:
+            config["allow_auth_from_params"] = self.allow_auth_from_params
 
         # 更新用户认证配置
         config.update(

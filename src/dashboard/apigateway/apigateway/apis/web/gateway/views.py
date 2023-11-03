@@ -115,6 +115,8 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         GatewayHandler.save_related_data(
             gateway=slz.instance,
             user_auth_type=UserAuthTypeEnum(settings.DEFAULT_USER_AUTH_TYPE).value,
+            # 通过管理端新创建的网关，要求必须使用请求头提供蓝鲸认证数据
+            allow_auth_from_params=False,
             username=request.user.username,
         )
 
