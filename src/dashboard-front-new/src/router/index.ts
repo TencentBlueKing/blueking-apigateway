@@ -8,6 +8,7 @@ const Home = () => import(/* webpackChunkName: "Home" */ '@/views/home.vue');
 const ApigwMain = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/main.vue');
 const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/index.vue');
 const ApigwResourceEdit = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/edit.vue');
+const ApigwResourceImport = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/import.vue');
 const apigwStageOverview = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/index.vue');
 const apigwStageDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/index.vue');
 const apigwReleaseHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/published/index.vue');
@@ -130,6 +131,16 @@ const routes: RouteRecordRaw[] = [
         component: ApigwResourceEdit,
         meta: {
           title: '克隆资源',
+          matchRoute: 'apigwResource',
+          showBackIcon: true,
+        },
+      },
+      {
+        path: '/:id/resource/import',
+        name: 'apigwResourceImport',
+        component: ApigwResourceImport,
+        meta: {
+          title: '导入资源配置',
           matchRoute: 'apigwResource',
           showBackIcon: true,
         },

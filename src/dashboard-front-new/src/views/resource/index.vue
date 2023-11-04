@@ -22,7 +22,7 @@
         <ag-dropdown
           :text="t('导入')"
           :dropdown-list="importDropData"
-          @on-change="handleBatchOperate"></ag-dropdown>
+          @on-change="handleImport"></ag-dropdown>
         <ag-dropdown
           :text="t('导出')"
           :dropdown-list="exportDropData"
@@ -526,6 +526,13 @@ const handleBatchConfirm = async () => {
   });
   getList();
   resetSelections();
+};
+
+const handleImport = () => {
+  console.log('导入');
+  router.push({
+    name: 'apigwResourceImport',
+  });
 };
 
 // 鼠标进入
