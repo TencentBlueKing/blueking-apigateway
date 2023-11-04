@@ -17,6 +17,9 @@
             :key="menu.name"
             :title="menu.title"
           >
+            <template #icon>
+              <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
+            </template>
             <bk-menu-item v-for="child in menu.children" :key="child.name" @click="handleGoPage(child.name, apigwId)">
               {{ child.title }}
             </bk-menu-item>
@@ -30,8 +33,7 @@
           />
         </bk-select>
       </template>
-      <template #header>
-        <!-- 环境概览 -->
+      <!-- <template #header>
         <stage-top-bar v-if="route.meta.isCustomTopbar === 'stageOverview'" />
         <div
           v-else
@@ -45,8 +47,15 @@
             {{ headerTitle }}
           </div>
         </div>
-      </template>
+      </template> -->
       <div class="content-view">
+        <div class="flex-row align-items-center content-header">
+          <i
+            class="icon apigateway-icon icon-ag-return-small"
+            v-if="route.meta.showBackIcon"
+            @click="handleBack"></i>
+          {{ headerTitle }}
+        </div>
         <router-view :key="apigwId" :apigw-id="apigwId"></router-view>
       </div>
     </bk-navigation>
@@ -59,7 +68,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { menuData } from '@/common/menu';
 import { useGetApiList } from '@/hooks';
 import { useCommon } from '@/store';
-import stageTopBar from '@/components/stage-top-bar.vue';
+// import stageTopBar from '@/components/stage-top-bar.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -146,10 +155,14 @@ const handleBack = () => {
         background: #fff !important;
         .bk-menu-item{
           color: rgb(99, 101, 110);
+          margin: 0px;
           .item-icon{
             .default-icon{
               background-color: rgb(197, 199, 205);
             }
+          }
+          &:hover{
+            background: #F0F1F5;
           }
         }
         .bk-menu-item.is-active {
@@ -162,6 +175,9 @@ const handleBack = () => {
           }
         }
       }
+      .submenu-header-icon{
+        color: rgb(99, 101, 110);
+      }
       .submenu-header-content{
         color: rgb(99, 101, 110);
       }
@@ -172,6 +188,9 @@ const handleBack = () => {
 
     :deep(.navigation-container) {
       .container-header{
+        height: 0px !important;
+        flex-basis: 0px !important;
+        border-bottom: 0px;
       }
     }
 
@@ -181,16 +200,22 @@ const handleBack = () => {
     .content-view {
       height: 100%;
       font-size: 14px;
-    }
-
-    .header {
-      margin-right: auto;
-      color: #313238;
-      font-size: 16px;
-      .icon-ag-return-small{
-        font-size: 32px;
-        color: #3a84ff;
-        cursor: pointer;
+      .content-header{
+        display: flex;
+        flex-basis: 51px;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdee5;
+        box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
+        height: 51px;
+        margin-right: auto;
+        color: #313238;
+        font-size: 16px;
+        .icon-ag-return-small{
+          font-size: 32px;
+          color: #3a84ff;
+          cursor: pointer;
+        }
       }
     }
   }
