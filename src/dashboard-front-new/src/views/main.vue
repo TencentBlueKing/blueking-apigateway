@@ -56,7 +56,11 @@
             @click="handleBack"></i>
           {{ headerTitle }}
         </div>
-        <router-view :key="apigwId" :apigw-id="apigwId"></router-view>
+        <div :class="route.meta.customHeader ? 'custom-header-view' : 'default-header-view'">
+          <router-view
+            :key="apigwId" :apigw-id="apigwId">
+          </router-view>
+        </div>
       </div>
     </bk-navigation>
   </div>
@@ -216,6 +220,9 @@ const handleBack = () => {
           color: #3a84ff;
           cursor: pointer;
         }
+      }
+      .default-header-view{
+        height: calc(100vh - 105px);
       }
     }
   }
