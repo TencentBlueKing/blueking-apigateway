@@ -14,6 +14,7 @@ export interface IDialog {
 export interface IMenu {
   name: string
   title: string
+  icon?: string
   children?: IMenu[]
 }
 

@@ -22,7 +22,7 @@
         <ag-dropdown
           :text="t('导入')"
           :dropdown-list="importDropData"
-          @on-change="handleBatchOperate"></ag-dropdown>
+          @on-change="handleImport"></ag-dropdown>
         <ag-dropdown
           :text="t('导出')"
           :dropdown-list="exportDropData"
@@ -46,6 +46,7 @@
             @page-limit-change="handlePageSizeChange"
             @page-value-change="handlePageChange"
             @selection-change="handleSelectionChange"
+            @row-mouse-enter="handleMouseEnter"
             row-hover="auto"
           >
             <bk-table-column
@@ -71,6 +72,9 @@
               width="120"
               v-if="!isDetail"
             >
+              <template #default="{ data }">
+                <bk-tag :theme="methodsEnum[data?.method]">{{ data?.method }}</bk-tag>
+              </template>
             </bk-table-column>
             <bk-table-column
               width="120"
@@ -88,10 +92,13 @@
             </bk-table-column>
             <bk-table-column
               :label="t('文档')"
-              prop="docs"
               width="100"
               v-if="!isDetail"
             >
+              <template #default="{ data }">
+                <section v-if="data?.docs.length">{{ data?.docs }}</section>
+                <section v-else></section>
+              </template>
             </bk-table-column>
             <bk-table-column
               :label="t('标签')"
@@ -280,7 +287,7 @@ import { Message } from 'bkui-vue';
 import agDropdown from '@/components/ag-dropdown.vue';
 import Detail from './detail.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
-import { IDialog, IDropList } from '@/types';
+import { IDialog, IDropList, MethodsEnum } from '@/types';
 const props = defineProps({
   apigwId: {
     type: Number,
@@ -302,6 +309,7 @@ interface IexportDialog extends IDialog {
   exportFileDocType: string
 }
 
+const methodsEnum: any = ref(MethodsEnum);
 const { t } = useI18n();
 // 批量下拉的item
 const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
@@ -367,11 +375,11 @@ const panels = [
 
 const columns = [
   {
-    label: '请求路径',
+    label: t('请求路径'),
     field: 'path',
   },
   {
-    label: '请求方法',
+    label: t('请求方法'),
     field: 'method',
   },
 ];
@@ -496,6 +504,7 @@ const handleExportDownload = async () => {
     });
   }
 };
+// 批量编辑确认
 const handleBatchConfirm = async () => {
   const ids = selections.value.map(e => e.id);
   if (isBatchDelete.value) {
@@ -517,6 +526,18 @@ const handleBatchConfirm = async () => {
   });
   getList();
   resetSelections();
+};
+
+const handleImport = () => {
+  console.log('导入');
+  router.push({
+    name: 'apigwResourceImport',
+  });
+};
+
+// 鼠标进入
+const handleMouseEnter = (e: any, row: any) => {
+  console.log('row', row);
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
