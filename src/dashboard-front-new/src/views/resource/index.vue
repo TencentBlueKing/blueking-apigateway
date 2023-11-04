@@ -529,7 +529,7 @@ const handleBatchConfirm = async () => {
 };
 
 // 鼠标进入
-const handleMouseEnter = ({ row }: any) => {
+const handleMouseEnter = (e: any, row: any) => {
   console.log('row', row);
 };
 
