@@ -33,23 +33,9 @@
           />
         </bk-select>
       </template>
-      <!-- <template #header>
-        <stage-top-bar v-if="route.meta.isCustomTopbar === 'stageOverview'" />
-        <div
-          v-else
-          class="header"
-        >
-          <div class="flex-row align-items-center">
-            <i
-              class="icon apigateway-icon icon-ag-return-small"
-              v-if="route.meta.showBackIcon"
-              @click="handleBack"></i>
-            {{ headerTitle }}
-          </div>
-        </div>
-      </template> -->
       <div class="content-view">
-        <div class="flex-row align-items-center content-header">
+        <!-- 默认头部 -->
+        <div class="flex-row align-items-center content-header" v-if="!route.meta.customHeader">
           <i
             class="icon apigateway-icon icon-ag-return-small"
             v-if="route.meta.showBackIcon"
@@ -72,7 +58,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { menuData } from '@/common/menu';
 import { useGetApiList } from '@/hooks';
 import { useCommon } from '@/store';
-// import stageTopBar from '@/components/stage-top-bar.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -204,6 +189,7 @@ const handleBack = () => {
     .content-view {
       height: 100%;
       font-size: 14px;
+      overflow: hidden;
       .content-header{
         display: flex;
         flex-basis: 51px;
@@ -223,6 +209,12 @@ const handleBack = () => {
       }
       .default-header-view{
         height: calc(100vh - 105px);
+        overflow: auto;
+      }
+      .custom-header-view{
+        margin-top: 52px;
+        height: 100%;
+        overflow: auto;
       }
     }
   }
