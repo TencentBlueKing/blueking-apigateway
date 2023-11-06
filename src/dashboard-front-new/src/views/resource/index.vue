@@ -191,6 +191,7 @@
                   isComponentLoading = !!v
                 }"
                 @deleted-success="getList"
+                @on-jump="jumpScopeId"
               />
             </bk-loading>
           </bk-tab-panel>
@@ -445,6 +446,10 @@ const handleShowInfo = (id: number) => {
   } else {
     isDetail.value = true;
   }
+};
+
+const jumpScopeId = (id: any) => {
+  handleShowInfo(id);
 };
 
 // 显示列表

@@ -31,3 +31,44 @@ export const getPluginForm = (apigwId: number, code: string) => fetch.get(`${BK_
  */
 export const getScopeBindingPluginList = (apigwId: number, scopeType: string, scopeId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${scopeType}/${scopeId}`);
 
+/**
+ * 创建一个插件，并且绑定到对应的 scope_type + scope_id
+ * @param apigwId 网关id
+ * @param scopeType 类型
+ * @param scopeId 类型id
+ * @param code 插件code
+ * @param data 插件的参数
+ */
+export const creatPlugin = (apigwId: number, scopeType: string, scopeId: number, code: string, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${scopeType}/${scopeId}/${code}/configs/`, data);
+
+/**
+ * 获取插件的配置
+ * @param apigwId 网关id
+ * @param scopeType 类型
+ * @param scopeId 类型id
+ * @param code 插件code
+ * @param id 插件id
+ */
+export const getPluginConfig = (apigwId: number, scopeType: string, scopeId: number, code: string, id: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`);
+
+/**
+ * 更新插件的配置
+ * @param apigwId 网关id
+ * @param scopeType 类型
+ * @param scopeId 类型id
+ * @param code 插件code
+ * @param id 插件id
+ * @param data 插件的参数
+ */
+export const updatePluginConfig = (apigwId: number, scopeType: string, scopeId: number, code: string, id: number, data: any) => fetch.put(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`, data);
+
+/**
+ * 删除插件的配置
+ * @param apigwId 网关id
+ * @param scopeType 类型
+ * @param scopeId 类型id
+ * @param code 插件code
+ * @param id 插件id
+ */
+export const deletePluginConfig = (apigwId: number, scopeType: string, scopeId: number, code: string, id: number) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`);
+
