@@ -1,7 +1,7 @@
 <template>
   <div class="navigation-main">
     <bk-navigation
-      class="navigation-main-content"
+      :class="['navigation-main-content', route.name === 'apigwResourceVersion' ? 'custom-height-navigation' : '']"
       :default-open="collapse"
       navigation-type="left-right"
       @toggle="handleCollapse"
@@ -224,5 +224,14 @@ const handleBack = () => {
         background: rgb(245, 247, 250);
       }
     }
+}
+</style>
+<style lang="scss">
+.custom-height-navigation {
+  .container-header {
+    flex-basis: 0px !important;
+    padding-top: 26px !important;
+    height: 102px !important;
+  }
 }
 </style>
