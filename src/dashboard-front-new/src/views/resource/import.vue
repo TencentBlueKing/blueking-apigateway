@@ -39,20 +39,18 @@
 </template>
 <script setup lang="ts">
 import editorMonaco from '@/components/ag-editor.vue';
-import {  ref } from 'vue';
+import { ref, watch, nextTick } from 'vue';
 
-const test = ref('test111111');
-
+const test = ref<string>('test111111');
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>(); // 实例化
 
-setTimeout(() => {
-  // console.log(11111, resourceEditorRef.value.setValue('111'));
-  // resourceEditorRef.value.setValue(test.value);
-}, 1000);
+nextTick(() => {
+  resourceEditorRef.value?.setValue(test.value);
+});
 
-// nextTick(() => {
-//   resourceEditorRef
-// })
+watch(test, () => {
+  console.log('tse', test.value);
+});
 
 </script>
 <style scoped lang="scss">

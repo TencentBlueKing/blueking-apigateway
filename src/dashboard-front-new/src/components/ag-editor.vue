@@ -9,29 +9,30 @@ import { ref, onMounted, toRefs, computed, watch, onBeforeMount } from 'vue';
 // 引入monaco编辑器
 import * as monaco from 'monaco-editor';
 
-const editor = ref(null); // 编辑器实例
+let editor = null; // 编辑器实例
 const monacoEditor = ref(null);
 // 定义从父组件接收的属性
 const props = defineProps({
-  value: { type: [String, Object, Array], default: () => 'yaml' },
+  modelValue: { type: [String, Object, Array], default: () => 'yaml' },
   language: { type: String, default: 'yaml' },
   readOnly: { type: Boolean, default: false },
   width: { type: [String, Number], default: '100%' },
   height: { type: [String, Number], default: '100%' },
 });
 
-const { value, language, readOnly, width, height } = toRefs(props);
+const { modelValue, language, readOnly, width, height } = toRefs(props);
+
+const emit = defineEmits(['change', 'update:modelValue']);
 
 // 挂载
 onMounted(() => {
-  console.log('value', value.value);
   initEditor();
 });
 
 // 卸载
 onBeforeMount(() => {
-  editor.value?.dispose();
-  editor.value = null;
+  editor?.dispose();
+  editor = null;
 });
 
 const style = computed(() => ({
@@ -42,30 +43,31 @@ const style = computed(() => ({
 // 设置值
 const setValue = (value) => {
   try {
-    if (!editor.value) return null;
-    return editor.value.setValue(value);
+    if (!editor) return null;
+    console.log('value1234', value);
+    return editor.setValue(value);
   } catch (err) {
     console.log('err', err);
   }
 };
 
 // 非只读模式时，建议手动调用setValue方法，watch在双向绑定时会让编辑器抖动
-watch(value, () => {
-  if (readonly.value) {
-    setValue(value.value);
+watch(modelValue, () => {
+  if (readOnly.value) {
+    setValue(modelValue.value);
   }
 });
 
 // 获取编辑器中的值
 const getValue = () => {
-  if (!editor.value) return '';
-  return editor.value.getValue();
+  if (!editor) return '';
+  return editor.getValue();
 };
 
 // 初始化编辑器
 const initEditor = () => {
-  editor.value = monaco.editor.create(monacoEditor.value, {
-    value: value.value,
+  editor = monaco.editor.create(monacoEditor.value, {
+    value: modelValue.value,
     theme: 'vs-dark', // 主题
     language: language.value,
     folding: true, // 是否折叠
@@ -89,16 +91,16 @@ const initEditor = () => {
 };
 
 const editorMounted = () => {
-  editor.value.onDidChangeModelContent((event) => {
+  editor.onDidChangeModelContent((event) => {
     const yamlValue = getValue();
     emitChange(yamlValue, event);
   });
 };
 
+// 修改editor的值
 const emitChange = (emitValue, event) => {
-  console.log('emitValue', emitValue);
-  ctx.emit('change', emitValue, event);
-  ctx.emit('input', emitValue, event);
+  emit('change', emitValue, event);
+  emit('update:modelValue', emitValue, event);
 };
 
 defineExpose({
