@@ -86,6 +86,13 @@ export const getResourceVersionsList = (apigwId: number, data: any) => fetch.get
 export const getSdksList = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/sdks/?${json2Query(data)}`);
 
 /**
+ *  资源版本对比接口
+ * @param apigwId 网关id
+ * @returns
+ */
+export const resourceVersionsDiff = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource_versions/diff/?${json2Query(data)}`);
+
+/**
  *  sdk创建接口
  * @param apigwId 网关id
  * @param data 数据

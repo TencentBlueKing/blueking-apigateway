@@ -1,3 +1,5 @@
+@import './variable.css';
+
 .ag-tag {
     display: inline-block;
     background: #F0F1F5;
@@ -45,5 +47,31 @@
     &.patch {
         background-color: #DAD6FD ;
         color: #5949E1;
+    }
+}
+
+.ag-strong {
+    font-weight: bold;
+    font-style: normal;
+    color: #313238;
+
+    &.default {
+        color: #979BA5;
+    }
+
+    &.primary {
+        color: $primaryColor;
+    }
+
+    &.success {
+        color: $successColor;
+    }
+
+    &.danger {
+        color: $dangerColor;
+    }
+
+    &.warning {
+        color: $warningColor;
     }
 }

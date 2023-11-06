@@ -3,29 +3,38 @@
     <bk-sideslider
       v-model:isShow="isShow"
       :width="1050"
-      :title="`${t('资源详情')}【${info.version}】`"
+      :title="`${$t('资源详情')}【${info.version}】`"
       quick-close
     >
       <template #default>
         <div class="sideslider-content">
           <div class="sideslider-lf">
-            <bk-input class="mb12" type="search" />
-            <div class="sideslider-lf-title mb8">版本日志</div>
+            <bk-input class="mb12" type="search" clearable v-model="keywords" />
+            <div class="sideslider-lf-title mb8">{{ $t("版本日志") }}</div>
             <div class="sideslider-lf-ul">
-              <div
-                :class="[
-                  'sideslider-lf-li',
-                  'mb8',
-                  currentSource.name === item.name ? 'active' : '',
-                ]"
-                v-for="item in info.resources"
-                :key="item.name"
-                @click="changeCurrentSource(item)"
-              >
-                <bk-overflow-title type="tips">
-                  {{ item.name }}
-                </bk-overflow-title>
-              </div>
+              <template v-if="getResources?.length">
+                <div
+                  :class="[
+                    'sideslider-lf-li',
+                    'mb8',
+                    currentSource.name === item.name ? 'active' : '',
+                  ]"
+                  v-for="item in getResources"
+                  :key="item.name"
+                  @click="changeCurrentSource(item)"
+                >
+                  <bk-overflow-title type="tips">
+                    <span v-html="renderTitle(item.name)"></span>
+                  </bk-overflow-title>
+                </div>
+              </template>
+              <bk-exception
+                v-else
+                class="exception-wrap-item exception-part"
+                type="empty"
+                scene="part"
+                :description="$t('暂无数据')"
+              />
             </div>
           </div>
           <div class="sideslider-rg">
@@ -36,7 +45,7 @@
                 class="bk-collapse-source"
               >
                 <bk-collapse-panel :name="1">
-                  <span><span class="log-name">版本日志</span></span>
+                  <span><span class="log-name">{{ $t("版本日志") }}</span></span>
                   <!-- <template #header>
                     <div class="bk-collapse-header">
                       <right-shape v-show="!activeIndex.includes(1)" />
@@ -57,232 +66,248 @@
                   </span>
                   <template #content>
                     <div class="sideslider-rg-content">
-                      <div class="sideslider-rg-info">
-                        <div class="sideslider-item-title">基本信息</div>
-                        <div class="sideslider-item-content">
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              资源名称：
+                      <p
+                        class="title mt15"
+                      >
+                        {{ $t("基本信息") }}
+                      </p>
+                      <bk-container class="ag-kv-box" :col="14" :margin="6">
+                        <bk-row>
+                          <bk-col :span="4">
+                            <label class="ag-key">{{ $t("资源名称") }}:</label>
+                          </bk-col>
+                          <bk-col :span="10">
+                            <div class="ag-value">
+                              <bk-tag theme="success">
+                                {{ currentSource.name }}
+                              </bk-tag>
                             </div>
-                            <div class="sideslider-item-content-value">
-                              {{ currentSource.name }}
+                          </bk-col>
+                        </bk-row>
+
+                        <bk-row>
+                          <bk-col :span="4">
+                            <label class="ag-key">{{ $t("资源地址") }}:</label>
+                          </bk-col>
+                          <bk-col :span="10">
+                            <div class="ag-value">{{ currentSource.path }}</div>
+                          </bk-col>
+                        </bk-row>
+
+                        <bk-row>
+                          <bk-col :span="4">
+                            <label class="ag-key">{{ $t("描述") }}:</label>
+                          </bk-col>
+                          <bk-col :span="10">
+                            <div class="ag-value">{{ currentSource.description }}</div>
+                          </bk-col>
+                        </bk-row>
+
+                        <bk-row>
+                          <bk-col :span="4">
+                            <label class="ag-key">{{ $t("标签") }}:</label>
+                          </bk-col>
+                          <bk-col :span="10">
+                            <div class="ag-value">
+                              <template v-if="currentSource.gateway_label_ids?.length">
+                                <bk-tag
+                                  v-for="tag in labels?.map((label) => {
+                                    if (currentSource.gateway_label_ids?.includes(label.id))
+                                      return label.name;
+                                  })"
+                                  :key="tag"
+                                >{{ tag }}</bk-tag
+                                >
+                              </template>
+                              <template v-else>
+                                --
+                              </template>
                             </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              资源地址：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              {{ currentSource.path }}
-                            </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              描述：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              {{ currentSource.description }}
-                            </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              标签：
-                            </div>
-                            <div
-                              class="sideslider-item-content-value"
-                              v-if="currentSource.gateway_label_ids?.length"
-                            >
-                              <bk-tag
-                                v-for="tag in currentSource.gateway_label_ids"
-                                :key="tag"
-                              >{{ tag }}</bk-tag
-                              >
-                            </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              认证方式：
-                            </div>
-                            <div class="sideslider-item-content-value">
+                          </bk-col>
+                        </bk-row>
+
+                        <bk-row>
+                          <bk-col :span="4">
+                            <label class="ag-key">{{ $t("认证方式") }}:</label>
+                          </bk-col>
+                          <bk-col :span="10">
+                            <div class="ag-value">
                               {{
                                 getResourceAuth(
                                   currentSource?.contexts?.resource_auth?.config
                                 )
-                              }}
-                            </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              校验应用权限：
-                            </div>
-                            <div class="sideslider-item-content-value">
+                              }}</div>
+                          </bk-col>
+                        </bk-row>
+
+                        <bk-row>
+                          <bk-col :span="4">
+                            <label class="ag-key">{{ $t("校验应用权限") }}:</label>
+                          </bk-col>
+                          <bk-col :span="10">
+                            <div class="ag-value">
                               {{
                                 getPermRequired(
                                   currentSource?.contexts?.resource_auth?.config
                                 )
                               }}
                             </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              是否公开：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              {{ currentSource?.is_public ? "是" : "否" }}
+                          </bk-col>
+                        </bk-row>
+
+                        <bk-row>
+                          <bk-col :span="4">
+                            <label class="ag-key">{{ $t("是否公开") }}:</label>
+                          </bk-col>
+                          <bk-col :span="10">
+                            <div class="ag-value">
+                              {{ currentSource?.is_public ? $t("是") : $t("否") }}
                               {{
                                 currentSource?.allow_apply_permission
-                                  ? "(允许申请权限)"
-                                  : "(不允许申请权限)"
+                                  ? `(${ $t("允许申请权限") })`
+                                  : `(${ $t("不允许申请权限") })`
                               }}
                             </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sideslider-rg-info">
-                        <div class="sideslider-item-title">前端配置</div>
-                        <div class="sideslider-item-content">
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              请求方法：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              <bk-tag theme="success">{{
-                                currentSource.method
-                              }}</bk-tag>
-                            </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              请求路径：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              {{ currentSource.path }}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sideslider-rg-info">
-                        <div class="sideslider-item-title">后端配置</div>
-                        <div class="sideslider-item-content">
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              后端服务地址：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              {{
-                                getRequestConfig(currentSource?.proxy?.config)
-                                  ?.method
-                              }}
-                            </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              服务：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              {{
-                                getRequestConfig(currentSource?.proxy?.config)
-                                  ?.method
-                              }}
-                            </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              请求方法：
-                            </div>
-                            <div class="sideslider-item-content-value">
+                          </bk-col>
+                        </bk-row>
+                      </bk-container>
+
+                      <p
+                        class="title mt15"
+                      >
+                        {{ $t("前端配置") }}
+                      </p>
+                      <bk-container class="ag-kv-box" :col="14" :margin="6">
+                        <bk-row>
+                          <bk-col :span="4">
+                            <label class="ag-key">{{ $t("请求方法") }}:</label>
+                          </bk-col>
+                          <bk-col :span="10">
+                            <div class="ag-value">
                               <bk-tag theme="success">
-                                {{
-                                  getRequestConfig(currentSource?.proxy?.config)
-                                    ?.method
-                                }}
+                                {{ currentSource.method }}
                               </bk-tag>
                             </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              自定义超时时间：
+                          </bk-col>
+                        </bk-row>
+
+                        <bk-row>
+                          <bk-col :span="4">
+                            <label class="ag-key">{{ $t("请求路径") }}:</label>
+                          </bk-col>
+                          <bk-col :span="10">
+                            <div class="ag-value">{{ currentSource.path }}</div>
+                          </bk-col>
+                        </bk-row>
+                      </bk-container>
+
+                      <template v-if="info.schema_version === '2.0'">
+                        <p
+                          class="title mt15"
+                        >
+                          {{ $t("后端配置") }}
+                        </p>
+                        <bk-container class="ag-kv-box" :col="14" :margin="6">
+                          <bk-row>
+                            <bk-col :span="4">
+                              <label class="ag-key">{{ $t("后端服务") }}:</label>
+                            </bk-col>
+                            <bk-col :span="10">
+                              <div class="ag-value">
+                                {{
+                                  currentSource?.proxy?.backend?.name
+                                }}
+                              </div>
+                            </bk-col>
+                          </bk-row>
+
+                          <bk-row>
+                            <bk-col :span="4">
+                              <label class="ag-key">{{ $t("请求方法") }}:</label>
+                            </bk-col>
+                            <bk-col :span="10">
+                              <div class="ag-value">
+                                <bk-tag theme="success">
+                                  {{
+                                    currentSource?.proxy?.config?.method
+                                  }}
+                                </bk-tag>
+                              </div>
+                            </bk-col>
+                          </bk-row>
+
+                          <bk-row>
+                            <bk-col :span="4">
+                              <label class="ag-key">{{ $t("自定义超时时间") }}:</label>
+                            </bk-col>
+                            <bk-col :span="10">
+                              <div class="ag-value">
+                                {{
+                                  currentSource?.proxy?.config?.timeout
+                                }}
+                              </div>
+                            </bk-col>
+                          </bk-row>
+
+                          <bk-row>
+                            <bk-col :span="4">
+                              <label class="ag-key">{{ $t("请求路径") }}:</label>
+                            </bk-col>
+                            <bk-col :span="10">
+                              <div class="ag-value">
+                                {{
+                                  currentSource?.proxy?.config?.path
+                                }}
+                              </div>
+                            </bk-col>
+                          </bk-row>
+                        </bk-container>
+                      </template>
+
+                      <p
+                        class="title mt15"
+                      >
+                        {{ $t("文档") }}
+                      </p>
+                      <bk-container class="ag-kv-box" :col="14" :margin="6">
+                        <bk-row>
+                          <bk-col :span="4">
+                            <label class="ag-key">{{ $t("文档更新时间") }}:</label>
+                          </bk-col>
+                          <bk-col :span="10">
+                            <div class="ag-value">
+                              <template v-if="localLanguage === 'en'">
+                                {{ currentSource?.doc_updated_time?.en || "--" }}
+                              </template>
+                              <template v-else>
+                                {{ currentSource?.doc_updated_time?.zh || "--" }}
+                              </template>
                             </div>
-                            <div class="sideslider-item-content-value">
-                              {{
-                                getRequestConfig(currentSource?.proxy?.config)
-                                  ?.timeout
-                              }}
-                            </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              请求路径：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              {{
-                                getRequestConfig(currentSource?.proxy?.config)
-                                  ?.path
-                              }}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sideslider-rg-info">
-                        <div class="sideslider-item-title">文档</div>
-                        <div class="sideslider-item-content">
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              文档更新时间：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              {{ currentSource.doc_updated_time }}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sideslider-rg-info">
-                        <div class="sideslider-item-title">插件：频率控制</div>
-                        <div class="sideslider-item-content">
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              默认频率控制：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              60次/s
-                            </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              特殊应用频率控制：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              <p>70次/s（蓝鲸应用 ID：889090）</p>
-                              <p>80次/s（蓝鲸应用 ID：889090）</p>
-                              <p>1000次/s（蓝鲸应用 ID：32232）</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sideslider-rg-info">
-                        <div class="sideslider-item-title">
-                          插件：IP 访问保护
-                        </div>
-                        <div class="sideslider-item-content">
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              类型：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              白名单
-                            </div>
-                          </div>
-                          <div class="sideslider-item-content-li">
-                            <div class="sideslider-item-content-label">
-                              IP：
-                            </div>
-                            <div class="sideslider-item-content-value">
-                              <p>（IPv6）192.169.1.10</p>
-                              <p>（IPv6）192.169.1.10</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                          </bk-col>
+                        </bk-row>
+                      </bk-container>
+
+                      <template v-if="info.schema_version === '2.0'">
+                        <template v-for="plugin in currentSource.plugins" :key="plugin.id">
+                          <p
+                            class="title mt15"
+                          >
+                            {{ $t("插件") }}: {{ plugin.name }}
+                          </p>
+                          <bk-container class="ag-kv-box" :col="14" :margin="6">
+                            <bk-row v-for="key in Object.keys(plugin.config)" :key="key">
+                              <bk-col :span="4">
+                                <label class="ag-key">{{ key }}:</label>
+                              </bk-col>
+                              <bk-col :span="10">
+                                <div class="ag-value">
+                                  {{ plugin.config[key] }}
+                                </div>
+                              </bk-col>
+                            </bk-row>
+                          </bk-container>
+                        </template>
+                      </template>
                     </div>
                   </template>
                 </bk-collapse-panel>
@@ -296,16 +321,18 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import cookie from 'cookie';
 // import { RightShape, AngleUpFill } from "bkui-vue/lib/icon";
-import { getResourceVersionsInfo } from '@/http';
+import { getResourceVersionsInfo, getGatewayLabels } from '@/http';
 
 const { t } = useI18n();
 const route = useRoute();
 // 网关id
 const apigwId = +route.params.id;
+const localLanguage =  cookie.parse(document.cookie).blueking_language || 'zh-cn';
 
 const props = defineProps<{
   id: number;
@@ -325,6 +352,13 @@ const getInfo = async () => {
     console.log('res:  ', res);
     info.value = res;
     currentSource.value = res.resources[0] || {};
+    if (currentSource.value?.proxy?.config) {
+      if (typeof currentSource.value?.proxy?.config === 'string') {
+        currentSource.value.proxy.config = JSON.parse(currentSource.value?.proxy?.config);
+      } else {
+        currentSource.value.proxy.config = {};
+      }
+    }
   } catch (e) {
     console.log(e);
   }
@@ -338,10 +372,10 @@ const getResourceAuth = (authStr: string) => {
   const tmpArr: string[] = [];
 
   if (auth?.auth_verified_required) {
-    tmpArr.push('用户认证');
+    tmpArr.push(`${t('用户认证')}`);
   }
   if (auth?.app_verified_required) {
-    tmpArr.push('蓝鲸应用认证');
+    tmpArr.push(`${t('蓝鲸应用认证')}`);
   }
   return tmpArr.join(', ');
 };
@@ -351,14 +385,9 @@ const getPermRequired = (authStr: string) => {
 
   const auth = JSON.parse(authStr);
   if (auth?.resource_perm_required) {
-    return '校验';
+    return `${t('校验')}`;
   }
-  return '不校验';
-};
-
-const getRequestConfig = (configStr: string) => {
-  if (!configStr) return {};
-  return JSON.parse(configStr);
+  return `${t('不校验')}`;
 };
 
 // 显示侧边栏
@@ -366,9 +395,44 @@ const showSideslider = () => {
   isShow.value = true;
 };
 
+// 网关标签
+const labels = ref<any[]>([]);
+const getLabels = async () => {
+  try {
+    const res = await getGatewayLabels(apigwId);
+    labels.value = res;
+  } catch (e) {
+    console.log(e);
+  }
+};
+getLabels();
+
 // 切换资源
 const changeCurrentSource = (source: any) => {
   currentSource.value = source;
+  if (currentSource.value?.proxy?.config) {
+    if (typeof currentSource.value?.proxy?.config === 'string') {
+      currentSource.value.proxy.config = JSON.parse(currentSource.value?.proxy?.config);
+    } else {
+      currentSource.value.proxy.config = {};
+    }
+  }
+};
+
+const keywords = ref('');
+// 搜索
+const getResources = computed(() => {
+  return info.value?.resources?.filter(item => item.name?.includes(keywords.value));
+});
+
+const renderTitle = (name: string) => {
+  let showName = name;
+  if (keywords.value) {
+    const reg = new RegExp(`(${keywords.value})`, 'ig');
+    showName = showName.replace(reg, '<i class="keyword ag-strong primary">$1</i>');
+  }
+
+  return showName;
 };
 
 watch(
@@ -435,33 +499,29 @@ defineExpose({
       color: #63656e;
       font-weight: 700;
     }
-    .sideslider-rg-info {
-      margin-bottom: 12px;
-      .sideslider-item-title {
-        font-size: 12px;
-        color: #63656e;
-        font-weight: 700;
-        line-height: 40px;
-        border-bottom: 1px solid #dddee5;
+    .title {
+      font-size: 13px;
+      color: #63656e;
+      font-weight: bold;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #dcdee5;
+      margin-bottom: 17px;
+    }
+    .ag-kv-box {
+      .bk-grid-row {
+        margin-bottom: 12px;
       }
-      .sideslider-item-content {
-        padding-top: 8px;
-        .sideslider-item-content-li {
-          display: flex;
-          align-items: flex-start;
-          .sideslider-item-content-label {
-            font-size: 12px;
-            color: #63656e;
-            text-align: right;
-            line-height: 32px;
-            width: 120px;
-          }
-          .sideslider-item-content-value {
-            font-size: 12px;
-            color: #313238;
-            line-height: 32px;
-          }
-        }
+      .ag-key {
+        font-size: 14px;
+        color: #63656e;
+        display: block;
+        text-align: right;
+        padding-right: 0;
+      }
+
+      .ag-value {
+        font-size: 14px;
+        color: #313238;
       }
     }
   }

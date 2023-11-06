@@ -3,7 +3,7 @@
     <div class="operate flex-row justify-content-between mt10 mb10">
       <div class="flex-1 flex-row align-items-center">
         <div class="mr10">
-          <bk-button theme="primary" @click="handleVersionCompare">
+          <bk-button theme="primary" @click="handleShowDiff">
             {{ t("版本对比") }}
           </bk-button>
         </div>
@@ -89,6 +89,20 @@
 
     <!-- 资源详情 -->
     <resource-detail :id="resourceVersionId" ref="resourceDetailRef" />
+
+    <!-- 版本对比 -->
+    <bk-sideslider
+      v-model:isShow="diffSidesliderConf.isShow"
+      :title="diffSidesliderConf.title"
+      :width="diffSidesliderConf.width"
+      :quick-close="true">
+      <template #default>
+        <div class="p20">
+          <version-diff ref="diffRef" :source-id="diffSourceId" :target-id="diffTargetId">
+          </version-diff>
+        </div>
+      </template>
+    </bk-sideslider>
   </div>
 </template>
 
@@ -99,6 +113,7 @@ import { useQueryList, useSelection } from '@/hooks';
 import { getResourceVersionsList } from '@/http';
 import createSdk from '../components/createSdk.vue';
 import resourceDetail from '../components/resourceDetail.vue';
+import versionDiff from '@/components/version-diff';
 
 const { t } = useI18n();
 
@@ -128,8 +143,22 @@ const openCreateSdk = (id: number) => {
   createSdkRef.value?.showCreateSdk();
 };
 
+// 版本对比抽屉
+const diffSidesliderConf = reactive({
+  isShow: false,
+  width: 1040,
+  title: t('版本资源对比'),
+});
+const diffSourceId = ref();
+const diffTargetId = ref();
+
 // 版本对比
-const handleVersionCompare = () => {};
+const handleShowDiff = () => {
+  diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
+  diffSidesliderConf.isShow = true;
+  diffSourceId.value = '';
+  diffTargetId.value = '';
+};
 
 // 展示详情
 const handleShowInfo = (id: number) => {
