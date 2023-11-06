@@ -92,11 +92,14 @@
                               <p class="scope-header fw700">{{ t('已绑环境') }}</p>
                               <ul class="scope-list mt10 ml17">
                                 <li
-                                  class="scope-li mb5" @mouseenter="handleScopeHover((i.name))"
-                                  @mouseleave="handlScopeLeave" @click="handeleJumpStage(i)"
-                                  v-for="i in curBindingScopeData.stages" :key="i.id">
-                                  {{ i.name }}
-                                  <span class="icon apigateway-icon icon-ag-jump ml5" v-if="i.name === curHover"></span>
+                                  class="scope-li mb5" @mouseenter="handleScopeHover((stageItem.name))"
+                                  @mouseleave="handlScopeLeave" @click="handeleJumpStage(stageItem)"
+                                  v-for="stageItem in curBindingScopeData.stages" :key="stageItem.id">
+                                  {{ stageItem.name }}
+                                  <span
+                                    class="icon apigateway-icon icon-ag-jump ml5"
+                                    v-if="stageItem.name === curHover">
+                                  </span>
                                 </li>
                               </ul>
                             </div>
@@ -117,11 +120,14 @@
                               <p class="scope-header fw700">{{ t('已绑资源') }}</p>
                               <ul class="scope-list mt10 ml17">
                                 <li
-                                  class="scope-li mb5" @mouseenter="handleScopeHover((i.name))"
-                                  @mouseleave="handlScopeLeave" @click="handeleJumpResource(i)"
-                                  v-for="i in curBindingScopeData.resources" :key="i.id">
-                                  {{ i.name }}
-                                  <span class="icon apigateway-icon icon-ag-jump ml5" v-if="i.name === curHover"></span>
+                                  class="scope-li mb5" @mouseenter="handleScopeHover((resourceItem.name))"
+                                  @mouseleave="handlScopeLeave" @click="handeleJumpResource(resourceItem)"
+                                  v-for="resourceItem in curBindingScopeData.resources" :key="resourceItem.id">
+                                  {{ resourceItem.name }}
+                                  <span
+                                    class="icon apigateway-icon icon-ag-jump ml5"
+                                    v-if="resourceItem.name === curHover">
+                                  </span>
                                 </li>
                               </ul>
                             </div>
@@ -320,7 +326,7 @@ const handleEditePlugin = async (item: any) => {
   const { code, config_id } = item;
   console.log(item);
   console.log(pluginListDate.value);
-  const curEditItem = pluginListDate.value.find((i: { code: string; }) => i.code === code);
+  const curEditItem = pluginListDate.value.find((pluginItem: { code: string; }) => pluginItem.code === code);
   curChoosePlugin.value = curEditItem;
   try {
     const res = await getPluginConfig(apigwId, scopeType.value, scopeId.value, code, config_id);

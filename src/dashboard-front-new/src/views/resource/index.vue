@@ -191,7 +191,7 @@
                   isComponentLoading = !!v
                 }"
                 @deleted-success="getList"
-                @on-jump="jumpScopeId"
+                @on-jump="handleJumpResource"
               />
             </bk-loading>
           </bk-tab-panel>
@@ -448,7 +448,7 @@ const handleShowInfo = (id: number) => {
   }
 };
 
-const jumpScopeId = (id: any) => {
+const handleJumpResource = (id: any) => {
   handleShowInfo(id);
 };
 
