@@ -1,5 +1,5 @@
 import fetch from './fetch';
-import { json2Query } from '@/common/util';
+import { json2Query, blobDownLoad } from '@/common/util';
 
 const { BK_DASHBOARD_URL } = window;
 
@@ -99,3 +99,24 @@ export const resourceVersionsDiff = (apigwId: number, data: any) => fetch.get(`$
  * @returns
  */
 export const createSdks = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/sdks/`, data);
+
+/**
+ * 导出资源
+ * @param apigwId 网关id
+ * @param data 导出参数
+ */
+
+export const exportResources = async (apigwId: number, data: any) => {
+  const res = await fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/export/`, data, { responseType: 'blob' });
+  return blobDownLoad(res);
+};
+
+/**
+ * 导出文档
+ * @param apigwId 网关id
+ * @param data 导出参数
+ */
+export const exportDocs = async (apigwId: number, data: any) => {
+  const res = await fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/docs/export/`, data, { responseType: 'blob' });
+  return blobDownLoad(res);
+};

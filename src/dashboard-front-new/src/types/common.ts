@@ -14,10 +14,17 @@ export interface IDialog {
 export interface IMenu {
   name: string
   title: string
+  icon?: string
   children?: IMenu[]
 }
 
 export interface IMethodList {
   id: string
   name: string
+}
+// drop下拉菜单interface
+export interface IDropList {
+  value: string
+  label: string
+  disabled?: boolean
 }

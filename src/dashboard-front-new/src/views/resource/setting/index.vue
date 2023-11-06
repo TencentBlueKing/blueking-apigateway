@@ -22,7 +22,7 @@
         <ag-dropdown
           :text="t('导入')"
           :dropdown-list="importDropData"
-          @on-change="handleBatchOperate"></ag-dropdown>
+          @on-change="handleImport"></ag-dropdown>
         <ag-dropdown
           :text="t('导出')"
           :dropdown-list="exportDropData"
@@ -46,6 +46,7 @@
             @page-limit-change="handlePageSizeChange"
             @page-value-change="handlePageChange"
             @selection-change="handleSelectionChange"
+            @row-mouse-enter="handleMouseEnter"
             row-hover="auto"
           >
             <bk-table-column
@@ -71,6 +72,9 @@
               width="120"
               v-if="!isDetail"
             >
+              <template #default="{ data }">
+                <bk-tag :theme="methodsEnum[data?.method]">{{ data?.method }}</bk-tag>
+              </template>
             </bk-table-column>
             <bk-table-column
               width="120"
@@ -88,10 +92,13 @@
             </bk-table-column>
             <bk-table-column
               :label="t('文档')"
-              prop="docs"
               width="100"
               v-if="!isDetail"
             >
+              <template #default="{ data }">
+                <section v-if="data?.docs.length">{{ data?.docs }}</section>
+                <section v-else></section>
+              </template>
             </bk-table-column>
             <bk-table-column
               :label="t('标签')"
@@ -243,17 +250,23 @@
       @closed="exportDialogConfig.isShow = false">
       <span class="rosource-number">{{ t('选择全部资源') }}</span>
       <bk-form>
-        <bk-form-item label="性别">
+        <bk-form-item label="导出内容">
           <bk-radio-group v-model="exportDialogConfig.exportFileDocType">
             <bk-radio label="resource">{{ t('资源配置') }}</bk-radio>
             <bk-radio label="docs">{{ t('资源文档') }}</bk-radio>
           </bk-radio-group>
         </bk-form-item>
 
-        <bk-form-item label="导出格式">
-          <bk-radio-group v-model="exportDialogConfig.exportFileType">
+        <bk-form-item label="导出格式" v-if="exportDialogConfig.exportFileDocType === 'resource'">
+          <bk-radio-group v-model="exportParams.file_type">
             <bk-radio class="mt5" label="yaml"> {{ $t('YAML格式') }} </bk-radio>
             <bk-radio label="json"> {{ $t('JSON格式') }} </bk-radio>
+          </bk-radio-group>
+        </bk-form-item>
+        <bk-form-item label="导出格式" v-else>
+          <bk-radio-group v-model="exportParams.file_type">
+            <bk-radio class="mt5" label="zip"> {{ $t('Zip') }} </bk-radio>
+            <bk-radio label="tgz"> {{ $t('Tgz') }} </bk-radio>
           </bk-radio-group>
         </bk-form-item>
       </bk-form>
@@ -265,12 +278,16 @@ import { reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
-import { getResourceListData, deleteResources, batchDeleteResources, batchEditResources } from '@/http';
+import {
+  getResourceListData, deleteResources,
+  batchDeleteResources, batchEditResources,
+  exportResources, exportDocs,
+} from '@/http';
 import { Message } from 'bkui-vue';
 import agDropdown from '@/components/ag-dropdown.vue';
 import Detail from './detail.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
-import { IDialog } from '@/types';
+import { IDialog, IDropList, MethodsEnum } from '@/types';
 const props = defineProps({
   apigwId: {
     type: Number,
@@ -284,20 +301,25 @@ interface IexportParams {
   query?: string
   method?: string
   label_name?: string
+  file_type?: string
+  resource_ids?: Array<number>
 }
 
 interface IexportDialog extends IDialog {
   exportFileDocType: string
-  exportFileType: string
 }
 
+const methodsEnum: any = ref(MethodsEnum);
 const { t } = useI18n();
 // 批量下拉的item
 const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
 // 导入下拉
 const importDropData = ref([{ value: 'config', label: '资源配置' }, { value: 'doc', label: '资源文档' }]);
 // 导出下拉
-const exportDropData = ref([{ value: 'all', label: t('全部资源') }, { value: 'filtered', label: t('已筛选资源') }, { value: 'selected', label: t('已选资源') }]);
+const exportDropData = ref<IDropList[]>([
+  { value: 'all', label: t('全部资源') },
+  { value: 'filtered', label: t('已筛选资源'), disabled: false },
+  { value: 'selected', label: t('已选资源'), disabled: false }]);
 
 const router = useRouter();
 
@@ -306,6 +328,7 @@ const filterData = ref({ query: '' });
 // 导出参数
 const exportParams: IexportParams = reactive({
   export_type: '',
+  file_type: 'yaml',
 });
 
 // 是否批量
@@ -336,7 +359,6 @@ const exportDialogConfig: IexportDialog = reactive({
   title: t('请选择导出的格式'),
   loading: false,
   exportFileDocType: 'resource',
-  exportFileType: 'yaml',
 });
 
 const batchEditData = ref({
@@ -353,11 +375,11 @@ const panels = [
 
 const columns = [
   {
-    label: '请求路径',
+    label: t('请求路径'),
     field: 'path',
   },
   {
-    label: '请求方法',
+    label: t('请求方法'),
     field: 'method',
   },
 ];
@@ -432,7 +454,7 @@ const handleShowList = () => {
 };
 
 // 处理批量编辑或删除
-const handleBatchOperate = async (data: {value: string, label: string}) => {
+const handleBatchOperate = async (data: IDropList) => {
   dialogData.isShow = true;
   // 批量删除
   if (data.value === 'delete') {
@@ -448,23 +470,41 @@ const handleBatchOperate = async (data: {value: string, label: string}) => {
 // 处理导出弹窗显示
 const handleExport = async ({ value }: {value: string}) => {
   console.log('data', value);
+  exportParams.export_type = value;
+  exportDialogConfig.isShow = true;
   switch (value) {
-    case 'all':
+    case 'selected':
+      exportParams.resource_ids = selections.value.map(e => e.id);
+      break;
+    default:
       exportParams.export_type = value;
       exportDialogConfig.isShow = true;
-      break;
-
-    default:
       break;
   }
   exportParams.export_type = value;
 };
 
-// 下载
+// 导出下载
 const handleExportDownload = async () => {
-
+  const params = exportParams;
+  const fetchMethod = exportDialogConfig.exportFileDocType === 'resource' ? exportResources : exportDocs;
+  try {
+    const res = await fetchMethod(props.apigwId, params);
+    if (res.success) {
+      Message({
+        message: t('导出成功'),
+        theme: 'success',
+      });
+    }
+    exportDialogConfig.isShow = false;
+  } catch ({ error }: any) {
+    Message({
+      message: error.message,
+      theme: 'error',
+    });
+  }
 };
-
+// 批量编辑确认
 const handleBatchConfirm = async () => {
   const ids = selections.value.map(e => e.id);
   if (isBatchDelete.value) {
@@ -476,6 +516,7 @@ const handleBatchConfirm = async () => {
       is_public: batchEditData.value.isPublic,
       allow_apply_permission: batchEditData.value.allowApply,
     };
+    // 批量编辑
     await batchEditResources(props.apigwId, params);
   }
   dialogData.isShow = false;
@@ -485,6 +526,18 @@ const handleBatchConfirm = async () => {
   });
   getList();
   resetSelections();
+};
+
+const handleImport = () => {
+  console.log('导入');
+  router.push({
+    name: 'apigwResourceImport',
+  });
+};
+
+// 鼠标进入
+const handleMouseEnter = (e: any, row: any) => {
+  console.log('row', row);
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
@@ -498,10 +551,29 @@ watch(
   { immediate: true },
 );
 
+// 监听导出弹窗
 watch(
   () => exportDialogConfig,
-  (v: any) => {
-    console.log('v', v);
+  (v: IexportDialog) => {
+    if (v.exportFileDocType === 'docs') {
+      exportParams.file_type = 'zip';
+    } else {
+      exportParams.file_type = 'yaml';
+    }
+  },
+  { deep: true },
+);
+
+// 选中的值
+watch(
+  () => selections.value,
+  (v: number[]) => {
+    exportDropData.value.forEach((e: IDropList) => {
+      // 已选资源
+      if (e.value === 'selected') {
+        e.disabled = !v.length;
+      }
+    });
   },
   { immediate: true, deep: true },
 );

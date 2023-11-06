@@ -342,7 +342,7 @@
           >
             {{
               !localSourceId
-                ? $t("请选择源版本123")
+                ? $t("请选择源版本")
                 : !localTargetId
                   ? $t("请选择目标版本")
                   : hasFilter

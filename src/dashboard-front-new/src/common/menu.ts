@@ -4,6 +4,7 @@ export const menuData: IMenu[]  = [
   {
     name: 'apigwStageManage',
     title: '环境管理',
+    icon: 'components',
     children: [
       {
         name: 'apigwStageOverview',
@@ -18,6 +19,7 @@ export const menuData: IMenu[]  = [
   {
     name: 'apigwResourceManage',
     title: '资源管理',
+    icon: 'runtime',
     children: [
       {
         name: 'apigwResource',

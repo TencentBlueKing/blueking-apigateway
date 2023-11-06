@@ -9,6 +9,7 @@ const ApigwMain = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/main.
 const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/setting/index.vue');
 const ApigwResourceEdit = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/setting/edit.vue');
 const apigwResourceVersion = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/version/index.vue');
+const ApigwResourceImport = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/import.vue');
 const apigwStageOverview = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/index.vue');
 const apigwStageDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/index.vue');
 const apigwReleaseHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/published/index.vue');
@@ -43,6 +44,7 @@ const routes: RouteRecordRaw[] = [
           title: '环境管理',
           matchRoute: 'apigwStageOverview',
           isCustomTopbar: 'stageOverview',
+          customHeader: true,
         },
       },
       {
@@ -53,6 +55,7 @@ const routes: RouteRecordRaw[] = [
           title: '环境概览',
           matchRoute: 'apigwStageOverview',
           isCustomTopbar: 'stageOverview',
+          customHeader: true,
         },
         children: [
           {
@@ -143,6 +146,16 @@ const routes: RouteRecordRaw[] = [
           title: '资源版本',
           matchRoute: 'apigwResourceVersion',
           isCustomTopbar: 'resourceVersionOverview',
+        },
+      },
+      {
+        path: '/:id/resource/import',
+        name: 'apigwResourceImport',
+        component: ApigwResourceImport,
+        meta: {
+          title: '导入资源配置',
+          matchRoute: 'apigwResource',
+          showBackIcon: true,
         },
       },
     ],
