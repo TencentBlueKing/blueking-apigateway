@@ -1,8 +1,6 @@
 <template>
   <div class="plugin-container">
-    <bk-loading
-      :loading="isBindingListLoading"
-    >
+    <bk-loading :loading="isBindingListLoading">
       <!-- 默认展示 -->
       <bk-exception
         class="exception-wrap-item" type="empty" :class="{ 'exception-gray': false }"
@@ -19,19 +17,14 @@
         </bk-button>
         <bk-collapse header-icon="right-shape" :list="curBindingPlugins" class="binding-plugins mt20">
           <template #title="slotProps">
-            <span
-              class="f15"
-              @mouseenter="handleTitleHover(slotProps)"
-              @mouseleave="handleTitleLeave">
+            <span class="f15" @mouseenter="handleTitleHover(slotProps)" @mouseleave="handleTitleLeave">
               {{ slotProps.name }}
               <span
-                class="icon apigateway-icon icon-ag-edit-line ml5 mr5 "
-                @click="handleEditePlugin(slotProps)"
+                class="icon apigateway-icon icon-ag-edit-line ml5 mr5 " @click="handleEditePlugin(slotProps)"
                 v-if="slotProps.name === curHoverHead">
               </span>
               <span
-                class="icon apigateway-icon icon-ag-delet "
-                @click="handleDeletePlugin(slotProps)"
+                class="icon apigateway-icon icon-ag-delet " @click="handleDeletePlugin(slotProps)"
                 v-if="slotProps.name === curHoverHead">
               </span>
             </span>
@@ -54,17 +47,14 @@
           <div class="plugins pl20 pr20" v-if="state.curStep === 1">
             <div class="plugin-search">
               <bk-input
-                v-model="searchValue" clearable type="search"
-                :placeholder="t('请输入插件关键字，按Enter搜索')" @enter="handleSearch"
-                @clear="handleClear" />
+                v-model="searchValue" clearable type="search" :placeholder="t('请输入插件关键字，按Enter搜索')"
+                @enter="handleSearch" @clear="handleClear" />
             </div>
-            <bk-loading
-              :loading="isPluginListLoading"
-            >
+            <bk-loading :loading="isPluginListLoading">
               <div class="plugin-list">
                 <div
-                  :class="[isBound(item) ? 'plugin disabled' : 'plugin ']" v-for="item in pluginListDate" :key="item.id"
-                  @click="handleChoosePlugin(item)" @mouseenter="handlePluginHover((item.code))">
+                  :class="[isBound(item) ? 'plugin disabled' : 'plugin ']" v-for="item in pluginListDate"
+                  :key="item.id" @click="handleChoosePlugin(item)" @mouseenter="handlePluginHover((item.code))">
                   <div class="plungin-head">
                     <span class="plugin-icon">
                       {{ pluginCodeFirst(item.code) }}
@@ -90,7 +80,7 @@
                           <template #content>
                             <div class="bingding-scope">
                               <p class="scope-header fw700">{{ t('已绑环境') }}</p>
-                              <ul class="scope-list mt10 ml17">
+                              <ul class="scope-list mt10">
                                 <li
                                   class="scope-li mb5" @mouseenter="handleScopeHover((stageItem.name))"
                                   @mouseleave="handlScopeLeave" @click="handeleJumpStage(stageItem)"
@@ -118,7 +108,7 @@
                           <template #content>
                             <div class="bingding-scope">
                               <p class="scope-header fw700">{{ t('已绑资源') }}</p>
-                              <ul class="scope-list mt10 ml17">
+                              <ul class="scope-list mt10 ">
                                 <li
                                   class="scope-li mb5" @mouseenter="handleScopeHover((resourceItem.name))"
                                   @mouseleave="handlScopeLeave" @click="handeleJumpResource(resourceItem)"
@@ -150,9 +140,7 @@
           <!-- 配置插件 -->
           <div class="plugin-config pl40 pr40 pt20 pb20" v-else>
             <pluginInfo
-              :cur-plugin="curChoosePlugin"
-              :scope-info="curScopeInfo"
-              :type="curType"
+              :cur-plugin="curChoosePlugin" :scope-info="curScopeInfo" :type="curType"
               @on-change="handleOperate">
             </pluginInfo>
           </div>
@@ -179,11 +167,8 @@
       <template #default>
         <div class="plugin-config pl40 pr40 pt20 pb20">
           <pluginInfo
-            :cur-plugin="curChoosePlugin"
-            :scope-info="curScopeInfo"
-            :edit-plugin="curEditPlugin"
-            :type="curType"
-            @on-change="handleOperate">
+            :cur-plugin="curChoosePlugin" :scope-info="curScopeInfo" :edit-plugin="curEditPlugin"
+            :type="curType" @on-change="handleOperate">
           </pluginInfo>
         </div>
       </template>
@@ -295,9 +280,11 @@ const isBound = computed(() => (obj: any) => {
   return flag;
 });
 // hover插件获取其对应绑定的stage和resource数量
-const handlePluginHover = async (code: string) => {
+const handlePluginHover = async (itemCode: string) => {
+  const flag = curBindingPlugins.value.some((item: { code: string; }) => item.code === itemCode);
+  if (flag) return;
   try {
-    const res = await getPluginBindingsList(apigwId, code);
+    const res = await getPluginBindingsList(apigwId, itemCode);
     curBindingScopeData.value = res;
   } catch (error) {
     console.log('error', error);
@@ -362,7 +349,7 @@ const handleDeletePlugin = (item: any) => {
 };
 // 跳转stage
 const handeleJumpStage = (item: any) => {
-  const {  name } = item;
+  const { name } = item;
   const isRouteStage = route.path.includes('stage');
   const query = {
     stage: name,
@@ -652,7 +639,10 @@ init();
 }
 
 .bingding-scope {
+  padding: 5px;
   .scope-list {
+    margin-left: 17px;
+
     :deep(.scope-li) {
       list-style: disc !important;
       cursor: pointer;
@@ -666,6 +656,7 @@ init();
 
 .bindding-info {
   min-height: 480px;
+
   .add-plugin-btn {
     margin-left: 12px;
 
@@ -689,16 +680,19 @@ init();
     }
   }
 }
-.binding-plugins{
-  .apigateway-icon:hover{
+
+.binding-plugins {
+  .apigateway-icon:hover {
     color: #1768ef;
   }
 }
+
 :deep(.bk-collapse-icon-left) {
   .bk-collapse-icon {
     left: 16px;
     top: 15px;
   }
+
   .bk-collapse-item {
     margin-bottom: 5px;
   }

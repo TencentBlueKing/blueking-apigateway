@@ -191,7 +191,9 @@
                   isComponentLoading = !!v
                 }"
                 @deleted-success="getList"
-                @on-jump="handleJumpResource"
+                @on-jump="(id: number | any) => {
+                  handleShowInfo(id)
+                }"
               />
             </bk-loading>
           </bk-tab-panel>
@@ -446,10 +448,6 @@ const handleShowInfo = (id: number) => {
   } else {
     isDetail.value = true;
   }
-};
-
-const handleJumpResource = (id: any) => {
-  handleShowInfo(id);
 };
 
 // 显示列表

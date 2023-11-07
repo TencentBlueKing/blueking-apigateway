@@ -42,8 +42,8 @@
     <div class="info-btn">
       <div class="last-step">
         <bk-button theme="primary" @click="handleAdd">{{ t('确定') }}</bk-button>
-        <bk-button @click="handlePre" class="ml8" v-if="isAdd">{{ t('上一步') }}</bk-button>
-        <bk-button @click="handleCancel" class="ml8">{{ t('取消') }}</bk-button>
+        <bk-button @click="handlePre" class="ml5" v-if="isAdd">{{ t('上一步') }}</bk-button>
+        <bk-button @click="handleCancel" class="ml5">{{ t('取消') }}</bk-button>
       </div>
     </div>
   </div>
@@ -159,9 +159,8 @@ const init = async () => {
     console.log(res);
   } catch (error) {
     console.log('error', error);
-  } finally {
-
   }
+  // 模拟数据
   switch (props.curPlugin.id) {
     case 1:
       configFormData.yaml = 'allow_origins: https://example.com:8081\nallow_origins_by_regex: []\nallow_methods: \' ** \'\nallow_headers: \' ** \'\nexpose_headers: \'\'\nmax_age: 86400';

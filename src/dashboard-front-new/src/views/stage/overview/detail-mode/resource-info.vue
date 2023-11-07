@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQueryList } from '@/hooks';
 import { getResourceVersionsInfo } from '@/http';
@@ -98,14 +98,12 @@ import { useStage, useCommon } from '@/store';
 import { IPagination } from '@/types';
 import error from 'bkui-vue/lib/icon/error';
 
-
 const { t } = useI18n();
 const common = useCommon();
 const stageStore = useStage();
 
 const props = defineProps<{
   versionId: number;
-  stageId: number
 }>();
 
 const searchValue = ref('');
