@@ -53,8 +53,15 @@
       <div class="flex-row justify-content-between">
         <div class="info">
           {{ t('请确认以下资源变更，资源配置：') }}
-          <span class="add-info">{{ t('新建') }}<span class="ag-strong success pl5 pr5">1</span>{{ t('条') }}</span>
-          <span class="add-info">{{ t('覆盖') }}<span class="ag-strong danger pl5 pr5">0</span>{{ t('条') }}</span>
+          <span class="add-info">{{ t('新建') }}
+            <span class="ag-strong success pl5 pr5">
+              {{ createNum }}
+            </span>{{ t('条') }}
+          </span>
+          <span class="add-info">{{ t('覆盖') }}
+            <span class="ag-strong danger pl5 pr5">{{ updateNum }}</span>
+            {{ t('条') }}
+          </span>
           <span v-if="showDoc">
             ，{{ $t('资源文档：') }}
             <span class="add-info">{{ t('新建') }}<span class="ag-strong success pl5 pr5">1</span>{{ t('条') }}</span>
@@ -66,6 +73,8 @@
         class="table-layout"
         :data="tableData"
         show-overflow-tooltip
+        :checked="tableData"
+        @selection-change="handleSelectionChange"
       >
         <bk-table-column
           width="80"
@@ -91,7 +100,7 @@
           prop="path"
         >
           <template #default="{ data }">
-            <span v-if="data?.id">{{ t('覆盖') }}</span>
+            <span class="danger-c" v-if="data?.id">{{ t('覆盖') }}</span>
             <span class="success-c" v-else>{{ t('新建') }}</span>
           </template>
         </bk-table-column>
@@ -100,14 +109,23 @@
 
     <div class="mt15">
       <bk-button
-        theme="primary"
+        :theme="curView === 'import' ? 'primary' : ''"
         @click="handleCheckData"
         :loading="isDataLoading"
       >
-        {{ t('下一步') }}
+        {{ curView === 'import' ? t('下一步') : t('上一步') }}
       </bk-button>
-
-      <bk-button>
+      <span v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }" v-if="curView === 'resources'">
+        <bk-button
+          class="mr10"
+          theme="primary"
+          type="button"
+          :disabled="!selections.length"
+          @click="handleImportResource" :loading="isDataLoading">
+          {{ $t('确定导入') }}
+        </bk-button>
+      </span>
+      <bk-button @click="goBack">
         {{ t('取消') }}
       </bk-button>
     </div>
@@ -115,14 +133,17 @@
 </template>
 <script setup lang="ts">
 import editorMonaco from '@/components/ag-editor.vue';
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import exampleData from '@/constant/example-data';
 import { Message } from 'bkui-vue';
 import { getStrFromFile } from '@/common/util';
-import { checkResourceImport } from '@/http';
+import { checkResourceImport, importResource } from '@/http';
 import { useCommon } from '@/store';
+import { useRouter } from 'vue-router';
+import { useSelection } from '@/hooks';
 
+const router = useRouter();
 const { t } = useI18n();
 const common = useCommon();
 const editorText = ref<string>(exampleData.content);
@@ -133,6 +154,24 @@ const language = ref<string>('zh');
 const isDataLoading = ref<boolean>(false);
 const curView = ref<string>('import'); // 当前页面
 const tableData = ref<any[]>([]);
+
+// 资源新建条数
+const createNum = computed(() => {
+  const results = deDuplication(selections.value.filter(item => !item.id), 'name');
+  return results.length;
+});
+
+// 资源覆盖条数
+const updateNum = computed(() => {
+  const results = deDuplication(selections.value.filter(item => item.id), 'name');
+  return results.length;
+});
+
+// checkbox hooks
+const {
+  selections,
+  handleSelectionChange,
+} = useSelection();
 
 // 设置editor的内容
 const setEditValue = () => {
@@ -160,6 +199,11 @@ const handleReq = (res: any) => {
 };
 // 下一步需要检查数据
 const handleCheckData = async () => {
+  // 上一步按钮功能
+  if (curView.value === 'resources') {
+    curView.value = 'import';
+    return;
+  }
   if (!editorText.value) {
     Message({
       theme: 'error',
@@ -168,17 +212,64 @@ const handleCheckData = async () => {
   }
   try {
     isDataLoading.value = true;
-    const parmas = {
+    const parmas: any = {
       content: editorText.value,
     };
+    // 如果勾选了资源文档
+    if (showDoc.value) {
+      parmas.doc_language = language.value;
+    }
     const res = await checkResourceImport(apigwId, parmas);
     tableData.value = res;
     curView.value = 'resources';
+    nextTick(() => {
+      selections.value = JSON.parse(JSON.stringify(tableData.value));
+    });
+    // resetSelections();
   } catch (error) {
 
   } finally {
     isDataLoading.value = false;
   }
+};
+
+// 确认导入
+const handleImportResource = async () => {
+  try {
+    isDataLoading.value = true;
+    const parmas = {
+      content: editorText.value,
+      selected_resources: selections.value,
+    };
+    await importResource(apigwId, parmas);
+    Message({
+      theme: 'success',
+      message: t('资源导入成功'),
+    });
+    goBack();
+  } catch (error) {
+
+  } finally {
+    isDataLoading.value = false;
+  }
+};
+
+
+const deDuplication = (data: any[], k: string) => {
+  const map = new Map();
+  for (const item of data) {
+    if (!map.has(item[k])) {
+      map.set(item[k], item);
+    }
+  }
+  return [...map.values()];
+};
+
+// 取消返回到资源列表
+const goBack = () => {
+  router.push({
+    name: 'apigwResource',
+  });
 };
 </script>
 <style scoped lang="scss">

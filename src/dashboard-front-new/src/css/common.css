@@ -471,6 +471,10 @@
   color: $successColor;
 }
 
+.danger-c{
+  color: $dangerColor;
+}
+
 .w700{
   width: 700px !important;
 }
