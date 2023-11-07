@@ -17,33 +17,28 @@
  */
 export default {
   content: `\
-  # Swagger yaml format template example
-  swagger: '2.0'
-  basePath: /
-  info:
-    version: '0.1'
-    title: API Gateway Resources
-  schemes:
-  - http
-  paths:
-    /users/:
-      get:
-        operationId: get_users
-        description: get users
-        x-bk-apigateway-resource:
-          isPublic: true
-          backend:
-            type: HTTP
-            method: get
-            path: /users/
-            timeout: 30
-            upstreams:
-              loadbalance: roundrobin
-              hosts:
-              - host: http://0.0.0.1
-                weight: 100
-          authConfig:
-            userVerifiedRequired: false
-        `,
+# Swagger yaml format template example
+swagger: '2.0'
+basePath: /
+info:
+  version: '0.1'
+  title: API Gateway Resources
+schemes:
+- http
+paths:
+  /users/:
+    get:
+      operationId: get_users
+      description: get users
+      x-bk-apigateway-resource:
+        isPublic: true
+        backend:
+          type: HTTP
+          method: get
+          path: /users/
+          timeout: 30
+        authConfig:
+          userVerifiedRequired: false
+      `,
 };
 
