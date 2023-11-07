@@ -85,7 +85,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
     )
     bk_app_codes = serializers.ListField(
-        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, default=list, help_text="网关关联的应用"
+        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, required=False, help_text="网关关联的应用"
     )
 
     class Meta:
@@ -207,7 +207,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
         return GatewayTypeHandler.is_official(self.context["auth_config"].gateway_type)
 
     def get_bk_app_codes(self, obj):
-        return self.context.get("bk_app_codes", [])
+        return self.context["bk_app_codes"]
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
@@ -216,7 +216,7 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
     )
     bk_app_codes = serializers.ListField(
-        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, default=list, help_text="网关关联的应用"
+        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, required=False, help_text="网关关联的应用"
     )
 
     class Meta:

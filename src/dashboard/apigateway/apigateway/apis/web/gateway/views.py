@@ -105,7 +105,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         slz = GatewayCreateInputSLZ(data=request.data, context={"created_by": request.user.username})
         slz.is_valid(raise_exception=True)
 
-        bk_app_codes = slz.validated_data.pop("bk_app_codes")
+        bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
 
         # 1. save gateway
         slz.save(
@@ -191,11 +191,12 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         slz = GatewayUpdateInputSLZ(instance=instance, data=request.data, partial=partial)
         slz.is_valid(raise_exception=True)
 
-        bk_app_codes = slz.validated_data.pop("bk_app_codes")
+        bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
 
         slz.save(updated_by=request.user.username)
 
-        GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
+        if bk_app_codes is not None:
+            GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
 
         GatewayHandler.record_audit_log_success(
             username=request.user.username,

@@ -140,7 +140,6 @@ class TestGatewayCreateInputSLZ:
                     "maintainers": ["guest", "admin"],
                     "developers": [],
                     "is_public": True,
-                    "bk_app_codes": [],
                 },
             ),
             # name length < 3
@@ -291,7 +290,6 @@ class TestGatewayUpdateInputSLZ:
                     "developers": [],
                     "description": "test",
                     "is_public": True,
-                    "bk_app_codes": [],
                 },
             ),
         ],
