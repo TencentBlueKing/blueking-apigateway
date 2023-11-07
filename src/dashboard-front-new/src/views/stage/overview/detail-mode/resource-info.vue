@@ -94,8 +94,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQueryList } from '@/hooks';
 import { getResourceVersionsInfo } from '@/http';
-import { useStage } from '@/store';
-import { useCommon } from '@/store';
+import { useStage, useCommon } from '@/store';
 import { IPagination } from '@/types';
 import error from 'bkui-vue/lib/icon/error';
 
@@ -129,11 +128,11 @@ const resourceVersionList = ref([]);
 watch(
   () => props.versionId,
   () => {
-    if (isReload) {
+    if (isReload.value) {
       // 页面强制刷新 versionId 为空处理
       getResourceVersionsData();
     }
-  }
+  },
 );
 
 // 获取资源信息数据
@@ -150,7 +149,7 @@ const getResourceVersionsData = async () => {
   }
   try {
     const res = await getResourceVersionsInfo(apigwId, props.versionId);
-    pagination.value.count = res.data.length
+    pagination.value.count = res.data.length;
     resourceVersionList.value = res.data || [];
   } catch (e) {
     // 接口404处理

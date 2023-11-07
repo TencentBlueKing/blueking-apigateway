@@ -191,6 +191,9 @@
                   isComponentLoading = !!v
                 }"
                 @deleted-success="getList"
+                @on-jump="(id: number | any) => {
+                  handleShowInfo(id)
+                }"
               />
             </bk-loading>
           </bk-tab-panel>
