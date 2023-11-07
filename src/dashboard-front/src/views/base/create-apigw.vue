@@ -49,6 +49,23 @@
           <i class="apigateway-icon icon-ag-info"></i> {{ $t('仅影响 HomePage 中运维开发分数的计算') }}
         </p>
       </bk-form-item>
+      <bk-form-item
+        v-if="GLOBAL_CONFIG.PLATFORM_FEATURE.GATEWAY_APP_BINDING_ENABLED"
+        :label="$t('关联蓝鲸应用')"
+        :property="'bk_app_codes'"
+        :error-display-type="'normal'"
+      >
+        <bk-tag-input
+          v-model="curApigw.bk_app_codes"
+          :placeholder="$t('请输入蓝鲸应用ID，并按Enter确认')"
+          :allow-create="true"
+          :allow-auto-match="true"
+          :has-delete-icon="true">
+        </bk-tag-input>
+        <p slot="tip" class="ag-tip mt10">
+          <i class="apigateway-icon icon-ag-info"></i> {{ $t('仅影响 HomePage 中运维开发分数的计算') }}
+        </p>
+      </bk-form-item>
       <div class="ag-span"></div>
       <!-- 去除用户类型 -->
       <bk-form-item>
@@ -91,7 +108,8 @@
           statusBoolean: true,
           is_public: true,
           maintainers: [],
-          developers: []
+          developers: [],
+          bk_app_codes: []
         },
         rules: {
           name: [

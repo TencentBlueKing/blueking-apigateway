@@ -88,6 +88,14 @@
               </div>
             </bk-col>
           </template>
+          <!-- 开发者不展示，当前空位展示关联蓝鲸应用 -->
+          <template v-if="!GLOBAL_CONFIG.PLATFORM_FEATURE.GATEWAY_DEVELOPERS_ENABLED && GLOBAL_CONFIG.PLATFORM_FEATURE.GATEWAY_APP_BINDING_ENABLED">
+            <bk-app-col :data="curApigw" />
+          </template>
+        </bk-row>
+        <!-- 开发者展示，关联蓝鲸应用新起一行 -->
+        <bk-row v-if="GLOBAL_CONFIG.PLATFORM_FEATURE.GATEWAY_DEVELOPERS_ENABLED && GLOBAL_CONFIG.PLATFORM_FEATURE.GATEWAY_APP_BINDING_ENABLED">
+          <bk-app-col :data="curApigw" :col="10" />
         </bk-row>
         <bk-row>
           <bk-col :span="2">
@@ -200,8 +208,10 @@
 
 <script>
   import { catchErrorHandler } from '@/common/util'
+  import bkAppCol from './components/bk-app-col.vue'
 
   export default {
+    components: { bkAppCol },
     data () {
       return {
         isPageLoading: true,
@@ -213,7 +223,8 @@
           statusForFe: false,
           is_public: true,
           maintainers: [],
-          developers: []
+          developers: [],
+          bk_app_codes: []
         },
         delApigwDialog: {
           visiable: false,
