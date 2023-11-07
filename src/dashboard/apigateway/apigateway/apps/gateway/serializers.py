@@ -57,7 +57,7 @@ class GatewayCreateSLZ(serializers.ModelSerializer):
     bk_app_codes = serializers.ListField(
         child=serializers.RegexField(APP_CODE_PATTERN),
         allow_empty=True,
-        default=list,
+        required=False,
     )
 
     class Meta:
@@ -112,7 +112,7 @@ class GatewayUpdateSLZ(serializers.ModelSerializer):
     bk_app_codes = serializers.ListField(
         child=serializers.RegexField(APP_CODE_PATTERN),
         allow_empty=True,
-        default=list,
+        required=False,
     )
 
     class Meta:
@@ -125,13 +125,6 @@ class GatewayUpdateSLZ(serializers.ModelSerializer):
             "bk_app_codes",
         )
         lookup_field = "id"
-
-    def update(self, instance, validated_data):
-        # 更新绑定的应用
-        bk_app_codes = validated_data.pop("bk_app_codes", [])
-        GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
-
-        return super().update(instance, validated_data)
 
 
 class GatewayUpdateStatusSLZ(serializers.ModelSerializer):

@@ -26,6 +26,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.gateway import serializers
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.common.contexts import APIAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.controller.tasks import revoke_release, rolling_update_release
@@ -67,7 +68,7 @@ class GatewayViewSet(BaseGatewayViewSet):
             gateway=slz.instance,
             user_auth_type=slz.validated_data["user_auth_type"],
             username=request.user.username,
-            app_codes_to_binding=slz.validated_data["bk_app_codes"],
+            app_codes_to_binding=slz.validated_data.get("bk_app_codes"),
         )
 
         # 3. record audit log
@@ -115,9 +116,15 @@ class GatewayViewSet(BaseGatewayViewSet):
         slz = serializers.GatewayUpdateSLZ(instance, data=request.data)
         slz.is_valid(raise_exception=True)
 
+        bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
+
         slz.save(
             updated_by=request.user.username,
         )
+
+        # 更新绑定的应用
+        if bk_app_codes is not None:
+            GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
 
         GatewayHandler().add_update_audit_log(slz.instance, request.user.username)
 

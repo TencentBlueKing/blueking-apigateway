@@ -92,7 +92,6 @@ class TestAPICreateSLZ:
                     "is_public": True,
                     "hosting_type": 1,
                     "user_auth_type": "ieod",
-                    "bk_app_codes": [],
                 },
                 False,
             ),
@@ -241,7 +240,6 @@ class TestAPIUpdateSLZ(TestCase):
                     "developers": [],
                     "description": "test",
                     "is_public": True,
-                    "bk_app_codes": [],
                 },
             },
             # ok, input parameters include status
@@ -256,7 +254,6 @@ class TestAPIUpdateSLZ(TestCase):
                     "developers": [],
                     "description": "test",
                     "is_public": True,
-                    "bk_app_codes": [],
                 },
             },
         ]
