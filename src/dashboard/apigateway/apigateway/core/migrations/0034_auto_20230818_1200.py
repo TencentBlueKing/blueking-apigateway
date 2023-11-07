@@ -24,7 +24,7 @@ from django_add_default_value import AddDefaultValue
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0032_gateway__developers'),
+        ('core', '0033_gatewayappbinding'),
     ]
 
     operations = [

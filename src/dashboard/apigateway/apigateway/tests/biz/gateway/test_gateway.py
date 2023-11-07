@@ -30,7 +30,16 @@ from apigateway.core.constants import (
     GatewayTypeEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import JWT, Context, Gateway, GatewayRelatedApp, Release, Resource, Stage
+from apigateway.core.models import (
+    JWT,
+    Context,
+    Gateway,
+    GatewayAppBinding,
+    GatewayRelatedApp,
+    Release,
+    Resource,
+    Stage,
+)
 
 
 class TestGatewayHandler:
@@ -223,7 +232,7 @@ class TestGatewayHandler:
                 }
             ),
         )
-        GatewayHandler.save_related_data(fake_gateway, "default", "admin", "test")
+        GatewayHandler.save_related_data(fake_gateway, "default", "admin", "test", app_codes_to_binding=["app1"])
 
         assert Context.objects.filter(
             scope_type=ContextScopeTypeEnum.GATEWAY.value,
@@ -235,6 +244,7 @@ class TestGatewayHandler:
         assert Stage.objects.filter(gateway=fake_gateway).exists()
         assert AlarmStrategy.objects.filter(gateway=fake_gateway).exists()
         assert GatewayRelatedApp.objects.filter(gateway=fake_gateway, bk_app_code="test").exists()
+        assert GatewayAppBinding.objects.filter(gateway=fake_gateway).exists()
 
     def test_delete_gateway(
         self,

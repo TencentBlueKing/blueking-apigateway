@@ -709,7 +709,10 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
 
 
 class GatewayRelatedApp(TimestampedModelMixin):
-    """网关关联的蓝鲸应用"""
+    """
+    网关关联的蓝鲸应用
+    - 应用可以通过 openapi 操作网关数据
+    """
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     bk_app_code = models.CharField(max_length=32, db_index=True)
@@ -719,6 +722,23 @@ class GatewayRelatedApp(TimestampedModelMixin):
 
     class Meta:
         db_table = "core_api_related_app"
+
+
+class GatewayAppBinding(TimestampedModelMixin, OperatorModelMixin):
+    """
+    网关绑定的蓝鲸应用
+    - 仅影响 HomePage 中运维开发分数的计算
+    """
+
+    gateway = models.ForeignKey(Gateway, on_delete=models.CASCADE)
+    bk_app_code = models.CharField(max_length=32, db_index=True)
+
+    def __str__(self):
+        return f"<GatewayAppBinding: {self.bk_app_code}/{self.gateway_id}>"
+
+    class Meta:
+        db_table = "core_gateway_app_binding"
+        unique_together = ("gateway", "bk_app_code")
 
 
 # ============================================ gateway instance ============================================

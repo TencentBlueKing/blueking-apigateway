@@ -20,6 +20,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
+from apigateway.biz.constants import APP_CODE_PATTERN
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
 from apigateway.core.constants import (
@@ -83,6 +84,9 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
     developers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
     )
+    bk_app_codes = serializers.ListField(
+        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, default=list, help_text="网关关联的应用"
+    )
 
     class Meta:
         model = Gateway
@@ -92,6 +96,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
             "maintainers",
             "developers",
             "is_public",
+            "bk_app_codes",
         )
         lookup_field = "id"
 
@@ -140,6 +145,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     docs_url = serializers.SerializerMethodField(help_text="文档地址")
     public_key_fingerprint = serializers.SerializerMethodField(help_text="公钥(指纹)")
     allow_update_gateway_auth = serializers.SerializerMethodField(help_text="是否允许更新网关认证配置")
+    bk_app_codes = serializers.SerializerMethodField(help_text="网关关联的应用")
 
     class Meta:
         model = Gateway
@@ -159,6 +165,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "api_domain",
             "docs_url",
             "public_key_fingerprint",
+            "bk_app_codes",
         )
         read_only_fields = fields
         lookup_field = "id"
@@ -199,11 +206,17 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     def get_is_official(self, obj):
         return GatewayTypeHandler.is_official(self.context["auth_config"].gateway_type)
 
+    def get_bk_app_codes(self, obj):
+        return self.context.get("bk_app_codes", [])
+
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
     developers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
+    )
+    bk_app_codes = serializers.ListField(
+        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, default=list, help_text="网关关联的应用"
     )
 
     class Meta:
@@ -213,6 +226,7 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
             "maintainers",
             "developers",
             "is_public",
+            "bk_app_codes",
         )
         lookup_field = "id"
 

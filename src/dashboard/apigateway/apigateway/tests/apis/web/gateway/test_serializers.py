@@ -114,6 +114,7 @@ class TestGatewayCreateInputSLZ:
                     "maintainers": ["guest"],
                     "developers": ["t1", "t2"],
                     "is_public": True,
+                    "bk_app_codes": ["app1", "app2"],
                 },
                 {
                     "name": "test",
@@ -121,6 +122,25 @@ class TestGatewayCreateInputSLZ:
                     "maintainers": ["guest", "admin"],
                     "developers": ["t1", "t2"],
                     "is_public": True,
+                    "bk_app_codes": ["app1", "app2"],
+                },
+            ),
+            # ok, default value
+            (
+                False,
+                {
+                    "name": "test",
+                    "description": "test",
+                    "maintainers": ["guest"],
+                    "is_public": True,
+                },
+                {
+                    "name": "test",
+                    "description": "test",
+                    "maintainers": ["guest", "admin"],
+                    "developers": [],
+                    "is_public": True,
+                    "bk_app_codes": [],
                 },
             ),
             # name length < 3
@@ -232,6 +252,7 @@ class TestGatewayRetrieveOutputSLZ:
             "docs_url": "http://apigw.demo.com/docs/",
             "public_key_fingerprint": calculate_fingerprint(jwt.public_key),
             "is_official": False,
+            "bk_app_codes": [],
         }
 
         assert slz.data == expected
@@ -247,12 +268,14 @@ class TestGatewayUpdateInputSLZ:
                     "developers": ["foo"],
                     "description": "test",
                     "is_public": True,
+                    "bk_app_codes": ["app1", "app2"],
                 },
                 {
                     "maintainers": ["admin"],
                     "developers": ["foo"],
                     "description": "test",
                     "is_public": True,
+                    "bk_app_codes": ["app1", "app2"],
                 },
             ),
             # input include status
@@ -268,6 +291,7 @@ class TestGatewayUpdateInputSLZ:
                     "developers": [],
                     "description": "test",
                     "is_public": True,
+                    "bk_app_codes": [],
                 },
             ),
         ],

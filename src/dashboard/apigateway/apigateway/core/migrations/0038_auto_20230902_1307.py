@@ -25,7 +25,7 @@ from django_add_default_value import AddDefaultValue
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0036_proxy_backend'),
+        ('core', '0037_proxy_backend'),
     ]
 
     operations = [

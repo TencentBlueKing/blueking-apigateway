@@ -24,7 +24,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0034_backend_backendconfig'),
+        ('core', '0035_backend_backendconfig'),
     ]
 
     operations = [
