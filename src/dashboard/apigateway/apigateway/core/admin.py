@@ -23,6 +23,7 @@ from apigateway.core.models import (
     BackendService,
     Context,
     Gateway,
+    GatewayAppBinding,
     MicroGateway,
     MicroGatewayReleaseHistory,
     Proxy,
@@ -167,6 +168,12 @@ class SslCertificateBindingAdmin(admin.ModelAdmin):
     list_filter = ["api"]
 
 
+class GatewayAppBindingAdmin(admin.ModelAdmin):
+    list_display = ["id", "gateway", "bk_app_code", "updated_time"]
+    search_fields = ["gateway__id", "bk_app_code"]
+    list_filter = ["gateway"]
+
+
 admin.site.register(Gateway, GatewayAdmin)
 admin.site.register(Stage, StageAdmin)
 admin.site.register(StageItem, StageItemAdmin)
@@ -187,3 +194,4 @@ admin.site.register(MicroGatewayReleaseHistory, MicroGatewayReleaseHistoryAdmin)
 admin.site.register(BackendService, BackendServiceAdmin)
 admin.site.register(SslCertificate, SslCertificateAdmin)
 admin.site.register(SslCertificateBinding, SslCertificateBindingAdmin)
+admin.site.register(GatewayAppBinding, GatewayAppBindingAdmin)
