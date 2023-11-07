@@ -24,7 +24,16 @@ from django_dynamic_fixture import G
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import APITypeEnum, ContextScopeTypeEnum, ContextTypeEnum
-from apigateway.core.models import JWT, APIRelatedApp, Context, Gateway, Release, ResourceVersion, Stage
+from apigateway.core.models import (
+    JWT,
+    APIRelatedApp,
+    Context,
+    Gateway,
+    GatewayAppBinding,
+    Release,
+    ResourceVersion,
+    Stage,
+)
 
 
 class TestGatewayHandler:
@@ -213,7 +222,7 @@ class TestGatewayHandler:
                 }
             ),
         )
-        GatewayHandler().save_related_data(fake_gateway, "default", "admin", "test")
+        GatewayHandler().save_related_data(fake_gateway, "default", "admin", "test", app_codes_to_binding=["app1"])
 
         assert Context.objects.filter(
             scope_type=ContextScopeTypeEnum.API.value, type=ContextTypeEnum.API_AUTH.value, scope_id=fake_gateway.id
@@ -223,6 +232,7 @@ class TestGatewayHandler:
         assert Stage.objects.filter(api=fake_gateway).exists()
         assert AlarmStrategy.objects.filter(api=fake_gateway).exists()
         assert APIRelatedApp.objects.filter(api=fake_gateway, bk_app_code="test").exists()
+        assert GatewayAppBinding.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
 
     def test_delete_api(
         self,

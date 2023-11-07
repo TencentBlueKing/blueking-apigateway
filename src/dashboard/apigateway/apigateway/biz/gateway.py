@@ -161,7 +161,7 @@ class GatewayHandler:
             APIRelatedApp.objects.add_related_app(gateway.id, related_app_code)
 
         # 6. 更新待绑定的应用
-        if app_codes_to_binding:
+        if app_codes_to_binding is not None:
             GatewayAppBindingHandler.update_gateway_app_bindings(gateway, app_codes_to_binding)
 
         # 7. 在权限中心注册分级管理员，创建用户组
