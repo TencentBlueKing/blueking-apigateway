@@ -44,7 +44,6 @@ const style = computed(() => ({
 const setValue = (value) => {
   try {
     if (!editor) return null;
-    console.log('value1234', value);
     return editor.setValue(value);
   } catch (err) {
     console.log('err', err);
