@@ -422,7 +422,7 @@ const changeCurrentSource = (source: any) => {
 const keywords = ref('');
 // 搜索
 const getResources = computed(() => {
-  return info.value?.resources?.filter(item => item.name?.includes(keywords.value));
+  return info.value?.resources?.filter((item: any) => item.name?.includes(keywords.value));
 });
 
 const renderTitle = (name: string) => {
@@ -448,6 +448,12 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
+.mb8 {
+  margin-bottom: 8px;
+}
+.mb12 {
+  margin-bottom: 12px;
+}
 .sideslider-content {
   width: 100%;
   display: flex;

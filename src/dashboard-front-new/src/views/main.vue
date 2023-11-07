@@ -228,10 +228,8 @@ const handleBack = () => {
 </style>
 <style lang="scss">
 .custom-height-navigation {
-  .container-header {
-    flex-basis: 0px !important;
-    padding-top: 26px !important;
-    height: 102px !important;
+  .content-header {
+    border-bottom: none !important;
   }
 }
 </style>
