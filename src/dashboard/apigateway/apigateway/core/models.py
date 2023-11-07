@@ -719,6 +719,7 @@ class GatewayAppBinding(TimestampedModelMixin, OperatorModelMixin):
 
     class Meta:
         db_table = "core_gateway_app_binding"
+        unique_together = ("gateway", "bk_app_code")
 
 
 # ============================================ gateway instance ============================================
