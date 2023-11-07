@@ -231,6 +231,7 @@ class TestGatewayRetrieveOutputSLZ:
                     gateway_type=GatewayTypeEnum.CLOUDS_API.value,
                     allow_update_gateway_auth=True,
                 ),
+                "bk_app_codes": [],
             },
         )
         jwt = GatewayJWTHandler.create_jwt(fake_gateway)

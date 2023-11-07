@@ -55,9 +55,8 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
         return self.context["gateway_auth_configs"][obj.id].user_auth_type
 
     def get_maintainers(self, obj):
-        # 网关对外的维护者，便于用户咨询网关问题，默认使用开发者；maintainers 为有权限管理网关的管理者
-        # TODO: 是否应该使用开发者，如何让网关管理员知道开发者用于 API 文档中展示为网关的维护者
-        return obj.developers or obj.maintainers
+        # TODO: 网关对外的维护者（助手号），便于用户咨询网关问题，需要单独使用一个新字段去维护？
+        return obj.maintainers
 
 
 class GatewayRetrieveV1OutputSLZ(GatewayListV1OutputSLZ):
