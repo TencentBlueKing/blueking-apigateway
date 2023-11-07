@@ -118,7 +118,7 @@
 import { ref, defineExpose, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
-import { useCommon } from '../../../store';
+import { useCommon } from '../../../../store';
 import { useGetGlobalProperties } from '@/hooks';
 
 const props = defineProps({

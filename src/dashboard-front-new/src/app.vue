@@ -3,7 +3,7 @@ import {
   ref,
   computed,
 } from 'vue';
-import UserInfo from '@/components/user-info.vue';
+import * as UserInfo from '@/components/user-info.vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { useUser } from '@/store';
