@@ -67,6 +67,7 @@ class GatewayViewSet(BaseGatewayViewSet):
             gateway=slz.instance,
             user_auth_type=slz.validated_data["user_auth_type"],
             username=request.user.username,
+            app_codes_to_binding=slz.validated_data["bk_app_codes"],
         )
 
         # 3. record audit log

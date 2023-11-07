@@ -23,8 +23,15 @@ from rest_framework.validators import UniqueTogetherValidator
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.gateway.utils import get_gateway_feature_flags
+from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.common.contexts import APIAuthContext, APIFeatureFlagContext
-from apigateway.core.constants import API_NAME_PATTERN, APIHostingTypeEnum, APITypeEnum, UserAuthTypeEnum
+from apigateway.core.constants import (
+    API_NAME_PATTERN,
+    APP_CODE_PATTERN,
+    APIHostingTypeEnum,
+    APITypeEnum,
+    UserAuthTypeEnum,
+)
 from apigateway.core.models import Gateway
 from apigateway.core.validators import ReservedAPINameValidator
 from apigateway.utils.crypto import calculate_fingerprint
@@ -47,6 +54,11 @@ class GatewayCreateSLZ(serializers.ModelSerializer):
         choices=APIHostingTypeEnum.get_choices(),
         default=settings.DEFAULT_GATEWAY_HOSTING_TYPE,
     )
+    bk_app_codes = serializers.ListField(
+        child=serializers.RegexField(APP_CODE_PATTERN),
+        allow_empty=True,
+        default=list,
+    )
 
     class Meta:
         model = Gateway
@@ -59,8 +71,9 @@ class GatewayCreateSLZ(serializers.ModelSerializer):
             "is_public",
             "user_auth_type",
             "hosting_type",
+            "bk_app_codes",
         )
-        no_write_fields = ["user_auth_type"]
+        no_write_fields = ["user_auth_type", "bk_app_codes"]
         lookup_field = "id"
 
         # 使用 UniqueTogetherValidator，方便错误提示信息统一处理
@@ -96,6 +109,11 @@ class GatewayCreateSLZ(serializers.ModelSerializer):
 class GatewayUpdateSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
+    bk_app_codes = serializers.ListField(
+        child=serializers.RegexField(APP_CODE_PATTERN),
+        allow_empty=True,
+        default=list,
+    )
 
     class Meta:
         model = Gateway
@@ -104,8 +122,16 @@ class GatewayUpdateSLZ(serializers.ModelSerializer):
             "maintainers",
             "developers",
             "is_public",
+            "bk_app_codes",
         )
         lookup_field = "id"
+
+    def update(self, instance, validated_data):
+        # 更新绑定的应用
+        bk_app_codes = validated_data.pop("bk_app_codes", [])
+        GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
+
+        return super().update(instance, validated_data)
 
 
 class GatewayUpdateStatusSLZ(serializers.ModelSerializer):
@@ -133,6 +159,7 @@ class GatewayDetailSLZ(serializers.ModelSerializer):
         max_length=512,
         required=False,
     )
+    bk_app_codes = serializers.SerializerMethodField()
 
     class Meta:
         model = Gateway
@@ -156,6 +183,7 @@ class GatewayDetailSLZ(serializers.ModelSerializer):
             "public_key_fingerprint",
             "feature_flags",
             "is_official",
+            "bk_app_codes",
         )
         extra_kwargs = {
             "description_en": {
@@ -185,6 +213,9 @@ class GatewayDetailSLZ(serializers.ModelSerializer):
         api_type = self.context["auth_config"]["api_type"]
         return APITypeEnum.is_official(api_type)
 
+    def get_bk_app_codes(self, obj):
+        return self.context.get("bk_app_codes", [])
+
     @classmethod
     def from_instance(cls, instance: Gateway):
         # 根据网关实例创建，简化调用
@@ -193,6 +224,7 @@ class GatewayDetailSLZ(serializers.ModelSerializer):
             context={
                 "auth_config": APIAuthContext().get_config(instance.pk),
                 "feature_flags": APIFeatureFlagContext().get_config(instance.pk, {}),
+                "bk_app_codes": GatewayAppBindingHandler.get_bound_app_codes(instance),
             },
         )
 
