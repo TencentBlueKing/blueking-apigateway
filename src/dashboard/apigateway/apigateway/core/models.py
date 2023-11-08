@@ -709,7 +709,10 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
 
 
 class GatewayRelatedApp(TimestampedModelMixin):
-    """网关关联的蓝鲸应用"""
+    """
+    网关关联的蓝鲸应用
+    - 应用可以通过 openapi 操作网关数据
+    """
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     bk_app_code = models.CharField(max_length=32, db_index=True)
