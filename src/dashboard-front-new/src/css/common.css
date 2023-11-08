@@ -181,14 +181,8 @@
 .mb5 {
   margin-bottom: 5px !important;
 }
-.mb8 {
-  margin-bottom: 8px !important;
-}
 .mb10 {
   margin-bottom: 10px !important;
-}
-.mb12 {
-  margin-bottom: 12px !important;
 }
 .mb15 {
   margin-bottom: 15px !important;
@@ -479,3 +473,6 @@
   width: 700px !important;
 }
 
+.fw700{
+  font-weight: 700;
+}

@@ -1,127 +1,131 @@
 <template>
-  <div class="detail-mode">
-    <bk-loading :loading="stageStore.realStageMainLoading">
-      <section class="stagae-info">
-        <div class="stage-name">
-          <span class="name">{{ stageData.name }}</span>
-        </div>
-        <div class="info">
-          <div class="column">
-            <div class="apigw-form-item">
-              <div class="label">{{ `${t('访问地址')}：` }}</div>
-              <div class="value url" >
-                <p class="link" v-overflow-title>--</p>
-                <i
-                  class="apigateway-icon icon-ag-copy-info"
-                  @click.self.stop="copy('--')"
-                ></i>
+  <div>
+    <!-- 自定义头部 -->
+    <stage-top-bar />
+    <div class="detail-mode">
+      <bk-loading :loading="stageStore.realStageMainLoading">
+        <section class="stagae-info">
+          <div class="stage-name">
+            <span class="name">{{ stageData.name }}</span>
+          </div>
+          <div class="info">
+            <div class="column">
+              <div class="apigw-form-item">
+                <div class="label">{{ `${t('访问地址')}：` }}</div>
+                <div class="value url">
+                  <p class="link" v-overflow-title>--</p>
+                  <i
+                    class="apigateway-icon icon-ag-copy-info"
+                    @click.self.stop="copy('--')"
+                  ></i>
+                </div>
+              </div>
+              <div class="apigw-form-item">
+                <div class="label">{{ `${t('当前资源版本')}：` }}</div>
+                <div class="value">
+                  <span
+                    class="unrelease"
+                    v-if="stageData.release.status === 'unreleased'"
+                  >
+                    {{ t('尚未发布') }}
+                  </span>
+                  <span v-else>{{ stageData.resource_version.version || '--' }}</span>
+                </div>
+              </div>
+              <div class="apigw-form-item">
+                <div class="label">{{ `${t('描述')}：` }}</div>
+                <div class="value" v-overflow-title>
+                  {{ stageData.description || '--' }}
+                </div>
               </div>
             </div>
-            <div class="apigw-form-item">
-              <div class="label">{{ `${t('当前资源版本')}：` }}</div>
-              <div class="value">
-                <span
-                  class="unrelease"
-                  v-if="stageData.release.status === 'unreleased'"
-                >
-                  {{ t('尚未发布') }}
-                </span>
-                <span v-else>{{ stageData.resource_version.version || '--' }}</span>
+            <div class="column">
+              <div class="apigw-form-item">
+                <div class="label">{{ `${t('发布人')}：` }}</div>
+                <div class="value">
+                  {{ stageData.release.created_by || '--' }}
+                </div>
               </div>
-            </div>
-            <div class="apigw-form-item">
-              <div class="label">{{ `${t('描述')}：` }}</div>
-              <div class="value" v-overflow-title>
-                {{ stageData.description || '--' }}
+              <div class="apigw-form-item">
+                <div class="label">{{ `${t('发布时间')}：` }}</div>
+                <div class="value">
+                  {{ stageData.release.created_time || '--' }}
+                </div>
+              </div>
+              <div class="apigw-form-item">
+                <div class="label">{{ `${t('创建时间')}：` }}</div>
+                <div class="value">
+                  {{ stageData.created_time || '--' }}
+                </div>
               </div>
             </div>
           </div>
-          <div class="column">
-            <div class="apigw-form-item">
-              <div class="label">{{ `${t('发布人')}：` }}</div>
-              <div class="value">
-                {{ stageData.release.created_by || '--' }}
-              </div>
-            </div>
-            <div class="apigw-form-item">
-              <div class="label">{{ `${t('发布时间')}：` }}</div>
-              <div class="value">
-                {{ stageData.release.created_time || '--' }}
-              </div>
-            </div>
-            <div class="apigw-form-item">
-              <div class="label">{{ `${t('创建时间')}：` }}</div>
-              <div class="value">
-                {{ stageData.created_time || '--' }}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="operate">
-          <div class="line"></div>
-          <bk-button
-            theme="primary"
-            class="mr10"
-            @click="handleRelease"
-          >
-            {{ t('发布资源') }}
-          </bk-button>
-          <bk-button class="mr10" @click="handleEditStage">{{ t('编辑') }}</bk-button>
-          <bk-dropdown :popover-options="popoverOptions">
-            <bk-button class="more-cls">
-              <i class="apigateway-icon icon-ag-gengduo"></i>
+          <div class="operate">
+            <div class="line"></div>
+            <bk-button
+              theme="primary"
+              class="mr10"
+              @click="handleRelease"
+            >
+              {{ t('发布资源') }}
             </bk-button>
-            <template #content>
-              <bk-dropdown-menu extCls="stage-more-actions">
-                <bk-dropdown-item @click="handleStageUnlist(item)">
-                  {{ t('下架') }}
-                </bk-dropdown-item>
-                <bk-dropdown-item
-                  :extCls="{ disabled: stageData.status === 1 }"
-                  v-bk-tooltips="t('环境下线后，才能删除')"
-                  @click="handleStageDelete(item)"
-                >
-                  {{ t('删除') }}
-                </bk-dropdown-item>
-              </bk-dropdown-menu>
-            </template>
-          </bk-dropdown>
-        </div>
-      </section>
-      <bk-alert
-        type="warning"
-        title="环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作"
-        class="mt15 mb15"
-      ></bk-alert>
-      <div class="tab-wrapper">
-        <bk-tab
-          v-model:active="active"
-          type="card-tab"
-          @change="handleTabChange"
-        >
-          <bk-tab-panel
-            v-for="item in panels"
-            :key="item.name"
-            :name="item.name"
-            :label="item.label"
-            render-directive="if"
+            <bk-button class="mr10" @click="handleEditStage">{{ t('编辑') }}</bk-button>
+            <bk-dropdown :popover-options="popoverOptions">
+              <bk-button class="more-cls">
+                <i class="apigateway-icon icon-ag-gengduo"></i>
+              </bk-button>
+              <template #content>
+                <bk-dropdown-menu ext-cls="stage-more-actions">
+                  <bk-dropdown-item @click="handleStageUnlist(item)">
+                    {{ t('下架') }}
+                  </bk-dropdown-item>
+                  <bk-dropdown-item
+                    :ext-cls="{ disabled: stageData.status === 1 }"
+                    v-bk-tooltips="t('环境下线后，才能删除')"
+                    @click="handleStageDelete(item)"
+                  >
+                    {{ t('删除') }}
+                  </bk-dropdown-item>
+                </bk-dropdown-menu>
+              </template>
+            </bk-dropdown>
+          </div>
+        </section>
+        <bk-alert
+          type="warning"
+          title="环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作"
+          class="mt15 mb15"
+        ></bk-alert>
+        <div class="tab-wrapper">
+          <bk-tab
+            v-model:active="active"
+            type="card-tab"
+            @change="handleTabChange"
           >
-            <router-view
-              :ref="item.name"
-              :stage-id="stageData.id"
-              :key="routeIndex"
-              :version-id="stageData.resource_version.id"
-            ></router-view>
-          </bk-tab-panel>
-        </bk-tab>
-      </div>
-    </bk-loading>
+            <bk-tab-panel
+              v-for="item in panels"
+              :key="item.name"
+              :name="item.name"
+              :label="item.label"
+              render-directive="if"
+            >
+              <router-view
+                :ref="item.name"
+                :stage-id="stageData.id"
+                :key="routeIndex"
+                :version-id="stageData.resource_version.id"
+              ></router-view>
+            </bk-tab-panel>
+          </bk-tab>
+        </div>
+      </bk-loading>
 
-    <!-- 环境侧边栏 -->
-    <edit-stage-sideslider ref="stageSidesliderRef" />
+      <!-- 环境侧边栏 -->
+      <edit-stage-sideslider ref="stageSidesliderRef" />
 
-    <!-- 发布资源至环境 -->
-    <release-sideslider ref="releaseSidesliderRef" />
+      <!-- 发布资源至环境 -->
+      <release-sideslider ref="releaseSidesliderRef" />
+    </div>
   </div>
 </template>
 
@@ -133,7 +137,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useStage } from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
-import { IStageData } from '../types/stage';
+import stageTopBar from '@/components/stage-top-bar.vue';
 import { deleteStage } from '@/http';
 import { Message } from 'bkui-vue';
 import mitt from '@/common/event-bus';
@@ -144,7 +148,7 @@ const route = useRoute();
 const router = useRouter();
 
 const releaseSidesliderRef = ref(null);
-const stageSidesliderRef = ref(null)
+const stageSidesliderRef = ref(null);
 
 // 当前环境信息
 const stageData: any = computed(() => {
@@ -189,12 +193,12 @@ watch(
   () => route.query,
   () => {
     routeIndex.value += 1;
-  }
+  },
 );
 
 // 选项卡切换
 const handleTabChange = (name: string) => {
-  const curPanel = panels.find((item) => item.name === name);
+  const curPanel = panels.find(item => item.name === name);
   router.push({
     name: curPanel.routeName,
     params: {
@@ -209,12 +213,12 @@ const handleRelease = () => {
 };
 
 // 下架环境
-const handleStageUnlist = (item) => {
+const handleStageUnlist = () => {
   console.log('下架');
 };
 
 // 删除环境
-const handleStageDelete = async (item) => {
+const handleStageDelete = async () => {
   if (stageData.value.status === 1) {
     return;
   }
@@ -237,7 +241,7 @@ const handleStageDelete = async (item) => {
 // 编辑环境
 const handleEditStage = () => {
   stageSidesliderRef.value.handleShowSideslider('edit');
-}
+};
 </script>
 
 <style lang="scss" scoped>

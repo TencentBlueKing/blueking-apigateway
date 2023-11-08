@@ -24,6 +24,12 @@
               {{ child.title }}
             </bk-menu-item>
           </bk-submenu>
+          <bk-menu-item @click="handleGoPage('apigwOnlineTest', apigwId)">
+            <template #icon>
+              <i class="icon apigateway-icon icon-ag-debug"></i>
+            </template>
+            {{ $t("在线调试") }}
+          </bk-menu-item>
         </bk-menu>
       </template>
       <template #side-header>
@@ -228,10 +234,8 @@ const handleBack = () => {
 </style>
 <style lang="scss">
 .custom-height-navigation {
-  .container-header {
-    flex-basis: 0px !important;
-    padding-top: 26px !important;
-    height: 102px !important;
+  .content-header {
+    border-bottom: none !important;
   }
 }
 </style>

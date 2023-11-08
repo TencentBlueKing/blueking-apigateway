@@ -75,13 +75,13 @@
             theme="primary"
             class="mr10"
           >
-            查看资源详情
+            {{ t('查看资源详情') }}
           </bk-button>
           <bk-button
             text
             theme="primary"
           >
-            复制资源地址
+            {{ t('复制资源地址') }}
           </bk-button>
         </bk-table-column>
       </bk-table>
@@ -90,18 +90,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useQueryList } from '@/hooks';
 import { getResourceVersionsInfo } from '@/http';
-import { useStage } from '@/store';
 import { useCommon } from '@/store';
-import { IPagination } from '@/types';
-import error from 'bkui-vue/lib/icon/error';
 
 const { t } = useI18n();
 const common = useCommon();
-const stageStore = useStage();
 
 const props = defineProps<{
   versionId: number;
@@ -111,17 +106,15 @@ const searchValue = ref('');
 
 const isReload = ref(false);
 
-const filterData = ref({ query: '' });
-
 // 网关id
 const { apigwId } = common;
 const isLoading = ref(false);
-const initPagination: IPagination = {
+
+const pagination = ref({
   current: 1,
   limit: 10,
   count: 0,
-};
-const pagination = ref(initPagination);
+});
 
 // 资源信息
 const resourceVersionList = ref([]);
@@ -129,11 +122,11 @@ const resourceVersionList = ref([]);
 watch(
   () => props.versionId,
   () => {
-    if (isReload) {
+    if (isReload.value) {
       // 页面强制刷新 versionId 为空处理
       getResourceVersionsData();
     }
-  }
+  },
 );
 
 // 获取资源信息数据
@@ -150,8 +143,8 @@ const getResourceVersionsData = async () => {
   }
   try {
     const res = await getResourceVersionsInfo(apigwId, props.versionId);
-    pagination.value.count = res.data.length
-    resourceVersionList.value = res.data || [];
+    pagination.value.count = res.resources.length;
+    resourceVersionList.value = res.resources || [];
   } catch (e) {
     // 接口404处理
     resourceVersionList.value = [];
