@@ -56,6 +56,7 @@ class TestAPICreateSLZ:
                     "status": 1,
                     "is_public": True,
                     "user_auth_type": "ieod",
+                    "bk_app_codes": ["app1", "app2"],
                 },
                 {
                     "name": "test",
@@ -66,6 +67,7 @@ class TestAPICreateSLZ:
                     "is_public": True,
                     "hosting_type": 0,
                     "user_auth_type": "ieod",
+                    "bk_app_codes": ["app1", "app2"],
                 },
                 False,
             ),
@@ -217,12 +219,14 @@ class TestAPIUpdateSLZ(TestCase):
                 "developers": ["foo"],
                 "description": "test",
                 "is_public": True,
+                "bk_app_codes": ["app1", "app2"],
                 "will_error": False,
                 "expected": {
                     "maintainers": ["admin"],
                     "developers": ["foo"],
                     "description": "test",
                     "is_public": True,
+                    "bk_app_codes": ["app1", "app2"],
                 },
             },
             # ok, is_public is str
@@ -352,6 +356,7 @@ class TestAPIDetailSLZ:
                 "public_key_fingerprint": calculate_fingerprint(self.jwt.public_key),
                 "feature_flags": {"MICRO_GATEWAY_ENABLED": True},
                 "is_official": False,
+                "bk_app_codes": [],
             },
         }
         result = GatewayDetailSLZ.from_instance(self.api)
