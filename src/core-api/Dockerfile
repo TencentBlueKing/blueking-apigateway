@@ -4,7 +4,9 @@ COPY ./ /app
 WORKDIR /app
 
 ARG BINARY=bk-apigateway-core-api
-RUN make build && chmod +x ${BINARY}
+ARG VERSION=latest
+ARG COMMIT=HEAD
+RUN make build -e VERSION=${VERSION} -e COMMIT=${COMMIT} && chmod +x ${BINARY}
 
 # install dlv
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.21.0

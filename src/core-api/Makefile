@@ -1,3 +1,5 @@
+VERSION = `git describe --tags --abbrev=0`
+COMMIT=`git rev-parse HEAD`
 
 .PHONY: init
 init:
@@ -54,7 +56,7 @@ cov:
 
 .PHONY: build
 build:
-	go build -ldflags "-X core/pkg/version.Version=`git describe --tags --abbrev=0` -X core/pkg/version.Commit=`git rev-parse HEAD` -X core/pkg/version.BuildTime=`date +%Y-%m-%d_%I:%M:%S` -X 'core/pkg/version.GoVersion=`go version`'" -o bk-apigateway-core-api
+	go build -ldflags "-X core/pkg/version.Version=$(VERSION) -X core/pkg/version.Commit=$(COMMIT) -X core/pkg/version.BuildTime=`date +%Y-%m-%d_%I:%M:%S` -X 'core/pkg/version.GoVersion=`go version`'" -o bk-apigateway-core-api
 
 .PHONY: serve
 serve: build
@@ -62,4 +64,4 @@ serve: build
 
 .PHONY: dev-image
 dev-image:
-	docker build -f Dockerfile . -t bk-apigateway-core-api:development
+	docker build --build-arg VERSION=`git describe --tags --abbrev=0` --build-arg COMMIT=`git rev-parse HEAD`  -f  Dockerfile . -t bk-apigateway-core-api:development
