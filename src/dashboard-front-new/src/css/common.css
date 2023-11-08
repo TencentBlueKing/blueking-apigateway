@@ -469,6 +469,10 @@
   color: $dangerColor;
 }
 
+.default-c{
+  color: $primaryColor;
+}
+
 .w700{
   width: 700px !important;
 }
