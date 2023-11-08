@@ -1,7 +1,7 @@
-
-.PHONY: init
 VERSION = `git describe --tags --abbrev=0`
 COMMIT=`git rev-parse HEAD`
+
+.PHONY: init
 init:
 	pip install pre-commit
 	pre-commit install
