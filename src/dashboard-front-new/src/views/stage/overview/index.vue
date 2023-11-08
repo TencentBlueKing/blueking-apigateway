@@ -1,15 +1,20 @@
 <template>
-  <div class="stage-overview-wrapper">
-    <bk-loading
-      :loading="stageStore.realStageMainLoading"
-    >
-      <stage-card-list :stage-list="stageStore.stageList" />
-    </bk-loading>
+  <div>
+    <!-- 自定义头部 -->
+    <stage-top-bar />
+    <div class="stage-overview-wrapper">
+      <bk-loading
+        :loading="stageStore.realStageMainLoading"
+      >
+        <stage-card-list :stage-list="stageStore.stageList" />
+      </bk-loading>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import stageCardList from './comps/stage-card-list.vue';
+import stageTopBar from '@/components/stage-top-bar.vue';
 import { useStage } from '@/store';
 
 // 环境列表

@@ -1,6 +1,6 @@
 <template>
   <div class="stage-top-bar">
-    <div class="title">环境概览</div>
+    <div class="title">{{ t('环境概览') }}</div>
     <div class="model-type mr8">
       <div
         v-for="item in modelTypes"
@@ -34,10 +34,12 @@ import { computed, ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { getStageList, getStageDetail } from '@/http';
 import { useStage } from '@/store';
+import { useI18n } from 'vue-i18n';
 import mitt from '@/common/event-bus';
 const router = useRouter();
 const route = useRoute();
 const stageStore = useStage();
+const { t } = useI18n();
 
 const modelTypes = ref([
   {
@@ -151,10 +153,16 @@ const handleChangeStage = async (name: string) => {
 
 <style lang="scss" scoped>
 .stage-top-bar {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  height: 51px;
   display: flex;
   align-items: center;
+  top: 0;
+  width: 100%;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid #dcdee5;
+  box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
   .title {
     color: #313238;
     font-size: 16px;
