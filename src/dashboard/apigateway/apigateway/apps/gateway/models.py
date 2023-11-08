@@ -35,5 +35,5 @@ class GatewayAppBinding(TimestampedModelMixin, OperatorModelMixin):
         return f"<GatewayAppBinding: {self.bk_app_code}/{self.gateway_id}>"
 
     class Meta:
-        db_table = "core_gateway_app_binding"
+        db_table = "gateway_app_binding"
         unique_together = ("gateway", "bk_app_code")
