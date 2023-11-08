@@ -5,6 +5,7 @@ import App from './app.vue';
 import i18n from './language/i18n';
 import './css/index.css';
 import globalConfig from '@/constant/config';
+import directive from '@/directive/index';
 
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
@@ -17,6 +18,7 @@ const app = createApp(App);
 app.config.globalProperties.GLOBAL_CONFIG = globalConfig;
 
 app.use(i18n)
+  .use(directive)
   .use(router)
   .use(createPinia())
   .use(bkui)
