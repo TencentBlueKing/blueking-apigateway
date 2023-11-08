@@ -121,7 +121,7 @@
           theme="primary"
           type="button"
           :disabled="!selections.length"
-          @click="handleImportResource" :loading="isDataLoading">
+          @click="handleImportResource" :loading="isImportLoading">
           {{ $t('确定导入') }}
         </bk-button>
       </span>
@@ -152,6 +152,7 @@ const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>(); // 实�
 const showDoc = ref<boolean>(false);
 const language = ref<string>('zh');
 const isDataLoading = ref<boolean>(false);
+const isImportLoading = ref<boolean>(false);
 const curView = ref<string>('import'); // 当前页面
 const tableData = ref<any[]>([]);
 
@@ -236,7 +237,7 @@ const handleCheckData = async () => {
 // 确认导入
 const handleImportResource = async () => {
   try {
-    isDataLoading.value = true;
+    isImportLoading.value = true;
     const parmas = {
       content: editorText.value,
       selected_resources: selections.value,
@@ -250,7 +251,7 @@ const handleImportResource = async () => {
   } catch (error) {
 
   } finally {
-    isDataLoading.value = false;
+    isImportLoading.value = false;
   }
 };
 
