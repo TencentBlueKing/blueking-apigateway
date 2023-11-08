@@ -731,6 +731,10 @@ BK_API_DEFAULT_STAGE_MAPPINGS = env.dict("BK_API_DEFAULT_STAGE_MAPPINGS", defaul
 
 FAKE_SEND_NOTICE = env.bool("FAKE_SEND_NOTICE", default=False)
 
+# for some legacy gateways, they support both `;` nad `&` as separator of query string
+# so we do a special process for them
+LEGACY_INVALID_PARAMS_GATEWAY_NAMES = env.list("LEGACY_INVALID_PARAMS_GATEWAY_NAMES", default=[])
+
 # ==============================================================================
 # OTEL
 # ==============================================================================
