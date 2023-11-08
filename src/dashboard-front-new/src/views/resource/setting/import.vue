@@ -3,10 +3,6 @@
     <section v-if="curView === 'import'">
       <div class="import-header flex-row justify-content-between">
         <div class="flex-row align-items-center">
-          <!-- <bk-button>
-            <i class="icon apigateway-icon icon-ag-add-small pr10"></i>
-            {{ t('导入 Swagger 文件') }}
-          </bk-button> -->
           <bk-upload
             theme="button"
             :custom-request="handleReq"

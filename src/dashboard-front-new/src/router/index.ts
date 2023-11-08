@@ -10,6 +10,7 @@ const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/r
 const ApigwResourceEdit = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/setting/edit.vue');
 const apigwResourceVersion = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/version/index.vue');
 const ApigwResourceImport = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/setting/import.vue');
+const ApigwResourceImportDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/setting/import-doc.vue');
 const apigwStageOverview = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/index.vue');
 const apigwStageDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/index.vue');
 const apigwReleaseHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/published/index.vue');
@@ -44,7 +45,6 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '环境管理',
           matchRoute: 'apigwStageOverview',
-          isCustomTopbar: 'stageOverview',
           customHeader: true,
         },
       },
@@ -55,7 +55,6 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '环境概览',
           matchRoute: 'apigwStageOverview',
-          isCustomTopbar: 'stageOverview',
           customHeader: true,
         },
         children: [
@@ -66,7 +65,6 @@ const routes: RouteRecordRaw[] = [
             meta: {
               title: '环境概览',
               matchRoute: 'apigwStageOverview',
-              isCustomTopbar: 'stageOverview',
             },
           },
           {
@@ -76,7 +74,6 @@ const routes: RouteRecordRaw[] = [
             meta: {
               title: '环境概览',
               matchRoute: 'apigwStageOverview',
-              isCustomTopbar: 'stageOverview',
             },
           },
           {
@@ -86,7 +83,6 @@ const routes: RouteRecordRaw[] = [
             meta: {
               title: '环境概览',
               matchRoute: 'apigwStageOverview',
-              isCustomTopbar: 'stageOverview',
             },
           },
         ],
@@ -164,6 +160,16 @@ const routes: RouteRecordRaw[] = [
         component: ApigwResourceImport,
         meta: {
           title: '导入资源配置',
+          matchRoute: 'apigwResource',
+          showBackIcon: true,
+        },
+      },
+      {
+        path: '/:id/resource/import-doc',
+        name: 'apigwResourceImportDoc',
+        component: ApigwResourceImportDoc,
+        meta: {
+          title: '导入资源文档',
           matchRoute: 'apigwResource',
           showBackIcon: true,
         },

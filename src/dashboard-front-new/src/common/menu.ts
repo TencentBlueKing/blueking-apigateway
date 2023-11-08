@@ -31,4 +31,9 @@ export const menuData: IMenu[]  = [
       },
     ],
   },
+  {
+    name: 'apigwOnlineTest',
+    title: '在线调试',
+    icon: 'debug',
+  },
 ];
