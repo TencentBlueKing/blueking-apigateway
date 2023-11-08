@@ -99,7 +99,6 @@
                         </bk-select>
                       </bk-form-item>
 
-                      <!-- :icon-offset="curStage.proxy_http.upstreams.loadbalance === 'weighted-roundrobin' ? 90 : 10" -->
                       <bk-form-item
                         label="后端服务地址"
                         v-for="(hostItem, index) of backend.config.hosts"
@@ -211,7 +210,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { getBackendsListData, createStage, getStageDetail, getStageBackends, updateStage } from '@/http';
@@ -315,8 +314,7 @@ const rules = {
     },
     {
       validator(value: string) {
-        const reg =
-          /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
+        const reg = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
         return reg.test(value);
       },
       message: t('请输入合法Host，如：http://example.com'),
@@ -409,7 +407,7 @@ const closeSideslider = () => {
 };
 
 // 显示侧边栏
-const handleShowSideslider = (type) => {
+const handleShowSideslider = (type: string) => {
   // 数据重置
   closeSideslider();
   // 新建环境获取当前网关下的所有后端服务进行配置
@@ -472,7 +470,7 @@ const handleConfirmEdit = async () => {
     params.backends.forEach((v: any) => {
       delete v.name;
     });
-    await updateStage(apigwId, stageId, params)
+    await updateStage(apigwId, stageId, params);
     Message({
       message: t('更新成功'),
       theme: 'success',

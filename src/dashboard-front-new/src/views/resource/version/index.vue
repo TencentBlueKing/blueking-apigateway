@@ -1,5 +1,6 @@
 <template>
   <div>
+    <resource-version-top-bar />
     <edition v-if="resourceVersionStore.tabActive === 'edition'" />
     <sdk v-else />
   </div>
@@ -7,6 +8,7 @@
 
 <script setup lang="ts">
 import { useResourceVersion } from '@/store';
+import resourceVersionTopBar from '@/components/resource-version-top-bar.vue';
 import edition from './edition/index.vue';
 import sdk from './sdk/index.vue';
 
