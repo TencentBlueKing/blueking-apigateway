@@ -16,8 +16,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 from rest_framework import serializers
 from tencent_apigateway_common.i18n.field import SerializerTranslatedField
+
+from apigateway.apps.stage.serializers import StageSLZ
+from apigateway.biz.stage import StageHandler
+from apigateway.core.models import Stage
 
 
 class StageV1SLZ(serializers.Serializer):
@@ -42,3 +48,25 @@ class StageWithResourceVersionV1SLZ(serializers.Serializer):
 
     def get_released(self, obj):
         return bool(obj.resource_version)
+
+
+class StageSyncInputSLZ(StageSLZ):
+    def update(self, instance, validated_data):
+        # 未校验 resource version 中引用的 stage vars 是否存在，
+        # 因此，不触发 update 信号，以防止误发布
+        Stage.objects.filter(id=instance.id).update(
+            description=validated_data.get("description"),
+            description_en=validated_data.get("description_en"),
+            _vars=json.dumps(vars),
+            updated_by=validated_data.get("updated_by", ""),
+        )
+
+        StageHandler.save_related_data(
+            instance,
+            validated_data["proxy_http"],
+            validated_data.get("rate_limit"),
+        )
+
+        StageHandler.add_update_audit_log(validated_data["api"], instance, validated_data.get("updated_by", ""))
+
+        return instance

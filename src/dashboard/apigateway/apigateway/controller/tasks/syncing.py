@@ -22,7 +22,9 @@ from typing import Optional
 from blue_krill.async_utils.django_utils import delay_on_commit
 from celery import shared_task
 from django.conf import settings
+from rest_framework.exceptions import ValidationError
 
+from apigateway.apps.release.validators import ReleaseValidationError, ReleaseValidator
 from apigateway.controller.distributor.combine import CombineDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
 from apigateway.core.constants import APIHostingTypeEnum, APIStatusEnum, StageStatusEnum
@@ -69,6 +71,14 @@ def rolling_update_release(gateway_id, publish_id: Optional[int] = None):
             continue
         elif stage.status != StageStatusEnum.ACTIVE.value:
             procedure_logger.warning("stage is not active, ignored")
+            continue
+
+        try:
+            validator = ReleaseValidator(gateway, stage, release.resource_version_id)
+            validator.validate()
+        except (ValidationError, ReleaseValidationError) as err:
+            procedure_logger.warning(f"release(id={release.pk}) validate failed, ignored, error={err}")
+            has_failure = True
             continue
 
         procedure_logger.info("distribute begin")

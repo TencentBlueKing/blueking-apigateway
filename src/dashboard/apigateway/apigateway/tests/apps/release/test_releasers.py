@@ -27,8 +27,8 @@ from apigateway.apps.release.releasers import (
     MicroGatewayReleaser,
     ReleaseBatchManager,
     ReleaseError,
-    ReleaseValidationError,
 )
+from apigateway.apps.release.validators import ReleaseValidationError
 from apigateway.core.constants import APIHostingTypeEnum, ReleaseStatusEnum
 from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
 

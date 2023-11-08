@@ -21,7 +21,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.stage import serializers
-from apigateway.apps.stage.serializers import StageSLZ
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Release, Stage
@@ -87,14 +86,15 @@ class StageV1ViewSet(viewsets.ViewSet):
 class StageSyncViewSet(viewsets.ViewSet):
     permission_classes = [GatewayRelatedAppPermission]
 
-    @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.Stage"])
+    @swagger_auto_schema(request_body=serializers.StageSyncInputSLZ, tags=["OpenAPI.Stage"])
     def sync(self, request, gateway_name: str, *args, **kwargs):
         instance = get_object_or_None(Stage, api=request.gateway, name=request.data.get("name", ""))
-        slz = StageSLZ(
+        slz = serializers.StageSyncInputSLZ(
             instance,
             data=request.data,
             context={
                 "request": request,
+                "allow_var_not_exist": True,
             },
         )
         slz.is_valid(raise_exception=True)
