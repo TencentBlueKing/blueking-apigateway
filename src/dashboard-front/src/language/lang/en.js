@@ -1215,5 +1215,6 @@ export default {
     "未知错误": "Unknown error",
     "次": "request(s)",
     "开发者": "Developers",
-    "仅影响 HomePage 中运维开发分数的计算": "Only affects the calculation of the DevOps development score in the HomePage."
+    "仅影响 HomePage 中运维开发分数的计算": "Only affects the calculation of the DevOps development score in the HomePage.",
+    "关联蓝鲸应用": "Associated App",
 }
