@@ -109,7 +109,7 @@
                 <section v-if="data?.labels.length">
                   <bk-tag v-for="item in data?.labels" :key="item.id">{{ item.name }}</bk-tag>
                 </section>
-                <section>--</section>
+                <section v-else>--</section>
               </template>
             </bk-table-column>
             <bk-table-column
