@@ -24,6 +24,12 @@
               {{ child.title }}
             </bk-menu-item>
           </bk-submenu>
+          <bk-menu-item @click="handleGoPage('apigwOnlineTest', apigwId)">
+            <template #icon>
+              <i class="icon apigateway-icon icon-ag-debug"></i>
+            </template>
+            {{ $t("在线调试") }}
+          </bk-menu-item>
         </bk-menu>
       </template>
       <template #side-header>
