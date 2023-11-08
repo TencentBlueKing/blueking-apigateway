@@ -16,6 +16,9 @@ const apigwReleaseHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/vi
 const apigwStageResourceInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/resource-info.vue');
 const apigwStagePluginManage = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/plugin-manage.vue');
 const apigwStageVariableManage = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/variable-manage.vue');
+const apigwPermissionApplys = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/apply/index.vue');
+const apigwPermissionApps = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/app/index.vue');
+const apigwPermissionRecords = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/record/index.vue');
 
 
 const routes: RouteRecordRaw[] = [
@@ -156,6 +159,33 @@ const routes: RouteRecordRaw[] = [
           title: '导入资源配置',
           matchRoute: 'apigwResource',
           showBackIcon: true,
+        },
+      },
+      {
+        path: '/:id/permission/applys',
+        name: 'apigwPermissionApplys',
+        component: apigwPermissionApplys,
+        meta: {
+          title: '权限审批',
+          matchRoute: 'apigwPermissionApplys',
+        },
+      },
+      {
+        path: '/:id/permission/apps',
+        name: 'apigwPermissionApps',
+        component: apigwPermissionApps,
+        meta: {
+          title: '应用权限',
+          matchRoute: 'apigwPermissionApps',
+        },
+      },
+      {
+        path: '/:id/permission/records',
+        name: 'apigwPermissionRecords',
+        component: apigwPermissionRecords,
+        meta: {
+          title: '审批历史',
+          matchRoute: 'apigwPermissionRecords',
         },
       },
     ],

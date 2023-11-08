@@ -31,4 +31,23 @@ export const menuData: IMenu[]  = [
       },
     ],
   },
+  {
+    name: 'apigwPermissionManage',
+    title: '权限管理',
+    icon: 'runtime',
+    children: [
+      {
+        name: 'apigwPermissionApplys',
+        title: '权限审批',
+      },
+      {
+        name: 'apigwPermissionApps',
+        title: '应用权限',
+      },
+      {
+        name: 'apigwPermissionRecords',
+        title: '审批历史',
+      },
+    ],
+  },
 ];
