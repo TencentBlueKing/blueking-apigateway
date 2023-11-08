@@ -65,7 +65,7 @@ const props = defineProps<{
 
 const baseInfoRef = ref(null);
 // 版本列表
-const versionOpts = ref([]);
+const versionOpts = ref<any[]>([]);
 
 interface CreateDialog {
   resource_version_id: string;
@@ -144,9 +144,10 @@ const showCreateSdk = () => {
 
 watch(
   () => [props.resourceVersionId, props.versionList],
-  (newArr) => {
-    versionOpts.value = newArr[1];
-    formData.resource_version_id = newArr[0];
+  (newArr: any[]) => {
+    const [id, opts] = newArr;
+    versionOpts.value = opts;
+    formData.resource_version_id = id;
   },
   {
     immediate: true,

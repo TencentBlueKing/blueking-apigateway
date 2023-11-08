@@ -15,6 +15,7 @@ const apigwStageDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views
 const apigwReleaseHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/published/index.vue');
 const apigwStageResourceInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/resource-info.vue');
 const apigwStagePluginManage = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/plugin-manage.vue');
+const apigwOnlineTest = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/online-test/index.vue');
 const apigwStageVariableManage = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/variable-manage.vue');
 
 
@@ -146,6 +147,15 @@ const routes: RouteRecordRaw[] = [
           title: '资源版本',
           matchRoute: 'apigwResourceVersion',
           isCustomTopbar: 'resourceVersionOverview',
+        },
+      },
+      {
+        path: '/:id/online',
+        name: 'apigwOnlineTest',
+        component: apigwOnlineTest,
+        meta: {
+          title: '在线调试',
+          matchRoute: 'apigwOnlineTest',
         },
       },
       {
