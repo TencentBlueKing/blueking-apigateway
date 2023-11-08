@@ -24,7 +24,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0034_auto_20230818_1200'),
+        ('core', '0033_auto_20230818_1200'),
         ('support', '0015_auto_20230227_2006'),
     ]
 

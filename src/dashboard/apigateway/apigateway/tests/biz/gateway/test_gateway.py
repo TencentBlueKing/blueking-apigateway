@@ -19,6 +19,7 @@ import pytest
 from django.core.exceptions import ObjectDoesNotExist
 from django_dynamic_fixture import G
 
+from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import GatewayHandler
@@ -34,7 +35,6 @@ from apigateway.core.models import (
     JWT,
     Context,
     Gateway,
-    GatewayAppBinding,
     GatewayRelatedApp,
     Release,
     Resource,

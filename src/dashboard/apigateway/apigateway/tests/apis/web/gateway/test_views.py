@@ -15,10 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import JWT, Gateway, GatewayAppBinding, Stage
+from apigateway.core.models import JWT, Gateway, Stage
 
 
 class TestGatewayListCreateApi:

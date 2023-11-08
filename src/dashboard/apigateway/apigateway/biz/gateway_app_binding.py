@@ -18,7 +18,8 @@
 #
 from typing import List
 
-from apigateway.core.models import Gateway, GatewayAppBinding
+from apigateway.apps.gateway.models import GatewayAppBinding
+from apigateway.core.models import Gateway
 
 
 class GatewayAppBindingHandler:

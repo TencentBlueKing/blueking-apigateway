@@ -24,7 +24,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0037_proxy_backend'),
+        ('core', '0036_proxy_backend'),
         ('support', '0016_auto_20230818_1200'),
     ]
 
