@@ -46,12 +46,9 @@
 <script setup lang="ts">
 import { ref, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter, useRoute } from 'vue-router';
 import { copy } from '@/common/util';
 import editStageSideslider from './edit-stage-sideslider.vue';
 import mitt from '@/common/event-bus';
-const router = useRouter();
-const route = useRoute();
 const { t } = useI18n();
 
 const props = defineProps<{
