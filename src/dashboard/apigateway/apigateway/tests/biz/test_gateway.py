@@ -21,6 +21,7 @@ import pytest
 from django.core.exceptions import ObjectDoesNotExist
 from django_dynamic_fixture import G
 
+from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import APITypeEnum, ContextScopeTypeEnum, ContextTypeEnum
@@ -29,7 +30,6 @@ from apigateway.core.models import (
     APIRelatedApp,
     Context,
     Gateway,
-    GatewayAppBinding,
     Release,
     ResourceVersion,
     Stage,
