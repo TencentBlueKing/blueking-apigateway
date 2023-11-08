@@ -74,7 +74,7 @@ def rolling_update_release(gateway_id, publish_id: Optional[int] = None):
             continue
 
         try:
-            validator = ReleaseValidator(gateway, stage, release.resource_version_id)
+            validator = ReleaseValidator(gateway, stage, release.resource_version.id)
             validator.validate()
         except (ValidationError, ReleaseValidationError) as err:
             procedure_logger.warning(f"release(id={release.pk}) validate failed, ignored, error={err}")

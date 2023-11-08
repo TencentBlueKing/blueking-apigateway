@@ -18,6 +18,7 @@
 import pytest
 from ddf import G
 
+from apigateway.apps.release.validators import ReleaseValidationError
 from apigateway.controller.tasks.syncing import release_updated_check, revoke_release_by_stage, rolling_update_release
 from apigateway.core.constants import APIHostingTypeEnum
 from apigateway.core.models import MicroGateway
@@ -71,6 +72,17 @@ class TestRollingUpdateRelease:
         assert rolling_update_release(edge_gateway.pk)
 
         self.distributor.distribute.assert_called()
+
+    def test_validate_failed(self, mocker, edge_gateway, edge_release, micro_gateway):
+        mocker.patch(
+            "apigateway.controller.tasks.syncing.ReleaseValidator.validate", side_effect=ReleaseValidationError()
+        )
+        edge_release.stage.micro_gateway = None
+        edge_release.stage.save()
+
+        assert not rolling_update_release(edge_gateway.pk)
+
+        self.distributor.distribute.assert_not_called()
 
 
 class TestReleaseUpdatedChecker:

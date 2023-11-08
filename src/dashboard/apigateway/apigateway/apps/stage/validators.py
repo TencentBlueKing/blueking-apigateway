@@ -37,7 +37,7 @@ class StageVarsValuesValidator:
         stage_vars = attrs["vars"]
         resource_version_id = attrs["resource_version_id"]
 
-        # 允许变量不存在:
+        # 允许环境中变量不存在:
         # openapi 同步环境时，存在修改变量名的情况，此时，当前 resource version 中资源引用的变量可能不存在；
         # 针对此场景，允许更新环境，但是将不再触发版本发布
         allow_var_not_exist = attrs.get("allow_var_not_exist", False)

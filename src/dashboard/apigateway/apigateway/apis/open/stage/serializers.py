@@ -52,21 +52,24 @@ class StageWithResourceVersionV1SLZ(serializers.Serializer):
 
 class StageSyncInputSLZ(StageSLZ):
     def update(self, instance, validated_data):
+        # 1. 更新数据
         # 未校验 resource version 中引用的 stage vars 是否存在，
         # 因此，不触发 update 信号，以防止误发布
         Stage.objects.filter(id=instance.id).update(
             description=validated_data.get("description"),
             description_en=validated_data.get("description_en"),
-            _vars=json.dumps(vars),
+            _vars=json.dumps(validated_data.get("vars", {})),
             updated_by=validated_data.get("updated_by", ""),
         )
 
+        # 2. save related data
         StageHandler.save_related_data(
             instance,
             validated_data["proxy_http"],
             validated_data.get("rate_limit"),
         )
 
+        # 3. 记录更新日志
         StageHandler.add_update_audit_log(validated_data["api"], instance, validated_data.get("updated_by", ""))
 
         return instance

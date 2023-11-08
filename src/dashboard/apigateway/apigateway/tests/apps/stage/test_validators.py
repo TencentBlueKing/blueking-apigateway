@@ -120,6 +120,29 @@ class TestStageVarsValidator:
                 },
                 "will_error": False,
             },
+            # allow_var_not_exist=True
+            {
+                "vars": {
+                    "domain": "bking.com",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "allow_var_not_exist": True,
+                "will_error": False,
+            },
+            {
+                "vars": {
+                    "prefix": "/test/",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "allow_var_not_exist": True,
+                "will_error": False,
+            },
             # var in path not exist
             {
                 "vars": {
@@ -141,6 +164,18 @@ class TestStageVarsValidator:
                     "in_path": ["prefix"],
                     "in_host": ["domain"],
                 },
+                "will_error": True,
+            },
+            {
+                "vars": {
+                    "prefix": "/test/?a=b",
+                    "domain": "bking.com",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "allow_var_not_exist": True,
                 "will_error": True,
             },
             # var in hosts not exist
@@ -166,9 +201,28 @@ class TestStageVarsValidator:
                 },
                 "will_error": True,
             },
+            {
+                "vars": {
+                    "prefix": "/test/",
+                    "domain": "http://bking.com",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "allow_var_not_exist": True,
+                "will_error": True,
+            },
         ]
         for test in data:
-            slz = self.StageSLZ(instance=stage, data={"vars": test["vars"]}, context={"request": self.request})
+            slz = self.StageSLZ(
+                instance=stage,
+                data={"vars": test["vars"]},
+                context={
+                    "request": self.request,
+                    "allow_var_not_exist": test.get("allow_var_not_exist", False),
+                },
+            )
             mocker.patch(
                 "apigateway.apps.stage.validators.ResourceVersion.objects.get_used_stage_vars",
                 return_value=test["mock_used_stage_vars"],
