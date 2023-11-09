@@ -1,5 +1,5 @@
 ARG IMAGE="node"
-ARG TAG="12-stretch-slim"
+ARG TAG="14.17.6-stretch-slim"
 
 FROM ${IMAGE}:${TAG} AS builder
 
@@ -7,7 +7,7 @@ COPY . /app
 
 WORKDIR /app
 
-# ARG NPM_REGISTRY="https://registry.npmjs.org/"
+ARG NPM_REGISTRY="https://registry.npmjs.org/"
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
@@ -15,8 +15,8 @@ ENV NODE_ENV=${NODE_ENV}
 ARG EDITION=ee
 ENV APP_VERSION=${EDITION}
 
-# RUN npm install --no-optional --registry="${NPM_REGISTRY:?}"
-RUN npm install
+RUN npm install --no-optional --registry="${NPM_REGISTRY:?}"
+# RUN npm install
 RUN npm run build:${EDITION:?}
 
 FROM ${IMAGE}:${TAG}
