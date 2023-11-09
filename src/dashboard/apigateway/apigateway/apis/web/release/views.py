@@ -47,7 +47,10 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator(
-    name="get", decorator=swagger_auto_schema(tags=["WebAPI.Release"], operation_description="获取环境下可用的资源列表接口(在线调试)")
+    name="get",
+    decorator=swagger_auto_schema(
+        tags=["WebAPI.Release"], operation_description="获取环境下可用的资源列表接口(在线调试)"
+    ),
 )
 class ReleaseAvailableResourceListApi(generics.ListAPIView):
     lookup_field = "stage_id"

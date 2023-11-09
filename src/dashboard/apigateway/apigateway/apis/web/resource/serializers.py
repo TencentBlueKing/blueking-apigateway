@@ -49,7 +49,9 @@ class ResourceQueryInputSLZ(serializers.Serializer):
     method = serializers.CharField(allow_blank=True, required=False, help_text="资源请求方法，完整匹配")
     label_ids = serializers.CharField(allow_blank=True, required=False, help_text="标签 ID，多个以逗号 , 分割")
     backend_id = serializers.IntegerField(allow_null=True, required=False, help_text="后端服务 ID")
-    query = serializers.CharField(allow_blank=True, required=False, help_text="资源筛选条件，支持模糊匹配资源名称，前端请求路径")
+    query = serializers.CharField(
+        allow_blank=True, required=False, help_text="资源筛选条件，支持模糊匹配资源名称，前端请求路径"
+    )
     order_by = serializers.ChoiceField(
         choices=["-id", "name", "-name", "path", "-path", "updated_time", "-updated_time"],
         allow_blank=True,
@@ -132,9 +134,15 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
 
 
 class ResourceAuthConfigSLZ(serializers.Serializer):
-    auth_verified_required = serializers.BooleanField(required=False, help_text="是否需要认证用户，true：需要，false：不需要")
-    app_verified_required = serializers.BooleanField(required=False, help_text="是否需要认证应用，true：需要，false：不需要")
-    resource_perm_required = serializers.BooleanField(required=False, help_text="是否需要校验资源权限，true：需要，false：不需要")
+    auth_verified_required = serializers.BooleanField(
+        required=False, help_text="是否需要认证用户，true：需要，false：不需要"
+    )
+    app_verified_required = serializers.BooleanField(
+        required=False, help_text="是否需要认证应用，true：需要，false：不需要"
+    )
+    resource_perm_required = serializers.BooleanField(
+        required=False, help_text="是否需要校验资源权限，true：需要，false：不需要"
+    )
 
 
 class HttpBackendConfigSLZ(serializers.Serializer):
@@ -145,10 +153,17 @@ class HttpBackendConfigSLZ(serializers.Serializer):
         max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, required=False, help_text="超时时间"
     )
     # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
-    legacy_upstreams = LegacyUpstreamsSLZ(allow_null=True, required=False, help_text="旧版 upstreams，管理端不需要处理")
+    legacy_upstreams = LegacyUpstreamsSLZ(
+        allow_null=True, required=False, help_text="旧版 upstreams，管理端不需要处理"
+    )
     legacy_transform_headers = LegacyTransformHeadersSLZ(
         allow_null=True, required=False, help_text="旧版 transform_headers，管理端不需要处理"
     )
+
+
+class HttpBackendSLZ(serializers.Serializer):
+    id = serializers.IntegerField(help_text="后端服务 ID")
+    config = HttpBackendConfigSLZ(help_text="后端配置")
 
 
 class ResourceInputSLZ(serializers.ModelSerializer):
@@ -156,8 +171,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
     name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True, help_text="资源名称")
     path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="前端请求路径")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
-    backend_id = serializers.IntegerField(help_text="后端服务 ID")
-    backend_config = HttpBackendConfigSLZ(help_text="后端配置")
+    backend = HttpBackendSLZ(help_text="后端服务")
     label_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=True,
@@ -181,9 +195,8 @@ class ResourceInputSLZ(serializers.ModelSerializer):
             "allow_apply_permission",
             # 认证配置
             "auth_config",
-            # 后端配置
-            "backend_id",
-            "backend_config",
+            # 资源后端
+            "backend",
             # 标签
             "label_ids",
         ]
@@ -240,7 +253,11 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         self._validate_match_subpath(data)
 
         data["resource"] = self.instance
-        data["backend"] = self._validate_backend_id(data["gateway"], data["backend_id"])
+
+        # 为方便使用 ResourcesSaver 统一处理数据，对 backend 数据进行转换
+        data["backend_config"] = data["backend"]["config"]
+        # NOTE: 使用 backend 对象覆盖了原有的 backend 输入数据
+        data["backend"] = self._validate_backend_id(data["gateway"], data["backend"]["id"])
 
         return data
 
@@ -255,7 +272,9 @@ class ResourceInputSLZ(serializers.ModelSerializer):
 
         if method == HTTP_METHOD_ANY:
             if queryset.exists():
-                raise serializers.ValidationError(_("当前请求方法为 {method}，但相同请求路径下，其它请求方法已存在。").format(method=method))
+                raise serializers.ValidationError(
+                    _("当前请求方法为 {method}，但相同请求路径下，其它请求方法已存在。").format(method=method)
+                )
 
         elif queryset.filter(method=HTTP_METHOD_ANY).exists():
             raise serializers.ValidationError(
@@ -266,8 +285,10 @@ class ResourceInputSLZ(serializers.ModelSerializer):
             )
 
     def _validate_match_subpath(self, data):
-        if data.get("match_subpath", False) != data["backend_config"].get("match_subpath", False):
-            raise serializers.ValidationError(_("资源前端配置中的【匹配所有子路径】与后端配置中的【追加匹配的子路径】值必需相同。"))
+        if data.get("match_subpath", False) != data["backend"]["config"].get("match_subpath", False):
+            raise serializers.ValidationError(
+                _("资源前端配置中的【匹配所有子路径】与后端配置中的【追加匹配的子路径】值必需相同。")
+            )
 
     def _exclude_current_instance(self, queryset):
         if self.instance is not None:
@@ -291,8 +312,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
 
 class ResourceOutputSLZ(serializers.ModelSerializer):
     auth_config = serializers.SerializerMethodField(help_text="认证配置")
-    backend_id = serializers.SerializerMethodField(help_text="后端服务 ID")
-    backend_config = serializers.SerializerMethodField(help_text="后端配置")
+    backend = serializers.SerializerMethodField(help_text="后端服务")
     labels = serializers.SerializerMethodField(help_text="标签列表")
 
     class Meta:
@@ -308,8 +328,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
             "is_public",
             "allow_apply_permission",
             "auth_config",
-            "backend_id",
-            "backend_config",
+            "backend",
             "labels",
         ]
         read_only_fields = fields
@@ -347,11 +366,11 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
     def get_auth_config(self, obj):
         return self.context["auth_config"]
 
-    def get_backend_id(self, obj):
-        return self.context["proxy"].backend_id
-
-    def get_backend_config(self, obj):
-        return self.context["proxy"].config
+    def get_backend(self, obj):
+        return {
+            "id": self.context["proxy"].backend_id,
+            "config": self.context["proxy"].config,
+        }
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])
@@ -493,9 +512,15 @@ class SelectedResourceSLZ(serializers.Serializer):
 class ResourceImportInputSLZ(serializers.Serializer):
     content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")
     selected_resources = serializers.ListField(
-        child=SelectedResourceSLZ(), allow_empty=False, allow_null=True, required=False, help_text="导入时选中的资源列表"
+        child=SelectedResourceSLZ(),
+        allow_empty=False,
+        allow_null=True,
+        required=False,
+        help_text="导入时选中的资源列表",
     )
-    delete = serializers.BooleanField(default=False, help_text="是否删除未选中的资源，即已存在，但是未在 content 中的资源")
+    delete = serializers.BooleanField(
+        default=False, help_text="是否删除未选中的资源，即已存在，但是未在 content 中的资源"
+    )
 
     def validate(self, data):
         data["resources"] = self._validate_content(data["content"])
@@ -508,12 +533,16 @@ class ResourceImportInputSLZ(serializers.Serializer):
         try:
             importer = ResourceSwaggerImporter(content)
         except Exception as err:
-            raise serializers.ValidationError({"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)})
+            raise serializers.ValidationError(
+                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
+            )
 
         try:
             importer.validate()
         except SchemaValidationError as err:
-            raise serializers.ValidationError({"content": _("导入内容不符合 swagger 2.0 协议，{err}。").format(err=err)})
+            raise serializers.ValidationError(
+                {"content": _("导入内容不符合 swagger 2.0 协议，{err}。").format(err=err)}
+            )
 
         slz = ResourceDataImportSLZ(
             data=importer.get_resources(),
@@ -528,7 +557,10 @@ class ResourceImportInputSLZ(serializers.Serializer):
 
 class ResourceImportCheckInputSLZ(ResourceImportInputSLZ):
     doc_language = serializers.ChoiceField(
-        choices=DocLanguageEnum.get_choices(), allow_blank=True, required=False, help_text="文档语言，en: 英文，zh: 中文"
+        choices=DocLanguageEnum.get_choices(),
+        allow_blank=True,
+        required=False,
+        help_text="文档语言，en: 英文，zh: 中文",
     )
 
 
@@ -557,7 +589,9 @@ class ResourceExportInputSLZ(serializers.Serializer):
         help_text="值为 all，不需其它参数；值为 filtered，支持 query/path/method/label_name 参数；值为 selected，支持 resource_ids 参数",
     )
     file_type = serializers.ChoiceField(
-        choices=SwaggerFormatEnum.get_choices(), default=SwaggerFormatEnum.YAML.value, help_text="导出的文件类型，如 yaml/json"
+        choices=SwaggerFormatEnum.get_choices(),
+        default=SwaggerFormatEnum.YAML.value,
+        help_text="导出的文件类型，如 yaml/json",
     )
     resource_filter_condition = ResourceQueryInputSLZ(
         required=False, help_text="资源筛选条件，export_type 为 filtered 时，应提供当前的筛选条件"
@@ -581,8 +615,7 @@ class ResourceExportOutputSLZ(serializers.Serializer):
     allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
 
     labels = serializers.SerializerMethodField(help_text="标签列表")
-    backend_name = serializers.SerializerMethodField(help_text="后端服务名称")
-    backend_config = serializers.SerializerMethodField(help_text="后端配置")
+    backend = serializers.SerializerMethodField(help_text="后端服务")
     plugin_configs = serializers.SerializerMethodField(help_text="插件配置")
     auth_config = serializers.SerializerMethodField(help_text="认证配置")
 
@@ -590,13 +623,12 @@ class ResourceExportOutputSLZ(serializers.Serializer):
         labels = self.context["labels"].get(obj.id, [])
         return [label["name"] for label in labels]
 
-    def get_backend_name(self, obj):
+    def get_backend(self, obj):
         proxy = self.context["proxies"][obj.id]
-        return self.context["backends"][proxy.backend_id].name
-
-    def get_backend_config(self, obj):
-        proxy = self.context["proxies"][obj.id]
-        return proxy.config
+        return {
+            "name": self.context["backends"][proxy.backend_id].name,
+            "config": proxy.config,
+        }
 
     def get_auth_config(self, obj):
         return self.context["auth_configs"][obj.id]

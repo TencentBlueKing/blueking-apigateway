@@ -140,7 +140,9 @@ class ComponentConvertor:
             # method = "" 为 GET/POST 方法
             if "" in method_to_component:
                 raise error_codes.INVALID_ARGUMENT.format(
-                    _("同一组件路径下，请求方法包含 'GET/POST' 及其它请求方法，请将请求方法为 'GET/POST' 的组件，拆分为请求方法分别为 GET、POST 的两个组件。"),
+                    _(
+                        "同一组件路径下，请求方法包含 'GET/POST' 及其它请求方法，请将请求方法为 'GET/POST' 的组件，拆分为请求方法分别为 GET、POST 的两个组件。"
+                    ),
                 )
 
     def _enrich_resource_id(self, components: List[Component]) -> List[Component]:

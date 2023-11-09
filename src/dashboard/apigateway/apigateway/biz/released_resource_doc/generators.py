@@ -79,6 +79,7 @@ class DocGenerator:
             verified_app_required=self.resource_data.verified_app_required,
             verified_user_required=self.resource_data.verified_user_required,
             docs_urls=getattr(settings, "DOCS_URLS", {}),
+            settings=settings,
         )
         return description.strip()
 

@@ -44,7 +44,7 @@ class FailJsonResponse(JsonResponse):
         super(FailJsonResponse, self).__init__(body, status=status)
 
 
-def OKJsonResponse(status: int = status.HTTP_200_OK, data: Union[Dict, List, None] = None):  # ruff: noqa: N802
+def OKJsonResponse(status: int = status.HTTP_200_OK, data: Union[Dict, List, None] = None):  # noqa: N802
     if status == 204:
         return HttpResponse(status=204)
 

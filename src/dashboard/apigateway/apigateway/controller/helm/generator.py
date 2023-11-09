@@ -207,7 +207,7 @@ class CrdChartGenerator:
             for term in terms:
                 func, _, value = term.partition(" ")
                 if func == "nindent":
-                    term = f"nindent {int(value) + indent_level * indent_step}"  # ruff: noqa: PLW2901
+                    term = f"nindent {int(value) + indent_level * indent_step}"  # noqa: PLW2901
                 fixed.append(term)
 
             return "{{ %s }}" % " | ".join(fixed)

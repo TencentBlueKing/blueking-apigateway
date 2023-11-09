@@ -33,11 +33,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.i18n import set_language
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from rest_framework import permissions
 
 from apigateway.apis.web.monitor.views import AlarmRecordSummaryListApi
+from apigateway.common.swagger import schema_view
 
 urlpatterns = [
     # /metrics
@@ -88,19 +86,6 @@ urlpatterns = [
     ),
 ]
 
-# add drf-yasg automatically generated documents
-schema_view = get_schema_view(
-    openapi.Info(
-        title="APIGateway-Dashboard API",
-        default_version="v1",
-        description="APIGateway-Dashboard API Document",
-        terms_of_service="http://example.com",
-        contact=openapi.Contact(email="blueking@tencent.com"),
-        license=openapi.License(name="BSD License"),
-    ),
-    public=True,
-    permission_classes=(permissions.AllowAny,),
-)
 
 # backend/docs/
 urlpatterns += [

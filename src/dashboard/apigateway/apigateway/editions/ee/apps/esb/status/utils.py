@@ -61,9 +61,9 @@ def str_number(v):
     """接收一个整数，返回 xxk 的方式"""
     v = int(v)
     if v > 10000000:
-        return u"%.2f千万" % (v / float(10000000))
+        return "%.2f千万" % (v / float(10000000))
     if v > 10000:
-        return u"%.2f万" % (v / float(10000))
+        return "%.2f万" % (v / float(10000))
     return str(v)
 
 

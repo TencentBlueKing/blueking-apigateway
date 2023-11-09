@@ -70,7 +70,7 @@ class ResourceProxyHTTPConfig(BaseModel, DiffMixin):
     transform_headers: Dict[Text, Any] = Field(default_factory=dict)
 
     @validator("transform_headers")
-    def clean_transform_headers(cls, v):  # ruff: noqa: N805
+    def clean_transform_headers(cls, v):  # noqa: N805
         return TransformHeaders.parse_obj(v).dict(exclude_unset=True)
 
 
@@ -119,7 +119,7 @@ class ResourceContexts(BaseModel, DiffMixin):
 class ResourcePluginConfig(BaseModel, DiffMixin):
     id: int
     name: str
-    type: int
+    type: str
     config: Dict[Text, Any] = Field(default_factory=dict)
 
 
@@ -131,6 +131,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
     path: Text
     match_subpath: bool = False
     is_public: bool = True
+    allow_apply_permission: bool = True
     proxy: Union[ResourceHTTPProxy, ResourceMockProxy]
     contexts: ResourceContexts
     disabled_stages: List[Text] = Field(default_factory=list)

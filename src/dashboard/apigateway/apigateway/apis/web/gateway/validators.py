@@ -32,4 +32,6 @@ class ReservedGatewayNameValidator:
 
         for prefix in settings.RESERVED_GATEWAY_NAME_PREFIXES:
             if value.startswith(prefix):
-                raise serializers.ValidationError(_("网关名不能以【{prefix}】开头，其为官方保留字。").format(prefix=prefix))
+                raise serializers.ValidationError(
+                    _("网关名不能以【{prefix}】开头，其为官方保留字。").format(prefix=prefix)
+                )

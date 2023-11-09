@@ -55,5 +55,7 @@ class Command(BaseCommand):
             result, message = synchronizer.pre_check_data()
             if not result:
                 logger.error(message)
-                logger.error("新版与旧版核心数据有差异，需调用指令 `python manage.py clear_ng_core_data` 删除新版数据后，再同步")
+                logger.error(
+                    "新版与旧版核心数据有差异，需调用指令 `python manage.py clear_ng_core_data` 删除新版数据后，再同步"
+                )
                 sys.exit(1)

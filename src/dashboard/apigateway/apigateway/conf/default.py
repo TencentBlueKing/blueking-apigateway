@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     "apigateway.apps.monitor",
     "apigateway.schema",
     "apigateway.core",
+    "apigateway.apps.gateway",
     "apigateway.apps.access_strategy",
     "apigateway.apps.plugin",
     "apigateway.apps.label",
@@ -533,7 +534,7 @@ API_USER_AUTH_CONFIGS = {
 }
 
 # 特殊的网关认证配置，在网关同步时，会更新网关的这些配置
-SPECIAL_API_AUTH_CONFIGS = {
+SPECIAL_GATEWAY_AUTH_CONFIGS = {
     "bk-auth": {
         "unfiltered_sensitive_keys": ["bk_token", "access_token"],
     },
@@ -722,6 +723,7 @@ CACHE_VERSION = "v1"
 APIGW_REVERSION_UPDATE_CHANNEL_KEY = "apigateway:reversion:update"
 APIGW_REVERSION_UPDATE_SET_KEY = "apigateway:reversion:update:set"
 
+BK_LOGIN_TICKET_KEY = "bk_token"
 BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {
     "bk_token": "bk_token",
 }
@@ -729,6 +731,10 @@ BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {
 BK_API_DEFAULT_STAGE_MAPPINGS = env.dict("BK_API_DEFAULT_STAGE_MAPPINGS", default={})
 
 FAKE_SEND_NOTICE = env.bool("FAKE_SEND_NOTICE", default=False)
+
+# for some legacy gateways, they support both `;` nad `&` as separator of query string
+# so we do a special process for them
+LEGACY_INVALID_PARAMS_GATEWAY_NAMES = env.list("LEGACY_INVALID_PARAMS_GATEWAY_NAMES", default=[])
 
 # ==============================================================================
 # OTEL
@@ -789,6 +795,7 @@ DEFAULT_FEATURE_FLAG = {
     "MENU_ITEM_ESB_API_DOC": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API_DOC", True),
     "SYNC_ESB_TO_APIGW_ENABLED": env.bool("FEATURE_FLAG_SYNC_ESB_TO_APIGW_ENABLED", True),
     "GATEWAY_DEVELOPERS_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_DEVELOPERS_ENABLED", False),
+    "GATEWAY_APP_BINDING_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_APP_BINDING_ENABLED", False),
     # api-support
     "ENABLE_SDK": env.bool("FEATURE_FLAG_ENABLE_SDK", False),
     "ALLOW_CREATE_APPCHAT": env.bool("FEATURE_FLAG_ALLOW_CREATE_APPCHAT", False),

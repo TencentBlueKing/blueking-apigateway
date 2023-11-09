@@ -48,7 +48,9 @@ class PathVarsValidator:
         duplicate_names = get_duplicate_items(var_names)
         if duplicate_names:
             raise serializers.ValidationError(
-                _("前端请求路径 {path} 中的路径变量 {var_name} 重复。").format(path=path, var_name=", ".join(duplicate_names))
+                _("前端请求路径 {path} 中的路径变量 {var_name} 重复。").format(
+                    path=path, var_name=", ".join(duplicate_names)
+                )
             )
 
 
@@ -87,7 +89,9 @@ class BackendPathVarsValidator:
                 stage_path_vars.append(match.group(1))
                 continue
 
-            raise serializers.ValidationError(_("后端请求路径中的路径变量 {var_name} 不符合规则。").format(var_name=var_name))
+            raise serializers.ValidationError(
+                _("后端请求路径中的路径变量 {var_name} 不符合规则。").format(var_name=var_name)
+            )
 
         return normal_path_vars, stage_path_vars
 

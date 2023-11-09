@@ -93,54 +93,49 @@ class TestResourceVersionListCreateApi:
 
 
 class TestResourceVersionRetrieveApi:
-    def test_retrieve(self, request_view, fake_gateway):
-        resource_version = G(
-            ResourceVersion,
-            gateway=fake_gateway,
-            version="1.0.1",
-            title="test",
-            created_time=dummy_time.time,
-            _data=json.dumps(
-                [
-                    {
-                        "id": 1,
-                        "name": "test",
-                        "path": "/echo",
-                        "proxy": {
-                            "type": "mock",
-                        },
-                    }
-                ]
-            ),
-        )
+    def test_retrieve(
+        self, request_view, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2, echo_plugin_stage_binding
+    ):
         resp = request_view(
             method="GET",
             view_name="gateway.resource_version.retrieve",
             gateway=fake_gateway,
-            path_params={"gateway_id": fake_gateway.id, "id": resource_version.id},
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource_version_v2.id},
         )
 
         assert resp.status_code == 200
 
         result = resp.json()
-
         assert result["data"] == {
-            "id": resource_version.id,
-            "version": resource_version.version,
-            "comment": resource_version.comment,
-            "data": [
+            "id": fake_resource_version_v2.id,
+            "version": fake_resource_version_v2.version,
+            "comment": fake_resource_version_v2.comment,
+            "schema_version": fake_resource_version_v2.schema_version,
+            "resources": [
                 {
-                    "id": 1,
-                    "name": "test",
-                    "path": "/echo",
+                    "name": fake_resource_version_v2.data[0]["name"],
+                    "method": fake_resource_version_v2.data[0]["method"],
+                    "path": fake_resource_version_v2.data[0]["path"],
+                    "description": fake_resource_version_v2.data[0]["description"],
+                    "description_en": fake_resource_version_v2.data[0]["description_en"],
+                    "gateway_label_ids": fake_resource_version_v2.data[0]["api_labels"],
+                    "match_subpath": fake_resource_version_v2.data[0]["match_subpath"],
+                    "is_public": fake_resource_version_v2.data[0]["is_public"],
+                    "allow_apply_permission": fake_resource_version_v2.data[0]["allow_apply_permission"],
+                    "doc_updated_time": "",
                     "proxy": {
-                        "type": "mock",
+                        "config": fake_resource_version_v2.data[0]["proxy"]["config"],
+                        "backend": {
+                            "id": fake_backend.id,
+                            "name": fake_backend.name,
+                        },
                     },
-                    "doc_updated_time": {},
+                    "contexts": fake_resource_version_v2.data[0]["contexts"],
+                    "plugins": [],
                 }
             ],
-            "created_by": resource_version.created_by,
-            "created_time": dummy_time.str,
+            "created_time": fake_resource_version_v2.created_time,
+            "created_by": fake_resource_version_v2.created_by,
         }
 
 

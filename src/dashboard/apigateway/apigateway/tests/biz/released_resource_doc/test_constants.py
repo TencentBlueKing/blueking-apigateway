@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 
 from apigateway.biz.released_resource_doc.constants import (
     BKAPI_AUTHORIZATION_DESCRIPTION_EN,
@@ -29,6 +30,7 @@ def test_bkapi_authorization_description():
         verified_app_required=True,
         verified_user_required=True,
         docs_urls={},
+        settings=settings,
     )
     assert result
 
@@ -40,5 +42,6 @@ def test_bkapi_authorization_description():
             "USE_GATEWAY_API": "",
             "ACCESS_TOKEN_API": "",
         },
+        settings=settings,
     )
     assert result

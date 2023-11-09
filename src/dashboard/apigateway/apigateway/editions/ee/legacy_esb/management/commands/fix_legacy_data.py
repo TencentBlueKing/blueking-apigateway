@@ -39,5 +39,7 @@ class Command(BaseCommand):
             legacy_models.SystemDocCategory.objects.delete_duplicate_names()
 
     def _is_confirmed_fix_legacy_doc_category(self, duplicate_names: List[str]) -> bool:
-        confirm = input(f"旧版文档分类 `name={', '.join(duplicate_names)}` 重复，请确认是否更新组件系统所属的文档分类，并删除重复的文档分类：yes/no?")
+        confirm = input(
+            f"旧版文档分类 `name={', '.join(duplicate_names)}` 重复，请确认是否更新组件系统所属的文档分类，并删除重复的文档分类：yes/no?"
+        )
         return confirm == "yes"

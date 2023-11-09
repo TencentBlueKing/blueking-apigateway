@@ -86,7 +86,9 @@ class UpstreamNode(KubernetesModel):
 
 
 class UpstreamPassiveCheckHealthy(KubernetesModel):
-    http_statuses: Optional[List[str]] = Field(default=None, alias="httpStatuses", description="健康节点的 HTTP 状态码")
+    http_statuses: Optional[List[str]] = Field(
+        default=None, alias="httpStatuses", description="健康节点的 HTTP 状态码"
+    )
     successes: Optional[int] = Field(default=None, description="确定节点健康的次数")
 
 
@@ -95,7 +97,9 @@ class UpstreamActiveCheckHealthy(UpstreamPassiveCheckHealthy):
 
 
 class UpstreamPassiveCheckUnhealthy(KubernetesModel):
-    http_statuses: Optional[List[str]] = Field(default=None, alias="httpStatuses", description="非健康节点的 HTTP 状态码")
+    http_statuses: Optional[List[str]] = Field(
+        default=None, alias="httpStatuses", description="非健康节点的 HTTP 状态码"
+    )
     http_failures: Optional[int] = Field(default=None, alias="httpFailures", description="非健康节点的 HTTP 失败次数")
     tcp_failures: Optional[int] = Field(default=None, alias="tcpFailures", description="非健康节点的 TCP 失败次数")
     timeouts: Optional[int] = Field(default=None, description="非健康节点的超时次数")
@@ -126,7 +130,9 @@ class UpstreamCheck(KubernetesModel):
 
 class Upstream(KubernetesModel):
     type: UpstreamTypeEnum = Field(default=UpstreamTypeEnum.ROUNDROBIN, description="负载均衡方式")
-    hash_on: Optional[UpstreamHashOnEnum] = Field(default=None, alias="hashOn", description="负载均衡方式为 chash 时使用")
+    hash_on: Optional[UpstreamHashOnEnum] = Field(
+        default=None, alias="hashOn", description="负载均衡方式为 chash 时使用"
+    )
     key: Optional[str] = Field(default=None, alias="key", description="负载均衡方式为 chash 时进行 hash 的 key")
     checks: Optional[UpstreamCheck] = Field(default=None, description="健康检查")
     scheme: Optional[UpstreamSchemeEnum] = Field(default=UpstreamSchemeEnum.HTTP, description="请求协议")
@@ -138,9 +144,13 @@ class Upstream(KubernetesModel):
     upstream_host: Optional[str] = Field(
         default=None, alias="upstreamHost", helm_value=True, description="指定上游请求的 host"
     )
-    tls_enable: Optional[bool] = Field(default=False, alias="tlsEnable", helm_value=True, description="是否开启 TLS 双向认证")
+    tls_enable: Optional[bool] = Field(
+        default=False, alias="tlsEnable", helm_value=True, description="是否开启 TLS 双向认证"
+    )
     #  tls: Optional[TLSReference] = Field(default=None, description="TLS 证书引用")
-    external_discovery_type: Optional[str] = Field(default=None, alias="externalDiscoveryType", description="外部发现类型")
+    external_discovery_type: Optional[str] = Field(
+        default=None, alias="externalDiscoveryType", description="外部发现类型"
+    )
     external_discovery_config: Optional[Dict[str, Any]] = Field(
         default=None, alias="externalDiscoveryConfig", description="外部服务发现配置"
     )

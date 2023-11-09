@@ -111,7 +111,6 @@ class BaseSDKManager(SDKManager):
         files: List[str],
         distribute_result: Optional[DistributeResult],
     ):
-
         if distribute_result:
             context.url = distribute_result.url
 

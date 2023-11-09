@@ -151,7 +151,9 @@ class StageInputSLZ(serializers.Serializer):
 def check_backend_host_scheme(backend, host):
     if host["scheme"] not in BACKEND_CONFIG_SCHEME_MAP[backend.type]:
         raise serializers.ValidationError(
-            _("后端服务【{backend_name}】的配置Scheme【{scheme}】不合法。").format(backend_name=backend.name, scheme=host["scheme"])
+            _("后端服务【{backend_name}】的配置Scheme【{scheme}】不合法。").format(
+                backend_name=backend.name, scheme=host["scheme"]
+            )
         )
 
 
