@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="icon" href="<%= process.env.BK_STATIC_URL %>/static/images/favicon.png" type="image/x-icon" />
+    <link rel="shortcut icon" href="<%= process.env.BK_STATIC_URL %>/static/images/favicon.png" type="image/x-icon" />
+    <meta charset="utf-8">
+    <title> API Gateway | 腾讯蓝鲸智云 </title>
+  </head>
+    <body>
+      <div class="app"></div>
+      <script>
+        var SITE_URL = '<%= process.env.BK_SITE_URL %>'
+        var BK_STATIC_URL = '<%= process.env.BK_STATIC_URL %>'
+        // 当前应用的环境，预发布环境为 stag，正式环境为 prod
+        // EngineApp名称，拼接规则：bkapp-{appcode}-{BKPAAS_ENVIRONMENT}
+        var BKPAAS_ENGINE_APP_NAME = '<%= process.env.BK_PAAS_ENGINE_APP_NAME %>'
+        // 内部版对应ieod，外部版对应tencent，混合云版对应clouds
+        var BKPAAS_ENGINE_REGION = '<%= process.env.BK_PAAS_ENGINE_REGION %>'
+        // APP ID
+        var BKPAAS_APP_SECRET = ''
+        var BK_LOGIN_URL = '<%= process.env.BK_APP_PORT %>'
+
+        var BK_APP_VERSION = '<%= process.env.BK_APP_VERSION %>'
+        var BK_NODE_ENV = '<%= process.env.NODE_ENV %>'
+        var BK_PAAS_ENVIRONMENT = '<%= process.env.BKPAAS_ENVIRONMENT %>'
+        var BK_PORT = '<%= process.env.PORT %>'
+        var BK_PAAS_APP_ID = '<%= process.env.BK_PAAS_APP_ID %>'
+        var BK_LOGIN_URL = '<%= process.env.BK_LOGIN_URL %>'
+        var BK_API_RESOURCE_URL_TMPL = '<%= process.env.BK_API_RESOURCE_URL_TMPL %>' //需要和后台确认 API_RESOURCE_URL_TMPL -> BK_API_RESOURCE_URL_TMPL
+        var BK_FEED_BACK_LINK = '<%= process.env.BK_FEED_BACK_LINK %>' //需要和后台确认 FEED_BACK_LINK -> BK_FEED_BACK_LINK
+        var BK_DOCS_URL_PREFIX = '<%= process.env.BK_DOCS_URL_PREFIX %>'
+        var BK_DASHBOARD_URL = '<%= process.env.BK_DASHBOARD_URL %>'
+        var BK_DASHBOARD_CSRF_COOKIE_NAME = '<%= process.env.DASHBOARD_CSRF_COOKIE_NAME %>'
+        var BK_DEFAULT_TEST_APP_CODE = '<%= process.env.DEFAULT_TEST_APP_CODE %>'
+        var BK_COMPONENT_API_URL = '<%= process.env.BK_COMPONENT_API_URL %>'
+        var BK_PAAS2_ESB_URL = '<%= process.env.BK_PAAS2_ESB_URL %>'
+        var BK_APIGATEWAY_VERSION = '<%= process.env.BK_APIGATEWAY_VERSION %>' || '1.1.1'
+        var BK_APP_CODE = '<%= process.env.BK_APP_CODE %>'
+        var BK_NPM_CONFIG_REPORT = '<%= process.env.npm_config_report %>'
+        var BK_DASHBOARD_FE_URL = '<%= process.env.BK_DASHBOARD_FE_URL %>'    //需要和后台确认 DASHBOARD_FE_URL -> BK_DASHBOARD_FE_URL
+        var BK_PAAS2_ESB_DOC_URL = '<%= process.env.BK_PAAS2_ESB_DOC_URL %>'
+
+        var BK_LIST_USERS_API_URL = `${BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fs_list_users/` // 人员选择器接口地址，可选填
+        var BK_DOCS_URL_PREFIX_MARKDOWN = `${BK_DOCS_URL_PREFIX}/markdown/APIGateway`
+        </script>
+      </script>
+    </body>
+</html>

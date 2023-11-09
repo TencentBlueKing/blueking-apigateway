@@ -8,3 +8,4 @@ build.yml
 
 .envrc
 src/dashboard/apigateway/apigateway/editions/te
+src/dashboard-front-new/.bk.local.env
