@@ -14,6 +14,7 @@ ARG EDITION=ee
 ENV APP_VERSION=${EDITION}
 
 # RUN npm install --no-optional --registry="${NPM_REGISTRY:?}"
+RUN npm config set registry http://mirrors.cloud.tencent.com/npm/
 RUN npm install
 RUN npm run build:${EDITION:?}
 

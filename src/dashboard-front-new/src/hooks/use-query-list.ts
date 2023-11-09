@@ -26,8 +26,8 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
   const tableData = ref([]);
 
   // 获取列表数据的方法
-  const getList = async () => {
-    const method = apiMethod;
+  const getList = async (fetchMethod = apiMethod) => {
+    const method = fetchMethod;
     isLoading.value = true;
     // 列表参数
     const paramsData = {
