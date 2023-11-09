@@ -1,5 +1,5 @@
 import fetch from './fetch';
-import { json2Query  } from '@/common/util';
+import { json2Query, blobDownLoad  } from '@/common/util';
 
 const { BK_DASHBOARD_URL } = window;
 
@@ -51,10 +51,10 @@ export const getApiPermissionList = (apigwId: number, data: any) => fetch.get(`$
  * @param apigwId 网关id
  * @param data 授权参数
  */
-export const authApiPermission = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-gateway-permissions/?${json2Query(data)}`);
+export const authApiPermission = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-gateway-permissions/`, data);
 
 /**
- *  获取有网关权限有权限的应用列表
+ *  获取有网关权限的应用列表
  * @param apigwId 网关id
  */
 export const getApiPermissionAppList = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-gateway-permissions/bk-app-codes/`);
@@ -64,14 +64,17 @@ export const getApiPermissionAppList = (apigwId: number) => fetch.get(`${BK_DASH
  * @param apigwId 网关id
  * @param data 删除参数
  */
-export const deleteApiPermission = (apigwId: number, data: any) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-gateway-permissions/delete/`, data);
+export const deleteApiPermission = (apigwId: number, data: any) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-gateway-permissions/delete/?${json2Query(data)}`);
 
 /**
  *  网关权限导出
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const exportApiPermission = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-gateway-permissions/export/`, data);
+export const exportApiPermission = async (apigwId: number, data: any) => {
+  const res = await fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-gateway-permissions/export/`, data, { responseType: 'blob' });
+  return blobDownLoad(res);
+};
 
 /**
  *  网关权限续期
@@ -86,38 +89,41 @@ export const batchUpdateApiPermission = (apigwId: number, data: any) => fetch.po
  * @param apigwId 网关id
  * @param data 查询参数
  */
-export const getResourcePermissionList = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-Resource-permissions/?${json2Query(data)}`);
+export const getResourcePermissionList = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-resource-permissions/?${json2Query(data)}`);
 
 /**
  *  资源权限主动授权
  * @param apigwId 网关id
  * @param data 授权参数
  */
-export const authResourcePermission = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-Resource-permissions/?${json2Query(data)}`);
+export const authResourcePermission = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-resource-permissions/`, data);
 
 /**
  *  获取有资源权限的应用列表
  * @param apigwId 网关id
  */
-export const getResourcePermissionAppList = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-Resource-permissions/bk-app-codes/`);
+export const getResourcePermissionAppList = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-resource-permissions/bk-app-codes/`);
 
 /**
  *  删除资源权限
  * @param apigwId 网关id
  * @param data 删除参数
  */
-export const deleteResourcePermission = (apigwId: number, data: any) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-Resource-permissions/delete/`, data);
+export const deleteResourcePermission = (apigwId: number, data: any) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-resource-permissions/delete/?${json2Query(data)}`);
 
 /**
  *  资源权限导出
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const exportResourcePermission = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-Resource-permissions/export/`, data);
+export const exportResourcePermission = async (apigwId: number, data: any) => {
+  const res = await fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-resource-permissions/export/`, data, { responseType: 'blob' });
+  return blobDownLoad(res);
+};
 
 /**
  *  资源权限续期
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const batchUpdateResourcePermission = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-Resource-permissions/renew/`, data);
+export const batchUpdateResourcePermission = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/permissions/app-resource-permissions/renew/`, data);

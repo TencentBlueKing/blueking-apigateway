@@ -34,7 +34,7 @@ export const menuData: IMenu[]  = [
   {
     name: 'apigwPermissionManage',
     title: '权限管理',
-    icon: 'runtime',
+    icon: 'permission',
     children: [
       {
         name: 'apigwPermissionApplys',
@@ -47,6 +47,21 @@ export const menuData: IMenu[]  = [
       {
         name: 'apigwPermissionRecords',
         title: '审批历史',
+      },
+    ],
+  },
+  {
+    name: 'apigwOperatingData',
+    title: '运行数据',
+    icon: 'bar-chart',
+    children: [
+      {
+        name: 'apigwAccessLog',
+        title: '流水日志',
+      },
+      {
+        name: 'apigwReport',
+        title: '统计报表',
       },
     ],
   },

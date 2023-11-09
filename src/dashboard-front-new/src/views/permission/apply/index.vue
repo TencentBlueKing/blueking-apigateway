@@ -7,20 +7,18 @@
         </bk-button>
       </span>
       <bk-form class="flex-row">
-        <bk-form-item :label="t('授权维度')">
-          <bk-select v-model="filterData.grant_dimension" style="width: 150px;">
+        <bk-form-item :label="t('授权维度')" class="mb10" label-width="108">
+          <bk-select v-model="filterData.grant_dimension" class="w150">
             <bk-option v-for="option of dimensionList" :key="option.id" :id="option.id" :name="option.name">
             </bk-option>
           </bk-select>
         </bk-form-item>
-        <bk-form-item :label="t('蓝鲸应用ID')">
-          <bk-input
-            clearable v-model="filterData.bk_app_code" :placeholder="t('请输入应用ID')"
-            style="width: 150px;">
+        <bk-form-item :label="t('蓝鲸应用ID')" class="mb10" label-width="119">
+          <bk-input clearable v-model="filterData.bk_app_code" :placeholder="t('请输入应用ID')" class="w150">
           </bk-input>
         </bk-form-item>
-        <bk-form-item :label="t('申请人')">
-          <bk-input clearable v-model="filterData.applied_by" :placeholder="t('请输入用户')" style="width: 150px;">
+        <bk-form-item :label="t('申请人')" class="mb10" label-width="90">
+          <bk-input clearable v-model="filterData.applied_by" :placeholder="t('请输入用户')" class="w150">
           </bk-input>
         </bk-form-item>
       </bk-form>
@@ -28,18 +26,10 @@
     <div class="apply-content">
       <bk-loading :loading="isLoading">
         <bk-table
-          class="table-layout"
-          :data="tableData"
-          remote-pagination
-          :pagination="pagination"
-          show-overflow-tooltip
-          @page-limit-change="handlePageSizeChange"
-          @page-value-change="handlePageChange"
-          @selection-change="handleSelectionChange"
-          @row-mouse-enter="handleMouseEnter"
-          row-hover="auto"
-        >
-          <bk-table-column width="80" type="selection" />
+          class="table-layout" :data="tableData" remote-pagination :pagination="pagination" show-overflow-tooltip
+          @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange"
+          @selection-change="handleSelectionChange" @row-mouse-enter="handleMouseEnter" row-hover="auto">
+          <bk-table-column width="80" type="selection" align="center" />
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
           <bk-table-column :label="t('授权维度')" prop="grant_dimension_display">
             <template #default="{ data }">
@@ -83,7 +73,6 @@
       </bk-loading>
 
     </div>
-
   </div>
 </template>
 
@@ -141,4 +130,13 @@ const init = () => {
 init();
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.w150 {
+  width: 150px;
+}
+
+.apply-content {
+  height: calc(100% - 90px);
+  min-height: 600px;
+}
+</style>

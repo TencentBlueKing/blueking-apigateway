@@ -139,3 +139,24 @@ export const blobDownLoad = async (res: any) => {
   const errorInfo = await res.json();
   return Promise.reject(errorInfo);
 };
+
+/**
+ * 对元素为对象的数组进行简单排序
+ */
+export function sortByKey(list: any = [], key: string | number) {
+  let sortKeys = list.map((item: any) => {
+    return item[key].toLowerCase();
+  });
+  sortKeys = [...new Set(sortKeys)]; // 去除重复key
+  sortKeys.sort(); // 排序
+
+  const results: any[] = [];
+  sortKeys.forEach((sortItem: any) => {
+    list.forEach((item: any) => {
+      if (item[key].toLowerCase() === sortItem) {
+        results.push(item);
+      }
+    });
+  });
+  return results;
+}
