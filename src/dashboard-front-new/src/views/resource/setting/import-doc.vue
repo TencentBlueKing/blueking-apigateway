@@ -35,7 +35,7 @@
           </bk-radio-group>
         </bk-button-group>
       </bk-form-item>
-      <bk-form-item class="mb0" :label="t('上传文件')" :label-width="120">
+      <bk-form-item class="mb0" :label="t('上传文件')" :label-width="120" v-if="docType === 'archive'">
         <bk-upload
           theme="button"
           with-credentials
@@ -53,6 +53,14 @@
           </template>
         </bk-upload>
       </bk-form-item>
+      <section v-if="docType === 'swagger'">
+        <bk-form-item class="mb0" :label="t('文档语言')" :label-width="120">
+          <bk-radio-group v-model="language">
+            <bk-radio label="zh">{{ t('中文文档') }}</bk-radio>
+            <bk-radio label="en">{{ t('英文文档') }}</bk-radio>
+          </bk-radio-group>
+        </bk-form-item>
+      </section>
     </bk-form>
 
     <section v-else>
@@ -150,6 +158,7 @@ const { apigwId } = common; // 网关id
 const docType = ref<string>('archive');
 const curView = ref<string>('import'); // 当前页面
 const tableData = ref<any[]>([]);
+const language = ref<string>('zh');
 const { BK_DASHBOARD_URL } = window;
 const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME || `${window.BK_PAAS_APP_ID}_csrftoken`];
 
