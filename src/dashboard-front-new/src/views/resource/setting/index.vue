@@ -97,7 +97,7 @@
             >
               <template #default="{ data }">
                 <section v-if="data?.docs.length">{{ data?.docs }}</section>
-                <section v-else></section>
+                <section v-else>--</section>
               </template>
             </bk-table-column>
             <bk-table-column
@@ -106,7 +106,10 @@
               v-if="!isDetail"
             >
               <template #default="{ data }">
-                <bk-tag v-for="item in data?.labels" :key="item.id">{{ item.name }}</bk-tag>
+                <section v-if="data?.labels.length">
+                  <bk-tag v-for="item in data?.labels" :key="item.id">{{ item.name }}</bk-tag>
+                </section>
+                <section v-else>--</section>
               </template>
             </bk-table-column>
             <bk-table-column
@@ -531,10 +534,11 @@ const handleBatchConfirm = async () => {
   resetSelections();
 };
 
-const handleImport = () => {
-  console.log('导入');
+// 处理导入跳转
+const handleImport = (v: IDropList) => {
+  const routerName = v.value === 'doc' ? 'apigwResourceImportDoc' : 'apigwResourceImport';
   router.push({
-    name: 'apigwResourceImport',
+    name: routerName,
   });
 };
 

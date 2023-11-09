@@ -22,45 +22,42 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apis.open.gateway import serializers
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import Gateway, GatewayRelatedApp
-
-pytestmark = pytest.mark.django_db
 
 
-class TestAPIQueryV1SLZ:
+class TestGatewayListV1InputSLZ:
     @pytest.mark.parametrize(
         "params, expected",
         [
             (
                 {
-                    "user_auth_type": "ieod",
+                    "user_auth_type": "default",
                     "name": "test",
                     "fuzzy": True,
                 },
                 {
-                    "user_auth_type": "ieod",
+                    "user_auth_type": "default",
                     "name": "test",
                     "fuzzy": True,
                 },
             ),
             (
                 {
-                    "user_auth_type": "ieod",
+                    "user_auth_type": "default",
                     "query": "test",
                     "fuzzy": True,
                 },
                 {
-                    "user_auth_type": "ieod",
+                    "user_auth_type": "default",
                     "query": "test",
                     "fuzzy": True,
                 },
             ),
             (
                 {
-                    "user_auth_type": "ieod",
+                    "user_auth_type": "default",
                 },
                 {
-                    "user_auth_type": "ieod",
+                    "user_auth_type": "default",
                 },
             ),
             (
@@ -70,12 +67,33 @@ class TestAPIQueryV1SLZ:
         ],
     )
     def test_validate(self, params, expected):
-        slz = serializers.GatewayQueryV1SLZ(data=params)
-        slz.is_valid()
+        slz = serializers.GatewayListV1InputSLZ(data=params)
+        slz.is_valid(raise_exception=True)
         assert slz.validated_data == expected
 
 
-class TestGatewaySyncSLZ:
+class TestGatewayListV1OutputSLZ:
+    def test_to_representation(self, fake_gateway):
+        slz = serializers.GatewayListV1OutputSLZ(
+            fake_gateway,
+            context={
+                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
+            },
+        )
+        assert slz.data
+        assert isinstance(slz.data["api_type"], int)
+        assert isinstance(slz.data["user_auth_type"], str)
+
+
+class TestGatewayRetrieveV1OutputSLZ:
+    def test_to_representation(self, fake_gateway):
+        slz = serializers.GatewayRetrieveV1OutputSLZ(fake_gateway)
+        assert slz.data
+        assert "api_type" not in slz.data
+        assert "user_auth_type" not in slz.data
+
+
+class TestGatewaySyncInputSLZ:
     @pytest.mark.parametrize(
         "data, expected, will_error",
         [
@@ -90,10 +108,8 @@ class TestGatewaySyncSLZ:
                     "name": "test",
                     "description": "desc",
                     "is_public": True,
-                    "api_type": 10,
+                    "gateway_type": 10,
                     "status": GatewayStatusEnum.ACTIVE.value,
-                    "user_auth_type": "default",
-                    "maintainers": [],
                 },
                 False,
             ),
@@ -108,8 +124,7 @@ class TestGatewaySyncSLZ:
                     "description": "desc",
                     "is_public": True,
                     "status": GatewayStatusEnum.ACTIVE.value,
-                    "user_auth_type": "default",
-                    "maintainers": [],
+                    "gateway_type": None,
                 },
                 False,
             ),
@@ -127,7 +142,7 @@ class TestGatewaySyncSLZ:
                     "maintainers": ["admin"],
                     "is_public": False,
                     "status": GatewayStatusEnum.INACTIVE.value,
-                    "user_auth_type": "default",
+                    "gateway_type": None,
                 },
                 False,
             ),
@@ -149,7 +164,7 @@ class TestGatewaySyncSLZ:
                     "maintainers": [],
                     "is_public": False,
                     "status": GatewayStatusEnum.INACTIVE.value,
-                    "user_auth_type": "default",
+                    "gateway_type": None,
                     "user_config": {
                         "from_bk_token": True,
                         "from_username": True,
@@ -168,10 +183,8 @@ class TestGatewaySyncSLZ:
                     "name": "bk-test",
                     "description": "desc",
                     "is_public": True,
-                    "api_type": 1,
+                    "gateway_type": 1,
                     "status": GatewayStatusEnum.ACTIVE.value,
-                    "user_auth_type": "default",
-                    "maintainers": [],
                 },
                 False,
             ),
@@ -187,9 +200,8 @@ class TestGatewaySyncSLZ:
             ),
         ],
     )
-    def test_validate(self, settings, data, expected, will_error):
-        settings.DEFAULT_USER_AUTH_TYPE = "default"
-        slz = serializers.GatewaySyncSLZ(data=data)
+    def test_validate(self, data, expected, will_error):
+        slz = serializers.GatewaySyncInputSLZ(data=data)
 
         if not will_error:
             slz.is_valid(raise_exception=True)
@@ -199,126 +211,6 @@ class TestGatewaySyncSLZ:
         with pytest.raises(ValidationError):
             slz.is_valid(raise_exception=True)
 
-    def test_create(self, settings, unique_gateway_name):
-        settings.USE_BK_IAM_PERMISSION = False
-        settings.SPECIAL_API_AUTH_CONFIGS = {
-            unique_gateway_name: {
-                "unfiltered_sensitive_keys": ["bk_token"],
-            }
-        }
-
-        bk_app_code = "test"
-
-        slz = serializers.GatewaySyncSLZ(
-            data={
-                "name": unique_gateway_name,
-                "description": "desc",
-                "is_public": True,
-            },
-            context={
-                "bk_app_code": bk_app_code,
-            },
-        )
-        slz.is_valid(raise_exception=True)
-        slz.save(created_by="", updated_by="")
-
-        assert Gateway.objects.filter(name=unique_gateway_name).exists()
-        assert GatewayRelatedApp.objects.filter(gateway=slz.instance, bk_app_code=bk_app_code).exists()
-        api_auth = GatewayAuthContext().get_config(slz.instance.id)
-        assert api_auth["unfiltered_sensitive_keys"] == ["bk_token"]
-        assert api_auth["api_type"] == 10
-
-        api_name = f"bk-{unique_gateway_name}"
-        slz = serializers.GatewaySyncSLZ(
-            data={
-                "name": api_name,
-                "description": "desc",
-                "is_public": True,
-                "api_type": 1,
-            },
-            context={
-                "bk_app_code": bk_app_code,
-            },
-        )
-        slz.is_valid(raise_exception=True)
-        slz.save(created_by="", updated_by="")
-        api_auth = GatewayAuthContext().get_config(slz.instance.id)
-        assert api_auth["api_type"] == 1
-
-    def test_update(self, settings, fake_gateway, unique_gateway_name):
-        settings.SPECIAL_API_AUTH_CONFIGS = {
-            fake_gateway.name: {
-                "unfiltered_sensitive_keys": ["bk_red"],
-            }
-        }
-
-        fake_gateway.maintainers = ["admin"]
-        slz = serializers.GatewaySyncSLZ(
-            instance=fake_gateway,
-            data={
-                "name": unique_gateway_name,
-                "description": "desc",
-                "is_public": False,
-                "maintainers": ["admin2"],
-            },
-        )
-        slz.is_valid()
-        slz.save(created_by="", updated_by="")
-
-        gateway = Gateway.objects.get(id=fake_gateway.id)
-        assert gateway.name != unique_gateway_name
-        assert gateway.description == "desc"
-        assert gateway.is_public is False
-        assert gateway.maintainers == ["admin", "admin2"]
-        api_auth = GatewayAuthContext().get_config(gateway.id)
-        assert api_auth["unfiltered_sensitive_keys"] == ["bk_red"]
-        assert api_auth["api_type"] == 10
-
-        slz = serializers.GatewaySyncSLZ(
-            instance=fake_gateway,
-            data={
-                "name": f"bk-{unique_gateway_name}",
-                "description": "desc",
-                "is_public": True,
-                "api_type": 1,
-            },
-        )
-        slz.is_valid(raise_exception=True)
-        slz.save(created_by="", updated_by="")
-        api_auth = GatewayAuthContext().get_config(gateway.id)
-        assert api_auth["api_type"] == 1
-
-    @pytest.mark.parametrize(
-        "api_name, special_api_auth_configs, expected",
-        [
-            ("my-color", {}, None),
-            (
-                "my-color",
-                {
-                    "my-color": {
-                        "unfiltered_sensitive_keys": ["bk_token", "my_color"],
-                    }
-                },
-                ["bk_token", "my_color"],
-            ),
-            (
-                "not-exist",
-                {
-                    "my-color": {
-                        "unfiltered_sensitive_keys": ["bk_token", "my_color"],
-                    }
-                },
-                None,
-            ),
-        ],
-    )
-    def test_get_api_unfiltered_sensitive_keys(self, settings, api_name, special_api_auth_configs, expected):
-        settings.SPECIAL_API_AUTH_CONFIGS = special_api_auth_configs
-        slz = serializers.GatewaySyncSLZ(data={})
-
-        result = slz._get_api_unfiltered_sensitive_keys(api_name)
-        assert result == expected
-
     @pytest.mark.parametrize(
         "name, api_type, expected_error",
         [
@@ -326,16 +218,18 @@ class TestGatewaySyncSLZ:
             ("test", 10, False),
             ("bk-test", 1, False),
             ("bk-test", 0, False),
+            ("foo-test", 1, False),
             ("test", 0, True),
             ("test", 1, True),
         ],
     )
-    def test_validate_api_type(self, name, api_type, expected_error):
-        slz = serializers.GatewaySyncSLZ()
+    def test_validate_name(self, settings, name, api_type, expected_error):
+        settings.OFFICIAL_GATEWAY_NAME_PREFIXES = ["bk-", "foo-"]
+        slz = serializers.GatewaySyncInputSLZ()
 
         if not expected_error:
-            slz._validate_api_type(name, api_type)
+            slz._validate_name(name, api_type)
             return
 
         with pytest.raises(ValidationError):
-            slz._validate_api_type(name, api_type)
+            slz._validate_name(name, api_type)

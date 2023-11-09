@@ -268,7 +268,7 @@ class TestResourceProxyDiffer:
                         {
                             "id": 1,
                             "name": "bk-mock",
-                            "type": 2,
+                            "type": "2",
                             "config": {
                                 "response_status": 200,
                                 "response_example": "success",
@@ -280,7 +280,7 @@ class TestResourceProxyDiffer:
                         {
                             "id": 1,
                             "name": "bk-mock",
-                            "type": 2,
+                            "type": "2",
                             "config": {
                                 "response_status": 200,
                                 "response_example": "fail",
@@ -293,7 +293,7 @@ class TestResourceProxyDiffer:
                             "2": {
                                 "id": 1,
                                 "name": "bk-mock",
-                                "type": 2,
+                                "type": "2",
                                 "config": {
                                     "response_status": 200,
                                     "response_example": "success",
@@ -305,7 +305,7 @@ class TestResourceProxyDiffer:
                             "2": {
                                 "id": 1,
                                 "name": "bk-mock",
-                                "type": 2,
+                                "type": "2",
                                 "config": {
                                     "response_status": 200,
                                     "response_example": "fail",

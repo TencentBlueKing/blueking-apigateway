@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from ddf import G
 from django.conf import settings
 
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
@@ -45,3 +46,9 @@ class TestGatewayRelatedAppHandler:
 
         del settings.API_GATEWAY_RESOURCE_LIMITS["max_gateway_count_per_app_whitelist"]["bk_test"]
         GatewayRelatedAppHandler._check_app_gateway_limit("bk_test")
+
+    def test_get_related_app_codes(self, fake_gateway):
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="foo")
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="bar")
+        result = GatewayRelatedAppHandler.get_related_app_codes(fake_gateway.id)
+        assert sorted(result) == ["bar", "foo"]

@@ -471,7 +471,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
     # todo: 1.14 删除
-    name = models.CharField(_("[Deprecated] 版本名"), max_length=128, unique=True)
+    name = models.CharField(_("[Deprecated] 版本名"), max_length=128)
     # todo: 1.14 删除
     title = models.CharField(max_length=128, blank=True, default="", null=True)
     comment = models.CharField(max_length=512, blank=True, null=True)
@@ -519,7 +519,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
         if not self.version:
             return f"{self.name}({self.title})"
 
-        return f"{self.version}({self.title})"
+        return self.version
 
     @property
     def is_schema_v2(self):
@@ -709,7 +709,10 @@ class JWT(TimestampedModelMixin, OperatorModelMixin):
 
 
 class GatewayRelatedApp(TimestampedModelMixin):
-    """网关关联的蓝鲸应用"""
+    """
+    网关关联的蓝鲸应用
+    - 应用可以通过 openapi 操作网关数据
+    """
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     bk_app_code = models.CharField(max_length=32, db_index=True)

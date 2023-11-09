@@ -117,7 +117,9 @@ class PaaSAppPermissionApplyInputSLZ(serializers.Serializer):
     def validate(self, data):
         if data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value and not data.get("resource_ids"):
             raise serializers.ValidationError(
-                _("申请权限类型为 {grant_dimension} 时，参数 resource_ids 不能为空。").format(grant_dimension=data["grant_dimension"])
+                _("申请权限类型为 {grant_dimension} 时，参数 resource_ids 不能为空。").format(
+                    grant_dimension=data["grant_dimension"]
+                )
             )
 
         return data
@@ -144,7 +146,9 @@ class AppPermissionApplyV1InputSLZ(serializers.Serializer):
         request = self.context["request"]
         if request.app.app_code != value:
             raise serializers.ValidationError(
-                _("应用【{app_code}】不能为其它应用【{value}】申请访问网关API的权限。").format(app_code=request.app.app_code, value=value)
+                _("应用【{app_code}】不能为其它应用【{value}】申请访问网关API的权限。").format(
+                    app_code=request.app.app_code, value=value
+                )
             )
 
         return value

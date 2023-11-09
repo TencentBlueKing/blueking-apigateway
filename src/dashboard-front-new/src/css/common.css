@@ -1,4 +1,5 @@
 /* stylelint-disable */
+@import './variable.css';
 .ft-12 {
   font-size: 12px;
 }
@@ -458,6 +459,18 @@
 
 .warning-c{
   color: #ff9c01 !important;
+}
+
+.success-c{
+  color: $successColor;
+}
+
+.danger-c{
+  color: $dangerColor;
+}
+
+.default-c{
+  color: $primaryColor;
 }
 
 .w700{

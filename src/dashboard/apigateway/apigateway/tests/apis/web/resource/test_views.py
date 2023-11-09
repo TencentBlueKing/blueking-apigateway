@@ -80,11 +80,13 @@ class TestResourceListCreateApi:
                 "path": "/echo/",
                 "match_subpath": False,
                 "label_ids": [],
-                "backend_config": {
-                    "method": "GET",
-                    "path": "/echo/",
-                    "match_subpath": False,
-                    "timeout": 30,
+                "backend": {
+                    "config": {
+                        "method": "GET",
+                        "path": "/echo/",
+                        "match_subpath": False,
+                        "timeout": 30,
+                    }
                 },
                 "auth_config": {
                     "auth_verified_required": False,
@@ -96,7 +98,7 @@ class TestResourceListCreateApi:
     )
     def test_create(self, request_view, fake_gateway, data):
         backend = G(Backend, gateway=fake_gateway)
-        data["backend_id"] = backend.id
+        data["backend"]["id"] = backend.id
 
         resp = request_view(
             method="POST",
@@ -152,11 +154,13 @@ class TestResourceRetrieveUpdateDestroyApi:
             "method": "POST",
             "path": "/echo/",
             "label_ids": [],
-            "backend_id": backend.id,
-            "backend_config": {
-                "method": "GET",
-                "path": "/echo/",
-                "timeout": 30,
+            "backend": {
+                "id": backend.id,
+                "config": {
+                    "method": "GET",
+                    "path": "/echo/",
+                    "timeout": 30,
+                },
             },
             "auth_config": {
                 "auth_verified_required": False,

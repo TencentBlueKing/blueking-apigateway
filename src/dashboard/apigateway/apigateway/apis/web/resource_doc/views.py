@@ -61,7 +61,9 @@ class DocArchiveParseApi(generics.CreateAPIView):
         try:
             docs = parser.parse(slz.validated_data["file"])
         except NoResourceDocError:
-            raise error_codes.INVALID_ARGUMENT.format(_("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True)
+            raise error_codes.INVALID_ARGUMENT.format(
+                _("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True
+            )
 
         slz = DocArchiveParseOutputSLZ(docs, many=True)
         return OKJsonResponse(data=slz.data)
@@ -84,7 +86,9 @@ class DocImportByArchiveApi(generics.CreateAPIView):
         try:
             docs = parser.parse(slz.validated_data["file"])
         except NoResourceDocError:
-            raise error_codes.INVALID_ARGUMENT.format(_("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True)
+            raise error_codes.INVALID_ARGUMENT.format(
+                _("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True
+            )
         except ResourceDocJinja2TemplateError as err:
             raise error_codes.INTERNAL.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
 

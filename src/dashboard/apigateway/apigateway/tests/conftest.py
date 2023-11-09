@@ -42,6 +42,7 @@ from apigateway.core.constants import (
     ProxyTypeEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusTypeEnum,
+    ResourceVersionSchemaEnum,
 )
 from apigateway.core.models import (
     Backend,
@@ -327,6 +328,34 @@ def fake_resource_version(faker, fake_gateway, fake_resource1, fake_resource2):
 
 
 @pytest.fixture
+def fake_resource_version_v2(faker, fake_gateway, fake_resource):
+    resource_version = G(
+        ResourceVersion,
+        gateway=fake_gateway,
+        name=faker.pystr(),
+        version=faker.pystr(),
+        schema_version=ResourceVersionSchemaEnum.V2.value,
+    )
+    resource_version.data = ResourceVersionHandler.make_version(fake_gateway)
+    resource_version.save()
+    return resource_version
+
+
+@pytest.fixture
+def fake_resource_version_v1(faker, fake_gateway, fake_resource):
+    resource_version = G(
+        ResourceVersion,
+        gateway=fake_gateway,
+        name=faker.pystr(),
+        version=faker.pystr(),
+        schema_version=ResourceVersionSchemaEnum.V1.value,
+    )
+    resource_version.data = ResourceVersionHandler.make_version(fake_gateway)
+    resource_version.save()
+    return resource_version
+
+
+@pytest.fixture
 def fake_release(fake_gateway, fake_stage, fake_resource_version):
     return G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
@@ -489,7 +518,7 @@ def request_to_view():
 
 @pytest.fixture()
 def request_view(request_factory):
-    def fn(method, view_name, path_params=None, gateway=None, user=None, **kwargs):
+    def fn(method, view_name, path_params=None, gateway=None, user=None, app=None, **kwargs):
         path = reverse(view_name, kwargs=path_params)
         resolved = resolve(path)
 
@@ -498,6 +527,8 @@ def request_view(request_factory):
         request.gateway = gateway
         if user is not None:
             request.user = user
+        if app is not None:
+            request.app = app
 
         response = resolved.func(request, *resolved.args, **resolved.kwargs)
         response.json = partial(get_response_json, response)

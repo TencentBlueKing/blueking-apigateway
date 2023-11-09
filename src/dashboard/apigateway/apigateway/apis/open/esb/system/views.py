@@ -27,7 +27,7 @@ from apigateway.utils.responses import V1OKJsonResponse
 
 
 class SystemViewSet(viewsets.GenericViewSet):
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     def _filter_active_and_public_systems(self, boards: List[str]):
         """

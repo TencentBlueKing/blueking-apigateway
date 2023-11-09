@@ -1,3 +1,5 @@
+/* stylelint-disable color-hex-case */
+/* stylelint-disable indentation */
 @import './variable.css';
 
 .ag-tag {
@@ -45,7 +47,7 @@
     }
 
     &.patch {
-        background-color: #DAD6FD ;
+        background-color: #DAD6FD;
         color: #5949E1;
     }
 }

@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import List
+
 from django.conf import settings
 
 from apigateway.common.error_codes import error_codes
@@ -40,3 +42,7 @@ class GatewayRelatedAppHandler:
                 f"The app [{bk_app_code}] exceeds the limit of the number of gateways that can be related."
                 + f" The maximum limit is {max_gateway_per_app}."
             )
+
+    @staticmethod
+    def get_related_app_codes(gateway_id: int) -> List[str]:
+        return list(GatewayRelatedApp.objects.filter(gateway_id=gateway_id).values_list("bk_app_code", flat=True))

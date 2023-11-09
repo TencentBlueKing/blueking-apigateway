@@ -13,22 +13,25 @@
           :active-key="activeMenuKey"
         >
           <bk-submenu
-            v-for="menu in menuData"
+            v-for="menu in subMenuList"
             :key="menu.name"
             :title="menu.title"
           >
             <template #icon>
               <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
             </template>
-            <bk-menu-item v-for="child in menu.children" :key="child.name" @click="handleGoPage(child.name, apigwId)">
+            <bk-menu-item
+              v-for="child in menu.children" :key="child.name" @click="handleGoPage(child.name, apigwId)">
               {{ child.title }}
             </bk-menu-item>
           </bk-submenu>
-          <bk-menu-item @click="handleGoPage('apigwOnlineTest', apigwId)">
+          <bk-menu-item
+            v-for="menuItem in menuList" :key="menuItem.name"
+            @click="handleGoPage(menuItem.name, apigwId)">
             <template #icon>
-              <i class="icon apigateway-icon icon-ag-debug"></i>
+              <i :class="['icon apigateway-icon', `icon-ag-${menuItem.icon}`]"></i>
             </template>
-            {{ $t("在线调试") }}
+            {{ menuItem.title }}
           </bk-menu-item>
         </bk-menu>
       </template>
@@ -59,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { menuData } from '@/common/menu';
 import { useGetApiList } from '@/hooks';
@@ -78,6 +81,10 @@ const collapse = ref(true);
 const activeMenuKey = ref('');
 const gatewaysList = ref<any>([]);
 const openedKeys = menuData.map(e => e.name);
+
+// 区分是否有子菜单
+const subMenuList = computed(() => menuData.filter(e => e.children?.length));
+const menuList = computed(() => menuData.filter(e => !e.children?.length));
 
 // 当前网关Id
 const apigwId = ref(0);

@@ -40,7 +40,10 @@ class BkStandardApiJSONRenderer(JSONRenderer):
         resp = renderer_context["response"]
         if status.is_success(resp.status_code):
             data = {"data": data}
-        elif status.is_client_error(resp.status_code) or status.is_server_error(resp.status_code):
+        elif (
+            status.is_client_error(resp.status_code) or status.is_server_error(resp.status_code)
+        ) and "error" not in data:
+            # the error from exception_handler already wrap the error data, so we don't need to wrap it again
             data = {"error": data}
         # For status codes other than (2xx, 4xx, 5xx), do not wrap data
         return super().render(data, accepted_media_type=None, renderer_context=None)

@@ -38,9 +38,7 @@ class Command(BaseCommand):
         for gateway_id in self._get_gateway_ids(gateway_name):
             resource_id_to_proxy_id = dict(
                 # proxy_id 为 0，为新版资源配置，不需要清理
-                Resource.objects.filter(gateway_id=gateway_id)
-                .exclude(proxy_id=0)
-                .values_list("id", "proxy_id")
+                Resource.objects.filter(gateway_id=gateway_id).exclude(proxy_id=0).values_list("id", "proxy_id")
             )
             proxies = {
                 proxy.id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_id_to_proxy_id.keys())

@@ -16,27 +16,26 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
 from . import views
 
 urlpatterns = [
-    path("", views.GatewayViewSet.as_view({"get": "list"}), name="openapi.gateway.list"),
-    path("<int:id>/", views.GatewayViewSet.as_view({"get": "retrieve"}), name="openapi.gateway.detail"),
-    path("<slug:gateway_name>/sync/", views.GatewaySyncViewSet.as_view({"post": "sync"}), name="openapi.gateway.sync"),
+    path("", views.GatewayListApi.as_view(), name="openapi.gateway.list"),
+    path("<int:id>/", views.GatewayRetrieveApi.as_view(), name="openapi.gateway.retrieve"),
     path(
-        "<slug:gateway_name>/status/",
-        views.GatewayUpdateStatusViewSet.as_view({"post": "update_status"}),
-        name="openapi.gateway.update_status",
-    ),
-    path(
-        "<slug:gateway_name>/public_key/",
-        views.GatewayPublicKeyViewSet.as_view({"get": "get_public_key"}),
-        name="openapi.gateway.public_key",
-    ),
-    path(
-        "<slug:gateway_name>/related-apps/",
-        views.GatewayRelatedAppViewSet.as_view({"post": "add_related_apps"}),
-        name="openapi.gateway.add_related_apps",
+        "<slug:gateway_name>/",
+        include(
+            [
+                path("sync/", views.GatewaySyncApi.as_view(), name="openapi.gateway.sync"),
+                path("status/", views.GatewayUpdateStatusApi.as_view(), name="openapi.gateway.update_status"),
+                path(
+                    "public_key/", views.GatewayPublicKeyRetrieveApi.as_view(), name="openapi.gateway.get_public_key"
+                ),
+                path(
+                    "related-apps/", views.GatewayRelatedAppAddApi.as_view(), name="openapi.gateway.add_related_apps"
+                ),
+            ]
+        ),
     ),
 ]

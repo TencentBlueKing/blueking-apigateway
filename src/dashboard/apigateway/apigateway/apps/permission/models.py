@@ -51,7 +51,9 @@ class AppGatewayPermission(TimestampedModelMixin):
 
     bk_app_code = models.CharField(max_length=32, db_index=True)
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    expires = models.DateTimeField(default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天"))
+    expires = models.DateTimeField(
+        default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天")
+    )
 
     objects = managers.AppGatewayPermissionManager()
 
@@ -103,7 +105,9 @@ class AppResourcePermission(TimestampedModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     # NOTE: resource 若为 ForeignKey，若资源删除，则权限被级联删除，但是发布版本中的资源配置存在，会导致应用无权限访问对应资源
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
-    expires = models.DateTimeField(default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天"))
+    expires = models.DateTimeField(
+        default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天")
+    )
     grant_type = models.CharField(max_length=16, choices=GrantTypeEnum.get_choices(), db_index=True)
 
     objects = managers.AppResourcePermissionManager()

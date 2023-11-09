@@ -120,3 +120,11 @@ export const exportDocs = async (apigwId: number, data: any) => {
   const res = await fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/docs/export/`, data, { responseType: 'blob' });
   return blobDownLoad(res);
 };
+
+/**
+ * 导入前检查
+ * @param apigwId 网关id
+ * @param data 检查参数
+ */
+export const checkResourceImport = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/import/check/`, data);
+

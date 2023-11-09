@@ -160,3 +160,20 @@ export function sortByKey(list: any = [], key: string | number) {
   });
   return results;
 }
+/**
+ * 读取文件内容
+ * @param {Object} file file文件对象
+ */
+export const getStrFromFile = (file: any) => {
+  let resolveFn: Function = () => {};
+  const PromiseFunc = new Promise(resolve => resolveFn = resolve);
+  // ▼ new 一个 FileReader
+  // ▼ 然后监听 onload 事件，从中取得文本内容
+  const oReader = Object.assign(new FileReader(), {
+    onload(event: any) {
+      resolveFn(event.target.result);
+    },
+  });
+  oReader.readAsText(file);
+  return PromiseFunc;
+};

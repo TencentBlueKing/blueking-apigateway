@@ -25,7 +25,9 @@ class IAMGradeManagerExistError(Exception):
         self._gateway_id = gateway_id
 
     def __str__(self):
-        return _("网关 (id={gateway_id}) 的 IAM 分级管理员已存在，请不要重复创建。").format(gateway_id=self._gateway_id)
+        return _("网关 (id={gateway_id}) 的 IAM 分级管理员已存在，请不要重复创建。").format(
+            gateway_id=self._gateway_id
+        )
 
 
 class IAMGradeManagerNotExist(Exception):
@@ -33,7 +35,9 @@ class IAMGradeManagerNotExist(Exception):
         self._gateway_id = gateway_id
 
     def __str__(self):
-        return _("网关 (id={gateway_id}) 的 IAM 分级管理员不存在，请联系系统负责人初始化数据。").format(gateway_id=self._gateway_id)
+        return _("网关 (id={gateway_id}) 的 IAM 分级管理员不存在，请联系系统负责人初始化数据。").format(
+            gateway_id=self._gateway_id
+        )
 
 
 class IAMUserRoleNotExist(Exception):
