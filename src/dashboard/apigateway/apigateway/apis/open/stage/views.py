@@ -101,6 +101,7 @@ class StageSyncViewSet(viewsets.ViewSet):
             data=request.data,
             context={
                 "request": request,
+                "allow_var_not_exist": True,
             },
         )
         slz.is_valid(raise_exception=True)

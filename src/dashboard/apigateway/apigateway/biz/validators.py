@@ -114,17 +114,26 @@ class StageVarsValuesValidator:
         stage_vars = attrs["vars"]
         resource_version_id = attrs["resource_version_id"]
 
+        # 允许环境中变量不存在:
+        # openapi 同步环境时，存在修改变量名的情况，此时，当前 resource version 中资源引用的变量可能不存在，
+        # 因此，通过 openapi 更新时，允许环境变量不存在
+        allow_var_not_exist = attrs.get("allow_var_not_exist", False)
+
         used_stage_vars = ResourceVersionHandler.get_used_stage_vars(gateway.id, resource_version_id)
         if not used_stage_vars:
             return
 
         for key in used_stage_vars["in_path"]:
             if key not in stage_vars:
+                if allow_var_not_exist:
+                    continue
+
                 raise serializers.ValidationError(
                     _(
                         "环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作路径变量，必须存在。"
                     ).format(stage_name=stage_name, key=key),
                 )
+
             if not STAGE_VAR_FOR_PATH_PATTERN.match(stage_vars[key]):
                 raise serializers.ValidationError(
                     _(
@@ -138,11 +147,15 @@ class StageVarsValuesValidator:
         for key in used_stage_vars["in_host"]:
             _value = stage_vars.get(key)
             if not _value:
+                if allow_var_not_exist:
+                    continue
+
                 raise serializers.ValidationError(
                     _(
                         "环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作 Host 变量，不能为空。"
                     ).format(stage_name=stage_name, key=key),
                 )
+
             if not HOST_WITHOUT_SCHEME_PATTERN.match(_value):
                 raise serializers.ValidationError(
                     _(

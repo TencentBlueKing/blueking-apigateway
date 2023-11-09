@@ -26,7 +26,7 @@ from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.releaser import ReleaseError, Releaser
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
-from apigateway.core.models import Release, ResourceVersion, Stage
+from apigateway.core.models import ResourceVersion, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
@@ -111,23 +111,6 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
         stage_ids = data["stage_ids"]
         resource_version = ResourceVersion.objects.get_object_fields(data["resource_version_id"])
 
-        # 如果环境已发布某版本，则不重复发布，且计入此次已发布环境
-        data["stage_ids"] = Release.objects.get_stage_ids_unreleased_the_version(
-            gateway_id=gateway_id,
-            stage_ids=stage_ids,
-            resource_version_id=data["resource_version_id"],
-        )
-        if not data["stage_ids"]:
-            return V1OKJsonResponse(
-                "OK",
-                data={
-                    "version": resource_version["version"],
-                    "resource_version_name": resource_version["name"],
-                    "resource_version_title": resource_version["title"],
-                    "stage_names": list(Stage.objects.filter(id__in=stage_ids).values_list("name", flat=True)),
-                },
-            )
-
         for stage_id in data["stage_ids"]:
             releaser = Releaser(access_token=get_user_access_token_from_request(request))
             try:
@@ -145,7 +128,6 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
                     )
             except LockTimeout as err:
                 return V1FailJsonResponse(str(err))
-
             except ReleaseError as err:
                 return V1FailJsonResponse(str(err))
 
