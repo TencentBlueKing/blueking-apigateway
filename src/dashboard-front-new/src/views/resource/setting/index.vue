@@ -536,7 +536,6 @@ const handleBatchConfirm = async () => {
 
 // 处理导入跳转
 const handleImport = (v: IDropList) => {
-  console.log('导入', v);
   const routerName = v.value === 'doc' ? 'apigwResourceImportDoc' : 'apigwResourceImport';
   router.push({
     name: routerName,
