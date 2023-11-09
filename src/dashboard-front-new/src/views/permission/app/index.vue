@@ -16,7 +16,7 @@
       </div>
       <bk-form class="flex-row ">
         <bk-form-item :label="$t('授权维度')" class="mb0">
-          <bk-select v-model="filterData.dimension" class="w150">
+          <bk-select v-model="dimension" class="w150">
             <bk-option v-for="option of dimensionList" :key="option.id" :id="option.id" :name="option.name">
             </bk-option>
           </bk-select>
@@ -238,6 +238,7 @@ const isDataLoading = ref(false);
 const isVisible = ref(false);
 const tableIndex = ref<number>(0);
 const curPermission = ref({ bk_app_code: '', detail: [], id: -1 });
+const dimension = ref<string>('resource');
 // 导出下拉
 const exportDropData = ref<IDropList[]>([
   { value: 'all', label: t('全部应用权限') },
@@ -308,7 +309,7 @@ const {
   handlePageChange,
   handlePageSizeChange,
   getList,
-} = useQueryList(filterData.value.dimension === 'resource' ? getResourcePermissionList : getApiPermissionList, filterData);
+} = useQueryList(getResourcePermissionList, filterData);
 
 // checkbox hooks
 const {
@@ -318,21 +319,22 @@ const {
 } = useSelection();
 
 
-// 监听授权维度是否变化
+// // 监听授权维度是否变化
 watch(
-  () => filterData.value.dimension,
+  () => dimension,
   () => {
-    const {
-      tableData,
-      // getList,
-    } = useQueryList(filterData.value.dimension === 'resource' ? getResourcePermissionList : getApiPermissionList, filterData);
-    getBkAppCodes();
-    const a = cloneDeep(tableData);
-    // getList();
-    console.log('api', a);
+    const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
+    getList(method);
 
-    console.log('tableData', tableData);
-    console.log('dimension改变');
+    // console.log('tableData', tableData);
+    // console.log('dimension改变');
+  },
+  { deep: true },
+);
+watch(
+  () => tableData.value,
+  (data: any) => {
+    console.log('tableData', data);
   },
   { deep: true },
 );
@@ -587,7 +589,7 @@ const handleSidesliderCancel = () => {
 const init = () => {
   // console.log(tableData);
   getApigwResources();
-  getBkAppCodes();
+  // getBkAppCodes();
 };
 init();
 </script>
