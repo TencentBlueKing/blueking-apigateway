@@ -18,6 +18,7 @@
 import base64
 from typing import Dict, List, Optional, Union
 
+from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
 from apigateway.controller.crds.base import KubernetesResourceMetadata
@@ -49,6 +50,8 @@ class StageConvertor(BaseConvertor):
         plugins = self._get_default_stage_plugins()
         plugins.extend(self._get_stage_plugins())
 
+        plugins.extend(self._get_extra_stage_plugins())
+
         return BkGatewayStage(
             metadata=self._common_metadata(self._release_data.stage.name),
             spec=BkGatewayStageSpec(
@@ -59,6 +62,12 @@ class StageConvertor(BaseConvertor):
                 plugins=plugins,
             ),
         )
+
+    def _get_extra_stage_plugins(self) -> List[PluginConfig]:
+        gateway_name = self._release_data.gateway.name
+        if gateway_name in settings.LEGACY_INVALID_PARAMS_GATEWAY_NAMES:
+            return [PluginConfig(name="bk-legacy-invalid-params")]
+        return []
 
     def _get_default_stage_plugins(self) -> List[PluginConfig]:
         """Get the default plugins for stage, which is shared by all resources in the stage"""
@@ -108,7 +117,7 @@ class StageConvertor(BaseConvertor):
 
         return plugins
 
-    def _get_stage_plugins(self):
+    def _get_stage_plugins(self) -> List[PluginConfig]:
         return [
             PluginConfig(name=plugin_data.name, config=plugin_data.config)
             for plugin_data in self._release_data.get_stage_plugins()

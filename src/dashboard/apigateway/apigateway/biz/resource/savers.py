@@ -108,9 +108,9 @@ class ResourcesSaver:
             resource = resources[resource_data.name]
             if resource_data.method != resource.method or resource_data.path != resource.path:
                 raise ValueError(
-                    _("根据资源名称匹配资源时，匹配资源的 method + path 和用户输入的不一致，请检查资源 (name={name}) 是否已存在。").format(
-                        name=resource_data.name
-                    )
+                    _(
+                        "根据资源名称匹配资源时，匹配资源的 method + path 和用户输入的不一致，请检查资源 (name={name}) 是否已存在。"
+                    ).format(name=resource_data.name)
                 )
 
             resource_data.resource = resource

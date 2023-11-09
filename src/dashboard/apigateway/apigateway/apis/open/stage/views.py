@@ -36,7 +36,7 @@ from apigateway.utils.responses import V1OKJsonResponse
 class StageViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.StageV1SLZ
     lookup_field = "id"
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     def get_queryset(self):
         return Stage.objects.filter(gateway=self.request.gateway)

@@ -152,13 +152,15 @@ class TestResourceInputSLZ:
                 "app_verified_required": True,
                 "resource_perm_required": True,
             },
-            "backend_config": {
-                "method": "GET",
-                "path": "/test",
-                "match_subpath": False,
-                "timeout": 0,
+            "backend": {
+                "id": backend.id,
+                "config": {
+                    "method": "GET",
+                    "path": "/test",
+                    "match_subpath": False,
+                    "timeout": 0,
+                },
             },
-            "backend_id": backend.id,
             "label_ids": [],
         }
 
@@ -206,8 +208,8 @@ class TestResourceInputSLZ:
     @pytest.mark.parametrize(
         "data",
         [
-            {"match_subpath": True, "backend_config": {"match_subpath": False}},
-            {"match_subpath": False, "backend_config": {"match_subpath": True}},
+            {"match_subpath": True, "backend": {"config": {"match_subpath": False}}},
+            {"match_subpath": False, "backend": {"config": {"match_subpath": True}}},
         ],
     )
     def test_validate_match_subpath__error(self, data):

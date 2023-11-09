@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 
 class ApiGatewayJWTAppMiddleware(BaseApiGatewayJWTAppMiddleware):
-
     App = namedtuple("App", ["app_code"])
 
     def make_app(self, bk_app_code=None, verified=False, **jwt_app):
@@ -37,7 +36,6 @@ class ApiGatewayJWTAppMiddleware(BaseApiGatewayJWTAppMiddleware):
 
 
 class ApiGatewayJWTUserMiddleware(BaseApiGatewayJWTUserMiddleware):
-
     User = namedtuple("User", ["username", "is_active", "is_authenticated"])
 
     def get_user(self, request, api_name=None, bk_username=None, verified=False, **credentials):

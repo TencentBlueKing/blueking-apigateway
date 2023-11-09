@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 
 class BaseComponent:
-
     HOST = ""
 
     def _call_api(self, http_func, path, data, **kwargs):

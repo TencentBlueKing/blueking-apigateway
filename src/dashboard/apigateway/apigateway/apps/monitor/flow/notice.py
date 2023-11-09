@@ -67,7 +67,6 @@ class CMSIMailNotice(BaseNotice):
 
 
 class NoticeWay:
-
     notice_way_map = {
         NoticeWayEnum.WECHAT.value: CMSIWechatNotice,
         NoticeWayEnum.IM.value: CMSIIMNotice,

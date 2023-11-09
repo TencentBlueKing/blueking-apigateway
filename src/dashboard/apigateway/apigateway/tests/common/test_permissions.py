@@ -36,7 +36,7 @@ class TestGatewayRelatedAppPermission:
             return OKJsonResponse()
 
     @pytest.mark.parametrize(
-        "mock_gateway, allow_api_not_exist, api_permission_exempt, mock_allow_manage, expected",
+        "mock_gateway, allow_gateway_not_exist, gateway_permission_exempt, mock_allow_manage, expected",
         [
             (None, True, False, False, True),
             (None, False, False, False, Http404),
@@ -51,8 +51,8 @@ class TestGatewayRelatedAppPermission:
         fake_gateway,
         mocker,
         mock_gateway,
-        allow_api_not_exist,
-        api_permission_exempt,
+        allow_gateway_not_exist,
+        gateway_permission_exempt,
         mock_allow_manage,
         expected,
     ):
@@ -66,8 +66,8 @@ class TestGatewayRelatedAppPermission:
         fake_request.app = mock.MagicMock(app_code="test")
 
         view = self.APINameViewSet.as_view({"get": "retrieve"})
-        view.allow_api_not_exist = allow_api_not_exist
-        view.api_permission_exempt = api_permission_exempt
+        view.allow_gateway_not_exist = allow_gateway_not_exist
+        view.gateway_permission_exempt = gateway_permission_exempt
 
         if expected == Http404:
             with pytest.raises(Http404):

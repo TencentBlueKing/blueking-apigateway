@@ -24,8 +24,10 @@ import logging
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from pydantic import parse_obj_as
 
-from apigateway.apis.open.gateway.serializers import GatewaySyncSLZ
+from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
+from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
 
@@ -45,13 +47,20 @@ class Command(BaseCommand):
                 continue
 
             if not dry_run:
-                slz = GatewaySyncSLZ(
-                    data=dict(config, name=name),
-                    context={
-                        "bk_app_code": settings.BK_APP_CODE,
-                    },
+                saver = GatewaySaver(
+                    id=None,
+                    data=parse_obj_as(
+                        GatewayData,
+                        dict(
+                            config,
+                            name=name,
+                            maintainers=[settings.GATEWAY_DEFAULT_CREATOR],
+                            status=GatewayStatusEnum.ACTIVE.value,
+                        ),
+                    ),
+                    bk_app_code=settings.BK_APP_CODE,
+                    username=settings.GATEWAY_DEFAULT_CREATOR,
                 )
-                slz.is_valid(raise_exception=True)
-                slz.save(created_by="admin", updated_by="admin")
+                saver.save()
 
         logger.info("create esb gateway [name=%s]", name)

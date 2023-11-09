@@ -90,7 +90,6 @@ class AlertHandler:
 
 @dataclass
 class AlertFlow:
-
     _handlers: List[AlertHandler] = field(default_factory=list)
 
     def run(self, events: Optional[List[MonitorEvent]] = None):

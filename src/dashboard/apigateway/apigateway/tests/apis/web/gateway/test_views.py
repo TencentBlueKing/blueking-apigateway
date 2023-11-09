@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.core.constants import GatewayStatusEnum
@@ -38,6 +39,7 @@ class TestGatewayListCreateApi:
             "description": faker.pystr(),
             "maintainers": ["admin"],
             "is_public": False,
+            "bk_app_codes": ["app1"],
         }
 
         resp = request_view(
@@ -53,6 +55,7 @@ class TestGatewayListCreateApi:
         assert result["data"]["id"] == gateway.id
         assert Stage.objects.filter(gateway=gateway).exists()
         assert JWT.objects.filter(gateway=gateway).count() == 1
+        assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
 
 
 class TestGatewayRetrieveUpdateDestroyApi:
@@ -75,6 +78,7 @@ class TestGatewayRetrieveUpdateDestroyApi:
             "description": faker.pystr(),
             "maintainers": ["admin"],
             "is_public": faker.random_element([True, False]),
+            "bk_app_codes": ["app1"],
         }
         resp = request_view(
             method="PUT",
@@ -87,6 +91,7 @@ class TestGatewayRetrieveUpdateDestroyApi:
         assert resp.status_code == 204
         assert gateway.description == data["description"]
         assert gateway.is_public is data["is_public"]
+        assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
 
     def test_destroy(self, request_view, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.INACTIVE.value

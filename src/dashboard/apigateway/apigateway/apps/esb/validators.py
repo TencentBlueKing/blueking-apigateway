@@ -38,4 +38,6 @@ class ComponentIDValidator:
         system_id = serializer_field.context["system_id"]
         count = ESBChannel.objects.filter(system_id=system_id, id__in=component_ids).count()
         if count != len(set(component_ids)):
-            raise serializers.ValidationError(_("系统【id={system_id}】下指定的部分组件ID不存在。").format(system_id=system_id))
+            raise serializers.ValidationError(
+                _("系统【id={system_id}】下指定的部分组件ID不存在。").format(system_id=system_id)
+            )

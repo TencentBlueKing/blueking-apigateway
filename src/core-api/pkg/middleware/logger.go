@@ -70,11 +70,11 @@ func logContextFields(c *gin.Context) []zap.Field {
 	c.Next()
 
 	duration := time.Since(start)
-	// always add 1ms, in case the 0ms in log
-	latency := float64(duration/time.Millisecond) + 1
+
+	latency := float64(duration) / float64(time.Microsecond)
 
 	status := c.Writer.Status()
-	hasError := (status != http.StatusOK)
+	hasError := status != http.StatusOK
 
 	params := stringx.Truncate(c.Request.URL.RawQuery, 1024)
 	fields := []zap.Field{

@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class APISDKV1ViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.APISDKV1SLZ
     lookup_field = "id"
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     def get_queryset(self):
         return GatewaySDK.objects.all()

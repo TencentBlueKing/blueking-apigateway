@@ -22,18 +22,24 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 
 
 class SDKListInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
+    language = serializers.ChoiceField(
+        choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.esb.sdk.SDKListInputSLZ"
 
 
 class SDKRetrieveInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
+    language = serializers.ChoiceField(
+        choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
+    )
 
 
 class SDKDocInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
+    language = serializers.ChoiceField(
+        choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.esb.sdk.SDKDocInputSLZ"
@@ -47,7 +53,9 @@ class SDKDocOutputSLZ(serializers.Serializer):
 
 
 class SDKUsageExampleInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python")
+    language = serializers.ChoiceField(
+        choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
+    )
     system_name = serializers.CharField(help_text="组件所属系统名称")
     component_name = serializers.CharField(help_text="组件名称")
 

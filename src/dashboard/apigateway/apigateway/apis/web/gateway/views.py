@@ -27,6 +27,7 @@ from rest_framework import generics, status
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
@@ -104,6 +105,8 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         slz = GatewayCreateInputSLZ(data=request.data, context={"created_by": request.user.username})
         slz.is_valid(raise_exception=True)
 
+        bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
+
         # 1. save gateway
         slz.save(
             status=GatewayStatusEnum.ACTIVE.value,
@@ -116,6 +119,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             gateway=slz.instance,
             user_auth_type=UserAuthTypeEnum(settings.DEFAULT_USER_AUTH_TYPE).value,
             username=request.user.username,
+            app_codes_to_binding=bk_app_codes,
         )
 
         # 3. record audit log
@@ -175,6 +179,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             instance,
             context={
                 "auth_config": GatewayAuthContext().get_auth_config(instance.pk),
+                "bk_app_codes": GatewayAppBindingHandler.get_bound_app_codes(instance),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -186,7 +191,12 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         slz = GatewayUpdateInputSLZ(instance=instance, data=request.data, partial=partial)
         slz.is_valid(raise_exception=True)
 
+        bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
+
         slz.save(updated_by=request.user.username)
+
+        if bk_app_codes is not None:
+            GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
 
         GatewayHandler.record_audit_log_success(
             username=request.user.username,

@@ -108,7 +108,9 @@ class BindOrUnbindScopesSLZ(serializers.Serializer):
     def validate_ssl_certificate_id(self, value) -> int:
         valid_id = SslCertificate.objects.get_valid_id(gateway_id=self.context["gateway_id"], id_=value)
         if not valid_id:
-            raise serializers.ValidationError(_("证书【id={ssl_certificate_id}】不存在。").format(ssl_certificate_id=value))
+            raise serializers.ValidationError(
+                _("证书【id={ssl_certificate_id}】不存在。").format(ssl_certificate_id=value)
+            )
         return valid_id
 
     def validate(self, data):
@@ -138,7 +140,9 @@ class BindOrUnbindSSLCertificatesSLZ(serializers.Serializer):
             self.context["gateway_id"], scope_type, scope_id
         )
         if not valid_scope_id:
-            raise serializers.ValidationError({"scope_id": _("scope【id={scope_id}】不存在。").format(scope_id=scope_id)})
+            raise serializers.ValidationError(
+                {"scope_id": _("scope【id={scope_id}】不存在。").format(scope_id=scope_id)}
+            )
 
         return valid_scope_id
 

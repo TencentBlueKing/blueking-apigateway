@@ -202,7 +202,9 @@ class ResourceImportValidator:
             resource_id = resource_data.resource.id
             if resource_id in resource_ids:
                 raise ValueError(
-                    _("资源重复，id={resource_id}, method={method}, path={path} 在当前配置数据中被多次使用，请检查。").format(
+                    _(
+                        "资源重复，id={resource_id}, method={method}, path={path} 在当前配置数据中被多次使用，请检查。"
+                    ).format(
                         resource_id=resource_id,
                         method=resource_data.method,
                         path=resource_data.path,
@@ -229,9 +231,9 @@ class ResourceImportValidator:
 
             if key in resource_keys:
                 raise ValueError(
-                    _("资源请求方法+请求路径重复，method={method}, path={path} 在当前配置数据中被多次使用，请检查。").format(
-                        method=resource_data.method, path=resource_data.path
-                    )
+                    _(
+                        "资源请求方法+请求路径重复，method={method}, path={path} 在当前配置数据中被多次使用，请检查。"
+                    ).format(method=resource_data.method, path=resource_data.path)
                 )
 
             resource_keys.add(key)
@@ -250,9 +252,9 @@ class ResourceImportValidator:
         for path, methods in path_to_methods.items():
             if HTTP_METHOD_ANY in methods and len(methods) > 1:
                 raise ValueError(
-                    _("当前配置数据及已有资源数据中，请求路径 {path} 下，同时存在 {method_any} 及其它请求方法。").format(
-                        path=path, method_any=HTTP_METHOD_ANY
-                    )
+                    _(
+                        "当前配置数据及已有资源数据中，请求路径 {path} 下，同时存在 {method_any} 及其它请求方法。"
+                    ).format(path=path, method_any=HTTP_METHOD_ANY)
                 )
 
     def _validate_name(self):
@@ -262,10 +264,14 @@ class ResourceImportValidator:
 
         for resource_data in self.resource_data_list:
             if resource_data.name in unchanged_resource_names:
-                raise ValueError(_("资源名称重复，name={name} 已被现有资源占用，请检查。").format(name=resource_data.name))
+                raise ValueError(
+                    _("资源名称重复，name={name} 已被现有资源占用，请检查。").format(name=resource_data.name)
+                )
 
             if resource_data.name in resource_names:
-                raise ValueError(_("资源名称重复，name={name} 在当前配置数据中被多次使用，请检查。").format(name=resource_data.name))
+                raise ValueError(
+                    _("资源名称重复，name={name} 在当前配置数据中被多次使用，请检查。").format(name=resource_data.name)
+                )
 
             resource_names.add(resource_data.name)
 
@@ -294,7 +300,9 @@ class ResourceImportValidator:
 
         exist_label_names = set(APILabel.objects.filter(gateway=self.gateway).values_list("name", flat=True))
         if len(label_names | exist_label_names) > settings.MAX_LABEL_COUNT_PER_GATEWAY:
-            raise ValueError(_("每个网关最多创建 {max_count} 个标签。").format(max_count=settings.MAX_LABEL_COUNT_PER_GATEWAY))
+            raise ValueError(
+                _("每个网关最多创建 {max_count} 个标签。").format(max_count=settings.MAX_LABEL_COUNT_PER_GATEWAY)
+            )
 
     def _validate_plugin_type(self):
         """
@@ -324,7 +332,9 @@ class ResourceImportValidator:
         exist_plugin_types = set(PluginType.objects.all().values_list("code", flat=True))
         not_exist_types = types - exist_plugin_types
         if not_exist_types:
-            raise ValueError(_("插件类型 {not_exist_types} 不存在。").format(not_exist_types=", ".join(not_exist_types)))
+            raise ValueError(
+                _("插件类型 {not_exist_types} 不存在。").format(not_exist_types=", ".join(not_exist_types))
+            )
 
     def _validate_plugin_config(self):
         """
@@ -348,7 +358,9 @@ class ResourceImportValidator:
                     )
                 except Exception as err:
                     raise ValueError(
-                        _("资源的插件配置校验失败，资源名称：{resource_name}，插件类型：{plugin_type_code}，错误信息：{err}。").format(
+                        _(
+                            "资源的插件配置校验失败，资源名称：{resource_name}，插件类型：{plugin_type_code}，错误信息：{err}。"
+                        ).format(
                             resource_name=resource_data.name,
                             plugin_type_code=plugin_type.code,
                             err=err,

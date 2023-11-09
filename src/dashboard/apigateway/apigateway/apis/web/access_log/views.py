@@ -139,7 +139,7 @@ class SearchLogListApi(generics.ListAPIView):
 )
 class LogDetailListApi(generics.ListAPIView):
     # 打开分享日志链接的，可能不是网关负责人，因此去除权限校验
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     def list(self, request, request_id, *args, **kwargs):
         """
@@ -171,7 +171,7 @@ class LogDetailListApi(generics.ListAPIView):
     ),
 )
 class LogLinkRetrieveApi(generics.RetrieveAPIView):
-    api_permission_exempt = False
+    gateway_permission_exempt = False
 
     def retrieve(self, request, request_id, *args, **kwargs):
         """

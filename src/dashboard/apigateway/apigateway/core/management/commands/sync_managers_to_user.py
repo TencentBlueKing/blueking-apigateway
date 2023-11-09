@@ -28,7 +28,7 @@ from apigateway.utils.string import random_string
 
 class Command(BaseCommand):
     def handle(self, **options):
-        UserModel = get_user_model()  # ruff: noqa: N806
+        UserModel = get_user_model()  # noqa: N806
         for username in getattr(settings, "APIGW_MANAGERS", None) or []:
             if not username:
                 continue

@@ -60,7 +60,7 @@ class DocListCreateApi(generics.ListCreateAPIView):
         """获取指定资源的资源文档"""
         queryset = self.get_queryset().filter(resource_id=resource_id)
 
-        docs = [doc for doc in queryset]
+        docs = list(queryset)
         existed_languages = [doc.language for doc in docs]
         missing_languages = set(DocLanguageEnum.get_values()) - set(existed_languages)
 
