@@ -35,14 +35,44 @@
           </bk-radio-group>
         </bk-button-group>
       </bk-form-item>
-      <bk-form-item class="mb0" :label="t('上传文件')" :label-width="120">
+      <bk-form-item :label="t('文档语言')" :label-width="120" v-if="docType === 'swagger'">
+        <bk-radio-group v-model="language">
+          <bk-radio label="zh">{{ t('中文文档') }}</bk-radio>
+          <bk-radio label="en">{{ t('英文文档') }}</bk-radio>
+        </bk-radio-group>
+      </bk-form-item>
+      <bk-form-item :label="t('上传文件')" :label-width="120">
+        <div class="flex-row align-items-center justify-content-between" v-if="docType === 'swagger'">
+          <bk-upload
+            theme="button"
+            :custom-request="handleReq"
+            class="upload-cls"
+          >
+            <template #default>
+              <bk-button>
+                <i class="icon apigateway-icon icon-ag-add-small pr10"></i>
+                {{ t('导入 Swagger 文件') }}
+              </bk-button>
+            </template>
+          </bk-upload>
+          <div class="flex-row align-items-center">
+            <bk-link theme="primary">
+              {{ t('模板示例') }}
+            </bk-link>
+            <bk-link theme="primary" class="pl10">
+              <i class="apigateway-icon icon-ag-info"></i>
+              {{ t('Swagger 说明文档') }}
+            </bk-link>
+          </div>
+        </div>
         <bk-upload
+          v-else
           theme="button"
           with-credentials
           :url="`${BK_DASHBOARD_URL}/gateways/${apigwId}/docs/archive/parse/`"
           class="upload-cls"
           name="file"
-          @done="handleReq"
+          @done="handleUploadSuccess"
           :header="{ name: 'X-CSRFToken', value: CSRFToken }"
         >
           <template #default>
@@ -52,6 +82,12 @@
             </bk-button>
           </template>
         </bk-upload>
+      </bk-form-item>
+
+      <bk-form-item :label-width="120">
+        <div class="monacoEditor" v-if="docType === 'swagger'">
+          <editor-monaco v-model="editorText" ref="resourceEditorRef" />
+        </div>
       </bk-form-item>
     </bk-form>
 
@@ -130,10 +166,13 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
+import editorMonaco from '@/components/ag-editor.vue';
 import { useI18n } from 'vue-i18n';
-// import { Message } from 'bkui-vue';
+import { Message } from 'bkui-vue';
+import { getStrFromFile } from '@/common/util';
 // import { archiveParse } from '@/http';
+import exampleData from '@/constant/example-data';
 import { useCommon } from '@/store';
 import cookie from 'cookie';
 import { useSelection } from '@/hooks';
@@ -150,6 +189,9 @@ const { apigwId } = common; // 网关id
 const docType = ref<string>('archive');
 const curView = ref<string>('import'); // 当前页面
 const tableData = ref<any[]>([]);
+const language = ref<string>('zh');
+const editorText = ref<string>(exampleData.content);
+const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>(); // 实例化
 const { BK_DASHBOARD_URL } = window;
 const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME || `${window.BK_PAAS_APP_ID}_csrftoken`];
 
@@ -165,16 +207,33 @@ const updateNum = computed(() => {
   return results.length;
 });
 
-// const handleRes = (response: any) => {
-//   console.log(response, 'handleRes');
-//   if (response.id) {
-//     return true;
-//   }
-//   return false;
-// };
-
 // 自定义上传方法
-const handleReq = async (response: any) => {
+const handleReq = (res: any) => {
+  const { file } = res;
+  const reg = '.*\\.(json|yaml|yml)';
+  if (!file.name.match(reg)) {
+    Message({
+      theme: 'error',
+      message: t('仅支持 json, yaml 格式'),
+    });
+    return;
+  }
+  // 读取文件内容并赋值给编辑器
+  getStrFromFile(file).then((res: any) => {
+    editorText.value = res;
+    setEditValue();
+  });
+};
+
+// 设置editor的内容
+const setEditValue = () => {
+  nextTick(() => {
+    resourceEditorRef.value?.setValue(editorText.value);
+  });
+};
+
+// 上传完成的方法
+const handleUploadSuccess = async (response: any) => {
   const res = response[0].response.data;
   const data = res.map((e: any) => ({ ...e, ...e.resource, ...e.resource_doc }));
   tableData.value = data;
@@ -213,6 +272,11 @@ const deDuplication = (data: any[], k: string) => {
     color: #3a84ff !important;
     position: relative;
     z-index: 1;
+  }
+
+  .monacoEditor {
+    width: 100%;
+    height: calc(100vh - 400px);
   }
 
   :deep(.upload-cls) {

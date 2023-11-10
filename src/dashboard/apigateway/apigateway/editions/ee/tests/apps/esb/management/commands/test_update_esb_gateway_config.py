@@ -48,7 +48,7 @@ class TestCommand:
         mock_get_auth_config = mocker.patch(
             (
                 "apigateway.apps.esb.management.commands."
-                "update_esb_gateway_config.GatewayHandler.get_current_gateway_auth_config"
+                "update_esb_gateway_config.GatewayHandler.get_gateway_auth_config"
             ),
             return_value={"api_type": 0, "allow_update_api_auth": False},
         )
@@ -63,7 +63,7 @@ class TestCommand:
         mock_get_auth_config = mocker.patch(
             (
                 "apigateway.apps.esb.management.commands."
-                "update_esb_gateway_config.GatewayHandler.get_current_gateway_auth_config"
+                "update_esb_gateway_config.GatewayHandler.get_gateway_auth_config"
             ),
             return_value={"api_type": 10, "allow_update_api_auth": True},
         )

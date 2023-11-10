@@ -43,7 +43,7 @@ from apigateway.utils.responses import V1OKJsonResponse
 class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
     serializer_class = serializers.ReleasedResourceOutputSLZ
     lookup_field = "id"
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     def get_queryset(self):
         return ReleasedResource.objects.filter(gateway=self.request.gateway)
@@ -83,7 +83,7 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
 )
 class ReleasedResourceListApi(generics.ListAPIView):
     lookup_field = "id"
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     def get_queryset(self):
         return ReleasedResource.objects.filter(gateway=self.request.gateway)
@@ -118,7 +118,7 @@ class ReleasedResourceListApi(generics.ListAPIView):
 )
 class ReleasedResourceListByGatewayNameApi(generics.ListAPIView):
     lookup_field = "id"
-    api_permission_exempt = True
+    gateway_permission_exempt = True
 
     permission_classes = [GatewayRelatedAppPermission]
 

@@ -28,20 +28,20 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
+from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.iam import IAMHandler
 from apigateway.biz.release import ReleaseHandler
+from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.stage import StageHandler
 from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, SslCertificate, Stage
 from apigateway.utils.dict import deep_update
-
-from .resource import ResourceHandler
-from .resource_version import ResourceVersionHandler
-from .stage import StageHandler
 
 
 class GatewayHandler:
@@ -85,7 +85,7 @@ class GatewayHandler:
         return gateway_id_to_stages
 
     @staticmethod
-    def get_current_gateway_auth_config(gateway_id: int) -> dict:
+    def get_gateway_auth_config(gateway_id: int) -> dict:
         """
         获取网关当前的认证配置
         """
@@ -134,7 +134,7 @@ class GatewayHandler:
         if not new_config:
             return None
 
-        current_config = GatewayHandler().get_current_gateway_auth_config(gateway_id)
+        current_config = GatewayHandler.get_gateway_auth_config(gateway_id)
 
         # 因用户配置为 dict，参数 user_conf 仅传递了部分用户配置，因此需合并当前配置与传入配置
         api_auth_config = APIAuthConfig.parse_obj(deep_update(current_config, new_config))
@@ -150,6 +150,7 @@ class GatewayHandler:
         user_config: Optional[dict] = None,
         unfiltered_sensitive_keys: Optional[List[str]] = None,
         api_type: Optional[GatewayTypeEnum] = None,
+        app_codes_to_binding: Optional[List[str]] = None,
     ):
         # 1. save gateway auth_config
         GatewayHandler.save_auth_config(
@@ -176,7 +177,11 @@ class GatewayHandler:
         if related_app_code:
             GatewayRelatedAppHandler.add_related_app(gateway.id, related_app_code)
 
-        # 6. 在权限中心注册分级管理员，创建用户组
+        # 6. update gateway app binding
+        if app_codes_to_binding is not None:
+            GatewayAppBindingHandler.update_gateway_app_bindings(gateway, app_codes_to_binding)
+
+        # 7. 在权限中心注册分级管理员，创建用户组
         if settings.USE_BK_IAM_PERMISSION:
             IAMHandler.register_grade_manager_and_builtin_user_groups(gateway)
 

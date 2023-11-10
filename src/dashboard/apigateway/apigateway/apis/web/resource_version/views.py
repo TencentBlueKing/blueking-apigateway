@@ -20,10 +20,13 @@
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
+from drf_yasg import openapi as parameters
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, serializers, status
 
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
+from apigateway.biz.backend import BackendHandler
+from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
@@ -115,20 +118,45 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
         decorator=swagger_auto_schema(
             tags=["WebAPI.ResourceVersion"],
             operation_description="资源版本详情查询接口",
+            manual_parameters=[
+                # 定义一个名为 "query" 的查询参数，默认值为 "None"
+                parameters.Parameter(
+                    name="stage_id",
+                    in_=parameters.IN_QUERY,
+                    type=parameters.TYPE_INTEGER,
+                    description="stage_id",
+                    default="None",
+                )
+            ],
         ),
     )
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = self.get_serializer(instance)
 
-        data = slz.data
-
-        # 补充资源文档的更新时间
+        # 查询资源文档的更新时间
         resource_docs_updated_time = ResourceDocVersion.objects.get_doc_updated_time(request.gateway.id, instance.id)
-        for item in data["data"]:
-            item["doc_updated_time"] = resource_docs_updated_time.get(item["id"], {})
 
-        return OKJsonResponse(data=data)
+        # 查询网关后端服务
+        resource_backends = BackendHandler.get_id_to_instance(request.gateway.id)
+
+        context = {
+            "resource_doc_updated_time": resource_docs_updated_time,
+            "resource_backends": resource_backends,
+            "is_schema_v2": instance.is_schema_v2,
+        }
+
+        # 如果传入了stage,返回对应stage的backend_config以及合并资源插件
+        stage_id = self.request.query_params.get("stage_id")
+
+        if stage_id:
+            backend_configs = BackendHandler.get_backend_configs_by_stage(request.gateway.id, stage_id)
+            context["resource_backend_configs"] = backend_configs
+            stage_plugin_bindings = PluginBindingHandler.get_stage_plugin_bindings(request.gateway.id, stage_id)
+            context["stage_plugin_bindings"] = stage_plugin_bindings
+
+        slz = ResourceVersionRetrieveOutputSLZ(instance, context=context)
+
+        return OKJsonResponse(data=slz.data)
 
 
 class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):

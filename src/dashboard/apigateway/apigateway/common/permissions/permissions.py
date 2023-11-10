@@ -43,7 +43,7 @@ class GatewayPermission(permissions.BasePermission):
         request.gateway = gateway_obj
 
         # 跳过网关权限校验
-        if getattr(view, "api_permission_exempt", False):
+        if getattr(view, "gateway_permission_exempt", False):
             return True
 
         return gateway_obj.has_permission(request.user.username)
@@ -73,8 +73,8 @@ class GatewayRelatedAppPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         gateway_obj = self.get_gateway_object(view)
 
-        # 通过 view 属性 allow_api_not_exist，控制是否允许网关为 None
-        if not gateway_obj and getattr(view, "allow_api_not_exist", False):
+        # 通过 view 属性 allow_gateway_not_exist，控制是否允许网关为 None
+        if not gateway_obj and getattr(view, "allow_gateway_not_exist", False):
             return True
 
         if not gateway_obj:
@@ -83,7 +83,7 @@ class GatewayRelatedAppPermission(permissions.BasePermission):
         request.gateway = gateway_obj
 
         # 跳过网关权限校验
-        if getattr(view, "api_permission_exempt", False):
+        if getattr(view, "gateway_permission_exempt", False):
             return True
 
         return GatewayRelatedApp.objects.filter(gateway=request.gateway, bk_app_code=request.app.app_code).exists()

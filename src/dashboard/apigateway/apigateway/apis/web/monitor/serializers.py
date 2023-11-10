@@ -182,4 +182,6 @@ class AlarmStrategySummaryQuerySLZ(serializers.Serializer):
 class AlarmRecordSummaryQueryOutputSLZ(serializers.Serializer):
     gateway = serializers.DictField(read_only=True, help_text="网关")
     alarm_record_count = serializers.IntegerField(read_only=True, help_text="告警记录总数")
-    strategy_summary = serializers.ListField(child=AlarmStrategySummaryQuerySLZ(), read_only=True, help_text="策略汇总")
+    strategy_summary = serializers.ListField(
+        child=AlarmStrategySummaryQuerySLZ(), read_only=True, help_text="策略汇总"
+    )

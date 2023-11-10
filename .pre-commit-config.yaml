@@ -2,11 +2,11 @@ fail_fast: true
 repos:
   - repo: local
     hooks:
-      - id: black
-        name: black
+      - id: format
+        name: ruff-formatter
         language: python
         types: [python]
-        entry: black --config=src/dashboard/pyproject.toml
+        entry: bash -c 'cd src/dashboard && ruff format --config=pyproject.toml  .'
         files: src/dashboard/
       - id: ruff
         name: ruff
@@ -22,12 +22,6 @@ repos:
         files: src/dashboard/
   - repo: local
     hooks:
-      - id: isort
-        name: isort
-        language: python
-        types: [python]
-        entry: isort --settings-path=src/esb/pyproject.toml
-        files: src/esb/
       - id: black
         name: black
         language: python

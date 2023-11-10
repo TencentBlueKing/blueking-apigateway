@@ -157,6 +157,7 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
 
 # ====================================================
 
+
 # FIXME: delete it in 1.14
 class Plugin(ConfigModelMixin):
     """废弃模型，保留是为了迁移数据"""

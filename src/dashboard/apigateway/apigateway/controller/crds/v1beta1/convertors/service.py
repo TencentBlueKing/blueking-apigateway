@@ -27,7 +27,6 @@ from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayS
 
 class ServiceConvertor(BaseConvertor):
     def convert(self) -> List[BkGatewayService]:
-
         upstreams = self._release_data.stage_upstreams
         if not upstreams:
             return []

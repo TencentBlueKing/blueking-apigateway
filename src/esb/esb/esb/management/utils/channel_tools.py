@@ -48,7 +48,7 @@ class ChannelClient(object):
                 "path": self.path,
                 "method": self.channel_config.get("method", ""),
                 "comp_codename": self.channel_config["comp_codename"],
-                "comp_conf_to_db": self.channel_config.get("comp_conf_to_db") or self.channel_config.get("comp_conf"),
+                "comp_conf_to_db": self._get_comp_conf_to_db(),
                 "config_fields": self.channel_config.get("config_fields"),
                 "permission_level": self.channel_config.get("permission_level", PermissionLevelEnum.UNLIMITED.value),
                 "verified_user_required": self.channel_config.get("verified_user_required", True),
@@ -57,3 +57,15 @@ class ChannelClient(object):
             }
         )
         return info
+
+    def _get_comp_conf_to_db(self):
+        if self.channel_config.get("comp_conf_to_db"):
+            return self.channel_config.get("comp_conf_to_db")
+
+        if self.channel_config.get("comp_conf"):
+            return self.channel_config.get("comp_conf")
+
+        if self.channel_config.get("config_fields"):
+            return {field["variable"]: field["default"] for field in self.channel_config["config_fields"]}
+
+        return None

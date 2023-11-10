@@ -59,7 +59,8 @@ class ReleaseHandler:
     def is_running(last_event: PublishEvent):
         """通过最新的一个event判断当前发布是否还在继续执行"""
         return last_event.status == PublishEventStatusEnum.DOING.value or (
-            last_event.status == PublishEventStatusEnum.SUCCESS.value  # 如果不是最后一个事件,如果是success的话说明也是running
+            last_event.status
+            == PublishEventStatusEnum.SUCCESS.value  # 如果不是最后一个事件,如果是success的话说明也是running
             and not last_event.is_last
         )
 
@@ -132,3 +133,7 @@ class ReleaseHandler:
             stage_publish_status[stage_id] = state
 
         return stage_publish_status
+
+    @staticmethod
+    def filter_released_gateway_ids(gateway_ids: List[int]) -> List[int]:
+        return list(set(Release.objects.filter(gateway_id__in=gateway_ids).values_list("gateway_id", flat=True)))
