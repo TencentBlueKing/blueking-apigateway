@@ -171,7 +171,6 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-<<<<<<< HEAD
         path: '/:id/permission/applys',
         name: 'apigwPermissionApplys',
         component: apigwPermissionApplys,
@@ -223,7 +222,8 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '统计报表',
           matchRoute: 'apigwReport',
-=======
+        },
+      }, {
         path: '/:id/resource/import-doc',
         name: 'apigwResourceImportDoc',
         component: ApigwResourceImportDoc,
@@ -231,7 +231,6 @@ const routes: RouteRecordRaw[] = [
           title: '导入资源文档',
           matchRoute: 'apigwResource',
           showBackIcon: true,
->>>>>>> 9911026c262a546f91fda540a9c7a08ee9568f32
         },
       },
     ],
