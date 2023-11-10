@@ -52,6 +52,72 @@
     }
 }
 
+.ag-tab-button {
+    padding: 0 36px !important;
+    &.is-selected {
+        &:before {
+            font-family: 'apigateway' !important;
+            content: "\e147";
+            display: inline-block;
+            font-size: 16px;
+            color: #fff;
+            background: #2DCB56;
+            border-radius: 50%;
+            height: 16px;
+            line-height: 16px;
+            margin-right: 8px;
+        }
+    }
+}
+
+.ag-tip {
+    color: #63656e;
+    line-height: 16px;
+    clear: both;
+    font-weight: normal;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.ag-textarea {
+    background: #313238;
+    color: #C4C6CC !important;
+    border-radius: 2px !important;
+    border: none;
+    resize: none !important;
+    &.is-focused:not(.is-readonly) {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    textarea {
+        background: #313238;
+        outline: none;
+        border: none !important;
+        min-height: 200px !important;
+        padding: 10px !important;
+        color: #FFF;
+        height: auto;
+        box-sizing: border-box;
+        &:focus {
+            background: #313238 !important;
+            border: none;
+            color: #FFF !important;
+        }
+    }
+}
+
+@media screen and (min-height: 500px) {
+    .ag-textarea textarea {
+        min-height: 250px !important;
+    }
+}
+
+@media screen and (min-height: 800px) {
+    .ag-textarea textarea {
+        min-height: 450px !important;
+    }
+}
+
 .ag-strong {
     font-weight: bold;
     font-style: normal;
