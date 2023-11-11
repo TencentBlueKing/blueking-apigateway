@@ -19,6 +19,7 @@ import pytest
 from django.core.exceptions import ObjectDoesNotExist
 from django_dynamic_fixture import G
 
+from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import GatewayHandler
@@ -30,7 +31,15 @@ from apigateway.core.constants import (
     GatewayTypeEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import JWT, Context, Gateway, GatewayRelatedApp, Release, Resource, Stage
+from apigateway.core.models import (
+    JWT,
+    Context,
+    Gateway,
+    GatewayRelatedApp,
+    Release,
+    Resource,
+    Stage,
+)
 
 
 class TestGatewayHandler:
@@ -271,7 +280,13 @@ class TestGatewayHandler:
             ),
         )
         GatewayHandler.save_related_data(
-            fake_gateway, "default", "admin", "test", allow_auth_from_params=False, allow_delete_sensitive_params=False
+            fake_gateway,
+            "default",
+            "admin",
+            "test",
+            allow_auth_from_params=False,
+            allow_delete_sensitive_params=False,
+            app_codes_to_binding=["app1"],
         )
 
         context = Context.objects.filter(
@@ -286,6 +301,7 @@ class TestGatewayHandler:
         assert Stage.objects.filter(gateway=fake_gateway).exists()
         assert AlarmStrategy.objects.filter(gateway=fake_gateway).exists()
         assert GatewayRelatedApp.objects.filter(gateway=fake_gateway, bk_app_code="test").exists()
+        assert GatewayAppBinding.objects.filter(gateway=fake_gateway).exists()
 
     def test_delete_gateway(
         self,

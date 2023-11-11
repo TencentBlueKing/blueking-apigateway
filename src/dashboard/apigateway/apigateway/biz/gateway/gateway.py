@@ -28,6 +28,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTy
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
+from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.iam import IAMHandler
@@ -161,6 +162,7 @@ class GatewayHandler:
         api_type: Optional[GatewayTypeEnum] = None,
         allow_auth_from_params: Optional[bool] = None,
         allow_delete_sensitive_params: Optional[bool] = None,
+        app_codes_to_binding: Optional[List[str]] = None,
     ):
         # 1. save gateway auth_config
         GatewayHandler.save_auth_config(
@@ -189,7 +191,11 @@ class GatewayHandler:
         if related_app_code:
             GatewayRelatedAppHandler.add_related_app(gateway.id, related_app_code)
 
-        # 6. 在权限中心注册分级管理员，创建用户组
+        # 6. update gateway app binding
+        if app_codes_to_binding is not None:
+            GatewayAppBindingHandler.update_gateway_app_bindings(gateway, app_codes_to_binding)
+
+        # 7. 在权限中心注册分级管理员，创建用户组
         if settings.USE_BK_IAM_PERMISSION:
             IAMHandler.register_grade_manager_and_builtin_user_groups(gateway)
 
