@@ -10,7 +10,7 @@ import {
 } from 'vue';
 import { IPagination } from '@/types';
 import { useCommon } from '@/store';
-
+const getMethod = ref<any>(null);
 
 export function useQueryList(apiMethod: Function, filterData?: any, id?: number) {
   const common = useCommon();
@@ -27,6 +27,7 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
 
   // 获取列表数据的方法
   const getList = async (fetchMethod = apiMethod) => {
+    getMethod.value = fetchMethod;
     const method = fetchMethod;
     isLoading.value = true;
     // 列表参数
@@ -49,13 +50,13 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
   // 页码变化发生的事件
   const handlePageChange = (current: number) => {
     pagination.value.offset = pagination.value.limit * (current - 1);
-    getList();
+    fetchList();
   };
 
   // 条数变化发生的事件
   const handlePageSizeChange = (limit: number) => {
     pagination.value.limit = limit;
-    getList();
+    fetchList();
   };
 
   // 监听筛选条件的变化
@@ -63,10 +64,18 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
     () => filterData,
     () => {
       pagination.value = { ...initPagination };
-      getList();
+      fetchList();
     },
     { deep: true },
   );
+
+  const fetchList = () => {
+    if (getMethod.value) {
+      getList(getMethod.value);
+    } else {
+      getList();
+    }
+  };
 
   onMounted(() => {
     getList();
@@ -80,5 +89,6 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
     handlePageChange,
     handlePageSizeChange,
     getList,
+    fetchList,
   };
 }
