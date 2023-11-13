@@ -47,6 +47,7 @@
             @page-value-change="handlePageChange"
             @selection-change="handleSelectionChange"
             @row-mouse-enter="handleMouseEnter"
+            @row-mouse-leave="handleMouseLeave"
             row-hover="auto"
           >
             <bk-table-column
@@ -546,7 +547,22 @@ const handleImport = (v: IDropList) => {
 
 // 鼠标进入
 const handleMouseEnter = (e: any, row: any) => {
-  console.log('row', row);
+  setTimeout(() => {
+    row.isDoc = true;
+    // data.isRowHover = true
+    // data.isAddLabel = true
+    console.log('row', row);
+  }, 100);
+};
+
+// 鼠标离开
+const handleMouseLeave = (e: any, row: any) => {
+  setTimeout(() => {
+    row.isDoc = false;
+    // data.isRowHover = true
+    // data.isAddLabel = true
+    console.log('row', row);
+  }, 100);
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
