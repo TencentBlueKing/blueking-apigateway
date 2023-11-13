@@ -211,6 +211,7 @@ const handleCheckData = async () => {
     isDataLoading.value = true;
     const parmas: any = {
       content: editorText.value,
+      allow_overwrite: true,
     };
     // 如果勾选了资源文档
     if (showDoc.value) {

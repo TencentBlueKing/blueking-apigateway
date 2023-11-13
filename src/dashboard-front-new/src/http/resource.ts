@@ -129,8 +129,15 @@ export const exportDocs = async (apigwId: number, data: any) => {
 export const checkResourceImport = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/import/check/`, data);
 
 /**
- * 导入前检查
+ * 导入资源
  * @param apigwId 网关id
  * @param data 导入参数
  */
 export const importResource = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/import/`, data);
+
+/**
+ * 导入资源文档
+ * @param apigwId 网关id
+ * @param data 导入参数
+ */
+export const importResourceDoc = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/docs/import/by-archive/`, data, { responseType: 'formData' });
