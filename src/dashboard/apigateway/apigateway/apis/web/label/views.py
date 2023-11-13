@@ -23,7 +23,7 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.label.models import APILabel
-from apigateway.biz.gateway_label import GatewayLabelHandler
+from apigateway.biz.audit import Auditor
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import GatewayLabelInputSLZ, GatewayLabelOutputSLZ
@@ -66,10 +66,10 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
             updated_by=request.user.username,
         )
 
-        GatewayLabelHandler.record_audit_log_success(
+        Auditor.record_gateway_label_op_success(
+            op_type=OpTypeEnum.CREATE,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.CREATE,
             instance_id=slz.instance.id,
             instance_name=slz.instance.name,
         )
@@ -121,10 +121,10 @@ class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView
             updated_by=request.user.username,
         )
 
-        GatewayLabelHandler.record_audit_log_success(
+        Auditor.record_gateway_label_op_success(
+            op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.MODIFY,
             instance_id=slz.instance.id,
             instance_name=slz.instance.name,
         )
@@ -137,10 +137,10 @@ class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView
 
         instance.delete()
 
-        GatewayLabelHandler.record_audit_log_success(
+        Auditor.record_gateway_label_op_success(
+            op_type=OpTypeEnum.DELETE,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.DELETE,
             instance_id=instance_id,
             instance_name=instance.name,
         )

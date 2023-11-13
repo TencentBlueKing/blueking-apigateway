@@ -26,6 +26,7 @@ from rest_framework import generics, status
 
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.common.contexts import GatewayAuthContext
@@ -123,10 +124,10 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         )
 
         # 3. record audit log
-        GatewayHandler.record_audit_log_success(
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.CREATE,
             username=request.user.username,
             gateway_id=slz.instance.id,
-            op_type=OpTypeEnum.CREATE,
             instance_id=slz.instance.id,
             instance_name=slz.instance.name,
         )
@@ -198,10 +199,10 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         if bk_app_codes is not None:
             GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
 
-        GatewayHandler.record_audit_log_success(
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=instance.id,
-            op_type=OpTypeEnum.MODIFY,
             instance_id=instance.id,
             instance_name=instance.name,
         )
@@ -219,10 +220,10 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         GatewayHandler.delete_gateway(instance_id)
 
-        GatewayHandler.record_audit_log_success(
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.DELETE,
             username=request.user.username,
             gateway_id=instance_id,
-            op_type=OpTypeEnum.DELETE,
             instance_id=instance_id,
             instance_name=instance.name,
         )
@@ -258,10 +259,10 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
             source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
             trigger_gateway_publish(source, request.user.username, instance.id)
 
-        GatewayHandler.record_audit_log_success(
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=instance.id,
-            op_type=OpTypeEnum.MODIFY,
             instance_id=instance.id,
             instance_name=instance.name,
         )

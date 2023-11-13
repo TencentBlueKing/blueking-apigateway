@@ -31,7 +31,7 @@ from rest_framework import generics, status
 
 from apigateway.apis.open.gateway import serializers
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.release import ReleaseHandler
@@ -185,10 +185,10 @@ class GatewaySyncApi(generics.CreateAPIView):
         gateway = saver.save()
 
         # record audit log
-        GatewayHandler.record_audit_log_success(
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY if slz.instance else OpTypeEnum.CREATE,
             username=username,
             gateway_id=gateway.id,
-            op_type=OpTypeEnum.MODIFY if slz.instance else OpTypeEnum.CREATE,
             instance_id=gateway.id,
             instance_name=gateway.name,
         )

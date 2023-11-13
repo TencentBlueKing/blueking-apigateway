@@ -17,15 +17,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.http import Http404
-from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.stage import serializers
 from apigateway.apis.open.stage.serializers import StageSLZ
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.biz.audit import Auditor
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Stage
@@ -110,15 +109,12 @@ class StageSyncViewSet(viewsets.ViewSet):
             updated_by=request.user.username,
         )
 
-        record_audit_log(
+        Auditor.record_stage_op_success(
+            op_type=OpTypeEnum.CREATE,
             username=request.user.username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.STAGE.value,
-            op_object_id=stage.id,
-            op_object=stage.name,
-            comment=_("创建环境"),
+            gateway_id=request.gateway.id,
+            instance_id=stage.id,
+            instance_name=stage.name,
         )
 
         return V1OKJsonResponse(

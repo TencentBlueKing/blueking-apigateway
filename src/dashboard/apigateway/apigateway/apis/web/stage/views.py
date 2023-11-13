@@ -21,12 +21,12 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.biz.audit import Auditor
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
-from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum
@@ -97,15 +97,12 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
 
         stage = StageHandler.create(data, request.user.username)
 
-        record_audit_log(
+        Auditor.record_stage_op_success(
+            op_type=OpTypeEnum.CREATE,
             username=request.user.username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.STAGE.value,
-            op_object_id=stage.id,
-            op_object=stage.name,
-            comment=_("创建环境"),
+            gateway_id=request.gateway.id,
+            instance_id=stage.id,
+            instance_name=stage.name,
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -176,15 +173,12 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
         username = request.user.username
         stage = StageHandler.update(instance, data, username)
 
-        record_audit_log(
-            username=username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.STAGE.value,
-            op_object_id=stage.id,
-            op_object=stage.name,
-            comment=_("更新环境"),
+        Auditor.record_stage_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=stage.id,
+            instance_name=stage.name,
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -197,17 +191,15 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
             raise error_codes.FAILED_PRECONDITION.format(_("请先下线环境，然后再删除。"))
 
         stage_id = instance.id
+        stage_name = instance.name
         StageHandler.delete(instance)
 
-        record_audit_log(
+        Auditor.record_stage_op_success(
+            op_type=OpTypeEnum.DELETE,
             username=request.user.username,
-            op_type=OpTypeEnum.DELETE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.STAGE.value,
-            op_object_id=stage_id,
-            op_object=instance.name,
-            comment=_("删除环境"),
+            gateway_id=request.gateway.id,
+            instance_id=stage_id,
+            instance_name=stage_name,
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -268,15 +260,13 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
         # 触发环境发布
         trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, username, instance.gateway_id, instance.id)
 
-        record_audit_log(
-            username=username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.STAGE.value,
-            op_object_id=instance.id,
-            op_object=instance.name,
-            comment=_("更新环境变量"),
+        Auditor.record_stage_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance.id,
+            instance_name=instance.name,
+            comment="更新环境变量",
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -374,15 +364,13 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
         username = request.user.username
         StageHandler.set_status(instance, data["status"], username)
 
-        record_audit_log(
-            username=username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.STAGE.value,
-            op_object_id=instance.id,
-            op_object=instance.name,
-            comment=_("环境状态变更"),
+        Auditor.record_stage_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance.id,
+            instance_name=instance.name,
+            comment="环境状态变更",
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

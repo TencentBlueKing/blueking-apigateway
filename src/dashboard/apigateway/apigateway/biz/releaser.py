@@ -23,13 +23,13 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
+from apigateway.biz.audit import Auditor
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.validators import StageVarsValuesValidator
-from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.tasks import release_gateway_by_helm, release_gateway_by_registry
@@ -126,15 +126,12 @@ class BaseGatewayReleaser:
         )
 
         # record audit log
-        record_audit_log(
+        Auditor.record_release_op_success(
+            op_type=OpTypeEnum.CREATE,
             username=self.username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=self.gateway.id,
-            op_object_type=OpObjectTypeEnum.RELEASE.value,
-            op_object_id=instance.id,
-            op_object=f"{self.stage.name}:{instance.resource_version.name}",
-            comment=_("版本发布"),
+            gateway_id=self.gateway.id,
+            instance_id=instance.id,
+            instance_name=f"{self.stage.name}:{instance.resource_version.name}",
         )
 
         # 发布，仅对微网关生效

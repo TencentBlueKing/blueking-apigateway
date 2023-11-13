@@ -24,12 +24,10 @@ from typing import Any, Dict, List, Optional
 
 from django.db.models import Q
 
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import ContextScopeTypeEnum
 from apigateway.core.models import Context, Gateway, Proxy, Resource, StageResourceDisabled
@@ -191,31 +189,6 @@ class ResourceHandler:
             "app_verified_required": True,
             "resource_perm_required": True,
         }
-
-    @staticmethod
-    def record_audit_log_success(
-        username: str,
-        gateway_id: int,
-        op_type: OpTypeEnum,
-        instance_id: int,
-        instance_name: str,
-    ):
-        comment = {
-            OpTypeEnum.CREATE: "创建资源",
-            OpTypeEnum.MODIFY: "更新资源",
-            OpTypeEnum.DELETE: "删除资源",
-        }.get(op_type, "-")
-
-        record_audit_log(
-            username=username,
-            op_type=op_type.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway_id,
-            op_object_type=OpObjectTypeEnum.RESOURCE.value,
-            op_object_id=instance_id,
-            op_object=instance_name,
-            comment=comment,
-        )
 
     @staticmethod
     def save_resource_labels(gateway: Gateway, resource: Resource, label_ids: List[int]):

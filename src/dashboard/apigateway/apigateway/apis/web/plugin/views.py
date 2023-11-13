@@ -24,10 +24,10 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.generics import get_object_or_404
 
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
-from apigateway.common.audit.shortcuts import record_audit_log
+from apigateway.biz.audit import Auditor
 from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.common.renderers import BkStandardApiJSONRenderer
@@ -209,22 +209,12 @@ class PluginConfigBindingPostModificationMixin:
             # update the resource updated_time
             Resource.objects.get(id=scope_id).save()
 
-        comment = {
-            OpTypeEnum.CREATE: "创建插件",
-            OpTypeEnum.MODIFY: "更新插件",
-            OpTypeEnum.DELETE: "删除插件",
-        }.get(op_type, "-")
-
-        # audit
-        record_audit_log(
+        Auditor.record_plugin_op_success(
+            op_type=op_type,
             username=self.request.user.username,
-            op_type=op_type.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=self.request.gateway.id,
-            op_object_type=OpObjectTypeEnum.PLUGIN.value,
-            op_object_id=instance_id,
-            op_object=instance_name,
-            comment=comment,
+            gateway_id=self.request.gateway.id,
+            instance_id=instance_id,
+            instance_name=instance_name,
         )
 
 

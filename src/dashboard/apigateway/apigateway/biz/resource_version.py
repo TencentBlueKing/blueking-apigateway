@@ -26,18 +26,18 @@ from django.utils.translation import gettext as _
 from packaging import version
 from rest_framework import serializers
 
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDocVersion
+from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
 from apigateway.biz.proxy import ProxyHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
-from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Proxy, Release, Resource, ResourceVersion, Stage
@@ -90,19 +90,6 @@ class ResourceVersionHandler:
         ]
 
     @staticmethod
-    def add_create_audit_log(gateway: Gateway, resource_version: ResourceVersion, username: str):
-        record_audit_log(
-            username=username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway.id,
-            op_object_type=OpObjectTypeEnum.RESOURCE_VERSION.value,
-            op_object_id=resource_version.id,
-            op_object=resource_version.name,
-            comment=_("生成版本"),
-        )
-
-    @staticmethod
     def get_data_by_id_or_new(gateway: Gateway, resource_version_id: Optional[int]) -> list:
         """
         根据版本 ID 获取 Data，或者获取当前资源列表中的版本数据
@@ -137,7 +124,13 @@ class ResourceVersionHandler:
 
         resource_version.save()
 
-        ResourceVersionHandler.add_create_audit_log(gateway, resource_version, username)
+        Auditor.record_resource_version_op_success(
+            op_type=OpTypeEnum.CREATE,
+            username=username,
+            gateway_id=gateway.id,
+            instance_id=resource_version.id,
+            instance_name=resource_version.name,
+        )
 
         return resource_version
 
