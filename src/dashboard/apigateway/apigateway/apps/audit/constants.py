@@ -16,25 +16,36 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from enum import Enum
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
 
 
-class OpTypeEnum(Enum):
-    QUERY = "query"
-    CREATE = "create"
-    DELETE = "delete"
-    MODIFY = "modify"
+class OpTypeEnum(StructuredEnum):
+    QUERY = EnumField("query", label=_("查询"))
+    CREATE = EnumField("create", label=_("创建"))
+    DELETE = EnumField("delete", label=_("删除"))
+    MODIFY = EnumField("modify", label=_("修改"))
 
 
-OP_TYPE_CHOICES = (
-    (OpTypeEnum.QUERY.value, _("查询")),
-    (OpTypeEnum.CREATE.value, _("创建")),
-    (OpTypeEnum.DELETE.value, _("删除")),
-    (OpTypeEnum.MODIFY.value, _("修改")),
-)
+class OpStatusEnum(StructuredEnum):
+    SUCCESS = EnumField("success", label=_("成功"))
+    FAIL = EnumField("fail", label=_("失败"))
+    UNKNOWN = EnumField("unknown", label=_("未知"))
+
+
+class OpObjectTypeEnum(StructuredEnum):
+    GATEWAY = EnumField("gateway")
+    STAGE = EnumField("stage")
+    BACKEND = EnumField("backend")
+    RESOURCE = EnumField("resource")
+    RESOURCE_VERSION = EnumField("resource_version")
+    RELEASE = EnumField("release")
+    GATEWAY_LABEL = EnumField("gateway_label")
+    MICRO_GATEWAY = EnumField("micro_gateway")
+    PLUGIN = EnumField("plugin")
+    RESOURCE_DOC = EnumField("resource_doc")
+
 
 # for translation only
 COMMENTS = (
@@ -54,34 +65,3 @@ COMMENTS = (
     _("更新网关"),
     _("删除网关"),
 )
-
-
-class OpStatusEnum(Enum):
-    SUCCESS = "success"
-    FAIL = "fail"
-    UNKNOWN = "unknown"
-
-
-OP_STATUS_CHOICES = (
-    (OpStatusEnum.SUCCESS.value, _("成功")),
-    (OpStatusEnum.FAIL.value, _("失败")),
-    (OpStatusEnum.UNKNOWN.value, _("未知")),
-)
-
-
-class OpObjectTypeEnum(StructuredEnum):
-    GATEWAY = EnumField("gateway")
-    STAGE = EnumField("stage")
-    BACKEND = EnumField("backend")
-    RESOURCE = EnumField("resource")
-    RESOURCE_VERSION = EnumField("resource_version")
-    RELEASE = EnumField("release")
-    ACCESS_STRATEGY = EnumField("access_strategy")
-    IP_GROUP = EnumField("ip_group")
-    GATEWAY_LABEL = EnumField("gateway_label")
-    MICRO_GATEWAY = EnumField("micro_gateway")
-    PLUGIN = EnumField("plugin")
-    RESOURCE_DOC = EnumField("resource_doc")
-
-
-AUDIT_SYSTEM = "apigateway-dashboard"

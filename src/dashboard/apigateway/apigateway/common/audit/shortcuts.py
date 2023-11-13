@@ -16,17 +16,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import functools
 import json
 
-from apigateway.apps.audit.constants import AUDIT_SYSTEM
 from apigateway.apps.audit.signals import _record_audit_log_signal
 from apigateway.utils.local import local
 from apigateway.utils.string import truncate_string
 
+AUDIT_SYSTEM = "apigateway-dashboard"
 
-def _record_audit_log(
-    system,
+
+def record_audit_log(
     username,
     op_type,
     op_status,
@@ -40,7 +39,7 @@ def _record_audit_log(
 ):
     data = {
         "event_id": local.request_id,
-        "system": system,
+        "system": AUDIT_SYSTEM,
         "username": username,
         "op_type": op_type,
         "op_status": op_status,
@@ -62,6 +61,3 @@ def _record_audit_log(
         data["data_after"] = json.dumps(data_after) if isinstance(data_after, (list, dict)) else data_after
 
     _record_audit_log_signal.send(sender="system", **data)
-
-
-record_audit_log = functools.partial(_record_audit_log, AUDIT_SYSTEM)

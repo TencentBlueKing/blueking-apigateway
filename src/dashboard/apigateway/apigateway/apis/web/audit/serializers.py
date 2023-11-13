@@ -19,7 +19,7 @@
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apps.audit.constants import OP_TYPE_CHOICES, OpObjectTypeEnum
+from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.common.fields import TimestampField
 
@@ -30,7 +30,9 @@ class AuditEventLogQueryInputSLZ(serializers.Serializer):
     op_object_type = serializers.ChoiceField(
         choices=OpObjectTypeEnum.get_choices(), allow_blank=True, required=False, help_text="操作对象类型"
     )
-    op_type = serializers.ChoiceField(choices=OP_TYPE_CHOICES, allow_blank=True, required=False, help_text="操作类型")
+    op_type = serializers.ChoiceField(
+        choices=OpTypeEnum.get_choices(), allow_blank=True, required=False, help_text="操作类型"
+    )
     username = serializers.CharField(allow_blank=True, required=False, help_text="操作者")
 
 

@@ -21,8 +21,7 @@ import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apigateway.apps.audit.constants import OP_STATUS_CHOICES, OP_TYPE_CHOICES
-from apigateway.apps.audit.managers import AuditEventLogManager
+from apigateway.apps.audit.constants import OpStatusEnum, OpTypeEnum
 
 
 class AuditEventLog(models.Model):
@@ -31,8 +30,8 @@ class AuditEventLog(models.Model):
     username = models.CharField(max_length=64, blank=False, null=False)
 
     op_time = models.DateTimeField(auto_now_add=True, db_index=True)
-    op_type = models.CharField(max_length=32, choices=OP_TYPE_CHOICES, blank=False, null=False, db_index=True)
-    op_status = models.CharField(max_length=32, choices=OP_STATUS_CHOICES, blank=False, null=False)
+    op_type = models.CharField(max_length=32, choices=OpTypeEnum.get_choices(), blank=False, null=False, db_index=True)
+    op_status = models.CharField(max_length=32, choices=OpStatusEnum.get_choices(), blank=False, null=False)
 
     op_object_group = models.CharField(max_length=64, db_index=True, blank=False, null=False)
     op_object_type = models.CharField(max_length=32, blank=False, null=False, db_index=True)
@@ -43,8 +42,6 @@ class AuditEventLog(models.Model):
     data_after = models.TextField(null=True, blank=True)
 
     comment = models.TextField(null=True, blank=True)
-
-    objects = AuditEventLogManager()
 
     def __str__(self):
         return f"<AuditEventLog: {self.event_id}>"
