@@ -58,6 +58,16 @@ const getFetchConfig = (method: string, payload: any, config: IFetchConfig) => {
   } else {
     fetchConfig = deepMerge(fetchConfig, payload);
   }
+  if (config.responseType === 'formData') { // 导入文件
+    fetchConfig = {
+      method: 'POST',
+      body: payload,
+      credentials: 'include',
+      headers: {},
+      globalError: true,
+      responseType: 'json',
+    };
+  }
   return fetchConfig;
 };
 

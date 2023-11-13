@@ -72,7 +72,8 @@
           :url="`${BK_DASHBOARD_URL}/gateways/${apigwId}/docs/archive/parse/`"
           class="upload-cls"
           name="file"
-          @done="handleUploadSuccess"
+          @done="handleUploadDone"
+          @progress="handleUploadSuccess"
           :header="{ name: 'X-CSRFToken', value: CSRFToken }"
         >
           <template #default>
@@ -115,7 +116,8 @@
         class="table-layout"
         :data="tableData"
         show-overflow-tooltip
-        :checked="tableData"
+        :checked="checkData"
+        :is-row-select-enable="isRowSelectEnable"
         @selection-change="handleSelectionChange"
       >
         <bk-table-column
@@ -123,6 +125,7 @@
           type="selection"
         />
         <bk-table-column
+          v-if="docType === 'archive'"
           :label="t('文件名称')"
           prop="filename"
         >
@@ -164,7 +167,9 @@
       </bk-table>
     </section>
 
-    <div class="mt15 btn-container">
+    <div
+      class="mt15" :class="curView === 'import' ? 'btn-container' : ''"
+      v-if="docType === 'swagger' || curView === 'resources'">
       <bk-button
         :theme="curView === 'import' ? 'primary' : ''"
         @click="handleCheckData"
@@ -194,7 +199,7 @@ import editorMonaco from '@/components/ag-editor.vue';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
 import { getStrFromFile } from '@/common/util';
-import { checkResourceImport } from '@/http';
+import { checkResourceImport, importResourceDoc, importResource } from '@/http';
 import exampleData from '@/constant/example-data';
 import { useCommon } from '@/store';
 import cookie from 'cookie';
@@ -214,10 +219,12 @@ const { apigwId } = common; // 网关id
 const docType = ref<string>('archive');
 const curView = ref<string>('import'); // 当前页面
 const tableData = ref<any[]>([]);
+const checkData = ref<any[]>([]);
 const language = ref<string>('zh');
 const isDataLoading = ref<boolean>(false);
 const isImportLoading = ref<boolean>(false);
 const editorText = ref<string>(exampleData.content);
+const zipFile = ref<any>('');
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>(); // 实例化
 const { BK_DASHBOARD_URL } = window;
 const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME || `${window.BK_PAAS_APP_ID}_csrftoken`];
@@ -259,12 +266,21 @@ const setEditValue = () => {
   });
 };
 
+// 拿不到上传成功的success的事件先用progress代替
+const handleUploadSuccess = async (e: any, file: any) => {
+  zipFile.value = file;
+};
+
 // 上传完成的方法
-const handleUploadSuccess = async (response: any) => {
+const handleUploadDone = async (response: any) => {
   const res = response[0].response.data;
   const data = res.map((e: any) => ({ ...e, ...e.resource, ...e.resource_doc }));
   tableData.value = data;
+  checkData.value = data.filter((e: any) => !!e.resource_doc); // 有资源文档的才默认选中
   curView.value = 'resources';
+  nextTick(() => {
+    selections.value = JSON.parse(JSON.stringify(checkData.value));
+  });
 };
 
 // 下一步需要检查数据
@@ -289,6 +305,7 @@ const handleCheckData = async () => {
     const res = await checkResourceImport(apigwId, parmas);
     tableData.value = res;
     curView.value = 'resources';
+    checkData.value = tableData.value;
     nextTick(() => {
       selections.value = JSON.parse(JSON.stringify(tableData.value));
     });
@@ -302,23 +319,36 @@ const handleCheckData = async () => {
 
 // 确认导入
 const handleImportDoc = async () => {
+  const formData = new FormData();
+  formData.append('file', zipFile.value);
+  formData.append('selected_resource_docs', JSON.stringify(selections.value));
+
   try {
     isImportLoading.value = true;
-    // const parmas = {
-    //   content: editorText.value,
-    //   selected_resources: selections.value,
-    // };
-    // await importResource(apigwId, parmas);
+
+    const paramsSwagger = {
+      content: editorText.value,
+      selected_resources: selections.value,
+    };
+    const parmas = docType.value === 'archive' ? formData : paramsSwagger;
+    const fetchUrl: any = docType.value === 'archive' ? importResourceDoc : importResource;
+    const message = docType.value === 'archive' ? '资源文档' : '资源';
+    await fetchUrl(apigwId, parmas);
     Message({
       theme: 'success',
-      message: t('资源导入成功'),
+      message: t(`${message}导入成功`),
     });
     goBack();
-  } catch (error) {
-
-  } finally {
+  } catch (error) {} finally {
     isImportLoading.value = false;
   }
+};
+
+// 没有资源不能导入
+const isRowSelectEnable = (data: any) => {
+  console.log('row', data);
+  if (docType.value === 'swagger') return true; // 如果是swagger 则可以选择
+  return data?.row.resource_doc;
 };
 
 // 取消返回到资源列表
