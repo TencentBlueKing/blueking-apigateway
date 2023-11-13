@@ -32,6 +32,11 @@ export const menuData: IMenu[]  = [
     ],
   },
   {
+    name: 'apigwBackendService',
+    title: '后端服务',
+    icon: 'components',
+  },
+  {
     name: 'apigwPermissionManage',
     title: '权限管理',
     icon: 'permission',

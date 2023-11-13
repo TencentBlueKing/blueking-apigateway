@@ -47,12 +47,12 @@
                 <bk-table-column prop="method" :label="t('请求方法')"></bk-table-column>
                 <bk-table-column prop="method" :label="t('审批状态')">
                   <template #default="{ data }">
-                    <template v-if="data.apply_status === 'rejected'">
+                    <span v-if="data.apply_status === 'rejected'">
                       <span class="ag-dot default mr5"></span> {{ t('驳回') }}
-                    </template>
-                    <template v-else>
+                    </span>
+                    <span v-else>
                       <span class="ag-dot success mr5"></span> {{ t('通过') }}
-                    </template>
+                    </span>
                   </template>
                 </bk-table-column>
               </bk-table>
@@ -152,14 +152,22 @@
                   <bk-table-column prop="method" :label="t('审批状态')">
                     <template #default="prop">
                       <template v-if="prop.row['apply_status'] === 'rejected'">
-                        <span class="ag-dot default mr5 vm"></span> {{ t('驳回') }}
+                        <span class="ag-dot default mr5 "></span> {{ t('驳回') }}
                       </template>
                       <template v-else>
-                        <span class="ag-dot success mr5 vm"></span> {{ t('通过') }}
+                        <span class="ag-dot success mr5 "></span> {{ t('通过') }}
                       </template>
                     </template>
                   </bk-table-column>
                 </bk-table>
+                <!-- <bk-alert
+                  theme="warning" :title="t('部分资源已被删除')"
+                  v-if="curRecord.resourceList.length && curRecord.resourceList.length > curRecord.resource_ids.length">
+                </bk-alert>
+                <bk-alert
+                  theme="warning" :title="t('资源已被删除')"
+                  v-if="!curRecord.resourceList.length && curRecord.resource_ids.length">
+                </bk-alert> -->
               </div>
             </div>
           </div>
@@ -205,8 +213,6 @@ const curRecord = ref({
   expire_days_display: 0,
   reason: '',
   handled_resources: [],
-
-
 });
 const detailSliderConf = reactive({
   title: '',

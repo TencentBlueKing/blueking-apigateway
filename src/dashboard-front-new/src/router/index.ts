@@ -24,6 +24,7 @@ const apigwPermissionRecords = () => import(/* webpackChunkName: 'apigw-env'*/'@
 const apigwAccessLog = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/access-log/index.vue');
 const apigwAccessLogDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/access-log/detail.vue');
 const apigwReport = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/report/index.vue');
+const apigwBackendService = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/backend-service/index.vue');
 
 
 const routes: RouteRecordRaw[] = [
@@ -168,6 +169,15 @@ const routes: RouteRecordRaw[] = [
           title: '导入资源配置',
           matchRoute: 'apigwResource',
           showBackIcon: true,
+        },
+      },
+      {
+        path: '/:id/backend-service',
+        name: 'apigwBackendService',
+        component: apigwBackendService,
+        meta: {
+          title: '后端服务',
+          matchRoute: 'apigwBackendService',
         },
       },
       {

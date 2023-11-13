@@ -30,7 +30,7 @@
       <bk-loading :loading="isLoading">
         <bk-table
           class="mt15" :data="tableData" :size="'small'" :pagination="pagination"
-          v-bkloading="{ isLoading: isLoading }" @page-limit-change="handlePageSizeChange"
+          @page-limit-change="handlePageSizeChange"
           @page-value-change="handlePageChange" @selection-change="handleSelectionChange">
           <bk-table-column type="selection" width="60" align="center"></bk-table-column>
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
@@ -414,7 +414,7 @@ watch(
 // 获取资源列表数据
 const getApigwResources = async () => {
   const pageParams = {
-    limit: 1000,
+    limit: 3000,
     order_by: 'path',
   };
   try {
