@@ -367,6 +367,8 @@ watch(
   (v: string) => {
     resetSelections();
     filterData.value.query = v;
+    // const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
+    // getList(method, { query: v });
     const isEmpty = v.trim() === '';
     exportDropData.value.forEach((e: IDropList) => {
       // 已选资源
@@ -380,8 +382,8 @@ watch(
 // 监听授权有效时间的类型
 watch(
   () => curAuthData.value.expire_type,
-  (newV) => {
-    if (newV === 'custom') {
+  (v: string) => {
+    if (v === 'custom') {
       curAuthData.value.expire_days = 180;
     } else {
       curAuthData.value.expire_days = null;
@@ -412,7 +414,7 @@ watch(
 // 获取资源列表数据
 const getApigwResources = async () => {
   const pageParams = {
-    no_page: true,
+    limit: 1000,
     order_by: 'path',
   };
   try {
@@ -584,7 +586,7 @@ const handleDialogCancel = () => {
   isVisible.value = false;
   authSliderConf.isShow = true;
 };
-// 选择授权的资源改变触发
+// 选择授权的资源数量发生改变触发
 const handleResourceChange = (sourceList: any, targetList: any, targetValueList: any) => {
   curAuthData.value.resource_ids = targetValueList;
 };
