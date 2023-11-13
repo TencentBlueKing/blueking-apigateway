@@ -34,6 +34,7 @@ class ReleaseInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     stage_id = serializers.IntegerField(required=True, help_text="环境id")
     resource_version_id = serializers.IntegerField(required=True, help_text="资源版本id")
+    comment = serializers.CharField(allow_blank=True, required=False, help_text="发布日志")
 
     def validate_stage_id(self, value):
         if not Stage.objects.filter(gateway=self.context["gateway"], id=value).exists():
