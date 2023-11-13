@@ -193,7 +193,9 @@
                 @done="(v: boolean | any) => {
                   isComponentLoading = !!v
                 }"
-                @deleted-success="getList"
+                @deleted-success="() => {
+                  getList()
+                }"
                 @on-jump="(id: number | any) => {
                   handleShowInfo(id)
                 }"
