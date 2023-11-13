@@ -127,16 +127,6 @@ module = [
 ]
 ignore_errors = true
 
-[tool.flake8]
-ignore = "W503,E203,E741,F841"
-max-line-length = 119
-max-complexity = 12
-format = "pylint"
-show_source = "true"
-statistics = "true"
-count = "true"
-exclude = "*migrations*,*.pyc,.git,__pycache__,venv"
-
 [tool.pytest.ini_options]
 addopts = "-p no:pastebin -p no:nose -p no:doctest -p no:warnings"
 testpaths = [
