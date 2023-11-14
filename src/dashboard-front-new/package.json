@@ -23,7 +23,7 @@
   "license": "ISC",
   "dependencies": {
     "art-template": "^4.13.2",
-    "bkui-vue": "0.0.2-beta.79",
+    "bkui-vue": "0.0.2-beta.85",
     "connect-history-api-fallback": "^2.0.0",
     "cookie": "^0.5.0",
     "cookie-parser": "^1.4.5",
@@ -46,6 +46,7 @@
     "@blueking/eslint-config-bk": "^2.1.0-beta.14",
     "@blueking/stylelint-config-bk": "^2.1.0-beta.10",
     "@types/cookie": "^0.5.2",
+    "@types/lodash": "^4.14.201",
     "@types/node": "^20.6.3",
     "enhanced-resolve": "^5.10.0",
     "postcss": "~8.4.16",
