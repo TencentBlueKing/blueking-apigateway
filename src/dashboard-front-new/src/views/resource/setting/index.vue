@@ -53,6 +53,7 @@
             <bk-table-column
               width="80"
               type="selection"
+              align="center"
             />
             <bk-table-column
               :label="t('资源名称')"
@@ -97,8 +98,20 @@
               v-if="!isDetail"
             >
               <template #default="{ data }">
-                <section v-if="data?.docs.length">{{ data?.docs }}</section>
-                <section v-else>--</section>
+                <section v-if="data?.docs.length" @click="handleShowDoc(data)">
+                  <span class="document-info">
+                    <i class="bk-icon apigateway-icon icon-ag-document"></i>
+                    {{ $t('详情') }}
+                  </span>
+                </section>
+                <section v-else>
+                  <span v-show="!data?.isDoc">--</span>
+                  <i
+                    class="bk-icon apigateway-icon icon-ag-plus plus-class"
+                    v-bk-tooltips="t('添加文档')"
+                    v-show="data?.isDoc"
+                    @click="handleShowDoc(data)"></i>
+                </section>
               </template>
             </bk-table-column>
             <bk-table-column
@@ -189,7 +202,9 @@
                 v-if="item.name === active && resourceId"
                 :is="item.component"
                 :resource-id="resourceId"
+                :cur-resource="curResource"
                 :apigw-id="apigwId"
+                height="calc(100vh - 348px)"
                 ref="componentRef"
                 @done="(v: boolean | any) => {
                   isComponentLoading = !!v
@@ -280,6 +295,19 @@
         </bk-form-item>
       </bk-form>
     </bk-dialog>
+
+    <!-- 文档侧边栏 -->
+    <bk-sideslider
+      v-model:isShow="docSliderConf.isShowDocSide"
+      quick-close
+      :title="docSliderConf.title"
+      width="780"
+      ext-cls="doc-sideslider-cls">
+      <template #default>
+        <ResourcesDoc
+          :cur-resource="curResource" @fetch="getList" @on-update="handleUpdateTitle"></ResourcesDoc>
+      </template>
+    </bk-sideslider>
   </div>
 </template>
 <script setup lang="ts">
@@ -296,6 +324,7 @@ import { Message } from 'bkui-vue';
 import agDropdown from '@/components/ag-dropdown.vue';
 import Detail from './detail.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
+import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 const props = defineProps({
   apigwId: {
@@ -351,9 +380,20 @@ const isShowLeft = ref(true);
 // 当前点击资源ID
 const resourceId = ref(0);
 
+const curResource: any = ref({});
+
 const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
+
+// 文档侧边栏数据
+const docSliderConf: any = reactive({
+  isShow: false,
+  title: t('文档详情'),
+  isLoading: false,
+  isEdited: false,
+  languages: 'zh',
+});
 
 // 批量删除dialog
 const dialogData: IDialog = reactive({
@@ -379,7 +419,7 @@ const batchEditData = ref({
 const panels = [
   { name: 'resourceDetail', label: t('资源配置'), component: Detail },
   { name: 'pluginManage', label: '插件管理', component: PluginManage },
-  { name: 'resourceDoc', label: '资源文档', component: PluginManage },
+  { name: 'resourcesDoc', label: '资源文档', component: ResourcesDoc },
 ];
 
 const columns = [
@@ -447,7 +487,8 @@ const handleDeleteResource = async (id: number) => {
 // 展示右边内容
 const handleShowInfo = (id: number) => {
   resourceId.value = id;
-  console.log('isDetail', isDetail.value);
+  curResource.value = tableData.value.find((e: any) => e.id === id);
+  console.log('curResource.value', curResource.value);
   if (isDetail.value) {
     isComponentLoading.value = true;
     active.value = 'resourceInfo';
@@ -565,6 +606,25 @@ const handleMouseLeave = (e: any, row: any) => {
   }, 100);
 };
 
+// 展示文档
+const handleShowDoc = (data: any, languages = 'zh') => {
+  console.log('data', data);
+  curResource.value = data;
+  resourceId.value = data.id;   // 资源id
+  docSliderConf.isShowDocSide = true;
+  docSliderConf.title = `${t('文档详情')}【${data.name}】`;
+  docSliderConf.languages = languages;
+};
+
+// 改变侧栏边title
+const handleUpdateTitle = (type: string, isUpdate?: boolean) => {
+  if (type === 'cancel') {
+    docSliderConf.title = `${t('文档详情')}【${curResource.value.name}】`;
+  } else {
+    docSliderConf.title = `${isUpdate ? t('更新') : t('创建')}【${curResource.value.name}】`;
+  }
+};
+
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
 watch(
   () => tableData.value,
@@ -642,6 +702,22 @@ watch(
           &.is-left {
             transform: rotate(180deg) !important;
           }
+        }
+      }
+      .document-info{
+        color: #3a84ff;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .plus-class{
+        font-size: 12px;
+        cursor: pointer;
+        color: #979BA5;
+        background: #EAEBF0;
+        padding: 5px;
+        &:hover {
+          color: #3A84FF;
+          background: #E1ECFF;
         }
       }
     }
