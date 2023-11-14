@@ -53,6 +53,7 @@
             <bk-table-column
               width="80"
               type="selection"
+              align="center"
             />
             <bk-table-column
               :label="t('资源名称')"
@@ -201,6 +202,7 @@
                 v-if="item.name === active && resourceId"
                 :is="item.component"
                 :resource-id="resourceId"
+                :cur-resource="curResource"
                 :apigw-id="apigwId"
                 ref="componentRef"
                 @done="(v: boolean | any) => {
@@ -301,7 +303,8 @@
       width="780"
       ext-cls="doc-sideslider-cls">
       <template #default>
-        <ResourcesDoc :cur-resource="curResource"></ResourcesDoc>
+        <ResourcesDoc
+          :cur-resource="curResource" @fetch="getList" @on-update="handleUpdateTitle"></ResourcesDoc>
       </template>
     </bk-sideslider>
   </div>
@@ -415,7 +418,7 @@ const batchEditData = ref({
 const panels = [
   { name: 'resourceDetail', label: t('资源配置'), component: Detail },
   { name: 'pluginManage', label: '插件管理', component: PluginManage },
-  { name: 'resourceDoc', label: '资源文档', component: ResourcesDoc },
+  { name: 'resourcesDoc', label: '资源文档', component: ResourcesDoc },
 ];
 
 const columns = [
@@ -483,7 +486,8 @@ const handleDeleteResource = async (id: number) => {
 // 展示右边内容
 const handleShowInfo = (id: number) => {
   resourceId.value = id;
-  console.log('isDetail', isDetail.value);
+  curResource.value = tableData.value.find((e: any) => e.id === id);
+  console.log('curResource.value', curResource.value);
   if (isDetail.value) {
     isComponentLoading.value = true;
     active.value = 'resourceInfo';
@@ -609,6 +613,15 @@ const handleShowDoc = (data: any, languages = 'zh') => {
   docSliderConf.isShowDocSide = true;
   docSliderConf.title = `${t('文档详情')}【${data.name}】`;
   docSliderConf.languages = languages;
+};
+
+// 改变侧栏边title
+const handleUpdateTitle = (type: string, isUpdate?: boolean) => {
+  if (type === 'cancel') {
+    docSliderConf.title = `${t('文档详情')}【${curResource.value.name}】`;
+  } else {
+    docSliderConf.title = `${isUpdate ? t('更新') : t('创建')}【${curResource.value.name}】`;
+  }
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id

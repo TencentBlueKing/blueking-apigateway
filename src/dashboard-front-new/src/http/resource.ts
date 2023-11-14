@@ -172,3 +172,11 @@ export const saveResourceDocs = (apigwId: number, resourceId: number, data: any)
  * @param docId 文档id
  */
 export const updateResourceDocs = (apigwId: number, resourceId: number, data: any, docId: number) => fetch.put(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/${resourceId}/docs/${docId}/`, data);
+
+/**
+ * 删除资源文档数据
+ * @param apigwId 网关id
+ * @param resourceId 资源id
+ * @param docId 文档id
+ */
+export const deleteResourceDocs = (apigwId: number, resourceId: number, docId: number) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/${resourceId}/docs/${docId}/`);

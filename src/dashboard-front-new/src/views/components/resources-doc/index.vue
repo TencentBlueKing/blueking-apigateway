@@ -3,19 +3,25 @@
     <section class="content p20">
       <div class="ag-markdown-view" :class="isEdited ? '' : 'text-c'">
         <h3 v-if="isEdited"> {{ $t('文档类型') }} </h3>
-        <bk-button-group size="small">
+        <bk-button-group>
           <bk-button
             v-for="item in languagesData"
             :selected="language === item.value"
             :key="item.value"
+            :disabled="isEdited && language !== item.value"
+            @click="handleSelectLanguage(item.value)"
           >
-            {{ item.label }}
+            <div
+              v-bk-tooltips="
+                { content: t('请选择待续期的权限'),
+                  placement: 'top',disabled: !isEdited || (isEdited && language === item.value) }">
+              {{ item.label }}
+            </div>
           </bk-button>
         </bk-button-group>
       </div>
       <div v-show="isEmpty">
         <div class="text-c mt50">
-          <!-- <table-empty empty :empty-title="language === 'zh' ? $t('您尚未创建中文文档') : $t('您尚未创建英文文档')" /> -->
           <bk-exception
             class="exception-wrap-item exception-part"
             type="empty"
@@ -35,6 +41,7 @@
             {{curResource.path}}
           </p>
         </div>
+        <!-- eslint-disable vue/no-v-html -->
         <div class="ag-markdown-view" v-html="markdownHtml" v-show="!isEdited"></div>
         <div class="ag-markdown-editor">
           <mavon-editor
@@ -66,19 +73,28 @@
         <bk-button class="mr5" theme="primary" style="width: 100px;" @click="handleEditMarkdown('edit')">
           {{ $t('修改') }}
         </bk-button>
-        <bk-button style="width: 100px;" @click="handleDeleteMarkdown"> {{ $t('删除') }} </bk-button>
+        <bk-pop-confirm
+          :title="t('确认要删除该文档？')"
+          content="将删除相关配置，不可恢复，请确认是否删除"
+          width="288"
+          trigger="click"
+          @confirm="handleDeleteMarkdown"
+        >
+          <bk-button>
+            {{ t('删除') }}
+          </bk-button>
+        </bk-pop-confirm>
       </template>
     </div>
   </div>
 </template>
 <script setup lang="ts">
 import { ref, toRefs, onMounted } from 'vue';
-import { getResourceDocs, updateResourceDocs, saveResourceDocs } from '@/http';
+import { getResourceDocs, updateResourceDocs, saveResourceDocs, deleteResourceDocs } from '@/http';
 import { useCommon } from '@/store';
 import { cloneDeep } from 'lodash';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
-
 
 const { t } = useI18n();
 const common = useCommon();
@@ -137,11 +153,15 @@ const toolbars = ref<any>({
   preview: true,
 });
 
+const emit = defineEmits(['fetch', 'on-update']);
+
+// 编辑markdown
 const handleEditMarkdown = (type: string) => {
   isEmpty.value = false;
   isEdited.value = true;
   console.log('isEdited.value', isEdited.value);
   isUpdate.value = type === 'edit';    // 是否是更新
+  emit('on-update', 'update', isUpdate.value);
   const docDataItem = cloneDeep(docData.value).find((e: any) => e.language === language.value);
   markdownDoc.value = docDataItem.content;
 };
@@ -150,11 +170,8 @@ const handleEditMarkdown = (type: string) => {
 const initData = async () => {
   try {
     docData.value = await getResourceDocs(apigwId, curResource.value.id);
-    const docDataItem =  cloneDeep(docData.value).find((e: any) => e.language === language.value);
-    docId.value = docDataItem.id;
-    isEmpty.value = !docDataItem.id;
-    markdownDoc.value = docDataItem.content;
-    markdownHtml.value = markdownRef.value.markdownIt.render(docDataItem.content);
+    // 根据语言找到是否有文档内容
+    handleDocDataWithLanguage();
   } catch (error) {
     console.log('error', error);
   }
@@ -176,8 +193,10 @@ const handleSaveMarkdown = async () => {
     };
     isSaving.value = true;
     if (docId.value) {
+      // 更新
       await updateResourceDocs(apigwId, curResource.value.id, data, docId.value);
     } else {
+      // 新增
       await saveResourceDocs(apigwId, curResource.value.id, data);
     }
     isEdited.value = false;
@@ -185,6 +204,9 @@ const handleSaveMarkdown = async () => {
       theme: 'success',
       message: t('保存成功！'),
     });
+    initData();
+    // 执行列表的方法
+    emit('fetch');
   } catch (error) {
 
   } finally {
@@ -194,9 +216,40 @@ const handleSaveMarkdown = async () => {
 
 const handleCancelMarkdown = () => {
   isEdited.value = false;
+  emit('on-update', 'cancel');
 };
 
-const handleDeleteMarkdown = () => {};
+// 删除文档
+const handleDeleteMarkdown = async () => {
+  try {
+    await deleteResourceDocs(apigwId, curResource.value.id, docId.value);
+    Message({
+      message: t('删除成功'),
+      theme: 'success',
+    });
+    initData();
+    // 执行列表的方法
+    emit('fetch');
+  } catch (error) {
+    console.log('error', error);
+  }
+};
+
+const handleSelectLanguage = (payload: string) => {
+  // 如果相同 则return
+  if (payload === language.value) return;
+  language.value = payload;
+  handleDocDataWithLanguage();
+};
+
+// 根据语言找到是否有文档内容
+const handleDocDataWithLanguage = () => {
+  const docDataItem =  cloneDeep(docData.value).find((e: any) => e.language === language.value);
+  docId.value = docDataItem.id;
+  isEmpty.value = !docDataItem.id;
+  markdownDoc.value = docDataItem.content;
+  markdownHtml.value = markdownRef.value.markdownIt.render(docDataItem.content);
+};
 
 onMounted(() => {
   initData();
