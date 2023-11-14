@@ -223,6 +223,23 @@ class TestPublishEventQueryOutputSLZ:
                     "status": fake_publish_event.status,
                     "created_time": dummy_time.str,
                     "detail": {},
-                }
+                },
+                {
+                    "id": -fake_publish_event.step,
+                    "release_history_id": fake_release_history.id,
+                    "name": fake_publish_event.name,
+                    "step": fake_publish_event.step,
+                    "status": PublishEventStatusTypeEnum.FAILURE.value,
+                    "created_time": dummy_time.str,
+                    "detail": {},
+                },
+            ],
+            "events_template": [
+                {"name": "validata_configuration", "desc": "配置校验", "step": 0},
+                {"name": "generate_release_task", "desc": "生成发布任务", "step": 1},
+                {"name": "distribute_configuration", "desc": "下发配置", "step": 2},
+                {"name": "parse_configuration", "desc": "解析配置", "step": 3},
+                {"name": "apply_configuration", "desc": "应用配置", "step": 4},
+                {"name": "load_configuration", "desc": "加载配置", "step": 5},
             ],
         }
