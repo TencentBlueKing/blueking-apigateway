@@ -26,6 +26,7 @@ from rest_framework import serializers
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, DEFAULT_STAGE_NAME, PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import Backend, BackendConfig, MicroGateway, Release, Stage
+from apigateway.utils.time import now_datetime
 
 
 class StageHandler:
@@ -74,8 +75,9 @@ class StageHandler:
             backend = backends[backend_config["id"]]
             backend.config = backend_config["config"]
             backend.updated_by = updated_by
+            backend.updated_time = now_datetime()
 
-        BackendConfig.objects.bulk_update(backends.values(), fields=["config", "updated_by"])
+        BackendConfig.objects.bulk_update(backends.values(), fields=["config", "updated_by", "updated_time"])
 
         # 触发环境发布
         trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, updated_by, stage.gateway_id, stage.id, is_sync=True)
