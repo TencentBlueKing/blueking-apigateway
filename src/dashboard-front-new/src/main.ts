@@ -6,6 +6,8 @@ import i18n from './language/i18n';
 import './css/index.css';
 import globalConfig from '@/constant/config';
 import directive from '@/directive/index';
+import mavonEditor from 'mavon-editor';
+import 'mavon-editor/dist/css/index.css';
 
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
@@ -22,4 +24,5 @@ app.use(i18n)
   .use(router)
   .use(createPinia())
   .use(bkui)
+  .use(mavonEditor)
   .mount('.app');
