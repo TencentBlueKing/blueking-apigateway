@@ -6,3 +6,4 @@ export * from './backends';
 export * from './online-test';
 export * from './plugin-manage';
 export * from './permission';
+export * from './basic-info';

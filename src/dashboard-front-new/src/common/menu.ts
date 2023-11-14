@@ -75,4 +75,9 @@ export const menuData: IMenu[]  = [
     title: '在线调试',
     icon: 'debug',
   },
+  {
+    name: 'apigwBasicInfo',
+    title: '基本信息',
+    icon: 'info',
+  },
 ];
