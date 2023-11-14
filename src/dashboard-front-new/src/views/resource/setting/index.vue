@@ -204,6 +204,7 @@
                 :resource-id="resourceId"
                 :cur-resource="curResource"
                 :apigw-id="apigwId"
+                height="calc(100vh - 348px)"
                 ref="componentRef"
                 @done="(v: boolean | any) => {
                   isComponentLoading = !!v

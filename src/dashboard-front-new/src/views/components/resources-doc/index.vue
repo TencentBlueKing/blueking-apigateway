@@ -1,6 +1,6 @@
 <template>
   <div class="resources-doc-container">
-    <section class="content p20">
+    <section class="content p20" :style="{ height: height }">
       <div class="ag-markdown-view" :class="isEdited ? '' : 'text-c'">
         <h3 v-if="isEdited"> {{ $t('文档类型') }} </h3>
         <bk-button-group>
@@ -101,9 +101,10 @@ const common = useCommon();
 const { apigwId } = common; // 网关id
 const props = defineProps({
   curResource: { type: Object, default: {} },   // 当前点击的资源
+  height: { type: String, default: 'calc(100vh - 104px)' },
 });
 
-const { curResource } = toRefs(props);
+const { curResource, height } = toRefs(props);
 
 const languagesData = ref([{ label: t('中文文档'), value: 'zh' }, { label: t('英文文档'), value: 'en' }]);
 const isEmpty = ref<boolean>(false);
