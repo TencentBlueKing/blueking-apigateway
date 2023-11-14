@@ -32,6 +32,45 @@ export const menuData: IMenu[]  = [
     ],
   },
   {
+    name: 'apigwBackendService',
+    title: '后端服务',
+    icon: 'components',
+  },
+  {
+    name: 'apigwPermissionManage',
+    title: '权限管理',
+    icon: 'permission',
+    children: [
+      {
+        name: 'apigwPermissionApplys',
+        title: '权限审批',
+      },
+      {
+        name: 'apigwPermissionApps',
+        title: '应用权限',
+      },
+      {
+        name: 'apigwPermissionRecords',
+        title: '审批历史',
+      },
+    ],
+  },
+  {
+    name: 'apigwOperatingData',
+    title: '运行数据',
+    icon: 'bar-chart',
+    children: [
+      {
+        name: 'apigwAccessLog',
+        title: '流水日志',
+      },
+      {
+        name: 'apigwReport',
+        title: '统计报表',
+      },
+    ],
+  },
+  {
     name: 'apigwOnlineTest',
     title: '在线调试',
     icon: 'debug',

@@ -271,13 +271,17 @@ const handleOperate = (operate: string) => {
   }
 };
 
-const pluginCodeFirst = computed(() => (code: string) => {
-  return code.charAt(3).toUpperCase();
+const pluginCodeFirst = computed(() => {
+  return function (code: string) {
+    return code.charAt(3).toUpperCase();
+  };
 });
 
-const isBound = computed(() => (obj: any) => {
-  const flag = curBindingPlugins.value.some((item: { code: string; }) => item.code === obj.code);
-  return flag;
+const isBound = computed(() => {
+  return function (obj: any) {
+    const flag = curBindingPlugins.value.some((item: { code: string; }) => item.code === obj.code);
+    return flag;
+  };
 });
 // hover插件获取其对应绑定的stage和resource数量
 const handlePluginHover = async (itemCode: string) => {
@@ -347,9 +351,11 @@ const handleDeletePlugin = (item: any) => {
     },
   });
 };
+
 // 跳转stage
 const handeleJumpStage = (item: any) => {
   const { name } = item;
+  console.log(item, name);
   const isRouteStage = route.path.includes('stage');
   const query = {
     stage: name,
@@ -360,7 +366,7 @@ const handeleJumpStage = (item: any) => {
     });
   } else {
     router.push({
-      name: 'apigwStageDetail',
+      name: 'apigwStagePluginManage',
       params: {
         id: apigwId,
       },
@@ -382,6 +388,7 @@ const handeleJumpResource = (item: any) => {
   }
   emit('on-jump', id);
 };
+
 const init = () => {
   console.log(route.path);
   const isStage = route.path.includes('stage');
@@ -404,6 +411,7 @@ const resetData = () => {
   searchValue.value = '';
   curChooseCode.value = '';
 };
+
 // 获取已绑定插件列表
 const getBindingDetails = async () => {
   try {

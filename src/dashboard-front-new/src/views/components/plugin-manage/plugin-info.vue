@@ -99,16 +99,17 @@ const rules = {
     },
   ],
 };
-const pluginCodeFirst = computed(() => (code: string) => {
-  console.log(code);
-  return code.charAt(3).toUpperCase();
+const pluginCodeFirst = computed(() => {
+  return function (code: string) {
+    return code.charAt(3).toUpperCase();
+  };
 });
 
 // 上一页
 const handlePre = () => {
   emit('on-change', 'pre');
 };
-// 确认添加
+// 确认
 const handleAdd = async () => {
   const { scopeInfo: { scopeType, scopeId, apigwId } } = props;
   const { curPlugin: { code, id } } = props;
@@ -131,7 +132,7 @@ const handleAdd = async () => {
     console.log('error', error);
   }
 };
-// 取消添加
+// 取消
 const handleCancel = () => {
   if (isAdd.value) {
     emit('on-change', 'addCancel');
@@ -141,7 +142,6 @@ const handleCancel = () => {
 const init = async () => {
   isStage.value = props.scopeInfo.scopeType === 'stage';
   console.log(isStage.value);
-
   console.log(props.editPlugin);
   isAdd.value = props.type === 'add';
   if (!isAdd.value) {

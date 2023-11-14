@@ -18,6 +18,13 @@ const apigwStageResourceInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@
 const apigwStagePluginManage = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/plugin-manage.vue');
 const apigwOnlineTest = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/online-test/index.vue');
 const apigwStageVariableManage = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/variable-manage.vue');
+const apigwPermissionApplys = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/apply/index.vue');
+const apigwPermissionApps = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/app/index.vue');
+const apigwPermissionRecords = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/record/index.vue');
+const apigwAccessLog = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/access-log/index.vue');
+const apigwAccessLogDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/access-log/detail.vue');
+const apigwReport = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/report/index.vue');
+const apigwBackendService = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/backend-service/index.vue');
 
 
 const routes: RouteRecordRaw[] = [
@@ -165,6 +172,68 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: '/:id/backend-service',
+        name: 'apigwBackendService',
+        component: apigwBackendService,
+        meta: {
+          title: '后端服务',
+          matchRoute: 'apigwBackendService',
+        },
+      },
+      {
+        path: '/:id/permission/applys',
+        name: 'apigwPermissionApplys',
+        component: apigwPermissionApplys,
+        meta: {
+          title: '权限审批',
+          matchRoute: 'apigwPermissionApplys',
+        },
+      },
+      {
+        path: '/:id/permission/apps',
+        name: 'apigwPermissionApps',
+        component: apigwPermissionApps,
+        meta: {
+          title: '应用权限',
+          matchRoute: 'apigwPermissionApps',
+        },
+      },
+      {
+        path: '/:id/permission/records',
+        name: 'apigwPermissionRecords',
+        component: apigwPermissionRecords,
+        meta: {
+          title: '审批历史',
+          matchRoute: 'apigwPermissionRecords',
+        },
+      },
+      {
+        path: '/:id/access-log',
+        name: 'apigwAccessLog',
+        component: apigwAccessLog,
+        meta: {
+          title: '流水日志',
+          matchRoute: 'apigwAccessLog',
+        },
+      },
+      {
+        path: '/:id/access-log/:requestId',
+        name: 'apigwAccessLogDetail',
+        component: apigwAccessLogDetail,
+        meta: {
+          title: '流水日志',
+          matchRoute: 'apigwAccessLogDetail',
+        },
+      },
+      {
+        path: '/:id/report',
+        name: 'apigwReport',
+        component: apigwReport,
+        meta: {
+          title: '统计报表',
+          matchRoute: 'apigwReport',
+        },
+      }, {
         path: '/:id/resource/import-doc',
         name: 'apigwResourceImportDoc',
         component: ApigwResourceImportDoc,
