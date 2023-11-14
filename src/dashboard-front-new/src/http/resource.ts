@@ -141,3 +141,34 @@ export const importResource = (apigwId: number, data: any) => fetch.post(`${BK_D
  * @param data 导入参数
  */
 export const importResourceDoc = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/docs/import/by-archive/`, data, { responseType: 'formData' });
+
+/**
+ * 导入资源文档by swagger
+ * @param apigwId 网关id
+ * @param data 导入参数
+ */
+export const importResourceDocSwagger = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/docs/import/by-swagger/`, data);
+
+/**
+ * 获取资源文档数据
+ * @param apigwId 网关id
+ * @param resourceId 资源id
+ */
+export const getResourceDocs = (apigwId: number, resourceId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/${resourceId}/docs/`);
+
+/**
+ * 保存资源文档数据
+ * @param apigwId 网关id
+ * @param resourceId 资源id
+ * @param data 文档内容
+ */
+export const saveResourceDocs = (apigwId: number, resourceId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/${resourceId}/docs/`, data);
+
+/**
+ * 更新资源文档数据
+ * @param apigwId 网关id
+ * @param resourceId 资源id
+ * @param data 文档内容
+ * @param docId 文档id
+ */
+export const updateResourceDocs = (apigwId: number, resourceId: number, data: any, docId: number) => fetch.put(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/${resourceId}/docs/${docId}/`, data);
