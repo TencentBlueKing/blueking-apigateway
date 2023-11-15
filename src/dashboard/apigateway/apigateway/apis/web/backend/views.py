@@ -28,6 +28,7 @@ from apigateway.biz.backend import BackendHandler
 from apigateway.biz.proxy import ProxyHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Backend, BackendConfig
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .filters import BackendFilter
@@ -96,6 +97,8 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
             gateway_id=request.gateway.id,
             instance_id=backend.id,
             instance_name=backend.name,
+            data_before={},
+            data_after=get_model_dict(backend),
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -138,6 +141,7 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
 
         slz = self.get_serializer(instance=instance, data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
@@ -152,6 +156,8 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
             gateway_id=request.gateway.id,
             instance_id=backend.id,
             instance_name=backend.name,
+            data_before=data_before,
+            data_after=get_model_dict(backend),
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -159,8 +165,9 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
 
-        # 通过stage/resource关联数据校验是否能删除
+        # 通过 stage/resource 关联数据校验是否能删除
         if not BackendHandler.deletable(instance):
             raise error_codes.FAILED_PRECONDITION.format(_("请先下线后端服务，然后再删除。"))
 
@@ -173,6 +180,8 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
             gateway_id=request.gateway.id,
             instance_id=instance.id,
             instance_name=instance.name,
+            data_before=data_before,
+            data_after={},
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

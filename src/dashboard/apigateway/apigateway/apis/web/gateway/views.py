@@ -34,6 +34,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -130,6 +131,8 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             gateway_id=slz.instance.id,
             instance_id=slz.instance.id,
             instance_name=slz.instance.name,
+            data_before={},
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED, data={"id": slz.instance.id})
@@ -189,6 +192,8 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         partial = kwargs.pop("partial", False)
 
         instance = self.get_object()
+        data_before = get_model_dict(instance)
+
         slz = GatewayUpdateInputSLZ(instance=instance, data=request.data, partial=partial)
         slz.is_valid(raise_exception=True)
 
@@ -205,6 +210,8 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             gateway_id=instance.id,
             instance_id=instance.id,
             instance_name=instance.name,
+            data_before=data_before,
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -212,6 +219,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
         instance_id = instance.id
 
         # 网关为“停用”状态，才可以删除
@@ -226,6 +234,8 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             gateway_id=instance_id,
             instance_id=instance_id,
             instance_name=instance.name,
+            data_before=data_before,
+            data_after={},
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -247,6 +257,8 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
+
         slz = self.get_serializer(instance=instance, data=request.data)
         slz.is_valid(raise_exception=True)
 
@@ -265,6 +277,8 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
             gateway_id=instance.id,
             instance_id=instance.id,
             instance_name=instance.name,
+            data_before=data_before,
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

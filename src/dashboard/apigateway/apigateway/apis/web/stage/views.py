@@ -31,6 +31,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import BackendConfig, Stage
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -103,6 +104,8 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
             gateway_id=request.gateway.id,
             instance_id=stage.id,
             instance_name=stage.name,
+            data_before={},
+            data_after=get_model_dict(stage),
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -164,6 +167,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
 
         slz = StageInputSLZ(instance=instance, data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
@@ -179,12 +183,15 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
             gateway_id=request.gateway.id,
             instance_id=stage.id,
             instance_name=stage.name,
+            data_before=data_before,
+            data_after=get_model_dict(stage),
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
 
         # 判断环境是否已下线
         if not instance.deletable:
@@ -200,6 +207,8 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
             gateway_id=request.gateway.id,
             instance_id=stage_id,
             instance_name=stage_name,
+            data_before=data_before,
+            data_after={},
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -211,8 +220,20 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
         data = slz.validated_data
 
         instance = self.get_object()
+        data_before = {"description": instance.description}
+
         instance.description = data["description"]
         instance.save()
+
+        Auditor.record_stage_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance.id,
+            instance_name=instance.name,
+            data_before=data_before,
+            data_after={"description": instance.description},
+        )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
@@ -253,6 +274,8 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
         data = slz.validated_data
 
         instance = self.get_object()
+        data_before = {"vars": instance.vars}
+
         instance.vars = data["vars"]
         instance.save()
 
@@ -267,6 +290,8 @@ class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIV
             instance_id=instance.id,
             instance_name=instance.name,
             comment="更新环境变量",
+            data_before=data_before,
+            data_after={"vars": instance.vars},
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -324,6 +349,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
 
     def update(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
+        data_before = get_model_dict(instance)
 
         slz = self.get_serializer(data=request.data, context={"backend": instance.backend})
         slz.is_valid(raise_exception=True)
@@ -331,6 +357,16 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
         data = slz.validated_data
         instance.config = data
         instance.save()
+
+        Auditor.record_stage_backend_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance.id,
+            instance_name=f"{instance.stage.name}:{instance.backend.name}",
+            data_before=data_before,
+            data_after=get_model_dict(instance),
+        )
 
         username = request.user.username
         # 触发环境发布
@@ -360,6 +396,7 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
         data = slz.validated_data
 
         instance = self.get_object()
+        data_before = {"status": instance.status}
 
         username = request.user.username
         StageHandler.set_status(instance, data["status"], username)
@@ -371,6 +408,8 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
             instance_id=instance.id,
             instance_name=instance.name,
             comment="环境状态变更",
+            data_before=data_before,
+            data_after={"status": data["status"]},
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

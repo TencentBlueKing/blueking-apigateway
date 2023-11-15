@@ -22,10 +22,10 @@ from django.utils.translation import gettext_lazy as _
 
 
 class OpTypeEnum(StructuredEnum):
-    QUERY = EnumField("query", label=_("查询"))
     CREATE = EnumField("create", label=_("创建"))
     DELETE = EnumField("delete", label=_("删除"))
     MODIFY = EnumField("modify", label=_("修改"))
+    QUERY = EnumField("query", label=_("查询"))
 
 
 class OpStatusEnum(StructuredEnum):
@@ -35,33 +35,52 @@ class OpStatusEnum(StructuredEnum):
 
 
 class OpObjectTypeEnum(StructuredEnum):
-    GATEWAY = EnumField("gateway")
-    STAGE = EnumField("stage")
-    BACKEND = EnumField("backend")
-    RESOURCE = EnumField("resource")
-    RESOURCE_VERSION = EnumField("resource_version")
-    RELEASE = EnumField("release")
-    GATEWAY_LABEL = EnumField("gateway_label")
-    MICRO_GATEWAY = EnumField("micro_gateway")
-    PLUGIN = EnumField("plugin")
-    RESOURCE_DOC = EnumField("resource_doc")
+    GATEWAY = EnumField("gateway", label=_("网关"))
+    STAGE = EnumField("stage", label=_("环境"))
+    BACKEND = EnumField("backend", label=_("后端服务"))
+    STAGE_BACKEND = EnumField("stage_backend", label=_("环境后端配置"))
+    RESOURCE = EnumField("resource", label=_("资源"))
+    RESOURCE_VERSION = EnumField("resource_version", label=_("资源版本"))
+    RELEASE = EnumField("release", label=_("发布"))
+    GATEWAY_LABEL = EnumField("gateway_label", label=_("网关标签"))
+    MICRO_GATEWAY = EnumField("micro_gateway", label=_("微网关"))
+    PLUGIN = EnumField("plugin", label=_("插件"))
+    RESOURCE_DOC = EnumField("resource_doc", label=_("资源文档"))
 
 
 # for translation only
 COMMENTS = (
-    _("创建资源"),
-    _("更新资源"),
-    _("删除资源"),
-    _("创建插件"),
-    _("更新插件"),
-    _("删除插件"),
-    _("创建资源文档"),
-    _("更新资源文档"),
-    _("删除资源文档"),
-    _("创建网关标签"),
-    _("更新网关标签"),
-    _("删除网关标签"),
     _("创建网关"),
     _("更新网关"),
     _("删除网关"),
+    _("创建网关标签"),
+    _("更新网关标签"),
+    _("删除网关标签"),
+    _("创建资源文档"),
+    _("更新资源文档"),
+    _("删除资源文档"),
+    _("创建资源"),
+    _("更新资源"),
+    _("删除资源"),
+    _("创建后端服务"),
+    _("更新后端服务"),
+    _("删除后端服务"),
+    _("创建微网关实例"),
+    _("更新微网关实例"),
+    _("删除微网关实例"),
+    _("创建插件"),
+    _("更新插件"),
+    _("删除插件"),
+    _("创建环境"),
+    _("更新环境"),
+    _("删除环境"),
+    _("版本发布"),
+    # extras
+    _("环境状态变更"),
+    _("更新环境变量"),
+    _("批量更新资源"),
+    _("批量删除资源"),
+    _("创建环境后端配置"),
+    _("更新环境后端配置"),
+    _("删除环境后端配置"),
 )

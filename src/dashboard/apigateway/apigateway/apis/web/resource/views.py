@@ -43,6 +43,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from .serializers import (
@@ -138,6 +139,8 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
             gateway_id=request.gateway.id,
             instance_id=instance.id,
             instance_name=instance.identity,
+            data_before={},
+            data_after=get_model_dict(instance),
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -185,6 +188,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
 
         slz = self.get_serializer(
             instance,
@@ -210,6 +214,8 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             gateway_id=request.gateway.id,
             instance_id=instance.id,
             instance_name=instance.identity,
+            data_before=data_before,
+            data_after=get_model_dict(instance),
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -217,6 +223,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
         instance_id = instance.id
 
         ResourceHandler.delete_resources([instance_id])
@@ -227,6 +234,8 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             gateway_id=request.gateway.id,
             instance_id=instance_id,
             instance_name=instance.identity,
+            data_before=data_before,
+            data_after={},
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -272,6 +281,11 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
             instance_id=";".join([str(resource.id) for resource in queryset]),
             instance_name=";".join([resource.identity for resource in queryset]),
             comment="批量更新资源",
+            data_before={},
+            data_after={
+                "is_public": slz.validated_data["is_public"],
+                "allow_apply_permission": slz.validated_data["allow_apply_permission"],
+            },
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -295,6 +309,8 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
             instance_id=";".join(map(str, resource_ids)),
             instance_name=";".join(resource_identities),
             comment="批量删除资源",
+            data_before=resource_ids,
+            data_after=[],
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

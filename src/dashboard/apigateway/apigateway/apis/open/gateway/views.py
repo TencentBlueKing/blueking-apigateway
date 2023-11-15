@@ -40,6 +40,7 @@ from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import JWT, Gateway
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import V1OKJsonResponse
 
 
@@ -167,6 +168,8 @@ class GatewaySyncApi(generics.CreateAPIView):
     def post(self, request, gateway_name: str, *args, **kwargs):
         gateway = getattr(request, "gateway", None)
 
+        data_before = get_model_dict(gateway) if gateway else {}
+
         request.data["name"] = gateway_name
         # gateway 为 None，则应为新建；非 None，则应为更新；
         # slz 中仅校验数据，不保存网关数据，利用 GatewaySaver 处理网关的保存；
@@ -191,6 +194,8 @@ class GatewaySyncApi(generics.CreateAPIView):
             gateway_id=gateway.id,
             instance_id=gateway.id,
             instance_name=gateway.name,
+            data_before=data_before,
+            data_after=get_model_dict(gateway),
         )
 
         return V1OKJsonResponse(

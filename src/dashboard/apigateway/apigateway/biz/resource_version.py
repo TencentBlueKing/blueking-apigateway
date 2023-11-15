@@ -130,6 +130,8 @@ class ResourceVersionHandler:
             gateway_id=gateway.id,
             instance_id=resource_version.id,
             instance_name=resource_version.name,
+            data_before={},
+            data_after={"version": data.get("version")},
         )
 
         return resource_version

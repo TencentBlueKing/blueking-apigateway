@@ -27,6 +27,7 @@ from apigateway.apps.micro_gateway.handlers import MicroGatewayHandlerFactory
 from apigateway.biz.audit import Auditor
 from apigateway.core.models import MicroGateway, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 
@@ -61,6 +62,8 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
             gateway_id=request.gateway.id,
             instance_id=slz.instance.id,
             instance_name=slz.instance.name,
+            data_before={},
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse(data={"id": slz.instance.id})
@@ -100,6 +103,7 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
     )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
 
         slz = serializers.UpdateMicroGatewaySLZ(
             instance,
@@ -121,6 +125,8 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
             gateway_id=request.gateway.id,
             instance_id=slz.instance.id,
             instance_name=slz.instance.name,
+            data_before=data_before,
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse()
@@ -137,6 +143,7 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
         # TODO: 删除微网关实例前，需检查微网关实例中，已无注册的接口
 
         instance = self.get_object()
+        data_before = get_model_dict(instance)
         instance_id = instance.id
 
         instance.delete()
@@ -147,6 +154,8 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
             gateway_id=request.gateway.id,
             instance_id=instance_id,
             instance_name=instance.name,
+            data_before=data_before,
+            data_after={},
         )
 
         return OKJsonResponse()

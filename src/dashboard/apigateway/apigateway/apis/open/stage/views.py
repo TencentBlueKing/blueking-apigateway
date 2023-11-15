@@ -28,7 +28,7 @@ from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Stage
-from apigateway.utils.django import get_object_or_None
+from apigateway.utils.django import get_model_dict, get_object_or_None
 from apigateway.utils.responses import V1OKJsonResponse
 
 
@@ -95,6 +95,7 @@ class StageSyncViewSet(viewsets.ViewSet):
     @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.Stage"])
     def sync(self, request, gateway_name: str, *args, **kwargs):
         instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))
+        data_before = get_model_dict(instance) if instance else {}
         slz = StageSLZ(
             instance,
             data=request.data,
@@ -110,11 +111,13 @@ class StageSyncViewSet(viewsets.ViewSet):
         )
 
         Auditor.record_stage_op_success(
-            op_type=OpTypeEnum.CREATE,
+            op_type=OpTypeEnum.MODIFY if instance else OpTypeEnum.CREATE,
             username=request.user.username,
             gateway_id=request.gateway.id,
             instance_id=stage.id,
             instance_name=stage.name,
+            data_before=data_before,
+            data_after=get_model_dict(stage),
         )
 
         return V1OKJsonResponse(

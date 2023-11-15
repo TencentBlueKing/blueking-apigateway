@@ -46,6 +46,7 @@ from apigateway.core.models import (
     ResourceVersion,
     Stage,
 )
+from apigateway.utils.django import get_model_dict
 
 
 class ReleaseError(Exception):
@@ -132,6 +133,8 @@ class BaseGatewayReleaser:
             gateway_id=self.gateway.id,
             instance_id=instance.id,
             instance_name=f"{self.stage.name}:{instance.resource_version.name}",
+            data_before={},
+            data_after=get_model_dict(instance),
         )
 
         # 发布，仅对微网关生效

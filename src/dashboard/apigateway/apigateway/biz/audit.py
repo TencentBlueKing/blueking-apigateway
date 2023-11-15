@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Optional
+from typing import Optional, Union
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.common.audit.shortcuts import record_audit_log
@@ -34,6 +34,8 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
     ):
         if comment is None:
@@ -51,6 +53,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.GATEWAY.value,
             op_object_id=instance_id,
             op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )
 
@@ -61,6 +65,8 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
     ):
         if comment is None:
@@ -78,6 +84,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.GATEWAY_LABEL.value,
             op_object_id=instance_id,
             op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )
 
@@ -88,6 +96,8 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
     ):
         if comment is None:
@@ -105,6 +115,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.RESOURCE_DOC.value,
             op_object_id=instance_id,
             op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )
 
@@ -115,6 +127,8 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
     ):
         if comment is None:
@@ -133,6 +147,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.RESOURCE.value,
             op_object_id=instance_id,
             op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )
 
@@ -143,6 +159,8 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
     ):
         if comment is None:
@@ -160,6 +178,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.BACKEND.value,
             op_object_id=instance_id,
             op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )
 
@@ -170,6 +190,8 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
     ):
         if comment is None:
@@ -187,6 +209,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.MICRO_GATEWAY.value,
             op_object_id=instance_id,
             op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )
 
@@ -197,6 +221,8 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
     ):
         if comment is None:
@@ -214,6 +240,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.PLUGIN.value,
             op_object_id=instance_id,
             op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )
 
@@ -224,6 +252,8 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
     ):
         if comment is None:
@@ -242,6 +272,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.STAGE.value,
             op_object_id=instance_id,
             op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )
 
@@ -252,13 +284,14 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
     ):
         if comment is None:
             comment = {
                 OpTypeEnum.CREATE: "版本发布",
             }.get(op_type, "-")
-        # extra: 环境状态变更/更新环境变量
 
         record_audit_log(
             username=username,
@@ -268,6 +301,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.RELEASE.value,
             op_object_id=instance_id,
             op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )
 
@@ -278,13 +313,14 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
     ):
         if comment is None:
             comment = {
                 OpTypeEnum.CREATE: "生成版本",
             }.get(op_type, "-")
-        # extra: 环境状态变更/更新环境变量
 
         record_audit_log(
             username=username,
@@ -294,5 +330,38 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.RESOURCE_VERSION.value,
             op_object_id=instance_id,
             op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
+            comment=comment,
+        )
+
+    @staticmethod
+    def record_stage_backend_op_success(
+        op_type: OpTypeEnum,
+        username: str,
+        gateway_id: int,
+        instance_id: int,
+        instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
+        comment: Optional[str] = None,
+    ):
+        if comment is None:
+            comment = {
+                OpTypeEnum.CREATE: "创建环境后端配置",
+                OpTypeEnum.MODIFY: "更新环境后端配置",
+                OpTypeEnum.DELETE: "删除环境后端配置",
+            }.get(op_type, "-")
+
+        record_audit_log(
+            username=username,
+            op_type=op_type.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=gateway_id,
+            op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
+            op_object_id=instance_id,
+            op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )

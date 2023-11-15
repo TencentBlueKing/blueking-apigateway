@@ -24,6 +24,7 @@ from rest_framework import generics, status
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.label.models import APILabel
 from apigateway.biz.audit import Auditor
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import GatewayLabelInputSLZ, GatewayLabelOutputSLZ
@@ -72,6 +73,8 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
             gateway_id=request.gateway.id,
             instance_id=slz.instance.id,
             instance_name=slz.instance.name,
+            data_before={},
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -114,6 +117,8 @@ class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
+
         slz = self.get_serializer(instance, data=request.data)
         slz.is_valid(raise_exception=True)
 
@@ -127,12 +132,16 @@ class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView
             gateway_id=request.gateway.id,
             instance_id=slz.instance.id,
             instance_name=slz.instance.name,
+            data_before=data_before,
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
+
         instance_id = instance.id
 
         instance.delete()
@@ -143,6 +152,8 @@ class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView
             gateway_id=request.gateway.id,
             instance_id=instance_id,
             instance_name=instance.name,
+            data_before=data_before,
+            data_after={},
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
