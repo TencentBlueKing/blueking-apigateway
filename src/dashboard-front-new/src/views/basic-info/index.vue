@@ -32,6 +32,7 @@
             <GateWaysEditTextarea
               field="description"
               width="600px"
+              :placeholder="t('请输入描述')"
               :content="basicInfoData.description"
               @on-change="handleDescriptionChange" />
           </div>
