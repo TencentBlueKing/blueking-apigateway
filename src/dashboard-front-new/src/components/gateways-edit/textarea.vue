@@ -5,17 +5,18 @@
         <div class="edit-content" :title="newVal">
           <slot :value="newVal">
             {{ newVal }}
-            <template v-if="!newVal">
-              --
-            </template>
+            <template v-if="!newVal"> -- </template>
           </slot>
         </div>
         <div class="edit-action-box" v-if="isEditMode">
-          <i class="apigateway-icon icon-ag-edit-small edit-action" @click.self.stop="handleEdit" />
+          <i
+            class="apigateway-icon icon-ag-edit-small edit-action"
+            @click.self.stop="handleEdit"
+          />
         </div>
       </div>
     </template>
-    <template v-else>
+    <div v-else class="edit-mode-content">
       <bk-input
         v-model="newVal"
         ref="textareaRef"
@@ -28,7 +29,7 @@
         @blur="handleBlur"
       />
       <p class="validate-error-tips" v-if="isShowError">{{ errorTips }}</p>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -145,60 +146,64 @@ onMounted(() => {
 });
 </script>
 
-<style lang='scss' scoped>
+<style lang="scss" scoped>
 @keyframes textarea-edit-loading {
-    to {
-        transform: rotateZ(360deg)
-    }
+  to {
+    transform: rotateZ(360deg);
+  }
 }
 
 .gateways-edit-textarea {
+  position: relative;
+
+  .edit-wrapper {
     position: relative;
+    display: flex;
+    align-items: center;
 
-    .edit-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-
-        &:hover {
-            .icon-ag-edit-small {
-                display: block;
-            }
-        }
+    &:hover {
+      .icon-ag-edit-small {
+        display: block;
+      }
     }
+  }
 
-    .edit-content {
-        flex: 0 0 auto;
-        max-width: calc(100% - 25px);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+  .edit-content {
+    flex: 0 0 auto;
+    max-width: calc(100% - 25px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .edit-action-box {
+    display: flex;
+    align-items: center;
+    margin-right: auto;
+    height: 40px;
+    line-height: 40px;
+
+    .icon-ag-edit-small {
+      font-size: 26px;
+      cursor: pointer;
+      display: none;
+
+      &:hover {
+        color: #3a84ff;
+      }
     }
+  }
 
-    .edit-action-box {
-        display: flex;
-        align-items: center;
-        margin-right: auto;
-
-        .icon-ag-edit-small{
-            font-size: 18px;
-            cursor: pointer;
-            display: none;
-
-            &:hover {
-                color: #3a84ff;
-            }
-        }
-    }
-
+  .edit-mode-content {
+    padding: 20px 0;
     .edit-input {
-        width: 100%;
+      width: 100%;
     }
+  }
 
-    .validate-error-tips {
-        font-size: 12px;
-        color: #ff4d4d;
-    }
+  .validate-error-tips {
+    font-size: 12px;
+    color: #ff4d4d;
+  }
 }
 </style>
-
