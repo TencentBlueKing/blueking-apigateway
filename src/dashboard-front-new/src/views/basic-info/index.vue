@@ -1,6 +1,6 @@
 <template>
   <div class="basic-info-wrapper">
-    <bk-alert v-if="!basicInfoData.status" theme="warning" :title="`${$t('前网关已停用，如需使用，请先启用')}`" class="mb15" />
+    <bk-alert v-if="!basicInfoData.status" theme="warning" :title="`${t('前网关已停用，如需使用，请先启用')}`" class="mb15" />
     <bk-loading :loading="basicInfoDetailLoading">
       <section class="header-info">
         <div
@@ -8,23 +8,23 @@
             'header-info-left',
             { 'header-info-left-disabled': !basicInfoData.status }
           ]">
-          <span class="name">P</span>
+          <span class="name">{{ basicInfoData.name[0] }}</span>
         </div>
         <div class="header-info-right">
           <div class="header-info-name">
             <span class="name">{{ basicInfoData.name }}</span>
             <div class="header-info-tag">
-              <bk-tag ext-cls="website" v-if="basicInfoData.is_official">{{ $t('官网') }}</bk-tag>
+              <bk-tag ext-cls="website" v-if="basicInfoData.is_official">{{ t('官网') }}</bk-tag>
               <div v-if="basicInfoData.status > 0">
-                <bk-tag ext-cls="vip">{{ $t('专享') }}</bk-tag>
+                <bk-tag ext-cls="vip">{{ t('专享') }}</bk-tag>
                 <bk-tag ext-cls="enabling">
                   <i class="apigateway-icon icon-ag-info" />
-                  {{ $t('启用中') }}
+                  {{ t('启用中') }}
                 </bk-tag>
               </div>
               <bk-tag ext-cls="deactivated" v-if="!basicInfoData.status">
                 <i class="apigateway-icon icon-ag-minus-circle" />
-                {{ $t('已停用') }}
+                {{ t('已停用') }}
               </bk-tag>
             </div>
           </div>
@@ -38,40 +38,40 @@
           <div class="header-info-button">
             <div>
               <bk-button v-if="basicInfoData.status > 0" @click="handleOperate('enable')" class="mr10">
-                {{ $t('停用') }}
+                {{ t('停用') }}
               </bk-button>
               <bk-button v-else theme="primary" @click="handleOperate('deactivate')" class="mr10">
-                {{ $t('立即启用') }}
+                {{ t('立即启用') }}
               </bk-button>
             </div>
             <bk-button @click="handleOperate('edit')" class="mr10">
-              {{ $t('编辑') }}
+              {{ t('编辑') }}
             </bk-button>
             <bk-button :disabled="basicInfoData.status > 0" @click="handleOperate('delete')">
-              {{ $t('删除') }}
+              {{ t('删除') }}
             </bk-button>
           </div>
         </div>
       </section>
       <section class="basic-info-detail">
         <div class="basic-info-detail-item">
-          <div class="detail-item-title">{{ $t('基础信息') }}</div>
+          <div class="detail-item-title">{{ t('基础信息') }}</div>
           <div class="detail-item-content">
             <div class="detail-item-content-item">
-              <div class="label">{{ `${$t('是否公开')}：` }}</div>
+              <div class="label">{{ `${t('是否公开')}：` }}</div>
               <div class="value">
                 <bk-switcher v-model="basicInfoData.is_public" theme="primary" />
               </div>
             </div>
             <div class="detail-item-content-item">
-              <div class="label">{{ `${$t('访问域名')}：` }}</div>
+              <div class="label">{{ `${t('访问域名')}：` }}</div>
               <div class="value url">
                 <span>{{ basicInfoData.api_domain || '--' }}</span>
                 <i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(basicInfoData.api_domain)"></i>
               </div>
             </div>
             <div class="detail-item-content-item">
-              <div class="label">{{ `${$t('文档地址')}：` }}</div>
+              <div class="label">{{ `${t('文档地址')}：` }}</div>
               <div class="value url">
                 <span class="link">{{ basicInfoData.docs_url || '--' }}</span>
                 <span>
@@ -83,7 +83,7 @@
               </div>
             </div>
             <div class="detail-item-content-item">
-              <div class="label">{{ `${$t('维护人员')}：` }}</div>
+              <div class="label">{{ `${t('维护人员')}：` }}</div>
               <div class="value">
                 <span>
                   {{ basicInfoData.maintainers && basicInfoData.maintainers.length
@@ -92,13 +92,13 @@
               </div>
             </div>
             <div class="detail-item-content-item">
-              <div class="label">{{ `${$t('创建人')}：` }}</div>
+              <div class="label">{{ `${t('创建人')}：` }}</div>
               <div class="value">
                 <span>{{ basicInfoData.created_by || '--' }}</span>
               </div>
             </div>
             <div class="detail-item-content-item">
-              <div class="label">{{ `${$t('创建时间')}：` }}</div>
+              <div class="label">{{ `${t('创建时间')}：` }}</div>
               <div class="value">
                 <span class="link">{{ basicInfoData.created_time || '--' }}</span>
               </div>
@@ -106,7 +106,7 @@
           </div>
         </div>
         <div class="basic-info-detail-item">
-          <div class="detail-item-title">{{ $t('API公钥（指纹）') }}</div>
+          <div class="detail-item-title">{{ t('API公钥（指纹）') }}</div>
           <div class="detail-item-content">
             <div class="detail-item-content-item">
               <div class="label" />
@@ -133,8 +133,8 @@
               <div class="label"></div>
               <div class="value more-tip">
                 <i class="apigateway-icon icon-ag-info"></i>
-                <span>{{ $t('可用于解密传入后端接口的请求头 X-Bkapi-JWT') }}，</span>
-                <a :href="GLOBAL_CONFIG.DOC.JWT" target="_blank" class="more-detail">{{ $t(' 更多详情') }}</a>
+                <span>{{ t('可用于解密传入后端接口的请求头 X-Bkapi-JWT') }}，</span>
+                <a :href="GLOBAL_CONFIG.DOC.JWT" target="_blank" class="more-detail">{{ t(' 更多详情') }}</a>
               </div>
             </div>
           </div>
@@ -160,12 +160,12 @@
           theme="primary"
           :disabled="!formRemoveApigw"
           @click="handleDeleteApigw">
-          {{ $t('确定') }}
+          {{ t('确定') }}
         </bk-button>
         <bk-button
           theme="default"
           @click="delApigwDialog.isShow = false">
-          {{ $t('取消') }}
+          {{ t('取消') }}
         </bk-button>
       </template>
     </bk-dialog>
@@ -181,14 +181,14 @@
       @closed="handleCloseEdit">
       <bk-form ref="formRef" form-type="vertical" :model="basicInfoDetailData" :rules="rules">
         <bk-form-item
-          :label="$t('名称')"
+          :label="t('名称')"
           property="name"
           required
         >
           <bk-input
             v-model="basicInfoDetailData.name"
             :disabled="true"
-            :placeholder="$t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
+            :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
             clearable
           />
           <p>
@@ -197,7 +197,7 @@
           </p>
         </bk-form-item>
         <bk-form-item
-          :label="$t('维护人员')"
+          :label="t('维护人员')"
           property="maintainers"
           required
         >
@@ -225,7 +225,7 @@
           required
         >
           <bk-switcher v-model="basicInfoDetailData.is_public" theme="primary" />
-          <span class="common-form-tips">{{ $t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
+          <span class="common-form-tips">{{ t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
         </bk-form-item>
       </bk-form>
     </bk-dialog>
@@ -234,7 +234,8 @@
 
 <script setup lang="ts">
 import _ from 'lodash';
-import { copy } from '@/common/util';
+import {  copy } from '@/common/util';
+import { useGetGlobalProperties } from '@/hooks';
 import {  ref, computed, watch } from 'vue';
 import { Message, InfoBox } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
@@ -276,6 +277,9 @@ const rules = {
   ],
 };
 
+// 全局变量
+const globalProperties = useGetGlobalProperties();
+const { GLOBAL_CONFIG } = globalProperties;
 
 // 网关id
 const apigwId = ref(0);
@@ -327,7 +331,6 @@ const getBasicInfo = async () => {
   try {
     const res = await getGateWaysInfo(apigwId.value);
     basicInfoData.value = Object.assign({}, res);
-    console.log(basicInfoData.value);
   } catch (e) {
     console.error(e);
   }
@@ -433,7 +436,7 @@ const handleOpenNav = (url: string) => {
 const handleDownload = () => {
   const { name, public_key } = basicInfoData.value;
   const element = document.createElement('a');
-  const blob = new Blob([public_key], {
+  const blob: any = new Blob([public_key], {
     type: 'text/plain',
   });
   element.download = `bk_apigw_public_key_${name}.pub`;
@@ -444,8 +447,8 @@ const handleDownload = () => {
 
 const handleDescriptionChange = async (payload: any) => {
   const { description } = payload;
-  const params: BasicInfoParams = Object.assign((basicInfoData.value, { description }));
-  await editGateWays(apigwId.value, params);
+  basicInfoData.value = Object.assign(basicInfoData.value, { description });
+  await editGateWays(apigwId.value, basicInfoData.value);
   Message({
     message: t('编辑成功'),
     theme: 'success',
