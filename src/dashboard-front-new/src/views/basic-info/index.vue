@@ -36,20 +36,29 @@
               @on-change="handleDescriptionChange" />
           </div>
           <div class="header-info-button">
+            <bk-button @click="handleOperate('edit')" class="mr10">
+              {{ t('编辑') }}
+            </bk-button>
             <div>
-              <bk-button v-if="basicInfoData.status > 0" @click="handleOperate('enable')" class="mr10">
+              <bk-button
+                v-if="basicInfoData.status > 0" @click="handleOperate('enable')"
+                theme="default"
+                class="deactivate-btn mr10"
+              >
                 {{ t('停用') }}
               </bk-button>
               <bk-button v-else theme="primary" @click="handleOperate('deactivate')" class="mr10">
                 {{ t('立即启用') }}
               </bk-button>
             </div>
-            <bk-button @click="handleOperate('edit')" class="mr10">
-              {{ t('编辑') }}
-            </bk-button>
-            <bk-button :disabled="basicInfoData.status > 0" @click="handleOperate('delete')">
-              {{ t('删除') }}
-            </bk-button>
+            <template v-if="basicInfoData.status > 0">
+              <bk-popover :content="$t('请先停用才可删除')">
+                <bk-button theme="default" class="mr5" :disabled="basicInfoData.status > 0"> {{ t('删除') }} </bk-button>
+              </bk-popover>
+            </template>
+            <template v-else>
+              <bk-button theme="default" @click="handleOperate('delete')"> {{ t('删除') }} </bk-button>
+            </template>
           </div>
         </div>
       </section>
@@ -215,8 +224,8 @@
             type="textarea"
             v-model="basicInfoDetailData.description"
             :placeholder="t('请输入网关描述')"
-            :maxlength="100"
-            :rows="3"
+            :maxlength="500"
+            :rows="5"
             clearable
           />
         </bk-form-item>
@@ -554,6 +563,14 @@ watch(
       }
       .header-info-button {
         display: flex;
+
+        .deactivate-btn {
+          &:hover {
+            background-color: #ff5656;
+            border-color: #ff5656;
+            color: #ffffff;
+          }
+        }
       }
     }
   }
@@ -662,5 +679,15 @@ watch(
 .gateways-name-tip {
   color: #979BA5;
   font-size: 14px;
+}
+</style>
+
+<style>
+.gateway-del-tips {
+  color: #c7254e;
+  padding: 3px 4px;
+  margin: 0;
+  background-color: rgba(0,0,0,.04);
+  border-radius: 3px;
 }
 </style>

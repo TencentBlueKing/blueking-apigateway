@@ -1,5 +1,8 @@
 import dayjs from 'dayjs';
 import { Message } from 'bkui-vue';
+import i18n from '@/language/i18n';
+
+const { t } = i18n.global;
 
 // 获取 cookie object
 export function getCookies(strCookie = document.cookie): any {
@@ -101,6 +104,10 @@ export function json2Query(param: any, key?: any) {
  * @param {Object} value 复制内容
  */
 export function copy(value: string) {
+  if (!value) {
+    Message({ theme: 'warning', message: t('暂无可复制数据'), delay: 2000, dismissable: false });
+    return;
+  }
   const el = document.createElement('textarea');
   el.value = value;
   el.setAttribute('readonly', '');
@@ -115,7 +122,7 @@ export function copy(value: string) {
     document.getSelection().removeAllRanges();
     document.getSelection().addRange(selected);
   }
-  Message({ theme: 'primary', message: '复制成功', delay: 2000, dismissable: false });
+  Message({ theme: 'primary', message: t('复制成功'), delay: 2000, dismissable: false });
 }
 
 /**
