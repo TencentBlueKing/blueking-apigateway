@@ -130,5 +130,5 @@ class ReleaseHistoryEventRetrieveOutputSLZ(ReleaseHistoryOutputSLZ):
         events_template = []
         choices = PublishEventEnum.get_choices()
         for step, (name, desc) in enumerate(choices):
-            events_template.append({"name": name, "desc": desc, "step": step})
+            events_template.append({"name": name, "description": desc, "step": step})
         return events_template

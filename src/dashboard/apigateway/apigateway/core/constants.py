@@ -118,14 +118,14 @@ class ReleaseHistoryStatusEnum(StructuredEnum):
 
 class PublishEventEnum(StructuredEnum):
     # dashboard
-    VALIDATE_CONFIGURATION = EnumField("validata_configuration", "配置校验")
-    GENERATE_TASK = EnumField("generate_release_task", "生成发布任务")
-    DISTRIBUTE_CONFIGURATION = EnumField("distribute_configuration", "下发配置")
+    VALIDATE_CONFIGURATION = EnumField("validata_configuration", _("配置校验"))
+    GENERATE_TASK = EnumField("generate_release_task", _("生成发布任务"))
+    DISTRIBUTE_CONFIGURATION = EnumField("distribute_configuration", _("下发配置"))
     # operator
-    PARSE_CONFIGURATION = EnumField("parse_configuration", "解析配置")
-    APPLY_CONFIGURATION = EnumField("apply_configuration", "应用配置")
+    PARSE_CONFIGURATION = EnumField("parse_configuration", _("解析配置"))
+    APPLY_CONFIGURATION = EnumField("apply_configuration", _("应用配置"))
     # apisix
-    LOAD_CONFIGURATION = EnumField("load_configuration", "加载配置")
+    LOAD_CONFIGURATION = EnumField("load_configuration", _("加载配置"))
 
 
 # 因为 get_event_step 依赖字段顺序，所以继承 Enum，以便于 get_event_step 获取 step
@@ -285,3 +285,6 @@ PATH_TO_NAME_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 
 # Micro gateway
 MICRO_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,19}$")
+
+# EventFailInterval(s)
+EVENT_FAIL_INTERVAL_TIME = 600
