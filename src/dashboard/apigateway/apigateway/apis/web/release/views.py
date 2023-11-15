@@ -65,11 +65,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         try:
             instance = self.get_object()
         except Http404:
-            return FailJsonResponse(
-                status=status.HTTP_404_NOT_FOUND,
-                code=error_codes.NOT_FOUND,
-                message=_("当前选择环境未发布版本，请先发布版本到该环境。"),
-            )
+            raise error_codes.NOT_FOUND.format(_("当前选择环境未发布版本，请先发布版本到该环境。"))
         stage_name = instance.stage.name
         data = defaultdict(list)
         for resource in instance.resource_version.data:
@@ -91,11 +87,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         if data:
             return OKJsonResponse(data=data)
 
-        return FailJsonResponse(
-            status=status.HTTP_404_NOT_FOUND,
-            code=error_codes.NOT_FOUND,
-            message=_("当前选择环境的发布版本中资源为空，请发布新版本到该环境"),
-        )
+        raise error_codes.NOT_FOUND.format(_("当前选择环境未发布版本，请先发布版本到该环境。"))
 
 
 @method_decorator(

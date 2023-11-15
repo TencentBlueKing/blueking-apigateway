@@ -228,6 +228,15 @@ class TestPublishEventQueryOutputSLZ:
                         "created_time": dummy_time.str,
                         "detail": {},
                     },
+                    {
+                        "id": -fake_publish_event.step,
+                        "release_history_id": fake_release_history.id,
+                        "name": fake_publish_event.name,
+                        "step": fake_publish_event.step,
+                        "status": PublishEventStatusEnum.FAILURE.value,
+                        "created_time": dummy_time.str,
+                        "detail": {},
+                    },
                 ],
                 "events_template": [
                     {"name": "validata_configuration", "description": "配置校验", "step": 0},
