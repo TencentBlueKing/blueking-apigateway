@@ -60,7 +60,7 @@ const props = defineProps({
   },
   maxLength: {
     type: Number,
-    default: 255,
+    default: 100,
   },
   mode: {
     type: String,
