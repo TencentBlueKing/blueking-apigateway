@@ -25,6 +25,7 @@ const apigwAccessLog = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/o
 const apigwAccessLogDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/access-log/detail.vue');
 const apigwReport = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/report/index.vue');
 const apigwBackendService = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/backend-service/index.vue');
+const ApiBasicInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/basic-info/index.vue');
 
 
 const routes: RouteRecordRaw[] = [
@@ -241,6 +242,15 @@ const routes: RouteRecordRaw[] = [
           title: '导入资源文档',
           matchRoute: 'apigwResource',
           showBackIcon: true,
+        },
+      },
+      {
+        path: '/:id/basic-info',
+        name: 'apigwBasicInfo',
+        component: ApiBasicInfo,
+        meta: {
+          title: '基本信息',
+          matchRoute: 'apigwBasicInfo',
         },
       },
     ],
