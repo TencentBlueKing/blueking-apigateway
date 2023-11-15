@@ -71,11 +71,12 @@ class ResourcesSaver:
     def _save_resources(self) -> bool:
         add_resources = []
         update_resources = []
+        now = now_datetime()
         for resource_data in self.resource_data_list:
             if resource_data.resource:
                 resource = resource_data.resource
                 resource.updated_by = self.username
-                resource.updated_time = now_datetime()
+                resource.updated_time = now
                 for key, value in resource_data.basic_data.items():
                     setattr(resource, key, value)
 
@@ -140,6 +141,7 @@ class ResourcesSaver:
 
         add_proxies = []
         update_proxies = []
+        now = now_datetime()
         for resource_data in self.resource_data_list:
             assert resource_data.resource
 
@@ -149,7 +151,7 @@ class ResourcesSaver:
                 proxy.backend = resource_data.backend
                 proxy.schema = schema
                 proxy._config = resource_data.backend_config.json()
-                proxy.updated_time = now_datetime()
+                proxy.updated_time = now
 
                 update_proxies.append(proxy)
             else:
@@ -186,6 +188,7 @@ class ResourcesSaver:
 
         add_contexts = []
         update_contexts = []
+        now = now_datetime()
         for resource_data in self.resource_data_list:
             assert resource_data.resource
 
@@ -196,7 +199,7 @@ class ResourcesSaver:
 
             if context:
                 context._config = json.dumps(auth_config)
-                context.updated_time = now_datetime()
+                context.updated_time = now
 
                 update_contexts.append(context)
             else:

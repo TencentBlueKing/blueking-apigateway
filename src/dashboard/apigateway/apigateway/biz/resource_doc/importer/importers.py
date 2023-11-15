@@ -60,6 +60,7 @@ class DocImporter:
     def _save_docs(self, docs: List[BaseDoc]):
         add_resource_docs = []
         update_resource_docs = []
+        now = now_datetime()
         for doc in docs:
             if doc.resource_doc is None:
                 assert doc.resource
@@ -77,7 +78,7 @@ class DocImporter:
                 doc.resource_doc.type = DocTypeEnum.MARKDOWN.value
                 doc.resource_doc.source = DocSourceEnum.IMPORT.value
                 doc.resource_doc.content = doc.content
-                doc.resource_doc.updated_time = now_datetime()
+                doc.resource_doc.updated_time = now
                 update_resource_docs.append(doc.resource_doc)
 
         if add_resource_docs:

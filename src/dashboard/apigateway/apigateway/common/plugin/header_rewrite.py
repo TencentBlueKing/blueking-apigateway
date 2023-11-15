@@ -63,6 +63,7 @@ class HeaderRewriteConvertor:
         update_plugin_configs = []
         delete_bindings = []
 
+        now = now_datetime()
         for scope_id, plugin_config in scope_id_to_plugin_config.items():
             if not plugin_config:
                 if scope_id in exist_bindings:
@@ -75,7 +76,7 @@ class HeaderRewriteConvertor:
                 plugin_config_obj = exist_bindings[scope_id].config
                 plugin_config_obj.yaml = yaml_dumps(plugin_config)
                 plugin_config_obj.updated_by = username
-                plugin_config_obj.updated_time = now_datetime()
+                plugin_config_obj.updated_time = now
                 update_plugin_configs.append(plugin_config_obj)
             else:
                 # 插件未绑定，新建插件配置

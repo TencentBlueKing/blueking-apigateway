@@ -53,6 +53,7 @@ class PluginSynchronizer:
         # list[(scope_id, plugin_config)]
         add_bindings: List[Tuple[int, PluginConfig]] = []
         update_plugin_configs = []
+        now = now_datetime()
         for scope_id, plugin_config_data_list in scope_id_to_plugin_configs.items():
             for plugin_config_data in plugin_config_data_list:
                 key = f"{scope_type.value}:{scope_id}:{plugin_config_data.type}"
@@ -64,7 +65,7 @@ class PluginSynchronizer:
                     plugin_config_obj = existing_binding.config
                     plugin_config_obj.config = plugin_config_data.yaml
                     plugin_config_obj.updated_by = username
-                    plugin_config_obj.updated_time = now_datetime()
+                    plugin_config_obj.updated_time = now
                     update_plugin_configs.append(plugin_config_obj)
                 else:
                     plugin_type = code_to_plugin_type[plugin_config_data.type]

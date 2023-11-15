@@ -71,6 +71,7 @@ class BackendHandler:
         stage_configs = {config.stage_id: config for config in backend_configs}
 
         backend_configs = []
+        now = now_datetime()
         for config in data["configs"]:
             backend_config = stage_configs[config["stage_id"]]
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
@@ -79,7 +80,7 @@ class BackendHandler:
 
             backend_config.config = new_config
             backend_config.updated_by = updated_by
-            backend_config.updated_time = now_datetime()
+            backend_config.updated_time = now
 
             backend_configs.append(backend_config)
 

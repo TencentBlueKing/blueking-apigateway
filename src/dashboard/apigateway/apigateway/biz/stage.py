@@ -71,11 +71,12 @@ class StageHandler:
             for backend_config in BackendConfig.objects.filter(gateway=stage.gateway, stage=stage)
         }
 
+        now = now_datetime()
         for backend_config in data["backends"]:
             backend = backends[backend_config["id"]]
             backend.config = backend_config["config"]
             backend.updated_by = updated_by
-            backend.updated_time = now_datetime()
+            backend.updated_time = now
 
         BackendConfig.objects.bulk_update(backends.values(), fields=["config", "updated_by", "updated_time"])
 
