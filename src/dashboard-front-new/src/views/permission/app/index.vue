@@ -16,7 +16,7 @@
       </div>
       <bk-form class="flex-row ">
         <bk-form-item :label="$t('授权维度')" class="mb0">
-          <bk-select v-model="dimension" class="w150">
+          <bk-select v-model="dimension" class="w150" :clearable="false">
             <bk-option v-for="option of dimensionList" :key="option.id" :id="option.id" :name="option.name">
             </bk-option>
           </bk-select>
@@ -134,7 +134,6 @@
             <bk-button theme="primary" class="mr10" @click="handleSave"> {{ t('保存') }} </bk-button>
             <bk-button @click="handleSidesliderCancel"> {{ t('取消') }} </bk-button>
           </div>
-
         </div>
       </template>
     </bk-sideslider>
@@ -644,11 +643,14 @@ const checkDate = (params: any) => {
 };
 // 授权接口
 const authAppDimension = async (params: any) => {
-  const fetchMethod = dimension.value === 'resource' ? authResourcePermission : authApiPermission;
+  const fetchMethod = params.dimension === 'resource' ? authResourcePermission : authApiPermission;
+  console.log(fetchMethod);
   try {
     await fetchMethod(apigwId, params);
     dimension.value = params.dimension;
     authSliderConf.isShow = false;
+    const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
+    getList(method);
     Message({
       theme: 'success',
       message: t('授权成功！'),
@@ -748,7 +750,7 @@ init();
   .bk-transfer {
     color: #63656e;
 
-    .header {
+    :deep(.header) {
       font-weight: normal;
     }
 
