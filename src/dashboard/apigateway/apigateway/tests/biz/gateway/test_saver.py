@@ -43,6 +43,8 @@ class TestGatewayData:
                     "is_public": False,
                     "gateway_type": None,
                     "user_config": None,
+                    "allow_auth_from_params": None,
+                    "allow_delete_sensitive_params": None,
                 },
             ),
             (
@@ -56,6 +58,8 @@ class TestGatewayData:
                     "gateway_type": 1,
                     "user_config": {"foo": "bar"},
                     "not_exist_key": "",
+                    "allow_auth_from_params": False,
+                    "allow_delete_sensitive_params": True,
                 },
                 {
                     "name": "foo",
@@ -66,6 +70,8 @@ class TestGatewayData:
                     "is_public": True,
                     "gateway_type": GatewayTypeEnum.OFFICIAL_API,
                     "user_config": {"foo": "bar"},
+                    "allow_auth_from_params": False,
+                    "allow_delete_sensitive_params": True,
                 },
             ),
         ],
@@ -106,6 +112,8 @@ class TestGatewaySaver:
                 is_public=True,
                 gateway_type=GatewayTypeEnum.OFFICIAL_API.value,
                 user_config={"from_bk_token": False},
+                allow_auth_from_params=True,
+                allow_delete_sensitive_params=False,
             ),
             bk_app_code="app1",
         )
@@ -125,6 +133,8 @@ class TestGatewaySaver:
         assert auth_config["api_type"] == 1
         assert auth_config["user_conf"]["from_bk_token"] is False
         assert auth_config["unfiltered_sensitive_keys"] == ["bar"]
+        assert auth_config["allow_auth_from_params"] is True
+        assert auth_config["allow_delete_sensitive_params"] is False
 
         assert GatewayRelatedApp.objects.filter(gateway=gateway).count() == 1
 
@@ -144,6 +154,7 @@ class TestGatewaySaver:
                 is_public=True,
                 gateway_type=GatewayTypeEnum.OFFICIAL_API.value,
                 user_config={"from_bk_token": False},
+                allow_auth_from_params=False,
             ),
             bk_app_code="app1",
         )
@@ -162,6 +173,8 @@ class TestGatewaySaver:
         assert auth_config["api_type"] == 1
         assert auth_config["user_conf"]["from_bk_token"] is False
         assert auth_config["unfiltered_sensitive_keys"] == ["bar"]
+        assert auth_config["allow_auth_from_params"] is False
+        assert "allow_delete_sensitive_params" not in auth_config
 
         assert GatewayRelatedApp.objects.filter(gateway=gateway).count() == 0
 

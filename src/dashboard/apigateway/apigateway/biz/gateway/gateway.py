@@ -103,6 +103,8 @@ class GatewayHandler:
         api_type: Optional[GatewayTypeEnum] = None,
         allow_update_api_auth: Optional[bool] = None,
         unfiltered_sensitive_keys: Optional[List[str]] = None,
+        allow_auth_from_params: Optional[bool] = None,
+        allow_delete_sensitive_params: Optional[bool] = None,
     ):
         """
         存储网关认证配置
@@ -112,7 +114,9 @@ class GatewayHandler:
         :param user_conf: 用户类型为 default 的用户的认证配置
         :param api_type: 网关类型，只有 ESB 才能被设置为 SUPER_OFFICIAL_API 网关，网关会将所有请求参数透传给其后端服务
         :param allow_update_api_auth: 是否允许编辑网关资源安全设置中的应用认证配置
-        :param unfiltered_sensitive_keys:
+        :param unfiltered_sensitive_keys: 网关请求后端时，不去除的敏感字段
+        :param allow_auth_from_params: 网关从请求中获取认证信息时，是否允许从请求参数(querystring, body 等)获取认证信息；如果不允许，则只能从请求头获取
+        :param allow_delete_sensitive_params: 网关转发请求到后端时，是否需要删除请求参数（querystring, body 等）中的敏感参数
         """
         new_config: Dict[str, Any] = {}
 
@@ -130,6 +134,12 @@ class GatewayHandler:
 
         if unfiltered_sensitive_keys is not None:
             new_config["unfiltered_sensitive_keys"] = unfiltered_sensitive_keys
+
+        if allow_auth_from_params is not None:
+            new_config["allow_auth_from_params"] = allow_auth_from_params
+
+        if allow_delete_sensitive_params is not None:
+            new_config["allow_delete_sensitive_params"] = allow_delete_sensitive_params
 
         if not new_config:
             return None
@@ -150,6 +160,8 @@ class GatewayHandler:
         user_config: Optional[dict] = None,
         unfiltered_sensitive_keys: Optional[List[str]] = None,
         api_type: Optional[GatewayTypeEnum] = None,
+        allow_auth_from_params: Optional[bool] = None,
+        allow_delete_sensitive_params: Optional[bool] = None,
         app_codes_to_binding: Optional[List[str]] = None,
     ):
         # 1. save gateway auth_config
@@ -159,6 +171,8 @@ class GatewayHandler:
             user_conf=user_config,
             api_type=api_type,
             unfiltered_sensitive_keys=unfiltered_sensitive_keys,
+            allow_auth_from_params=allow_auth_from_params,
+            allow_delete_sensitive_params=allow_delete_sensitive_params,
         )
 
         # 2. save jwt
