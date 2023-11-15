@@ -187,14 +187,13 @@
         >
           <bk-input
             v-model="basicInfoDetailData.name"
+            :maxlength="30"
             :disabled="true"
-            :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
-            clearable
+            :placeholder="t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
           />
-          <p>
-            <span>  <i class="apigateway-icon icon-ag-info" /></span>
+          <div class="gateways-name-tip">
             <span>{{ t(' 网关唯一标识，创建后不可修改') }}</span>
-          </p>
+          </div>
         </bk-form-item>
         <bk-form-item
           :label="t('维护人员')"
@@ -216,6 +215,8 @@
             type="textarea"
             v-model="basicInfoDetailData.description"
             :placeholder="t('请输入网关描述')"
+            :maxlength="100"
+            :rows="3"
             clearable
           />
         </bk-form-item>
@@ -656,5 +657,10 @@ watch(
       }
     }
   }
+}
+
+.gateways-name-tip {
+  color: #979BA5;
+  font-size: 14px;
 }
 </style>
