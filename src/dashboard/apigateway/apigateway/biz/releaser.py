@@ -151,7 +151,7 @@ class BaseGatewayReleaser:
         try:
             self._validate()
         except (ValidationError, ReleaseValidationError, NonRelatedMicroGatewayError) as err:
-            message = str(err)
+            message = err.detail[0] if isinstance(err, ValidationError) else str(err)
             history = self._save_release_history()
             PublishEventReporter.report_config_validate_fail_event(history, message)
             raise ReleaseError(message) from err
