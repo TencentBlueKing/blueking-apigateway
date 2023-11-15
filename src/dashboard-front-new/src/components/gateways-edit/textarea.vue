@@ -96,6 +96,8 @@ const handleInput = () => {
 };
 
 const handleBlur = () => {
+  if (!isEditable.value) return;
+  isEditable.value = false;
   triggerChange();
 };
 
@@ -109,8 +111,6 @@ const hideEdit = (event: any) => {
     }
   }
   handleValidate();
-  if (isShowError.value) return;
-  isEditable.value = false;
 };
 
 const triggerChange = () => {
