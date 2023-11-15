@@ -24,8 +24,10 @@ from rest_framework import serializers
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
 from apigateway.core.constants import (
+    PublishEventEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusEnum,
+    ReleaseHistoryStatusEnum,
 )
 from apigateway.core.models import PublishEvent, ReleaseHistory, ResourceVersion, Stage
 
@@ -106,7 +108,9 @@ class ReleaseHistoryEventInfoSLZ(serializers.Serializer):
     release_history_id = serializers.IntegerField(source="publish_id", allow_null=False, help_text="发布历史id")
     name = serializers.SerializerMethodField(read_only=True, help_text="发布事件节点名称")
     step = serializers.IntegerField(read_only=True, help_text="发布事件节点所属步骤")
-    status = serializers.CharField(read_only=True, help_text="发布事件状态")
+    status = serializers.ChoiceField(
+        choices=ReleaseHistoryStatusEnum.get_choices(), read_only=True, help_text="发布事件状态:success/failure/doing"
+    )
     created_time = serializers.DateTimeField(read_only=True, help_text="发布节点事件创建时间")
     detail = serializers.DictField(read_only=True, help_text="发布日志")
 
@@ -116,7 +120,15 @@ class ReleaseHistoryEventInfoSLZ(serializers.Serializer):
 
 class ReleaseHistoryEventRetrieveOutputSLZ(ReleaseHistoryOutputSLZ):
     events = serializers.ListField(child=ReleaseHistoryEventInfoSLZ(), allow_empty=True, help_text="发布事件列表")
+    events_template = serializers.SerializerMethodField(read_only=True, help_text="发布事件模板")
 
     def to_representation(self, obj):
         obj.events = self.context["release_history_events"]
         return super().to_representation(obj)
+
+    def get_events_template(self, obj):
+        events_template = []
+        choices = PublishEventEnum.get_choices()
+        for step, (name, desc) in enumerate(choices):
+            events_template.append({"name": name, "description": desc, "step": step})
+        return events_template
