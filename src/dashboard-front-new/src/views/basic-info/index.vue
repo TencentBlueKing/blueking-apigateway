@@ -1,6 +1,6 @@
 <template>
   <div class="basic-info-wrapper">
-    <bk-alert v-if="!basicInfoData.status" theme="warning" :title="`${t('前网关已停用，如需使用，请先启用')}`" class="mb15" />
+    <bk-alert v-if="!basicInfoData.status" theme="warning" :title="`${t('当前网关已停用，如需使用，请先启用')}`" class="mb15" />
     <bk-loading :loading="basicInfoDetailLoading">
       <section class="header-info">
         <div
@@ -60,7 +60,7 @@
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('是否公开')}：` }}</div>
               <div class="value">
-                <bk-switcher v-model="basicInfoData.is_public" theme="primary" />
+                <bk-switcher v-model="basicInfoData.is_public" theme="primary" @change="handleChangePublic" />
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -215,7 +215,7 @@
           <bk-input
             type="textarea"
             v-model="basicInfoDetailData.description"
-            placeholder="请输入"
+            :placeholder="t('请输入网关描述')"
             clearable
           />
         </bk-form-item>
@@ -302,7 +302,7 @@ const basicInfoData = ref<BasicInfoParams>({
   public_key: '',
   maintainers: [],
   developers: [],
-  is_public: false,
+  is_public: true,
   is_official: false,
 });
 const basicInfoDetailData = ref(_.cloneDeep(basicInfoData.value));
@@ -359,8 +359,9 @@ const  handleDeleteApigw = async () => {
       theme: 'success',
       message: t('删除成功'),
     });
+    delApigwDialog.value.isShow = false;
     router.push({
-      name: 'Home',
+      name: 'home',
     });
   } catch (e) {
     console.error(e);
@@ -383,6 +384,15 @@ const handleConfirmEdit = async () => {
   } finally {
     dialogEditData.value.loading = false;
   }
+};
+
+const handleChangePublic = async (value: boolean) => {
+  basicInfoData.value.is_public = value;
+  await editGateWays(apigwId.value, basicInfoData.value);
+  Message({
+    message: t('更新成功'),
+    theme: 'success',
+  });
 };
 
 const handleOperate = async (type: string) => {
