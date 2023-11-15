@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onBeforeMount, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { getStageList, getStageDetail } from '@/http';
 import { useStage } from '@/store';
@@ -61,7 +61,7 @@ const apigwId = +route.params.id;
 // 当前环境
 const curStage = ref(stageStore.curStageData || stageStore.defaultStage);
 
-const init = async (isUpdate?: Boolean) => {
+const init = async (isUpdate?: Boolean, isDelete?: Boolean) => {
   stageStore.setStageMainLoading(true);
   try {
     const data = await getStageList(apigwId);
@@ -71,7 +71,9 @@ const init = async (isUpdate?: Boolean) => {
     if (!isUpdate) {
       curStage.value = data[0];
     }
-    getStageDetailFun(curStage.value.id);
+    if (!isDelete) {
+      getStageDetailFun(curStage.value.id);
+    }
   } catch (error) {
     console.error(error);
   } finally {
@@ -81,20 +83,6 @@ const init = async (isUpdate?: Boolean) => {
   }
 };
 init();
-
-// 事件总线监听重新获取环境列表
-mitt.on('get-stage-list', (isUpdate) => {
-  init(isUpdate);
-});
-// 切换概览模式
-mitt.on('switch-mode', async (data) => {
-  await getStageDetailFun(data.id);
-  switchModelType('detail', 'apigwStageDetail', data.name);
-});
-// 切换环境
-mitt.on('switch-stage', async () => {
-  handleChangeStage(curStage.value.name);
-});
 
 // 是否为详情模式
 const isDetailMode = computed(() => {
@@ -139,10 +127,12 @@ const switchModelType = (key: string, routeName: string, stageName?: string) => 
 };
 
 // 切换环境
-const handleChangeStage = async (name: string) => {
+const handleChangeStage = async (name: string, isDelete: Boolean) => {
   // 获取切换环境的名字
   const data = stageStore.stageList.find(item => item.name === name);
-  await getStageDetailFun(data.id);
+  if (!isDelete) {
+    await getStageDetailFun(data.id);
+  }
   stageStore.curStageId = data.id;
   router.push({
     query: {
@@ -150,6 +140,32 @@ const handleChangeStage = async (name: string) => {
     },
   });
 };
+
+onMounted(() => {
+  // 事件总线监听重新获取环境列表
+  mitt.on('get-stage-list', (data) => {
+    if (typeof data === 'boolean') {
+      init(data);
+    } else {
+      init(data?.isUpdate, data?.isDelete);
+    }
+  });
+  // 切换概览模式
+  mitt.on('switch-mode', async (data) => {
+    await getStageDetailFun(data.id);
+    switchModelType('detail', 'apigwStageDetail', data.name);
+  });
+  // 切换环境
+  mitt.on('switch-stage', async (isDelete?: Boolean) => {
+    handleChangeStage(curStage.value.name, isDelete);
+  });
+});
+
+onBeforeMount(() => {
+  mitt.off('get-stage-list');
+  mitt.off('switch-mode');
+  mitt.off('switch-stage');
+});
 </script>
 
 <style lang="scss" scoped>

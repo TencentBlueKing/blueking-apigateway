@@ -213,7 +213,7 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-import { getBackendsListData, createStage, getStageDetail, getStageBackends, updateStage } from '@/http';
+import { getBackendsListData, createStage, getStageDetail, getStageBackends, updateStage, getStageList } from '@/http';
 import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash';
 import { useCommon, useStage } from '@/store';
@@ -454,6 +454,8 @@ const handleConfirmCreate = async () => {
     });
     // 重新获取环境列表(全局事件总线实现)
     mitt.emit('get-stage-list');
+    // 数据重置
+    closeSideslider();
     // 关闭dialog
     isShow.value = false;
   } catch (error) {

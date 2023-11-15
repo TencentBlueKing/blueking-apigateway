@@ -83,19 +83,19 @@
             >
               {{ t('编辑') }}
             </bk-button>
-            <bk-dropdown :popover-options="popoverOptions">
+            <bk-dropdown>
               <bk-button class="more-cls">
                 <i class="apigateway-icon icon-ag-gengduo"></i>
               </bk-button>
               <template #content>
                 <bk-dropdown-menu ext-cls="stage-more-actions">
-                  <bk-dropdown-item @click="handleStageUnlist(item)">
+                  <bk-dropdown-item @click="handleStageUnlist()">
                     {{ t('下架') }}
                   </bk-dropdown-item>
                   <bk-dropdown-item
                     :ext-cls="{ disabled: stageData.status === 1 }"
                     v-bk-tooltips="t('环境下线后，才能删除')"
-                    @click="handleStageDelete(item)"
+                    @click="handleStageDelete()"
                   >
                     {{ t('删除') }}
                   </bk-dropdown-item>
@@ -151,7 +151,7 @@ import { useStage } from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import stageTopBar from '@/components/stage-top-bar.vue';
-import { deleteStage } from '@/http';
+import { deleteStage, removalStage } from '@/http';
 import { Message } from 'bkui-vue';
 import mitt from '@/common/event-bus';
 
@@ -226,8 +226,22 @@ const handleRelease = () => {
 };
 
 // 下架环境
-const handleStageUnlist = () => {
-  console.log('下架');
+const handleStageUnlist = async () => {
+  const data = {
+    status: 0,
+  };
+  try {
+    await removalStage(apigwId, stageData.value.id, data);
+    Message({
+      message: t('下架成功'),
+      theme: 'success',
+    });
+    // 获取网关列表
+    await mitt.emit('get-stage-list');
+    // 开启loading
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 // 删除环境
@@ -242,9 +256,9 @@ const handleStageDelete = async () => {
       theme: 'success',
     });
     // 获取网关列表
-    await mitt.emit('get-stage-list');
-    // 切换前一个环境
-    await mitt.emit('switch-stage');
+    await mitt.emit('get-stage-list', { isUpdate: false, isDelete: true });
+    // 切换前一个环境, 并且不需要获取当前环境详情
+    await mitt.emit('switch-stage', true);
     // 开启loading
   } catch (error) {
     console.error(error);
