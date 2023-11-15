@@ -29,7 +29,6 @@ from rest_framework import generics, status
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.biz.releaser import ReleaseError, Releaser
-from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, ReleaseHistory
 from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.exception import LockTimeout
@@ -67,7 +66,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         except Http404:
             return FailJsonResponse(
                 status=status.HTTP_404_NOT_FOUND,
-                code=error_codes.NOT_FOUND,
+                code="UNKNOWN",
                 message=_("当前选择环境未发布版本，请先发布版本到该环境。"),
             )
         stage_name = instance.stage.name
@@ -93,7 +92,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
 
         return FailJsonResponse(
             status=status.HTTP_404_NOT_FOUND,
-            code=error_codes.NOT_FOUND,
+            code="UNKNOWN",
             message=_("当前选择环境的发布版本中资源为空，请发布新版本到该环境"),
         )
 

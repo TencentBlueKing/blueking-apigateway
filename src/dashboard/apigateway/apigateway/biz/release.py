@@ -59,13 +59,13 @@ class ReleaseHandler:
 
         # 补全event（由于上报的事件之间时间很短，当时为了减少存储，减少了部分event上报） todo: 后续由底层补齐事件
         new_events = []
-        steps = (event.step for event in publish_events)
+        steps = {event.step for event in publish_events}
         max_step = max(steps)
         now = datetime.now().timestamp()
         # 按照step来归类确定事件完整程度来补齐event
         for step in sorted(steps):
             step_events = [event for event in publish_events if event.step == step]
-            step_status_list = (event.status for event in step_events)
+            step_status_list = {event.status for event in step_events}
 
             if len(step_events) == 0:
                 continue
