@@ -283,7 +283,7 @@ const stageAddress = computed(() => {
   let url = GLOBAL_CONFIG.STAGE_DOMAIN;
   for (const name in keys) {
     const reg = new RegExp(`{${name}}`);
-    url = url.replace(reg, keys[name]);
+    url = url?.replace(reg, keys[name]);
   }
   return url;
 });

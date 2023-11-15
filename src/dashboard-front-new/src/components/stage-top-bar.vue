@@ -20,10 +20,11 @@
         v-for="(item, index) in stageStore.stageList"
         :key="index"
         class="stage-item"
+        :title="item.name"
         :class="{ active: curStage.name === item.name }"
         @click="handleChangeStage(item.name)"
       >
-        {{ item.name }}
+        <span v-overflow-title>{{ item.name }}</span>
       </li>
     </ul>
   </div>
@@ -195,13 +196,21 @@ const handleChangeStage = async (name: string) => {
     height: 100%;
     display: flex;
     .stage-item {
-      width: 75px;
+      width: 80px;
       height: 100%;
       font-size: 14px;
       color: #63656e;
       display: flex;
       align-items: center;
-      justify-content: center;
+      span {
+        text-align: center;
+        width: 80px;
+        padding: 0 3px;
+        display: inline-block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
 
       &:hover {
         background-color: #f0f5ff;

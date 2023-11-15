@@ -13,7 +13,12 @@
               <div class="apigw-form-item">
                 <div class="label">{{ `${t('访问地址')}：` }}</div>
                 <div class="value url">
-                  <p class="link" v-overflow-title>--</p>
+                  <p
+                    class="link"
+                    v-overflow-title
+                  >
+                    --
+                  </p>
                   <i
                     class="apigateway-icon icon-ag-copy-info"
                     @click.self.stop="copy('--')"
@@ -34,7 +39,10 @@
               </div>
               <div class="apigw-form-item">
                 <div class="label">{{ `${t('描述')}：` }}</div>
-                <div class="value" v-overflow-title>
+                <div
+                  class="value"
+                  v-overflow-title
+                >
                   {{ stageData.description || '--' }}
                 </div>
               </div>
@@ -69,7 +77,12 @@
             >
               {{ t('发布资源') }}
             </bk-button>
-            <bk-button class="mr10" @click="handleEditStage">{{ t('编辑') }}</bk-button>
+            <bk-button
+              class="mr10"
+              @click="handleEditStage"
+            >
+              {{ t('编辑') }}
+            </bk-button>
             <bk-dropdown :popover-options="popoverOptions">
               <bk-button class="more-cls">
                 <i class="apigateway-icon icon-ag-gengduo"></i>
@@ -250,12 +263,11 @@ const handleEditStage = () => {
   padding: 24px;
   font-size: 12px;
   .stagae-info {
+    display: flex;
     height: 128px;
     padding: 24px;
     background: #ffffff;
     box-shadow: 0 2px 4px 0 #1919290d;
-
-    display: flex;
 
     .stage-name {
       width: 120px;
@@ -266,85 +278,90 @@ const handleEditStage = () => {
       display: flex;
       align-items: center;
       justify-content: center;
-
-      .name {
-        font-weight: 700;
-        font-size: 16px;
-        color: #3a84ff;
-      }
     }
 
-    .info {
-      display: flex;
-      .column {
-        transform: translateY(-8px);
-        &:first-child {
-          margin-right: 80px;
-        }
+    .name {
+      padding: 0 3px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #3a84ff;
+      display: inline-block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .info {
+    display: flex;
+    .column {
+      transform: translateY(-8px);
+      &:first-child {
+        margin-right: 80px;
       }
-      .apigw-form-item {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        line-height: 32px;
-        color: #63656e;
+    }
+    .apigw-form-item {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      line-height: 32px;
+      color: #63656e;
 
-        .value {
-          max-width: 220px;
-          color: #313238;
+      .value {
+        max-width: 220px;
+        color: #313238;
 
-          &.url {
-            max-width: 200px;
-            display: flex;
-            align-items: center;
+        &.url {
+          max-width: 200px;
+          display: flex;
+          align-items: center;
 
-            .link {
-              overflow: hidden;
-              white-space: nowrap;
-              text-overflow: ellipsis;
-            }
+          .link {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+          }
 
-            i {
-              cursor: pointer;
-              color: #3a84ff;
-              margin-left: 3px;
-              font-size: 12px;
-              padding: 3px;
-            }
+          i {
+            cursor: pointer;
+            color: #3a84ff;
+            margin-left: 3px;
+            font-size: 12px;
+            padding: 3px;
           }
         }
-        .unrelease {
-          display: inline-block;
-          font-size: 10px;
-          color: #fe9c00;
-          background: #fff1db;
-          border-radius: 2px;
-          padding: 2px 5px;
-          line-height: 1;
-        }
       }
-    }
-
-    .operate {
-      display: flex;
-      margin-left: 40px;
-      .line {
-        height: 32px;
-        width: 1px;
-        background: #dcdee5;
-        margin-right: 20px;
+      .unrelease {
+        display: inline-block;
+        font-size: 10px;
+        color: #fe9c00;
+        background: #fff1db;
+        border-radius: 2px;
+        padding: 2px 5px;
+        line-height: 1;
       }
     }
   }
 
-  .tab-wrapper {
-    background: #ffffff;
-    box-shadow: 0 2px 4px 0 #1919290d;
-    border-radius: 0 0 2px 2px;
-
-    :deep(.bk-tab-content) {
-      padding: 24px;
+  .operate {
+    display: flex;
+    margin-left: 40px;
+    .line {
+      height: 32px;
+      width: 1px;
+      background: #dcdee5;
+      margin-right: 20px;
     }
+  }
+}
+
+.tab-wrapper {
+  background: #ffffff;
+  box-shadow: 0 2px 4px 0 #1919290d;
+  border-radius: 0 0 2px 2px;
+
+  :deep(.bk-tab-content) {
+    padding: 24px;
   }
 }
 
