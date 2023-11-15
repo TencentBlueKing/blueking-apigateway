@@ -78,6 +78,6 @@ export const menuData: IMenu[]  = [
   {
     name: 'apigwBasicInfo',
     title: '基本信息',
-    icon: 'info',
+    icon: 'document',
   },
 ];

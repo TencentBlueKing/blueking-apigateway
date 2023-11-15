@@ -123,7 +123,7 @@
                       <i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(basicInfoData.public_key)" />
                     </span>
                     <span>
-                      <i class="apigateway-icon icon-ag-download" @click.stop="handleDownload('--')" />
+                      <i class="apigateway-icon icon-ag-download" @click.stop="handleDownload" />
                     </span>
                   </div>
                 </div>
@@ -177,7 +177,7 @@
       :title="dialogEditData.title"
       quick-close
       :is-loading="dialogEditData.loading"
-      @confirm="handleConfirmCreate"
+      @confirm="handleConfirmEdit"
       @closed="handleCloseEdit">
       <bk-form ref="formRef" form-type="vertical" :model="basicInfoDetailData" :rules="rules">
         <bk-form-item
@@ -187,9 +187,14 @@
         >
           <bk-input
             v-model="basicInfoDetailData.name"
+            :disabled="true"
             :placeholder="$t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
             clearable
           />
+          <p>
+            <span>  <i class="apigateway-icon icon-ag-info" /></span>
+            <span>{{ t(' 网关唯一标识，创建后不可修改') }}</span>
+          </p>
         </bk-form-item>
         <bk-form-item
           :label="$t('维护人员')"
@@ -360,24 +365,18 @@ const  handleDeleteApigw = async () => {
   }
 };
 
-// 创建网关确认
-const handleConfirmCreate = async () => {
+const handleConfirmEdit = async () => {
   try {
-    // 校验
     await formRef.value.validate();
     dialogEditData.value.loading = true;
-    const params: any = _.cloneDeep(basicInfoData.value);
-    Object.keys(basicInfoData.value).forEach((key) => {
-      if (!['description', 'maintainers', 'developers', 'is_public', 'bk_app_codes'].includes(key)) {
-        delete params[key];
-      }
-    });
+    const params: any = _.cloneDeep(basicInfoDetailData.value);
     await editGateWays(apigwId.value, params);
     Message({
       message: t('编辑成功'),
       theme: 'success',
     });
     dialogEditData.value.isShow = false;
+    await getBasicInfo();
   } catch (error) {
   } finally {
     dialogEditData.value.loading = false;
@@ -443,8 +442,14 @@ const handleDownload = () => {
   URL.revokeObjectURL(blob);
 };
 
-const handleDescriptionChange = (payload: any) => {
-  console.log(payload);
+const handleDescriptionChange = async (payload: any) => {
+  const { description } = payload;
+  const params: BasicInfoParams = Object.assign((basicInfoData.value, { description }));
+  await editGateWays(apigwId.value, params);
+  Message({
+    message: t('编辑成功'),
+    theme: 'success',
+  });
 };
 
 watch(

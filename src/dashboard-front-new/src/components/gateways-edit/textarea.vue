@@ -5,7 +5,7 @@
         <div class="edit-content" :title="newVal">
           <slot :value="newVal">
             {{ newVal }}
-            <template v-if="!newVal && !isLoading">
+            <template v-if="!newVal">
               --
             </template>
           </slot>
@@ -53,10 +53,6 @@ const props = defineProps({
     type: String,
     default: '请输入',
   },
-  remoteHander: {
-    type: Function,
-    default: () => Promise.resolve(),
-  },
   rules: {
     type: Array,
     default: () => [],
@@ -76,7 +72,6 @@ const props = defineProps({
 const emit = defineEmits(['on-change']);
 
 const textareaRef = ref(null);
-const isLoading = ref(false);
 const isShowError = ref(false);
 const isEditable = ref(false);
 const errorTips = ref('');
@@ -85,33 +80,13 @@ const newVal = ref(props.content);
 const handleValidate = () => {
   isShowError.value = false;
   errorTips.value = '';
-  // if (props.rules.length > 0) {
-  //     for (let i = 0; i < props.rules.length; i++) {
-  //         const validate = props.rules[i];
-  //         if (validate?.required && !newVal) {
-  //             isShowError.value = true;
-  //             errorTips = validate.message;
-  //             break;
-  //         }
-  //         if (validate?.validator && !validate?.validator(newVal.value)) {
-  //             this.isShowError = true;
-  //             this.errorTips = validate?.message;
-  //             break;
-  //         }
-  //         if ((validate?.required && newVal.value) && (validate?.validator?.(this.newVal))) {
-  //             this.isShowError = false;
-  //             this.errorTips = '';
-  //             break;
-  //         }
-  //     }
-  // }
 };
 
 const handleEdit = () => {
   document.body.click();
   isEditable.value = true;
   nextTick(() => {
-    // textareaRef.value?.focus();
+    textareaRef.value?.focus();
   });
 };
 
@@ -121,20 +96,17 @@ const handleInput = () => {
 };
 
 const handleBlur = () => {
-  if (isEditable.value) return;
-  handleValidate();
-  if (isShowError.value) return;
   triggerChange();
 };
 
 const hideEdit = (event: any) => {
   if (event.path && event.path.length > 0) {
-    // for (let i = 0; i < event.path.length; i++) {
-    //   const target = event.path[i];
-    //   if (target.className === 'gateways-edit-textarea') {
-    //     return;
-    //   }
-    // }
+    for (const i of event.path) {
+      const target = event.path[i];
+      if (target.className === 'gateways-edit-textarea') {
+        return;
+      }
+    }
   }
   handleValidate();
   if (isShowError.value) return;
@@ -146,7 +118,6 @@ const triggerChange = () => {
   if (newVal.value === props.content) {
     return;
   }
-  isLoading.value = true;
   emit('on-change', {
     [props.field]: newVal.value,
   });
