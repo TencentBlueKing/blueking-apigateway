@@ -124,7 +124,7 @@
       <edit-stage-sideslider ref="stageSidesliderRef" />
 
       <!-- 发布资源至环境 -->
-      <release-sideslider ref="releaseSidesliderRef" />
+      <release-sideslider :current-assets="stageData" ref="releaseSidesliderRef" />
     </div>
   </div>
 </template>
