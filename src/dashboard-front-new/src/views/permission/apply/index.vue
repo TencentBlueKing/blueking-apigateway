@@ -51,7 +51,7 @@
               </bk-table>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
+          <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code" width="110"></bk-table-column>
           <bk-table-column :label="t('授权维度')" prop="grant_dimension_display">
             <template #default="{ data }">
               {{ data?.grant_dimension_display || '--' }}
@@ -68,7 +68,7 @@
             </template>
           </bk-table-column>
           <bk-table-column :label="t('申请人')" prop="applied_by"></bk-table-column>
-          <bk-table-column :label="t('申请时间')" prop="created_time"></bk-table-column>
+          <bk-table-column :label="t('申请时间')" prop="created_time" width="215"></bk-table-column>
           <bk-table-column :label="t('审批状态')" prop="status">
             <template #default="{ data }">
               <round-loading v-if="data?.status === 'pending'" />
