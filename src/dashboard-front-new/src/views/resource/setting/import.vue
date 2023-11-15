@@ -134,7 +134,7 @@ import { useI18n } from 'vue-i18n';
 import exampleData from '@/constant/example-data';
 import { Message } from 'bkui-vue';
 import { getStrFromFile } from '@/common/util';
-import { checkResourceImport, importResource } from '@/http';
+import { checkResourceImport, importResource, importResourceDocSwagger } from '@/http';
 import { useCommon } from '@/store';
 import { useRouter } from 'vue-router';
 import { useSelection } from '@/hooks';
@@ -211,6 +211,7 @@ const handleCheckData = async () => {
     isDataLoading.value = true;
     const parmas: any = {
       content: editorText.value,
+      allow_overwrite: true,
     };
     // 如果勾选了资源文档
     if (showDoc.value) {
@@ -238,7 +239,18 @@ const handleImportResource = async () => {
       content: editorText.value,
       selected_resources: selections.value,
     };
+    // swagger需要的参数
+    const resourceDocs = selections.value.map((e: any) => ({
+      language: e.doc.language,
+      resource_name: e.name,
+    }));
+    const paramsDocs = {
+      swagger: editorText.value,
+      selected_resource_docs: resourceDocs,
+      language: language.value,
+    };
     await importResource(apigwId, parmas);
+    await importResourceDocSwagger(apigwId, paramsDocs);
     Message({
       theme: 'success',
       message: t('资源导入成功'),

@@ -318,6 +318,7 @@ const isAdsorb = ref<boolean>(false);
 const fixedLeft = ref(expandWidth);
 const userPlaceholder = '******';
 const allMethodList = ref([common.methodList]);
+const headerViewRef = ref(null);
 
 
 const isDefaultAppAuth = computed(() => formData.value.appAuth === 'use_test_app');
@@ -643,6 +644,7 @@ const observerBtnScroll = () => {
 const destroyEvent = () => {
   const container = document.querySelector('.default-header-view');
   container?.removeEventListener('scroll', controlToggle);
+  headerViewRef.value?.removeEventListener('scroll', controlToggle);
 };
 
 // 获取按钮底部距离
@@ -669,6 +671,7 @@ init();
 
 onMounted(() => {
   nextTick(() => {
+    headerViewRef.value = document.querySelector('.default-header-view');
     // 初始化判断按钮组是否吸附
     controlToggle();
     observerBtnScroll();

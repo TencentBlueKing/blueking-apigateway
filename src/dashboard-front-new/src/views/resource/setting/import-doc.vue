@@ -72,7 +72,8 @@
           :url="`${BK_DASHBOARD_URL}/gateways/${apigwId}/docs/archive/parse/`"
           class="upload-cls"
           name="file"
-          @done="handleUploadSuccess"
+          @done="handleUploadDone"
+          @progress="handleUploadSuccess"
           :header="{ name: 'X-CSRFToken', value: CSRFToken }"
         >
           <template #default>
@@ -115,7 +116,8 @@
         class="table-layout"
         :data="tableData"
         show-overflow-tooltip
-        :checked="tableData"
+        :checked="checkData"
+        :is-row-select-enable="isRowSelectEnable"
         @selection-change="handleSelectionChange"
       >
         <bk-table-column
@@ -123,6 +125,7 @@
           type="selection"
         />
         <bk-table-column
+          v-if="docType === 'archive'"
           :label="t('文件名称')"
           prop="filename"
         >
@@ -163,6 +166,31 @@
         </bk-table-column>
       </bk-table>
     </section>
+
+    <div
+      class="mt15" :class="curView === 'import' ? 'btn-container' : ''"
+      v-if="docType === 'swagger' || curView === 'resources'">
+      <bk-button
+        :theme="curView === 'import' ? 'primary' : ''"
+        @click="handleCheckData"
+        :loading="isDataLoading"
+      >
+        {{ curView === 'import' ? t('下一步') : t('上一步') }}
+      </bk-button>
+      <span v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }" v-if="curView === 'resources'">
+        <bk-button
+          class="mr10"
+          theme="primary"
+          type="button"
+          :disabled="!selections.length"
+          @click="handleImportDoc" :loading="isImportLoading">
+          {{ $t('确定导入') }}
+        </bk-button>
+      </span>
+      <bk-button @click="goBack">
+        {{ t('取消') }}
+      </bk-button>
+    </div>
   </div>
 </template>
 <script setup lang="ts">
@@ -171,14 +199,16 @@ import editorMonaco from '@/components/ag-editor.vue';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
 import { getStrFromFile } from '@/common/util';
-// import { archiveParse } from '@/http';
+import { checkResourceImport, importResourceDoc, importResourceDocSwagger } from '@/http';
 import exampleData from '@/constant/example-data';
 import { useCommon } from '@/store';
 import cookie from 'cookie';
 import { useSelection } from '@/hooks';
+import { useRouter } from 'vue-router';
 
 const { t } = useI18n();
 const common = useCommon();
+const router = useRouter();
 
 // checkbox hooks
 const {
@@ -189,8 +219,12 @@ const { apigwId } = common; // 网关id
 const docType = ref<string>('archive');
 const curView = ref<string>('import'); // 当前页面
 const tableData = ref<any[]>([]);
+const checkData = ref<any[]>([]);
 const language = ref<string>('zh');
+const isDataLoading = ref<boolean>(false);
+const isImportLoading = ref<boolean>(false);
 const editorText = ref<string>(exampleData.content);
+const zipFile = ref<any>('');
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>(); // 实例化
 const { BK_DASHBOARD_URL } = window;
 const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME || `${window.BK_PAAS_APP_ID}_csrftoken`];
@@ -232,11 +266,101 @@ const setEditValue = () => {
   });
 };
 
+// 拿不到上传成功的success的事件先用progress代替
+const handleUploadSuccess = async (e: any, file: any) => {
+  zipFile.value = file;
+};
+
 // 上传完成的方法
-const handleUploadSuccess = async (response: any) => {
+const handleUploadDone = async (response: any) => {
   const res = response[0].response.data;
   const data = res.map((e: any) => ({ ...e, ...e.resource, ...e.resource_doc }));
   tableData.value = data;
+  checkData.value = data.filter((e: any) => !!e.resource_doc); // 有资源文档的才默认选中
+  curView.value = 'resources';
+  nextTick(() => {
+    selections.value = JSON.parse(JSON.stringify(checkData.value));
+  });
+};
+
+// 下一步需要检查数据
+const handleCheckData = async () => {
+  // 上一步按钮功能
+  if (curView.value === 'resources') {
+    curView.value = 'import';
+    return;
+  }
+  if (!editorText.value) {
+    Message({
+      theme: 'error',
+      message: t('请输入Swagger内容'),
+    });
+  }
+  try {
+    isDataLoading.value = true;
+    const parmas: any = {
+      content: editorText.value,
+      doc_language: language.value,
+    };
+    const res = await checkResourceImport(apigwId, parmas);
+    tableData.value = res;
+    curView.value = 'resources';
+    checkData.value = tableData.value;
+    nextTick(() => {
+      selections.value = JSON.parse(JSON.stringify(tableData.value));
+    });
+    // resetSelections();
+  } catch (error) {
+
+  } finally {
+    isDataLoading.value = false;
+  }
+};
+
+// 确认导入
+const handleImportDoc = async () => {
+  try {
+    isImportLoading.value = true;
+    // 压缩包需要的参数
+    const formData = new FormData();
+    formData.append('file', zipFile.value);
+    formData.append('selected_resource_docs', JSON.stringify(selections.value));
+    // swagger需要的参数
+    const resourceDocs = selections.value.map((e: any) => ({
+      language: e.doc.language,
+      resource_name: e.name,
+    }));
+    const paramsSwagger = {
+      swagger: editorText.value,
+      selected_resource_docs: resourceDocs,
+      language: language.value,
+    };
+    const parmas = docType.value === 'archive' ? formData : paramsSwagger;
+    const fetchUrl: any = docType.value === 'archive' ? importResourceDoc : importResourceDocSwagger;
+    const message = docType.value === 'archive' ? '资源文档' : '资源';
+    await fetchUrl(apigwId, parmas);
+    Message({
+      theme: 'success',
+      message: t(`${message}导入成功`),
+    });
+    goBack();
+  } catch (error) {} finally {
+    isImportLoading.value = false;
+  }
+};
+
+// 没有资源不能导入
+const isRowSelectEnable = (data: any) => {
+  console.log('row', data);
+  if (docType.value === 'swagger') return true; // 如果是swagger 则可以选择
+  return data?.row.resource_doc;
+};
+
+// 取消返回到资源列表
+const goBack = () => {
+  router.push({
+    name: 'apigwResource',
+  });
 };
 
 const deDuplication = (data: any[], k: string) => {
@@ -277,6 +401,10 @@ const deDuplication = (data: any[], k: string) => {
   .monacoEditor {
     width: 100%;
     height: calc(100vh - 400px);
+  }
+
+  .btn-container{
+    margin-left: 120px;
   }
 
   :deep(.upload-cls) {
