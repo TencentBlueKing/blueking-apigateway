@@ -16,3 +16,9 @@ export interface BasicInfoParams {
   public_key: string
   is_official: boolean
 }
+
+export interface DialogParams {
+  isShow: boolean,
+  loading: boolean
+  title?: string
+}

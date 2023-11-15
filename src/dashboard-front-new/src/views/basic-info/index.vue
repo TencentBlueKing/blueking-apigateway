@@ -8,7 +8,7 @@
             'header-info-left',
             { 'header-info-left-disabled': !basicInfoData.status }
           ]">
-          <span class="name">{{ basicInfoData.name[0] }}</span>
+          <span class="name">{{ basicInfoData.name?.[0].toUpperCase() }}</span>
         </div>
         <div class="header-info-right">
           <div class="header-info-name">
@@ -241,7 +241,7 @@ import { Message, InfoBox } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 // import { useStage } from '@/store';
-import { BasicInfoParams } from './common/type';
+import { BasicInfoParams, DialogParams } from './common/type';
 import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays } from '@/http';
 import GateWaysEditTextarea from '@/components/gateways-edit/textarea.vue';
 
@@ -306,16 +306,15 @@ const basicInfoData = ref<BasicInfoParams>({
   is_official: false,
 });
 const basicInfoDetailData = ref(_.cloneDeep(basicInfoData.value));
-const delApigwDialog = ref({
+const delApigwDialog = ref<DialogParams>({
   isShow: false,
   loading: false,
 });
-const dialogEditData = ref({
+const dialogEditData = ref<DialogParams>({
   isShow: false,
   loading: false,
   title: t('编辑网关'),
 });
-
 
 const formRemoveApigw = computed(() => {
   return basicInfoData.value.name === formRemoveConfirmApigw.value;
@@ -372,7 +371,7 @@ const handleConfirmEdit = async () => {
   try {
     await formRef.value.validate();
     dialogEditData.value.loading = true;
-    const params: any = _.cloneDeep(basicInfoDetailData.value);
+    const params = _.cloneDeep(basicInfoDetailData.value);
     await editGateWays(apigwId.value, params);
     Message({
       message: t('编辑成功'),
@@ -447,8 +446,8 @@ const handleDownload = () => {
 
 const handleDescriptionChange = async (payload: any) => {
   const { description } = payload;
-  basicInfoData.value = Object.assign(basicInfoData.value, { description });
   await editGateWays(apigwId.value, basicInfoData.value);
+  basicInfoData.value = Object.assign(basicInfoData.value, { description });
   Message({
     message: t('编辑成功'),
     theme: 'success',
@@ -542,16 +541,9 @@ watch(
           }
         }
       }
-
-      .header-info-description {
-        padding-top: 8px;
-        padding-bottom: 22px;
-      }
-
       .header-info-button {
         display: flex;
       }
-
     }
   }
 
