@@ -316,6 +316,8 @@
           :cur-resource="curResource" @fetch="handleSuccess" @on-update="handleUpdateTitle"></ResourcesDoc>
       </template>
     </bk-sideslider>
+    <!-- 生成版本 -->
+    <version-sideslider ref="versionSidesliderRef" />
   </div>
 </template>
 <script setup lang="ts">
@@ -329,8 +331,9 @@ import {
   exportResources, exportDocs, checkNeedNewVersion,
 } from '@/http';
 import { Message } from 'bkui-vue';
-import agDropdown from '@/components/ag-dropdown.vue';
 import Detail from './detail.vue';
+import VersionSideslider from './comps/version-sideslider.vue';
+import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
 import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
@@ -371,6 +374,8 @@ const router = useRouter();
 
 const filterData = ref({ query: '' });
 
+// ref
+const versionSidesliderRef = ref(null);
 // 导出参数
 const exportParams: IexportParams = reactive({
   export_type: '',
@@ -419,6 +424,7 @@ const exportDialogConfig: IexportDialog = reactive({
   exportFileDocType: 'resource',
 });
 
+// 是否需要alert信息栏
 const versionConfigs = reactive({
   needNewVersion: false,
   versionMessage: '',
@@ -659,6 +665,7 @@ const handleShowVersion = async () => {
 
 // 生成版本功能
 const handleCreateResourceVersion = () => {
+  versionSidesliderRef.value.showReleaseSideslider();
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
