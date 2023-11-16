@@ -8,12 +8,10 @@
             :custom-request="handleReq"
             class="upload-cls"
           >
-            <template #default>
-              <bk-button>
-                <i class="icon apigateway-icon icon-ag-add-small pr10"></i>
-                {{ t('导入 Swagger 文件') }}
-              </bk-button>
-            </template>
+            <bk-button>
+              <i class="icon apigateway-icon icon-ag-add-small pr10"></i>
+              {{ t('导入 Swagger 文件') }}
+            </bk-button>
           </bk-upload>
           <span class="desc">{{ t('（json /yaml 格式）') }}</span>
           <bk-form class="flex-row">
@@ -134,7 +132,7 @@ import { useI18n } from 'vue-i18n';
 import exampleData from '@/constant/example-data';
 import { Message } from 'bkui-vue';
 import { getStrFromFile } from '@/common/util';
-import { checkResourceImport, importResource } from '@/http';
+import { checkResourceImport, importResource, importResourceDocSwagger } from '@/http';
 import { useCommon } from '@/store';
 import { useRouter } from 'vue-router';
 import { useSelection } from '@/hooks';
@@ -239,7 +237,18 @@ const handleImportResource = async () => {
       content: editorText.value,
       selected_resources: selections.value,
     };
+    // swagger需要的参数
+    const resourceDocs = selections.value.map((e: any) => ({
+      language: e.doc.language,
+      resource_name: e.name,
+    }));
+    const paramsDocs = {
+      swagger: editorText.value,
+      selected_resource_docs: resourceDocs,
+      language: language.value,
+    };
     await importResource(apigwId, parmas);
+    await importResourceDocSwagger(apigwId, paramsDocs);
     Message({
       theme: 'success',
       message: t('资源导入成功'),

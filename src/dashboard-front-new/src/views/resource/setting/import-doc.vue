@@ -199,7 +199,7 @@ import editorMonaco from '@/components/ag-editor.vue';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
 import { getStrFromFile } from '@/common/util';
-import { checkResourceImport, importResourceDoc, importResource } from '@/http';
+import { checkResourceImport, importResourceDoc, importResourceDocSwagger } from '@/http';
 import exampleData from '@/constant/example-data';
 import { useCommon } from '@/store';
 import cookie from 'cookie';
@@ -319,19 +319,24 @@ const handleCheckData = async () => {
 
 // 确认导入
 const handleImportDoc = async () => {
-  const formData = new FormData();
-  formData.append('file', zipFile.value);
-  formData.append('selected_resource_docs', JSON.stringify(selections.value));
-
   try {
     isImportLoading.value = true;
-
+    // 压缩包需要的参数
+    const formData = new FormData();
+    formData.append('file', zipFile.value);
+    formData.append('selected_resource_docs', JSON.stringify(selections.value));
+    // swagger需要的参数
+    const resourceDocs = selections.value.map((e: any) => ({
+      language: e.doc.language,
+      resource_name: e.name,
+    }));
     const paramsSwagger = {
-      content: editorText.value,
-      selected_resources: selections.value,
+      swagger: editorText.value,
+      selected_resource_docs: resourceDocs,
+      language: language.value,
     };
     const parmas = docType.value === 'archive' ? formData : paramsSwagger;
-    const fetchUrl: any = docType.value === 'archive' ? importResourceDoc : importResource;
+    const fetchUrl: any = docType.value === 'archive' ? importResourceDoc : importResourceDocSwagger;
     const message = docType.value === 'archive' ? '资源文档' : '资源';
     await fetchUrl(apigwId, parmas);
     Message({

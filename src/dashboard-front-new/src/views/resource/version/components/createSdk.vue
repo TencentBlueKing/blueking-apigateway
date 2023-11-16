@@ -48,7 +48,7 @@
 import { reactive, watch, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { IDialog } from '@/types';
-import { createSdks } from '@/http';
+import { createSdks, getResourceVersionsList } from '@/http';
 import { useRoute } from 'vue-router';
 import { Message } from 'bkui-vue';
 
@@ -59,8 +59,8 @@ const route = useRoute();
 const apigwId = +route.params.id;
 
 const props = defineProps<{
-  versionList: Array<any>;
-  resourceVersionId: string;
+  versionList?: Array<any>;
+  resourceVersionId?: string;
 }>();
 
 const baseInfoRef = ref(null);
@@ -142,12 +142,41 @@ const showCreateSdk = () => {
   dialogConfig.isShow = true;
 };
 
+// 获取版本列表
+const getResourceVersions = async () => {
+  try {
+    const query = {
+      offset: 0,
+      limit: 1000,
+    };
+    const res = await getResourceVersionsList(apigwId, query);
+    versionOpts.value = res.results;
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+watch(
+  () => dialogConfig.isShow,
+  (show) => {
+    if (!show) {
+      formData.resource_version_id = '';
+      formData.version = '';
+      formData.language = 'python';
+    }
+  },
+);
+
 watch(
   () => [props.resourceVersionId, props.versionList],
   (newArr: any[]) => {
     const [id, opts] = newArr;
-    versionOpts.value = opts;
-    formData.resource_version_id = id;
+    if (id && opts) {
+      versionOpts.value = opts;
+      formData.resource_version_id = id;
+    } else {
+      getResourceVersions();
+    }
   },
   {
     immediate: true,

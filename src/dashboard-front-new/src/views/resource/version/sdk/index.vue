@@ -3,7 +3,7 @@
     <div class="operate flex-row justify-content-between mt10 mb10">
       <div class="flex-1 flex-row align-items-center">
         <div class="mr10">
-          <bk-button theme="primary" @click="handleVersionCompare">
+          <bk-button theme="primary" @click="openCreateSdk">
             {{ t("生成SDK") }}
           </bk-button>
           <bk-button @click="handleBatchDownload">
@@ -72,7 +72,7 @@
             </bk-table-column>
             <bk-table-column :label="t('操作')" min-width="140">
               <template #default="{ data }">
-                <bk-button text theme="primary">
+                <bk-button text theme="primary" @click="copy(data.name)">
                   {{ t("复制地址") }}
                 </bk-button>
                 <bk-button text theme="primary" class="pl10 pr10">
@@ -84,6 +84,12 @@
         </bk-loading>
       </div>
     </div>
+
+    <!-- 生成sdk弹窗 -->
+    <create-sdk
+      @done="getList()"
+      ref="createSdkRef"
+    />
   </div>
 </template>
 
@@ -92,9 +98,12 @@ import { ref, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQueryList, useSelection } from '@/hooks';
 import { getSdksList } from '@/http';
+import { copy } from '@/common/util';
+import createSdk from '../components/createSdk.vue';
 
 const { t } = useI18n();
 
+const createSdkRef = ref(null);
 const filterData = ref({ query: '' });
 
 // 列表hooks
@@ -110,12 +119,14 @@ const {
 // 列表多选
 const { selections, handleSelectionChange, resetSelections } = useSelection();
 
-// 版本对比
-const handleVersionCompare = () => {};
-
 // 批量下载
 const handleBatchDownload = () => {};
 
 // 展示详情
 const handleShowInfo = (id: string) => {};
+
+// 显示生成sdk弹窗
+const openCreateSdk = () => {
+  createSdkRef.value?.showCreateSdk();
+};
 </script>

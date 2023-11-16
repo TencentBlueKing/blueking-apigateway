@@ -1,8 +1,9 @@
 <template>
   <div class="resource-container p20">
     <bk-alert
+      v-if="versionConfigs.needNewVersion"
       theme="warning"
-      title="资源如有更新，需要“生成版本”并“发布到环境”才能生效"
+      :title="versionConfigs.versionMessage"
     />
     <div class="operate flex-row justify-content-between mt10 mb10">
       <div class="flex-1 flex-row align-items-center">
@@ -27,6 +28,13 @@
           :text="t('导出')"
           :dropdown-list="exportDropData"
           @on-change="handleExport"></ag-dropdown>
+        <div class="mr10">
+          <bk-button
+            @click="handleCreateResourceVersion"
+          >
+            {{ t('生成版本') }}
+          </bk-button>
+        </div>
       </div>
       <div class="flex-1 flex-row justify-content-end">
         <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input>
@@ -53,6 +61,7 @@
             <bk-table-column
               width="80"
               type="selection"
+              align="center"
             />
             <bk-table-column
               :label="t('资源名称')"
@@ -97,8 +106,20 @@
               v-if="!isDetail"
             >
               <template #default="{ data }">
-                <section v-if="data?.docs.length">{{ data?.docs }}</section>
-                <section v-else>--</section>
+                <section v-if="data?.docs.length" @click="handleShowDoc(data)">
+                  <span class="document-info">
+                    <i class="bk-icon apigateway-icon icon-ag-document"></i>
+                    {{ $t('详情') }}
+                  </span>
+                </section>
+                <section v-else>
+                  <span v-show="!data?.isDoc">--</span>
+                  <i
+                    class="bk-icon apigateway-icon icon-ag-plus plus-class"
+                    v-bk-tooltips="t('添加文档')"
+                    v-show="data?.isDoc"
+                    @click="handleShowDoc(data)"></i>
+                </section>
               </template>
             </bk-table-column>
             <bk-table-column
@@ -189,7 +210,9 @@
                 v-if="item.name === active && resourceId"
                 :is="item.component"
                 :resource-id="resourceId"
+                :cur-resource="curResource"
                 :apigw-id="apigwId"
+                height="calc(100vh - 348px)"
                 ref="componentRef"
                 @done="(v: boolean | any) => {
                   isComponentLoading = !!v
@@ -280,22 +303,39 @@
         </bk-form-item>
       </bk-form>
     </bk-dialog>
+
+    <!-- 文档侧边栏 -->
+    <bk-sideslider
+      v-model:isShow="docSliderConf.isShowDocSide"
+      quick-close
+      :title="docSliderConf.title"
+      width="780"
+      ext-cls="doc-sideslider-cls">
+      <template #default>
+        <ResourcesDoc
+          :cur-resource="curResource" @fetch="handleSuccess" @on-update="handleUpdateTitle"></ResourcesDoc>
+      </template>
+    </bk-sideslider>
+    <!-- 生成版本 -->
+    <version-sideslider ref="versionSidesliderRef" />
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue';
+import { reactive, ref, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
 import {
   getResourceListData, deleteResources,
   batchDeleteResources, batchEditResources,
-  exportResources, exportDocs,
+  exportResources, exportDocs, checkNeedNewVersion,
 } from '@/http';
 import { Message } from 'bkui-vue';
-import agDropdown from '@/components/ag-dropdown.vue';
 import Detail from './detail.vue';
+import VersionSideslider from './comps/version-sideslider.vue';
+import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
+import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 const props = defineProps({
   apigwId: {
@@ -334,6 +374,8 @@ const router = useRouter();
 
 const filterData = ref({ query: '' });
 
+// ref
+const versionSidesliderRef = ref(null);
 // 导出参数
 const exportParams: IexportParams = reactive({
   export_type: '',
@@ -351,9 +393,21 @@ const isShowLeft = ref(true);
 // 当前点击资源ID
 const resourceId = ref(0);
 
+// 当前点击的资源
+const curResource: any = ref({});
+
 const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
+
+// 文档侧边栏数据
+const docSliderConf: any = reactive({
+  isShow: false,
+  title: t('文档详情'),
+  isLoading: false,
+  isEdited: false,
+  languages: 'zh',
+});
 
 // 批量删除dialog
 const dialogData: IDialog = reactive({
@@ -370,6 +424,12 @@ const exportDialogConfig: IexportDialog = reactive({
   exportFileDocType: 'resource',
 });
 
+// 是否需要alert信息栏
+const versionConfigs = reactive({
+  needNewVersion: false,
+  versionMessage: '',
+});
+
 const batchEditData = ref({
   isPublic: true,
   allowApply: true,
@@ -379,7 +439,7 @@ const batchEditData = ref({
 const panels = [
   { name: 'resourceDetail', label: t('资源配置'), component: Detail },
   { name: 'pluginManage', label: '插件管理', component: PluginManage },
-  { name: 'resourceDoc', label: '资源文档', component: PluginManage },
+  { name: 'resourcesDoc', label: '资源文档', component: ResourcesDoc },
 ];
 
 const columns = [
@@ -447,7 +507,8 @@ const handleDeleteResource = async (id: number) => {
 // 展示右边内容
 const handleShowInfo = (id: number) => {
   resourceId.value = id;
-  console.log('isDetail', isDetail.value);
+  curResource.value = tableData.value.find((e: any) => e.id === id);
+  console.log('curResource.value', curResource.value);
   if (isDetail.value) {
     isComponentLoading.value = true;
     active.value = 'resourceInfo';
@@ -551,7 +612,7 @@ const handleMouseEnter = (e: any, row: any) => {
     row.isDoc = true;
     // data.isRowHover = true
     // data.isAddLabel = true
-    console.log('row', row);
+    // console.log('row', row);
   }, 100);
 };
 
@@ -561,8 +622,50 @@ const handleMouseLeave = (e: any, row: any) => {
     row.isDoc = false;
     // data.isRowHover = true
     // data.isAddLabel = true
-    console.log('row', row);
+    // console.log('row', row);
   }, 100);
+};
+
+// 展示文档
+const handleShowDoc = (data: any, languages = 'zh') => {
+  console.log('data', data);
+  curResource.value = data;
+  resourceId.value = data.id;   // 资源id
+  docSliderConf.isShowDocSide = true;
+  docSliderConf.title = `${t('文档详情')}【${data.name}】`;
+  docSliderConf.languages = languages;
+};
+
+// 改变侧栏边title
+const handleUpdateTitle = (type: string, isUpdate?: boolean) => {
+  if (type === 'cancel') {
+    docSliderConf.title = `${t('文档详情')}【${curResource.value.name}】`;
+  } else {
+    docSliderConf.title = `${isUpdate ? t('更新') : t('创建')}【${curResource.value.name}】`;
+  }
+};
+
+// 处理保存成功 删除成功 重新请求列表
+const handleSuccess = () => {
+  getList();
+  handleShowVersion();
+};
+
+// 获取资源是否需要发版本更新
+const handleShowVersion = async () => {
+  try {
+    const res = await checkNeedNewVersion(props.apigwId);
+    versionConfigs.needNewVersion = res.need_new_version;
+    versionConfigs.versionMessage = res.msg;
+  } catch (error: any) {
+    versionConfigs.needNewVersion = false;
+    versionConfigs.versionMessage = error.msg;
+  }
+};
+
+// 生成版本功能
+const handleCreateResourceVersion = () => {
+  versionSidesliderRef.value.showReleaseSideslider();
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
@@ -602,6 +705,10 @@ watch(
   },
   { immediate: true, deep: true },
 );
+
+onMounted(() => {
+  handleShowVersion();
+});
 </script>
 <style lang="scss" scoped>
 .resource-container{
@@ -642,6 +749,22 @@ watch(
           &.is-left {
             transform: rotate(180deg) !important;
           }
+        }
+      }
+      .document-info{
+        color: #3a84ff;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .plus-class{
+        font-size: 12px;
+        cursor: pointer;
+        color: #979BA5;
+        background: #EAEBF0;
+        padding: 5px;
+        &:hover {
+          color: #3A84FF;
+          background: #E1ECFF;
         }
       }
     }

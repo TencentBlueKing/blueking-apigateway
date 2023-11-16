@@ -23,7 +23,7 @@
   "license": "ISC",
   "dependencies": {
     "art-template": "^4.13.2",
-    "bkui-vue": "0.0.2-beta.85",
+    "bkui-vue": "0.0.2-beta.87",
     "connect-history-api-fallback": "^2.0.0",
     "cookie": "^0.5.0",
     "cookie-parser": "^1.4.5",
@@ -32,6 +32,7 @@
     "express": "^4.18.2",
     "express-art-template": "^1.0.1",
     "lodash": "^4.17.21",
+    "mavon-editor": "^3.0.1",
     "mitt": "^3.0.1",
     "monaco-editor": "^0.44.0",
     "pinia": "^2.0.23",
