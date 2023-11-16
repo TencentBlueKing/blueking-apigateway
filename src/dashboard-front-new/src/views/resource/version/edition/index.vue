@@ -83,7 +83,7 @@
     <create-sdk
       :version-list="tableData"
       :resource-version-id="resourceVersionId"
-      @done="getList()"
+      @done="changeTab"
       ref="createSdkRef"
     />
 
@@ -114,8 +114,10 @@ import { getResourceVersionsList } from '@/http';
 import createSdk from '../components/createSdk.vue';
 import resourceDetail from '../components/resourceDetail.vue';
 import versionDiff from '@/components/version-diff';
+import { useResourceVersion } from '@/store';
 
 const { t } = useI18n();
+const resourceVersionStore = useResourceVersion();
 
 const filterData = ref({ query: '' });
 
@@ -164,5 +166,10 @@ const handleShowDiff = () => {
 const handleShowInfo = (id: number) => {
   resourceVersionId.value = id;
   resourceDetailRef.value?.showSideslider();
+};
+
+// 生成sdk成功，跳转列表
+const changeTab = () => {
+  resourceVersionStore.setTabActive('sdk');
 };
 </script>
