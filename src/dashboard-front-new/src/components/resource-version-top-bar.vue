@@ -1,6 +1,6 @@
 <template>
   <div class="resource-version-top">
-    <bk-tab v-model:active="active" type="unborder-card" @change="handleChange">
+    <bk-tab :active="resourceVersionStore.tabActive || 'edition'" type="unborder-card" @change="handleChange">
       <bk-tab-panel name="edition" label="版本列表">
       </bk-tab-panel>
       <bk-tab-panel name="sdk" label="SDK列表">
@@ -10,12 +10,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import { useResourceVersion } from '@/store';
 
 const resourceVersionStore = useResourceVersion();
-
-const active = ref(resourceVersionStore.tabActive || 'edition');
 
 const handleChange = (key: string) => {
   resourceVersionStore.setTabActive(key);
