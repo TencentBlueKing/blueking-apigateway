@@ -17,7 +17,7 @@
       <bk-form class="flex-row ">
         <bk-form-item :label="$t('授权维度')" class="mb0">
           <bk-select v-model="dimension" class="w150" :clearable="false">
-            <bk-option v-for="option of dimensionList" :key="option.id" :id="option.id" :name="option.name">
+            <bk-option v-for="option of dimensionList" :key="option.id" :value="option.id" :label="option.name">
             </bk-option>
           </bk-select>
         </bk-form-item>
@@ -30,7 +30,7 @@
       <bk-loading :loading="isLoading">
         <bk-table
           class="mt15" :data="tableData" :size="'small'" :pagination="pagination"
-          @page-limit-change="handlePageSizeChange"
+          @page-limit-change="handlePageSizeChange" remote-pagination
           @page-value-change="handlePageChange" @selection-change="handleSelectionChange">
           <bk-table-column type="selection" width="60" align="center"></bk-table-column>
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
@@ -160,16 +160,30 @@
               {{ data?.bk_app_code || '--' }}
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('请求路径')" prop="resource_path">
-            <template #default="{ data }">
-              {{ data?.resource_path || '--' }}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="t('请求方法')" prop="resource_method">
-            <template #default="{ data }">
-              {{ data?.resource_method || '--' }}
-            </template>
-          </bk-table-column>
+          <template v-if="dimension === 'resource'">
+            <bk-table-column :label="t('请求路径')" prop="resource_path">
+              <template #default="{ data }">
+                {{ data?.resource_path || '--' }}
+              </template>
+            </bk-table-column>
+            <bk-table-column :label="t('请求方法')" prop="resource_method">
+              <template #default="{ data }">
+                {{ data?.resource_method || '--' }}
+              </template>
+            </bk-table-column>
+          </template>
+          <template v-else>
+            <bk-table-column :label="t('授权维度')">
+              {{ dimensionType[dimension as keyof typeof dimensionType] }}
+            </bk-table-column>
+            <bk-table-column :label="t('过期时间')" prop="expires">
+              <template #default="{ data }">
+                {{ data?.expires === null ? t('永久有效') : data?.expires }}
+              </template>
+            </bk-table-column>
+          </template>
+
+
         </bk-table>
       </div>
     </bk-dialog>
@@ -270,13 +284,17 @@ const curSelections = ref([]);
 const renewableConfi = reactive({
   content: t('权限有效期大于 30 天时，暂无法续期'), placement: 'left',
 });
+const dimensionType = reactive({
+  api: t('网关'),
+  resource: t('资源'),
+});
 // 导出下拉
 const exportDropData = ref<IDropList[]>([
   { value: 'all', label: t('全部应用权限') },
   { value: 'filtered', label: t('已筛选应用权限'), disabled: true },
   { value: 'selected', label: t('已选应用权限'), disabled: true },
 ]);
-
+// 授权维度
 const dimensionList = reactive([
   { id: 'api', name: t('按网关') },
   { id: 'resource', name: t('按资源') },
@@ -459,7 +477,7 @@ const handleExport = async ({ value }: {value: string}) => {
     }
   } catch ({ error }: any) {
     Message({
-      message: error.message,
+      message: error.message || t('导出失败'),
       theme: 'error',
     });
   } finally {
@@ -492,7 +510,7 @@ const handleComfirmBatch = async () => {
     });
   } catch ({ error }: any) {
     Message({
-      message: error.message,
+      message: error.message || t('续期失败'),
       theme: 'error',
     });
   } finally {
@@ -539,7 +557,7 @@ const handleRemovePermission = async () => {
     });
   } catch ({ error }: any) {
     Message({
-      message: error.message,
+      message: error.message || t('删除失败'),
       theme: 'error',
     });
   }
@@ -645,19 +663,22 @@ const checkDate = (params: any) => {
 const authAppDimension = async (params: any) => {
   const fetchMethod = params.dimension === 'resource' ? authResourcePermission : authApiPermission;
   console.log(fetchMethod);
+  const isSame = params.dimension === dimension.value;
   try {
     await fetchMethod(apigwId, params);
     dimension.value = params.dimension;
     authSliderConf.isShow = false;
-    const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-    getList(method);
+    if (isSame) {
+      const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
+      getList(method);
+    }
     Message({
       theme: 'success',
       message: t('授权成功！'),
     });
   } catch ({ error }: any) {
     Message({
-      message: error.message,
+      message: error.message || t('授权失败'),
       theme: 'error',
     });
   }
