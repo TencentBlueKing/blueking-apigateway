@@ -217,6 +217,19 @@ class GatewayUpdateStatusApi(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
+        # record audit log
+        gateway = request.gateway
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=username,
+            gateway_id=gateway.id,
+            instance_id=gateway.id,
+            instance_name=gateway.name,
+            data_before={"status": gateway.status},
+            data_after={"status": slz.validated_data["status"]},
+        )
+
         return V1OKJsonResponse()
 
 
@@ -236,5 +249,18 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
         missing_app_codes = set(target_app_codes) - set(related_app_codes)
         for bk_app_code in missing_app_codes:
             GatewayRelatedAppHandler.add_related_app(request.gateway.id, bk_app_code)
+
+        # record audit log
+        gateway = request.gateway
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=username,
+            gateway_id=gateway.id,
+            instance_id=gateway.id,
+            instance_name=gateway.name,
+            data_before={"related_app_codes": related_app_codes},
+            data_after={"added_related_app_codes": list(missing_app_codes)},
+        )
 
         return V1OKJsonResponse()
