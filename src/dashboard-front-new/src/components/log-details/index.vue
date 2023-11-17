@@ -13,7 +13,7 @@
           {{ t('发布失败') }}
         </bk-tag>
         <div class="title-publish-info">{{ t('发布版本') }}: <span>{{ logDetails?.resource_version_display }}</span></div>
-        <div class="title-publish-info">{{ t('耗时') }}: <span>{{ logDetails?.duration }}</span></div>
+        <div class="title-publish-info">{{ t('耗时') }}: <span>{{ logDetails?.duration }} s</span></div>
       </div>
     </template>
     <template #default>
@@ -134,6 +134,17 @@ const getLogsList = async () => {
 const showSideslider = () => {
   isShow.value = true;
 };
+
+const emit = defineEmits<(e: 'release-success') => void>();
+
+watch(
+  () => isShow.value,
+  (v) => {
+    if (!v && logDetails.value?.status === 'success') {
+      emit('release-success');
+    }
+  },
+);
 
 watch(
   () => props.historyId,

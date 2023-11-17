@@ -14,6 +14,7 @@ type SelectionType = {
 
 export const useSelection = () => {
   const selections = ref([]);
+  const bkTableRef = ref();
 
   const handleSelectionChange = (selection: SelectionType) => {
     // 全选
@@ -37,10 +38,12 @@ export const useSelection = () => {
 
   const resetSelections = () => {
     selections.value = [];
+    bkTableRef.value?.clearSelection();
   };
 
   return {
     selections,
+    bkTableRef,
     handleSelectionChange,
     resetSelections,
   };

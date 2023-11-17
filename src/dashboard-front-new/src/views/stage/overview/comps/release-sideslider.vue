@@ -26,7 +26,6 @@
                   <bk-form-item property="resource_version_id" :label="`发布的资源版本(当前版本: ${currentAssets.resource_version.version})`">
                     <bk-select
                       v-model="formData.resource_version_id"
-                      class="bk-select"
                       :input-search="false"
                       filterable
                       @change="handleVersionChange"
@@ -36,7 +35,7 @@
                         :key="item.id"
                         :value="item.id"
                         :label="item.version"
-                        :class="{ 'custom-option-disabled': item.disabled }"
+                        :disabled="item.disabled"
                       >
                       </bk-option>
                     </bk-select>
@@ -111,7 +110,7 @@
     </bk-dialog>
 
     <!-- 日志弹窗 -->
-    <log-details ref="logDetailsRef" :history-id="publishId"></log-details>
+    <log-details ref="logDetailsRef" :history-id="publishId" @release-success="emit('release-success')"></log-details>
   </div>
 </template>
 
@@ -135,6 +134,8 @@ const props = defineProps({
     default: () => ({}),
   },
 });
+
+const emit = defineEmits<(e: 'release-success') => void>();
 
 const resourceVersion = computed(() => {
   let version = '';
@@ -219,8 +220,7 @@ const showReleaseSideslider = () => {
 // 获取资源版本列表
 const getResourceVersions = async () => {
   try {
-    const res = await getResourceVersionsList(apigwId, { offset: 1, limit: 1000 });
-    // res.results?.push({ id: 9, version: '1.0.2+20231027155125', disabled: true });
+    const res = await getResourceVersionsList(apigwId, { offset: 0, limit: 1000 });
     res.results?.forEach((item: any) => {
       if (item.id === props.currentAssets?.resource_version?.id) {
         item.disabled = true;
@@ -281,6 +281,11 @@ watch(
       stepsConfig.value.curStep = 1;
       formData.resource_version_id = undefined;
       formData.comment = '';
+      diffData.value = {
+        add: [],
+        delete: [],
+        update: [],
+      };
     };
   },
 );
@@ -325,12 +330,5 @@ defineExpose({
   .operate2 {
     padding: 0px 24px 24px;
   }
-}
-</style>
-
-<style lang="scss">
-.custom-option-disabled {
-  color: #c4c6cc !important;
-  cursor: not-allowed !important;
 }
 </style>

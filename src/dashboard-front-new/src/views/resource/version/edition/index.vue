@@ -3,7 +3,7 @@
     <div class="operate flex-row justify-content-between mt10 mb10">
       <div class="flex-1 flex-row align-items-center">
         <div class="mr10">
-          <bk-button theme="primary" @click="handleShowDiff">
+          <bk-button theme="primary" @click="handleShowDiff" :disabled="diffDisabled">
             {{ t("版本对比") }}
           </bk-button>
         </div>
@@ -12,7 +12,7 @@
         <bk-input
           class="ml10 mr10 operate-input"
           placeholder="请输入版本号"
-          v-model="filterData.query"
+          v-model="filterData.keyword"
         ></bk-input>
       </div>
     </div>
@@ -21,6 +21,7 @@
         <bk-loading :loading="isLoading">
           <bk-table
             class="table-layout"
+            ref="bkTableRef"
             :data="tableData"
             remote-pagination
             :pagination="pagination"
@@ -30,7 +31,7 @@
             @selection-change="handleSelectionChange"
             row-hover="auto"
           >
-            <bk-table-column width="80" type="selection" />
+            <bk-table-column width="80" type="selection" align="center" />
             <bk-table-column :label="t('版本号')" min-width="120">
               <template #default="{ data }">
                 <bk-button
@@ -59,9 +60,12 @@
             </bk-table-column>
             <bk-table-column min-width="120" :label="t('SDK')">
               <template #default="{ data }">
-                <bk-button text theme="primary">
+                <bk-button text theme="primary" v-if="data?.sdk_count > 0" @click="jumpSdk(data)">
                   {{ data?.sdk_count }}
                 </bk-button>
+                <span v-else>
+                  {{ data?.sdk_count }}
+                </span>
               </template>
             </bk-table-column>
             <bk-table-column :label="t('操作')" min-width="140">
@@ -69,9 +73,22 @@
                 <bk-button text theme="primary" @click="openCreateSdk(data.id)">
                   {{ t("生成SDK") }}
                 </bk-button>
-                <bk-button text theme="primary" class="pl10 pr10">
-                  {{ t("发布至环境") }}
-                </bk-button>
+                <bk-dropdown trigger="click" :is-show="isReleaseMenuShow">
+                  <bk-button text theme="primary" class="pl10 pr10" @click="showRelease()">
+                    {{ t("发布至环境") }}
+                  </bk-button>
+                  <template #content>
+                    <bk-dropdown-menu>
+                      <bk-dropdown-item
+                        v-for="item in stageList"
+                        :key="item.id"
+                        @click="handleClickStage(item)"
+                      >
+                        {{ item.name }}
+                      </bk-dropdown-item>
+                    </bk-dropdown-menu>
+                  </template>
+                </bk-dropdown>
               </template>
             </bk-table-column>
           </bk-table>
@@ -103,23 +120,33 @@
         </div>
       </template>
     </bk-sideslider>
+
+    <!-- 发布资源 -->
+    <release-sideslider :current-assets="stageData" ref="releaseSidesliderRef" @release-success="getList()" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQueryList, useSelection } from '@/hooks';
-import { getResourceVersionsList } from '@/http';
+import { getResourceVersionsList, getStageList } from '@/http';
 import createSdk from '../components/createSdk.vue';
 import resourceDetail from '../components/resourceDetail.vue';
 import versionDiff from '@/components/version-diff';
 import { useResourceVersion } from '@/store';
+import { Message } from 'bkui-vue';
+import { useRoute } from 'vue-router';
+import releaseSideslider from '@/views/stage/overview/comps/release-sideslider.vue';
 
+const route = useRoute();
 const { t } = useI18n();
 const resourceVersionStore = useResourceVersion();
 
-const filterData = ref({ query: '' });
+const apigwId = +route.params.id;
+
+const filterData = ref({ keyword: '' });
+const diffDisabled = ref<boolean>(true);
 
 // 列表hooks
 const {
@@ -132,12 +159,19 @@ const {
 } = useQueryList(getResourceVersionsList, filterData);
 
 // 列表多选
-const { selections, handleSelectionChange, resetSelections } = useSelection();
+const { selections, bkTableRef, handleSelectionChange, resetSelections } = useSelection();
 
 // 当前操作的行
 const resourceVersionId = ref();
 const createSdkRef = ref(null);
 const resourceDetailRef = ref(null);
+
+// 该网关下的环境列表
+const stageList = ref<any>([]);
+const isReleaseMenuShow = ref<boolean>(false);
+// 选择发布的环境
+const stageData = ref();
+const releaseSidesliderRef = ref(null);
 
 // 生成sdk
 const openCreateSdk = (id: number) => {
@@ -157,9 +191,14 @@ const diffTargetId = ref();
 // 版本对比
 const handleShowDiff = () => {
   diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
+
+  // 选中一项，与最近版本对比；选中两项，则二者对比
+  const [diffSource, diffTarget] = selections.value;
+  diffSourceId.value = diffSource?.id;
+  diffTargetId.value = diffTarget?.id || '';
+
   diffSidesliderConf.isShow = true;
-  diffSourceId.value = '';
-  diffTargetId.value = '';
+  resetSelections();
 };
 
 // 展示详情
@@ -172,4 +211,52 @@ const handleShowInfo = (id: number) => {
 const changeTab = () => {
   resourceVersionStore.setTabActive('sdk');
 };
+
+// 过滤当前资源版本下的sdk
+const jumpSdk = (row: any) => {
+  resourceVersionStore.setResourceFilter(row?.version);
+  resourceVersionStore.setTabActive('sdk');
+};
+
+// 选择要发布的环境
+const showRelease = async () => {
+  try {
+    const res = await getStageList(apigwId);
+    if (res?.length) {
+      stageList.value = res;
+      isReleaseMenuShow.value = true;
+    } else {
+      Message({
+        theme: 'warning',
+        message: t('请先添加环境！'),
+      });
+    }
+  } catch (e) {
+    Message({
+      theme: 'warning',
+      message: t('获取环境列表失败，请稍后再试！'),
+    });
+    console.log(e);
+  }
+};
+
+// 展示发布弹窗
+const handleClickStage = (stage: any) => {
+  stageData.value = stage;
+  releaseSidesliderRef.value.showReleaseSideslider();
+};
+
+watch(
+  () => selections.value,
+  (sel) => {
+    if (sel?.length === 1 || sel?.length === 2) {
+      diffDisabled.value = false;
+    } else {
+      diffDisabled.value = true;
+    }
+  },
+  {
+    deep: true,
+  },
+);
 </script>

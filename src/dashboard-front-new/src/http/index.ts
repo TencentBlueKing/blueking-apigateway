@@ -9,4 +9,6 @@ export * from './plugin-manage';
 export * from './permission';
 export * from './backend-service';
 export * from './basic-info';
+export * from './access-log';
 export * from './resource-version';
+export * from './releases';

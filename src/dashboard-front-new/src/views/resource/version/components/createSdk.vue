@@ -157,25 +157,21 @@ const getResourceVersions = async () => {
 };
 
 watch(
-  () => dialogConfig.isShow,
-  (show) => {
-    if (!show) {
+  () => [props.resourceVersionId, props.versionList, dialogConfig.isShow],
+  (newArr: any[]) => {
+    const [id, opts, show] = newArr;
+
+    if (show) {
+      if (id && opts) {
+        versionOpts.value = opts;
+        formData.resource_version_id = id;
+      } else {
+        getResourceVersions();
+      }
+    } else {
       formData.resource_version_id = '';
       formData.version = '';
       formData.language = 'python';
-    }
-  },
-);
-
-watch(
-  () => [props.resourceVersionId, props.versionList],
-  (newArr: any[]) => {
-    const [id, opts] = newArr;
-    if (id && opts) {
-      versionOpts.value = opts;
-      formData.resource_version_id = id;
-    } else {
-      getResourceVersions();
     }
   },
   {

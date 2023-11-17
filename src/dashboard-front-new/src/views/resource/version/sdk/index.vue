@@ -6,16 +6,13 @@
           <bk-button theme="primary" @click="openCreateSdk">
             {{ t("生成SDK") }}
           </bk-button>
-          <bk-button @click="handleBatchDownload">
-            {{ t("批量下载") }}
-          </bk-button>
         </div>
       </div>
       <div class="flex-1 flex-row justify-content-end">
         <bk-input
           class="ml10 mr10 operate-input"
           placeholder="请输入关键字或选择条件查询"
-          v-model="filterData.query"
+          v-model="filterData.keyword"
         ></bk-input>
       </div>
     </div>
@@ -24,6 +21,7 @@
         <bk-loading :loading="isLoading">
           <bk-table
             class="table-layout"
+            ref="bkTableRef"
             :data="tableData"
             remote-pagination
             :pagination="pagination"
@@ -33,7 +31,7 @@
             @selection-change="handleSelectionChange"
             row-hover="auto"
           >
-            <bk-table-column width="80" type="selection" />
+            <!-- <bk-table-column width="80" type="selection" align="center" /> -->
             <bk-table-column :label="t('SDK版本号')" min-width="120">
               <template #default="{ data }">
                 <bk-button
@@ -75,7 +73,7 @@
                 <bk-button text theme="primary" @click="copy(data.name)">
                   {{ t("复制地址") }}
                 </bk-button>
-                <bk-button text theme="primary" class="pl10 pr10">
+                <bk-button text theme="primary" class="pl10 pr10" @click="handleDownload(data)">
                   {{ t("下载") }}
                 </bk-button>
               </template>
@@ -94,17 +92,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQueryList, useSelection } from '@/hooks';
 import { getSdksList } from '@/http';
 import { copy } from '@/common/util';
+import { useResourceVersion } from '@/store';
 import createSdk from '../components/createSdk.vue';
 
 const { t } = useI18n();
+const resourceVersionStore = useResourceVersion();
 
 const createSdkRef = ref(null);
-const filterData = ref({ query: '' });
+const filterData = ref({ keyword: '' });
 
 // 列表hooks
 const {
@@ -117,16 +117,29 @@ const {
 } = useQueryList(getSdksList, filterData);
 
 // 列表多选
-const { selections, handleSelectionChange, resetSelections } = useSelection();
+const { bkTableRef, handleSelectionChange } = useSelection();
 
-// 批量下载
-const handleBatchDownload = () => {};
+// 下载单个
+const handleDownload = (row: any) => {
+  const { download_url } = row;
+  window.open(download_url);
+};
 
 // 展示详情
-const handleShowInfo = (id: string) => {};
+const handleShowInfo = () => {};
 
 // 显示生成sdk弹窗
 const openCreateSdk = () => {
   createSdkRef.value?.showCreateSdk();
 };
+
+watch(
+  () => resourceVersionStore.getResourceFilter,
+  (value: string) => {
+    filterData.value.keyword = value;
+  },
+  {
+    immediate: true,
+  },
+);
 </script>
