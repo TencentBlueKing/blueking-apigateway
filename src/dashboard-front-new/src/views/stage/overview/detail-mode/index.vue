@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 自定义头部 -->
-    <stage-top-bar />
+    <stage-top-bar ref="stageTopBarRef" />
     <div class="detail-mode">
       <bk-loading :loading="stageStore.realStageMainLoading">
         <section class="stagae-info">
@@ -137,7 +137,7 @@
       <edit-stage-sideslider ref="stageSidesliderRef" />
 
       <!-- 发布资源至环境 -->
-      <release-sideslider :current-assets="stageData" ref="releaseSidesliderRef" />
+      <release-sideslider :current-assets="stageData" ref="releaseSidesliderRef" @release-success="handleReleaseSuccess" />
     </div>
   </div>
 </template>
@@ -152,7 +152,7 @@ import releaseSideslider from '../comps/release-sideslider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import stageTopBar from '@/components/stage-top-bar.vue';
 import { deleteStage, removalStage } from '@/http';
-import { Message } from 'bkui-vue';
+import { Message, InfoBox } from 'bkui-vue';
 import mitt from '@/common/event-bus';
 
 const { t } = useI18n();
@@ -162,6 +162,7 @@ const router = useRouter();
 
 const releaseSidesliderRef = ref(null);
 const stageSidesliderRef = ref(null);
+const stageTopBarRef = ref(null);
 
 // 当前环境信息
 const stageData: any = computed(() => {
@@ -200,6 +201,11 @@ onMounted(() => {
   handleTabChange('resourceInfo');
 });
 
+// 发布成功，重新请求环境详情
+const handleReleaseSuccess = () => {
+  stageTopBarRef.value?.getStageDetailFun(stageData.value?.id);
+};
+
 // 重新加载子组件
 const routeIndex = ref(0);
 watch(
@@ -227,42 +233,52 @@ const handleRelease = () => {
 
 // 下架环境
 const handleStageUnlist = async () => {
-  const data = {
-    status: 0,
-  };
-  try {
-    await removalStage(apigwId, stageData.value.id, data);
-    Message({
-      message: t('下架成功'),
-      theme: 'success',
-    });
-    // 获取网关列表
-    await mitt.emit('get-stage-list');
-    // 开启loading
-  } catch (error) {
-    console.error(error);
-  }
+  InfoBox({
+    title: t('确认下架吗？'),
+    onConfirm: async () => {
+      const data = {
+        status: 0,
+      };
+      try {
+        await removalStage(apigwId, stageData.value.id, data);
+        Message({
+          message: t('下架成功'),
+          theme: 'success',
+        });
+        // 获取网关列表
+        await mitt.emit('get-stage-list');
+        // 开启loading
+      } catch (error) {
+        console.error(error);
+      }
+    },
+  });
 };
 
 // 删除环境
 const handleStageDelete = async () => {
-  if (stageData.value.status === 1) {
-    return;
-  }
-  try {
-    await deleteStage(apigwId, stageData.value.id);
-    Message({
-      message: t('删除成功'),
-      theme: 'success',
-    });
-    // 获取网关列表
-    await mitt.emit('get-stage-list', { isUpdate: false, isDelete: true });
-    // 切换前一个环境, 并且不需要获取当前环境详情
-    await mitt.emit('switch-stage', true);
-    // 开启loading
-  } catch (error) {
-    console.error(error);
-  }
+  InfoBox({
+    title: t('确认删除吗？'),
+    onConfirm: async () => {
+      if (stageData.value.status === 1) {
+        return;
+      }
+      try {
+        await deleteStage(apigwId, stageData.value.id);
+        Message({
+          message: t('删除成功'),
+          theme: 'success',
+        });
+        // 获取网关列表
+        await mitt.emit('get-stage-list', { isUpdate: false, isDelete: true });
+        // 切换前一个环境, 并且不需要获取当前环境详情
+        await mitt.emit('switch-stage', true);
+        // 开启loading
+      } catch (error) {
+        console.error(error);
+      }
+    },
+  });
 };
 
 // 编辑环境

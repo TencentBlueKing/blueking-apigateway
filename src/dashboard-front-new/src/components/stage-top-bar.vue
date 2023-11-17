@@ -166,6 +166,10 @@ onBeforeMount(() => {
   mitt.off('switch-mode');
   mitt.off('switch-stage');
 });
+
+defineExpose({
+  getStageDetailFun,
+});
 </script>
 
 <style lang="scss" scoped>
