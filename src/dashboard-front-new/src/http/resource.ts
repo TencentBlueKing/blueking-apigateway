@@ -180,3 +180,9 @@ export const updateResourceDocs = (apigwId: number, resourceId: number, data: an
  * @param docId 文档id
  */
 export const deleteResourceDocs = (apigwId: number, resourceId: number, docId: number) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/${resourceId}/docs/${docId}/`);
+
+/**
+ * 是否需要创建新资源版本
+ * @param apigwId 网关id
+ */
+export const checkNeedNewVersion = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource_versions/need-new-version/`, { globalError: false });

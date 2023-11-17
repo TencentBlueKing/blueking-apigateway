@@ -1,8 +1,9 @@
 <template>
   <div class="resource-container p20">
     <bk-alert
+      v-if="versionConfigs.needNewVersion"
       theme="warning"
-      title="资源如有更新，需要“生成版本”并“发布到环境”才能生效"
+      :title="versionConfigs.versionMessage"
     />
     <div class="operate flex-row justify-content-between mt10 mb10">
       <div class="flex-1 flex-row align-items-center">
@@ -27,6 +28,13 @@
           :text="t('导出')"
           :dropdown-list="exportDropData"
           @on-change="handleExport"></ag-dropdown>
+        <div class="mr10">
+          <bk-button
+            @click="handleCreateResourceVersion"
+          >
+            {{ t('生成版本') }}
+          </bk-button>
+        </div>
       </div>
       <div class="flex-1 flex-row justify-content-end">
         <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input>
@@ -305,24 +313,27 @@
       ext-cls="doc-sideslider-cls">
       <template #default>
         <ResourcesDoc
-          :cur-resource="curResource" @fetch="getList" @on-update="handleUpdateTitle"></ResourcesDoc>
+          :cur-resource="curResource" @fetch="handleSuccess" @on-update="handleUpdateTitle"></ResourcesDoc>
       </template>
     </bk-sideslider>
+    <!-- 生成版本 -->
+    <version-sideslider ref="versionSidesliderRef" />
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue';
+import { reactive, ref, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
 import {
   getResourceListData, deleteResources,
   batchDeleteResources, batchEditResources,
-  exportResources, exportDocs,
+  exportResources, exportDocs, checkNeedNewVersion,
 } from '@/http';
 import { Message } from 'bkui-vue';
-import agDropdown from '@/components/ag-dropdown.vue';
 import Detail from './detail.vue';
+import VersionSideslider from './comps/version-sideslider.vue';
+import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
 import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
@@ -363,6 +374,8 @@ const router = useRouter();
 
 const filterData = ref({ query: '' });
 
+// ref
+const versionSidesliderRef = ref(null);
 // 导出参数
 const exportParams: IexportParams = reactive({
   export_type: '',
@@ -380,6 +393,7 @@ const isShowLeft = ref(true);
 // 当前点击资源ID
 const resourceId = ref(0);
 
+// 当前点击的资源
 const curResource: any = ref({});
 
 const active = ref('resourceInfo');
@@ -408,6 +422,12 @@ const exportDialogConfig: IexportDialog = reactive({
   title: t('请选择导出的格式'),
   loading: false,
   exportFileDocType: 'resource',
+});
+
+// 是否需要alert信息栏
+const versionConfigs = reactive({
+  needNewVersion: false,
+  versionMessage: '',
 });
 
 const batchEditData = ref({
@@ -592,7 +612,7 @@ const handleMouseEnter = (e: any, row: any) => {
     row.isDoc = true;
     // data.isRowHover = true
     // data.isAddLabel = true
-    console.log('row', row);
+    // console.log('row', row);
   }, 100);
 };
 
@@ -602,7 +622,7 @@ const handleMouseLeave = (e: any, row: any) => {
     row.isDoc = false;
     // data.isRowHover = true
     // data.isAddLabel = true
-    console.log('row', row);
+    // console.log('row', row);
   }, 100);
 };
 
@@ -623,6 +643,29 @@ const handleUpdateTitle = (type: string, isUpdate?: boolean) => {
   } else {
     docSliderConf.title = `${isUpdate ? t('更新') : t('创建')}【${curResource.value.name}】`;
   }
+};
+
+// 处理保存成功 删除成功 重新请求列表
+const handleSuccess = () => {
+  getList();
+  handleShowVersion();
+};
+
+// 获取资源是否需要发版本更新
+const handleShowVersion = async () => {
+  try {
+    const res = await checkNeedNewVersion(props.apigwId);
+    versionConfigs.needNewVersion = res.need_new_version;
+    versionConfigs.versionMessage = res.msg;
+  } catch (error: any) {
+    versionConfigs.needNewVersion = false;
+    versionConfigs.versionMessage = error.msg;
+  }
+};
+
+// 生成版本功能
+const handleCreateResourceVersion = () => {
+  versionSidesliderRef.value.showReleaseSideslider();
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
@@ -662,6 +705,10 @@ watch(
   },
   { immediate: true, deep: true },
 );
+
+onMounted(() => {
+  handleShowVersion();
+});
 </script>
 <style lang="scss" scoped>
 .resource-container{
