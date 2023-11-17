@@ -169,7 +169,7 @@ class ReleaseHistoryListApi(generics.ListAPIView):
 
         queryset = ReleaseHistory.objects.filter_release_history(
             gateway=request.gateway,
-            query=data.get("query"),
+            query=data.get("keyword"),
             stage_id=data.get("stage_id"),
             created_by=data.get("created_by"),
             time_start=data.get("time_start"),

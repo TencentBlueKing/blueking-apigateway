@@ -34,7 +34,7 @@ from .validators import ReservedGatewayNameValidator
 
 
 class GatewayListInputSLZ(serializers.Serializer):
-    query = serializers.CharField(allow_blank=True, required=False, help_text="网关筛选条件，支持模糊匹配网关名称")
+    keyword = serializers.CharField(allow_blank=True, required=False, help_text="网关筛选条件，支持模糊匹配网关名称")
     order_by = serializers.ChoiceField(
         choices=["-updated_time", "updated_time", "-created_time", "created_time", "name", "-name"],
         default="-updated_time",

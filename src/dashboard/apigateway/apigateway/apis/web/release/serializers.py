@@ -52,7 +52,7 @@ class ReleaseInputSLZ(serializers.Serializer):
 
 
 class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
-    query = serializers.CharField(allow_blank=True, required=False, help_text="查询参数关键字")
+    keyword = serializers.CharField(allow_blank=True, required=False, help_text="查询参数关键字")
     stage_id = serializers.IntegerField(allow_null=True, required=False, help_text="环境id")
     created_by = serializers.CharField(allow_blank=True, required=False, help_text="创建者")
     time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")

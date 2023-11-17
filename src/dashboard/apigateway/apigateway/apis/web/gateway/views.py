@@ -74,7 +74,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
         queryset = self._filter_list_queryset(
             gateway_ids,
-            slz.validated_data.get("query"),
+            slz.validated_data.get("keyword"),
             slz.validated_data["order_by"],
         )
         page = self.paginate_queryset(queryset)
@@ -92,11 +92,11 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
         return self.get_paginated_response(output_slz.data)
 
-    def _filter_list_queryset(self, gateway_ids: List[int], query: Optional[str], order_by: str):
+    def _filter_list_queryset(self, gateway_ids: List[int], keyword: Optional[str], order_by: str):
         queryset = Gateway.objects.filter(id__in=gateway_ids)
 
-        if query:
-            queryset = queryset.filter(name__icontains=query)
+        if keyword:
+            queryset = queryset.filter(name__icontains=keyword)
 
         return queryset.order_by(order_by)
 
