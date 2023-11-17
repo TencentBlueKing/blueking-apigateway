@@ -110,6 +110,10 @@ class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):
     created_by = serializers.CharField(help_text="创建人")
 
 
+class ResourceVersionListInputSLZ(serializers.Serializer):
+    query = serializers.CharField(allow_blank=True, required=False, help_text="资源版本筛选条件，支持模糊匹配")
+
+
 class ResourceVersionListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="id")
     released_stages = serializers.SerializerMethodField(help_text="已发布的环境列表")
