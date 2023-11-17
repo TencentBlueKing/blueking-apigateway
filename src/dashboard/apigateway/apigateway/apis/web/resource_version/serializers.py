@@ -111,7 +111,7 @@ class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):
 
 
 class ResourceVersionListInputSLZ(serializers.Serializer):
-    query = serializers.CharField(allow_blank=True, required=False, help_text="资源版本筛选条件，支持模糊匹配")
+    keyword = serializers.CharField(allow_blank=True, required=False, help_text="资源版本筛选条件，支持模糊匹配")
 
 
 class ResourceVersionListOutputSLZ(serializers.Serializer):
