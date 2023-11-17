@@ -50,15 +50,7 @@ from .serializers import (
         responses={status.HTTP_200_OK: ResourceVersionListOutputSLZ(many=True)},
         tags=["WebAPI.ResourceVersion"],
         operation_description="资源版本列表查询接口",
-        manual_parameters=[
-            # 定义一个名为 "keyword" 的查询参数，默认值为 "None"
-            parameters.Parameter(
-                name="keyword",
-                in_=parameters.IN_QUERY,
-                type=parameters.TYPE_STRING,
-                description="资源版本(支模糊持匹配)",
-            )
-        ],
+        query_serializer=ResourceVersionListInputSLZ(),
     ),
 )
 @method_decorator(
