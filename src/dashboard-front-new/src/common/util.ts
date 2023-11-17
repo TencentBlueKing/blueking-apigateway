@@ -1,8 +1,12 @@
 import dayjs from 'dayjs';
 import { Message } from 'bkui-vue';
+// import JSZip from 'jszip';
+// import FileSaver from 'file-saver';
+// import axios from 'axios';
 import i18n from '@/language/i18n';
 
 const { t } = i18n.global;
+
 
 // 获取 cookie object
 export function getCookies(strCookie = document.cookie): any {
@@ -146,6 +150,56 @@ export const blobDownLoad = async (res: any) => {
   const errorInfo = await res.json();
   return Promise.reject(errorInfo);
 };
+
+/**
+ * 将文件 url 格式转换为 Bolb 类型格式 或者 arraybuffer 格式
+ * @param fileUrl 文件完整地址
+ */
+// const getFileData  = (fileUrl: string) => {
+//   return new Promise((resolve, reject) => {
+//     fetch(fileUrl, {
+//       method: 'GET',
+//     }).then((res: any) => {
+//       if (res.ok) {
+//         resolve(res.blob());
+//       } else {
+//         reject(res);
+//       }
+//     }).
+//       catch((e: Error) => {
+//         reject(e);
+//       });
+//   });
+// };
+
+/**
+ * 根据文件url批量压缩下载成zip包
+ * @param fileList 文件列表[{fileUrl: 'xxxxx', fileName: '文件1'}, {fileUrl: 'xxxxx', fileName: '文件2'}]
+ * @param zipName 压缩包名如 测试.zip
+ */
+// export const zipDownload = async (fileList: any[], zipName: string) => {
+//   const zip = new JSZip();
+//   const promises: any = [];
+//   fileList.forEach((item: any) => {
+//     const promise = getFileData(item.fileUrl).then((res: any) => {
+//       zip.file(String(item.fileName), res, { binary: true });
+//     });
+//     promises.push(promise);
+//   });
+
+//   Promise.all(promises).then(() => {
+//     // 生成zip文件
+//     zip.generateAsync({
+//       type: 'blob',
+//       compression: 'DEFLATE',  // STORE: 默认不压缩， DEFLATE：需要压缩
+//       compressionOptions: {
+//         level: 9,         // 压缩等级 1~9   1 压缩速度最快， 9 最优压缩方式
+//       },
+//     }).then((res: any) => {
+//       FileSaver.saveAs(res, zipName);
+//     });
+//   });
+// };
 
 /**
  * 对元素为对象的数组进行简单排序

@@ -193,6 +193,7 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(addItem)"
+                    :title="`【${addItem?.method}】${addItem?.path}`"
                   ></span>
                 </div>
                 <div class="resource-box pl15 pr15">
@@ -226,6 +227,7 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(deleteItem)"
+                    :title="`【${deleteItem?.method}】${deleteItem?.path}`"
                   ></span>
                 </div>
                 <div class="resource-box pl15 pr15">
@@ -249,6 +251,7 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(deleteItem)"
+                    :title="`【${deleteItem?.method}】${deleteItem?.path}`"
                   ></span>
                 </div>
                 <div class="resource-box pl15 pr15">
@@ -289,6 +292,7 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(updateItem.source)"
+                    :title="`【${updateItem?.method}】${updateItem?.path}`"
                   ></span>
                 </div>
                 <div class="resource-box pl15 pr15">
@@ -315,6 +319,7 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(updateItem.target)"
+                    :title="`【${updateItem?.method}】${updateItem?.path}`"
                   ></span>
                 </div>
                 <!-- {{updateItem.source.diff}} -->
@@ -509,8 +514,7 @@ const checkMatch = (item, type) => {
 };
 
 const renderTitle = (item) => {
-  let { method } = item;
-  let { path } = item;
+  let { method, path } = item;
   if (searchKeyword.value) {
     const reg = new RegExp(`(${searchKeyword.value})`, 'ig');
     method = method.replace(reg, '<i class="keyword ag-strong primary">$1</i>');
@@ -734,6 +738,7 @@ onMounted(() => {
         text-overflow: ellipsis;
         white-space: nowrap;
         display: inline-block;
+        width: 96%;
       }
 
       .bk-icon {
