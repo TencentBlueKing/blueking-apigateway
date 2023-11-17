@@ -196,11 +196,11 @@ class HttpResourceConvertor(BaseConvertor):
 
     def _convert_http_resource_rewrite(self, resource_proxy: Dict[str, Any]) -> ResourceRewrite:
         if self._release_data.resource_version.is_schema_v2:
+            # stage_headers及headers相关处理在operator处理
             return ResourceRewrite(
                 enabled=True,
                 method=resource_proxy.get("method"),
                 path=resource_proxy.get("path"),
-                stage_headers=ResourceRewriteHeadersStrategyEnum.APPEND,
             )
 
         headers = self._convert_http_rewrite_headers(self._release_data.stage_backend_config.get("transform_headers"))
