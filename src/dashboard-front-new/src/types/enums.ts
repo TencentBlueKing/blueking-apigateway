@@ -4,7 +4,7 @@ export enum MethodsEnum {
   DELETE = 'danger',
   PUT = 'warning',
   PATCH = 'info',
-  ANY = '',
+  ANY = 'success',
 }
 
 export enum PublishSourceEnum {
