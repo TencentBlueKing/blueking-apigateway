@@ -173,9 +173,9 @@ class ResourceHandler:
             )
             queryset = queryset.filter(id__in=resource_ids)
 
-        if condition.get("query"):
-            query = condition.get("query")
-            queryset = queryset.filter(Q(path__icontains=query) | Q(name__icontains=query))
+        if condition.get("keyword"):
+            keyword = condition.get("keyword")
+            queryset = queryset.filter(Q(path__icontains=keyword) | Q(name__icontains=keyword))
 
         if condition.get("order_by"):
             queryset = queryset.order_by(condition["order_by"])

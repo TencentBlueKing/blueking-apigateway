@@ -101,7 +101,7 @@ class TestReleaseHistoryListApi:
 
         data = [
             {
-                "query": "test",
+                "keyword": "test",
                 "expected": {
                     "count": 1,
                 },

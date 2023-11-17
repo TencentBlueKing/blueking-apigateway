@@ -114,13 +114,13 @@ class TestReleaseHistoryQueryInputSLZ:
     def test_to_internal_value(self):
         data = [
             {
-                "query": "test",
+                "keyword": "test",
                 "stage_id": 12345,
                 "created_by": "admin",
                 "time_start": 1577263732,
                 "time_end": 1577263732,
                 "expected": {
-                    "query": "test",
+                    "keyword": "test",
                     "stage_id": 12345,
                     "created_by": "admin",
                     "time_start": datetime.datetime(2019, 12, 25, 8, 48, 52, tzinfo=tzutc()),
@@ -128,13 +128,13 @@ class TestReleaseHistoryQueryInputSLZ:
                 },
             },
             {
-                "query": "test",
+                "keyword": "test",
                 "stage_id": 12345,
                 "created_by": "admin",
                 "time_start": None,
                 "time_end": None,
                 "expected": {
-                    "query": "test",
+                    "keyword": "test",
                     "stage_id": 12345,
                     "created_by": "admin",
                     "time_start": None,

@@ -89,7 +89,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
         queryset = AlarmStrategy.objects.filter_alarm_strategy(
             gateway=request.gateway,
             gateway_label_id=data.get("gateway_label_id"),
-            query=data.get("query"),
+            keyword=data.get("keyword"),
             order_by=data.get("order_by") or "-id",
         )
 
