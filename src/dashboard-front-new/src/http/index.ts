@@ -10,3 +10,4 @@ export * from './permission';
 export * from './basic-info';
 export * from './access-log';
 export * from './resource-version';
+export * from './releases';
