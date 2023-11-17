@@ -8,5 +8,6 @@ export * from './logs';
 export * from './plugin-manage';
 export * from './permission';
 export * from './basic-info';
+export * from './access-log';
 export * from './resource-version';
 export * from './releases';
