@@ -327,12 +327,26 @@ export const useAccessLog = defineStore('accessLog', {
     },
   }),
   getters: {
-    datepickerShortcuts: state => state.datepickerShortcuts,
-    shortcutsInDay: state => state.shortcutsInDay,
-    alarmStrategyOptions: state => state.alarmStrategyOptions,
-    alarmStatus: state => state.alarmStatus,
-    methodList: state => state.methodList,
-    SDKLanguageList: state => state.SDKLanguageList,
-    auditOptions: state => state.auditOptions,
+    getDatepickerShortcuts(state) {
+      return state.datepickerShortcuts;
+    },
+    getShortcutsInDay(state) {
+      return state.shortcutsInDay;
+    },
+    getAlarmStrategyOptions(state) {
+      return state.alarmStrategyOptions;
+    },
+    getAlarmStatus(state) {
+      return state.alarmStatus;
+    },
+    getMethodList(state) {
+      return state.methodList;
+    },
+    getSDKLanguageList(state) {
+      return state.SDKLanguageList;
+    },
+    getAuditOptions(state) {
+      return state.auditOptions;
+    },
   },
 });

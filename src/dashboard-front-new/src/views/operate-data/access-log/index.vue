@@ -4,16 +4,19 @@
       <bk-form class="search-form" form-type="vertical">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker">
           <bk-date-picker
-            ref="datePickerRef" style="width: 320px;" v-model="dateTimeRange" :placeholder="t('选择日期时间范围')"
-            :type="'datetimerange'" :shortcuts="AccessLogStore.datepickerShortcuts" :shortcut-close="true"
-            :use-shortcut-text="true" :clearable="false" :shortcut-selected-index="shortcutSelectedIndex"
-            @shortcut-change="handleShortcutChange" @pick-success="handleTimeChange">
-            <template #shortcuts>
-              <div class="custom-shortcuts">
-                {{AccessLogStore.datepickerShortcuts}}
-              </div>
-            </template>
-          </bk-date-picker>
+            ref="datePickerRef"
+            type="datetimerange"
+            style="width: 320px;"
+            v-model="dateTimeRange"
+            :placeholder="t('选择日期时间范围')"
+            :shortcuts="AccessLogStore.datepickerShortcuts"
+            :shortcut-close="true"
+            :use-shortcut-text="true"
+            :clearable="false"
+            :shortcut-selected-index="shortcutSelectedIndex"
+            @shortcut-change="handleShortcutChange"
+            @pick-success="handleTimeChange"
+          />
         </bk-form-item>
         <bk-form-item :label="t('环境')">
           <bk-select
@@ -37,26 +40,38 @@
     <div v-bkloading="{ isLoading: !isPageLoading && isDataLoading }">
       <div class="chart">
         <div class="chart-container">
-          <div class="chart-title"> {{ t('请求数') }} </div>
-          <div v-show="isShowChart" class="chart-el" ref="chartContainer"></div>
+          <div class="chart-title"> {{ t('请求数') }}</div>
+          <div v-show="isShowChart" ref="chartContainer" class="chart-el"></div>
           <div v-show="!isShowChart && !isPageLoading" class="no-data-chart">
             <slot name="empty">
-              <table-empty
-                :keyword="tableEmptyConf.keyword" :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="getSearchData" @clear-filter="clearFilterKey" />
+              <TableEmpty
+                :keyword="tableEmptyConf.keyword"
+                :abnormal="tableEmptyConf.isAbnormal"
+                @reacquire="getSearchData"
+                @clear-filter="clearFilterKey"
+              />
             </slot>
           </div>
         </div>
       </div>
       <div class="list">
         <bk-table
-          ref="tableRef" :data="table.list" :size="'small'" :pagination="pagination"
-          :row-style="{ cursor: 'pointer' }" :row-class-name="getRowClassName" @row-click="handleRowClick"
-          @page-change="handlePageChange" @page-limit-change="handlePageLimitChange">
+          ref="tableRef"
+          :data="table.list"
+          :size="'small'"
+          :pagination="pagination"
+          :row-style="{ cursor: 'pointer' }"
+          :row-class-name="getRowClassName"
+          @row-click="handleRowClick"
+          @page-change="handlePageChange"
+          @page-limit-change="handlePageLimitChange">
           <template #empty>
-            <table-empty
-              :keyword="tableEmptyConf.keyword" :abnormal="tableEmptyConf.isAbnormal"
-              @reacquire="getSearchData" @clear-filter="clearFilterKey" />
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getSearchData"
+              @clear-filter="clearFilterKey"
+            />
           </template>
           <bk-table-column type="expand" width="30" align="center">
             <template #default="{ row }">
@@ -71,17 +86,23 @@
                   </dt>
                   <!-- <dd class="value">{{ row[field] | formatValue(null, field) }}</dd> -->
                 </div>
-                <bk-button class="share-btn" theme="primary" outline @click="copy(row)" :loading="isShareLoading"> {{
-                  t('复制分享链接') }} </bk-button>
+                <bk-button class="share-btn" theme="primary" outline @click="copy(row)" :loading="isShareLoading">
+                  {{ t('复制分享链接') }}
+                </bk-button>
               </dl>
             </template>
           </bk-table-column>
           <template v-if="table.headers.length">
             <bk-table-column
               v-for="({ field, label, width, formatter }, index) in table.headers"
-              :show-overflow-tooltip="true" :key="index" :width="width" :formatter="formatter" :label="label"
-              :class-name="field" :prop="field">
-            </bk-table-column>
+              :show-overflow-tooltip="true"
+              :key="index"
+              :width="width"
+              :formatter="formatter"
+              :label="label"
+              :class-name="field"
+              :prop="field"
+            />
           </template>
           <template v-else>
             <bk-table-column label="" />
@@ -121,13 +142,13 @@
 <script lang="ts" setup>
 import dayjs from 'dayjs';
 import i18n from '@/language/i18n';
-import { merge } from 'lodash';
-import { ref, nextTick, watch, onMounted, computed } from 'vue';
-// import { merge } from 'lodash';
+import SearchInput from './components/search-input.vue';
+import TableEmpty from '@/components/table-empty.vue';
 import echarts from 'echarts';
 import 'echarts/lib/chart/bar';
 import 'echarts/lib/component/tooltip';
-import SearchInput from './components/search-input.vue';
+import { ref, nextTick, watch, onMounted, computed } from 'vue';
+import { merge } from 'lodash';
 // import { bus } from '@/common/bus';
 import { copy } from '@/common/util';
 import { SearchParamsInterface } from './common/type';
@@ -151,6 +172,7 @@ const route = useRoute();
 const AccessLogStore = useAccessLog();
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
+console.log(AccessLogStore, 555);
 
 const chartInstance = ref(null);
 const chartContainer = ref(null);
@@ -186,7 +208,7 @@ const table = ref({
 const searchUsage = ref({
   showed: false,
   config: {
-    // allowHtml: true,
+    allowHtml: true,
     trigger: 'click',
     theme: 'light',
     content: '#access-log-search-usage-content',
@@ -203,6 +225,7 @@ const chartData: any = ref({});
 const stageList = ref([]);
 
 const isShowChart = computed(() => {
+  console.log(chartData.value, 555);
   return chartData.value?.series?.length;
 });
 
@@ -342,7 +365,7 @@ const setTableHeader = () => {
 
 const getApigwStages = async () => {
   const pageParams = {
-    // no_page: true,
+    no_page: true,
     order_by: 'name',
   };
   try {
@@ -370,18 +393,15 @@ const getApigwAccessLogChart = () => {
   const params = {
     ...searchParams.value,
     query: keyword.value,
-    // no_page: true,
+    no_page: true,
   };
-  console.log(params);
   fetchApigwAccessLogChart(apigwId.value, params);
 };
 
 const getSearchData = async () => {
   isDataLoading.value = true;
-  console.log(222);
   try {
     setSearchTimeRange();
-    console.log(222);
     const [listRes, chartRes]: any = await Promise.all([getApigwAccessLogList(), getApigwAccessLogChart()]);
     chartData.value = chartRes?.data;
     renderChart(chartData.value);
@@ -403,7 +423,6 @@ const getSearchData = async () => {
   } finally {
     isPageLoading.value = false;
     isDataLoading.value = false;
-    // this.$store.commit('setMainContentLoading', false);
     setTableHeader();
   }
 };
@@ -484,8 +503,8 @@ const chartResize = () => {
 };
 
 const initChart = () => {
-  console.log(555555555);
   chartInstance.value = echarts.init(chartContainer.value);
+  console.log(chartInstance.value, 5555);
   window.addEventListener('resize', chartResize);
 };
 
