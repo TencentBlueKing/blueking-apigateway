@@ -1,6 +1,6 @@
 <template>
   <div class="basic-info-wrapper">
-    <bk-alert v-if="!basicInfoData.status" theme="warning" :title="`${t('前网关已停用，如需使用，请先启用')}`" class="mb15" />
+    <bk-alert v-if="!basicInfoData.status" theme="warning" :title="`${t('当前网关已停用，如需使用，请先启用')}`" class="mb15" />
     <bk-loading :loading="basicInfoDetailLoading">
       <section class="header-info">
         <div
@@ -32,24 +32,34 @@
             <GateWaysEditTextarea
               field="description"
               width="600px"
+              :placeholder="t('请输入描述')"
               :content="basicInfoData.description"
               @on-change="handleDescriptionChange" />
           </div>
           <div class="header-info-button">
+            <bk-button @click="handleOperate('edit')" class="mr10">
+              {{ t('编辑') }}
+            </bk-button>
             <div>
-              <bk-button v-if="basicInfoData.status > 0" @click="handleOperate('enable')" class="mr10">
+              <bk-button
+                v-if="basicInfoData.status > 0" @click="handleOperate('enable')"
+                theme="default"
+                class="deactivate-btn mr10"
+              >
                 {{ t('停用') }}
               </bk-button>
               <bk-button v-else theme="primary" @click="handleOperate('deactivate')" class="mr10">
                 {{ t('立即启用') }}
               </bk-button>
             </div>
-            <bk-button @click="handleOperate('edit')" class="mr10">
-              {{ t('编辑') }}
-            </bk-button>
-            <bk-button :disabled="basicInfoData.status > 0" @click="handleOperate('delete')">
-              {{ t('删除') }}
-            </bk-button>
+            <template v-if="basicInfoData.status > 0">
+              <bk-popover :content="$t('请先停用才可删除')">
+                <bk-button theme="default" class="mr5" :disabled="basicInfoData.status > 0"> {{ t('删除') }} </bk-button>
+              </bk-popover>
+            </template>
+            <template v-else>
+              <bk-button theme="default" @click="handleOperate('delete')"> {{ t('删除') }} </bk-button>
+            </template>
           </div>
         </div>
       </section>
@@ -60,7 +70,7 @@
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('是否公开')}：` }}</div>
               <div class="value">
-                <bk-switcher v-model="basicInfoData.is_public" theme="primary" />
+                <bk-switcher v-model="basicInfoData.is_public" theme="primary" @change="handleChangePublic" />
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -187,14 +197,13 @@
         >
           <bk-input
             v-model="basicInfoDetailData.name"
+            :maxlength="30"
             :disabled="true"
-            :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
-            clearable
+            :placeholder="t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
           />
-          <p>
-            <span>  <i class="apigateway-icon icon-ag-info" /></span>
+          <div class="gateways-name-tip">
             <span>{{ t(' 网关唯一标识，创建后不可修改') }}</span>
-          </p>
+          </div>
         </bk-form-item>
         <bk-form-item
           :label="t('维护人员')"
@@ -215,7 +224,9 @@
           <bk-input
             type="textarea"
             v-model="basicInfoDetailData.description"
-            placeholder="请输入"
+            :placeholder="t('请输入网关描述')"
+            :maxlength="500"
+            :rows="5"
             clearable
           />
         </bk-form-item>
@@ -302,7 +313,7 @@ const basicInfoData = ref<BasicInfoParams>({
   public_key: '',
   maintainers: [],
   developers: [],
-  is_public: false,
+  is_public: true,
   is_official: false,
 });
 const basicInfoDetailData = ref(_.cloneDeep(basicInfoData.value));
@@ -359,8 +370,9 @@ const  handleDeleteApigw = async () => {
       theme: 'success',
       message: t('删除成功'),
     });
+    delApigwDialog.value.isShow = false;
     router.push({
-      name: 'Home',
+      name: 'home',
     });
   } catch (e) {
     console.error(e);
@@ -383,6 +395,15 @@ const handleConfirmEdit = async () => {
   } finally {
     dialogEditData.value.loading = false;
   }
+};
+
+const handleChangePublic = async (value: boolean) => {
+  basicInfoData.value.is_public = value;
+  await editGateWays(apigwId.value, basicInfoData.value);
+  Message({
+    message: t('更新成功'),
+    theme: 'success',
+  });
 };
 
 const handleOperate = async (type: string) => {
@@ -543,6 +564,14 @@ watch(
       }
       .header-info-button {
         display: flex;
+
+        .deactivate-btn {
+          &:hover {
+            background-color: #ff5656;
+            border-color: #ff5656;
+            color: #ffffff;
+          }
+        }
       }
     }
   }
@@ -646,5 +675,20 @@ watch(
       }
     }
   }
+}
+
+.gateways-name-tip {
+  color: #979BA5;
+  font-size: 14px;
+}
+</style>
+
+<style>
+.gateway-del-tips {
+  color: #c7254e;
+  padding: 3px 4px;
+  margin: 0;
+  background-color: rgba(0,0,0,.04);
+  border-radius: 3px;
 }
 </style>
