@@ -20,16 +20,10 @@
       <div class="log-details-main">
         <div class="main-process">
           <div>
-            <bk-steps
-              direction="vertical"
-              size="small"
-              theme="success"
-              ext-cls="logs-steps"
-              :controllable="state.controllable"
-              :cur-step="state.curStep"
-              :steps="state.objectSteps"
+            <bk-timeline
               class="mb20"
-              @click="stepChanged"
+              :list="state.objectSteps"
+              @select="handleTimelineChange"
             />
           </div>
         </div>
@@ -66,17 +60,24 @@ const logCodeViewer: any = ref<InstanceType<typeof editorMonaco>>();
 const logDetails = ref<any>();
 const state = reactive({
   objectSteps: [],
-  curStep: 1,
-  controllable: true,
 });
 const logBody = ref<string>('');
 
 let timeId: any = null;
 
 // 改变当前选中值
-const stepChanged = (index: number) => {
-  // state.curStep = index;
-  logBody.value = state.objectSteps[index - 1]?.detail?.start_time || '';
+const handleTimelineChange = (data: any) => {
+  const { tag } = data.tag;
+  let detail: any = {};
+  for (let i = 0; i < state.objectSteps?.length; i++) {
+    const item = state.objectSteps[i];
+    if (item?.tag === tag) {
+      detail = item?.detail || {};
+      break;
+    }
+  }
+
+  logBody.value = detail?.start_time || '';
 };
 
 // 获取日志列表
@@ -93,39 +94,50 @@ const getLogsList = async () => {
       if (res?.events[index + 1]?.created_time) {
         const date1 = dayjs(res?.events[index + 1]?.created_time);
         const date2 = dayjs(item?.created_time);
-        item.description = `${dayjs(date1.diff(date2)).format('sS')}`;
+        item.content = `<span style="font-size: 12px;">${dayjs(date1.diff(date2)).format('sS')}</span>`;
       }
 
       if (index === res?.events?.length - 1) {
-        item.curStep = true;
+        item.color = 'blue';
       }
     });
 
     // 整理步骤
     const steps: any = [];
     res?.events_template?.forEach((item: any, index: number) => {
-      item.status = item.status === 'doing' ? 'loading' : item.status === 'failure' ? 'error' : item.status;
-      steps[index] = [{ ...item, title: item.description, description: '', isFirst: true }];
+      item.size = 'large';
+      const subStep = res?.events[res?.events?.length - 1]?.step || 0;
+      if (item?.step < subStep) {
+        item.color = 'green';
+        item.filled = true;
+      } else if (item?.step === subStep) {
+        item.color = res?.status === 'success' ? 'green' : 'blue';
+        item.filled = res?.status === 'success';
+      }
+
+      steps[index] = [{ ...item, tag: item.description, content: '' }];
 
       res?.events?.forEach((subItem: any) => {
         if (item?.step === subItem?.step) {
-          subItem.status = subItem.status === 'doing' ? 'loading' : subItem.status === 'failure' ? 'error' : subItem.status;
-          steps[index]?.push({ ...subItem, title: subItem.name });
+          if (subItem.status === 'doing') {
+            subItem.color = 'blue';
+          } else if (subItem.status === 'failure') {
+            subItem.color = 'red';
+          } else if (subItem.status === 'success') {
+            subItem.color = 'green';
+            subItem.filled = true;
+          }
+
+          steps[index]?.push({
+            ...subItem,
+            tag: subItem.name,
+          });
         }
       });
     });
 
     state.objectSteps = steps?.flat();
-    // 是否为正在进行的节点
-    state.objectSteps?.forEach((item: any, index: number) => {
-      if (item?.curStep) {
-        state.curStep = index + 1;
-        if (res?.status === 'success') {
-          state.curStep = index + 2;
-        }
-      }
-    });
-    logBody.value = state.objectSteps[state.curStep - 1]?.detail?.start_time || '';
+    logBody.value = res?.events[res?.events?.length - 1]?.detail?.start_time || '';
   } catch (e) {
     console.log(e);
   }
@@ -201,35 +213,6 @@ defineExpose({
   .main-encoding {
     flex: 1;
     height: 100%;
-  }
-}
-</style>
-
-<style lang="scss">
-.logs-steps.bk-steps {
-  .bk-step {
-    display: flex;
-    margin-bottom: 0;
-    padding-bottom: 18px;
-    .bk-step-content {
-      display: flex;
-      flex: 1;
-      align-items: center;
-      justify-content: space-between;
-    }
-    &:last-child:after {
-      height: 0;
-    }
-    .bk-step-indicator {
-      >span {
-        display: none;
-      }
-    }
-  }
-  .bk-step:after {
-    z-index: 999;
-    top: 22px;
-    height: 18px;
   }
 }
 </style>
