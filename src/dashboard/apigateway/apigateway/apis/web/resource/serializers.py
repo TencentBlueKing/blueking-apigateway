@@ -152,7 +152,7 @@ class HttpBackendConfigSLZ(serializers.Serializer):
     timeout = serializers.IntegerField(
         max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, required=False, help_text="超时时间"
     )
-    # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
+    # 1.13 版本：兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
     legacy_upstreams = LegacyUpstreamsSLZ(
         allow_null=True, required=False, help_text="旧版 upstreams，管理端不需要处理"
     )
