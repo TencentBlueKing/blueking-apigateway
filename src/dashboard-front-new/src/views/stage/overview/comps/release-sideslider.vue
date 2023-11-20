@@ -1,106 +1,172 @@
 <template>
   <div class="release-sideslider">
-    <bk-sideslider
-      v-model:isShow="isShow"
-      :width="1050"
-      title="发布资源至环境"
-      quick-close
-    >
+    <bk-sideslider v-model:isShow="isShow" :width="1050" :title="`发布资源至环境【${currentAssets.name}】`" quick-close>
       <template #default>
         <div class="sideslider-content">
           <div class="top-steps">
             <bk-steps
-              :controllable="stepsConfig.controllable"
-              :cur-step="stepsConfig.curStep"
-              :steps="stepsConfig.objectSteps"
-            />
+              :controllable="stepsConfig.controllable" :cur-step="stepsConfig.curStep"
+              :steps="stepsConfig.objectSteps" />
           </div>
-          <div class="main">
+          <div>
             <template v-if="stepsConfig.curStep === 1">
-              <bk-alert
-                theme="info"
-                title="当前版本号"
-                class="mt15 mb15"
-                closable
-              />
-              <bk-form
-                class="example"
-                form-type="vertical"
-              >
-                <bk-form-item label="发布的资源版本">
-                  <bk-input
-                    placeholder="请输入"
-                    clearable
-                  />
-                  <p slot="tip">
-                    新增
-                    <span class="add">1</span>
-                    个，更新
-                    <span class="update">1</span>
-                    个， 删除
-                    <span class="delete">3</span>
-                    个
-                  </p>
-                </bk-form-item>
-                <bk-form-item label="版本日志">
-                  <bk-input
-                    v-model="versionLog"
-                    type="textarea"
-                    :rows="4"
-                    :maxlength="100"
-                  />
-                </bk-form-item>
-              </bk-form>
+              <div class="main">
+                <bk-alert
+                  theme="info"
+                  :title="$t('尚未发布')"
+                  v-if="currentAssets.release.status === 'unreleased'"
+                  class="mt15 mb15" closable />
+                <bk-alert
+                  v-else
+                  theme="info"
+                  :title="`当前版本号: ${currentAssets.resource_version.version || '--'}, 于${currentAssets.release.created_time || '--'}发布成功; 资源发布成功后, 需发布到指定的环, 方可生效`"
+                  class="mt15 mb15" closable />
+
+                <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
+                  <bk-form-item property="resource_version_id" :label="`发布的资源版本(当前版本: ${currentAssets.resource_version.version})`">
+                    <bk-select
+                      v-model="formData.resource_version_id"
+                      :input-search="false"
+                      filterable
+                      @change="handleVersionChange"
+                    >
+                      <bk-option
+                        v-for="(item) in versionList"
+                        :key="item.id"
+                        :value="item.id"
+                        :label="item.version"
+                        :disabled="item.disabled"
+                      >
+                      </bk-option>
+                    </bk-select>
+                    <p>
+                      <span>
+                        {{ $t("新增") }}
+                        <strong class="ag-strong success">{{ diffData.add.length }}</strong>
+                        {{ $t("个资源") }}，
+                      </span>
+                      <span>
+                        {{ $t("更新") }}
+                        <strong class="ag-strong warning">{{ diffData.update.length }}</strong>
+                        {{ $t("个资源") }}，
+                      </span>
+                      <span>
+                        {{ $t("删除") }}
+                        <strong class="ag-strong danger">{{ diffData.delete.length }}</strong>
+                        {{ $t("个资源") }}
+                      </span>
+                    </p>
+                  </bk-form-item>
+                  <bk-form-item property="comment" :label="$t('版本日志')">
+                    <bk-input v-model="formData.comment" type="textarea" :rows="4" :maxlength="100" />
+                  </bk-form-item>
+                </bk-form>
+              </div>
             </template>
             <template v-else>
-                对比
+              <div class="resource-diff-main">
+                <version-diff
+                  ref="diffRef"
+                  :source-id="currentAssets.resource_version.id"
+                  :target-id="formData.resource_version_id"
+                  :source-switch="false"
+                  :target-switch="false"
+                >
+                </version-diff>
+              </div>
             </template>
-            <div class="operate">
-              <bk-button
-                v-if="stepsConfig.curStep === 1"
-                theme="primary"
-                style="width: 100px"
-                @click="handleNext"
-              >
-                下一步
+            <div :class="stepsConfig.curStep === 1 ? 'operate1' : 'operate2'">
+              <bk-button v-if="stepsConfig.curStep === 1" theme="primary" style="width: 100px" @click="handleNext">
+                {{ $t('下一步') }}
               </bk-button>
               <template v-else-if="stepsConfig.curStep === 2">
-                <bk-button
-                  theme="primary"
-                  style="width: 100px"
-                >
-                  确认发布
+                <bk-button theme="primary" style="width: 100px" @click="showPublishDia">
+                  {{ $t('确认发布') }}
                 </bk-button>
-                <bk-button
-                  class="ml10"
-                  style="width: 100px"
-                  @click="handleBack"
-                >
-                  上一步
+                <bk-button class="ml10" style="width: 100px" @click="handleBack">
+                  {{ $t('上一步') }}
                 </bk-button>
               </template>
-              <bk-button
-                class="ml10"
-                style="width: 100px"
-                @click="handleCancel"
-              >
-                取消
+              <bk-button class="ml10" style="width: 100px" @click="handleCancel">
+                {{ $t('取消') }}
               </bk-button>
             </div>
           </div>
         </div>
       </template>
     </bk-sideslider>
+
+    <!-- 确认发布弹窗 -->
+    <bk-dialog
+      :is-show="dialogConfig.isShow"
+      :title="dialogConfig.title"
+      :is-loading="dialogConfig.loading"
+      :theme="'primary'"
+      quick-close
+      @closed="() => (dialogConfig.isShow = false)"
+      @confirm="handlePublish"
+    >
+      将发布资源 {{ resourceVersion }} 版本至【{{ currentAssets.name }}】环境
+    </bk-dialog>
+
+    <!-- 日志弹窗 -->
+    <log-details ref="logDetailsRef" :history-id="publishId" @release-success="emit('release-success')"></log-details>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { IDialog } from '@/types';
+import { useI18n } from 'vue-i18n';
+import { ref, reactive, watch, computed } from 'vue';
+import { getResourceVersionsList, resourceVersionsDiff, createReleases } from '@/http';
+import { useRoute } from 'vue-router';
+import versionDiff from '@/components/version-diff';
+import logDetails from '@/components/log-details/index.vue';
+
+const route = useRoute();
+const apigwId = +route.params.id;
+
+const { t } = useI18n();
+
+const props = defineProps({
+  currentAssets: {
+    type: Object,
+    default: () => ({}),
+  },
+});
+
+const emit = defineEmits<(e: 'release-success') => void>();
+
+const resourceVersion = computed(() => {
+  let version = '';
+  versionList.value?.forEach((item: any) => {
+    if (item.id === formData.resource_version_id) {
+      version = item.version;
+    }
+  });
+  return version;
+});
 
 const isShow = ref(false);
+const versionList = ref<any>([]);
+const formRef = ref(null);
+const logDetailsRef = ref(null);
 
-// 版本日志
-const versionLog = ref('');
+interface FormData {
+  resource_version_id: number | undefined;
+  comment: string;
+};
+// 提交数据
+const formData = reactive<FormData>({
+  resource_version_id: undefined,
+  comment: '',
+});
+// 差异数据
+const diffData = ref({
+  add: [],
+  delete: [],
+  update: [],
+});
 
 const stepsConfig = ref({
   objectSteps: [{ title: '发布信息' }, { title: '差异确认' }],
@@ -108,13 +174,91 @@ const stepsConfig = ref({
   controllable: true,
 });
 
+const dialogConfig: IDialog = reactive({
+  isShow: false,
+  title: t('确认发布资源?'),
+  loading: false,
+});
+
+const rules = {
+  resource_version_id: [
+    {
+      required: true,
+      message: '请选择',
+      trigger: 'change',
+    },
+  ],
+};
+
+const showPublishDia = () => {
+  dialogConfig.isShow = true;
+};
+
+const publishId = ref();
+const handlePublish = async () => {
+  try {
+    const params = {
+      stage_id: props.currentAssets.id,
+      ...formData,
+    };
+    const res = await createReleases(apigwId, params);
+
+    publishId.value = res?.id;
+    isShow.value = false;
+    dialogConfig.isShow = false;
+    logDetailsRef.value.showSideslider();
+  } catch (e) {
+    console.log(e);
+  }
+};
+
 // 显示侧边栏
 const showReleaseSideslider = () => {
   isShow.value = true;
 };
 
+// 获取资源版本列表
+const getResourceVersions = async () => {
+  try {
+    const res = await getResourceVersionsList(apigwId, { offset: 0, limit: 1000 });
+    res.results?.forEach((item: any) => {
+      if (item.id === props.currentAssets?.resource_version?.id) {
+        item.disabled = true;
+      }
+    });
+    versionList.value = res.results;
+  } catch (e) {
+    console.log(e);
+  };
+};
+
+const handleVersionChange = async (val: number) => {
+  if (!val) {
+    diffData.value = {
+      add: [],
+      delete: [],
+      update: [],
+    };
+    return;
+  };
+
+  try {
+    const query = {
+      source_resource_version_id: props.currentAssets?.resource_version?.id,
+      target_resource_version_id: val,
+    };
+
+    const res: any = await resourceVersionsDiff(apigwId, query);
+
+    diffData.value = res;
+  } catch (e) {
+    console.log(e);
+  };
+};
+
 // 下一步
-const handleNext = () => {
+const handleNext = async () => {
+  await formRef.value?.validate();
   stepsConfig.value.curStep = 2;
 };
 
@@ -128,6 +272,24 @@ const handleCancel = () => {
   isShow.value = false;
 };
 
+watch(
+  () => isShow.value,
+  (val) => {
+    if (val) {
+      getResourceVersions();
+    } else {
+      stepsConfig.value.curStep = 1;
+      formData.resource_version_id = undefined;
+      formData.comment = '';
+      diffData.value = {
+        add: [],
+        delete: [],
+        update: [],
+      };
+    };
+  },
+);
+
 defineExpose({
   showReleaseSideslider,
 });
@@ -136,23 +298,37 @@ defineExpose({
 <style lang="scss" scoped>
 .sideslider-content {
   width: 100%;
+
   .top-steps {
     width: 100%;
     padding: 16px 300px;
     border-bottom: 1px solid #dcdee5;
   }
+
   .main {
-    padding: 0 80px;
+    padding: 0 100px;
 
     .add {
       color: #34d97b;
     }
+
     .update {
       color: #ffb400;
     }
+
     .delete {
       color: #ff5656;
     }
+  }
+
+  .resource-diff-main {
+    padding: 18px 24px 24px;
+  }
+  .operate1 {
+    padding: 0px 100px 24px;
+  }
+  .operate2 {
+    padding: 0px 24px 24px;
   }
 }
 </style>

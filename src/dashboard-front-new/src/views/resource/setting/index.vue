@@ -1,8 +1,9 @@
 <template>
   <div class="resource-container p20">
     <bk-alert
+      v-if="versionConfigs.needNewVersion"
       theme="warning"
-      title="资源如有更新，需要“生成版本”并“发布到环境”才能生效"
+      :title="versionConfigs.versionMessage"
     />
     <div class="operate flex-row justify-content-between mt10 mb10">
       <div class="flex-1 flex-row align-items-center">
@@ -27,6 +28,13 @@
           :text="t('导出')"
           :dropdown-list="exportDropData"
           @on-change="handleExport"></ag-dropdown>
+        <div class="mr10">
+          <bk-button
+            @click="handleCreateResourceVersion"
+          >
+            {{ t('生成版本') }}
+          </bk-button>
+        </div>
       </div>
       <div class="flex-1 flex-row justify-content-end">
         <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input>
@@ -120,10 +128,51 @@
               v-if="!isDetail"
             >
               <template #default="{ data }">
-                <section v-if="data?.labels.length">
-                  <bk-tag v-for="item in data?.labels" :key="item.id">{{ item.name }}</bk-tag>
+                <section class="text-warp" v-if="!data?.isEditLabel" @click="handleEditLabel(data)">
+                  <section
+                    v-if="data?.labels.length"
+                    v-bk-tooltips="{ content: data?.labelText.join(';') }">
+                    <span v-for="(item, index) in data?.labels" :key="item.id">
+                      <bk-tag @click="handleEditLabel(data)" v-if="index < data.tagOrder">{{ item.name }}</bk-tag>
+                    </span>
+                    <bk-tag v-if="data.labels.length > data.tagOrder">
+                      +{{ data.labels.length - data.tagOrder }}
+                      <!-- ... -->
+                    </bk-tag>
+                    <i
+                      v-show="data?.isDoc"
+                      @click="handleEditLabel(data)"
+                      class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
+                  </section>
+                  <section v-else>--</section>
                 </section>
-                <section v-else>--</section>
+                <section v-else>
+                  <bk-select
+                    style="width: 235px;"
+                    class="select-wrapper mt5"
+                    filterable
+                    multiple
+                    multiple-mode="tag"
+                    ref="multiSelect"
+                    v-model="curLabelIds"
+                    @change="changeSelect">
+
+                    <bk-option v-for="option in labelsData" :key="option.id" :id="option.id" :name="option.name">
+                      <template #default>
+                        <div
+                          v-bk-tooltips="{
+                            content: $t('标签最多只能选择10个'),
+                            disabled: !(!curLabelIds.includes(option.id) && curLabelIds.length >= 10) }"
+                          :disabled="!curLabelIds.includes(option.id) && curLabelIds.length >= 10"
+                          class="flex-row align-items-center">
+                          <bk-checkbox
+                            class="mr5" v-model="option.isChecked" />
+                          {{ option.name }}
+                        </div>
+                      </template>
+                    </bk-option>
+                  </bk-select>
+                </section>
               </template>
             </bk-table-column>
             <bk-table-column
@@ -305,27 +354,32 @@
       ext-cls="doc-sideslider-cls">
       <template #default>
         <ResourcesDoc
-          :cur-resource="curResource" @fetch="getList" @on-update="handleUpdateTitle"></ResourcesDoc>
+          :cur-resource="curResource" @fetch="handleSuccess" @on-update="handleUpdateTitle"></ResourcesDoc>
       </template>
     </bk-sideslider>
+    <!-- 生成版本 -->
+    <version-sideslider ref="versionSidesliderRef" />
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue';
+import { reactive, ref, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
 import {
   getResourceListData, deleteResources,
   batchDeleteResources, batchEditResources,
-  exportResources, exportDocs,
+  exportResources, exportDocs, checkNeedNewVersion,
+  getGatewayLabels,
 } from '@/http';
 import { Message } from 'bkui-vue';
-import agDropdown from '@/components/ag-dropdown.vue';
 import Detail from './detail.vue';
+import VersionSideslider from './comps/version-sideslider.vue';
+import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
 import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
+import { cloneDeep } from 'lodash';
 const props = defineProps({
   apigwId: {
     type: Number,
@@ -363,6 +417,8 @@ const router = useRouter();
 
 const filterData = ref({ query: '' });
 
+// ref
+const versionSidesliderRef = ref(null);
 // 导出参数
 const exportParams: IexportParams = reactive({
   export_type: '',
@@ -380,11 +436,21 @@ const isShowLeft = ref(true);
 // 当前点击资源ID
 const resourceId = ref(0);
 
+// 当前点击的资源
 const curResource: any = ref({});
 
 const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
+
+// 标签数据
+const labelsData = ref<any[]>([]);
+
+// 当前点击行的选中的标签
+const curLabelIds = ref<number[]>([]);
+
+// 当前点击行的选中的标签备份
+const curLabelIdsbackUp = ref<number[]>([]);
 
 // 文档侧边栏数据
 const docSliderConf: any = reactive({
@@ -408,6 +474,12 @@ const exportDialogConfig: IexportDialog = reactive({
   title: t('请选择导出的格式'),
   loading: false,
   exportFileDocType: 'resource',
+});
+
+// 是否需要alert信息栏
+const versionConfigs = reactive({
+  needNewVersion: false,
+  versionMessage: '',
 });
 
 const batchEditData = ref({
@@ -592,7 +664,7 @@ const handleMouseEnter = (e: any, row: any) => {
     row.isDoc = true;
     // data.isRowHover = true
     // data.isAddLabel = true
-    console.log('row', row);
+    // console.log('row', row);
   }, 100);
 };
 
@@ -602,7 +674,7 @@ const handleMouseLeave = (e: any, row: any) => {
     row.isDoc = false;
     // data.isRowHover = true
     // data.isAddLabel = true
-    console.log('row', row);
+    // console.log('row', row);
   }, 100);
 };
 
@@ -625,6 +697,61 @@ const handleUpdateTitle = (type: string, isUpdate?: boolean) => {
   }
 };
 
+// 处理保存成功 删除成功 重新请求列表
+const handleSuccess = () => {
+  getList();
+  handleShowVersion();
+};
+
+// 获取资源是否需要发版本更新
+const handleShowVersion = async () => {
+  try {
+    const res = await checkNeedNewVersion(props.apigwId);
+    versionConfigs.needNewVersion = res.need_new_version;
+    versionConfigs.versionMessage = res.msg;
+  } catch (error: any) {
+    versionConfigs.needNewVersion = false;
+    versionConfigs.versionMessage = error.msg;
+  }
+};
+
+// 处理标签点击
+const handleEditLabel = (data: any) => {
+  tableData.value.forEach((item) => {
+    item.isEditLabel = false;
+  });
+  curLabelIds.value = data.labels.map((item: any) => item.id);
+  curLabelIdsbackUp.value = cloneDeep(curLabelIds.value);
+  // 设置checkbox是否选中
+  setCheckBoxStatus(curLabelIds.value);
+  data.isEditLabel = true;
+};
+
+// 生成版本功能
+const handleCreateResourceVersion = () => {
+  versionSidesliderRef.value.showReleaseSideslider();
+};
+
+// 获取标签数据
+const getLabelsData = async () => {
+  const res = await getGatewayLabels(props.apigwId);
+  res.forEach((e: any) => e.isChecked = false);
+  labelsData.value = res;
+};
+
+const changeSelect = (v: number[]) => {
+  // 设置checkbox是否选中
+  setCheckBoxStatus(v);
+  console.log('curLabelIds.value', curLabelIds.value);
+};
+
+// 设置checkbox是否选中
+const setCheckBoxStatus = (checkedIds: number[]) => {
+  labelsData.value.forEach((e) => {
+    e.isChecked = !!checkedIds.includes(e.id);
+  });
+};
+
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
 watch(
   () => tableData.value,
@@ -632,6 +759,14 @@ watch(
     if (v.length) {
       resourceId.value = v[0].id;
     }
+    // 设置显示的tag值
+    tableData.value.forEach((item: any) => {
+      item.tagOrder = '3';
+      item.labelText = item.labels.map((label: any) => {
+        return label.name;
+      });
+      item.isEditLabel = false;
+    });
   },
   { immediate: true },
 );
@@ -662,6 +797,11 @@ watch(
   },
   { immediate: true, deep: true },
 );
+
+onMounted(() => {
+  handleShowVersion();
+  getLabelsData();
+});
 </script>
 <style lang="scss" scoped>
 .resource-container{
@@ -718,6 +858,19 @@ watch(
         &:hover {
           color: #3A84FF;
           background: #E1ECFF;
+        }
+      }
+
+      .text-warp{
+        position: relative;
+        cursor: pointer;
+        .edit-icon{
+          position: absolute;
+          font-size: 24px;
+          cursor: pointer;
+          color: #3A84FF;
+          top: 8px;
+          right: -20px;
         }
       }
     }

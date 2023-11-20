@@ -106,7 +106,7 @@
               </bk-option>
             </bk-select>
             <strong class="title" v-else
-            >{{ sourceVersion.title }} ({{ sourceVersion.name }})</strong
+            >{{ sourceVersion.version }} ({{ sourceVersion.comment }})</strong
             >
           </div>
         </div>
@@ -133,7 +133,7 @@
               </bk-option>
             </bk-select>
             <strong class="title" v-else
-            >{{ targetVersion.title }} ({{ targetVersion.name }})</strong
+            >{{ targetVersion.version }} ({{ targetVersion.comment }})</strong
             >
           </div>
           <div class="marked">{{ $t("目标版本") }}</div>
@@ -148,11 +148,11 @@
       </div>
 
       <div class="diff-main">
-        <bk-loading :loading="isDataLoading" color="#ffffff" opacity="1" :z-index="1000" style="min-height: 300px;">
+        <bk-loading :loading="isDataLoading" color="#ffffff" opacity="1" :z-index="1000" class="diff-loading">
           <!-- 新增 -->
           <div
             class="diff-item"
-            v-for="addItem of diffData.add"
+            v-for="addItem in diffData.add"
             :key="addItem.id"
           >
             <template v-if="checkMatch(addItem, 'add')">
@@ -169,16 +169,16 @@
                   >
                 </div>
                 <div class="resource-box pl15 pr15">
-                  <bk-transition :name="animation">
-                    <bk-exception
-                      class="exception-part"
-                      type="empty"
-                      scene="part"
-                      v-show="addItem.isExpanded"
-                    >
-                      {{ $t("此版本无该资源") }}
-                    </bk-exception>
-                  </bk-transition>
+                  <!-- <bk-transition :name="animation"> -->
+                  <bk-exception
+                    class="exception-part"
+                    type="empty"
+                    scene="part"
+                    v-show="addItem.isExpanded"
+                  >
+                    {{ $t("此版本无该资源") }}
+                  </bk-exception>
+                  <!-- </bk-transition> -->
                 </div>
               </div>
               <div class="target-box">
@@ -193,15 +193,16 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(addItem)"
+                    :title="`【${addItem?.method}】${addItem?.path}`"
                   ></span>
                 </div>
                 <div class="resource-box pl15 pr15">
-                  <bk-transition :name="animation">
-                    <resource-detail
-                      :cur-resource="addItem"
-                      v-show="addItem.isExpanded"
-                    ></resource-detail>
-                  </bk-transition>
+                  <!-- <bk-transition :name="animation"> -->
+                  <resource-detail
+                    :cur-resource="addItem"
+                    v-show="addItem.isExpanded"
+                  ></resource-detail>
+                  <!-- </bk-transition> -->
                 </div>
               </div>
             </template>
@@ -210,7 +211,7 @@
           <!-- 删除 -->
           <div
             class="diff-item"
-            v-for="deleteItem of diffData.delete"
+            v-for="deleteItem in diffData.delete"
             :key="deleteItem.id"
           >
             <template v-if="checkMatch(deleteItem, 'delete')">
@@ -226,15 +227,16 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(deleteItem)"
+                    :title="`【${deleteItem?.method}】${deleteItem?.path}`"
                   ></span>
                 </div>
                 <div class="resource-box pl15 pr15">
-                  <bk-transition :name="animation">
-                    <resource-detail
-                      :cur-resource="deleteItem"
-                      v-show="deleteItem.isExpanded"
-                    ></resource-detail>
-                  </bk-transition>
+                  <!-- <bk-transition :name="animation"> -->
+                  <resource-detail
+                    :cur-resource="deleteItem"
+                    v-show="deleteItem.isExpanded"
+                  ></resource-detail>
+                  <!-- </bk-transition> -->
                 </div>
               </div>
               <div class="target-box">
@@ -249,17 +251,18 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(deleteItem)"
+                    :title="`【${deleteItem?.method}】${deleteItem?.path}`"
                   ></span>
                 </div>
                 <div class="resource-box pl15 pr15">
-                  <bk-transition :name="animation">
-                    <resource-detail
-                      style="opacity: 0.35"
-                      :cur-resource="deleteItem"
-                      v-show="deleteItem.isExpanded"
-                    >
-                    </resource-detail>
-                  </bk-transition>
+                  <!-- <bk-transition :name="animation"> -->
+                  <resource-detail
+                    style="opacity: 0.35"
+                    :cur-resource="deleteItem"
+                    v-show="deleteItem.isExpanded"
+                  >
+                  </resource-detail>
+                  <!-- </bk-transition> -->
                 </div>
               </div>
             </template>
@@ -268,7 +271,7 @@
           <!-- 更新 -->
           <div
             class="diff-item"
-            v-for="updateItem of diffData.update"
+            v-for="updateItem in diffData.update"
             :key="`${updateItem.source.id}:${updateItem.target.id}`"
           >
             <template
@@ -289,18 +292,19 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(updateItem.source)"
+                    :title="`【${updateItem?.method}】${updateItem?.path}`"
                   ></span>
                 </div>
                 <div class="resource-box pl15 pr15">
-                  <bk-transition :name="animation">
-                    <resource-detail
-                      class="source-version"
-                      :cur-resource="updateItem.source"
-                      v-show="updateItem.isExpanded"
-                      :diff-data="updateItem.target.diff"
-                      :only-show-diff="searchParams.onlyUpdated"
-                    ></resource-detail>
-                  </bk-transition>
+                  <!-- <bk-transition :name="animation"> -->
+                  <resource-detail
+                    class="source-version"
+                    :cur-resource="updateItem.source"
+                    v-show="updateItem.isExpanded"
+                    :diff-data="updateItem.target.diff"
+                    :only-show-diff="searchParams.onlyUpdated"
+                  ></resource-detail>
+                  <!-- </bk-transition> -->
                 </div>
               </div>
               <div class="target-box">
@@ -315,19 +319,20 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(updateItem.target)"
+                    :title="`【${updateItem?.method}】${updateItem?.path}`"
                   ></span>
                 </div>
                 <!-- {{updateItem.source.diff}} -->
 
                 <div class="resource-box pl15 pr15">
-                  <bk-transition :name="animation">
-                    <resource-detail
-                      :cur-resource="updateItem.target"
-                      v-show="updateItem.isExpanded"
-                      :diff-data="updateItem.source.diff"
-                      :only-show-diff="searchParams.onlyUpdated"
-                    ></resource-detail>
-                  </bk-transition>
+                  <!-- <bk-transition :name="animation"> -->
+                  <resource-detail
+                    :cur-resource="updateItem.target"
+                    v-show="updateItem.isExpanded"
+                    :diff-data="updateItem.source.diff"
+                    :only-show-diff="searchParams.onlyUpdated"
+                  ></resource-detail>
+                  <!-- </bk-transition> -->
                 </div>
               </div>
             </template>
@@ -407,7 +412,7 @@ const diffData = reactive<any>({
   delete: [],
   update: [],
 });
-const animation = ref('collapse');
+// const animation = ref('collapse');
 const searchKeyword = ref('');
 const searchParams = reactive({
   keyword: '',
@@ -456,8 +461,8 @@ const sourceVersion = computed(() => {
   }
   return {
     id: '',
-    title: '',
-    name: '',
+    comment: '',
+    version: '',
   };
 });
 
@@ -468,8 +473,8 @@ const targetVersion = computed(() => {
   }
   return {
     id: '',
-    title: '',
-    name: '',
+    comment: '',
+    version: '',
   };
 });
 
@@ -509,8 +514,7 @@ const checkMatch = (item, type) => {
 };
 
 const renderTitle = (item) => {
-  let { method } = item;
-  let { path } = item;
+  let { method, path } = item;
   if (searchKeyword.value) {
     const reg = new RegExp(`(${searchKeyword.value})`, 'ig');
     method = method.replace(reg, '<i class="keyword ag-strong primary">$1</i>');
@@ -704,16 +708,16 @@ onMounted(() => {
 }
 
 .diff-main {
-  /* padding-bottom: 12px; */
+  .diff-loading {
+    min-height: 300px;
+    padding: 6px 0px;
+  }
 }
 
 .diff-item {
-  &:not(:first-child) {
-    margin-top: -12px;
-  }
   .source-box,
   .target-box {
-    padding: 12px 12px 12px 12px;
+    padding: 6px 12px;
 
     .metadata {
       height: 36px;
@@ -734,6 +738,7 @@ onMounted(() => {
         text-overflow: ellipsis;
         white-space: nowrap;
         display: inline-block;
+        width: 96%;
       }
 
       .bk-icon {

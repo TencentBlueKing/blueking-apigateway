@@ -8,12 +8,10 @@
             :custom-request="handleReq"
             class="upload-cls"
           >
-            <template #default>
-              <bk-button>
-                <i class="icon apigateway-icon icon-ag-add-small pr10"></i>
-                {{ t('导入 Swagger 文件') }}
-              </bk-button>
-            </template>
+            <bk-button>
+              <i class="icon apigateway-icon icon-ag-add-small pr10"></i>
+              {{ t('导入 Swagger 文件') }}
+            </bk-button>
           </bk-upload>
           <span class="desc">{{ t('（json /yaml 格式）') }}</span>
           <bk-form class="flex-row">

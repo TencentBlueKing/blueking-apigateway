@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 自定义头部 -->
-    <stage-top-bar />
+    <stage-top-bar ref="stageTopBarRef" />
     <div class="detail-mode">
       <bk-loading :loading="stageStore.realStageMainLoading">
         <section class="stagae-info">
@@ -13,7 +13,12 @@
               <div class="apigw-form-item">
                 <div class="label">{{ `${t('访问地址')}：` }}</div>
                 <div class="value url">
-                  <p class="link" v-overflow-title>--</p>
+                  <p
+                    class="link"
+                    v-overflow-title
+                  >
+                    --
+                  </p>
                   <i
                     class="apigateway-icon icon-ag-copy-info"
                     @click.self.stop="copy('--')"
@@ -34,7 +39,10 @@
               </div>
               <div class="apigw-form-item">
                 <div class="label">{{ `${t('描述')}：` }}</div>
-                <div class="value" v-overflow-title>
+                <div
+                  class="value"
+                  v-overflow-title
+                >
                   {{ stageData.description || '--' }}
                 </div>
               </div>
@@ -69,20 +77,25 @@
             >
               {{ t('发布资源') }}
             </bk-button>
-            <bk-button class="mr10" @click="handleEditStage">{{ t('编辑') }}</bk-button>
-            <bk-dropdown :popover-options="popoverOptions">
+            <bk-button
+              class="mr10"
+              @click="handleEditStage"
+            >
+              {{ t('编辑') }}
+            </bk-button>
+            <bk-dropdown>
               <bk-button class="more-cls">
                 <i class="apigateway-icon icon-ag-gengduo"></i>
               </bk-button>
               <template #content>
                 <bk-dropdown-menu ext-cls="stage-more-actions">
-                  <bk-dropdown-item @click="handleStageUnlist(item)">
+                  <bk-dropdown-item @click="handleStageUnlist()">
                     {{ t('下架') }}
                   </bk-dropdown-item>
                   <bk-dropdown-item
                     :ext-cls="{ disabled: stageData.status === 1 }"
                     v-bk-tooltips="t('环境下线后，才能删除')"
-                    @click="handleStageDelete(item)"
+                    @click="handleStageDelete()"
                   >
                     {{ t('删除') }}
                   </bk-dropdown-item>
@@ -124,7 +137,7 @@
       <edit-stage-sideslider ref="stageSidesliderRef" />
 
       <!-- 发布资源至环境 -->
-      <release-sideslider ref="releaseSidesliderRef" />
+      <release-sideslider :current-assets="stageData" ref="releaseSidesliderRef" @release-success="handleReleaseSuccess" />
     </div>
   </div>
 </template>
@@ -138,8 +151,8 @@ import { useStage } from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import stageTopBar from '@/components/stage-top-bar.vue';
-import { deleteStage } from '@/http';
-import { Message } from 'bkui-vue';
+import { deleteStage, removalStage } from '@/http';
+import { Message, InfoBox } from 'bkui-vue';
 import mitt from '@/common/event-bus';
 
 const { t } = useI18n();
@@ -149,6 +162,7 @@ const router = useRouter();
 
 const releaseSidesliderRef = ref(null);
 const stageSidesliderRef = ref(null);
+const stageTopBarRef = ref(null);
 
 // 当前环境信息
 const stageData: any = computed(() => {
@@ -187,6 +201,11 @@ onMounted(() => {
   handleTabChange('resourceInfo');
 });
 
+// 发布成功，重新请求环境详情
+const handleReleaseSuccess = () => {
+  stageTopBarRef.value?.getStageDetailFun(stageData.value?.id);
+};
+
 // 重新加载子组件
 const routeIndex = ref(0);
 watch(
@@ -213,29 +232,53 @@ const handleRelease = () => {
 };
 
 // 下架环境
-const handleStageUnlist = () => {
-  console.log('下架');
+const handleStageUnlist = async () => {
+  InfoBox({
+    title: t('确认下架吗？'),
+    onConfirm: async () => {
+      const data = {
+        status: 0,
+      };
+      try {
+        await removalStage(apigwId, stageData.value.id, data);
+        Message({
+          message: t('下架成功'),
+          theme: 'success',
+        });
+        // 获取网关列表
+        await mitt.emit('get-stage-list');
+        // 开启loading
+      } catch (error) {
+        console.error(error);
+      }
+    },
+  });
 };
 
 // 删除环境
 const handleStageDelete = async () => {
-  if (stageData.value.status === 1) {
-    return;
-  }
-  try {
-    await deleteStage(apigwId, stageData.value.id);
-    Message({
-      message: t('删除成功'),
-      theme: 'success',
-    });
-    // 获取网关列表
-    await mitt.emit('get-stage-list');
-    // 切换前一个环境
-    await mitt.emit('switch-stage');
-    // 开启loading
-  } catch (error) {
-    console.error(error);
-  }
+  InfoBox({
+    title: t('确认删除吗？'),
+    onConfirm: async () => {
+      if (stageData.value.status === 1) {
+        return;
+      }
+      try {
+        await deleteStage(apigwId, stageData.value.id);
+        Message({
+          message: t('删除成功'),
+          theme: 'success',
+        });
+        // 获取网关列表
+        await mitt.emit('get-stage-list', { isUpdate: false, isDelete: true });
+        // 切换前一个环境, 并且不需要获取当前环境详情
+        await mitt.emit('switch-stage', true);
+        // 开启loading
+      } catch (error) {
+        console.error(error);
+      }
+    },
+  });
 };
 
 // 编辑环境
@@ -250,12 +293,11 @@ const handleEditStage = () => {
   padding: 24px;
   font-size: 12px;
   .stagae-info {
+    display: flex;
     height: 128px;
     padding: 24px;
     background: #ffffff;
     box-shadow: 0 2px 4px 0 #1919290d;
-
-    display: flex;
 
     .stage-name {
       width: 120px;
@@ -266,85 +308,90 @@ const handleEditStage = () => {
       display: flex;
       align-items: center;
       justify-content: center;
-
-      .name {
-        font-weight: 700;
-        font-size: 16px;
-        color: #3a84ff;
-      }
     }
 
-    .info {
-      display: flex;
-      .column {
-        transform: translateY(-8px);
-        &:first-child {
-          margin-right: 80px;
-        }
+    .name {
+      padding: 0 3px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #3a84ff;
+      display: inline-block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .info {
+    display: flex;
+    .column {
+      transform: translateY(-8px);
+      &:first-child {
+        margin-right: 80px;
       }
-      .apigw-form-item {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        line-height: 32px;
-        color: #63656e;
+    }
+    .apigw-form-item {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      line-height: 32px;
+      color: #63656e;
 
-        .value {
-          max-width: 220px;
-          color: #313238;
+      .value {
+        max-width: 220px;
+        color: #313238;
 
-          &.url {
-            max-width: 200px;
-            display: flex;
-            align-items: center;
+        &.url {
+          max-width: 200px;
+          display: flex;
+          align-items: center;
 
-            .link {
-              overflow: hidden;
-              white-space: nowrap;
-              text-overflow: ellipsis;
-            }
+          .link {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+          }
 
-            i {
-              cursor: pointer;
-              color: #3a84ff;
-              margin-left: 3px;
-              font-size: 12px;
-              padding: 3px;
-            }
+          i {
+            cursor: pointer;
+            color: #3a84ff;
+            margin-left: 3px;
+            font-size: 12px;
+            padding: 3px;
           }
         }
-        .unrelease {
-          display: inline-block;
-          font-size: 10px;
-          color: #fe9c00;
-          background: #fff1db;
-          border-radius: 2px;
-          padding: 2px 5px;
-          line-height: 1;
-        }
       }
-    }
-
-    .operate {
-      display: flex;
-      margin-left: 40px;
-      .line {
-        height: 32px;
-        width: 1px;
-        background: #dcdee5;
-        margin-right: 20px;
+      .unrelease {
+        display: inline-block;
+        font-size: 10px;
+        color: #fe9c00;
+        background: #fff1db;
+        border-radius: 2px;
+        padding: 2px 5px;
+        line-height: 1;
       }
     }
   }
 
-  .tab-wrapper {
-    background: #ffffff;
-    box-shadow: 0 2px 4px 0 #1919290d;
-    border-radius: 0 0 2px 2px;
-
-    :deep(.bk-tab-content) {
-      padding: 24px;
+  .operate {
+    display: flex;
+    margin-left: 40px;
+    .line {
+      height: 32px;
+      width: 1px;
+      background: #dcdee5;
+      margin-right: 20px;
     }
+  }
+}
+
+.tab-wrapper {
+  background: #ffffff;
+  box-shadow: 0 2px 4px 0 #1919290d;
+  border-radius: 0 0 2px 2px;
+
+  :deep(.bk-tab-content) {
+    padding: 24px;
   }
 }
 

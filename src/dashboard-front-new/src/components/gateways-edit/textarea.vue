@@ -27,6 +27,7 @@
         :rows="3"
         @input="handleInput"
         @blur="handleBlur"
+        @enter="handleEnter"
       />
       <p class="validate-error-tips" v-if="isShowError">{{ errorTips }}</p>
     </div>
@@ -60,7 +61,7 @@ const props = defineProps({
   },
   maxLength: {
     type: Number,
-    default: 255,
+    default: 500,
   },
   mode: {
     type: String,
@@ -100,6 +101,15 @@ const handleBlur = () => {
   if (!isEditable.value) return;
   isEditable.value = false;
   triggerChange();
+};
+
+const handleEnter = (value: string, event: any) => {
+  if (!isEditable.value) return;
+  if (event.key === 'Enter' && event.keyCode === 13) {
+    newVal.value = newVal.value.trim();
+    isEditable.value = false;
+    triggerChange();
+  }
 };
 
 const hideEdit = (event: any) => {
