@@ -37,7 +37,15 @@
         </div>
       </div>
       <div class="flex-1 flex-row justify-content-end">
-        <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input>
+        <!-- <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input> -->
+        <bk-search-select
+          v-model="searchValue"
+          :data="searchData"
+          unique-select
+          style="width: 450px"
+          placeholder="请选择或输入"
+          :value-split-code="'+'"
+        />
       </div>
     </div>
     <div class="flex-row resource-content">
@@ -362,7 +370,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted } from 'vue';
+import { reactive, ref, watch, onMounted, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
@@ -415,7 +423,7 @@ const exportDropData = ref<IDropList[]>([
 
 const router = useRouter();
 
-const filterData = ref({ query: '' });
+const filterData = ref<any>({ keyword: '' });
 
 // ref
 const versionSidesliderRef = ref(null);
@@ -442,6 +450,20 @@ const curResource: any = ref({});
 const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
+
+const searchValue = ref([]);
+const searchData = shallowRef([
+  {
+    name: '模糊查询',
+    id: 'keyword',
+    placeholder: '请输入资源名称，前端请求路径',
+  },
+  {
+    name: '资源名称',
+    id: 'name',
+    placeholder: '请输入资源名称',
+  },
+]);
 
 // 标签数据
 const labelsData = ref<any[]>([]);
@@ -796,6 +818,24 @@ watch(
     });
   },
   { immediate: true, deep: true },
+);
+
+// Search Select选中的值
+watch(
+  () => searchValue.value,
+  (v: any[]) => {
+    if (v.length) {
+      v.forEach((e: any) => {
+        if (e.id === e.name) {
+          filterData.value.keyword = e.name;
+        } else {
+          filterData.value[e.id] = e.values[0].id;
+        }
+      });
+    } else {
+      getList();
+    }
+  },
 );
 
 onMounted(() => {
