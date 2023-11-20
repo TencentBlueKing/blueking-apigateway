@@ -67,11 +67,11 @@
           <div class="base-info mb20">
             <p class="title"><span class="icon apigateway-icon icon-ag-down-shape"></span>{{ t('基础信息') }}</p>
             <bk-form
-              ref="baseInfoRef" class="base-info-form mt20" :model="baseInfo" :rules="baseInfoRules"
+              ref="baseInfoRef" class="base-info-form mt20" :model="baseInfo"
               form-type="vertical">
-              <bk-form-item :label="t('服务名称')" property="name" required>
+              <bk-form-item :label="t('服务名称')" property="name" required :rules="baseInfoRules.name">
                 <bk-input
-                  v-model="baseInfo.name" :placeholder="t('请输入 1-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头')"
+                  v-model="baseInfo.name" :placeholder="t('请输入 1-20 字符的字母、数字、连字符(-)，以字母开头')"
                   :disabled="curOperate === 'edit'" />
                 <p class="aler-text">{{ t('后端服务唯一标识，创建后不可修改') }}</p>
               </bk-form-item>
@@ -99,7 +99,8 @@
                 </template>
                 <template #content="slotProps">
                   <bk-form ref="stageConfigRef" class="stage-config-form " :model="slotProps" form-type="vertical">
-                    <bk-form-item :label="t('负载均衡类型')" property="loadbalance" required :rules="rules.loadbalance">
+                    <bk-form-item
+                      :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
                       <bk-select
                         v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
                         @change="handleChange(slotProps)">
@@ -111,9 +112,9 @@
                     </bk-form-item>
                     <bk-form-item
                       :label="t('后端服务地址')" v-for="(hostItem, i) in slotProps.configs.hosts" :key="i"
-                      :rules="rules.host" :property="`config.hosts.${i}.host`"
+                      :rules="configRules.host" :property="`configs.hosts.${i}.host`"
                       :class="['backend-item-cls', { 'form-item-special': i !== 0 }]" required>
-                      <div class="host-item mb10">
+                      <div class="host-item">
                         <bk-input :placeholder="t('格式如 ：http(s)://host:port')" v-model="hostItem.host" :key="i">
                           <template #prefix>
                             <bk-select v-model="hostItem.scheme" class="scheme-select-cls w80" :clearable="false">
@@ -139,8 +140,8 @@
                       </div>
                     </bk-form-item>
                     <bk-form-item
-                      :label="t('超时时间')" :required="true" :property="'config.timeout'" class="timeout-item"
-                      :rules="rules.timeout" :error-display-type="'normal'">
+                      :label="t('超时时间')" :required="true" :property="'configs.timeout'" class="timeout-item"
+                      :rules="configRules.timeout" :error-display-type="'normal'">
                       <bk-input
                         type="number" :min="1" :max="300"
                         v-model="slotProps.configs.timeout" class="time-input">
@@ -153,126 +154,6 @@
                   </bk-form>
                 </template>
               </bk-collapse>
-              <!-- <div class="content" v-if="!isBatchSet">
-                <section
-                  class="backend-config-item" v-for="(configItem , index) in stageConfig" :key="configItem.id">
-                  <div class="title">
-                    {{ configItem.name }}
-                    <span class="ml5">
-                      {{ configItem.description.trim() === '' ? '' : `(${configItem.description})` }}
-                    </span>
-                  </div>
-                  <div class="item-content">
-                    <bk-form
-                      ref="stageConfigRef"
-                      :label-width="180"
-                      :model="configItem"
-                      form-type="vertical"
-                    >
-                      <bk-form-item
-                        :required="true"
-                        :label="t('负载均衡类型')"
-                      >
-                        <bk-select
-                          :clearable="false"
-                          :placeholder="t('负载均衡类型')"
-                          v-model="configItem.configs.loadbalance"
-                          @change="handleChange(configItem,index)"
-                        >
-                          <bk-option
-                            v-for="option in loadbalanceList"
-                            :key="option.id"
-                            :id="option.id"
-                            :name="option.name"
-                          ></bk-option>
-                        </bk-select>
-                      </bk-form-item>
-
-                      <bk-form-item
-                        label="后端服务地址"
-                        v-for="(hostItem, index) of configItem.configs.hosts"
-                        :required="true"
-                        :property="`config.hosts.${index}.host`"
-                        :key="index"
-                        :rules="rules.host"
-                        :class="['backend-item-cls', { 'form-item-special': index !== 0 }]"
-                      >
-                        <div class="host-item mb10">
-                          <bk-input
-                            :placeholder="t('格式: http(s)://host:port')"
-                            v-model="hostItem.host"
-                            :key="configItem.configs.loadbalance"
-                          >
-                            <template #prefix>
-                              <bk-select
-                                v-model="hostItem.scheme"
-                                class="scheme-select-cls"
-                                style="width: 120px"
-                                :clearable="false"
-                              >
-                                <bk-option
-                                  v-for="(item, index) in schemeList"
-                                  :key="index"
-                                  :value="item.value"
-                                  :label="item.value"
-                                />
-                              </bk-select>
-                              <div class="slash">://</div>
-                            </template>
-                            <template
-                              #suffix
-                              v-if="configItem.configs.loadbalance === 'weighted-roundrobin'"
-                            >
-                              <bk-input
-                                :class="['suffix-slot-cls', 'weights-input', { 'is-error': hostItem.isRoles }]"
-                                :placeholder="t('权重')"
-                                type="number"
-                                :min="1"
-                                :max="10000"
-                                v-model="hostItem.weight"
-                              ></bk-input>
-                            </template>
-                          </bk-input>
-
-                          <i
-                            class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
-                            @click="handleAddServiceAddress(configItem.name)"
-                          ></i>
-                          <i
-                            class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
-                            :class="{ disabled: configItem.configs.hosts.length < 2 }"
-                            @click="handleDeleteServiceAddress(configItem.name,i)"
-                          ></i>
-                        </div>
-                      </bk-form-item>
-
-                      <bk-form-item
-                        :label="$t('超时时间')"
-                        :required="true"
-                        :property="'config.timeout'"
-                        class="timeout-item-cls"
-                        :rules="rules.timeout"
-                        :error-display-type="'normal'"
-                      >
-                        <bk-input
-                          type="number"
-                          :min="1"
-                          :show-controls="false"
-                          v-model="configItem.configs.timeout"
-                          class="time-input"
-                        >
-                          <template #suffix>
-                            <div class="group-text group-text-style">{{ $t('秒') }}</div>
-                          </template>
-                        </bk-input>
-                        <p class="timeout-tip">
-                          {{ $t('最大300秒') }}
-                        </p>
-                      </bk-form-item>
-                    </bk-form>
-                  </div>
-                </section>
-              </div> -->
               <div v-else>
                 <bk-collapse :list="batchConfig" header-icon="right-shape" v-model="activeIndex">
                   <template #title>
@@ -283,7 +164,8 @@
                   <template #content="slotProps">
                     <bk-form
                       ref="stageBatchConfigRef" class="stage-config-form " :model="slotProps" form-type="vertical">
-                      <bk-form-item :label="t('负载均衡类型')" property="loadbalance" required :rules="rules.loadbalance">
+                      <bk-form-item
+                        :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
                         <bk-select
                           v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
                           @change="handleChange(slotProps)">
@@ -295,9 +177,9 @@
                       </bk-form-item>
                       <bk-form-item
                         :label="t('后端服务地址')" v-for="(hostItem, i) in slotProps.configs.hosts" :key="i"
-                        :rules="rules.host" :property="`config.hosts.${i}.host`"
+                        :rules="configRules.host" :property="`configs.hosts.${i}.host`"
                         :class="['backend-item-cls', { 'form-item-special': i !== 0 }]" required>
-                        <div class="host-item mb10">
+                        <div class="host-item">
                           <bk-input :placeholder="t('格式如 ：http(s)://host:port')" v-model="hostItem.host" :key="i">
                             <template #prefix>
                               <bk-select v-model="hostItem.scheme" class="scheme-select-cls w80" :clearable="false">
@@ -323,8 +205,8 @@
                         </div>
                       </bk-form-item>
                       <bk-form-item
-                        :label="t('超时时间')" :required="true" :property="'config.timeout'" class="timeout-item"
-                        :rules="rules.timeout" :error-display-type="'normal'">
+                        :label="t('超时时间')" :required="true" :property="'configs.timeout'" class="timeout-item"
+                        :rules="configRules.timeout" :error-display-type="'normal'">
                         <bk-input
                           type="number" :min="1" :max="300"
                           v-model="slotProps.configs.timeout" class="time-input">
@@ -440,7 +322,7 @@ const baseInfoRules = {
   ],
 };
 // 服务配置校验规则
-const rules = {
+const configRules = {
   loadbalance: [
     {
       required: true,
@@ -596,6 +478,7 @@ const handleDeleteServiceAddress = (name: string, index: number) => {
 
 // 点击名称/编辑
 const handleEdit = async (data: any) => {
+  isBatchSet.value = false;
   curOperate.value = 'edit';
   baseInfo.value = {
     name: data.name,
@@ -614,9 +497,6 @@ const handleEdit = async (data: any) => {
   } catch (error) {
     console.log('error', error);
   }
-
-
-  console.log(data);
 };
 
 // 点击关联的资源数
