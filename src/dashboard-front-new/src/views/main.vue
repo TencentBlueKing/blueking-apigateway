@@ -19,10 +19,25 @@
           >
             <template #icon>
               <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
+              <bk-badge
+                dot
+                theme="danger"
+                style="margin-left: 5px"
+                v-if="menu.name === 'apigwPermissionManage' && permission.count !== 0"
+              >
+              </bk-badge>
             </template>
             <bk-menu-item
               v-for="child in menu.children" :key="child.name" @click="handleGoPage(child.name, apigwId)">
               {{ child.title }}
+              <bk-badge
+                :count="permission.count"
+                :max="99"
+                theme="danger"
+                style="margin-left: 5px"
+                v-if="child.name === 'apigwPermissionApplys' && permission.count !== 0"
+              >
+              </bk-badge>
             </bk-menu-item>
           </bk-submenu>
           <bk-menu-item
@@ -66,12 +81,14 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { menuData } from '@/common/menu';
 import { useGetApiList } from '@/hooks';
-import { useCommon } from '@/store';
+import { useCommon, usePermission } from '@/store';
+import { getPermissionApplyList } from '@/http';
 
 const route = useRoute();
 const router = useRouter();
 // 全局公共字段存储
 const common = useCommon();
+const permission = usePermission();
 // 获取网关数据方法
 const {
   getGatewaysListData,
@@ -116,10 +133,21 @@ watch(
   { immediate: true, deep: true },
 );
 
+// 获取权限审批的数量
+const getPermiList = async () => {
+  try {
+    const res = await getPermissionApplyList(apigwId.value, { offset: 0, limit: 10 });
+    permission.setCount(res.count);
+  } catch (error) {
+    console.log('error', error);
+  }
+};
+
 onMounted(async () => {
   gatewaysList.value = await getGatewaysListData();
   // 初始化设置一次
   handleSetApigwName();
+  getPermiList();
 });
 
 const handleGoPage = (routeName: string, apigwId?: number) => {
@@ -130,6 +158,7 @@ const handleGoPage = (routeName: string, apigwId?: number) => {
       id: apigwId,
     },
   });
+  getPermiList();
 };
 
 const handleBack = () => {
@@ -177,6 +206,41 @@ const handleBack = () => {
           }
         }
       }
+      .submenu-header{
+        position: relative;
+        .bk-badge-main{
+          position: absolute;
+          left: 120px;
+          top: 1px;
+          .bk-badge{
+            width: 6px;
+            height: 6px;
+            min-width: 6px;
+            background-color: #ff5656;
+          }
+        }
+      }
+      .submenu-list{
+        .bk-menu-item{
+          .item-content{
+            position: relative;
+            .bk-badge-main{
+              position: absolute;
+              top: 6px;
+              left: 56px;
+              .bk-badge{
+                background-color: #ff5656;
+                height: 18px;
+                padding: 0px 2px;
+                font-size: 12px;
+                line-height: 14px;
+                min-width: 18px;
+              }
+            }
+          }
+        }
+      }
+
       .submenu-header-icon{
         color: rgb(99, 101, 110);
       }

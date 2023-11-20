@@ -124,7 +124,7 @@
         </bk-table>
         <bk-form :label-width="0" :model="curAction" :rules="rules" ref="batchForm" class="mt20">
           <bk-form-item class="bk-hide-label" label="" :required="true" :property="'comment'">
-            <bk-input type="textarea" :placeholder="$t('请输入备注')" v-model="curAction.comment" :maxlength="100">
+            <bk-input type="textarea" :placeholder="t('请输入备注')" v-model="curAction.comment" :maxlength="100">
             </bk-input>
           </bk-form-item>
         </bk-form>
@@ -149,13 +149,13 @@
         ref="approveForm"
         class="mt10 mr20 mb30">
         <bk-form-item
-          :label="$t('备注')"
+          :label="t('备注')"
           :required="true"
           :property="'comment'">
           <bk-alert class="mb10" :theme="alertTheme" :title="approveFormMessage"></bk-alert>
           <bk-input
             type="textarea"
-            :placeholder="$t('请输入备注')"
+            :placeholder="t('请输入备注')"
             v-model="curAction.comment"
             :rows="4"
             :maxlength="100">
@@ -170,11 +170,12 @@
 import { reactive, ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPermissionApplyList, updatePermissionStatus } from '@/http';
-import { useCommon } from '@/store';
+import { useCommon, usePermission } from '@/store';
 import { useQueryList, useSelection } from '@/hooks';
 import { Message } from 'bkui-vue';
 const { t } = useI18n();
 const common = useCommon();
+const permission = usePermission();
 
 const { apigwId } = common; // 网关id
 
@@ -259,6 +260,16 @@ watch(
   },
   { immediate: true, deep: true },
 );
+// 监听总数量的变化
+watch(
+  () => pagination.value,
+  (v: any) => {
+    permission.setCount(v.count);
+    console.log('newValue', v);
+  },
+  { deep: true },
+);
+
 
 // 批量审批dialog的title
 const batchApplyDialogConfTitle = computed(() => {
@@ -373,9 +384,9 @@ const handleApplyApprove = (data: any) => {
   };
   console.log(curPermission.value);
 
-  if (!curPermission.value.isSelectAll) {
-    curAction.value.comment = t('部分通过');
-  }
+  // if (!curPermission.value.isSelectAll) {
+  //   curAction.value.comment = t('部分通过');
+  // }
   applyActionDialogConf.title = t('通过申请');
   applyActionDialogConf.isShow = true;
 };
