@@ -163,7 +163,8 @@
                     multiple-mode="tag"
                     ref="multiSelect"
                     v-model="curLabelIds"
-                    @change="changeSelect">
+                    @change="changeSelect"
+                    @toggle="handleToggle">
 
                     <bk-option v-for="option in labelsData" :key="option.id" :id="option.id" :name="option.name">
                       <template #default>
@@ -378,7 +379,7 @@ import {
   getResourceListData, deleteResources,
   batchDeleteResources, batchEditResources,
   exportResources, exportDocs, checkNeedNewVersion,
-  getGatewayLabels,
+  getGatewayLabels, setResourcesLabels,
 } from '@/http';
 import { Message } from 'bkui-vue';
 import Detail from './detail.vue';
@@ -543,6 +544,11 @@ const {
   handleSelectionChange,
   resetSelections,
 } = useSelection();
+
+const init =  () => {
+  handleShowVersion();
+  getLabelsData();
+};
 
 // isPublic为true allowApply才可选
 const handlePublicChange = () => {
@@ -774,6 +780,16 @@ const setCheckBoxStatus = (checkedIds: number[]) => {
   });
 };
 
+//
+const handleToggle = async (v: boolean) => {
+  console.log('v', v);
+  if (!v) {
+    await setResourcesLabels(props.apigwId, resourceId.value, { label_ids: curLabelIds.value });
+    getList();
+    init();
+  }
+};
+
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
 watch(
   () => tableData.value,
@@ -839,8 +855,7 @@ watch(
 );
 
 onMounted(() => {
-  handleShowVersion();
-  getLabelsData();
+  init();
 });
 </script>
 <style lang="scss" scoped>
