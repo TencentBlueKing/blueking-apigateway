@@ -160,8 +160,8 @@ watch(
 
 watch(
   () => props.historyId,
-  (v) => {
-    if (v) {
+  (id) => {
+    if (id && isShow.value) {
       getLogsList();
       timeId = setInterval(() => {
         getLogsList();

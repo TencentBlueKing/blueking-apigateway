@@ -220,7 +220,6 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
-import { useRoute } from 'vue-router';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '@/store';
@@ -229,8 +228,6 @@ import ApigwKeyValuer from '@/components/key-valuer';
 import editorMonaco from '@/components/ag-editor.vue';
 import { cloneDeep } from 'lodash';
 
-const route = useRoute();
-const apigwId = +route.params.id;
 const { t } = useI18n();
 const common = useCommon();
 
@@ -404,7 +401,7 @@ const getApigwReleaseResources = async () => {
   if (!stageId) return;
 
   try {
-    const res = await getReleaseResources(apigwId, stageId);
+    const res = await getReleaseResources(common.apigwId, stageId);
     resources.value = res || {};
 
     // 环境变更会触发资源列表更新，资源更新后需要清空已有的选择
@@ -424,7 +421,7 @@ const getApigwStages = async () => {
   };
 
   try {
-    const res = await getStages(apigwId, pageParams);
+    const res = await getStages(common.apigwId, pageParams);
     stageList.value = res;
 
     params.value.stage_id = (stageList.value[0] || {})?.id;
@@ -437,7 +434,7 @@ const getApigwStages = async () => {
 const postApigwAPITest = async (data: any) => {
   requestStatus.value = 0;
   try {
-    const res = await postAPITest(apigwId, data);
+    const res = await postAPITest(common.apigwId, data);
     response.value = res;
   } catch (e) {
     console.log(e);
@@ -608,7 +605,7 @@ const handleReset = () => {
 
 const getApigwDetail = async () => {
   try {
-    const res = await getApiDetail(apigwId);
+    const res = await getApiDetail(common.apigwId);
     curApigw.value = res;
     curApigw.value.statusBoolean = Boolean(curApigw.value?.status);
   } catch (e) {

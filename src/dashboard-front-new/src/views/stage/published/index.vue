@@ -76,16 +76,22 @@
           :label="t('操作')"
         >
           <template #default="{ data }">
-            <bk-button text theme="primary" @click="handleClick(data.id)">
+            <bk-button text theme="primary" @click="showDetails(data.id)">
               {{ t("查看详情") }}
             </bk-button>
-            <bk-button text theme="primary" class="pl10 pr10">
+            <bk-button text theme="primary" class="pl10 pr10" @click="showLogs(data.id)">
               {{ t("操作日志") }}
             </bk-button>
           </template>
         </bk-table-column>
       </bk-table>
     </bk-loading>
+
+    <!-- 日志抽屉 -->
+    <log-details ref="logDetailsRef" :history-id="historyId" />
+
+    <!-- 详情 -->
+    <publish-details ref="detailsRef" :id="detailId" />
   </div>
 </template>
 
@@ -94,6 +100,8 @@ import { useQueryList, useDatePicker } from '@/hooks';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { PublishSourceEnum, PublishStatusEnum } from '@/types';
+import logDetails from '@/components/log-details/index.vue';
+import publishDetails from './comps/publish-details.vue';
 import {
   getReleaseHistories,
 } from '@/http';
@@ -120,8 +128,20 @@ const {
   handleComfirm,
 } = useDatePicker(filterData);
 
-const handleClick = () => {};
+const historyId = ref();
+const logDetailsRef = ref(null);
+const detailId = ref();
+const detailsRef = ref(null);
 
+const showDetails = (id: string) => {
+  detailId.value = id;
+  detailsRef.value?.showSideslider();
+};
+
+const showLogs = (id: string) => {
+  historyId.value = id;
+  logDetailsRef.value?.showSideslider();
+};
 </script>
 
 <style lang="scss" scoped>
