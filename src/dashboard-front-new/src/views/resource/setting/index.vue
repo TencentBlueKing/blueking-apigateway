@@ -174,8 +174,23 @@
                             content: $t('标签最多只能选择10个'),
                             disabled: !(!curLabelIds.includes(option.id) && curLabelIds.length >= 10) }"
                           :disabled="!curLabelIds.includes(option.id) && curLabelIds.length >= 10"
-                          class="flex-row align-items-center">
+                          class="flex-row align-items-center justify-content-between" style="width: 100%;"
+                          v-if="!option.isEdited">
                           {{ option.name }}
+                          <div>
+                            <i class="icon apigateway-icon icon-ag-edit-line" @click="handleEditOptionItem(option)"></i>
+                            <span class="icon apigateway-icon icon-ag-delet"></span>
+                          </div>
+                        </div>
+                        <div v-else>
+                          <bk-input
+                            style="width: 180px"
+                            ref="inputRef"
+                            v-model="option.name"
+                            size="small"
+                            @enter="addOption"
+                            :placeholder="t('请输入标签')"
+                          />
                         </div>
                       </template>
                     </bk-option>
@@ -186,22 +201,15 @@
                           style="display: flex; align-items: center;"
                         >
                           <bk-input
+                            style="width: 220px"
                             ref="inputRef"
                             v-model="optionName"
                             size="small"
                             @enter="addOption"
                             :placeholder="t('请输入标签')"
                           />
-                          <done
-                            style="font-size: 22px;color: #2DCB56;cursor: pointer;margin-left: 6px;"
-                            @click="addOption"
-                          />
-                          <error
-                            style="font-size: 16px;color: #C4C6CC;cursor: pointer;margin-left: 2px;"
-                            @click="showEdit = false"
-                          />
                         </div>
-                        <div v-else class="flex-row align-items-center justity-content-center">
+                        <div v-else class="flex-row align-items-center justity-content-center" style="cursor: pointer;">
                           <div
                             class="flex-row align-items-center"
                             @click="handleShowEdit"
@@ -422,7 +430,7 @@ import { reactive, ref, watch, onMounted, shallowRef, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
-import { Done, Error, Plus, RightTurnLine, Spinner } from 'bkui-vue/lib/icon';
+import { Plus, RightTurnLine, Spinner } from 'bkui-vue/lib/icon';
 import {
   getResourceListData, deleteResources,
   batchDeleteResources, batchEditResources,
@@ -820,11 +828,12 @@ const handleCreateResourceVersion = () => {
 // 获取标签数据
 const getLabelsData = async () => {
   const res = await getGatewayLabels(props.apigwId);
-  res.forEach((e: any) => e.isChecked = false);
+  res.forEach((e: any) => e.isEdited = false);
   labelsData.value = res;
 };
 
 const changeSelect = (id: number) => {
+  console.log('id', id);
   resourceId.value = id;
 };
 
@@ -872,6 +881,10 @@ const handleShowEdit = () => {
   setTimeout(() => {
     inputRef.value.focus();
   });
+};
+
+const handleEditOptionItem = (e: any) => {
+  e.isEdited = true;
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
