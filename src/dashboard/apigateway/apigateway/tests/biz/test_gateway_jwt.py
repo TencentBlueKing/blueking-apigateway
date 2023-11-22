@@ -18,8 +18,7 @@
 from ddf import G
 from django.utils.encoding import smart_bytes
 
-from apigateway.biz.gateway_jwt import GatewayJWTHandler
-from apigateway.common.mcryptography import AESCipherManager
+from apigateway.biz.gateway_jwt import GatewayJWTHandler, get_jwt_crypto
 from apigateway.core.models import JWT, Gateway
 
 
@@ -40,9 +39,9 @@ class TestGatewayJWTHandler:
         GatewayJWTHandler.update_jwt_key(gateway, "test", "test")
         jwt = JWT.objects.get(gateway=gateway)
 
-        cipher = AESCipherManager.create_jwt_cipher()
+        crypto = get_jwt_crypto()
         assert jwt.public_key == "test"
-        assert cipher.decrypt_from_hex(jwt.encrypted_private_key) == "test"
+        assert crypto.decrypt(jwt.encrypted_private_key) == "test"
 
     def test_get_private_key(self):
         gateway = G(Gateway)
@@ -60,9 +59,9 @@ class TestGatewayJWTHandler:
             smart_bytes(faker.pystr()),
         )
 
-        cipher = AESCipherManager.create_jwt_cipher()
+        crypto = get_jwt_crypto()
         assert not GatewayJWTHandler.is_jwt_key_changed(
             gateway,
-            cipher.decrypt_from_hex(jwt.encrypted_private_key),
+            crypto.decrypt(jwt.encrypted_private_key),
             smart_bytes(jwt.public_key),
         )
