@@ -37,7 +37,15 @@
         </div>
       </div>
       <div class="flex-1 flex-row justify-content-end">
-        <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input>
+        <!-- <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input> -->
+        <bk-search-select
+          v-model="searchValue"
+          :data="searchData"
+          unique-select
+          style="width: 450px"
+          placeholder="请选择或输入"
+          :value-split-code="'+'"
+        />
       </div>
     </div>
     <div class="flex-row resource-content">
@@ -154,10 +162,12 @@
                     multiple
                     multiple-mode="tag"
                     ref="multiSelect"
+                    show-on-init
                     v-model="curLabelIds"
-                    @change="changeSelect">
-
-                    <bk-option v-for="option in labelsData" :key="option.id" :id="option.id" :name="option.name">
+                    selected-style="checkbox"
+                    @change="changeSelect(data.id)"
+                    @toggle="handleToggle">
+                    <bk-option v-for="option in labelsData" :key="option.name" :id="option.id" :name="option.name">
                       <template #default>
                         <div
                           v-bk-tooltips="{
@@ -165,12 +175,58 @@
                             disabled: !(!curLabelIds.includes(option.id) && curLabelIds.length >= 10) }"
                           :disabled="!curLabelIds.includes(option.id) && curLabelIds.length >= 10"
                           class="flex-row align-items-center">
-                          <bk-checkbox
-                            class="mr5" v-model="option.isChecked" />
                           {{ option.name }}
                         </div>
                       </template>
                     </bk-option>
+                    <template #extension>
+                      <div class="custom-extension" style="margin: 0 auto;">
+                        <div
+                          v-if="showEdit"
+                          style="display: flex; align-items: center;"
+                        >
+                          <bk-input
+                            ref="inputRef"
+                            v-model="optionName"
+                            size="small"
+                            @enter="addOption"
+                            :placeholder="t('请输入标签')"
+                          />
+                          <done
+                            style="font-size: 22px;color: #2DCB56;cursor: pointer;margin-left: 6px;"
+                            @click="addOption"
+                          />
+                          <error
+                            style="font-size: 16px;color: #C4C6CC;cursor: pointer;margin-left: 2px;"
+                            @click="showEdit = false"
+                          />
+                        </div>
+                        <div v-else class="flex-row align-items-center justity-content-center">
+                          <div
+                            class="flex-row align-items-center"
+                            @click="handleShowEdit"
+                          >
+                            <plus style="font-size: 18px;" />
+                            {{ t('新建标签') }}
+                          </div>
+                          <div class="flex-row align-items-center" style="position: absolute; right: 12px;">
+                            <bk-divider
+                              direction="vertical"
+                              type="solid"
+                            />
+                            <spinner
+                              v-if="isLoading"
+                              style="font-size: 14px;color: #3A84FF;"
+                            />
+                            <right-turn-line
+                              v-else
+                              style="font-size: 14px;cursor: pointer;"
+                              @click="refresh"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </template>
                   </bk-select>
                 </section>
               </template>
@@ -362,15 +418,16 @@
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted } from 'vue';
+import { reactive, ref, watch, onMounted, shallowRef, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
+import { Done, Error, Plus, RightTurnLine, Spinner } from 'bkui-vue/lib/icon';
 import {
   getResourceListData, deleteResources,
   batchDeleteResources, batchEditResources,
   exportResources, exportDocs, checkNeedNewVersion,
-  getGatewayLabels,
+  getGatewayLabels, updateResourcesLabels, createResourcesLabels,
 } from '@/http';
 import { Message } from 'bkui-vue';
 import Detail from './detail.vue';
@@ -415,7 +472,7 @@ const exportDropData = ref<IDropList[]>([
 
 const router = useRouter();
 
-const filterData = ref({ query: '' });
+const filterData = ref<any>({ keyword: '' });
 
 // ref
 const versionSidesliderRef = ref(null);
@@ -442,6 +499,20 @@ const curResource: any = ref({});
 const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
+
+const searchValue = ref([]);
+const searchData = shallowRef([
+  {
+    name: '模糊查询',
+    id: 'keyword',
+    placeholder: '请输入资源名称，前端请求路径',
+  },
+  {
+    name: '资源名称',
+    id: 'name',
+    placeholder: '请输入资源名称',
+  },
+]);
 
 // 标签数据
 const labelsData = ref<any[]>([]);
@@ -487,6 +558,10 @@ const batchEditData = ref({
   allowApply: true,
 });
 
+const showEdit = ref(false);
+const optionName = ref('');
+const inputRef = ref(null);
+
 // tab 选项卡
 const panels = [
   { name: 'resourceDetail', label: t('资源配置'), component: Detail },
@@ -521,6 +596,18 @@ const {
   handleSelectionChange,
   resetSelections,
 } = useSelection();
+
+const init =  () => {
+  handleShowVersion();
+  getLabelsData();
+};
+
+// 相同的标签
+const isSameLabels = computed(() => {
+  const curLabelIdsString = JSON.stringify(curLabelIds.value.sort());
+  const curLabelIdsbackUpString = JSON.stringify(curLabelIdsbackUp.value.sort());
+  return curLabelIdsString === curLabelIdsbackUpString;
+});
 
 // isPublic为true allowApply才可选
 const handlePublicChange = () => {
@@ -722,8 +809,6 @@ const handleEditLabel = (data: any) => {
   });
   curLabelIds.value = data.labels.map((item: any) => item.id);
   curLabelIdsbackUp.value = cloneDeep(curLabelIds.value);
-  // 设置checkbox是否选中
-  setCheckBoxStatus(curLabelIds.value);
   data.isEditLabel = true;
 };
 
@@ -739,16 +824,53 @@ const getLabelsData = async () => {
   labelsData.value = res;
 };
 
-const changeSelect = (v: number[]) => {
-  // 设置checkbox是否选中
-  setCheckBoxStatus(v);
-  console.log('curLabelIds.value', curLabelIds.value);
+const changeSelect = (id: number) => {
+  resourceId.value = id;
 };
 
-// 设置checkbox是否选中
-const setCheckBoxStatus = (checkedIds: number[]) => {
-  labelsData.value.forEach((e) => {
-    e.isChecked = !!checkedIds.includes(e.id);
+//
+const handleToggle = async (v: boolean) => {
+  // 关闭下拉框且
+  console.log('isSameLabels.value', isSameLabels.value);
+  if (!v) {
+    // 变更了的标签数据请求接口
+    if (!isSameLabels.value) {
+      await updateResourcesLabels(props.apigwId, resourceId.value, { label_ids: curLabelIds.value });
+      getList();
+      init();
+    } else {
+      // 改为查看态
+      tableData.value.forEach((item) => {
+        item.isEditLabel = false;
+      });
+    }
+  }
+};
+
+const addOption = async () => {
+  if (optionName.value.trim()) {
+    await createResourcesLabels(props.apigwId, { name: optionName.value });
+    Message({
+      message: t('标签新建成功'),
+      theme: 'success',
+    });
+    getLabelsData();
+    optionName.value = '';
+  }
+  showEdit.value = false;
+};
+
+const refresh = () => {
+  isLoading.value = true;
+  setTimeout(() => {
+    isLoading.value = false;
+  }, 2000);
+};
+
+const handleShowEdit = () => {
+  showEdit.value = true;
+  setTimeout(() => {
+    inputRef.value.focus();
   });
 };
 
@@ -798,9 +920,26 @@ watch(
   { immediate: true, deep: true },
 );
 
+// Search Select选中的值
+watch(
+  () => searchValue.value,
+  (v: any[]) => {
+    if (v.length) {
+      v.forEach((e: any) => {
+        if (e.id === e.name) {
+          filterData.value.keyword = e.name;
+        } else {
+          filterData.value[e.id] = e.values[0].id;
+        }
+      });
+    } else {
+      getList();
+    }
+  },
+);
+
 onMounted(() => {
-  handleShowVersion();
-  getLabelsData();
+  init();
 });
 </script>
 <style lang="scss" scoped>

@@ -103,7 +103,7 @@
                       :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
                       <bk-select
                         v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
-                        @change="handleChange(slotProps)">
+                      >
                         <bk-option
                           v-for="option of loadbalanceList" :key="option.id" :value="option.id"
                           :label="option.name">
@@ -168,7 +168,7 @@
                         :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
                         <bk-select
                           v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
-                          @change="handleChange(slotProps)">
+                        >
                           <bk-option
                             v-for="option of loadbalanceList" :key="option.id" :value="option.id"
                             :label="option.name">
@@ -297,7 +297,6 @@ const loadbalanceList = reactive([
 ]);
 // scheme 类型
 const schemeList = [{ value: 'http' }, { value: 'https' }];
-
 // 基础信息
 const baseInfo = ref({
   name: 'default',
@@ -388,14 +387,6 @@ const getAllStageName = computed(() => {
   return newTitle;
 });
 
-
-const handleChange = (curItem: any) => {
-  console.log(curItem);
-  console.log(stageList.value);
-  console.log(batchConfig.value);
-};
-
-
 // 判断后端服务新建时间是否在24h之内
 // const isWithinTime = (date: string) => {
 //   const str = timeFormatter(date);
@@ -408,14 +399,8 @@ const handleChange = (curItem: any) => {
 //   return diff < twentyFourHours;
 // };
 
-// 新建btn
-const handleAdd = () => {
+const resetData = () => {
   isBatchSet.value = false;
-  curOperate.value = 'add';
-  baseInfo.value = {
-    name: 'default',
-    description: '',
-  };
   batchConfig.value = [{
     configs: {
       loadbalance: 'roundrobin',
@@ -427,6 +412,16 @@ const handleAdd = () => {
       }],
     },
   }];
+};
+
+// 新建btn
+const handleAdd = () => {
+  curOperate.value = 'add';
+  baseInfo.value = {
+    name: 'default',
+    description: '',
+  };
+  resetData();
   stageConfig.value = stageList.value.map((item: any) => {
     const { name, id, description } = item;
     const newItem = {
@@ -478,7 +473,7 @@ const handleDeleteServiceAddress = (name: string, index: number) => {
 
 // 点击名称/编辑
 const handleEdit = async (data: any) => {
-  isBatchSet.value = false;
+  resetData();
   curOperate.value = 'edit';
   baseInfo.value = {
     name: data.name,
@@ -491,8 +486,6 @@ const handleEdit = async (data: any) => {
     stageConfig.value = res.configs.map((item: any) => {
       return { configs: item };
     });
-    console.log(res);
-    console.log(stageConfig.value);
     sidesliderConfi.isShow = true;
   } catch (error) {
     console.log('error', error);
@@ -542,6 +535,8 @@ const handleConfirm = async () => {
   console.log('batchConfig', batchConfig.value);
   const isAdd = curOperate.value === 'add';
   if (isBatchSet.value) {
+    console.log(stageBatchConfigRef.value);
+    await stageBatchConfigRef.value.validate();
     finaConfigs.value = stageList.value.map((item: any) => {
       const { configs } = batchConfig.value[0];
       const newItem = {
@@ -553,6 +548,12 @@ const handleConfirm = async () => {
       return newItem;
     });
   } else {
+    console.log('baseInfoRef', baseInfoRef.value);
+    console.log('stageConfigRef', stageConfigRef.value);
+    // await stageConfigRef.value.validate();
+    // for (const item of stageConfigRef.value) {
+    //   await item.validate();
+    // }
     finaConfigs.value = stageConfig.value.map((item) => {
       const id =  isAdd ? item.id : item.configs.stage.id;
       const newItem = {
@@ -564,7 +565,6 @@ const handleConfirm = async () => {
       return newItem;
     });
   }
-
   const { name, description } = baseInfo.value;
   const params = {
     name,
@@ -593,7 +593,6 @@ const handleConfirm = async () => {
 const handleCancel = () => {
   sidesliderConfi.isShow = false;
 };
-
 
 const init = async () => {
   console.log(tableData);
@@ -765,17 +764,6 @@ init();
 }
 
 .backend-config-item {
-  .item-title {
-    height: 40px;
-    line-height: 40px;
-    background: #f0f1f5;
-    border-radius: 2px;
-    font-weight: 700;
-    font-size: 14px;
-    color: #63656e;
-    padding: 0 16px;
-  }
-
   .item-content {
     background: #f5f7fa;
     padding: 20px 32px;

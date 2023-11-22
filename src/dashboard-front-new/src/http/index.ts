@@ -13,3 +13,4 @@ export * from './access-log';
 export * from './report';
 export * from './resource-version';
 export * from './releases';
+export * from './monitor';
