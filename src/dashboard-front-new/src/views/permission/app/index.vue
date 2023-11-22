@@ -269,7 +269,7 @@ const { t } = useI18n();
 const common = useCommon();
 const { apigwId } = common; // 网关id
 
-const filterData = ref({ bk_app_code: '', query: '', grant_type: '', resource_id: '' });
+const filterData = ref({ bk_app_code: '', keyword: '', grant_type: '', resource_id: '' });
 const isExportDropdownShow = ref<boolean>(false);
 const resourceList = ref([]);
 const isVisible = ref<boolean>(false);
@@ -329,7 +329,7 @@ const exportParams: IexportParams = reactive({
 interface IexportParams {
   export_type: string
   bk_app_code?: string
-  query?: string
+  keyword?: string
   resource_ids?: number
   permission_ids?: Array<number>
   grant_type?: string
@@ -383,9 +383,7 @@ watch(
   () => searchQuery.value,
   (v: string) => {
     resetSelections();
-    filterData.value.query = v;
-    // const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-    // getList(method, { query: v });
+    filterData.value.keyword = v;
     const isEmpty = v.trim() === '';
     exportDropData.value.forEach((e: IDropList) => {
       // 已选资源
@@ -461,7 +459,7 @@ const handleExport = async ({ value }: {value: string}) => {
       exportParams.permission_ids = selections.value.map(e => e.id);
       break;
     case 'filtered':
-      exportParams.query = searchQuery.value;
+      exportParams.keyword = searchQuery.value;
       break;
     default:
       break;
@@ -483,7 +481,7 @@ const handleExport = async ({ value }: {value: string}) => {
   } finally {
     exportParams.export_type = '';
     exportParams.permission_ids = [];
-    exportParams.query = '';
+    exportParams.keyword = '';
   }
 };
 

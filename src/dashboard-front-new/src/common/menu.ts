@@ -71,6 +71,21 @@ export const menuData: IMenu[]  = [
     ],
   },
   {
+    name: 'apigwMonitorAlarm',
+    title: '监控告警',
+    icon: 'monitor',
+    children: [
+      {
+        name: 'apigwMonitorAlarmStrategy',
+        title: '告警策略',
+      },
+      {
+        name: 'apigwMonitorAlarmHistory',
+        title: '告警历史',
+      },
+    ],
+  },
+  {
     name: 'apigwOnlineTest',
     title: '在线调试',
     icon: 'debug',
