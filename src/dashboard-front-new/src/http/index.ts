@@ -12,3 +12,4 @@ export * from './basic-info';
 export * from './access-log';
 export * from './resource-version';
 export * from './releases';
+export * from './monitor';
