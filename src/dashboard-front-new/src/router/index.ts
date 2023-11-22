@@ -26,6 +26,8 @@ const apigwAccessLogDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/v
 const apigwReport = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/report/index.vue');
 const apigwBackendService = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/backend-service/index.vue');
 const ApiBasicInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/basic-info/index.vue');
+const apigwMonitorAlarmStrategy = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-strategy/index.vue');
+const apigwMonitorAlarmHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-history/index.vue');
 
 
 const routes: RouteRecordRaw[] = [
@@ -234,7 +236,26 @@ const routes: RouteRecordRaw[] = [
           title: '统计报表',
           matchRoute: 'apigwReport',
         },
-      }, {
+      },
+      {
+        path: '/:id/monitor/alarm-strategy',
+        name: 'apigwMonitorAlarmStrategy',
+        component: apigwMonitorAlarmStrategy,
+        meta: {
+          title: '告警策略',
+          matchRoute: 'apigwMonitorAlarmStrategy',
+        },
+      },
+      {
+        path: '/:id/monitor/alarm-history',
+        name: 'apigwMonitorAlarmHistory',
+        component: apigwMonitorAlarmHistory,
+        meta: {
+          title: '告警历史',
+          matchRoute: 'apigwMonitorAlarmHistory',
+        },
+      },
+      {
         path: '/:id/resource/import-doc',
         name: 'apigwResourceImportDoc',
         component: ApigwResourceImportDoc,
