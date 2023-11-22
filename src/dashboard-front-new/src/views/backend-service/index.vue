@@ -15,9 +15,9 @@
     <div class="backend-service-content">
       <bk-loading :loading="isLoading">
         <bk-table
+          :row-class="isNewCreate"
           class="table-layout" :data="tableData" remote-pagination :pagination="pagination" show-overflow-tooltip
           @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange" row-hover="auto">
-          <!-- <bk-table-column type="selection" width="60" align="center"></bk-table-column> -->
           <bk-table-column :label="t('后端服务名称')" prop="name">
             <template #default="{ data }">
               <bk-button text theme="primary" @click="handleEdit(data)">
@@ -63,7 +63,8 @@
       v-model:isShow="sidesliderConfi.isShow" :title="sidesliderConfi.title" :quick-close="false"
       ext-cls="backend-service-slider" width="800">
       <template #default>
-        <div class="content p30">
+        <div class="content">
+          <bk-alert theme="warning" :title="editTitle" class="mb20" v-if="curOperate === 'edit'" />
           <div class="base-info mb20">
             <p class="title"><span class="icon apigateway-icon icon-ag-down-shape"></span>{{ t('基础信息') }}</p>
             <bk-form
@@ -226,7 +227,7 @@
       </template>
       <template #footer>
         <div class="pl30">
-          <bk-button theme="primary" class="mr5 w80" @click="handleConfirm">
+          <bk-button theme="primary" class="mr5 w80" @click="handleConfirm" :loading="isSaveLoading">
             {{ t('确定') }}
           </bk-button>
           <bk-button class="w80" @click="handleCancel">{{ t('取消') }}</bk-button>
@@ -242,7 +243,7 @@ import { useI18n } from 'vue-i18n';
 import { InfoBox, Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
 import { useCommon } from '@/store';
-// import { timeFormatter } from '@/common/util';
+import { timeFormatter } from '@/common/util';
 import { useQueryList } from '@/hooks';
 import {
   getStageList,
@@ -258,13 +259,14 @@ const common = useCommon();
 const router = useRouter();
 const { apigwId } = common; // 网关id
 
-
 const filterData = ref({ name: '', type: '' });
 const isBatchSet = ref<boolean>(false);
+const isSaveLoading = ref<boolean>(false);
 const baseInfoRef = ref(null);
 const stageConfigRef = ref(null);
 const stageBatchConfigRef = ref(null);
 const curOperate = ref<string>('add');
+const editTitle = ref<string>(t('如果环境和资源已经发布，服务配置修改后，将立即对所有已发布资源生效'));
 const finaConfigs = ref([]);
 const curServiceDetail = ref({
   id: 0,
@@ -387,17 +389,22 @@ const getAllStageName = computed(() => {
   return newTitle;
 });
 
+const isNewCreate = (row: any) => {
+  console.log(row);
+  return isWithinTime(row?.updated_time) ? 'new-created' : '';
+};
+
 // 判断后端服务新建时间是否在24h之内
-// const isWithinTime = (date: string) => {
-//   const str = timeFormatter(date);
-//   const targetTime = new Date(str);
-//   const currentTime = new Date();
-//   // 计算两个时间之间的毫秒差
-//   const diff = currentTime.getTime() - targetTime.getTime();
-//   // 24 小时的毫秒数
-//   const twentyFourHours = 24 * 60 * 60 * 1000;
-//   return diff < twentyFourHours;
-// };
+const isWithinTime = (date: string) => {
+  const str = timeFormatter(date);
+  const targetTime = new Date(str);
+  const currentTime = new Date();
+  // 计算两个时间之间的毫秒差
+  const diff = currentTime.getTime() - targetTime.getTime();
+  // 24 小时的毫秒数
+  const twentyFourHours = 24 * 60 * 60 * 1000;
+  return diff < twentyFourHours;
+};
 
 const resetData = () => {
   isBatchSet.value = false;
@@ -572,6 +579,7 @@ const handleConfirm = async () => {
     configs: finaConfigs.value,
   };
   console.log(params);
+  isSaveLoading.value = true;
   try {
     if (isAdd) {
       await createBackendService(apigwId, params);
@@ -586,6 +594,8 @@ const handleConfirm = async () => {
     getList();
   } catch (error) {
     console.log('error', error);
+  } finally {
+    isSaveLoading.value = false;
   }
 };
 
@@ -616,10 +626,15 @@ init();
   width: 80px;
 }
 
+:deep(.new-created){
+  background-color: #f1fcf5 !important;
+}
 .w500 {
   width: 500px;
 }
-
+.content{
+  padding: 20px 30px 30px;
+}
 .backend-service-slider {
   :deep(.bk-modal-content) {
     min-height: calc(100vh - 104px) !important;
@@ -667,7 +682,19 @@ init();
     }
   }
 }
-
+:deep(.table-layout){
+  .bk-table-body{
+    table{
+      tbody{
+        tr{
+          td{
+            background-color: rgba(0,0,0,0);
+          }
+        }
+      }
+    }
+  }
+}
 .host-item {
   display: flex;
   align-items: center;

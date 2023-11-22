@@ -69,9 +69,12 @@
           </bk-table-column>
           <bk-table-column :label="t('申请人')" prop="applied_by"></bk-table-column>
           <bk-table-column :label="t('申请时间')" prop="created_time" width="215"></bk-table-column>
-          <bk-table-column :label="t('审批状态')" prop="status">
+          <bk-table-column :label="t('审批状态')" prop="status" width="150">
             <template #default="{ data }">
-              <round-loading v-if="data?.status === 'pending'" />
+              <loading
+                class="mr5" loading size="mini" mode="spin" theme="primary"
+                v-if="data?.status === 'pending'"
+              />
               <span v-else :class="['dot', data?.status]"></span>
               {{ statusMap[data?.status as keyof typeof statusMap] }}
             </template>
@@ -172,7 +175,7 @@ import { useI18n } from 'vue-i18n';
 import { getPermissionApplyList, updatePermissionStatus } from '@/http';
 import { useCommon, usePermission } from '@/store';
 import { useQueryList, useSelection } from '@/hooks';
-import { Message } from 'bkui-vue';
+import { Message, Loading } from 'bkui-vue';
 const { t } = useI18n();
 const common = useCommon();
 const permission = usePermission();
