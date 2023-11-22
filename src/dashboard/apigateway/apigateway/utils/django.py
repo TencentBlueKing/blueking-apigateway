@@ -17,7 +17,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from typing import Any, Dict
 
+from django.forms.models import model_to_dict
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from jsonfield import JSONField as BaseJSONField
@@ -39,3 +41,7 @@ class JSONField(BaseJSONField):
             return json.loads(value, **self.load_kwargs)
 
         return value
+
+
+def get_model_dict(instance) -> Dict[str, Any]:
+    return model_to_dict(instance, fields=[field.name for field in instance._meta.fields])

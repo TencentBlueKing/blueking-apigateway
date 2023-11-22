@@ -17,19 +17,18 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.http import Http404
-from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.stage import serializers
 from apigateway.apis.open.stage.serializers import StageSLZ
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.biz.audit import Auditor
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Stage
-from apigateway.utils.django import get_object_or_None
+from apigateway.utils.django import get_model_dict, get_object_or_None
 from apigateway.utils.responses import V1OKJsonResponse
 
 
@@ -96,6 +95,7 @@ class StageSyncViewSet(viewsets.ViewSet):
     @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.Stage"])
     def sync(self, request, gateway_name: str, *args, **kwargs):
         instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))
+        data_before = get_model_dict(instance) if instance else {}
         slz = StageSLZ(
             instance,
             data=request.data,
@@ -111,15 +111,14 @@ class StageSyncViewSet(viewsets.ViewSet):
             updated_by=request.user.username,
         )
 
-        record_audit_log(
+        Auditor.record_stage_op_success(
+            op_type=OpTypeEnum.MODIFY if instance else OpTypeEnum.CREATE,
             username=request.user.username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.STAGE.value,
-            op_object_id=stage.id,
-            op_object=stage.name,
-            comment=_("创建环境"),
+            gateway_id=request.gateway.id,
+            instance_id=stage.id,
+            instance_name=stage.name,
+            data_before=data_before,
+            data_after=get_model_dict(stage),
         )
 
         return V1OKJsonResponse(

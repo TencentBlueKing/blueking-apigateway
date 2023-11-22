@@ -24,7 +24,6 @@ from typing import Any, Dict, List, Optional
 from django.conf import settings
 from django.db.models import Count
 
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
@@ -36,7 +35,6 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
-from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
@@ -244,27 +242,6 @@ class GatewayHandler:
 
         # delete gateway
         Gateway.objects.filter(id=gateway_id).delete()
-
-    @staticmethod
-    def record_audit_log_success(
-        username: str, gateway_id: int, op_type: OpTypeEnum, instance_id: int, instance_name: str
-    ):
-        comment = {
-            OpTypeEnum.CREATE: "创建网关",
-            OpTypeEnum.MODIFY: "更新网关",
-            OpTypeEnum.DELETE: "删除网关",
-        }.get(op_type, "-")
-
-        record_audit_log(
-            username=username,
-            op_type=op_type.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway_id,
-            op_object_type=OpObjectTypeEnum.GATEWAY.value,
-            op_object_id=instance_id,
-            op_object=instance_name,
-            comment=comment,
-        )
 
     @staticmethod
     def get_feature_flags(gateway_id: int) -> Dict[str, bool]:
