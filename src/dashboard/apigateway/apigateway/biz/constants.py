@@ -18,6 +18,7 @@
 import re
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
+from django.conf import settings
 
 
 class SwaggerFormatEnum(StructuredEnum):
@@ -35,7 +36,7 @@ SEMVER_PATTERN = re.compile(
 )
 
 
-MAX_BACKEND_TIMEOUT_IN_SECOND = 600
+MAX_BACKEND_TIMEOUT_IN_SECOND = settings.MAX_BACKEND_TIMEOUT_IN_SECOND
 
 # stage var
 STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")
