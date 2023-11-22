@@ -76,10 +76,10 @@
           :label="t('操作')"
         >
           <template #default="{ data }">
-            <bk-button text theme="primary" @click="showDetails(data.id)">
+            <!-- <bk-button text theme="primary" @click="showDetails(data.id)">
               {{ t("查看详情") }}
-            </bk-button>
-            <bk-button text theme="primary" class="pl10 pr10" @click="showLogs(data.id)">
+            </bk-button> -->
+            <bk-button text theme="primary" @click="showLogs(data.id)">
               {{ t("操作日志") }}
             </bk-button>
           </template>
