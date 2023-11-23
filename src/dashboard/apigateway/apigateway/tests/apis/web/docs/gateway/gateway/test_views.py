@@ -18,7 +18,9 @@
 #
 from ddf import G
 
-from apigateway.core.models import Release
+from apigateway.apis.web.docs.gateway.gateway.views import GatewayListApi
+from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.models import Gateway, Release
 
 
 class TestGatewayListApi:
@@ -32,7 +34,34 @@ class TestGatewayListApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert len(result["data"]) >= 1
+        assert len(result["data"]["results"]) >= 1
+
+    def test_filter_gateways(self, unique_gateway_name):
+        view = GatewayListApi()
+
+        # no release
+        gateway = G(Gateway, name=unique_gateway_name, status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+        result = view._filter_gateways(unique_gateway_name)
+        assert list(result.values_list("id", flat=True)) == []
+
+        # ok
+        G(Release, gateway=gateway)
+        result = view._filter_gateways(unique_gateway_name)
+        assert list(result.values_list("id", flat=True)) == [gateway.id]
+
+        # inactive
+        gateway.status = GatewayStatusEnum.INACTIVE.value
+        gateway.is_public = True
+        gateway.save()
+        result = view._filter_gateways(unique_gateway_name)
+        assert list(result.values_list("id", flat=True)) == []
+
+        # not public
+        gateway.status = GatewayStatusEnum.ACTIVE.value
+        gateway.is_public = False
+        gateway.save()
+        result = view._filter_gateways(unique_gateway_name)
+        assert list(result.values_list("id", flat=True)) == []
 
 
 class TestGatewayRetrieveApi:
