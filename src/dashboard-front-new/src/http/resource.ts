@@ -191,7 +191,7 @@ export const checkNeedNewVersion = (apigwId: number) => fetch.get(`${BK_DASHBOAR
  * 设置标签
  * @param apigwId 网关id
  * @param resourceId 资源id
- * @param labelsId 标签id
+ * @param data 标签数据
  */
 export const updateResourcesLabels = (apigwId: number, resourceId: number, data: any) => fetch.put(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/${resourceId}/labels/`, data);
 
@@ -201,3 +201,10 @@ export const updateResourcesLabels = (apigwId: number, resourceId: number, data:
  * @param data 标签名称
  */
 export const createResourcesLabels = (apigwId: number, data: {name: string}) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/labels/`, data);
+
+/**
+ * 删除标签
+ * @param apigwId 网关id
+ * @param labelsId 标签id
+ */
+export const deleteResourcesLabels = (apigwId: number, labelsId: number) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/labels/${labelsId}/`);

@@ -155,87 +155,13 @@
                   <section v-else>--</section>
                 </section>
                 <section v-else>
-                  <bk-select
-                    style="width: 235px;"
-                    class="select-wrapper mt5"
-                    filterable
-                    multiple
-                    multiple-mode="tag"
-                    ref="multiSelect"
-                    show-on-init
-                    v-model="curLabelIds"
-                    selected-style="checkbox"
-                    @change="changeSelect(data.id)"
-                    @toggle="handleToggle">
-                    <bk-option v-for="option in labelsData" :key="option.name" :id="option.id" :name="option.name">
-                      <template #default>
-                        <div
-                          v-bk-tooltips="{
-                            content: $t('标签最多只能选择10个'),
-                            disabled: !(!curLabelIds.includes(option.id) && curLabelIds.length >= 10) }"
-                          :disabled="!curLabelIds.includes(option.id) && curLabelIds.length >= 10"
-                          class="flex-row align-items-center justify-content-between" style="width: 100%;"
-                          v-if="!option.isEdited">
-                          {{ option.name }}
-                          <div>
-                            <i class="icon apigateway-icon icon-ag-edit-line" @click="handleEditOptionItem(option)"></i>
-                            <span class="icon apigateway-icon icon-ag-delet"></span>
-                          </div>
-                        </div>
-                        <div v-else>
-                          <bk-input
-                            style="width: 180px"
-                            ref="inputRef"
-                            v-model="option.name"
-                            size="small"
-                            @enter="addOption"
-                            :placeholder="t('请输入标签')"
-                          />
-                        </div>
-                      </template>
-                    </bk-option>
-                    <template #extension>
-                      <div class="custom-extension" style="margin: 0 auto;">
-                        <div
-                          v-if="showEdit"
-                          style="display: flex; align-items: center;"
-                        >
-                          <bk-input
-                            style="width: 220px"
-                            ref="inputRef"
-                            v-model="optionName"
-                            size="small"
-                            @enter="addOption"
-                            :placeholder="t('请输入标签')"
-                          />
-                        </div>
-                        <div v-else class="flex-row align-items-center justity-content-center" style="cursor: pointer;">
-                          <div
-                            class="flex-row align-items-center"
-                            @click="handleShowEdit"
-                          >
-                            <plus style="font-size: 18px;" />
-                            {{ t('新建标签') }}
-                          </div>
-                          <div class="flex-row align-items-center" style="position: absolute; right: 12px;">
-                            <bk-divider
-                              direction="vertical"
-                              type="solid"
-                            />
-                            <spinner
-                              v-if="isLoading"
-                              style="font-size: 14px;color: #3A84FF;"
-                            />
-                            <right-turn-line
-                              v-else
-                              style="font-size: 14px;cursor: pointer;"
-                              @click="refresh"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </template>
-                  </bk-select>
+                  <SelectCheckBox
+                    :cur-select-label-ids="curLabelIds"
+                    :resource-id="resourceId"
+                    :labels-data="labelsData"
+                    @close="handleCloseSelect"
+                    @update-success="handleUpdateLabelSuccess"
+                    @label-add-success="getLabelsData"></SelectCheckBox>
                 </section>
               </template>
             </bk-table-column>
@@ -426,20 +352,20 @@
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted, shallowRef, computed } from 'vue';
+import { reactive, ref, watch, onMounted, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
-import { Plus, RightTurnLine, Spinner } from 'bkui-vue/lib/icon';
 import {
   getResourceListData, deleteResources,
   batchDeleteResources, batchEditResources,
   exportResources, exportDocs, checkNeedNewVersion,
-  getGatewayLabels, updateResourcesLabels, createResourcesLabels,
+  getGatewayLabels,
 } from '@/http';
 import { Message } from 'bkui-vue';
 import Detail from './detail.vue';
 import VersionSideslider from './comps/version-sideslider.vue';
+import SelectCheckBox from './comps/select-check-box.vue';
 import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
 import ResourcesDoc from '@/views/components/resources-doc/index.vue';
@@ -566,9 +492,9 @@ const batchEditData = ref({
   allowApply: true,
 });
 
-const showEdit = ref(false);
-const optionName = ref('');
-const inputRef = ref(null);
+// const showEdit = ref(false);
+// const optionName = ref('');
+// const inputRef = ref(null);
 
 // tab 选项卡
 const panels = [
@@ -610,12 +536,12 @@ const init =  () => {
   getLabelsData();
 };
 
-// 相同的标签
-const isSameLabels = computed(() => {
-  const curLabelIdsString = JSON.stringify(curLabelIds.value.sort());
-  const curLabelIdsbackUpString = JSON.stringify(curLabelIdsbackUp.value.sort());
-  return curLabelIdsString === curLabelIdsbackUpString;
-});
+// // 相同的标签
+// const isSameLabels = computed(() => {
+//   const curLabelIdsString = JSON.stringify(curLabelIds.value.sort());
+//   const curLabelIdsbackUpString = JSON.stringify(curLabelIdsbackUp.value.sort());
+//   return curLabelIdsString === curLabelIdsbackUpString;
+// });
 
 // isPublic为true allowApply才可选
 const handlePublicChange = () => {
@@ -812,6 +738,8 @@ const handleShowVersion = async () => {
 
 // 处理标签点击
 const handleEditLabel = (data: any) => {
+  console.log('111', data);
+  resourceId.value = data.id;
   tableData.value.forEach((item) => {
     item.isEditLabel = false;
   });
@@ -832,59 +760,81 @@ const getLabelsData = async () => {
   labelsData.value = res;
 };
 
-const changeSelect = (id: number) => {
-  console.log('id', id);
-  resourceId.value = id;
-};
+// const changeSelect = (id: number) => {
+//   console.log('id', id);
+//   resourceId.value = id;
+// };
 
 //
-const handleToggle = async (v: boolean) => {
-  // 关闭下拉框且
-  console.log('isSameLabels.value', isSameLabels.value);
-  if (!v) {
-    // 变更了的标签数据请求接口
-    if (!isSameLabels.value) {
-      await updateResourcesLabels(props.apigwId, resourceId.value, { label_ids: curLabelIds.value });
-      getList();
-      init();
-    } else {
-      // 改为查看态
-      tableData.value.forEach((item) => {
-        item.isEditLabel = false;
-      });
-    }
-  }
-};
+// const handleToggle = async (v: boolean) => {
+//   // 关闭下拉框且
+//   console.log('isSameLabels.value', isSameLabels.value);
+//   if (!v) {
+//     // 变更了的标签数据请求接口
+//     if (!isSameLabels.value) {
+//       await updateResourcesLabels(props.apigwId, resourceId.value, { label_ids: curLabelIds.value });
+//       getList();
+//       init();
+//     } else {
+//       // 改为查看态
+//       tableData.value.forEach((item) => {
+//         item.isEditLabel = false;
+//       });
+//     }
+//   }
+// };
 
-const addOption = async () => {
-  if (optionName.value.trim()) {
-    await createResourcesLabels(props.apigwId, { name: optionName.value });
-    Message({
-      message: t('标签新建成功'),
-      theme: 'success',
-    });
-    getLabelsData();
-    optionName.value = '';
-  }
-  showEdit.value = false;
-};
+// const addOption = async () => {
+//   if (optionName.value.trim()) {
+//     await createResourcesLabels(props.apigwId, { name: optionName.value });
+//     Message({
+//       message: t('标签新建成功'),
+//       theme: 'success',
+//     });
+//     getLabelsData();
+//     optionName.value = '';
+//   }
+//   showEdit.value = false;
+// };
 
-const refresh = () => {
-  isLoading.value = true;
-  setTimeout(() => {
-    isLoading.value = false;
-  }, 2000);
-};
+// const refresh = () => {
+//   isLoading.value = true;
+//   setTimeout(() => {
+//     isLoading.value = false;
+//   }, 2000);
+// };
 
-const handleShowEdit = () => {
-  showEdit.value = true;
-  setTimeout(() => {
-    inputRef.value.focus();
+// const handleShowEdit = () => {
+//   showEdit.value = true;
+//   setTimeout(() => {
+//     inputRef.value.focus();
+//   });
+// };
+
+// const handleEditOptionItem = (e: any) => {
+//   e.isEdited = true;
+// };
+
+// const handleDeleteOptionItem = (e: any) => {
+//   console.log(1111, e);
+// };
+
+// const handleDeleteOptionItemConfirm = () => {
+
+// };
+
+// 未做变更关闭select下拉
+const handleCloseSelect = () => {
+  tableData.value.forEach((item) => {
+    item.isEditLabel = false;
   });
 };
 
-const handleEditOptionItem = (e: any) => {
-  e.isEdited = true;
+// 更新成功
+const handleUpdateLabelSuccess = () => {
+  console.log(111);
+  getList();
+  init();
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
