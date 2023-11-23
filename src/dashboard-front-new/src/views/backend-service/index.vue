@@ -46,10 +46,12 @@
               </bk-button>
               <span
                 v-bk-tooltips="{
-                  content: t(`服务被${data?.resource_count}个资源引用了，不能删除`),
+                  content: t(`${data?.name === 'default' ? '默认后端服务，且' : '服务'}被${data?.resource_count}个资源引用了，不能删除`),
                   disabled: data?.resource_count === 0
                 }">
-                <bk-button theme="primary" text :disabled="data?.resource_count !== 0" @click="handleDelete(data)">
+                <bk-button
+                  theme="primary" text
+                  :disabled="data?.resource_count !== 0 || data?.name === 'default'" @click="handleDelete(data)">
                   {{ t('删除') }}
                 </bk-button>
               </span>
@@ -99,7 +101,9 @@
                   </span>
                 </template>
                 <template #content="slotProps">
-                  <bk-form ref="stageConfigRef" class="stage-config-form " :model="slotProps" form-type="vertical">
+                  <bk-form
+                    :ref="getSatgeConfigRef"
+                    class="stage-config-form " :model="slotProps" form-type="vertical">
                     <bk-form-item
                       :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
                       <bk-select
@@ -116,7 +120,7 @@
                       :rules="configRules.host" :property="`configs.hosts.${i}.host`"
                       :class="['backend-item-cls', { 'form-item-special': i !== 0 }]" required>
                       <div class="host-item">
-                        <bk-input :placeholder="t('格式如 ：http(s)://host:port')" v-model="hostItem.host" :key="i">
+                        <bk-input :placeholder="t('格式如：host:port')" v-model="hostItem.host" :key="i">
                           <template #prefix>
                             <bk-select v-model="hostItem.scheme" class="scheme-select-cls w80" :clearable="false">
                               <bk-option
@@ -238,7 +242,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { InfoBox, Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
@@ -263,7 +267,7 @@ const filterData = ref({ name: '', type: '' });
 const isBatchSet = ref<boolean>(false);
 const isSaveLoading = ref<boolean>(false);
 const baseInfoRef = ref(null);
-const stageConfigRef = ref(null);
+const stageConfigRef = ref([]);
 const stageBatchConfigRef = ref(null);
 const curOperate = ref<string>('add');
 const editTitle = ref<string>(t('如果环境和资源已经发布，服务配置修改后，将立即对所有已发布资源生效'));
@@ -301,7 +305,7 @@ const loadbalanceList = reactive([
 const schemeList = [{ value: 'http' }, { value: 'https' }];
 // 基础信息
 const baseInfo = ref({
-  name: 'default',
+  name: '',
   description: '',
 });
 // 基础信息校验规则
@@ -342,7 +346,7 @@ const configRules = {
         const reg = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
         return reg.test(value);
       },
-      message: t('请输入合法Host，如：http://example.com'),
+      message: t('请输入合法Host，如：example.com'),
       trigger: 'blur',
     },
   ],
@@ -375,22 +379,13 @@ const {
   getList,
 } = useQueryList(getBackendServiceList, filterData);
 
-// 监听是否批量设置
-watch(
-  () => isBatchSet.value,
-  (v: boolean) => {
-    console.log(v);
-  },
-  { immediate: true },
-);
-
+// 获取所有的stage name
 const getAllStageName = computed(() => {
   const newTitle = stageList.value.map(item => item.name).join('，');
   return newTitle;
 });
 
 const isNewCreate = (row: any) => {
-  console.log(row);
   return isWithinTime(row?.updated_time) ? 'new-created' : '';
 };
 
@@ -421,11 +416,19 @@ const resetData = () => {
   }];
 };
 
+// 获取所有stage服务配置的ref
+const getSatgeConfigRef = (el: any) => {
+  console.log(el);
+  if (el !== null) {
+    stageConfigRef.value.push(el);
+  }
+};
+
 // 新建btn
 const handleAdd = () => {
   curOperate.value = 'add';
   baseInfo.value = {
-    name: 'default',
+    name: '',
     description: '',
   };
   resetData();
@@ -513,7 +516,6 @@ const handleResource = (data: any) => {
 
 // 点击删除
 const handleDelete = (item: any) => {
-  console.log(item);
   InfoBox({
     title: t(`确定删除【${item.name}】该服务?`),
     infoType: 'warning',
@@ -537,12 +539,8 @@ const handleDelete = (item: any) => {
 const handleConfirm = async () => {
   // 基础信息校验
   await baseInfoRef.value.validate();
-  console.log(baseInfo.value);
-  console.log('stageConfig', stageConfig.value);
-  console.log('batchConfig', batchConfig.value);
   const isAdd = curOperate.value === 'add';
   if (isBatchSet.value) {
-    console.log(stageBatchConfigRef.value);
     await stageBatchConfigRef.value.validate();
     finaConfigs.value = stageList.value.map((item: any) => {
       const { configs } = batchConfig.value[0];
@@ -555,12 +553,13 @@ const handleConfirm = async () => {
       return newItem;
     });
   } else {
-    console.log('baseInfoRef', baseInfoRef.value);
-    console.log('stageConfigRef', stageConfigRef.value);
-    // await stageConfigRef.value.validate();
-    // for (const item of stageConfigRef.value) {
-    //   await item.validate();
-    // }
+    console.log(stageConfigRef.value);
+
+    // 逐个stage服务配置的校验
+    for (const item of stageConfigRef.value) {
+      if (item === null) break;
+      await item.validate();
+    }
     finaConfigs.value = stageConfig.value.map((item) => {
       const id =  isAdd ? item.id : item.configs.stage.id;
       const newItem = {
@@ -578,7 +577,6 @@ const handleConfirm = async () => {
     description,
     configs: finaConfigs.value,
   };
-  console.log(params);
   isSaveLoading.value = true;
   try {
     if (isAdd) {
@@ -591,6 +589,7 @@ const handleConfirm = async () => {
       theme: 'success',
     });
     sidesliderConfi.isShow = false;
+    stageConfigRef.value = [];
     getList();
   } catch (error) {
     console.log('error', error);
@@ -602,18 +601,16 @@ const handleConfirm = async () => {
 // 取消btn
 const handleCancel = () => {
   sidesliderConfi.isShow = false;
+  stageConfigRef.value = [];
 };
 
 const init = async () => {
-  console.log(tableData);
   try {
     const res = await getStageList(apigwId);
     stageList.value = res;
     res.forEach((item: any) => {
       activeIndex.value.push(item.name);
     });
-    console.log(stageList.value);
-    console.log(activeIndex.value);
   } catch (error) {
     console.log('error', error);
   }
