@@ -15,9 +15,9 @@
     <div class="backend-service-content">
       <bk-loading :loading="isLoading">
         <bk-table
+          :row-class="isNewCreate"
           class="table-layout" :data="tableData" remote-pagination :pagination="pagination" show-overflow-tooltip
           @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange" row-hover="auto">
-          <!-- <bk-table-column type="selection" width="60" align="center"></bk-table-column> -->
           <bk-table-column :label="t('后端服务名称')" prop="name">
             <template #default="{ data }">
               <bk-button text theme="primary" @click="handleEdit(data)">
@@ -46,10 +46,12 @@
               </bk-button>
               <span
                 v-bk-tooltips="{
-                  content: t(`服务被${data?.resource_count}个资源引用了，不能删除`),
+                  content: t(`${data?.name === 'default' ? '默认后端服务，且' : '服务'}被${data?.resource_count}个资源引用了，不能删除`),
                   disabled: data?.resource_count === 0
                 }">
-                <bk-button theme="primary" text :disabled="data?.resource_count !== 0" @click="handleDelete(data)">
+                <bk-button
+                  theme="primary" text
+                  :disabled="data?.resource_count !== 0 || data?.name === 'default'" @click="handleDelete(data)">
                   {{ t('删除') }}
                 </bk-button>
               </span>
@@ -63,7 +65,8 @@
       v-model:isShow="sidesliderConfi.isShow" :title="sidesliderConfi.title" :quick-close="false"
       ext-cls="backend-service-slider" width="800">
       <template #default>
-        <div class="content p30">
+        <div class="content">
+          <bk-alert theme="warning" :title="editTitle" class="mb20" v-if="curOperate === 'edit'" />
           <div class="base-info mb20">
             <p class="title"><span class="icon apigateway-icon icon-ag-down-shape"></span>{{ t('基础信息') }}</p>
             <bk-form
@@ -98,7 +101,9 @@
                   </span>
                 </template>
                 <template #content="slotProps">
-                  <bk-form ref="stageConfigRef" class="stage-config-form " :model="slotProps" form-type="vertical">
+                  <bk-form
+                    :ref="getSatgeConfigRef"
+                    class="stage-config-form " :model="slotProps" form-type="vertical">
                     <bk-form-item
                       :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
                       <bk-select
@@ -115,7 +120,7 @@
                       :rules="configRules.host" :property="`configs.hosts.${i}.host`"
                       :class="['backend-item-cls', { 'form-item-special': i !== 0 }]" required>
                       <div class="host-item">
-                        <bk-input :placeholder="t('格式如 ：http(s)://host:port')" v-model="hostItem.host" :key="i">
+                        <bk-input :placeholder="t('格式如：host:port')" v-model="hostItem.host" :key="i">
                           <template #prefix>
                             <bk-select v-model="hostItem.scheme" class="scheme-select-cls w80" :clearable="false">
                               <bk-option
@@ -226,7 +231,7 @@
       </template>
       <template #footer>
         <div class="pl30">
-          <bk-button theme="primary" class="mr5 w80" @click="handleConfirm">
+          <bk-button theme="primary" class="mr5 w80" @click="handleConfirm" :loading="isSaveLoading">
             {{ t('确定') }}
           </bk-button>
           <bk-button class="w80" @click="handleCancel">{{ t('取消') }}</bk-button>
@@ -237,12 +242,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { InfoBox, Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
 import { useCommon } from '@/store';
-// import { timeFormatter } from '@/common/util';
+import { timeFormatter } from '@/common/util';
 import { useQueryList } from '@/hooks';
 import {
   getStageList,
@@ -258,13 +263,14 @@ const common = useCommon();
 const router = useRouter();
 const { apigwId } = common; // 网关id
 
-
 const filterData = ref({ name: '', type: '' });
 const isBatchSet = ref<boolean>(false);
+const isSaveLoading = ref<boolean>(false);
 const baseInfoRef = ref(null);
-const stageConfigRef = ref(null);
+const stageConfigRef = ref([]);
 const stageBatchConfigRef = ref(null);
 const curOperate = ref<string>('add');
+const editTitle = ref<string>(t('如果环境和资源已经发布，服务配置修改后，将立即对所有已发布资源生效'));
 const finaConfigs = ref([]);
 const curServiceDetail = ref({
   id: 0,
@@ -299,7 +305,7 @@ const loadbalanceList = reactive([
 const schemeList = [{ value: 'http' }, { value: 'https' }];
 // 基础信息
 const baseInfo = ref({
-  name: 'default',
+  name: '',
   description: '',
 });
 // 基础信息校验规则
@@ -340,7 +346,7 @@ const configRules = {
         const reg = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
         return reg.test(value);
       },
-      message: t('请输入合法Host，如：http://example.com'),
+      message: t('请输入合法Host，如：example.com'),
       trigger: 'blur',
     },
   ],
@@ -373,31 +379,27 @@ const {
   getList,
 } = useQueryList(getBackendServiceList, filterData);
 
-// 监听是否批量设置
-watch(
-  () => isBatchSet.value,
-  (v: boolean) => {
-    console.log(v);
-  },
-  { immediate: true },
-);
-
+// 获取所有的stage name
 const getAllStageName = computed(() => {
   const newTitle = stageList.value.map(item => item.name).join('，');
   return newTitle;
 });
 
+const isNewCreate = (row: any) => {
+  return isWithinTime(row?.updated_time) ? 'new-created' : '';
+};
+
 // 判断后端服务新建时间是否在24h之内
-// const isWithinTime = (date: string) => {
-//   const str = timeFormatter(date);
-//   const targetTime = new Date(str);
-//   const currentTime = new Date();
-//   // 计算两个时间之间的毫秒差
-//   const diff = currentTime.getTime() - targetTime.getTime();
-//   // 24 小时的毫秒数
-//   const twentyFourHours = 24 * 60 * 60 * 1000;
-//   return diff < twentyFourHours;
-// };
+const isWithinTime = (date: string) => {
+  const str = timeFormatter(date);
+  const targetTime = new Date(str);
+  const currentTime = new Date();
+  // 计算两个时间之间的毫秒差
+  const diff = currentTime.getTime() - targetTime.getTime();
+  // 24 小时的毫秒数
+  const twentyFourHours = 24 * 60 * 60 * 1000;
+  return diff < twentyFourHours;
+};
 
 const resetData = () => {
   isBatchSet.value = false;
@@ -414,11 +416,19 @@ const resetData = () => {
   }];
 };
 
+// 获取所有stage服务配置的ref
+const getSatgeConfigRef = (el: any) => {
+  console.log(el);
+  if (el !== null) {
+    stageConfigRef.value.push(el);
+  }
+};
+
 // 新建btn
 const handleAdd = () => {
   curOperate.value = 'add';
   baseInfo.value = {
-    name: 'default',
+    name: '',
     description: '',
   };
   resetData();
@@ -506,7 +516,6 @@ const handleResource = (data: any) => {
 
 // 点击删除
 const handleDelete = (item: any) => {
-  console.log(item);
   InfoBox({
     title: t(`确定删除【${item.name}】该服务?`),
     infoType: 'warning',
@@ -530,12 +539,8 @@ const handleDelete = (item: any) => {
 const handleConfirm = async () => {
   // 基础信息校验
   await baseInfoRef.value.validate();
-  console.log(baseInfo.value);
-  console.log('stageConfig', stageConfig.value);
-  console.log('batchConfig', batchConfig.value);
   const isAdd = curOperate.value === 'add';
   if (isBatchSet.value) {
-    console.log(stageBatchConfigRef.value);
     await stageBatchConfigRef.value.validate();
     finaConfigs.value = stageList.value.map((item: any) => {
       const { configs } = batchConfig.value[0];
@@ -548,12 +553,13 @@ const handleConfirm = async () => {
       return newItem;
     });
   } else {
-    console.log('baseInfoRef', baseInfoRef.value);
-    console.log('stageConfigRef', stageConfigRef.value);
-    // await stageConfigRef.value.validate();
-    // for (const item of stageConfigRef.value) {
-    //   await item.validate();
-    // }
+    console.log(stageConfigRef.value);
+
+    // 逐个stage服务配置的校验
+    for (const item of stageConfigRef.value) {
+      if (item === null) break;
+      await item.validate();
+    }
     finaConfigs.value = stageConfig.value.map((item) => {
       const id =  isAdd ? item.id : item.configs.stage.id;
       const newItem = {
@@ -571,7 +577,7 @@ const handleConfirm = async () => {
     description,
     configs: finaConfigs.value,
   };
-  console.log(params);
+  isSaveLoading.value = true;
   try {
     if (isAdd) {
       await createBackendService(apigwId, params);
@@ -583,27 +589,28 @@ const handleConfirm = async () => {
       theme: 'success',
     });
     sidesliderConfi.isShow = false;
+    stageConfigRef.value = [];
     getList();
   } catch (error) {
     console.log('error', error);
+  } finally {
+    isSaveLoading.value = false;
   }
 };
 
 // 取消btn
 const handleCancel = () => {
   sidesliderConfi.isShow = false;
+  stageConfigRef.value = [];
 };
 
 const init = async () => {
-  console.log(tableData);
   try {
     const res = await getStageList(apigwId);
     stageList.value = res;
     res.forEach((item: any) => {
       activeIndex.value.push(item.name);
     });
-    console.log(stageList.value);
-    console.log(activeIndex.value);
   } catch (error) {
     console.log('error', error);
   }
@@ -616,10 +623,15 @@ init();
   width: 80px;
 }
 
+:deep(.new-created){
+  background-color: #f1fcf5 !important;
+}
 .w500 {
   width: 500px;
 }
-
+.content{
+  padding: 20px 30px 30px;
+}
 .backend-service-slider {
   :deep(.bk-modal-content) {
     min-height: calc(100vh - 104px) !important;
@@ -667,7 +679,19 @@ init();
     }
   }
 }
-
+:deep(.table-layout){
+  .bk-table-body{
+    table{
+      tbody{
+        tr{
+          td{
+            background-color: rgba(0,0,0,0);
+          }
+        }
+      }
+    }
+  }
+}
 .host-item {
   display: flex;
   align-items: center;
