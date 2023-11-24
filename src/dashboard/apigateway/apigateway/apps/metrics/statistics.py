@@ -63,7 +63,9 @@ class StatisticsHandler:
     def _save_gateway_request_data(self, start: int, end: int, step: str, gateway_name: str):
         gateway_request_count = StatisticsAPIRequestMetrics().query(end, step, gateway_name)
         if not gateway_request_count.get("series"):
-            logger.error("The resource request data obtained from Prometheus is empty, skip statistics.")
+            logger.info(
+                "gateway: {gateway_name}, the resource request data obtained from Prometheus is empty, skip statistics."
+            )
             return
 
         # 统计请求数/失败请求数
@@ -119,7 +121,9 @@ class StatisticsHandler:
     def _save_app_request_data(self, start: int, end: int, step: str, gateway_name: str):
         app_request_count = StatisticsAppRequestMetrics().query(end, step, gateway_name)
         if not app_request_count.get("series"):
-            logger.error("The app request data obtained from Prometheus is empty, skip statistics.")
+            logger.info(
+                f"gateway: {gateway_name}, the app request data obtained from Prometheus is empty, skip statistics."
+            )
             return
 
         # 保存数据
