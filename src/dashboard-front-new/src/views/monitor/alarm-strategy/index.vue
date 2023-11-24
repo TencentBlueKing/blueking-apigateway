@@ -611,6 +611,13 @@ init();
   border-radius: 2px;
   white-space: nowrap;
 }
+:deep(.alarm-strategy-content){
+  .bk-exception{
+    height: 280px;
+    max-height: 280px;
+    justify-content: center;
+  }
+}
 </style>
 
 

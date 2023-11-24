@@ -45,6 +45,7 @@
                 {{ t('编辑') }}
               </bk-button>
               <span
+                v-if="data?.resource_count !== 0"
                 v-bk-tooltips="{
                   content: t(`${data?.name === 'default' ? '默认后端服务，且' : '服务'}被${data?.resource_count}个资源引用了，不能删除`),
                   disabled: data?.resource_count === 0
@@ -52,6 +53,18 @@
                 <bk-button
                   theme="primary" text
                   :disabled="data?.resource_count !== 0 || data?.name === 'default'" @click="handleDelete(data)">
+                  {{ t('删除') }}
+                </bk-button>
+              </span>
+              <span
+                v-else
+                v-bk-tooltips="{
+                  content: t('默认后端服务，不能删除'),
+                  disabled: data?.name !== 'default'
+                }">
+                <bk-button
+                  theme="primary" text
+                  :disabled="data?.name === 'default'" @click="handleDelete(data)">
                   {{ t('删除') }}
                 </bk-button>
               </span>
