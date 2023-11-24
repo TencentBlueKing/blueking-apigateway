@@ -1,6 +1,6 @@
 <template>
   <div class="backend-service-container p20">
-    <div class="header flex-row justify-content-between">
+    <div class="header flex-row justify-content-between mb24">
       <div class="header-btn flex-row ">
         <span class="mr10">
           <bk-button theme="primary" class="mr5 w80" @click="handleAdd">
@@ -635,12 +635,14 @@ init();
 .w80 {
   width: 80px;
 }
-
-:deep(.new-created){
-  background-color: #f1fcf5 !important;
+.mb24{
+  margin-bottom: 24px;
 }
 .w500 {
   width: 500px;
+}
+:deep(.new-created){
+  background-color: #f1fcf5 !important;
 }
 .content{
   padding: 20px 30px 30px;

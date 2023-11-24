@@ -1,6 +1,6 @@
 <template>
   <div class="alarm-strategy-container p20">
-    <div class="header flex-row justify-content-between mb10">
+    <div class="header flex-row justify-content-between mb24">
       <div class="header-btn flex-row ">
         <span class="mr10">
           <bk-button theme="primary" class="mr5 w80" @click="handleAdd">
@@ -443,6 +443,9 @@ init();
 }
 .w328{
   width: 328px;
+}
+.mb24{
+  margin-bottom: 24px;
 }
 :deep(.alarm-strategy-table) {
   .bk-table-body {
