@@ -15,7 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Optional
 
 from django.db.models import Q
 from django.template.loader import render_to_string
@@ -48,7 +47,20 @@ class SDKListApi(generics.ListAPIView):
         slz = SDKListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = self._filter_sdks(slz.validated_data["language"], slz.validated_data.get("keyword"))
+        queryset = GatewaySDK.objects.filter(
+            gateway__is_public=True,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            is_recommended=True,
+            language=slz.validated_data["language"],
+        )
+
+        # 根据网关名称、描述过滤
+        keyword = slz.validated_data.get("keyword")
+        if keyword:
+            queryset = queryset.filter(
+                Q(gateway__name__icontains=keyword) | Q(gateway__description__icontains=keyword)
+            )
+
         page = self.paginate_queryset(queryset.order_by("name").prefetch_related("gateway"))
         resource_version_ids = {sdk.resource_version_id for sdk in page}
 
@@ -66,22 +78,6 @@ class SDKListApi(generics.ListAPIView):
             },
         )
         return self.get_paginated_response(output_slz.data)
-
-    def _filter_sdks(self, language: str, keyword: Optional[str]):
-        queryset = GatewaySDK.objects.filter(
-            gateway__is_public=True,
-            gateway__status=GatewayStatusEnum.ACTIVE.value,
-            is_recommended=True,
-            language=language,
-        )
-
-        # 根据网关名称、描述过滤
-        if keyword:
-            queryset = queryset.filter(
-                Q(gateway__name__icontains=keyword) | Q(gateway__description__icontains=keyword)
-            )
-
-        return queryset
 
 
 @method_decorator(

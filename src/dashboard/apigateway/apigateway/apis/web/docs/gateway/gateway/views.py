@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Optional
 
 from django.db.models import Q
 from django.utils.decorators import method_decorator
@@ -49,7 +48,18 @@ class GatewayListApi(generics.ListAPIView):
         slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        gateways = list(self._filter_gateways(keyword=slz.validated_data.get("keyword")))
+        # 网关公开，启用中
+        queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+
+        # 根据网关名称、描述过滤
+        keyword = slz.validated_data.get("keyword")
+        if keyword:
+            queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
+
+        # 网关存在已发布的版本
+        released_gateway_ids = Release.objects.all().values_list("gateway_id", flat=True).distinct()
+        gateways = list(queryset.filter(id__in=released_gateway_ids))
+
         gateway_ids = [gateway.id for gateway in gateways]
 
         output_slz = GatewayOutputSLZ(
@@ -63,24 +73,6 @@ class GatewayListApi(generics.ListAPIView):
         # 需将官方 SDK 放在前面，但官方标记 is_official 不在 Gateway 表中，因此需要获取数据后，再排序分页
         page = self.paginate_queryset(sorted(output_slz.data, key=lambda x: (-x["is_official"], x["name"])))
         return self.get_paginated_response(page)
-
-    def _filter_gateways(self, keyword: Optional[str]):
-        """
-        查询可显示的网关
-        - 网关公开
-        - 网关启用中
-        - 网关存在已发布的版本
-        """
-        queryset = Gateway.objects.filter(
-            status=GatewayStatusEnum.ACTIVE.value,
-            is_public=True,
-        )
-
-        if keyword:
-            queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
-
-        released_gateway_ids = Release.objects.all().values_list("gateway_id", flat=True).distinct()
-        return queryset.filter(id__in=released_gateway_ids)
 
 
 @method_decorator(
