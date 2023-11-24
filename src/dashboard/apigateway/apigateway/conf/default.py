@@ -429,7 +429,7 @@ if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
             },
             "apigateway.apps.permission.tasks.renew_app_resource_permission": {
                 "task": "apigateway.apps.permission.tasks.renew_app_resource_permission",
-                "schedule": crontab(minute=50, hour=8),
+                "schedule": crontab(minute=50, hour=10),
             },
         }
     )
