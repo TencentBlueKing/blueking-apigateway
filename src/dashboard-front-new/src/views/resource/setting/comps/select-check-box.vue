@@ -10,17 +10,19 @@
     v-model="curLabelIds"
     selected-style="checkbox"
     @toggle="handleToggle">
-    <bk-option v-for="option in labelsData" :key="option.name" :id="option.id" :name="option.name">
+    <bk-option v-for="(option, index) in labelsData" :key="option.name" :id="option.id" :name="option.name">
       <template #default>
         <div
           v-bk-tooltips="{
             content: $t('标签最多只能选择10个'),
             disabled: !(!curLabelIds.includes(option.id) && curLabelIds.length >= 10) }"
           :disabled="!curLabelIds.includes(option.id) && curLabelIds.length >= 10"
-          class="flex-row align-items-center justify-content-between" style="width: 100%;"
-          v-if="!option.isEdited">
+          class="flex-row align-items-center justify-content-between item-container" style="width: 100%;"
+          v-if="!option.isEdited"
+          @mouseenter="handleMouseEnter(index)"
+          @mouseleave="handleMouseLeave">
           {{ option.name }}
-          <div>
+          <div class="icon-container" v-if="hoverIndex === index">
             <i
               class="icon apigateway-icon icon-ag-edit-line"
               @click.stop="handleEditOptionItem(option)"></i>
@@ -106,6 +108,8 @@ const optionName = ref('');
 const inputRef = ref(null);
 const selectRef = ref(null);
 const editInputRef = ref(null);
+const hoverIndex = ref<number>(null);
+const isIconClick = ref<boolean>(false);  // 是否点击了icon
 
 const curLabelIdsbackUp = ref(curLabelIds.value);
 
@@ -171,6 +175,7 @@ const updateOption = async (name: string, id: number) => {
   }
 };
 
+// 展示新建标签input
 const handleShowEdit = () => {
   showEdit.value = true;
   setTimeout(() => {
@@ -188,7 +193,10 @@ const handleEditOptionItem = (e: any) => {
   }, 500);
 };
 
-const handleDeleteOptionItem = () => {};
+// 点击了删除icon
+const handleDeleteOptionItem = () => {
+  isIconClick.value = true;
+};
 
 // 删除某个标签
 const handleDeleteOptionItemConfirm = async (e: any) => {
@@ -209,5 +217,30 @@ const handleInputFocus = () => {
     editInputRef.value[0].focus();
   });
 };
+// 鼠标移入事件
+const handleMouseEnter = (i: number) => {
+  hoverIndex.value = i;
+};
+// 处理鼠标移出
+const handleMouseLeave = () => {
+  // 如果点击了icon 则不隐藏icon
+  if (isIconClick.value) return;
+  hoverIndex.value = null;
+};
 </script>
+<style scoped lang="scss">
+  .item-container{
+    width: 100%;
+    position: relative;
+    .icon-container{
+      position: absolute;
+      right: -20px;
+      .icon{
+        &:hover{
+          color: #3a84ff;
+        }
+      }
+    }
+  }
+</style>
 

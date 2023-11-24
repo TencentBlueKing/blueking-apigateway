@@ -144,16 +144,18 @@
                     <span v-for="(item, index) in data?.labels" :key="item.id">
                       <bk-tag @click="handleEditLabel(data)" v-if="index < data.tagOrder">{{ item.name }}</bk-tag>
                     </span>
-                    <bk-tag v-if="data.labels.length > data.tagOrder">
+                    <bk-tag
+                      v-if="data.labels.length > data.tagOrder"
+                      class="tag-cls">
                       +{{ data.labels.length - data.tagOrder }}
                       <!-- ... -->
                     </bk-tag>
-                    <i
-                      v-show="data?.isDoc"
-                      @click="handleEditLabel(data)"
-                      class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                   </section>
                   <section v-else>--</section>
+                  <i
+                    v-show="data?.isDoc"
+                    @click="handleEditLabel(data)"
+                    class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                 </section>
                 <section v-else>
                   <SelectCheckBox
@@ -537,13 +539,6 @@ const init =  () => {
   getLabelsData();
 };
 
-// // 相同的标签
-// const isSameLabels = computed(() => {
-//   const curLabelIdsString = JSON.stringify(curLabelIds.value.sort());
-//   const curLabelIdsbackUpString = JSON.stringify(curLabelIdsbackUp.value.sort());
-//   return curLabelIdsString === curLabelIdsbackUpString;
-// });
-
 // isPublic为true allowApply才可选
 const handlePublicChange = () => {
   batchEditData.value.allowApply = batchEditData.value.isPublic;
@@ -569,7 +564,6 @@ const handleEditResource = (id: number, type: string) => {
 
 // 删除资源
 const handleDeleteResource = async (id: number) => {
-  console.log('props.apigwId', props);
   await deleteResources(props.apigwId, id);
   Message({
     message: t('删除成功'),
@@ -613,7 +607,6 @@ const handleBatchOperate = async (data: IDropList) => {
 
 // 处理导出弹窗显示
 const handleExport = async ({ value }: {value: string}) => {
-  console.log('data', value);
   exportParams.export_type = value;
   exportDialogConfig.isShow = true;
   switch (value) {
@@ -684,9 +677,6 @@ const handleImport = (v: IDropList) => {
 const handleMouseEnter = (e: any, row: any) => {
   setTimeout(() => {
     row.isDoc = true;
-    // data.isRowHover = true
-    // data.isAddLabel = true
-    // console.log('row', row);
   }, 100);
 };
 
@@ -694,15 +684,11 @@ const handleMouseEnter = (e: any, row: any) => {
 const handleMouseLeave = (e: any, row: any) => {
   setTimeout(() => {
     row.isDoc = false;
-    // data.isRowHover = true
-    // data.isAddLabel = true
-    // console.log('row', row);
   }, 100);
 };
 
 // 展示文档
 const handleShowDoc = (data: any, languages = 'zh') => {
-  console.log('data', data);
   curResource.value = data;
   resourceId.value = data.id;   // 资源id
   docSliderConf.isShowDocSide = true;
@@ -739,7 +725,6 @@ const handleShowVersion = async () => {
 
 // 处理标签点击
 const handleEditLabel = (data: any) => {
-  console.log('111', data);
   resourceId.value = data.id;
   tableData.value.forEach((item) => {
     item.isEditLabel = false;
@@ -770,7 +755,6 @@ const handleCloseSelect = () => {
 
 // 更新成功
 const handleUpdateLabelSuccess = () => {
-  console.log(111);
   getList();
   init();
 };
@@ -912,6 +896,9 @@ onMounted(() => {
           top: 8px;
           right: -20px;
         }
+      }
+      .tag-cls{
+        cursor: pointer;
       }
     }
 
