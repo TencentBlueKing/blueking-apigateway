@@ -23,7 +23,9 @@
                   class="mt15 mb15" closable />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
-                  <bk-form-item property="resource_version_id" :label="`发布的资源版本(当前版本: ${currentAssets.resource_version.version})`">
+                  <bk-form-item
+                    property="resource_version_id"
+                    :label="`发布的资源版本(当前版本: ${currentAssets.resource_version.version})`">
                     <bk-select
                       v-model="formData.resource_version_id"
                       :input-search="false"
@@ -132,6 +134,10 @@ const props = defineProps({
   currentAssets: {
     type: Object,
     default: () => ({}),
+  },
+  version: {
+    type: Object,
+    required: false,
   },
 });
 
@@ -277,6 +283,9 @@ watch(
   (val) => {
     if (val) {
       getResourceVersions();
+      if (props.version?.id) {
+        formData.resource_version_id = props.version?.id;
+      }
     } else {
       stepsConfig.value.curStep = 1;
       formData.resource_version_id = undefined;
