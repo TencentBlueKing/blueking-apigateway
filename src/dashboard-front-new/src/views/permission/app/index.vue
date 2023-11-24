@@ -29,6 +29,7 @@
     <div class="app-content">
       <bk-loading :loading="isLoading">
         <bk-table
+          show-overflow-tooltip
           class="mt15" :data="tableData" :size="'small'" :pagination="pagination"
           @page-limit-change="handlePageSizeChange" remote-pagination
           @page-value-change="handlePageChange" @selection-change="handleSelectionChange">

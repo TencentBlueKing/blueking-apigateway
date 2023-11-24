@@ -83,6 +83,10 @@ const handleRefresh = () => {
 <style lang="scss" scoped>
 .gateways-empty-table-search {
     max-height: 280px;
+    width: auto !important;
+    display: flex;
+    align-items: center;
+    margin: 0 auto;
 
     .search-empty-tips {
         font-size: 12px;
@@ -109,22 +113,10 @@ const handleRefresh = () => {
         cursor: pointer;
         color: #3a84ff;
     }
-}
-</style>
 
-<style lang="scss">
-.gateways-empty-table-search {
     .exception-wrap-item .bk-exception-img.part-img {
         height: 130px;
     }
-}
-
-.bk-table-body-content {
-    width: auto !important;
-    height: 280px;
-    max-height: 280px;
-    display: flex;
-    align-items: center;
 
     .bk-table-empty-text {
         padding: 0 !important;
