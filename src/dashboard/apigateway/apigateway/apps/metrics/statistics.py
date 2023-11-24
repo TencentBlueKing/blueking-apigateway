@@ -41,48 +41,48 @@ class StatisticsHandler:
         self._gateway_id_to_resources = {}
 
     def stats(self, start: int, end: int, step: str):
-        self._stats_gateway_request_count(start, end, step)
-        self._stats_app_request_count(start, end, step)
+        self._stats_gateway_request_data(start, end, step)
+        self._stats_app_request_data(start, end, step)
 
-    def _stats_gateway_request_count(self, start: int, end: int, step: str):
+    def _stats_gateway_request_data(self, start: int, end: int, step: str):
         # 清理旧数据
         StatisticsAPIRequestByDay.objects.filter(start_time=utctime(start).datetime).delete()
 
         # 按网关拉取，写入新数据；全量拉取时，数据量过大可能拉不到
         for gateway_name in self._get_active_gateway_names():
-            self._save_api_request_data(start, end, step, gateway_name)
+            self._save_gateway_request_data(start, end, step, gateway_name)
 
-    def _stats_app_request_count(self, start: int, end: int, step: str):
+    def _stats_app_request_data(self, start: int, end: int, step: str):
         # 清理旧数据
         StatisticsAppRequestByDay.objects.filter(start_time=utctime(start).datetime).delete()
 
-        # 按网关拉取，写入新数据；全量拉取时，数据量过大数据可能拉不到
+        # 按网关拉取，写入新数据；全量拉取时，数据量过大可能拉不到
         for gateway_name in self._get_active_gateway_names():
             self._save_app_request_data(start, end, step, gateway_name)
 
-    def _save_api_request_data(self, start: int, end: int, step: str, gateway_name: str):
-        api_request_count = StatisticsAPIRequestMetrics().query(end, step, gateway_name)
-        if not api_request_count.get("series"):
+    def _save_gateway_request_data(self, start: int, end: int, step: str, gateway_name: str):
+        gateway_request_count = StatisticsAPIRequestMetrics().query(end, step, gateway_name)
+        if not gateway_request_count.get("series"):
             logger.error("The resource request data obtained from Prometheus is empty, skip statistics.")
             return
 
         # 统计请求数/失败请求数
-        api_request_data: Dict = defaultdict(dict)
-        for item in api_request_count["series"]:
+        gateway_request_data: Dict = defaultdict(dict)
+        for item in gateway_request_count["series"]:
             dimensions = item["dimensions"]
 
             gateway_name_ = dimensions["api_name"]
             key = f'{dimensions["stage_name"]}:{dimensions["resource_name"]}'
-            api_request_data[gateway_name_].setdefault(key, defaultdict(float))
+            gateway_request_data[gateway_name_].setdefault(key, defaultdict(float))
 
             count = item["datapoints"][0][0]
-            api_request_data[gateway_name_][key]["total_count"] += count
+            gateway_request_data[gateway_name_][key]["total_count"] += count
             if dimensions["proxy_error"] != "0":
-                api_request_data[gateway_name_][key]["failed_count"] += count
+                gateway_request_data[gateway_name_][key]["failed_count"] += count
 
         # 保存数据
         statistics_record = []
-        for gateway_name_, gateway_request_data in api_request_data.items():
+        for gateway_name_, gateway_request_data in gateway_request_data.items():
             gateway_id = self._get_gateway_id(gateway_name_)
             if not gateway_id:
                 logger.warning("gateway (name=%s) does not exist, skip save api statistics.", gateway_name_)

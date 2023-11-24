@@ -111,7 +111,7 @@ def fake_statistics_app_request_metrics(fake_resource):
 
 
 class TestStatisticsHandler:
-    def test_save_api_request_data(
+    def test_save_gateway_request_data(
         self,
         mocker,
         fake_resource,
@@ -131,7 +131,7 @@ class TestStatisticsHandler:
         now = now_datetime()
 
         handler = StatisticsHandler()
-        handler._save_api_request_data(now, now, "1m")
+        handler._save_gateway_request_data(now, now, "1m")
 
         assert StatisticsAPIRequestByDay.objects.filter(api_id=fake_gateway.id).count() == 1
         record = StatisticsAPIRequestByDay.objects.get(api_id=fake_gateway.id, resource_id=fake_resource.id)
