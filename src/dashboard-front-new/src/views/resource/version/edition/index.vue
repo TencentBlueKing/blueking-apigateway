@@ -73,8 +73,8 @@
                 <bk-button text theme="primary" @click="openCreateSdk(data.id)">
                   {{ t("生成SDK") }}
                 </bk-button>
-                <bk-dropdown trigger="click" :is-show="isReleaseMenuShow">
-                  <bk-button text theme="primary" class="pl10 pr10" @click="showRelease()">
+                <bk-dropdown trigger="click" :is-show="!!data?.isReleaseMenuShow">
+                  <bk-button text theme="primary" class="pl10 pr10" @click="showRelease(data)">
                     {{ t("发布至环境") }}
                   </bk-button>
                   <template #content>
@@ -82,7 +82,7 @@
                       <bk-dropdown-item
                         v-for="item in stageList"
                         :key="item.id"
-                        @click="handleClickStage(item)"
+                        @click="handleClickStage(item, data)"
                       >
                         {{ item.name }}
                       </bk-dropdown-item>
@@ -122,7 +122,11 @@
     </bk-sideslider>
 
     <!-- 发布资源 -->
-    <release-sideslider :current-assets="stageData" ref="releaseSidesliderRef" @release-success="getList()" />
+    <release-sideslider
+      :current-assets="stageData"
+      :version="versionData"
+      ref="releaseSidesliderRef"
+      @release-success="getList()" />
   </div>
 </template>
 
@@ -168,9 +172,9 @@ const resourceDetailRef = ref(null);
 
 // 该网关下的环境列表
 const stageList = ref<any>([]);
-const isReleaseMenuShow = ref<boolean>(false);
 // 选择发布的环境
 const stageData = ref();
+const versionData = ref();
 const releaseSidesliderRef = ref(null);
 
 // 生成sdk
@@ -219,12 +223,12 @@ const jumpSdk = (row: any) => {
 };
 
 // 选择要发布的环境
-const showRelease = async () => {
+const showRelease = async (row: any) => {
   try {
     const res = await getStageList(apigwId);
     if (res?.length) {
       stageList.value = res;
-      isReleaseMenuShow.value = true;
+      row.isReleaseMenuShow = true;
     } else {
       Message({
         theme: 'warning',
@@ -241,9 +245,11 @@ const showRelease = async () => {
 };
 
 // 展示发布弹窗
-const handleClickStage = (stage: any) => {
+const handleClickStage = (stage: any, row: any) => {
   stageData.value = stage;
+  versionData.value = row;
   releaseSidesliderRef.value.showReleaseSideslider();
+  row.isReleaseMenuShow = false;
 };
 
 watch(
