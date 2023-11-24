@@ -49,20 +49,20 @@ class GatewayListApi(generics.ListAPIView):
         slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = self._filter_gateways(keyword=slz.validated_data.get("keyword"))
+        gateways = list(self._filter_gateways(keyword=slz.validated_data.get("keyword")))
+        gateway_ids = [gateway.id for gateway in gateways]
 
-        page = self.paginate_queryset(queryset)
-        gateway_ids = [gateway.id for gateway in page]
-
-        slz = GatewayOutputSLZ(
-            page,
+        output_slz = GatewayOutputSLZ(
+            gateways,
             many=True,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids),
             },
         )
 
-        return self.get_paginated_response(sorted(slz.data, key=lambda x: (-x["is_official"], x["name"])))
+        # 需将官方 SDK 放在前面，但官方标记 is_official 不在 Gateway 表中，因此需要获取数据后，再排序分页
+        page = self.paginate_queryset(sorted(output_slz.data, key=lambda x: (-x["is_official"], x["name"])))
+        return self.get_paginated_response(page)
 
     def _filter_gateways(self, keyword: Optional[str]):
         """

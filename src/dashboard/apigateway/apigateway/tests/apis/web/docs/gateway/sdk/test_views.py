@@ -15,6 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.apis.web.docs.gateway.sdk.views import SDKListApi
+from apigateway.apps.support.constants import ProgrammingLanguageEnum
+
+
 class TestSDKListApi:
     def test_list(self, request_view, fake_sdk):
         resp = request_view(
@@ -27,10 +31,28 @@ class TestSDKListApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert len(result["data"]) >= 1
-        assert result["data"][0]["gateway"]
-        assert result["data"][0]["sdk"]
-        assert result["data"][0]["resource_version"]
+        assert len(result["data"]["results"]) >= 1
+        assert result["data"]["results"][0]["gateway"]
+        assert result["data"]["results"][0]["sdk"]
+        assert result["data"]["results"][0]["resource_version"]
+
+    def test_filter_sdks(self, fake_gateway, fake_sdk):
+        view = SDKListApi()
+
+        fake_gateway.description = "this is a test"
+        fake_gateway.save()
+
+        result = view._filter_sdks(ProgrammingLanguageEnum.PYTHON.value, None)
+        assert result.filter(id=fake_sdk.id).exists()
+
+        result = view._filter_sdks(ProgrammingLanguageEnum.PYTHON.value, fake_gateway.name)
+        assert result.filter(id=fake_sdk.id).exists()
+
+        result = view._filter_sdks(ProgrammingLanguageEnum.PYTHON.value, fake_gateway.description)
+        assert result.filter(id=fake_sdk.id).exists()
+
+        result = view._filter_sdks(ProgrammingLanguageEnum.PYTHON.value, "not exist keyword")
+        assert result.count() == 0
 
 
 class TestSDKDocApi:

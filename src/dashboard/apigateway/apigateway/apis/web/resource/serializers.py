@@ -55,7 +55,7 @@ class ResourceQueryInputSLZ(serializers.Serializer):
     order_by = serializers.ChoiceField(
         choices=["-id", "name", "-name", "path", "-path", "updated_time", "-updated_time"],
         allow_blank=True,
-        required=False,
+        default="-updated_time",
         help_text="排序字段",
     )
 
