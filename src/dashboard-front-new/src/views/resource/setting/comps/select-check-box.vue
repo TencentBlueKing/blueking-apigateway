@@ -32,18 +32,19 @@
             >
               <i
                 class="icon apigateway-icon icon-ag-delet"
-                @click.stop="handleDeleteOptionItem(option)"></i>
+                @click.stop="handleDeleteOptionItem"></i>
             </bk-pop-confirm>
           </div>
         </div>
         <div v-else @click.stop="handleInputFocus">
           <bk-input
             style="width: 180px"
-            ref="inputRef"
+            ref="editInputRef"
             v-model="option.name"
             size="small"
-            @enter="addOption"
-            :placeholder="t('请输入标签')"
+            @enter="updateOption(option.name, option.id)"
+            @input="handleInputFocus"
+            :placeholder="t('请输入标签， enter保存')"
           />
         </div>
       </template>
@@ -60,7 +61,7 @@
             v-model="optionName"
             size="small"
             @enter="addOption"
-            :placeholder="t('请输入标签')"
+            :placeholder="t('请输入标签，enter保存')"
           />
         </div>
         <div v-else class="flex-row align-items-center justity-content-center" style="cursor: pointer;">
@@ -71,33 +72,18 @@
             <plus style="font-size: 18px;" />
             {{ t('新建标签') }}
           </div>
-          <div class="flex-row align-items-center" style="position: absolute; right: 12px;">
-            <bk-divider
-              direction="vertical"
-              type="solid"
-            />
-            <!-- <spinner
-              v-if="isLoading"
-              style="font-size: 14px;color: #3A84FF;"
-            />
-            <right-turn-line
-              v-else
-              style="font-size: 14px;cursor: pointer;"
-              @click="refresh"
-            /> -->
-          </div>
         </div>
       </div>
     </template>
   </bk-select>
 </template>
 <script setup lang="ts">
-import { ref, computed, toRefs, PropType, watch } from 'vue';
+import { ref, computed, toRefs, PropType, nextTick } from 'vue';
 import { Plus } from 'bkui-vue/lib/icon';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 
-import { updateResourcesLabels, createResourcesLabels, deleteResourcesLabels } from '@/http';
+import { updateResourcesLabels, createResourcesLabels, deleteResourcesLabels, updateResourcesLabelItem } from '@/http';
 
 import { useCommon } from '@/store';
 
@@ -119,6 +105,7 @@ const showEdit = ref(false);
 const optionName = ref('');
 const inputRef = ref(null);
 const selectRef = ref(null);
+const editInputRef = ref(null);
 
 const curLabelIdsbackUp = ref(curLabelIds.value);
 
@@ -146,12 +133,16 @@ const handleToggle = async (v: boolean) => {
           emit('update-success');
         } catch (error) {}
       } else {
+        labelsData.value.forEach((item: any) => {
+          item.isEdited = false;
+        });
         emit('close');
       }
     }
   }, 500);
 };
 
+// 新增标签
 const addOption = async () => {
   if (optionName.value.trim()) {
     await createResourcesLabels(apigwId, { name: optionName.value });
@@ -165,12 +156,20 @@ const addOption = async () => {
   emit('label-add-success');
 };
 
-// const refresh = () => {
-//   isLoading.value = true;
-//   setTimeout(() => {
-//     isLoading.value = false;
-//   }, 2000);
-// };
+// 更新标签
+const updateOption = async (name: string, id: number) => {
+  if (name.trim()) {
+    await updateResourcesLabelItem(apigwId, id, { name });
+    Message({
+      message: t('标签修改成功'),
+      theme: 'success',
+    });
+    labelsData.value.forEach((item: any) => {
+      item.isEdited = false;
+    });
+    emit('update-success');
+  }
+};
 
 const handleShowEdit = () => {
   showEdit.value = true;
@@ -180,16 +179,19 @@ const handleShowEdit = () => {
 };
 
 const handleEditOptionItem = (e: any) => {
+  labelsData.value.forEach((item: any) => {
+    item.isEdited = false;
+  });
   e.isEdited = true;
+  setTimeout(() => {
+    editInputRef.value[0].focus();
+  }, 500);
 };
 
-const handleDeleteOptionItem = (e: any) => {
-  console.log(1111, e);
-};
+const handleDeleteOptionItem = () => {};
 
 // 删除某个标签
 const handleDeleteOptionItemConfirm = async (e: any) => {
-  console.log(1111111, e);
   try {
     await deleteResourcesLabels(apigwId, e.id);
     Message({
@@ -201,16 +203,11 @@ const handleDeleteOptionItemConfirm = async (e: any) => {
   } catch (error) {}
 };
 
+// 输入框聚焦
 const handleInputFocus = () => {
-  console.log(111111);
+  nextTick(() => {
+    editInputRef.value[0].focus();
+  });
 };
-
-watch(
-  () => curLabelIds,
-  (v: any) => {
-    console.log('vvvvv', v);
-  },
-  { deep: true, immediate: true },
-);
 </script>
 

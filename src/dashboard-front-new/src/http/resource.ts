@@ -208,3 +208,11 @@ export const createResourcesLabels = (apigwId: number, data: {name: string}) => 
  * @param labelsId 标签id
  */
 export const deleteResourcesLabels = (apigwId: number, labelsId: number) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/labels/${labelsId}/`);
+
+/**
+ * 更新标签
+ * @param apigwId 网关id
+ * @param labelsId 标签id
+ * @param data 标签数据
+ */
+export const updateResourcesLabelItem = (apigwId: number, labelsId: number, data: {name: string}) => fetch.put(`${BK_DASHBOARD_URL}/gateways/${apigwId}/labels/${labelsId}/`, data);

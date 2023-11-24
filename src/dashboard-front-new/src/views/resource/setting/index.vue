@@ -110,7 +110,7 @@
             </bk-table-column>
             <bk-table-column
               :label="t('文档')"
-              width="100"
+              width="80"
               v-if="!isDetail"
             >
               <template #default="{ data }">
@@ -133,6 +133,7 @@
             <bk-table-column
               :label="t('标签')"
               prop="labels"
+              width="280"
               v-if="!isDetail"
             >
               <template #default="{ data }">
@@ -759,69 +760,6 @@ const getLabelsData = async () => {
   res.forEach((e: any) => e.isEdited = false);
   labelsData.value = res;
 };
-
-// const changeSelect = (id: number) => {
-//   console.log('id', id);
-//   resourceId.value = id;
-// };
-
-//
-// const handleToggle = async (v: boolean) => {
-//   // 关闭下拉框且
-//   console.log('isSameLabels.value', isSameLabels.value);
-//   if (!v) {
-//     // 变更了的标签数据请求接口
-//     if (!isSameLabels.value) {
-//       await updateResourcesLabels(props.apigwId, resourceId.value, { label_ids: curLabelIds.value });
-//       getList();
-//       init();
-//     } else {
-//       // 改为查看态
-//       tableData.value.forEach((item) => {
-//         item.isEditLabel = false;
-//       });
-//     }
-//   }
-// };
-
-// const addOption = async () => {
-//   if (optionName.value.trim()) {
-//     await createResourcesLabels(props.apigwId, { name: optionName.value });
-//     Message({
-//       message: t('标签新建成功'),
-//       theme: 'success',
-//     });
-//     getLabelsData();
-//     optionName.value = '';
-//   }
-//   showEdit.value = false;
-// };
-
-// const refresh = () => {
-//   isLoading.value = true;
-//   setTimeout(() => {
-//     isLoading.value = false;
-//   }, 2000);
-// };
-
-// const handleShowEdit = () => {
-//   showEdit.value = true;
-//   setTimeout(() => {
-//     inputRef.value.focus();
-//   });
-// };
-
-// const handleEditOptionItem = (e: any) => {
-//   e.isEdited = true;
-// };
-
-// const handleDeleteOptionItem = (e: any) => {
-//   console.log(1111, e);
-// };
-
-// const handleDeleteOptionItemConfirm = () => {
-
-// };
 
 // 未做变更关闭select下拉
 const handleCloseSelect = () => {
