@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from abc import abstractmethod
+from typing import Optional
 
 from django.conf import settings
 
@@ -27,21 +28,22 @@ from .base import BasePrometheusMetrics
 
 class BaseStatisticsMetrics(BasePrometheusMetrics):
     @abstractmethod
-    def _get_query_promql(self, step: str):
+    def _get_query_promql(self, step: str, gateway_name: Optional[str] = None):
         pass
 
-    def query(self, time_: int, step: str):
+    def query(self, time_: int, step: str, gateway_name: Optional[str] = None):
         return prometheus_component.query(
             bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
-            promql=self._get_query_promql(step),
+            promql=self._get_query_promql(step, gateway_name),
             time_=time_,
         )
 
 
 class StatisticsAPIRequestMetrics(BaseStatisticsMetrics):
-    def _get_query_promql(self, step):
+    def _get_query_promql(self, step: str, gateway_name: Optional[str] = None):
         labels = self._get_labels_expression(
             [
+                ("api_name", "=", gateway_name),
                 *self.default_labels,
             ]
         )
@@ -53,9 +55,10 @@ class StatisticsAPIRequestMetrics(BaseStatisticsMetrics):
 
 
 class StatisticsAPIRequestDurationMetrics(BaseStatisticsMetrics):
-    def _get_query_promql(self, step):
+    def _get_query_promql(self, step: str, gateway_name: Optional[str] = None):
         labels = self._get_labels_expression(
             [
+                ("api_name", "=", gateway_name),
                 *self.default_labels,
             ]
         )
@@ -71,9 +74,10 @@ class StatisticsAppRequestMetrics(BaseStatisticsMetrics):
     根据网关、环境、资源，统计应用请求量
     """
 
-    def _get_query_promql(self, step):
+    def _get_query_promql(self, step: str, gateway_name: Optional[str] = None):
         labels = self._get_labels_expression(
             [
+                ("api_name", "=", gateway_name),
                 *self.default_labels,
             ]
         )
@@ -89,9 +93,10 @@ class StatisticsAppRequestByResourceMetrics(BaseStatisticsMetrics):
     根据网关、资源，统计应用请求量
     """
 
-    def _get_query_promql(self, step):
+    def _get_query_promql(self, step: str, gateway_name: Optional[str] = None):
         labels = self._get_labels_expression(
             [
+                ("api_name", "=", gateway_name),
                 *self.default_labels,
             ]
         )
