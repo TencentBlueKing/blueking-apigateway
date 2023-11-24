@@ -27,6 +27,7 @@ class SDKListInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(
         choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
     )
+    keyword = serializers.CharField(allow_blank=True, required=False, help_text="筛选条件，支持模糊匹配网关名称、描述")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKListInputSLZ"
