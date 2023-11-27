@@ -21,8 +21,6 @@ from django.utils.translation import gettext_lazy as _
 
 from apigateway.common.mixins.models import TimestampedModelMixin
 
-from .managers import StatisticsAPIRequestManager, StatisticsAppRequestManager
-
 
 class StatisticsModelMixin(models.Model):
     total_count = models.BigIntegerField(default=0)
@@ -35,16 +33,14 @@ class StatisticsModelMixin(models.Model):
         abstract = True
 
 
-class StatisticsAPIRequest(StatisticsModelMixin, TimestampedModelMixin):
+class StatisticsGatewayRequest(StatisticsModelMixin, TimestampedModelMixin):
     """
     网关请求统计
     """
 
-    api_id = models.IntegerField(db_index=True)
+    gateway_id = models.IntegerField(db_index=True, db_column="api_id")
     stage_name = models.CharField(max_length=64)
     resource_id = models.IntegerField()
-
-    objects = StatisticsAPIRequestManager()
 
     class Meta:
         abstract = True
@@ -55,12 +51,10 @@ class StatisticsAppRequest(StatisticsModelMixin, TimestampedModelMixin):
     应用请求统计
     """
 
-    api_id = models.IntegerField(db_index=True)
+    gateway_id = models.IntegerField(db_index=True, db_column="api_id")
     bk_app_code = models.CharField(max_length=32)
     stage_name = models.CharField(max_length=64)
     resource_id = models.IntegerField()
-
-    objects = StatisticsAppRequestManager()
 
     class Meta:
         abstract = True
@@ -78,7 +72,7 @@ class StatisticsAppRequest(StatisticsModelMixin, TimestampedModelMixin):
 #         db_table = 'metrics_stats_app_request_by_hour'
 
 
-class StatisticsAPIRequestByDay(StatisticsAPIRequest):
+class StatisticsGatewayRequestByDay(StatisticsGatewayRequest):
     class Meta:
         verbose_name = _("网关请求统计(按天)")
         verbose_name_plural = _("网关请求统计(按天)")

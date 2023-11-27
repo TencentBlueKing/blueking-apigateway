@@ -177,8 +177,8 @@ def renew_app_resource_permission():
     for item in queryset:
         if not item.bk_app_code:
             continue
-        app_request_data[item.bk_app_code].setdefault(item.api_id, set())
-        app_request_data[item.bk_app_code][item.api_id].add(item.resource_id)
+        app_request_data[item.bk_app_code].setdefault(item.gateway_id, set())
+        app_request_data[item.bk_app_code][item.gateway_id].add(item.resource_id)
 
     for bk_app_code, gateway_resources in app_request_data.items():
         for gateway_id, resource_ids in gateway_resources.items():

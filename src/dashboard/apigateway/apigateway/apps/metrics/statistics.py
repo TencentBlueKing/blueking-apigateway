@@ -24,7 +24,7 @@ from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Resource
 from apigateway.utils.time import utctime
 
-from .models import StatisticsAPIRequestByDay, StatisticsAppRequestByDay
+from .models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from .prometheus.statistics import (
     StatisticsAPIRequestMetrics,
     StatisticsAppRequestMetrics,
@@ -34,31 +34,47 @@ logger = logging.getLogger(__name__)
 
 
 class StatisticsHandler:
+    def stats(self, start: int, end: int, step: str):
+        gateway_stats = GatewayRequestStatistics()
+        gateway_stats.delete_statistics_by_time(start)
+        gateway_stats.statistics(start, end, step)
+
+        app_stats = AppRequestStatistics()
+        app_stats.delete_statistics_by_time(start)
+        app_stats.statistics(start, end, step)
+
+
+class BaseRequestStatistics:
     def __init__(self):
         self._gateway_name_to_id = dict(Gateway.objects.all().values_list("name", "id"))
 
         # gateway_id -> resource_name -> resource_id, e.g. {1: {"echo": 10}}
         self._gateway_id_to_resources = {}
 
-    def stats(self, start: int, end: int, step: str):
-        self._stats_gateway_request_data(start, end, step)
-        self._stats_app_request_data(start, end, step)
+    def _get_active_gateway_names(self) -> List[str]:
+        # 如果网关已下线，则不再统计
+        return list(Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value).values_list("name", flat=True))
 
-    def _stats_gateway_request_data(self, start: int, end: int, step: str):
-        # 清理旧数据
-        StatisticsAPIRequestByDay.objects.filter(start_time=utctime(start).datetime).delete()
+    def _get_gateway_id(self, gateway_name: str) -> Optional[int]:
+        return self._gateway_name_to_id.get(gateway_name)
 
+    def _get_resource_id(self, gateway_id: int, resource_name: str) -> Optional[int]:
+        if gateway_id not in self._gateway_id_to_resources:
+            resource_name_to_id = dict(Resource.objects.filter(gateway_id=gateway_id).values_list("name", "id"))
+            self._gateway_id_to_resources[gateway_id] = resource_name_to_id
+
+        return self._gateway_id_to_resources[gateway_id].get(resource_name)
+
+
+class GatewayRequestStatistics(BaseRequestStatistics):
+    def delete_statistics_by_time(self, time_: int):
+        # 清理指定日期的统计数据
+        StatisticsGatewayRequestByDay.objects.filter(start_time=utctime(time_).datetime).delete()
+
+    def statistics(self, start: int, end: int, step: str):
         # 按网关拉取，写入新数据；全量拉取时，数据量过大可能拉不到
         for gateway_name in self._get_active_gateway_names():
             self._save_gateway_request_data(start, end, step, gateway_name)
-
-    def _stats_app_request_data(self, start: int, end: int, step: str):
-        # 清理旧数据
-        StatisticsAppRequestByDay.objects.filter(start_time=utctime(start).datetime).delete()
-
-        # 按网关拉取，写入新数据；全量拉取时，数据量过大可能拉不到
-        for gateway_name in self._get_active_gateway_names():
-            self._save_app_request_data(start, end, step, gateway_name)
 
     def _save_gateway_request_data(self, start: int, end: int, step: str, gateway_name: str):
         gateway_request_count = StatisticsAPIRequestMetrics().query(end, step, gateway_name)
@@ -106,18 +122,29 @@ class StatisticsHandler:
                     continue
 
                 statistics_record.append(
-                    StatisticsAPIRequestByDay(
+                    StatisticsGatewayRequestByDay(
                         total_count=int(request_data["total_count"]),
                         failed_count=int(request_data["failed_count"]),
                         start_time=utctime(start).datetime,
                         end_time=utctime(end).datetime,
-                        api_id=gateway_id,
+                        gateway_id=gateway_id,
                         stage_name=stage_name,
                         resource_id=resource_id,
                     )
                 )
 
-        StatisticsAPIRequestByDay.objects.bulk_create(statistics_record, batch_size=100)
+        StatisticsGatewayRequestByDay.objects.bulk_create(statistics_record, batch_size=100)
+
+
+class AppRequestStatistics(BaseRequestStatistics):
+    def delete_statistics_by_time(self, time_: int):
+        # 清理指定日期的统计数据
+        StatisticsAppRequestByDay.objects.filter(start_time=utctime(time_).datetime).delete()
+
+    def statistics(self, start: int, end: int, step: str):
+        # 按网关拉取，写入新数据；全量拉取时，数据量过大可能拉不到
+        for gateway_name in self._get_active_gateway_names():
+            self._save_app_request_data(start, end, step, gateway_name)
 
     def _save_app_request_data(self, start: int, end: int, step: str, gateway_name: str):
         app_request_count = StatisticsAppRequestMetrics().query(end, step)
@@ -160,24 +187,10 @@ class StatisticsHandler:
                     start_time=utctime(start).datetime,
                     end_time=utctime(end).datetime,
                     bk_app_code=bk_app_code,
-                    api_id=gateway_id,
+                    gateway_id=gateway_id,
                     stage_name=dimensions["stage_name"],
                     resource_id=resource_id,
                 )
             )
 
         StatisticsAppRequestByDay.objects.bulk_create(statistics_record, batch_size=100)
-
-    def _get_active_gateway_names(self) -> List[str]:
-        # 如果网关已下线，则不再统计
-        return list(Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value).values_list("name", flat=True))
-
-    def _get_gateway_id(self, gateway_name: str) -> Optional[int]:
-        return self._gateway_name_to_id.get(gateway_name)
-
-    def _get_resource_id(self, gateway_id: int, resource_name: str) -> Optional[int]:
-        if gateway_id not in self._gateway_id_to_resources:
-            resource_name_to_id = dict(Resource.objects.filter(gateway_id=gateway_id).values_list("name", "id"))
-            self._gateway_id_to_resources[gateway_id] = resource_name_to_id
-
-        return self._gateway_id_to_resources[gateway_id].get(resource_name)
