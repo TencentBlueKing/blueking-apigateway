@@ -50,7 +50,7 @@ class BaseStatisticsMetrics(BasePrometheusMetrics):
             return prometheus_component.query(bk_biz_id=bk_biz_id, promql=promql, time_=time_)
 
 
-class StatisticsAPIRequestMetrics(BaseStatisticsMetrics):
+class StatisticsGatewayRequestMetrics(BaseStatisticsMetrics):
     def _get_query_promql(self, step: str, gateway_name: Optional[str] = None):
         labels = self._get_labels_expression(
             [
@@ -65,7 +65,7 @@ class StatisticsAPIRequestMetrics(BaseStatisticsMetrics):
         )
 
 
-class StatisticsAPIRequestDurationMetrics(BaseStatisticsMetrics):
+class StatisticsGatewayRequestDurationMetrics(BaseStatisticsMetrics):
     def _get_query_promql(self, step: str, gateway_name: Optional[str] = None):
         labels = self._get_labels_expression(
             [

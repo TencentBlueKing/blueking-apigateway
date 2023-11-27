@@ -139,7 +139,7 @@ class TestGatewayRequestStatistics:
         fake_statistics_api_request_metrics,
     ):
         mocker.patch(
-            "apigateway.apps.metrics.statistics.StatisticsAPIRequestMetrics.query",
+            "apigateway.apps.metrics.statistics.StatisticsGatewayRequestMetrics.query",
             return_value=fake_statistics_api_request_metrics,
         )
         fake_gateway = fake_resource.gateway
