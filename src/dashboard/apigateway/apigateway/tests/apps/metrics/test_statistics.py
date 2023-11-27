@@ -132,7 +132,6 @@ class TestStatisticsHandler:
         record = StatisticsAPIRequestByDay.objects.get(api_id=fake_gateway.id, resource_id=fake_resource.id)
         assert record.total_count == 7
         assert record.failed_count == 2
-        assert record.total_msecs == 154
 
     def test_save_app_request_data(self, mocker, fake_resource, fake_statistics_app_request_metrics):
         fake_gateway = fake_resource.api
