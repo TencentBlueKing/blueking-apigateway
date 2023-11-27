@@ -429,7 +429,7 @@ export default {
     "包含小写字母、数字、下划线或点号，长度小于255个字符": "Consists of lowercase letters, numbers, underscores(_) and dots(.), length less than 255",
     "前缀(generic).小写的系统名.小写的组件类名": "prefix(generic).lowercase-system-name.lowercase-component-class-name",
     "权限级别": "Permission Level",
-    "无权限，应用不需申请组件API权限；普通权限，应用需在开发者中心申请组件API权限，审批通过后访问": "No Limit, app does not need to apply permission; Normal, app needs to apply permission in the developer center",
+    "无限制，应用不需申请组件API权限；普通权限，应用需在开发者中心申请组件API权限，审批通过后访问": "No Limit, app does not need to apply permission; Normal, app needs to apply permission in the developer center",
     "超时时长": "Timeout",
     "未设置时使用系统的超时时长，最大600秒": "Use system timeout if not set, max 600 seconds",
     "组件配置": "Component Config",
