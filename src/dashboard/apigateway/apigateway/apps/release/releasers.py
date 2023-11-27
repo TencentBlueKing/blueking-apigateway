@@ -30,9 +30,7 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.audit.utils import record_audit_log
 from apigateway.apps.release.serializers import ReleaseBatchSLZ
-from apigateway.apps.stage.validators import StageVarsValuesValidator
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
-from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.tasks import (
     mark_release_history_failure,
@@ -53,13 +51,11 @@ from apigateway.core.models import (
 )
 from apigateway.core.signals import reversion_update_signal
 
+from .validators import ReleaseValidationError, ReleaseValidator
+
 
 class ReleaseError(Exception):
     """发布失败"""
-
-
-class ReleaseValidationError(Exception):
-    """发布校验失败"""
 
 
 class NonRelatedMicroGatewayError(Exception):
@@ -99,7 +95,7 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
             - resource_version_id：待发布版本
             - comment：发布备注
         """
-        slz = slz = ReleaseBatchSLZ(data=data, context={"api": gateway})
+        slz = ReleaseBatchSLZ(data=data, context={"api": gateway})
         slz.is_valid(raise_exception=True)
 
         return cls(
@@ -168,31 +164,8 @@ class BaseGatewayReleaser(metaclass=ABCMeta):
     def _validate(self):
         """校验待发布数据"""
         for stage in self.stages:
-            self._validate_stage_upstreams(self.gateway.id, stage, self.resource_version.id)
-            self._validate_stage_vars(stage, self.resource_version.id)
-
-    def _validate_stage_upstreams(self, gateway_id: int, stage: Stage, resource_version_id: int):
-        """检查环境的代理配置，如果未配置任何有效的上游主机地址（Hosts），则报错。
-
-        :raise ReleaseValidationError: 当未配置 Hosts 时。
-        """
-        if not StageProxyHTTPContext().contain_hosts(stage.id):
-            raise ReleaseValidationError(
-                _("网关环境【{stage_name}】中代理配置 Hosts 未配置，请在网关 `基本设置 -> 环境管理` 中进行配置。").format(  # noqa: E501
-                    stage_name=stage.name,
-                )
-            )
-
-    def _validate_stage_vars(self, stage: Stage, resource_version_id: int):
-        validator = StageVarsValuesValidator()
-        validator(
-            {
-                "gateway": self.gateway,
-                "stage_name": stage.name,
-                "vars": stage.vars,
-                "resource_version_id": resource_version_id,
-            }
-        )
+            validator = ReleaseValidator(self.gateway, stage, self.resource_version.id)
+            validator.validate()
 
     def _do_release(self, releases: List[Release], release_history: ReleaseHistory):
         """发布资源版本"""
