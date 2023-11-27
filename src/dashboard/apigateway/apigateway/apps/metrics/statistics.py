@@ -70,22 +70,22 @@ class StatisticsHandler:
             return
 
         # 统计请求数/失败请求数
-        gateway_request_data: Dict = defaultdict(dict)
+        gateway_name_to_request_data: Dict = defaultdict(dict)
         for item in gateway_request_count["series"]:
             dimensions = item["dimensions"]
 
             gateway_name_ = dimensions["api_name"]
             key = f'{dimensions["stage_name"]}:{dimensions["resource_name"]}'
-            gateway_request_data[gateway_name_].setdefault(key, defaultdict(float))
+            gateway_name_to_request_data[gateway_name_].setdefault(key, defaultdict(float))
 
             count = item["datapoints"][0][0]
-            gateway_request_data[gateway_name_][key]["total_count"] += count
+            gateway_name_to_request_data[gateway_name_][key]["total_count"] += count
             if dimensions["proxy_error"] != "0":
-                gateway_request_data[gateway_name_][key]["failed_count"] += count
+                gateway_name_to_request_data[gateway_name_][key]["failed_count"] += count
 
         # 保存数据
         statistics_record = []
-        for gateway_name_, gateway_request_data in gateway_request_data.items():
+        for gateway_name_, gateway_request_data in gateway_name_to_request_data.items():
             gateway_id = self._get_gateway_id(gateway_name_)
             if not gateway_id:
                 logger.warning("gateway (name=%s) does not exist, skip save api statistics.", gateway_name_)
