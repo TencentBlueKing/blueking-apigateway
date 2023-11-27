@@ -147,7 +147,7 @@ class AppRequestStatistics(BaseRequestStatistics):
             self._save_app_request_data(start, end, step, gateway_name)
 
     def _save_app_request_data(self, start: int, end: int, step: str, gateway_name: str):
-        app_request_count = StatisticsAppRequestMetrics().query(end, step)
+        app_request_count = StatisticsAppRequestMetrics().query(end, step, gateway_name)
         if not app_request_count.get("series"):
             logger.info(
                 "gateway: %s, the app request data obtained from Prometheus is empty, skip statistics.", gateway_name
