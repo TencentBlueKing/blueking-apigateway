@@ -67,9 +67,9 @@ class BaseRequestStatistics:
 
 
 class GatewayRequestStatistics(BaseRequestStatistics):
-    def delete_statistics_by_time(self, time_: int):
+    def delete_statistics_by_time(self, timestamp: int):
         # 清理指定日期的统计数据
-        StatisticsGatewayRequestByDay.objects.filter(start_time=utctime(time_).datetime).delete()
+        StatisticsGatewayRequestByDay.objects.filter(start_time=utctime(timestamp).datetime).delete()
 
     def statistics(self, start: int, end: int, step: str):
         # 按网关拉取，写入新数据；全量拉取时，数据量过大可能拉不到
@@ -137,9 +137,9 @@ class GatewayRequestStatistics(BaseRequestStatistics):
 
 
 class AppRequestStatistics(BaseRequestStatistics):
-    def delete_statistics_by_time(self, time_: int):
+    def delete_statistics_by_time(self, timestamp: int):
         # 清理指定日期的统计数据
-        StatisticsAppRequestByDay.objects.filter(start_time=utctime(time_).datetime).delete()
+        StatisticsAppRequestByDay.objects.filter(start_time=utctime(timestamp).datetime).delete()
 
     def statistics(self, start: int, end: int, step: str):
         # 按网关拉取，写入新数据；全量拉取时，数据量过大可能拉不到
