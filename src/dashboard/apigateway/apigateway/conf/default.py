@@ -426,11 +426,11 @@ if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
         {
             "apigateway.apps.metrics.tasks.statistics_request_by_day": {
                 "task": "apigateway.apps.metrics.tasks.statistics_request_by_day",
-                "schedule": crontab(minute=30, hour=0),
+                "schedule": crontab(minute=30, hour=8),
             },
             "apigateway.apps.permission.tasks.renew_app_resource_permission": {
                 "task": "apigateway.apps.permission.tasks.renew_app_resource_permission",
-                "schedule": crontab(minute=50, hour=0),
+                "schedule": crontab(minute=50, hour=10),
             },
         }
     )
