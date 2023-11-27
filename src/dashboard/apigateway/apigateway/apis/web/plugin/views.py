@@ -20,6 +20,7 @@ from typing import Any, Dict, Union
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
+from django.utils.translation import get_language
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.generics import get_object_or_404
@@ -61,7 +62,14 @@ class PluginTypeListApi(generics.ListAPIView):
 
     def get_serializer_context(self):
         # 需要返回描述，描述在 plugin_form 中
-        plugin_type_notes = {i["type_id"]: i["notes"] for i in PluginForm.objects.values("type_id", "notes")}
+        if get_language() != "zh-cn":
+            plugin_type_notes = {
+                i["type_id"]: i["notes"] for i in PluginForm.objects.filter(language="en").values("type_id", "notes")
+            }
+        else:
+            plugin_type_notes = {
+                i["type_id"]: i["notes"] for i in PluginForm.objects.exclude(language="en").values("type_id", "notes")
+            }
 
         # 需要返回每个 pluginType 是否已经被当前资源绑定
         current_scope_type = self.request.query_params.get("scope_type")
