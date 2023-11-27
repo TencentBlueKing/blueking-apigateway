@@ -74,21 +74,21 @@ class StatisticsHandler:
         for item in gateway_request_count["series"]:
             dimensions = item["dimensions"]
 
-            gateway_name_ = dimensions["api_name"]
+            _gateway_name = dimensions["api_name"]
             key = f'{dimensions["stage_name"]}:{dimensions["resource_name"]}'
-            gateway_name_to_request_data[gateway_name_].setdefault(key, defaultdict(float))
+            gateway_name_to_request_data[_gateway_name].setdefault(key, defaultdict(float))
 
             count = item["datapoints"][0][0]
-            gateway_name_to_request_data[gateway_name_][key]["total_count"] += count
+            gateway_name_to_request_data[_gateway_name][key]["total_count"] += count
             if dimensions["proxy_error"] != "0":
-                gateway_name_to_request_data[gateway_name_][key]["failed_count"] += count
+                gateway_name_to_request_data[_gateway_name][key]["failed_count"] += count
 
         # 保存数据
         statistics_record = []
-        for gateway_name_, gateway_request_data in gateway_name_to_request_data.items():
-            gateway_id = self._get_gateway_id(gateway_name_)
+        for _gateway_name, gateway_request_data in gateway_name_to_request_data.items():
+            gateway_id = self._get_gateway_id(_gateway_name)
             if not gateway_id:
-                logger.warning("gateway (name=%s) does not exist, skip save api statistics.", gateway_name_)
+                logger.warning("gateway (name=%s) does not exist, skip save api statistics.", _gateway_name)
                 continue
 
             for key, request_data in gateway_request_data.items():
@@ -101,7 +101,7 @@ class StatisticsHandler:
                     logger.warning(
                         "resource (name=%s) of gateway (name=%s) does not exist, skip save api statistics.",
                         resource_name,
-                        gateway_name_,
+                        _gateway_name,
                     )
                     continue
 
@@ -137,13 +137,13 @@ class StatisticsHandler:
                 continue
 
             dimensions = item["dimensions"]
-            gateway_name_ = dimensions["api_name"]
+            _gateway_name = dimensions["api_name"]
             resource_name = dimensions["resource_name"]
             bk_app_code = dimensions.get("bk_app_code") or dimensions.get("app_code", "")
 
-            gateway_id = self._get_gateway_id(gateway_name_)
+            gateway_id = self._get_gateway_id(_gateway_name)
             if not gateway_id:
-                logger.warning("gateway (name=%s) does not exist, skip save app statistics.", gateway_name_)
+                logger.warning("gateway (name=%s) does not exist, skip save app statistics.", _gateway_name)
                 continue
 
             resource_id = self._get_resource_id(gateway_id, resource_name)
@@ -151,7 +151,7 @@ class StatisticsHandler:
                 logger.warning(
                     "resource (name=%s) of gateway (name=%s) does not exist, skip save app statistics.",
                     resource_name,
-                    gateway_name_,
+                    _gateway_name,
                 )
                 continue
 
