@@ -64,7 +64,8 @@ class StatisticsHandler:
         gateway_request_count = StatisticsAPIRequestMetrics().query(end, step, gateway_name)
         if not gateway_request_count.get("series"):
             logger.info(
-                "gateway: {gateway_name}, the resource request data obtained from Prometheus is empty, skip statistics."
+                "gateway: %s, the resource request data obtained from Prometheus is empty, skip statistics.",
+                gateway_name,
             )
             return
 
@@ -122,7 +123,8 @@ class StatisticsHandler:
         app_request_count = StatisticsAppRequestMetrics().query(end, step, gateway_name)
         if not app_request_count.get("series"):
             logger.info(
-                f"gateway: {gateway_name}, the app request data obtained from Prometheus is empty, skip statistics."
+                "gateway: %s, the app request data obtained from Prometheus is empty, skip statistics.",
+                gateway_name,
             )
             return
 
