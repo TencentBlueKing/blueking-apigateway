@@ -16,14 +16,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
+import random
 from abc import abstractmethod
+from time import sleep
 from typing import Optional
 
 from django.conf import settings
 
+from apigateway.components.exceptions import RemoteAPIResultError, RemoteRequestError
 from apigateway.components.prometheus import prometheus_component
 
 from .base import BasePrometheusMetrics
+
+logger = logging.getLogger(__name__)
 
 
 class BaseStatisticsMetrics(BasePrometheusMetrics):
@@ -32,11 +38,16 @@ class BaseStatisticsMetrics(BasePrometheusMetrics):
         pass
 
     def query(self, time_: int, step: str, gateway_name: Optional[str] = None):
-        return prometheus_component.query(
-            bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
-            promql=self._get_query_promql(step, gateway_name),
-            time_=time_,
-        )
+        bk_biz_id = getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", "")
+        promql = self._get_query_promql(step, gateway_name)
+
+        try:
+            return prometheus_component.query(bk_biz_id=bk_biz_id, promql=promql, time_=time_)
+        except (RemoteRequestError, RemoteAPIResultError) as err:
+            logger.warning("fetch statistics metrics data error: %s, will retry.", err)
+            # 此接口涉及定时拉取网关请求量数据，为保证成功率，添加重试
+            sleep(random.uniform(0.2, 1))
+            return prometheus_component.query(bk_biz_id=bk_biz_id, promql=promql, time_=time_)
 
 
 class StatisticsAPIRequestMetrics(BaseStatisticsMetrics):

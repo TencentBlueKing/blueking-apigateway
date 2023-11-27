@@ -16,9 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import random
 from operator import itemgetter
-from time import sleep
 from typing import Any, Dict
 
 from bkapi_client_core.apigateway import OperationGroup
@@ -28,8 +26,6 @@ from django.conf import settings
 from apigateway.components.bkapi_client.bkmonitorv3 import Client as BkMonitorV3Client
 from apigateway.components.esb_components import get_client_by_username as get_client_by_username_for_esb
 from apigateway.components.handler import RequestAPIHandler
-
-from .exceptions import RemoteAPIResultError, RemoteRequestError
 
 
 class PrometheusComponent:
@@ -60,12 +56,7 @@ class PrometheusComponent:
         # Instant query, no need for start, step,
         # but the backend does not allow the value to be null, so set a default value.
         # step: set to 1m, backend use it to calculate real evaluation timestamp
-        try:
-            return self._promql_query(bk_biz_id, promql, 0, time_, "1m", "instant")
-        except (RemoteRequestError, RemoteAPIResultError):
-            # 此接口涉及定时拉取网关请求量数据，为保证成功率，添加重试
-            sleep(random.uniform(0.2, 1))
-            return self._promql_query(bk_biz_id, promql, 0, time_, "1m", "instant")
+        return self._promql_query(bk_biz_id, promql, 0, time_, "1m", "instant")
 
     def _promql_query(
         self, bk_biz_id: str, promql: str, start: int, end: int, step: str, type_: str

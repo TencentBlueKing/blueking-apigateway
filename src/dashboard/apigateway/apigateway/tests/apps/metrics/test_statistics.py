@@ -116,22 +116,17 @@ class TestStatisticsHandler:
         mocker,
         fake_resource,
         fake_statistics_api_request_metrics,
-        fake_statistics_api_request_duration_metrics,
     ):
         mocker.patch(
             "apigateway.apps.metrics.statistics.StatisticsAPIRequestMetrics.query",
             return_value=fake_statistics_api_request_metrics,
-        )
-        mocker.patch(
-            "apigateway.apps.metrics.statistics.StatisticsAPIRequestDurationMetrics.query",
-            return_value=fake_statistics_api_request_duration_metrics,
         )
         fake_gateway = fake_resource.api
 
         now = now_datetime()
 
         handler = StatisticsHandler()
-        handler._save_gateway_request_data(now, now, "1m")
+        handler._save_gateway_request_data(now, now, "1m", "my-gateway")
 
         assert StatisticsAPIRequestByDay.objects.filter(api_id=fake_gateway.id).count() == 1
         record = StatisticsAPIRequestByDay.objects.get(api_id=fake_gateway.id, resource_id=fake_resource.id)
@@ -149,7 +144,7 @@ class TestStatisticsHandler:
         now = now_datetime()
 
         handler = StatisticsHandler()
-        handler._save_app_request_data(now, now, "1m")
+        handler._save_app_request_data(now, now, "1m", "my-gateway")
 
         assert StatisticsAppRequestByDay.objects.filter(api_id=fake_gateway.id).count() == 3
         assert StatisticsAppRequestByDay.objects.filter(api_id=fake_gateway.id, bk_app_code="app2").count() == 2
