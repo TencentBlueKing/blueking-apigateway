@@ -24,11 +24,13 @@ from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResou
 
 
 @dataclass
-class ReleasedResourceDocData:
+class ResourceDocData:
     language: str
     content: str
     updated_time: str
 
+
+class ReleasedResourceDocData(ResourceDocData):
     @classmethod
     def from_data(cls, released_resource_doc: Dict[str, Any]) -> "ReleasedResourceDocData":
         return cls(
@@ -38,6 +40,13 @@ class ReleasedResourceDocData:
         )
 
 
+@dataclass
+class DummyResourceDocData(ResourceDocData):
+    @classmethod
+    def create(cls, language: str) -> "DummyResourceDocData":
+        return cls(language=language, content="", updated_time="")
+
+
 class ReleasedResourceDocHandler:
     @staticmethod
     def get_released_resource_doc_data(
@@ -45,7 +54,7 @@ class ReleasedResourceDocHandler:
         stage_name: str,
         resource_name: str,
         language: str = DocLanguageEnum.ZH.value,
-    ) -> Tuple[Optional[ReleasedResourceData], Optional[ReleasedResourceDocData]]:
+    ) -> Tuple[Optional[ReleasedResourceData], Optional[ResourceDocData]]:
         released_resource = ReleasedResourceHandler.get_released_resource(
             gateway_id=gateway_id,
             stage_name=stage_name,
@@ -61,6 +70,6 @@ class ReleasedResourceDocHandler:
             language=language,
         ).first()
         if not doc:
-            return ReleasedResourceData.from_data(released_resource.data), None
+            return ReleasedResourceData.from_data(released_resource.data), DummyResourceDocData.create(language)
 
         return ReleasedResourceData.from_data(released_resource.data), ReleasedResourceDocData.from_data(doc.data)
