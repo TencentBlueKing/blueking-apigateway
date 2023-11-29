@@ -45,6 +45,13 @@ const headerList = ref([
     link: '',
   },
   {
+    name: t('网关API文档'),
+    id: 3,
+    url: 'apigwDoc',
+    enabled: true,
+    link: '',
+  },
+  {
     name: t('组件API文档'),
     id: 4,
     url: 'componentDoc',
@@ -67,10 +74,10 @@ const headerList = ref([
     params: {
       type: 'esb',
     },
-    url: 'esbSDK',
     enabled: true,
-    link: '',
+    url: 'esbSDK',
   },
+
 ]);
 
 const apigwId = computed(() => {

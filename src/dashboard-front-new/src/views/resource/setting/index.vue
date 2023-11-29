@@ -110,7 +110,7 @@
             </bk-table-column>
             <bk-table-column
               :label="t('文档')"
-              width="100"
+              width="80"
               v-if="!isDetail"
             >
               <template #default="{ data }">
@@ -133,6 +133,7 @@
             <bk-table-column
               :label="t('标签')"
               prop="labels"
+              width="280"
               v-if="!isDetail"
             >
               <template #default="{ data }">
@@ -143,44 +144,27 @@
                     <span v-for="(item, index) in data?.labels" :key="item.id">
                       <bk-tag @click="handleEditLabel(data)" v-if="index < data.tagOrder">{{ item.name }}</bk-tag>
                     </span>
-                    <bk-tag v-if="data.labels.length > data.tagOrder">
+                    <bk-tag
+                      v-if="data.labels.length > data.tagOrder"
+                      class="tag-cls">
                       +{{ data.labels.length - data.tagOrder }}
                       <!-- ... -->
                     </bk-tag>
-                    <i
-                      v-show="data?.isDoc"
-                      @click="handleEditLabel(data)"
-                      class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                   </section>
                   <section v-else>--</section>
+                  <i
+                    v-show="data?.isDoc"
+                    @click="handleEditLabel(data)"
+                    class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                 </section>
                 <section v-else>
-                  <bk-select
-                    style="width: 235px;"
-                    class="select-wrapper mt5"
-                    filterable
-                    multiple
-                    multiple-mode="tag"
-                    ref="multiSelect"
-                    v-model="curLabelIds"
-                    @change="changeSelect"
-                    @toggle="handleToggle">
-
-                    <bk-option v-for="option in labelsData" :key="option.id" :id="option.id" :name="option.name">
-                      <template #default>
-                        <div
-                          v-bk-tooltips="{
-                            content: $t('标签最多只能选择10个'),
-                            disabled: !(!curLabelIds.includes(option.id) && curLabelIds.length >= 10) }"
-                          :disabled="!curLabelIds.includes(option.id) && curLabelIds.length >= 10"
-                          class="flex-row align-items-center">
-                          <bk-checkbox
-                            class="mr5" v-model="option.isChecked" />
-                          {{ option.name }}
-                        </div>
-                      </template>
-                    </bk-option>
-                  </bk-select>
+                  <SelectCheckBox
+                    :cur-select-label-ids="curLabelIds"
+                    :resource-id="resourceId"
+                    :labels-data="labelsData"
+                    @close="handleCloseSelect"
+                    @update-success="handleUpdateLabelSuccess"
+                    @label-add-success="getLabelsData"></SelectCheckBox>
                 </section>
               </template>
             </bk-table-column>
@@ -379,11 +363,12 @@ import {
   getResourceListData, deleteResources,
   batchDeleteResources, batchEditResources,
   exportResources, exportDocs, checkNeedNewVersion,
-  getGatewayLabels, setResourcesLabels,
+  getGatewayLabels,
 } from '@/http';
 import { Message } from 'bkui-vue';
 import Detail from './detail.vue';
 import VersionSideslider from './comps/version-sideslider.vue';
+import SelectCheckBox from './comps/select-check-box.vue';
 import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
 import ResourcesDoc from '@/views/components/resources-doc/index.vue';
@@ -510,6 +495,10 @@ const batchEditData = ref({
   allowApply: true,
 });
 
+// const showEdit = ref(false);
+// const optionName = ref('');
+// const inputRef = ref(null);
+
 // tab 选项卡
 const panels = [
   { name: 'resourceDetail', label: t('资源配置'), component: Detail },
@@ -575,7 +564,6 @@ const handleEditResource = (id: number, type: string) => {
 
 // 删除资源
 const handleDeleteResource = async (id: number) => {
-  console.log('props.apigwId', props);
   await deleteResources(props.apigwId, id);
   Message({
     message: t('删除成功'),
@@ -619,7 +607,6 @@ const handleBatchOperate = async (data: IDropList) => {
 
 // 处理导出弹窗显示
 const handleExport = async ({ value }: {value: string}) => {
-  console.log('data', value);
   exportParams.export_type = value;
   exportDialogConfig.isShow = true;
   switch (value) {
@@ -690,9 +677,6 @@ const handleImport = (v: IDropList) => {
 const handleMouseEnter = (e: any, row: any) => {
   setTimeout(() => {
     row.isDoc = true;
-    // data.isRowHover = true
-    // data.isAddLabel = true
-    // console.log('row', row);
   }, 100);
 };
 
@@ -700,15 +684,11 @@ const handleMouseEnter = (e: any, row: any) => {
 const handleMouseLeave = (e: any, row: any) => {
   setTimeout(() => {
     row.isDoc = false;
-    // data.isRowHover = true
-    // data.isAddLabel = true
-    // console.log('row', row);
   }, 100);
 };
 
 // 展示文档
 const handleShowDoc = (data: any, languages = 'zh') => {
-  console.log('data', data);
   curResource.value = data;
   resourceId.value = data.id;   // 资源id
   docSliderConf.isShowDocSide = true;
@@ -745,13 +725,12 @@ const handleShowVersion = async () => {
 
 // 处理标签点击
 const handleEditLabel = (data: any) => {
+  resourceId.value = data.id;
   tableData.value.forEach((item) => {
     item.isEditLabel = false;
   });
   curLabelIds.value = data.labels.map((item: any) => item.id);
   curLabelIdsbackUp.value = cloneDeep(curLabelIds.value);
-  // 设置checkbox是否选中
-  setCheckBoxStatus(curLabelIds.value);
   data.isEditLabel = true;
 };
 
@@ -763,31 +742,21 @@ const handleCreateResourceVersion = () => {
 // 获取标签数据
 const getLabelsData = async () => {
   const res = await getGatewayLabels(props.apigwId);
-  res.forEach((e: any) => e.isChecked = false);
+  res.forEach((e: any) => e.isEdited = false);
   labelsData.value = res;
 };
 
-const changeSelect = (v: number[]) => {
-  // 设置checkbox是否选中
-  setCheckBoxStatus(v);
-  console.log('curLabelIds.value', curLabelIds.value);
-};
-
-// 设置checkbox是否选中
-const setCheckBoxStatus = (checkedIds: number[]) => {
-  labelsData.value.forEach((e) => {
-    e.isChecked = !!checkedIds.includes(e.id);
+// 未做变更关闭select下拉
+const handleCloseSelect = () => {
+  tableData.value.forEach((item) => {
+    item.isEditLabel = false;
   });
 };
 
-//
-const handleToggle = async (v: boolean) => {
-  console.log('v', v);
-  if (!v) {
-    await setResourcesLabels(props.apigwId, resourceId.value, { label_ids: curLabelIds.value });
-    getList();
-    init();
-  }
+// 更新成功
+const handleUpdateLabelSuccess = () => {
+  getList();
+  init();
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
@@ -927,6 +896,9 @@ onMounted(() => {
           top: 8px;
           right: -20px;
         }
+      }
+      .tag-cls{
+        cursor: pointer;
       }
     }
 

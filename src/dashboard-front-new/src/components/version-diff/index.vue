@@ -10,7 +10,7 @@
           {{ $t("正在努力对比中…") }}
         </span>
       </template>
-      <template v-else-if="localSourceId && localTargetId">
+      <template v-else-if="localSourceId || localTargetId">
         <span>
           {{ $t("新增") }}
           <strong class="ag-strong success m5">
@@ -534,9 +534,9 @@ const handleVersionChange = () => {
 };
 
 const getDiffData = async () => {
-  if (!localSourceId.value) {
-    return false;
-  }
+  // if (!localSourceId.value) {
+  //   return false;
+  // }
 
   if (isDataLoading.value) {
     return false;

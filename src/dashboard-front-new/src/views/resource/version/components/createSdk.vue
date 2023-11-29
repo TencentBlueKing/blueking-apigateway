@@ -169,9 +169,11 @@ watch(
         getResourceVersions();
       }
     } else {
-      formData.resource_version_id = '';
-      formData.version = '';
-      formData.language = 'python';
+      setTimeout(() => {
+        formData.resource_version_id = '';
+        formData.version = '';
+        formData.language = 'python';
+      }, 1000);
     }
   },
   {

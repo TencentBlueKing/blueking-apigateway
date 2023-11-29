@@ -4,7 +4,13 @@ import {
   RouteRecordRaw,
 } from 'vue-router';
 
+import globalConfig from '@/constant/config';
+
 const Home = () => import(/* webpackChunkName: "Home" */ '@/views/home.vue');
+const ApigwDocs = () => import(/* webpackChunkName: "ApigwDocs" */ '@/views/apigwDocs/index.vue');
+const ApigwAPIDetail = () => import(/* webpackChunkName: "apigw-doc" */ '@/views/apigwDocs/components/detail.vue');
+const ApigwAPIDetailIntro = () => import(/* webpackChunkName: "apigw-doc" */ '@/views/apigwDocs/components/intro.vue');
+const ApigwAPIDetailDoc = () => import(/* webpackChunkName: "apigw-doc" */ '@/views/apigwDocs/components/doc.vue');
 const ApigwMain = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/main.vue');
 const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/setting/index.vue');
 const ApigwResourceEdit = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/setting/edit.vue');
@@ -32,6 +38,11 @@ const ApigwSDK = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/sdk/gat
 const ApigwESBSDK = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/sdk/esb-sdk/index.vue');
 const ComponentDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/index.vue');
 
+// 文档一级路由出口
+const docsComponent = {
+  name: 'DocMain',
+  template: '<router-view></router-view>',
+};
 
 const routes: RouteRecordRaw[] = [
   {
@@ -279,35 +290,87 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  // 文档路由映射
   {
-    path: '/component-api',
-    name: 'componentDoc',
-    component: ComponentDoc,
-    meta: {
-      matchRoute: 'componentDoc',
-      notAppHeader: true,
-      isDocRouter: true,
-    },
-  },
-  {
-    path: '/sdk/apigw',
-    name: 'apigwSDK',
-    component: ApigwSDK,
-    meta: {
-      matchRoute: 'apigwSDK',
-      type: 'apigateway',
-      isDocRouter: true,
-    },
-  },
-  {
-    path: '/sdk/esb',
-    name: 'esbSDK',
-    component: ApigwESBSDK,
-    meta: {
-      matchRoute: 'esbSDK',
-      type: 'esb',
-      isDocRouter: true,
-    },
+    path: `${globalConfig.PREV_URL}`,
+    redirect: `${globalConfig.PREV_URL}/apigw-api/`,
+    name: 'docsMain',
+    component: docsComponent,
+    alias: '',
+    children: [
+      {
+        path: 'apigw-api',
+        name: 'apigwDoc',
+        component: ApigwDocs,
+        meta: {
+          matchRoute: 'apigwDoc',
+          notAppHeader: true,
+          isDocRouter: true,
+          isMenu: false,   // 是否作为侧边栏菜单
+        },
+      },
+      {
+        path: '/component-api',
+        name: 'componentDoc',
+        component: ComponentDoc,
+        meta: {
+          matchRoute: 'componentDoc',
+          notAppHeader: true,
+          isDocRouter: true,
+        },
+      },
+      {
+        path: 'sdk/apigw',
+        name: 'apigwSDK',
+        component: ApigwSDK,
+        meta: {
+          matchRoute: 'apigwSDK',
+          type: 'apigateway',
+          isDocRouter: true,
+        },
+      },
+      {
+        path: 'sdk/esb',
+        name: 'esbSDK',
+        component: ApigwESBSDK,
+        meta: {
+          matchRoute: 'esbSDK',
+          type: 'esb',
+          isDocRouter: true,
+        },
+      },
+      {
+        path: 'apigw-api/:apigwId/',
+        name: 'apigwAPIDetail',
+        component: ApigwAPIDetail,
+        meta: {
+          matchRoute: 'apigwAPIDetail',
+          isDocRouter: true,
+        },
+        children: [
+          {
+            path: 'apigw-api/:apigwId/intro',
+            alias: '',
+            name: 'apigwAPIDetailIntro',
+            component: ApigwAPIDetailIntro,
+            meta: {
+              matchRoute: 'apigwAPIDetailIntro',
+              isDocRouter: true,
+            },
+          },
+          {
+            path: 'apigw-api/:apigwId/:resourceId/doc',
+            alias: '',
+            name: 'apigwAPIDetailDoc',
+            component: ApigwAPIDetailDoc,
+            meta: {
+              matchRoute: 'apigwAPIDetailDoc',
+              isDocRouter: true,
+            },
+          },
+        ],
+      },
+    ],
   },
 ];
 export default createRouter({
