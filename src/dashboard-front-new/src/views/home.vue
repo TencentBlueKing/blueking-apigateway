@@ -1,7 +1,7 @@
 <template>
   <div class="home-container">
     <div class="title-container flex-row justify-content-between">
-      <div class="flex-1 left">{{ t('我的网关') }} (3)</div>
+      <div class="flex-1 left">{{ t('我的网关') }} ({{ gatewaysList.length }})</div>
       <div class="flex-1 flex-row">
         <bk-button
           theme="primary"
@@ -37,7 +37,6 @@
               {{ item.name }}
             </span>
             <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
-            <bk-tag theme="warning" v-if="item.is_public">{{ t('公开') }}</bk-tag>
             <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
           </div>
           <div class="flex-1 of1">{{ item.created_by }}</div>
@@ -171,7 +170,7 @@ const initDialogData: IinitDialogData = {
   name: '',
   maintainers: [user.user.username],   // 默认当前填入当前用户
   description: '',
-  is_public: false,
+  is_public: true,
 };
 
 const rules = {
@@ -232,7 +231,8 @@ const init = async () => {
 
 // 新建网关弹窗
 const showAddDialog = () => {
-  // 打开弹窗初始化弹窗数据
+  // 初始化数据
+  resetDialogData();
   formData.value = initDialogData;
   dialogData.value.isShow = true;
   dialogData.value.loading = false;
@@ -264,6 +264,13 @@ const handleGoPage = (routeName: string, apigwId: number) => {
       id: apigwId,
     },
   });
+};
+
+const resetDialogData = () => {
+  initDialogData.name = '';
+  initDialogData.maintainers = [user.user.username];
+  initDialogData.description = '';
+  initDialogData.is_public = true;
 };
 
 init();
