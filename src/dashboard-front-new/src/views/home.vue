@@ -9,7 +9,7 @@
         >
           {{ t('新建网关') }}
         </bk-button>
-        <bk-input class="ml10 mr10 search-input" placeholder="请输入网关名"></bk-input>
+        <bk-input class="ml10 mr10 search-input" v-model="filterNameData.name" placeholder="请输入网关名"></bk-input>
         <bk-select
           v-model="filterKey"
           :clearable="false"
@@ -22,11 +22,11 @@
     </div>
     <div class="table-container">
       <div class="table-header flex-row">
-        <div class="flex-1 of4">{{t('网关名')}}</div>
-        <div class="flex-1 of1">创建者</div>
-        <div class="flex-1 of2">环境列表</div>
-        <div class="flex-1 of1 text-c">资源数量</div>
-        <div class="flex-1 of2">操作</div>
+        <div class="flex-1 of4">{{ t('网关名') }}</div>
+        <div class="flex-1 of1">{{ t('创建者') }}</div>
+        <div class="flex-1 of2">{{ t('环境列表') }}</div>
+        <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
+        <div class="flex-1 of2">{{ t('操作') }}</div>
       </div>
       <div class="table-list">
         <div class="table-item flex-row align-items-center" v-for="item in gatewaysList" :key="item.id">
@@ -162,10 +162,17 @@ const { t } = useI18n();
 const user = useUser();
 const router = useRouter();
 
-// 获取网关数据方法
-const {
-  getGatewaysListData,
-} = useGetApiList();
+
+const formRef = ref(null);
+const filterKey = ref<string>('updated_time');
+const filterNameData = ref({ name: '' });
+// 弹窗
+const dialogData = ref<IDialog>({
+  isShow: false,
+  title: t('新建网关'),
+  loading: false,
+});
+
 
 // 新增网关弹窗字段interface
 interface IinitDialogData {
@@ -211,14 +218,6 @@ const rules = {
   ],
 };
 
-const formRef = ref(null);
-const filterKey = ref<string>('updated_time');
-// 弹窗
-const dialogData = ref<IDialog>({
-  isShow: false,
-  title: t('新建网关'),
-  loading: false,
-});
 // 新增网关字段
 const formData = ref<IinitDialogData>(initDialogData);
 
@@ -233,6 +232,12 @@ const filterData = ref([
   { value: 'updated_time', label: t('更新时间') },
   { value: 'name', label: t('字母 A-Z') },
 ]);
+
+// 获取网关数据方法
+const {
+  getGatewaysListData,
+} = useGetApiList(filterNameData);
+
 
 // 页面初始化
 const init = async () => {
