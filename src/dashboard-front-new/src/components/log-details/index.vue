@@ -28,7 +28,7 @@
           </div>
         </div>
         <div class="main-encoding">
-          <editor-monaco language="json" v-model="logBody" :read-only="true" ref="logCodeViewer" />
+          <editor-monaco v-model="logBody" :read-only="true" ref="logCodeViewer" />
         </div>
       </div>
     </template>
@@ -36,12 +36,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import dayjs from 'dayjs';
 import { getLogs } from '@/http';
 import { useI18n } from 'vue-i18n';
 import editorMonaco from '@/components/ag-editor.vue';
+import { Spinner } from 'bkui-vue/lib/icon';
 
 const props = defineProps({
   historyId: {
@@ -52,7 +53,7 @@ const props = defineProps({
 const { t } = useI18n();
 
 const route = useRoute();
-const apigwId = +route.params?.id;
+const apigwId = computed(() => +route.params?.id);
 
 const isShow = ref(false);
 const logCodeViewer: any = ref<InstanceType<typeof editorMonaco>>();
@@ -82,7 +83,7 @@ const handleTimelineChange = (data: any) => {
 // 获取日志列表
 const getLogsList = async () => {
   try {
-    const res = await getLogs(apigwId, props.historyId);
+    const res = await getLogs(apigwId.value, props.historyId);
     if (res.status !== 'doing') {
       clearInterval(timeId);
     }
@@ -112,6 +113,9 @@ const getLogsList = async () => {
       } else if (item?.step === subStep) {
         item.color = res?.status === 'success' ? 'green' : 'blue';
         item.filled = res?.status === 'success';
+        if (res?.status !== 'success') {
+          item.icon = Spinner;
+        }
       }
 
       steps[index] = { ...item, tag: item.description, content: '' };
@@ -142,6 +146,7 @@ const getLogsList = async () => {
     state.objectSteps = steps;
     logBody.value = JSON.stringify(steps[steps.length - 1]?.detail || {});
   } catch (e) {
+    clearInterval(timeId);
     console.log(e);
   }
 };
@@ -212,6 +217,9 @@ defineExpose({
     padding: 16px;
     box-sizing: border-box;
     margin-right: 16px;
+    :deep(.bk-timeline .bk-timeline-dot .bk-timeline-icon .bk-timeline-icon-inner>:first-child) {
+      font-size: 20px !important;
+    }
   }
   .main-encoding {
     flex: 1;
