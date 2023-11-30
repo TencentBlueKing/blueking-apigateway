@@ -4,9 +4,17 @@
       <bk-form class="search-form" form-type="vertical">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker">
           <bk-date-picker
-            ref="datePickerRef" type="datetimerange" style="width: 320px" v-model="dateTimeRange"
-            :placeholder="t('选择日期时间范围')" :shortcuts="AccessLogStore.datepickerShortcuts" :shortcut-close="true"
-            :use-shortcut-text="true" :clearable="false" :shortcut-selected-index="shortcutSelectedIndex"
+            ref="datePickerRef"
+            type="datetimerange"
+            style="width: 320px"
+            v-model="dateTimeRange"
+            :key="dateKey"
+            :placeholder="t('选择日期时间范围')"
+            :shortcuts="AccessLogStore.datepickerShortcuts"
+            :shortcut-close="true"
+            :use-shortcut-text="true"
+            :clearable="false"
+            :shortcut-selected-index="shortcutSelectedIndex"
             @shortcut-change="handleShortcutChange" @change="handlePickerChange" />
         </bk-form-item>
         <bk-form-item :label="t('环境')">
@@ -90,46 +98,47 @@
         <bk-table
           ref="tableRef"
           size="small"
+          class="access-log-table"
           :data="table.list"
+          :columns="table.headers"
           :pagination="pagination"
+          :remote-pagination="true"
           :row-style="{ cursor: 'pointer' }"
-          :row-class="getRowClassName"
+          :row-class="getRowClass"
           @row-click="handleRowClick"
-          @page-change="handlePageChange"
+          @page-value-change="handlePageChange"
           @page-limit-change="handlePageLimitChange"
         >
+          <template #expandRow="row">
+            <dl class="details">
+              <div
+                class="item"
+                v-for="({ label, field, is_filter: showCopy }, index) in table.fields"
+                :key="index">
+                <dt class="label">
+                  {{label}}
+                  <i
+                    v-if="showCopy"
+                    v-bk-tooltips="$t('复制字段名')"
+                    @click.stop="copy(field)"
+                    class="apigateway-icon icon-ag-clipboard copy-btn"
+                  >
+                  </i>
+                </dt>
+                <dd class="value">{{ formatValue(row[field], field) }}</dd>
+              </div>
+              <bk-button
+                class="share-btn"
+                theme="primary"
+                outline
+                @click="handleClickCopyLink(row)"
+                :loading="isShareLoading"> {{ $t('复制分享链接') }} </bk-button>
+            </dl>
+          </template>
           <template #empty>
             <TableEmpty
               :keyword="tableEmptyConf.keyword" :abnormal="tableEmptyConf.isAbnormal" @reacquire="getSearchData"
               @clear-filter="handleClearFilterKey" />
-          </template>
-          <bk-table-column type="expand" width="30" align="center">
-            <template #default="{ row }">
-              <dl class="details">
-                <div class="item" v-for="({ label, field, is_filter: showCopy }, index) in table.fields" :key="index">
-                  <dt class="label">
-                    {{ label }}
-                    <i
-                      v-bk-tooltips="t('复制字段名')" v-if="showCopy" class="apigateway-icon icon-ag-clipboard copy-btn"
-                      @click="copy(field)">
-                    </i>
-                  </dt>
-                  <dd class="value">{{ row[field] }}</dd>
-                </div>
-                <bk-button class="share-btn" theme="primary" outline @click="copy(row)" :loading="isShareLoading">
-                  {{ t("复制分享链接") }}
-                </bk-button>
-              </dl>
-            </template>
-          </bk-table-column>
-          <template v-if="table.headers.length">
-            <bk-table-column
-              v-for="({ field, label, width, formatter }, index) in table.headers"
-              :show-overflow-tooltip="true" :key="index" :width="width" :formatter="formatter" :label="label"
-              :class-name="field" :prop="field" />
-          </template>
-          <template v-else>
-            <bk-table-column label="" />
           </template>
         </bk-table>
       </div>
@@ -145,9 +154,8 @@ import TableEmpty from '@/components/table-empty.vue';
 import echarts from 'echarts';
 import 'echarts/lib/chart/bar';
 import 'echarts/lib/component/tooltip';
-import { ref, nextTick, onMounted, onBeforeUnmount, computed, markRaw } from 'vue';
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, markRaw } from 'vue';
 import { merge } from 'lodash';
-// import { bus } from '@/common/bus';
 import { copy } from '@/common/util';
 import { SearchParamsInterface } from './common/type';
 import { useCommon, useAccessLog } from '@/store';
@@ -156,33 +164,33 @@ import {
   fetchApigwAccessLogList,
   fetchApigwAccessLogChart,
   fetchApigwStages,
+  fetchApigwAccessLogShareLink,
 } from '@/http';
-// import { catchErrorHandler } from '@/common/util';
-// import chartMixin from '@/mixins/chart';
-
-const { getChartIntervalOption } = userChartIntervalOption();
 
 const { t } = i18n.global;
+const { getChartIntervalOption } = userChartIntervalOption();
 const commonStore = useCommon();
 const AccessLogStore = useAccessLog();
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 
+const keyword = ref('');
 const chartInstance = ref(null);
 const chartContainer = ref(null);
 const tableRef = ref(null);
 const datePickerRef = ref(null);
-const keyword = ref('');
 const isPageLoading = ref(false);
 const isDataLoading = ref(false);
 const isShareLoading = ref(false);
 const shortcutSelectedIndex = ref(1);
+const dateKey = ref('dateKey');
 const dateTimeRange = ref([]);
 const apigwId = ref(commonStore.apigwId);
 const pagination = ref({
   current: 1,
   count: 0,
   limit: 10,
+  showTotalCount: true,
 });
 const searchParams = ref<SearchParamsInterface>({
   stage_id: 0,
@@ -202,7 +210,7 @@ const table = ref({
 const searchUsage = ref({
   showed: false,
 });
-const chartData: any = ref({});
+const chartData: Record<string, any> = ref({});
 const stageList = ref([]);
 
 const isShowChart = computed(() => {
@@ -213,12 +221,12 @@ const localLanguage = computed(() => {
   return 'zh-cn';
 });
 
-const formatterValue = (params: any) => {
+const formatterValue = (params: Record<string, any>) => {
   return `${params.value.toLocaleString()}次`;
 };
 
-const formatValue = (value?: any, field?: string) => {
-  if (value && field === 'timestamp') {
+const formatValue = (value: any, field: string) => {
+  if (value && ['timestamp', 'error'].includes(field)) {
     return dayjs.unix(value).format('YYYY-MM-DD HH:mm:ss ZZ');
   }
   return value || '--';
@@ -315,25 +323,30 @@ const renderChart = (data: Record<string, any>) => {
 };
 
 const setTableHeader = () => {
-  const columns = [
+  const columns =  [
+    {
+      type: 'expand',
+      width: 30,
+      minWidth: 30,
+    },
     {
       field: 'timestamp',
       width: 220,
       label: t('请求时间'),
-      formatter: (row: any, column: any, cellValue: string) => {
-        return formatValue(cellValue, column.property);
+      render: ({ data }: Record<string, any>) => {
+        return formatValue(data.timestamp, 'timestamp');
       },
     },
     { field: 'method', width: 160, label: t('请求方法') },
     { field: 'http_path', label: t('请求路径') },
     { field: 'status', width: 160, label: t('状态码') },
-    { field: 'backend_duration', width: 160, label: t('耗时(毫秒)') },
+    { field: 'backend_duration', width: 100, label: t('耗时(毫秒)') },
     {
       field: 'error',
       width: 200,
       label: t('错误'),
-      formatter: (row: any, column: any, cellValue: string) => {
-        return formatValue(cellValue, column.property);
+      render: ({ data }: Record<string, any>) => {
+        return formatValue(data.error, 'error');
       },
     },
   ];
@@ -386,18 +399,13 @@ const getSearchData = async () => {
     chartData.value = chartRes || {};
     renderChart(chartData.value);
     table.value = Object.assign(table.value, {
-      list: listRes?.data?.results || [],
-      fields: listRes?.data?.fields || [],
+      list: listRes?.results || [],
+      fields: listRes?.fields || [],
     });
-    // 根据接口要求最大显示10000条以内数据，但总条数仍然显示为实际值
-    pagination.value.count = Math.min(listRes?.data?.count || 0, 10000);
-    nextTick(() => {
-      const countDom = document.querySelector('.bk-page-total-count .stress');
-      console.log(countDom);
-      if (countDom) {
-        // countDom?.innerText = listRes?.data.count;
-      }
+    table.value.list.forEach((item) => {
+      item.isExpand = false;
     });
+    pagination.value.count = listRes?.count || 0;
     setTableHeader();
     updateTableEmptyConfig();
     tableEmptyConf.value.isAbnormal = false;
@@ -407,6 +415,20 @@ const getSearchData = async () => {
     isPageLoading.value = false;
     isDataLoading.value = false;
     setTableHeader();
+  }
+};
+
+
+const handleClickCopyLink = async ({ request_id }: any) => {
+  const params = { request_id };
+  isShareLoading.value = true;
+  try {
+    const { link } = await fetchApigwAccessLogShareLink(apigwId.value, params);
+    copy(link || '');
+  } catch (e) {
+    console.error(e);
+  } finally {
+    isShareLoading.value = false;
   }
 };
 
@@ -447,25 +469,29 @@ const handleClickUsageValue = (event: any) => {
 };
 
 const handlePageLimitChange = (limit: number) => {
-  pagination.value.limit = limit;
-  pagination.value.current = 1;
+  pagination.value = Object.assign(pagination.value, { current: 1, limit });
   getSearchData();
 };
 
-const handlePageChange = (newPage: number) => {
-  pagination.value.current = newPage;
+const handlePageChange = (current: number) => {
+  pagination.value = Object.assign(pagination.value, { current });
   getSearchData();
 };
 
-const handleRowClick = (row: any) => {
-  tableRef.value.toggleRowExpansion(row);
+const handleRowClick = (event: any, row: any) => {
+  row.isExpand = !row.isExpand;
+  nextTick(() => {
+    tableRef.value.setRowExpand(row,  row.isExpand);
+  });
 };
 
 const handleClearFilterKey = () => {
   keyword.value = '';
   [datePickerRef.value.shortcut] = [AccessLogStore.datepickerShortcuts[1]];
+  dateTimeRange.value = [];
   shortcutSelectedIndex.value = 1;
-  pagination.value.current = 1;
+  dateKey.value = String(+new Date());
+  setSearchTimeRange();
   handleSearch();
 };
 
@@ -482,7 +508,7 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
-const getRowClassName = ({ row }: any) => {
+const getRowClass = (row: Record<string, any>) => {
   return !(row.status >= 200 && row.status < 300) || row.error ? 'exception' : '';
 };
 
@@ -580,7 +606,8 @@ onBeforeUnmount(() => {
     .details {
       position: relative;
       padding: 16px 0;
-
+      font-size: 12px;
+      background-color: #ffffff;
       .item {
         display: flex;
         margin-bottom: 8px;
@@ -611,7 +638,7 @@ onBeforeUnmount(() => {
         .value {
           font-family: "Courier New", Courier, monospace;
           flex: none;
-          width: calc(100% - 300px);
+          width: calc(100% - 400px);
           white-space: pre-wrap;
           word-break: break-word;
           color: #63656e;
@@ -621,7 +648,7 @@ onBeforeUnmount(() => {
 
       .share-btn {
         position: absolute;
-        right: 0;
+        right: 30px;
         top: 18px;
       }
     }
@@ -720,6 +747,13 @@ onBeforeUnmount(() => {
 :deep(.bk-picker-confirm-action) {
   a:first-child {
     display: none;
+  }
+}
+
+:deep(.access-log-table) {
+  .head-text {
+    font-weight: 700!important;
+    color: #63656e!important;
   }
 }
 </style>
