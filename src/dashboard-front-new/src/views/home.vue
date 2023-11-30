@@ -12,8 +12,11 @@
         <bk-input class="ml10 mr10 search-input" placeholder="请输入网关名"></bk-input>
         <bk-select
           v-model="filterKey"
+          :clearable="false"
         >
-          <bk-option v-for="(item, index) in filterData" :key="index" :value="item.value" :label="item.label" />
+          <bk-option
+            v-for="(item, index) in filterData"
+            :key="index" :value="item.value" :label="item.label" />
         </bk-select>
       </div>
     </div>
@@ -53,6 +56,7 @@
             <bk-button
               text
               theme="primary"
+              @click="handleGoPage('apigwStageOverview', item.id)"
             >
               环境概览
             </bk-button>
@@ -60,6 +64,7 @@
               text
               theme="primary"
               class="pl20"
+              @click="handleGoPage('apigwResource', item.id)"
             >
               资源配额
             </bk-button>
@@ -67,6 +72,7 @@
               text
               theme="primary"
               class="pl20"
+              @click="handleGoPage('apigwAccessLog', item.id)"
             >
               流水日志
             </bk-button>
@@ -98,9 +104,12 @@
         >
           <bk-input
             v-model="formData.name"
-            :placeholder="$t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
+            :maxlength="30"
+            show-word-limit
+            :placeholder="$t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
             clearable
           />
+          <span class="common-form-tips">网关的唯一标识，创建后不可更改</span>
         </bk-form-item>
         <bk-form-item
           label="维护人员"
@@ -121,7 +130,8 @@
           <bk-input
             type="textarea"
             v-model="formData.description"
-            placeholder="请输入"
+            placeholder="请输入网关描述"
+            :maxlength="100"
             clearable
           />
         </bk-form-item>
