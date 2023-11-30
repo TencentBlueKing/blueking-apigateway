@@ -1,5 +1,5 @@
 ARG IMAGE=python
-ARG TAG=3.6.15-slim-buster
+ARG TAG=3.10.12-slim-buster
 FROM ${IMAGE}:${TAG}
 
 RUN apt-get update && apt-get install -y libssl-dev default-libmysqlclient-dev libffi-dev \

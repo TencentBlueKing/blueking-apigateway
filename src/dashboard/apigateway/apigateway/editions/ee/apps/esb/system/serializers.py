@@ -21,12 +21,12 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.esb.bkcore.models import ComponentSystem, DocCategory
 from apigateway.apps.esb.constants import SYSTEM_NAME_PATTERN
 from apigateway.apps.esb.mixins import OfficialWriteFields
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
+from apigateway.tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
 class SystemSLZ(ExtensibleFieldMixin, OfficialWriteFields, serializers.ModelSerializer):

@@ -18,7 +18,6 @@
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.biz.constants import APP_CODE_PATTERN
 from apigateway.biz.gateway import GatewayHandler
@@ -27,6 +26,7 @@ from apigateway.core.constants import (
     GatewayStatusEnum,
 )
 from apigateway.core.models import Gateway
+from apigateway.tencent_apigateway_common.i18n.field import SerializerTranslatedField
 from apigateway.utils.crypto import calculate_fingerprint
 
 from .constants import GATEWAY_NAME_PATTERN

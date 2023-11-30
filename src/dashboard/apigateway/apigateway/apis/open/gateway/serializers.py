@@ -21,7 +21,6 @@ from typing import Optional
 from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
@@ -31,6 +30,7 @@ from apigateway.core.constants import (
     GatewayTypeEnum,
 )
 from apigateway.core.models import Gateway
+from apigateway.tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
 class GatewayListV1InputSLZ(serializers.Serializer):

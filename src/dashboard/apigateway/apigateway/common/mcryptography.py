@@ -18,7 +18,8 @@
 #
 from django.conf import settings
 from django.utils.encoding import force_bytes
-from tencent_apigateway_common.encrypt.cipher import AESGCMCipher
+
+from apigateway.tencent_apigateway_common.encrypt.cipher import AESGCMCipher
 
 
 class AESCipherManager:

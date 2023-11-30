@@ -17,7 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
+
+from apigateway.tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
 class ResourceListInputSLZ(serializers.Serializer):

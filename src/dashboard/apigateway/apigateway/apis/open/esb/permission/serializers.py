@@ -19,7 +19,6 @@
 import math
 
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.esb.helpers import BoardConfigManager
 from apigateway.apps.esb.permission.serializers import AppPermissionApplyRecordSLZ
@@ -33,6 +32,7 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
+from apigateway.tencent_apigateway_common.i18n.field import SerializerTranslatedField
 from apigateway.utils import time
 
 

@@ -32,12 +32,12 @@ from typing import Any, Dict, List
 from urllib.parse import quote
 
 from celery.schedules import crontab
-from tencent_apigateway_common.env import Env
 
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
 from apigateway.conf.log_utils import get_logging_config, makedirs_when_not_exists
 from apigateway.conf.utils import get_default_keepalive_options
+from apigateway.tencent_apigateway_common.env import Env
 
 env = Env()
 

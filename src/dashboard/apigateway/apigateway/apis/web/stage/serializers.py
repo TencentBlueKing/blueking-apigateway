@@ -21,7 +21,6 @@ from django.utils.translation import gettext_lazy
 from packaging import version
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
@@ -29,6 +28,7 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import STAGE_NAME_PATTERN, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import Backend, Stage
+from apigateway.tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from .validators import StageVarsValidator
 

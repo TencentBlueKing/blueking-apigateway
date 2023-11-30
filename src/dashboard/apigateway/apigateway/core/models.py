@@ -24,7 +24,6 @@ from typing import List
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
-from tencent_apigateway_common.i18n.field import I18nProperty
 
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.core import managers
@@ -53,6 +52,7 @@ from apigateway.core.constants import (
 )
 from apigateway.core.utils import get_path_display
 from apigateway.schema.models import Schema
+from apigateway.tencent_apigateway_common.i18n.field import I18nProperty
 
 logger = logging.getLogger(__name__)
 

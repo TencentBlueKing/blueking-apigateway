@@ -20,10 +20,10 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.esb.bkcore.models import DocCategory
 from apigateway.apps.esb.mixins import OfficialWriteFields
+from apigateway.tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
 class DocCategorySLZ(OfficialWriteFields, serializers.ModelSerializer):

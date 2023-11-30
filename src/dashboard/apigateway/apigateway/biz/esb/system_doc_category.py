@@ -18,11 +18,11 @@
 import copy
 
 from django.conf import settings
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.esb.bkcore.models import ComponentSystem, DocCategory, ESBChannel, SystemDocCategory
 from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.biz.esb.board_config import BoardConfigManager
+from apigateway.tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 
 class SystemDocCategoryHandler:

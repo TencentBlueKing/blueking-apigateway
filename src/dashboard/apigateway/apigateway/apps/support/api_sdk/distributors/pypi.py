@@ -22,11 +22,10 @@ from dataclasses import dataclass, field
 from subprocess import CalledProcessError, check_call
 from typing import ClassVar, List, Optional
 
-from tencent_apigateway_common.pypi.registry import SimplePypiRegistry
-
 from apigateway.apps.support.api_sdk.constants import PYPIRC_TMPL
 from apigateway.apps.support.api_sdk.exceptions import DistributeError
 from apigateway.apps.support.api_sdk.models import DistributeResult, Distributor
+from apigateway.tencent_apigateway_common.pypi.registry import SimplePypiRegistry
 from apigateway.utils.file import write_to_file
 from apigateway.utils.pypi import RepositoryConfig
 

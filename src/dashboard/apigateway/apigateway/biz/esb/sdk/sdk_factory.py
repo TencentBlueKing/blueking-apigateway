@@ -22,11 +22,11 @@ from typing import Optional
 
 from django.conf import settings
 from django.utils.translation import gettext as _
-from tencent_apigateway_common.pypi.pip import PipHelper
-from tencent_apigateway_common.pypi.registry import SimplePypiRegistry
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.biz.esb.board_config import BoardConfigManager
+from apigateway.tencent_apigateway_common.pypi.pip import PipHelper
+from apigateway.tencent_apigateway_common.pypi.registry import SimplePypiRegistry
 
 
 @dataclass
