@@ -25,11 +25,11 @@ from typing import Optional
 from django.utils.translation import gettext
 from docutils.core import publish_parts
 from pydantic import BaseModel, Field
-from tencent_apigateway_common.django.translation import get_current_language_code
 
 from apigateway.apps.esb.bkcore.models import ComponentDoc, ESBChannel
 from apigateway.apps.esb.constants import ComponentDocTypeEnum
 from apigateway.biz.esb.board_config import BoardConfig, BoardConfigManager
+from apigateway.common.django.translation import get_current_language_code
 
 from .constants import API_URL_PARTS
 

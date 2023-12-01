@@ -19,12 +19,12 @@
 from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.esb.bkcore.models import AppPermissionApplyRecord
 from apigateway.apps.esb.helpers import BoardConfigManager
 from apigateway.apps.permission.constants import RENEWABLE_EXPIRE_DAYS, ApplyStatusEnum
 from apigateway.common.fields import TimestampField
+from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.utils.time import to_datetime_from_now
 
 

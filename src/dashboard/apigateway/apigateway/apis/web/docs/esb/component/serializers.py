@@ -17,9 +17,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.permission.constants import PermissionLevelEnum
+from apigateway.common.i18n.field import SerializerTranslatedField
 
 
 class ComponentSearchInputSLZ(serializers.Serializer):

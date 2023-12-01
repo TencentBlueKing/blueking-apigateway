@@ -199,13 +199,13 @@ reference = "tencent"
 
 [[package]]
 name = "beautifulsoup4"
-version = "4.10.0"
+version = "4.12.2"
 description = "Screen-scraping library"
 optional = false
-python-versions = ">3.0.0"
+python-versions = ">=3.6.0"
 files = [
-    {file = "beautifulsoup4-4.10.0-py3-none-any.whl", hash = "sha256:9a315ce70049920ea4572a4055bc4bd700c940521d36fc858205ad4fcde149bf"},
-    {file = "beautifulsoup4-4.10.0.tar.gz", hash = "sha256:c23ad23c521d818955a4151a67d81580319d4bf548d3d49f4223ae041ff98891"},
+    {file = "beautifulsoup4-4.12.2-py3-none-any.whl", hash = "sha256:bd2520ca0d9d7d12694a53d44ac482d181b4ec1888909b035a3dbf40d0f57d4a"},
+    {file = "beautifulsoup4-4.12.2.tar.gz", hash = "sha256:492bbc69dca35d12daac71c4db1bfff0c876c00ef4a2ffacce226d4638eb72da"},
 ]
 
 [package.dependencies]
@@ -3766,13 +3766,13 @@ reference = "tencent"
 
 [[package]]
 name = "soupsieve"
-version = "2.3.1"
+version = "2.3.2.post1"
 description = "A modern CSS selector implementation for Beautiful Soup."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "soupsieve-2.3.1-py3-none-any.whl", hash = "sha256:1a3cca2617c6b38c0343ed661b1fa5de5637f257d4fe22bd9f1338010a1efefb"},
-    {file = "soupsieve-2.3.1.tar.gz", hash = "sha256:b8d49b1cd4f037c7082a9683dfa1801aa2597fb11c3a1155b7a5b94829b4f1f9"},
+    {file = "soupsieve-2.3.2.post1-py3-none-any.whl", hash = "sha256:3b2503d3c7084a42b1ebd08116e5f81aadfaea95863628c80a3b774a11b7c759"},
+    {file = "soupsieve-2.3.2.post1.tar.gz", hash = "sha256:fc53893b3da2c33de295667a0e19f078c14bf86544af307354de5fcf12a3f30d"},
 ]
 
 [package.source]
@@ -3809,29 +3809,6 @@ files = [
 
 [package.extras]
 doc = ["reno", "sphinx", "tornado (>=4.5)"]
-
-[package.source]
-type = "legacy"
-url = "https://mirrors.cloud.tencent.com/pypi/simple"
-reference = "tencent"
-
-[[package]]
-name = "tencent-apigateway-common"
-version = "0.1.11"
-description = ""
-optional = false
-python-versions = ">=3.6.2,<3.8"
-files = [
-    {file = "tencent_apigateway_common-0.1.11-py3-none-any.whl", hash = "sha256:b839a53d37811eb0efc8b0a0acb3dad5266c5e4a0909a9088645e0fd0cf8ba62"},
-]
-
-[package.dependencies]
-blue-krill = ">=1.0.5,<2.0.0"
-cryptography = ">=3.3.1,<4.0.0"
-dataclasses = {version = ">=0.7,<0.8", markers = "python_version >= \"3.6.1\" and python_version < \"3.7.0\""}
-django = "*"
-djangorestframework = ">=3.10,<4.0"
-pypi-simple = ">=0.8.0,<0.9.0"
 
 [package.source]
 type = "legacy"
@@ -4509,4 +4486,4 @@ reference = "tencent"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.6.6 || ~3.7"
-content-hash = "3159e814c41fe2a55483b38222b2931b0682bb017ee7debd3360dcfe5ec87b21"
+content-hash = "1ed78e921cdfe1d46739f3c52008a78a919ccf1ff71f3c01f81424da7e9dd0b9"
