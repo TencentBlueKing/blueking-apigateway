@@ -51,6 +51,34 @@ const headerList = ref([
     enabled: true,
     link: '',
   },
+  {
+    name: t('组件API文档'),
+    id: 4,
+    url: 'componentDoc',
+    enabled: true,
+    link: '',
+  },
+  {
+    name: t('网关API SDK'),
+    id: 5,
+    params: {
+      type: 'apigateway',
+    },
+    url: 'apigwSDK',
+    enabled: true,
+    link: '',
+  },
+  {
+    name: t('组件API SDK'),
+    id: 6,
+    params: {
+      type: 'esb',
+    },
+    url: 'esbSDK',
+    enabled: true,
+    link: '',
+  },
+
 ]);
 
 const apigwId = computed(() => {

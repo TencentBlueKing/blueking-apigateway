@@ -839,4 +839,11 @@ init();
     text-align: center;
   }
 }
+:deep(.app-content){
+  .bk-exception{
+    height: 280px;
+    max-height: 280px;
+    justify-content: center;
+  }
+}
 </style>
