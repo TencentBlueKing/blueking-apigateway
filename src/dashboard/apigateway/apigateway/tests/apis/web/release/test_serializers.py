@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+import json
 
 import pytest
 from dateutil.tz import tzutc
@@ -113,13 +114,13 @@ class TestReleaseHistoryQueryInputSLZ:
     def test_to_internal_value(self):
         data = [
             {
-                "query": "test",
+                "keyword": "test",
                 "stage_id": 12345,
                 "created_by": "admin",
                 "time_start": 1577263732,
                 "time_end": 1577263732,
                 "expected": {
-                    "query": "test",
+                    "keyword": "test",
                     "stage_id": 12345,
                     "created_by": "admin",
                     "time_start": datetime.datetime(2019, 12, 25, 8, 48, 52, tzinfo=tzutc()),
@@ -127,13 +128,13 @@ class TestReleaseHistoryQueryInputSLZ:
                 },
             },
             {
-                "query": "test",
+                "keyword": "test",
                 "stage_id": 12345,
                 "created_by": "admin",
                 "time_start": None,
                 "time_end": None,
                 "expected": {
-                    "query": "test",
+                    "keyword": "test",
                     "stage_id": 12345,
                     "created_by": "admin",
                     "time_start": None,
@@ -205,24 +206,49 @@ class TestPublishEventQueryOutputSLZ:
                 ),
             },
         )
-        assert slz.data == {
-            "id": fake_release_history.id,
-            "stage": {"id": fake_stage.id, "name": fake_stage.name},
-            "resource_version_display": fake_release_history.resource_version.object_display,
-            "created_time": dummy_time.str,
-            "created_by": fake_release_history.created_by,
-            "source": fake_release_history.source,
-            "status": PublishEventStatusEnum.FAILURE.value,
-            "duration": 0,
-            "events": [
-                {
-                    "id": fake_publish_event.id,
-                    "release_history_id": fake_release_history.id,
-                    "name": fake_publish_event.name,
-                    "step": fake_publish_event.step,
-                    "status": fake_publish_event.status,
-                    "created_time": dummy_time.str,
-                    "detail": {},
-                }
-            ],
-        }
+
+        slz_data_json = json.dumps(slz.data, sort_keys=True, default=str)
+        expected_data_json = json.dumps(
+            {
+                "id": fake_release_history.id,
+                "stage": {"id": fake_stage.id, "name": fake_stage.name},
+                "resource_version_display": fake_release_history.resource_version.object_display,
+                "created_time": dummy_time.str,
+                "created_by": fake_release_history.created_by,
+                "source": fake_release_history.source,
+                "status": PublishEventStatusEnum.FAILURE.value,
+                "duration": 0,
+                "events": [
+                    {
+                        "id": fake_publish_event.id,
+                        "release_history_id": fake_release_history.id,
+                        "name": fake_publish_event.name,
+                        "step": fake_publish_event.step,
+                        "status": fake_publish_event.status,
+                        "created_time": dummy_time.str,
+                        "detail": {},
+                    },
+                    {
+                        "id": -fake_publish_event.step,
+                        "release_history_id": fake_release_history.id,
+                        "name": fake_publish_event.name,
+                        "step": fake_publish_event.step,
+                        "status": PublishEventStatusEnum.FAILURE.value,
+                        "created_time": dummy_time.str,
+                        "detail": {},
+                    },
+                ],
+                "events_template": [
+                    {"name": "validata_configuration", "description": "配置校验", "step": 0},
+                    {"name": "generate_release_task", "description": "生成发布任务", "step": 1},
+                    {"name": "distribute_configuration", "description": "下发配置", "step": 2},
+                    {"name": "parse_configuration", "description": "解析配置", "step": 3},
+                    {"name": "apply_configuration", "description": "应用配置", "step": 4},
+                    {"name": "load_configuration", "description": "加载配置", "step": 5},
+                ],
+            },
+            sort_keys=True,
+            default=str,
+        )
+
+        assert slz_data_json == expected_data_json

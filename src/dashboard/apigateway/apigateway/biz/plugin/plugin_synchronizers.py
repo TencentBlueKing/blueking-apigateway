@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
 from apigateway.biz.plugin_binding import PluginBindingHandler
+from apigateway.utils.time import now_datetime
 
 
 class PluginConfigData(BaseModel):
@@ -52,6 +53,7 @@ class PluginSynchronizer:
         # list[(scope_id, plugin_config)]
         add_bindings: List[Tuple[int, PluginConfig]] = []
         update_plugin_configs = []
+        now = now_datetime()
         for scope_id, plugin_config_data_list in scope_id_to_plugin_configs.items():
             for plugin_config_data in plugin_config_data_list:
                 key = f"{scope_type.value}:{scope_id}:{plugin_config_data.type}"
@@ -63,6 +65,7 @@ class PluginSynchronizer:
                     plugin_config_obj = existing_binding.config
                     plugin_config_obj.config = plugin_config_data.yaml
                     plugin_config_obj.updated_by = username
+                    plugin_config_obj.updated_time = now
                     update_plugin_configs.append(plugin_config_obj)
                 else:
                     plugin_type = code_to_plugin_type[plugin_config_data.type]
@@ -102,7 +105,9 @@ class PluginSynchronizer:
             PluginBinding.objects.bulk_create(bindings, batch_size=100)
 
         if update_plugin_configs:
-            PluginConfig.objects.bulk_update(update_plugin_configs, fields=["yaml", "updated_by"], batch_size=100)
+            PluginConfig.objects.bulk_update(
+                update_plugin_configs, fields=["yaml", "updated_by", "updated_time"], batch_size=100
+            )
 
         if remaining_key_to_binding:
             # 已创建且当前存在的 binding 已被 pop 出去，剩余的即为需要删除的 binding

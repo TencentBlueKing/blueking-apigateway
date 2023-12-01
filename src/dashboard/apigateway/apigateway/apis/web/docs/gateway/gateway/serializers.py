@@ -23,6 +23,12 @@ from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
 
 
+class GatewayQueryInputSLZ(serializers.Serializer):
+    keyword = serializers.CharField(
+        allow_blank=True, required=False, help_text="网关筛选条件，支持模糊匹配网关名称、描述"
+    )
+
+
 class GatewayOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="网关 ID")
     name = serializers.CharField(help_text="网关名称")

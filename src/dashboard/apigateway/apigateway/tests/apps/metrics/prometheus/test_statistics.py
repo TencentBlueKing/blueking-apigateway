@@ -21,7 +21,7 @@ import pytest
 from apigateway.apps.metrics.prometheus import statistics
 
 
-class TestStatisticsAPIRequestMetrics:
+class TestStatisticsGatewayRequestMetrics:
     @pytest.mark.parametrize(
         "step, expected",
         [
@@ -39,12 +39,12 @@ class TestStatisticsAPIRequestMetrics:
             "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
         )
 
-        metrics = statistics.StatisticsAPIRequestMetrics()
+        metrics = statistics.StatisticsGatewayRequestMetrics()
         result = metrics._get_query_promql(step)
         assert result == expected
 
 
-class TestStatisticsAPIRequestDurationMetrics:
+class TestStatisticsGatewayRequestDurationMetrics:
     @pytest.mark.parametrize(
         "step, expected",
         [
@@ -62,7 +62,7 @@ class TestStatisticsAPIRequestDurationMetrics:
             "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
         )
 
-        metrics = statistics.StatisticsAPIRequestDurationMetrics()
+        metrics = statistics.StatisticsGatewayRequestDurationMetrics()
         result = metrics._get_query_promql(step)
         assert result == expected
 

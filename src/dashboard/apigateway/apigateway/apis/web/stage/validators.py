@@ -37,8 +37,11 @@ class StageVarsValidator(GetGatewayFromContextMixin):
         gateway = self._get_gateway(serializer)
         instance = getattr(serializer, "instance", None)
 
+        context = getattr(serializer, "context", {})
+        allow_var_not_exist = context.get("allow_var_not_exist", False)
+
         self._validate_vars_keys(attrs["vars"])
-        self._validate_vars_values(attrs["vars"], gateway, instance)
+        self._validate_vars_values(attrs["vars"], gateway, instance, allow_var_not_exist)
 
     def _validate_vars_keys(self, _vars: dict):
         """
@@ -52,7 +55,7 @@ class StageVarsValidator(GetGatewayFromContextMixin):
                     ).format(key=key),
                 )
 
-    def _validate_vars_values(self, _vars: dict, gateway, instance):
+    def _validate_vars_values(self, _vars: dict, gateway, instance, allow_var_not_exist: bool):
         """
         校验变量的值是否符合要求
         - 用作路径变量时：值应符合路径片段规则
@@ -73,5 +76,6 @@ class StageVarsValidator(GetGatewayFromContextMixin):
                 "stage_name": instance.name,
                 "vars": _vars,
                 "resource_version_id": stage_release["resource_version_id"],
+                "allow_var_not_exist": allow_var_not_exist,
             }
         )

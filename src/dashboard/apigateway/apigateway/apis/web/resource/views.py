@@ -23,15 +23,15 @@ from urllib.parse import urljoin
 
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.constants import ExportTypeEnum
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
+from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
@@ -40,10 +40,10 @@ from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from .serializers import (
@@ -133,12 +133,14 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
         resources = saver.save()
         instance = resources[0]
 
-        ResourceHandler.record_audit_log_success(
+        Auditor.record_resource_op_success(
+            op_type=OpTypeEnum.CREATE,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.CREATE,
             instance_id=instance.id,
             instance_name=instance.identity,
+            data_before={},
+            data_after=get_model_dict(instance),
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -186,6 +188,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
 
         slz = self.get_serializer(
             instance,
@@ -205,12 +208,14 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         resources = saver.save()
         instance = resources[0]
 
-        ResourceHandler.record_audit_log_success(
+        Auditor.record_resource_op_success(
+            op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.MODIFY,
             instance_id=instance.id,
             instance_name=instance.identity,
+            data_before=data_before,
+            data_after=get_model_dict(instance),
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -218,16 +223,19 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
         instance_id = instance.id
 
         ResourceHandler.delete_resources([instance_id])
 
-        ResourceHandler.record_audit_log_success(
+        Auditor.record_resource_op_success(
+            op_type=OpTypeEnum.DELETE,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.DELETE,
             instance_id=instance_id,
             instance_name=instance.identity,
+            data_before=data_before,
+            data_after={},
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -266,15 +274,18 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
             updated_by=request.user.username,
         )
 
-        record_audit_log(
+        Auditor.record_resource_op_success(
+            op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.RESOURCE.value,
-            op_object_id=";".join([str(resource.id) for resource in queryset]),
-            op_object=";".join([resource.identity for resource in queryset]),
-            comment=_("批量更新资源"),
+            gateway_id=request.gateway.id,
+            instance_id=";".join([str(resource.id) for resource in queryset]),
+            instance_name=";".join([resource.identity for resource in queryset]),
+            comment="批量更新资源",
+            data_before={},
+            data_after={
+                "is_public": slz.validated_data["is_public"],
+                "allow_apply_permission": slz.validated_data["allow_apply_permission"],
+            },
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -291,15 +302,15 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
 
         ResourceHandler.delete_resources(resource_ids)
 
-        record_audit_log(
+        Auditor.record_resource_op_success(
+            op_type=OpTypeEnum.DELETE,
             username=request.user.username,
-            op_type=OpTypeEnum.DELETE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.RESOURCE.value,
-            op_object_id=";".join(map(str, resource_ids)),
-            op_object=";".join(resource_identities),
-            comment=_("批量删除资源"),
+            gateway_id=request.gateway.id,
+            instance_id=";".join(map(str, resource_ids)),
+            instance_name=";".join(resource_identities),
+            comment="批量删除资源",
+            data_before=resource_ids,
+            data_after=[],
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

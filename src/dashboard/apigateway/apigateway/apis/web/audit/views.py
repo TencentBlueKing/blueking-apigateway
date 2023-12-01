@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.db.models import Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -48,27 +49,33 @@ class AuditEventLogListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = self.get_queryset()
-
         time_start = data.get("time_start")
         time_end = data.get("time_end")
+        keyword = data.get("keyword")
         op_object_type = data.get("op_object_type")
         op_type = data.get("op_type")
+        op_object = data.get("op_object")
         username = data.get("username")
-        fuzzy = data.get("fuzzy", False)
 
+        queryset = self.get_queryset()
         if time_start:
             queryset = queryset.filter(op_time__gte=time_start)
         if time_end:
             queryset = queryset.filter(op_time__lte=time_end)
 
+        # fuzzy search by keyword
+        if keyword:
+            queryset = queryset.filter(Q(username__icontains=keyword) | Q(op_object__icontains=keyword))
+
+        # filter by other fields
         if op_object_type:
             queryset = queryset.filter(op_object_type=op_object_type)
         if op_type:
             queryset = queryset.filter(op_type=op_type)
-
+        if op_object:
+            queryset = queryset.filter(op_object__icontains=op_object)
         if username:
-            queryset = queryset.filter(username__icontains=username) if fuzzy else queryset.filter(username=username)
+            queryset = queryset.filter(username=username)
 
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page, many=True)

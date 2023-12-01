@@ -23,7 +23,7 @@ from apigateway.core.models import Backend
 
 
 class BackendFilter(filters.FilterSet):
-    name = filters.CharFilter()
+    name = filters.CharFilter(lookup_expr="icontains")
     type = filters.ChoiceFilter(choices=BackendTypeEnum.get_choices())
 
     class Meta:

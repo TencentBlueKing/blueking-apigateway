@@ -115,7 +115,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
             },
             {
                 "params": {
-                    "query": "list-02",
+                    "keyword": "list-02",
                 },
                 "expected": [
                     {

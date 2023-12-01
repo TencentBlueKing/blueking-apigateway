@@ -26,6 +26,7 @@ from rest_framework import generics, status
 
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.common.contexts import GatewayAuthContext
@@ -33,6 +34,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -74,7 +76,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
         queryset = self._filter_list_queryset(
             gateway_ids,
-            slz.validated_data.get("query"),
+            slz.validated_data.get("keyword"),
             slz.validated_data["order_by"],
         )
         page = self.paginate_queryset(queryset)
@@ -92,11 +94,11 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
         return self.get_paginated_response(output_slz.data)
 
-    def _filter_list_queryset(self, gateway_ids: List[int], query: Optional[str], order_by: str):
+    def _filter_list_queryset(self, gateway_ids: List[int], keyword: Optional[str], order_by: str):
         queryset = Gateway.objects.filter(id__in=gateway_ids)
 
-        if query:
-            queryset = queryset.filter(name__icontains=query)
+        if keyword:
+            queryset = queryset.filter(name__icontains=keyword)
 
         return queryset.order_by(order_by)
 
@@ -118,17 +120,23 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         GatewayHandler.save_related_data(
             gateway=slz.instance,
             user_auth_type=UserAuthTypeEnum(settings.DEFAULT_USER_AUTH_TYPE).value,
+            # 通过管理端新创建的网关，要求必须使用请求头提供蓝鲸认证数据
+            allow_auth_from_params=False,
+            # 通过管理端新创建的网关，不需要删除敏感参数
+            allow_delete_sensitive_params=False,
             username=request.user.username,
             app_codes_to_binding=bk_app_codes,
         )
 
         # 3. record audit log
-        GatewayHandler.record_audit_log_success(
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.CREATE,
             username=request.user.username,
             gateway_id=slz.instance.id,
-            op_type=OpTypeEnum.CREATE,
             instance_id=slz.instance.id,
             instance_name=slz.instance.name,
+            data_before={},
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED, data={"id": slz.instance.id})
@@ -188,6 +196,8 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         partial = kwargs.pop("partial", False)
 
         instance = self.get_object()
+        data_before = get_model_dict(instance)
+
         slz = GatewayUpdateInputSLZ(instance=instance, data=request.data, partial=partial)
         slz.is_valid(raise_exception=True)
 
@@ -198,12 +208,14 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         if bk_app_codes is not None:
             GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
 
-        GatewayHandler.record_audit_log_success(
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=instance.id,
-            op_type=OpTypeEnum.MODIFY,
             instance_id=instance.id,
             instance_name=instance.name,
+            data_before=data_before,
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -211,6 +223,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
         instance_id = instance.id
 
         # 网关为“停用”状态，才可以删除
@@ -219,12 +232,14 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         GatewayHandler.delete_gateway(instance_id)
 
-        GatewayHandler.record_audit_log_success(
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.DELETE,
             username=request.user.username,
             gateway_id=instance_id,
-            op_type=OpTypeEnum.DELETE,
             instance_id=instance_id,
             instance_name=instance.name,
+            data_before=data_before,
+            data_after={},
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -246,6 +261,8 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
+
         slz = self.get_serializer(instance=instance, data=request.data)
         slz.is_valid(raise_exception=True)
 
@@ -258,12 +275,14 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
             source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
             trigger_gateway_publish(source, request.user.username, instance.id)
 
-        GatewayHandler.record_audit_log_success(
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=instance.id,
-            op_type=OpTypeEnum.MODIFY,
             instance_id=instance.id,
             instance_name=instance.name,
+            data_before=data_before,
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
