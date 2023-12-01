@@ -1,7 +1,7 @@
 <template>
   <div class="home-container">
     <div class="title-container flex-row justify-content-between">
-      <div class="flex-1 left">{{ t('我的网关') }} (3)</div>
+      <div class="flex-1 left">{{ t('我的网关') }} ({{ gatewaysList.length }})</div>
       <div class="flex-1 flex-row">
         <bk-button
           theme="primary"
@@ -9,26 +9,31 @@
         >
           {{ t('新建网关') }}
         </bk-button>
-        <bk-input class="ml10 mr10 search-input" placeholder="请输入网关名"></bk-input>
+        <bk-input class="ml10 mr10 search-input" v-model="filterNameData.name" placeholder="请输入网关名"></bk-input>
         <bk-select
           v-model="filterKey"
+          :clearable="false"
         >
-          <bk-option v-for="(item, index) in filterData" :key="index" :value="item.value" :label="item.label" />
+          <bk-option
+            v-for="(item, index) in filterData"
+            :key="index" :value="item.value" :label="item.label" />
         </bk-select>
       </div>
     </div>
     <div class="table-container">
       <div class="table-header flex-row">
-        <div class="flex-1 of4">{{t('网关名')}}</div>
-        <div class="flex-1 of1">创建者</div>
-        <div class="flex-1 of2">环境列表</div>
-        <div class="flex-1 of1 text-c">资源数量</div>
-        <div class="flex-1 of2">操作</div>
+        <div class="flex-1 of4">{{ t('网关名') }}</div>
+        <div class="flex-1 of1">{{ t('创建者') }}</div>
+        <div class="flex-1 of2">{{ t('环境列表') }}</div>
+        <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
+        <div class="flex-1 of2">{{ t('操作') }}</div>
       </div>
       <div class="table-list">
         <div class="table-item flex-row align-items-center" v-for="item in gatewaysList" :key="item.id">
           <div class="flex-1 flex-row align-items-center of4">
-            <div class="name-logo mr10" :class="item.status ? '' : 'deact'">
+            <div
+              class="name-logo mr10" :class="item.status ? '' : 'deact'"
+              @click="handleGoPage('apigwResource', item.id)">
               {{ item.name[0].toUpperCase() }}
             </div>
             <span
@@ -37,7 +42,6 @@
               {{ item.name }}
             </span>
             <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
-            <bk-tag theme="warning" v-if="item.is_public">{{ t('公开') }}</bk-tag>
             <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
           </div>
           <div class="flex-1 of1">{{ item.created_by }}</div>
@@ -54,6 +58,7 @@
             <bk-button
               text
               theme="primary"
+              @click="handleGoPage('apigwStageOverview', item.id)"
             >
               环境概览
             </bk-button>
@@ -61,13 +66,15 @@
               text
               theme="primary"
               class="pl20"
+              @click="handleGoPage('apigwResource', item.id)"
             >
-              资源配额
+              资源配置
             </bk-button>
             <bk-button
               text
               theme="primary"
               class="pl20"
+              @click="handleGoPage('apigwAccessLog', item.id)"
             >
               流水日志
             </bk-button>
@@ -99,9 +106,12 @@
         >
           <bk-input
             v-model="formData.name"
-            :placeholder="$t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
+            :maxlength="30"
+            show-word-limit
+            :placeholder="$t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
             clearable
           />
+          <span class="common-form-tips">网关的唯一标识，创建后不可更改</span>
         </bk-form-item>
         <bk-form-item
           label="维护人员"
@@ -122,7 +132,8 @@
           <bk-input
             type="textarea"
             v-model="formData.description"
-            placeholder="请输入"
+            placeholder="请输入网关描述"
+            :maxlength="100"
             clearable
           />
         </bk-form-item>
@@ -153,10 +164,17 @@ const { t } = useI18n();
 const user = useUser();
 const router = useRouter();
 
-// 获取网关数据方法
-const {
-  getGatewaysListData,
-} = useGetApiList();
+
+const formRef = ref(null);
+const filterKey = ref<string>('updated_time');
+const filterNameData = ref({ name: '' });
+// 弹窗
+const dialogData = ref<IDialog>({
+  isShow: false,
+  title: t('新建网关'),
+  loading: false,
+});
+
 
 // 新增网关弹窗字段interface
 interface IinitDialogData {
@@ -171,7 +189,7 @@ const initDialogData: IinitDialogData = {
   name: '',
   maintainers: [user.user.username],   // 默认当前填入当前用户
   description: '',
-  is_public: false,
+  is_public: true,
 };
 
 const rules = {
@@ -202,14 +220,6 @@ const rules = {
   ],
 };
 
-const formRef = ref(null);
-const filterKey = ref<string>('updated_time');
-// 弹窗
-const dialogData = ref<IDialog>({
-  isShow: false,
-  title: t('新建网关'),
-  loading: false,
-});
 // 新增网关字段
 const formData = ref<IinitDialogData>(initDialogData);
 
@@ -225,6 +235,12 @@ const filterData = ref([
   { value: 'name', label: t('字母 A-Z') },
 ]);
 
+// 获取网关数据方法
+const {
+  getGatewaysListData,
+} = useGetApiList(filterNameData);
+
+
 // 页面初始化
 const init = async () => {
   gatewaysList.value = await getGatewaysListData();
@@ -232,7 +248,8 @@ const init = async () => {
 
 // 新建网关弹窗
 const showAddDialog = () => {
-  // 打开弹窗初始化弹窗数据
+  // 初始化数据
+  resetDialogData();
   formData.value = initDialogData;
   dialogData.value.isShow = true;
   dialogData.value.loading = false;
@@ -264,6 +281,13 @@ const handleGoPage = (routeName: string, apigwId: number) => {
       id: apigwId,
     },
   });
+};
+
+const resetDialogData = () => {
+  initDialogData.name = '';
+  initDialogData.maintainers = [user.user.username];
+  initDialogData.description = '';
+  initDialogData.is_public = true;
 };
 
 init();
