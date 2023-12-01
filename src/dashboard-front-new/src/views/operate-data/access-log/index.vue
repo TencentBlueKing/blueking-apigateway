@@ -345,7 +345,9 @@ const setTableHeader = () => {
       field: 'error',
       width: 200,
       label: t('错误'),
-      showOverflowTooltip: true,
+      showOverflowTooltip: {
+        content: '',
+      },
       render: ({ data }: Record<string, any>) => {
         return data.error || '--';
       },

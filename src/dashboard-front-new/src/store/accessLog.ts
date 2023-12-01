@@ -275,7 +275,7 @@ export const useAccessLog = defineStore('accessLog', {
       OPObjectType: [
         {
           name: t('网关'),
-          value: 'api',
+          value: 'gateway',
         },
         {
           name: t('环境'),
@@ -286,7 +286,11 @@ export const useAccessLog = defineStore('accessLog', {
           value: 'resource',
         },
         {
-          name: t('版本'),
+          name: t('资源文档'),
+          value: 'resource_doc',
+        },
+        {
+          name: t('资源版本'),
           value: 'resource_version',
         },
         {
@@ -303,11 +307,15 @@ export const useAccessLog = defineStore('accessLog', {
         },
         {
           name: t('标签'),
-          value: 'api_label',
+          value: 'gateway_label',
         },
         {
           name: t('插件'),
           value: 'plugin',
+        },
+        {
+          name: t('后端服务'),
+          value: 'backend',
         },
       ],
       OPType: [

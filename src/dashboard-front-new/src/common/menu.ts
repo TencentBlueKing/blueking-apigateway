@@ -95,4 +95,9 @@ export const menuData: IMenu[]  = [
     title: '基本信息',
     icon: 'document',
   },
+  {
+    name: 'apigwOperateRecords',
+    title: '操作记录',
+    icon: 'audit',
+  },
 ];

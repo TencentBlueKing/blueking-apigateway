@@ -34,6 +34,7 @@ const apigwBackendService = () => import(/* webpackChunkName: 'apigw-env'*/'@/vi
 const ApiBasicInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/basic-info/index.vue');
 const apigwMonitorAlarmStrategy = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-strategy/index.vue');
 const apigwMonitorAlarmHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-history/index.vue');
+const ApigwOperateRecords  = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-records/index.vue');
 
 // 文档一级路由出口
 const docsComponent = {
@@ -283,6 +284,15 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '基本信息',
           matchRoute: 'apigwBasicInfo',
+        },
+      },
+      {
+        path: '/:id/operate-records',
+        name: 'apigwOperateRecords',
+        component: ApigwOperateRecords,
+        meta: {
+          title: '操作记录',
+          matchRoute: 'apigwOperateRecords',
         },
       },
     ],
