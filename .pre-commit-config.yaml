@@ -6,14 +6,14 @@ repos:
         name: ruff-formatter
         language: python
         types: [python]
-        entry: bash -c 'cd src/dashboard && ruff format --config=pyproject.toml  .'
+        entry: bash -c 'cd src/dashboard && ruff format --config=pyproject.toml --force-exclude .'
         files: src/dashboard/
       - id: ruff
         name: ruff
         language: python
         types: [python]
         entry: bash -c 'cd src/dashboard && ruff --config=pyproject.toml --force-exclude --fix .'
-        files: ^src/dashboard/
+        files: src/dashboard/
       - id: mypy
         name: mypy
         language: python

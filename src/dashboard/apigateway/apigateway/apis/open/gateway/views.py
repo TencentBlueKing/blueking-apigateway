@@ -31,7 +31,7 @@ from rest_framework import generics, status
 
 from apigateway.apis.open.gateway import serializers
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.release import ReleaseHandler
@@ -40,6 +40,7 @@ from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import JWT, Gateway
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import V1OKJsonResponse
 
 
@@ -167,6 +168,8 @@ class GatewaySyncApi(generics.CreateAPIView):
     def post(self, request, gateway_name: str, *args, **kwargs):
         gateway = getattr(request, "gateway", None)
 
+        data_before = get_model_dict(gateway) if gateway else {}
+
         request.data["name"] = gateway_name
         # gateway 为 None，则应为新建；非 None，则应为更新；
         # slz 中仅校验数据，不保存网关数据，利用 GatewaySaver 处理网关的保存；
@@ -185,12 +188,14 @@ class GatewaySyncApi(generics.CreateAPIView):
         gateway = saver.save()
 
         # record audit log
-        GatewayHandler.record_audit_log_success(
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY if slz.instance else OpTypeEnum.CREATE,
             username=username,
             gateway_id=gateway.id,
-            op_type=OpTypeEnum.MODIFY if slz.instance else OpTypeEnum.CREATE,
             instance_id=gateway.id,
             instance_name=gateway.name,
+            data_before=data_before,
+            data_after=get_model_dict(gateway),
         )
 
         return V1OKJsonResponse(
@@ -212,6 +217,19 @@ class GatewayUpdateStatusApi(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
+        # record audit log
+        gateway = request.gateway
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=username,
+            gateway_id=gateway.id,
+            instance_id=gateway.id,
+            instance_name=gateway.name,
+            data_before={"status": gateway.status},
+            data_after={"status": slz.validated_data["status"]},
+        )
+
         return V1OKJsonResponse()
 
 
@@ -231,5 +249,18 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
         missing_app_codes = set(target_app_codes) - set(related_app_codes)
         for bk_app_code in missing_app_codes:
             GatewayRelatedAppHandler.add_related_app(request.gateway.id, bk_app_code)
+
+        # record audit log
+        gateway = request.gateway
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=username,
+            gateway_id=gateway.id,
+            instance_id=gateway.id,
+            instance_name=gateway.name,
+            data_before={"related_app_codes": related_app_codes},
+            data_after={"added_related_app_codes": list(missing_app_codes)},
+        )
 
         return V1OKJsonResponse()

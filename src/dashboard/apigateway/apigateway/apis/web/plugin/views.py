@@ -15,24 +15,26 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
+from django.utils.translation import get_language
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.generics import get_object_or_404
 
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
-from apigateway.common.audit.shortcuts import record_audit_log
+from apigateway.biz.audit import Auditor
 from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.common.renderers import BkStandardApiJSONRenderer
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Resource, Stage
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -60,7 +62,14 @@ class PluginTypeListApi(generics.ListAPIView):
 
     def get_serializer_context(self):
         # 需要返回描述，描述在 plugin_form 中
-        plugin_type_notes = {i["type_id"]: i["notes"] for i in PluginForm.objects.values("type_id", "notes")}
+        if get_language() != "zh-cn":
+            plugin_type_notes = {
+                i["type_id"]: i["notes"] for i in PluginForm.objects.filter(language="en").values("type_id", "notes")
+            }
+        else:
+            plugin_type_notes = {
+                i["type_id"]: i["notes"] for i in PluginForm.objects.exclude(language="en").values("type_id", "notes")
+            }
 
         # 需要返回每个 pluginType 是否已经被当前资源绑定
         current_scope_type = self.request.query_params.get("scope_type")
@@ -194,6 +203,8 @@ class PluginConfigBindingPostModificationMixin:
         scope_id: int,
         instance_id: int,
         instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
     ):
         # if scope_type is stage, should publish
         if scope_type == PluginBindingScopeEnum.STAGE.value:
@@ -209,22 +220,14 @@ class PluginConfigBindingPostModificationMixin:
             # update the resource updated_time
             Resource.objects.get(id=scope_id).save()
 
-        comment = {
-            OpTypeEnum.CREATE: "创建插件",
-            OpTypeEnum.MODIFY: "更新插件",
-            OpTypeEnum.DELETE: "删除插件",
-        }.get(op_type, "-")
-
-        # audit
-        record_audit_log(
+        Auditor.record_plugin_op_success(
+            op_type=op_type,
             username=self.request.user.username,
-            op_type=op_type.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=self.request.gateway.id,
-            op_object_type=OpObjectTypeEnum.PLUGIN.value,
-            op_object_id=instance_id,
-            op_object=instance_name,
-            comment=comment,
+            gateway_id=self.request.gateway.id,
+            instance_id=instance_id,
+            instance_name=instance_name,
+            data_before=data_before,
+            data_after=data_after,
         )
 
 
@@ -278,12 +281,14 @@ class PluginConfigCreateApi(
         ).save()
 
         self.post_modification(
-            PublishSourceEnum.PLUGIN_BIND,
-            OpTypeEnum.CREATE,
-            scope_type,
-            scope_id,
-            serializer.instance.id,
-            serializer.instance.name,
+            source=PublishSourceEnum.PLUGIN_BIND,
+            op_type=OpTypeEnum.CREATE,
+            scope_type=scope_type,
+            scope_id=scope_id,
+            instance_id=serializer.instance.id,
+            instance_name=serializer.instance.name,
+            data_before={},
+            data_after=get_model_dict(serializer.instance),
         )
 
 
@@ -334,18 +339,22 @@ class PluginConfigRetrieveUpdateDestroyApi(
         self.validate_scope()
         self.validate_code(type_id=serializer.validated_data["type_id"])
 
+        data_before = get_model_dict(serializer.instance)
+
         super().perform_update(serializer)
 
         # if scope_type is stage, should publish
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
         self.post_modification(
-            PublishSourceEnum.PLUGIN_UPDATE,
-            OpTypeEnum.MODIFY,
-            scope_type,
-            scope_id,
-            serializer.instance.id,
-            serializer.instance.name,
+            source=PublishSourceEnum.PLUGIN_UPDATE,
+            op_type=OpTypeEnum.MODIFY,
+            scope_type=scope_type,
+            scope_id=scope_id,
+            instance_id=serializer.instance.id,
+            instance_name=serializer.instance.name,
+            data_before=data_before,
+            data_after=get_model_dict(serializer.instance),
         )
 
     @transaction.atomic
@@ -362,18 +371,22 @@ class PluginConfigRetrieveUpdateDestroyApi(
         instance_id = instance.id
         instance_name = instance.name
 
+        data_before = get_model_dict(instance)
+
         super().perform_destroy(instance)
 
         # if scope_type is stage, should publish
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
         self.post_modification(
-            PublishSourceEnum.PLUGIN_UNBIND,
-            OpTypeEnum.DELETE,
-            scope_type,
-            scope_id,
-            instance_id,
-            instance_name,
+            source=PublishSourceEnum.PLUGIN_UNBIND,
+            op_type=OpTypeEnum.DELETE,
+            scope_type=scope_type,
+            scope_id=scope_id,
+            instance_id=instance_id,
+            instance_name=instance_name,
+            data_before=data_before,
+            data_after={},
         )
 
 

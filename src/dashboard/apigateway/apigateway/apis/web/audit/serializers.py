@@ -16,10 +16,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apps.audit.constants import OP_TYPE_CHOICES, OpObjectTypeEnum
+from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.common.fields import TimestampField
 
@@ -27,11 +29,17 @@ from apigateway.common.fields import TimestampField
 class AuditEventLogQueryInputSLZ(serializers.Serializer):
     time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")
     time_end = TimestampField(allow_null=True, required=False, help_text="结束时间")
+
+    keyword = serializers.CharField(allow_blank=True, required=False, help_text="关键字 (模糊)")
+
     op_object_type = serializers.ChoiceField(
-        choices=OpObjectTypeEnum.get_choices(), allow_blank=True, required=False, help_text="操作对象类型"
+        choices=OpObjectTypeEnum.get_choices(), allow_blank=True, required=False, help_text="操作对象"
     )
-    op_type = serializers.ChoiceField(choices=OP_TYPE_CHOICES, allow_blank=True, required=False, help_text="操作类型")
-    username = serializers.CharField(allow_blank=True, required=False, help_text="操作者")
+    op_type = serializers.ChoiceField(
+        choices=OpTypeEnum.get_choices(), allow_blank=True, required=False, help_text="操作类型"
+    )
+    op_object = serializers.CharField(allow_blank=True, required=False, help_text="实例")
+    username = serializers.CharField(allow_blank=True, required=False, help_text="操作人")
 
 
 class AuditEventLogOutputSLZ(serializers.ModelSerializer):
@@ -47,6 +55,8 @@ class AuditEventLogOutputSLZ(serializers.ModelSerializer):
             "op_object_type",
             "op_object_id",
             "op_object",
+            "data_before",
+            "data_after",
             "comment",
         )
         read_only_fields = fields
@@ -54,10 +64,22 @@ class AuditEventLogOutputSLZ(serializers.ModelSerializer):
 
     def to_representation(self, value):
         data = super().to_representation(value)
-        data["comment"] = self._translate_comment(data["comment"])
-        return data
+        # translate comment
+        if data["comment"]:
+            data["comment"] = _(data["comment"])
 
-    def _translate_comment(self, comment) -> str:
-        if comment:
-            return _(comment)
-        return ""
+        if data["data_before"]:
+            try:
+                data["data_before"] = json.loads(data["data_before"])
+            except Exception:
+                # do nothing here
+                pass
+
+        if data["data_after"]:
+            try:
+                data["data_after"] = json.loads(data["data_after"])
+            except Exception:
+                # do nothing here
+                pass
+
+        return data

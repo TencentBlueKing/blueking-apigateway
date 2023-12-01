@@ -82,6 +82,8 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         choices=[GatewayTypeEnum.OFFICIAL_API.value, GatewayTypeEnum.CLOUDS_API.value], required=False
     )
     user_config = UserConfigSLZ(required=False)
+    allow_auth_from_params = serializers.BooleanField(default=True)
+    allow_delete_sensitive_params = serializers.BooleanField(default=True)
 
     class Meta:
         model = Gateway
@@ -94,6 +96,8 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "is_public",
             "api_type",
             "user_config",
+            "allow_auth_from_params",
+            "allow_delete_sensitive_params",
         ]
         extra_kwargs = {
             "description_en": {

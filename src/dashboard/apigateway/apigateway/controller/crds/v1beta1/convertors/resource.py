@@ -195,11 +195,14 @@ class HttpResourceConvertor(BaseConvertor):
         )
 
     def _convert_http_resource_rewrite(self, resource_proxy: Dict[str, Any]) -> ResourceRewrite:
-        # FIXME: 1.13 去掉这个逻辑
         if self._release_data.resource_version.is_schema_v2:
+            # stage_headers及headers相关处理在operator处理
             return ResourceRewrite(
-                enabled=False,
+                enabled=True,
+                method=resource_proxy.get("method"),
+                path=resource_proxy.get("path"),
             )
+
         headers = self._convert_http_rewrite_headers(self._release_data.stage_backend_config.get("transform_headers"))
         headers.update(self._convert_http_rewrite_headers(resource_proxy.get("transform_headers")))
 

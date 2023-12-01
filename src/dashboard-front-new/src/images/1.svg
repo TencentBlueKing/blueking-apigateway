@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="42px" height="25px" viewBox="0 0 42 25" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>内部版</title>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="组件详情" transform="translate(-352.000000, -67.000000)">
+            <g id="内部版" transform="translate(352.000000, 67.000000)">
+                <path d="M0,0 L40,0 C41.1045695,-2.02906125e-16 42,0.8954305 42,2 L42,16 C42,17.1045695 41.1045695,18 40,18 L0,18 L0,18 L0,0 Z" id="矩形" fill="#3A84FF"></path>
+                <polygon id="路径-2" fill="#1964E1" points="0 18 8 24.4453125 8 18"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>
