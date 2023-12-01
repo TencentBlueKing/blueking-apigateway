@@ -13,7 +13,12 @@
           {{ t('发布失败') }}
         </bk-tag>
         <div class="title-publish-info">{{ t('发布版本') }}: <span>{{ logDetails?.resource_version_display }}</span></div>
-        <div class="title-publish-info">{{ t('耗时') }}: <span>{{ logDetails?.duration }} s</span></div>
+        <div class="title-publish-info">
+          {{ t('耗时') }}:
+          <span>
+            {{ state.totalDuration }} s
+          </span>
+        </div>
       </div>
     </template>
     <template #default>
@@ -61,6 +66,7 @@ const logCodeViewer: any = ref<InstanceType<typeof editorMonaco>>();
 const logDetails = ref<any>();
 const state = reactive({
   objectSteps: [],
+  totalDuration: 0,
 });
 const logBody = ref<string>('');
 
@@ -89,21 +95,10 @@ const getLogsList = async () => {
     }
     logDetails.value = res;
 
-    // 计算每个小节点的耗时
-    res?.events?.forEach((item: any, index: number) => {
-      if (res?.events[index + 1]?.created_time) {
-        const date1 = dayjs(res?.events[index + 1]?.created_time);
-        const date2 = dayjs(item?.created_time);
-        item.content = `<span style="font-size: 12px;">${dayjs(date1.diff(date2)).format('sS')}</span>`;
-      }
-
-      if (index === res?.events?.length - 1) {
-        item.color = 'blue';
-      }
-    });
-
     // 整理步骤
     const steps: any = [];
+    state.totalDuration = 0;
+
     res?.events_template?.forEach((item: any, index: number) => {
       item.size = 'large';
       const subStep = res?.events[res?.events?.length - 1]?.step || 0;
@@ -111,36 +106,36 @@ const getLogsList = async () => {
         item.color = 'green';
         item.filled = true;
       } else if (item?.step === subStep) {
-        item.color = res?.status === 'success' ? 'green' : 'blue';
-        item.filled = res?.status === 'success';
-        if (res?.status !== 'success') {
+        if (res?.status === 'success') {
+          item.color = 'green';
+          item.filled = true;
+        } else if (res?.status === 'doing') {
+          item.color = 'blue';
           item.icon = Spinner;
+        } else {
+          item.color = 'red';
         }
       }
 
-      steps[index] = { ...item, tag: item.description, content: '' };
+      steps[index] = { ...item, tag: item.description };
 
       const children: any = [];
       res?.events?.forEach((subItem: any) => {
         if (item?.step === subItem?.step) {
-          // if (subItem.status === 'doing') {
-          //   subItem.color = 'blue';
-          // } else if (subItem.status === 'failure') {
-          //   subItem.color = 'red';
-          // } else if (subItem.status === 'success') {
-          //   subItem.color = 'green';
-          //   subItem.filled = true;
-          // }
-
-          // steps[index]?.push({
-          //   ...subItem,
-          //   tag: subItem.name,
-          // });
           children.push(subItem);
         }
       });
+      const firstChild = children[0];
+      const lastChild = children[children.length - 1];
+
+      const date1 = dayjs(firstChild?.created_time);
+      const date2 = dayjs(lastChild?.created_time);
+
+      const duration = date2.diff(date1, 's', true);
+      state.totalDuration += duration;
+
       steps[index].children = children;
-      steps[index].content = children[children.length - 1]?.content;
+      steps[index].content = `<span style="font-size: 12px;">${duration} s</span>`;
       steps[index].detail = children[children.length - 1]?.detail;
     });
     state.objectSteps = steps;
@@ -219,6 +214,14 @@ defineExpose({
     margin-right: 16px;
     :deep(.bk-timeline .bk-timeline-dot .bk-timeline-icon .bk-timeline-icon-inner>:first-child) {
       font-size: 20px !important;
+    }
+    :deep(.bk-timeline .bk-timeline-dot .bk-timeline-section) {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      .bk-timeline-title {
+        padding-bottom: 0px;
+      }
     }
   }
   .main-encoding {
