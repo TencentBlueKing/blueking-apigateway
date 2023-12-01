@@ -74,6 +74,7 @@
         <bk-table-column
           width="80"
           type="selection"
+          align="center"
         />
         <bk-table-column
           :label="t('请求路径')"
