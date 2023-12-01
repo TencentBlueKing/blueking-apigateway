@@ -19,6 +19,7 @@ from typing import Dict, Optional
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
+from apigateway.utils.time import now_datetime
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -62,6 +63,7 @@ class HeaderRewriteConvertor:
         update_plugin_configs = []
         delete_bindings = []
 
+        now = now_datetime()
         for scope_id, plugin_config in scope_id_to_plugin_config.items():
             if not plugin_config:
                 if scope_id in exist_bindings:
@@ -74,6 +76,7 @@ class HeaderRewriteConvertor:
                 plugin_config_obj = exist_bindings[scope_id].config
                 plugin_config_obj.yaml = yaml_dumps(plugin_config)
                 plugin_config_obj.updated_by = username
+                plugin_config_obj.updated_time = now
                 update_plugin_configs.append(plugin_config_obj)
             else:
                 # 插件未绑定，新建插件配置
@@ -108,7 +111,9 @@ class HeaderRewriteConvertor:
             PluginBinding.objects.bulk_create(bindings, batch_size=100)
 
         if update_plugin_configs:
-            PluginConfig.objects.bulk_update(update_plugin_configs, fields=["yaml", "updated_by"], batch_size=100)
+            PluginConfig.objects.bulk_update(
+                update_plugin_configs, fields=["yaml", "updated_by", "updated_time"], batch_size=100
+            )
 
         if delete_bindings:
             PluginBinding.objects.filter(

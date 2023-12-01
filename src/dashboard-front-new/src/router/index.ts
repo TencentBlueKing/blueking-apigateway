@@ -4,7 +4,13 @@ import {
   RouteRecordRaw,
 } from 'vue-router';
 
+import globalConfig from '@/constant/config';
+
 const Home = () => import(/* webpackChunkName: "Home" */ '@/views/home.vue');
+const ApigwDocs = () => import(/* webpackChunkName: "ApigwDocs" */ '@/views/apigwDocs/index.vue');
+const ApigwAPIDetail = () => import(/* webpackChunkName: "apigw-doc" */ '@/views/apigwDocs/components/detail.vue');
+const ApigwAPIDetailIntro = () => import(/* webpackChunkName: "apigw-doc" */ '@/views/apigwDocs/components/intro.vue');
+const ApigwAPIDetailDoc = () => import(/* webpackChunkName: "apigw-doc" */ '@/views/apigwDocs/components/doc.vue');
 const ApigwMain = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/main.vue');
 const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/setting/index.vue');
 const ApigwResourceEdit = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/setting/edit.vue');
@@ -26,7 +32,14 @@ const apigwAccessLogDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/v
 const apigwReport = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/report/index.vue');
 const apigwBackendService = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/backend-service/index.vue');
 const ApiBasicInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/basic-info/index.vue');
+const apigwMonitorAlarmStrategy = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-strategy/index.vue');
+const apigwMonitorAlarmHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-history/index.vue');
 
+// 文档一级路由出口
+const docsComponent = {
+  name: 'DocMain',
+  template: '<router-view></router-view>',
+};
 
 const routes: RouteRecordRaw[] = [
   {
@@ -234,7 +247,26 @@ const routes: RouteRecordRaw[] = [
           title: '统计报表',
           matchRoute: 'apigwReport',
         },
-      }, {
+      },
+      {
+        path: '/:id/monitor/alarm-strategy',
+        name: 'apigwMonitorAlarmStrategy',
+        component: apigwMonitorAlarmStrategy,
+        meta: {
+          title: '告警策略',
+          matchRoute: 'apigwMonitorAlarmStrategy',
+        },
+      },
+      {
+        path: '/:id/monitor/alarm-history',
+        name: 'apigwMonitorAlarmHistory',
+        component: apigwMonitorAlarmHistory,
+        meta: {
+          title: '告警历史',
+          matchRoute: 'apigwMonitorAlarmHistory',
+        },
+      },
+      {
         path: '/:id/resource/import-doc',
         name: 'apigwResourceImportDoc',
         component: ApigwResourceImportDoc,
@@ -252,6 +284,58 @@ const routes: RouteRecordRaw[] = [
           title: '基本信息',
           matchRoute: 'apigwBasicInfo',
         },
+      },
+    ],
+  },
+  // 文档路由映射
+  {
+    path: `${globalConfig.PREV_URL}`,
+    redirect: `${globalConfig.PREV_URL}/apigw-api/`,
+    name: 'docsMain',
+    component: docsComponent,
+    alias: '',
+    children: [
+      {
+        path: 'apigw-api',
+        name: 'apigwDoc',
+        component: ApigwDocs,
+        meta: {
+          matchRoute: 'apigwDoc',
+          notAppHeader: true,
+          isDocRouter: true,
+          isMenu: false,   // 是否作为侧边栏菜单
+        },
+      },
+      {
+        path: 'apigw-api/:apigwId/',
+        name: 'apigwAPIDetail',
+        component: ApigwAPIDetail,
+        meta: {
+          matchRoute: 'apigwAPIDetail',
+          isDocRouter: true,
+        },
+        children: [
+          {
+            path: 'apigw-api/:apigwId/intro',
+            alias: '',
+            name: 'apigwAPIDetailIntro',
+            component: ApigwAPIDetailIntro,
+            meta: {
+              matchRoute: 'apigwAPIDetailIntro',
+              isDocRouter: true,
+            },
+          },
+          {
+            path: 'apigw-api/:apigwId/:resourceId/doc',
+            alias: '',
+            name: 'apigwAPIDetailDoc',
+            component: ApigwAPIDetailDoc,
+            meta: {
+              matchRoute: 'apigwAPIDetailDoc',
+              isDocRouter: true,
+            },
+          },
+        ],
       },
     ],
   },

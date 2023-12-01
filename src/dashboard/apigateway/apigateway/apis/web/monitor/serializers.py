@@ -157,7 +157,7 @@ class AlarmRecordQueryOutputSLZ(serializers.ModelSerializer):
 
 
 class AlarmStrategyQueryInputSLZ(serializers.Serializer):
-    query = serializers.CharField(allow_blank=True, required=False, help_text="查询关键字")
+    keyword = serializers.CharField(allow_blank=True, required=False, help_text="查询关键字")
     gateway_label_id = serializers.IntegerField(allow_null=True, required=False, help_text="网关标签 id")
     order_by = serializers.ChoiceField(
         choices=["name", "-name", "updated_time", "-updated_time"],

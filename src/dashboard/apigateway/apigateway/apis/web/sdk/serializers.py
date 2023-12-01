@@ -59,6 +59,7 @@ class GatewaySDKQueryInputSLZ(serializers.Serializer):
     )
     version_number = serializers.CharField(required=False, allow_blank=True, help_text="sdk版本号")
     resource_version_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源版本号id")
+    keyword = serializers.CharField(allow_blank=True, required=False, help_text="查询关键字，支持模糊匹配")
 
 
 class ResourceVersionInfoSlz(serializers.Serializer):

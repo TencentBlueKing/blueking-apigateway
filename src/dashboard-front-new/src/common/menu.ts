@@ -34,7 +34,7 @@ export const menuData: IMenu[]  = [
   {
     name: 'apigwBackendService',
     title: '后端服务',
-    icon: 'components',
+    icon: 'panel-permission',
   },
   {
     name: 'apigwPermissionManage',
@@ -67,6 +67,21 @@ export const menuData: IMenu[]  = [
       {
         name: 'apigwReport',
         title: '统计报表',
+      },
+    ],
+  },
+  {
+    name: 'apigwMonitorAlarm',
+    title: '监控告警',
+    icon: 'monitor',
+    children: [
+      {
+        name: 'apigwMonitorAlarmStrategy',
+        title: '告警策略',
+      },
+      {
+        name: 'apigwMonitorAlarmHistory',
+        title: '告警历史',
       },
     ],
   },

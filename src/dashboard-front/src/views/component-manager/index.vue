@@ -252,7 +252,7 @@
                 :name="option.name">
               </bk-option>
             </bk-select>
-            <p class="tips" slot="tip"><i class="apigateway-icon icon-ag-info"></i> {{ $t('无权限，应用不需申请组件API权限；普通权限，应用需在开发者中心申请组件API权限，审批通过后访问') }} </p>
+            <p class="tips" slot="tip"><i class="apigateway-icon icon-ag-info"></i> {{ $t('无限制，应用不需申请组件API权限；普通权限，应用需在开发者中心申请组件API权限，审批通过后访问') }} </p>
           </bk-form-item>
           <bk-form-item :label="$t('用户认证')" :required="true" property="verified_user_required" :error-display-type="'normal'">
             <bk-checkbox

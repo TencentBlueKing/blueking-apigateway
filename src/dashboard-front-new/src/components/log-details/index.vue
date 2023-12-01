@@ -20,16 +20,10 @@
       <div class="log-details-main">
         <div class="main-process">
           <div>
-            <bk-steps
-              direction="vertical"
-              size="small"
-              theme="success"
-              ext-cls="logs-steps"
-              :controllable="state.controllable"
-              :cur-step="state.curStep"
-              :steps="state.objectSteps"
+            <bk-timeline
               class="mb20"
-              @click="stepChanged"
+              :list="state.objectSteps"
+              @select="handleTimelineChange"
             />
           </div>
         </div>
@@ -42,12 +36,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import dayjs from 'dayjs';
 import { getLogs } from '@/http';
 import { useI18n } from 'vue-i18n';
 import editorMonaco from '@/components/ag-editor.vue';
+import { Spinner } from 'bkui-vue/lib/icon';
 
 const props = defineProps({
   historyId: {
@@ -58,7 +53,7 @@ const props = defineProps({
 const { t } = useI18n();
 
 const route = useRoute();
-const apigwId = +route.params?.id;
+const apigwId = computed(() => +route.params?.id);
 
 const isShow = ref(false);
 const logCodeViewer: any = ref<InstanceType<typeof editorMonaco>>();
@@ -66,23 +61,29 @@ const logCodeViewer: any = ref<InstanceType<typeof editorMonaco>>();
 const logDetails = ref<any>();
 const state = reactive({
   objectSteps: [],
-  curStep: 1,
-  controllable: true,
 });
 const logBody = ref<string>('');
 
 let timeId: any = null;
 
 // 改变当前选中值
-const stepChanged = (index: number) => {
-  // state.curStep = index;
-  logBody.value = state.objectSteps[index - 1]?.detail?.start_time || '';
+const handleTimelineChange = (data: any) => {
+  const { tag } = data;
+  let detail: any = {};
+  for (let i = 0; i < state.objectSteps?.length; i++) {
+    const item = state.objectSteps[i];
+    if (item?.tag === tag) {
+      detail = item?.detail || {};
+      break;
+    }
+  }
+  logBody.value = JSON.stringify(detail || {});
 };
 
 // 获取日志列表
 const getLogsList = async () => {
   try {
-    const res = await getLogs(apigwId, props.historyId);
+    const res = await getLogs(apigwId.value, props.historyId);
     if (res.status !== 'doing') {
       clearInterval(timeId);
     }
@@ -93,40 +94,59 @@ const getLogsList = async () => {
       if (res?.events[index + 1]?.created_time) {
         const date1 = dayjs(res?.events[index + 1]?.created_time);
         const date2 = dayjs(item?.created_time);
-        item.description = `${dayjs(date1.diff(date2)).format('sS')}`;
+        item.content = `<span style="font-size: 12px;">${dayjs(date1.diff(date2)).format('sS')}</span>`;
       }
 
       if (index === res?.events?.length - 1) {
-        item.curStep = true;
+        item.color = 'blue';
       }
     });
 
     // 整理步骤
     const steps: any = [];
     res?.events_template?.forEach((item: any, index: number) => {
-      item.status = item.status === 'doing' ? 'loading' : item.status === 'failure' ? 'error' : item.status;
-      steps[index] = [{ ...item, title: item.description, description: '', isFirst: true }];
-
-      res?.events?.forEach((subItem: any) => {
-        if (item?.step === subItem?.step) {
-          subItem.status = subItem.status === 'doing' ? 'loading' : subItem.status === 'failure' ? 'error' : subItem.status;
-          steps[index]?.push({ ...subItem, title: subItem.name });
-        }
-      });
-    });
-
-    state.objectSteps = steps?.flat();
-    // 是否为正在进行的节点
-    state.objectSteps?.forEach((item: any, index: number) => {
-      if (item?.curStep) {
-        state.curStep = index + 1;
-        if (res?.status === 'success') {
-          state.curStep = index + 2;
+      item.size = 'large';
+      const subStep = res?.events[res?.events?.length - 1]?.step || 0;
+      if (item?.step < subStep) {
+        item.color = 'green';
+        item.filled = true;
+      } else if (item?.step === subStep) {
+        item.color = res?.status === 'success' ? 'green' : 'blue';
+        item.filled = res?.status === 'success';
+        if (res?.status !== 'success') {
+          item.icon = Spinner;
         }
       }
+
+      steps[index] = { ...item, tag: item.description, content: '' };
+
+      const children: any = [];
+      res?.events?.forEach((subItem: any) => {
+        if (item?.step === subItem?.step) {
+          // if (subItem.status === 'doing') {
+          //   subItem.color = 'blue';
+          // } else if (subItem.status === 'failure') {
+          //   subItem.color = 'red';
+          // } else if (subItem.status === 'success') {
+          //   subItem.color = 'green';
+          //   subItem.filled = true;
+          // }
+
+          // steps[index]?.push({
+          //   ...subItem,
+          //   tag: subItem.name,
+          // });
+          children.push(subItem);
+        }
+      });
+      steps[index].children = children;
+      steps[index].content = children[children.length - 1]?.content;
+      steps[index].detail = children[children.length - 1]?.detail;
     });
-    logBody.value = state.objectSteps[state.curStep - 1]?.detail?.start_time || '';
+    state.objectSteps = steps;
+    logBody.value = JSON.stringify(steps[steps.length - 1]?.detail || {});
   } catch (e) {
+    clearInterval(timeId);
     console.log(e);
   }
 };
@@ -148,8 +168,8 @@ watch(
 
 watch(
   () => props.historyId,
-  (v) => {
-    if (v) {
+  (id) => {
+    if (id && isShow.value) {
       getLogsList();
       timeId = setInterval(() => {
         getLogsList();
@@ -197,39 +217,13 @@ defineExpose({
     padding: 16px;
     box-sizing: border-box;
     margin-right: 16px;
+    :deep(.bk-timeline .bk-timeline-dot .bk-timeline-icon .bk-timeline-icon-inner>:first-child) {
+      font-size: 20px !important;
+    }
   }
   .main-encoding {
     flex: 1;
     height: 100%;
-  }
-}
-</style>
-
-<style lang="scss">
-.logs-steps.bk-steps {
-  .bk-step {
-    display: flex;
-    margin-bottom: 0;
-    padding-bottom: 18px;
-    .bk-step-content {
-      display: flex;
-      flex: 1;
-      align-items: center;
-      justify-content: space-between;
-    }
-    &:last-child:after {
-      height: 0;
-    }
-    .bk-step-indicator {
-      >span {
-        display: none;
-      }
-    }
-  }
-  .bk-step:after {
-    z-index: 999;
-    top: 22px;
-    height: 18px;
   }
 }
 </style>

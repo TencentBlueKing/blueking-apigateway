@@ -75,7 +75,7 @@ class SSLCertificateSLZ(serializers.ModelSerializer):
 
 class QuerySSLCertificateSLZ(serializers.Serializer):
     type = serializers.ChoiceField(choices=SSLCertificateTypeEnum.get_choices())
-    query = serializers.CharField(allow_blank=True, required=False)
+    keyword = serializers.CharField(allow_blank=True, required=False)
     order_by = serializers.ChoiceField(
         choices=["name", "-name", "expires", "-expires", "updated_time", "-updated_time"],
         allow_blank=True,

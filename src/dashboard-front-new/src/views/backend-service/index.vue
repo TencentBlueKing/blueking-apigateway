@@ -15,9 +15,9 @@
     <div class="backend-service-content">
       <bk-loading :loading="isLoading">
         <bk-table
+          :row-class="isNewCreate"
           class="table-layout" :data="tableData" remote-pagination :pagination="pagination" show-overflow-tooltip
           @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange" row-hover="auto">
-          <!-- <bk-table-column type="selection" width="60" align="center"></bk-table-column> -->
           <bk-table-column :label="t('后端服务名称')" prop="name">
             <template #default="{ data }">
               <bk-button text theme="primary" @click="handleEdit(data)">
@@ -46,10 +46,12 @@
               </bk-button>
               <span
                 v-bk-tooltips="{
-                  content: t(`服务被${data?.resource_count}个资源引用了，不能删除`),
+                  content: t(`${data?.name === 'default' ? '默认后端服务，且' : '服务'}被${data?.resource_count}个资源引用了，不能删除`),
                   disabled: data?.resource_count === 0
                 }">
-                <bk-button theme="primary" text :disabled="data?.resource_count !== 0" @click="handleDelete(data)">
+                <bk-button
+                  theme="primary" text
+                  :disabled="data?.resource_count !== 0 || data?.name === 'default'" @click="handleDelete(data)">
                   {{ t('删除') }}
                 </bk-button>
               </span>
@@ -63,15 +65,16 @@
       v-model:isShow="sidesliderConfi.isShow" :title="sidesliderConfi.title" :quick-close="false"
       ext-cls="backend-service-slider" width="800">
       <template #default>
-        <div class="content p30">
+        <div class="content">
+          <bk-alert theme="warning" :title="editTitle" class="mb20" v-if="curOperate === 'edit'" />
           <div class="base-info mb20">
             <p class="title"><span class="icon apigateway-icon icon-ag-down-shape"></span>{{ t('基础信息') }}</p>
             <bk-form
-              ref="baseInfoRef" class="base-info-form mt20" :model="baseInfo" :rules="baseInfoRules"
+              ref="baseInfoRef" class="base-info-form mt20" :model="baseInfo"
               form-type="vertical">
-              <bk-form-item :label="t('服务名称')" property="name" required>
+              <bk-form-item :label="t('服务名称')" property="name" required :rules="baseInfoRules.name">
                 <bk-input
-                  v-model="baseInfo.name" :placeholder="t('请输入 1-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头')"
+                  v-model="baseInfo.name" :placeholder="t('请输入 1-20 字符的字母、数字、连字符(-)，以字母开头')"
                   :disabled="curOperate === 'edit'" />
                 <p class="aler-text">{{ t('后端服务唯一标识，创建后不可修改') }}</p>
               </bk-form-item>
@@ -98,11 +101,14 @@
                   </span>
                 </template>
                 <template #content="slotProps">
-                  <bk-form ref="stageConfigRef" class="stage-config-form " :model="slotProps" form-type="vertical">
-                    <bk-form-item :label="t('负载均衡类型')" property="loadbalance" required :rules="rules.loadbalance">
+                  <bk-form
+                    :ref="getSatgeConfigRef"
+                    class="stage-config-form " :model="slotProps" form-type="vertical">
+                    <bk-form-item
+                      :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
                       <bk-select
                         v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
-                        @change="handleChange(slotProps)">
+                      >
                         <bk-option
                           v-for="option of loadbalanceList" :key="option.id" :value="option.id"
                           :label="option.name">
@@ -111,10 +117,10 @@
                     </bk-form-item>
                     <bk-form-item
                       :label="t('后端服务地址')" v-for="(hostItem, i) in slotProps.configs.hosts" :key="i"
-                      :rules="rules.host" :property="`config.hosts.${i}.host`"
+                      :rules="configRules.host" :property="`configs.hosts.${i}.host`"
                       :class="['backend-item-cls', { 'form-item-special': i !== 0 }]" required>
-                      <div class="host-item mb10">
-                        <bk-input :placeholder="t('格式如 ：http(s)://host:port')" v-model="hostItem.host" :key="i">
+                      <div class="host-item">
+                        <bk-input :placeholder="t('格式如：host:port')" v-model="hostItem.host" :key="i">
                           <template #prefix>
                             <bk-select v-model="hostItem.scheme" class="scheme-select-cls w80" :clearable="false">
                               <bk-option
@@ -139,8 +145,8 @@
                       </div>
                     </bk-form-item>
                     <bk-form-item
-                      :label="t('超时时间')" :required="true" :property="'config.timeout'" class="timeout-item"
-                      :rules="rules.timeout" :error-display-type="'normal'">
+                      :label="t('超时时间')" :required="true" :property="'configs.timeout'" class="timeout-item"
+                      :rules="configRules.timeout" :error-display-type="'normal'">
                       <bk-input
                         type="number" :min="1" :max="300"
                         v-model="slotProps.configs.timeout" class="time-input">
@@ -153,126 +159,6 @@
                   </bk-form>
                 </template>
               </bk-collapse>
-              <!-- <div class="content" v-if="!isBatchSet">
-                <section
-                  class="backend-config-item" v-for="(configItem , index) in stageConfig" :key="configItem.id">
-                  <div class="title">
-                    {{ configItem.name }}
-                    <span class="ml5">
-                      {{ configItem.description.trim() === '' ? '' : `(${configItem.description})` }}
-                    </span>
-                  </div>
-                  <div class="item-content">
-                    <bk-form
-                      ref="stageConfigRef"
-                      :label-width="180"
-                      :model="configItem"
-                      form-type="vertical"
-                    >
-                      <bk-form-item
-                        :required="true"
-                        :label="t('负载均衡类型')"
-                      >
-                        <bk-select
-                          :clearable="false"
-                          :placeholder="t('负载均衡类型')"
-                          v-model="configItem.configs.loadbalance"
-                          @change="handleChange(configItem,index)"
-                        >
-                          <bk-option
-                            v-for="option in loadbalanceList"
-                            :key="option.id"
-                            :id="option.id"
-                            :name="option.name"
-                          ></bk-option>
-                        </bk-select>
-                      </bk-form-item>
-
-                      <bk-form-item
-                        label="后端服务地址"
-                        v-for="(hostItem, index) of configItem.configs.hosts"
-                        :required="true"
-                        :property="`config.hosts.${index}.host`"
-                        :key="index"
-                        :rules="rules.host"
-                        :class="['backend-item-cls', { 'form-item-special': index !== 0 }]"
-                      >
-                        <div class="host-item mb10">
-                          <bk-input
-                            :placeholder="t('格式: http(s)://host:port')"
-                            v-model="hostItem.host"
-                            :key="configItem.configs.loadbalance"
-                          >
-                            <template #prefix>
-                              <bk-select
-                                v-model="hostItem.scheme"
-                                class="scheme-select-cls"
-                                style="width: 120px"
-                                :clearable="false"
-                              >
-                                <bk-option
-                                  v-for="(item, index) in schemeList"
-                                  :key="index"
-                                  :value="item.value"
-                                  :label="item.value"
-                                />
-                              </bk-select>
-                              <div class="slash">://</div>
-                            </template>
-                            <template
-                              #suffix
-                              v-if="configItem.configs.loadbalance === 'weighted-roundrobin'"
-                            >
-                              <bk-input
-                                :class="['suffix-slot-cls', 'weights-input', { 'is-error': hostItem.isRoles }]"
-                                :placeholder="t('权重')"
-                                type="number"
-                                :min="1"
-                                :max="10000"
-                                v-model="hostItem.weight"
-                              ></bk-input>
-                            </template>
-                          </bk-input>
-
-                          <i
-                            class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
-                            @click="handleAddServiceAddress(configItem.name)"
-                          ></i>
-                          <i
-                            class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
-                            :class="{ disabled: configItem.configs.hosts.length < 2 }"
-                            @click="handleDeleteServiceAddress(configItem.name,i)"
-                          ></i>
-                        </div>
-                      </bk-form-item>
-
-                      <bk-form-item
-                        :label="$t('超时时间')"
-                        :required="true"
-                        :property="'config.timeout'"
-                        class="timeout-item-cls"
-                        :rules="rules.timeout"
-                        :error-display-type="'normal'"
-                      >
-                        <bk-input
-                          type="number"
-                          :min="1"
-                          :show-controls="false"
-                          v-model="configItem.configs.timeout"
-                          class="time-input"
-                        >
-                          <template #suffix>
-                            <div class="group-text group-text-style">{{ $t('秒') }}</div>
-                          </template>
-                        </bk-input>
-                        <p class="timeout-tip">
-                          {{ $t('最大300秒') }}
-                        </p>
-                      </bk-form-item>
-                    </bk-form>
-                  </div>
-                </section>
-              </div> -->
               <div v-else>
                 <bk-collapse :list="batchConfig" header-icon="right-shape" v-model="activeIndex">
                   <template #title>
@@ -283,10 +169,11 @@
                   <template #content="slotProps">
                     <bk-form
                       ref="stageBatchConfigRef" class="stage-config-form " :model="slotProps" form-type="vertical">
-                      <bk-form-item :label="t('负载均衡类型')" property="loadbalance" required :rules="rules.loadbalance">
+                      <bk-form-item
+                        :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
                         <bk-select
                           v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
-                          @change="handleChange(slotProps)">
+                        >
                           <bk-option
                             v-for="option of loadbalanceList" :key="option.id" :value="option.id"
                             :label="option.name">
@@ -295,9 +182,9 @@
                       </bk-form-item>
                       <bk-form-item
                         :label="t('后端服务地址')" v-for="(hostItem, i) in slotProps.configs.hosts" :key="i"
-                        :rules="rules.host" :property="`config.hosts.${i}.host`"
+                        :rules="configRules.host" :property="`configs.hosts.${i}.host`"
                         :class="['backend-item-cls', { 'form-item-special': i !== 0 }]" required>
-                        <div class="host-item mb10">
+                        <div class="host-item">
                           <bk-input :placeholder="t('格式如 ：http(s)://host:port')" v-model="hostItem.host" :key="i">
                             <template #prefix>
                               <bk-select v-model="hostItem.scheme" class="scheme-select-cls w80" :clearable="false">
@@ -323,8 +210,8 @@
                         </div>
                       </bk-form-item>
                       <bk-form-item
-                        :label="t('超时时间')" :required="true" :property="'config.timeout'" class="timeout-item"
-                        :rules="rules.timeout" :error-display-type="'normal'">
+                        :label="t('超时时间')" :required="true" :property="'configs.timeout'" class="timeout-item"
+                        :rules="configRules.timeout" :error-display-type="'normal'">
                         <bk-input
                           type="number" :min="1" :max="300"
                           v-model="slotProps.configs.timeout" class="time-input">
@@ -344,7 +231,7 @@
       </template>
       <template #footer>
         <div class="pl30">
-          <bk-button theme="primary" class="mr5 w80" @click="handleConfirm">
+          <bk-button theme="primary" class="mr5 w80" @click="handleConfirm" :loading="isSaveLoading">
             {{ t('确定') }}
           </bk-button>
           <bk-button class="w80" @click="handleCancel">{{ t('取消') }}</bk-button>
@@ -355,12 +242,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { InfoBox, Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
 import { useCommon } from '@/store';
-// import { timeFormatter } from '@/common/util';
+import { timeFormatter } from '@/common/util';
 import { useQueryList } from '@/hooks';
 import {
   getStageList,
@@ -376,13 +263,14 @@ const common = useCommon();
 const router = useRouter();
 const { apigwId } = common; // 网关id
 
-
 const filterData = ref({ name: '', type: '' });
 const isBatchSet = ref<boolean>(false);
+const isSaveLoading = ref<boolean>(false);
 const baseInfoRef = ref(null);
-const stageConfigRef = ref(null);
+const stageConfigRef = ref([]);
 const stageBatchConfigRef = ref(null);
 const curOperate = ref<string>('add');
+const editTitle = ref<string>(t('如果环境和资源已经发布，服务配置修改后，将立即对所有已发布资源生效'));
 const finaConfigs = ref([]);
 const curServiceDetail = ref({
   id: 0,
@@ -415,10 +303,9 @@ const loadbalanceList = reactive([
 ]);
 // scheme 类型
 const schemeList = [{ value: 'http' }, { value: 'https' }];
-
 // 基础信息
 const baseInfo = ref({
-  name: 'default',
+  name: '',
   description: '',
 });
 // 基础信息校验规则
@@ -440,7 +327,7 @@ const baseInfoRules = {
   ],
 };
 // 服务配置校验规则
-const rules = {
+const configRules = {
   loadbalance: [
     {
       required: true,
@@ -459,7 +346,7 @@ const rules = {
         const reg = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
         return reg.test(value);
       },
-      message: t('请输入合法Host，如：http://example.com'),
+      message: t('请输入合法Host，如：example.com'),
       trigger: 'blur',
     },
   ],
@@ -492,48 +379,30 @@ const {
   getList,
 } = useQueryList(getBackendServiceList, filterData);
 
-// 监听是否批量设置
-watch(
-  () => isBatchSet.value,
-  (v: boolean) => {
-    console.log(v);
-  },
-  { immediate: true },
-);
-
+// 获取所有的stage name
 const getAllStageName = computed(() => {
   const newTitle = stageList.value.map(item => item.name).join('，');
   return newTitle;
 });
 
-
-const handleChange = (curItem: any) => {
-  console.log(curItem);
-  console.log(stageList.value);
-  console.log(batchConfig.value);
+const isNewCreate = (row: any) => {
+  return isWithinTime(row?.updated_time) ? 'new-created' : '';
 };
 
-
 // 判断后端服务新建时间是否在24h之内
-// const isWithinTime = (date: string) => {
-//   const str = timeFormatter(date);
-//   const targetTime = new Date(str);
-//   const currentTime = new Date();
-//   // 计算两个时间之间的毫秒差
-//   const diff = currentTime.getTime() - targetTime.getTime();
-//   // 24 小时的毫秒数
-//   const twentyFourHours = 24 * 60 * 60 * 1000;
-//   return diff < twentyFourHours;
-// };
+const isWithinTime = (date: string) => {
+  const str = timeFormatter(date);
+  const targetTime = new Date(str);
+  const currentTime = new Date();
+  // 计算两个时间之间的毫秒差
+  const diff = currentTime.getTime() - targetTime.getTime();
+  // 24 小时的毫秒数
+  const twentyFourHours = 24 * 60 * 60 * 1000;
+  return diff < twentyFourHours;
+};
 
-// 新建btn
-const handleAdd = () => {
+const resetData = () => {
   isBatchSet.value = false;
-  curOperate.value = 'add';
-  baseInfo.value = {
-    name: 'default',
-    description: '',
-  };
   batchConfig.value = [{
     configs: {
       loadbalance: 'roundrobin',
@@ -545,6 +414,24 @@ const handleAdd = () => {
       }],
     },
   }];
+};
+
+// 获取所有stage服务配置的ref
+const getSatgeConfigRef = (el: any) => {
+  console.log(el);
+  if (el !== null) {
+    stageConfigRef.value.push(el);
+  }
+};
+
+// 新建btn
+const handleAdd = () => {
+  curOperate.value = 'add';
+  baseInfo.value = {
+    name: '',
+    description: '',
+  };
+  resetData();
   stageConfig.value = stageList.value.map((item: any) => {
     const { name, id, description } = item;
     const newItem = {
@@ -596,6 +483,7 @@ const handleDeleteServiceAddress = (name: string, index: number) => {
 
 // 点击名称/编辑
 const handleEdit = async (data: any) => {
+  resetData();
   curOperate.value = 'edit';
   baseInfo.value = {
     name: data.name,
@@ -608,15 +496,10 @@ const handleEdit = async (data: any) => {
     stageConfig.value = res.configs.map((item: any) => {
       return { configs: item };
     });
-    console.log(res);
-    console.log(stageConfig.value);
     sidesliderConfi.isShow = true;
   } catch (error) {
     console.log('error', error);
   }
-
-
-  console.log(data);
 };
 
 // 点击关联的资源数
@@ -633,7 +516,6 @@ const handleResource = (data: any) => {
 
 // 点击删除
 const handleDelete = (item: any) => {
-  console.log(item);
   InfoBox({
     title: t(`确定删除【${item.name}】该服务?`),
     infoType: 'warning',
@@ -657,11 +539,9 @@ const handleDelete = (item: any) => {
 const handleConfirm = async () => {
   // 基础信息校验
   await baseInfoRef.value.validate();
-  console.log(baseInfo.value);
-  console.log('stageConfig', stageConfig.value);
-  console.log('batchConfig', batchConfig.value);
   const isAdd = curOperate.value === 'add';
   if (isBatchSet.value) {
+    await stageBatchConfigRef.value.validate();
     finaConfigs.value = stageList.value.map((item: any) => {
       const { configs } = batchConfig.value[0];
       const newItem = {
@@ -673,6 +553,13 @@ const handleConfirm = async () => {
       return newItem;
     });
   } else {
+    console.log(stageConfigRef.value);
+
+    // 逐个stage服务配置的校验
+    for (const item of stageConfigRef.value) {
+      if (item === null) break;
+      await item.validate();
+    }
     finaConfigs.value = stageConfig.value.map((item) => {
       const id =  isAdd ? item.id : item.configs.stage.id;
       const newItem = {
@@ -684,14 +571,13 @@ const handleConfirm = async () => {
       return newItem;
     });
   }
-
   const { name, description } = baseInfo.value;
   const params = {
     name,
     description,
     configs: finaConfigs.value,
   };
-  console.log(params);
+  isSaveLoading.value = true;
   try {
     if (isAdd) {
       await createBackendService(apigwId, params);
@@ -703,28 +589,28 @@ const handleConfirm = async () => {
       theme: 'success',
     });
     sidesliderConfi.isShow = false;
+    stageConfigRef.value = [];
     getList();
   } catch (error) {
     console.log('error', error);
+  } finally {
+    isSaveLoading.value = false;
   }
 };
 
 // 取消btn
 const handleCancel = () => {
   sidesliderConfi.isShow = false;
+  stageConfigRef.value = [];
 };
 
-
 const init = async () => {
-  console.log(tableData);
   try {
     const res = await getStageList(apigwId);
     stageList.value = res;
     res.forEach((item: any) => {
       activeIndex.value.push(item.name);
     });
-    console.log(stageList.value);
-    console.log(activeIndex.value);
   } catch (error) {
     console.log('error', error);
   }
@@ -737,10 +623,15 @@ init();
   width: 80px;
 }
 
+:deep(.new-created){
+  background-color: #f1fcf5 !important;
+}
 .w500 {
   width: 500px;
 }
-
+.content{
+  padding: 20px 30px 30px;
+}
 .backend-service-slider {
   :deep(.bk-modal-content) {
     min-height: calc(100vh - 104px) !important;
@@ -788,7 +679,19 @@ init();
     }
   }
 }
-
+:deep(.table-layout){
+  .bk-table-body{
+    table{
+      tbody{
+        tr{
+          td{
+            background-color: rgba(0,0,0,0);
+          }
+        }
+      }
+    }
+  }
+}
 .host-item {
   display: flex;
   align-items: center;
@@ -885,17 +788,6 @@ init();
 }
 
 .backend-config-item {
-  .item-title {
-    height: 40px;
-    line-height: 40px;
-    background: #f0f1f5;
-    border-radius: 2px;
-    font-weight: 700;
-    font-size: 14px;
-    color: #63656e;
-    padding: 0 16px;
-  }
-
   .item-content {
     background: #f5f7fa;
     padding: 20px 32px;

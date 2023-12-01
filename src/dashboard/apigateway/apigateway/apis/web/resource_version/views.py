@@ -38,6 +38,7 @@ from .serializers import (
     ResourceVersionCreateInputSLZ,
     ResourceVersionDiffOutputSLZ,
     ResourceVersionDiffQueryInputSLZ,
+    ResourceVersionListInputSLZ,
     ResourceVersionListOutputSLZ,
     ResourceVersionRetrieveOutputSLZ,
 )
@@ -49,6 +50,7 @@ from .serializers import (
         responses={status.HTTP_200_OK: ResourceVersionListOutputSLZ(many=True)},
         tags=["WebAPI.ResourceVersion"],
         operation_description="资源版本列表查询接口",
+        query_serializer=ResourceVersionListInputSLZ(),
     ),
 )
 @method_decorator(
@@ -67,11 +69,13 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         return ResourceVersion.objects.filter(gateway=self.request.gateway).order_by("-id")
 
     def list(self, request, *args, **kwargs):
-        data = (
-            ResourceVersion.objects.filter(gateway=request.gateway)
-            .values("id", "version", "comment", "created_time")
-            .order_by("-id")
-        )
+        slz = ResourceVersionListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        query = slz.validated_data.get("keyword")
+        queryset = ResourceVersion.objects.filter(gateway=request.gateway)
+        if query:
+            queryset = queryset.filter(version__icontains=query)
+        data = queryset.values("id", "version", "comment", "created_time").order_by("-id")
 
         page = self.paginate_queryset(data)
         resource_version_ids = [rv["id"] for rv in page]

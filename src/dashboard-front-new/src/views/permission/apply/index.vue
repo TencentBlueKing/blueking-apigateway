@@ -32,7 +32,7 @@
           @row-click="handleRowClick" @expand-change="handlePageExpandChange"
           row-hover="auto">
           <bk-table-column width="80" type="selection" align="center" />
-          <bk-table-column type="expand" width="30" class="ag-expand-cell">
+          <!-- <bk-table-column type="expand" width="30" class="ag-expand-cell">
             <template #expandRow="row">
               <div class="h60" v-if="row.grant_dimension === 'api'">
                 <bk-alert theme="error" :title="t('将申请网关下所有资源的权限，包括未来新创建的资源，请谨慎审批')" />
@@ -50,7 +50,7 @@
                 <bk-table-column prop="method" :label="t('请求方法')"></bk-table-column>
               </bk-table>
             </template>
-          </bk-table-column>
+          </bk-table-column> -->
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code" width="110"></bk-table-column>
           <bk-table-column :label="t('授权维度')" prop="grant_dimension_display">
             <template #default="{ data }">
@@ -69,9 +69,12 @@
           </bk-table-column>
           <bk-table-column :label="t('申请人')" prop="applied_by"></bk-table-column>
           <bk-table-column :label="t('申请时间')" prop="created_time" width="215"></bk-table-column>
-          <bk-table-column :label="t('审批状态')" prop="status">
+          <bk-table-column :label="t('审批状态')" prop="status" width="150">
             <template #default="{ data }">
-              <round-loading v-if="data?.status === 'pending'" />
+              <loading
+                class="mr5" loading size="mini" mode="spin" theme="primary"
+                v-if="data?.status === 'pending'"
+              />
               <span v-else :class="['dot', data?.status]"></span>
               {{ statusMap[data?.status as keyof typeof statusMap] }}
             </template>
@@ -172,7 +175,7 @@ import { useI18n } from 'vue-i18n';
 import { getPermissionApplyList, updatePermissionStatus } from '@/http';
 import { useCommon, usePermission } from '@/store';
 import { useQueryList, useSelection } from '@/hooks';
-import { Message } from 'bkui-vue';
+import { Message, Loading } from 'bkui-vue';
 const { t } = useI18n();
 const common = useCommon();
 const permission = usePermission();
@@ -206,6 +209,7 @@ const curPermission = ref({
   selection: [],
   grant_dimension: '',
   isSelectAll: true,
+  resource_ids: [],
 });
 const dimensionList = reactive([
   { id: 'api', name: t('按网关') },
@@ -285,7 +289,8 @@ const alertTheme = computed(() => {
 // 审批操作alter的title
 const approveFormMessage = computed(() => {
   const selectLength = curPermission.value.selection?.length;
-  const resourceLength = curPermission.value.resourceList?.length;
+  // const resourceLength = curPermission.value.resourceList?.length;
+  const resourceLength = curPermission.value.resource_ids?.length;
   const appCode = curPermission.value.bk_app_code;
   if (curPermission.value.grant_dimension === 'api') {
     if (curAction.value.status === 'approved') {
@@ -314,9 +319,9 @@ const handleBatchApply = () => {
   batchApplyDialogConf.isShow = true;
 };
 // 折叠table 多选发生变化触发
-const handleRowSelectionChange = () => {
+// const handleRowSelectionChange = () => {
 
-};
+// };
 // 折叠变化
 const handlePageExpandChange = (row: any, expandedRows: any) => {
   expandRows.value = expandedRows.map((item: any) => {

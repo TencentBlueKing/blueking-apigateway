@@ -48,7 +48,7 @@ class TestResourceListCreateApi:
                 2,
             ),
             (
-                {"query": "echo"},
+                {"keyword": "echo"},
                 1,
             ),
         ],

@@ -15,12 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import copy
 from datetime import datetime
 from typing import Any, Dict, List
 
 from django.db.models import Max
 
 from apigateway.core.constants import (
+    EVENT_FAIL_INTERVAL_TIME,
     GatewayStatusEnum,
     PublishEventStatusEnum,
     ReleaseHistoryStatusEnum,
@@ -53,7 +55,49 @@ class ReleaseHandler:
     @staticmethod
     def list_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:
         """通过 release_history_id 查询所有发布事件"""
-        return PublishEvent.objects.filter(publish_id=release_history_id).order_by("step", "status").all()
+        publish_events = PublishEvent.objects.filter(publish_id=release_history_id).order_by("step", "status")
+
+        # 补全event（由于上报的事件之间时间很短，当时为了减少存储，减少了部分event上报） todo: 后续由底层补齐事件
+        new_events = []
+        steps = {event.step for event in publish_events}
+        max_step = max(steps)
+        now = datetime.now().timestamp()
+        # 按照step来归类确定事件完整程度来补齐event
+        for step in sorted(steps):
+            step_events = [event for event in publish_events if event.step == step]
+            step_status_list = {event.status for event in step_events}
+
+            if len(step_events) == 0:
+                continue
+            # 补全doing event
+            if PublishEventStatusEnum.DOING.value not in step_status_list:
+                doing_event = copy.copy(step_events[0])
+                doing_event.pk = -step  # 这里避免id一样引起混淆，暂时id没有什么用
+                doing_event.status = PublishEventStatusEnum.DOING.value
+                new_events.append(doing_event)
+
+            # 补全success 和 failure event
+            if PublishEventStatusEnum.SUCCESS.value not in step_status_list and any(
+                event.status == PublishEventStatusEnum.DOING.value for event in step_events
+            ):
+                if step != max_step:
+                    success_event = copy.copy(step_events[0])
+                    success_event.pk = -step
+                    success_event.status = PublishEventStatusEnum.SUCCESS.value
+                    new_events.append(success_event)
+
+                # 如果到了最后一步并且超过了10min没有event认为失败
+                if (
+                    step == max_step
+                    and PublishEventStatusEnum.FAILURE.value not in step_status_list
+                    and now - step_events[0].created_time.timestamp() > EVENT_FAIL_INTERVAL_TIME
+                ):
+                    fail_event = copy.copy(step_events[0])
+                    fail_event.pk = -step
+                    fail_event.status = PublishEventStatusEnum.FAILURE.value
+                    new_events.append(fail_event)
+
+        return sorted(list(publish_events) + new_events, key=lambda event: (event.step, event.status))
 
     @staticmethod
     def is_running(last_event: PublishEvent):
@@ -75,7 +119,7 @@ class ReleaseHandler:
         # 如果是成功但不是最后一个节点并且该状态已经过去了10min,这种也认失败
         if (
             last_event.status == PublishEventStatusEnum.SUCCESS.value and not last_event.is_last
-        ) and now - last_event.created_time.timestamp() > 600:
+        ) and now - last_event.created_time.timestamp() > EVENT_FAIL_INTERVAL_TIME:
             return ReleaseHistoryStatusEnum.FAILURE.value
 
         # 如果还在执行中

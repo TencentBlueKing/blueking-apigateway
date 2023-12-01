@@ -36,7 +36,7 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     release = Release.objects.get(id=release_id)
 
     is_cli_sync = publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID
-    release_history = None if is_cli_sync else ReleaseHistory.objects.get(id=release_id)
+    release_history = None if is_cli_sync else ReleaseHistory.objects.get(id=publish_id)
 
     # 事件上报要以release维度的stage来上报
     if release_history:
