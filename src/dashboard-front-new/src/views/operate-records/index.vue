@@ -94,6 +94,7 @@ const defaultFilterData = ref<DefaultSearchParamsInterface>({
   op_type: '',
   op_object: '',
   op_object_type: '',
+  op_status: '',
   username: '',
   time_start: '',
   time_end: '',
@@ -129,6 +130,12 @@ const OperateRecordType =  ref(AccessLogStore.auditOptions.OPType.map((item: Rec
     ...{ id: item.value },
   };
 }));
+const OperateRecordStatus =  ref(OperateRecords.operateStatus.map((item: Record<string, string>) => {
+  return {
+    ...item,
+    ...{ id: item.value },
+  };
+}));
 const searchValue = ref([]);
 const searchData = shallowRef([
   {
@@ -148,6 +155,13 @@ const searchData = shallowRef([
     placeholder: t('请选择操作类型'),
     children: OperateRecordType.value,
   },
+  {
+    name: t('操作状态'),
+    id: 'op_status',
+    placeholder: t('请选择操作状态'),
+    children: OperateRecordStatus.value,
+  },
+
   {
     name: t('实例'),
     id: 'op_object',
