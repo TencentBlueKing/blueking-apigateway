@@ -19,41 +19,14 @@ import datetime
 from collections import defaultdict
 from typing import Dict, List, Optional
 
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.common.audit.shortcuts import record_audit_log
 from apigateway.common.constants import LanguageCodeEnum
 
 from .constants import EN_RESOURCE_DOC_TMPL, ZH_RESOURCE_DOC_TMPL
 
 
 class ResourceDocHandler:
-    @staticmethod
-    def record_audit_log_success(
-        username: str,
-        gateway_id: int,
-        op_type: OpTypeEnum,
-        instance_id: int,
-        instance_name: str,
-    ):
-        comment = {
-            OpTypeEnum.CREATE: "创建资源文档",
-            OpTypeEnum.MODIFY: "更新资源文档",
-            OpTypeEnum.DELETE: "删除资源文档",
-        }.get(op_type, "-")
-
-        record_audit_log(
-            username=username,
-            op_type=op_type.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway_id,
-            op_object_type=OpObjectTypeEnum.RESOURCE_DOC.value,
-            op_object_id=instance_id,
-            op_object=instance_name,
-            comment=comment,
-        )
-
     @staticmethod
     def get_docs(resource_ids: List[int]) -> Dict[int, List]:
         if not resource_ids:

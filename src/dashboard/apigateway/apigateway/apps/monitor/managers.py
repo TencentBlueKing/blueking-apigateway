@@ -116,11 +116,11 @@ class AlarmStrategyManager(models.Manager):
 
         return matched_strategies
 
-    def filter_alarm_strategy(self, gateway, gateway_label_id=None, query=None, order_by=None, fuzzy=True):
+    def filter_alarm_strategy(self, gateway, gateway_label_id=None, keyword=None, order_by=None, fuzzy=True):
         queryset = self.filter(gateway=gateway)
 
-        if query and fuzzy:
-            queryset = queryset.filter(name__contains=query)
+        if keyword and fuzzy:
+            queryset = queryset.filter(name__contains=keyword)
 
         if gateway_label_id is not None:
             queryset = queryset.filter(api_labels__id=gateway_label_id)

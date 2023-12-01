@@ -21,6 +21,7 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apis.open.gateway import views
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.core.models import Gateway, GatewayRelatedApp, Release
 
@@ -108,14 +109,20 @@ class TestGatewaySyncApi:
             data={
                 "description": "desc",
                 "is_public": True,
+                "allow_delete_sensitive_params": False,
             },
             app=mocker.MagicMock(app_code="foo"),
         )
         result = resp.json()
 
+        gateway = Gateway.objects.get(name=unique_gateway_name)
         assert resp.status_code == 200
         assert result["code"] == 0
-        assert result["data"]["id"] == Gateway.objects.get(name=unique_gateway_name).id
+        assert result["data"]["id"] == gateway.id
+
+        auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
+        assert auth_config["allow_auth_from_params"] is True
+        assert auth_config["allow_delete_sensitive_params"] is False
 
 
 class TestGatewayUpdateStatusApi:

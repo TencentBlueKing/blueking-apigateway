@@ -22,6 +22,7 @@ from django.db import transaction
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, PublishSourceEnum
 from apigateway.core.models import Backend, BackendConfig, Proxy
+from apigateway.utils.time import now_datetime
 
 
 class BackendHandler:
@@ -70,6 +71,7 @@ class BackendHandler:
         stage_configs = {config.stage_id: config for config in backend_configs}
 
         backend_configs = []
+        now = now_datetime()
         for config in data["configs"]:
             backend_config = stage_configs[config["stage_id"]]
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
@@ -78,10 +80,11 @@ class BackendHandler:
 
             backend_config.config = new_config
             backend_config.updated_by = updated_by
+            backend_config.updated_time = now
 
             backend_configs.append(backend_config)
 
-        BackendConfig.objects.bulk_update(backend_configs, fields=["config", "updated_by"])
+        BackendConfig.objects.bulk_update(backend_configs, fields=["config", "updated_by", "updated_time"])
 
         # 触发变更的stage的发布流程
         for backend_config in backend_configs:

@@ -68,6 +68,7 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
             resource_version_id=slz.validated_data.get("resource_version_id"),
             order_by="-id",
             fuzzy=True,
+            keyword=slz.validated_data.get("keyword"),
         )
 
         page = self.paginate_queryset(queryset)

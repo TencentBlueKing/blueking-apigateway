@@ -101,7 +101,7 @@ class ESBChannelManager(models.Manager):
         self,
         board: str,
         system_name: Optional[str] = None,
-        query: Optional[str] = None,
+        keyword: Optional[str] = None,
         order_by: Optional[tuple] = None,
     ):
         qs = self.filter(board=board, is_active=True, is_public=True)
@@ -109,9 +109,9 @@ class ESBChannelManager(models.Manager):
         if system_name:
             qs = qs.filter(system__name__iexact=system_name)
 
-        if query:
+        if keyword:
             qs = qs.filter(
-                Q(name__icontains=query) | Q(description__icontains=query) | Q(system__name__icontains=query)
+                Q(name__icontains=keyword) | Q(description__icontains=keyword) | Q(system__name__icontains=keyword)
             )
 
         if order_by:

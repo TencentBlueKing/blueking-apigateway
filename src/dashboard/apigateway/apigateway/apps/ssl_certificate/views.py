@@ -82,8 +82,8 @@ class SSLCertificateViewSet(viewsets.ModelViewSet):
 
         queryset = self.get_queryset()
         queryset = queryset.filter(type=data["type"])
-        if data.get("query"):
-            queryset = queryset.filter(Q(name__contains=data["query"]) | Q(snis__contains=data["query"]))
+        if data.get("keyword"):
+            queryset = queryset.filter(Q(name__contains=data["keyword"]) | Q(snis__contains=data["keyword"]))
         queryset = queryset.order_by(data.get("order_by") or "-updated_time")
 
         page = self.paginate_queryset(queryset)

@@ -1,5 +1,5 @@
 // 获取网关列表的hooks, 多个地方用到
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { getGatewaysList } from '@/http';
 import { IPagination } from '@/types';
 
@@ -10,16 +10,27 @@ const initPagination: IPagination = {
 };
 const pagination = ref<IPagination>(initPagination);
 
-export const useGetApiList = () => {
+export const useGetApiList = (filter: any) => {
   const getGatewaysListData = async () => {
     try {
-      const res = await getGatewaysList({
+      const parmas = {
         limit: pagination.value.limit,
         offset: pagination.value.limit * pagination.value.offset,
-      });
+        ...filter.value,
+      };
+      const res = await getGatewaysList(parmas);
       return res.results;
     } catch (error) {}
   };
+
+  // 监听输入框改变
+  watch(
+    () => filter,
+    () => {
+      getGatewaysListData();
+    },
+    { deep: true },
+  );
 
   return {
     getGatewaysListData,

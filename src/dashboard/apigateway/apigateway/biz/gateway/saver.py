@@ -35,6 +35,10 @@ class GatewayData(BaseModel):
     is_public: bool = Field(default=False)
     gateway_type: Optional[GatewayTypeEnum] = Field(default=None)
     user_config: Optional[Dict] = Field(default=None)
+    # allow_auth_from_params/allow_delete_sensitive_params 默认值 None，即默认不修改此配置，
+    # 上层如需修改，需明确指定配置值
+    allow_auth_from_params: Optional[bool] = Field(default=None)
+    allow_delete_sensitive_params: Optional[bool] = Field(default=None)
 
     @validator("gateway_type")
     def validate_gateway_type(cls, v):  # noqa: N805
@@ -95,6 +99,8 @@ class GatewaySaver:
             user_config=self._gateway_data.user_config,
             unfiltered_sensitive_keys=self._get_gateway_unfiltered_sensitive_keys(gateway.name),
             api_type=self._gateway_data.gateway_type,
+            allow_auth_from_params=self._gateway_data.allow_auth_from_params,
+            allow_delete_sensitive_params=self._gateway_data.allow_delete_sensitive_params,
         )
 
     def _update_gateway(self):
@@ -115,6 +121,8 @@ class GatewaySaver:
             user_conf=self._gateway_data.user_config,
             unfiltered_sensitive_keys=self._get_gateway_unfiltered_sensitive_keys(gateway.name),
             api_type=self._gateway_data.gateway_type,
+            allow_auth_from_params=self._gateway_data.allow_auth_from_params,
+            allow_delete_sensitive_params=self._gateway_data.allow_delete_sensitive_params,
         )
 
     def _get_gateway_unfiltered_sensitive_keys(self, gateway_name: str) -> Optional[List[str]]:

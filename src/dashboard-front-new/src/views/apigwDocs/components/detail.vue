@@ -24,8 +24,6 @@
               </div>
             </bk-option>
           </bk-select>
-          <!-- <strong class="name">{{curApigw.name || '--'}}</strong> -->
-          <!-- <p class="desc">{{curApigw.description}}</p> -->
         </div>
         <div class="component-list-box">
           <p
@@ -78,7 +76,9 @@
                         :title="component.name"
                         :class="{ 'active': curComponentName === component.name }"
                         @click="handleShowDoc(component)">
+                        <!-- eslint-disable-next-line vue/no-v-html -->
                         <p class="name" v-html="hightlight(component.name)" v-bk-overflow-tips></p>
+                        <!-- eslint-disable-next-line vue/no-v-html -->
                         <p class="label" v-html="hightlight(component.description) || $t('暂无描述')" v-bk-overflow-tips>
                         </p>
                       </li>
@@ -410,16 +410,11 @@ watch(
 );
 
 watch(
-  () => curStageId.value,
-  (value) => {
-    // this.$store.commit('apigw/updateCurStage', value);
-  },
-);
-
-watch(
   () => route,
   () => {
-    init();
+    if (route?.params?.apigwId && route?.params?.resourceId) {
+      init();
+    }
   },
   { immediate: true, deep: true },
 );

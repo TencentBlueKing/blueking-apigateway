@@ -426,11 +426,11 @@ if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
         {
             "apigateway.apps.metrics.tasks.statistics_request_by_day": {
                 "task": "apigateway.apps.metrics.tasks.statistics_request_by_day",
-                "schedule": crontab(minute=30, hour=0),
+                "schedule": crontab(minute=30, hour=8),
             },
             "apigateway.apps.permission.tasks.renew_app_resource_permission": {
                 "task": "apigateway.apps.permission.tasks.renew_app_resource_permission",
-                "schedule": crontab(minute=50, hour=0),
+                "schedule": crontab(minute=50, hour=10),
             },
         }
     )
@@ -625,6 +625,8 @@ PLUGIN_METADATA_CONFIG = {
             "proxy_error": "$proxy_error",
             "instance": "$instance_id",
             "timestamp": "$bk_log_request_timestamp",
+            # 临时字段，用于记录请求时，认证参数的位置，便于推动认证参数优化
+            "auth_location": "$auth_params_location",
         }
     },
     "bk-concurrency-limit": {
@@ -714,6 +716,9 @@ for k, v in env.dict("MAX_RESOURCE_COUNT_PER_GATEWAY_WHITELIST", default={}).ite
 
 # 网关下对象的最大数量
 MAX_LABEL_COUNT_PER_GATEWAY = env.int("MAX_LABEL_COUNT_PER_GATEWAY", 100)
+
+# 管理端支持的最大超时时间
+MAX_BACKEND_TIMEOUT_IN_SECOND = env.int("MAX_BACKEND_TIMEOUT_IN_SECOND", 600)
 
 MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION = env.int("MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION", 99)
 

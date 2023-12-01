@@ -48,7 +48,7 @@ class ComponentSearchApi(generics.ListAPIView):
 
         queryset = ESBChannel.objects.filter_public_components(
             board,
-            query=slz.validated_data.get("query"),
+            keyword=slz.validated_data.get("keyword"),
             order_by=("system_id", "name"),
         )
 

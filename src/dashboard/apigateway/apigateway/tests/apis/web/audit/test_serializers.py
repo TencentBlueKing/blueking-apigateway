@@ -46,6 +46,8 @@ class TestAuditEventLogSLZ(TestCase):
                     op_object_id="123",
                     op_object="gateway: 123",
                     comment="comment",
+                    data_before='{"a": 1}',
+                    data_after='{"a": 2}',
                 ),
                 "expected": {
                     "event_id": "10a7324e4cd341edbfaace38472915d2",
@@ -58,6 +60,8 @@ class TestAuditEventLogSLZ(TestCase):
                     "op_object_id": "123",
                     "op_object": "gateway: 123",
                     "comment": "comment",
+                    "data_before": {"a": 1},
+                    "data_after": {"a": 2},
                 },
             },
             # event_id with '10a7324e-4cd3-41ed-bfaa-ce38472915d2'
@@ -86,6 +90,8 @@ class TestAuditEventLogSLZ(TestCase):
                     "op_object_id": "123",
                     "op_object": "gateway: 123",
                     "comment": "comment",
+                    "data_before": None,
+                    "data_after": None,
                 },
             },
         ]

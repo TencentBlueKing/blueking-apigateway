@@ -62,8 +62,8 @@
               <div class="v">{{curComponent.resource_perm_required ? $t('是') : $t('否')}}</div>
             </div>
           </div>
+          <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="curComponent.markdownHtml"></div>
-          <!-- <zan class="mt30 mb50" v-if="GLOBAL_CONFIG.PLATFORM_FEATURE.ENABLE_FEEDBACK"></zan> -->
         </bk-tab-panel>
         <bk-tab-panel
           :name="'sdk'"
@@ -72,12 +72,11 @@
           <div id="sdk-markdown">
             <div class="bk-button-group">
               <bk-button class="is-selected">Python</bk-button>
-              <!-- <bk-button disabled>GO</bk-button> -->
             </div>
 
             <h3 class="f16">
               {{ $t('SDK信息-doc') }}
-              <span class="ag-tip ml10" v-if="!curSdk.sdk_version_number">
+              <span class="ag-tip ml10" v-if="!curSdk?.sdk?.version">
                 ({{ SDKInfo }})
               </span>
             </h3>
@@ -87,8 +86,8 @@
             </div>
 
             <h3 class="f16 mt20"> {{ $t('SDK使用样例') }} </h3>
+            <!-- eslint-disable-next-line vue/no-v-html -->
             <div class="ag-markdown-view mt20" :key="renderHtmlIndex" v-html="sdkMarkdownHtml"></div>
-            <!-- <zan class="mt30 mb50" v-if="GLOBAL_CONFIG.PLATFORM_FEATURE.ENABLE_FEEDBACK"></zan> -->
           </div>
         </bk-tab-panel>
       </bk-tab>
@@ -114,12 +113,8 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/monokai-sublime.css';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-import { Message } from 'bkui-vue';
 import { getApigwResourceSDKDocs, getApigwResourceDocDocs, getApigwResourcesDocs, getApigwSDKDocs, getGatewaysDetailsDocs } from '@/http';
-
-// import Clipboard from 'clipboard';
 // import chat from '@/components/chat';
-// import zan from '@/components/zan';
 
 const route = useRoute();
 const { t } = useI18n();
@@ -153,7 +148,7 @@ const curComponent = ref<any>({
   innerHtml: '',
   markdownHtml: '',
 });
-// const curComponentList = ref<any>([]);
+
 const sdkNavList = ref<any>([]);
 const sdks = ref<any>([]);
 const curSdk = ref<any>({});
@@ -164,8 +159,6 @@ const curApigw = ref({
   maintainers: [],
 });
 const componentNavList = ref<any>([]);
-// const resourceListT = ref<any>([1, 2, 3]);
-const clipboardInstance = ref<any>();
 
 const SDKInfo = computed(() => t(`网关当前环境【${curStage.value}】对应的资源版本未生成SDK，可联系网关负责人生成SDK`));
 
@@ -214,8 +207,7 @@ const initMarkdownHtml = (box: string) => {
       parentDiv.className = 'pre-wrapper';
       btn.className = 'ag-copy-btn';
       codeBox.className = 'code-box';
-      btn.innerHTML = '<span :title="$t(`复制`)"><i class="bk-icon icon-clipboard mr5"></i></span>';
-      btn?.setAttribute('data-clipboard-text', code);
+      btn.innerHTML = `<span :title="$t('复制')"><i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(${code})"></i></span>`;
       parentDiv?.appendChild(btn);
       codeBox?.appendChild(item?.querySelector('code'));
       item?.appendChild(codeBox);
@@ -223,22 +215,6 @@ const initMarkdownHtml = (box: string) => {
       parentDiv?.appendChild(item);
     });
   });
-
-  if (clipboardInstance.value?.off) {
-    clipboardInstance.value.off('success');
-  }
-
-  // setTimeout(() => {
-  //   clipboardInstance.value = new Clipboard('.ag-copy-btn');
-  //   clipboardInstance.value.on('success', () => {
-  //     Message({
-  //       width: 100,
-  //       limit: 1,
-  //       theme: 'success',
-  //       message: t('复制成功'),
-  //     });
-  //   });
-  // }, 2000);
 };
 
 const getApigwResourceSDK = async () => {
@@ -343,7 +319,9 @@ init();
 watch(
   () => route,
   () => {
-    init();
+    if (route?.params?.apigwId && route?.params?.resourceId && route?.query?.stage) {
+      init();
+    }
   },
   { immediate: true, deep: true },
 );

@@ -89,10 +89,11 @@ const router = useRouter();
 // 全局公共字段存储
 const common = useCommon();
 const permission = usePermission();
+const filterData = ref({ name: '' });
 // 获取网关数据方法
 const {
   getGatewaysListData,
-} = useGetApiList();
+} = useGetApiList(filterData);
 const collapse = ref(true);
 // 选中的菜单
 const activeMenuKey = ref('');

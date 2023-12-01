@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db import models
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.core.constants import GatewayStatusEnum
@@ -148,8 +148,16 @@ class APISDKManager(models.Manager):
         version_number="",
         resource_version_id=None,
         fuzzy=False,
+        keyword=None,
     ):
         queryset = self.filter(gateway=gateway)
+
+        if keyword:
+            queryset = queryset.filter(
+                Q(language__icontains=keyword)
+                | Q(version_number__contains=keyword)
+                | Q(resource_version__version__contains=keyword)
+            )
 
         if language:
             queryset = queryset.filter(language=language)
