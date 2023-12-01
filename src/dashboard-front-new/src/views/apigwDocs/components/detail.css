@@ -473,3 +473,24 @@
         }
     }
 }
+
+h3 {
+    font-weight: bold;
+    color: #333;
+    margin: 16px 0px;
+}
+
+.bk-special-tab.bk-tab {
+    :deep(.bk-tab-content) {
+        padding-top: 20px;
+    }
+}
+
+.f16 {
+    font-size: 16px !important;
+}
+
+.ag-tip {
+    display: flex;
+    align-items: center;
+}

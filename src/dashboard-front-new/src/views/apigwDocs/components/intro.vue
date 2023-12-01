@@ -6,7 +6,7 @@
       </div>
 
       <div style="position: relative;">
-        <bk-breadcrumb separator-class="bk-icon icon-angle-right" class="0">
+        <bk-breadcrumb separator=">">
           <bk-breadcrumb-item :to="{ name: 'apigwDoc' }"> {{ $t('网关API文档') }} </bk-breadcrumb-item>
           <bk-breadcrumb-item>{{curApigw.name || '--'}}</bk-breadcrumb-item>
           <bk-breadcrumb-item> {{ $t('简介') }} </bk-breadcrumb-item>
@@ -36,7 +36,6 @@
         <h3> {{ $t('网关 SDK') }} </h3>
         <div class="bk-button-group">
           <bk-button class="is-selected">Python</bk-button>
-          <!-- <bk-button disabled>GO</bk-button> -->
         </div>
       </div>
 
@@ -44,37 +43,38 @@
         style="margin-top: 15px;"
         :data="sdks"
         show-overflow-tooltip
+        :border="['outer']"
         :size="'small'">
-        <template #empty>
+        <!-- <template #empty>
           <table-empty
             :abnormal="isAbnormal"
             @reacquire="getApigwSDK('python')"
           />
-        </template>
+        </template> -->
 
         <bk-table-column :label="$t('网关环境')" field="stage_name">
           <template #default="{ data }">
-            {{data?.stage_name}}
+            {{data?.stage?.name || '--'}}
           </template>
         </bk-table-column>
 
-        <bk-table-column :label="$t('网关API资源版本')" field="resource_version_display" width="250">
+        <bk-table-column :label="$t('网关API资源版本')" field="resource_version_display">
           <template #default="{ data }">
-            {{data?.resource_version_display || '--'}}
+            {{data?.resource_version?.version || '--'}}
           </template>
         </bk-table-column>
 
         <bk-table-column :label="$t('SDK 版本号')" field="sdk_version_number">
           <template #default="{ data }">
-            {{data?.sdk_version_number || '--'}}
+            {{data?.sdk?.version || '--'}}
           </template>
         </bk-table-column>
 
         <bk-table-column :label="$t('SDK下载')">
           <template #default="{ data }">
-            <template v-if="data?.sdk_download_url">
-              <bk-button class="mr5" :text="true" @click="handleShow(data)"> {{ $t('查看') }} </bk-button>
-              <bk-button :text="true" @click="handleDownload(data)"> {{ $t('下载') }} </bk-button>
+            <template v-if="data?.sdk?.url">
+              <bk-button theme="primary" class="mr5" text @click="handleShow(data)"> {{ $t('查看') }} </bk-button>
+              <bk-button theme="primary" text @click="handleDownload(data)"> {{ $t('下载') }} </bk-button>
             </template>
             <template v-else>
               {{ $t('未生成-doc') }}
@@ -84,16 +84,14 @@
       </bk-table>
 
       <p class="ag-tip mt5">
-        <i class="bk-icon icon-info"></i>
+        <info-line style="margin-right: 8px;" />
         {{ $t('若资源版本对应的SDK未生成，可联系网关负责人生成SDK') }}
       </p>
-
-      <!-- <zan class="mt30 mb50"></zan> -->
 
       <bk-sideslider
         :width="720"
         :title="sdkConfig.title"
-        :is-show="sdkConfig.isShow"
+        v-model:is-show="sdkConfig.isShow"
         :quick-close="true">
         <template #default>
           <div class="p25">
@@ -112,17 +110,15 @@
 </template>
 
 <script lang="ts"  setup>
-import { ref, reactive, computed, watch, nextTick } from 'vue';
-// import Clipboard from 'clipboard'
+import { ref, reactive, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-// import { Message } from 'bkui-vue';
 import { slugify } from 'transliteration';
 // import Chat from '@/components/chat'
 import sdkDetail from '@/components/sdk-detail';
-// import zan from '@/components/zan'
 import sideNav from '@/components/side-nav';
 import { getGatewaysDetailsDocs, getApigwSDKDocs } from '@/http';
+import { InfoLine } from 'bkui-vue/lib/icon';
 
 const route = useRoute();
 const { t } = useI18n();
@@ -144,51 +140,15 @@ const curApigw = ref<any>({
 });
 const isAbnormal = ref<boolean>(false);
 const curApigwId = ref();
-// const clipboardInstance = ref();
-
-
-// const curUser = computed(() => this.$store.state.user);
-// const userList = computed(() => {
-//   // 去重
-//   const set = new Set([curUser.value?.username, ...curApigw.value?.maintainers]);
-//   return [...set];
-// });
-// const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);
-// const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
-
-
-// const renderHeader = (h, data: any) => {
-//   const directive = {
-//     name: 'bkTooltips',
-//     content: t('网关API资源版本对应的SDK'),
-//     placement: 'right',
-//   };
-//   return (<span style="cursor: pointer;" class="custom-header-cell" v-bk-tooltips={ directive }>
-//               { data.column.label }
-//               <i class="bk-icon icon-question-circle-shape ml5"></i>
-//           </span>)
-// };
 
 const handleShow = (data: any) => {
   curSdk.value = data;
   sdkConfig.title = `${t('网关API SDK')}：${curApigwId.value}`;
   sdkConfig.isShow = true;
-
-  // setTimeout(() => {
-  //   clipboardInstance.value = new Clipboard('.doc-copy')
-  //   clipboardInstance.value.on('success', () => {
-  //     Message({
-  //       width: 100,
-  //       limit: 1,
-  //       theme: 'success',
-  //       message: t('复制成功')
-  //     })
-  //   })
-  // }, 1000)
 };
 
-const handleDownload = (sdk: any) => {
-  window.open(sdk?.sdk_download_url);
+const handleDownload = (data: any) => {
+  window.open(data?.sdk?.url);
 };
 
 const initMarkdownHtml = () => {
@@ -226,21 +186,6 @@ const initMarkdownHtml = () => {
       item.appendChild(codeBox);
     });
   });
-
-  // if (clipboardInstance.value?.off) {
-  //   clipboardInstance.value?.off('success')
-  // }
-  // setTimeout(() => {
-  //   clipboardInstance.value = new Clipboard('.doc-copy')
-  //   clipboardInstance.value.on('success', () => {
-  //     Message({
-  //       width: 100,
-  //       limit: 1,
-  //       theme: 'success',
-  //       message: t('复制成功')
-  //     })
-  //   })
-  // }, 1000)
 };
 
 const getApigwAPIDetail = async () => {
@@ -288,7 +233,9 @@ init();
 watch(
   () => route,
   () => {
-    init();
+    if (route?.params?.apigwId) {
+      init();
+    }
   },
   { immediate: true, deep: true },
 );
