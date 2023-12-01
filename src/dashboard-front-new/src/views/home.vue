@@ -31,7 +31,9 @@
       <div class="table-list">
         <div class="table-item flex-row align-items-center" v-for="item in gatewaysList" :key="item.id">
           <div class="flex-1 flex-row align-items-center of4">
-            <div class="name-logo mr10" :class="item.status ? '' : 'deact'">
+            <div
+              class="name-logo mr10" :class="item.status ? '' : 'deact'"
+              @click="handleGoPage('apigwResource', item.id)">
               {{ item.name[0].toUpperCase() }}
             </div>
             <span
@@ -66,7 +68,7 @@
               class="pl20"
               @click="handleGoPage('apigwResource', item.id)"
             >
-              资源配额
+              资源配置
             </bk-button>
             <bk-button
               text
