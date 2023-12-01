@@ -10,13 +10,13 @@
             <div class="group" v-for="(component, index) of componentList" :key="index">
               <strong class="category-title" @click="handleScrollTo(component.board)" style="cursor: pointer;">{{
                 component.board_label }}</strong>
-              <svg aria-hidden="true" class="category-icon">
+              <!-- <svg aria-hidden="true" class="category-icon">
                 <use :xlink:href="`#doc-icon${index % 4}`"></use>
-              </svg>
+              </svg> -->
               <ul class="list">
                 <li
                   :class="{ 'selected': curCategoryId === `${component.board}_${category.id}` }"
-                  v-for="(category) of component.categories" :key="category.id" v-bk-overflow-tips
+                  v-for="(category) of component.categories" :key="category.id"
                   @click="handleScrollTo(component.board, category)">
                   <a href="javascript: void(0);">{{ category.name }}</a>
                 </li>
@@ -33,7 +33,6 @@
                 </svg>
                 <strong :id="`version_${component.board}`">{{ component.board_label }}</strong>
               </p>
-
               <div class="ag-card" v-for="(category, index) of component.categories" :key="index">
                 <p class="card-title" :id="`${component.board}_${category.id}`">
                   {{ category.name }}
@@ -46,9 +45,10 @@
                     <li v-for="item of category.systems" :key="item.name">
                       <router-link
                         :to="{
-                          name: 'ComponentAPIDetailIntro', params: {
+                          name: 'ComponentAPIDetailIntro',
+                          params: {
                             version: component.board,
-                            category: category.name, id: item.name
+                            id: item.name,
                           }
                         }">
                         {{ item.description }}
@@ -63,7 +63,7 @@
         </div>
       </template>
       <div class="mt20" v-else style="width: 100%; border-radius: 2px; border: 1px solid #eee; background: #FFF;">
-        <table-empty empty />
+        1
       </div>
     </div>
   </div>
@@ -83,6 +83,8 @@ const componentList = ref([]);
 
 
 const handleScrollTo = (version: any, category: any = null) => {
+  console.log(category);
+
   const OFFSET = category ? 87 : 75;
   const categoryId = category ? `${version}_${category.id}` : `version_${version}`;
   const element = document.getElementById(categoryId);
@@ -91,7 +93,6 @@ const handleScrollTo = (version: any, category: any = null) => {
     const rect = element.getBoundingClientRect();
     const container = document.querySelector('#app .container-content') || document.documentElement || document.body;
     const top = container.scrollTop + rect.top - OFFSET;
-
     container.scrollTo({
       top,
       behavior: 'smooth',
@@ -272,6 +273,60 @@ init();
       span {
         vertical-align: middle;
       }
+    }
+  }
+}
+
+.ag-card {
+  background: #ffffff;
+  padding: 18px 16px 10px 16px;
+  box-shadow: 0px 2px 6px 0px rgba(0, 0, 0, 0.1);
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+    color: #63656e;
+    line-height: 19px;
+
+    .total {
+      font-size: 14px;
+      color: #979ba5;
+      font-weight: normal;
+    }
+  }
+
+  .card-content {
+    margin-top: 20px;
+  }
+
+  &+.ag-card {
+    margin-top: 16px;
+  }
+
+  .systems {
+    display: flex;
+    flex-wrap: wrap;
+
+    >li {
+      width: 25%;
+      margin-bottom: 20px;
+    }
+
+    a {
+      font-size: 14px;
+      display: block;
+      margin-bottom: 4px;
+      color: #63656e;
+
+      &:hover {
+        color: #3a84ff;
+      }
+    }
+
+    .desc {
+      font-size: 12px;
+      color: #C4C6CC;
     }
   }
 }

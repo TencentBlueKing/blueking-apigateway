@@ -37,6 +37,9 @@ const ApigwMonitorAlarmHistory = () => import(/* webpackChunkName: 'apigw-env'*/
 const ApigwSDK = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/sdk/gateway-sdk/index.vue');
 const ApigwESBSDK = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/sdk/esb-sdk/index.vue');
 const ComponentDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/index.vue');
+const ComponentAPIDetail = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/components/detail.vue');
+const ComponentAPIDetailDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/components/doc.vue');
+const ComponentAPIDetailIntro = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/components/intro.vue');
 
 // 文档一级路由出口
 const docsComponent = {
@@ -310,7 +313,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/component-api',
+        path: 'component-api',
         name: 'componentDoc',
         component: ComponentDoc,
         meta: {
@@ -365,6 +368,37 @@ const routes: RouteRecordRaw[] = [
             component: ApigwAPIDetailDoc,
             meta: {
               matchRoute: 'apigwAPIDetailDoc',
+              isDocRouter: true,
+            },
+          },
+        ],
+      },
+      {
+        path: 'component-api/:version/:id',
+        name: 'componentAPIDetail',
+        component: ComponentAPIDetail,
+        meta: {
+          matchRoute: 'componentDoc',
+          isDocRouter: true,
+        },
+        children: [
+          {
+            path: 'intro',
+            alias: '',
+            name: 'ComponentAPIDetailIntro',
+            component: ComponentAPIDetailIntro,
+            meta: {
+              matchRoute: 'componentDoc',
+              isDocRouter: true,
+            },
+          },
+          {
+            path: ':componentId/doc',
+            alias: '',
+            name: 'ComponentAPIDetailDoc',
+            component: ComponentAPIDetailDoc,
+            meta: {
+              matchRoute: 'componentDoc',
               isDocRouter: true,
             },
           },

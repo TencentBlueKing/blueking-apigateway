@@ -20,10 +20,9 @@ export const getComponenSystemDetail = (board: string, system_name: string) => f
 /**
  *  查询指定组件系统下的组件 API 列表，仅返回公开的组件
  * @param board
- * @param data 查询参数
  * @param system_name  系统名称
  */
-export const getSystemAPIList = (board: string, system_name: string, data: any) => fetch.get(`${BK_DASHBOARD_URL}/docs/esb/boards/${board}/systems/${system_name}/components/?${json2Query(data)}`);
+export const getSystemAPIList = (board: string, system_name: string) => fetch.get(`${BK_DASHBOARD_URL}/docs/esb/boards/${board}/systems/${system_name}/components/`);
 
 /**
  *  查询组件 API，根据筛选条件模糊搜索，仅返回前 30 条记录

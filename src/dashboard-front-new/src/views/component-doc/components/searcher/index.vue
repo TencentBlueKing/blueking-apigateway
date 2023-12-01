@@ -16,7 +16,7 @@
     <div class="input-wrapper bk-dropdown-menu search-result-box">
       <input
         type="text" style="width: 400px;" v-model="keyword" class="input" :placeholder="t('请输入API名称')"
-        @input="handleSearch" @keydown="keyupHandle">
+        @input="handleSearch" @keydown="handleKeyup">
       <div class="bk-dropdown-content is-show left-align" v-if="keyword">
         <bk-loading :loading="isLoading" opacity="1">
           <ul
@@ -142,9 +142,9 @@ const handleSearch = async () => {
     console.log('error', error);
   }
 };
-const keyupHandle = (e: any) => {
+const handleKeyup = (e: any) => {
   const curKeyCode = e.keyCode;
-  const curLength  = resultList.value.length;
+  const curLength = resultList.value.length;
 
   switch (curKeyCode) {
     // 上
@@ -254,17 +254,25 @@ init();
   }
 }
 
-.bk-dropdown-list {
-  width: 105px;
+.bk-popover {
+  .bk-dropdown-content {
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
 
-  a {
-    color: #63656e;
+    .bk-dropdown-list {
+      width: 105px;
 
-    &:hover {
-      background-color: #eaf3ff;
-      color: #3a84ff
+      a {
+        color: #63656e;
+
+        &:hover {
+          background-color: #eaf3ff;
+          color: #3a84ff
+        }
+      }
     }
   }
+
 }
 
 
@@ -280,7 +288,11 @@ init();
         margin-bottom: 9px;
         display: block;
         white-space: nowrap;
-
+        color: #63656e;
+        &:hover{
+          background-color: #eaf3ff;
+          color: #3a84ff
+        }
         .name {
           margin-bottom: 5px;
           color: #63656E;

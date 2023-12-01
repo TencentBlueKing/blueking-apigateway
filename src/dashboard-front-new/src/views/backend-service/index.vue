@@ -79,7 +79,7 @@
       ext-cls="backend-service-slider" width="800">
       <template #default>
         <div class="content">
-          <bk-alert theme="warning" :title="editTitle" class="mb20" v-if="curOperate === 'edit'" />
+          <bk-alert theme="warning" :title="editTitle" class="mb20" v-if="curOperate === 'edit' && isPublish" />
           <div class="base-info mb20">
             <p class="title"><span class="icon apigateway-icon icon-ag-down-shape"></span>{{ t('基础信息') }}</p>
             <bk-form
@@ -279,6 +279,7 @@ const { apigwId } = common; // 网关id
 const filterData = ref({ name: '', type: '' });
 const isBatchSet = ref<boolean>(false);
 const isSaveLoading = ref<boolean>(false);
+const isPublish = ref<boolean>(false);
 const baseInfoRef = ref(null);
 const stageConfigRef = ref([]);
 const stageBatchConfigRef = ref(null);
@@ -597,11 +598,27 @@ const handleConfirm = async () => {
     } else {
       await updateBackendService(apigwId, curServiceDetail.value.id, params);
     }
-    Message({
-      message: isAdd ? t('新建成功') : t('更新成功'),
-      theme: 'success',
-    });
-    sidesliderConfi.isShow = false;
+    if (isPublish.value && !isAdd) {
+      sidesliderConfi.isShow = false;
+      InfoBox({
+        title: t('内容保存成功，正在发布至环境中'),
+        infoType: 'success',
+        subTitle: t('服务修改后将会立即发布至环境中'),
+        confirmText: t('去查看'),
+        cancelText: t('关闭'),
+        onConfirm: () => {
+          router.push({
+            name: 'apigwReleaseHistory',
+          });
+        },
+      });
+    } else {
+      Message({
+        message: isAdd ? t('新建成功') : t('更新成功'),
+        theme: 'success',
+      });
+      sidesliderConfi.isShow = false;
+    }
     stageConfigRef.value = [];
     getList();
   } catch (error) {
@@ -621,9 +638,12 @@ const init = async () => {
   try {
     const res = await getStageList(apigwId);
     stageList.value = res;
+    console.log(stageList.value);
     res.forEach((item: any) => {
       activeIndex.value.push(item.name);
     });
+    isPublish.value = stageList.value.some((item: any) => item.publish_id !== 0);
+    console.log(isPublish.value);
   } catch (error) {
     console.log('error', error);
   }
