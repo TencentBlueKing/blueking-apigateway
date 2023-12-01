@@ -17,17 +17,17 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.db import transaction
-from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.micro_gateway import serializers
 from apigateway.apps.micro_gateway.constants import MicroGatewayCreateWayEnum
 from apigateway.apps.micro_gateway.handlers import MicroGatewayHandlerFactory
-from apigateway.common.audit.shortcuts import record_audit_log
+from apigateway.biz.audit import Auditor
 from apigateway.core.models import MicroGateway, Stage
 from apigateway.utils.access_token import get_user_access_token_from_request
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 
@@ -56,15 +56,14 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
             slz.instance.id, get_user_access_token_from_request(request), request.user.username
         )
 
-        record_audit_log(
+        Auditor.record_micro_gateway_op_success(
+            op_type=OpTypeEnum.CREATE,
             username=request.user.username,
-            op_type=OpTypeEnum.CREATE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.MICRO_GATEWAY.value,
-            op_object_id=slz.instance.id,
-            op_object=slz.instance.name,
-            comment=_("创建微网关实例"),
+            gateway_id=request.gateway.id,
+            instance_id=slz.instance.id,
+            instance_name=slz.instance.name,
+            data_before={},
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse(data={"id": slz.instance.id})
@@ -104,6 +103,7 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
     )
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
 
         slz = serializers.UpdateMicroGatewaySLZ(
             instance,
@@ -119,15 +119,14 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
                 slz.instance.id, get_user_access_token_from_request(request), request.user.username
             )
 
-        record_audit_log(
+        Auditor.record_micro_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
-            op_type=OpTypeEnum.MODIFY.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.MICRO_GATEWAY.value,
-            op_object_id=slz.instance.id,
-            op_object=slz.instance.name,
-            comment=_("更新微网关实例"),
+            gateway_id=request.gateway.id,
+            instance_id=slz.instance.id,
+            instance_name=slz.instance.name,
+            data_before=data_before,
+            data_after=get_model_dict(slz.instance),
         )
 
         return OKJsonResponse()
@@ -144,19 +143,19 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
         # TODO: 删除微网关实例前，需检查微网关实例中，已无注册的接口
 
         instance = self.get_object()
+        data_before = get_model_dict(instance)
         instance_id = instance.id
 
         instance.delete()
 
-        record_audit_log(
+        Auditor.record_micro_gateway_op_success(
+            op_type=OpTypeEnum.DELETE,
             username=request.user.username,
-            op_type=OpTypeEnum.DELETE.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=request.gateway.id,
-            op_object_type=OpObjectTypeEnum.MICRO_GATEWAY.value,
-            op_object_id=instance_id,
-            op_object=instance.name,
-            comment=_("删除微网关实例"),
+            gateway_id=request.gateway.id,
+            instance_id=instance_id,
+            instance_name=instance.name,
+            data_before=data_before,
+            data_after={},
         )
 
         return OKJsonResponse()

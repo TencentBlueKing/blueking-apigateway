@@ -57,6 +57,10 @@ class TestGatewayListCreateApi:
         assert JWT.objects.filter(gateway=gateway).count() == 1
         assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
 
+        auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
+        assert auth_config["allow_auth_from_params"] is False
+        assert auth_config["allow_delete_sensitive_params"] is False
+
 
 class TestGatewayRetrieveUpdateDestroyApi:
     def test_retrieve(self, request_view, fake_gateway):
@@ -92,6 +96,10 @@ class TestGatewayRetrieveUpdateDestroyApi:
         assert gateway.description == data["description"]
         assert gateway.is_public is data["is_public"]
         assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
+
+        auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
+        assert "allow_auth_from_params" not in auth_config
+        assert "allow_delete_sensitive_params" not in auth_config
 
     def test_destroy(self, request_view, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.INACTIVE.value

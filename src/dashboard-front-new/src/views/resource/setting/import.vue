@@ -7,11 +7,12 @@
             theme="button"
             :custom-request="handleReq"
             class="upload-cls"
+            accept=".yaml,.json,.yml"
           >
-            <bk-button>
-              <i class="icon apigateway-icon icon-ag-add-small pr10"></i>
+            <div>
+              <i class="icon apigateway-icon icon-ag-add-small"></i>
               {{ t('导入 Swagger 文件') }}
-            </bk-button>
+            </div>
           </bk-upload>
           <span class="desc">{{ t('（json /yaml 格式）') }}</span>
           <bk-form class="flex-row">
@@ -237,18 +238,21 @@ const handleImportResource = async () => {
       content: editorText.value,
       selected_resources: selections.value,
     };
-    // swagger需要的参数
-    const resourceDocs = selections.value.map((e: any) => ({
-      language: e.doc.language,
-      resource_name: e.name,
-    }));
-    const paramsDocs = {
-      swagger: editorText.value,
-      selected_resource_docs: resourceDocs,
-      language: language.value,
-    };
     await importResource(apigwId, parmas);
-    await importResourceDocSwagger(apigwId, paramsDocs);
+    // 勾选了文档才需要上传swagger文档
+    if (showDoc.value) {
+      // swagger需要的参数
+      const resourceDocs = selections.value.map((e: any) => ({
+        language: e.doc.language,
+        resource_name: e.name,
+      }));
+      const paramsDocs = {
+        swagger: editorText.value,
+        selected_resource_docs: resourceDocs,
+        language: language.value,
+      };
+      await importResourceDocSwagger(apigwId, paramsDocs);
+    }
     Message({
       theme: 'success',
       message: t('资源导入成功'),

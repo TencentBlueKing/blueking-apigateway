@@ -19,7 +19,6 @@
 from django.urls import include, path
 
 from apigateway.apis.open.esb.permission import views as esb_permission_views
-from apigateway.apis.open.metrics.views import StatisticsV1ViewSet
 from apigateway.apis.open.support.views import APISDKV1ViewSet
 
 urlpatterns = [
@@ -29,10 +28,6 @@ urlpatterns = [
     # TODO: why?
     path(
         "apis/latest-sdks/", APISDKV1ViewSet.as_view({"get": "list_latest_sdks"}), name="openapi.support.latest_sdks"
-    ),
-    path(
-        "apis/metrics/statistics/query-api-metrics/",
-        StatisticsV1ViewSet.as_view({"get": "query_api_metrics"}, name="openapi.metrics.query_api_metrics"),
     ),
     path("", include("apigateway.apis.open.released.urls")),
     path("", include("apigateway.apis.open.support.urls")),

@@ -93,11 +93,7 @@ class TestResourceVersionReleaseApi:
             return_value=True,
         )
 
-    @pytest.mark.parametrize(
-        "unreleased_stage_ids",
-        [[], [1, 2]],
-    )
-    def test_release(self, faker, request_view, fake_admin_user, fake_gateway, mocker, unreleased_stage_ids):
+    def test_release(self, faker, request_view, fake_admin_user, fake_gateway, mocker):
         G(ResourceVersion, gateway=fake_gateway)
         mocker.patch(
             "apigateway.biz.releaser.BaseGatewayReleaser.release",
@@ -120,10 +116,6 @@ class TestResourceVersionReleaseApi:
                 "title": faker.pystr(),
                 "version": faker.pystr(),
             },
-        )
-        mocker.patch(
-            "apigateway.apis.open.resource_version.views.Release.objects.get_stage_ids_unreleased_the_version",
-            return_value=unreleased_stage_ids,
         )
 
         mocker.patch("apigateway.apis.open.resource_version.views.Lock", return_value=MagicMock())

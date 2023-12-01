@@ -49,13 +49,13 @@ class ResourceQueryInputSLZ(serializers.Serializer):
     method = serializers.CharField(allow_blank=True, required=False, help_text="资源请求方法，完整匹配")
     label_ids = serializers.CharField(allow_blank=True, required=False, help_text="标签 ID，多个以逗号 , 分割")
     backend_id = serializers.IntegerField(allow_null=True, required=False, help_text="后端服务 ID")
-    query = serializers.CharField(
+    keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="资源筛选条件，支持模糊匹配资源名称，前端请求路径"
     )
     order_by = serializers.ChoiceField(
         choices=["-id", "name", "-name", "path", "-path", "updated_time", "-updated_time"],
         allow_blank=True,
-        required=False,
+        default="-updated_time",
         help_text="排序字段",
     )
 
@@ -152,7 +152,7 @@ class HttpBackendConfigSLZ(serializers.Serializer):
     timeout = serializers.IntegerField(
         max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, required=False, help_text="超时时间"
     )
-    # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
+    # 1.13 版本：兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
     legacy_upstreams = LegacyUpstreamsSLZ(
         allow_null=True, required=False, help_text="旧版 upstreams，管理端不需要处理"
     )

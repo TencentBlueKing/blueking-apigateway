@@ -31,7 +31,7 @@ from apigateway.apps.permission.models import (
 
 class AppResourcePermissionFilter(filters.FilterSet):
     bk_app_code = filters.CharFilter()
-    query = filters.CharFilter(method="query_filter")
+    keyword = filters.CharFilter(method="query_filter")
     grant_type = filters.ChoiceFilter(choices=GrantTypeEnum.get_choices())
     resource_id = filters.NumberFilter()
     order_by = filters.OrderingFilter(
@@ -42,7 +42,7 @@ class AppResourcePermissionFilter(filters.FilterSet):
         model = AppResourcePermission
         fields = [
             "bk_app_code",
-            "query",
+            "keyword",
             "grant_type",
             "resource_id",
             "order_by",
@@ -68,7 +68,7 @@ class AppPermissionApplyFilter(filters.FilterSet):
 
 class AppGatewayPermissionFilter(filters.FilterSet):
     bk_app_code = filters.CharFilter()
-    query = filters.CharFilter(method="query_filter")
+    keyword = filters.CharFilter(method="query_filter")
     order_by = filters.OrderingFilter(
         choices=[(field, field) for field in ["bk_app_code", "-bk_app_code", "expires", "-expires"]]
     )
@@ -77,7 +77,7 @@ class AppGatewayPermissionFilter(filters.FilterSet):
         model = AppGatewayPermission
         fields = [
             "bk_app_code",
-            "query",
+            "keyword",
             "order_by",
         ]
 

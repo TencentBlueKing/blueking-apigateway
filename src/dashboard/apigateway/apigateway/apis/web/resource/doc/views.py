@@ -23,6 +23,7 @@ from rest_framework import generics, status
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.support.constants import DocLanguageEnum, DocSourceEnum, DocTypeEnum
 from apigateway.apps.support.models import ResourceDoc
+from apigateway.biz.audit import Auditor
 from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 from apigateway.core.models import Resource
 from apigateway.utils.responses import OKJsonResponse
@@ -101,10 +102,10 @@ class DocListCreateApi(generics.ListCreateAPIView):
             updated_by=request.user.username,
         )
 
-        ResourceDocHandler.record_audit_log_success(
+        Auditor.record_resource_doc_op_success(
+            op_type=OpTypeEnum.CREATE,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.CREATE,
             instance_id=slz.instance.id,
             instance_name=f"{slz.instance.language}:{resource.name}",
         )
@@ -157,10 +158,10 @@ class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
             updated_by=request.user.username,
         )
 
-        ResourceDocHandler.record_audit_log_success(
+        Auditor.record_resource_doc_op_success(
+            op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.MODIFY,
             instance_id=slz.instance.id,
             instance_name=f"{slz.instance.language}:{resource.name}",
         )
@@ -174,10 +175,10 @@ class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
 
         instance.delete()
 
-        ResourceDocHandler.record_audit_log_success(
+        Auditor.record_resource_doc_op_success(
+            op_type=OpTypeEnum.DELETE,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            op_type=OpTypeEnum.DELETE,
             instance_id=instance_id,
             instance_name=f"{instance.language}:{resource.name}",
         )

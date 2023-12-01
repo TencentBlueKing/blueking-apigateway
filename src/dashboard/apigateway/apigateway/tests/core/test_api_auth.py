@@ -180,6 +180,8 @@ class TestAPIAuthConfig:
                     "unfiltered_sensitive_keys": ["bk_token"],
                     "allow_update_api_auth": True,
                     "include_system_headers": ["X-Bkapi-App"],
+                    "allow_auth_from_params": False,
+                    "allow_delete_sensitive_params": False,
                     "rtx_conf": {},
                     "uin_conf": {},
                     "user_conf": {
@@ -199,6 +201,8 @@ class TestAPIAuthConfig:
                     "api_type": 0,
                     "unfiltered_sensitive_keys": ["bk_token"],
                     "allow_update_api_auth": True,
+                    "allow_auth_from_params": False,
+                    "allow_delete_sensitive_params": False,
                     "include_system_headers": ["X-Bkapi-App"],
                     "user_conf": {
                         "user_type": "default",

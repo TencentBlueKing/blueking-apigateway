@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,8 +15,30 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.db import models
+
+from django.test import TestCase
+
+from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.audit.models import AuditEventLog
+from apigateway.biz.audit import Auditor
 
 
-class AuditEventLogManager(models.Manager):
-    pass
+class TestRecordAuditLog(TestCase):
+    def test_record_audit_log(self):
+        data = [
+            {
+                "username": "admin",
+                "op_type": OpTypeEnum.CREATE,
+                "gateway_id": "1",
+                "instance_id": 123,
+                "instance_name": "gateway: test",
+                "data_before": '{"name": "test"}',
+                "data_after": '{"name": "test"}',
+                "comment": "test",
+            }
+        ]
+        for test in data:
+            Auditor.record_gateway_op_success(**test)
+            logs = AuditEventLog.objects.filter(op_object_id="123")
+            self.assertTrue(logs.exists())
+            self.assertEqual(logs.count(), 1)

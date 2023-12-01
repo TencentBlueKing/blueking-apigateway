@@ -32,7 +32,7 @@ class TestGatewayListApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert len(result["data"]) >= 1
+        assert len(result["data"]["results"]) >= 1
 
 
 class TestGatewayRetrieveApi:

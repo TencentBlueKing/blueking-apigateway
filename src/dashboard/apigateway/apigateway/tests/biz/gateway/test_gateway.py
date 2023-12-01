@@ -86,13 +86,15 @@ class TestGatewayHandler:
         assert result == expected
 
     @pytest.mark.parametrize(
-        "user_conf, api_type, allow_update_api_auth, unfiltered_sensitive_keys, expected",
+        "user_conf, api_type, allow_update_api_auth, unfiltered_sensitive_keys, allow_auth_from_params, allow_delete_sensitive_params, expected",
         [
             # update user_conf
             (
                 {
                     "from_username": False,
                 },
+                None,
+                None,
                 None,
                 None,
                 None,
@@ -114,6 +116,8 @@ class TestGatewayHandler:
                 GatewayTypeEnum.OFFICIAL_API,
                 None,
                 None,
+                None,
+                None,
                 {
                     "user_auth_type": "default",
                     "api_type": GatewayTypeEnum.OFFICIAL_API.value,
@@ -131,6 +135,8 @@ class TestGatewayHandler:
                 None,
                 None,
                 False,
+                None,
+                None,
                 None,
                 {
                     "user_auth_type": "default",
@@ -152,6 +158,8 @@ class TestGatewayHandler:
                 GatewayTypeEnum.OFFICIAL_API,
                 False,
                 None,
+                None,
+                None,
                 {
                     "user_auth_type": "default",
                     "api_type": GatewayTypeEnum.OFFICIAL_API.value,
@@ -164,12 +172,14 @@ class TestGatewayHandler:
                     "unfiltered_sensitive_keys": [],
                 },
             ),
-            # update unfiltered_sensitive_keys
+            # update unfiltered_sensitive_keys/allow_auth_from_params=True/allow_delete_sensitive_params=True
             (
                 None,
                 None,
                 None,
                 ["bk_token", "bk_app_secret"],
+                True,
+                True,
                 {
                     "user_auth_type": "default",
                     "api_type": GatewayTypeEnum.CLOUDS_API.value,
@@ -180,12 +190,45 @@ class TestGatewayHandler:
                         "from_username": True,
                     },
                     "unfiltered_sensitive_keys": ["bk_token", "bk_app_secret"],
+                    "allow_auth_from_params": True,
+                    "allow_delete_sensitive_params": True,
+                },
+            ),
+            # update allow_auth_from_params=False/allow_delete_sensitive_params=False
+            (
+                None,
+                None,
+                None,
+                None,
+                False,
+                False,
+                {
+                    "user_auth_type": "default",
+                    "api_type": GatewayTypeEnum.CLOUDS_API.value,
+                    "allow_update_api_auth": True,
+                    "user_conf": {
+                        "user_type": "default",
+                        "from_bk_token": True,
+                        "from_username": True,
+                    },
+                    "unfiltered_sensitive_keys": [],
+                    "allow_auth_from_params": False,
+                    "allow_delete_sensitive_params": False,
                 },
             ),
         ],
     )
     def test_save_auth_config(
-        self, mocker, fake_gateway, user_conf, api_type, allow_update_api_auth, unfiltered_sensitive_keys, expected
+        self,
+        mocker,
+        fake_gateway,
+        user_conf,
+        api_type,
+        allow_update_api_auth,
+        unfiltered_sensitive_keys,
+        allow_auth_from_params,
+        allow_delete_sensitive_params,
+        expected,
     ):
         mocker.patch(
             "apigateway.biz.gateway.GatewayHandler.get_gateway_auth_config",
@@ -209,6 +252,8 @@ class TestGatewayHandler:
             api_type=api_type,
             allow_update_api_auth=allow_update_api_auth,
             unfiltered_sensitive_keys=unfiltered_sensitive_keys,
+            allow_auth_from_params=allow_auth_from_params,
+            allow_delete_sensitive_params=allow_delete_sensitive_params,
         )
         assert result.scope_type == ContextScopeTypeEnum.GATEWAY.value
         assert result.type == ContextTypeEnum.GATEWAY_AUTH.value
@@ -224,6 +269,8 @@ class TestGatewayHandler:
                     "api_type": GatewayTypeEnum.CLOUDS_API.value,
                     "unfiltered_sensitive_keys": [],
                     "allow_update_api_auth": True,
+                    "allow_auth_from_params": False,
+                    "allow_delete_sensitive_params": False,
                     "user_conf": {
                         "user_type": "default",
                         "from_bk_token": True,
@@ -232,13 +279,23 @@ class TestGatewayHandler:
                 }
             ),
         )
-        GatewayHandler.save_related_data(fake_gateway, "default", "admin", "test", app_codes_to_binding=["app1"])
+        GatewayHandler.save_related_data(
+            fake_gateway,
+            "default",
+            "admin",
+            "test",
+            allow_auth_from_params=False,
+            allow_delete_sensitive_params=False,
+            app_codes_to_binding=["app1"],
+        )
 
-        assert Context.objects.filter(
+        context = Context.objects.filter(
             scope_type=ContextScopeTypeEnum.GATEWAY.value,
             type=ContextTypeEnum.GATEWAY_AUTH.value,
             scope_id=fake_gateway.id,
-        ).exists()
+        ).get()
+        assert context.config["allow_auth_from_params"] is False
+        assert context.config["allow_delete_sensitive_params"] is False
 
         assert JWT.objects.filter(gateway=fake_gateway).exists()
         assert Stage.objects.filter(gateway=fake_gateway).exists()

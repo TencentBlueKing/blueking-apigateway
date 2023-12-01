@@ -148,7 +148,7 @@ class TestResourceHandler:
         result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"label_ids": [label.id]})
         assert list(result) == [resource_1]
 
-        result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"query": "Test"})
+        result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"keyword": "Test"})
         assert result.count() == 2
 
         result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {})

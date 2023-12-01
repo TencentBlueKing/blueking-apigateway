@@ -23,7 +23,7 @@ from apigateway.apps.permission.constants import PermissionLevelEnum
 
 
 class ComponentSearchInputSLZ(serializers.Serializer):
-    query = serializers.CharField(
+    keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="查询关键字，支持模糊匹配组件名称、组件描述、组件系统名称"
     )
 
