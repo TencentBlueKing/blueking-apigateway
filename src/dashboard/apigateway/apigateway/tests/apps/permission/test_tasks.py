@@ -30,15 +30,15 @@ class TestRenewAppResourcePermission:
 
         G(
             StatisticsAppRequestByDay,
-            api_id=fake_gateway.id,
+            gateway_id=fake_gateway.id,
             bk_app_code=bk_app_code,
             resource_id=1,
             end_time=to_datetime_from_now(days=-3),
         )
-        G(StatisticsAppRequestByDay, api_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=2, end_time=now)
-        G(StatisticsAppRequestByDay, api_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=3, end_time=now)
-        G(StatisticsAppRequestByDay, api_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=4, end_time=now)
-        G(StatisticsAppRequestByDay, api_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=5, end_time=now)
+        G(StatisticsAppRequestByDay, gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=2, end_time=now)
+        G(StatisticsAppRequestByDay, gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=3, end_time=now)
+        G(StatisticsAppRequestByDay, gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=4, end_time=now)
+        G(StatisticsAppRequestByDay, gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=5, end_time=now)
 
         G(
             AppResourcePermission,
