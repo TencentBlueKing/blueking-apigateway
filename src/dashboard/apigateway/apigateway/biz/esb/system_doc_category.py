@@ -19,8 +19,7 @@ import copy
 
 from django.conf import settings
 
-from apigateway.apps.esb.bkcore.models import ComponentSystem, DocCategory, ESBChannel, SystemDocCategory
-from apigateway.apps.esb.constants import DataTypeEnum
+from apigateway.apps.esb.bkcore.models import ComponentSystem, ESBChannel
 from apigateway.biz.esb.board_config import BoardConfigManager
 from apigateway.common.i18n.field import SerializerTranslatedField
 
@@ -35,6 +34,10 @@ class SystemDocCategoryHandler:
 
     @staticmethod
     def _get_system_doc_categories_by_db():
+        # for te only, so the import only valid if make edition-te
+        from apigateway.apps.esb.bkcore.models import DocCategory, SystemDocCategory
+        from apigateway.apps.esb.constants import DataTypeEnum
+
         board_to_category_ids = SystemDocCategory.objects.group_category_id_by_board()
         category_id_to_system_ids = SystemDocCategory.objects.group_system_id_by_category_id()
         category_id_to_fields_map = DocCategory.objects.get_id_to_fields_map()
