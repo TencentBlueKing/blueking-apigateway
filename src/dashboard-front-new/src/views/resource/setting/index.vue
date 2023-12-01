@@ -61,6 +61,7 @@
             show-overflow-tooltip
             @page-limit-change="handlePageSizeChange"
             @page-value-change="handlePageChange"
+            @select-all="handleSelecAllChange"
             @selection-change="handleSelectionChange"
             @row-mouse-enter="handleMouseEnter"
             @row-mouse-leave="handleMouseLeave"
@@ -531,6 +532,7 @@ const {
 const {
   selections,
   handleSelectionChange,
+  handleSelecAllChange,
   resetSelections,
 } = useSelection();
 
