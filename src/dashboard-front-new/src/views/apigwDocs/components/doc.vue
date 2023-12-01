@@ -114,6 +114,7 @@ import 'highlight.js/styles/monokai-sublime.css';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { getApigwResourceSDKDocs, getApigwResourceDocDocs, getApigwResourcesDocs, getApigwSDKDocs, getGatewaysDetailsDocs } from '@/http';
+import { copy } from '@/common/util';
 // import chat from '@/components/chat';
 
 const route = useRoute();
@@ -207,13 +208,27 @@ const initMarkdownHtml = (box: string) => {
       parentDiv.className = 'pre-wrapper';
       btn.className = 'ag-copy-btn';
       codeBox.className = 'code-box';
-      btn.innerHTML = `<span :title="$t('复制')"><i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(${code})"></i></span>`;
+      btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
+      btn.setAttribute('data-copy', code);
       parentDiv?.appendChild(btn);
       codeBox?.appendChild(item?.querySelector('code'));
       item?.appendChild(codeBox);
       item?.parentNode?.replaceChild(parentDiv, item);
       parentDiv?.appendChild(item);
     });
+
+
+    setTimeout(() => {
+      const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
+
+      const handleCopy = function (this: any) {
+        copy(this.dataset?.copy);
+      };
+
+      copyDoms.forEach((dom: any) => {
+        dom.onclick = handleCopy;
+      });
+    }, 1000);
   });
 };
 
