@@ -44,6 +44,13 @@ const headerList = ref([
     enabled: true,
     link: '',
   },
+  {
+    name: t('网关API文档'),
+    id: 3,
+    url: 'apigwDoc',
+    enabled: true,
+    link: '',
+  },
 ]);
 
 const apigwId = computed(() => {

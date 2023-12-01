@@ -36,12 +36,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import dayjs from 'dayjs';
 import { getLogs } from '@/http';
 import { useI18n } from 'vue-i18n';
 import editorMonaco from '@/components/ag-editor.vue';
+import { Spinner } from 'bkui-vue/lib/icon';
 
 const props = defineProps({
   historyId: {
@@ -52,7 +53,7 @@ const props = defineProps({
 const { t } = useI18n();
 
 const route = useRoute();
-const apigwId = +route.params?.id;
+const apigwId = computed(() => +route.params?.id);
 
 const isShow = ref(false);
 const logCodeViewer: any = ref<InstanceType<typeof editorMonaco>>();
@@ -67,7 +68,7 @@ let timeId: any = null;
 
 // 改变当前选中值
 const handleTimelineChange = (data: any) => {
-  const { tag } = data.tag;
+  const { tag } = data;
   let detail: any = {};
   for (let i = 0; i < state.objectSteps?.length; i++) {
     const item = state.objectSteps[i];
@@ -76,14 +77,13 @@ const handleTimelineChange = (data: any) => {
       break;
     }
   }
-
-  logBody.value = detail?.start_time || '';
+  logBody.value = JSON.stringify(detail || {});
 };
 
 // 获取日志列表
 const getLogsList = async () => {
   try {
-    const res = await getLogs(apigwId, props.historyId);
+    const res = await getLogs(apigwId.value, props.historyId);
     if (res.status !== 'doing') {
       clearInterval(timeId);
     }
@@ -113,32 +113,40 @@ const getLogsList = async () => {
       } else if (item?.step === subStep) {
         item.color = res?.status === 'success' ? 'green' : 'blue';
         item.filled = res?.status === 'success';
+        if (res?.status !== 'success') {
+          item.icon = Spinner;
+        }
       }
 
-      steps[index] = [{ ...item, tag: item.description, content: '' }];
+      steps[index] = { ...item, tag: item.description, content: '' };
 
+      const children: any = [];
       res?.events?.forEach((subItem: any) => {
         if (item?.step === subItem?.step) {
-          if (subItem.status === 'doing') {
-            subItem.color = 'blue';
-          } else if (subItem.status === 'failure') {
-            subItem.color = 'red';
-          } else if (subItem.status === 'success') {
-            subItem.color = 'green';
-            subItem.filled = true;
-          }
+          // if (subItem.status === 'doing') {
+          //   subItem.color = 'blue';
+          // } else if (subItem.status === 'failure') {
+          //   subItem.color = 'red';
+          // } else if (subItem.status === 'success') {
+          //   subItem.color = 'green';
+          //   subItem.filled = true;
+          // }
 
-          steps[index]?.push({
-            ...subItem,
-            tag: subItem.name,
-          });
+          // steps[index]?.push({
+          //   ...subItem,
+          //   tag: subItem.name,
+          // });
+          children.push(subItem);
         }
       });
+      steps[index].children = children;
+      steps[index].content = children[children.length - 1]?.content;
+      steps[index].detail = children[children.length - 1]?.detail;
     });
-
-    state.objectSteps = steps?.flat();
-    logBody.value = res?.events[res?.events?.length - 1]?.detail?.start_time || '';
+    state.objectSteps = steps;
+    logBody.value = JSON.stringify(steps[steps.length - 1]?.detail || {});
   } catch (e) {
+    clearInterval(timeId);
     console.log(e);
   }
 };
@@ -209,6 +217,9 @@ defineExpose({
     padding: 16px;
     box-sizing: border-box;
     margin-right: 16px;
+    :deep(.bk-timeline .bk-timeline-dot .bk-timeline-icon .bk-timeline-icon-inner>:first-child) {
+      font-size: 20px !important;
+    }
   }
   .main-encoding {
     flex: 1;
