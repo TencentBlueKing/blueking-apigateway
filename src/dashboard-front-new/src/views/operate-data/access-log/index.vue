@@ -226,7 +226,7 @@ const formatterValue = (params: Record<string, any>) => {
 };
 
 const formatValue = (value: any, field: string) => {
-  if (value && ['timestamp', 'error'].includes(field)) {
+  if (value && ['timestamp'].includes(field)) {
     return dayjs.unix(value).format('YYYY-MM-DD HH:mm:ss ZZ');
   }
   return value || '--';
@@ -345,8 +345,9 @@ const setTableHeader = () => {
       field: 'error',
       width: 200,
       label: t('错误'),
+      showOverflowTooltip: true,
       render: ({ data }: Record<string, any>) => {
-        return formatValue(data.error, 'error');
+        return data.error || '--';
       },
     },
   ];
@@ -450,7 +451,8 @@ const handleStageSelected = (value: number) => {
   getSearchData();
 };
 
-const handleSearch = () => {
+const handleSearch = (value: string) => {
+  keyword.value = value;
   searchParams.value.query = keyword.value;
   pagination.value.current = 1;
   getSearchData();
@@ -492,7 +494,7 @@ const handleClearFilterKey = () => {
   shortcutSelectedIndex.value = 1;
   dateKey.value = String(+new Date());
   setSearchTimeRange();
-  handleSearch();
+  handleSearch('');
 };
 
 const updateTableEmptyConfig = () => {
@@ -652,18 +654,21 @@ onBeforeUnmount(() => {
         top: 18px;
       }
     }
+  }
+}
 
-    .exception {
+:deep(.exception) {
+  background: #f9edec;
+  &:hover {
+    td {
       background: #f9edec;
-
-      &:hover {
-        td {
-          background: #f9edec;
-        }
-      }
-
-      .status,
-      .error {
+    }
+  }
+  td {
+    background: #f9edec !important;
+    &:nth-child(5),
+    &:last-child {
+      .cell {
         color: #ff5656;
       }
     }
