@@ -112,12 +112,28 @@ class TestArchiveParser:
         with pytest.raises(NoResourceDocError):
             ArchiveParser(1)._parse({})
 
+    def test_filter_files(self):
+        files = {
+            "get_user.md": "",
+            "en/get_user.md": "",
+            "docs/en/get_user.md": "",
+            "other/docs/en/get_user.md": "",
+        }
+        result = ArchiveParser(1)._filter_files(files)
+        assert result == {
+            "en/get_user.md": "",
+            "docs/en/get_user.md": "",
+        }
+
     @pytest.mark.parametrize(
         "filename, expected",
         [
+            ("get_user.md", None),
             ("zh/get_user.md", "zh"),
             ("en/get_user.md", "en"),
             ("zz/get_user.md", "zz"),
+            ("docs/zh/get_user.md", "zh"),
+            ("other/docs/zh/get_user.md", "zh"),
         ],
     )
     def test_extract_language(self, filename, expected):
@@ -131,6 +147,8 @@ class TestArchiveParser:
             ("en/get_user.md", "get_user"),
             ("zh/get_user.md.j2", "get_user"),
             ("zz/get_user.txt", None),
+            ("docs/zh/get_user.md", "get_user"),
+            ("other/docs/zh/get_user.md", "get_user"),
         ],
     )
     def test_extract_resource_name(self, filename, expected):
