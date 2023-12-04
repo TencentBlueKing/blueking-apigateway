@@ -11,14 +11,14 @@
           <bk-breadcrumb-item>{{curApigw.name || '--'}}</bk-breadcrumb-item>
           <bk-breadcrumb-item> {{ $t('简介') }} </bk-breadcrumb-item>
         </bk-breadcrumb>
-        <!-- <chat
+        <chat
           class="ag-chat"
           :default-user-list="userList"
           :owner="curUser.username"
           :name="chatName"
           :content="chatContent"
           :is-query="true">
-        </chat> -->
+        </chat>
       </div>
 
       <bk-divider></bk-divider>
@@ -110,16 +110,18 @@
 </template>
 
 <script lang="ts"  setup>
-import { ref, reactive, watch, nextTick } from 'vue';
+import { ref, reactive, watch, nextTick, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { slugify } from 'transliteration';
-// import Chat from '@/components/chat'
+import chat from '@/components/chat';
 import sdkDetail from '@/components/sdk-detail';
 import sideNav from '@/components/side-nav';
 import { getGatewaysDetailsDocs, getApigwSDKDocs } from '@/http';
 import { InfoLine } from 'bkui-vue/lib/icon';
+import { useUser } from '@/store';
 
+const userStore = useUser();
 const route = useRoute();
 const { t } = useI18n();
 const sdks = ref<any>([]);
@@ -140,6 +142,15 @@ const curApigw = ref<any>({
 });
 const isAbnormal = ref<boolean>(false);
 const curApigwId = ref();
+
+const curUser = computed(() => userStore?.user);
+const userList = computed(() => {
+  // 去重
+  const set = new Set([curUser.value?.username, ...curApigw.value?.maintainers]);
+  return [...set];
+});
+const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);
+const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
 
 const handleShow = (data: any) => {
   curSdk.value = data;
