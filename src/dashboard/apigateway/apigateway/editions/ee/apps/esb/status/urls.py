@@ -42,12 +42,12 @@ urlpatterns = [
         name="apigateway.apps.esb.status.api.systems.summary",
     ),
     path(
-        "systems/<slug:system_name>/details/group_by/",
+        "systems/<slug:system_name>/details/group-by/",
         views.SysDetailsGroupByView.as_view(),
         name="apigateway.apps.esb.status.api.systems.details.group_by",
     ),
     path(
-        "systems/<slug:system_name>/date_histogram/",
+        "systems/<slug:system_name>/date-histogram/",
         views.SysDateHistogramView.as_view(),
         name="apigateway.apps.esb.status.api.systems.date_histogram",
     ),
