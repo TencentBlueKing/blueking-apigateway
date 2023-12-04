@@ -55,7 +55,7 @@ class DocRetrieveApi(generics.RetrieveAPIView):
             language=ResourceDocHandler.get_doc_language(get_current_language_code()),
         )
         # 不公开的资源，对用户来说，就是一个不存在的资源
-        if not (resource_data and resource_data.is_public):
+        if not (resource_data and resource_data.is_public and doc_data):
             raise error_codes.NOT_FOUND
 
         generator = DocGenerator(
