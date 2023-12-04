@@ -47,12 +47,13 @@
             theme="button"
             :custom-request="handleReq"
             class="upload-cls"
+            accept=".yaml,.json,.yml"
           >
             <template #default>
-              <bk-button>
-                <i class="icon apigateway-icon icon-ag-add-small pr10"></i>
+              <div>
+                <i class="icon apigateway-icon icon-ag-add-small"></i>
                 {{ t('导入 Swagger 文件') }}
-              </bk-button>
+              </div>
             </template>
           </bk-upload>
           <div class="flex-row align-items-center">
@@ -77,10 +78,10 @@
           :header="{ name: 'X-CSRFToken', value: CSRFToken }"
         >
           <template #default>
-            <bk-button>
-              <i class="icon apigateway-icon icon-ag-add-small pr10"></i>
+            <div>
+              <i class="icon apigateway-icon icon-ag-add-small"></i>
               {{ t('导入文档压缩包') }}
-            </bk-button>
+            </div>
           </template>
         </bk-upload>
       </bk-form-item>
@@ -123,6 +124,7 @@
         <bk-table-column
           width="80"
           type="selection"
+          align="center"
         />
         <bk-table-column
           v-if="docType === 'archive'"

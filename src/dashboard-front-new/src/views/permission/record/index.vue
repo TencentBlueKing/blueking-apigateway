@@ -2,7 +2,7 @@
   <div class="permission-record-container p20">
     <div class="header ">
       <bk-form class="flex-row">
-        <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker" label-width="85">
+        <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker mb15" label-width="85">
           <bk-date-picker
             class="w320" v-model="initDateTimeRange" :placeholder="t('选择日期时间范围')"
             :type="'datetimerange'" :shortcuts="datepickerShortcuts" :shortcut-close="true" :use-shortcut-text="true"
@@ -10,13 +10,13 @@
             @shortcut-change="handleShortcutChange" @pick-success="handleTimeChange">
           </bk-date-picker>
         </bk-form-item>
-        <bk-form-item :label="t('授权维度')" class="mb10" label-width="108">
+        <bk-form-item :label="t('授权维度')" class="mb15" label-width="108">
           <bk-select v-model="filterData.grant_dimension" class="w150">
             <bk-option v-for="option of dimensionList" :key="option.id" :id="option.id" :name="option.name">
             </bk-option>
           </bk-select>
         </bk-form-item>
-        <bk-form-item :label="t('蓝鲸应用ID')" class="mb10" label-width="119">
+        <bk-form-item :label="t('蓝鲸应用ID')" class="mb15" label-width="119">
           <bk-input clearable v-model="filterData.bk_app_code" :placeholder="t('请输入应用ID，按Enter搜索')" class="w320">
           </bk-input>
         </bk-form-item>
@@ -421,5 +421,13 @@ init();
 }
 .w320{
   width: 320px;
+}
+
+:deep(.record-content){
+  .bk-exception{
+    height: 280px;
+    max-height: 280px;
+    justify-content: center;
+  }
 }
 </style>

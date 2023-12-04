@@ -1,6 +1,6 @@
 <template>
   <div class="permission-apply-container p20">
-    <div class="header flex-row justify-content-between">
+    <div class="header flex-row justify-content-between mb5">
       <span v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: applySumCount !== 0 }">
         <bk-button theme="primary" :disabled="applySumCount === 0" @click="handleBatchApply">
           {{ t('批量审批') }}
@@ -447,6 +447,13 @@ init();
     padding: 0 !important;
     height: 42px !important;
     cursor: default !important;
+  }
+}
+:deep(.apply-content){
+  .bk-exception{
+    height: 280px;
+    max-height: 280px;
+    justify-content: center;
   }
 }
 </style>

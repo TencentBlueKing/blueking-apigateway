@@ -397,6 +397,13 @@ const handleRowClick = (e: any, row: any) => {
     }
   }
 }
+:deep(.alarm-history-content){
+  .bk-exception{
+    height: 280px;
+    max-height: 280px;
+    justify-content: center;
+  }
+}
 </style>
 
 

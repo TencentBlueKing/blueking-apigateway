@@ -1,6 +1,6 @@
 <template>
   <div class="plugin-manage-container">
-    <PluginManage></PluginManage>
+    <plugin-manage></plugin-manage>
   </div>
 </template>
 
