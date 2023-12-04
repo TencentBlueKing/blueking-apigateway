@@ -40,6 +40,7 @@
         :data="tableData"
         :pagination="pagination"
         :remote-pagination="true"
+        :show-overflow-tooltip="true"
         @page-value-change="handlePageChange"
         @page-limit-change="handlePageSizeChange"
       >
@@ -54,7 +55,7 @@
             </div>
           </template>
         </bk-table-column>
-        <bk-table-column :label="t('实例')" prop="op_object" />
+        <bk-table-column :label="t('实例')" prop="op_object" :show-overflow-tooltip="true" />
         <bk-table-column :label="t('操作类型')">
           <template #default="{ row }">
             {{ getOpTypeText(row.op_type) || '--'}}
