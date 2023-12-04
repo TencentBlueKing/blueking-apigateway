@@ -105,6 +105,7 @@
           :remote-pagination="true"
           :row-style="{ cursor: 'pointer' }"
           :row-class="getRowClass"
+          :show-overflow-tooltip="true"
           @row-click="handleRowClick"
           @page-value-change="handlePageChange"
           @page-limit-change="handlePageLimitChange"
@@ -345,9 +346,7 @@ const setTableHeader = () => {
       field: 'error',
       width: 200,
       label: t('错误'),
-      showOverflowTooltip: {
-        content: '',
-      },
+      showOverflowTooltip: true,
       render: ({ data }: Record<string, any>) => {
         return data.error || '--';
       },
