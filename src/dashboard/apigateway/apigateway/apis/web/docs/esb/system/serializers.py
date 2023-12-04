@@ -18,7 +18,8 @@
 #
 from django.conf import settings
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
+
+from apigateway.common.i18n.field import SerializerTranslatedField
 
 
 class SystemSLZ(serializers.Serializer):

@@ -16,17 +16,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from rest_framework import serializers
+from django.core.exceptions import ImproperlyConfigured
+from environ import Env as BaseEnv
 
-from apigateway.common.i18n.field import SerializerTranslatedField
+
+class SettingsError(Exception):
+    pass
 
 
-class StageOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(help_text="网关环境 ID")
-    name = serializers.CharField(help_text="网关环境名称")
-    description = SerializerTranslatedField(
-        default_field="description_i18n", allow_blank=True, help_text="网关环境描述"
-    )
-
-    class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.stage.StageOutputSLZ"
+class Env(BaseEnv):
+    def get_value(self, *args, **kwargs):
+        try:
+            return super(Env, self).get_value(*args, **kwargs)
+        except ImproperlyConfigured as e:
+            raise SettingsError from e

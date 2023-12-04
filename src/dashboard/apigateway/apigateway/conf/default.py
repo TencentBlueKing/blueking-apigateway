@@ -34,8 +34,8 @@ from urllib.parse import quote
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.encoding import force_bytes
-from tencent_apigateway_common.env import Env
 
+from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
 from apigateway.conf.log_utils import get_logging_config, makedirs_when_not_exists

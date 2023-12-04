@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,17 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from rest_framework import serializers
-
-from apigateway.common.i18n.field import SerializerTranslatedField
-
-
-class StageOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(help_text="网关环境 ID")
-    name = serializers.CharField(help_text="网关环境名称")
-    description = SerializerTranslatedField(
-        default_field="description_i18n", allow_blank=True, help_text="网关环境描述"
-    )
-
-    class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.stage.StageOutputSLZ"

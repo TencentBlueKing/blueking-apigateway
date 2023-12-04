@@ -20,7 +20,6 @@ import math
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
@@ -34,6 +33,7 @@ from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.common.fields import TimestampField
+from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.utils import time
 
 

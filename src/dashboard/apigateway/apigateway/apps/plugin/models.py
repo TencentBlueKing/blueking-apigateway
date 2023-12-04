@@ -20,7 +20,6 @@ from typing import Any, Dict
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from tencent_apigateway_common.i18n.field import I18nProperty
 
 from apigateway.apps.plugin.constants import (
     PluginBindingScopeEnum,
@@ -34,6 +33,7 @@ from apigateway.apps.plugin.managers import (
     PluginFormManager,
     PluginTypeManager,
 )
+from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway
 from apigateway.schema.models import Schema

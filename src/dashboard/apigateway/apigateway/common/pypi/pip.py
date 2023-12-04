@@ -16,17 +16,28 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from rest_framework import serializers
+from urllib.parse import urlparse
 
-from apigateway.common.i18n.field import SerializerTranslatedField
+from packaging.version import parse as parse_version
 
 
-class StageOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(help_text="网关环境 ID")
-    name = serializers.CharField(help_text="网关环境名称")
-    description = SerializerTranslatedField(
-        default_field="description_i18n", allow_blank=True, help_text="网关环境描述"
-    )
+class PipHelper:
+    def __init__(self, extra_index_url: str = ""):
+        self.extra_index_url = extra_index_url
 
-    class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.stage.StageOutputSLZ"
+    def install_command(self, package: str, version: str = ""):
+        commands = ["pip", "install"]
+
+        if self.extra_index_url:
+            commands.append(f"--extra-index-url={self.extra_index_url}")
+
+            urlinfo = urlparse(self.extra_index_url)
+            if urlinfo.scheme == "http":
+                commands.append(f"--trusted-host={urlinfo.hostname}")
+
+        if version:
+            commands.append(f"{package}=={parse_version(version)}")
+        else:
+            commands.append(f"{package}")
+
+        return " ".join(commands)

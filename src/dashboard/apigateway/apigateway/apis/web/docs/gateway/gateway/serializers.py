@@ -17,10 +17,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
+from apigateway.common.i18n.field import SerializerTranslatedField
 
 
 class GatewayQueryInputSLZ(serializers.Serializer):

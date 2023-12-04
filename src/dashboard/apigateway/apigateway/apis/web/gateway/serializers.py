@@ -18,11 +18,11 @@
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.biz.constants import APP_CODE_PATTERN
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
+from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
     GatewayStatusEnum,
 )

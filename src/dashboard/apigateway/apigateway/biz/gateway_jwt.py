@@ -17,9 +17,9 @@
 #
 from django.conf import settings
 from django.utils.encoding import force_bytes, smart_str
-from tencent_apigateway_common.encrypt.cipher import AESGCMCipher
 
-from apigateway.common.encrypt import EncryptHandler
+from apigateway.common.encrypt.cipher import AESGCMCipher
+from apigateway.common.encrypt.encrypt import EncryptHandler
 from apigateway.core.models import JWT, Gateway
 from apigateway.utils.crypto import KeyGenerator
 
