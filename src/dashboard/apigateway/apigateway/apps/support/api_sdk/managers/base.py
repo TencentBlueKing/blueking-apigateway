@@ -36,7 +36,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class BaseSDKManager(SDKManager):
-    include_private_resources: bool = False
     is_public: bool = False
     version: str = ""
 
