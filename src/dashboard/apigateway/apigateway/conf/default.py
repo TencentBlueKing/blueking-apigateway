@@ -32,6 +32,8 @@ from typing import Any, Dict, List
 from urllib.parse import quote
 
 from celery.schedules import crontab
+from django.core.exceptions import ImproperlyConfigured
+from django.utils.encoding import force_bytes
 from tencent_apigateway_common.env import Env
 
 from apigateway.conf.celery_conf import *  # noqa
@@ -41,7 +43,6 @@ from apigateway.conf.utils import get_default_keepalive_options
 
 env = Env()
 
-ENCRYPT_KEY = env.str("ENCRYPT_KEY")
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -59,8 +60,26 @@ DEFAULT_TEST_APP = {
     "bk_app_secret": env.str("DEFAULT_TEST_APP_SECRET", BK_APP_SECRET),
 }
 
+# legacy apigateway custom crypto
+CRYPTO_TYPE_APIGW_CUSTOM = "APIGW_CUSTOM"
+
+ENCRYPT_KEY = env.str("ENCRYPT_KEY")
 JWT_CRYPTO_KEY = ENCRYPT_KEY
 LOG_LINK_SECRET = ENCRYPT_KEY
+
+# bk crypto, support 'SHANGMI' , 'CLASSIC'
+BK_CRYPTO_TYPE = env.str("BK_CRYPTO_TYPE", CRYPTO_TYPE_APIGW_CUSTOM)
+if BK_CRYPTO_TYPE not in ("SHANGMI", "CLASSIC", CRYPTO_TYPE_APIGW_CUSTOM):
+    raise ImproperlyConfigured(
+        f"Set BK_CRYPTO_TYPE environment variable, should be one of 'SHANGMI' , 'CLASSIC', current is {BK_CRYPTO_TYPE}"
+    )
+ENCRYPT_CIPHER_TYPE = "SM4CTR" if BK_CRYPTO_TYPE == "SHANGMI" else "FernetCipher"
+BKKRILL_ENCRYPT_SECRET_KEY = force_bytes(env.str("BKKRILL_ENCRYPT_SECRET_KEY", ""))
+if BK_CRYPTO_TYPE != CRYPTO_TYPE_APIGW_CUSTOM and BKKRILL_ENCRYPT_SECRET_KEY == "":
+    raise ImproperlyConfigured(
+        f"the BK_CRYPTO_TYPE is {BK_CRYPTO_TYPE}, so the BKKRILL_ENCRYPT_SECRET_KEY can not be empty"
+    )
+
 
 # use the same nonce, should not be changed at all!!!!!!
 CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
