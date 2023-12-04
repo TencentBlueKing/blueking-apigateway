@@ -24,12 +24,12 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
-from tencent_apigateway_common.i18n.field import I18nProperty
 
 from apigateway.apps.esb.bkcore import managers
 from apigateway.apps.esb.constants import ComponentDocTypeEnum, DataTypeEnum, LanguageEnum
 from apigateway.apps.permission.constants import ApplyStatusEnum, PermissionApplyExpireDaysEnum, PermissionLevelEnum
 from apigateway.apps.permission.models import generate_expire_time
+from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.utils.time import NeverExpiresTime

@@ -21,11 +21,11 @@ from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from tencent_apigateway_common.django.translation import get_current_language_code
 
 from apigateway.biz.esb.decorators import check_board_exist
 from apigateway.biz.esb.sdk.models import DocTemplates, DummySDKDocContext, SDKDocContext
 from apigateway.biz.esb.sdk.sdk_factory import ESBSDKFetcher
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import OKJsonResponse
 

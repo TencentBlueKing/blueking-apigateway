@@ -23,11 +23,11 @@ from typing import Optional
 from cachetools import TTLCache, cached
 from django.conf import settings
 from django.utils.translation import gettext as _
-from tencent_apigateway_common.pypi.pip import PipHelper
-from tencent_apigateway_common.pypi.registry import SimplePypiRegistry
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.biz.esb.board_config import BoardConfigManager
+from apigateway.common.pypi.pip import PipHelper
+from apigateway.common.pypi.registry import SimplePypiRegistry
 
 
 @dataclass

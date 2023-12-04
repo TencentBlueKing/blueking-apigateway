@@ -21,11 +21,11 @@ from typing import Optional
 from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
 from apigateway.biz.validators import BKAppCodeListValidator
+from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
     GatewayStatusEnum,
     GatewayTypeEnum,
