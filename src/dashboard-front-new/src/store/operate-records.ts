@@ -10,14 +10,14 @@ export const useOperateRecords = defineStore('operate-records', {
         name: t('成功'),
         value: 'success',
       },
-      {
-        name: t('失败'),
-        value: 'failure',
-      },
-      {
-        name: t('未知'),
-        value: 'unknown',
-      },
+      // {
+      //   name: t('失败'),
+      //   value: 'failure',
+      // },
+      // {
+      //   name: t('未知'),
+      //   value: 'unknown',
+      // },
     ],
   }),
   getters: {

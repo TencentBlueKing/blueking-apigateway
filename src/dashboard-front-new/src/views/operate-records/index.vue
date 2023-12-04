@@ -4,10 +4,20 @@
       <bk-form class="search-form" form-type="inline">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker top-form-item-time">
           <bk-date-picker
-            ref="topDatePicker" style="width: 320px" v-model="dateTimeRange" :placeholder="t('选择日期时间范围')"
-            :type="'datetimerange'" :shortcuts="AccessLogStore.datepickerShortcuts" :shortcut-close="true"
-            :use-shortcut-text="true" :shortcut-selected-index="shortcutSelectedIndex"
-            @shortcut-change="handleShortcutChange" @clear="handleTimeClear" @pick-success="handleTimeChange">
+            ref="topDatePicker"
+            style="width: 320px"
+            v-model="dateTimeRange"
+            :key="dateKey"
+            :placeholder="t('选择日期时间范围')"
+            :type="'datetimerange'"
+            :shortcuts="AccessLogStore.datepickerShortcuts"
+            :shortcut-close="true"
+            :use-shortcut-text="true"
+            :shortcut-selected-index="shortcutSelectedIndex"
+            @shortcut-change="handleShortcutChange"
+            @pick-success="handleTimeChange"
+            @clear="handleTimeClear"
+          >
           </bk-date-picker>
         </bk-form-item>
         <bk-form-item>
@@ -110,6 +120,7 @@ const {
 } = useQueryList(fetchApigwAuditLogs, filterData);
 
 const topDatePicker = ref(null);
+const dateKey = ref('dateKey');
 const shortcutSelectedIndex = shallowRef(-1);
 const dateTimeRange = ref([]);
 const members = ref([]);
@@ -234,17 +245,10 @@ const handleShortcutChange = (value: Record<string, any>, index: number) => {
 
 const handleClearFilterKey = () => {
   members.value = [];
-  filterData.value.op_object_type = '';
-  if (filterData.value.op_type) {
-    filterData.value.op_type = '';
-  }
   filterData.value = cloneDeep(defaultFilterData.value);
   searchValue.value = [];
-  if (dateTimeRange.value.length) {
-    dateTimeRange.value = [];
-    handleTimeClear();
-  }
-  useQueryList(fetchApigwAuditLogs, filterData);
+  handleTimeClear();
+  dateKey.value = String(+new Date());
 };
 ;
 const updateTableEmptyConfig = () => {
@@ -257,22 +261,16 @@ const updateTableEmptyConfig = () => {
 
 watch(
   () => searchValue.value,
-  (payload: any[]) => {
-    if (!payload.length) {
+  (newVal: any[]) => {
+    if (!newVal.length) {
       filterData.value = cloneDeep(defaultFilterData.value);
       getList();
       updateTableEmptyConfig();
       return;
     }
     Object.keys(filterData.value).forEach((item: string) => {
-      const hasData = payload.find((v: Record<string, any>) => v.id === item);
-      if (hasData) {
-        filterData.value.keyword = hasData.name;
-        filterData.value[item] = hasData.values[0].id;
-      } else {
-        filterData.value.keyword = '';
-        filterData.value[item] = '';
-      }
+      const hasData = newVal.find((v: Record<string, any>) => v.id === item);
+      filterData.value[item] = hasData ? hasData.values[0].id : '';
     });
     getList();
     updateTableEmptyConfig();
