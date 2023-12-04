@@ -34,7 +34,6 @@ class SystemDocCategoryHandler:
 
     @staticmethod
     def _get_system_doc_categories_by_db():
-        # for te only, so the import only valid if make edition-te
         from apigateway.apps.esb.bkcore.models import DocCategory, SystemDocCategory
         from apigateway.apps.esb.constants import DataTypeEnum
 

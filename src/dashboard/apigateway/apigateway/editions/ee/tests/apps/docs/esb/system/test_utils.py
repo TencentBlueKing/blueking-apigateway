@@ -26,20 +26,23 @@ pytestmark = pytest.mark.django_db
 class TestSystemDocCategoryHandler:
     def test_get_system_doc_categories_by_db(self, mocker):
         mocker.patch(
-            "apigateway.biz.esb.system_doc_category.SystemDocCategory.objects.group_category_id_by_board",
+            "apigateway.apps.esb.bkcore.models.SystemDocCategory.objects.group_category_id_by_board",
+            # "apigateway.biz.esb.system_doc_category.SystemDocCategory.objects.group_category_id_by_board",
             return_value={
                 "test": [1, 2],
             },
         )
         mocker.patch(
-            "apigateway.biz.esb.system_doc_category.SystemDocCategory.objects.group_system_id_by_category_id",
+            "apigateway.apps.esb.bkcore.models.SystemDocCategory.objects.group_system_id_by_category_id",
+            # "apigateway.biz.esb.system_doc_category.SystemDocCategory.objects.group_system_id_by_category_id",
             return_value={
                 1: [1, 2],
                 2: [3, 4],
             },
         )
         mocker.patch(
-            "apigateway.biz.esb.system_doc_category.DocCategory.objects.get_id_to_fields_map",
+            "apigateway.apps.esb.bkcore.models.DocCategory.objects.get_id_to_fields_map",
+            # "apigateway.biz.esb.system_doc_category.DocCategory.objects.get_id_to_fields_map",
             return_value={
                 1: {"id": 1, "name": "c1", "priority": 1},
                 2: {"id": 2, "name": "c2", "priority": 2},
