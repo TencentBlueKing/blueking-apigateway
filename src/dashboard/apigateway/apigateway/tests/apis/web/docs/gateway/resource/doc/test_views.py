@@ -58,7 +58,7 @@ class TestDocListApi:
 
         mocker.patch(
             "apigateway.apis.web.docs.gateway.resource.doc.views.ReleasedResourceDocHandler.get_released_resource_doc_data",
-            return_value=(mocker.MagicMock(is_public=False), None),
+            return_value=(mocker.MagicMock(is_public=False), mocker.MagicMock()),
         )
         resp = request_view(
             method="GET",

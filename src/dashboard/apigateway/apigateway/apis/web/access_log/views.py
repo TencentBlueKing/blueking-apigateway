@@ -105,7 +105,7 @@ class SearchLogListApi(generics.ListAPIView):
             limit=data["limit"],
         )
 
-        # 去除params、body中的敏感数据
+        # 去除 params、body 中的敏感数据
         logs = DataScrubber().scrub_sensitive_data(logs)
         # 添加扩展数据
         logs = self._add_extend_fields(logs)
@@ -151,7 +151,7 @@ class LogDetailListApi(generics.ListAPIView):
         client = LogSearchClient(request_id=request_id)
 
         total_count, logs = client.search_logs()
-        # 去除params、body中的敏感数据
+        # 去除 params、body 中的敏感数据
         logs = DataScrubber().scrub_sensitive_data(logs)
 
         paginator = LimitOffsetPaginator(total_count, 0, total_count)

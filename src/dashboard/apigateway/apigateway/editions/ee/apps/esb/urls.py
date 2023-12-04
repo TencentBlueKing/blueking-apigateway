@@ -21,7 +21,7 @@ from django.urls import include, path
 urlpatterns = [
     path("systems/", include("apigateway.apps.esb.system.urls")),
     path("components/", include("apigateway.apps.esb.component.urls")),
-    path("doc_categories/", include("apigateway.apps.esb.doc_category.urls")),
+    path("doc-categories/", include("apigateway.apps.esb.doc_category.urls")),
     path("status/", include("apigateway.apps.esb.status.urls")),
     path("permissions/", include("apigateway.apps.esb.permission.urls")),
 ]
