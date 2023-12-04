@@ -84,7 +84,7 @@ def _release_gateway(
 
 
 @shared_task(ignore_result=True)
-def release_gateway_by_helm(access_token: str, username, release_id, micro_gateway_release_history_id):
+def release_gateway_by_helm(bk_ticket: str, username, release_id, micro_gateway_release_history_id):
     """发布资源到专享网关"""
     logger.info(
         "release_gateway_by_helm: release_id=%s, micro_gateway_release_history_id=%s",
@@ -109,8 +109,8 @@ def release_gateway_by_helm(access_token: str, username, release_id, micro_gatew
     # BkGatewayConfig 随着 micro-gateway 的 release 下发，所以无需包含
     return _release_gateway(
         distributor=HelmDistributor(
-            chart_helper=ChartHelper(access_token=access_token),
-            release_helper=ReleaseHelper(access_token=access_token),
+            chart_helper=ChartHelper(bk_ticket=bk_ticket),
+            release_helper=ReleaseHelper(bk_ticket=bk_ticket),
             generate_chart=True,
             operator=username,
         ),

@@ -71,7 +71,7 @@ class BaseGatewayReleaser:
     stage: Stage
     resource_version: ResourceVersion
     comment: str = ""
-    access_token: str = ""
+    bk_ticket: str = ""
     username: str = ""
 
     @classmethod
@@ -81,7 +81,7 @@ class BaseGatewayReleaser:
         stage_id: int,
         resource_version_id: int,
         comment: str,
-        access_token: str,
+        bk_ticket: str,
         username: str = "",
     ):
         """
@@ -89,7 +89,7 @@ class BaseGatewayReleaser:
         :param stage_id: 发布的环境 id
         :param resource_version_id: 发布的版本 id
         :param comment: 发布备注
-        :param access_token: access_token
+        :param bk_ticket: bk_ticket
         :param username: 发布人
         """
         return cls(
@@ -97,7 +97,7 @@ class BaseGatewayReleaser:
             stage=Stage.objects.get(id=stage_id),
             resource_version=ResourceVersion.objects.get(id=resource_version_id),
             comment=comment,
-            access_token=access_token,
+            bk_ticket=bk_ticket,
             username=username,
         )
 
@@ -299,7 +299,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         )
 
         return release_gateway_by_helm.si(
-            access_token=self.access_token,
+            bk_ticket=self.bk_ticket,
             release_id=release.pk,
             micro_gateway_release_history_id=history.pk,
             username=self.username,
@@ -323,14 +323,14 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
 
 class Releaser:
-    access_token: str = ""
+    bk_ticket: str = ""
 
-    def __init__(self, access_token):
-        self.access_token = access_token
+    def __init__(self, bk_ticket):
+        self.bk_ticket = bk_ticket
 
     def release(
         self, gateway: Gateway, stage_id: int, resource_version_id: int, comment: str, username: str = ""
     ) -> ReleaseHistory:
         return MicroGatewayReleaser.from_data(
-            gateway, stage_id, resource_version_id, comment, self.access_token, username
+            gateway, stage_id, resource_version_id, comment, self.bk_ticket, username
         ).release()

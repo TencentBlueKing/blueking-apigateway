@@ -29,7 +29,7 @@ from apigateway.biz.releaser import ReleaseError, Releaser
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import ResourceVersion, Stage
-from apigateway.utils.access_token import get_user_access_token_from_request
+from apigateway.utils.bk_ticket import get_user_bk_ticket_from_request
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
@@ -127,7 +127,7 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
         resource_version = ResourceVersion.objects.get_object_fields(data["resource_version_id"])
 
         for stage_id in data["stage_ids"]:
-            releaser = Releaser(access_token=get_user_access_token_from_request(request))
+            releaser = Releaser(bk_ticket=get_user_bk_ticket_from_request(request))
             try:
                 with Lock(
                     f"{gateway_id}_{stage_id}",

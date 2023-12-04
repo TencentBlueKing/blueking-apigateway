@@ -51,7 +51,7 @@ class NamespaceInfo:
 
 @dataclass
 class BcsHelper:
-    access_token: str = ""
+    bk_ticket: str = ""
     bcs_client: BcsApiGatewayClient = field(default_factory=get_bcs_api_gateway_client)
     bcs_admin_client: BcsApiGatewayClient = field(default_factory=get_bcs_api_gateway_admin_client)
 
@@ -59,7 +59,7 @@ class BcsHelper:
         self.bcs_client.update_bkapi_authorization(
             bk_app_code=settings.BK_APP_CODE,
             bk_app_secret=settings.BK_APP_SECRET,
-            access_token=self.access_token,
+            **{settings.BK_LOGIN_TICKET_KEY: self.bk_ticket},
         )
 
     def get_projects(self) -> List[ProjectInfo]:

@@ -18,7 +18,6 @@
 import logging
 from dataclasses import dataclass
 from typing import Optional
-from urllib.parse import urlparse
 
 from bkapi.bcs_api_gateway.client import Client as BcsApiGatewayClient
 from django.conf import settings
@@ -51,13 +50,13 @@ class ChartInfo:
 @dataclass
 class ChartHelper:
     client: Optional[BcsApiGatewayClient] = None
-    access_token: str = ""
+    bk_ticket: str = ""
 
     def __post_init__(self):
         if not self.client:
             self.client = get_bcs_api_gateway_client()
-        if self.access_token and self.access_token != "":
-            self.client.update_bkapi_authorization(access_token=self.access_token)
+        if self.bk_ticket and self.bk_ticket != "":
+            self.client.update_bkapi_authorization(**{settings.BK_LOGIN_TICKET_KEY: self.bk_ticket})
 
     def get_public_repo_info(self) -> ChartRepoInfo:
         """Get the public chart repos info."""
@@ -95,10 +94,10 @@ class ChartHelper:
     def push_chart(self, chart_file: str, repo_info: ChartRepoInfo):
         """Push the chart to the repo."""
 
-        url = urlparse(repo_info.url)
+        # url = urlparse(repo_info.url)
         repo_info = self.get_repo_info(repo_info.project_name, repo_info.name)
         client = RepoClient(
-            endpoint=f"{url.scheme}://{url.netloc}",
+            endpoint=settings.BCS_REPOSITORY_URL,
             project_name=repo_info.project_name,
             repo_name=repo_info.name,
         )

@@ -36,7 +36,7 @@ class ComponentReleaser:
     username: str
     release_history: Optional[ComponentReleaseHistory] = None
     resource_version: Optional[ResourceVersion] = None
-    access_token: str = ""
+    bk_ticket: str = ""
 
     def create_release_history(self):
         self.release_history = ComponentReleaseHistory.objects.create(
@@ -68,7 +68,7 @@ class ComponentReleaser:
         """发布组件对应的网关，并记录组件发布历史记录"""
         assert self.resource_version
 
-        releaser = Releaser(access_token=self.access_token)
+        releaser = Releaser(bk_ticket=self.bk_ticket)
         releaser.release(
             self.gateway,
             {

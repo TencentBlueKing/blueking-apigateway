@@ -33,7 +33,7 @@ class RepoApiGroup(OperationGroup):
     upload = bind_property(
         Operation,
         method="POST",
-        path="/helm/api/{project_name}/{repo_name}/charts",
+        path="/helm/{project_name}/{repo_name}/charts",
     )
     list = bind_property(
         Operation,

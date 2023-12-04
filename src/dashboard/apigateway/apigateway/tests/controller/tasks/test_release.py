@@ -62,8 +62,8 @@ class TestReleaseGaterwayByHelm:
         access_token = "access_token"
         assert tasks.release_gateway_by_helm(access_token, username, edge_release.id, micro_gateway_release_history.id)
 
-        self.chart_helper_factory.assert_called_once_with(access_token=access_token)
-        self.release_helper_factory.assert_called_once_with(access_token=access_token)
+        self.chart_helper_factory.assert_called_once_with(bk_ticket=access_token)
+        self.release_helper_factory.assert_called_once_with(bk_ticket=access_token)
         self.distributor_factory.assert_called_once_with(
             chart_helper=self.chart_helper,
             release_helper=self.release_helper,

@@ -16,10 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 
 
-def get_user_access_token_from_request(request):
-    if request and request.user and hasattr(request.user, "token") and hasattr(request.user.token, "access_token"):
-        return request.user.token.access_token
-
-    return None
+def get_user_bk_ticket_from_request(request):
+    return request.COOKIES.get(settings.BK_LOGIN_TICKET_KEY, None)

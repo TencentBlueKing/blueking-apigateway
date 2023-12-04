@@ -26,7 +26,7 @@ from apigateway.apps.micro_gateway.constants import MicroGatewayCreateWayEnum
 from apigateway.apps.micro_gateway.handlers import MicroGatewayHandlerFactory
 from apigateway.biz.audit import Auditor
 from apigateway.core.models import MicroGateway, Stage
-from apigateway.utils.access_token import get_user_access_token_from_request
+from apigateway.utils.bk_ticket import get_user_bk_ticket_from_request
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
@@ -53,7 +53,7 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
         # 部署微网关实例
         create_way = MicroGatewayCreateWayEnum(slz.validated_data["create_way"])
         MicroGatewayHandlerFactory.get_handler(create_way).deploy(
-            slz.instance.id, get_user_access_token_from_request(request), request.user.username
+            slz.instance.id, get_user_bk_ticket_from_request(request), request.user.username
         )
 
         Auditor.record_micro_gateway_op_success(
@@ -116,7 +116,7 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
         # 更新微网关实例
         if slz.validated_data["need_deploy"]:
             MicroGatewayHandlerFactory.get_handler(MicroGatewayCreateWayEnum.NEED_DEPLOY).deploy(
-                slz.instance.id, get_user_access_token_from_request(request), request.user.username
+                slz.instance.id, get_user_bk_ticket_from_request(request), request.user.username
             )
 
         Auditor.record_micro_gateway_op_success(

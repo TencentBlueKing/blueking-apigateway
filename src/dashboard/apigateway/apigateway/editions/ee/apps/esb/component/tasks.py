@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(name="apigateway.apps.esb.tasks.sync_and_release_esb_components", ignore_result=True)
-def sync_and_release_esb_components(api_id: int, username: str, access_token: str, lock_blocking: bool):
+def sync_and_release_esb_components(api_id: int, username: str, bk_ticket: str, lock_blocking: bool):
     logger.info("sync_and_release_esb_components task start")
 
     release_lock = get_release_lock()
@@ -48,7 +48,7 @@ def sync_and_release_esb_components(api_id: int, username: str, access_token: st
 
     gateway = Gateway.objects.get(id=api_id)
     synchronizer = ComponentSynchronizer()
-    releaser = ComponentReleaser(gateway, username, access_token=access_token)
+    releaser = ComponentReleaser(gateway, username, bk_ticket=bk_ticket)
 
     try:
         releaser.create_release_history()

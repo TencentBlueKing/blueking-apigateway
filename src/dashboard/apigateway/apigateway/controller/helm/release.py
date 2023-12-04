@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Tuple
 
 from bkapi.bcs_api_gateway.client import Client as BcsApiGatewayClient
+from django.conf import settings
 
 from apigateway.components.bcs import get_bcs_api_gateway_client
 from apigateway.components.bcs_helper import BcsApiGatewayApiRequestError
@@ -56,11 +57,11 @@ class ReleaseInfo:
 @dataclass
 class ReleaseHelper:
     client: BcsApiGatewayClient = field(default_factory=get_bcs_api_gateway_client)
-    access_token: str = ""
+    bk_ticket: str = ""
 
     def __post_init__(self):
-        if self.access_token and self.access_token != "":
-            self.client.update_bkapi_authorization(access_token=self.access_token)
+        if self.bk_ticket and self.bk_ticket != "":
+            self.client.update_bkapi_authorization(**{settings.BK_LOGIN_TICKET_KEY: self.bk_ticket})
 
     def upgrade_release(
         self,

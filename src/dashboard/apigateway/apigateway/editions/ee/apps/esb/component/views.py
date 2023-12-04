@@ -39,7 +39,7 @@ from apigateway.apps.esb.permissions import UserAccessESBPermission
 from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, ResourceVersion
-from apigateway.utils.access_token import get_user_access_token_from_request
+from apigateway.utils.bk_ticket import get_user_bk_ticket_from_request
 from apigateway.utils.django import get_object_or_None
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
@@ -207,7 +207,7 @@ class ComponentSyncViewSet(viewsets.ViewSet):
         # 因同步及发布任务耗时较长，因此采用异步方式处理
         apply_async_on_commit(
             sync_and_release_esb_components,
-            args=(esb_gateway.id, request.user.username, get_user_access_token_from_request(request), False),
+            args=(esb_gateway.id, request.user.username, get_user_bk_ticket_from_request(request), False),
             expires=ESB_RELEASE_TASK_EXPIRES,
         )
 
