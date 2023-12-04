@@ -15,7 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.biz.released_resource_doc import ReleasedResourceDocData, ReleasedResourceDocHandler
+from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
+from apigateway.biz.released_resource_doc.released_resource_doc import DummyResourceDocData, ReleasedResourceDocData
 
 
 class TestReleasedResourceDocData:
@@ -31,6 +32,14 @@ class TestReleasedResourceDocData:
         assert result.language == "zh"
         assert result.content == "hello world"
         assert result.updated_time == "2021-01-01 00:00:00"
+
+
+class TestDummyResourceDocData:
+    def test_create(self):
+        doc_data = DummyResourceDocData.create("zh")
+        assert doc_data.language == "zh"
+        assert doc_data.content == ""
+        assert doc_data.updated_time == ""
 
 
 class TestReleasedResourceDocHandler:
@@ -50,7 +59,7 @@ class TestReleasedResourceDocHandler:
             "not_exist",
         )
         assert resource_data is not None
-        assert doc_data is None
+        assert doc_data is not None
 
         resource_data, doc_data = ReleasedResourceDocHandler.get_released_resource_doc_data(
             fake_gateway.id,

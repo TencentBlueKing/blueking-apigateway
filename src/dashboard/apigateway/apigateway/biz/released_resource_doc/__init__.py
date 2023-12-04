@@ -15,4 +15,4 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .released_resource_doc import ReleasedResourceDocHandler, ReleasedResourceDocData  # noqa
+from .released_resource_doc import ReleasedResourceDocHandler, ResourceDocData  # noqa

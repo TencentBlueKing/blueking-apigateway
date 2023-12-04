@@ -29,7 +29,7 @@ from apigateway.core.utils import get_path_display, get_resource_url
 from apigateway.utils.jinja2 import render_to_string
 
 from .constants import BKAPI_AUTHORIZATION_DESCRIPTIONS, RESOURCE_URL_PARTS, APIDocTypeEnum
-from .released_resource_doc import ReleasedResourceDocData
+from .released_resource_doc import ResourceDocData
 
 
 class DocGenerator:
@@ -38,7 +38,7 @@ class DocGenerator:
         gateway: Gateway,
         stage_name: str,
         resource_data: ReleasedResourceData,
-        doc_data: ReleasedResourceDocData,
+        doc_data: ResourceDocData,
         language: str,
     ):
         self.gateway = gateway
