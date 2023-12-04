@@ -20,6 +20,7 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Optional
 
+from cachetools import TTLCache, cached
 from django.conf import settings
 from django.utils.translation import gettext as _
 
@@ -48,8 +49,9 @@ class PythonSDK:
         return data
 
 
-class SDKFactory:
+class ESBSDKFetcher:
     @staticmethod
+    @cached(cache=TTLCache(maxsize=100, ttl=3600))
     def get_sdk(board: str, language: str) -> Optional[PythonSDK]:
         if language == ProgrammingLanguageEnum.PYTHON.value:
             return PythonSDKManager.get_manager(board).get_sdk()
