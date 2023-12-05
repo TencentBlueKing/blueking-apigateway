@@ -10,7 +10,7 @@
         <div class="sideslider-content">
           <div class="sideslider-lf">
             <bk-input class="mb12" type="search" clearable v-model="keywords" />
-            <div class="sideslider-lf-title mb8">{{ $t("版本日志") }}</div>
+            <!-- <div class="sideslider-lf-title mb8">{{ $t("版本日志") }}</div> -->
             <div class="sideslider-lf-ul">
               <template v-if="getResources?.length">
                 <div
@@ -61,7 +61,7 @@
                 </bk-collapse-panel>
                 <bk-collapse-panel :name="2">
                   <span>
-                    <bk-tag theme="success">{{ currentSource.method }}</bk-tag>
+                    <bk-tag :theme="getMethodsTheme(currentSource.method)">{{ currentSource.method }}</bk-tag>
                     <span class="log-name">{{ currentSource.name }}</span>
                   </span>
                   <template #content>
@@ -111,12 +111,12 @@
                             <div class="ag-value">
                               <template v-if="currentSource.gateway_label_ids?.length">
                                 <bk-tag
-                                  v-for="tag in labels?.map((label) => {
+                                  v-for="tag in labels?.filter((label) => {
                                     if (currentSource.gateway_label_ids?.includes(label.id))
-                                      return label.name;
+                                      return true;
                                   })"
-                                  :key="tag"
-                                >{{ tag }}</bk-tag
+                                  :key="tag.id"
+                                >{{ tag.name }}</bk-tag
                                 >
                               </template>
                               <template v-else>
@@ -184,7 +184,7 @@
                           </bk-col>
                           <bk-col :span="10">
                             <div class="ag-value">
-                              <bk-tag theme="success">
+                              <bk-tag :theme="getMethodsTheme(currentSource.method)">
                                 {{ currentSource.method }}
                               </bk-tag>
                             </div>
@@ -227,7 +227,7 @@
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
-                                <bk-tag theme="success">
+                                <bk-tag :theme="getMethodsTheme(currentSource?.proxy?.config?.method)">
                                   {{
                                     currentSource?.proxy?.config?.method
                                   }}
@@ -327,11 +327,12 @@ import { useI18n } from 'vue-i18n';
 import cookie from 'cookie';
 // import { RightShape, AngleUpFill } from "bkui-vue/lib/icon";
 import { getResourceVersionsInfo, getGatewayLabels } from '@/http';
+import { getMethodsTheme } from '@/common/util';
 
 const { t } = useI18n();
 const route = useRoute();
 // 网关id
-const apigwId = +route.params.id;
+const apigwId = computed(() => +route.params.id);
 const localLanguage =  cookie.parse(document.cookie).blueking_language || 'zh-cn';
 
 const props = defineProps<{
@@ -345,10 +346,10 @@ const currentSource = ref<any>({});
 
 // 获取详情数据
 const getInfo = async () => {
-  if (!props.id || !apigwId) return;
+  if (!props.id || !apigwId.value) return;
 
   try {
-    const res = await getResourceVersionsInfo(apigwId, props.id);
+    const res = await getResourceVersionsInfo(apigwId.value, props.id);
     console.log('res:  ', res);
     info.value = res;
     currentSource.value = res.resources[0] || {};
@@ -399,7 +400,7 @@ const showSideslider = () => {
 const labels = ref<any[]>([]);
 const getLabels = async () => {
   try {
-    const res = await getGatewayLabels(apigwId);
+    const res = await getGatewayLabels(apigwId.value);
     labels.value = res;
   } catch (e) {
     console.log(e);

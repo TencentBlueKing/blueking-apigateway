@@ -2,6 +2,7 @@
 import {
   ref,
   computed,
+  watch,
 } from 'vue';
 import * as UserInfo from '@/components/user-info.vue';
 import { useI18n } from 'vue-i18n';
@@ -40,7 +41,7 @@ const headerList = ref([
   {
     name: t('组件管理'),
     id: 2,
-    url: 'apigwDoc',
+    url: 'apigwAccess',
     enabled: true,
     link: '',
   },
@@ -87,6 +88,23 @@ const apigwId = computed(() => {
   }
   return undefined;
 });
+
+watch(
+  () => route.fullPath,
+  () => {
+    const { name } = route;
+
+    let index = 0;
+    for (let i = 0; i < headerList.value.length; i++) {
+      const item = headerList.value[i];
+      if (item.url === name) {
+        index = i;
+        break;
+      }
+    }
+    activeIndex.value = index;
+  },
+);
 
 const isExternalLink  = (url?: string) => /^https?:\/\//.test(url);
 
