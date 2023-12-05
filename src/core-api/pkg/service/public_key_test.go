@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"core/pkg/cacheimpls"
+	"core/pkg/database/dao"
 	"core/pkg/database/dao/mock"
 )
 
@@ -90,6 +91,68 @@ var _ = Describe("GatewayPublicKeyService", func() {
 			)
 
 			publicKey, err := svc.Get(context.Background(), instanceID, gatewayName)
+			assert.Equal(GinkgoT(), "publicKey", publicKey)
+			assert.NoError(GinkgoT(), err)
+		})
+	})
+
+	Describe("Get By GatewayName cases", func() {
+		var ctl *gomock.Controller
+		var gatewayName string
+		var patches *gomonkey.Patches
+		var svc GatewayPublicKeyService
+
+		BeforeEach(func() {
+			patches = gomonkey.NewPatches()
+			ctl = gomock.NewController(GinkgoT())
+			gatewayName = "gateway"
+
+			mockManager := mock.NewMockJWTManager(ctl)
+
+			svc = &gatewayPublicKeyService{
+				jwtManager: mockManager,
+			}
+		})
+
+		AfterEach(func() {
+			ctl.Finish()
+			patches.Reset()
+		})
+
+		It("error", func() {
+			patches.ApplyFunc(
+				cacheimpls.GetGatewayByName,
+				func(ctx context.Context, name string) (gateway dao.Gateway, err error) {
+					return dao.Gateway{ID: 1}, nil
+				},
+			)
+			patches.ApplyFunc(
+				cacheimpls.GetJWTPublicKey,
+				func(ctx context.Context, gatewayID int64) (string, error) {
+					return "", errors.New("get GetActionDetail fail")
+				},
+			)
+
+			publicKey, err := svc.GetByGatewayName(context.Background(), gatewayName)
+			assert.Empty(GinkgoT(), publicKey)
+			assert.Error(GinkgoT(), err)
+		})
+
+		It("ok", func() {
+			patches.ApplyFunc(
+				cacheimpls.GetGatewayByName,
+				func(ctx context.Context, name string) (gateway dao.Gateway, err error) {
+					return dao.Gateway{ID: 1}, nil
+				},
+			)
+			patches.ApplyFunc(
+				cacheimpls.GetJWTPublicKey,
+				func(ctx context.Context, gatewayID int64) (string, error) {
+					return "publicKey", nil
+				},
+			)
+
+			publicKey, err := svc.GetByGatewayName(context.Background(), gatewayName)
 			assert.Equal(GinkgoT(), "publicKey", publicKey)
 			assert.NoError(GinkgoT(), err)
 		})

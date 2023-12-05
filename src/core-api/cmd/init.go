@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"github.com/getsentry/raven-go"
-	sentry "github.com/getsentry/sentry-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/spf13/viper"
 
 	"core/pkg/config"
@@ -31,8 +31,6 @@ import (
 	"core/pkg/metric"
 	"core/pkg/trace"
 )
-
-var globalConfig *config.Config
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
@@ -46,31 +44,31 @@ func initConfig() {
 		panic(fmt.Sprintf("Using config file: %s, read fail: err=%v", viper.ConfigFileUsed(), err))
 	}
 	var err error
-	globalConfig, err = config.Load(viper.GetViper())
+	config.GlobalConfig, err = config.Load(viper.GetViper())
 	if err != nil {
 		panic(fmt.Sprintf("Could not load configurations from file, error: %v", err))
 	}
 }
 
 func initLogger() {
-	logging.InitLogger(globalConfig)
+	logging.InitLogger(config.GlobalConfig)
 }
 
 func initDatabase() {
-	defaultDBConfig, ok := globalConfig.DatabaseMap["apigateway"]
+	defaultDBConfig, ok := config.GlobalConfig.DatabaseMap["apigateway"]
 	if !ok {
 		panic("database apigateway should be configured")
 	}
 
-	database.InitDBClients(&defaultDBConfig, globalConfig.Tracing)
+	database.InitDBClients(&defaultDBConfig, config.GlobalConfig.Tracing)
 
 	logging.GetLogger().Info("init Database success")
 }
 
 func initSentry() {
-	if len(globalConfig.Sentry.DSN) != 0 {
+	if len(config.GlobalConfig.Sentry.DSN) != 0 {
 		err := sentry.Init(sentry.ClientOptions{
-			Dsn: globalConfig.Sentry.DSN,
+			Dsn: config.GlobalConfig.Sentry.DSN,
 		})
 		if err != nil {
 			logging.GetLogger().Errorf("init Sentry fail: %s", err)
@@ -79,7 +77,7 @@ func initSentry() {
 		logging.GetLogger().Info("init Sentry success")
 
 		// init gin sentry
-		err = raven.SetDSN(globalConfig.Sentry.DSN)
+		err = raven.SetDSN(config.GlobalConfig.Sentry.DSN)
 		if err != nil {
 			logging.GetLogger().Errorf("init gin Sentry fail: %s", err)
 			return
@@ -96,12 +94,12 @@ func initMetrics() {
 }
 
 func initTracing() {
-	if !globalConfig.Tracing.Enable {
+	if !config.GlobalConfig.Tracing.Enable {
 		logging.GetLogger().Info("tracing is not enabled, will not init it")
 		return
 	}
 	logging.GetLogger().Info("enabling tracing")
-	err := trace.InitTrace(globalConfig.Tracing)
+	err := trace.InitTrace(config.GlobalConfig.Tracing)
 	if err != nil {
 		logging.GetLogger().Errorf("init tracing fail: %+v", err)
 		return

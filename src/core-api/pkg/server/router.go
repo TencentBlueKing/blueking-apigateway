@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"core/pkg/api/microgateway"
+	"core/pkg/api/open"
 	"core/pkg/config"
 	"core/pkg/database"
 	"core/pkg/middleware"
@@ -44,6 +45,10 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	router := gin.Default()
 
 	router.Use(middleware.RequestID())
+	// metrics
+	router.Use(middleware.Metrics())
+	// recovery sentry
+	router.Use(sentry.Recovery(raven.DefaultClient, false))
 
 	// basic
 	// liveness
@@ -77,6 +82,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	})
 	// metrics
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
 	// router.GET("/version", handler.Version)
 	// trace
 	if cfg.Tracing.GinAPIEnabled() {
@@ -85,15 +91,20 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	}
 	microGatewayRouter := router.Group("/api/v1/micro-gateway")
 
-	// metrics
-	microGatewayRouter.Use(middleware.Metrics())
-	// recovery sentry
-	microGatewayRouter.Use(sentry.Recovery(raven.DefaultClient, false))
-
 	microGatewayRouter.Use(middleware.APILogger())
 	microGatewayRouter.Use(middleware.MicroGatewayInstanceMiddleware())
 	microGatewayRouter.GET("/:micro_gateway_instance_id/permissions/", microgateway.QueryPermission)
 	microGatewayRouter.GET("/:micro_gateway_instance_id/public_keys/", microgateway.QueryPublicKey)
 	microGatewayRouter.POST("/:micro_gateway_instance_id/release/:publish_id/events/", microgateway.ReportPublishEvent)
+
+	// open api
+	openRouterV1 := router.Group("/api/v1/open")
+	openRouterV1.Use(middleware.BkGatewayJWTAuthMiddlewareV1())
+	openRouterV1.GET("gateways/:gateway_name/public_key/", open.QueryPublicKeyV1)
+
+	openRouterV2 := router.Group("/api/v2/open")
+	openRouterV2.Use(middleware.BkGatewayJWTAuthMiddlewareV2())
+	openRouterV2.GET("gateways/:gateway_name/public_key/", open.QueryPublicKeyV2)
+
 	return router
 }

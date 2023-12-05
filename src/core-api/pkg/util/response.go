@@ -66,6 +66,27 @@ func NewErrorJSONResponse(
 	}
 }
 
+// LegacySuccessJsonResponse ...
+func LegacySuccessJsonResponse(c *gin.Context, data interface{}) {
+	// 兼容历史接口
+	c.JSON(http.StatusOK, gin.H{
+		"data":    data,
+		"result":  true,
+		"message": "OK",
+		"code":    0,
+	})
+}
+
+// LegacyErrorJSONResponse ...
+func LegacyErrorJSONResponse(ctx *gin.Context, errorCode string, statusCode int, message string) {
+	// 兼容历史接口
+	ctx.JSON(statusCode, gin.H{
+		"result":  false,
+		"message": message,
+		"code":    errorCode,
+	})
+}
+
 // BadRequestErrorJSONResponse ...
 var (
 	BadRequestErrorJSONResponse = NewErrorJSONResponse(BadRequestError, http.StatusBadRequest)
