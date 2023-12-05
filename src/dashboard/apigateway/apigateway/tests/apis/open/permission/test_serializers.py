@@ -116,6 +116,7 @@ class TestAppPermissionResourceSLZ:
     @pytest.mark.parametrize(
         "permission_status, expected",
         [
+            ("unlimited", False),
             ("pending", False),
             ("owned", False),
             ("rejected", True),
@@ -131,6 +132,8 @@ class TestAppPermissionResourceSLZ:
     @pytest.mark.parametrize(
         "permission_status, expires_in, expected",
         [
+            ("unlimited", math.inf, False),
+            ("unlimited", -math.inf, False),
             ("pending", -math.inf, False),
             ("owned", 10, True),
             ("owned", time.to_seconds(RENEWABLE_EXPIRE_DAYS) + 100, False),
@@ -234,7 +237,7 @@ class TestAppPermissionApplyV1SLZ:
             AppGatewayPermission,
             gateway=fake_gateway,
             bk_app_code=bk_app_code,
-            expires=to_datetime_from_now(days=180),
+            expires=to_datetime_from_now(days=400),
         )
 
         with pytest.raises(drf_serializers.ValidationError):
