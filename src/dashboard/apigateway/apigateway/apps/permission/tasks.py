@@ -270,7 +270,9 @@ def alert_app_permission_expiring_soon():
         if not app_maintainers:
             continue
 
-        app_perms = sorted(app_perms, key=lambda x: (x["gateway_name"], x["grant_dimension"], x["resource_name"]))
+        sorted_app_perms = sorted(
+            app_perms, key=lambda x: (x["gateway_name"], x["grant_dimension"], x["resource_name"])
+        )
 
         title = f"【蓝鲸API网关】你的应用【{bk_app_code}】访问网关资源的权限即将过期，请尽快处理"
 
@@ -279,7 +281,7 @@ def alert_app_permission_expiring_soon():
             context={
                 "title": title,
                 "bk_app_code": bk_app_code,
-                "permissions": app_perms,
+                "permissions": sorted_app_perms,
                 "renew_permission_link": settings.PAAS_RENEW_API_PERMISSION_URL.format(bk_app_code=bk_app_code),
             },
         )
@@ -296,4 +298,4 @@ def alert_app_permission_expiring_soon():
             ],
         }
 
-        return cmsi_component.send_mail(params)
+        cmsi_component.send_mail(params)
