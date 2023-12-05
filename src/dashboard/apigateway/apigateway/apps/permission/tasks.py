@@ -34,9 +34,16 @@ from apigateway.apps.permission.constants import (
     GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
 )
-from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord, AppResourcePermission
+from apigateway.apps.permission.models import (
+    AppGatewayPermission,
+    AppPermissionApply,
+    AppPermissionRecord,
+    AppResourcePermission,
+)
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.components.cmsi import cmsi_component
+from apigateway.components.paasv3 import paasv3_component
+from apigateway.core.models import Gateway, Resource
 from apigateway.utils.file import read_file
 
 logger = logging.getLogger(__name__)
@@ -188,3 +195,107 @@ def renew_app_resource_permission():
                 resource_ids=resource_ids,
                 grant_type=GrantTypeEnum.AUTO_RENEW.value,
             )
+
+
+@shared_task(name="apigateway.apps.permission.tasks.alert_app_permission_expiring_soon", ignore_result=True)
+def alert_app_permission_expiring_soon():
+    """
+    告警通知应用访问网关权限快过期
+    - 过期前 15 天开始通知
+    - 为防止告警消息过多，只通知指定过期天数，如 0, 1, 3, 7, 15
+    """
+    now = timezone.now()
+    expire_end_time = now + datetime.timedelta(days=16)
+    # 为防止告警消息过多，只通知指定过期天数
+    alert_expire_days = [0, 1, 3, 7, 15]
+
+    permissions = defaultdict(list)
+
+    # 按网关的权限
+    permissions_by_gateway = AppGatewayPermission.objects.filter(expires__range=(now, expire_end_time))
+    for permission in permissions_by_gateway:
+        permissions[permission.bk_app_code].append(
+            {
+                "gateway_id": permission.gateway_id,
+                "expire_days": int(permission.expires_in / 86400),
+                "grant_dimension": GrantDimensionEnum.API.value,
+                "grant_dimension_display": GrantDimensionEnum.get_choice_label(GrantDimensionEnum.API.value),
+            }
+        )
+
+    permissions_by_resource = AppResourcePermission.objects.filter(expires__range=(now, expire_end_time))
+    for permission in permissions_by_resource:
+        permissions[permission.bk_app_code].append(
+            {
+                "gateway_id": permission.gateway_id,
+                "expire_days": int(permission.expires_in / 86400),
+                "grant_dimension": GrantDimensionEnum.RESOURCE.value,
+                "grant_dimension_display": GrantDimensionEnum.get_choice_label(GrantDimensionEnum.RESOURCE.value),
+                "resource_id": permission.resource_id,
+            }
+        )
+
+    # 过滤掉不告警的记录
+    filtered_permissions = defaultdict(list)
+    gateway_ids = set()
+    resource_ids = set()
+    for bk_app_code, app_perms in permissions.items():
+        for app_perm in app_perms:
+            if app_perm["expire_days"] not in alert_expire_days:
+                continue
+
+            filtered_permissions[bk_app_code].append(app_perm)
+            gateway_ids.add(app_perm["gateway_id"])
+            if app_perm.get("resource_id"):
+                resource_ids.add(app_perm["resource_id"])
+
+    # 补全网关名称、资源名称
+    gateway_id_to_fields = {
+        item["id"]: item for item in Gateway.objects.filter(id__in=gateway_ids).values("id", "name")
+    }
+    resource_id_to_fields = {
+        item["id"]: item for item in Resource.objects.filter(id__in=resource_ids).values("id", "name")
+    }
+    for app_perms in filtered_permissions.values():
+        for perm in app_perms:
+            perm.update(
+                {
+                    "gateway_name": gateway_id_to_fields[perm["gateway_id"]].get("name", ""),
+                    "resource_name": resource_id_to_fields.get(perm.get("resource_id"), {}).get("name", ""),
+                }
+            )
+
+    for bk_app_code, app_perms in filtered_permissions.items():
+        app_maintainers = paasv3_component.get_app_maintainers(bk_app_code)
+        if not app_maintainers:
+            continue
+
+        sorted_app_perms = sorted(
+            app_perms, key=lambda x: (x["gateway_name"], x["grant_dimension"], x["resource_name"])
+        )
+
+        title = f"【蓝鲸API网关】你的应用【{bk_app_code}】访问网关资源的权限即将过期，请尽快处理"
+
+        mail_content = render_to_string(
+            "permission/alert_app_permission_expiring_soon_template.html",
+            context={
+                "title": title,
+                "bk_app_code": bk_app_code,
+                "permissions": sorted_app_perms,
+                "renew_permission_link": settings.PAAS_RENEW_API_PERMISSION_URL.format(bk_app_code=bk_app_code),
+            },
+        )
+
+        params = {
+            "title": title,
+            "receiver__username": app_maintainers,
+            "content": mail_content,
+            "attachments": [
+                {
+                    "filename": "api_gateway.png",
+                    "content": base64.b64encode(read_file(APIGW_LOGO_PATH)).decode("utf-8"),
+                }
+            ],
+        }
+
+        cmsi_component.send_mail(params)

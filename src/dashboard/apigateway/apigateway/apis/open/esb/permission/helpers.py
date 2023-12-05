@@ -72,7 +72,10 @@ class ComponentPermission(BaseModel):
 
     @property
     def permission_status(self) -> str:
-        if not self.component_perm_required or self.expires_in == math.inf:
+        if not self.component_perm_required:
+            return PermissionStatusEnum.UNLIMITED.value
+
+        if self.expires_in == math.inf:
             return PermissionStatusEnum.OWNED.value
 
         if self.component_permission_apply_status:
