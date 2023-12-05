@@ -199,7 +199,7 @@
                 </bk-button>
 
                 <bk-pop-confirm
-                  :title="t('确认删除该资源？')"
+                  :title="t(`确认删除资源${data?.name}？`)"
                   content="删除操作无法撤回，请谨慎操作！"
                   width="288"
                   trigger="click"
@@ -252,9 +252,7 @@
                 @done="(v: boolean | any) => {
                   isComponentLoading = !!v
                 }"
-                @deleted-success="() => {
-                  getList()
-                }"
+                @deleted-success="handleDeleteSuccess"
                 @on-jump="(id: number | any) => {
                   handleShowInfo(id)
                 }"
@@ -610,6 +608,7 @@ const handleBatchOperate = async (data: IDropList) => {
 // 处理导出弹窗显示
 const handleExport = async ({ value }: {value: string}) => {
   exportParams.export_type = value;
+  exportDialogConfig.exportFileDocType = 'resource';
   exportDialogConfig.isShow = true;
   switch (value) {
     case 'selected':
@@ -759,6 +758,12 @@ const handleCloseSelect = () => {
 const handleUpdateLabelSuccess = () => {
   getList();
   init();
+};
+
+// 删除成功
+const handleDeleteSuccess = () => {
+  getList();
+  handleShowList();
 };
 
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id

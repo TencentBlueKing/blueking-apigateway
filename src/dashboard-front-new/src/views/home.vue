@@ -22,9 +22,9 @@
     </div>
     <div class="table-container">
       <div class="table-header flex-row">
-        <div class="flex-1 of4">{{ t('网关名') }}</div>
+        <div class="flex-1 of3">{{ t('网关名') }}</div>
         <div class="flex-1 of1">{{ t('创建者') }}</div>
-        <div class="flex-1 of2">{{ t('环境列表') }}</div>
+        <div class="flex-1 of3">{{ t('环境列表') }}</div>
         <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
         <div class="flex-1 of2">{{ t('操作') }}</div>
       </div>
@@ -47,9 +47,19 @@
           <div class="flex-1 of1">{{ item.created_by }}</div>
           <div class="flex-1 of2 env">
             <div class="flex-row">
-              <bk-tag v-for="envItem in item.stages" :key="envItem.id">
-                <i :class="['ag-dot',{ 'success': envItem.released }]"></i>
-                {{ envItem.name }}
+              <span
+                v-for="(envItem, index) in item.stages" :key="envItem.id">
+                <bk-tag v-if="index < 3">
+                  <i :class="['ag-dot',{ 'success': envItem.released }]"></i>
+                  {{ envItem.name }}
+                </bk-tag>
+              </span>
+              <bk-tag
+                v-if="item.stages.length > item.tagOrder"
+                class="tag-cls"
+                v-bk-tooltips="{ content: item?.labelText.join(';') }">
+                +{{ item.stages.length - item.tagOrder }}
+                <!-- ... -->
               </bk-tag>
             </div>
           </div>
@@ -244,6 +254,15 @@ const {
 // 页面初始化
 const init = async () => {
   gatewaysList.value = await getGatewaysListData();
+  gatewaysList.value.forEach((item: any) => {
+    item.tagOrder = '3';
+    item.labelText = item.stages.reduce((prev: any, label: any, index: number) => {
+      if (index > item.tagOrder - 1) {
+        prev.push(label.name);
+      }
+      return prev;
+    }, []);
+  });
 };
 
 // 新建网关弹窗
@@ -370,11 +389,8 @@ init();
     .of1{
         flex: 0 0 10%;
       }
-      .of2{
-        flex: 0 0 20%;
-      }
-      .of4{
-        flex: 0 0 40%;
+      .of3{
+        flex: 0 0 30%;
       }
   }
 
