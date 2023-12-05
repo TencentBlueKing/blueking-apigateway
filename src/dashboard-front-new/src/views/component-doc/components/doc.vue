@@ -8,16 +8,19 @@
         </span>
       </div>
 
-      <div style="position: relative;">
-        <bk-breadcrumb separator-class="bk-icon icon-angle-right" class="mb20">
+      <div class="position-relative">
+        <bk-breadcrumb separator=">" class="mb20">
           <bk-breadcrumb-item :to="{ name: 'componentDoc' }">{{ t('组件API文档') }}</bk-breadcrumb-item>
           <bk-breadcrumb-item>{{ curSystem.description || '--' }}</bk-breadcrumb-item>
           <bk-breadcrumb-item>{{ curComponent.name || '--' }}</bk-breadcrumb-item>
         </bk-breadcrumb>
-        <!-- <chat
-          class="ag-chat" v-if="GLOBAL_CONFIG.PLATFORM_FEATURE.ALLOW_CREATE_APPCHAT" :default-user-list="userList"
-          :owner="curUser.username" :name="chatName" :content="chatContent">
-        </chat> -->
+        <chat
+          class="ag-chat"
+          :default-user-list="userList"
+          :owner="curUser.username"
+          :name="chatName"
+          :content="chatContent">
+        </chat>
       </div>
       <bk-tab v-model:active="active" class="bk-special-tab" @tab-change="handleTabChange">
         <bk-tab-panel :name="'doc'" :label="t('文档')">
@@ -57,15 +60,13 @@
             <h3 class="f16 fw700 mt15 mb15 balck">
               {{ t('SDK信息') }}
             </h3>
-            <router-link
-              style="margin-top: -30px;" :to="{ name: 'esbSDK', query: { tab: 'doc' } }"
-              class="ag-link fn f12 fr">{{ t('Python SDK使用说明') }}</router-link>
-
+            <router-link :to="{ name: 'esbSDK', query: { tab: 'doc' } }" class="ag-link fn f12 fr mt-30">
+              {{ t('Python SDK使用说明') }}
+            </router-link>
             <div>
               <sdk-detail :params="curSdk"></sdk-detail>
             </div>
             <h3 class="f16 mt30 fw700 mt15 mb15 balck">{{ t('SDK使用样例') }}</h3>
-
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div class="ag-markdown-view mt20" :key="renderHtmlIndex" v-html="sdkMarkdownHtml"></div>
           </div>
@@ -74,7 +75,7 @@
     </div>
 
     <div class="component-nav-box">
-      <div style="position: fixed;">
+      <div class="position-fixed">
         <side-nav :list="componentNavList" v-if="active === 'doc'"></side-nav>
         <side-nav :list="sdkNavList" v-else></side-nav>
       </div>
@@ -83,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { slugify } from 'transliteration';
@@ -91,6 +92,7 @@ import MarkdownIt from 'markdown-it';
 import { copy } from '@/common/util';
 import sideNav from '@/components/side-nav/index.vue';
 import sdkDetail from '@/components/sdk-detail/index.vue';
+import chat from '@/components/chat/index.vue';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/monokai-sublime.css';
 import {
@@ -100,7 +102,9 @@ import {
   getSDKDoc,
   getSystemComponentDoc,
 } from '@/http';
+import { useUser } from '@/store';
 
+const userStore = useUser();
 const { t } = useI18n();
 const route = useRoute();
 
@@ -128,6 +132,21 @@ const curSystem = ref<any>({
   name: '',
   description: '',
 });
+const curApigw = ref({
+  name: '',
+  label: '',
+  maintainers: [],
+});
+
+
+const curUser = computed(() => userStore?.user);
+const userList = computed(() => {
+  // 去重
+  const set = new Set([curUser.value?.username, ...curApigw.value?.maintainers]);
+  return [...set];
+});
+const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);
+const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
 
 
 const md = new MarkdownIt({
@@ -255,7 +274,6 @@ const getSDKDetail = async () => {
 const getAPIList = async () => {
   try {
     const res = await getSystemAPIList(curVersion.value, curSystemName.value);
-    // console.log(res);
     curComponentList.value = res;
     const match = curComponentList.value.find(item => item.name === curComponentName.value);
     if (match) {
@@ -299,7 +317,6 @@ const getSDKExample = async () => {
 };
 
 const init = () => {
-  console.log(route);
   const routeParams: any = route.params;
   curVersion.value = routeParams.version;
   curSystemName.value = routeParams.id;
@@ -315,9 +332,22 @@ init();
 </script>
 
 <style lang="scss" scoped>
-.balck{
+.position-relative {
+  position: relative;
+}
+
+.position-fixed {
+  position: fixed
+}
+
+.mt-30 {
+  margin-top: -30px;
+}
+
+.balck {
   color: #000;
 }
+
 .component-doc {
   display: flex;
 }
@@ -553,6 +583,7 @@ init();
     position: relative;
     overflow: auto;
     margin: 14px 0;
+
     code {
       color: #FFF;
     }

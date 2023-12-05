@@ -15,8 +15,8 @@
     </bk-dropdown>
     <div class="input-wrapper bk-dropdown-menu search-result-box">
       <input
-        type="text" style="width: 400px;" v-model="keyword" class="input" :placeholder="t('请输入API名称')"
-        @input="handleSearch" @keydown="handleKeyup">
+        type="text" v-model="keyword" class="input w400" :placeholder="t('请输入API名称')" @input="handleSearch"
+        @keydown="handleKeyup">
       <div class="bk-dropdown-content is-show left-align" v-if="keyword">
         <bk-loading :loading="isLoading" opacity="1">
           <ul
@@ -39,7 +39,7 @@
             </template>
             <template v-else>
               <li>
-                <a href="javascript:;" style="text-align: center; line-height: 41px;">
+                <a href="javascript:;" class="search-empty">
                   {{ t('没有找到相应记录') }}
                 </a>
               </li>
@@ -56,10 +56,12 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import {
   searchAPI,
 } from '@/http';
 const { t } = useI18n();
+const router = useRouter();
 
 const props = defineProps({
   versionList: {
@@ -98,7 +100,6 @@ watch(
       // eslint-disable-next-line prefer-destructuring
       curVersion.value = props.versionList[0];
       curVersionList.value = props.versionList;
-      console.log(curVersion.value);
     }
   },
   {
@@ -125,7 +126,14 @@ const triggerHandler = (version: any) => {
 };
 // 跳转指定组件
 const handleShowDoc = (version: any) => {
-  console.log(version);
+  router.push({
+    name: 'componentAPIDetailDoc',
+    params: {
+      version: curVersion.value.board,
+      id: version.system_name,
+      componentId: version.name,
+    },
+  });
 };
 // 搜索
 const handleSearch = async () => {
@@ -137,7 +145,6 @@ const handleSearch = async () => {
     const res = await searchAPI(curBoard, '-', { keyword: curKeyword });
     isLoading.value = false;
     resultList.value = res;
-    console.log(res);
   } catch (error) {
     console.log('error', error);
   }
@@ -198,14 +205,18 @@ const handleKeyup = (e: any) => {
   }
 };
 
-
-const init = () => {
-  // console.log(props.versionList);
-};
-init();
 </script>
 
 <style lang="scss" scoped>
+.w400 {
+  width: 400px;
+}
+
+.search-empty {
+  text-align: center;
+  line-height: 41px;
+}
+
 .bk-dropdown-content {
   background: #fff;
   padding: 4px 0;
@@ -243,6 +254,7 @@ init();
   }
 
   .input {
+    color: #000;
     outline: none;
     border: none;
     line-height: 16px;
@@ -254,33 +266,37 @@ init();
   }
 }
 
-.bk-popover {
-  .bk-dropdown-content {
-    box-shadow: none !important;
-    -webkit-box-shadow: none !important;
 
-    .bk-dropdown-list {
-      width: 105px;
+.bk-dropdown-content {
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
 
-      a {
-        color: #63656e;
+  .bk-dropdown-list {
+    width: 105px;
 
-        &:hover {
-          background-color: #eaf3ff;
-          color: #3a84ff
-        }
+    a {
+      color: #63656e;
+
+      &:hover {
+        background-color: #eaf3ff;
+        color: #3a84ff
       }
     }
   }
-
 }
 
+.search-empty{
+  text-align: center;
+  line-height: 41px !important;
+}
 
 .search-result-box {
   :deep(.bk-dropdown-list) {
     font-size: 12px;
+    width: 100%;
 
     li {
+      width: 100%;
       a {
         height: auto;
         line-height: 1;
@@ -289,10 +305,12 @@ init();
         display: block;
         white-space: nowrap;
         color: #63656e;
-        &:hover{
+
+        &:hover {
           background-color: #eaf3ff;
           color: #3a84ff
         }
+
         .name {
           margin-bottom: 5px;
           color: #63656E;

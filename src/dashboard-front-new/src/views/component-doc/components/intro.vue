@@ -5,20 +5,19 @@
         <strong class="name">{{ t('简介') }}</strong>
       </div>
 
-      <div style="position: relative;">
+      <div class="position-relative">
         <bk-breadcrumb separator=">" class="mb20">
           <bk-breadcrumb-item :to="{ name: 'componentDoc' }">{{ t('组件API文档') }}</bk-breadcrumb-item>
           <bk-breadcrumb-item>{{ curSystem.description || '--' }}</bk-breadcrumb-item>
           <bk-breadcrumb-item>{{ t('简介') }}</bk-breadcrumb-item>
         </bk-breadcrumb>
-        <!-- <chat
+        <chat
           class="ag-chat"
-          v-if="GLOBAL_CONFIG.PLATFORM_FEATURE.ALLOW_CREATE_APPCHAT"
           :default-user-list="userList"
           :owner="curUser.username"
           :name="chatName"
           :content="chatContent">
-        </chat> -->
+        </chat>
       </div>
       <bk-divider></bk-divider>
       <div class="ag-markdown-view" id="markdown">
@@ -38,7 +37,7 @@
       </div>
     </div>
     <div class="component-nav-box" v-if="componentNavList.length">
-      <div style="position: fixed;">
+      <div class="position-fixed">
         <side-nav :list="componentNavList"></side-nav>
       </div>
     </div>
@@ -46,13 +45,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { ref, nextTick, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useGetGlobalProperties } from '@/hooks';
 import { slugify } from 'transliteration';
 import { useRoute } from 'vue-router';
 import sideNav from '@/components/side-nav/index.vue';
 import sdkDetail from '@/components/sdk-detail/index.vue';
+import chat from '@/components/chat/index.vue';
+import { useUser } from '@/store';
 import {
   getComponenSystemDetail,
   getESBSDKDetail,
@@ -60,6 +61,7 @@ import {
 
 const { t } = useI18n();
 const route = useRoute();
+const userStore = useUser();
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 
@@ -71,6 +73,25 @@ const curSystem = ref<any>({
   name: '',
   description: '',
 });
+const curApigw = ref<any>({
+  id: 2,
+  name: '',
+  description: '',
+  maintainers: [
+  ],
+  is_official: '',
+  api_url: '',
+});
+
+const curUser = computed(() => userStore?.user);
+const userList = computed(() => {
+  // 去重
+  const set = new Set([curUser.value?.username, ...curApigw.value?.maintainers]);
+  return [...set];
+});
+const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);
+const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
+
 
 // 获取当前系统的信息
 const getSystemDetail = async () => {
@@ -85,7 +106,6 @@ const getSystemDetail = async () => {
 const getSDKDetail = async () => {
   try {
     const res = await getESBSDKDetail(curVersion.value, { language: 'python' });
-    console.log('sdkDetail', res);
     curSdk.value = {
       sdk: {
         name: res.sdk_name,
@@ -94,7 +114,6 @@ const getSDKDetail = async () => {
         install_command: res.sdk_install_command,
       },
     };
-    // console.log(curSdk.value);
     initMarkdownHtml();
   } catch (error) {
     console.log('error', error);
@@ -127,12 +146,17 @@ const init = () => {
   curSystemName.value = routeParams.id;
   getSystemDetail();
   getSDKDetail();
-  // console.log(GLOBAL_CONFIG);
 };
 init();
 </script>
 
 <style lang="scss" scoped>
+.position-relative{
+  position: relative;
+}
+.position-fixed{
+  position:fixed
+}
 .intro-doc {
   display: flex;
 }

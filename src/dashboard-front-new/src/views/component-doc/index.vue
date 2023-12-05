@@ -8,7 +8,7 @@
         <div class="left">
           <div :class="['side-nav', { 'fixed': isFixed }]">
             <div class="group" v-for="(component, index) of componentList" :key="index">
-              <strong class="category-title" @click="handleScrollTo(component.board)" style="cursor: pointer;">{{
+              <strong class="category-title" @click="handleScrollTo(component.board)">{{
                 component.board_label }}</strong>
               <!-- <svg aria-hidden="true" class="category-icon">
                 <use :xlink:href="`#doc-icon${index % 4}`"></use>
@@ -62,8 +62,13 @@
           </div>
         </div>
       </template>
-      <div class="mt20" v-else style="width: 100%; border-radius: 2px; border: 1px solid #eee; background: #FFF;">
-        <table-empty empty />
+      <div class="mt20 empty-container" v-else>
+        <bk-exception
+          class="exception-wrap-item exception-part exception-gray"
+          type="empty"
+          scene="part"
+          description="没有数据"
+        />
       </div>
     </div>
   </div>
@@ -83,15 +88,13 @@ const componentList = ref([]);
 
 
 const handleScrollTo = (version: any, category: any = null) => {
-  console.log(category);
-
   const OFFSET = category ? 87 : 75;
   const categoryId = category ? `${version}_${category.id}` : `version_${version}`;
   const element = document.getElementById(categoryId);
   curCategoryId.value = categoryId;
   if (element) {
     const rect = element.getBoundingClientRect();
-    const container = document.querySelector('#app .container-content') || document.documentElement || document.body;
+    const container = document.querySelector('.app .container-content') || document.documentElement || document.body;
     const top = container.scrollTop + rect.top - OFFSET;
     container.scrollTo({
       top,
@@ -100,20 +103,51 @@ const handleScrollTo = (version: any, category: any = null) => {
   }
 };
 
+// 左侧导航是否需要固定
+const isFix = () => {
+  const sideNav = document.querySelector('.side-nav') as HTMLElement;
+  const winHeight = window.innerHeight;
+  const sideHeight = winHeight - 52 - 16 - 105;
+  const container = document.querySelector('.app .container-content') as HTMLElement || document.documentElement || document.body ;
+  container.onscroll = function () {
+    const scrollTop = container.scrollTop || document.documentElement.scrollTop || document.body.scrollTop;
+    isFixed.value = scrollTop > 160;
+    if (isFixed.value) {
+      if (sideNav) {
+        sideNav.style.height = `${sideHeight}px`;
+      }
+    }
+  };
+};
 
 const init = async () => {
   try {
     const res = await getComponentSystemList(board.value);
     componentList.value = res;
-    console.log(res);
   } catch (error) {
     console.log('error', error);
   }
+  isFix();
 };
 init();
 </script>
 
 <style lang="scss" scoped>
+.empty-container{
+width: 100%;
+border-radius: 2px;
+border: 1px solid #eee;
+background-color: #fff;
+}
+.exception-gray{
+  background-color: #f5f6fa;
+}
+
+.exception-part {
+  height: 260px;
+  padding-top: 48px;
+  flex: 1;
+}
 .index-wrapper {
   .banner {
     height: 160px;
@@ -173,6 +207,7 @@ init();
     position: relative;
     display: block;
     padding-left: 40px;
+    cursor:pointer;
 
     &::after {
       content: '';

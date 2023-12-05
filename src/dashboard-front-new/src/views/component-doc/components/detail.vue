@@ -48,7 +48,7 @@
       <!-- eslint-disable-next-line vue/valid-v-on -->
       <div class="nav-panel" ref="panel" v-if="isNavPanelShow">
         <div class="version-panel">
-          <bk-dropdown ref="dropdown" :popover-options="popoverOptions" style="margin: 16px;">
+          <bk-dropdown ref="dropdown m16" :popover-options="popoverOptions">
             <div class="version-name">
               <svg aria-hidden="true" class="category-icon vm">
                 <use :xlink:href="`#doc-icon${curVersionData.logoIndex % 4}`"></use>
@@ -57,7 +57,7 @@
               <i class="ag-doc-icon doc-down-shape f12 apigateway-icon icon-ag-down-shape"></i>
             </div>
             <template #content>
-              <bk-dropdown-menu class="bk-dropdown-list" style="width: 250px;">
+              <bk-dropdown-menu class="bk-dropdown-list w250">
                 <bk-dropdown-item v-for="component in componentList" :key="component.board">
                   <a href="javascript:;" @click="handleSwitchVersion(component)">{{ component.board_label }}</a>
                 </bk-dropdown-item>
@@ -224,7 +224,6 @@ const filterData = computed(() => {
 const getComponentList = async () => {
   try {
     const res = await getComponentSystemList(curVersion.value);
-    // console.log(res);
     componentList.value = res;
     componentList.value.forEach((item: any, index: number) => {
       item.logoIndex = index;
@@ -242,7 +241,6 @@ const getComponentList = async () => {
 const getAPIList = async () => {
   try {
     const res = await getSystemAPIList(curVersion.value, curSystemName.value);
-    // console.log(res);
     originComponentList.value = res;
   } catch (error) {
     console.log('error', error);
@@ -252,7 +250,6 @@ const getAPIList = async () => {
 const getSystemDetail = async () => {
   try {
     const res = await getComponenSystemDetail(curVersion.value, curSystemName.value);
-    // console.log(res);
     curSystem.value = res;
   } catch (error) {
     console.log('error', error);
@@ -275,7 +272,7 @@ const handleShowDoc = (component: any) => {
   curComponent.value = component;
   curComponentName.value = curComponent.value.name;
   router.push({
-    name: 'ComponentAPIDetailDoc',
+    name: 'componentAPIDetailDoc',
     params: {
       componentId: component.name,
     },
@@ -320,7 +317,6 @@ watch(
     if (!v.params.id) {
       return;
     }
-    console.log('route', v);
     isNavPanelShow.value = false;
     init();
   },
@@ -330,6 +326,12 @@ init();
 </script>
 
 <style lang="scss" scoped>
+.m16{
+  margin: 16px;
+}
+.w250{
+  width: 250px;
+}
 :deep(.container-content){
   :deep(.content){
     height: auto !important;
