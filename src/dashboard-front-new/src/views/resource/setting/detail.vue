@@ -76,7 +76,7 @@
         <template #label>
           <span class="label-cls">{{ t('请求方法：') }}</span>
         </template>
-        <span class="value-cls">{{ formData.method }}</span>
+        <bk-tag :theme="methodsEnum[formData?.method]">{{ formData?.method }}</bk-tag>
       </bk-form-item>
       <bk-form-item class="form-item-cls">
         <template #label>
@@ -160,6 +160,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { getResourceDetailData, getBackendsDetailData, deleteResources } from '@/http';
 import { Message } from 'bkui-vue';
+import { MethodsEnum } from '@/types';
 
 const router = useRouter();
 
@@ -182,6 +183,8 @@ const formData = ref<any>({});
 
 // 服务table
 const servicesData = ref<any>({});
+
+const methodsEnum: any = ref(MethodsEnum);
 
 // 资源详情
 const getResourceDetails = async () => {

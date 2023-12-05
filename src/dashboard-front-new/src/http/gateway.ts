@@ -1,7 +1,7 @@
 import fetch from './fetch';
 import { json2Query } from '@/common/util';
 
-const { BK_DASHBOARD_URL } = window;
+const { BK_DASHBOARD_URL, CREATE_CHAT_API, SEND_CHAT_API } = window;
 
 // 获取网关列表
 export const getGatewaysList = (data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/?${json2Query(data)}`);
@@ -33,3 +33,8 @@ export const getApigwResourceSDKDocs = (gatewayName: string, data: any) => fetch
 // 获取网关资源的文档
 export const getApigwResourceDocDocs = (gatewayName: string, resourceName: string, data: any) => fetch.get(`${BK_DASHBOARD_URL}/docs/gateways/${gatewayName}/resources/${resourceName}/doc/?${json2Query(data)}`);
 
+// 拉群
+export const createChat = (data: any) => fetch.post(CREATE_CHAT_API, data);
+
+// 发消息
+export const sendChat = (data: any) => fetch.post(SEND_CHAT_API, data);
