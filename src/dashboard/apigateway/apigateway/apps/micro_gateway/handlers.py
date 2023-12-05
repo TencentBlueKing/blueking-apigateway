@@ -19,7 +19,7 @@
 微网关实例处理器
 """
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 from django.conf import settings
@@ -27,11 +27,12 @@ from django.conf import settings
 from apigateway.apps.micro_gateway.constants import MicroGatewayCreateWayEnum
 from apigateway.controller.tasks import deploy_micro_gateway
 from apigateway.core.constants import MicroGatewayStatusEnum
+from apigateway.utils.user_credentials import UserCredentials
 
 
 class BaseMicroGatewayHandler(metaclass=ABCMeta):
     @abstractmethod
-    def deploy(self, micro_gateway_id: int, bk_ticket: str, username: str = ""):
+    def deploy(self, micro_gateway_id: int, user_credentials: Optional[UserCredentials] = None, username: str = ""):
         """部署微网关"""
 
     @abstractmethod
@@ -46,8 +47,10 @@ class BaseMicroGatewayHandler(metaclass=ABCMeta):
 class NeedDeployMicroGatewayHandler(BaseMicroGatewayHandler):
     """新部署的微网关实例"""
 
-    def deploy(self, micro_gateway_id: int, bk_ticket: str, username: str = ""):
-        delay_on_commit(deploy_micro_gateway, micro_gateway_id, bk_ticket, username)
+    def deploy(self, micro_gateway_id: int, user_credentials: Optional[UserCredentials] = None, username: str = ""):
+        delay_on_commit(
+            deploy_micro_gateway, micro_gateway_id, user_credentials.to_dict() if user_credentials else None, username
+        )
 
     def get_initial_status(self) -> MicroGatewayStatusEnum:
         return MicroGatewayStatusEnum.PENDING
@@ -63,7 +66,7 @@ class NeedDeployMicroGatewayHandler(BaseMicroGatewayHandler):
 class RelateDeployedMicroGatewayHandler(BaseMicroGatewayHandler):
     """接入已部署的微网关实例"""
 
-    def deploy(self, micro_gateway_id: int, bk_ticket: str, username: str = ""):
+    def deploy(self, micro_gateway_id: int, user_credentials: Optional[UserCredentials] = None, username: str = ""):
         """部署微网关"""
 
     def get_initial_status(self) -> MicroGatewayStatusEnum:

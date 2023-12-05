@@ -65,13 +65,13 @@ class Command(BaseCommand):
                 f"sync esb components to gateway(name={settings.BK_ESB_GATEWAY_NAME}) synchronously, "
                 "please wait a few minutes"
             )
-            sync_and_release_esb_components(esb_gateway.id, "admin", access_token, True)
+            sync_and_release_esb_components(esb_gateway.id, "admin", True)
             print(f"sync esb components to gateway(name={settings.BK_ESB_GATEWAY_NAME}) and release successfully")
             return
 
         apply_async_on_commit(
             sync_and_release_esb_components,
-            args=(esb_gateway.id, "admin", access_token, True),
+            args=(esb_gateway.id, "admin", True),
             expires=ESB_RELEASE_TASK_EXPIRES,
         )
 

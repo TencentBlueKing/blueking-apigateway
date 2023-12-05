@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(ignore_result=True)
-def deploy_micro_gateway(micro_gateway_id, bk_ticket, username):
+def deploy_micro_gateway(micro_gateway_id, user_credentials, username):
     """部署微网关实例"""
     micro_gateway = MicroGateway.objects.get(id=micro_gateway_id)
     micro_gateway_config = micro_gateway.config
@@ -47,7 +47,7 @@ def deploy_micro_gateway(micro_gateway_id, bk_ticket, username):
     micro_gateway.status = MicroGatewayStatusEnum.INSTALLING.value
     micro_gateway.save(update_fields=["status"])
 
-    release_helper = ReleaseHelper(bk_ticket=bk_ticket)
+    release_helper = ReleaseHelper(user_credentials=user_credentials)
     bcs_info = MicroGatewayBcsInfo.from_micro_gateway_config(micro_gateway_config)
     values_generator = MicroGatewayValuesGenerator(micro_gateway=micro_gateway)
     procedure_logger = ProcedureLogger("edge-gateway-upgrading", logger)

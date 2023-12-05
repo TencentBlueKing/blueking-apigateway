@@ -50,13 +50,13 @@ class ChartInfo:
 @dataclass
 class ChartHelper:
     client: Optional[BcsApiGatewayClient] = None
-    bk_ticket: str = ""
+    user_credentials: Optional[dict] = None
 
     def __post_init__(self):
         if not self.client:
             self.client = get_bcs_api_gateway_client()
-        if self.bk_ticket and self.bk_ticket != "":
-            self.client.update_bkapi_authorization(**{settings.BK_LOGIN_TICKET_KEY: self.bk_ticket})
+        if self.user_credentials:
+            self.client.update_bkapi_authorization(**self.user_credentials)
 
     def get_public_repo_info(self) -> ChartRepoInfo:
         """Get the public chart repos info."""

@@ -28,11 +28,11 @@ from apigateway.biz.releaser import (
     MicroGatewayReleaseHistory,
     MicroGatewayReleaser,
     ReleaseError,
-    Releaser,
     ReleaseValidationError,
 )
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
+from apigateway.utils.user_credentials import UserCredentials
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -60,13 +60,23 @@ class TestBaseGatewayReleaser:
             fake_stage.id,
             fake_resource_version.id,
             "",
-            bk_ticket="access_token",
+            user_credentials=UserCredentials(
+                credentials="access_token",
+            ),
         )
         assert isinstance(releaser, BaseGatewayReleaser)
 
         # 资源版本 不存在
         with pytest.raises(ResourceVersion.DoesNotExist):
-            BaseGatewayReleaser.from_data(fake_gateway, fake_stage.id, 0, "", bk_ticket="access_token")
+            BaseGatewayReleaser.from_data(
+                fake_gateway,
+                fake_stage.id,
+                0,
+                "",
+                user_credentials=UserCredentials(
+                    credentials="access_token",
+                ),
+            )
 
     def test_release(self, mocker, fake_gateway):
         release_data = get_release_data(fake_gateway)
@@ -75,7 +85,9 @@ class TestBaseGatewayReleaser:
             release_data["stage_id"],
             release_data["resource_version_id"],
             release_data.get("comment", ""),
-            bk_ticket="access_token",
+            user_credentials=UserCredentials(
+                credentials="access_token",
+            ),
         )
 
         # 校验失败
@@ -268,7 +280,9 @@ class TestMicroGatewayReleaser:
             release_data["stage_id"],
             release_data["resource_version_id"],
             release_data["comment"],
-            bk_ticket="access_token",
+            user_credentials=UserCredentials(
+                credentials="access_token",
+            ),
         )
 
     def test_do_release_edge_gateway(
@@ -292,16 +306,18 @@ class TestMicroGatewayReleaser:
             gateway=fake_gateway,
             stage=fake_stage,
             resource_version=fake_resource_version,
-            bk_ticket="access_token",
+            user_credentials=UserCredentials(
+                credentials="access_token",
+            ),
         )
 
         releaser._do_release(fake_release, fake_release_history)
 
         mock_release_gateway_by_helm.si.assert_called_once_with(
-            bk_ticket="access_token",
             release_id=fake_release.pk,
             micro_gateway_release_history_id=mocker.ANY,
             username=releaser.username,
+            user_credentials={"bk_token": "access_token"},
         )
 
         assert ReleaseHistory.objects.filter(
@@ -353,13 +369,3 @@ class TestMicroGatewayReleaser:
             micro_gateway=fake_shared_gateway,
             release_history=fake_release_history,
         ).exists()
-
-
-class TestReleaser:
-    def test_release(self, mocker, fake_gateway):
-        mock_release = mocker.patch("apigateway.biz.releaser.BaseGatewayReleaser.release")
-        release_data = get_release_data(fake_gateway)
-        Releaser(bk_ticket="bk_ticket").release(
-            fake_gateway, release_data["stage_id"], release_data["resource_version_id"], release_data["comment"]
-        )
-        mock_release.assert_called_once_with()

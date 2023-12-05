@@ -17,7 +17,7 @@
 #
 from dataclasses import dataclass, field
 from logging import getLogger
-from typing import List
+from typing import List, Optional
 
 from bkapi.bcs_api_gateway.client import Client as BcsApiGatewayClient
 from django.conf import settings
@@ -25,6 +25,7 @@ from django.conf import settings
 from apigateway.components.bcs import get_bcs_api_gateway_admin_client, get_bcs_api_gateway_client
 from apigateway.components.exceptions import ApiRequestError
 from apigateway.utils.exception import check_result_code
+from apigateway.utils.user_credentials import UserCredentials
 
 logger = getLogger(__name__)
 
@@ -51,7 +52,7 @@ class NamespaceInfo:
 
 @dataclass
 class BcsHelper:
-    bk_ticket: str = ""
+    user_credentials: Optional[UserCredentials] = None
     bcs_client: BcsApiGatewayClient = field(default_factory=get_bcs_api_gateway_client)
     bcs_admin_client: BcsApiGatewayClient = field(default_factory=get_bcs_api_gateway_admin_client)
 
@@ -59,8 +60,11 @@ class BcsHelper:
         self.bcs_client.update_bkapi_authorization(
             bk_app_code=settings.BK_APP_CODE,
             bk_app_secret=settings.BK_APP_SECRET,
-            **{settings.BK_LOGIN_TICKET_KEY: self.bk_ticket},
         )
+        if self.user_credentials:
+            self.bcs_admin_client.update_bkapi_authorization(
+                **self.user_credentials.to_dict(),
+            )
 
     def get_projects(self) -> List[ProjectInfo]:
         result = self.bcs_client.api.list_auth_projects()

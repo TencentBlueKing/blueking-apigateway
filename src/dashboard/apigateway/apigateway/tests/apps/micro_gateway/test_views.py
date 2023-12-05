@@ -126,7 +126,9 @@ class TestMicroGatewayViewSet:
 
         if need_deploy:
             mock_deploy_micro_gateway.assert_called_once_with(
-                args=(result["data"]["id"], "access_token", fake_admin_user.username), ignore_result=True, kwargs={}
+                args=(result["data"]["id"], {"bk_token": "access_token"}, fake_admin_user.username),
+                ignore_result=True,
+                kwargs={},
             )
         else:
             mock_deploy_micro_gateway.assert_not_called()

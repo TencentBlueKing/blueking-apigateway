@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from dataclasses import dataclass
+from typing import Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 from django.utils.functional import cached_property
@@ -47,6 +48,7 @@ from apigateway.core.models import (
     Stage,
 )
 from apigateway.utils.django import get_model_dict
+from apigateway.utils.user_credentials import UserCredentials
 
 
 class ReleaseError(Exception):
@@ -71,8 +73,8 @@ class BaseGatewayReleaser:
     stage: Stage
     resource_version: ResourceVersion
     comment: str = ""
-    bk_ticket: str = ""
     username: str = ""
+    user_credentials: Optional[UserCredentials] = None
 
     @classmethod
     def from_data(
@@ -81,15 +83,15 @@ class BaseGatewayReleaser:
         stage_id: int,
         resource_version_id: int,
         comment: str,
-        bk_ticket: str,
         username: str = "",
+        user_credentials: Optional[UserCredentials] = None,
     ):
         """
         :param gateway: 待操作的网关
         :param stage_id: 发布的环境 id
         :param resource_version_id: 发布的版本 id
         :param comment: 发布备注
-        :param bk_ticket: bk_ticket
+        :param user_credentials: user_credentials
         :param username: 发布人
         """
         return cls(
@@ -97,7 +99,7 @@ class BaseGatewayReleaser:
             stage=Stage.objects.get(id=stage_id),
             resource_version=ResourceVersion.objects.get(id=resource_version_id),
             comment=comment,
-            bk_ticket=bk_ticket,
+            user_credentials=user_credentials,
             username=username,
         )
 
@@ -299,10 +301,10 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         )
 
         return release_gateway_by_helm.si(
-            bk_ticket=self.bk_ticket,
             release_id=release.pk,
             micro_gateway_release_history_id=history.pk,
             username=self.username,
+            user_credentials=self.user_credentials.to_dict() if self.user_credentials else None,
         )  # type: ignore
 
     def _create_release_task(self, release: Release, release_history: ReleaseHistory):
@@ -322,15 +324,14 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         delay_on_commit(task)
 
 
-class Releaser:
-    bk_ticket: str = ""
-
-    def __init__(self, bk_ticket):
-        self.bk_ticket = bk_ticket
-
-    def release(
-        self, gateway: Gateway, stage_id: int, resource_version_id: int, comment: str, username: str = ""
-    ) -> ReleaseHistory:
-        return MicroGatewayReleaser.from_data(
-            gateway, stage_id, resource_version_id, comment, self.bk_ticket, username
-        ).release()
+def release(
+    gateway: Gateway,
+    stage_id: int,
+    resource_version_id: int,
+    comment: str,
+    username: str = "",
+    user_credentials: Optional[UserCredentials] = None,
+) -> ReleaseHistory:
+    return MicroGatewayReleaser.from_data(
+        gateway, stage_id, resource_version_id, comment, username, user_credentials
+    ).release()

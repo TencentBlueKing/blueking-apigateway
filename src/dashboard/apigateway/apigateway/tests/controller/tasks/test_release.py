@@ -52,7 +52,7 @@ class TestReleaseGaterwayByHelm:
         edge_release.stage.micro_gateway.delete()
 
         assert not tasks.release_gateway_by_helm(
-            "access_token", "user", edge_release.id, micro_gateway_release_history.id
+            "user", edge_release.id, micro_gateway_release_history.id, {"bk_ticket": "access_token"}
         )
 
     def test_success(self, mocker, edge_release, micro_gateway, micro_gateway_release_history):
@@ -60,10 +60,12 @@ class TestReleaseGaterwayByHelm:
 
         username = "user"
         access_token = "access_token"
-        assert tasks.release_gateway_by_helm(access_token, username, edge_release.id, micro_gateway_release_history.id)
+        assert tasks.release_gateway_by_helm(
+            username, edge_release.id, micro_gateway_release_history.id, {"bk_ticket": access_token}
+        )
 
-        self.chart_helper_factory.assert_called_once_with(bk_ticket=access_token)
-        self.release_helper_factory.assert_called_once_with(bk_ticket=access_token)
+        self.chart_helper_factory.assert_called_once_with(user_credentials={"bk_ticket": access_token})
+        self.release_helper_factory.assert_called_once_with(user_credentials={"bk_ticket": access_token})
         self.distributor_factory.assert_called_once_with(
             chart_helper=self.chart_helper,
             release_helper=self.release_helper,
@@ -80,7 +82,7 @@ class TestReleaseGaterwayByHelm:
         username = "user"
         access_token = "access_token"
         assert not tasks.release_gateway_by_helm(
-            access_token, username, edge_release.id, micro_gateway_release_history.id
+            username, edge_release.id, micro_gateway_release_history.id, {"bk_ticket": access_token}
         )
 
         micro_gateway_release_history.refresh_from_db()

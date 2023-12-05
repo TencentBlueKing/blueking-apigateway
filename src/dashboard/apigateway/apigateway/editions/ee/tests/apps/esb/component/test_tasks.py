@@ -74,7 +74,7 @@ def test_sync_and_release_esb_components(mocker, fake_gateway, updated_resources
         return_value=mocker.MagicMock(**{"acquire.return_value": False}),
     )
 
-    sync_and_release_esb_components(fake_gateway.id, "admin", "access_token", False)
+    sync_and_release_esb_components(fake_gateway.id, "admin", False)
 
     # acquired
     mock_release_lock_release = mocker.MagicMock()
@@ -101,9 +101,9 @@ def test_sync_and_release_esb_components(mocker, fake_gateway, updated_resources
 
     if release_side_effect:
         with pytest.raises(ComponentReleaseError):
-            sync_and_release_esb_components(fake_gateway.id, "admin", "access_token", False)
+            sync_and_release_esb_components(fake_gateway.id, "admin", False)
     else:
-        sync_and_release_esb_components(fake_gateway.id, "admin", "access_token", False)
+        sync_and_release_esb_components(fake_gateway.id, "admin", False)
 
     mock_sync_to_resources.asset_called_once_with(fake_gateway, username="admin")
     mock_create_resource_version.assert_called_once_with()
@@ -130,7 +130,7 @@ def test_test_sync_and_release_esb_components_error(mocker, fake_gateway):
     mock_mark_release_fail = mocker.patch("apigateway.apps.esb.component.tasks.ComponentReleaser.mark_release_fail")
 
     with pytest.raises(Exception):
-        sync_and_release_esb_components(fake_gateway.id, "admin", "access_token", False)
+        sync_and_release_esb_components(fake_gateway.id, "admin", False)
 
     mock_mark_release_fail.assert_called_once()
     mock_release_lock_release.assert_called_once_with()

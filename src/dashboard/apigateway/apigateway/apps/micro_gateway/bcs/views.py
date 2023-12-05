@@ -27,8 +27,8 @@ from apigateway.apps.micro_gateway.bcs import serializers
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bcs_helper import BcsApiGatewayApiRequestError, BcsHelper
 from apigateway.controller.helm.release import ReleaseHelper
-from apigateway.utils.bk_ticket import get_user_bk_ticket_from_request
 from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class BcsViewSet(viewsets.ViewSet):
     )
     def get_projects(self, request, *args, **kwargs):
         try:
-            projects = BcsHelper(bk_ticket=get_user_bk_ticket_from_request(request)).get_projects()
+            projects = BcsHelper(user_credentials=get_user_credentials_from_request(request)).get_projects()
         except BcsApiGatewayApiRequestError as err:
             raise error_codes.INTERNAL.format(str(err), replace=True)
 
@@ -56,7 +56,7 @@ class BcsViewSet(viewsets.ViewSet):
         query_slz.is_valid(raise_exception=True)
 
         try:
-            clusters = BcsHelper(bk_ticket=get_user_bk_ticket_from_request(request)).get_clusters(
+            clusters = BcsHelper(user_credentials=get_user_credentials_from_request(request)).get_clusters(
                 project_id=query_slz.validated_data["project_id"]
             )
         except BcsApiGatewayApiRequestError as err:
@@ -77,7 +77,7 @@ class BcsViewSet(viewsets.ViewSet):
         data = query_slz.validated_data
 
         try:
-            namespaces = BcsHelper(bk_ticket=get_user_bk_ticket_from_request(request)).get_namespaces(
+            namespaces = BcsHelper(user_credentials=get_user_credentials_from_request(request)).get_namespaces(
                 project_id=data["project_id"],
                 cluster_id=data["cluster_id"],
             )
@@ -99,7 +99,7 @@ class BcsViewSet(viewsets.ViewSet):
         data = query_slz.validated_data
 
         try:
-            releases = ReleaseHelper(bk_ticket=get_user_bk_ticket_from_request(request)).list_releases(
+            releases = ReleaseHelper(user_credentials=get_user_credentials_from_request(request)).list_releases(
                 project_id=data["project_id"],
                 cluster_id=data["cluster_id"],
                 namespace=data["namespace"],
