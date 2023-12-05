@@ -33,11 +33,12 @@ class ApplyStatusEnum(StructuredEnum):
 # Restricted Enum subclassing
 # https://docs.python.org/3/library/enum.html#restricted-subclassing-of-enumerations
 class PermissionStatusEnum(ChoiceEnum):
+    UNLIMITED = "unlimited"  # 无限制
     APPROVED = "approved"
     REJECTED = "rejected"
     PENDING = "pending"
     NEED_APPLY = "need_apply"
-    OWNED = "owned"
+    OWNED = "owned"  # 已申请
     EXPIRED = "expired"
 
 
@@ -84,4 +85,4 @@ class GrantDimensionEnum(StructuredEnum):
 # 默认的权限有效期天数
 DEFAULT_PERMISSION_EXPIRE_DAYS = 180
 # 可续期的过期天数，权限有效期小于此值，允许续期，否则，不允许
-RENEWABLE_EXPIRE_DAYS = 30
+RENEWABLE_EXPIRE_DAYS = 360

@@ -79,7 +79,10 @@ class ResourcePermission(BaseModel):
 
     @property
     def permission_status(self):
-        if not self.resource_perm_required or self.expires_in == math.inf:
+        if not self.resource_perm_required:
+            return PermissionStatusEnum.UNLIMITED.value
+
+        if self.expires_in == math.inf:
             return PermissionStatusEnum.OWNED.value
 
         if self.api_permission_apply_status or self.resource_permission_apply_status:
