@@ -30,11 +30,11 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.biz.releaser import ReleaseError, release
 from apigateway.common.error_codes import error_codes
+from apigateway.common.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import Release, ReleaseHistory
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
-from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 from .serializers import (
     ReleaseHistoryEventRetrieveOutputSLZ,

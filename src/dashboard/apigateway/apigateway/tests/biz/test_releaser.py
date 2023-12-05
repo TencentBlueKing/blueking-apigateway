@@ -30,9 +30,9 @@ from apigateway.biz.releaser import (
     ReleaseError,
     ReleaseValidationError,
 )
+from apigateway.common.user_credentials import UserCredentials
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
-from apigateway.utils.user_credentials import UserCredentials
 
 pytestmark = pytest.mark.django_db(transaction=True)
 

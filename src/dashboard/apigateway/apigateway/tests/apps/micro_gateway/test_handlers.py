@@ -18,8 +18,8 @@
 import pytest
 
 from apigateway.apps.micro_gateway.handlers import NeedDeployMicroGatewayHandler, RelateDeployedMicroGatewayHandler
+from apigateway.common.user_credentials import UserCredentials
 from apigateway.core.constants import MicroGatewayStatusEnum
-from apigateway.utils.user_credentials import UserCredentials
 
 pytestmark = pytest.mark.django_db(transaction=True)
 

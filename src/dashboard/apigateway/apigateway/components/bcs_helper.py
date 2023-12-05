@@ -22,10 +22,10 @@ from typing import List, Optional
 from bkapi.bcs_api_gateway.client import Client as BcsApiGatewayClient
 from django.conf import settings
 
+from apigateway.common.user_credentials import UserCredentials
 from apigateway.components.bcs import get_bcs_api_gateway_admin_client, get_bcs_api_gateway_client
 from apigateway.components.exceptions import ApiRequestError
 from apigateway.utils.exception import check_result_code
-from apigateway.utils.user_credentials import UserCredentials
 
 logger = getLogger(__name__)
 

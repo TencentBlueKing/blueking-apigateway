@@ -25,10 +25,10 @@ from rest_framework import status, viewsets
 
 from apigateway.apps.micro_gateway.bcs import serializers
 from apigateway.common.error_codes import error_codes
+from apigateway.common.user_credentials import get_user_credentials_from_request
 from apigateway.components.bcs_helper import BcsApiGatewayApiRequestError, BcsHelper
 from apigateway.controller.helm.release import ReleaseHelper
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 logger = logging.getLogger(__name__)
 

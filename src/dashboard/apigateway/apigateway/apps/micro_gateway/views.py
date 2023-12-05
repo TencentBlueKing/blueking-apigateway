@@ -25,10 +25,10 @@ from apigateway.apps.micro_gateway import serializers
 from apigateway.apps.micro_gateway.constants import MicroGatewayCreateWayEnum
 from apigateway.apps.micro_gateway.handlers import MicroGatewayHandlerFactory
 from apigateway.biz.audit import Auditor
+from apigateway.common.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import MicroGateway, Stage
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 
 class MicroGatewayViewSet(viewsets.ModelViewSet):

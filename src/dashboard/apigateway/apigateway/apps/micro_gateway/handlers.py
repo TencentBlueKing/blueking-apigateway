@@ -25,9 +25,9 @@ from blue_krill.async_utils.django_utils import delay_on_commit
 from django.conf import settings
 
 from apigateway.apps.micro_gateway.constants import MicroGatewayCreateWayEnum
+from apigateway.common.user_credentials import UserCredentials
 from apigateway.controller.tasks import deploy_micro_gateway
 from apigateway.core.constants import MicroGatewayStatusEnum
-from apigateway.utils.user_credentials import UserCredentials
 
 
 class BaseMicroGatewayHandler(metaclass=ABCMeta):

@@ -33,6 +33,7 @@ from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.validators import StageVarsValuesValidator
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.common.event.event import PublishEventReporter
+from apigateway.common.user_credentials import UserCredentials
 from apigateway.controller.tasks import release_gateway_by_helm, release_gateway_by_registry
 from apigateway.core import constants
 from apigateway.core.constants import PublishSourceEnum, ReleaseStatusEnum, StageStatusEnum
@@ -48,7 +49,6 @@ from apigateway.core.models import (
     Stage,
 )
 from apigateway.utils.django import get_model_dict
-from apigateway.utils.user_credentials import UserCredentials
 
 
 class ReleaseError(Exception):
