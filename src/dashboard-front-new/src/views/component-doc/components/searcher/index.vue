@@ -121,7 +121,7 @@ const hightlightSystemName = (node: any) => {
 
 const triggerHandler = (version: any) => {
   curVersion.value = version;
-  dropdown.value.hide();
+  dropdown?.value.hide();
 };
 // 跳转指定组件
 const handleShowDoc = (version: any) => {

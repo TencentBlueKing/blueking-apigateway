@@ -63,7 +63,7 @@
         </div>
       </template>
       <div class="mt20" v-else style="width: 100%; border-radius: 2px; border: 1px solid #eee; background: #FFF;">
-        1
+        <table-empty empty />
       </div>
     </div>
   </div>

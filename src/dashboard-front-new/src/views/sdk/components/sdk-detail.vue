@@ -7,14 +7,14 @@
           <!-- <bk-button disabled>GO</bk-button> -->
         </div>
         <bk-input
-          v-if="type === 'apigateway'" class="fr w500" v-model="keyword"
-          :placeholder="t('请输入网关名称或描述')" :right-icon="'bk-icon icon-search'" :clearable="true">
+          v-if="type === 'apigateway'" class="fr w500" v-model="keyword" :placeholder="t('请输入网关名称或描述')"
+          :right-icon="'bk-icon icon-search'" :clearable="true">
         </bk-input>
         <bk-loading :loading="isLoading">
           <bk-table
-            class="sdk-content-table mt15" ref="sdkRef"
-            :data="curPageData" :size="'small'" :key="renderKey" :outer-border="false" :pagination="pagination"
-            @page-limit-change="handlePageLimitChange" @page-change="handlePageChange">
+            class="sdk-content-table mt15" ref="sdkRef" :data="curPageData" :size="'small'" :key="renderKey"
+            :outer-border="false" :pagination="pagination" @page-limit-change="handlePageLimitChange"
+            @page-change="handlePageChange">
             <template v-if="type === 'apigateway'">
               <bk-table-column :label="t('网关名称')">
                 <template #default="{ data }">
@@ -25,9 +25,10 @@
               <bk-table-column :label="t('网关描述')">
                 <template #default="{ data }">
                   <span
-                    v-bk-tooltips="
-                      { content: data?.gateway.description,placement: 'left',extCls: 'gateway-detail-tooltips',
-                        disabled: data?.gateway.description === '' }">
+                    v-bk-tooltips="{
+                      content: data?.gateway.description, placement: 'left', extCls: 'gateway-detail-tooltips',
+                      disabled: data?.gateway.description === ''
+                    }">
                     {{ data?.gateway.description || '--' }}
                   </span>
                   <!-- <bk-popover
@@ -79,7 +80,7 @@
                   </a>
                 </template>
                 <template v-else>
-                  {{ t('未生成-doc') }}
+                  {{ t('未生成') }}
                 </template>
               </template>
             </bk-table-column>
@@ -265,18 +266,7 @@ const curParams = ref({
 });
 const curPageData = ref([]);
 
-// 监听路由的变化
-watch(
-  () => route,
-  () => {
-    active.value = 'sdk';
-    curPageData.value = [];
-    // eslint-disable-next-line no-plusplus
-    renderKey.value++;
-    init();
-  },
-  { deep: true },
-);
+
 // 监听搜索关键词的变化
 watch(
   () => keyword.value,
@@ -328,7 +318,7 @@ const initMarkdownHtml = (content: string) => {
 };
 
 // 获取SDK list
-const getSDKlist = async (keyword: any|string = null) => {
+const getSDKlist = async (keyword: any | string = null) => {
   const pageParams = {
     limit: pagination.value.limit,
     offset: pagination.value.offset,
@@ -339,12 +329,10 @@ const getSDKlist = async (keyword: any|string = null) => {
   try {
     if (type.value === 'apigateway') {
       const res = await getGatewaySDKlist(pageParams);
-      console.log('apigateway', res);
       curPageData.value = res.results;
       pagination.value.count = res.count;
     } else {
       const res = await getESBSDKlist(board.value, pageParams);
-      console.log('ESB', res);
       curPageData.value = res;
       pagination.value.count = res.length;
     }
@@ -353,6 +341,7 @@ const getSDKlist = async (keyword: any|string = null) => {
     console.log('error', error);
   }
 };
+
 // 获取SDK 说明
 const getSDKDoc = async () => {
   const params = { language: 'python' };
@@ -360,11 +349,9 @@ const getSDKDoc = async () => {
   try {
     if (type.value === 'apigateway') {
       const res = await getGatewaySDKDoc(params);
-      console.log('GatewaySDKDoc', res);
       sdkDoc.value = res.content;
     } else {
       const res = await getESBSDKDoc(board.value, params);
-      console.log('ESBSDKDoc', res);
       sdkDoc.value = res.content;
     }
     isLoading.value = false;
@@ -375,18 +362,34 @@ const getSDKDoc = async () => {
 };
 
 const init = () => {
-  console.log(route);
+  const curTab: any = route.query.tab;
+  active.value = curTab ? curTab : 'sdk';
   type.value = props.curType;
+  console.log('type', type.value);
   getSDKlist();
   getSDKDoc();
 };
-init();
+
+// 监听type的变化
+watch(
+  () => props.curType,
+  () => {
+    active.value = 'sdk';
+    curPageData.value = [];
+    // eslint-disable-next-line no-plusplus
+    renderKey.value++;
+    init();
+  },
+  { immediate: true, deep: true },
+);
+
 </script>
 
 <style lang="scss" scoped>
-.w500{
+.w500 {
   width: 500px;
 }
+
 .skd-wrapper {
   width: 1200px;
   margin: 20px auto;
@@ -609,9 +612,9 @@ init();
 }
 
 
-.popover-text{
-white-space: normal;
-word-break: break-all;
+.popover-text {
+  white-space: normal;
+  word-break: break-all;
 }
 
 .data-box {
@@ -666,7 +669,7 @@ word-break: break-all;
 }
 </style>
 <style lang="scss">
-.gateway-detail-tooltips{
+.gateway-detail-tooltips {
   width: 300px;
 }
 </style>

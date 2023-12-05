@@ -6,8 +6,8 @@
       </div>
 
       <div style="position: relative;">
-        <bk-breadcrumb separator-class="bk-icon icon-angle-right" class="mb20">
-          <bk-breadcrumb-item :to="{ name: 'componentAPI' }">{{ t('组件API文档') }}</bk-breadcrumb-item>
+        <bk-breadcrumb separator=">" class="mb20">
+          <bk-breadcrumb-item :to="{ name: 'componentDoc' }">{{ t('组件API文档') }}</bk-breadcrumb-item>
           <bk-breadcrumb-item>{{ curSystem.description || '--' }}</bk-breadcrumb-item>
           <bk-breadcrumb-item>{{ t('简介') }}</bk-breadcrumb-item>
         </bk-breadcrumb>
@@ -20,14 +20,12 @@
           :content="chatContent">
         </chat> -->
       </div>
-
       <bk-divider></bk-divider>
-
       <div class="ag-markdown-view" id="markdown">
-        <h3>{{ t('系统描述') }}</h3>
+        <h3 class="mt10">{{ t('系统描述') }}</h3>
         <p class="mb30">{{ curSystem.comment || t('暂无简介') }}</p>
 
-        <h3>{{ t('系统负责人-doc') }}</h3>
+        <h3>{{ t('系统负责人') }}</h3>
         <p class="mb30">{{ curSystem.maintainers && curSystem.maintainers.join(', ') || '--' }}</p>
 
         <template v-if="GLOBAL_CONFIG">
@@ -35,14 +33,12 @@
           <div class="bk-button-group">
             <bk-button class="is-selected">Python</bk-button>
           </div>
-
           <div>
             <sdk-detail :params="curSdk"></sdk-detail>
           </div>
         </template>
       </div>
     </div>
-
     <div class="component-nav-box" v-if="componentNavList.length">
       <div style="position: fixed;">
         <side-nav :list="componentNavList"></side-nav>
@@ -61,7 +57,7 @@ import sideNav from '@/components/side-nav/index.vue';
 import sdkDetail from '@/components/sdk-detail/index.vue';
 import {
   getComponenSystemDetail,
-  getESBSDKDoc,
+  getESBSDKDetail,
 } from '@/http';
 
 const { t } = useI18n();
@@ -78,20 +74,29 @@ const curSystem = ref<any>({
   description: '',
 });
 
+// 获取当前系统的信息
 const getSystemDetail = async () => {
   try {
     const res = await getComponenSystemDetail(curVersion.value, curSystemName.value);
-    console.log(res);
     curSystem.value = res;
   } catch (error) {
     console.log('error', error);
   }
 };
+// 获取当前SDK的信息
 const getSDKDetail = async () => {
   try {
-    const res = await getESBSDKDoc(curVersion.value, { language: 'python' });
-    console.log(res);
-    curSdk.value = res;
+    const res = await getESBSDKDetail(curVersion.value, { language: 'python' });
+    console.log('sdkDetail', res);
+    curSdk.value = {
+      sdk: {
+        name: res.sdk_name,
+        version: res.sdk_version_number,
+        url: res.sdk_download_url,
+        install_command: res.sdk_install_command,
+      },
+    };
+    // console.log(curSdk.value);
     initMarkdownHtml();
   } catch (error) {
     console.log('error', error);
@@ -117,21 +122,21 @@ const initMarkdownHtml = () => {
     });
 
     // 复制代码
-    markdownDom.querySelectorAll('a').forEach((item) => {
-      item.target = '_blank';
-    });
-    markdownDom.querySelectorAll('pre').forEach((item) => {
-      const btn = document.createElement('button');
-      const codeBox = document.createElement('div');
-      const code = item.querySelector('code').innerText;
-      btn.className = 'ag-copy-btn';
-      codeBox.className = 'code-box';
-      btn.innerHTML = '<span :title="$t(`复制`)"><i class="bk-icon icon-clipboard mr5"></i></span>';
-      btn.setAttribute('data-clipboard-text', code);
-      item.appendChild(btn);
-      codeBox.appendChild(item.querySelector('code'));
-      item.appendChild(codeBox);
-    });
+    // markdownDom.querySelectorAll('a').forEach((item) => {
+    //   item.target = '_blank';
+    // });
+    // markdownDom.querySelectorAll('pre').forEach((item) => {
+    //   const btn = document.createElement('button');
+    //   const codeBox = document.createElement('div');
+    //   const code = item.querySelector('code').innerText;
+    //   btn.className = 'ag-copy-btn';
+    //   codeBox.className = 'code-box';
+    //   btn.innerHTML = '<span :title="$t(`复制`)"><i class="bk-icon icon-clipboard mr5"></i></span>';
+    //   btn.setAttribute('data-clipboard-text', code);
+    //   item.appendChild(btn);
+    //   codeBox.appendChild(item.querySelector('code'));
+    //   item.appendChild(codeBox);
+    // });
   });
 
   // if (clipboardInstance.value?.off) {
@@ -156,18 +161,18 @@ const init = () => {
   curSystemName.value = routeParams.id;
   getSystemDetail();
   getSDKDetail();
-  console.log(GLOBAL_CONFIG);
+  // console.log(GLOBAL_CONFIG);
 };
 init();
 
-watch(
-  () => route,
-  () => {
-    init();
-    console.log(route);
-  },
-  { immediate: true, deep: true },
-);
+// watch(
+//   () => curSystemName.value,
+//   () => {
+//     init();
+//     console.log('intro', route);
+//   },
+//   {  deep: true },
+// );
 </script>
 
 <style lang="scss" scoped>
