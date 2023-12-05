@@ -330,6 +330,11 @@ init();
 </script>
 
 <style lang="scss" scoped>
+:deep(.container-content){
+  :deep(.content){
+    height: auto !important;
+  }
+}
 .bk-dropdown-popover {
   transform: translate3d(640px, 123px, 0px) !important;
   .bk-dropdown-content {

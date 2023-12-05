@@ -316,7 +316,6 @@ init();
     a {
       font-size: 14px;
       display: block;
-      margin-bottom: 4px;
       color: #63656e;
 
       &:hover {

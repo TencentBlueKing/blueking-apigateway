@@ -24,10 +24,8 @@
       <div class="ag-markdown-view" id="markdown">
         <h3 class="mt10">{{ t('系统描述') }}</h3>
         <p class="mb30">{{ curSystem.comment || t('暂无简介') }}</p>
-
         <h3>{{ t('系统负责人') }}</h3>
         <p class="mb30">{{ curSystem.maintainers && curSystem.maintainers.join(', ') || '--' }}</p>
-
         <template v-if="GLOBAL_CONFIG">
           <h3>{{ t('组件API SDK') }}</h3>
           <div class="bk-button-group">
@@ -120,39 +118,7 @@ const initMarkdownHtml = () => {
       });
       item.id = id;
     });
-
-    // 复制代码
-    // markdownDom.querySelectorAll('a').forEach((item) => {
-    //   item.target = '_blank';
-    // });
-    // markdownDom.querySelectorAll('pre').forEach((item) => {
-    //   const btn = document.createElement('button');
-    //   const codeBox = document.createElement('div');
-    //   const code = item.querySelector('code').innerText;
-    //   btn.className = 'ag-copy-btn';
-    //   codeBox.className = 'code-box';
-    //   btn.innerHTML = '<span :title="$t(`复制`)"><i class="bk-icon icon-clipboard mr5"></i></span>';
-    //   btn.setAttribute('data-clipboard-text', code);
-    //   item.appendChild(btn);
-    //   codeBox.appendChild(item.querySelector('code'));
-    //   item.appendChild(codeBox);
-    // });
   });
-
-  // if (clipboardInstance.value?.off) {
-  //   clipboardInstance.value?.off('success')
-  // }
-  // setTimeout(() => {
-  //   clipboardInstance.value = new Clipboard('.doc-copy')
-  //   clipboardInstance.value.on('success', () => {
-  //     Message({
-  //       width: 100,
-  //       limit: 1,
-  //       theme: 'success',
-  //       message: t('复制成功')
-  //     })
-  //   })
-  // }, 1000)
 };
 
 const init = () => {
@@ -164,15 +130,6 @@ const init = () => {
   // console.log(GLOBAL_CONFIG);
 };
 init();
-
-// watch(
-//   () => curSystemName.value,
-//   () => {
-//     init();
-//     console.log('intro', route);
-//   },
-//   {  deep: true },
-// );
 </script>
 
 <style lang="scss" scoped>
@@ -383,10 +340,17 @@ init();
     }
   }
 }
+
 .component-nav-box {
   margin-left: 15px;
   height: auto;
   flex: 1;
+}
+
+:deep(.bk-button-group) {
+  .is-selected {
+    background-color: #F6F9FF !important;
+  }
 }
 </style>
 

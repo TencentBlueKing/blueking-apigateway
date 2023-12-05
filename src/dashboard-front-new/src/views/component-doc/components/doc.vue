@@ -183,24 +183,10 @@ const initMarkdownHtml = (box: string) => {
     }
 
     // 复制代码
-    markdownDom?.querySelectorAll('a').forEach((item: any) => {
+    markdownDom?.querySelectorAll('a')?.forEach((item) => {
       item.target = '_blank';
     });
-    // markdownDom.querySelectorAll('pre').forEach((item: any) => {
-    //   const btn = document.createElement('button');
-    //   let code = '';
-    //   if (item?.className.indexOf('code') > -1) {
-    //     code = item?.innerText;
-    //   } else {
-    //     code = item?.querySelector('code').innerText;
-    //   }
-
-    //   btn.className = 'ag-copy-btn';
-    //   btn.innerHTML = '<span title="复制"><i class="bk-icon icon-clipboard mr5"></i></span>';
-    //   btn.setAttribute('data-clipboard-text', code);
-    //   item?.appendChild(btn);
-    // });
-    markdownDom?.querySelectorAll('pre')?.forEach((item: any) => {
+    markdownDom?.querySelectorAll('pre')?.forEach((item) => {
       const parentDiv = document.createElement('div');
       const btn = document.createElement('button');
       const codeBox = document.createElement('div');
@@ -208,14 +194,27 @@ const initMarkdownHtml = (box: string) => {
       parentDiv.className = 'pre-wrapper';
       btn.className = 'ag-copy-btn';
       codeBox.className = 'code-box';
-      btn.innerHTML = '<span :title="t(`复制`)"><i class="icon apigateway-icon icon-ag-copy" ></i></span>';
+      btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
+      btn.setAttribute('data-copy', code);
       parentDiv?.appendChild(btn);
       codeBox?.appendChild(item?.querySelector('code'));
       item?.appendChild(codeBox);
-      console.log(code, btn, item);
       item?.parentNode?.replaceChild(parentDiv, item);
       parentDiv?.appendChild(item);
     });
+
+
+    setTimeout(() => {
+      const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
+
+      const handleCopy = function (this: any) {
+        copy(this.dataset?.copy);
+      };
+
+      copyDoms.forEach((dom: any) => {
+        dom.onclick = handleCopy;
+      });
+    }, 1000);
   });
 };
 
