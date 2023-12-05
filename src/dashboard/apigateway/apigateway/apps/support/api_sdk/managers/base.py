@@ -36,7 +36,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class BaseSDKManager(SDKManager):
-    include_private_resources: bool = False
     is_public: bool = False
     version: str = ""
 
@@ -64,7 +63,7 @@ class BaseSDKManager(SDKManager):
         if resource["method"] == HTTP_METHOD_ANY:
             return False
 
-        return self.include_private_resources or resource.get("is_public", True)
+        return True
 
     def get_generator(self, context: SDKContext, **kwargs) -> Generator:
         """获取生成器对象"""

@@ -130,7 +130,6 @@ class Distributor:
 @dataclass
 class SDKManager:
     name: str = ""
-    include_private_resources: bool = False
     is_public: bool = False
 
     def handle(self, output_dir: str, resource_version: ResourceVersion) -> SDKContext:
