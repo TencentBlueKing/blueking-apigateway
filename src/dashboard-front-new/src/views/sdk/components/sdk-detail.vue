@@ -94,11 +94,6 @@
         </div>
         <!-- eslint-disable-next-line vue/no-v-html -->
         <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="markdownHtml"></div>
-        <div class="ag-markdown-editor">
-          <mavon-editor
-            ref="markdownRef" v-model="markdownDoc" v-show="isEdited" :language="language" :box-shadow="false"
-            :subfield="false" :ishljs="false" :code-style="'monokai'" :tab-size="4" />
-        </div>
       </bk-tab-panel>
     </bk-tab>
 
@@ -214,10 +209,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, reactive, computed } from 'vue';
+import { ref, watch, reactive, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { copy } from '@/common/util';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/monokai-sublime.css';
 import {
   getGatewaySDKlist,
   getESBSDKlist,
@@ -238,15 +236,11 @@ const board = ref<string>('-');
 const type = ref<string | any>('');
 const sdkDoc = ref<string>('');
 const markdownHtml = ref<string>('');
-const markdownDoc = ref<string>('');
-const language = ref<string>('zh');
 const active = ref<string>('sdk');
 const renderKey = ref<number>(0);
 const renderHtmlIndex = ref<number>(0);
 const keyword = ref<string>('');
-const isEdited = ref<boolean>(false);
 const isLoading = ref<boolean>(false);
-const markdownRef = ref(null);
 const pagination = ref({
   offset: 0,
   count: 0,
@@ -313,8 +307,59 @@ const handleDownload = () => {
     window.open(curParams.value.sdk_download_url);
   }
 };
+
+const md = new MarkdownIt({
+  linkify: false,
+  html: true,
+  breaks: true,
+  highlight(str: string, lang: string) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(lang, str, true).value;
+      } catch (__) { }
+    }
+
+    return '';
+  },
+});
+
 const initMarkdownHtml = (content: string) => {
-  markdownHtml.value = markdownRef.value.markdownIt.render(content);
+  markdownHtml.value = md.render(content);
+  // eslint-disable-next-line no-plusplus
+  renderHtmlIndex.value++;
+  nextTick(() => {
+    const markdownDom = document.getElementById('markdown');
+
+    // 复制代码
+    markdownDom.querySelectorAll('a').forEach((item: any) => {
+      item.target = '_blank';
+    });
+    markdownDom?.querySelectorAll('pre')?.forEach((item) => {
+      const parentDiv = document.createElement('div');
+      const btn = document.createElement('button');
+      const codeBox = document.createElement('div');
+      const code = item?.querySelector('code')?.innerText;
+      parentDiv.className = 'pre-wrapper';
+      btn.className = 'ag-copy-btn';
+      codeBox.className = 'code-box';
+      btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
+      btn.setAttribute('data-copy', code);
+      parentDiv?.appendChild(btn);
+      codeBox?.appendChild(item?.querySelector('code'));
+      item?.appendChild(codeBox);
+      item?.parentNode?.replaceChild(parentDiv, item);
+      parentDiv?.appendChild(item);
+    });
+    setTimeout(() => {
+      const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
+      const handleCopy = function (this: any) {
+        copy(this.dataset?.copy);
+      };
+      copyDoms.forEach((dom: any) => {
+        dom.onclick = handleCopy;
+      });
+    }, 1000);
+  });
 };
 
 // 获取SDK list
@@ -354,6 +399,8 @@ const getSDKDoc = async () => {
       const res = await getESBSDKDoc(board.value, params);
       sdkDoc.value = res.content;
     }
+    console.log('sdkDoc', sdkDoc.value);
+
     isLoading.value = false;
     initMarkdownHtml(sdkDoc.value);
   } catch (error) {

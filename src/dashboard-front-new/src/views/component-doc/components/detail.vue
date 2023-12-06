@@ -48,7 +48,7 @@
       <!-- eslint-disable-next-line vue/valid-v-on -->
       <div class="nav-panel" ref="panel" v-if="isNavPanelShow">
         <div class="version-panel">
-          <bk-dropdown ref="dropdown m16" :popover-options="popoverOptions">
+          <bk-dropdown ref="dropdown" :popover-options="popoverOptions" class="m16">
             <div class="version-name">
               <svg aria-hidden="true" class="category-icon vm">
                 <use :xlink:href="`#doc-icon${curVersionData.logoIndex % 4}`"></use>
@@ -750,6 +750,13 @@ init();
     font-size: 14px;
     padding-left: 0;
   }
+}
+.version-panel {
+    margin-bottom: 20px;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
 }
 </style>
 

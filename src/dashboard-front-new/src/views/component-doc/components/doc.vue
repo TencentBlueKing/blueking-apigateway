@@ -22,7 +22,7 @@
           :content="chatContent">
         </chat>
       </div>
-      <bk-tab v-model:active="active" class="bk-special-tab" @tab-change="handleTabChange">
+      <bk-tab v-model:active="active" class="bk-special-tab">
         <bk-tab-panel :name="'doc'" :label="t('文档')">
           <div class="ag-kv-box mb15">
             <div class="kv-row">
@@ -52,7 +52,7 @@
           <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="curComponent.markdownHtml"></div>
         </bk-tab-panel>
         <bk-tab-panel :name="'sdk '" :label="t('SDK及示例')">
-          <div id="sdk-markdown">
+          <div>
             <div class="bk-button-group mb5">
               <bk-button class="is-selected">Python</bk-button>
               <!-- <bk-button disabled>GO</bk-button> -->
@@ -68,7 +68,7 @@
             </div>
             <h3 class="f16 mt30 fw700 mt15 mb15 balck">{{ t('SDK使用样例') }}</h3>
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="ag-markdown-view mt20" :key="renderHtmlIndex" v-html="sdkMarkdownHtml"></div>
+            <div class="ag-markdown-view mt20" id="sdk-markdown" :key="renderHtmlIndex" v-html="sdkMarkdownHtml"></div>
           </div>
         </bk-tab-panel>
       </bk-tab>
@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed } from 'vue';
+import { ref, nextTick, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { slugify } from 'transliteration';
@@ -137,6 +137,17 @@ const curApigw = ref({
   label: '',
   maintainers: [],
 });
+watch(
+  () => active.value,
+  (v: string) => {
+    if (v === 'doc') {
+      initMarkdownHtml('markdown');
+    } else {
+      initMarkdownHtml('sdk-markdown');
+    }
+  },
+  {  deep: true },
+);
 
 
 const curUser = computed(() => userStore?.user);
@@ -225,11 +236,9 @@ const initMarkdownHtml = (box: string) => {
 
     setTimeout(() => {
       const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
-
       const handleCopy = function (this: any) {
         copy(this.dataset?.copy);
       };
-
       copyDoms.forEach((dom: any) => {
         dom.onclick = handleCopy;
       });
@@ -237,13 +246,6 @@ const initMarkdownHtml = (box: string) => {
   });
 };
 
-const handleTabChange = () => {
-  // if (active.value === 'doc') {
-  //   initMarkdownHtml('markdown');
-  // } else {
-  //   initMarkdownHtml('sdk-markdown');
-  // }
-};
 
 // 获取当前系统的信息
 const getSystemDetail = async () => {
