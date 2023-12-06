@@ -121,12 +121,12 @@ class ReleaseCreateApi(generics.CreateAPIView):
                 try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
             ):
                 history = release(
-                    request.gateway,
-                    slz.validated_data["stage_id"],
-                    slz.validated_data["resource_version_id"],
-                    slz.validated_data.get("comment", ""),
-                    request.user.username,
-                    get_user_credentials_from_request(request),
+                    gateway=request.gateway,
+                    stage_id=slz.validated_data["stage_id"],
+                    resource_version_id=slz.validated_data["resource_version_id"],
+                    comment=slz.validated_data.get("comment", ""),
+                    username=request.user.username,
+                    user_credentials=get_user_credentials_from_request(request),
                 )
         except LockTimeout as err:
             logger.exception("retrieve lock timeout")

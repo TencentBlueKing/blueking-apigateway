@@ -53,7 +53,7 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
         # 部署微网关实例
         create_way = MicroGatewayCreateWayEnum(slz.validated_data["create_way"])
         MicroGatewayHandlerFactory.get_handler(create_way).deploy(
-            slz.instance.id, get_user_credentials_from_request(request), request.user.username
+            slz.instance.id, request.user.username, get_user_credentials_from_request(request)
         )
 
         Auditor.record_micro_gateway_op_success(
@@ -116,7 +116,7 @@ class MicroGatewayViewSet(viewsets.ModelViewSet):
         # 更新微网关实例
         if slz.validated_data["need_deploy"]:
             MicroGatewayHandlerFactory.get_handler(MicroGatewayCreateWayEnum.NEED_DEPLOY).deploy(
-                slz.instance.id, get_user_credentials_from_request(request), request.user.username
+                slz.instance.id, request.user.username, get_user_credentials_from_request(request)
             )
 
         Auditor.record_micro_gateway_op_success(

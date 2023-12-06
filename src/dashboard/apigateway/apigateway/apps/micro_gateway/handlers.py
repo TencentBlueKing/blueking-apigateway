@@ -32,7 +32,7 @@ from apigateway.core.constants import MicroGatewayStatusEnum
 
 class BaseMicroGatewayHandler(metaclass=ABCMeta):
     @abstractmethod
-    def deploy(self, micro_gateway_id: int, user_credentials: Optional[UserCredentials] = None, username: str = ""):
+    def deploy(self, micro_gateway_id: int, username: str = "", user_credentials: Optional[UserCredentials] = None):
         """部署微网关"""
 
     @abstractmethod
@@ -47,9 +47,9 @@ class BaseMicroGatewayHandler(metaclass=ABCMeta):
 class NeedDeployMicroGatewayHandler(BaseMicroGatewayHandler):
     """新部署的微网关实例"""
 
-    def deploy(self, micro_gateway_id: int, user_credentials: Optional[UserCredentials] = None, username: str = ""):
+    def deploy(self, micro_gateway_id: int, username: str = "", user_credentials: Optional[UserCredentials] = None):
         delay_on_commit(
-            deploy_micro_gateway, micro_gateway_id, user_credentials.to_dict() if user_credentials else None, username
+            deploy_micro_gateway, micro_gateway_id, username, user_credentials.to_dict() if user_credentials else None
         )
 
     def get_initial_status(self) -> MicroGatewayStatusEnum:
@@ -66,7 +66,7 @@ class NeedDeployMicroGatewayHandler(BaseMicroGatewayHandler):
 class RelateDeployedMicroGatewayHandler(BaseMicroGatewayHandler):
     """接入已部署的微网关实例"""
 
-    def deploy(self, micro_gateway_id: int, user_credentials: Optional[UserCredentials] = None, username: str = ""):
+    def deploy(self, micro_gateway_id: int, username: str = "", user_credentials: Optional[UserCredentials] = None):
         """部署微网关"""
 
     def get_initial_status(self) -> MicroGatewayStatusEnum:

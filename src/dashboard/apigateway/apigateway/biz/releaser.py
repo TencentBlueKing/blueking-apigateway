@@ -99,8 +99,8 @@ class BaseGatewayReleaser:
             stage=Stage.objects.get(id=stage_id),
             resource_version=ResourceVersion.objects.get(id=resource_version_id),
             comment=comment,
-            user_credentials=user_credentials,
             username=username,
+            user_credentials=user_credentials,
         )
 
     def _save_release_history(self) -> ReleaseHistory:

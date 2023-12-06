@@ -38,7 +38,7 @@ class TestNeedDeployMicroGateway:
         self.handler.deploy(micro_gateway_id, user_credentials=UserCredentials(credentials="access_token"))
 
         mock_deploy_micro_gateway.assert_called_once_with(
-            args=(micro_gateway_id, {"bk_token": "access_token"}, ""), ignore_result=True, kwargs={}
+            args=(micro_gateway_id, "", {"bk_token": "access_token"}), ignore_result=True, kwargs={}
         )
 
     def test_get_initial_status(self):
