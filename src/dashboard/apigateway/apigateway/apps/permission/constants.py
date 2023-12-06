@@ -59,15 +59,15 @@ class PermissionApplyExpireDaysEnum(StructuredEnum):
 
 class GrantTypeEnum(StructuredEnum):
     # 初始化方式主动授权
-    INITIALIZE = EnumField("initialize")
+    INITIALIZE = EnumField("initialize", label=_("主动授权"))
     # 申请审批方式授权
-    APPLY = EnumField("apply")
+    APPLY = EnumField("apply", label=_("申请审批"))
     # 续期
-    RENEW = EnumField("renew")
+    RENEW = EnumField("renew", label=_("续期"))
     # 自动续期
-    AUTO_RENEW = EnumField("auto_renew")
+    AUTO_RENEW = EnumField("auto_renew", label=_("自动续期"))
     # 资源权限同步自按网关权限
-    SYNC = EnumField("sync")
+    SYNC = EnumField("sync", label=_("按网关授权同步"))
 
 
 class GrantDimensionEnum(StructuredEnum):

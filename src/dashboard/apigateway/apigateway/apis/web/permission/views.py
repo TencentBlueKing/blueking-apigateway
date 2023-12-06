@@ -49,6 +49,7 @@ from .filters import (
     AppResourcePermissionFilter,
 )
 from .serializers import (
+    AppGatewayPermissionExportOutputSLZ,
     AppGatewayPermissionOutputSLZ,
     AppPermissionApplyApprovalInputSLZ,
     AppPermissionApplyOutputSLZ,
@@ -56,6 +57,7 @@ from .serializers import (
     AppPermissionIDsSLZ,
     AppPermissionInputSLZ,
     AppPermissionRecordOutputSLZ,
+    AppResourcePermissionExportOutputSLZ,
     AppResourcePermissionOutputSLZ,
 )
 
@@ -154,7 +156,7 @@ class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generic
             queryset = self.get_queryset().filter(id__in=data["permission_ids"])
 
         resources = Resource.objects.filter(id__in=[perm.resource_id for perm in queryset])
-        slz = AppResourcePermissionOutputSLZ(
+        slz = AppResourcePermissionExportOutputSLZ(
             queryset, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
         )
         content = self._get_csv_content(slz.data)
@@ -346,7 +348,7 @@ class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
             queryset = self.get_queryset().filter(id__in=data["permission_ids"])
 
-        slz = AppGatewayPermissionOutputSLZ(queryset, many=True)
+        slz = AppGatewayPermissionExportOutputSLZ(queryset, many=True)
         content = self._get_csv_content(slz.data)
 
         response = DownloadableResponse(content, filename=f"{self.request.gateway.name}-permissions.csv")

@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from rest_framework import serializers
+from rest_framework import serializers, validators
 
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN
@@ -39,4 +39,13 @@ class BaseBackendConfigSLZ(serializers.Serializer):
     )
     timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1, help_text="超时时间")
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices(), help_text="负载均衡")
-    hosts = serializers.ListField(child=HostSLZ(), allow_empty=False, help_text="主机列表")
+    hosts = serializers.ListField(
+        child=HostSLZ(),
+        allow_empty=False,
+        help_text="主机列表",
+        validators=[
+            validators.UniqueTogetherValidator(
+                queryset=None, fields=["scheme", "host"], message="hosts must be unique."
+            )
+        ],
+    )
