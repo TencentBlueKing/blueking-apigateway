@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from rest_framework import serializers, validators
+from rest_framework import serializers
 
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN
@@ -43,9 +43,14 @@ class BaseBackendConfigSLZ(serializers.Serializer):
         child=HostSLZ(),
         allow_empty=False,
         help_text="主机列表",
-        validators=[
-            validators.UniqueTogetherValidator(
-                queryset=None, fields=["scheme", "host"], message="hosts must be unique."
-            )
-        ],
     )
+
+    def validate_hosts(self, value):
+        unique_combinations = set()
+        for host_data in value:
+            # 假设HostSLZ有scheme和host字段
+            scheme_host_combination = (host_data["scheme"], host_data["host"])
+            if scheme_host_combination in unique_combinations:
+                raise serializers.ValidationError("hosts中的scheme和host组合必须唯一。")
+            unique_combinations.add(scheme_host_combination)
+        return value
