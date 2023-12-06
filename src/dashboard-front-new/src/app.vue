@@ -41,7 +41,7 @@ const headerList = ref([
   {
     name: t('组件管理'),
     id: 2,
-    url: 'apigwAccess',
+    url: 'componentsMain',
     enabled: true,
     link: '',
   },
@@ -92,12 +92,12 @@ const apigwId = computed(() => {
 watch(
   () => route.fullPath,
   () => {
-    const { name } = route;
+    const { meta } = route;
 
     let index = 0;
     for (let i = 0; i < headerList.value.length; i++) {
       const item = headerList.value[i];
-      if (item.url === name) {
+      if (item.url === meta?.topMenu) {
         index = i;
         break;
       }
