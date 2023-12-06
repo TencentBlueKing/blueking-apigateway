@@ -373,7 +373,7 @@ const { t } = useI18n();
 const route = useRoute();
 
 // 网关id
-const apigwId = +route.params.id;
+const apigwId = computed(() => +route.params.id);
 
 const props = defineProps({
   versionList: {
@@ -548,7 +548,7 @@ const getDiffData = async () => {
   diffData.update = [];
 
   try {
-    const res = await resourceVersionsDiff(apigwId, {
+    const res = await resourceVersionsDiff(apigwId.value, {
       source_resource_version_id: String(localSourceId.value).replace(
         'current',
         '',
@@ -587,10 +587,10 @@ const getApigwVersions = async () => {
     offset: 0,
   };
   try {
-    const res = await getResourceVersionsList(apigwId, pageParams);
-    res.results.forEach((item) => {
+    const res = await getResourceVersionsList(apigwId.value, pageParams);
+    res.results.forEach((item: any) => {
       item.resource_version_display = `${item.version}(${item.comment})`;
-      item.stage_text = item.released_stages.map((item) => {
+      item.stage_text = item.released_stages.map((item: any) => {
         return item.name;
       });
     });

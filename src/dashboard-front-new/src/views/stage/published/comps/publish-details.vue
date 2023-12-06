@@ -98,14 +98,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { getReleaseLatest } from '@/http';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const route = useRoute();
-const apigwId = +route.params.id;
+const apigwId = computed(() => +route.params.id);
 
 const props = defineProps({
   id: String,
@@ -120,7 +120,7 @@ const showSideslider = () => {
 
 const getDetails = async () => {
   try {
-    const res = await getReleaseLatest(apigwId);
+    const res = await getReleaseLatest(apigwId.value);
     info.value = res;
     console.log(res);
   } catch (e) {

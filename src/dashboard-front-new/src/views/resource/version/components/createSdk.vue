@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, ref } from 'vue';
+import { reactive, watch, ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { IDialog } from '@/types';
 import { createSdks, getResourceVersionsList } from '@/http';
@@ -56,7 +56,7 @@ const { t } = useI18n();
 const route = useRoute();
 
 // 网关id
-const apigwId = +route.params.id;
+const apigwId = computed(() => +route.params.id);
 
 const props = defineProps<{
   versionList?: Array<any>;
@@ -97,7 +97,7 @@ const handleCreate = async () => {
     await baseInfoRef.value?.validate();
     dialogConfig.loading = true;
 
-    await createSdks(apigwId, formData);
+    await createSdks(apigwId.value, formData);
 
     Message({
       message: t('创建成功'),
@@ -149,7 +149,7 @@ const getResourceVersions = async () => {
       offset: 0,
       limit: 1000,
     };
-    const res = await getResourceVersionsList(apigwId, query);
+    const res = await getResourceVersionsList(apigwId.value, query);
     versionOpts.value = res.results;
   } catch (e) {
     console.log(e);
