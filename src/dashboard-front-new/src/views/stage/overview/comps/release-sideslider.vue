@@ -126,7 +126,7 @@ import versionDiff from '@/components/version-diff';
 import logDetails from '@/components/log-details/index.vue';
 
 const route = useRoute();
-const apigwId = +route.params.id;
+const apigwId = computed(() => +route.params.id);
 
 const { t } = useI18n();
 
@@ -207,7 +207,7 @@ const handlePublish = async () => {
       stage_id: props.currentAssets.id,
       ...formData,
     };
-    const res = await createReleases(apigwId, params);
+    const res = await createReleases(apigwId.value, params);
 
     publishId.value = res?.id;
     isShow.value = false;
@@ -226,7 +226,7 @@ const showReleaseSideslider = () => {
 // 获取资源版本列表
 const getResourceVersions = async () => {
   try {
-    const res = await getResourceVersionsList(apigwId, { offset: 0, limit: 1000 });
+    const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 1000 });
     res.results?.forEach((item: any) => {
       if (item.id === props.currentAssets?.resource_version?.id) {
         item.disabled = true;
@@ -254,7 +254,7 @@ const handleVersionChange = async (val: number) => {
       target_resource_version_id: val,
     };
 
-    const res: any = await resourceVersionsDiff(apigwId, query);
+    const res: any = await resourceVersionsDiff(apigwId.value, query);
 
     diffData.value = res;
   } catch (e) {
