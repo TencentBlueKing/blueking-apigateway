@@ -21,7 +21,7 @@ from ddf import G
 from django.utils import timezone
 
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
-from apigateway.apps.permission.models import AppAPIPermission, AppResourcePermission
+from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.apps.permission.tasks import AppPermissionExpiringSoonAlerter, renew_app_resource_permission
 from apigateway.utils.time import now_datetime, to_datetime_from_now
 
@@ -104,7 +104,7 @@ class TestRenewAppResourcePermission:
 class TestAppPermissionExpiringSoonAlerter:
     def test_get_permissions_expiring_soon(self, fake_gateway, unique_id):
         now = timezone.now()
-        G(AppAPIPermission, api=fake_gateway, expires=now + datetime.timedelta(days=20), bk_app_code=unique_id)
+        G(AppGatewayPermission, api=fake_gateway, expires=now + datetime.timedelta(days=20), bk_app_code=unique_id)
         G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=10), bk_app_code=unique_id)
         G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=70), bk_app_code=unique_id)
 
