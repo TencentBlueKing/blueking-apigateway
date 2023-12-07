@@ -38,7 +38,7 @@ class PermissionStatusEnum(ChoiceEnum):
     REJECTED = "rejected"
     PENDING = "pending"
     NEED_APPLY = "need_apply"
-    OWNED = "owned"  # 已申请
+    OWNED = "owned"  # 已申请，且未过期
     EXPIRED = "expired"
 
 
