@@ -362,9 +362,11 @@ class AppComponentPermissionManager(models.Manager):
         component_ids: List[int],
         expire_days: int,
     ):
-        self.filter(bk_app_code=bk_app_code, component_id__in=component_ids).update(
-            expires=to_datetime_from_now(days=expire_days),
-        )
+        queryset = self.filter(bk_app_code=bk_app_code, component_id__in=component_ids)
+        # 仅续期权限期限小于待续期时间的权限
+        expires = to_datetime_from_now(days=expire_days)
+        queryset = queryset.filter(expires__lt=expires)
+        queryset.update(expires=expires)
 
     def renew_permission_by_ids(self, ids: List[int], expire_days: int):
         self.filter(id__in=ids).update(

@@ -36,6 +36,7 @@ from apigateway.apps.permission.models import (
 )
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, Resource
+from apigateway.utils.time import now_datetime
 
 
 class ResourcePermissionHandler:
@@ -106,6 +107,51 @@ class PermissionDimensionManager(metaclass=ABCMeta):
     @abstractmethod
     def allow_apply_permission(self, gateway_id: int, bk_app_code: str) -> Tuple[bool, str]:
         """判断是否允许申请权限"""
+
+    def create_apply_record(
+        self,
+        bk_app_code: str,
+        gateway: Gateway,
+        resource_ids: List[int],
+        grant_dimension: str,
+        reason: str,
+        expire_days: int,
+        username: str,
+    ) -> AppPermissionApply:
+        """创建申请权限的单据"""
+        record = AppPermissionRecord.objects.create(
+            bk_app_code=bk_app_code,
+            applied_by=username,
+            applied_time=now_datetime(),
+            reason=reason,
+            expire_days=expire_days,
+            api=gateway,
+            resource_ids=resource_ids,
+            grant_dimension=grant_dimension,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+
+        instance = AppPermissionApply.objects.create(
+            bk_app_code=bk_app_code,
+            applied_by=username,
+            api=gateway,
+            resource_ids=resource_ids,
+            grant_dimension=grant_dimension,
+            status=ApplyStatusEnum.PENDING.value,
+            reason=reason,
+            expire_days=expire_days,
+            apply_record_id=record.id,
+        )
+
+        self.save_permission_apply_status(
+            bk_app_code=bk_app_code,
+            gateway=gateway,
+            apply=instance,
+            status=ApplyStatusEnum.PENDING.value,
+            resources=Resource.objects.filter_by_ids(gateway, ids=resource_ids),
+        )
+
+        return instance
 
 
 class APIPermissionDimensionManager(PermissionDimensionManager):
