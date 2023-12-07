@@ -8,12 +8,12 @@
         clearable
         style="width: 500px"
       />
-      <bk-button
+      <!-- <bk-button
         theme="primary"
         @click="handleGoApigw"
       >
         {{ t('网关管理') }}
-      </bk-button>
+      </bk-button> -->
     </div>
     <div class="docs-list">
       <bk-loading :loading="isLoading">

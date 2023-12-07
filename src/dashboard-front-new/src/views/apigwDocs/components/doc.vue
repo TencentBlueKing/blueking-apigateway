@@ -17,15 +17,14 @@
           <bk-breadcrumb-item>{{curComponent.name || '--'}}</bk-breadcrumb-item>
         </bk-breadcrumb>
 
-        <!-- <chat
+        <chat
           class="ag-chat"
-          v-if="GLOBAL_CONFIG.PLATFORM_FEATURE.ALLOW_CREATE_APPCHAT"
           :default-user-list="userList"
           :owner="curUser.username"
           :name="chatName"
           :content="chatContent"
           :is-query="true">
-        </chat> -->
+        </chat>
       </div>
 
       <bk-tab v-model:active="active" class="bk-special-tab">
@@ -114,10 +113,14 @@ import 'highlight.js/styles/monokai-sublime.css';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { getApigwResourceSDKDocs, getApigwResourceDocDocs, getApigwResourcesDocs, getApigwSDKDocs, getGatewaysDetailsDocs } from '@/http';
-// import chat from '@/components/chat';
+import { copy } from '@/common/util';
+import chat from '@/components/chat';
+import { useUser } from '@/store';
 
+const userStore = useUser();
 const route = useRoute();
 const { t } = useI18n();
+
 const md = new MarkdownIt({
   linkify: false,
   html: true,
@@ -161,6 +164,14 @@ const curApigw = ref({
 const componentNavList = ref<any>([]);
 
 const SDKInfo = computed(() => t(`网关当前环境【${curStage.value}】对应的资源版本未生成SDK，可联系网关负责人生成SDK`));
+const curUser = computed(() => userStore?.user);
+const userList = computed(() => {
+  // 去重
+  const set = new Set([curUser.value?.username, ...curApigw.value?.maintainers]);
+  return [...set];
+});
+const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);
+const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
 
 const initMarkdownHtml = (box: string) => {
   nextTick(() => {
@@ -207,13 +218,27 @@ const initMarkdownHtml = (box: string) => {
       parentDiv.className = 'pre-wrapper';
       btn.className = 'ag-copy-btn';
       codeBox.className = 'code-box';
-      btn.innerHTML = `<span :title="$t('复制')"><i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(${code})"></i></span>`;
+      btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
+      btn.setAttribute('data-copy', code);
       parentDiv?.appendChild(btn);
       codeBox?.appendChild(item?.querySelector('code'));
       item?.appendChild(codeBox);
       item?.parentNode?.replaceChild(parentDiv, item);
       parentDiv?.appendChild(item);
     });
+
+
+    setTimeout(() => {
+      const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
+
+      const handleCopy = function (this: any) {
+        copy(this.dataset?.copy);
+      };
+
+      copyDoms.forEach((dom: any) => {
+        dom.onclick = handleCopy;
+      });
+    }, 1000);
   });
 };
 

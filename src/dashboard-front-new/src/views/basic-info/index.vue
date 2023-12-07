@@ -16,7 +16,7 @@
             <div class="header-info-tag">
               <bk-tag ext-cls="website" v-if="basicInfoData.is_official">{{ t('官网') }}</bk-tag>
               <div v-if="basicInfoData.status > 0">
-                <bk-tag ext-cls="vip">{{ t('专享') }}</bk-tag>
+                <!-- <bk-tag ext-cls="vip">{{ t('专享') }}</bk-tag>? -->
                 <bk-tag ext-cls="enabling">
                   <i class="apigateway-icon icon-ag-bar-chart" />
                   {{ t('启用中') }}
