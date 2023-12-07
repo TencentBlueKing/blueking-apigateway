@@ -99,6 +99,7 @@ class ResourcePermission(BaseModel):
         if self.expires_in > -math.inf:
             return PermissionStatusEnum.EXPIRED.value
 
+        # 无权限，待申请
         return PermissionStatusEnum.NEED_APPLY.value
 
     @cached_property

@@ -260,7 +260,7 @@ class AppPermissionExpiringSoonAlerter:
         - 过滤掉不在指定告警时间的权限
         - 过滤掉已下架网关的权限
         """
-        gateway_ids = set(perm["gateway_id"] for perms in permissions.values() for perm in perms)
+        gateway_ids = {perm["gateway_id"] for perms in permissions.values() for perm in perms}
         inactive_gateway_ids = list(
             Gateway.objects.filter(id__in=gateway_ids, status=APIStatusEnum.INACTIVE.value).values_list(
                 "id", flat=True
@@ -282,10 +282,10 @@ class AppPermissionExpiringSoonAlerter:
 
     def _complete_permissions(self, permissions: Dict[str, List]):
         """补全，完善权限数据"""
-        gateway_ids = set(perm["gateway_id"] for perms in permissions.values() for perm in perms)
-        resource_ids = set(
+        gateway_ids = {perm["gateway_id"] for perms in permissions.values() for perm in perms}
+        resource_ids = {
             perm["resource_id"] for perms in permissions.values() for perm in perms if perm.get("resource_id")
-        )
+        }
 
         # 补全网关名称、资源名称
         gateway_id_to_fields = {
