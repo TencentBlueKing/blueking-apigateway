@@ -131,7 +131,7 @@ class TestArchiveParser:
             ("get_user.md", None),
             ("zh/get_user.md", "zh"),
             ("en/get_user.md", "en"),
-            ("zz/get_user.md", "zz"),
+            ("zz/get_user.md", None),
             ("docs/zh/get_user.md", "zh"),
             ("other/docs/zh/get_user.md", "zh"),
         ],

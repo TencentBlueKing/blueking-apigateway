@@ -93,12 +93,10 @@ class ArchiveParser(BaseParser):
         """
         :param files: filename to full filepath
         """
-        available_languages = DocLanguageEnum.get_values()
-
         docs = []
         for filename, filepath in files.items():
             language = self._extract_language(filename)
-            if language not in available_languages:
+            if not language:
                 continue
 
             resource_name = self._extract_resource_name(filename)
@@ -129,7 +127,13 @@ class ArchiveParser(BaseParser):
         if len(parts) < 2:
             return None
 
-        return parts[-2]
+        language = parts[-2]
+
+        available_languages = DocLanguageEnum.get_values()
+        if language not in available_languages:
+            return None
+
+        return language
 
     def _extract_resource_name(self, filename: str) -> Optional[str]:
         """
