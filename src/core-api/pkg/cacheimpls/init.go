@@ -64,7 +64,7 @@ var (
 		"gateway",
 		DisableCache,
 		tracedFuncWrapper("gateway", retrieveGatewayByName),
-		12*time.Hour,
+		1*time.Minute,
 		newRandomDuration(30),
 	)
 
@@ -82,7 +82,7 @@ var (
 		"resource_version_mapping",
 		DisableCache,
 		tracedFuncWrapper("resource_version_mapping", retrieveResourceVersionMapping),
-		12*time.Hour,
+		1*time.Minute,
 		newRandomDuration(30),
 	)
 
