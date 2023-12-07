@@ -1,0 +1,434 @@
+<template>
+  <div class="operate-records-content">
+    <div class="ag-top-header">
+      <bk-form class="search-form" form-type="inline">
+        <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker top-form-item-time">
+          <bk-date-picker
+            ref="topDatePicker"
+            style="width: 320px"
+            v-model="dateTimeRange"
+            :key="dateKey"
+            :placeholder="t('选择日期时间范围')"
+            :type="'datetimerange'"
+            :shortcuts="AccessLogStore.datepickerShortcuts"
+            :shortcut-close="true"
+            :use-shortcut-text="true"
+            :shortcut-selected-index="shortcutSelectedIndex"
+            @shortcut-change="handleShortcutChange"
+            @pick-success="handleTimeChange"
+            @clear="handleTimeClear"
+          >
+          </bk-date-picker>
+        </bk-form-item>
+        <bk-form-item>
+          <bk-search-select
+            v-model="searchValue"
+            unique-select
+            class="operate-records-search"
+            :data="searchData"
+            :placeholder="t('请输入关键字或选择条件搜索')"
+            :clearable="false"
+            :value-split-code="'+'"
+          />
+        </bk-form-item>
+      </bk-form>
+    </div>
+    <bk-loading :loading="isLoading" :z-index="100">
+      <bk-table
+        size="small"
+        ref="tableRef"
+        :data="tableData"
+        :pagination="pagination"
+        :remote-pagination="true"
+        :show-overflow-tooltip="true"
+        @page-value-change="handlePageChange"
+        @page-limit-change="handlePageSizeChange"
+      >
+        <bk-table-column
+          width="300"
+          :label="t('操作对象')"
+        >
+          <template #default="{ row }">
+            <div class="cell-field">
+              <!-- <span class="label"> {{ t("类型") }}： </span> -->
+              <span class="content">{{ getOpObjectTypeText(row.op_object_type) }}</span>
+            </div>
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('实例')" prop="op_object" :show-overflow-tooltip="true" />
+        <bk-table-column :label="t('操作类型')">
+          <template #default="{ row }">
+            {{ getOpTypeText(row.op_type) || '--'}}
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('操作状态')">
+          <template #default="{ row }">
+            <span :class="['ag-dot', row.op_status]"></span>
+            <span class="status-text">{{ getStatusText(row.op_status) }}</span>
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('操作人')" prop="username" />
+        <bk-table-column :label="t('操作时间')" prop="op_time" />
+        <bk-table-column :label="t('描述')" prop="comment" />
+        <template #empty>
+          <TableEmpty
+            :keyword="tableEmptyConf.keyword"
+            :abnormal="tableEmptyConf.isAbnormal"
+            @reacquire="getAuditLogList"
+            @clear-filter="handleClearFilterKey"
+          />
+        </template>
+      </bk-table>
+    </bk-loading>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import i18n from '@/language/i18n';
+import TableEmpty from '@/components/table-empty.vue';
+import { ref, shallowRef, reactive, watch } from 'vue';
+import { cloneDeep } from 'lodash';
+import { useQueryList } from '@/hooks';
+import { useAccessLog, useOperateRecords } from '@/store';
+import {
+  DefaultSearchParamsInterface,
+  TableEmptyConfType,
+} from './common/type';
+import { fetchApigwAuditLogs } from '@/http';
+
+const { t } = i18n.global;
+const AccessLogStore = useAccessLog();
+const OperateRecords = useOperateRecords();
+
+const defaultFilterData = ref<DefaultSearchParamsInterface>({
+  keyword: '',
+  op_type: '',
+  op_object: '',
+  op_object_type: '',
+  op_status: '',
+  username: '',
+  time_start: '',
+  time_end: '',
+});
+const filterData = ref<{[key: string]: any}>(cloneDeep(defaultFilterData));
+const {
+  tableData,
+  pagination,
+  isLoading,
+  handlePageChange,
+  handlePageSizeChange,
+  getList,
+} = useQueryList(fetchApigwAuditLogs, filterData);
+
+const topDatePicker = ref(null);
+const dateKey = ref('dateKey');
+const shortcutSelectedIndex = shallowRef(-1);
+const dateTimeRange = ref([]);
+const members = ref([]);
+const curPagination = ref(cloneDeep(pagination));
+const tableEmptyConf = reactive<TableEmptyConfType>({
+  keyword: '',
+  isAbnormal: false,
+});
+const OperateRecordObjectType =  ref(AccessLogStore.auditOptions.OPObjectType.map((item: Record<string, string>) => {
+  return {
+    ...item,
+    ...{ id: item.value },
+  };
+}));
+const OperateRecordType =  ref(AccessLogStore.auditOptions.OPType.map((item: Record<string, string>) => {
+  return {
+    ...item,
+    ...{ id: item.value },
+  };
+}));
+const OperateRecordStatus =  ref(OperateRecords.operateStatus.map((item: Record<string, string>) => {
+  return {
+    ...item,
+    ...{ id: item.value },
+  };
+}));
+const searchValue = ref([]);
+const searchData = shallowRef([
+  {
+    name: t('模糊查询'),
+    id: 'keyword',
+    placeholder: t('请输入实例，操作人'),
+  },
+  {
+    name: t('操作对象'),
+    id: 'op_object_type',
+    placeholder: t('请选择操作对象'),
+    children: OperateRecordObjectType.value,
+  },
+  {
+    name: t('操作类型'),
+    id: 'op_type',
+    placeholder: t('请选择操作类型'),
+    children: OperateRecordType.value,
+  },
+  {
+    name: t('操作状态'),
+    id: 'op_status',
+    placeholder: t('请选择操作状态'),
+    children: OperateRecordStatus.value,
+  },
+
+  {
+    name: t('实例'),
+    id: 'op_object',
+    placeholder: t('请输入实例'),
+  },
+  {
+    name: t('操作人'),
+    id: 'username',
+    placeholder: t('请输入操作人'),
+  },
+]);
+
+const formatDatetime = (timeRange: number[]) => {
+  return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
+};
+
+const setSearchTimeRange = () => {
+  let timeRange = dateTimeRange.value;
+  // 选择的是时间快捷项，需要实时计算时间值
+  if (shortcutSelectedIndex.value !== -1) {
+    timeRange = AccessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
+  }
+  const formatTimeRange = formatDatetime(timeRange);
+  filterData.value = Object.assign(filterData.value, {
+    time_start: formatTimeRange[0] || '',
+    time_end: formatTimeRange[1] || '',
+  });
+};
+
+const getAuditLogList = async () => {
+  setSearchTimeRange();
+  getList();
+  updateTableEmptyConfig();
+};
+
+const getStatusText = (type: string) => {
+  return (OperateRecords.operateStatus.find((item: Record<string, string>) => item.value === type) || {})?.name || '';
+};
+
+const getOpTypeText = (type: string) => {
+  return (
+    (
+      AccessLogStore.auditOptions.OPType.find((item: Record<string, string>) => item.value === type) || {}
+    )?.name || ''
+  );
+};
+
+const getOpObjectTypeText = (type: string) => {
+  return (
+    (
+      AccessLogStore.auditOptions.OPObjectType.find((item: Record<string, string>) => item.value === type) || {}
+    )?.name || ''
+  );
+};
+
+const handleTimeChange = () => {
+  setSearchTimeRange();
+};
+
+const handleTimeClear = () => {
+  shortcutSelectedIndex.value = -1;
+  dateTimeRange.value = [];
+  setSearchTimeRange();
+};
+
+const handleShortcutChange = (value: Record<string, any>, index: number) => {
+  shortcutSelectedIndex.value = index;
+  updateTableEmptyConfig();
+};
+
+const handleClearFilterKey = () => {
+  members.value = [];
+  filterData.value = cloneDeep(defaultFilterData.value);
+  searchValue.value = [];
+  handleTimeClear();
+  dateKey.value = String(+new Date());
+};
+;
+const updateTableEmptyConfig = () => {
+  if (!curPagination.value.count) {
+    tableEmptyConf.keyword = 'placeholder';
+    return;
+  }
+  tableEmptyConf.keyword = '';
+};
+
+watch(
+  () => searchValue.value,
+  (newVal: any[]) => {
+    if (!newVal.length) {
+      filterData.value = cloneDeep(defaultFilterData.value);
+      getList();
+      updateTableEmptyConfig();
+      return;
+    }
+    Object.keys(filterData.value).forEach((item: string) => {
+      const hasData = newVal.find((v: Record<string, any>) => v.id === item);
+      filterData.value[item] = hasData ? hasData.values[0].id : '';
+    });
+    getList();
+    updateTableEmptyConfig();
+  },
+);
+</script>
+
+<style lang="scss" scoped>
+.operate-records-content {
+  min-height: calc(100vh - 208px);
+  padding: 24px;
+
+  .ag-top-header {
+    min-height: 32px;
+    margin-bottom: 20px;
+    position: relative;
+
+    :deep(.search-form) {
+      width: 100% !important;
+      max-width: 100% !important;
+      display: inline-block;
+
+      .bk-form-item {
+        display: inline-flex;
+        margin-bottom: 0;
+        margin-left: 8px;
+        vertical-align: middle;
+
+        &:first-child {
+          margin-left: 0;
+        }
+
+        .bk-form-label {
+          width: auto !important;
+          line-height: 32px;
+          display: inline-block;
+          padding: 0 15px 0 0;
+
+          span {
+            display: inline-block;
+            line-height: 20px;
+          }
+        }
+
+        .bk-form-content {
+          margin-left: 0 !important;
+        }
+      }
+
+      .ag-form-item-inline {
+        margin-left: 8px !important;
+        margin-top: 0px !important;
+
+        .bk-form-content {
+          display: flex !important;
+          font-size: unset;
+        }
+
+        .suffix {
+          margin-left: 4px;
+        }
+      }
+
+      .top-search-input {
+        width: 600px;
+      }
+
+    }
+  }
+
+  .cell-field {
+    display: flex;
+
+    .label {
+      flex: none;
+      color: #979ba5;
+    }
+
+    .content {
+      flex: 1;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+  }
+
+  .operate-records-search {
+    width: calc(100vh - 20px);
+    background: #ffffff;
+  }
+
+  .ag-dot {
+    width: 8px;
+    height: 8px;
+    display: inline-block;
+    vertical-align: middle;
+    background: #C4C6CC;
+    border-radius: 50%;
+
+    &.default {
+        background: #f0f1f5;
+        border: 1px solid #c9cad2;
+    }
+
+    &.primary,
+    &.releasing,
+    &.pending {
+        background: #f0f1f5;
+        border: 1px solid #c9cad2;
+    }
+
+    &.success {
+        background: #E5F6EA;
+        border: 1px solid #3FC06D;
+    }
+
+    &.danger,
+    &.failure {
+        background: #FFE6E6;
+        border: 1px solid #EA3636;
+    }
+
+    &.failure,
+    &.fail {
+        background: #FFE6E6;
+        border: 1px solid #EA3636;
+    }
+
+    &.skipped,
+    &.unknown {
+        background: rgba(120, 67, 175, .16);
+        border: 1px solid #7843AF;
+    }
+
+    &.received {
+        background: rgba(58, 132, 255, .16);
+        border: 1px solid #3A84FF;
+    }
+  }
+}
+
+@media (max-width: 1660px) {
+  .search-form {
+    width: 870px;
+
+    :deep(.bk-form-item.top-form-item-input) {
+      margin-top: 10px !important;
+    }
+
+    .member-selector {
+      width: 320px;
+    }
+
+    .top-search-button,
+    .top-clear-button {
+      margin-top: 10px;
+    }
+  }
+}
+</style>

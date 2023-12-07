@@ -14,5 +14,6 @@ export * from './report';
 export * from './resource-version';
 export * from './releases';
 export * from './monitor';
+export * from './operate-records';
 export * from './sdk';
 export * from './component-api-doc';

@@ -105,6 +105,7 @@
           :remote-pagination="true"
           :row-style="{ cursor: 'pointer' }"
           :row-class="getRowClass"
+          :show-overflow-tooltip="true"
           @row-click="handleRowClick"
           @page-value-change="handlePageChange"
           @page-limit-change="handlePageLimitChange"
