@@ -15,11 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
+
 from ddf import G
+from django.utils import timezone
 
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
-from apigateway.apps.permission.models import AppResourcePermission
-from apigateway.apps.permission.tasks import renew_app_resource_permission
+from apigateway.apps.permission.models import AppAPIPermission, AppResourcePermission
+from apigateway.apps.permission.tasks import AppPermissionExpiringSoonAlerter, renew_app_resource_permission
 from apigateway.utils.time import now_datetime, to_datetime_from_now
 
 
@@ -96,3 +99,62 @@ class TestRenewAppResourcePermission:
         assert AppResourcePermission.objects.get(
             gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=5
         ).expires > to_datetime_from_now(days=179)
+
+
+class TestAppPermissionExpiringSoonAlerter:
+    def test_get_permissions_expiring_soon(self, fake_gateway, unique_id):
+        now = timezone.now()
+        G(AppAPIPermission, api=fake_gateway, expires=now + datetime.timedelta(days=20), bk_app_code=unique_id)
+        G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=10), bk_app_code=unique_id)
+        G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=70), bk_app_code=unique_id)
+
+        alerter = AppPermissionExpiringSoonAlerter(30, [])
+        result = alerter._get_permissions_expiring_soon()
+        assert len(result[unique_id]) == 2
+
+    def test_filter_permissions(self, fake_gateway, unique_id):
+        now = timezone.now()
+        G(
+            AppResourcePermission,
+            api=fake_gateway,
+            expires=now + datetime.timedelta(hours=24 * 1 + 1),
+            bk_app_code=unique_id,
+        )
+        G(
+            AppResourcePermission,
+            api=fake_gateway,
+            expires=now + datetime.timedelta(hours=24 * 3 + 2),
+            bk_app_code=unique_id,
+        )
+        G(
+            AppResourcePermission,
+            api=fake_gateway,
+            expires=now + datetime.timedelta(hours=24 * 7 + 1),
+            bk_app_code=unique_id,
+        )
+
+        alerter = AppPermissionExpiringSoonAlerter(30, [1, 3])
+
+        permissions = alerter._get_permissions_expiring_soon()
+        assert len(permissions[unique_id]) == 3
+
+        result = alerter._filter_permissions(permissions)
+        assert len(result[unique_id]) == 2
+
+        fake_gateway.status = 0
+        fake_gateway.save()
+
+        result = alerter._filter_permissions(permissions)
+        assert len(result.get(unique_id, [])) == 0
+
+    def test_complete_permissions(self, fake_gateway, unique_id):
+        now = timezone.now()
+        G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=1), bk_app_code=unique_id)
+        G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=2), bk_app_code=unique_id)
+        G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=3), bk_app_code=unique_id)
+
+        alerter = AppPermissionExpiringSoonAlerter(30, [])
+
+        permissions = alerter._get_permissions_expiring_soon()
+        alerter._complete_permissions(permissions)
+        assert permissions[unique_id][0]["gateway_name"] == fake_gateway.name

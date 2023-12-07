@@ -36,7 +36,7 @@ class PermissionStatusEnum(StructuredEnum):
     REJECTED = EnumField("rejected", label="已拒绝")
     PENDING = EnumField("pending", label="申请中")
     NEED_APPLY = EnumField("need_apply", label="待申请")
-    OWNED = EnumField("owned", label="已申请")
+    OWNED = EnumField("owned", label="已申请，且未过期")
     EXPIRED = EnumField("expired", label="已过期")
 
 
