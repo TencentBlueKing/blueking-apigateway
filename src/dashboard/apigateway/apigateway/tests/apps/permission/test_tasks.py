@@ -104,9 +104,19 @@ class TestRenewAppResourcePermission:
 class TestAppPermissionExpiringSoonAlerter:
     def test_get_permissions_expiring_soon(self, fake_gateway, unique_id):
         now = timezone.now()
-        G(AppGatewayPermission, api=fake_gateway, expires=now + datetime.timedelta(days=20), bk_app_code=unique_id)
-        G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=10), bk_app_code=unique_id)
-        G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=70), bk_app_code=unique_id)
+        G(AppGatewayPermission, gateway=fake_gateway, expires=now + datetime.timedelta(days=20), bk_app_code=unique_id)
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            expires=now + datetime.timedelta(days=10),
+            bk_app_code=unique_id,
+        )
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            expires=now + datetime.timedelta(days=70),
+            bk_app_code=unique_id,
+        )
 
         alerter = AppPermissionExpiringSoonAlerter(30, [])
         result = alerter._get_permissions_expiring_soon()
@@ -116,19 +126,19 @@ class TestAppPermissionExpiringSoonAlerter:
         now = timezone.now()
         G(
             AppResourcePermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             expires=now + datetime.timedelta(hours=24 * 1 + 1),
             bk_app_code=unique_id,
         )
         G(
             AppResourcePermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             expires=now + datetime.timedelta(hours=24 * 3 + 2),
             bk_app_code=unique_id,
         )
         G(
             AppResourcePermission,
-            api=fake_gateway,
+            gateway=fake_gateway,
             expires=now + datetime.timedelta(hours=24 * 7 + 1),
             bk_app_code=unique_id,
         )
@@ -149,9 +159,9 @@ class TestAppPermissionExpiringSoonAlerter:
 
     def test_complete_permissions(self, fake_gateway, unique_id):
         now = timezone.now()
-        G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=1), bk_app_code=unique_id)
-        G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=2), bk_app_code=unique_id)
-        G(AppResourcePermission, api=fake_gateway, expires=now + datetime.timedelta(days=3), bk_app_code=unique_id)
+        G(AppResourcePermission, gateway=fake_gateway, expires=now + datetime.timedelta(days=1), bk_app_code=unique_id)
+        G(AppResourcePermission, gateway=fake_gateway, expires=now + datetime.timedelta(days=2), bk_app_code=unique_id)
+        G(AppResourcePermission, gateway=fake_gateway, expires=now + datetime.timedelta(days=3), bk_app_code=unique_id)
 
         alerter = AppPermissionExpiringSoonAlerter(30, [])
 
