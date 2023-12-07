@@ -84,7 +84,7 @@ def _release_gateway(
 
 
 @shared_task(ignore_result=True)
-def release_gateway_by_helm(username, release_id, micro_gateway_release_history_id, user_credentials):
+def release_gateway_by_helm(release_id, micro_gateway_release_history_id, username, user_credentials):
     """发布资源到专享网关"""
     logger.info(
         "release_gateway_by_helm: release_id=%s, micro_gateway_release_history_id=%s",

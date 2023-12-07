@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(ignore_result=True)
-def deploy_micro_gateway(micro_gateway_id, user_credentials, username):
+def deploy_micro_gateway(micro_gateway_id, username, user_credentials):
     """部署微网关实例"""
     micro_gateway = MicroGateway.objects.get(id=micro_gateway_id)
     micro_gateway_config = micro_gateway.config
