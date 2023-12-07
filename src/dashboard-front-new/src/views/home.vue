@@ -29,7 +29,10 @@
         <div class="flex-1 of2">{{ t('操作') }}</div>
       </div>
       <div class="table-list">
-        <div class="table-item flex-row align-items-center" v-for="item in gatewaysList" :key="item.id">
+        <div
+          class="table-item flex-row align-items-center"
+          v-for="item in gatewaysList" :key="item.id"
+          :class="item.isYesterday ? 'newly-item' : ''">
           <div class="flex-1 flex-row align-items-center of4">
             <div
               class="name-logo mr10" :class="item.status ? '' : 'deact'"
@@ -167,6 +170,7 @@ import { Message } from 'bkui-vue';
 import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
 import { useGetApiList } from '@/hooks';
+import moment from 'moment';
 import {
   ref,
 } from 'vue';
@@ -255,6 +259,9 @@ const {
 const init = async () => {
   gatewaysList.value = await getGatewaysListData();
   gatewaysList.value.forEach((item: any) => {
+    const isYesterday = moment(new Date()).diff(moment(item.created_time), 'days') ;
+    console.log('isYesterday', isYesterday);
+    item.isYesterday = isYesterday < 2;
     item.tagOrder = '3';
     item.labelText = item.stages.reduce((prev: any, label: any, index: number) => {
       if (index > item.tagOrder - 1) {
@@ -385,6 +392,10 @@ init();
       .table-item:nth-of-type(1) {
         margin-top: 0px
        };
+
+       .newly-item{
+        background: #F2FFF4;
+       }
     }
     .of1{
         flex: 0 0 10%;
