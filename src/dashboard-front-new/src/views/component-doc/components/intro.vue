@@ -5,46 +5,39 @@
         <strong class="name">{{ t('简介') }}</strong>
       </div>
 
-      <div style="position: relative;">
-        <bk-breadcrumb separator-class="bk-icon icon-angle-right" class="mb20">
-          <bk-breadcrumb-item :to="{ name: 'componentAPI' }">{{ t('组件API文档') }}</bk-breadcrumb-item>
+      <div class="position-relative">
+        <bk-breadcrumb separator=">" class="mb20">
+          <bk-breadcrumb-item :to="{ name: 'componentDoc' }">{{ t('组件API文档') }}</bk-breadcrumb-item>
           <bk-breadcrumb-item>{{ curSystem.description || '--' }}</bk-breadcrumb-item>
           <bk-breadcrumb-item>{{ t('简介') }}</bk-breadcrumb-item>
         </bk-breadcrumb>
-        <!-- <chat
+        <chat
           class="ag-chat"
-          v-if="GLOBAL_CONFIG.PLATFORM_FEATURE.ALLOW_CREATE_APPCHAT"
           :default-user-list="userList"
           :owner="curUser.username"
           :name="chatName"
           :content="chatContent">
-        </chat> -->
+        </chat>
       </div>
-
       <bk-divider></bk-divider>
-
       <div class="ag-markdown-view" id="markdown">
-        <h3>{{ t('系统描述') }}</h3>
+        <h3 class="mt10">{{ t('系统描述') }}</h3>
         <p class="mb30">{{ curSystem.comment || t('暂无简介') }}</p>
-
-        <h3>{{ t('系统负责人-doc') }}</h3>
+        <h3>{{ t('系统负责人') }}</h3>
         <p class="mb30">{{ curSystem.maintainers && curSystem.maintainers.join(', ') || '--' }}</p>
-
         <template v-if="GLOBAL_CONFIG">
           <h3>{{ t('组件API SDK') }}</h3>
           <div class="bk-button-group">
             <bk-button class="is-selected">Python</bk-button>
           </div>
-
           <div>
             <sdk-detail :params="curSdk"></sdk-detail>
           </div>
         </template>
       </div>
     </div>
-
     <div class="component-nav-box" v-if="componentNavList.length">
-      <div style="position: fixed;">
+      <div class="position-fixed">
         <side-nav :list="componentNavList"></side-nav>
       </div>
     </div>
@@ -52,20 +45,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { ref, nextTick, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useGetGlobalProperties } from '@/hooks';
 import { slugify } from 'transliteration';
 import { useRoute } from 'vue-router';
 import sideNav from '@/components/side-nav/index.vue';
 import sdkDetail from '@/components/sdk-detail/index.vue';
+import chat from '@/components/chat/index.vue';
+import { useUser } from '@/store';
 import {
   getComponenSystemDetail,
-  getESBSDKDoc,
+  getESBSDKDetail,
 } from '@/http';
 
 const { t } = useI18n();
 const route = useRoute();
+const userStore = useUser();
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 
@@ -77,21 +73,47 @@ const curSystem = ref<any>({
   name: '',
   description: '',
 });
+const curApigw = ref<any>({
+  id: 2,
+  name: '',
+  description: '',
+  maintainers: [
+  ],
+  is_official: '',
+  api_url: '',
+});
 
+const curUser = computed(() => userStore?.user);
+const userList = computed(() => {
+  // 去重
+  const set = new Set([curUser.value?.username, ...curApigw.value?.maintainers]);
+  return [...set];
+});
+const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);
+const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
+
+
+// 获取当前系统的信息
 const getSystemDetail = async () => {
   try {
     const res = await getComponenSystemDetail(curVersion.value, curSystemName.value);
-    console.log(res);
     curSystem.value = res;
   } catch (error) {
     console.log('error', error);
   }
 };
+// 获取当前SDK的信息
 const getSDKDetail = async () => {
   try {
-    const res = await getESBSDKDoc(curVersion.value, { language: 'python' });
-    console.log(res);
-    curSdk.value = res;
+    const res = await getESBSDKDetail(curVersion.value, { language: 'python' });
+    curSdk.value = {
+      sdk: {
+        name: res.sdk_name,
+        version: res.sdk_version_number,
+        url: res.sdk_download_url,
+        install_command: res.sdk_install_command,
+      },
+    };
     initMarkdownHtml();
   } catch (error) {
     console.log('error', error);
@@ -115,39 +137,7 @@ const initMarkdownHtml = () => {
       });
       item.id = id;
     });
-
-    // 复制代码
-    markdownDom.querySelectorAll('a').forEach((item) => {
-      item.target = '_blank';
-    });
-    markdownDom.querySelectorAll('pre').forEach((item) => {
-      const btn = document.createElement('button');
-      const codeBox = document.createElement('div');
-      const code = item.querySelector('code').innerText;
-      btn.className = 'ag-copy-btn';
-      codeBox.className = 'code-box';
-      btn.innerHTML = '<span :title="$t(`复制`)"><i class="bk-icon icon-clipboard mr5"></i></span>';
-      btn.setAttribute('data-clipboard-text', code);
-      item.appendChild(btn);
-      codeBox.appendChild(item.querySelector('code'));
-      item.appendChild(codeBox);
-    });
   });
-
-  // if (clipboardInstance.value?.off) {
-  //   clipboardInstance.value?.off('success')
-  // }
-  // setTimeout(() => {
-  //   clipboardInstance.value = new Clipboard('.doc-copy')
-  //   clipboardInstance.value.on('success', () => {
-  //     Message({
-  //       width: 100,
-  //       limit: 1,
-  //       theme: 'success',
-  //       message: t('复制成功')
-  //     })
-  //   })
-  // }, 1000)
 };
 
 const init = () => {
@@ -156,21 +146,17 @@ const init = () => {
   curSystemName.value = routeParams.id;
   getSystemDetail();
   getSDKDetail();
-  console.log(GLOBAL_CONFIG);
 };
 init();
-
-watch(
-  () => route,
-  () => {
-    init();
-    console.log(route);
-  },
-  { immediate: true, deep: true },
-);
 </script>
 
 <style lang="scss" scoped>
+.position-relative{
+  position: relative;
+}
+.position-fixed{
+  position:fixed
+}
 .intro-doc {
   display: flex;
 }
@@ -378,10 +364,17 @@ watch(
     }
   }
 }
+
 .component-nav-box {
   margin-left: 15px;
   height: auto;
   flex: 1;
+}
+
+:deep(.bk-button-group) {
+  .is-selected {
+    background-color: #F6F9FF !important;
+  }
 }
 </style>
 

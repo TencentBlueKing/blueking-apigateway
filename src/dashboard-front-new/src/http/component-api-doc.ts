@@ -38,4 +38,11 @@ export const searchAPI = (board: string, system_name: string, data: any) => fetc
  * @param system_name  系统名称
  * @param component_name   组件名称
  */
-export const getAPIDoc = (board: string, system_name: string, component_name: string) => fetch.get(`${BK_DASHBOARD_URL}/docs/esb/boards/${board}/systems/${system_name}/components/${component_name}/doc/`);
+export const getSystemComponentDoc = (board: string, system_name: string, component_name: string) => fetch.get(`${BK_DASHBOARD_URL}/docs/esb/boards/${board}/systems/${system_name}/components/${component_name}/doc/`);
+
+/**
+ *  获取指定组件的指定语言（python） SDK 的调用示例
+ * @param data
+ * @param board   系统名称
+ */
+export const getSDKDoc = (board: string, data: any) => fetch.get(`${BK_DASHBOARD_URL}/docs/esb/boards/${board}/sdks/usage-example/?${json2Query(data)}`);

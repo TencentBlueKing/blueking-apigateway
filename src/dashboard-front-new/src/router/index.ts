@@ -449,7 +449,7 @@ const routes: RouteRecordRaw[] = [
           {
             path: ':componentId/doc',
             alias: '',
-            name: 'ComponentAPIDetailDoc',
+            name: 'componentAPIDetailDoc',
             component: ComponentAPIDetailDoc,
             meta: {
               matchRoute: 'componentDoc',
