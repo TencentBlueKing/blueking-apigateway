@@ -21,6 +21,7 @@ import datetime
 import logging
 import os
 from collections import defaultdict
+from typing import Dict, List
 
 from celery import shared_task
 from django.conf import settings
@@ -34,15 +35,25 @@ from apigateway.apps.permission.constants import (
     GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
 )
-from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord, AppResourcePermission
+from apigateway.apps.permission.models import (
+    AppAPIPermission,
+    AppPermissionApply,
+    AppPermissionRecord,
+    AppResourcePermission,
+)
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.components.cmsi import cmsi_component
+from apigateway.components.paasv3 import paasv3_component
+from apigateway.core.constants import APIStatusEnum
+from apigateway.core.models import Gateway, Resource
 from apigateway.utils.file import read_file
 
 logger = logging.getLogger(__name__)
 
 
 APIGW_LOGO_PATH = os.path.join(settings.BASE_DIR, "static/img/api_gateway.png")
+
+ONE_DAY_SECONDS = 86400
 
 
 @shared_task(name="apigateway.apps.permission.tasks.send_mail_for_perm_apply", ignore_result=True)
@@ -188,3 +199,153 @@ def renew_app_resource_permission():
                 resource_ids=resource_ids,
                 grant_type=GrantTypeEnum.AUTO_RENEW.value,
             )
+
+
+class AppPermissionExpiringSoonAlerter:
+    def __init__(self, expire_in_days: int, expire_day_to_alert: List[int]):
+        """
+        - param expire_in_days: 统计过期时间在指定天内的权限
+        - param expire_day_to_alert: 需要告警的过期天数，只有过期时间在指定天的权限才会告警，防止告警过多
+        """
+        self.expire_in_days = expire_in_days
+        self.expire_day_to_alert = expire_day_to_alert
+
+    def alert(self):
+        permissions = self._get_permissions_expiring_soon()
+
+        # 过滤掉不告警的记录
+        filtered_permissions = self._filter_permissions(permissions)
+
+        # 不全权限中的网关名、资源名等数据
+        self._complete_permissions(filtered_permissions)
+
+        # 发送告警
+        self._send_alert(filtered_permissions)
+
+    def _get_permissions_expiring_soon(self) -> Dict[str, List]:
+        now = timezone.now()
+        expire_end_time = now + datetime.timedelta(days=self.expire_in_days)
+
+        permissions = defaultdict(list)
+
+        # 按网关的权限
+        permissions_by_gateway = AppAPIPermission.objects.filter(expires__range=(now, expire_end_time))
+        for permission in permissions_by_gateway:
+            permissions[permission.bk_app_code].append(
+                {
+                    "gateway_id": permission.api_id,
+                    "expire_days": int(permission.expires_in / ONE_DAY_SECONDS),
+                    "grant_dimension": GrantDimensionEnum.API.value,
+                    "grant_dimension_display": GrantDimensionEnum.get_choice_label(GrantDimensionEnum.API.value),
+                }
+            )
+
+        # 按资源的权限
+        permissions_by_resource = AppResourcePermission.objects.filter(expires__range=(now, expire_end_time))
+        for permission in permissions_by_resource:
+            permissions[permission.bk_app_code].append(
+                {
+                    "gateway_id": permission.api_id,
+                    "expire_days": int(permission.expires_in / ONE_DAY_SECONDS),
+                    "grant_dimension": GrantDimensionEnum.RESOURCE.value,
+                    "grant_dimension_display": GrantDimensionEnum.get_choice_label(GrantDimensionEnum.RESOURCE.value),
+                    "resource_id": permission.resource_id,
+                }
+            )
+
+        return permissions
+
+    def _filter_permissions(self, permissions: Dict[str, List]) -> Dict[str, List]:
+        """
+        - 过滤掉不在指定告警时间的权限
+        - 过滤掉已下架网关的权限
+        """
+        gateway_ids = {perm["gateway_id"] for perms in permissions.values() for perm in perms}
+        inactive_gateway_ids = list(
+            Gateway.objects.filter(id__in=gateway_ids, status=APIStatusEnum.INACTIVE.value).values_list(
+                "id", flat=True
+            )
+        )
+
+        filtered_permissions = defaultdict(list)
+        for bk_app_code, app_perms in permissions.items():
+            for app_perm in app_perms:
+                if app_perm["expire_days"] not in self.expire_day_to_alert:
+                    continue
+
+                if app_perm["gateway_id"] in inactive_gateway_ids:
+                    continue
+
+                filtered_permissions[bk_app_code].append(app_perm)
+
+        return filtered_permissions
+
+    def _complete_permissions(self, permissions: Dict[str, List]):
+        """补全，完善权限数据"""
+        gateway_ids = {perm["gateway_id"] for perms in permissions.values() for perm in perms}
+        resource_ids = {
+            perm["resource_id"] for perms in permissions.values() for perm in perms if perm.get("resource_id")
+        }
+
+        # 补全网关名称、资源名称
+        gateway_id_to_fields = {
+            item["id"]: item for item in Gateway.objects.filter(id__in=gateway_ids).values("id", "name")
+        }
+        resource_id_to_fields = {
+            item["id"]: item for item in Resource.objects.filter(id__in=resource_ids).values("id", "name")
+        }
+        for app_perms in permissions.values():
+            for perm in app_perms:
+                perm.update(
+                    {
+                        "gateway_name": gateway_id_to_fields[perm["gateway_id"]].get("name", ""),
+                        "resource_name": resource_id_to_fields.get(perm.get("resource_id"), {}).get("name", ""),
+                    }
+                )
+
+    def _send_alert(self, permissions: Dict[str, List]):
+        for bk_app_code, app_perms in permissions.items():
+            app_maintainers = paasv3_component.get_app_maintainers(bk_app_code)
+            if not app_maintainers:
+                continue
+
+            sorted_app_perms = sorted(
+                app_perms, key=lambda x: (x["gateway_name"], x["grant_dimension"], x["resource_name"])
+            )
+
+            title = f"【蓝鲸API网关】你的应用【{bk_app_code}】访问网关资源的权限即将过期，请尽快处理"
+
+            mail_content = render_to_string(
+                "permission/alert_app_permission_expiring_soon_template.html",
+                context={
+                    "title": title,
+                    "bk_app_code": bk_app_code,
+                    "permissions": sorted_app_perms,
+                    "renew_permission_link": settings.PAAS_RENEW_API_PERMISSION_URL.format(bk_app_code=bk_app_code),
+                },
+            )
+
+            params = {
+                "title": title,
+                "receiver__username": app_maintainers,
+                "content": mail_content,
+                "attachments": [
+                    {
+                        "filename": "api_gateway.png",
+                        "content": base64.b64encode(read_file(APIGW_LOGO_PATH)).decode("utf-8"),
+                    }
+                ],
+            }
+
+            cmsi_component.send_mail(params)
+
+
+@shared_task(name="apigateway.apps.permission.tasks.alert_app_permission_expiring_soon", ignore_result=True)
+def alert_app_permission_expiring_soon():
+    """
+    告警通知应用访问网关权限快过期
+    - 过期前 15 天开始通知
+    - 为防止告警消息过多，只通知指定过期天数，如 0, 1, 3, 7, 15
+    """
+    alerter = AppPermissionExpiringSoonAlerter(expire_in_days=16, expire_day_to_alert=[0, 1, 3, 7, 15])
+    alerter.alert()

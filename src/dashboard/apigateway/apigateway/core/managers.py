@@ -410,7 +410,7 @@ class ResourceVersionManager(models.Manager):
             resources[resource["id"]] = {
                 "id": resource["id"],
                 "name": resource["name"],
-                "description": resource.get("description", ""),
+                "description": resource.get("description") or "",
                 "description_en": resource.get("description_en", ""),
                 "method": resource["method"],
                 "path": resource["path"],
@@ -827,7 +827,7 @@ class ReleasedResourceManager(models.Manager):
         return {
             "id": resource["id"],
             "name": resource["name"],
-            "description": resource.get("description", ""),
+            "description": resource.get("description") or "",
             "description_en": resource.get("description_en", ""),
             "method": resource["method"],
             "path": resource["path"],
