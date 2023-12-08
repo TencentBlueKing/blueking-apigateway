@@ -35,6 +35,7 @@
 import { ref, defineExpose, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '../../../../store';
+import mitt from '@/common/event-bus';
 
 const props = defineProps({
   detail: {
@@ -82,6 +83,13 @@ watch(
     }
   },
   { immediate: true },
+);
+
+watch(
+  () => frontConfigData.value.path,
+  (val: any) => {
+    mitt.emit('front-path', val);
+  },
 );
 
 const validate = async () => {

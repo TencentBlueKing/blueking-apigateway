@@ -146,7 +146,7 @@
             type="textarea"
             v-model="formData.description"
             placeholder="请输入网关描述"
-            :maxlength="100"
+            :maxlength="500"
             clearable
           />
         </bk-form-item>

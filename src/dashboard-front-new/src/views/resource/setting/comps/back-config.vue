@@ -115,11 +115,12 @@
   </bk-form>
 </template>
 <script setup lang="ts">
-import { ref, defineExpose, watch } from 'vue';
+import { ref, defineExpose, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
 import { useCommon } from '../../../../store';
 import { useGetGlobalProperties } from '@/hooks';
+import mitt from '@/common/event-bus';
 
 const props = defineProps({
   detail: {
@@ -129,6 +130,7 @@ const props = defineProps({
 });
 
 const backRef = ref(null);
+const frontPath = ref('');
 const { t } = useI18n();
 const common = useCommon();
 const backConfigData = ref({
@@ -175,6 +177,7 @@ const handleServiceChange = async (backendId: number) => {
 const handleCheckPath = async () => {
   try {
     const params = {
+      path: frontPath.value,
       backend_id: backConfigData.value.id,
       backend_path: backConfigData.value.config.path,
     };
@@ -208,7 +211,14 @@ const validate = async () => {
   await backRef.value?.validate();
 };
 
-init();
+onMounted(() => {
+  // 事件总线监听重新获取环境列表
+  mitt.on('front-path', (value: string) => {
+    frontPath.value = value;
+  });
+  init();
+});
+
 defineExpose({
   backConfigData,
   validate,
