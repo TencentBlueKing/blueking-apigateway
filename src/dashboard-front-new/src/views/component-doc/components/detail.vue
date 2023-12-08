@@ -320,25 +320,27 @@ watch(
     isNavPanelShow.value = false;
     init();
   },
-  {  deep: true },
+  { deep: true },
 );
 init();
 </script>
 
 <style lang="scss" scoped>
-.m16{
+.m16 {
   margin: 16px;
 }
-.w250{
+
+.w250 {
   width: 250px;
 }
-:deep(.container-content){
-  :deep(.content){
+
+:deep(.container-content) {
+  :deep(.content) {
     height: auto !important;
   }
 }
+
 .bk-dropdown-popover {
-  transform: translate3d(640px, 123px, 0px) !important;
   .bk-dropdown-content {
     .bk-dropdown-list {
       width: 250px;
@@ -751,12 +753,13 @@ init();
     padding-left: 0;
   }
 }
-.version-panel {
-    margin-bottom: 20px;
 
-    &:last-child {
-        margin-bottom: 0;
-    }
+.version-panel {
+  margin-bottom: 20px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 </style>
 

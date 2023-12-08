@@ -314,29 +314,27 @@ const {
 //     },
 //     { field: 'applied_by', label: t('申请人') },
 //     { field: 'created_time', width: 215, label: t('申请时间') },
-//     {
-//       field: 'status',
-//       width: 150,
-//       label: t('审批状态'),
-//       showOverflowTooltip: true,
-//       render: ({ data }: Record<string, any>) => {
-//         return renderCell;
-//       },
-//     },
-//     {
-//       field: 'operate',
-//       width: 220,
-//       label: t('操作'),
-//       render: ({ data }: Record<string, any>) => {
-//         return `<div>
-//                   <loading
-//                   class="mr5" loading size="mini" mode="spin" theme="primary"
-//                   v-if="${data?.status} === 'pending'"/>
-//                   <span v-else :class="['dot', ${data?.status}]"></span>
-//                   {{ statusMap[${data?.status} as keyof typeof statusMap] }}
-//                 </div>`;
-//       },
-//     },
+//     // {
+//     //   field: 'status',
+//     //   width: 150,
+//     //   label: t('审批状态'),
+//     //   showOverflowTooltip: true,
+//     //   render: ({ data }: Record<string, any>) => {
+//     //     return `<div>
+//     // <loading class="mr5" loading size="mini" mode="spin" theme="primary" v-if="${data?.status} === 'pending'"/>
+//     // <span v-else :class="['dot', ${data?.status}]"></span>
+//     // {{ statusMap[${data?.status} as keyof typeof statusMap] }}
+//     // </div>`;;
+//     //   },
+//     // },
+//     // {
+//     //   field: 'operate',
+//     //   width: 220,
+//     //   label: t('操作'),
+//     //   render: ({ data }: Record<string, any>) => {
+//     //     return ;
+//     //   },
+//     // },
 //   ];
 //   headers.value = columns;
 // };

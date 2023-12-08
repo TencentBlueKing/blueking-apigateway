@@ -70,7 +70,7 @@
   <!-- 新建/编辑sideslider -->
   <bk-sideslider
     ext-cls="alarm-strategy-slider" v-model:isShow="sidesliderConfig.isShow" :title="sidesliderConfig.title"
-    :quick-close="false" width="750">
+    width="750">
     <template #default>
       <div class="strategy-form p30">
         <bk-form ref="strategyFormRef" :label-width="160" :model="formData">

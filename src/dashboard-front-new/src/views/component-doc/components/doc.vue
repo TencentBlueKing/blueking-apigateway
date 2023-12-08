@@ -51,7 +51,7 @@
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="curComponent.markdownHtml"></div>
         </bk-tab-panel>
-        <bk-tab-panel :name="'sdk '" :label="t('SDK及示例')">
+        <bk-tab-panel :name="'sdk '" :label="t('SDK及示例')" id="sdk-markdown">
           <div>
             <div class="bk-button-group mb5">
               <bk-button class="is-selected">Python</bk-button>
@@ -68,7 +68,7 @@
             </div>
             <h3 class="f16 mt30 fw700 mt15 mb15 balck">{{ t('SDK使用样例') }}</h3>
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="ag-markdown-view mt20" id="sdk-markdown" :key="renderHtmlIndex" v-html="sdkMarkdownHtml"></div>
+            <div class="ag-markdown-view mt20" :key="renderHtmlIndex" v-html="sdkMarkdownHtml"></div>
           </div>
         </bk-tab-panel>
       </bk-tab>
@@ -141,12 +141,12 @@ watch(
   () => active.value,
   (v: string) => {
     if (v === 'doc') {
-      initMarkdownHtml('markdown');
+      getComponentDoc();
     } else {
-      initMarkdownHtml('sdk-markdown');
+      getSDKExample();
     }
   },
-  {  deep: true },
+  { deep: true },
 );
 
 
@@ -176,11 +176,14 @@ const md = new MarkdownIt({
 });
 
 const initMarkdownHtml = (box: string) => {
+  console.log('box', box);
+  console.log('activeTab', active.value);
   if (!box) {
     return false;
   }
   nextTick(() => {
     const markdownDom = document.getElementById(box);
+
     if (markdownDom.className.indexOf('has-init') > -1) {
       return false;
     }
@@ -211,7 +214,6 @@ const initMarkdownHtml = (box: string) => {
         });
       });
     }
-
     // 复制代码
     markdownDom?.querySelectorAll('a')?.forEach((item) => {
       item.target = '_blank';
@@ -327,7 +329,6 @@ const init = () => {
   getSDKDetail();
   getAPIList();
   getComponentDoc();
-  getSDKExample();
 };
 init();
 

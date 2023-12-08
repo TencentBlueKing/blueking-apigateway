@@ -71,17 +71,20 @@
 
             <bk-table-column :label="t('操作')" width="200">
               <template #default="{ data }">
-                <template v-if="type === 'apigateway' ? data?.sdk.url : data?.sdk_download_url">
-                  <bk-button class="mr5" theme="primary" text @click="handleShow(data)">
-                    {{ t('查看') }}
-                  </bk-button>
-                  <a class="ag-link" :href="type === 'apigateway' ? data?.sdk.url : data?.sdk_download_url">
-                    {{ t('下载') }}
-                  </a>
-                </template>
-                <template v-else>
+                <!-- <template v-if="type === 'apigateway' ? data?.sdk.url : data?.sdk_download_url"> -->
+                <bk-button class="mr5" theme="primary" text @click="handleShow(data)">
+                  {{ t('查看') }}
+                </bk-button>
+                <a
+                  class="ag-link"
+                  :href="type === 'apigateway' ? data?.sdk.url : data?.sdk_download_url"
+                  v-if="type === 'apigateway' ? data?.sdk.url : data?.sdk_download_url">
+                  {{ t('下载') }}
+                </a>
+                <!-- </template> -->
+                <!-- <template v-else>
                   {{ t('未生成') }}
-                </template>
+                </template> -->
               </template>
             </bk-table-column>
           </bk-table>
@@ -128,7 +131,7 @@
                 <span class="column-key"> {{ t('SDK地址') }}: </span>
               </div>
               <div class="value flex-row align-items-center">
-                <bk-popover placement="top" width="600" theme="dark">
+                <bk-popover placement="top" width="600" theme="dark" :disabled="curParams.sdk_download_url === ''">
                   <span class="column-value vm">{{ curParams.sdk_download_url || '--' }}</span>
                   <template #content>
                     <div class="popover-text">
@@ -288,7 +291,6 @@ const handlePageChange = (current: number) => {
 
 // 查看
 const handleShow = (data: any) => {
-  console.log(data);
   sidesliderConfi.isShow = true;
   const isGateway = type.value === 'apigateway';
   sidesliderConfi.title = isGateway ? `网关API SDK：${data.gateway.name}` : `组件API SDK：${data.board_label}`;
@@ -399,8 +401,6 @@ const getSDKDoc = async () => {
       const res = await getESBSDKDoc(board.value, params);
       sdkDoc.value = res.content;
     }
-    console.log('sdkDoc', sdkDoc.value);
-
     isLoading.value = false;
     initMarkdownHtml(sdkDoc.value);
   } catch (error) {
@@ -412,7 +412,6 @@ const init = () => {
   const curTab: any = route.query.tab;
   active.value = curTab ? curTab : 'sdk';
   type.value = props.curType;
-  console.log('type', type.value);
   getSDKlist();
   getSDKDoc();
 };
