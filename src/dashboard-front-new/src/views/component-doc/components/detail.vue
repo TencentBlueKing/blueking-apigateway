@@ -46,7 +46,7 @@
       </div>
 
       <!-- eslint-disable-next-line vue/valid-v-on -->
-      <div class="nav-panel" ref="panel" v-if="isNavPanelShow">
+      <div class="nav-panel" ref="panel" v-if="isNavPanelShow" v-clickOutSide="handleTogglePanel">
         <div class="version-panel">
           <bk-dropdown ref="dropdown" :popover-options="popoverOptions" class="m16">
             <div class="version-name">
