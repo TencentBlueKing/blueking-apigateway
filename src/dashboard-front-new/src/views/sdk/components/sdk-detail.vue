@@ -71,20 +71,17 @@
 
             <bk-table-column :label="t('操作')" width="200">
               <template #default="{ data }">
-                <!-- <template v-if="type === 'apigateway' ? data?.sdk.url : data?.sdk_download_url"> -->
-                <bk-button class="mr5" theme="primary" text @click="handleShow(data)">
-                  {{ t('查看') }}
-                </bk-button>
-                <a
-                  class="ag-link"
-                  :href="type === 'apigateway' ? data?.sdk.url : data?.sdk_download_url"
-                  v-if="type === 'apigateway' ? data?.sdk.url : data?.sdk_download_url">
-                  {{ t('下载') }}
-                </a>
-                <!-- </template> -->
-                <!-- <template v-else>
+                <template v-if="type === 'apigateway' ? data?.sdk.url : data?.sdk_download_url">
+                  <bk-button class="mr5" theme="primary" text @click="handleShow(data)">
+                    {{ t('查看') }}
+                  </bk-button>
+                  <a class="ag-link" :href="type === 'apigateway' ? data?.sdk.url : data?.sdk_download_url">
+                    {{ t('下载') }}
+                  </a>
+                </template>
+                <template v-else>
                   {{ t('未生成') }}
-                </template> -->
+                </template>
               </template>
             </bk-table-column>
           </bk-table>
