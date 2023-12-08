@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -17,15 +16,106 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import math
-from unittest import mock
 
 import pytest
 from ddf import G
 
-from apigateway.apis.open.esb.permission.helpers import ComponentPermission, ComponentPermissionBuilder
-from apigateway.apps.esb.bkcore.models import AppComponentPermission, ComponentSystem, ESBChannel
+from apigateway.apps.esb.bkcore.models import (
+    AppComponentPermission,
+    AppPermissionApplyRecord,
+    ComponentResourceBinding,
+)
+from apigateway.biz.esb.permissions import (
+    AppComponentPermissionData,
+    ComponentPermission,
+    ComponentPermissionByEsbManager,
+)
+from apigateway.utils.time import to_datetime_from_now
 
-pytestmark = pytest.mark.django_db
+
+class TestComponentPermissionByEsbManager:
+    def test_create_apply_record(self, unique_id, fake_system, fake_channel):
+        manager = ComponentPermissionByEsbManager()
+        record = manager.create_apply_record(
+            bk_app_code=unique_id,
+            system=fake_system,
+            component_ids=[fake_channel.id],
+            reason="",
+            expire_days=180,
+            username="admin",
+        )
+
+        assert AppPermissionApplyRecord.objects.filter(id=record.id).exists()
+
+    def test_renew_permission(self, unique_id, fake_channel):
+        perm = G(
+            AppComponentPermission,
+            bk_app_code=unique_id,
+            component_id=fake_channel.id,
+            expires=to_datetime_from_now(days=10),
+        )
+
+        manager = ComponentPermissionByEsbManager()
+        manager.renew_permission(unique_id, [fake_channel.id], 180)
+
+        perm.refresh_from_db()
+
+        assert to_datetime_from_now(days=170) < perm.expires < to_datetime_from_now(days=190)
+
+    def test_list_permissions(self, mocker, fake_system, fake_channel):
+        mocker.patch(
+            "apigateway.biz.esb.permissions.get_component_doc_link",
+            return_value="",
+        )
+        mocker.patch(
+            "apigateway.biz.esb.permissions.ComponentPermission.expires_in",
+            new_callable=mocker.PropertyMock(return_value=-math.inf),
+        )
+        mocker.patch(
+            "apigateway.biz.esb.permissions.ComponentPermission.permission_status",
+            new_callable=mocker.PropertyMock(return_value="need_apply"),
+        )
+
+        components = [
+            {
+                "id": fake_channel.id,
+                "board": fake_channel.board or "",
+                "name": fake_channel.name,
+                "description": fake_channel.description,
+                "description_en": fake_channel.description_en,
+                "system_name": fake_system.name,
+                "permission_level": fake_channel.permission_level,
+            }
+        ]
+
+        manager = ComponentPermissionByEsbManager()
+        result = manager.list_permissions("test", components)
+        assert result == [
+            {
+                "id": fake_channel.id,
+                "board": fake_channel.board or "",
+                "name": fake_channel.name,
+                "description": fake_channel.description,
+                "description_en": fake_channel.description_en,
+                "system_name": fake_system.name,
+                "permission_level": fake_channel.permission_level,
+                "permission_status": "need_apply",
+                "expires_in": -math.inf,
+                "doc_link": "",
+            }
+        ]
+
+    def test_get_component_id_to_resource_id(self, fake_channel, faker):
+        if not ComponentResourceBinding:
+            return
+
+        resource_id = faker.pyint()
+
+        G(ComponentResourceBinding, component_id=fake_channel.id, resource_id=resource_id)
+
+        manager = ComponentPermissionByEsbManager()
+        result = manager._get_component_id_to_resource_id([fake_channel.id])
+        assert result == {fake_channel.id: resource_id}
 
 
 class TestComponentPermission:
@@ -73,7 +163,7 @@ class TestComponentPermission:
     )
     def test_as_dict(self, mocker, component, expected):
         mocker.patch(
-            "apigateway.apis.open.esb.permission.helpers.get_component_doc_link",
+            "apigateway.biz.esb.permissions.get_component_doc_link",
             return_value="",
         )
         perm = ComponentPermission.parse_obj(component)
@@ -146,13 +236,13 @@ class TestComponentPermission:
     )
     def test_permission_status(self, mocker, mocked_component, params, expected):
         mocker.patch(
-            "apigateway.apis.open.esb.permission.helpers.ComponentPermission.component_perm_required",
-            new_callable=mock.PropertyMock(return_value=params["component_perm_required"]),
+            "apigateway.biz.esb.permissions.ComponentPermission.component_perm_required",
+            new_callable=mocker.PropertyMock(return_value=params["component_perm_required"]),
         )
         if "expires_in" in params:
             mocker.patch(
-                "apigateway.apis.open.esb.permission.helpers.ComponentPermission.expires_in",
-                new_callable=mock.PropertyMock(return_value=params["expires_in"]),
+                "apigateway.biz.esb.permissions.ComponentPermission.expires_in",
+                new_callable=mocker.PropertyMock(return_value=params["expires_in"]),
             )
 
         mocked_component.update(params)
@@ -200,64 +290,16 @@ class TestComponentPermission:
     )
     def test_expires_in(self, mocker, mocked_component, params, expected):
         mocker.patch(
-            "apigateway.apis.open.esb.permission.helpers.ComponentPermission.component_perm_required",
-            new_callable=mock.PropertyMock(return_value=params["component_perm_required"]),
+            "apigateway.biz.esb.permissions.ComponentPermission.component_perm_required",
+            new_callable=mocker.PropertyMock(return_value=params["component_perm_required"]),
         )
 
         if "component_permission_expires_in" in params:
-            params["component_permission"] = G(AppComponentPermission)
-            mocker.patch(
-                "apigateway.apps.esb.bkcore.models.AppComponentPermission.expires_in",
-                new_callable=mock.PropertyMock(return_value=params["component_permission_expires_in"]),
+            params["component_permission"] = AppComponentPermissionData(
+                expires_in=params["component_permission_expires_in"]
             )
 
         mocked_component.update(params)
 
         perm = ComponentPermission.parse_obj(mocked_component)
         assert perm.expires_in == expected
-
-
-class TestComponentPermissionBuilder:
-    def test_build(self, mocker):
-        mocker.patch(
-            "apigateway.apis.open.esb.permission.helpers.get_component_doc_link",
-            return_value="",
-        )
-        mocker.patch(
-            "apigateway.apis.open.esb.permission.helpers.ComponentPermission.expires_in",
-            new_callable=mock.PropertyMock(return_value=-math.inf),
-        )
-        mocker.patch(
-            "apigateway.apis.open.esb.permission.helpers.ComponentPermission.permission_status",
-            new_callable=mock.PropertyMock(return_value="need_apply"),
-        )
-        system = G(ComponentSystem)
-        component = G(ESBChannel, system=system)
-
-        components = [
-            {
-                "id": component.id,
-                "board": component.board or "",
-                "name": component.name,
-                "description": component.description,
-                "description_en": component.description_en,
-                "system_name": system.name,
-                "permission_level": component.permission_level,
-            }
-        ]
-
-        result = ComponentPermissionBuilder(system.id, target_app_code="test").build(components)
-        assert result == [
-            {
-                "id": component.id,
-                "board": component.board or "",
-                "name": component.name,
-                "description": component.description,
-                "description_en": component.description_en,
-                "system_name": system.name,
-                "permission_level": component.permission_level,
-                "permission_status": "need_apply",
-                "expires_in": -math.inf,
-                "doc_link": "",
-            }
-        ]

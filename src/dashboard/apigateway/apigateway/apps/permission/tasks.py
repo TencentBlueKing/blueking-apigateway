@@ -37,7 +37,6 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import (
     AppAPIPermission,
-    AppPermissionApply,
     AppPermissionRecord,
     AppResourcePermission,
 )
@@ -61,7 +60,7 @@ def send_mail_for_perm_apply(record_id):
     """
     申请权限，发送邮件通知管理员审批
     """
-    record = AppPermissionApply.objects.get(id=record_id)
+    record = AppPermissionRecord.objects.get(id=record_id)
 
     apigw_domain = getattr(settings, "DASHBOARD_FE_URL", "").rstrip("/")
     manager = PermissionDimensionManager.get_manager(record.grant_dimension)

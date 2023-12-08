@@ -123,7 +123,7 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
         data = slz.validated_data
 
         manager = PermissionDimensionManager.get_manager(data["grant_dimension"])
-        instance = manager.create_apply_record(
+        record = manager.create_apply_record(
             data["target_app_code"],
             request.gateway,
             data.get("resource_ids", []),
@@ -134,14 +134,14 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
         )
 
         try:
-            apply_async_on_commit(send_mail_for_perm_apply, args=[instance.id])
+            apply_async_on_commit(send_mail_for_perm_apply, args=[record.id])
         except Exception:
-            logger.exception("send mail to api manager fail. apply_record_id=%s", instance.apply_record_id)
+            logger.exception("send mail to api manager fail. apply_record_id=%s", record.id)
 
         return OKJsonResponse(
             "OK",
             data={
-                "record_id": instance.apply_record_id,
+                "record_id": record.id,
             },
         )
 

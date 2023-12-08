@@ -151,7 +151,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
             resources=Resource.objects.filter_by_ids(gateway, ids=resource_ids),
         )
 
-        return instance
+        return record
 
 
 class APIPermissionDimensionManager(PermissionDimensionManager):

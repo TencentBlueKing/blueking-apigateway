@@ -72,7 +72,7 @@ class ComponentPermissionManager(metaclass=ABCMeta):
         username: str,
     ) -> AppPermissionApplyRecord:
         """创建权限申请单"""
-        instance = AppPermissionApplyRecord.objects.create_record(
+        record = AppPermissionApplyRecord.objects.create_record(
             board=system.board,
             bk_app_code=bk_app_code,
             applied_by=username,
@@ -91,14 +91,14 @@ class ComponentPermissionManager(metaclass=ABCMeta):
                 component_id__in=component_ids,
             ).delete()
             AppPermissionApplyStatus.objects.batch_create(
-                record=instance,
+                record=record,
                 bk_app_code=bk_app_code,
                 system=system,
                 component_ids=component_ids,
                 status=ApplyStatusEnum.PENDING.value,
             )
 
-        return instance
+        return record
 
     def renew_permission(self, bk_app_code: str, component_ids: List[int], expire_days: int):
         """权限续期"""
@@ -299,7 +299,7 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
 
 
 class AppComponentPermissionData(BaseModel):
-    expires_in: int
+    expires_in: Optional[int]
 
 
 class ComponentPermission(BaseModel):
