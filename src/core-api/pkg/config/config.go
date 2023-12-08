@@ -102,8 +102,6 @@ type Config struct {
 	Tracing Tracing
 }
 
-var GlobalConfig *Config
-
 // Load will load config from viper
 func Load(v *viper.Viper) (*Config, error) {
 	var cfg Config

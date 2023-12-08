@@ -20,20 +20,21 @@ package middleware
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	gomonkey "github.com/agiledragon/gomonkey/v2"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+
 	"core/pkg/cacheimpls"
 	"core/pkg/config"
 	"core/pkg/database"
 	"core/pkg/database/dao"
 	"core/pkg/logging"
 	"core/pkg/util"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
-	"github.com/agiledragon/gomonkey/v2"
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 )
 
 const testPublicKey = `

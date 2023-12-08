@@ -25,6 +25,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"core/pkg/constant"
 	"core/pkg/service"
 	"core/pkg/util"
 )
@@ -61,7 +62,7 @@ func QueryPublicKeyV1(c *gin.Context) {
 		}
 	}
 	util.LegacySuccessJsonResponse(c, gin.H{
-		"issuer":     util.GetBkGatewayIssuer(c),
+		"issuer":     c.GetString(constant.BkGatewayJWTIssuerKey),
 		"public_key": publicKey,
 	})
 }
@@ -95,7 +96,7 @@ func QueryPublicKeyV2(c *gin.Context) {
 	}
 
 	util.SuccessJSONResponse(c, gin.H{
-		"issuer":     util.GetBkGatewayIssuer(c),
+		"issuer":     c.GetString(constant.BkGatewayJWTIssuerKey),
 		"public_key": publicKey,
 	})
 }

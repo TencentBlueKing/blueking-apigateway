@@ -32,6 +32,8 @@ import (
 	"core/pkg/trace"
 )
 
+var globalConfig *config.Config
+
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile == "" {
@@ -44,31 +46,31 @@ func initConfig() {
 		panic(fmt.Sprintf("Using config file: %s, read fail: err=%v", viper.ConfigFileUsed(), err))
 	}
 	var err error
-	config.GlobalConfig, err = config.Load(viper.GetViper())
+	globalConfig, err = config.Load(viper.GetViper())
 	if err != nil {
 		panic(fmt.Sprintf("Could not load configurations from file, error: %v", err))
 	}
 }
 
 func initLogger() {
-	logging.InitLogger(config.GlobalConfig)
+	logging.InitLogger(globalConfig)
 }
 
 func initDatabase() {
-	defaultDBConfig, ok := config.GlobalConfig.DatabaseMap["apigateway"]
+	defaultDBConfig, ok := globalConfig.DatabaseMap["apigateway"]
 	if !ok {
 		panic("database apigateway should be configured")
 	}
 
-	database.InitDBClients(&defaultDBConfig, config.GlobalConfig.Tracing)
+	database.InitDBClients(&defaultDBConfig, globalConfig.Tracing)
 
 	logging.GetLogger().Info("init Database success")
 }
 
 func initSentry() {
-	if len(config.GlobalConfig.Sentry.DSN) != 0 {
+	if len(globalConfig.Sentry.DSN) != 0 {
 		err := sentry.Init(sentry.ClientOptions{
-			Dsn: config.GlobalConfig.Sentry.DSN,
+			Dsn: globalConfig.Sentry.DSN,
 		})
 		if err != nil {
 			logging.GetLogger().Errorf("init Sentry fail: %s", err)
@@ -77,7 +79,7 @@ func initSentry() {
 		logging.GetLogger().Info("init Sentry success")
 
 		// init gin sentry
-		err = raven.SetDSN(config.GlobalConfig.Sentry.DSN)
+		err = raven.SetDSN(globalConfig.Sentry.DSN)
 		if err != nil {
 			logging.GetLogger().Errorf("init gin Sentry fail: %s", err)
 			return
@@ -94,12 +96,12 @@ func initMetrics() {
 }
 
 func initTracing() {
-	if !config.GlobalConfig.Tracing.Enable {
+	if !globalConfig.Tracing.Enable {
 		logging.GetLogger().Info("tracing is not enabled, will not init it")
 		return
 	}
 	logging.GetLogger().Info("enabling tracing")
-	err := trace.InitTrace(config.GlobalConfig.Tracing)
+	err := trace.InitTrace(globalConfig.Tracing)
 	if err != nil {
 		logging.GetLogger().Errorf("init tracing fail: %+v", err)
 		return

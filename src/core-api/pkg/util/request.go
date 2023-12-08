@@ -33,8 +33,6 @@ const RequestIDKey = "request_id"
 // InstanceIDKey ...
 const InstanceIDKey = "instance_id"
 
-const BkGatewayJWTIssuerKey = "bk_gateway_jwt_issuer"
-
 // ErrNilRequestBody ...
 var ErrNilRequestBody = errors.New("request Body is nil")
 
@@ -57,16 +55,6 @@ func GetRequestID(c *gin.Context) string {
 // SetRequestID set the request id to context
 func SetRequestID(c *gin.Context, requestID string) {
 	c.Set(RequestIDKey, requestID)
-}
-
-// SetBkGatewayIssuer set the bk gateway issuer to context
-func SetBkGatewayIssuer(c *gin.Context, issuer string) {
-	c.Set(BkGatewayJWTIssuerKey, issuer)
-}
-
-// GetBkGatewayIssuer get the bk gateway issuer from context
-func GetBkGatewayIssuer(c *gin.Context) string {
-	return c.GetString(BkGatewayJWTIssuerKey)
 }
 
 // GetInstanceID get the request id from context

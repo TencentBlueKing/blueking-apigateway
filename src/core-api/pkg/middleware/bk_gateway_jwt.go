@@ -25,9 +25,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/spf13/cast"
 
+	"core/pkg/constant"
 	"core/pkg/service"
 	"core/pkg/util"
 )
@@ -95,7 +96,7 @@ func BkGatewayJWTAuthMiddlewareV1() func(c *gin.Context) {
 			return
 		}
 		// set issuer
-		util.SetBkGatewayIssuer(c, cast.ToString(claims["iss"]))
+		c.Set(constant.BkGatewayJWTIssuerKey, cast.ToString(claims["iss"]))
 		c.Next()
 	}
 }
@@ -137,7 +138,8 @@ func BkGatewayJWTAuthMiddlewareV2() func(c *gin.Context) {
 			return
 		}
 		// set issuer
-		util.SetBkGatewayIssuer(c, cast.ToString(claims["iss"]))
+		c.Set(constant.BkGatewayJWTIssuerKey, cast.ToString(claims["iss"]))
+
 		c.Next()
 	}
 }
