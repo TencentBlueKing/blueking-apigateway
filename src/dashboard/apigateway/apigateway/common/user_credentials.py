@@ -16,24 +16,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.utils.access_token import get_user_access_token_from_request
+from dataclasses import dataclass
+from typing import Optional
+
+from django.conf import settings
 
 
-def test_get_user_access_token_from_request(mocker, faker):
-    request = mocker.MagicMock(user=mocker.MagicMock(token=mocker.MagicMock(access_token=faker.pystr())))
-    assert get_user_access_token_from_request(request) == request.user.token.access_token
+@dataclass
+class UserCredentials:
+    credentials: str
 
-    # No access_token
-    request = mocker.MagicMock(user=mocker.MagicMock(token=mocker.MagicMock(access_token=None)))
-    assert get_user_access_token_from_request(request) is None
+    def to_dict(self):
+        return {
+            settings.BK_LOGIN_TICKET_KEY: self.credentials,
+        }
 
-    # No token
-    request = mocker.MagicMock(user=mocker.MagicMock(token=None))
-    assert get_user_access_token_from_request(request) is None
 
-    # No user
-    request = mocker.MagicMock(user=None)
-    assert get_user_access_token_from_request(request) is None
-
-    # None
-    assert get_user_access_token_from_request(None) is None
+def get_user_credentials_from_request(request) -> Optional[UserCredentials]:
+    credentials = request.COOKIES.get(settings.BK_LOGIN_TICKET_KEY, None)
+    if not credentials:
+        return None
+    return UserCredentials(credentials=credentials)

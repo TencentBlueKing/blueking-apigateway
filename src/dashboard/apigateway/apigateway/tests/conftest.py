@@ -26,6 +26,7 @@ import fakeredis
 import pytest
 from celery import shared_task
 from ddf import G
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
@@ -91,6 +92,7 @@ class APIRequestFactory(DRFAPIRequestFactory):
     def request(self, *args, **kwargs):
         request = super().request(*args, **kwargs)
         request.user = UserModel(username=FAKE_USERNAME, is_superuser=True)
+        request.COOKIES[settings.BK_LOGIN_TICKET_KEY] = "access_token"
         return request
 
 
