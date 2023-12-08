@@ -21,7 +21,7 @@
         :pagination="pagination"
         ext-cls="ag-stage-table"
         @page-limit-change="handlePageLimitChange"
-        @page-change="handlePageChange"
+        @page-value-change="handlePageChange"
       >
         <!-- <div slot="empty">
         <table-empty
@@ -172,7 +172,7 @@ const { t } = useI18n();
 const keyword = ref('');
 const docCategoryList = ref([]);
 const pagination = ref({
-  current: 1,
+  offset: 1,
   count: 0,
   limit: 10,
 });
@@ -223,7 +223,7 @@ const validateFormRef = ref(null);
 watch(keyword, (newVal, oldVal) => {
   if (oldVal && !newVal && isFilter.value) {
     isFilter.value = false;
-    pagination.value.current = 1;
+    pagination.value.offset = 1;
     pagination.value.limit = 10;
     displayData.value = allData.value;
     pagination.value.count = displayData.value.length;
@@ -329,12 +329,12 @@ const getDocCategoryList = async (loading = false) => {
 
 const handlePageLimitChange = (limit) => {
   pagination.value.limit = limit;
-  pagination.value.current = 1;
-  handlePageChange(pagination.value.current);
+  pagination.value.offset = 1;
+  handlePageChange(pagination.value.offset);
 };
 
 const handlePageChange = (page) => {
-  pagination.value.current = page;
+  pagination.value.offset = page;
   const data = getDataByPage(page);
   docCategoryList.value.splice(0, docCategoryList.value.length, ...data);
 };
@@ -343,7 +343,7 @@ const handlePageChange = (page) => {
 const getDataByPage = (page?: number) => {
   if (!page) {
     // eslint-disable-next-line no-multi-assign
-    pagination.value.current = page = 1;
+    pagination.value.offset = page = 1;
   }
   let startIndex = (page - 1) * pagination.value.limit;
   let endIndex = page * pagination.value.limit;
@@ -396,7 +396,7 @@ const handleSearch = (payload: any) => {
   if (payload === '') {
     return;
   }
-  pagination.value.current = 1;
+  pagination.value.offset = 1;
   pagination.value.limit = 10;
   isFilter.value = true;
   displayData.value = allData.value.filter((item) => {
@@ -434,7 +434,7 @@ const updateTableEmptyConfig = () => {
 init();
 </script>
 
-<style lang="postcss" scoped>
+<style lang="scss" scoped>
 .category-container {
   padding: 24px;
   .ag-top-header {
