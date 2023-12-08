@@ -25,10 +25,12 @@ from apigateway.core.models import Backend
 class BackendFilter(filters.FilterSet):
     name = filters.CharFilter(lookup_expr="icontains")
     type = filters.ChoiceFilter(choices=BackendTypeEnum.get_choices())
+    order_by = filters.OrderingFilter(choices=[(field, field) for field in ["updated_time", "-updated_time"]])
 
     class Meta:
         model = Backend
         fields = [
             "name",
             "type",
+            "order_by",
         ]

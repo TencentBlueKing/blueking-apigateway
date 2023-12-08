@@ -68,6 +68,12 @@ class AppGatewayPermissionOutputSLZ(serializers.Serializer):
         return bool(obj.expires and obj.expires < to_datetime_from_now(days=RENEWABLE_EXPIRE_DAYS))
 
 
+class AppGatewayPermissionExportOutputSLZ(AppGatewayPermissionOutputSLZ):
+    grant_type = serializers.CharField(
+        default=GrantTypeEnum.get_choice_label(GrantTypeEnum.INITIALIZE.value), help_text="授权类型"
+    )
+
+
 class AppPermissionInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(label="", max_length=32, required=True, validators=[BKAppCodeValidator()])
     expire_days = serializers.IntegerField(allow_null=True, required=True, help_text="过期天数")
@@ -165,6 +171,10 @@ class AppResourcePermissionOutputSLZ(AppGatewayPermissionOutputSLZ):
     def get_resource_method(self, obj):
         resource = self.context.get("resource_map", {}).get(obj.resource_id)
         return resource.method if resource else ""
+
+
+class AppResourcePermissionExportOutputSLZ(AppResourcePermissionOutputSLZ):
+    grant_type = serializers.CharField(source="get_grant_type_display", help_text="授权类型")
 
 
 class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):
