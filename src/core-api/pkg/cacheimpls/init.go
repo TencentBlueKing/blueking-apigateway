@@ -82,7 +82,7 @@ var (
 		"resource_version_mapping",
 		DisableCache,
 		tracedFuncWrapper("resource_version_mapping", retrieveResourceVersionMapping),
-		1*time.Minute,
+		12*time.Hour,
 		newRandomDuration(30),
 	)
 
