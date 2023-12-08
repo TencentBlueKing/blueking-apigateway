@@ -783,6 +783,9 @@ USE_BKAPI_BKMONITORV3 = env.bool("USE_BKAPI_BKMONITORV3", False)
 # 是否使用 bklog 网关 API
 USE_BKAPI_BK_LOG = env.bool("USE_BKAPI_BK_LOG", False)
 
+# paas 开发者中心权限续期地址
+BK_PAAS3_URL = env.str("BK_PAAS3_URL", "")
+PAAS_RENEW_API_PERMISSION_URL = f"{BK_PAAS3_URL}/developer-center/apps/{{bk_app_code}}/cloudapi"
 
 # ==============================================================================
 # Feature Flag

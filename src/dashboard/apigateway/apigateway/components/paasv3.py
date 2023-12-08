@@ -18,7 +18,7 @@
 #
 import json
 import logging
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from bkapi.paasv3.shortcuts import get_client_by_username
 from bkapi_client_core.utils import to_curl
@@ -89,6 +89,20 @@ class PaaSV3Component:
             result_data.extend(apps)
 
         return {app["code"]: app for app in filter(None, result_data)} or {}
+
+    def get_app_maintainers(self, bk_app_code: str) -> List[str]:
+        """获取应用负责人"""
+        app = self.get_app(bk_app_code)
+        if not app:
+            return []
+
+        if app.get("developers"):
+            return app["developers"]
+
+        if app.get("creator"):
+            return [app["creator"]]
+
+        return []
 
 
 paasv3_component = PaaSV3Component()

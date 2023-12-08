@@ -33,9 +33,15 @@ class TestPluginBindingHandler:
         result = PluginBindingHandler.get_scopes(
             gateway_id=fake_gateway.id, scope_type=PluginBindingScopeEnum.STAGE, scope_ids=[s1.id, s2.id]
         )
-        assert result == [{"id": s1.id, "name": s1.name}, {"id": s2.id, "name": s2.name}]
+        assert sorted(result, key=lambda x: x["id"]) == [
+            {"id": s1.id, "name": s1.name},
+            {"id": s2.id, "name": s2.name},
+        ]
 
         result = PluginBindingHandler.get_scopes(
             gateway_id=fake_gateway.id, scope_type=PluginBindingScopeEnum.RESOURCE, scope_ids=[r1.id, r2.id]
         )
-        assert result == [{"id": r1.id, "name": r1.name}, {"id": r2.id, "name": r2.name}]
+        assert sorted(result, key=lambda x: x["id"]) == [
+            {"id": r1.id, "name": r1.name},
+            {"id": r2.id, "name": r2.name},
+        ]

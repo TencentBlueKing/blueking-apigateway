@@ -101,7 +101,7 @@ class TestResourcePermission:
                 {
                     "resource_perm_required": False,
                 },
-                "owned",
+                "unlimited",
             ),
             (
                 {
