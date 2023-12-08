@@ -260,7 +260,6 @@ const init = async () => {
   gatewaysList.value = await getGatewaysListData();
   gatewaysList.value.forEach((item: any) => {
     const isYesterday = moment(new Date()).diff(moment(item.created_time), 'days') ;
-    console.log('isYesterday', isYesterday);
     item.isYesterday = isYesterday < 2;
     item.tagOrder = '3';
     item.labelText = item.stages.reduce((prev: any, label: any, index: number) => {

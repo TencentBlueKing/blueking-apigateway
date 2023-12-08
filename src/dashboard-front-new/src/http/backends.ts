@@ -7,4 +7,4 @@ const { BK_DASHBOARD_URL } = window;
 export const getBackendsListData = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/backends/`);
 
 // 获取后端服务详情
-export const getBackendsDetailData = (apigwId: number, backendId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/backends/${backendId}`);
+export const getBackendsDetailData = (apigwId: number, backendId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/backends/${backendId}/`);

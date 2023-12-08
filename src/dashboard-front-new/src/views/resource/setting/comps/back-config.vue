@@ -29,7 +29,10 @@
         :label="t('后端服务地址')"
       >
         <template #default="{ data }">
-          {{data?.hosts[0].scheme}}://{{ data?.hosts[0].host }}
+          <span v-if="data?.hosts[0].host">
+            {{data?.hosts[0].scheme}}://{{ data?.hosts[0].host }}
+          </span>
+          <span v-else>--</span>
         </template>
       </bk-table-column>
       <bk-table-column
