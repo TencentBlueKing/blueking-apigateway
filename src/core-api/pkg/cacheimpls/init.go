@@ -64,7 +64,7 @@ var (
 		"gateway",
 		DisableCache,
 		tracedFuncWrapper("gateway", retrieveGatewayByName),
-		12*time.Hour,
+		1*time.Minute,
 		newRandomDuration(30),
 	)
 
