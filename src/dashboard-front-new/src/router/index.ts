@@ -32,6 +32,7 @@ const apigwAccessLogDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/v
 const apigwReport = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/report/index.vue');
 const ApigwBackendService = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/backend-service/index.vue');
 const ApiBasicInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/basic-info/index.vue');
+const ApigwOperateRecords  = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-records/index.vue');
 const ApigwMonitorAlarmStrategy = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-strategy/index.vue');
 const ApigwMonitorAlarmHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-history/index.vue');
 const ApigwSDK = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/sdk/gateway-sdk/index.vue');
@@ -324,6 +325,15 @@ const routes: RouteRecordRaw[] = [
           title: '基本信息',
           matchRoute: 'apigwBasicInfo',
           topMenu: 'home',
+        },
+      },
+      {
+        path: '/:id/operate-records',
+        name: 'apigwOperateRecords',
+        component: ApigwOperateRecords,
+        meta: {
+          title: '操作记录',
+          matchRoute: 'apigwOperateRecords',
         },
       },
     ],
