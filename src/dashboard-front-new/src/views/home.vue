@@ -170,7 +170,7 @@ import { Message } from 'bkui-vue';
 import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
 import { useGetApiList } from '@/hooks';
-import moment from 'moment';
+import { is24HoursAgo } from '@/common/util';
 import {
   ref,
 } from 'vue';
@@ -259,8 +259,7 @@ const {
 const init = async () => {
   gatewaysList.value = await getGatewaysListData();
   gatewaysList.value.forEach((item: any) => {
-    const isYesterday = moment(new Date()).diff(moment(item.created_time), 'days') ;
-    item.isYesterday = isYesterday < 2;
+    item.is24HoursAgo = is24HoursAgo(item.created_time);
     item.tagOrder = '3';
     item.labelText = item.stages.reduce((prev: any, label: any, index: number) => {
       if (index > item.tagOrder - 1) {
