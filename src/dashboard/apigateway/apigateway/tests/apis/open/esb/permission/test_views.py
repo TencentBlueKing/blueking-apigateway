@@ -195,7 +195,7 @@ class TestAppPermissionApplyRecordViewSet:
 
         system = G(ComponentSystem, name=unique_id)
 
-        record = AppPermissionApplyRecord.objects.create_record(
+        AppPermissionApplyRecord.objects.create_record(
             board="test",
             bk_app_code=unique_id,
             applied_by="admin",

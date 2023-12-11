@@ -160,7 +160,7 @@ class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
             order_by="-id",
         )
 
-        page = self.paginate_queryset(queryset)
+        page = list(self.paginate_queryset(queryset))
 
         manager = ComponentPermissionManager.get_manager()
         manager.patch_permission_apply_records(page)

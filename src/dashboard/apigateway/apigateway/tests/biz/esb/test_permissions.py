@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 import math
 
 import pytest
@@ -25,10 +26,14 @@ from apigateway.apps.esb.bkcore.models import (
     AppPermissionApplyRecord,
     ComponentResourceBinding,
 )
+from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
+from apigateway.apps.permission.models import AppPermissionRecord as GatewayAppPermissionRecord
+from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.esb.permissions import (
     AppComponentPermissionData,
     ComponentPermission,
     ComponentPermissionByEsbManager,
+    ComponentPermissionByGatewayManager,
 )
 from apigateway.utils.time import to_datetime_from_now
 
@@ -105,6 +110,161 @@ class TestComponentPermissionByEsbManager:
             }
         ]
 
+
+class TestComponentPermissionByGatewayManager:
+    def test_create_apply_record(self, mocker, unique_id, fake_system, fake_channel, fake_gateway, fake_resource):
+        mocker.patch(
+            "apigateway.biz.esb.permissions.get_esb_gateway",
+            return_value=fake_gateway,
+        )
+        G(
+            ComponentResourceBinding,
+            component_id=fake_channel.id,
+            resource_id=fake_resource.id,
+        )
+        manager = ComponentPermissionByGatewayManager()
+        record = manager.create_apply_record(
+            bk_app_code=unique_id,
+            system=fake_system,
+            component_ids=[fake_channel.id],
+            reason="",
+            expire_days=180,
+            username="admin",
+        )
+
+        assert AppPermissionApplyRecord.objects.filter(id=record.id).exists()
+        assert GatewayAppPermissionRecord.objects.filter(id=record.gateway_apply_record_id).exists()
+
+    def test_renew_permission(self, mocker, unique_id, fake_channel, fake_gateway, fake_resource):
+        mocker.patch(
+            "apigateway.biz.esb.permissions.get_esb_gateway",
+            return_value=fake_gateway,
+        )
+        G(
+            ComponentResourceBinding,
+            component_id=fake_channel.id,
+            resource_id=fake_resource.id,
+        )
+        perm1 = G(
+            AppComponentPermission,
+            bk_app_code=unique_id,
+            component_id=fake_channel.id,
+            expires=to_datetime_from_now(days=10),
+        )
+        perm2 = G(
+            AppResourcePermission,
+            bk_app_code=unique_id,
+            api=fake_gateway,
+            resource_id=fake_resource.id,
+            expires=to_datetime_from_now(days=10),
+            grant_type="renew",
+        )
+
+        manager = ComponentPermissionByGatewayManager()
+        manager.renew_permission(unique_id, [fake_channel.id], 180)
+
+        perm1.refresh_from_db()
+        perm2.refresh_from_db()
+
+        assert to_datetime_from_now(days=170) < perm1.expires < to_datetime_from_now(days=190)
+        assert to_datetime_from_now(days=170) < perm2.expires < to_datetime_from_now(days=190)
+
+    def list_permissions(self, mocker, unique_id, fake_system, fake_channel, fake_gateway, fake_resource):
+        mocker.patch(
+            "apigateway.biz.esb.permissions.get_esb_gateway",
+            return_value=fake_gateway,
+        )
+        mocker.patch(
+            "apigateway.biz.esb.permissions.get_component_doc_link",
+            return_value="",
+        )
+        mocker.patch(
+            "apigateway.biz.esb.permissions.ComponentPermission.expires_in",
+            new_callable=mocker.PropertyMock(return_value=-math.inf),
+        )
+        mocker.patch(
+            "apigateway.biz.esb.permissions.ComponentPermission.permission_status",
+            new_callable=mocker.PropertyMock(return_value="need_apply"),
+        )
+        G(
+            ComponentResourceBinding,
+            component_id=fake_channel.id,
+            resource_id=fake_resource.id,
+        )
+        G(
+            AppResourcePermission,
+            bk_app_code=unique_id,
+            api=fake_gateway,
+            resource_id=fake_resource.id,
+            expires=to_datetime_from_now(days=10),
+        )
+
+        components = [
+            {
+                "id": fake_channel.id,
+                "board": fake_channel.board or "",
+                "name": fake_channel.name,
+                "description": fake_channel.description,
+                "description_en": fake_channel.description_en,
+                "system_name": fake_system.name,
+                "permission_level": fake_channel.permission_level,
+            }
+        ]
+
+        manager = ComponentPermissionByGatewayManager()
+        result = manager.list_permissions(unique_id, components)
+        assert result == [
+            {
+                "id": fake_channel.id,
+                "board": fake_channel.board or "",
+                "name": fake_channel.name,
+                "description": fake_channel.description,
+                "description_en": fake_channel.description_en,
+                "system_name": fake_system.name,
+                "permission_level": fake_channel.permission_level,
+                "permission_status": "owned",
+                "expires_in": -math.inf,
+                "doc_link": "",
+            }
+        ]
+
+    def test_patch_permission_apply_records(self, mocker, unique_id, fake_channel, fake_gateway, fake_resource):
+        mocker.patch(
+            "apigateway.biz.esb.permissions.get_esb_gateway",
+            return_value=fake_gateway,
+        )
+        G(
+            ComponentResourceBinding,
+            component_id=fake_channel.id,
+            resource_id=fake_resource.id,
+        )
+
+        gateway_record = G(
+            GatewayAppPermissionRecord,
+            bk_app_code=unique_id,
+            api=fake_gateway,
+            _resource_ids=f"{fake_resource.id}",
+            _handled_resource_ids=json.dumps({"approved": [fake_resource.id], "rejected": []}),
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+        esb_record = G(
+            AppPermissionApplyRecord,
+            bk_app_code=unique_id,
+            _component_ids=f"{fake_channel.id}",
+            handled_component_ids={},
+            status=ApplyStatusEnum.PENDING.value,
+            gateway_apply_record_id=gateway_record.id,
+        )
+
+        manager = ComponentPermissionByGatewayManager()
+        manager.patch_permission_apply_records([esb_record])
+
+        assert esb_record.status == gateway_record.status
+        assert esb_record.handled_by == gateway_record.handled_by
+        assert esb_record.handled_time == gateway_record.handled_time
+        assert esb_record.handled_component_ids == {"approved": [fake_channel.id], "rejected": []}
+
     def test_get_component_id_to_resource_id(self, fake_channel, faker):
         if not ComponentResourceBinding:
             return
@@ -113,7 +273,7 @@ class TestComponentPermissionByEsbManager:
 
         G(ComponentResourceBinding, component_id=fake_channel.id, resource_id=resource_id)
 
-        manager = ComponentPermissionByEsbManager()
+        manager = ComponentPermissionByGatewayManager()
         result = manager._get_component_id_to_resource_id([fake_channel.id])
         assert result == {fake_channel.id: resource_id}
 

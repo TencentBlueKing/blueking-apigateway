@@ -42,6 +42,7 @@ from apigateway.apps.permission.constants import (
     PermissionStatusEnum,
 )
 from apigateway.apps.permission.models import AppPermissionApplyStatus as GatewayAppPermissionApplyStatus
+from apigateway.apps.permission.models import AppPermissionRecord as GatewayAppPermissionRecord
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.permission import PermissionDimensionManager
 
@@ -137,14 +138,6 @@ class ComponentPermissionManager(metaclass=ABCMeta):
     def patch_permission_apply_records(self, records: List[AppPermissionApplyRecord]):
         pass
 
-    def _get_component_id_to_resource_id(self, component_ids: Optional[List[int]] = None) -> Dict[int, int]:
-        queryset = ComponentResourceBinding.objects.all()
-
-        if component_ids is not None:
-            queryset = queryset.filter(component_id__in=component_ids)
-
-        return dict(queryset.values_list("component_id", "resource_id"))
-
 
 class ComponentPermissionByEsbManager(ComponentPermissionManager):
     """根据 ESB 数据，处理组件权限数据"""
@@ -154,8 +147,6 @@ class ComponentPermissionByEsbManager(ComponentPermissionManager):
 
 class ComponentPermissionByGatewayManager(ComponentPermissionManager):
     """根据网关 bk-esb 权限数据，处理组件权限数据"""
-
-    GATEWAY_APPLY_RECORD_ID_KEY = "gateway_apply_record_id"
 
     @transaction.atomic
     def create_apply_record(
@@ -177,7 +168,7 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
             )
 
         # 创建组件权限申请单
-        instance = super().create_apply_record(bk_app_code, system, component_ids, reason, expire_days, username)
+        esb_record = super().create_apply_record(bk_app_code, system, component_ids, reason, expire_days, username)
 
         # 创建网关 bk-esb 的权限申请单
         manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.RESOURCE.value)
@@ -192,10 +183,10 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
         )
 
         # 将网关权限单ID，记录到组件权限申请单，方便查询组件权限单据时，根据网关权限单获取单据实际的审批结果
-        instance.gateway_apply_record_id = gateway_record.id
-        instance.save()
+        esb_record.gateway_apply_record_id = gateway_record.id
+        esb_record.save()
 
-        return instance
+        return esb_record
 
     def renew_permission(self, bk_app_code: str, component_ids: List[int], expire_days: int):
         """权限续期"""
@@ -269,7 +260,7 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
         resource_id_to_component_id = {value: key for key, value in component_id_to_resource_id.items()}
 
         gateway_apply_records = {
-            record.id: record for record in AppPermissionApplyRecord.objects.filter(id__in=gateway_apply_record_ids)
+            record.id: record for record in GatewayAppPermissionRecord.objects.filter(id__in=gateway_apply_record_ids)
         }
         for record in records:
             if not record.gateway_apply_record_id:
@@ -289,8 +280,16 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
                     for resource_id in resource_ids
                     if resource_id_to_component_id.get(resource_id)
                 ]
-                for status, resource_ids in gateway_record.handled_resource_ids()
+                for status, resource_ids in gateway_record.handled_resource_ids.items()
             }
+
+    def _get_component_id_to_resource_id(self, component_ids: Optional[List[int]] = None) -> Dict[int, int]:
+        queryset = ComponentResourceBinding.objects.all()
+
+        if component_ids is not None:
+            queryset = queryset.filter(component_id__in=component_ids)
+
+        return dict(queryset.values_list("component_id", "resource_id"))
 
 
 class AppComponentPermissionData(BaseModel):
