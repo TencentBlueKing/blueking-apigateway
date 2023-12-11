@@ -51,7 +51,11 @@
         </bk-menu>
       </template>
       <template #side-header>
-        <bk-select class="header-select" v-model="apigwId" @change="handleGoPage(activeMenuKey, apigwId)">
+        <bk-select
+          class="header-select" filterable
+          v-model="apigwId"
+          @change="handleGoPage(activeMenuKey, apigwId)"
+          :clearable="false">
           <bk-option
             v-for="item in gatewaysList" :key="item.id" :id="item.id" :name="item.name"
           />
