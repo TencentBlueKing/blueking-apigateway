@@ -44,6 +44,9 @@ const ComponentsMain = () => import(/* webpackChunkName: 'components-main'*/'@/v
 const ComponentsIntro = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/intro/index.vue');
 const ComponentsSystem = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/system/index.vue');
 const ComponentsManage = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/manage/index.vue');
+const SyncApigwAccess = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/manage/components/sync-access.vue');
+const SyncHistory = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/manage/components/sync-history.vue');
+const SyncVersion = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/manage/components/sync-version.vue');
 const ComponentsCategory = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/category/index.vue');
 const ComponentsAudit = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/permission/audit/index.vue');
 const ComponentsPower = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/permission/power/index.vue');
@@ -490,6 +493,36 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '组件管理',
           matchRoute: 'ComponentsManage',
+          topMenu: 'componentsMain',
+        },
+      },
+      {
+        path: 'sync',
+        name: 'syncApigwAccess',
+        component: SyncApigwAccess,
+        meta: {
+          title: '同步组件配置到 API 网关',
+          matchRoute: 'syncApigwAccess',
+          topMenu: 'componentsMain',
+        },
+      },
+      {
+        path: 'history',
+        name: 'syncHistory',
+        component: SyncHistory,
+        meta: {
+          title: '组件同步历史',
+          matchRoute: 'syncHistory',
+          topMenu: 'componentsMain',
+        },
+      },
+      {
+        path: 'version',
+        name: 'syncVersion',
+        component: SyncVersion,
+        meta: {
+          title: '组件同步版本',
+          matchRoute: 'syncVersion',
           topMenu: 'componentsMain',
         },
       },

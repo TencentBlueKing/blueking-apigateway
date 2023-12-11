@@ -353,6 +353,40 @@ export const getStrFromFile = (file: any) => {
 };
 
 /**
+ * 手动清空table过滤条件
+ *
+ * @param refInstance {Object} 指定的 table
+ *
+ */
+export function clearFilter(refInstance: any) {
+  if (refInstance?.filterPanels) {
+    const { filterPanels } = refInstance;
+    for (const key in filterPanels) {
+      filterPanels[key].handleReset();
+    }
+  }
+}
+
+/**
+ * 判断表格是否存在筛选条件
+ *
+ * @param filters {Object} 对应筛选条件
+ *
+ */
+export function isTableFilter(filters: any) {
+  let isFilter = false;
+  if (Object.keys(filters)?.length) {
+    for (const key in filters) {
+      if (filters[key].length) {
+        isFilter = true;
+        break;
+      }
+    }
+  }
+  return isFilter;
+}
+
+/**
  * 根据请求方法返回tab的对应主题
  * @param methods 请求方法
  * @returns tag的主题
