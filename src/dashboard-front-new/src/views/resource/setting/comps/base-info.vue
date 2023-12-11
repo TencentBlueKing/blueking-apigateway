@@ -84,6 +84,10 @@ const props = defineProps({
     type: Object,
     default: {},
   },
+  isClone: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const formRef = ref(null);
@@ -129,7 +133,7 @@ watch(
     if (Object.keys(val).length) {
       const { name, description, auth_config, is_public, allow_apply_permission, labels } = val;
       const label_ids = labels.map((e: {id: number, name: string}) => e.id);
-      formData.value = { name, description, auth_config, is_public, allow_apply_permission, label_ids };
+      formData.value = { name: props.isClone ? `${name}_clone` : name, description, auth_config, is_public, allow_apply_permission, label_ids };
       console.log('formData', formData.value);
     }
   },

@@ -28,3 +28,10 @@ export const getESBSDKlist = (board: string, data: any) => fetch.get(`${BK_DASHB
  * @param data 查询参数
  */
 export const getESBSDKDoc = (board: string, data: any) => fetch.get(`${BK_DASHBOARD_URL}/docs/esb/boards/${board}/sdks/doc/?${json2Query(data)}`);
+
+/**
+ *  获取指定语言（python） 组件 SDK 的信息
+ * @param board
+ * @param data 查询参数
+ */
+export const getESBSDKDetail = (board: string, data: any) => fetch.get(`${BK_DASHBOARD_URL}/docs/esb/boards/${board}/sdks/latest/?${json2Query(data)}`);

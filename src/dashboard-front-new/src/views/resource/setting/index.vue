@@ -61,10 +61,12 @@
             show-overflow-tooltip
             @page-limit-change="handlePageSizeChange"
             @page-value-change="handlePageChange"
+            @select-all="handleSelecAllChange"
             @selection-change="handleSelectionChange"
             @row-mouse-enter="handleMouseEnter"
             @row-mouse-leave="handleMouseLeave"
             row-hover="auto"
+            :row-class="is24HoursAgoClsFunc"
           >
             <bk-table-column
               width="80"
@@ -198,7 +200,7 @@
                 </bk-button>
 
                 <bk-pop-confirm
-                  :title="t('确认删除该资源？')"
+                  :title="t(`确认删除资源${data?.name}？`)"
                   content="删除操作无法撤回，请谨慎操作！"
                   width="288"
                   trigger="click"
@@ -251,9 +253,7 @@
                 @done="(v: boolean | any) => {
                   isComponentLoading = !!v
                 }"
-                @deleted-success="() => {
-                  getList()
-                }"
+                @deleted-success="handleDeleteSuccess"
                 @on-jump="(id: number | any) => {
                   handleShowInfo(id)
                 }"
@@ -374,6 +374,7 @@ import PluginManage from '@/views/components/plugin-manage/index.vue';
 import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { cloneDeep } from 'lodash';
+import { is24HoursAgo } from '@/common/util';
 const props = defineProps({
   apigwId: {
     type: Number,
@@ -531,6 +532,7 @@ const {
 const {
   selections,
   handleSelectionChange,
+  handleSelecAllChange,
   resetSelections,
 } = useSelection();
 
@@ -608,6 +610,7 @@ const handleBatchOperate = async (data: IDropList) => {
 // 处理导出弹窗显示
 const handleExport = async ({ value }: {value: string}) => {
   exportParams.export_type = value;
+  exportDialogConfig.exportFileDocType = 'resource';
   exportDialogConfig.isShow = true;
   switch (value) {
     case 'selected':
@@ -759,6 +762,16 @@ const handleUpdateLabelSuccess = () => {
   init();
 };
 
+// 删除成功
+const handleDeleteSuccess = () => {
+  getList();
+  handleShowList();
+};
+
+const is24HoursAgoClsFunc = (v: any) => {
+  return v.is24HoursAgo ? '' : 'row-cls';
+};
+
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
 watch(
   () => tableData.value,
@@ -768,12 +781,14 @@ watch(
     }
     // 设置显示的tag值
     tableData.value.forEach((item: any) => {
+      item.is24HoursAgo = is24HoursAgo(item.created_time);
       item.tagOrder = '3';
       item.labelText = item.labels.map((label: any) => {
         return label.name;
       });
       item.isEditLabel = false;
     });
+    console.log('tableData.value', tableData.value);
   },
   { immediate: true },
 );
@@ -882,6 +897,14 @@ onMounted(() => {
         &:hover {
           color: #3A84FF;
           background: #E1ECFF;
+        }
+      }
+
+      .table-layout{
+        :deep(.row-cls){
+          td{
+            background: #F2FFF4 !important;
+          }
         }
       }
 

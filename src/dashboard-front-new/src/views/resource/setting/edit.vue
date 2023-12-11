@@ -9,7 +9,7 @@
         <span class="panel-title">{{ t('基础信息') }}</span>
         <template #content>
           <div class="panel-content">
-            <BaseInfo ref="baseInfoRef" :detail="resourceDetail"></BaseInfo>
+            <BaseInfo ref="baseInfoRef" :detail="resourceDetail" :is-clone="isClone"></BaseInfo>
           </div>
         </template>
       </bk-collapse-panel>

@@ -8,8 +8,8 @@ import {
 type SelectionType = {
   checked: boolean;
   data: any[];
-  isAll: boolean;
-  row: any
+  isAll?: boolean;
+  row?: any
 };
 
 export const useSelection = () => {
@@ -36,6 +36,14 @@ export const useSelection = () => {
     }
   };
 
+  const handleSelecAllChange = (selection: SelectionType) => {
+    if (selection.checked) {
+      selections.value = JSON.parse(JSON.stringify(selection.data));
+    } else {
+      selections.value = [];
+    }
+  };
+
   const resetSelections = () => {
     selections.value = [];
     bkTableRef.value?.clearSelection();
@@ -45,6 +53,7 @@ export const useSelection = () => {
     selections,
     bkTableRef,
     handleSelectionChange,
+    handleSelecAllChange,
     resetSelections,
   };
 };
