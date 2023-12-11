@@ -23,9 +23,9 @@ from apigateway.apps.esb.bkcore.models import ComponentSystem, ESBChannel
 
 @pytest.fixture
 def fake_system():
-    return G(ComponentSystem)
+    return G(ComponentSystem, board="default")
 
 
 @pytest.fixture
 def fake_channel(fake_system):
-    return G(ESBChannel, system=fake_system)
+    return G(ESBChannel, system=fake_system, board="default")
