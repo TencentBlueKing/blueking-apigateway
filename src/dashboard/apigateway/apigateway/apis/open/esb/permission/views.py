@@ -25,7 +25,6 @@ from rest_framework import status, viewsets
 
 from apigateway.apis.open.esb.permission import serializers
 from apigateway.apps.esb.bkcore.models import (
-    AppComponentPermission,
     AppPermissionApplyRecord,
     ComponentSystem,
     ESBChannel,
@@ -124,18 +123,11 @@ class AppPermissionViewSet(viewsets.ViewSet):
 
         data = slz.validated_data
 
-        component_ids = AppComponentPermission.objects.filter_component_ids(
-            bk_app_code=data["target_app_code"],
-            expire_days_range=data.get("expire_days_range"),
-        )
-        queryset = ESBChannel.objects.filter_active_and_public_components(
-            ids=component_ids,
-            allow_apply_permission=True,
-        )
-        components = ESBChannel.objects.get_components(queryset)
-
         manager = ComponentPermissionManager.get_manager()
-        component_permissions = manager.list_permissions(data["target_app_code"], None, components)
+        component_permissions = manager.list_applied_permissions(
+            data["target_app_code"],
+            data.get("expire_days_range"),
+        )
 
         slz = serializers.AppPermissionComponentSLZ(component_permissions, many=True)
         return OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("system_name", "name")))

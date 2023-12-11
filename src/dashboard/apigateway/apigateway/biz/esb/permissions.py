@@ -31,6 +31,7 @@ from apigateway.apps.esb.bkcore.models import (
     AppPermissionApplyStatus,
     ComponentResourceBinding,
     ComponentSystem,
+    ESBChannel,
 )
 from apigateway.apps.esb.helpers import get_component_doc_link
 from apigateway.apps.esb.utils import get_esb_gateway
@@ -45,6 +46,7 @@ from apigateway.apps.permission.models import AppPermissionApplyStatus as Gatewa
 from apigateway.apps.permission.models import AppPermissionRecord as GatewayAppPermissionRecord
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.utils.time import to_datetime_from_now
 
 
 class ComponentPermissionManager(metaclass=ABCMeta):
@@ -133,6 +135,19 @@ class ComponentPermissionManager(metaclass=ABCMeta):
         component_permissions = parse_obj_as(List[ComponentPermission], components)
 
         return [perm.as_dict() for perm in component_permissions]
+
+    def list_applied_permissions(self, bk_app_code: str, expire_days_range: Optional[int]):
+        """已申请权限的列表"""
+        component_ids = AppComponentPermission.objects.filter_component_ids(
+            bk_app_code=bk_app_code,
+            expire_days_range=expire_days_range,
+        )
+        queryset = ESBChannel.objects.filter_active_and_public_components(
+            ids=component_ids,
+            allow_apply_permission=True,
+        )
+        components = ESBChannel.objects.get_components(queryset)
+        return self.list_permissions(bk_app_code, None, components)
 
     def patch_permission_apply_records(self, records: List[AppPermissionApplyRecord]):
         pass
@@ -247,6 +262,31 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
         component_permissions = parse_obj_as(List[ComponentPermission], components)
 
         return [perm.as_dict() for perm in component_permissions]
+
+    def list_applied_permissions(self, bk_app_code: str, expire_days_range: Optional[int]):
+        """已申请权限的列表"""
+        gateway = get_esb_gateway()
+
+        queryset = AppResourcePermission.objects.filter(api=gateway, bk_app_code=bk_app_code)
+        if expire_days_range is not None:
+            queryset = queryset.filter(
+                expires__range=(to_datetime_from_now(), to_datetime_from_now(expire_days_range))
+            )
+        resource_ids = list(queryset.values_list("resource_id", flat=True))
+
+        component_ids = list(
+            ComponentResourceBinding.objects.filter(resource_id__in=resource_ids).values_list(
+                "component_id", flat=True
+            )
+        )
+
+        queryset = ESBChannel.objects.filter_active_and_public_components(
+            ids=component_ids,
+            allow_apply_permission=True,
+        )
+        components = ESBChannel.objects.get_components(queryset)
+
+        return self.list_permissions(bk_app_code, None, components)
 
     def patch_permission_apply_records(self, records: List[AppPermissionApplyRecord]):
         gateway_apply_record_ids = []

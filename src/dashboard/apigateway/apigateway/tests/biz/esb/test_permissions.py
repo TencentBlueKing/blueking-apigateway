@@ -110,6 +110,43 @@ class TestComponentPermissionByEsbManager:
             }
         ]
 
+    def test_list_applied_permissions(self, mocker, unique_id, fake_system, fake_channel):
+        mocker.patch(
+            "apigateway.biz.esb.permissions.get_component_doc_link",
+            return_value="",
+        )
+        mocker.patch(
+            "apigateway.biz.esb.permissions.ComponentPermission.expires_in",
+            new_callable=mocker.PropertyMock(return_value=-math.inf),
+        )
+        mocker.patch(
+            "apigateway.biz.esb.permissions.ComponentPermission.permission_status",
+            new_callable=mocker.PropertyMock(return_value="need_apply"),
+        )
+
+        G(
+            AppComponentPermission,
+            bk_app_code=unique_id,
+            component_id=fake_channel.id,
+        )
+
+        manager = ComponentPermissionByEsbManager()
+        result = manager.list_applied_permissions(unique_id, None)
+        assert result == [
+            {
+                "id": fake_channel.id,
+                "board": fake_channel.board or "",
+                "name": fake_channel.name,
+                "description": fake_channel.description,
+                "description_en": fake_channel.description_en,
+                "system_name": fake_system.name,
+                "permission_level": fake_channel.permission_level,
+                "permission_status": "need_apply",
+                "expires_in": -math.inf,
+                "doc_link": "",
+            }
+        ]
+
 
 class TestComponentPermissionByGatewayManager:
     def test_create_apply_record(self, mocker, unique_id, fake_system, fake_channel, fake_gateway, fake_resource):
@@ -232,6 +269,57 @@ class TestComponentPermissionByGatewayManager:
                 "system_name": fake_system.name,
                 "permission_level": fake_channel.permission_level,
                 "permission_status": "owned",
+                "expires_in": -math.inf,
+                "doc_link": "",
+            }
+        ]
+
+    def test_list_applied_permissions(self, mocker, unique_id, fake_system, fake_channel, fake_gateway, fake_resource):
+        if ComponentResourceBinding is None:
+            return
+
+        mocker.patch(
+            "apigateway.biz.esb.permissions.get_esb_gateway",
+            return_value=fake_gateway,
+        )
+        mocker.patch(
+            "apigateway.biz.esb.permissions.get_component_doc_link",
+            return_value="",
+        )
+        mocker.patch(
+            "apigateway.biz.esb.permissions.ComponentPermission.expires_in",
+            new_callable=mocker.PropertyMock(return_value=-math.inf),
+        )
+        mocker.patch(
+            "apigateway.biz.esb.permissions.ComponentPermission.permission_status",
+            new_callable=mocker.PropertyMock(return_value="need_apply"),
+        )
+
+        G(
+            ComponentResourceBinding,
+            component_id=fake_channel.id,
+            resource_id=fake_resource.id,
+        )
+
+        G(
+            AppResourcePermission,
+            bk_app_code=unique_id,
+            api=fake_gateway,
+            resource_id=fake_resource.id,
+        )
+
+        manager = ComponentPermissionByGatewayManager()
+        result = manager.list_applied_permissions(unique_id, None)
+        assert result == [
+            {
+                "id": fake_channel.id,
+                "board": fake_channel.board or "",
+                "name": fake_channel.name,
+                "description": fake_channel.description,
+                "description_en": fake_channel.description_en,
+                "system_name": fake_system.name,
+                "permission_level": fake_channel.permission_level,
+                "permission_status": "need_apply",
                 "expires_in": -math.inf,
                 "doc_link": "",
             }

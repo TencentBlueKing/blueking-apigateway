@@ -121,14 +121,10 @@ class TestAppPermissionViewSet:
             return_value=None,
         )
         mocker.patch(
-            "apigateway.apis.open.esb.permission.views.AppComponentPermission.objects.filter_component_ids",
-            return_value=[1],
-        )
-        mocker.patch(
             "apigateway.apis.open.esb.permission.views.ComponentPermissionManager.get_manager",
             return_value=mocker.MagicMock(
                 **{
-                    "list_permissions.return_value": [
+                    "list_applied_permissions.return_value": [
                         {
                             "board": "test",
                             "id": 1,
