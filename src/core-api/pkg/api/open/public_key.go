@@ -34,7 +34,20 @@ type queryPublicKeySerializer struct {
 	BkGatewayName string `uri:"gateway_name"  binding:"required"  example:"gateway"`
 }
 
-// QueryPublicKeyV1  will query the public key for gateway from database
+// QueryPublicKeyV1 godoc
+// @Summary query public key of v1
+// @Description query public key of v1
+// @Tags open
+// @Accept  json
+// @Produce  json
+// @Header 200 {string} X-Bkapi-Jwt "the bkapi jwt"
+// @Param gateway_name path string true "gateway_name"
+// @Success 200 {object} util.LegacySuccessResponse "success"
+// @Success 400 {object} util.LegacyErrorResponse "Bad Request"
+// @Success 401 {object} util.LegacyErrorResponse "Unauthorized"
+// @Failure 404 {object} util.LegacyErrorResponse "Not Found"
+// @Failure 500 {object} util.LegacyErrorResponse "Internal Server Error"
+// @Router /api/v1/open/gateways/{gateway_name}/public_key/ [get]
 func QueryPublicKeyV1(c *gin.Context) {
 	// uri params: bk_gateway_name or api_name
 	// response body:
@@ -67,7 +80,19 @@ func QueryPublicKeyV1(c *gin.Context) {
 	})
 }
 
-// QueryPublicKeyV2  will query the public key for gateway from database
+// QueryPublicKeyV2 godoc
+// @Summary query public key of v2
+// @Description query public key of v2
+// @Tags open
+// @Accept  json
+// @Produce  json
+// @Param gateway_name path string true "gateway_name"
+// @Success 200 {object} util.SuccessResponse "success"
+// @Failure 400 {object} util.ErrorResponse "Bad Request"
+// @Failure 401 {object} util.ErrorResponse "Unauthorized"
+// @Failure 404 {object} util.ErrorResponse "Not Found"
+// @Failure 500 {object} util.ErrorResponse "Internal Server Error"
+// @Router /api/v2/open/gateways/{gateway_name}/public_key/ [get]
 func QueryPublicKeyV2(c *gin.Context) {
 	// uri params: bk_gateway_name or api_name
 	// response body:

@@ -1,0 +1,116 @@
+definitions:
+  util.Error:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      system:
+        type: string
+    type: object
+  util.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/util.Error'
+    type: object
+  util.LegacyErrorResponse:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+      result:
+        type: boolean
+    type: object
+  util.LegacySuccessResponse:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+      result:
+        type: boolean
+    type: object
+  util.SuccessResponse:
+    properties:
+      data: {}
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/open/gateways/{gateway_name}/public_key/:
+    get:
+      consumes:
+      - application/json
+      description: query public key of v1
+      parameters:
+      - description: gateway_name
+        in: path
+        name: gateway_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/util.LegacySuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.LegacyErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/util.LegacyErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.LegacyErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.LegacyErrorResponse'
+      summary: query public key of v1
+      tags:
+      - open
+  /api/v2/open/gateways/{gateway_name}/public_key/:
+    get:
+      consumes:
+      - application/json
+      description: query public key of v2
+      parameters:
+      - description: gateway_name
+        in: path
+        name: gateway_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/util.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+      summary: query public key of v2
+      tags:
+      - open
+swagger: "2.0"
