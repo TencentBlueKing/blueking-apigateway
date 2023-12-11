@@ -108,7 +108,7 @@ class ComponentPermissionManager(metaclass=ABCMeta):
             expire_days,
         )
 
-    def list_permissions(self, bk_app_code: str, components: List[Dict[str, Any]]):
+    def list_permissions(self, bk_app_code: str, system_id: Optional[int], components: List[Dict[str, Any]]):
         """权限列表"""
         component_ids = [component["id"] for component in components]
         component_permission_map = {
@@ -117,11 +117,10 @@ class ComponentPermissionManager(metaclass=ABCMeta):
             )
             for perm in AppComponentPermission.objects.filter(bk_app_code=bk_app_code, component_id__in=component_ids)
         }
-        component_permission_apply_status_map = dict(
-            AppPermissionApplyStatus.objects.filter(
-                bk_app_code=bk_app_code,
-                component_id__in=component_ids,
-            ).values_list("component_id", "status")
+        component_permission_apply_status_map = AppPermissionApplyRecord.objects.get_component_permission_status(
+            bk_app_code,
+            system_id,
+            [ApplyStatusEnum.PENDING.value],
         )
 
         components = copy.copy(components)
@@ -214,7 +213,7 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
             expire_days=expire_days,
         )
 
-    def list_permissions(self, bk_app_code: str, components: List[Dict[str, Any]]):
+    def list_permissions(self, bk_app_code: str, system_id: Optional[int], components: List[Dict[str, Any]]):
         """权限列表"""
         component_ids = [component["id"] for component in components]
         component_id_to_resource_id = self._get_component_id_to_resource_id(component_ids)

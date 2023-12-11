@@ -54,7 +54,7 @@ class ComponentViewSet(viewsets.GenericViewSet):
         components = ESBChannel.objects.get_components(queryset)
 
         manager = ComponentPermissionManager.get_manager()
-        component_permissions = manager.list_permissions(slz.validated_data["target_app_code"], components)
+        component_permissions = manager.list_permissions(slz.validated_data["target_app_code"], system_id, components)
 
         output_slz = self.get_serializer(
             sorted(component_permissions, key=operator.itemgetter("permission_level", "name")),
@@ -135,7 +135,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
         components = ESBChannel.objects.get_components(queryset)
 
         manager = ComponentPermissionManager.get_manager()
-        component_permissions = manager.list_permissions(data["target_app_code"], components)
+        component_permissions = manager.list_permissions(data["target_app_code"], None, components)
 
         slz = serializers.AppPermissionComponentSLZ(component_permissions, many=True)
         return OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("system_name", "name")))

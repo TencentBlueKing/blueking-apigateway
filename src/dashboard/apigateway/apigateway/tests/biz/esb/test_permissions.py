@@ -94,7 +94,7 @@ class TestComponentPermissionByEsbManager:
         ]
 
         manager = ComponentPermissionByEsbManager()
-        result = manager.list_permissions("test", components)
+        result = manager.list_permissions("test", fake_system.id, components)
         assert result == [
             {
                 "id": fake_channel.id,
@@ -113,6 +113,9 @@ class TestComponentPermissionByEsbManager:
 
 class TestComponentPermissionByGatewayManager:
     def test_create_apply_record(self, mocker, unique_id, fake_system, fake_channel, fake_gateway, fake_resource):
+        if ComponentResourceBinding is None:
+            return
+
         mocker.patch(
             "apigateway.biz.esb.permissions.get_esb_gateway",
             return_value=fake_gateway,
@@ -136,6 +139,9 @@ class TestComponentPermissionByGatewayManager:
         assert GatewayAppPermissionRecord.objects.filter(id=record.gateway_apply_record_id).exists()
 
     def test_renew_permission(self, mocker, unique_id, fake_channel, fake_gateway, fake_resource):
+        if ComponentResourceBinding is None:
+            return
+
         mocker.patch(
             "apigateway.biz.esb.permissions.get_esb_gateway",
             return_value=fake_gateway,
@@ -170,6 +176,9 @@ class TestComponentPermissionByGatewayManager:
         assert to_datetime_from_now(days=170) < perm2.expires < to_datetime_from_now(days=190)
 
     def list_permissions(self, mocker, unique_id, fake_system, fake_channel, fake_gateway, fake_resource):
+        if ComponentResourceBinding is None:
+            return
+
         mocker.patch(
             "apigateway.biz.esb.permissions.get_esb_gateway",
             return_value=fake_gateway,
@@ -212,7 +221,7 @@ class TestComponentPermissionByGatewayManager:
         ]
 
         manager = ComponentPermissionByGatewayManager()
-        result = manager.list_permissions(unique_id, components)
+        result = manager.list_permissions(unique_id, fake_system.id, components)
         assert result == [
             {
                 "id": fake_channel.id,
@@ -229,6 +238,9 @@ class TestComponentPermissionByGatewayManager:
         ]
 
     def test_patch_permission_apply_records(self, mocker, unique_id, fake_channel, fake_gateway, fake_resource):
+        if ComponentResourceBinding is None:
+            return
+
         mocker.patch(
             "apigateway.biz.esb.permissions.get_esb_gateway",
             return_value=fake_gateway,

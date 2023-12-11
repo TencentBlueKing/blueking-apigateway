@@ -457,7 +457,7 @@ class AppPermissionApplyRecordManager(models.Manager):
             expire_days=expire_days,
         )
 
-    def get_component_permisson_status(
+    def get_component_permission_status(
         self,
         bk_app_code: str,
         system_id: Optional[int],
