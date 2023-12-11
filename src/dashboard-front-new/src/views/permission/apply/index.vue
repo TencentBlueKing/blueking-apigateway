@@ -26,11 +26,35 @@
     <div class="apply-content">
       <bk-loading :loading="isLoading">
         <bk-table
-          ref="permissionTable" class="table-layout" :data="tableData" remote-pagination :pagination="pagination"
-          show-overflow-tooltip @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange"
+          ref="permissionTable" class="table-layout"
+          :data="tableData"
+          :columns="headers"
+          remote-pagination
+          :row-style="{ cursor: 'pointer' }"
+          :pagination="pagination"
+          @page-limit-change="handlePageSizeChange"
+          @page-value-change="handlePageChange"
           @selection-change="handleSelectionChange"
-          @row-click="handleRowClick" @expand-change="handlePageExpandChange"
+          @row-click="handleRowClick"
+          @expand-change="handlePageExpandChange"
           row-hover="auto">
+          <!-- <template #expandRow="row">
+            <div class="h60" v-if="row.grant_dimension === 'api'">
+              <bk-alert theme="error" :title="t('将申请网关下所有资源的权限，包括未来新创建的资源，请谨慎审批')" />
+              {{ row.id }}
+            </div>
+            <bk-table
+              v-else :ref="`permissionDetail_${row.id}`" :max-height="378" :size="'small'" :key="row.id"
+              :data="row.resourceList" :outer-border="false"
+              ext-cls="ag-expand-table"
+              @selection-change="handleRowSelectionChange">
+              <bk-table-column type="index" label="" width="60"></bk-table-column>
+              <bk-table-column type="selection" width="50"></bk-table-column>
+              <bk-table-column prop="name" :label="t('资源名称')"></bk-table-column>
+              <bk-table-column prop="path" :label="t('请求路径')"></bk-table-column>
+              <bk-table-column prop="method" :label="t('请求方法')"></bk-table-column>
+            </bk-table>
+          </template> -->
           <bk-table-column width="80" type="selection" align="center" />
           <!-- <bk-table-column type="expand" width="30" class="ag-expand-cell">
             <template #expandRow="row">
@@ -186,6 +210,8 @@ const filterData = ref({ bk_app_code: '', applied_by: '', grant_dimension: '' })
 const expandRows = ref([]);
 const batchForm = ref(null);
 const approveForm = ref(null);
+const permissionTable = ref(null);
+const headers = ref([]);
 // const timer = ref(null);
 const applySumCount = ref<number>(-1);
 // const resourceList = ref([]);
@@ -247,6 +273,75 @@ const {
   resetSelections,
 } = useSelection();
 
+
+// const setTableHeader = () => {
+//   const columns =  [
+//     {
+//       type: 'selection',
+//       width: 80,
+//       minWidth: 80,
+//       align: 'center',
+//     },
+//     {
+//       type: 'expand',
+//       width: 30,
+//       minWidth: 30,
+//     },
+//     { field: 'bk_app_code', width: 110,  label: t('蓝鲸应用ID') },
+//     {
+//       field: 'grant_dimension_display',
+//       label: t('授权维度'),
+//       showOverflowTooltip: true,
+//       render: ({ data }: Record<string, any>) => {
+//         return data?.grant_dimension_display || '--';
+//       },
+//     },
+//     {
+//       field: 'expire_days_display',
+//       label: t('权限期限'),
+//       showOverflowTooltip: true,
+//       render: ({ data }: Record<string, any>) => {
+//         return data?.expire_days_display || '--';
+//       },
+//     },
+//     {
+//       field: 'reason',
+//       label: t('申请理由'),
+//       showOverflowTooltip: true,
+//       render: ({ data }: Record<string, any>) => {
+//         return data?.reason || '--';
+//       },
+//     },
+//     { field: 'applied_by', label: t('申请人') },
+//     { field: 'created_time', width: 215, label: t('申请时间') },
+//     // {
+//     //   field: 'status',
+//     //   width: 150,
+//     //   label: t('审批状态'),
+//     //   showOverflowTooltip: true,
+//     //   render: ({ data }: Record<string, any>) => {
+//     //     return `<div>
+//     // <loading class="mr5" loading size="mini" mode="spin" theme="primary" v-if="${data?.status} === 'pending'"/>
+//     // <span v-else :class="['dot', ${data?.status}]"></span>
+//     // {{ statusMap[${data?.status} as keyof typeof statusMap] }}
+//     // </div>`;;
+//     //   },
+//     // },
+//     // {
+//     //   field: 'operate',
+//     //   width: 220,
+//     //   label: t('操作'),
+//     //   render: ({ data }: Record<string, any>) => {
+//     //     return ;
+//     //   },
+//     // },
+//   ];
+//   headers.value = columns;
+// };
+
+// const renderCell = ({row:any}) => {
+//   return <div>{row}</div>
+// }
 
 // 监听授权维度的变化
 watch(
@@ -328,7 +423,7 @@ const handlePageExpandChange = (row: any, expandedRows: any) => {
     return item.id;
   });
   // if (curExpandRow !== row) {
-  //   $refs.permissionTable.toggleRowExpansion(curExpandRow, false);
+  //   permissionTable.value.toggleRowExpansion(curExpandRow, false);
   // }
   // curExpandRow = row;
   // nextTick(() => {
@@ -419,6 +514,7 @@ const handleRowClick = (row: any) => {
 };
 
 const init = () => {
+  // setTableHeader();
   console.log(tableData);
   console.log(apigwId);
 };

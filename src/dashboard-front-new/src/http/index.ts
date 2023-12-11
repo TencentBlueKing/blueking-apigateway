@@ -17,3 +17,5 @@ export * from './monitor';
 export * from './operate-records';
 export * from './sdk';
 export * from './component-api-doc';
+export * from './category';
+export * from './system';
