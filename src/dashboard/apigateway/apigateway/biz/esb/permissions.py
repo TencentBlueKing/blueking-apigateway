@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import copy
-import json
 import math
 from abc import ABCMeta
 from typing import Any, Dict, List, Optional, Union
@@ -192,9 +191,8 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
             username,
         )
 
-        # 将网关权限单ID，记录到组件权限申请单，方便查询组件权限单据时，根据网关权限单获取单据实际的审批结果；
-        # 因组件权限单不会审批，comment 不会用到，因此使用此字段保存
-        instance.comment = json.dumps({self.GATEWAY_APPLY_RECORD_ID_KEY: gateway_record.id})
+        # 将网关权限单ID，记录到组件权限申请单，方便查询组件权限单据时，根据网关权限单获取单据实际的审批结果
+        instance.gateway_apply_record_id = gateway_record.id
         instance.save()
 
         return instance
@@ -263,9 +261,7 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
     def patch_permission_apply_records(self, records: List[AppPermissionApplyRecord]):
         gateway_apply_record_ids = []
         for record in records:
-            try:
-                record.gateway_apply_record_id = json.loads(record.comment)[self.GATEWAY_APPLY_RECORD_ID_KEY]
-            except Exception:
+            if not record.gateway_apply_record_id:
                 continue
             gateway_apply_record_ids.append(record.gateway_apply_record_id)
 
@@ -276,11 +272,10 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
             record.id: record for record in AppPermissionApplyRecord.objects.filter(id__in=gateway_apply_record_ids)
         }
         for record in records:
-            gateway_apply_record_id = getattr(record, "gateway_apply_record_id", None)
-            if not gateway_apply_record_id:
+            if not record.gateway_apply_record_id:
                 continue
 
-            gateway_record = gateway_apply_records.get(gateway_apply_record_id)
+            gateway_record = gateway_apply_records.get(record.gateway_apply_record_id)
             if not gateway_record:
                 continue
 
