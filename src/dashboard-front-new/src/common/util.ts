@@ -369,3 +369,29 @@ export const is24HoursAgo = (dateString: string) => {
   // 判断时间差是否大于等于24小时
   return hours >= 24;
 };
+/**
+ * 根据请求方法返回tab的对应主题
+ * @param methods 请求方法
+ * @returns tag的主题
+ */
+export const getMethodsTheme = (methods: string) => {
+  if (!methods) return 'success';
+
+  let theme = '';
+  switch (methods.toLocaleLowerCase()) {
+    case 'get':
+      theme = 'success';
+      break;
+    case 'patch':
+    case 'post':
+      theme = 'info';
+      break;
+    case 'put':
+      theme = 'warning';
+      break;
+    case 'delete':
+      theme = 'danger';
+      break;
+  };
+  return theme;
+};

@@ -131,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQueryList, useSelection } from '@/hooks';
 import { getResourceVersionsList, getStageList } from '@/http';
@@ -147,7 +147,7 @@ const route = useRoute();
 const { t } = useI18n();
 const resourceVersionStore = useResourceVersion();
 
-const apigwId = +route.params.id;
+const apigwId = computed(() => +route.params.id);
 
 const filterData = ref({ keyword: '' });
 const diffDisabled = ref<boolean>(true);
@@ -225,7 +225,7 @@ const jumpSdk = (row: any) => {
 // 选择要发布的环境
 const showRelease = async (row: any) => {
   try {
-    const res = await getStageList(apigwId);
+    const res = await getStageList(apigwId.value);
     if (res?.length) {
       stageList.value = res;
       row.isReleaseMenuShow = true;

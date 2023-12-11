@@ -1,6 +1,6 @@
 <template>
   <div class="alarm-strategy-container p20">
-    <div class="header flex-row justify-content-between mb10">
+    <div class="header flex-row justify-content-between mb24">
       <div class="header-btn flex-row ">
         <span class="mr10">
           <bk-button theme="primary" class="mr5 w80" @click="handleAdd">
@@ -70,7 +70,7 @@
   <!-- 新建/编辑sideslider -->
   <bk-sideslider
     ext-cls="alarm-strategy-slider" v-model:isShow="sidesliderConfig.isShow" :title="sidesliderConfig.title"
-    :quick-close="false" width="750">
+    width="750">
     <template #default>
       <div class="strategy-form p30">
         <bk-form ref="strategyFormRef" :label-width="160" :model="formData">
@@ -78,6 +78,7 @@
             <dl class="form-content">
               <div class="content-panel single">
                 <bk-form-item
+                  class="mb0"
                   :label="t('告警策略名称')" :required="true" :rules="rules.name" :property="'name'"
                   :error-display-type="'normal'">
                   <bk-input :placeholder="t('请输入')" :maxlength="128" v-model="formData.name"></bk-input>
@@ -87,6 +88,7 @@
                 <dt class="panel-title"> {{ t('触发条件') }} </dt>
                 <dd class="panel-content">
                   <bk-form-item
+                    class="mb20"
                     :label="t('告警规则')" :required="true" :rules="rules.alarm_subtype"
                     :property="'alarm_subtype'" :error-display-type="'normal'">
                     <bk-select :clearable="false" v-model="formData.alarm_subtype">
@@ -96,7 +98,7 @@
                       </bk-option>
                     </bk-select>
                   </bk-form-item>
-                  <bk-form-item :label="t('告警范围')">
+                  <bk-form-item :label="t('告警范围')" class="mb20">
                     <div class="flex-group">
                       <span class="item label"> {{ t('资源标签包含') }} </span>
                       <span class="item w328 flex-none">
@@ -108,7 +110,7 @@
                       </span>
                     </div>
                   </bk-form-item>
-                  <bk-form-item :label="t('检测算法')">
+                  <bk-form-item :label="t('检测算法')" class="mb20">
                     <div class="flex-groups">
                       <div class="flex-group flex-2">
                         <span class="item">
@@ -142,10 +144,10 @@
                       </div>
                     </div>
                   </bk-form-item>
-                  <bk-form-item :label="t('告警收敛')">
+                  <bk-form-item :label="t('告警收敛')" class="mb0">
                     <div class="flex-group">
                       <span class="item label"> {{ t('告警产生后') }}， </span>
-                      <span class="item flex-none w122">
+                      <span class="item flex-0-0 w122">
                         <bk-select disabled :clearable="false" v-model="formData.config.converge_config.duration">
                           <bk-option
                             v-for="option in alarmStrategyOptions.convergeConfig.duration" :key="option.value"
@@ -153,7 +155,7 @@
                           </bk-option>
                         </bk-select>
                       </span>
-                      <span class="item label flex-1"> {{ t('内不再发送告警') }} </span>
+                      <span class="item label flex-1-1"> {{ t('内不再发送告警') }} </span>
                     </div>
                   </bk-form-item>
                 </dd>
@@ -182,7 +184,7 @@
                       <bk-checkbox :label="'maintainer'"> {{ t('网关维护者') }} </bk-checkbox>
                     </bk-checkbox-group>
                   </bk-form-item>
-                  <bk-form-item :label="t('其他通知对象')">
+                  <bk-form-item :label="t('其他通知对象')" class="mb0">
                     <!-- <bk-input
                       :placeholder="t('请输入用户')"
                       :maxlength="128"
@@ -424,7 +426,15 @@ init();
 </script>
 
 <style lang="scss" scoped>
-
+.flex-0-0{
+  flex:0 0 auto !important;
+}
+.flex-1-1{
+  flex:1 1 0% !important;
+}
+.mb0{
+  margin-bottom: 0px !important;
+}
 .w70{
   width: 70px;
 }
@@ -443,6 +453,9 @@ init();
 }
 .w328{
   width: 328px;
+}
+.mb24{
+  margin-bottom: 24px;
 }
 :deep(.alarm-strategy-table) {
   .bk-table-body {
@@ -610,6 +623,13 @@ init();
   margin-right: 4px;
   border-radius: 2px;
   white-space: nowrap;
+}
+:deep(.alarm-strategy-content){
+  .bk-exception{
+    height: 280px;
+    max-height: 280px;
+    justify-content: center;
+  }
 }
 </style>
 

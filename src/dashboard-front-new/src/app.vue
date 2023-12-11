@@ -2,6 +2,7 @@
 import {
   ref,
   computed,
+  watch,
 } from 'vue';
 import * as UserInfo from '@/components/user-info.vue';
 import { useI18n } from 'vue-i18n';
@@ -40,7 +41,7 @@ const headerList = ref([
   {
     name: t('组件管理'),
     id: 2,
-    url: 'apigwDoc',
+    url: 'componentsMain',
     enabled: true,
     link: '',
   },
@@ -51,6 +52,34 @@ const headerList = ref([
     enabled: true,
     link: '',
   },
+  {
+    name: t('组件API文档'),
+    id: 4,
+    url: 'componentDoc',
+    enabled: true,
+    link: '',
+  },
+  {
+    name: t('网关API SDK'),
+    id: 5,
+    params: {
+      type: 'apigateway',
+    },
+    url: 'apigwSDK',
+    enabled: true,
+    link: '',
+  },
+  {
+    name: t('组件API SDK'),
+    id: 6,
+    params: {
+      type: 'esb',
+    },
+    url: 'esbSDK',
+    enabled: true,
+    link: '',
+  },
+
 ]);
 
 const apigwId = computed(() => {
@@ -59,6 +88,23 @@ const apigwId = computed(() => {
   }
   return undefined;
 });
+
+watch(
+  () => route.fullPath,
+  () => {
+    const { meta } = route;
+
+    let index = 0;
+    for (let i = 0; i < headerList.value.length; i++) {
+      const item = headerList.value[i];
+      if (item.url === meta?.topMenu) {
+        index = i;
+        break;
+      }
+    }
+    activeIndex.value = index;
+  },
+);
 
 const isExternalLink  = (url?: string) => /^https?:\/\//.test(url);
 

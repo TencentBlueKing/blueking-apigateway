@@ -24,16 +24,33 @@ const apigwStageResourceInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@
 const apigwStagePluginManage = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/plugin-manage.vue');
 const apigwOnlineTest = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/online-test/index.vue');
 const apigwStageVariableManage = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/stage/overview/detail-mode/variable-manage.vue');
-const apigwPermissionApplys = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/apply/index.vue');
-const apigwPermissionApps = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/app/index.vue');
-const apigwPermissionRecords = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/record/index.vue');
+const ApigwPermissionApplys = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/apply/index.vue');
+const ApigwPermissionApps = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/app/index.vue');
+const ApigwPermissionRecords = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/permission/record/index.vue');
 const apigwAccessLog = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/access-log/index.vue');
 const apigwAccessLogDetail = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/access-log/detail.vue');
 const apigwReport = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-data/report/index.vue');
-const apigwBackendService = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/backend-service/index.vue');
+const ApigwBackendService = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/backend-service/index.vue');
 const ApiBasicInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/basic-info/index.vue');
-const apigwMonitorAlarmStrategy = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-strategy/index.vue');
-const apigwMonitorAlarmHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-history/index.vue');
+const ApigwOperateRecords  = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-records/index.vue');
+const ApigwMonitorAlarmStrategy = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-strategy/index.vue');
+const ApigwMonitorAlarmHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-history/index.vue');
+const ApigwSDK = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/sdk/gateway-sdk/index.vue');
+const ApigwESBSDK = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/sdk/esb-sdk/index.vue');
+const ComponentDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/index.vue');
+const ComponentAPIDetail = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/components/detail.vue');
+const ComponentAPIDetailDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/components/doc.vue');
+const ComponentAPIDetailIntro = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/components/intro.vue');
+const ComponentsMain = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/index.vue');
+const ComponentsIntro = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/intro/index.vue');
+const ComponentsSystem = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/system/index.vue');
+const ComponentsManage = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/manage/index.vue');
+const ComponentsCategory = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/category/index.vue');
+const ComponentsAudit = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/permission/audit/index.vue');
+const ComponentsPower = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/permission/power/index.vue');
+const ComponentsHistory = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/permission/history/index.vue');
+const ComponentsRuntimeData = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/runtime-data/index.vue');
+
 
 // 文档一级路由出口
 const docsComponent = {
@@ -57,6 +74,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '资源管理',
       matchRoute: 'apigwMain',
+      topMenu: 'home',
     },
     children: [
       {
@@ -66,6 +84,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '环境管理',
           matchRoute: 'apigwStageOverview',
+          topMenu: 'home',
           customHeader: true,
         },
       },
@@ -76,6 +95,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '环境概览',
           matchRoute: 'apigwStageOverview',
+          topMenu: 'home',
           customHeader: true,
         },
         children: [
@@ -86,6 +106,7 @@ const routes: RouteRecordRaw[] = [
             meta: {
               title: '环境概览',
               matchRoute: 'apigwStageOverview',
+              topMenu: 'home',
             },
           },
           {
@@ -95,6 +116,7 @@ const routes: RouteRecordRaw[] = [
             meta: {
               title: '环境概览',
               matchRoute: 'apigwStageOverview',
+              topMenu: 'home',
             },
           },
           {
@@ -104,6 +126,7 @@ const routes: RouteRecordRaw[] = [
             meta: {
               title: '环境概览',
               matchRoute: 'apigwStageOverview',
+              topMenu: 'home',
             },
           },
         ],
@@ -115,6 +138,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '发布记录',
           matchRoute: 'apigwReleaseHistory',
+          topMenu: 'home',
         },
       },
       {
@@ -124,6 +148,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '资源配置',
           matchRoute: 'apigwResource',
+          topMenu: 'home',
         },
       },
       {
@@ -133,6 +158,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '新建资源',
           matchRoute: 'apigwResource',
+          topMenu: 'home',
           showBackIcon: true,
         },
       },
@@ -143,6 +169,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '编辑资源',
           matchRoute: 'apigwResource',
+          topMenu: 'home',
           showBackIcon: true,
         },
       },
@@ -153,6 +180,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '克隆资源',
           matchRoute: 'apigwResource',
+          topMenu: 'home',
           showBackIcon: true,
         },
       },
@@ -163,6 +191,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '资源版本',
           matchRoute: 'apigwResourceVersion',
+          topMenu: 'home',
           isCustomTopbar: 'resourceVersionOverview',
         },
       },
@@ -173,6 +202,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '在线调试',
           matchRoute: 'apigwOnlineTest',
+          topMenu: 'home',
         },
       },
       {
@@ -182,43 +212,48 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '导入资源配置',
           matchRoute: 'apigwResource',
+          topMenu: 'home',
           showBackIcon: true,
         },
       },
       {
         path: '/:id/backend-service',
         name: 'apigwBackendService',
-        component: apigwBackendService,
+        component: ApigwBackendService,
         meta: {
           title: '后端服务',
           matchRoute: 'apigwBackendService',
+          topMenu: 'home',
         },
       },
       {
         path: '/:id/permission/applys',
         name: 'apigwPermissionApplys',
-        component: apigwPermissionApplys,
+        component: ApigwPermissionApplys,
         meta: {
           title: '权限审批',
           matchRoute: 'apigwPermissionApplys',
+          topMenu: 'home',
         },
       },
       {
         path: '/:id/permission/apps',
         name: 'apigwPermissionApps',
-        component: apigwPermissionApps,
+        component: ApigwPermissionApps,
         meta: {
           title: '应用权限',
           matchRoute: 'apigwPermissionApps',
+          topMenu: 'home',
         },
       },
       {
         path: '/:id/permission/records',
         name: 'apigwPermissionRecords',
-        component: apigwPermissionRecords,
+        component: ApigwPermissionRecords,
         meta: {
           title: '审批历史',
           matchRoute: 'apigwPermissionRecords',
+          topMenu: 'home',
         },
       },
       {
@@ -228,6 +263,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '流水日志',
           matchRoute: 'apigwAccessLog',
+          topMenu: 'home',
         },
       },
       {
@@ -237,6 +273,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '流水日志',
           matchRoute: 'apigwAccessLogDetail',
+          topMenu: 'home',
         },
       },
       {
@@ -246,24 +283,27 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '统计报表',
           matchRoute: 'apigwReport',
+          topMenu: 'home',
         },
       },
       {
         path: '/:id/monitor/alarm-strategy',
         name: 'apigwMonitorAlarmStrategy',
-        component: apigwMonitorAlarmStrategy,
+        component: ApigwMonitorAlarmStrategy,
         meta: {
           title: '告警策略',
           matchRoute: 'apigwMonitorAlarmStrategy',
+          topMenu: 'home',
         },
       },
       {
         path: '/:id/monitor/alarm-history',
         name: 'apigwMonitorAlarmHistory',
-        component: apigwMonitorAlarmHistory,
+        component: ApigwMonitorAlarmHistory,
         meta: {
           title: '告警历史',
           matchRoute: 'apigwMonitorAlarmHistory',
+          topMenu: 'home',
         },
       },
       {
@@ -273,6 +313,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '导入资源文档',
           matchRoute: 'apigwResource',
+          topMenu: 'home',
           showBackIcon: true,
         },
       },
@@ -283,6 +324,16 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '基本信息',
           matchRoute: 'apigwBasicInfo',
+          topMenu: 'home',
+        },
+      },
+      {
+        path: '/:id/operate-records',
+        name: 'apigwOperateRecords',
+        component: ApigwOperateRecords,
+        meta: {
+          title: '操作记录',
+          matchRoute: 'apigwOperateRecords',
         },
       },
     ],
@@ -301,9 +352,43 @@ const routes: RouteRecordRaw[] = [
         component: ApigwDocs,
         meta: {
           matchRoute: 'apigwDoc',
+          topMenu: 'apigwDoc',
           notAppHeader: true,
           isDocRouter: true,
           isMenu: false,   // 是否作为侧边栏菜单
+        },
+      },
+      {
+        path: 'component-api',
+        name: 'componentDoc',
+        component: ComponentDoc,
+        meta: {
+          matchRoute: 'componentDoc',
+          topMenu: 'componentDoc',
+          notAppHeader: true,
+          isDocRouter: true,
+        },
+      },
+      {
+        path: 'sdk/apigw',
+        name: 'apigwSDK',
+        component: ApigwSDK,
+        meta: {
+          matchRoute: 'apigwSDK',
+          topMenu: 'apigwSDK',
+          type: 'apigateway',
+          isDocRouter: true,
+        },
+      },
+      {
+        path: 'sdk/esb',
+        name: 'esbSDK',
+        component: ApigwESBSDK,
+        meta: {
+          matchRoute: 'esbSDK',
+          topMenu: 'esbSDK',
+          type: 'esb',
+          isDocRouter: true,
         },
       },
       {
@@ -312,6 +397,7 @@ const routes: RouteRecordRaw[] = [
         component: ApigwAPIDetail,
         meta: {
           matchRoute: 'apigwAPIDetail',
+          topMenu: 'apigwDoc',
           isDocRouter: true,
         },
         children: [
@@ -322,6 +408,7 @@ const routes: RouteRecordRaw[] = [
             component: ApigwAPIDetailIntro,
             meta: {
               matchRoute: 'apigwAPIDetailIntro',
+              topMenu: 'apigwDoc',
               isDocRouter: true,
             },
           },
@@ -332,10 +419,151 @@ const routes: RouteRecordRaw[] = [
             component: ApigwAPIDetailDoc,
             meta: {
               matchRoute: 'apigwAPIDetailDoc',
+              topMenu: 'apigwDoc',
               isDocRouter: true,
             },
           },
         ],
+      },
+      {
+        path: 'component-api/:version/:id',
+        name: 'componentAPIDetail',
+        component: ComponentAPIDetail,
+        meta: {
+          matchRoute: 'componentDoc',
+          topMenu: 'componentDoc',
+          isDocRouter: true,
+        },
+        children: [
+          {
+            path: 'intro',
+            alias: '',
+            name: 'ComponentAPIDetailIntro',
+            component: ComponentAPIDetailIntro,
+            meta: {
+              matchRoute: 'componentDoc',
+              topMenu: 'componentDoc',
+              isDocRouter: true,
+            },
+          },
+          {
+            path: ':componentId/doc',
+            alias: '',
+            name: 'componentAPIDetailDoc',
+            component: ComponentAPIDetailDoc,
+            meta: {
+              matchRoute: 'componentDoc',
+              topMenu: 'componentDoc',
+              isDocRouter: true,
+            },
+          },
+        ],
+      },
+    ],
+  },
+
+  // 组件管理
+  {
+    path: '/components',
+    name: 'componentsMain',
+    component: ComponentsMain,
+    meta: {
+      title: '组件管理',
+      matchRoute: 'componentsMain',
+      topMenu: 'componentsMain',
+    },
+    children: [
+      {
+        path: 'intro',
+        name: 'componentsIntro',
+        component: ComponentsIntro,
+        meta: {
+          title: '简介',
+          matchRoute: 'componentsIntro',
+          topMenu: 'componentsMain',
+        },
+      },
+      {
+        path: 'system',
+        name: 'componentsSystem',
+        component: ComponentsSystem,
+        meta: {
+          title: '系统管理',
+          matchRoute: 'ComponentsSystem',
+          topMenu: 'componentsMain',
+        },
+      },
+      {
+        path: 'access',
+        name: 'componentsManage',
+        component: ComponentsManage,
+        meta: {
+          title: '组件管理',
+          matchRoute: 'ComponentsManage',
+          topMenu: 'componentsMain',
+        },
+      },
+      {
+        path: 'category',
+        name: 'componentsCategory',
+        component: ComponentsCategory,
+        meta: {
+          title: '文档分类',
+          matchRoute: 'ComponentsCategory',
+          topMenu: 'componentsMain',
+        },
+      },
+      {
+        path: 'permission',
+        name: 'componentsPermission',
+        component: docsComponent,
+        meta: {
+          title: '权限管理',
+          matchRoute: 'componentsPermission',
+          topMenu: 'componentsMain',
+        },
+        children: [
+          {
+            path: 'apply',
+            name: 'permissionApply',
+            component: ComponentsAudit,
+            meta: {
+              title: '权限审批',
+              matchRoute: 'permissionApply',
+              topMenu: 'componentsMain',
+            },
+          },
+          {
+            path: 'power',
+            name: 'permissionPower',
+            component: ComponentsPower,
+            meta: {
+              title: '应用权限',
+              matchRoute: 'permissionPower',
+              topMenu: 'componentsMain',
+            },
+          },
+          {
+            path: 'record',
+            name: 'permissionRecord',
+            component: ComponentsHistory,
+            meta: {
+              title: '审批历史',
+              matchRoute: 'permissionRecord',
+              topMenu: 'componentsMain',
+            },
+          },
+        ],
+      },
+      {
+        path: 'runtime-data',
+        name: 'componentsRuntimeData',
+        component: ComponentsRuntimeData,
+        meta: {
+          title: '实时运行数据',
+          matchRoute: 'componentsRuntimeData',
+          topMenu: 'componentsMain',
+        },
       },
     ],
   },

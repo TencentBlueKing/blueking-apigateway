@@ -1,6 +1,6 @@
 <template>
   <div class="backend-service-container p20">
-    <div class="header flex-row justify-content-between">
+    <div class="header flex-row justify-content-between mb24">
       <div class="header-btn flex-row ">
         <span class="mr10">
           <bk-button theme="primary" class="mr5 w80" @click="handleAdd">
@@ -45,6 +45,7 @@
                 {{ t('编辑') }}
               </bk-button>
               <span
+                v-if="data?.resource_count !== 0"
                 v-bk-tooltips="{
                   content: t(`${data?.name === 'default' ? '默认后端服务，且' : '服务'}被${data?.resource_count}个资源引用了，不能删除`),
                   disabled: data?.resource_count === 0
@@ -52,6 +53,18 @@
                 <bk-button
                   theme="primary" text
                   :disabled="data?.resource_count !== 0 || data?.name === 'default'" @click="handleDelete(data)">
+                  {{ t('删除') }}
+                </bk-button>
+              </span>
+              <span
+                v-else
+                v-bk-tooltips="{
+                  content: t('默认后端服务，不能删除'),
+                  disabled: data?.name !== 'default'
+                }">
+                <bk-button
+                  theme="primary" text
+                  :disabled="data?.name === 'default'" @click="handleDelete(data)">
                   {{ t('删除') }}
                 </bk-button>
               </span>
@@ -66,7 +79,7 @@
       ext-cls="backend-service-slider" width="800">
       <template #default>
         <div class="content">
-          <bk-alert theme="warning" :title="editTitle" class="mb20" v-if="curOperate === 'edit'" />
+          <bk-alert theme="warning" :title="editTitle" class="mb20" v-if="curOperate === 'edit' && isPublish" />
           <div class="base-info mb20">
             <p class="title"><span class="icon apigateway-icon icon-ag-down-shape"></span>{{ t('基础信息') }}</p>
             <bk-form
@@ -86,15 +99,9 @@
           <div class="stage-config">
             <div class="header-title flex-row justify-content-between">
               <p class="title"><span class="icon apigateway-icon icon-ag-down-shape"></span>{{ t('各环境的服务配置') }}</p>
-              <div class="switch" v-if="stageList.length > 1">
-                <bk-switcher
-                  v-model="isBatchSet" :true-value="true" :false-value="false" theme="primary" size="small"
-                  class="mr5" />
-                {{ t('批量设置') }}
-              </div>
             </div>
             <div class="stage mt20">
-              <bk-collapse v-if="!isBatchSet" :list="stageConfig" header-icon="right-shape" v-model="activeIndex">
+              <bk-collapse :list="stageConfig" header-icon="right-shape" v-model="activeIndex">
                 <template #title="slotProps">
                   <span class="fw700 stage-name">
                     {{ slotProps.name || slotProps.configs.stage.name}}
@@ -159,72 +166,6 @@
                   </bk-form>
                 </template>
               </bk-collapse>
-              <div v-else>
-                <bk-collapse :list="batchConfig" header-icon="right-shape" v-model="activeIndex">
-                  <template #title>
-                    <span class="fw700 stage-name">
-                      {{ t(`全部环境（${getAllStageName}）`) }}
-                    </span>
-                  </template>
-                  <template #content="slotProps">
-                    <bk-form
-                      ref="stageBatchConfigRef" class="stage-config-form " :model="slotProps" form-type="vertical">
-                      <bk-form-item
-                        :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
-                        <bk-select
-                          v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
-                        >
-                          <bk-option
-                            v-for="option of loadbalanceList" :key="option.id" :value="option.id"
-                            :label="option.name">
-                          </bk-option>
-                        </bk-select>
-                      </bk-form-item>
-                      <bk-form-item
-                        :label="t('后端服务地址')" v-for="(hostItem, i) in slotProps.configs.hosts" :key="i"
-                        :rules="configRules.host" :property="`configs.hosts.${i}.host`"
-                        :class="['backend-item-cls', { 'form-item-special': i !== 0 }]" required>
-                        <div class="host-item">
-                          <bk-input :placeholder="t('格式如 ：http(s)://host:port')" v-model="hostItem.host" :key="i">
-                            <template #prefix>
-                              <bk-select v-model="hostItem.scheme" class="scheme-select-cls w80" :clearable="false">
-                                <bk-option
-                                  v-for="(item, index) in schemeList" :key="index" :value="item.value"
-                                  :label="item.value" />
-                              </bk-select>
-                              <div class="slash">://</div>
-                            </template>
-                            <template #suffix v-if="slotProps.configs.loadbalance === 'weighted-roundrobin'">
-                              <bk-input
-                                class="suffix-slot-cls weights-input" :placeholder="t('权重')" type="number" :min="1"
-                                :max="10000" v-model="hostItem.weight"></bk-input>
-                            </template>
-                          </bk-input>
-                          <i
-                            class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
-                            @click="handleAddServiceAddress(slotProps.name)"></i>
-                          <i
-                            class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
-                            :class="{ disabled: slotProps.configs.hosts.length < 2 }"
-                            @click="handleDeleteServiceAddress(slotProps.name, i)"></i>
-                        </div>
-                      </bk-form-item>
-                      <bk-form-item
-                        :label="t('超时时间')" :required="true" :property="'configs.timeout'" class="timeout-item"
-                        :rules="configRules.timeout" :error-display-type="'normal'">
-                        <bk-input
-                          type="number" :min="1" :max="300"
-                          v-model="slotProps.configs.timeout" class="time-input">
-                          <template #suffix>
-                            <div class="group-text group-text-style">{{ t('秒') }}</div>
-                          </template>
-                        </bk-input>
-                        <span class="timeout-tip"> {{ t('最大300秒') }} </span>
-                      </bk-form-item>
-                    </bk-form>
-                  </template>
-                </bk-collapse>
-              </div>
             </div>
           </div>
         </div>
@@ -242,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { InfoBox, Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
@@ -264,11 +205,10 @@ const router = useRouter();
 const { apigwId } = common; // 网关id
 
 const filterData = ref({ name: '', type: '' });
-const isBatchSet = ref<boolean>(false);
 const isSaveLoading = ref<boolean>(false);
+const isPublish = ref<boolean>(false);
 const baseInfoRef = ref(null);
 const stageConfigRef = ref([]);
-const stageBatchConfigRef = ref(null);
 const curOperate = ref<string>('add');
 const editTitle = ref<string>(t('如果环境和资源已经发布，服务配置修改后，将立即对所有已发布资源生效'));
 const finaConfigs = ref([]);
@@ -281,17 +221,6 @@ const curServiceDetail = ref({
 const stageList = ref([]);
 const stageConfig = ref([]);
 const activeIndex = ref([]);
-const batchConfig = ref([{
-  configs: {
-    loadbalance: 'roundrobin',
-    timeout: 30,
-    hosts: [{
-      scheme: 'http',
-      host: '',
-      weight: 100,
-    }],
-  },
-}]);
 const sidesliderConfi = reactive({
   isShow: false,
   title: '',
@@ -379,11 +308,6 @@ const {
   getList,
 } = useQueryList(getBackendServiceList, filterData);
 
-// 获取所有的stage name
-const getAllStageName = computed(() => {
-  const newTitle = stageList.value.map(item => item.name).join('，');
-  return newTitle;
-});
 
 const isNewCreate = (row: any) => {
   return isWithinTime(row?.updated_time) ? 'new-created' : '';
@@ -401,21 +325,6 @@ const isWithinTime = (date: string) => {
   return diff < twentyFourHours;
 };
 
-const resetData = () => {
-  isBatchSet.value = false;
-  batchConfig.value = [{
-    configs: {
-      loadbalance: 'roundrobin',
-      timeout: 30,
-      hosts: [{
-        scheme: 'http',
-        host: '',
-        weight: 100,
-      }],
-    },
-  }];
-};
-
 // 获取所有stage服务配置的ref
 const getSatgeConfigRef = (el: any) => {
   console.log(el);
@@ -431,7 +340,6 @@ const handleAdd = () => {
     name: '',
     description: '',
   };
-  resetData();
   stageConfig.value = stageList.value.map((item: any) => {
     const { name, id, description } = item;
     const newItem = {
@@ -459,7 +367,7 @@ const handleAdd = () => {
 const handleAddServiceAddress = (name: string) => {
   console.log(name);
   console.log(stageConfig.value);
-  const isAddItem = isBatchSet.value ? batchConfig.value : stageConfig.value;
+  const isAddItem = stageConfig.value;
   isAddItem.forEach((item) => {
     if (item.name === name) {
       item.configs.hosts.push({
@@ -473,7 +381,7 @@ const handleAddServiceAddress = (name: string) => {
 
 // 删除服务地址
 const handleDeleteServiceAddress = (name: string, index: number) => {
-  const isDeleteItem = isBatchSet.value ? batchConfig.value : stageConfig.value;
+  const isDeleteItem = stageConfig.value;
   isDeleteItem.forEach((item) => {
     if (item.name === name && item.configs.hosts.length !== 1) {
       item.configs.hosts.splice(index, 1);
@@ -483,7 +391,6 @@ const handleDeleteServiceAddress = (name: string, index: number) => {
 
 // 点击名称/编辑
 const handleEdit = async (data: any) => {
-  resetData();
   curOperate.value = 'edit';
   baseInfo.value = {
     name: data.name,
@@ -509,6 +416,9 @@ const handleResource = (data: any) => {
     name: 'apigwResource',
     params: {
       id: apigwId,
+    },
+    query: {
+      name: data.name,
     },
   };
   router.push(params);
@@ -540,37 +450,25 @@ const handleConfirm = async () => {
   // 基础信息校验
   await baseInfoRef.value.validate();
   const isAdd = curOperate.value === 'add';
-  if (isBatchSet.value) {
-    await stageBatchConfigRef.value.validate();
-    finaConfigs.value = stageList.value.map((item: any) => {
-      const { configs } = batchConfig.value[0];
-      const newItem = {
-        timeout: configs.timeout,
-        loadbalance: configs.loadbalance,
-        hosts: configs.hosts,
-        stage_id: item.id,
-      };
-      return newItem;
-    });
-  } else {
-    console.log(stageConfigRef.value);
 
-    // 逐个stage服务配置的校验
-    for (const item of stageConfigRef.value) {
-      if (item === null) break;
-      await item.validate();
-    }
-    finaConfigs.value = stageConfig.value.map((item) => {
-      const id =  isAdd ? item.id : item.configs.stage.id;
-      const newItem = {
-        timeout: item.configs.timeout,
-        loadbalance: item.configs.loadbalance,
-        hosts: item.configs.hosts,
-        stage_id: id,
-      };
-      return newItem;
-    });
+  console.log(stageConfigRef.value);
+
+  // 逐个stage服务配置的校验
+  for (const item of stageConfigRef.value) {
+    if (item === null) break;
+    await item.validate();
   }
+  finaConfigs.value = stageConfig.value.map((item) => {
+    const id =  isAdd ? item.id : item.configs.stage.id;
+    const newItem = {
+      timeout: item.configs.timeout,
+      loadbalance: item.configs.loadbalance,
+      hosts: item.configs.hosts,
+      stage_id: id,
+    };
+    return newItem;
+  });
+
   const { name, description } = baseInfo.value;
   const params = {
     name,
@@ -584,11 +482,27 @@ const handleConfirm = async () => {
     } else {
       await updateBackendService(apigwId, curServiceDetail.value.id, params);
     }
-    Message({
-      message: isAdd ? t('新建成功') : t('更新成功'),
-      theme: 'success',
-    });
-    sidesliderConfi.isShow = false;
+    if (isPublish.value && !isAdd) {
+      sidesliderConfi.isShow = false;
+      InfoBox({
+        title: t('内容保存成功，正在发布至环境中'),
+        infoType: 'success',
+        subTitle: t('服务修改后将会立即发布至环境中'),
+        confirmText: t('去查看'),
+        cancelText: t('关闭'),
+        onConfirm: () => {
+          router.push({
+            name: 'apigwReleaseHistory',
+          });
+        },
+      });
+    } else {
+      Message({
+        message: isAdd ? t('新建成功') : t('更新成功'),
+        theme: 'success',
+      });
+      sidesliderConfi.isShow = false;
+    }
     stageConfigRef.value = [];
     getList();
   } catch (error) {
@@ -608,9 +522,12 @@ const init = async () => {
   try {
     const res = await getStageList(apigwId);
     stageList.value = res;
+    console.log(stageList.value);
     res.forEach((item: any) => {
       activeIndex.value.push(item.name);
     });
+    isPublish.value = stageList.value.some((item: any) => item.publish_id !== 0);
+    console.log(isPublish.value);
   } catch (error) {
     console.log('error', error);
   }
@@ -622,12 +539,14 @@ init();
 .w80 {
   width: 80px;
 }
-
-:deep(.new-created){
-  background-color: #f1fcf5 !important;
+.mb24{
+  margin-bottom: 24px;
 }
 .w500 {
   width: 500px;
+}
+:deep(.new-created){
+  background-color: #f1fcf5 !important;
 }
 .content{
   padding: 20px 30px 30px;
