@@ -347,7 +347,6 @@ const routes: RouteRecordRaw[] = [
     redirect: `${globalConfig.PREV_URL}/apigw-api/`,
     name: 'docsMain',
     component: docsComponent,
-    alias: '',
     children: [
       {
         path: 'apigw-api',
