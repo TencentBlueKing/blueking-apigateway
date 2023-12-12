@@ -35,22 +35,26 @@ class TestComponentViewSet:
             return_value="my-test",
         )
         mocker.patch(
-            "apigateway.apis.open.esb.permission.views.ComponentPermissionBuilder.build",
-            return_value=[
-                {
-                    "id": 1,
-                    "board": "test",
-                    "name": "test",
-                    "system_name": "test",
-                    "description": "test",
-                    "description_en": "test_en",
-                    "expires_in": math.inf,
-                    "permission_level": "normal",
-                    "permission_status": "owned",
-                    "doc_link": "",
-                    "tag": "",
+            "apigateway.apis.open.esb.permission.views.ComponentPermissionManager.get_manager",
+            return_value=mocker.MagicMock(
+                **{
+                    "list_permissions.return_value": [
+                        {
+                            "id": 1,
+                            "board": "test",
+                            "name": "test",
+                            "system_name": "test",
+                            "description": "test",
+                            "description_en": "test_en",
+                            "expires_in": math.inf,
+                            "permission_level": "normal",
+                            "permission_status": "owned",
+                            "doc_link": "",
+                            "tag": "",
+                        }
+                    ]
                 }
-            ],
+            ),
         )
 
         params = {
@@ -82,13 +86,11 @@ class TestComponentViewSet:
 
 
 class TestAppPermissionApplyV1APIView:
-    def test_apply(self, mocker, request_factory, unique_id):
+    def test_apply(self, settings, mocker, request_factory, unique_id):
+        settings.USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS = False
+
         mocker.patch(
             "apigateway.apis.open.esb.permission.serializers.BKAppCodeValidator.__call__",
-            return_value=None,
-        )
-        mocker.patch(
-            "apigateway.apis.open.esb.permission.views.send_mail_for_perm_apply.apply_async",
             return_value=None,
         )
 
@@ -123,22 +125,26 @@ class TestAppPermissionViewSet:
             return_value=[1],
         )
         mocker.patch(
-            "apigateway.apis.open.esb.permission.views.ComponentPermissionBuilder.build",
-            return_value=[
-                {
-                    "board": "test",
-                    "id": 1,
-                    "name": "test",
-                    "system_name": "test",
-                    "description": "desc",
-                    "description_en": "desc_en",
-                    "expires_in": 10,
-                    "permission_level": "nomal",
-                    "permission_status": "owned",
-                    "permission_action": "",
-                    "doc_link": "",
-                },
-            ],
+            "apigateway.apis.open.esb.permission.views.ComponentPermissionManager.get_manager",
+            return_value=mocker.MagicMock(
+                **{
+                    "list_applied_permissions.return_value": [
+                        {
+                            "board": "test",
+                            "id": 1,
+                            "name": "test",
+                            "system_name": "test",
+                            "description": "desc",
+                            "description_en": "desc_en",
+                            "expires_in": 10,
+                            "permission_level": "nomal",
+                            "permission_status": "owned",
+                            "permission_action": "",
+                            "doc_link": "",
+                        },
+                    ],
+                }
+            ),
         )
         mocker.patch(
             "apigateway.apis.open.esb.permission.serializers.BoardConfigManager.get_optional_display_label",
@@ -189,7 +195,7 @@ class TestAppPermissionApplyRecordViewSet:
 
         system = G(ComponentSystem, name=unique_id)
 
-        record = AppPermissionApplyRecord.objects.create_record(
+        AppPermissionApplyRecord.objects.create_record(
             board="test",
             bk_app_code=unique_id,
             applied_by="admin",

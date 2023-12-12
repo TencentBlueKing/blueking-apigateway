@@ -207,6 +207,11 @@ class AppPermissionApplyRecord(ModelWithBoard, TimestampedModelMixin):
     handled_component_ids = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     status = models.CharField(max_length=16, choices=ApplyStatusEnum.get_choices(), db_index=True)
     comment = models.CharField(max_length=512, blank=True, default="")
+    gateway_apply_record_id = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="网关 bk-esb 权限申请单ID，用于关联申请单，以获取网关申请单状态",
+    )
 
     objects = managers.AppPermissionApplyRecordManager()
 

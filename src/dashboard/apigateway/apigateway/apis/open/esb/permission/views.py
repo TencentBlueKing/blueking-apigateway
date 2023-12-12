@@ -19,23 +19,18 @@
 import logging
 import operator
 
-from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.esb.permission import serializers
-from apigateway.apis.open.esb.permission.helpers import ComponentPermissionBuilder
 from apigateway.apps.esb.bkcore.models import (
-    AppComponentPermission,
     AppPermissionApplyRecord,
-    AppPermissionApplyStatus,
     ComponentSystem,
     ESBChannel,
 )
 from apigateway.apps.esb.permission.serializers import AppPermissionApplyRecordDetailSLZ
-from apigateway.apps.permission.constants import ApplyStatusEnum
-from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.biz.esb.permissions import ComponentPermissionManager
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import V1OKJsonResponse
 
@@ -57,16 +52,14 @@ class ComponentViewSet(viewsets.GenericViewSet):
         queryset = ESBChannel.objects.filter_active_and_public_components(system_id=system_id)
         components = ESBChannel.objects.get_components(queryset)
 
-        component_permissions = ComponentPermissionBuilder(
-            system_id,
-            slz.validated_data["target_app_code"],
-        ).build(components)
+        manager = ComponentPermissionManager.get_manager()
+        component_permissions = manager.list_permissions(slz.validated_data["target_app_code"], system_id, components)
 
-        slz = self.get_serializer(
+        output_slz = self.get_serializer(
             sorted(component_permissions, key=operator.itemgetter("permission_level", "name")),
             many=True,
         )
-        return V1OKJsonResponse("OK", data=slz.data)
+        return V1OKJsonResponse("OK", data=output_slz.data)
 
 
 class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
@@ -90,37 +83,15 @@ class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
 
         data = slz.validated_data
 
-        for component_ids in ESBChannel.objects.group_by_permission_level(data["component_ids"]):
-            instance = AppPermissionApplyRecord.objects.create_record(
-                board=system.board,
-                bk_app_code=data["target_app_code"],
-                applied_by=request.user.username,
-                system=system,
-                component_ids=component_ids,
-                status=ApplyStatusEnum.PENDING.value,
-                reason=data["reason"],
-                expire_days=data["expire_days"],
-            )
-
-            if AppPermissionApplyStatus is not None:
-                # 删除应用-组件申请状态的历史记录，方便下面批量插入
-                AppPermissionApplyStatus.objects.filter(
-                    bk_app_code=data["target_app_code"],
-                    system=system,
-                    component_id__in=component_ids,
-                ).delete()
-                AppPermissionApplyStatus.objects.batch_create(
-                    record=instance,
-                    bk_app_code=data["target_app_code"],
-                    system=system,
-                    component_ids=component_ids,
-                    status=ApplyStatusEnum.PENDING.value,
-                )
-
-            try:
-                apply_async_on_commit(send_mail_for_perm_apply, args=[instance.id])
-            except Exception:
-                logger.exception("send mail to gateway manager fail. apply_record_id=%s", instance.id)
+        manager = ComponentPermissionManager.get_manager()
+        manager.create_apply_record(
+            data["target_app_code"],
+            system,
+            data["component_ids"],
+            data["reason"],
+            data["expire_days"],
+            request.user.username,
+        )
 
         return V1OKJsonResponse("OK")
 
@@ -138,7 +109,8 @@ class AppPermissionRenewAPIView(viewsets.GenericViewSet):
 
         data = slz.validated_data
 
-        AppComponentPermission.objects.renew_permissions(
+        manager = ComponentPermissionManager.get_manager()
+        manager.renew_permission(
             data["target_app_code"],
             data["component_ids"],
             data["expire_days"],
@@ -155,20 +127,11 @@ class AppPermissionViewSet(viewsets.ViewSet):
 
         data = slz.validated_data
 
-        component_ids = AppComponentPermission.objects.filter_component_ids(
-            bk_app_code=data["target_app_code"],
-            expire_days_range=data.get("expire_days_range"),
-        )
-        queryset = ESBChannel.objects.filter_active_and_public_components(
-            ids=component_ids,
-            allow_apply_permission=True,
-        )
-        components = ESBChannel.objects.get_components(queryset)
-
-        component_permissions = ComponentPermissionBuilder(
-            None,
+        manager = ComponentPermissionManager.get_manager()
+        component_permissions = manager.list_applied_permissions(
             data["target_app_code"],
-        ).build(components)
+            data.get("expire_days_range"),
+        )
 
         slz = serializers.AppPermissionComponentSLZ(component_permissions, many=True)
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("system_name", "name")))
@@ -195,7 +158,11 @@ class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
             order_by="-id",
         )
 
-        page = self.paginate_queryset(queryset)
+        page = list(self.paginate_queryset(queryset))
+
+        manager = ComponentPermissionManager.get_manager()
+        manager.patch_permission_apply_records(page)
+
         slz = serializers.AppPermissionApplyRecordV1SLZ(page, many=True)
         return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
 
@@ -209,6 +176,9 @@ class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
             record = AppPermissionApplyRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
         except AppPermissionApplyRecord.DoesNotExist:
             raise error_codes.NOT_FOUND
+
+        manager = ComponentPermissionManager.get_manager()
+        manager.patch_permission_apply_records([record])
 
         slz = AppPermissionApplyRecordDetailSLZ(record)
         return V1OKJsonResponse("OK", data=slz.data)
