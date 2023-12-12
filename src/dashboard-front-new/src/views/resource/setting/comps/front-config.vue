@@ -81,7 +81,7 @@ const rules = ref<any>({
       validator: (value: string) => {
         console.log('value', value);
         if (!value) return true;
-        return value !== cloneData.value.path;
+        return value !== cloneData.value.path || frontConfigData.value.method !== cloneData.value.method;
       },
       message: cloneTips.value,
       trigger: 'blur',
