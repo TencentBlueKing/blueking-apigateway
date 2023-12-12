@@ -39,7 +39,7 @@
         <div
           class="table-item flex-row align-items-center"
           v-for="item in gatewaysList" :key="item.id"
-          :class="item.isYesterday ? 'newly-item' : ''">
+          :class="item.is24HoursAgo ? '' : 'newly-item'">
           <div class="flex-1 flex-row align-items-center of3">
             <div
               class="name-logo mr10" :class="item.status ? '' : 'deact'"

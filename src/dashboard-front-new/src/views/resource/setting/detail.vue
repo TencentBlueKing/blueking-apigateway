@@ -125,7 +125,7 @@
         <template #label>
           <span class="label-cls">{{ t('请求方法：') }}</span>
         </template>
-        <span class="value-cls">{{ formData.backend?.config?.method }}</span>
+        <bk-tag :theme="methodsEnum[formData.backend?.config?.method]">{{ formData.backend?.config?.method }}</bk-tag>
       </bk-form-item>
       <bk-form-item class="form-item-cls">
         <template #label>
