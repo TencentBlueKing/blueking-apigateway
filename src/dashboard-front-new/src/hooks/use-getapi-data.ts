@@ -5,7 +5,7 @@ import { IPagination } from '@/types';
 
 const initPagination: IPagination = {
   offset: 0,
-  limit: 100,
+  limit: 10000,
   count: 0,
 };
 const pagination = ref<IPagination>(initPagination);
