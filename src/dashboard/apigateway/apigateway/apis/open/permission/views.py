@@ -141,7 +141,7 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
         record = manager.create_apply_record(
             data["target_app_code"],
             request.gateway,
-            data.get("resource_ids", []),
+            data.get("resource_ids") or [],
             data["grant_dimension"],
             data["reason"],
             data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
