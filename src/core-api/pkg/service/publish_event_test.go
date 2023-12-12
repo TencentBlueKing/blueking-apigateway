@@ -176,7 +176,6 @@ var _ = Describe("PublishEventService", func() {
 			err := svc.Report(ctx, event)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "has been reported")
-
 		})
 
 		It("ok: report success", func() {

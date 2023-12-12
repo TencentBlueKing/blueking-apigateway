@@ -33,3 +33,4 @@ core
 *.log
 bk-apigateway-core-api
 .coverage.cov
+config.yaml

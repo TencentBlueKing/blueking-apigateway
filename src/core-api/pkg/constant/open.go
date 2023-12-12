@@ -16,40 +16,6 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package cacheimpls
+package constant
 
-import (
-	"context"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestPublishEvent_Key(t *testing.T) {
-	k := PublishEventKey{
-		GatewayID: 1,
-		StageID:   2,
-		PublishID: 3,
-		Step:      4,
-		Status:    "success",
-	}
-	assert.Equal(t, "1:2:3:4:success", k.Key())
-}
-
-func TestPublishEventExistsAndSet(t *testing.T) {
-	key := PublishEventKey{
-		GatewayID: 1,
-		StageID:   2,
-		PublishID: 3,
-		Step:      4,
-		Status:    "success",
-	}
-
-	exists := PublishEventExists(context.Background(), key)
-	assert.Equal(t, false, exists)
-
-	PublishEventSet(context.Background(), key)
-
-	exists = PublishEventExists(context.Background(), key)
-	assert.Equal(t, true, exists)
-}
+const BkGatewayJWTIssuerKey = "bk_gateway_jwt_issuer"

@@ -17,11 +17,16 @@ init:
 	go install github.com/segmentio/golines@latest
 	# for goimports
 	go install -v github.com/incu6us/goimports-reviser/v3@latest
+	# for swag
+	go install github.com/swaggo/swag/cmd/swag@latest
 
 .PHONY: dep
 dep:
 	go mod tidy
 	go mod vendor
+
+doc:
+	swag init
 
 .PHONY: mock
 mock:
