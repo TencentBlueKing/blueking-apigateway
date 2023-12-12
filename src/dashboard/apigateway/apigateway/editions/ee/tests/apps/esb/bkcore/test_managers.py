@@ -32,8 +32,8 @@ class TestAppComponentPermissionManager:
 
         AppComponentPermission.objects.renew_permissions(unique_id, [1], 70)
         perm.refresh_from_db()
-        to_datetime_from_now(days=99) < perm.expires < to_datetime_from_now(days=101)
+        assert to_datetime_from_now(days=99) < perm.expires < to_datetime_from_now(days=101)
 
         AppComponentPermission.objects.renew_permissions(unique_id, [1], 170)
         perm.refresh_from_db()
-        to_datetime_from_now(days=160) < perm.expires < to_datetime_from_now(days=180)
+        assert to_datetime_from_now(days=160) < perm.expires < to_datetime_from_now(days=180)

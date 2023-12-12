@@ -17,7 +17,6 @@
 #
 import copy
 import math
-from abc import ABCMeta
 from typing import Any, Dict, List, Optional, Union
 
 from django.conf import settings
@@ -49,7 +48,7 @@ from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.utils.time import to_datetime_from_now
 
 
-class ComponentPermissionManager(metaclass=ABCMeta):
+class ComponentPermissionManager:
     """
     组件权限管理
     - 未使用网关 bk-esb 管理组件权限时，直接使用组件的权限数据，权限单据
