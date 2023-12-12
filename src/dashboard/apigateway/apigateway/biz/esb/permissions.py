@@ -84,6 +84,7 @@ class ComponentPermissionManager:
             expire_days=expire_days,
         )
 
+        # 在旧版中，AppPermissionApplyStatus 不存在，为保持模型引用的兼容，将其设置为了 None
         if AppPermissionApplyStatus is not None:
             # 删除应用-组件申请状态的历史记录，方便下面批量插入
             AppPermissionApplyStatus.objects.filter(
@@ -121,6 +122,8 @@ class ComponentPermissionManager:
         component_permission_apply_status_map = AppPermissionApplyRecord.objects.get_component_permission_status(
             bk_app_code,
             system_id,
+            # 这里可以包含 PENDING，以及最新审批且状态为 REJECTED 的单据；但是旧版中，是根据历史单据 records 分析的，获取此 REJECTED 较复杂，
+            # 所以这里只获取 PENDING
             [ApplyStatusEnum.PENDING.value],
         )
 
