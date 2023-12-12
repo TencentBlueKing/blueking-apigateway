@@ -245,7 +245,7 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
         resource_id_to_apply_status = dict(
             GatewayAppPermissionApplyStatus.objects.filter(
                 bk_app_code=bk_app_code,
-                api_id=gateway.id,
+                gateway_id=gateway.id,
                 grant_dimension=GrantDimensionEnum.RESOURCE.value,
             ).values_list("resource_id", "status")
         )

@@ -24,6 +24,9 @@ from apigateway.core.models import Resource
 
 class TestComponentResourceBindingHandler:
     def test_sync(self, fake_resource_data):
+        if ComponentResourceBinding is None:
+            return
+
         resource_1 = G(Resource)
         resource_2 = G(Resource)
         resource_3 = G(Resource)

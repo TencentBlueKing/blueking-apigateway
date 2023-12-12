@@ -148,7 +148,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
             gateway=gateway,
             apply=instance,
             status=ApplyStatusEnum.PENDING.value,
-            resources=Resource.objects.filter_by_ids(gateway, ids=resource_ids),
+            resources=Resource.objects.filter(gateway=gateway, id__in=resource_ids),
         )
 
         return record
