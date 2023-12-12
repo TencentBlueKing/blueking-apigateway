@@ -13,7 +13,14 @@
         <bk-select
           v-model="filterKey"
           :clearable="false"
+          class="select-cls"
+          @change="handleChange"
         >
+          <template #prefix>
+            <div class="prefix-cls flex-row align-items-center">
+              <i class="icon apigateway-icon icon-ag-exchange-line pb5"></i>
+            </div>
+          </template>
           <bk-option
             v-for="(item, index) in filterData"
             :key="index" :value="item.value" :label="item.label" />
@@ -22,15 +29,18 @@
     </div>
     <div class="table-container">
       <div class="table-header flex-row">
-        <div class="flex-1 of4">{{ t('网关名') }}</div>
+        <div class="flex-1 of3">{{ t('网关名') }}</div>
         <div class="flex-1 of1">{{ t('创建者') }}</div>
-        <div class="flex-1 of2">{{ t('环境列表') }}</div>
+        <div class="flex-1 of3">{{ t('环境列表') }}</div>
         <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
         <div class="flex-1 of2">{{ t('操作') }}</div>
       </div>
       <div class="table-list">
-        <div class="table-item flex-row align-items-center" v-for="item in gatewaysList" :key="item.id">
-          <div class="flex-1 flex-row align-items-center of4">
+        <div
+          class="table-item flex-row align-items-center"
+          v-for="item in gatewaysList" :key="item.id"
+          :class="item.is24HoursAgo ? '' : 'newly-item'">
+          <div class="flex-1 flex-row align-items-center of3">
             <div
               class="name-logo mr10" :class="item.status ? '' : 'deact'"
               @click="handleGoPage('apigwResource', item.id)">
@@ -45,11 +55,21 @@
             <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
           </div>
           <div class="flex-1 of1">{{ item.created_by }}</div>
-          <div class="flex-1 of2 env">
+          <div class="flex-1 of3 env">
             <div class="flex-row">
-              <bk-tag v-for="envItem in item.stages" :key="envItem.id">
-                <i :class="['ag-dot',{ 'success': envItem.released }]"></i>
-                {{ envItem.name }}
+              <span
+                v-for="(envItem, index) in item.stages" :key="envItem.id">
+                <bk-tag v-if="index < 3">
+                  <i :class="['ag-dot',{ 'success': envItem.released }]"></i>
+                  {{ envItem.name }}
+                </bk-tag>
+              </span>
+              <bk-tag
+                v-if="item.stages.length > item.tagOrder"
+                class="tag-cls"
+                v-bk-tooltips="{ content: item?.labelText.join(';') }">
+                +{{ item.stages.length - item.tagOrder }}
+                <!-- ... -->
               </bk-tag>
             </div>
           </div>
@@ -133,7 +153,7 @@
             type="textarea"
             v-model="formData.description"
             placeholder="请输入网关描述"
-            :maxlength="100"
+            :maxlength="500"
             clearable
           />
         </bk-form-item>
@@ -157,6 +177,7 @@ import { Message } from 'bkui-vue';
 import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
 import { useGetApiList } from '@/hooks';
+import { is24HoursAgo } from '@/common/util';
 import {
   ref,
 } from 'vue';
@@ -166,7 +187,7 @@ const router = useRouter();
 
 
 const formRef = ref(null);
-const filterKey = ref<string>('updated_time');
+const filterKey = ref<string>('created_time');
 const filterNameData = ref({ name: '' });
 // 弹窗
 const dialogData = ref<IDialog>({
@@ -244,6 +265,16 @@ const {
 // 页面初始化
 const init = async () => {
   gatewaysList.value = await getGatewaysListData();
+  gatewaysList.value.forEach((item: any) => {
+    item.is24HoursAgo = is24HoursAgo(item.created_time);
+    item.tagOrder = '3';
+    item.labelText = item.stages.reduce((prev: any, label: any, index: number) => {
+      if (index > item.tagOrder - 1) {
+        prev.push(label.name);
+      }
+      return prev;
+    }, []);
+  });
 };
 
 // 新建网关弹窗
@@ -290,6 +321,25 @@ const resetDialogData = () => {
   initDialogData.is_public = true;
 };
 
+const handleChange = (v: string) => {
+  switch (v) {
+    case 'created_time':
+      // @ts-ignore
+      gatewaysList.value.sort((a: any, b: any) => new Date(b.created_time) - new Date(a.created_time));
+      break;
+    case 'updated_time':
+      // @ts-ignore
+      gatewaysList.value.sort((a: any, b: any) => new Date(b.updated_time) - new Date(a.updated_time));
+      break;
+    case 'name':
+      // @ts-ignore
+      gatewaysList.value.sort((a: any, b: any) => a.name.charAt(0).localeCompare(b.name.charAt(0)));
+      break;
+    default:
+      break;
+  }
+};
+
 init();
 </script>
 
@@ -306,6 +356,15 @@ init();
       font-size: 20px;
       color: #313238;
       flex: 0 0 60%;
+    }
+  }
+  .select-cls{
+    .prefix-cls{
+      background: #fff;
+      color: #979ba5;
+      i{
+        transform: rotate(90deg);
+      }
     }
   }
   .table-container{
@@ -366,16 +425,17 @@ init();
       .table-item:nth-of-type(1) {
         margin-top: 0px
        };
+
+       .newly-item{
+        background: #F2FFF4;
+       }
     }
     .of1{
         flex: 0 0 10%;
       }
-      .of2{
-        flex: 0 0 20%;
-      }
-      .of4{
-        flex: 0 0 40%;
-      }
+    .of3{
+      flex: 0 0 30%;
+    }
   }
 
   .footer-container{

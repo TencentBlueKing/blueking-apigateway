@@ -125,7 +125,7 @@
         <template #label>
           <span class="label-cls">{{ t('请求方法：') }}</span>
         </template>
-        <span class="value-cls">{{ formData.backend?.config?.method }}</span>
+        <bk-tag :theme="methodsEnum[formData.backend?.config?.method]">{{ formData.backend?.config?.method }}</bk-tag>
       </bk-form-item>
       <bk-form-item class="form-item-cls">
         <template #label>
@@ -142,7 +142,7 @@
       {{t('编辑')}}
     </bk-button>
     <bk-pop-confirm
-      :title="t('确认删除该资源？')"
+      :title="t(`确认删除资源${formData?.name}？`)"
       content="删除操作无法撤回，请谨慎操作！"
       width="288"
       trigger="click"

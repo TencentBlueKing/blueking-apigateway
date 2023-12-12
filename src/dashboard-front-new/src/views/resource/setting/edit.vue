@@ -9,7 +9,7 @@
         <span class="panel-title">{{ t('基础信息') }}</span>
         <template #content>
           <div class="panel-content">
-            <BaseInfo ref="baseInfoRef" :detail="resourceDetail"></BaseInfo>
+            <BaseInfo ref="baseInfoRef" :detail="resourceDetail" :is-clone="isClone"></BaseInfo>
           </div>
         </template>
       </bk-collapse-panel>
@@ -112,13 +112,13 @@ const handleSubmit = async () => {
     };
     console.log('params', params);
     debugger;
-    if (resourceId.value) {
+    if (resourceId.value && !isClone.value) {
       await updateResources(apigwId, resourceId.value, params);
     } else {
       await createResources(apigwId, params);
     }
     Message({
-      message: t(`${resourceId.value ? '更新' : '新建'}成功`),
+      message: t(`${resourceId.value && !isClone.value ? '更新' : '新建'}成功`),
       theme: 'success',
     });
     router.push({

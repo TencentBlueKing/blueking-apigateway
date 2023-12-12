@@ -683,7 +683,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import cookie from 'cookie';
 import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
@@ -693,7 +693,7 @@ import { useRoute } from 'vue-router';
 const { t } = useI18n();
 // 网关id
 const route = useRoute();
-const apigwId = +route.params.id;
+const apigwId = computed(() => +route.params.id);
 
 const props = defineProps({
   curResource: {
@@ -885,7 +885,7 @@ const checkPluginsDiff = () => {};
 const labels = ref<any[]>([]);
 const getLabels = async () => {
   try {
-    const res = await getGatewayLabels(apigwId);
+    const res = await getGatewayLabels(apigwId.value);
     labels.value = res;
   } catch (e) {
     console.log(e);
@@ -895,7 +895,7 @@ const getLabels = async () => {
 // 后端服务列表
 const getBackendsList = async () => {
   try {
-    const res = await getBackendsListData(apigwId);
+    const res = await getBackendsListData(apigwId.value);
     console.log('backends: ', res);
   } catch (e) {
     console.log(e);

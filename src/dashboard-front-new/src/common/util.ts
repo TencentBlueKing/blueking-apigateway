@@ -351,3 +351,81 @@ export const getStrFromFile = (file: any) => {
   oReader.readAsText(file);
   return PromiseFunc;
 };
+
+
+export const is24HoursAgo = (dateString: string) => {
+  // 将日期字符串转换为 Date 对象
+  const date: any = new Date(dateString);
+
+  // 获取当前时间
+  const now: any = new Date();
+
+  // 计算时间差，单位为毫秒
+  const diff = now - date;
+
+  // 将时间差转换为小时
+  const hours = diff / (1000 * 60 * 60);
+
+  // 判断时间差是否大于等于24小时
+  return hours >= 24;
+};
+/**
+ * 手动清空table过滤条件
+ *
+ * @param refInstance {Object} 指定的 table
+ *
+ */
+export function clearFilter(refInstance: any) {
+  if (refInstance?.filterPanels) {
+    const { filterPanels } = refInstance;
+    for (const key in filterPanels) {
+      filterPanels[key].handleReset();
+    }
+  }
+}
+
+/**
+ * 判断表格是否存在筛选条件
+ *
+ * @param filters {Object} 对应筛选条件
+ *
+ */
+export function isTableFilter(filters: any) {
+  let isFilter = false;
+  if (Object.keys(filters)?.length) {
+    for (const key in filters) {
+      if (filters[key].length) {
+        isFilter = true;
+        break;
+      }
+    }
+  }
+  return isFilter;
+}
+
+/**
+ * 根据请求方法返回tab的对应主题
+ * @param methods 请求方法
+ * @returns tag的主题
+ */
+export const getMethodsTheme = (methods: string) => {
+  if (!methods) return 'success';
+
+  let theme = '';
+  switch (methods.toLocaleLowerCase()) {
+    case 'get':
+      theme = 'success';
+      break;
+    case 'patch':
+    case 'post':
+      theme = 'info';
+      break;
+    case 'put':
+      theme = 'warning';
+      break;
+    case 'delete':
+      theme = 'danger';
+      break;
+  };
+  return theme;
+};

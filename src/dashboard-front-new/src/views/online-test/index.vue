@@ -58,7 +58,7 @@
             <bk-input class="ag-textarea" type="textarea" :placeholder="$t('请输入')" v-model="params.body">
             </bk-input>
           </bk-form-item>
-          <bk-form-item :label="$t('online-test-应用认证')">
+          <bk-form-item :label="$t('应用认证')">
             <div class="bk-button-group">
               <bk-button
                 class="ag-tab-button" :class="{ 'is-selected': isDefaultAppAuth }"
@@ -100,7 +100,7 @@
               {{ $t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}
             </p>
           </bk-form-item>
-          <bk-form-item :label="$t('online-test-用户认证')" :key="tokenInputRender" v-if="curResource.verified_user_required">
+          <bk-form-item :label="$t('用户认证')" :key="tokenInputRender" v-if="curResource.verified_user_required">
             <div class="bk-button-group">
               <bk-button
                 class="ag-tab-button" :class="{ 'is-selected': formData.useUserFromCookies }"

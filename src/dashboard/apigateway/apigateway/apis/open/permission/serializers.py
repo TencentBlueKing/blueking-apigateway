@@ -82,12 +82,12 @@ class AppResourcePermissionOutputSLZ(serializers.Serializer):
         return permission_status not in [
             PermissionStatusEnum.PENDING.value,
             PermissionStatusEnum.OWNED.value,
+            PermissionStatusEnum.UNLIMITED.value,
         ]
 
     def _need_to_renew_permission(self, permission_status, expires_in):
-        if permission_status in [PermissionStatusEnum.OWNED.value] and 0 < expires_in < time.to_seconds(
-            days=RENEWABLE_EXPIRE_DAYS
-        ):
+        renewable_end_time = time.to_seconds(days=RENEWABLE_EXPIRE_DAYS)
+        if permission_status in [PermissionStatusEnum.OWNED.value] and 0 < expires_in < renewable_end_time:
             return True
 
         return False

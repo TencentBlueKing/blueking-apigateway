@@ -21,6 +21,23 @@ from django.urls import path
 from apigateway.apis.open.permission import views
 
 urlpatterns = [
+    # For gateway manage permissions
+    path(
+        "apis/<slug:gateway_name>/permissions/apply/",
+        views.AppPermissionApplyV1APIView.as_view(),
+        name="openapi.permission.apply.api",
+    ),
+    path(
+        "apis/<slug:gateway_name>/permissions/grant/",
+        views.AppPermissionGrantViewSet.as_view({"post": "grant"}),
+        name="openapi.permission.grant",
+    ),
+    path(
+        "apis/<slug:gateway_name>/permissions/revoke/",
+        views.RevokeAppPermissionViewSet.as_view({"delete": "revoke"}),
+        name="openapi.permission.revoke",
+    ),
+    # For app api permission management in paas developer center
     path(
         "apis/<int:gateway_id>/permissions/resources/",
         views.ResourceViewSet.as_view({"get": "list"}),
@@ -41,21 +58,6 @@ urlpatterns = [
         "apis/<int:gateway_id>/permissions/app-permissions/renew/",
         views.AppPermissionRenewAPIView.as_view(),
         name="openapi.permission.renew.deprecated",
-    ),
-    path(
-        "apis/<slug:gateway_name>/permissions/apply/",
-        views.AppPermissionApplyV1APIView.as_view(),
-        name="openapi.permission.apply.api",
-    ),
-    path(
-        "apis/<slug:gateway_name>/permissions/grant/",
-        views.AppPermissionGrantViewSet.as_view({"post": "grant"}),
-        name="openapi.permission.grant",
-    ),
-    path(
-        "apis/<slug:gateway_name>/permissions/revoke/",
-        views.RevokeAppPermissionViewSet.as_view({"delete": "revoke"}),
-        name="openapi.permission.revoke",
     ),
     path(
         "apis/permissions/renew/",

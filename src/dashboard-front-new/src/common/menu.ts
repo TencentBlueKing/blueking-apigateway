@@ -95,4 +95,57 @@ export const menuData: IMenu[]  = [
     title: '基本信息',
     icon: 'document',
   },
+  {
+    name: 'apigwOperateRecords',
+    title: '操作记录',
+    icon: 'audit',
+  },
+];
+
+
+export const componentsMenu: IMenu[] = [
+  {
+    name: 'componentsIntro',
+    title: '简介',
+    icon: 'component-intro',
+  },
+  {
+    name: 'componentsSystem',
+    title: '系统管理',
+    icon: 'system-mgr',
+  },
+  {
+    name: 'componentsManage',
+    title: '组件管理',
+    icon: 'components',
+  },
+  {
+    name: 'componentsCategory',
+    title: '文档分类',
+    icon: 'document',
+  },
+  {
+    name: 'componentsPermission',
+    title: '权限管理',
+    icon: 'my-perm',
+    children: [
+      {
+        name: 'permissionApply',
+        title: '权限审批',
+      },
+      {
+        name: 'permissionPower',
+        title: '应用权限',
+      },
+      {
+        name: 'permissionRecord',
+        title: '审批历史',
+      },
+    ],
+  },
+  {
+    name: 'componentsRuntimeData',
+    title: '实时运行数据',
+    icon: 'runtime',
+  },
 ];

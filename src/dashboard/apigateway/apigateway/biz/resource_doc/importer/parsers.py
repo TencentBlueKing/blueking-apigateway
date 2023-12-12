@@ -77,20 +77,26 @@ class ArchiveParser(BaseParser):
         """
         with TemporaryDirectory() as output_dir:
             files = ArchiveFileFactory.from_fileobj(archive_file).extractall(output_dir, archive_file)
+            files = self._filter_files(files)
             docs = self._parse(files)
             self._enrich_docs(docs)
             return docs
+
+    def _filter_files(self, files: Dict[str, str]) -> Dict[str, str]:
+        """
+        过滤文件
+        - 只保留 1 ~ 2 级目录的文件，如 en/get_users.md, docs/en/get_users.md
+        """
+        return {filename: filepath for filename, filepath in files.items() if len(filename.split("/")) in [2, 3]}
 
     def _parse(self, files: Dict[str, str]) -> List[ArchiveDoc]:
         """
         :param files: filename to full filepath
         """
-        available_languages = DocLanguageEnum.get_values()
-
         docs = []
         for filename, filepath in files.items():
             language = self._extract_language(filename)
-            if language not in available_languages:
+            if not language:
                 continue
 
             resource_name = self._extract_resource_name(filename)
@@ -111,13 +117,23 @@ class ArchiveParser(BaseParser):
 
         return docs
 
-    def _extract_language(self, filename: str) -> str:
+    def _extract_language(self, filename: str) -> Optional[str]:
         """
         根据文件名提取语言
 
-        :param filename: 形如：en/get_user.md
+        :param filename: 形如：en/get_user.md, docs/en/get_users.md
         """
-        return filename.partition("/")[0]
+        parts = filename.rsplit("/", 2)
+        if len(parts) < 2:
+            return None
+
+        language = parts[-2]
+
+        available_languages = DocLanguageEnum.get_values()
+        if language not in available_languages:
+            return None
+
+        return language
 
     def _extract_resource_name(self, filename: str) -> Optional[str]:
         """
@@ -125,9 +141,9 @@ class ArchiveParser(BaseParser):
         - 忽略下划线开头的文件
         - 忽略非 .md, .md.j2 结尾的文件
 
-        :param filename: 形如：en/get_user.md
+        :param filename: 形如：en/get_user.md, docs/en/get_users.md
         """
-        name = filename.partition("/")[2]
+        name = filename.rsplit("/", 1)[-1]
 
         if name.startswith("_"):
             return None

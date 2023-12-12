@@ -37,23 +37,53 @@ const (
 	SystemError = "InternalServerError"
 )
 
+// SuccessResponse ...
+type SuccessResponse struct {
+	Data interface{} `json:"data"`
+}
+
+// Error ...
+type Error struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	System  string `json:"system"`
+}
+
+// ErrorResponse  ...
+type ErrorResponse struct {
+	Error Error `json:"error"`
+}
+
+// LegacySuccessResponse  ...
+type LegacySuccessResponse struct {
+	Data    interface{} `json:"data"`
+	Result  bool        `json:"result"`
+	Message string      `json:"message"`
+	Code    int         `json:"code"`
+}
+
+// LegacyErrorResponse  ...
+type LegacyErrorResponse struct {
+	Result  bool   `json:"result"`
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
 // SuccessJSONResponse ...
 func SuccessJSONResponse(c *gin.Context, data interface{}) {
-	c.JSON(http.StatusOK, gin.H{
-		"data": data,
+	c.JSON(http.StatusOK, SuccessResponse{
+		Data: data,
 	})
 }
 
 // BaseErrorJSONResponse ...
 func BaseErrorJSONResponse(c *gin.Context, errorCode string, message string, statusCode int) {
 	// BaseJSONResponse(c, statusCode, code, message, gin.H{})
-	c.JSON(statusCode, gin.H{
-		"error": gin.H{
-			"code":    errorCode,
-			"message": message,
-			"system":  "bk-apigateway",
-		},
-	})
+	c.JSON(statusCode, ErrorResponse{Error: Error{
+		Code:    errorCode,
+		Message: message,
+		System:  "bk-apigateway",
+	}})
 }
 
 // NewErrorJSONResponse ...
@@ -64,6 +94,26 @@ func NewErrorJSONResponse(
 	return func(c *gin.Context, message string) {
 		BaseErrorJSONResponse(c, errorCode, message, statusCode)
 	}
+}
+
+// LegacySuccessJsonResponse ...
+func LegacySuccessJsonResponse(c *gin.Context, data interface{}) {
+	// 兼容历史接口
+	c.JSON(http.StatusOK, LegacySuccessResponse{
+		Result: true,
+		Code:   0,
+		Data:   data,
+	})
+}
+
+// LegacyErrorJSONResponse ...
+func LegacyErrorJSONResponse(ctx *gin.Context, errorCode string, statusCode int, message string) {
+	// 兼容历史接口
+	ctx.JSON(statusCode, LegacyErrorResponse{
+		Result:  false,
+		Code:    4000,
+		Message: message,
+	})
 }
 
 // BadRequestErrorJSONResponse ...

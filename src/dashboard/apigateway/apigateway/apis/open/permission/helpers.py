@@ -70,18 +70,27 @@ class ResourcePermission(BaseModel):
 
     @property
     def permission_status(self):
-        if not self.resource_perm_required or self.expires_in == math.inf:
+        # 如果资源不需要权限校验，则权限类型为：无限制，即默认拥有权限
+        if not self.resource_perm_required:
+            return PermissionStatusEnum.UNLIMITED.value
+
+        # 如果权限记录中，有效期为永久有效；权限不需要再申请，优先展示
+        if self.expires_in == math.inf:
             return PermissionStatusEnum.OWNED.value
 
+        # 如果权限已有申请状态，如已拒绝、申请中；优先展示
         if self.api_permission_apply_status or self.resource_permission_apply_status:
             return self.api_permission_apply_status or self.resource_permission_apply_status
 
+        # 有权限且未过期
         if self.expires_in > 0:
             return PermissionStatusEnum.OWNED.value
 
+        # 有权限，但是已过期
         if self.expires_in > -math.inf:
             return PermissionStatusEnum.EXPIRED.value
 
+        # 无权限，待申请
         return PermissionStatusEnum.NEED_APPLY.value
 
     @cached_property

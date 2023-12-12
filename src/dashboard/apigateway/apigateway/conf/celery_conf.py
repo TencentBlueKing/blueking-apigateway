@@ -46,6 +46,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apigateway.controller.clean_task.delete_old_publish_events",
         "schedule": crontab(day_of_week="*", hour=0, minute=0),
     },
+    "apigateway.apps.permission.tasks.alert_app_permission_expiring_soon": {
+        "task": "apigateway.apps.permission.tasks.alert_app_permission_expiring_soon",
+        "schedule": crontab(minute=30, hour=14),
+    },
 }
 
 CELERY_CHORD_UNLOCK_MAX_RETRIES = 60

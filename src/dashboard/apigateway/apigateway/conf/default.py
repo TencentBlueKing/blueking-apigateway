@@ -580,13 +580,14 @@ DEFAULT_STAGE_RATE_LIMIT_CONFIG = {
 
 # 微网关 chart 信息
 BCS_MICRO_GATEWAY_CHART_NAME = "bk-micro-gateway"
-BCS_MICRO_GATEWAY_CHART_VERSION = "v1.0.0-alpha.2"
-BCS_MICRO_GATEWAY_IMAGE_REGISTRY = ""
+BCS_MICRO_GATEWAY_CHART_VERSION = env.str("BCS_MICRO_GATEWAY_CHART_VERSION", "v1.12.7")
+BCS_MICRO_GATEWAY_IMAGE_REGISTRY = env.str("BCS_MICRO_GATEWAY_IMAGE_REGISTRY", "")
 BCS_MICRO_GATEWAY_SENTRY_DSN = env.str("BCS_MICRO_GATEWAY_SENTRY_DSN", "")
 
 # 公共 chart 仓库
 BCS_PUBLIC_CHART_PROJECT = "bcs-public-project"
 BCS_PUBLIC_CHART_REPOSITORY = "public-repo"
+BCS_REPOSITORY_URL = env.str("BCS_REPOSITORY_URL", "")
 
 # BCS 为网关分配的认证 Token
 BCS_API_GATEWAY_TOKEN = env.str("BCS_API_GATEWAY_TOKEN", "")
@@ -803,6 +804,10 @@ USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
 USE_BKAPI_BKMONITORV3 = env.bool("USE_BKAPI_BKMONITORV3", False)
 # 是否使用 bklog 网关 API
 USE_BKAPI_BK_LOG = env.bool("USE_BKAPI_BK_LOG", False)
+
+# paas 开发者中心权限续期地址
+BK_PAAS3_URL = env.str("BK_PAAS3_URL", "")
+PAAS_RENEW_API_PERMISSION_URL = f"{BK_PAAS3_URL}/developer-center/apps/{{bk_app_code}}/cloudapi"
 
 # ==============================================================================
 # Feature Flag

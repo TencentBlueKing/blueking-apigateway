@@ -278,3 +278,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-icon-close:before {
 	content: "\e160";
 }
+.icon-ag-yiqiyong:before {
+	content: "\e161";
+}
+.icon-ag-sort:before {
+	content: "\e162";
+}

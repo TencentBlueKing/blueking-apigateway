@@ -7,14 +7,14 @@
           <!-- <bk-button disabled>GO</bk-button> -->
         </div>
         <bk-input
-          v-if="type === 'apigateway'" class="fr w500" v-model="keyword"
-          :placeholder="t('请输入网关名称或描述')" :right-icon="'bk-icon icon-search'" :clearable="true">
+          v-if="type === 'apigateway'" class="fr w500" v-model="keyword" :placeholder="t('请输入网关名称或描述')"
+          :right-icon="'bk-icon icon-search'" :clearable="true">
         </bk-input>
         <bk-loading :loading="isLoading">
           <bk-table
-            class="sdk-content-table mt15" ref="sdkRef"
-            :data="curPageData" :size="'small'" :key="renderKey" :outer-border="false" :pagination="pagination"
-            @page-limit-change="handlePageLimitChange" @page-change="handlePageChange">
+            class="sdk-content-table mt15" ref="sdkRef" :data="curPageData" :size="'small'" :key="renderKey"
+            :outer-border="false" :pagination="pagination" @page-limit-change="handlePageLimitChange"
+            @page-change="handlePageChange">
             <template v-if="type === 'apigateway'">
               <bk-table-column :label="t('网关名称')">
                 <template #default="{ data }">
@@ -25,9 +25,10 @@
               <bk-table-column :label="t('网关描述')">
                 <template #default="{ data }">
                   <span
-                    v-bk-tooltips="
-                      { content: data?.gateway.description,placement: 'left',extCls: 'gateway-detail-tooltips',
-                        disabled: data?.gateway.description === '' }">
+                    v-bk-tooltips="{
+                      content: data?.gateway.description, placement: 'left', extCls: 'gateway-detail-tooltips',
+                      disabled: data?.gateway.description === ''
+                    }">
                     {{ data?.gateway.description || '--' }}
                   </span>
                   <!-- <bk-popover
@@ -79,7 +80,7 @@
                   </a>
                 </template>
                 <template v-else>
-                  {{ t('未生成-doc') }}
+                  {{ t('未生成') }}
                 </template>
               </template>
             </bk-table-column>
@@ -93,11 +94,6 @@
         </div>
         <!-- eslint-disable-next-line vue/no-v-html -->
         <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="markdownHtml"></div>
-        <div class="ag-markdown-editor">
-          <mavon-editor
-            ref="markdownRef" v-model="markdownDoc" v-show="isEdited" :language="language" :box-shadow="false"
-            :subfield="false" :ishljs="false" :code-style="'monokai'" :tab-size="4" />
-        </div>
       </bk-tab-panel>
     </bk-tab>
 
@@ -132,7 +128,7 @@
                 <span class="column-key"> {{ t('SDK地址') }}: </span>
               </div>
               <div class="value flex-row align-items-center">
-                <bk-popover placement="top" width="600" theme="dark">
+                <bk-popover placement="top" width="600" theme="dark" :disabled="curParams.sdk_download_url === ''">
                   <span class="column-value vm">{{ curParams.sdk_download_url || '--' }}</span>
                   <template #content>
                     <div class="popover-text">
@@ -213,10 +209,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, reactive, computed } from 'vue';
+import { ref, watch, reactive, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { copy } from '@/common/util';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/monokai-sublime.css';
 import {
   getGatewaySDKlist,
   getESBSDKlist,
@@ -237,15 +236,11 @@ const board = ref<string>('-');
 const type = ref<string | any>('');
 const sdkDoc = ref<string>('');
 const markdownHtml = ref<string>('');
-const markdownDoc = ref<string>('');
-const language = ref<string>('zh');
 const active = ref<string>('sdk');
 const renderKey = ref<number>(0);
 const renderHtmlIndex = ref<number>(0);
 const keyword = ref<string>('');
-const isEdited = ref<boolean>(false);
 const isLoading = ref<boolean>(false);
-const markdownRef = ref(null);
 const pagination = ref({
   offset: 0,
   count: 0,
@@ -265,18 +260,7 @@ const curParams = ref({
 });
 const curPageData = ref([]);
 
-// 监听路由的变化
-watch(
-  () => route,
-  () => {
-    active.value = 'sdk';
-    curPageData.value = [];
-    // eslint-disable-next-line no-plusplus
-    renderKey.value++;
-    init();
-  },
-  { deep: true },
-);
+
 // 监听搜索关键词的变化
 watch(
   () => keyword.value,
@@ -304,7 +288,6 @@ const handlePageChange = (current: number) => {
 
 // 查看
 const handleShow = (data: any) => {
-  console.log(data);
   sidesliderConfi.isShow = true;
   const isGateway = type.value === 'apigateway';
   sidesliderConfi.title = isGateway ? `网关API SDK：${data.gateway.name}` : `组件API SDK：${data.board_label}`;
@@ -323,12 +306,63 @@ const handleDownload = () => {
     window.open(curParams.value.sdk_download_url);
   }
 };
+
+const md = new MarkdownIt({
+  linkify: false,
+  html: true,
+  breaks: true,
+  highlight(str: string, lang: string) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(lang, str, true).value;
+      } catch (__) { }
+    }
+
+    return '';
+  },
+});
+
 const initMarkdownHtml = (content: string) => {
-  markdownHtml.value = markdownRef.value.markdownIt.render(content);
+  markdownHtml.value = md.render(content);
+  // eslint-disable-next-line no-plusplus
+  renderHtmlIndex.value++;
+  nextTick(() => {
+    const markdownDom = document.getElementById('markdown');
+
+    // 复制代码
+    markdownDom.querySelectorAll('a').forEach((item: any) => {
+      item.target = '_blank';
+    });
+    markdownDom?.querySelectorAll('pre')?.forEach((item) => {
+      const parentDiv = document.createElement('div');
+      const btn = document.createElement('button');
+      const codeBox = document.createElement('div');
+      const code = item?.querySelector('code')?.innerText;
+      parentDiv.className = 'pre-wrapper';
+      btn.className = 'ag-copy-btn';
+      codeBox.className = 'code-box';
+      btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
+      btn.setAttribute('data-copy', code);
+      parentDiv?.appendChild(btn);
+      codeBox?.appendChild(item?.querySelector('code'));
+      item?.appendChild(codeBox);
+      item?.parentNode?.replaceChild(parentDiv, item);
+      parentDiv?.appendChild(item);
+    });
+    setTimeout(() => {
+      const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
+      const handleCopy = function (this: any) {
+        copy(this.dataset?.copy);
+      };
+      copyDoms.forEach((dom: any) => {
+        dom.onclick = handleCopy;
+      });
+    }, 1000);
+  });
 };
 
 // 获取SDK list
-const getSDKlist = async (keyword: any|string = null) => {
+const getSDKlist = async (keyword: any | string = null) => {
   const pageParams = {
     limit: pagination.value.limit,
     offset: pagination.value.offset,
@@ -339,12 +373,10 @@ const getSDKlist = async (keyword: any|string = null) => {
   try {
     if (type.value === 'apigateway') {
       const res = await getGatewaySDKlist(pageParams);
-      console.log('apigateway', res);
       curPageData.value = res.results;
       pagination.value.count = res.count;
     } else {
       const res = await getESBSDKlist(board.value, pageParams);
-      console.log('ESB', res);
       curPageData.value = res;
       pagination.value.count = res.length;
     }
@@ -353,6 +385,7 @@ const getSDKlist = async (keyword: any|string = null) => {
     console.log('error', error);
   }
 };
+
 // 获取SDK 说明
 const getSDKDoc = async () => {
   const params = { language: 'python' };
@@ -360,11 +393,9 @@ const getSDKDoc = async () => {
   try {
     if (type.value === 'apigateway') {
       const res = await getGatewaySDKDoc(params);
-      console.log('GatewaySDKDoc', res);
       sdkDoc.value = res.content;
     } else {
       const res = await getESBSDKDoc(board.value, params);
-      console.log('ESBSDKDoc', res);
       sdkDoc.value = res.content;
     }
     isLoading.value = false;
@@ -375,18 +406,33 @@ const getSDKDoc = async () => {
 };
 
 const init = () => {
-  console.log(route);
+  const curTab: any = route.query.tab;
+  active.value = curTab ? curTab : 'sdk';
   type.value = props.curType;
   getSDKlist();
   getSDKDoc();
 };
-init();
+
+// 监听type的变化
+watch(
+  () => props.curType,
+  () => {
+    active.value = 'sdk';
+    curPageData.value = [];
+    // eslint-disable-next-line no-plusplus
+    renderKey.value++;
+    init();
+  },
+  { immediate: true, deep: true },
+);
+
 </script>
 
 <style lang="scss" scoped>
-.w500{
+.w500 {
   width: 500px;
 }
+
 .skd-wrapper {
   width: 1200px;
   margin: 20px auto;
@@ -609,9 +655,9 @@ init();
 }
 
 
-.popover-text{
-white-space: normal;
-word-break: break-all;
+.popover-text {
+  white-space: normal;
+  word-break: break-all;
 }
 
 .data-box {
@@ -666,7 +712,7 @@ word-break: break-all;
 }
 </style>
 <style lang="scss">
-.gateway-detail-tooltips{
+.gateway-detail-tooltips {
   width: 300px;
 }
 </style>

@@ -101,7 +101,7 @@ class TestComponentPermission:
                 {
                     "component_perm_required": False,
                 },
-                "owned",
+                "unlimited",
             ),
             (
                 {

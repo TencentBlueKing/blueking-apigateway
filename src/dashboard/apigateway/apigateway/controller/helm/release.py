@@ -17,7 +17,7 @@
 #
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from bkapi.bcs_api_gateway.client import Client as BcsApiGatewayClient
 
@@ -56,11 +56,11 @@ class ReleaseInfo:
 @dataclass
 class ReleaseHelper:
     client: BcsApiGatewayClient = field(default_factory=get_bcs_api_gateway_client)
-    access_token: str = ""
+    user_credentials: Optional[dict] = None
 
     def __post_init__(self):
-        if self.access_token and self.access_token != "":
-            self.client.update_bkapi_authorization(access_token=self.access_token)
+        if self.user_credentials:
+            self.client.update_bkapi_authorization(**self.user_credentials)
 
     def upgrade_release(
         self,

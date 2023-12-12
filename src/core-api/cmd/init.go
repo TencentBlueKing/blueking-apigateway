@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"github.com/getsentry/raven-go"
-	sentry "github.com/getsentry/sentry-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/spf13/viper"
 
 	"core/pkg/config"

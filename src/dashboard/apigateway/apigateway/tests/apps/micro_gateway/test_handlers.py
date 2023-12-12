@@ -18,6 +18,7 @@
 import pytest
 
 from apigateway.apps.micro_gateway.handlers import NeedDeployMicroGatewayHandler, RelateDeployedMicroGatewayHandler
+from apigateway.common.user_credentials import UserCredentials
 from apigateway.core.constants import MicroGatewayStatusEnum
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -34,10 +35,10 @@ class TestNeedDeployMicroGateway:
         )
 
         micro_gateway_id = faker.pyint()
-        self.handler.deploy(micro_gateway_id, access_token="access_token")
+        self.handler.deploy(micro_gateway_id, user_credentials=UserCredentials(credentials="access_token"))
 
         mock_deploy_micro_gateway.assert_called_once_with(
-            args=(micro_gateway_id, "access_token", ""), ignore_result=True, kwargs={}
+            args=(micro_gateway_id, "", {"bk_token": "access_token"}), ignore_result=True, kwargs={}
         )
 
     def test_get_initial_status(self):
@@ -60,7 +61,7 @@ class TestRelateDeployedMicroGatewayHandler:
         self.handler = RelateDeployedMicroGatewayHandler()
 
     def test_deploy(self, faker):
-        assert self.handler.deploy(faker.pyint(), access_token="access_token") is None
+        assert self.handler.deploy(faker.pyint(), user_credentials=UserCredentials(credentials="access_token")) is None
 
     def test_get_initial_status(self):
         assert self.handler.get_initial_status() == MicroGatewayStatusEnum.INSTALLED

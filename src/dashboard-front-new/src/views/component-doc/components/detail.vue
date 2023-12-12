@@ -34,9 +34,9 @@
               :class="{ 'active': curComponentName === component.name }" v-for="component of curComponentList"
               :key="component.id" @click="handleShowDoc(component)">
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <p class="name" v-html="hightlight(component.name, 'api')" v-bk-overflow-tips></p>
+              <p class="name" v-html="hightlight(component.name, 'api')"></p>
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <p class="label" v-html="hightlight(component.description, 'api')" v-bk-overflow-tips></p>
+              <p class="label" v-html="hightlight(component.description, 'api')"></p>
             </li>
           </ul>
           <template v-else-if="keyword">
@@ -45,9 +45,10 @@
         </div>
       </div>
 
-      <div class="nav-panel" v-if="isNavPanelShow" v-bk-clickoutside="handleTogglePanel">
+      <!-- eslint-disable-next-line vue/valid-v-on -->
+      <div class="nav-panel" ref="panel" v-if="isNavPanelShow" v-clickOutSide="handleTogglePanel">
         <div class="version-panel">
-          <bk-dropdown ref="dropdown" :popover-options="popoverOptions" style="margin: 16px;">
+          <bk-dropdown ref="dropdown" :popover-options="popoverOptions" class="m16">
             <div class="version-name">
               <svg aria-hidden="true" class="category-icon vm">
                 <use :xlink:href="`#doc-icon${curVersionData.logoIndex % 4}`"></use>
@@ -56,7 +57,7 @@
               <i class="ag-doc-icon doc-down-shape f12 apigateway-icon icon-ag-down-shape"></i>
             </div>
             <template #content>
-              <bk-dropdown-menu class="bk-dropdown-list" style="width: 250px;">
+              <bk-dropdown-menu class="bk-dropdown-list w250">
                 <bk-dropdown-item v-for="component in componentList" :key="component.board">
                   <a href="javascript:;" @click="handleSwitchVersion(component)">{{ component.board_label }}</a>
                 </bk-dropdown-item>
@@ -101,12 +102,9 @@
     </div>
 
     <div class="right">
-
       <bk-loading :loading="mainContentLoading">
         <router-view :key="route.path"></router-view>
       </bk-loading>
-
-
     </div>
   </div>
 </template>
@@ -129,7 +127,7 @@ const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 
-const curVersion = ref<string>('');
+const curVersion = ref<string>('default');
 const curSystemName = ref<string>('');
 const curBoardLabel = ref<string>('');
 const keyword = ref<string>('');
@@ -141,6 +139,7 @@ const isNavPanelShow = ref<boolean>(false);
 const mainContentLoading = ref<boolean>(false);
 const toggleTimer = ref(null);
 const dropdown = ref(null);
+const panel = ref(null);
 const curComponent = ref({
   id: '',
   content: '',
@@ -202,7 +201,7 @@ const filterData = computed(() => {
     board_label: '',
     categories: [] as any,
   };
-  curVersionData.value.categories.forEach((category) => {
+  curVersionData.value.categories.forEach((category: any) => {
     const list: any = [];
     const obj = { ...category };
     const keyword = panelKeyword.value.toLowerCase();
@@ -225,7 +224,6 @@ const filterData = computed(() => {
 const getComponentList = async () => {
   try {
     const res = await getComponentSystemList(curVersion.value);
-    console.log(res);
     componentList.value = res;
     componentList.value.forEach((item: any, index: number) => {
       item.logoIndex = index;
@@ -243,7 +241,6 @@ const getComponentList = async () => {
 const getAPIList = async () => {
   try {
     const res = await getSystemAPIList(curVersion.value, curSystemName.value);
-    console.log(res);
     originComponentList.value = res;
   } catch (error) {
     console.log('error', error);
@@ -253,7 +250,6 @@ const getAPIList = async () => {
 const getSystemDetail = async () => {
   try {
     const res = await getComponenSystemDetail(curVersion.value, curSystemName.value);
-    console.log(res);
     curSystem.value = res;
   } catch (error) {
     console.log('error', error);
@@ -267,6 +263,7 @@ const handleTogglePanel = () => {
   }, 100);
 };
 const handleShowIntro = () => {
+  curComponentName.value = '';
   router.push({
     name: 'ComponentAPIDetailIntro',
   });
@@ -275,7 +272,7 @@ const handleShowDoc = (component: any) => {
   curComponent.value = component;
   curComponentName.value = curComponent.value.name;
   router.push({
-    name: 'ComponentAPIDetailDoc',
+    name: 'componentAPIDetailDoc',
     params: {
       componentId: component.name,
     },
@@ -313,21 +310,37 @@ const init = () => {
     behavior: 'smooth',
   });
 };
-
+// 监听route变化
 watch(
   () => route,
-  () => {
+  (v: any) => {
+    if (!v.params.id) {
+      return;
+    }
+    isNavPanelShow.value = false;
     init();
-    console.log(route);
   },
-  { immediate: true, deep: true },
+  { deep: true },
 );
-
+init();
 </script>
 
 <style lang="scss" scoped>
+.m16 {
+  margin: 16px;
+}
+
+.w250 {
+  width: 250px;
+}
+
+:deep(.container-content) {
+  :deep(.content) {
+    height: auto !important;
+  }
+}
+
 .bk-dropdown-popover {
-  transform: translate3d(640px, 123px, 0px) !important;
   .bk-dropdown-content {
     .bk-dropdown-list {
       width: 250px;
@@ -588,9 +601,6 @@ watch(
   top: 11px;
 }
 
-.component-doc {
-  display: flex;
-}
 
 .nav-panel {
   height: 500px;
@@ -741,6 +751,14 @@ watch(
     color: #63656E;
     font-size: 14px;
     padding-left: 0;
+  }
+}
+
+.version-panel {
+  margin-bottom: 20px;
+
+  &:last-child {
+    margin-bottom: 0;
   }
 }
 </style>

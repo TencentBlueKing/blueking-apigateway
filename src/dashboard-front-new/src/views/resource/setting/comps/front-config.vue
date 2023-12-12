@@ -8,6 +8,7 @@
       <bk-select
         :input-search="false"
         v-model="frontConfigData.method"
+        @change="clearValidate"
         class="w700">
         <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
@@ -15,13 +16,13 @@
     <bk-form-item
       :label="t('请求路径')"
       property="path"
-      required
-    >
+      required>
       <div class="flex-row aligin-items-center">
         <bk-input
           v-model="frontConfigData.path"
           :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
           clearable
+          @input="clearValidate"
           class="w700"
         />
         <bk-checkbox class="ml40" v-model="frontConfigData.match_subpath">
@@ -35,6 +36,7 @@
 import { ref, defineExpose, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '../../../../store';
+import mitt from '@/common/event-bus';
 
 const props = defineProps({
   detail: {
@@ -49,19 +51,44 @@ const props = defineProps({
 
 const frontRef = ref(null);
 const { t } = useI18n();
+const cloneTips = ref(t('请求方法+请求路径在网关下唯一，请至少调整其中一项'));
 const common = useCommon();
 const frontConfigData = ref({
   path: '',
   method: '',
   match_subpath: false,
 });
+
+const cloneData = ref({
+  path: '',
+  method: '',
+});
 const methodData = ref(common.methodList);
 
-const rules = {
+const rules = ref<any>({
+  method: [
+    {
+      validator: (value: string) => {
+        if (!value) return true;
+        return value !== cloneData.value.method || frontConfigData.value.path !== cloneData.value.path;
+      },
+      message: cloneTips.value,
+      trigger: 'blur',
+    },
+  ],
   path: [
     {
+      validator: (value: string) => {
+        console.log('value', value);
+        if (!value) return true;
+        return value !== cloneData.value.path || frontConfigData.value.method !== cloneData.value.method;
+      },
+      message: cloneTips.value,
+      trigger: 'blur',
+    },
+    {
       required: true,
-      message: t('必填项'),
+      message: t('请求路径不能为空'),
       trigger: 'blur',
     },
     {
@@ -70,7 +97,7 @@ const rules = {
       trigger: 'blur',
     },
   ],
-};
+});
 
 watch(
   () => props.detail,
@@ -78,14 +105,36 @@ watch(
     if (Object.keys(val).length) {
       const { path, method, match_subpath } = val;
       frontConfigData.value = { path, method, match_subpath };
-      console.log('formData', frontConfigData.value);
+      if (props.isClone) {
+        cloneData.value = { path, method };
+        setTimeout(() => {
+          validate();
+        }, 500);
+      }
+
+
+      // setTimeout(() => {
+      //   rules
+      // }, 1000);
     }
   },
   { immediate: true },
 );
 
+watch(
+  () => frontConfigData.value.path,
+  (val: any) => {
+    mitt.emit('front-path', val);
+  },
+);
+
 const validate = async () => {
   await frontRef.value?.validate();
+};
+
+// 清除表单验证
+const clearValidate = () => {
+  frontRef.value?.clearValidate();
 };
 
 defineExpose({

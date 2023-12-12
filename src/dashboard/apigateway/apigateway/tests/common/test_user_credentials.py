@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,10 +15,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
+
+from apigateway.common.user_credentials import UserCredentials, get_user_credentials_from_request
 
 
-def get_user_access_token_from_request(request):
-    if request and request.user and hasattr(request.user, "token") and hasattr(request.user.token, "access_token"):
-        return request.user.token.access_token
+def test_get_user_access_token_from_request(mocker, faker):
+    request = mocker.MagicMock(COOKIES={settings.BK_LOGIN_TICKET_KEY: "user_credentials"})
+    assert get_user_credentials_from_request(request) == UserCredentials(credentials="user_credentials")
 
-    return None
+    # No access_token
+    request = mocker.MagicMock(COOKIES={})
+    assert get_user_credentials_from_request(request) is None

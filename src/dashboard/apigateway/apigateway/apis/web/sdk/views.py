@@ -101,9 +101,7 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
                     operator=self.request.user.username,
                 )
             except exceptions.ResourcesIsEmpty:
-                raise error_codes.INTERNAL.format(
-                    _("网关下无资源（公开，且请求方法非 ANY），无法生成 SDK。"), replace=True
-                )
+                raise error_codes.INTERNAL.format(_("网关下无符合条件的资源，无法生成 SDK。"), replace=True)
             except exceptions.GenerateError:
                 raise error_codes.INTERNAL.format(_("网关 SDK 生成失败。"), replace=True)
             except exceptions.PackError:
