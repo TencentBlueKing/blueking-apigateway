@@ -833,7 +833,7 @@ watch(
         }
       });
     } else {
-      getList();
+      filterData.value.keyword = '';
     }
   },
 );
@@ -854,7 +854,7 @@ onMounted(() => {
     // max-height: 280px;
   }
   .resource-content{
-    height: calc(100% - 90px);
+    height: calc(100% - 68px);
     min-height: 600px;
     .left-wraper{
       position: relative;
