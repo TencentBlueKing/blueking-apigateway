@@ -9,7 +9,7 @@
         >
           {{ t('新建网关') }}
         </bk-button>
-        <bk-input class="ml10 mr10 search-input" v-model="filterNameData.name" placeholder="请输入网关名"></bk-input>
+        <bk-input class="ml10 mr10 search-input" v-model="filterNameData.keyword" placeholder="请输入网关名"></bk-input>
         <bk-select
           v-model="filterKey"
           :clearable="false"
@@ -28,85 +28,94 @@
       </div>
     </div>
     <div class="table-container">
-      <div class="table-header flex-row">
-        <div class="flex-1 of3">{{ t('网关名') }}</div>
-        <div class="flex-1 of1">{{ t('创建者') }}</div>
-        <div class="flex-1 of3">{{ t('环境列表') }}</div>
-        <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
-        <div class="flex-1 of2">{{ t('操作') }}</div>
-      </div>
-      <div class="table-list">
-        <div
-          class="table-item flex-row align-items-center"
-          v-for="item in gatewaysList" :key="item.id"
-          :class="item.is24HoursAgo ? '' : 'newly-item'">
-          <div class="flex-1 flex-row align-items-center of3">
-            <div
-              class="name-logo mr10" :class="item.status ? '' : 'deact'"
-              @click="handleGoPage('apigwResource', item.id)">
-              {{ item.name[0].toUpperCase() }}
-            </div>
-            <span
-              class="name mr10" :class="item.status ? '' : 'deact-name'"
-              @click="handleGoPage('apigwResource', item.id)">
-              {{ item.name }}
-            </span>
-            <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
-            <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
-          </div>
-          <div class="flex-1 of1">{{ item.created_by }}</div>
-          <div class="flex-1 of3 env">
-            <div class="flex-row">
+      <section v-if="gatewaysList.length">
+        <div class="table-header flex-row">
+          <div class="flex-1 of3">{{ t('网关名') }}</div>
+          <div class="flex-1 of1">{{ t('创建者') }}</div>
+          <div class="flex-1 of3">{{ t('环境列表') }}</div>
+          <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
+          <div class="flex-1 of2">{{ t('操作') }}</div>
+        </div>
+        <div class="table-list">
+          <div
+            class="table-item flex-row align-items-center"
+            v-for="item in gatewaysList" :key="item.id"
+            :class="item.is24HoursAgo ? '' : 'newly-item'">
+            <div class="flex-1 flex-row align-items-center of3">
+              <div
+                class="name-logo mr10" :class="item.status ? '' : 'deact'"
+                @click="handleGoPage('apigwResource', item.id)">
+                {{ item.name[0].toUpperCase() }}
+              </div>
               <span
-                v-for="(envItem, index) in item.stages" :key="envItem.id">
-                <bk-tag v-if="index < 3">
-                  <i :class="['ag-dot',{ 'success': envItem.released }]"></i>
-                  {{ envItem.name }}
-                </bk-tag>
+                class="name mr10" :class="item.status ? '' : 'deact-name'"
+                @click="handleGoPage('apigwResource', item.id)">
+                {{ item.name }}
               </span>
-              <bk-tag
-                v-if="item.stages.length > item.tagOrder"
-                class="tag-cls"
-                v-bk-tooltips="{ content: item?.labelText.join(';') }">
-                +{{ item.stages.length - item.tagOrder }}
-                <!-- ... -->
-              </bk-tag>
+              <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
+              <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
             </div>
-          </div>
-          <div class="flex-1 of1 text-c" :class="item.resource_count ? 'default-c' : ''">{{ item.resource_count }}</div>
-          <div class="flex-1 of2">
-            <bk-button
-              text
-              theme="primary"
-              @click="handleGoPage('apigwStageOverview', item.id)"
-            >
-              环境概览
-            </bk-button>
-            <bk-button
-              text
-              theme="primary"
-              class="pl20"
-              @click="handleGoPage('apigwResource', item.id)"
-            >
-              资源配置
-            </bk-button>
-            <bk-button
-              text
-              theme="primary"
-              class="pl20"
-              @click="handleGoPage('apigwAccessLog', item.id)"
-            >
-              流水日志
-            </bk-button>
+            <div class="flex-1 of1">{{ item.created_by }}</div>
+            <div class="flex-1 of3 env">
+              <div class="flex-row">
+                <span
+                  v-for="(envItem, index) in item.stages" :key="envItem.id">
+                  <bk-tag v-if="index < 3">
+                    <i :class="['ag-dot',{ 'success': envItem.released }]"></i>
+                    {{ envItem.name }}
+                  </bk-tag>
+                </span>
+                <bk-tag
+                  v-if="item.stages.length > item.tagOrder"
+                  class="tag-cls"
+                  v-bk-tooltips="{ content: item?.labelText.join(';') }">
+                  +{{ item.stages.length - item.tagOrder }}
+                  <!-- ... -->
+                </bk-tag>
+              </div>
+            </div>
+            <div class="flex-1 of1 text-c" :class="item.resource_count ? 'default-c' : ''">
+              {{ item.resource_count }}</div>
+            <div class="flex-1 of2">
+              <bk-button
+                text
+                theme="primary"
+                @click="handleGoPage('apigwStageOverview', item.id)"
+              >
+                环境概览
+              </bk-button>
+              <bk-button
+                text
+                theme="primary"
+                class="pl20"
+                @click="handleGoPage('apigwResource', item.id)"
+              >
+                资源配置
+              </bk-button>
+              <bk-button
+                text
+                theme="primary"
+                class="pl20"
+                @click="handleGoPage('apigwAccessLog', item.id)"
+              >
+                流水日志
+              </bk-button>
+            </div>
           </div>
         </div>
+      </section>
+      <section v-else>
+        <div class="text-c">
+          {{ t('暂无数据') }}
+        </div>
+      </section>
+
+      <div class="footer-container">
+        <div>
+          <bk-link theme="primary">技术支持</bk-link> | <bk-link theme="primary">产品官网</bk-link>
+        </div>
+        Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved.
       </div>
-    </div>
-    <div class="footer-container">
-      <div>
-        <bk-link theme="primary">技术支持</bk-link> | <bk-link theme="primary">产品官网</bk-link>
-      </div>
-      Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved.
     </div>
 
     <bk-dialog
@@ -180,6 +189,7 @@ import { useGetApiList } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import {
   ref,
+  watch,
 } from 'vue';
 const { t } = useI18n();
 const user = useUser();
@@ -187,8 +197,8 @@ const router = useRouter();
 
 
 const formRef = ref(null);
-const filterKey = ref<string>('created_time');
-const filterNameData = ref({ name: '' });
+const filterKey = ref<string>('updated_time');
+const filterNameData = ref({ keyword: '' });
 // 弹窗
 const dialogData = ref<IDialog>({
   isShow: false,
@@ -251,15 +261,21 @@ const gatewaysList = ref<any>([]);
 const curYear = (new Date()).getFullYear();
 
 const filterData = ref([
-  { value: 'created_time', label: t('创建时间') },
   { value: 'updated_time', label: t('更新时间') },
+  { value: 'created_time', label: t('创建时间') },
   { value: 'name', label: t('字母 A-Z') },
 ]);
 
 // 获取网关数据方法
 const {
   getGatewaysListData,
+  dataList,
 } = useGetApiList(filterNameData);
+
+// 赋值给列表
+watch(() => dataList.value, (val: any[]) => {
+  gatewaysList.value = val;
+});
 
 
 // 页面初始化
@@ -321,6 +337,7 @@ const resetDialogData = () => {
   initDialogData.is_public = true;
 };
 
+// 列表排序
 const handleChange = (v: string) => {
   switch (v) {
     case 'created_time':
