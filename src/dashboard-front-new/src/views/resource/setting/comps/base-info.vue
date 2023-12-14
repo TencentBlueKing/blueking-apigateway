@@ -39,7 +39,9 @@
     <bk-form-item
       :label="t('认证方式')"
     >
-      <bk-checkbox v-model="formData.auth_config.app_verified_required">
+      <bk-checkbox
+        v-model="formData.auth_config.app_verified_required"
+        :disabled="!curApigwData.allow_update_gateway_auth">
         {{ t('蓝鲸应用认证') }}
       </bk-checkbox>
       <bk-checkbox class="ml40" v-model="formData.auth_config.auth_verified_required">
@@ -52,6 +54,7 @@
     >
       <bk-switcher
         v-model="formData.auth_config.resource_perm_required"
+        :disabled="!curApigwData.allow_update_gateway_auth"
         theme="primary"
       />
     </bk-form-item>
@@ -93,20 +96,20 @@ const props = defineProps({
 const formRef = ref(null);
 const { t } = useI18n();
 const common = useCommon();
+const { curApigwData } = common;
 const formData = ref({
   name: '',
   description: '',
   label_ids: [],
   auth_config: {
-    auth_verified_required: false,
-    app_verified_required: false,
-    resource_perm_required: false,
+    auth_verified_required: true,
+    app_verified_required: true,
+    resource_perm_required: true,
   },
-  is_public: false,
-  allow_apply_permission: false,
+  is_public: true,
+  allow_apply_permission: true,
 });
 
-console.log('formData1', props.detail);
 const labelsData = ref([]);
 
 const rules = {
@@ -134,7 +137,6 @@ watch(
       const { name, description, auth_config, is_public, allow_apply_permission, labels } = val;
       const label_ids = labels.map((e: {id: number, name: string}) => e.id);
       formData.value = { name: props.isClone ? `${name}_clone` : name, description, auth_config, is_public, allow_apply_permission, label_ids };
-      console.log('formData', formData.value);
     }
   },
   { immediate: true },

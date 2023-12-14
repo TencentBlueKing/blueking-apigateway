@@ -48,6 +48,7 @@
       <bk-select
         :input-search="false"
         v-model="backConfigData.config.method"
+        :clearable="false"
         class="w700">
         <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
@@ -73,7 +74,7 @@
         >
           {{ t('校验并查看地址') }}
         </bk-button>
-        <bk-checkbox class="ml40" v-model="backConfigData.config.match_subpath">
+        <bk-checkbox class="ml40" v-model="backConfigData.config.match_subpath" disabled>
           {{ t('追加匹配的子路径') }}
         </bk-checkbox>
       </div>
@@ -140,7 +141,7 @@ const backConfigData = ref({
   id: '',
   config: {
     path: '',
-    method: '',
+    method: 'GET',
     match_subpath: false,
   },
 });
@@ -216,8 +217,10 @@ const validate = async () => {
 
 onMounted(() => {
   // 事件总线监听重新获取环境列表
-  mitt.on('front-path', (value: string) => {
-    frontPath.value = value;
+  mitt.on('front-config', (value: any) => {
+    console.log('value', value);
+    frontPath.value = value.path;
+    backConfigData.value.config.match_subpath = value.match_subpath;
   });
   init();
 });
@@ -238,7 +241,7 @@ defineExpose({
       }
       .w700{
           max-width: 700px !important;
-          width: 70% !important;
+          width: 73% !important;
         }
       .w568{
         max-width: 568px !important;

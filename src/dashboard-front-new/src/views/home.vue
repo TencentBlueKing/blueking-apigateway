@@ -41,7 +41,7 @@
             class="table-item flex-row align-items-center"
             v-for="item in gatewaysList" :key="item.id"
             :class="item.is24HoursAgo ? '' : 'newly-item'">
-            <div class="flex-1 flex-row align-items-center of3">
+            <div class="flex-1 flex-row align-items-center  of3">
               <div
                 class="name-logo mr10" :class="item.status ? '' : 'deact'"
                 @click="handleGoPage('apigwResource', item.id)">
@@ -171,7 +171,7 @@
           property="is_public"
           required
         >
-          <bk-switcher v-model="formData.is_public" />
+          <bk-switcher theme="primary" v-model="formData.is_public" />
           <span class="common-form-tips">公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏</span>
         </bk-form-item>
       </bk-form>
@@ -194,7 +194,6 @@ import {
 const { t } = useI18n();
 const user = useUser();
 const router = useRouter();
-
 
 const formRef = ref(null);
 const filterKey = ref<string>('updated_time');
@@ -404,7 +403,6 @@ init();
         border-radius: 2px;
         padding: 0 16px;
         margin: 12px 0px;
-        cursor: pointer;
         .name-logo{
           width: 48px;
           height: 48px;
@@ -415,10 +413,12 @@ init();
           color: #3A84FF;
           font-size: 26px;
           font-weight: 700;
+          cursor: pointer;
         }
         .name{
           font-weight: 700;
           color: #313238;
+          cursor: pointer;
           &:hover{
             color: #3a84ff;
           }

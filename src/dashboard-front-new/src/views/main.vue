@@ -86,7 +86,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { menuData } from '@/common/menu';
 import { useGetApiList } from '@/hooks';
 import { useCommon, usePermission } from '@/store';
-import { getPermissionApplyList } from '@/http';
+import { getPermissionApplyList, getGatewaysDetail } from '@/http';
 
 const route = useRoute();
 const router = useRouter();
@@ -123,6 +123,12 @@ const handleSetApigwName = () => {
   common.setApigwName(apigwName);
 };
 
+// 将当前的网关详情存到全局pinia中
+const handleSetApigwDeatail = async () => {
+  const curApigwDataDetail = await getGatewaysDetail(apigwId.value);
+  common.setCurApigwData(curApigwDataDetail);
+};
+
 // 监听当前路由
 watch(
   () => route,
@@ -134,6 +140,8 @@ watch(
     common.setApigwId(apigwId.value);
     // 设置全局网关名称
     handleSetApigwName();
+    // 设置当前网关详情
+    handleSetApigwDeatail();
   },
   { immediate: true, deep: true },
 );

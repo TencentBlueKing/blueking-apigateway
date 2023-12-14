@@ -738,8 +738,13 @@ const handleEditLabel = (data: any) => {
 };
 
 // 生成版本功能
-const handleCreateResourceVersion = () => {
-  versionSidesliderRef.value.showReleaseSideslider();
+const handleCreateResourceVersion = async () => {
+  try {
+    await getGatewayLabels(props.apigwId);
+    versionSidesliderRef.value.showReleaseSideslider();
+  } catch (error) {
+
+  }
 };
 
 // 获取标签数据
@@ -824,6 +829,9 @@ watch(
 watch(
   () => searchValue.value,
   (v: any[]) => {
+    filterData.value = {
+      keyword: '',
+    };
     if (v.length) {
       v.forEach((e: any) => {
         if (e.id === e.name) {
@@ -832,8 +840,6 @@ watch(
           filterData.value[e.id] = e.values[0].id;
         }
       });
-    } else {
-      filterData.value.keyword = '';
     }
   },
 );
