@@ -72,7 +72,7 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/docs/", include("apigateway.apis.web.resource_doc.urls")),
     path("backend/gateways/<int:gateway_id>/releases/", include("apigateway.apis.web.release.urls")),
     path("backend/gateways/<int:gateway_id>/plugins/", include("apigateway.apis.web.plugin.urls")),
-    path("backend/gateways/<int:gateway_id>/resource_versions/", include("apigateway.apis.web.resource_version.urls")),
+    path("backend/gateways/<int:gateway_id>/resource-versions/", include("apigateway.apis.web.resource_version.urls")),
     path("backend/gateways/<int:gateway_id>/sdks/", include("apigateway.apis.web.sdk.urls")),
     path("backend/gateways/<int:gateway_id>/audits/", include("apigateway.apis.web.audit.urls")),
     # TODO: refactor or remove
