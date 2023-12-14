@@ -739,12 +739,15 @@ const handleEditLabel = (data: any) => {
 
 // 生成版本功能
 const handleCreateResourceVersion = async () => {
-  try {
-    await getGatewayLabels(props.apigwId);
-    versionSidesliderRef.value.showReleaseSideslider();
-  } catch (error) {
-
+  if (!versionConfigs.needNewVersion) {
+    Message({
+      message: t('资源及资源文档无变更, 不需要生成新版本'),
+      theme: 'error',
+    });
+    return;
   }
+
+  versionSidesliderRef.value.showReleaseSideslider();
 };
 
 // 获取标签数据

@@ -26,7 +26,7 @@
     <bk-form-item
       :label="t('标签')"
     >
-      <bk-select
+      <!-- <bk-select
         class="w700"
         v-model="formData.label_ids"
         :input-search="false"
@@ -34,7 +34,8 @@
         filterable
         multiple-mode="tag">
         <bk-option v-for="item in labelsData" :key="item.id" :value="item.id" :label="item.name" />
-      </bk-select>
+      </bk-select> -->
+      <SelectCheckBox :labels-data="labelsData" :width="700"></SelectCheckBox>
     </bk-form-item>
     <bk-form-item
       :label="t('认证方式')"
@@ -78,6 +79,7 @@
 </template>
 <script setup lang="ts">
 import { ref, defineExpose, watch } from 'vue';
+import SelectCheckBox from './select-check-box.vue';
 import { useI18n } from 'vue-i18n';
 import { getGatewayLabels } from '@/http';
 import { useCommon } from '@/store';
