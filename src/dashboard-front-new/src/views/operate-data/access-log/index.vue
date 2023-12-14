@@ -133,7 +133,9 @@
                 theme="primary"
                 outline
                 @click="handleClickCopyLink(row)"
-                :loading="isShareLoading"> {{ $t('复制分享链接') }} </bk-button>
+                :loading="isShareLoading">
+                {{ $t('复制分享链接') }}
+              </bk-button>
             </dl>
           </template>
           <template #empty>
@@ -584,7 +586,7 @@ onBeforeUnmount(() => {
       }
 
       .ag-form-item-inline {
-        margin-left: 8px !important;
+        margin-right: 8px !important;
         margin-top: 0px !important;
 
         .bk-form-content {
