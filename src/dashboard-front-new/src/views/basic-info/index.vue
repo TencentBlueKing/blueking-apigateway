@@ -642,6 +642,7 @@ watch(
 
           .value {
             display: flex;
+            align-items: center;
             vertical-align: middle;
             margin-left: 8px;
 
