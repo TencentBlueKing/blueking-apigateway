@@ -30,7 +30,8 @@
           size="small"
           :pagination="pagination"
           v-bkloading="{ isLoading, opacity: 1 }"
-          @page-change="handlePageChange"
+          remote-pagination
+          @page-value-change="handlePageChange"
           @page-limit-change="handlePageLimitChange">
           <template #empty>
             <div>
@@ -46,7 +47,7 @@
           <bk-table-column label="ID" prop="resource_version_title">
             <template #default="{ data }">
               <bk-button theme="primary" class="mr10" text @click="handleVersion(data?.id)">
-                {{data.id || '--'}}
+                {{data?.id || '--'}}
               </bk-button>
             </template>
           </bk-table-column>
@@ -83,6 +84,7 @@
 import { ref, reactive, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { getSyncHistory } from '@/http';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -214,9 +216,9 @@ const getComponents = async (loading = false) => {
     ...searchParams.value,
   };
   try {
-    const res = await this.$store.dispatch('component/getSyncHistory', { pageParams });
-    pagination.count = res.data.count;
-    componentList.value = res.data.results;
+    const res = await getSyncHistory(pageParams);
+    pagination.count = res?.count;
+    componentList.value = res?.results;
     updateTableEmptyConfig();
     tableEmptyConf.value.isAbnormal = false;
   } catch (e) {
