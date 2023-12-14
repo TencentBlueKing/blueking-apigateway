@@ -64,12 +64,12 @@
           <template v-if="localData.gateway_label_ids?.length">
             <bk-tag
               class="ag-value"
-              v-for="tag in labels?.map((label) => {
+              v-for="tag in labels?.filter((label) => {
                 if (localData.gateway_label_ids?.includes(label.id))
-                  return label.name;
+                  return true;
               })"
-              :key="tag"
-            >{{ tag }}</bk-tag
+              :key="tag.id"
+            >{{ tag.name }}</bk-tag
             >
           </template>
           <div class="ag-value" v-else>--</div>
