@@ -105,3 +105,36 @@ class TestAppRequestAlerter:
         )
         result = self.alerter.get_message(event)
         assert result != ""
+
+    @pytest.mark.parametrize(
+        "record_source, expected",
+        [
+            (
+                {
+                    "method": "GET",
+                    "http_host": "bkapi.example.com",
+                    "http_path": "/",
+                },
+                "GET, bkapi.example.com, /",
+            ),
+            (
+                {
+                    "method": "GET",
+                    "http_host": "bkapi.example.com",
+                    "http_path": "/foo",
+                },
+                "GET, bkapi.example.com, /foo",
+            ),
+            (
+                {
+                    "method": "GET",
+                    "http_host": "bkapi.example.com",
+                    "http_path": "/foo?color=red&size=large",
+                },
+                "GET, bkapi.example.com, /foo",
+            ),
+        ],
+    )
+    def test_get_request_info(self, record_source, expected):
+        result = self.alerter._get_request_info(record_source)
+        assert result == expected
