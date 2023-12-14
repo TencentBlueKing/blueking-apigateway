@@ -43,25 +43,30 @@ class TimeChartOutputSLZ(serializers.Serializer):
 class RequestLogOutputSLZ(serializers.Serializer):
     request_id = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求 ID")
     timestamp = serializers.IntegerField(required=False, allow_null=True, help_text="请求时间戳")
+
     stage = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="环境")
     resource_id = serializers.IntegerField(required=False, allow_null=True, help_text="资源 ID")
     resource_name = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="资源名称")
+
     app_code = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="应用编码")
     client_ip = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="客户端 IP")
     method = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求方法")
     http_host = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求域名")
     http_path = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求路径")
-    backend_method = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="后端请求方法")
-    backend_scheme = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="后端请求协议")
-    backend_host = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="后端请求域名")
-    backend_path = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="后端请求路径")
     params = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求参数")
     body = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求体")
+
+    backend_scheme = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="后端请求协议")
+    backend_method = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="后端请求方法")
+    backend_host = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="后端请求域名")
+    backend_path = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="后端请求路径")
     response_body = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应体")
     status = serializers.IntegerField(required=False, allow_null=True, help_text="响应状态码")
-    headers = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应头")
+
+    # headers = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应头")
     request_duration = serializers.IntegerField(required=False, allow_null=True, help_text="请求耗时")
     backend_duration = serializers.IntegerField(required=False, allow_null=True, help_text="后端请求耗时")
+
     code_name = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="状态码名称")
     error = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="错误")
     response_desc = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应描述")
