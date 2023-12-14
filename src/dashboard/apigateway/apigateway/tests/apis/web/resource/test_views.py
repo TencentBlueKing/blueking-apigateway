@@ -22,6 +22,7 @@ import pytest
 from ddf import G
 
 from apigateway.apis.web.resource.views import (
+    BackendHostIsEmpty,
     BackendPathCheckApi,
 )
 from apigateway.apps.label.models import APILabel, ResourceLabel
@@ -661,7 +662,7 @@ class TestBackendPathCheckApi:
     def test_get_backend_hosts(self, fake_gateway, fake_request):
         stage = G(Stage, gateway=fake_gateway, _vars='{"k1": "v1"}')
         backend = G(Backend, gateway=fake_gateway, name="default")
-        G(
+        backend_config = G(
             BackendConfig,
             gateway=fake_gateway,
             stage=stage,
@@ -678,6 +679,12 @@ class TestBackendPathCheckApi:
 
         result = view._get_backend_hosts(backend.id)
         assert result == {stage.id: ["http://api.demo.com"]}
+
+        backend_config.config = {"type": "node", "hosts": [{"host": "", "scheme": "http"}]}
+        backend_config.save()
+
+        with pytest.raises(BackendHostIsEmpty):
+            view._get_backend_hosts(backend.id)
 
     @pytest.mark.parametrize(
         "host, path, vars, expected",
