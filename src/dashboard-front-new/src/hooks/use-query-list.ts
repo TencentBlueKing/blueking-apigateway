@@ -19,6 +19,7 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
     offset: 0,
     limit: 10,
     count: 0,
+    small: false,
   };
 
   const pagination = ref<IPagination>({ ...initPagination });

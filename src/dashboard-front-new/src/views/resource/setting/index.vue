@@ -1,5 +1,5 @@
 <template>
-  <div class="resource-container p20">
+  <div class="resource-container pt10 pl20 pr20">
     <bk-alert
       v-if="versionConfigs.needNewVersion"
       theme="warning"
@@ -39,17 +39,28 @@
       <div class="flex-1 flex-row justify-content-end">
         <!-- <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input> -->
         <bk-search-select
+          v-if="!isDetail"
           v-model="searchValue"
           :data="searchData"
           unique-select
-          style="width: 450px"
+          style="width: 450px; background:#fff"
           placeholder="请选择或输入"
           :value-split-code="'+'"
         />
       </div>
     </div>
+    <bk-search-select
+      v-if="isDetail"
+      v-model="searchValue"
+      :data="searchData"
+      unique-select
+      style="width: 400px; background:#fff"
+      class="mb10"
+      placeholder="请选择或输入"
+      :value-split-code="'+'"
+    />
     <div class="flex-row resource-content">
-      <div class="left-wraper" :style="{ width: isDetail ? isShowLeft ? '370px' : '0' : '100%' }">
+      <div class="left-wraper" :style="{ width: isDetail ? isShowLeft ? '400px' : '0' : '100%' }">
         <bk-loading
           :loading="isLoading"
         >
@@ -583,6 +594,7 @@ const handleShowInfo = (id: number) => {
     isComponentLoading.value = true;
     active.value = 'resourceInfo';
   } else {
+    pagination.value.small = true;
     isDetail.value = true;
   }
 };
@@ -591,6 +603,7 @@ const handleShowInfo = (id: number) => {
 const handleShowList = () => {
   isDetail.value = false;
   isShowLeft.value = true;
+  pagination.value.small = false;
 };
 
 // 处理批量编辑或删除
@@ -722,7 +735,7 @@ const handleShowVersion = async () => {
     versionConfigs.versionMessage = res.msg;
   } catch (error: any) {
     versionConfigs.needNewVersion = false;
-    versionConfigs.versionMessage = error.msg;
+    versionConfigs.versionMessage = error?.msg;
   }
 };
 
@@ -937,6 +950,11 @@ onMounted(() => {
     .right-wraper{
       background: #fff;
       transition: all .15s;
+      position: absolute;
+      top: 51px;
+      left: 420px;
+      bottom: 0;
+      right: 0;
       .close-btn{
         align-items: center;
         border-radius: 50%;

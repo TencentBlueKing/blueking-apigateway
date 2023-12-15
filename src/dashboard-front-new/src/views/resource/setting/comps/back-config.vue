@@ -218,7 +218,6 @@ const validate = async () => {
 onMounted(() => {
   // 事件总线监听重新获取环境列表
   mitt.on('front-config', (value: any) => {
-    console.log('value', value);
     frontPath.value = value.path;
     backConfigData.value.config.match_subpath = value.match_subpath;
   });
