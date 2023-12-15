@@ -7,6 +7,7 @@
       required>
       <bk-select
         :input-search="false"
+        :clearable="false"
         v-model="frontConfigData.method"
         @change="clearValidate"
         class="w700">
@@ -54,7 +55,7 @@ const { t } = useI18n();
 const cloneTips = ref(t('请求方法+请求路径在网关下唯一，请至少调整其中一项'));
 const common = useCommon();
 const frontConfigData = ref({
-  path: '',
+  path: 'GET',
   method: '',
   match_subpath: false,
 });
@@ -111,21 +112,17 @@ watch(
           validate();
         }, 500);
       }
-
-
-      // setTimeout(() => {
-      //   rules
-      // }, 1000);
     }
   },
   { immediate: true },
 );
 
 watch(
-  () => frontConfigData.value.path,
+  () => frontConfigData.value,
   (val: any) => {
-    mitt.emit('front-path', val);
+    mitt.emit('front-config', val);
   },
+  { deep: true },
 );
 
 const validate = async () => {

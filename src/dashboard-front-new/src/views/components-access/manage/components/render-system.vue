@@ -108,10 +108,10 @@ const handleSelectSys = (payload: any) => {
   emit('on-select', payload);
 };
 
-// const setSelected = (id) => {
-//   curSelect.value = id;
-//   emit('on-select', { id });
-// };
+const setSelected = (id: string) => {
+  curSelect.value = id;
+  emit('on-select', { id });
+};
 
 const handleSelectAll = () => {
   curSelect.value = '*';
@@ -160,6 +160,11 @@ watch(
     }
   },
 );
+
+defineExpose({
+  setSelected,
+  updateTableEmptyConfig,
+});
 </script>
 
 <style lang="scss" scoped>
