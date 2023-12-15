@@ -1,7 +1,7 @@
 <template>
   <div class="resource-container pt10 pl20 pr20">
     <bk-alert
-      v-if="versionConfigs.needNewVersion"
+      v-if="versionConfigs.needNewVersion && !isDetail"
       theme="warning"
       :title="versionConfigs.versionMessage"
     />
@@ -44,7 +44,7 @@
           :data="searchData"
           unique-select
           style="width: 450px; background:#fff"
-          placeholder="请选择或输入"
+          :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
           :value-split-code="'+'"
         />
       </div>
@@ -56,7 +56,7 @@
       unique-select
       style="width: 400px; background:#fff"
       class="mb10"
-      placeholder="请选择或输入"
+      placeholder="请输入资源名称或选择条件搜索, 按Enter确认"
       :value-split-code="'+'"
     />
     <div class="flex-row resource-content">
