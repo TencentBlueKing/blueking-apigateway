@@ -26,7 +26,7 @@
     <bk-form-item
       :label="t('标签')"
     >
-      <bk-select
+      <!-- <bk-select
         class="w700"
         v-model="formData.label_ids"
         :input-search="false"
@@ -34,29 +34,42 @@
         filterable
         multiple-mode="tag">
         <bk-option v-for="item in labelsData" :key="item.id" :value="item.id" :label="item.name" />
-      </bk-select>
+      </bk-select> -->
+      <SelectCheckBox
+        :labels-data="labelsData"
+        :width="700"
+        :is-add="true"
+        v-model="formData.label_ids"
+        @update-success="init"
+        @label-add-success="init"></SelectCheckBox>
     </bk-form-item>
     <bk-form-item
       :label="t('认证方式')"
+      :description="t('请求方需提供蓝鲸用户身份信息')"
     >
-      <bk-checkbox v-model="formData.auth_config.app_verified_required">
-        {{ t('蓝鲸应用认证') }}
+      <bk-checkbox
+        v-model="formData.auth_config.app_verified_required"
+        :disabled="!curApigwData.allow_update_gateway_auth">
+        <span v-bk-tooltips="{ content: '请求方需提供蓝鲸应用身份信息' }">{{ t('蓝鲸应用认证') }}</span>
       </bk-checkbox>
       <bk-checkbox class="ml40" v-model="formData.auth_config.auth_verified_required">
-        {{ t('用户认证') }}
+        <span v-bk-tooltips="{ content: '请求方需提供蓝鲸用户身份信息' }">{{ t('用户认证') }}</span>
       </bk-checkbox>
     </bk-form-item>
     <bk-form-item
       :label="t('检验应用权限')"
+      :description="t('蓝鲸应用需申请资源访问权限')"
       v-if="formData.auth_config.app_verified_required"
     >
       <bk-switcher
         v-model="formData.auth_config.resource_perm_required"
+        :disabled="!curApigwData.allow_update_gateway_auth"
         theme="primary"
       />
     </bk-form-item>
     <bk-form-item
       :label="t('是否公开')"
+      :description="t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')"
       property="is_public"
     >
       <div class="flex-row align-items-center public-switch">
@@ -67,7 +80,9 @@
         <bk-checkbox
           v-if="formData.is_public" class="ml40"
           v-model="formData.allow_apply_permission">
-          {{ t('允许申请权限') }}
+          <span v-bk-tooltips="{ content: '允许，则任何蓝鲸应用可在蓝鲸开发者中心申请资源的访问权限；否则，只能通过网关管理员主动授权为某应用添加权限' }">
+            {{ t('允许申请权限') }}
+          </span>
         </bk-checkbox>
       </div>
     </bk-form-item>
@@ -75,6 +90,7 @@
 </template>
 <script setup lang="ts">
 import { ref, defineExpose, watch } from 'vue';
+import SelectCheckBox from './select-check-box.vue';
 import { useI18n } from 'vue-i18n';
 import { getGatewayLabels } from '@/http';
 import { useCommon } from '@/store';
@@ -93,20 +109,20 @@ const props = defineProps({
 const formRef = ref(null);
 const { t } = useI18n();
 const common = useCommon();
+const { curApigwData } = common;
 const formData = ref({
   name: '',
   description: '',
   label_ids: [],
   auth_config: {
-    auth_verified_required: false,
-    app_verified_required: false,
-    resource_perm_required: false,
+    auth_verified_required: true,
+    app_verified_required: true,
+    resource_perm_required: true,
   },
-  is_public: false,
-  allow_apply_permission: false,
+  is_public: true,
+  allow_apply_permission: true,
 });
 
-console.log('formData1', props.detail);
 const labelsData = ref([]);
 
 const rules = {
@@ -134,7 +150,6 @@ watch(
       const { name, description, auth_config, is_public, allow_apply_permission, labels } = val;
       const label_ids = labels.map((e: {id: number, name: string}) => e.id);
       formData.value = { name: props.isClone ? `${name}_clone` : name, description, auth_config, is_public, allow_apply_permission, label_ids };
-      console.log('formData', formData.value);
     }
   },
   { immediate: true },

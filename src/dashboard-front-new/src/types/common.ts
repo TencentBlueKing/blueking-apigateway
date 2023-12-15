@@ -1,5 +1,6 @@
 // 分页interface
 export interface IPagination {
+  small?: boolean
   offset: number
   limit: number
   count: number

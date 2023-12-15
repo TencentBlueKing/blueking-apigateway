@@ -1,12 +1,12 @@
 <template>
   <bk-select
-    style="width: 235px;"
+    :style="{ width: `${width}px` }"
     class="select-wrapper mt5"
     filterable
     multiple
     multiple-mode="tag"
     ref="selectRef"
-    show-on-init
+    :show-on-init="!isAdd"
     v-model="curLabelIds"
     selected-style="checkbox"
     @toggle="handleToggle">
@@ -52,13 +52,13 @@
       </template>
     </bk-option>
     <template #extension>
-      <div class="custom-extension" style="margin: 0 auto;">
+      <div class="custom-extension" style="margin: 0 auto; width: 100%;">
         <div
           v-if="showEdit"
-          style="display: flex; align-items: center;"
+          class="flex-row align-items-center justify-content-center"
         >
           <bk-input
-            style="width: 220px"
+            style="width: 95%"
             ref="inputRef"
             v-model="optionName"
             size="small"
@@ -66,9 +66,9 @@
             :placeholder="t('请输入标签，enter保存')"
           />
         </div>
-        <div v-else class="flex-row align-items-center justity-content-center" style="cursor: pointer;">
+        <div v-else class="flex-row align-items-center justify-content-center" style="cursor: pointer;">
           <div
-            class="flex-row align-items-center"
+            class="flex-row align-items-center justify-content-center"
             @click="handleShowEdit"
           >
             <plus style="font-size: 18px;" />
@@ -80,7 +80,7 @@
   </bk-select>
 </template>
 <script setup lang="ts">
-import { ref, computed, toRefs, PropType, nextTick } from 'vue';
+import { ref, computed, toRefs, PropType, nextTick, watch } from 'vue';
 import { Plus } from 'bkui-vue/lib/icon';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
@@ -89,18 +89,21 @@ import { updateResourcesLabels, createResourcesLabels, deleteResourcesLabels, up
 
 import { useCommon } from '@/store';
 
-const emit = defineEmits(['close', 'update-success', 'label-add-success']);
+const emit = defineEmits(['close', 'update-success', 'label-add-success', 'update:modelValue']);
 const common = useCommon();
 const { t } = useI18n();
 const { apigwId } = common; // 网关id
 
 const props = defineProps({
+  modelValue: { type: Array, default: () => [] },
   curSelectLabelIds: { type: Array, default: [] },   // 当前选中的label
   resourceId: { type: Number, default: 0 },
   labelsData: { type: Array as PropType<any>, default: [] },
+  width: { type: Number, default: 235 },
+  isAdd: { type: Boolean, default: false },
 });
 
-const { curSelectLabelIds, resourceId, labelsData } = toRefs(props);
+const { curSelectLabelIds, resourceId, labelsData, width, isAdd, modelValue } = toRefs(props);
 
 const curLabelIds = ref(curSelectLabelIds.value);
 const showEdit = ref(false);
@@ -120,9 +123,22 @@ const isSameLabels = computed(() => {
   return curLabelIdsString === curLabelIdsbackUpString;
 });
 
+// 赋值给select curLabelIds
+watch(modelValue, () => {
+  if (modelValue.value.length) {
+    curLabelIds.value = modelValue.value;
+  }
+});
+
+watch(curLabelIds, () => {
+  emit('update:modelValue', curLabelIds.value || []);
+});
+
 
 //
 const handleToggle = async (v: boolean) => {
+  // 新增标签标识
+  if (isAdd.value) return;
   setTimeout(async () => {
     // 关闭下拉框且
     if (!v) {

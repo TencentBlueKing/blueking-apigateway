@@ -40,6 +40,7 @@ export const useCommon = defineStore('common', {
         name: 'ANY',
       },
     ],
+    curApigwData: { allow_update_gateway_auth: false },
   }),
   actions: {
     setApigwId(apigwId: number) {
@@ -47,6 +48,10 @@ export const useCommon = defineStore('common', {
     },
     setApigwName(name: string) {
       this.apigwName = name;
+    },
+    setCurApigwData(data: any) {
+      this.curApigwData = data;
+      console.log('this.curApigwData', this.curApigwData);
     },
   },
 });

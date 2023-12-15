@@ -33,10 +33,7 @@
           <bk-tag v-for="item in formData.labels" :key="item.id">{{ item.name }}</bk-tag>
         </span>
       </bk-form-item>
-      <bk-form-item class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('认证方式：') }}</span>
-        </template>
+      <bk-form-item class="form-item-cls" :label="t('认证方式：')" :description="t('请求方需提供蓝鲸身份信息')">
         <span class="value-cls" v-if="formData.auth_config?.app_verified_required">
           {{ t('蓝鲸应用认证') }}，
         </span>
@@ -52,10 +49,10 @@
           {{ formData.auth_config?.resource_perm_required ? t('开启') : t('关闭') }}
         </span>
       </bk-form-item>
-      <bk-form-item class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('是否公开：') }}</span>
-        </template>
+      <bk-form-item
+        class="form-item-cls"
+        :description="t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')"
+        :label="t('是否公开：')">
         <span class="warning-c">{{ formData.is_public ? t('公开') : t('不公开') }}</span>
         <span class="value-cls" v-if="formData.is_public">
           {{ formData.allow_apply_permission ? t('（允许申请权限）') : t('（不允许申请权限）') }}
@@ -253,6 +250,7 @@ watch(
       flex-flow: wrap;
       :deep(.form-item-cls){
         flex: 0 0 50%;
+        margin-bottom: 5px;
         .bk-form-label{
           padding-right: 10px;
         }
