@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse, urlunparse
 
 from pydantic import BaseModel
 
@@ -144,4 +145,7 @@ class ResourceBackendAlerter(Alerter):
         return dimension.code_name or "网关请求后端接口错误"
 
     def _get_backend_url(self, record_source: Dict[str, Any]) -> str:
-        return f"{record_source['backend_scheme']}://{record_source['backend_host']}{record_source['backend_path']}"
+        parsed_path = urlparse(record_source["backend_path"])
+        path_without_querystring = urlunparse((parsed_path.scheme, parsed_path.netloc, parsed_path.path, "", "", ""))
+
+        return f"{record_source['backend_scheme']}://{record_source['backend_host']}{path_without_querystring}"
