@@ -8,4 +8,4 @@ const { BK_DASHBOARD_URL } = window;
  * @param apigwId 网关id
  * @param data 资源版本信息
  */
-export const createResourceVersion = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource_versions/`, data);
+export const createResourceVersion = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/`, data);

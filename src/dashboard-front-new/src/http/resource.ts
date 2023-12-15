@@ -69,14 +69,14 @@ export const backendsPathCheck = (apigwId: number, data: any) => fetch.get(`${BK
  * @param versionId 版本id
  * @returns
  */
-export const getResourceVersionsInfo = (apigwId: number, id: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource_versions/${id}`);
+export const getResourceVersionsInfo = (apigwId: number, id: number, data?: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/${id}?${json2Query(data)}`);
 
 /**
  *  资源版本列表
  * @param apigwId 网关id
  * @returns
  */
-export const getResourceVersionsList = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource_versions/?${json2Query(data)}`);
+export const getResourceVersionsList = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/?${json2Query(data)}`);
 
 /**
  *  sdk列表查询接口
@@ -90,7 +90,7 @@ export const getSdksList = (apigwId: number, data: any) => fetch.get(`${BK_DASHB
  * @param apigwId 网关id
  * @returns
  */
-export const resourceVersionsDiff = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource_versions/diff/?${json2Query(data)}`);
+export const resourceVersionsDiff = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/diff/?${json2Query(data)}`);
 
 /**
  *  sdk创建接口
@@ -185,7 +185,7 @@ export const deleteResourceDocs = (apigwId: number, resourceId: number, docId: n
  * 是否需要创建新资源版本
  * @param apigwId 网关id
  */
-export const checkNeedNewVersion = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource_versions/need-new-version/`, { globalError: false });
+export const checkNeedNewVersion = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/need-new-version/`, { globalError: false });
 
 /**
  * 设置标签
