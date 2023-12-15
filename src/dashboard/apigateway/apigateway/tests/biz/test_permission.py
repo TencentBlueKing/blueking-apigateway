@@ -26,6 +26,7 @@ from apigateway.apps.permission.models import (
     AppAPIPermission,
     AppPermissionApply,
     AppPermissionApplyStatus,
+    AppPermissionRecord,
     AppResourcePermission,
 )
 from apigateway.biz.permission import (
@@ -203,6 +204,22 @@ class TestAPIPermissionDimensionManager:
         result, _ = manager.allow_apply_permission(fake_gateway, target_app_code)
         assert result is True
 
+    def test_create_apply_record(self, fake_gateway, fake_resource):
+        manager = APIPermissionDimensionManager()
+        record = manager.create_apply_record(
+            "test",
+            fake_gateway,
+            [fake_resource.id],
+            GrantDimensionEnum.API.value,
+            "",
+            180,
+            "admin",
+        )
+
+        assert AppPermissionRecord.objects.filter(id=record.id).exists()
+        assert AppPermissionApply.objects.filter(apply_record_id=record.id).exists()
+        assert AppPermissionApplyStatus.objects.filter(api=fake_gateway).exists()
+
 
 class TestResourcePermissionDimensionManager:
     def _make_fake_apply(self, fake_gateway):
@@ -334,3 +351,19 @@ class TestResourcePermissionDimensionManager:
         manager = ResourcePermissionDimensionManager()
         result, _ = manager.allow_apply_permission(fake_gateway.id, "test")
         assert not result
+
+    def test_create_apply_record(self, fake_gateway, fake_resource):
+        manager = ResourcePermissionDimensionManager()
+        record = manager.create_apply_record(
+            "test",
+            fake_gateway,
+            [fake_resource.id],
+            GrantDimensionEnum.API.value,
+            "",
+            180,
+            "admin",
+        )
+
+        assert AppPermissionRecord.objects.filter(id=record.id).exists()
+        assert AppPermissionApply.objects.filter(apply_record_id=record.id).exists()
+        assert AppPermissionApplyStatus.objects.filter(api=fake_gateway).exists()

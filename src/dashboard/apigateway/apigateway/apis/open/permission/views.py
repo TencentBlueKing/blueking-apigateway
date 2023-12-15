@@ -32,12 +32,11 @@ from apigateway.apis.open.permission.helpers import (
     ResourcePermissionBuilder,
 )
 from apigateway.apps.permission.constants import (
-    ApplyStatusEnum,
     GrantDimensionEnum,
     GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
 )
-from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord, AppResourcePermission
+from apigateway.apps.permission.models import AppPermissionRecord, AppResourcePermission
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -45,7 +44,6 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Gateway, Resource
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.time import now_datetime
 
 from . import serializers
 
@@ -124,43 +122,21 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
 
         data = slz.validated_data
 
-        record = AppPermissionRecord.objects.create(
-            bk_app_code=data["target_app_code"],
-            applied_by=request.user.username,
-            applied_time=now_datetime(),
-            reason=data["reason"],
-            expire_days=data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
-            api=request.gateway,
-            resource_ids=data.get("resource_ids", []),
-            grant_dimension=data["grant_dimension"],
-            status=ApplyStatusEnum.PENDING.value,
-        )
-
-        instance = AppPermissionApply.objects.create(
-            bk_app_code=data["target_app_code"],
-            applied_by=request.user.username,
-            api=request.gateway,
-            resource_ids=data.get("resource_ids", []),
-            grant_dimension=data["grant_dimension"],
-            status=ApplyStatusEnum.PENDING.value,
-            reason=data["reason"],
-            expire_days=data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
-            apply_record_id=record.id,
-        )
-
         manager = PermissionDimensionManager.get_manager(data["grant_dimension"])
-        manager.save_permission_apply_status(
-            bk_app_code=data["target_app_code"],
-            gateway=request.gateway,
-            apply=instance,
-            status=ApplyStatusEnum.PENDING.value,
-            resources=Resource.objects.filter_by_ids(request.gateway, ids=data.get("resource_ids", [])),
+        record = manager.create_apply_record(
+            data["target_app_code"],
+            request.gateway,
+            data.get("resource_ids", []),
+            data["grant_dimension"],
+            data["reason"],
+            data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
+            request.user.username,
         )
 
         try:
-            apply_async_on_commit(send_mail_for_perm_apply, args=[instance.id])
+            apply_async_on_commit(send_mail_for_perm_apply, args=[record.id])
         except Exception:
-            logger.exception("send mail to api manager fail. apply_record_id=%s", instance.id)
+            logger.exception("send mail to api manager fail. apply_record_id=%s", record.id)
 
         return OKJsonResponse(
             "OK",

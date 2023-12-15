@@ -736,6 +736,9 @@ FAKE_SEND_NOTICE = env.bool("FAKE_SEND_NOTICE", default=False)
 # so we do a special process for them
 LEGACY_INVALID_PARAMS_GATEWAY_NAMES = env.list("LEGACY_INVALID_PARAMS_GATEWAY_NAMES", default=[])
 
+# 使用网关 bk-esb 管理组件 API 的权限
+USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS = env.bool("USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS", True)
+
 # ==============================================================================
 # OTEL
 # ==============================================================================
