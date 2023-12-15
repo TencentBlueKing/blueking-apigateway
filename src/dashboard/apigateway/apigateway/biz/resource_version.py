@@ -118,6 +118,8 @@ class ResourceVersionHandler:
                 "version": data.get("version"),
                 "created_time": now,
                 "schema_version": ResourceVersionSchemaEnum.V2.value,
+                "created_by": username,
+                "updated_by": username,
             }
         )
         resource_version = ResourceVersion(**data)

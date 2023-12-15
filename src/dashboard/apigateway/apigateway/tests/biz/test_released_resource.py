@@ -127,7 +127,7 @@ class TestReleasedResourceHandler:
             gateway=fake_gateway,
             stage=stage_prod,
             resource_version=resource_version,
-            created_by="test",
+            updated_by="test",
             updated_time=dummy_time.time,
         )
 
