@@ -125,7 +125,7 @@ class ReleasedResourceHandler:
             "updated_by",
         )
         return {
-            release[release.stage.pk]: {
+            release[release["stage_id"]]: {
                 "release_status": True,
                 "release_time": release["updated_time"],
                 "resource_version_id": release["resource_version_id"],
