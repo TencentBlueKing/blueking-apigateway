@@ -68,10 +68,11 @@
           :data="componentList"
           :size="setting.size"
           :pagination="pagination"
+          remote-pagination
           v-bkloading="{ isLoading, opacity: 1 }"
           @select="handlerChange"
           @select-all="handlerAllChange"
-          @page-change="handlePageChange"
+          @page-value-change="handlePageChange"
           @row-mouse-enter="changeEnter"
           @row-mouse-leave="changeLeave"
           @page-limit-change="handlePageLimitChange">
@@ -395,11 +396,24 @@ import { Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
 import { useSidebar } from '@/hooks';
 import { copy } from '@/common/util';
+import { useCommon } from '@/store';
+import {
+  getEsbComponents,
+  checkEsbNeedNewVersion,
+  getSystems,
+  addComponent,
+  updateComponent,
+  getComponentsDetail,
+  deleteComponentByBatch,
+  getReleaseStatus,
+  getFeatures,
+} from '@/http';
 import RenderSystem from './components/render-system';
 import RenderConfig from './components/render-config';
 
 const router = useRouter();
 const { t } = useI18n();
+const common = useCommon();
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
 const systemFilterRef = ref();
@@ -485,35 +499,10 @@ const tableEmptyConf = reactive<any>({
   keyword: '',
   isAbnormal: false,
 });
-const isExpand = ref<boolean>(false);
+const isExpand = ref<boolean>(true);
 const isFilter = ref<boolean>(false);
 const curSelectSystemId = ref<string>('*');
-const methodList = ref<any>([
-  {
-    id: 'GET',
-    name: 'GET',
-  },
-  {
-    id: 'POST',
-    name: 'POST',
-  },
-  {
-    id: 'PUT',
-    name: 'PUT',
-  },
-  {
-    id: 'PATCH',
-    name: 'PATCH',
-  },
-  {
-    id: 'DELETE',
-    name: 'DELETE',
-  },
-  {
-    id: '*',
-    name: 'GET/POST',
-  },
-]);
+const methodList = ref<any>(common.methodList);
 const levelList = ref<any>([
   {
     id: 'unlimited',
@@ -618,9 +607,14 @@ const handleSelect = ({ id }: any) => {
 const getComponents = async (loading = false) => {
   isLoading.value = loading;
   try {
-    const res = await this.$store.dispatch('component/getComponents');
-    allData.value = Object.freeze(res.data);
-    displayData.value = res.data;
+    const params = {
+      limit: 10000,
+      offset: 0,
+    };
+
+    const res = await getEsbComponents(params);
+    allData.value = Object.freeze(res);
+    displayData.value = res;
     pagination.count = displayData.value?.length;
     componentList.value = getDataByPage();
     if (curSelectSystemId.value !== '*') {
@@ -662,8 +656,8 @@ const handleSysSelect = (value: any, option: any) => {
 
 const checkNeedNewVersion = async () => {
   try {
-    const res = await this.$store.dispatch('component/checkNeedNewVersion');
-    needNewVersion.value = res.data.need_new_release;
+    const res = await checkEsbNeedNewVersion();
+    needNewVersion.value = res?.need_new_release;
   } catch (e) {
     needNewVersion.value = false;
   }
@@ -671,8 +665,8 @@ const checkNeedNewVersion = async () => {
 
 const getSystemList = async () => {
   try {
-    const res = await this.$store.dispatch('system/getSystems');
-    systemList.value = Object.freeze(res.data);
+    const res = await getSystems();
+    systemList.value = Object.freeze(res);
     // 获取组件是否需要发版本更新
     checkNeedNewVersion();
     // 子组件状态更新
@@ -710,12 +704,12 @@ const handleSubmit = () => {
       delete tempData.config_fields;
     }
     try {
-      const methods = isEdit.value ? 'updateComponent' : 'addComponent';
-      const params = isEdit.value ? {
-        id: componentData.value?.id,
-        data: tempData,
-      } : tempData;
-      await this.$store.dispatch(`component/${methods}`, params);
+      if (!isEdit.value) {
+        await addComponent(tempData);
+      } else {
+        await updateComponent(componentData.value?.id, tempData);
+      }
+
       isSliderShow.value = false;
       getComponents(true);
       getSystemList();
@@ -756,6 +750,7 @@ const handleCreate = () => {
 
 const getDataByPage = (page?: any) => {
   if (!page) {
+    page = 1;
     pagination.current = 1;
   }
   let startIndex = (page - 1) * pagination.limit;
@@ -802,27 +797,25 @@ const handleEdit = async (payload: any) => {
   isSliderShow.value = true;
   detailLoading.value = true;
   try {
-    const res = await this.$store.dispatch('component/getComponentsDetail', {
-      id: componentData.value?.id,
-    });
+    const res = await getComponentsDetail(componentData.value?.id);
     const {
       name,
       description,
       method,
       path,
       timeout,
-    } = res.data;
+    } = res;
     formData.value.description = description;
     formData.value.name = name;
     formData.value.method = method === '' ? '*' : method;
     formData.value.path = path;
     formData.value.timeout = timeout;
-    formData.value.system_id = res.data.system_id;
-    formData.value.component_codename = res.data.component_codename;
-    formData.value.permission_level = res.data.permission_level;
-    formData.value.is_active = res.data.is_active;
-    formData.value.config_fields = res.data.config_fields || [];
-    formData.value.verified_user_required = res.data.verified_user_required;
+    formData.value.system_id = res?.system_id;
+    formData.value.component_codename = res?.component_codename;
+    formData.value.permission_level = res?.permission_level;
+    formData.value.is_active = res?.is_active;
+    formData.value.config_fields = res?.config_fields || [];
+    formData.value.verified_user_required = res?.verified_user_required;
     nextTick(() => {
       initSidebarFormData(formData.value);
     });
@@ -841,9 +834,7 @@ const handleAfterLeave = () => {
 const handleDeleteComponent = async () => {
   deleteDialogConf.loading = true;
   try {
-    await this.$store.dispatch('component/deleteComponentByBatch', {
-      ids: deleteDialogConf.ids,
-    });
+    await deleteComponentByBatch({ ids: deleteDialogConf.ids });
     Message({
       message: t('删除成功'),
       theme: 'success',
@@ -873,8 +864,8 @@ const handleDelete = ({ id }: any) => {
 
 const getStatus = async () => {
   try {
-    const res = await this.$store.dispatch('component/getReleaseStatus');
-    isReleasing.value = res.data.is_releasing;
+    const res = await getReleaseStatus();
+    isReleasing.value = res?.is_releasing;
     if (isReleasing.value) {
       setTimeout(() => {
         getStatus();
@@ -932,8 +923,12 @@ const handleSettingChange = ({ fields, size }: any) => {
 
 const getFeature = async () => {
   try {
-    const res = await this.$store.dispatch('apis/getFeature');
-    syncEsbToApigwEnabled.value = res.data.SYNC_ESB_TO_APIGW_ENABLED;
+    const params = {
+      limit: 10000,
+      offset: 0,
+    };
+    const res = await getFeatures(params);
+    syncEsbToApigwEnabled.value = res?.SYNC_ESB_TO_APIGW_ENABLED;
   } catch (e) {
     console.log(e);
   }

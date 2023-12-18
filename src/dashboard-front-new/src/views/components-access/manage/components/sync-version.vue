@@ -21,8 +21,9 @@
           :data="componentList"
           size="small"
           :pagination="pagination"
+          remote-pagination
           v-bkloading="{ isLoading, opacity: 1 }"
-          @page-change="handlePageChange"
+          @page-value-change="handlePageChange"
           @page-limit-change="handlePageLimitChange"
           @filter-change="handleFilterChange">
           <template #empty>
@@ -92,9 +93,12 @@ import { ref, reactive, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { clearFilter, isTableFilter } from '@/common/util';
+import { useCommon } from '@/store';
+import { getSyncVersion } from '@/http';
 
 const { t } = useI18n();
 const route = useRoute();
+const common = useCommon();
 
 const componentTableRef = ref();
 
@@ -120,7 +124,7 @@ const filterList = ref<any>({});
 
 const id = computed(() => route.query.id);
 const methodFilters = computed(() => {
-  return this.$store.state.options.methodList.map((item: any) => {
+  return common.methodList?.map((item: any) => {
     return {
       value: item.id,
       text: item.id,
@@ -131,12 +135,10 @@ const methodFilters = computed(() => {
 const getComponents = async (loading = false) => {
   isLoading.value = loading;
   try {
-    const res = await this.$store.dispatch('component/getSyncVersion', {
-      id: id.value,
-    });
-    allData.value = Object.freeze(res.data);
-    displayData.value = res.data;
-    displayDataLocal.value = res.data;
+    const res = await getSyncVersion(id.value);
+    allData.value = Object.freeze(res);
+    displayData.value = res;
+    displayDataLocal.value = res;
     pagination.count = displayData.value?.length;
     componentList.value = getDataByPage();
     tableEmptyConf.isAbnormal = false;
@@ -162,6 +164,7 @@ const updateTableEmptyConfig = () => {
 
 const getDataByPage = (page?: number) => {
   if (!page) {
+    page = 1;
     pagination.current = 1;
   }
   let startIndex = (page - 1) * pagination.limit;

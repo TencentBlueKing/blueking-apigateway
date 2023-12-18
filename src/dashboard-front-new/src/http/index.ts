@@ -19,3 +19,4 @@ export * from './sdk';
 export * from './component-api-doc';
 export * from './category';
 export * from './system';
+export * from './components-access';

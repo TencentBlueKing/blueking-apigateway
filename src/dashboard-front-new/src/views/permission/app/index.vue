@@ -2,8 +2,8 @@
   <div class="permission-app-container p20">
     <div class="header mb5">
       <div class="header-btn flex-1 flex-row align-items-center">
-        <span class="mr10" v-bk-tooltips="{ content: t('请选择待续期的权限'), disabled: applySumCount !== 0 }">
-          <bk-button theme="primary" class="mr5" @click="handleBatchApplyPermission" :disabled="applySumCount === 0">
+        <span class="mr10" v-bk-tooltips="{ content: t('请选择待续期的权限'), disabled: selections.length }">
+          <bk-button theme="primary" class="mr5" @click="handleBatchApplyPermission" :disabled="!selections.length">
             {{ t('批量续期') }}
           </bk-button>
         </span>
@@ -31,8 +31,11 @@
         <bk-table
           show-overflow-tooltip
           class="mt15" :data="tableData" :size="'small'" :pagination="pagination"
-          @page-limit-change="handlePageSizeChange" remote-pagination
-          @page-value-change="handlePageChange" @selection-change="handleSelectionChange">
+          remote-pagination
+          @page-limit-change="handlePageSizeChange"
+          @page-value-change="handlePageChange"
+          @selection-change="handleSelectionChange"
+          @select-all="handleSelecAllChange">
           <bk-table-column type="selection" width="60" align="center"></bk-table-column>
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
           <bk-table-column :label="t('资源名称')" prop="resource_name" v-if="dimension === 'resource'"></bk-table-column>
@@ -276,7 +279,6 @@ const resourceList = ref([]);
 const isVisible = ref<boolean>(false);
 const isBatchApplyLoaading = ref<boolean>(false);
 const tableIndex = ref<number>(0);
-const applySumCount = ref<number>(-1);
 const curPermission = ref({ bk_app_code: '', detail: [], id: -1 });
 const dimension = ref<string>('resource');
 const searchQuery = ref<string>('');
@@ -366,6 +368,7 @@ const {
 const {
   selections,
   handleSelectionChange,
+  handleSelecAllChange,
   resetSelections,
 } = useSelection();
 
@@ -405,14 +408,6 @@ watch(
       curAuthData.value.expire_days = null;
     }
   },
-);
-// 监听选择的变化
-watch(
-  () => selections.value,
-  (v: number[]) => {
-    applySumCount.value = v.length;
-  },
-  { immediate: true, deep: true },
 );
 watch(
   () => selections.value,

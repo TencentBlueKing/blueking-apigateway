@@ -34,7 +34,8 @@
           v-bkloading="{ isLoading, opacity: 1 }"
           @select="handlerChange"
           @select-all="handlerAllChange"
-          @page-change="handlePageChange"
+          remote-pagination
+          @page-value-change="handlePageChange"
           @page-limit-change="handlePageLimitChange"
           @filter-change="handleFilterChange">
           <template #empty>
@@ -48,12 +49,12 @@
             </div>
           </template>
 
-          <bk-table-column :label="$t('系统名称')" prop="system_name" :render-header="$renderHeader">
+          <bk-table-column :label="$t('系统名称')" prop="system_name">
             <template #default="{ data }">
               {{data?.system_name || '--'}}
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('组件名称')" prop="component_name" :render-header="$renderHeader">
+          <bk-table-column :label="$t('组件名称')" prop="component_name">
             <template #default="{ data }">
               {{data?.component_name || '--'}}
             </template>
@@ -62,14 +63,13 @@
             :label="$t('组件请求方法')"
             :filters="methodFilters"
             :filter-multiple="true"
-            :render-header="$renderHeader"
             column-key="component_method"
             prop="component_method">
             <template #default="{ data }">
               {{data?.component_method || '--'}}
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('组件请求路径')" prop="component_path" :min-width="200" :render-header="$renderHeader">
+          <bk-table-column :label="$t('组件请求路径')" prop="component_path" :min-width="200">
             <template #default="{ data }">
               {{data?.component_path || '--'}}
             </template>
@@ -86,7 +86,7 @@
               </template>
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('组件ID')" prop="component_id" :render-header="$renderHeader">
+          <bk-table-column :label="$t('组件ID')" prop="component_id">
             <template #default="{ data }">
               {{data?.component_id || '--'}}
             </template>
@@ -95,7 +95,6 @@
             :label="$t('操作类型')" width="150"
             :filters="statusFilters"
             :filter-multiple="true"
-            :render-header="$renderHeader"
             column-key="status"
             prop="status">
             <template #default="{ data }">
@@ -127,7 +126,7 @@
                   <bk-button
                     size="small"
                     class="btn"
-                    @click="$refs.resourcePopconfirm.cancel()">
+                    @click="resourcePopconfirm?.cancel()">
                     {{ $t('取消') }}
                   </bk-button>
                 </div>
@@ -178,9 +177,12 @@ import { ref, reactive, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { clearFilter, isTableFilter } from '@/common/util';
+import { checkSyncComponent, syncReleaseData, getEsbGateway } from '@/http';
+import { useCommon } from '@/store';
 
 const { t } = useI18n();
 const router = useRouter();
+const common = useCommon();
 
 // const systemFilterRef = ref();
 // const form = ref();
@@ -251,32 +253,6 @@ const statusFilters = reactive<any>([
 //     name: t('普通'),
 //   },
 // ]);
-const methodList = reactive<any>([
-  {
-    id: 'GET',
-    name: 'GET',
-  },
-  {
-    id: 'POST',
-    name: 'POST',
-  },
-  {
-    id: 'PUT',
-    name: 'PUT',
-  },
-  {
-    id: 'PATCH',
-    name: 'PATCH',
-  },
-  {
-    id: 'DELETE',
-    name: 'DELETE',
-  },
-  {
-    id: '*',
-    name: 'GET/POST',
-  },
-]);
 
 const createNum = computed(() => {
   const results = allData.value?.filter((item: any) => !item?.resource_id);
@@ -302,7 +278,7 @@ const deleteInfo = computed(() => t(`删除 <strong style="color: #EA3536;"> ${d
 const confirmIsLoading = computed(() => isLoading.value);
 
 const methodFilters = computed(() => {
-  return methodList?.map((item: any) => {
+  return common.methodList?.map((item: any) => {
     return {
       value: item.id,
       text: item.id,
@@ -312,6 +288,7 @@ const methodFilters = computed(() => {
 
 const getDataByPage = (page?: any) => {
   if (!page) {
+    page = 1;
     pagination.current = 1;
   }
   let startIndex = (page - 1) * pagination.limit;
@@ -329,9 +306,9 @@ const getDataByPage = (page?: any) => {
 const getComponents = async (loading = false) => {
   isLoading.value = loading;
   try {
-    const res = await this.$store.dispatch('component/checkSyncComponent');
-    allData.value = Object.freeze(res.data);
-    displayData.value = res.data;
+    const res = await checkSyncComponent();
+    allData.value = Object.freeze(res);
+    displayData.value = res;
     pagination.count = displayData.value?.length;
     componentList.value = getDataByPage();
     tableEmptyConf.isAbnormal = false;
@@ -411,7 +388,7 @@ const confirm = () => {
 
 const checkReleaseData = async () => {
   try {
-    await this.$store.dispatch('component/ayncReleaseData');
+    await syncReleaseData();
     router.push({
       name: 'apigwAccess',
     });
@@ -498,10 +475,10 @@ const handleFilterChange = (filters: any) => {
   }
 };
 
-const getEsbGateway = async () => {
+const getEsbGatewayData = async () => {
   try {
-    const res = await this.$store.dispatch('system/getEsbGateway');
-    esb.value = res.data;
+    const res = await getEsbGateway();
+    esb.value = res;
   } catch (e) {
     console.log(e);
   }
@@ -540,7 +517,7 @@ const updateTableEmptyConfig = () => {
 
 const init = () => {
   getComponents();
-  getEsbGateway();
+  getEsbGatewayData();
 };
 
 init();

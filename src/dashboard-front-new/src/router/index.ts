@@ -513,6 +513,7 @@ const routes: RouteRecordRaw[] = [
           title: '同步组件配置到 API 网关',
           matchRoute: 'syncApigwAccess',
           topMenu: 'componentsMain',
+          showBackIcon: true,
         },
       },
       {
@@ -523,6 +524,7 @@ const routes: RouteRecordRaw[] = [
           title: '组件同步历史',
           matchRoute: 'syncHistory',
           topMenu: 'componentsMain',
+          showBackIcon: true,
         },
       },
       {
@@ -533,6 +535,7 @@ const routes: RouteRecordRaw[] = [
           title: '组件同步版本',
           matchRoute: 'syncVersion',
           topMenu: 'componentsMain',
+          showBackIcon: true,
         },
       },
       {

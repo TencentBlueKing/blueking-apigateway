@@ -20,10 +20,10 @@
             </template>
             <template v-else>
               <div class="main">
-                <bk-alert
+                <!-- <bk-alert
                   theme="info"
                   :title="$t('尚未发布')"
-                  class="mt15 mb15" closable />
+                  class="mt15 mb15" closable /> -->
                 <!-- <bk-alert
                   v-else
                   theme="info"
@@ -35,7 +35,8 @@
                   <bk-form-item
                     property="version"
                     :label="t('版本号')">
-                    <bk-input v-model="formData.version" />
+                    <bk-input v-model="formData.version" :placeholder="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')" />
+                    <span class="common-form-tips">{{ t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}</span>
                     <p>
                       <span>
                         {{ $t("新增") }}
