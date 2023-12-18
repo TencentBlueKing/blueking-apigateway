@@ -200,7 +200,7 @@ onMounted(() => {
       display: none;
 
       &:hover {
-        color: #3a84ff;
+        color: #1768ef;
       }
     }
   }
