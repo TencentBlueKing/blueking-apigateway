@@ -18,7 +18,7 @@
               <div v-if="basicInfoData.status > 0">
                 <!-- <bk-tag ext-cls="vip">{{ t('专享') }}</bk-tag>? -->
                 <bk-tag ext-cls="enabling">
-                  <i class="apigateway-icon icon-ag-bar-chart" />
+                  <i class="apigateway-icon icon-ag-yiqiyong" />
                   {{ t('启用中') }}
                 </bk-tag>
               </div>
@@ -37,28 +37,32 @@
               @on-change="handleDescriptionChange" />
           </div>
           <div class="header-info-button">
-            <bk-button @click="handleOperate('edit')" class="mr10">
+            <bk-button @click="handleOperate('edit')" class="operate-btn">
               {{ t('编辑') }}
             </bk-button>
             <div>
               <bk-button
                 v-if="basicInfoData.status > 0" @click="handleOperate('enable')"
                 theme="default"
-                class="deactivate-btn mr10"
+                class="deactivate-btn operate-btn"
               >
                 {{ t('停用') }}
               </bk-button>
-              <bk-button v-else theme="primary" @click="handleOperate('deactivate')" class="mr10">
+              <bk-button v-else theme="primary" @click="handleOperate('deactivate')" class="operate-btn">
                 {{ t('立即启用') }}
               </bk-button>
             </div>
             <template v-if="basicInfoData.status > 0">
               <bk-popover :content="$t('请先停用才可删除')">
-                <bk-button theme="default" class="mr5" :disabled="basicInfoData.status > 0"> {{ t('删除') }} </bk-button>
+                <bk-button theme="default" class="operate-btn" :disabled="basicInfoData.status > 0">
+                  {{ t('删除') }}
+                </bk-button>
               </bk-popover>
             </template>
             <template v-else>
-              <bk-button theme="default" @click="handleOperate('delete')"> {{ t('删除') }} </bk-button>
+              <bk-button theme="default" @click="handleOperate('delete')" class="operate-btn">
+                {{ t('删除') }}
+              </bk-button>
             </template>
           </div>
         </div>
@@ -70,7 +74,13 @@
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('是否公开')}：` }}</div>
               <div class="value">
-                <bk-switcher v-model="basicInfoData.is_public" theme="primary" @change="handleChangePublic" />
+                <bk-switcher
+                  v-model="basicInfoData.is_public"
+                  theme="primary"
+                  size="small"
+                  style="min-width: 28px;"
+                  @change="handleChangePublic"
+                />
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -160,7 +170,8 @@
       :loading="delApigwDialog.loading"
       @closed="delApigwDialog.isShow = false">
       <div class="ps-form">
-        <div class="form-tips" v-html="delTips"></div>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <div class="form-tips" v-html="delTips" />
         <div class="mt15">
           <bk-input v-model="formRemoveConfirmApigw"></bk-input>
         </div>
@@ -465,9 +476,14 @@ const handleDownload = () => {
   URL.revokeObjectURL(blob);
 };
 
-const handleDescriptionChange = async (payload: any) => {
-  const { description } = payload;
-  await editGateWays(apigwId.value, basicInfoData.value);
+const handleDescriptionChange = async ({ description }: Record<string, string>) => {
+  const params = {
+    ...basicInfoData.value,
+    ...{
+      description,
+    },
+  };
+  await editGateWays(apigwId.value, params);
   basicInfoData.value = Object.assign(basicInfoData.value, { description });
   Message({
     message: t('编辑成功'),
@@ -538,7 +554,7 @@ watch(
 
         .header-info-tag {
           display: flex;
-          margin-left: 5px;
+          margin-left: 8px;
 
           .website {
             background-color: #EDF4FF;
@@ -554,16 +570,33 @@ watch(
           .enabling {
             background-color: #E4FAF0;
             color: #14A568;
+            margin: 0;
           }
 
           .deactivated {
             background-color: #F0F1F5;
             color: #63656E;
+            margin: 0;
+          }
+
+          .icon-ag-yiqiyong,
+          .icon-ag-minus-circle {
+            font-size: 14px;
           }
         }
       }
+
+      .header-info-description {
+        margin-top: 8px;
+        margin-bottom: 23px;
+      }
       .header-info-button {
         display: flex;
+
+        .operate-btn {
+          min-width: 88px;
+          margin-right: 8px;
+        }
 
         .deactivate-btn {
           &:hover {
@@ -599,8 +632,9 @@ watch(
 
         &-item {
           display: flex;
+          align-items: center;
           width: calc(100% - 200px);
-          margin-bottom: 8px;
+          line-height: 32px;
 
           .label {
             color: #63656E;
@@ -608,6 +642,7 @@ watch(
 
           .value {
             display: flex;
+            align-items: center;
             vertical-align: middle;
             margin-left: 8px;
 
@@ -630,10 +665,15 @@ watch(
             .apigateway-icon {
               font-size: 16px;
               color: #979BA5;
-
               &:hover {
                 color: #3A84FF;
                 cursor: pointer;
+              }
+              &.icon-ag-lock-fill1 {
+                &:hover {
+                  color: #979BA5;
+                  cursor: pointer;
+                }
               }
             }
 

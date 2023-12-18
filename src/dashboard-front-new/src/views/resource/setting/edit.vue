@@ -6,8 +6,8 @@
       use-card-theme
     >
       <bk-collapse-panel name="baseInfo">
-        <span class="panel-title">{{ t('基础信息') }}</span>
         <template #content>
+          <div class="panel-title pt5 pb5">{{ t('基础信息') }}</div>
           <div class="panel-content">
             <BaseInfo ref="baseInfoRef" :detail="resourceDetail" :is-clone="isClone"></BaseInfo>
           </div>
@@ -15,8 +15,8 @@
       </bk-collapse-panel>
 
       <bk-collapse-panel name="frontConfig">
-        <span class="panel-title">{{ t('前端配置') }}</span>
         <template #content>
+          <div class="panel-title pt5 pb5">{{ t('前端配置') }}</div>
           <div class="panel-content">
             <FrontConfig ref="frontConfigRef" :detail="resourceDetail" :is-clone="isClone"></FrontConfig>
           </div>
@@ -24,8 +24,8 @@
       </bk-collapse-panel>
 
       <bk-collapse-panel name="backConfig">
-        <span class="panel-title">{{ t('后端配置') }}</span>
         <template #content>
+          <div class="panel-title pt5 pb5">{{ t('后端配置') }}</div>
           <div class="panel-content">
             <BackConfig ref="backConfigRef" :detail="resourceDetail"></BackConfig>
           </div>
@@ -143,8 +143,11 @@ init();
     :deep(.collapse-cls){
       .bk-collapse-item{
         background: #fff;
+        .bk-collapse-header{
+          display: none;
+        }
         .panel-title{
-            color: #63656e;
+            color: #323339;
             font-weight: 700;
         }
         .panel-content{

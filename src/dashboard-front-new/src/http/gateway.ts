@@ -6,6 +6,9 @@ const { BK_DASHBOARD_URL, CREATE_CHAT_API, SEND_CHAT_API } = window;
 // 获取网关列表
 export const getGatewaysList = (data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/?${json2Query(data)}`);
 
+// 获取网关详情
+export const getGatewaysDetail = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/`);
+
 // 新建网关
 export const createGateway = (data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/`, data);
 

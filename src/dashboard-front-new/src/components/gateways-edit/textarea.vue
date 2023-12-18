@@ -184,17 +184,18 @@ onMounted(() => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    height: 26px;
+    line-height: 26px;
   }
 
   .edit-action-box {
     display: flex;
     align-items: center;
     margin-right: auto;
-    height: 40px;
-    line-height: 40px;
 
     .icon-ag-edit-small {
       font-size: 26px;
+      color: #979BA5;
       cursor: pointer;
       display: none;
 
@@ -205,7 +206,7 @@ onMounted(() => {
   }
 
   .edit-mode-content {
-    padding: 20px 0;
+    // padding: 20px 0;
     .edit-input {
       width: 100%;
     }

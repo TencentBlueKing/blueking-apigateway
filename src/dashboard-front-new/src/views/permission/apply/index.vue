@@ -1,8 +1,8 @@
 <template>
   <div class="permission-apply-container p20">
     <div class="header flex-row justify-content-between mb5">
-      <span v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: applySumCount !== 0 }">
-        <bk-button theme="primary" :disabled="applySumCount === 0" @click="handleBatchApply">
+      <span v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: selections.length }">
+        <bk-button theme="primary" :disabled="!selections.length" @click="handleBatchApply">
           {{ t('批量审批') }}
         </bk-button>
       </span>
@@ -34,6 +34,7 @@
           :pagination="pagination"
           @page-limit-change="handlePageSizeChange"
           @page-value-change="handlePageChange"
+          @select-all="handleSelecAllChange"
           @selection-change="handleSelectionChange"
           @row-click="handleRowClick"
           @expand-change="handlePageExpandChange"
@@ -212,8 +213,6 @@ const batchForm = ref(null);
 const approveForm = ref(null);
 const permissionTable = ref(null);
 const headers = ref([]);
-// const timer = ref(null);
-const applySumCount = ref<number>(-1);
 // const resourceList = ref([]);
 const batchApplyDialogConf = reactive({
   isLoading: false,
@@ -270,6 +269,7 @@ const {
 const {
   selections,
   handleSelectionChange,
+  handleSelecAllChange,
   resetSelections,
 } = useSelection();
 
@@ -351,14 +351,7 @@ watch(
   },
   {  deep: true },
 );
-// 监听多选的变化
-watch(
-  () => selections.value,
-  (v: number[]) => {
-    applySumCount.value = v.length;
-  },
-  { immediate: true, deep: true },
-);
+
 // 监听总数量的变化
 watch(
   () => pagination.value,

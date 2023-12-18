@@ -1,7 +1,7 @@
 <template>
-  <div class="resource-container p20">
+  <div class="resource-container pt10 pl20 pr20">
     <bk-alert
-      v-if="versionConfigs.needNewVersion"
+      v-if="versionConfigs.needNewVersion && !isDetail"
       theme="warning"
       :title="versionConfigs.versionMessage"
     />
@@ -39,17 +39,28 @@
       <div class="flex-1 flex-row justify-content-end">
         <!-- <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input> -->
         <bk-search-select
+          v-if="!isDetail"
           v-model="searchValue"
           :data="searchData"
           unique-select
-          style="width: 450px"
-          placeholder="请选择或输入"
+          style="width: 450px; background:#fff"
+          :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
           :value-split-code="'+'"
         />
       </div>
     </div>
+    <bk-search-select
+      v-if="isDetail"
+      v-model="searchValue"
+      :data="searchData"
+      unique-select
+      style="width: 400px; background:#fff"
+      class="mb10"
+      placeholder="请输入资源名称或选择条件搜索, 按Enter确认"
+      :value-split-code="'+'"
+    />
     <div class="flex-row resource-content">
-      <div class="left-wraper" :style="{ width: isDetail ? isShowLeft ? '370px' : '0' : '100%' }">
+      <div class="left-wraper" :style="{ width: isDetail ? isShowLeft ? '400px' : '0' : '100%' }">
         <bk-loading
           :loading="isLoading"
         >
@@ -583,6 +594,7 @@ const handleShowInfo = (id: number) => {
     isComponentLoading.value = true;
     active.value = 'resourceInfo';
   } else {
+    pagination.value.small = true;
     isDetail.value = true;
   }
 };
@@ -591,6 +603,7 @@ const handleShowInfo = (id: number) => {
 const handleShowList = () => {
   isDetail.value = false;
   isShowLeft.value = true;
+  pagination.value.small = false;
 };
 
 // 处理批量编辑或删除
@@ -722,7 +735,7 @@ const handleShowVersion = async () => {
     versionConfigs.versionMessage = res.msg;
   } catch (error: any) {
     versionConfigs.needNewVersion = false;
-    versionConfigs.versionMessage = error.msg;
+    versionConfigs.versionMessage = error?.msg;
   }
 };
 
@@ -738,7 +751,15 @@ const handleEditLabel = (data: any) => {
 };
 
 // 生成版本功能
-const handleCreateResourceVersion = () => {
+const handleCreateResourceVersion = async () => {
+  if (!versionConfigs.needNewVersion) {
+    Message({
+      message: t('资源及资源文档无变更, 不需要生成新版本'),
+      theme: 'error',
+    });
+    return;
+  }
+
   versionSidesliderRef.value.showReleaseSideslider();
 };
 
@@ -824,6 +845,9 @@ watch(
 watch(
   () => searchValue.value,
   (v: any[]) => {
+    filterData.value = {
+      keyword: '',
+    };
     if (v.length) {
       v.forEach((e: any) => {
         if (e.id === e.name) {
@@ -832,8 +856,6 @@ watch(
           filterData.value[e.id] = e.values[0].id;
         }
       });
-    } else {
-      getList();
     }
   },
 );
@@ -854,7 +876,7 @@ onMounted(() => {
     // max-height: 280px;
   }
   .resource-content{
-    height: calc(100% - 90px);
+    height: calc(100% - 68px);
     min-height: 600px;
     .left-wraper{
       position: relative;
@@ -928,6 +950,11 @@ onMounted(() => {
     .right-wraper{
       background: #fff;
       transition: all .15s;
+      position: absolute;
+      top: 51px;
+      left: 420px;
+      bottom: 0;
+      right: 0;
       .close-btn{
         align-items: center;
         border-radius: 50%;

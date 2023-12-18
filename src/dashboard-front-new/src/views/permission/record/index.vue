@@ -29,7 +29,7 @@
           @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange"
           row-hover="auto">
           <bk-table-column type="expand" width="30" class="ag-expand-cell">
-            <template #expandRow="row">
+            <!-- <template #expandRow="row">
               <div class="h60" v-if="row.grant_dimension === 'api'">
                 <bk-alert theme="error" :title="t('网关下所有资源的权限，包括未来新创建的资源')" />
                 {{ row.id }}
@@ -56,7 +56,7 @@
                   </template>
                 </bk-table-column>
               </bk-table>
-            </template>
+            </template> -->
           </bk-table-column>
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
           <bk-table-column :label="t('授权维度')" prop="grant_dimension_display">

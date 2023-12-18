@@ -589,7 +589,7 @@ const getApigwVersions = async () => {
   try {
     const res = await getResourceVersionsList(apigwId.value, pageParams);
     res.results.forEach((item: any) => {
-      item.resource_version_display = `${item.version}(${item.comment})`;
+      item.resource_version_display = item.comment ? `${item.version}(${item.comment})` : item.version;
       item.stage_text = item.released_stages.map((item: any) => {
         return item.name;
       });

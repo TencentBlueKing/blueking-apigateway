@@ -9,6 +9,7 @@ const initPagination: IPagination = {
   count: 0,
 };
 const pagination = ref<IPagination>(initPagination);
+const dataList = ref<any[]>([]);
 
 export const useGetApiList = (filter: any) => {
   const getGatewaysListData = async () => {
@@ -19,7 +20,8 @@ export const useGetApiList = (filter: any) => {
         ...filter.value,
       };
       const res = await getGatewaysList(parmas);
-      return res.results;
+      dataList.value = res.results;
+      return dataList.value;
     } catch (error) {}
   };
 
@@ -34,5 +36,6 @@ export const useGetApiList = (filter: any) => {
 
   return {
     getGatewaysListData,
+    dataList,
   };
 };
