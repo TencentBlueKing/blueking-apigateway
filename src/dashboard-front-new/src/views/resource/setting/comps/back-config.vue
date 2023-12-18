@@ -241,6 +241,7 @@ const renderTimeOutLabel = () => {
           placement='bottom-start'
           trigger='manual'
           title={t('批量修改超时时间')}
+          extCls='back-config-timeout-popover'
           is-show={isShowPopConfirm.value}
           content={
             <div class='back-config-timeout-wrapper'>
@@ -256,7 +257,7 @@ const renderTimeOutLabel = () => {
                     suffix='s'
                   />
                 </div>
-                <div class='back-config-timeout-tip'>{t('最大300s')}</div>
+                <div class='back-config-timeout-tip'>{t('最大 300s')}</div>
               </div>
               {
                 isTimeEmpty.value ? <div  class='time-empty-error'>{t('超时时间不能为空')}{isTimeEmpty.value}</div> : ''
@@ -402,7 +403,7 @@ defineExpose({
     display: flex;
     align-items: center;
     .back-config-timeout-input {
-      min-width: 170px;
+      min-width: 182px;
       display: flex;
       align-items: center;
       .bk-input {
@@ -421,6 +422,9 @@ defineExpose({
   .time-empty-error {
     color: #ea3636;
   }
+}
+.back-config-timeout-popover {
+  padding: 16px 16px !important;
 }
 </style>
 
