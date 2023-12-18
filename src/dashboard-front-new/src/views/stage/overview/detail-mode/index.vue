@@ -139,7 +139,11 @@
       <edit-stage-sideslider ref="stageSidesliderRef" />
 
       <!-- 发布资源至环境 -->
-      <release-sideslider :current-assets="stageData" ref="releaseSidesliderRef" @release-success="handleReleaseSuccess" />
+      <release-sideslider
+        :current-assets="stageData"
+        ref="releaseSidesliderRef"
+        @release-success="handleReleaseSuccess"
+      />
     </div>
   </div>
 </template>

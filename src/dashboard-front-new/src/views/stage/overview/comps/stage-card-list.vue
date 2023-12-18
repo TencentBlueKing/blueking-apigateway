@@ -1,12 +1,31 @@
 <template>
   <div class="card-list">
-    <div class="card-item" v-for="(stageData, index) in stageList" :key="index" @click="handleToDetail(stageData)">
+    <div class="card-item" v-for="(stageData, index) in stageList" :key="index">
       <div class="title">
-        <spinner v-if="stageData.release.status === 'doing'" fill="#3A84FF" />
-        <span v-else :class="['dot', stageData.release.status]"></span>
-        {{ stageData.name }}
+        <div class="title-lf">
+          <spinner v-if="stageData.release.status === 'doing'" fill="#3A84FF" />
+          <span v-else :class="['dot', stageData.release.status]"></span>
+          {{ stageData.name }}
+        </div>
+        <div class="title-rg">
+          <bk-button
+            theme="primary"
+            size="small"
+            @click="handleRelease(stageData)"
+          >
+            发布资源
+          </bk-button>
+          <bk-button
+            class="ml10"
+            size="small"
+            @click="handleStageUnlist(stageData.id)"
+          >
+            下架
+          </bk-button>
+
+        </div>
       </div>
-      <div class="content">
+      <div class="content" @click="handleToDetail(stageData)">
         <div class="apigw-form-item">
           <div class="label">{{ `${t('访问地址')}：` }}</div>
           <div class="value url">
@@ -49,21 +68,39 @@
 
     <!-- 环境侧边栏 -->
     <edit-stage-sideslider ref="stageSidesliderRef" />
+
+    <!-- 发布资源至环境 -->
+    <release-sideslider
+      :current-assets="currentStage"
+      ref="releaseSidesliderRef"
+      @release-success="handleReleaseSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue';
+import { ref, toRefs, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { copy } from '@/common/util';
 import editStageSideslider from './edit-stage-sideslider.vue';
+import releaseSideslider from '../comps/release-sideslider.vue';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties } from '@/hooks';
 import { useCommon } from '@/store';
+import { Message, InfoBox } from 'bkui-vue';
+import { removalStage } from '@/http';
 import { Spinner } from 'bkui-vue/lib/icon';
+import { useRoute } from 'vue-router';
 
 const common = useCommon();
 const { t } = useI18n();
+const route = useRoute();
+
+// 网关id
+const apigwId = computed(() => +route.params.id);
+
+const releaseSidesliderRef = ref();
+const currentStage = ref<any>({});
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -90,6 +127,41 @@ const handleToDetail = (data: any) => {
   //     stage: data.name,
   //   }
   // });
+};
+
+// 发布资源
+const handleRelease = (stage: any) => {
+  currentStage.value = stage;
+  releaseSidesliderRef.value?.showReleaseSideslider();
+};
+
+// 发布成功
+const handleReleaseSuccess = async () => {
+  await mitt.emit('get-stage-list');
+};
+
+// 下架环境
+const handleStageUnlist = async (id: number) => {
+  InfoBox({
+    title: t('确认下架吗？'),
+    onConfirm: async () => {
+      const data = {
+        status: 0,
+      };
+      try {
+        await removalStage(apigwId.value, id, data);
+        Message({
+          message: t('下架成功'),
+          theme: 'success',
+        });
+        // 获取网关列表
+        await mitt.emit('get-stage-list');
+        // 开启loading
+      } catch (error) {
+        console.error(error);
+      }
+    },
+  });
 };
 
 // 访问地址
@@ -148,16 +220,20 @@ const handleAddStage = () => {
   cursor: pointer;
 
   .title {
-    height: 52px;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    font-size: 14px;
-    font-weight: 700;
-    color: #313238;
+    height: 52px;
     border-bottom: 1px solid #DCDEE5;
-
-    span {
-      margin-right: 8px;
+    .title-lf {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #313238;
+      span {
+        margin-right: 8px;
+      }
     }
   }
 
