@@ -16,12 +16,14 @@
                   <p
                     class="link"
                     v-overflow-title
+                    v-bk-tooltips="{ content: getStageAddress(stageData.name) }"
                   >
-                    --
+                    {{ getStageAddress(stageData.name) || '--' }}
                   </p>
                   <i
                     class="apigateway-icon icon-ag-copy-info"
-                    @click.self.stop="copy('--')"
+                    v-if="getStageAddress(stageData.name)"
+                    @click.self.stop="copy(getStageAddress(stageData.name))"
                   ></i>
                 </div>
               </div>
@@ -147,10 +149,11 @@ import { copy } from '@/common/util';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
-import { useStage } from '@/store';
+import { useStage, useCommon } from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import stageTopBar from '@/components/stage-top-bar.vue';
+import { useGetGlobalProperties } from '@/hooks';
 import { deleteStage, removalStage } from '@/http';
 import { Message, InfoBox } from 'bkui-vue';
 import mitt from '@/common/event-bus';
@@ -159,6 +162,11 @@ const { t } = useI18n();
 const stageStore = useStage();
 const route = useRoute();
 const router = useRouter();
+const common = useCommon();
+
+// 全局变量
+const globalProperties = useGetGlobalProperties();
+const { GLOBAL_CONFIG } = globalProperties;
 
 const releaseSidesliderRef = ref(null);
 const stageSidesliderRef = ref(null);
@@ -257,12 +265,13 @@ const handleStageUnlist = async () => {
 
 // 删除环境
 const handleStageDelete = async () => {
+  if (stageData.value.status === 1) {
+    return;
+  }
+
   InfoBox({
     title: t('确认删除吗？'),
     onConfirm: async () => {
-      if (stageData.value.status === 1) {
-        return;
-      }
       try {
         await deleteStage(apigwId, stageData.value.id);
         Message({
@@ -284,6 +293,22 @@ const handleStageDelete = async () => {
 // 编辑环境
 const handleEditStage = () => {
   stageSidesliderRef.value.handleShowSideslider('edit');
+};
+
+// 访问地址
+const getStageAddress = (name: string) => {
+  const keys: any = {
+    api_name: common.apigwName?.name,
+    stage_name: name,
+    resource_path: '',
+  };
+
+  let url = GLOBAL_CONFIG.STAGE_DOMAIN;
+  for (const name in keys) {
+    const reg = new RegExp(`{${name}}`);
+    url = url?.replace(reg, keys[name]);
+  }
+  return url;
 };
 </script>
 

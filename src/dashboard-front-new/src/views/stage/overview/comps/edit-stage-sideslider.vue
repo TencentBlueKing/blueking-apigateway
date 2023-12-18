@@ -3,7 +3,7 @@
     <bk-sideslider
       v-model:isShow="isShow"
       :title="isAdd ? t('新建环境') : t('编辑环境')"
-      quick-close
+      :quick-close="false"
       width="960"
       ext-cls="stage-sideslider-cls"
       @hidden="closeSideslider"
@@ -67,7 +67,7 @@
               v-for="(backend, backendIndex) in curStageData.backends"
               :key="backend.name"
             >
-              <div class="title">
+              <div class="title" v-if="backendIndex === 0">
                 <i class="apigateway-icon icon-ag-down-shape"></i>
                 {{ t('后端服务配置') }}
               </div>
@@ -233,17 +233,19 @@ const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 
 // 默认值
-const defaultConfig = {
-  type: 'node',
-  timeout: 30,
-  loadbalance: 'weighted-roundrobin',
-  hosts: [
-    {
-      scheme: 'http',
-      host: '',
-      weight: 100,
-    },
-  ],
+const defaultConfig = () => {
+  return {
+    type: 'node',
+    timeout: 30,
+    loadbalance: 'weighted-roundrobin',
+    hosts: [
+      {
+        scheme: 'http',
+        host: '',
+        weight: 100,
+      },
+    ],
+  };
 };
 
 const curStageData = ref({
@@ -252,7 +254,7 @@ const curStageData = ref({
   backends: [
     {
       name: '',
-      config: defaultConfig,
+      config: defaultConfig(),
     },
   ],
 });
@@ -274,8 +276,8 @@ const schemeList = [{ value: 'http' }, { value: 'https' }];
 
 // 访问地址
 const stageAddress = computed(() => {
-  const keys = {
-    api_name: common.apigwName,
+  const keys: any = {
+    api_name: common.apigwName?.name,
     stage_name: curStageData.value.name,
     resource_path: '',
   };
@@ -365,7 +367,7 @@ const addInit = async () => {
     return {
       id: item.id,
       name: item.name,
-      config: defaultConfig,
+      config: defaultConfig(),
     };
   });
   isDialogLoading.value = false;
@@ -400,7 +402,7 @@ const closeSideslider = () => {
     backends: [
       {
         name: '',
-        config: defaultConfig,
+        config: defaultConfig(),
       },
     ],
   };

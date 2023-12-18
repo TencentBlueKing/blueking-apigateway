@@ -2,15 +2,24 @@
   <div class="card-list">
     <div class="card-item" v-for="(stageData, index) in stageList" :key="index" @click="handleToDetail(stageData)">
       <div class="title">
-        <span :class="['dot', stageData.release.status]"></span>
+        <spinner v-if="stageData.release.status === 'doing'" fill="#3A84FF" />
+        <span v-else :class="['dot', stageData.release.status]"></span>
         {{ stageData.name }}
       </div>
       <div class="content">
         <div class="apigw-form-item">
           <div class="label">{{ `${t('访问地址')}：` }}</div>
           <div class="value url">
-            <p class="link">--</p>
-            <i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy('--')"></i>
+            <p
+              class="link"
+              v-bk-tooltips="{ content: getStageAddress(stageData.name) }">
+              {{ getStageAddress(stageData.name) || '--' }}
+            </p>
+            <i
+              class="apigateway-icon icon-ag-copy-info"
+              v-if="getStageAddress(stageData.name)"
+              @click.self.stop="copy(getStageAddress(stageData.name))">
+            </i>
           </div>
         </div>
         <div class="apigw-form-item">
@@ -49,7 +58,16 @@ import { useI18n } from 'vue-i18n';
 import { copy } from '@/common/util';
 import editStageSideslider from './edit-stage-sideslider.vue';
 import mitt from '@/common/event-bus';
+import { useGetGlobalProperties } from '@/hooks';
+import { useCommon } from '@/store';
+import { Spinner } from 'bkui-vue/lib/icon';
+
+const common = useCommon();
 const { t } = useI18n();
+
+// 全局变量
+const globalProperties = useGetGlobalProperties();
+const { GLOBAL_CONFIG } = globalProperties;
 
 const props = defineProps<{
   stageList: any[];
@@ -72,6 +90,22 @@ const handleToDetail = (data: any) => {
   //     stage: data.name,
   //   }
   // });
+};
+
+// 访问地址
+const getStageAddress = (name: string) => {
+  const keys: any = {
+    api_name: common.apigwName?.name,
+    stage_name: name,
+    resource_path: '',
+  };
+
+  let url = GLOBAL_CONFIG.STAGE_DOMAIN;
+  for (const name in keys) {
+    const reg = new RegExp(`{${name}}`);
+    url = url?.replace(reg, keys[name]);
+  }
+  return url;
 };
 
 // 新建环境
@@ -205,14 +239,20 @@ const handleAddStage = () => {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #E5F6EA;
 
     &.success {
       border: 1px solid #3FC06D;
+      background: #E5F6EA;
     }
 
     &.unreleased {
-      border: 1px solid #3FC06D;
+      border: 1px solid #C4C6CC;
+      background: #F0F1F5;
+    }
+
+    &.failure {
+      border: 1px solid #EA3636;
+      background: #FFE6E6;
     }
   }
 }</style>
