@@ -32,6 +32,7 @@
                     <bk-input
                       :placeholder="t('请输入 2-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头')"
                       v-model="curStageData.name"
+                      :disabled="!isAdd"
                     ></bk-input>
                     <p
                       slot="tip"
@@ -110,7 +111,7 @@
                       >
                         <div class="host-item mb10">
                           <bk-input
-                            :placeholder="$t('格式: http(s)://host:port')"
+                            :placeholder="$t('格式: host:port')"
                             v-model="hostItem.host"
                             :key="backend.config.loadbalance"
                           >
@@ -152,7 +153,11 @@
                           <i
                             class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
                             :class="{ disabled: backend.config.hosts.length < 2 }"
-                            @click="handleDeleteServiceAddress(backend.name, index)"
+                            @click="
+                              backend.config.hosts.length < 2 ?
+                                ''
+                                :
+                                handleDeleteServiceAddress(backend.name, index)"
                           ></i>
                         </div>
                       </bk-form-item>
@@ -168,9 +173,8 @@
                         <bk-input
                           type="number"
                           :min="1"
-                          :show-controls="false"
+                          :max="300"
                           v-model="backend.config.timeout"
-                          class="time-input"
                         >
                           <template #suffix>
                             <div class="group-text group-text-style">{{ $t('秒') }}</div>
@@ -602,8 +606,10 @@ defineExpose({
     }
   }
 
-  :deep(.bk-input--number-control) {
-    display: none;
+  .weights-input {
+    :deep(.bk-input--number-control) {
+      display: none;
+    }
   }
 }
 
