@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="tsx">
-import { ref, defineExpose, watch, onMounted } from 'vue';
+import { ref, unref, defineExpose, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
 import { useCommon } from '../../../../store';
@@ -161,6 +161,10 @@ const servicesConfigs = ref([]);
 const servicesConfigsStorage = ref([]);
 // 校验列表
 const servicesCheckData = ref([]);
+const popoverConfirmRef = ref();
+const timeOutValue = ref('');
+const isShowPopConfirm = ref(false);
+const isTimeEmpty = ref(false);
 // 全局变量
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
@@ -179,12 +183,6 @@ const rules = {
     },
   ],
 };
-
-const isShowPopConfirm = ref(false);
-
-const isTimeEmpty = ref(false);
-
-const timeOutValue = ref('');
 
 const handleTimeOutTotal = (value: any[]) => {
   backConfigData.value.config.timeout = value.reduce((curr,next) => {
@@ -223,8 +221,21 @@ const handleCancelTime = () => {
 }
 
 const handleTimeOutInput = (value:string) => {
-  timeOutValue.value = value.replace(/[^\d]/g,'');
+  value = value.replace(/\D/g, '')
+  if(Number(value) > 300) {
+    value = '300';
+  }
+  timeOutValue.value = value.replace(/\D/g, '');
   isTimeEmpty.value = !value;
+}
+
+const handleClickOutSide = (e:any) => {
+  if (
+    isShowPopConfirm.value &&
+    !unref(popoverConfirmRef).content.el.contains(e.target)
+  ) {
+    handleCancelTime();
+  }
 }
 
 const renderTimeOutLabel = () => {
@@ -234,8 +245,8 @@ const renderTimeOutLabel = () => {
         <span>{t('超时时间')}</span>
         <bk-pop-confirm
           width='280'
-          placement='bottom-start'
           trigger='manual'
+          ref={popoverConfirmRef}
           title={t('批量修改超时时间')}
           extCls='back-config-timeout-popover'
           is-show={isShowPopConfirm.value}
@@ -245,11 +256,10 @@ const renderTimeOutLabel = () => {
                 <div class='back-config-timeout-input'>
                   <bk-input 
                     v-model={timeOutValue.value}
-                    type="number"
-                    min={0}
-                    max={300}
+                    maxlength={3}
                     placeholder={t('请输入超时时间')}
                     onInput={(value:string) => {handleTimeOutInput(value)}}
+                    nativeOnKeypress={(value:string) => { value = value.replace(/\d/g, '') }}
                     suffix='s'
                   />
                 </div>
@@ -273,6 +283,7 @@ const renderTimeOutLabel = () => {
               )
             }}
             onClick={() => handleShowPopover()}
+            v-clickOutSide={(e:any) => handleClickOutSide(e)}
           />
         </bk-pop-confirm>
         <i
