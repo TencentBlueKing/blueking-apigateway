@@ -223,11 +223,7 @@ const handleCancelTime = () => {
 }
 
 const handleTimeOutInput = (value:string) => {
-  value = value.replace(/[^\d]/g,'')
-  if(Number(value)<=0){
-    value = '';
-  } 
-  timeOutValue.value = value;
+  timeOutValue.value = value.replace(/[^\d]/g,'');
   isTimeEmpty.value = !value;
 }
 
