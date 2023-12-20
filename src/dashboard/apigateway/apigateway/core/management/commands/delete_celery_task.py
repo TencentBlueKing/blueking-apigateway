@@ -28,11 +28,9 @@ class Command(BaseCommand):
     help = "Delete a Celery task from the database"
 
     def add_arguments(self, parser):
-        parser.add_argument("task_name", type=str, help="Name of the Celery task to delete")
+        parser.add_argument("--task-name", dest="task_name", required=True, help="Name of the Celery task to delete")
 
-    def handle(self, *args, **kwargs):
-        task_name = kwargs["task_name"]
-
+    def handle(self, task_name: str, *args, **kwargs):
         # 查询任务是否存在
         with connection.cursor() as cursor:
             cursor.execute(f"SELECT COUNT(*) FROM django_celery_beat_periodictask WHERE name='{task_name}';")
@@ -40,7 +38,6 @@ class Command(BaseCommand):
 
         if not task_exists:
             raise CommandError(f'Task "{task_name}" does not exist.')
-            return
 
         # 构建 SQL 语句
         sql = f"DELETE FROM django_celery_beat_periodictask WHERE name='{task_name}';"
