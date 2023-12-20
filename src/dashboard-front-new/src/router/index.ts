@@ -103,7 +103,7 @@ const routes: RouteRecordRaw[] = [
         },
         children: [
           {
-            path: '',
+            path: 'resource-info',
             name: 'apigwStageResourceInfo',
             component: apigwStageResourceInfo,
             meta: {
