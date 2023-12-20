@@ -555,6 +555,10 @@ watch(
         .header-info-tag {
           display: flex;
           margin-left: 8px;
+          font-size: 12px;
+          .bk-tag {
+            margin: 2px 4px 2px 0;
+          }
 
           .website {
             background-color: #EDF4FF;
@@ -570,13 +574,11 @@ watch(
           .enabling {
             background-color: #E4FAF0;
             color: #14A568;
-            margin: 0;
           }
 
           .deactivated {
             background-color: #F0F1F5;
             color: #63656E;
-            margin: 0;
           }
 
           .icon-ag-yiqiyong,
