@@ -672,7 +672,7 @@ watch(
               &.icon-ag-lock-fill1 {
                 &:hover {
                   color: #979BA5;
-                  cursor: pointer;
+                  cursor: default;
                 }
               }
             }
