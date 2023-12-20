@@ -23,7 +23,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.common.release.publish import trigger_gateway_publish
+from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
 
@@ -54,5 +55,9 @@ class Command(BaseCommand):
             username=settings.GATEWAY_DEFAULT_CREATOR,
         )
         saver.save()
+
+        # publish gateway
+
+        trigger_gateway_publish(PublishSourceEnum.CLI_SYNC, author="cli", gateway_id=gateway.id, is_sync=True)
 
         logger.info("sync gateway success: name=%s", name)
