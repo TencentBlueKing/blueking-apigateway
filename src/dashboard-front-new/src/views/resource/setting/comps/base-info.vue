@@ -86,6 +86,13 @@
         </bk-checkbox>
       </div>
     </bk-form-item>
+    <!-- <BkSchemaForm
+      class="mt20"
+      v-model="schemaFormData"
+      :schema="formConfig.schema"
+      ref="bkForm"
+      :label-width="180">
+    </BkSchemaForm> -->
   </bk-form>
 </template>
 <script setup lang="ts">
@@ -94,6 +101,9 @@ import SelectCheckBox from './select-check-box.vue';
 import { useI18n } from 'vue-i18n';
 import { getGatewayLabels } from '@/http';
 import { useCommon } from '@/store';
+
+// import createForm from '@/common/index.umd';
+// const BkSchemaForm = createForm();
 
 const props = defineProps({
   detail: {
@@ -124,6 +134,32 @@ const formData = ref({
 });
 
 const labelsData = ref([]);
+// const schemaFormData = ref({});
+// const formConfig = ref({
+//   schema: {
+//     properties: {
+//       corp_id: {
+//         title: 'Corp Id',
+//         type: 'string',
+//         'ui:rules': [{
+//           validator: '/!^[0-9]*$/',
+//           message: 'test111',
+//         }],
+//       },
+//       agent_id: {
+//         title: 'Agent Id',
+//         type: 'string',
+//       },
+//       secret: {
+//         title: 'Secret',
+//         type: 'string',
+//       },
+//     },
+//     required: ['corp_id', 'agent_id', 'secret'],
+//     title: 'WecomIdpPluginConfig',
+//     type: 'object',
+//   },
+// });
 
 const rules = {
   name: [

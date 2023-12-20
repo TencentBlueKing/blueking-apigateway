@@ -16,12 +16,14 @@
                   <p
                     class="link"
                     v-overflow-title
+                    v-bk-tooltips="{ content: getStageAddress(stageData.name) }"
                   >
-                    --
+                    {{ getStageAddress(stageData.name) || '--' }}
                   </p>
                   <i
                     class="apigateway-icon icon-ag-copy-info"
-                    @click.self.stop="copy('--')"
+                    v-if="getStageAddress(stageData.name)"
+                    @click.self.stop="copy(getStageAddress(stageData.name))"
                   ></i>
                 </div>
               </div>
@@ -83,21 +85,27 @@
             >
               {{ t('编辑') }}
             </bk-button>
-            <bk-dropdown>
-              <bk-button class="more-cls">
+            <bk-dropdown trigger="manual" v-model:is-show="showDropdown">
+              <bk-button class="more-cls" @click="showDropdown = true">
                 <i class="apigateway-icon icon-ag-gengduo"></i>
               </bk-button>
               <template #content>
                 <bk-dropdown-menu ext-cls="stage-more-actions">
                   <bk-dropdown-item
-                    @click="handleStageUnlist()"
                     :ext-cls="formatOffShelf"
+                    v-bk-tooltips="
+                      stageData.release.status === 'unreleased' ?
+                        t('尚未发布，不可下架') :
+                        stageData.status === 0 ?
+                          t('已下架') :
+                          t('下架环境')"
+                    @click="handleStageUnlist()"
                   >
                     {{ t('下架') }}
                   </bk-dropdown-item>
                   <bk-dropdown-item
                     :ext-cls="{ disabled: stageData.status === 1 }"
-                    v-bk-tooltips="t('环境下线后，才能删除')"
+                    v-bk-tooltips="stageData.status === 1 ? t('环境下线后，才能删除') : t('删除环境')"
                     @click="handleStageDelete()"
                   >
                     {{ t('删除') }}
@@ -141,8 +149,8 @@
 
       <!-- 发布资源至环境 -->
       <release-sideslider
-        ref="releaseSidesliderRef"
         :current-assets="stageData"
+        ref="releaseSidesliderRef"
         @release-success="handleReleaseSuccess"
       />
     </div>
@@ -154,10 +162,11 @@ import { copy } from '@/common/util';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
-import { useStage } from '@/store';
+import { useStage, useCommon } from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import stageTopBar from '@/components/stage-top-bar.vue';
+import { useGetGlobalProperties } from '@/hooks';
 import { deleteStage, removalStage } from '@/http';
 import { Message, InfoBox } from 'bkui-vue';
 import mitt from '@/common/event-bus';
@@ -166,10 +175,17 @@ const { t } = useI18n();
 const stageStore = useStage();
 const route = useRoute();
 const router = useRouter();
+const common = useCommon();
+
+// 全局变量
+const globalProperties = useGetGlobalProperties();
+const { GLOBAL_CONFIG } = globalProperties;
 
 const releaseSidesliderRef = ref(null);
 const stageSidesliderRef = ref(null);
 const stageTopBarRef = ref(null);
+
+const showDropdown = ref<boolean>(false);
 
 // 当前环境信息
 const stageData: any = computed(() => {
@@ -205,8 +221,8 @@ const panels = [
 const apigwId = +route.params.id;
 
 const formatOffShelf = computed(() => {
-  if (['unreleased', 'failure'].includes(stageData.value.release.status)) {
-    return 'off-shelf-disabled';
+  if (['unreleased', 'failure', 0].includes(stageData.value.release.status)) {
+    return 'disabled';
   }
   return '';
 });
@@ -247,7 +263,7 @@ const handleRelease = () => {
 
 // 下架环境
 const handleStageUnlist = async () => {
-  if (['unreleased', 'failure'].includes(stageData.value.release.status)) {
+  if (['unreleased', 'failure', 0].includes(stageData.value.release.status)) {
     return;
   }
   InfoBox({
@@ -274,12 +290,14 @@ const handleStageUnlist = async () => {
 
 // 删除环境
 const handleStageDelete = async () => {
+  showDropdown.value = false;
+  if (stageData.value.status === 1) {
+    return;
+  }
+
   InfoBox({
     title: t('确认删除吗？'),
     onConfirm: async () => {
-      if (stageData.value.status === 1) {
-        return;
-      }
       try {
         await deleteStage(apigwId, stageData.value.id);
         Message({
@@ -301,6 +319,22 @@ const handleStageDelete = async () => {
 // 编辑环境
 const handleEditStage = () => {
   stageSidesliderRef.value.handleShowSideslider('edit');
+};
+
+// 访问地址
+const getStageAddress = (name: string) => {
+  const keys: any = {
+    api_name: common.apigwName?.name,
+    stage_name: name,
+    resource_path: '',
+  };
+
+  let url = GLOBAL_CONFIG.STAGE_DOMAIN;
+  for (const name in keys) {
+    const reg = new RegExp(`{${name}}`);
+    url = url?.replace(reg, keys[name]);
+  }
+  return url;
 };
 </script>
 
@@ -414,8 +448,10 @@ const handleEditStage = () => {
 
 .stage-more-actions {
   :deep(.disabled) {
-    color: #c9cacf;
-    background: #f5f7fa;
+    color: #c4c6cc !important;
+    background-color: #fff !important;
+    border-color: #dcdee5 !important;
+    cursor: not-allowed;
   }
 }
 
@@ -425,12 +461,5 @@ const handleEditStage = () => {
     transform: rotate(90deg);
     font-size: 16px;
   }
-}
-
-.off-shelf-disabled {
-  color: #c4c6cc !important;
-  background-color: #fff !important;
-  border-color: #dcdee5 !important;
-  cursor: not-allowed;
 }
 </style>
