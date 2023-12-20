@@ -106,7 +106,9 @@ import {
   getReleaseHistories,
 } from '@/http';
 const { t } = useI18n();
-const filterData = ref({ query: '' });
+const filterData = ref({
+  query: '',
+});
 const datePickerRef = ref(null);
 const publishSourceEnum: any = ref(PublishSourceEnum);
 const publishStatusEnum: any = ref(PublishStatusEnum);
@@ -133,10 +135,10 @@ const logDetailsRef = ref(null);
 const detailId = ref();
 const detailsRef = ref(null);
 
-const showDetails = (id: string) => {
-  detailId.value = id;
-  detailsRef.value?.showSideslider();
-};
+// const showDetails = (id: string) => {
+//   detailId.value = id;
+//   detailsRef.value?.showSideslider();
+// };
 
 const showLogs = (id: string) => {
   historyId.value = id;

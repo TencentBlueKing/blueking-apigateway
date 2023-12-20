@@ -89,7 +89,10 @@
               </bk-button>
               <template #content>
                 <bk-dropdown-menu ext-cls="stage-more-actions">
-                  <bk-dropdown-item @click="handleStageUnlist()">
+                  <bk-dropdown-item
+                    @click="handleStageUnlist()"
+                    :ext-cls="formatOffShelf"
+                  >
                     {{ t('下架') }}
                   </bk-dropdown-item>
                   <bk-dropdown-item
@@ -137,7 +140,11 @@
       <edit-stage-sideslider ref="stageSidesliderRef" />
 
       <!-- 发布资源至环境 -->
-      <release-sideslider :current-assets="stageData" ref="releaseSidesliderRef" @release-success="handleReleaseSuccess" />
+      <release-sideslider
+        ref="releaseSidesliderRef"
+        :current-assets="stageData"
+        @release-success="handleReleaseSuccess"
+      />
     </div>
   </div>
 </template>
@@ -197,6 +204,13 @@ const panels = [
 // 网关id
 const apigwId = +route.params.id;
 
+const formatOffShelf = computed(() => {
+  if (['unreleased', 'failure'].includes(stageData.value.release.status)) {
+    return 'off-shelf-disabled';
+  }
+  return '';
+});
+
 onMounted(() => {
   handleTabChange('resourceInfo');
 });
@@ -233,6 +247,9 @@ const handleRelease = () => {
 
 // 下架环境
 const handleStageUnlist = async () => {
+  if (['unreleased', 'failure'].includes(stageData.value.release.status)) {
+    return;
+  }
   InfoBox({
     title: t('确认下架吗？'),
     onConfirm: async () => {
@@ -408,5 +425,12 @@ const handleEditStage = () => {
     transform: rotate(90deg);
     font-size: 16px;
   }
+}
+
+.off-shelf-disabled {
+  color: #c4c6cc !important;
+  background-color: #fff !important;
+  border-color: #dcdee5 !important;
+  cursor: not-allowed;
 }
 </style>

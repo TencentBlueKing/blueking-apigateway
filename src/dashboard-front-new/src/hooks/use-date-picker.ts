@@ -46,7 +46,7 @@ export const useDatePicker = (filterData?: any) => {
     },
   ]);
 
-  const dateValue = ref([new Date(), new Date()]);
+  const dateValue = ref([]);
 
   const handleChange = (date: any) => {
     dateValue.value = date;
