@@ -26,7 +26,8 @@
       <bk-loading :loading="isLoading">
         <bk-table
           ref="tableRef"
-          class="table-layout"
+          size="small"
+          class="perm-record-table"
           :data="tableData"
           :columns="table.headers"
           :pagination="pagination"
@@ -48,12 +49,12 @@
                 :header-border="false"
                 :outer-border="false"
                 :header-cell-style="{ background: '#fafbfd', borderRight: 'none' }"
-                ext-cls="ag-expand-table">
+                class="ag-expand-table">
                 <bk-table-column type="index" label="#" width="60" />
-                <bk-table-column prop="name" :label="t('资源名称')"/>
+                <bk-table-column prop="name" :label="t('资源名称')" />
                 <bk-table-column prop="path" :label="t('请求路径')"/>
-                <bk-table-column prop="method" :label="t('请求方法')"/>
-                <bk-table-column prop="method" :label="t('审批状态')">
+                <bk-table-column prop="method" :label="t('请求方法')" />
+                <bk-table-column prop="method" :label="t('审批状态')" >
                   <template #default="childData">
                     <div class="perm-record-dot">
                       <template v-if="['rejected'].includes(childData?.data?.apply_status)">
@@ -480,6 +481,9 @@ onMounted(() => {
 }
 
 :deep(.perm-record-dot) {
+  .mr5 {
+    margin-right: 5px;
+  }
   .ag-dot {
       width: 8px;
       height: 8px;
@@ -489,26 +493,25 @@ onMounted(() => {
       border-radius: 50%;
   
       &.default {
-          background: #f0f1f5;
-          border: 1px solid #c9cad2;
+        background: #f0f1f5;
+        border: 1px solid #c9cad2;
       }
   
       &.primary,
       &.releasing,
       &.pending {
-          background: #f0f1f5;
-          border: 1px solid #c9cad2;
+        background: #f0f1f5;
+        border: 1px solid #c9cad2;
       }
-  
       &.success {
-          background: #E5F6EA;
-          border: 1px solid #3FC06D;
+        background: #E5F6EA;
+        border: 1px solid #3FC06D;
       }
   }
 }
 
+:deep(.perm-record-table) ,
 :deep(.ag-expand-table) {
-  border-bottom: 0;
   tr {
     background-color: #fafbfd;
   }
@@ -523,6 +526,9 @@ onMounted(() => {
     padding: 0 !important;
     height: 42px !important;
     cursor: default !important;
+  }
+  .bk-fixed-bottom-border {
+    display: none;
   }
 }
 </style>
