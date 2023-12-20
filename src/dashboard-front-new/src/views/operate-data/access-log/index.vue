@@ -331,6 +331,7 @@ const setTableHeader = () => {
       type: 'expand',
       width: 30,
       minWidth: 30,
+      showOverflowTooltip: false,
     },
     {
       field: 'timestamp',

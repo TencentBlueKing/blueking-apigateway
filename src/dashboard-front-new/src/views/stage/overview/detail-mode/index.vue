@@ -92,7 +92,7 @@
               <template #content>
                 <bk-dropdown-menu ext-cls="stage-more-actions">
                   <bk-dropdown-item
-                    :ext-cls="{ disabled: stageData.release.status === 'unreleased' || stageData.status === 0 }"
+                    :ext-cls="formatOffShelf"
                     v-bk-tooltips="
                       stageData.release.status === 'unreleased' ?
                         t('尚未发布，不可下架') :
@@ -220,6 +220,13 @@ const panels = [
 // 网关id
 const apigwId = +route.params.id;
 
+const formatOffShelf = computed(() => {
+  if (['unreleased', 'failure', 0].includes(stageData.value.release.status)) {
+    return 'disabled';
+  }
+  return '';
+});
+
 onMounted(() => {
   handleTabChange('resourceInfo');
 });
@@ -261,11 +268,9 @@ const handleRelease = () => {
 
 // 下架环境
 const handleStageUnlist = async () => {
-  showDropdown.value = false;
-  if (stageData.value.release.status === 'unreleased' || stageData.value.status === 0) { // 未发布 已下架
+  if (['unreleased', 'failure', 0].includes(stageData.value.release.status)) {
     return;
   }
-
   InfoBox({
     title: t('确认下架吗？'),
     onConfirm: async () => {
@@ -448,8 +453,10 @@ const getStageAddress = (name: string) => {
 
 .stage-more-actions {
   :deep(.disabled) {
-    color: #c9cacf;
-    background: #f5f7fa;
+    color: #c4c6cc !important;
+    background-color: #fff !important;
+    border-color: #dcdee5 !important;
+    cursor: not-allowed;
   }
 }
 

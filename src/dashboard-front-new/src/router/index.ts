@@ -199,7 +199,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/:id/online',
+        path: '/:id/debugging',
         name: 'apigwOnlineTest',
         component: apigwOnlineTest,
         meta: {
@@ -220,7 +220,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/:id/backend-service',
+        path: '/:id/backend',
         name: 'apigwBackendService',
         component: ApigwBackendService,
         meta: {
@@ -230,7 +230,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/:id/permission/applys',
+        path: '/:id/permission/apply',
         name: 'apigwPermissionApplys',
         component: ApigwPermissionApplys,
         meta: {
@@ -240,7 +240,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/:id/permission/apps',
+        path: '/:id/permission/app',
         name: 'apigwPermissionApps',
         component: ApigwPermissionApps,
         meta: {
@@ -250,7 +250,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/:id/permission/records',
+        path: '/:id/permission/record',
         name: 'apigwPermissionRecords',
         component: ApigwPermissionRecords,
         meta: {
@@ -260,7 +260,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/:id/access-log',
+        path: '/:id/log',
         name: 'apigwAccessLog',
         component: apigwAccessLog,
         meta: {
@@ -321,7 +321,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/:id/basic-info',
+        path: '/:id/basic',
         name: 'apigwBasicInfo',
         component: ApiBasicInfo,
         meta: {
@@ -331,7 +331,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/:id/operate-records',
+        path: '/:id/audit',
         name: 'apigwOperateRecords',
         component: ApigwOperateRecords,
         meta: {
