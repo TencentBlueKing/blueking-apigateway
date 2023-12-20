@@ -248,12 +248,17 @@ watch(
 // 选项卡切换
 const handleTabChange = (name: string) => {
   const curPanel = panels.find(item => item.name === name);
-  router.push({
+
+  const data: any = {
     name: curPanel.routeName,
     params: {
       id: apigwId,
     },
-  });
+  };
+  if (route.query?.stage) {
+    data.query = { ...route.query };
+  }
+  router.push(data);
 };
 
 // 发布资源
