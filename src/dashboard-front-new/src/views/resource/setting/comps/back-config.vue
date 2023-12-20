@@ -36,9 +36,13 @@
         </template>
       </bk-table-column>
       <bk-table-column
-        :label="t('超时时间')"
+        :label="renderTimeOutLabel"
         prop="timeout"
       >
+        <template #default="{ row }">
+         <span>{{ row.timeout || '0' }}s</span>
+         <bk-tag theme="warning" v-if="row.isCustom">{{ t('自定义') }}</bk-tag>
+        </template>
       </bk-table-column>
     </bk-table>
     <bk-form-item
@@ -118,12 +122,14 @@
     </bk-form-item>
   </bk-form>
 </template>
-<script setup lang="ts">
-import { ref, defineExpose, watch, onMounted } from 'vue';
+
+<script setup lang="tsx">
+import { ref, unref, defineExpose, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
 import { useCommon } from '../../../../store';
 import { useGetGlobalProperties } from '@/hooks';
+import { cloneDeep } from 'lodash';
 import mitt from '@/common/event-bus';
 
 const props = defineProps({
@@ -143,6 +149,7 @@ const backConfigData = ref({
     path: '',
     method: 'GET',
     match_subpath: false,
+    timeout: 0
   },
 });
 const methodData = ref(common.methodList);
@@ -150,8 +157,14 @@ const methodData = ref(common.methodList);
 const servicesData = ref([]);
 // 服务详情
 const servicesConfigs = ref([]);
+// 服务详情缓存数据
+const servicesConfigsStorage = ref([]);
 // 校验列表
 const servicesCheckData = ref([]);
+const popoverConfirmRef = ref();
+const timeOutValue = ref('');
+const isShowPopConfirm = ref(false);
+const isTimeEmpty = ref(false);
 // 全局变量
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
@@ -171,10 +184,128 @@ const rules = {
   ],
 };
 
+const handleTimeOutTotal = (value: any[]) => {
+  backConfigData.value.config.timeout = value.reduce((curr,next) => {
+    return curr + Number(next.timeout || 0)
+  },0)
+}
+
+const handleRefreshTime = () => {
+  servicesConfigs.value = cloneDeep(servicesConfigsStorage.value);
+  handleTimeOutTotal(servicesConfigs.value)
+};
+
+const handleShowPopover = () => {
+  isShowPopConfirm.value = true;
+  isTimeEmpty.value = false;
+};
+
+const handleConfirmTime = () => {
+  if(!timeOutValue.value) {
+    isTimeEmpty.value = true;
+    return;
+  }
+  servicesConfigs.value.forEach((item:Record<string, string | boolean>) => {
+    item.isCustom = true;
+    item.timeout = timeOutValue.value;
+  })
+  handleTimeOutTotal(servicesConfigs.value);
+  isShowPopConfirm.value = false;
+  timeOutValue.value = '';
+};
+
+const handleCancelTime = () => {
+  isTimeEmpty.value = false;
+  isShowPopConfirm.value = false;
+  timeOutValue.value = '';
+}
+
+const handleTimeOutInput = (value:string) => {
+  value = value.replace(/\D/g, '')
+  if(Number(value) > 300) {
+    value = '300';
+  }
+  timeOutValue.value = value.replace(/\D/g, '');
+  isTimeEmpty.value = !value;
+}
+
+const handleClickOutSide = (e:any) => {
+  if (
+    isShowPopConfirm.value &&
+    !unref(popoverConfirmRef).content.el.contains(e.target)
+  ) {
+    handleCancelTime();
+  }
+}
+
+const renderTimeOutLabel = () => {
+  return (
+    <div>
+      <div class='back-config-timeout'>
+        <span>{t('超时时间')}</span>
+        <bk-pop-confirm
+          width='280'
+          trigger='manual'
+          ref={popoverConfirmRef}
+          title={t('批量修改超时时间')}
+          extCls='back-config-timeout-popover'
+          is-show={isShowPopConfirm.value}
+          content={
+            <div class='back-config-timeout-wrapper'>
+              <div class='back-config-timeout-content'>
+                <div class='back-config-timeout-input'>
+                  <bk-input 
+                    v-model={timeOutValue.value}
+                    maxlength={3}
+                    placeholder={t('请输入超时时间')}
+                    onInput={(value:string) => {handleTimeOutInput(value)}}
+                    nativeOnKeypress={(value:string) => { value = value.replace(/\d/g, '') }}
+                    suffix='s'
+                  />
+                </div>
+                <div class='back-config-timeout-tip'>{t('最大 300s')}</div>
+              </div>
+              {
+                isTimeEmpty.value ? <div  class='time-empty-error'>{t('超时时间不能为空')}{isTimeEmpty.value}</div> : ''
+              }
+            </div>
+          }
+          onConfirm={() => handleConfirmTime()}
+          onCancel={() => handleCancelTime()}
+        >
+          <i
+            class="apigateway-icon icon-ag-edit-line edit-action"
+            v-bk-tooltips={{
+              content: (
+                <div>
+                  {t('自定义超时时间')}
+                </div>
+              )
+            }}
+            onClick={() => handleShowPopover()}
+            v-clickOutSide={(e:any) => handleClickOutSide(e)}
+          />
+        </bk-pop-confirm>
+        <i
+          class="apigateway-icon icon-ag-cc-history refresh-icon"
+          v-bk-tooltips={{
+            content: (
+              <div>
+                {t('恢复初始值')}
+              </div>
+            )
+          }}
+          onClick={() => handleRefreshTime()}
+        />
+      </div>
+    </div>
+  );
+};
+
 // 选择服务获取服务详情数据
 const handleServiceChange = async (backendId: number) => {
   const res = await getBackendsDetailData(common.apigwId, backendId);
-  servicesConfigs.value = res.configs;
+  [servicesConfigs.value, servicesConfigsStorage.value] = [cloneDeep(res.configs || []), cloneDeep(res.configs || [])];
 };
 
 // 校验路径
@@ -229,24 +360,78 @@ defineExpose({
   validate,
 });
 </script>
-    <style lang="scss" scoped>
-    .back-config-container{
-      .table-layout{
-        margin: 0 0 20px 150px;
-        width: 700px !important;
+
+<style lang="scss" scoped>
+.back-config-container {
+  .table-layout {
+    margin: 0 0 20px 150px;
+    width: 700px !important;
+  }
+
+  .public-switch {
+    height: 32px;
+  }
+
+  .w700 {
+    max-width: 700px !important;
+    // width: 70% !important;
+  }
+
+  .w568 {
+    max-width: 568px !important;
+    width: 55% !important;
+  }
+
+  .ag-primary {
+    color: #3a84ff;
+  }
+}
+
+:deep(.back-config-timeout) {
+  display: inline-block;
+
+  .edit-action,
+  .refresh-icon {
+    margin-left: 8px;
+    font-size: 16px;
+    color: #1768ef;
+    vertical-align: middle;
+    cursor: pointer;
+  }
+  .refresh-icon {
+    margin-left: 15px;
+  }
+}
+</style>
+
+<style lang="scss">
+.back-config-timeout-wrapper {
+  .back-config-timeout-content {
+    display: flex;
+    align-items: center;
+    .back-config-timeout-input {
+      min-width: 182px;
+      display: flex;
+      align-items: center;
+      .bk-input {
+        width: 100%;
       }
-      .public-switch{
-          height: 32px;
-      }
-      .w700{
-          max-width: 700px !important;
-          width: 73% !important;
-        }
-      .w568{
-        max-width: 568px !important;
-        width: 55% !important;
+      .bk-input--number-control {
+        display: none;
       }
     }
-    </style>
-
+    .back-config-timeout-tip {
+      font-size: 12px;
+      margin-left: 10px;
+      color: #63656E;
+    }
+  }
+  .time-empty-error {
+    color: #ea3636;
+  }
+}
+.back-config-timeout-popover {
+  padding: 16px 16px !important;
+}
+</style>
 

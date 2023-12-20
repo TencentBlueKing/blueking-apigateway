@@ -24,9 +24,21 @@
         :class="{ active: curStage.name === item.name }"
         @click="handleChangeStage(item.name)"
       >
+        <spinner v-if="item.release.status === 'doing'" fill="#3A84FF" />
+        <span v-else :class="['dot', item.release.status]"></span>
         <span v-overflow-title>{{ item.name }}</span>
       </li>
     </ul>
+
+    <plus
+      v-if="curActive === 'detail'"
+      fill="#3785ff"
+      @click="handleAddStage"
+      style="font-size: 28px; cursor: pointer;"
+    />
+
+    <!-- 环境侧边栏 -->
+    <edit-stage-sideslider ref="stageSidesliderRef" />
   </div>
 </template>
 
@@ -34,12 +46,16 @@
 import { computed, ref, onBeforeMount, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { getStageList, getStageDetail } from '@/http';
-import { useStage } from '@/store';
+import { useStage, useCommon } from '@/store';
 import { useI18n } from 'vue-i18n';
 import mitt from '@/common/event-bus';
+import { Spinner, Plus } from 'bkui-vue/lib/icon';
+import editStageSideslider from '@/views/stage/overview/comps/edit-stage-sideslider.vue';
+
 const router = useRouter();
 const route = useRoute();
 const stageStore = useStage();
+const common = useCommon();
 const { t } = useI18n();
 
 const modelTypes = ref([
@@ -56,7 +72,13 @@ const modelTypes = ref([
 ]);
 
 // 获取环境列表
-const apigwId = +route.params.id;
+const apigwId = computed(() => common.apigwId);
+
+// 新建环境
+const stageSidesliderRef = ref(null);
+const handleAddStage = () => {
+  stageSidesliderRef.value.handleShowSideslider('add');
+};
 
 // 当前环境
 const curStage = ref(stageStore.curStageData || stageStore.defaultStage);
@@ -64,7 +86,7 @@ const curStage = ref(stageStore.curStageData || stageStore.defaultStage);
 const init = async (isUpdate?: Boolean, isDelete?: Boolean) => {
   stageStore.setStageMainLoading(true);
   try {
-    const data = await getStageList(apigwId);
+    const data = await getStageList(apigwId.value);
     stageStore.setStageList(data);
 
     // 更新停留当前环境
@@ -95,7 +117,7 @@ const curActive = ref(isDetailMode.value ? 'detail' : 'abbreviation');
 // 获取环境详情
 const getStageDetailFun = (id: number) => {
   stageStore.setStageMainLoading(true);
-  getStageDetail(apigwId, id).then((data) => {
+  getStageDetail(apigwId.value, id).then((data) => {
     stageStore.curStageData = data;
     curStage.value = data;
     stageStore.curStageId = data.id;
@@ -127,7 +149,7 @@ const switchModelType = (key: string, routeName: string, stageName?: string) => 
 };
 
 // 切换环境
-const handleChangeStage = async (name: string, isDelete: Boolean) => {
+const handleChangeStage = async (name: string, isDelete?: Boolean) => {
   // 获取切换环境的名字
   const data = stageStore.stageList.find(item => item.name === name);
   if (!isDelete) {
@@ -216,20 +238,43 @@ defineExpose({
     height: 100%;
     display: flex;
     .stage-item {
-      width: 80px;
+      cursor: pointer;
+      width: 100px;
       height: 100%;
+      box-sizing: border-box;
       font-size: 14px;
       color: #63656e;
       display: flex;
       align-items: center;
+      justify-content: center;
       span {
         text-align: center;
-        width: 80px;
-        padding: 0 3px;
+        padding-left: 6px;
         display: inline-block;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+
+        &.success {
+          border: 1px solid #3FC06D;
+          background: #E5F6EA;
+        }
+
+        &.unreleased {
+          border: 1px solid #C4C6CC;
+          background: #F0F1F5;
+        }
+
+        &.failure {
+          border: 1px solid #EA3636;
+          background: #FFE6E6;
+        }
       }
 
       &:hover {
