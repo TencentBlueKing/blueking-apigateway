@@ -25,7 +25,6 @@
                   :title="$t('尚未发布')"
                   class="mt15 mb15" closable /> -->
                 <!-- <bk-alert
-                  v-else
                   theme="info"
                   :title="`当前版本号: ${currentAssets.resource_version.version || '--'},
                   于${currentAssets.release.created_time || '--'}发布成功; 资源发布成功后, 需发布到指定的环, 方可生效`"
@@ -34,10 +33,12 @@
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
                   <bk-form-item
                     property="version"
-                    :label="t('版本号')">
+                    :label="t('版本号')"
+                    class="mt20"
+                    required>
                     <bk-input v-model="formData.version" :placeholder="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')" />
-                    <span class="common-form-tips">{{ t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}</span>
-                    <p>
+                    <!-- <span class="common-form-tips">{{ t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}</span> -->
+                    <section class="ft12">
                       <span>
                         {{ $t("新增") }}
                         <strong class="ag-strong success">{{ diffData.add.length }}</strong>
@@ -53,7 +54,7 @@
                         <strong class="ag-strong danger">{{ diffData.delete.length }}</strong>
                         {{ $t("个资源") }}
                       </span>
-                    </p>
+                    </section>
                   </bk-form-item>
                   <bk-form-item property="comment" :label="$t('版本日志')">
                     <bk-input v-model="formData.comment" type="textarea" :rows="4" :maxlength="100" />
@@ -157,11 +158,19 @@ const rules = {
       trigger: 'change',
     },
   ],
+  version: [
+    {
+      required: true,
+      message: t('请输入版本号'),
+      trigger: 'change',
+    },
+  ],
 };
 
 // 生成版本成功并弹窗
 const handleBuildVersion = async () => {
   try {
+    await formRef.value?.validate();
     loading.value = true;
     await createResourceVersion(apigwId, formData);
     // 弹窗并关闭侧栏
