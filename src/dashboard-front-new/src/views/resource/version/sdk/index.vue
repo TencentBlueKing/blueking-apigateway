@@ -69,11 +69,21 @@
             >
             </bk-table-column>
             <bk-table-column :label="t('操作')" min-width="140">
-              <template #default="{ data }">
-                <bk-button text theme="primary" @click="copy(data.name)">
+              <template #default="{ row,data }">
+                <bk-button text theme="primary" @click="copy(data.download_url)">
                   {{ t("复制地址") }}
                 </bk-button>
-                <bk-button text theme="primary" class="pl10 pr10" @click="handleDownload(data)">
+                <bk-button
+                  text
+                  theme="primary"
+                  class="pl10 pr10"
+                  v-bk-tooltips="{
+                    content: !row.download_url ? $t('暂无下载地址') : '',
+                    disabled: row.download_url
+                  }"
+                  :disabled="!row.download_url"
+                  @click="handleDownload(data)"
+                >
                   {{ t("下载") }}
                 </bk-button>
               </template>
