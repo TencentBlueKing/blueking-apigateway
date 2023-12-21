@@ -28,7 +28,7 @@
       </div>
     </div>
     <div class="info-form-container mt20">
-      <bk-form ref="formRef" class="info-form" :model="configFormData" :rules="rules" form-type="vertical">
+      <!-- <bk-form ref="formRef" class="info-form" :model="configFormData" :rules="rules" form-type="vertical">
         <bk-form-item :label="t('名称')" property="name" required>
           <bk-input v-model="configFormData.name" :placeholder="t('请输入')" />
         </bk-form-item>
@@ -37,9 +37,17 @@
             <bk-alert theme="info" :title="t(infoNotes)"></bk-alert>
           </bk-form-item>
         </bk-loading>
-      </bk-form>
+      </bk-form> -->
+      <BkSchemaForm
+        class="mt20"
+        v-model="schemaFormData"
+        :schema="formConfig.schema"
+        :layout="formConfig.layout"
+        :rules="formConfig.rules"
+        ref="formRef">
+      </BkSchemaForm>
     </div>
-    <div class="info-btn">
+    <div class="info-btn mt20">
       <div class="last-step">
         <bk-button theme="primary" @click="handleAdd">{{ t('确定') }}</bk-button>
         <bk-button @click="handlePre" class="ml5" v-if="isAdd">{{ t('上一步') }}</bk-button>
@@ -50,13 +58,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, defineEmits } from 'vue';
+import { computed, ref, defineEmits, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPluginForm, creatPlugin, updatePluginConfig } from '@/http';
 import { Message } from 'bkui-vue';
+import createForm from '@/common/index.umd';
+const BkSchemaForm = createForm();
 
 const { t } = useI18n();
 const emit = defineEmits(['on-change']);
+
+const schemaFormData = ref({});
+const formConfig = ref({
+  schema: {},
+  layout: {},
+  rules: {},
+});
 
 const props = defineProps({
   curPlugin: {
@@ -72,33 +89,15 @@ const props = defineProps({
     type: String,
   },
 });
-// 添加插件interface
-interface IPluginForm {
-  name: string
-  yaml: string
-  type_id: number
-}
+
+const { curPlugin } = toRefs(props);
 const formRef = ref(null);
-const curPluginInfo = ref<any>({});
+const curPluginInfo = ref<any>(curPlugin);
 const isPluginFormLoading = ref(false);
 const infoNotes = ref('');
 const isAdd = ref(false);
 const isStage = ref(false);
 const editAlert = ref(t('修改插件配置将会直接影响线上环境，请谨慎操作'));
-const configFormData: IPluginForm = reactive({
-  name: '',
-  yaml: '',
-  type_id: -1,
-});
-const rules = {
-  name: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'blur',
-    },
-  ],
-};
 const pluginCodeFirst = computed(() => {
   return function (code: string) {
     return code.charAt(3).toUpperCase();
@@ -112,16 +111,16 @@ const handlePre = () => {
 // 确认
 const handleAdd = async () => {
   const { scopeInfo: { scopeType, scopeId, apigwId } } = props;
-  const { curPlugin: { code, id } } = props;
-  configFormData.type_id = id;
-  console.log(configFormData);
-  await formRef.value?.validate();
+  const { curPlugin: { code } } = props;
+  // await formRef.value?.validate();
+  console.log('schemaFormData', schemaFormData.value);
+  debugger;
   try {
     if (isAdd.value) {
-      await creatPlugin(apigwId, scopeType, scopeId, code, configFormData);
+      await creatPlugin(apigwId, scopeType, scopeId, code, schemaFormData.value);
       emit('on-change', 'addSuccess');
     } else {
-      await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, configFormData);
+      await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, schemaFormData.value);
       emit('on-change', 'editSuccess');
     }
     Message({
@@ -141,14 +140,8 @@ const handleCancel = () => {
 };
 const init = async () => {
   isStage.value = props.scopeInfo.scopeType === 'stage';
-  console.log(isStage.value);
-  console.log(props.editPlugin);
   isAdd.value = props.type === 'add';
-  if (!isAdd.value) {
-    configFormData.name = props.editPlugin.name;
-  }
   curPluginInfo.value = props.curPlugin;
-  configFormData.type_id = props.curPlugin.id;
   const { scopeInfo: { apigwId } } = props;
   const { curPlugin: { code } } = props;
   try {
@@ -156,26 +149,9 @@ const init = async () => {
     const res = await getPluginForm(apigwId, code);
     isPluginFormLoading.value = false;
     infoNotes.value = res.notes;
-    console.log(res);
+    formConfig.value = res.config;
   } catch (error) {
     console.log('error', error);
-  }
-  // 模拟数据
-  switch (props.curPlugin.id) {
-    case 1:
-      configFormData.yaml = 'allow_origins: https://example.com:8081\nallow_origins_by_regex: []\nallow_methods: \' ** \'\nallow_headers: \' ** \'\nexpose_headers: \'\'\nmax_age: 86400';
-      break;
-    case 2:
-      configFormData.yaml = 'set:\n- key: appenv\n  value: ieod\nremove: []\n';
-      break;
-    case 3:
-      configFormData.yaml = 'whitelist: |-\n  1.1.1.1\n  2.2.2.2';
-      break;
-    case 4:
-      configFormData.yaml = 'rates:\n  default:\n    period: 1\n    tokens: 100\n  specials: []\n';
-      break;
-    default:
-      break;
   }
 };
 init();
