@@ -26,10 +26,11 @@
     <div class="apply-content">
       <bk-loading :loading="isLoading">
         <bk-table
-          ref="permissionTable" class="table-layout"
+          ref="permissionTableRef"
+          class="perm-apply-table"
           :data="tableData"
-          :columns="headers"
-          remote-pagination
+          :columns="permissionData.headers"
+          :remote-pagination="true"
           :row-style="{ cursor: 'pointer' }"
           :pagination="pagination"
           @page-limit-change="handlePageSizeChange"
@@ -39,90 +40,27 @@
           @row-click="handleRowClick"
           @expand-change="handlePageExpandChange"
           row-hover="auto">
-          <!-- <template #expandRow="row">
-            <div class="h60" v-if="row.grant_dimension === 'api'">
+          <template #expandRow="row">
+            <div class="apply-expand-alert" v-if="['api'].includes(row.grant_dimension)">
               <bk-alert theme="error" :title="t('将申请网关下所有资源的权限，包括未来新创建的资源，请谨慎审批')" />
-              {{ row.id }}
             </div>
             <bk-table
-              v-else :ref="`permissionDetail_${row.id}`" :max-height="378" :size="'small'" :key="row.id"
-              :data="row.resourceList" :outer-border="false"
+              v-else
+              :ref="`permissionDetail_${row.id}`"
+              :max-height="378"
+              :size="'small'"
+              :key="row.id"
+              :data="row.resourceList"
+              :outer-border="false"
               ext-cls="ag-expand-table"
               @selection-change="handleRowSelectionChange">
-              <bk-table-column type="index" label="" width="60"></bk-table-column>
-              <bk-table-column type="selection" width="50"></bk-table-column>
-              <bk-table-column prop="name" :label="t('资源名称')"></bk-table-column>
-              <bk-table-column prop="path" :label="t('请求路径')"></bk-table-column>
-              <bk-table-column prop="method" :label="t('请求方法')"></bk-table-column>
+              <bk-table-column type="index" label="" width="60" />
+              <bk-table-column type="selection" width="50" />
+              <bk-table-column prop="name" :label="t('资源名称')" />
+              <bk-table-column prop="path" :label="t('请求路径')" />
+              <bk-table-column prop="method" :label="t('请求方法')" />
             </bk-table>
-          </template> -->
-          <bk-table-column width="80" type="selection" align="center" />
-          <!-- <bk-table-column type="expand" width="30" class="ag-expand-cell">
-            <template #expandRow="row">
-              <div class="h60" v-if="row.grant_dimension === 'api'">
-                <bk-alert theme="error" :title="t('将申请网关下所有资源的权限，包括未来新创建的资源，请谨慎审批')" />
-                {{ row.id }}
-              </div>
-              <bk-table
-                v-else :ref="`permissionDetail_${row.id}`" :max-height="378" :size="'small'" :key="row.id"
-                :data="row.resourceList" :outer-border="false"
-                ext-cls="ag-expand-table"
-                @selection-change="handleRowSelectionChange">
-                <bk-table-column type="index" label="" width="60"></bk-table-column>
-                <bk-table-column type="selection" width="50"></bk-table-column>
-                <bk-table-column prop="name" :label="t('资源名称')"></bk-table-column>
-                <bk-table-column prop="path" :label="t('请求路径')"></bk-table-column>
-                <bk-table-column prop="method" :label="t('请求方法')"></bk-table-column>
-              </bk-table>
-            </template>
-          </bk-table-column> -->
-          <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code" width="110"></bk-table-column>
-          <bk-table-column :label="t('授权维度')" prop="grant_dimension_display">
-            <template #default="{ data }">
-              {{ data?.grant_dimension_display || '--' }}
-            </template>
-          </bk-table-column>
-          <bk-table-column width="120" :label="t('权限期限')" prop="expire_days_display">
-            <template #default="{ data }">
-              {{ data?.expire_days_display || '--' }}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="t('申请理由')" prop="reason">
-            <template #default="{ data }">
-              {{ data?.reason || '--' }}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="t('申请人')" prop="applied_by"></bk-table-column>
-          <bk-table-column :label="t('申请时间')" prop="created_time" width="215"></bk-table-column>
-          <bk-table-column :label="t('审批状态')" prop="status" width="150">
-            <template #default="{ data }">
-              <loading
-                class="mr5" loading size="mini" mode="spin" theme="primary"
-                v-if="data?.status === 'pending'"
-              />
-              <span v-else :class="['dot', data?.status]"></span>
-              {{ statusMap[data?.status as keyof typeof statusMap] }}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="t('操作')" width="200">
-            <template #default="{ data }">
-              <bk-popover
-                :content="t('请选择资源')" v-if="expandRows.includes(data?.id)
-                  && data?.selection.length === 0
-                  && data?.grant_dimension !== 'api'">
-                <bk-button class="mr10 is-disabled" theme="primary" text @click.stop.prevent="handlePrevent">
-                  {{ t('全部通过') }}
-                </bk-button>
-              </bk-popover>
-              <bk-button class="mr10" v-else theme="primary" text @click.stop.prevent="handleApplyApprove(data)">
-                <!-- {{ data?.isSelectAll ? t('全部通过') : t('部分通过') }} -->
-                {{ t('全部通过') }}
-              </bk-button>
-              <bk-button theme="primary" text @click.stop.prevent="handleApplyReject(data)">
-                {{ t('全部驳回') }}
-              </bk-button>
-            </template>
-          </bk-table-column>
+          </template>
         </bk-table>
       </bk-loading>
     </div>
@@ -194,8 +132,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { reactive, ref, watch, computed } from 'vue';
+<script setup lang="tsx">
+import { reactive, ref, watch, computed, onMounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPermissionApplyList, updatePermissionStatus } from '@/http';
 import { useCommon, usePermission } from '@/store';
@@ -211,8 +149,9 @@ const filterData = ref({ bk_app_code: '', applied_by: '', grant_dimension: '' })
 const expandRows = ref([]);
 const batchForm = ref(null);
 const approveForm = ref(null);
-const permissionTable = ref(null);
-const headers = ref([]);
+const permissionTableRef = ref(null);
+const renderTableIndex = ref(0)
+const permissionRowSelection =  ref([]);
 // const resourceList = ref([]);
 const batchApplyDialogConf = reactive({
   isLoading: false,
@@ -222,6 +161,9 @@ const applyActionDialogConf = reactive({
   isShow: false,
   title: t('通过申请'),
   isLoading: false,
+});
+const permissionData = ref({
+  headers: [],
 });
 const curAction = ref({
   ids: [],
@@ -274,74 +216,103 @@ const {
 } = useSelection();
 
 
-// const setTableHeader = () => {
-//   const columns =  [
-//     {
-//       type: 'selection',
-//       width: 80,
-//       minWidth: 80,
-//       align: 'center',
-//     },
-//     {
-//       type: 'expand',
-//       width: 30,
-//       minWidth: 30,
-//     },
-//     { field: 'bk_app_code', width: 110,  label: t('蓝鲸应用ID') },
-//     {
-//       field: 'grant_dimension_display',
-//       label: t('授权维度'),
-//       showOverflowTooltip: true,
-//       render: ({ data }: Record<string, any>) => {
-//         return data?.grant_dimension_display || '--';
-//       },
-//     },
-//     {
-//       field: 'expire_days_display',
-//       label: t('权限期限'),
-//       showOverflowTooltip: true,
-//       render: ({ data }: Record<string, any>) => {
-//         return data?.expire_days_display || '--';
-//       },
-//     },
-//     {
-//       field: 'reason',
-//       label: t('申请理由'),
-//       showOverflowTooltip: true,
-//       render: ({ data }: Record<string, any>) => {
-//         return data?.reason || '--';
-//       },
-//     },
-//     { field: 'applied_by', label: t('申请人') },
-//     { field: 'created_time', width: 215, label: t('申请时间') },
-//     // {
-//     //   field: 'status',
-//     //   width: 150,
-//     //   label: t('审批状态'),
-//     //   showOverflowTooltip: true,
-//     //   render: ({ data }: Record<string, any>) => {
-//     //     return `<div>
-//     // <loading class="mr5" loading size="mini" mode="spin" theme="primary" v-if="${data?.status} === 'pending'"/>
-//     // <span v-else :class="['dot', ${data?.status}]"></span>
-//     // {{ statusMap[${data?.status} as keyof typeof statusMap] }}
-//     // </div>`;;
-//     //   },
-//     // },
-//     // {
-//     //   field: 'operate',
-//     //   width: 220,
-//     //   label: t('操作'),
-//     //   render: ({ data }: Record<string, any>) => {
-//     //     return ;
-//     //   },
-//     // },
-//   ];
-//   headers.value = columns;
-// };
-
-// const renderCell = ({row:any}) => {
-//   return <div>{row}</div>
-// }
+const setTableHeader = () => {
+  const columns =  [
+    {
+      type: 'selection',
+      width: 60,
+      minWidth: 60,
+      align: 'center',
+      showOverflowTooltip: false,
+    },
+    {
+      type: 'expand',
+      width: 30,
+      minWidth: 30,
+      showOverflowTooltip: false
+    },
+    { field: 'bk_app_code', label: t('蓝鲸应用ID') },
+    {
+      field: 'grant_dimension_display',
+      label: t('授权维度'),
+      render: ({ data }: Record<string, any>) => {
+        return data?.grant_dimension_display || '--';
+      },
+    },
+    {
+      field: 'expire_days_display',
+      label: t('权限期限'),
+      render: ({ data }: Record<string, any>) => {
+        return data?.expire_days_display || '--';
+      },
+    },
+    {
+      field: 'reason',
+      label: t('申请理由'),
+      render: ({ data }: Record<string, any>) => {
+        return data?.reason || '--';
+      },
+    },
+    { field: 'applied_by', label: t('申请人') },
+    { field: 'created_time', width: 215, label: t('申请时间') },
+    {
+      field: 'status',
+      width: 150,
+      label: t('审批状态'),
+      render: ({ data }: Record<string, any>) => {
+        if(['pending'].includes(data?.status)) {
+          return (
+            <div class="perm-apply-dot">
+              <Loading class="mr5" loading size="mini" mode="spin" theme="primary" />
+              {statusMap[data?.status as keyof typeof statusMap]}
+            </div>
+          )
+        } else {
+          return (
+            <div class="perm-apply-dot">
+              <span class={[
+                'dot', 
+                {[data.status]: data?.status}
+              ]} 
+              />
+              {statusMap[data?.status as keyof typeof statusMap]}
+            </div>
+          )
+        }
+      }
+    },
+    {
+      field: 'operate',
+      width: 220,
+      label: t('操作'),
+      render: ({ data }: Record<string, any>) => {
+        if(expandRows.value.includes(data?.id) && data?.selection.length === 0 && data?.grant_dimension !== 'api') {
+          return (
+            <div>
+              <bk-popover content={t('请选择资源')}>
+                  <bk-button class="mr10 is-disabled" theme="primary" text onClick={(e:Event) => { handlePrevent(e, data) }}>
+                    { t('全部通过') }
+                  </bk-button>
+              </bk-popover>
+              <bk-button theme="primary" text onClick={(e:Event) => { handleApplyReject(e, data) }}>
+                  { t('全部驳回') }
+              </bk-button>
+            </div>
+          )
+        } else {
+          return (
+            <div>
+              <bk-button class="mr10" theme="primary" text onClick={(e:Event) => { handleApplyApprove(e, data)}}>
+                { data?.isSelectAll ? t('全部通过') : t('部分通过') }
+              </bk-button>
+            </div>
+          )
+        }
+      },
+    },
+  ];
+  permissionData.value.headers = columns;
+};
 
 // 监听授权维度的变化
 watch(
@@ -406,10 +377,14 @@ const handleBatchApply = () => {
   };
   batchApplyDialogConf.isShow = true;
 };
-// 折叠table 多选发生变化触发
-// const handleRowSelectionChange = () => {
 
-// };
+// 折叠table 多选发生变化触发
+const handleRowSelectionChange = (row:any, rowSelections: any[]) => {
+  permissionRowSelection.value = rowSelections
+  row.selection = rowSelections;
+  row.isSelectAll = rowSelections.length ? row.resourceList.length === rowSelections.length : true;
+  renderTableIndex.value++;
+}
 // 折叠变化
 const handlePageExpandChange = (row: any, expandedRows: any) => {
   expandRows.value = expandedRows.map((item: any) => {
@@ -462,13 +437,13 @@ const batchRejectPermission = () => {
   curAction.value.status = 'rejected';
   updateStatus();
 };
-
-
-const handlePrevent = () => {
+const handlePrevent = (e: Event, data: any) => {
+  e.stopPropagation();
   return false;
 };
 // 全部通过/部分通过 btn
-const handleApplyApprove = (data: any) => {
+const handleApplyApprove = (e: Event, data: any) => {
+  e.stopPropagation();
   curPermission.value = data;
   curAction.value = {
     ids: [data.id],
@@ -484,7 +459,8 @@ const handleApplyApprove = (data: any) => {
   applyActionDialogConf.isShow = true;
 };
 // 全部驳回 btn
-const handleApplyReject = (data: any) => {
+const handleApplyReject = (e: Event, data: any) => {
+  e.stopPropagation();
   curPermission.value = data;
   curAction.value = {
     ids: [data.id],
@@ -500,25 +476,28 @@ const handleSubmitApprove = () => {
   updateStatus();
 };
 
-
-// 鼠标点击
-const handleRowClick = (row: any) => {
-  console.log('row', row);
+const handleRowClick = (e: Event, row: Record<string, any>) => {
+  e.stopPropagation();
+  row.isExpand = !row.isExpand;
+  nextTick(() => {
+    permissionTableRef.value.setRowExpand(row,  row.isExpand);
+  });
 };
 
 const init = () => {
-  // setTableHeader();
-  console.log(tableData);
-  console.log(apigwId);
+  setTableHeader();
 };
-init();
+
+onMounted(() => {
+  init();
+});
 </script>
 
 <style lang="scss" scoped>
 .w150 {
   width: 150px;
 }
-.h60{
+.h60 {
   height: 60px;
 }
 .apply-content {
@@ -526,11 +505,25 @@ init();
   min-height: 600px;
 }
 
-.ag-expand-table {
+.apply-expand-alert {
+  padding: 20px;
+  line-height: 60px;
+  background-color: #fafafa;
+}
+
+:deep(.perm-apply-table),
+:deep(.ag-expand-table) {
   tr {
     background-color: #fafbfd;
   }
-
+  th {
+    .head-text {
+      font-weight: bold !important;
+      color: #63656E !important;
+    }
+  }
+}
+:deep(.ag-expand-table) {
   td,
   th {
     padding: 0 !important;
@@ -544,5 +537,23 @@ init();
     max-height: 280px;
     justify-content: center;
   }
+}
+
+:deep(.perm-apply-dot) {
+  .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 3px;
+      &.approved {
+        background: #e6f6eb;
+        border: 1px solid #43c472;
+      }
+      &.rejected {
+        background: #FFE6E6;
+        border: 1px solid #EA3636;
+      }
+    }
 }
 </style>

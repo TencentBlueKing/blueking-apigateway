@@ -54,7 +54,7 @@
                 <bk-table-column prop="name" :label="t('资源名称')" />
                 <bk-table-column prop="path" :label="t('请求路径')"/>
                 <bk-table-column prop="method" :label="t('请求方法')" />
-                <bk-table-column prop="method" :label="t('审批状态')" >
+                <bk-table-column prop="apply_status" :label="t('审批状态')" >
                   <template #default="childData">
                     <div class="perm-record-dot">
                       <template v-if="['rejected'].includes(childData?.data?.apply_status)">
@@ -271,8 +271,6 @@ const datepickerShortcuts = reactive([
 ]);
 const tableRef = ref();
 const table = ref({
-  list: [],
-  fields: [],
   headers: [],
 });
 const setTableHeader = () => {
@@ -355,12 +353,14 @@ const {
   // getList,
 } = useQueryList(getPermissionRecordList, filterData);
 
-const handleRowClick = (event: any, row: any) => {
+const handleRowClick = (e: Event, row: Record<string, any>) => {
+  e.stopPropagation();
   row.isExpand = !row.isExpand;
   nextTick(() => {
     tableRef.value.setRowExpand(row,  row.isExpand);
   });
 };
+
 // 日期清除
 const handleTimeClear = () => {
   shortcutSelectedIndex.value = -1;
@@ -405,7 +405,6 @@ const handleShowRecord = (e: Event, data: any) => {
 
 
 const init = () => {
-  console.log(tableData.value);
   setTableHeader();
 };
 
@@ -469,6 +468,7 @@ onMounted(() => {
 
 .record-expand-alert {
   padding: 20px;
+  line-height: 60px;
   background-color: #fafafa;
 }
 
@@ -525,8 +525,10 @@ onMounted(() => {
   th {
     padding: 0 !important;
     height: 42px !important;
-    cursor: default !important;
   }
+}
+
+:deep(.ag-expand-table) {
   .bk-fixed-bottom-border {
     display: none;
   }
