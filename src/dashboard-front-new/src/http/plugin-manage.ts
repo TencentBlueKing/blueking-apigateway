@@ -21,7 +21,7 @@ export const getPluginBindingsList = (apigwId: number, code: string) => fetch.ge
  * @param apigwId 网关id
  * @param code 插件code
  */
-export const getPluginForm = (apigwId: number, code: string) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${code}/form`);
+export const getPluginForm = (apigwId: number, code: string) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${code}/form/`);
 
 /**
  * 获取某个环境或资源绑定的插件列表 (插件类型 + 插件配置)

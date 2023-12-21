@@ -147,12 +147,7 @@
           property="maintainers"
           required
         >
-          <bk-tag-input
-            v-model="formData.maintainers"
-            allow-create
-            has-delete-icon
-            allow-auto-match
-          />
+          <member-select v-model="formData.maintainers" />
         </bk-form-item>
         <bk-form-item
           label="描述"
@@ -187,6 +182,7 @@ import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
 import { useGetApiList } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
+import MemberSelect from '@/components/member-select';
 import {
   ref,
   watch,

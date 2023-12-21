@@ -26,15 +26,6 @@
     <bk-form-item
       :label="t('标签')"
     >
-      <!-- <bk-select
-        class="w700"
-        v-model="formData.label_ids"
-        :input-search="false"
-        multiple
-        filterable
-        multiple-mode="tag">
-        <bk-option v-for="item in labelsData" :key="item.id" :value="item.id" :label="item.name" />
-      </bk-select> -->
       <SelectCheckBox
         :labels-data="labelsData"
         :width="700"
@@ -102,9 +93,6 @@ import { useI18n } from 'vue-i18n';
 import { getGatewayLabels } from '@/http';
 import { useCommon } from '@/store';
 
-// import createForm from '@/common/index.umd';
-// const BkSchemaForm = createForm();
-
 const props = defineProps({
   detail: {
     type: Object,
@@ -134,32 +122,6 @@ const formData = ref({
 });
 
 const labelsData = ref([]);
-// const schemaFormData = ref({});
-// const formConfig = ref({
-//   schema: {
-//     properties: {
-//       corp_id: {
-//         title: 'Corp Id',
-//         type: 'string',
-//         'ui:rules': [{
-//           validator: '/!^[0-9]*$/',
-//           message: 'test111',
-//         }],
-//       },
-//       agent_id: {
-//         title: 'Agent Id',
-//         type: 'string',
-//       },
-//       secret: {
-//         title: 'Secret',
-//         type: 'string',
-//       },
-//     },
-//     required: ['corp_id', 'agent_id', 'secret'],
-//     title: 'WecomIdpPluginConfig',
-//     type: 'object',
-//   },
-// });
 
 const rules = {
   name: [

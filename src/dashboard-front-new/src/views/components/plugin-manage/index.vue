@@ -20,7 +20,7 @@
             <span class="f15" @mouseenter="handleTitleHover(slotProps)" @mouseleave="handleTitleLeave">
               {{ slotProps.name }}
               <span
-                class="icon apigateway-icon icon-ag-edit-line ml5 mr5 " @click="handleEditePlugin(slotProps)"
+                class="icon apigateway-icon icon-ag-edit-line ml5 mr5 " @click.stop="handleEditePlugin(slotProps)"
                 v-if="slotProps.name === curHoverHead">
               </span>
               <span
@@ -31,7 +31,13 @@
           </template>
           <template #content="slotProps">
             <div>
-              {{ slotProps.config }}
+              <!-- {{ slotProps.config }} -->
+              <div v-for="(item, key) in slotProps.config" :key="key">
+                <div class="flex-row align-items-center">
+                  <div class="form-key-cls">{{key}}：</div>
+                  <div class="form-val-cls">{{item || '--'}}</div>
+                </div>
+              </div>
             </div>
           </template>
         </bk-collapse>
@@ -720,5 +726,15 @@ init();
 
 :deep(.bk-collapse-header):hover {
   background-color: #fff !important;
+}
+
+.form-key-cls{
+  font-size: 12px;
+  color: #63656E;
+  padding: 5px 0;
+}
+.form-val-cls{
+  font-size: 12px;
+  color: #313238;
 }
 </style>
