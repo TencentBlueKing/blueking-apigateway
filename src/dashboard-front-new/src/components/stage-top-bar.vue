@@ -4,11 +4,11 @@
     <div class="model-type mr8">
       <div
         v-for="item in modelTypes"
-        :key="item.key"
-        :class="['item', { active: item.key === curActive }]"
-        @click="switchModelType(item.key, item.routeName)"
+        :key="item?.key"
+        :class="['item', { active: item?.key === curActive }]"
+        @click="switchModelType(item?.key, item?.routeName)"
       >
-        {{ item.text }}
+        {{ item?.text }}
       </div>
     </div>
     <!-- 详情模式环境 -->
@@ -20,13 +20,13 @@
         v-for="(item, index) in stageStore.stageList"
         :key="index"
         class="stage-item"
-        :title="item.name"
-        :class="{ active: curStage.name === item.name }"
-        @click="handleChangeStage(item.name)"
+        :title="item?.name"
+        :class="{ active: curStage?.name === item?.name }"
+        @click="handleChangeStage(item?.name)"
       >
-        <spinner v-if="item.release.status === 'doing'" fill="#3A84FF" />
-        <span v-else :class="['dot', item.release.status]"></span>
-        <span v-overflow-title>{{ item.name }}</span>
+        <spinner v-if="item?.release.status === 'doing'" fill="#3A84FF" />
+        <span v-else :class="['dot', item?.release.status]"></span>
+        <span v-overflow-title>{{ item?.name }}</span>
       </li>
     </ul>
 
@@ -89,12 +89,13 @@ const init = async (isUpdate?: Boolean, isDelete?: Boolean) => {
     const data = await getStageList(apigwId.value);
     stageStore.setStageList(data);
 
-    // 更新停留当前环境
-    if (!isUpdate) {
+    if (route.query?.stage) {
+      curStage.value = stageStore.stageList?.find(stage => stage.name === route.query.stage);
+    } else if (!isUpdate) { // 更新停留当前环境
       curStage.value = data[0];
     }
     if (!isDelete) {
-      getStageDetailFun(curStage.value.id);
+      getStageDetailFun(curStage.value?.id);
     }
   } catch (error) {
     console.error(error);
@@ -116,6 +117,11 @@ const curActive = ref(isDetailMode.value ? 'detail' : 'abbreviation');
 
 // 获取环境详情
 const getStageDetailFun = (id: number) => {
+  if (!id) {
+    curStage.value = stageStore.stageList[0];
+    id = curStage.value.id;
+  }
+
   stageStore.setStageMainLoading(true);
   getStageDetail(apigwId.value, id).then((data) => {
     stageStore.curStageData = data;
@@ -151,7 +157,7 @@ const switchModelType = (key: string, routeName: string, stageName?: string) => 
 // 切换环境
 const handleChangeStage = async (name: string, isDelete?: Boolean) => {
   // 获取切换环境的名字
-  const data = stageStore.stageList.find(item => item.name === name);
+  const data = stageStore.stageList.find(item => item?.name === name);
   if (!isDelete) {
     await getStageDetailFun(data.id);
   }

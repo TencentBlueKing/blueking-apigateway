@@ -25,70 +25,54 @@
     <div class="record-content">
       <bk-loading :loading="isLoading">
         <bk-table
-          class="table-layout" :data="tableData" remote-pagination :pagination="pagination" show-overflow-tooltip
-          @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange"
-          row-hover="auto">
-          <bk-table-column type="expand" width="30" class="ag-expand-cell">
-            <!-- <template #expandRow="row">
-              <div class="h60" v-if="row.grant_dimension === 'api'">
-                <bk-alert theme="error" :title="t('网关下所有资源的权限，包括未来新创建的资源')" />
-                {{ row.id }}
-              </div>
+          ref="tableRef"
+          size="small"
+          class="perm-record-table"
+          :data="tableData"
+          :columns="table.headers"
+          :pagination="pagination"
+          :remote-pagination="true"
+          :row-style="{ cursor: 'pointer' }"
+          @row-click="handleRowClick"
+          @page-limit-change="handlePageSizeChange"
+          @page-value-change="handlePageChange"
+        >
+          <template #expandRow="row">
+            <div class="record-expand-alert" v-if="['api'].includes(row.grant_dimension)">
+              <bk-alert theme="info" :title="t('网关下所有资源的权限，包括未来新创建的资源')" />
+            </div>
+            <div v-else>
               <bk-table
-                v-else
                 :max-height="378"
                 :size="'small'"
                 :data="row.handled_resources"
+                :header-border="false"
                 :outer-border="false"
-                ext-cls="ag-expand-table">
-                <bk-table-column type="index" label="" width="60"></bk-table-column>
-                <bk-table-column prop="name" :label="t('资源名称')"></bk-table-column>
-                <bk-table-column prop="path" :label="t('请求路径')"></bk-table-column>
-                <bk-table-column prop="method" :label="t('请求方法')"></bk-table-column>
-                <bk-table-column prop="method" :label="t('审批状态')">
-                  <template #default="{ data }">
-                    <span v-if="data.apply_status === 'rejected'">
-                      <span class="ag-dot default mr5"></span> {{ t('驳回') }}
-                    </span>
-                    <span v-else>
-                      <span class="ag-dot success mr5"></span> {{ t('通过') }}
-                    </span>
+                :header-cell-style="{ background: '#fafbfd', borderRight: 'none' }"
+                class="ag-expand-table">
+                <bk-table-column type="index" label="#" width="60" />
+                <bk-table-column prop="name" :label="t('资源名称')" />
+                <bk-table-column prop="path" :label="t('请求路径')"/>
+                <bk-table-column prop="method" :label="t('请求方法')" />
+                <bk-table-column prop="apply_status" :label="t('审批状态')" >
+                  <template #default="childData">
+                    <div class="perm-record-dot">
+                      <template v-if="['rejected'].includes(childData?.data?.apply_status)">
+                        <span  class="ag-dot default mr5"></span> {{ t('驳回') }}
+                      </template>
+                      <template v-else>
+                      <span  class="ag-dot success mr5"></span> {{ t('通过') }}
+                      </template>
+                    </div>
                   </template>
                 </bk-table-column>
               </bk-table>
-            </template> -->
-          </bk-table-column>
-          <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
-          <bk-table-column :label="t('授权维度')" prop="grant_dimension_display">
-            <template #default="{ data }">
-              {{ data?.grant_dimension_display || '--' }}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="t('权限期限')" prop="expire_days_display">
-            <template #default="{ data }">
-              {{ data?.expire_days_display || '--' }}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="t('申请人')" prop="applied_by"></bk-table-column>
-          <bk-table-column :label="t('审批时间')" prop="handled_time" width="200"></bk-table-column>
-          <bk-table-column :label="t('审批人')" prop="handled_by"></bk-table-column>
-          <bk-table-column :label="t('审批状态')" prop="status">
-            <template #default="{ data }">
-              <span class="ag-dot default mr5 " v-if="data?.status === 'rejected'"></span>
-              <span class="ag-dot success mr5 " v-else></span>
-              {{statusMap[data?.status as keyof typeof statusMap]}}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="t('操作')" width="100">
-            <template #default="{ data }">
-              <bk-button class="mr10" theme="primary" text @click.stop.prevent="handleShowRecord(data)">
-                {{ t('详情') }}
-              </bk-button>
-            </template>
-          </bk-table-column>
+            </div>
+          </template>
         </bk-table>
       </bk-loading>
     </div>
+
     <!-- 详情sideslider -->
     <bk-sideslider
       :quick-close="true"
@@ -178,8 +162,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { nextTick, reactive, ref } from 'vue';
+<script setup lang="tsx">
+import { nextTick, reactive, ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPermissionRecordList } from '@/http';
 import { useCommon } from '@/store';
@@ -285,7 +269,80 @@ const datepickerShortcuts = reactive([
     },
   },
 ]);
-
+const tableRef = ref();
+const table = ref({
+  headers: [],
+});
+const setTableHeader = () => {
+  const columns =  [
+    {
+      type: 'expand',
+      width: 30,
+      minWidth: 30
+    },
+    {
+      field: 'bk_app_code',
+      label: t('蓝鲸应用ID'),
+    },
+    { 
+      field: 'grant_dimension_display', 
+      label: t('授权维度'),
+      render: ({ data }: Record<string, any>) => {
+        return data.grant_dimension_display || '--'
+      }
+     },
+    { 
+      field: 'expire_days_display',
+      label: t('权限期限'),
+      render: ({ data }: Record<string, any>) => {
+        return data.expire_days_display || '--'
+      }
+    },
+    { field: 'applied_by', label: t('申请人') },
+    { field: 'handled_time', label: t('审批时间') },
+    { field: 'handled_by', label: t('审批人') },
+    { 
+      field: 'status', 
+      label: t('审批状态'),
+      render: ({ data }: Record<string, any>) => {
+        if(['rejected'].includes(data?.status)) {
+          return (
+            <div class="perm-record-dot">
+              <div class="ag-dot default mr5" />
+              {statusMap[data?.status as keyof typeof statusMap]}
+            </div>
+          )
+        } else {
+          return (
+            <div class="perm-record-dot">
+              <span class="ag-dot success mr5" />
+              {statusMap[data?.status as keyof typeof statusMap]}
+            </div>
+          )
+        }
+      }
+     },
+    {
+      field: 'operate',
+      label: t('操作'),
+      render: ({ data }: Record<string, any>) => {
+        return (
+          <div>
+            <bk-button 
+              class="mr10"
+              theme="primary"
+              text
+              onClick={(e:Event) => {handleShowRecord(e,data)}}  
+            >
+              { t('详情') }
+            </bk-button>
+          </div>
+        );
+      },
+    },
+  ];
+  table.value.headers = columns;
+};
 // 列表hooks
 const {
   tableData,
@@ -295,6 +352,14 @@ const {
   handlePageSizeChange,
   // getList,
 } = useQueryList(getPermissionRecordList, filterData);
+
+const handleRowClick = (e: Event, row: Record<string, any>) => {
+  e.stopPropagation();
+  row.isExpand = !row.isExpand;
+  nextTick(() => {
+    tableRef.value.setRowExpand(row,  row.isExpand);
+  });
+};
 
 // 日期清除
 const handleTimeClear = () => {
@@ -320,7 +385,8 @@ const handleTimeChange = () => {
   });
 };
 // 展示详情
-const handleShowRecord = (data: any) => {
+const handleShowRecord = (e: Event, data: any) => {
+  e.stopPropagation();
   curRecord.value = data;
   detailSliderConf.title = `${t('申请应用：')}${data.bk_app_code}`;
   curRecord.value.resourceList = [];
@@ -339,10 +405,12 @@ const handleShowRecord = (data: any) => {
 
 
 const init = () => {
-  console.log(tableData);
-  console.log(apigwId);
+  setTableHeader();
 };
-init();
+
+onMounted(() => {
+  init();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -356,31 +424,6 @@ init();
 .w320 {
   width: 320px;
 }
-.ag-dot {
-    width: 8px;
-    height: 8px;
-    display: inline-block;
-    vertical-align: middle;
-    background: #C4C6CC;
-    border-radius: 50%;
-
-    &.default {
-        background: #f0f1f5;
-        border: 1px solid #c9cad2;
-    }
-
-    &.primary,
-    &.releasing,
-    &.pending {
-        background: #f0f1f5;
-        border: 1px solid #c9cad2;
-    }
-
-    &.success {
-        background: #E5F6EA;
-        border: 1px solid #3FC06D;
-    }
-  }
 .record-content {
   height: calc(100% - 90px);
   min-height: 600px;
@@ -416,11 +459,17 @@ init();
 		}
 	}
 }
-.lh22{
+.lh22 {
   line-height: 22px;
 }
-.w320{
+.w320 {
   width: 320px;
+}
+
+.record-expand-alert {
+  padding: 20px;
+  line-height: 60px;
+  background-color: #fafafa;
 }
 
 :deep(.record-content){
@@ -428,6 +477,60 @@ init();
     height: 280px;
     max-height: 280px;
     justify-content: center;
+  }
+}
+
+:deep(.perm-record-dot) {
+  .mr5 {
+    margin-right: 5px;
+  }
+  .ag-dot {
+      width: 8px;
+      height: 8px;
+      display: inline-block;
+      vertical-align: middle;
+      background: #C4C6CC;
+      border-radius: 50%;
+  
+      &.default {
+        background: #f0f1f5;
+        border: 1px solid #c9cad2;
+      }
+  
+      &.primary,
+      &.releasing,
+      &.pending {
+        background: #f0f1f5;
+        border: 1px solid #c9cad2;
+      }
+      &.success {
+        background: #E5F6EA;
+        border: 1px solid #3FC06D;
+      }
+  }
+}
+
+:deep(.perm-record-table) ,
+:deep(.ag-expand-table) {
+  tr {
+    background-color: #fafbfd;
+  }
+  th {
+    .head-text {
+      font-weight: bold !important;
+      color: #63656E !important;
+    }
+  }
+  td,
+  th {
+    padding: 0 !important;
+    height: 42px !important;
+  }
+}
+
+:deep(.ag-expand-table) {
+  .bk-fixed-bottom-border {
+    display: none;
   }
 }
 </style>

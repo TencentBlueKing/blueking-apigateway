@@ -331,6 +331,7 @@ const setTableHeader = () => {
       type: 'expand',
       width: 30,
       minWidth: 30,
+      showOverflowTooltip: false,
     },
     {
       field: 'timestamp',
@@ -483,7 +484,8 @@ const handlePageChange = (current: number) => {
   getSearchData();
 };
 
-const handleRowClick = (event: any, row: any) => {
+const handleRowClick = (e: Event, row: Record<string, any>) => {
+  e.stopPropagation();
   row.isExpand = !row.isExpand;
   nextTick(() => {
     tableRef.value.setRowExpand(row,  row.isExpand);

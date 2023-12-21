@@ -251,7 +251,7 @@ const handleClearFilterKey = () => {
   handleTimeClear();
   dateKey.value = String(+new Date());
 };
-;
+
 const updateTableEmptyConfig = () => {
   if (!curPagination.value.count) {
     tableEmptyConf.keyword = 'placeholder';
