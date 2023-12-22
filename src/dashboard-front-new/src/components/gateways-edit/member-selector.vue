@@ -212,7 +212,6 @@ onBeforeMount(() => {
       }
     }
 
-
     .edit-selector {
       width: 100%;
     }
@@ -231,13 +230,15 @@ onBeforeMount(() => {
     display: none;
 
     &:hover {
-      color: #1768ef;
+      color: #3a84ff;
     }
   }
 }
 
-.maintainers-error-tip {
-  border: 1px solid red;
+:deep(.maintainers-error-tip) {
+  .bk-tag-input-trigger {
+    border-color: red;
+  }
 }
 
 .validate-error-tips {
