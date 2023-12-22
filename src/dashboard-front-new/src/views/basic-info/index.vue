@@ -8,7 +8,7 @@
             'header-info-left',
             { 'header-info-left-disabled': !basicInfoData.status }
           ]">
-          <span class="name">{{ basicInfoData.name?.[0].toUpperCase() }}</span>
+          <span class="name">{{ basicInfoData?.name?.[0]?.toUpperCase() }}</span>
         </div>
         <div class="header-info-right">
           <div class="header-info-name">
@@ -34,7 +34,8 @@
               width="600px"
               :placeholder="t('请输入描述')"
               :content="basicInfoData.description"
-              @on-change="handleDescriptionChange" />
+              @on-change="(e:Record<string, any>) => handleInfoChange(e, 'description')"
+            />
           </div>
           <div class="header-info-button">
             <bk-button @click="handleOperate('edit')" class="operate-btn">
@@ -43,7 +44,6 @@
             <div>
               <bk-button
                 v-if="basicInfoData.status > 0" @click="handleOperate('enable')"
-                theme="default"
                 class="deactivate-btn operate-btn"
               >
                 {{ t('停用') }}
@@ -54,13 +54,13 @@
             </div>
             <template v-if="basicInfoData.status > 0">
               <bk-popover :content="$t('请先停用才可删除')">
-                <bk-button theme="default" class="operate-btn" :disabled="basicInfoData.status > 0">
+                <bk-button class="operate-btn" :disabled="basicInfoData.status > 0">
                   {{ t('删除') }}
                 </bk-button>
               </bk-popover>
             </template>
             <template v-else>
-              <bk-button theme="default" @click="handleOperate('delete')" class="operate-btn">
+              <bk-button @click="handleOperate('delete')" class="operate-btn">
                 {{ t('删除') }}
               </bk-button>
             </template>
@@ -105,10 +105,17 @@
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('维护人员')}：` }}</div>
               <div class="value">
-                <span>
-                  {{ basicInfoData.maintainers && basicInfoData.maintainers.length
-                    ? basicInfoData.maintainers.join() : '--' }}
-                </span>
+                <GateWaysEditMemberSelector
+                  mode="edit"
+                  width="600px"
+                  field="maintainers"
+                  :is-required="true"
+                  :placeholder="t('请选择维护人员')"
+                  :content="basicInfoData.maintainers"
+                  :is-error-class="'maintainers-error-tip'"
+                  :error-value="t('维修人员不能为空')"
+                  @on-change="(e:Record<string, any>) => handleInfoChange(e, 'maintainers')"
+                />
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -221,12 +228,7 @@
           property="maintainers"
           required
         >
-          <bk-tag-input
-            v-model="basicInfoDetailData.maintainers"
-            allow-create
-            has-delete-icon
-            allow-auto-match
-          />
+          <MemberSelect v-model="basicInfoDetailData.maintainers" :placeholder="t('请选择维护人员')" />
         </bk-form-item>
         <bk-form-item
           :label="t('描述')"
@@ -266,6 +268,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { BasicInfoParams, DialogParams } from './common/type';
 import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays } from '@/http';
 import GateWaysEditTextarea from '@/components/gateways-edit/textarea.vue';
+import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
+import MemberSelect from '@/components/member-select';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -476,15 +480,18 @@ const handleDownload = () => {
   URL.revokeObjectURL(blob);
 };
 
-const handleDescriptionChange = async ({ description }: Record<string, string>) => {
+const handleInfoChange = async ({ description, maintainers }: Record<string, string>, type: string) => {
   const params = {
     ...basicInfoData.value,
-    ...{
-      description,
-    },
   };
+  if (type === 'description') {
+    params.description = description;
+  }
+  if (type === 'maintainers') {
+    params.maintainers = [...maintainers];
+  }
   await editGateWays(apigwId.value, params);
-  basicInfoData.value = Object.assign(basicInfoData.value, { description });
+  basicInfoData.value = Object.assign(basicInfoData.value, params);
   Message({
     message: t('编辑成功'),
     theme: 'success',
@@ -718,7 +725,6 @@ watch(
     }
   }
 }
-
 .gateways-name-tip {
   color: #979BA5;
   font-size: 14px;
