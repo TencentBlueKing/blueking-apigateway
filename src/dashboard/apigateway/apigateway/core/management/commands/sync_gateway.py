@@ -54,5 +54,4 @@ class Command(BaseCommand):
             username=settings.GATEWAY_DEFAULT_CREATOR,
         )
         saver.save()
-
         logger.info("sync gateway success: name=%s", name)

@@ -387,6 +387,11 @@ ETCD_CONFIG = {
 
 # celery 配置
 # 修改 Redis 连接时的 keepalive 配置，让连接更健壮
+# 开启CeleryWorker发送任务事件
+CELERY_WORKER_SEND_TASK_EVENTS = True
+# 开启任务发送 sent 事件
+CELERY_TASK_SEND_SENT_EVENT = True
+
 REDIS_CONNECTION_OPTIONS = {
     "socket_timeout": 3,
     "socket_connect_timeout": 3,
