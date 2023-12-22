@@ -228,7 +228,7 @@
           property="maintainers"
           required
         >
-          <MemberSelect v-model="basicInfoDetailData.maintainers" :placeholder="t('请选择维护人员')" />
+          <MemberSelect v-model="basicInfoDetailData.maintainers" :placeholder="t('请选择维护人员')" :has-delete-icon="true" />
         </bk-form-item>
         <bk-form-item
           :label="t('描述')"

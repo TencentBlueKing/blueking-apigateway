@@ -22,6 +22,7 @@
         ref="memberSelectorRef" v-model="displayValue"
         :class="['edit-selector', { [isErrorClass]: isShowError }]"
         :placeholder="placeholder"
+        :has-delete-icon="true"
         @blur="handleBlur"
         @keydown="handleEnter" />
       <p class="validate-error-tips" v-if="isShowError">{{ errorTips }}</p>
@@ -76,7 +77,7 @@ const memberSelectorEditRef = ref();
 const isShowError = ref(false);
 const isEditable = ref(false);
 const errorTips = ref('');
-const displayValue = ref([]) as any;
+const displayValue = ref([]);
 
 const handleValidate = () => {
   isShowError.value = false;
@@ -87,8 +88,7 @@ const handleEdit = () => {
   document.body.click();
   isEditable.value = true;
   nextTick(() => {
-    console.log(memberSelectorRef.value?.tagInputRef);
-    memberSelectorRef.value?.tagInputRef?.tagInputRef.focus();
+    memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
   });
 };
 
