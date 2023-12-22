@@ -68,14 +68,21 @@
                 <bk-tag
                   v-if="item.stages.length > item.tagOrder"
                   class="tag-cls"
-                  v-bk-tooltips="{ content: item?.labelText.join(';') }">
+                  v-bk-tooltips="{ content: tipsContent(item?.labelTextData), theme: 'light', placement: 'bottom' }">
                   +{{ item.stages.length - item.tagOrder }}
                   <!-- ... -->
                 </bk-tag>
               </div>
             </div>
-            <div class="flex-1 of1 text-c" :class="item.resource_count ? 'default-c' : ''">
-              {{ item.resource_count }}</div>
+            <div
+              :class="[
+                'flex-1 of1 text-c',
+                { 'default-c': item.hasOwnProperty('resource_count') }
+              ]"
+              @click="handleGoPage('apigwResource', item.id)"
+            >
+              {{ item.resource_count }}
+            </div>
             <div class="flex-1 of2">
               <bk-button
                 text
@@ -140,19 +147,14 @@
             :placeholder="$t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
             clearable
           />
-          <span class="common-form-tips">网关的唯一标识，创建后不可更改</span>
+          <span class="common-form-tips">{{ t('网关的唯一标识，创建后不可更改') }}</span>
         </bk-form-item>
         <bk-form-item
           label="维护人员"
           property="maintainers"
           required
         >
-          <bk-tag-input
-            v-model="formData.maintainers"
-            allow-create
-            has-delete-icon
-            allow-auto-match
-          />
+          <member-select v-model="formData.maintainers" />
         </bk-form-item>
         <bk-form-item
           label="描述"
@@ -187,9 +189,11 @@ import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
 import { useGetApiList } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
+import MemberSelect from '@/components/member-select';
 import {
   ref,
   watch,
+  h,
 } from 'vue';
 const { t } = useI18n();
 const user = useUser();
@@ -283,9 +287,9 @@ const init = async () => {
   gatewaysList.value.forEach((item: any) => {
     item.is24HoursAgo = is24HoursAgo(item.created_time);
     item.tagOrder = '3';
-    item.labelText = item.stages.reduce((prev: any, label: any, index: number) => {
+    item.labelTextData = item.stages.reduce((prev: any, label: any, index: number) => {
       if (index > item.tagOrder - 1) {
-        prev.push(label.name);
+        prev.push({ name: label.name, released: item.released });
       }
       return prev;
     }, []);
@@ -354,6 +358,14 @@ const handleChange = (v: string) => {
     default:
       break;
   }
+};
+
+const tipsContent = (data: any[]) => {
+  return h('div', {}, [
+    data.map((item: any) => h('div', { style: 'display: flex; align-items: center', class: 'mt5 tips-cls' }, [h('i', {
+      class: `ag-dot mr5 ${item.released ? 'success' : ''}`,
+    }), item.name])),
+  ]);
 };
 
 init();
@@ -425,18 +437,6 @@ init();
         }
         .env{
           overflow: hidden;
-          .ag-dot{
-            width: 8px;
-            height: 8px;
-            display: inline-block;
-            vertical-align: middle;
-            border-radius: 50%;
-            border: 1px solid #C4C6CC;
-          }
-          .success{
-            background: #e5f6ea;
-            border: 1px solid #3fc06d;
-          }
         }
       }
       .table-item:nth-of-type(1) {
@@ -467,5 +467,31 @@ init();
       color: #979BA5 !important;
     }
   }
+
+  .default-c {
+    cursor: pointer;
+  }
 }
+.ag-dot{
+    width: 8px;
+    height: 8px;
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 50%;
+    border: 1px solid #C4C6CC;
+  }
+  .success{
+    background: #e5f6ea;
+    border: 1px solid #3fc06d;
+  }
+
+  .tips-cls{
+    background: #f0f1f5;
+    padding: 3px 8px;
+    border-radius: 2px;
+    cursor: default;
+    &:hover{
+      background: #d7d9e1 !important;
+    }
+  }
 </style>

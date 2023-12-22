@@ -29,3 +29,13 @@ export interface IDropList {
   label: string
   disabled?: boolean
 }
+
+export enum StaffType {
+  RTX = 'rtx',
+}
+export interface Staff {
+  english_name: string;
+  chinese_name: string;
+  username: string;
+  display_name: string;
+}

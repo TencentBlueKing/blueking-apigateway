@@ -133,10 +133,10 @@ const logDetailsRef = ref(null);
 const detailId = ref();
 const detailsRef = ref(null);
 
-const showDetails = (id: string) => {
-  detailId.value = id;
-  detailsRef.value?.showSideslider();
-};
+// const showDetails = (id: string) => {
+//   detailId.value = id;
+//   detailsRef.value?.showSideslider();
+// };
 
 const showLogs = (id: string) => {
   historyId.value = id;

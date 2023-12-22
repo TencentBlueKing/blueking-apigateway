@@ -43,7 +43,7 @@
       </bk-form-item>
       <bk-form-item class="form-item-cls">
         <template #label>
-          <span class="label-cls">{{ t('检验应用权限：') }}</span>
+          <span class="label-cls">{{ t('校验应用权限：') }}</span>
         </template>
         <span class="value-cls warning-c">
           {{ formData.auth_config?.resource_perm_required ? t('开启') : t('关闭') }}
