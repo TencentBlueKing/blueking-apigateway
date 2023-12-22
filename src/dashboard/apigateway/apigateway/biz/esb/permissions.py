@@ -346,6 +346,7 @@ class ComponentPermission(BaseModel):
     description: str
     description_en: Optional[str] = None
     system_name: str
+    system_id: Optional[int] = None
     permission_level: str
     component_permission: Optional[AppComponentPermissionData]
     component_permission_apply_status: Optional[str]
@@ -356,6 +357,7 @@ class ComponentPermission(BaseModel):
             "id": self.id,
             "name": self.name,
             "system_name": self.system_name,
+            "system_id": self.system_id,
             "description": self.description,
             "description_en": self.description_en,
             "permission_level": self.permission_level,
