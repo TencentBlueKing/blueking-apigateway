@@ -113,7 +113,7 @@
                   :placeholder="t('请选择维护人员')"
                   :content="basicInfoData.maintainers"
                   :is-error-class="'maintainers-error-tip'"
-                  :error-value="t('维修人员不能为空')"
+                  :error-value="t('维护人员不能为空')"
                   @on-change="(e:Record<string, any>) => handleInfoChange(e, 'maintainers')"
                 />
               </div>
@@ -228,7 +228,7 @@
           property="maintainers"
           required
         >
-          <MemberSelect v-model="basicInfoDetailData.maintainers" :placeholder="t('请选择维护人员')" />
+          <MemberSelect v-model="basicInfoDetailData.maintainers" :placeholder="t('请选择维护人员')" :has-delete-icon="true" />
         </bk-form-item>
         <bk-form-item
           :label="t('描述')"

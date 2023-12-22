@@ -1,5 +1,5 @@
 <template>
-  <div class="gateways-edit-member-selector" :style="styles">
+  <div ref="memberSelectorEditRef" class="gateways-edit-member-selector" :style="styles">
     <template v-if="!isEditable">
       <div class="edit-wrapper">
         <div class="edit-content">
@@ -22,7 +22,9 @@
         ref="memberSelectorRef" v-model="displayValue"
         :class="['edit-selector', { [isErrorClass]: isShowError }]"
         :placeholder="placeholder"
+        :has-delete-icon="true"
         @blur="handleBlur"
+        @change="handleChange"
         @keydown="handleEnter" />
       <p class="validate-error-tips" v-if="isShowError">{{ errorTips }}</p>
     </div>
@@ -72,10 +74,11 @@ const props = defineProps({
 const emit = defineEmits(['on-change']);
 
 const memberSelectorRef = ref();
+const memberSelectorEditRef = ref();
 const isShowError = ref(false);
 const isEditable = ref(false);
 const errorTips = ref('');
-const displayValue = ref([]) as any;
+const displayValue = ref([]);
 
 const handleValidate = () => {
   isShowError.value = false;
@@ -86,14 +89,25 @@ const handleEdit = () => {
   document.body.click();
   isEditable.value = true;
   nextTick(() => {
-    console.log(memberSelectorRef.value?.tagInputRef);
-    memberSelectorRef.value?.tagInputRef?.tagInputRef.focus();
+    memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
   });
 };
 
 const handleBlur = () => {
   if (!isEditable.value) return;
   triggerChange();
+};
+
+const handleChange = () => {
+  if (props.isRequired && !displayValue.value.length) {
+    isShowError.value = true;
+    errorTips.value = props.errorValue;
+    return;
+  }
+  isEditable.value = true;
+  nextTick(() => {
+    memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
+  });
 };
 
 const handleEnter = (event: any) => {
@@ -106,19 +120,14 @@ const handleEnter = (event: any) => {
 const hideEdit = (event: any) => {
   if (props.isRequired && !displayValue.value.length) {
     isShowError.value = true;
+    errorTips.value = props.errorValue;
     return;
   }
-  if (event.path && event.path.length > 0) {
-    for (const i of event.path) {
-      const target = event.path[i];
-      console.log(target.className);
-      if (target.className === 'gateways-edit-member-selector') {
-        return;
-      }
-    }
+  if (memberSelectorEditRef.value?.contains(event.target)) {
+    return;
   }
-  // isEditable.value = false;
   handleValidate();
+  triggerChange();
 };
 
 const triggerChange = () => {
@@ -151,13 +160,13 @@ watch(
   (payload: any[]) => {
     displayValue.value = [...payload];
   },
+  { immediate: true },
 );
 
 watch(
   () => props.errorValue,
   (payload: string) => {
     errorTips.value = payload;
-    console.log(errorTips.value, 444);
   },
   { immediate: true },
 );
@@ -217,7 +226,6 @@ onBeforeMount(() => {
       }
     }
 
-
     .edit-selector {
       width: 100%;
     }
@@ -236,13 +244,15 @@ onBeforeMount(() => {
     display: none;
 
     &:hover {
-      color: #1768ef;
+      color: #3a84ff;
     }
   }
 }
 
-.maintainers-error-tip {
-  border: 1px solid red;
+:deep(.maintainers-error-tip) {
+  .bk-tag-input-trigger {
+    border-color: red;
+  }
 }
 
 .validate-error-tips {
