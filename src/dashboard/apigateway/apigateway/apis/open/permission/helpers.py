@@ -229,7 +229,7 @@ class AppPermissionBuilder:
         for resource_id, resource in resource_map.items():
             resource_fields = resource_id_to_fields_map.get(resource_id, {})
             resource["api_name"] = resource_fields.get("api_name", "")
-            resource["gateway_id"] = resource_fields.get("api_id", "")
+            resource["gateway_id"] = resource_fields.get("api_id")
             resource["doc_link"] = doc_links.get(resource_id, "")
             resource["api_permission_apply_status"] = gateway_id_to_permission_apply_status.get(
                 resource_fields.get("api_id"), ""
