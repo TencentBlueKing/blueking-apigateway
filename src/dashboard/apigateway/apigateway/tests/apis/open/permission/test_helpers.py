@@ -23,8 +23,10 @@ import pytest
 from ddf import G
 
 from apigateway.apis.open.permission.helpers import AppPermissionBuilder, ResourcePermission
-from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
+from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
+from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionApplyStatus, AppResourcePermission
 from apigateway.core.models import Resource
+from apigateway.utils.time import to_datetime_from_now
 
 pytestmark = pytest.mark.django_db
 
@@ -300,3 +302,95 @@ class TestAppPermissionBuilder:
                 "doc_link": "test",
             }
         ]
+
+    def test_build_with_apply_status(self, mocker, fake_gateway, fake_resource, unique_id):
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            bk_app_code=unique_id,
+            resource_id=fake_resource.id,
+            expires=to_datetime_from_now(days=-10),
+        )
+        G(
+            AppPermissionApplyStatus,
+            gateway=fake_gateway,
+            bk_app_code=unique_id,
+            resource=fake_resource.id,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+
+        mocker.patch(
+            "apigateway.apis.open.permission.helpers.ResourceVersionHandler.get_released_public_resources",
+            return_value=[
+                {
+                    "id": fake_resource.id,
+                    "name": "test1-1",
+                    "description": "desc",
+                    "description_en": "desc_en",
+                    "resource_perm_required": True,
+                },
+            ],
+        )
+        mocker.patch(
+            "apigateway.apis.open.permission.helpers.ReleasedResource.objects.filter_latest_released_resources",
+            return_value=[
+                {
+                    "id": fake_resource.id,
+                    "name": "test1-2",
+                    "description": "desc",
+                    "description_en": "desc_en",
+                    "resource_perm_required": True,
+                },
+            ],
+        )
+        mocker.patch(
+            "apigateway.apis.open.permission.helpers.ReleasedResourceHandler.get_latest_doc_link",
+            return_value={
+                fake_resource.id: "test",
+            },
+        )
+
+        result = AppPermissionBuilder(unique_id).build()
+        assert result[0]["expires_in"] < 0
+
+        result[0]["expires_in"] = -10
+        assert result == [
+            {
+                "id": fake_resource.id,
+                "name": "test1-2",
+                "api_name": fake_gateway.name,
+                "description": "desc",
+                "description_en": "desc_en",
+                "permission_status": "pending",
+                "permission_level": "normal",
+                "expires_in": -10,
+                "doc_link": "test",
+            },
+        ]
+
+    def test_get_gateway_id_to_permission_apply_status(self, fake_gateway, unique_id):
+        G(
+            AppPermissionApplyStatus,
+            bk_app_code=unique_id,
+            gateway=fake_gateway,
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+
+        builder = AppPermissionBuilder(unique_id)
+        result = builder._get_gateway_id_to_permission_apply_status()
+        assert result == {fake_gateway.id: "pending"}
+
+    def test_get_resource_id_to_permission_apply_status(self, fake_gateway, fake_resource, unique_id):
+        G(
+            AppPermissionApplyStatus,
+            bk_app_code=unique_id,
+            gateway=fake_gateway,
+            resource=fake_resource,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+
+        builder = AppPermissionBuilder(unique_id)
+        result = builder._get_resource_id_to_permission_apply_status()
+        assert result == {fake_resource.id: "pending"}
