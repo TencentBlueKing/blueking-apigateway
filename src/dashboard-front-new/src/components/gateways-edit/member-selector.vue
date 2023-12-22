@@ -24,6 +24,7 @@
         :placeholder="placeholder"
         :has-delete-icon="true"
         @blur="handleBlur"
+        @change="handleChange"
         @keydown="handleEnter" />
       <p class="validate-error-tips" v-if="isShowError">{{ errorTips }}</p>
     </div>
@@ -97,6 +98,18 @@ const handleBlur = () => {
   triggerChange();
 };
 
+const handleChange = () => {
+  if (props.isRequired && !displayValue.value.length) {
+    isShowError.value = true;
+    errorTips.value = props.errorValue;
+    return;
+  }
+  isEditable.value = true;
+  nextTick(() => {
+    memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
+  });
+};
+
 const handleEnter = (event: any) => {
   if (!isEditable.value) return;
   if (event.key === 'Enter' && event.keyCode === 13) {
@@ -107,6 +120,7 @@ const handleEnter = (event: any) => {
 const hideEdit = (event: any) => {
   if (props.isRequired && !displayValue.value.length) {
     isShowError.value = true;
+    errorTips.value = props.errorValue;
     return;
   }
   if (memberSelectorEditRef.value?.contains(event.target)) {
