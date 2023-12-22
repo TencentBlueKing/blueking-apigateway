@@ -1,13 +1,14 @@
 <template>
-  <div class="resource-container pt10 pl20 pr20">
+  <div class="resource-container page-wrapper-padding">
     <bk-alert
       v-if="versionConfigs.needNewVersion && !isDetail"
       theme="warning"
+      class="mb20"
       :title="versionConfigs.versionMessage"
     />
-    <div class="operate flex-row justify-content-between mt10 mb10">
+    <div class="operate flex-row justify-content-between mb15">
       <div class="flex-1 flex-row align-items-center">
-        <div class="mr10">
+        <div class="mr8">
           <bk-button
             theme="primary"
             @click="handleCreateResource"
@@ -28,7 +29,7 @@
           :text="t('导出')"
           :dropdown-list="exportDropData"
           @on-change="handleExport"></ag-dropdown>
-        <div class="mr10">
+        <div class="mr8">
           <bk-button
             @click="handleCreateResourceVersion"
           >
@@ -55,7 +56,7 @@
       :data="searchData"
       unique-select
       style="width: 400px; background:#fff"
-      class="mb10"
+      class="mb15"
       placeholder="请输入资源名称或选择条件搜索, 按Enter确认"
       :value-split-code="'+'"
     />
@@ -882,6 +883,7 @@ onMounted(() => {
       position: relative;
       background: #fff;
       transition: all .15s;
+      margin-bottom: 24px;
       .toggle-button{
         align-items: center;
         background: #dcdee5;

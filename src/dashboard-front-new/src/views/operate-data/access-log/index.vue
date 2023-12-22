@@ -1,5 +1,5 @@
 <template>
-  <div class="access-log-wrapper">
+  <div class="access-log-wrapper page-wrapper-padding">
     <div class="ag-top-header">
       <bk-form class="search-form" form-type="vertical">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker">
@@ -548,7 +548,7 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 .access-log-wrapper {
   min-height: calc(100vh - 208px);
-  padding: 24px;
+  padding-bottom: 24px;
 
   .ag-top-header {
     min-height: 32px;

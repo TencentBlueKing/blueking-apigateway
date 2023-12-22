@@ -1,5 +1,5 @@
 <template>
-  <div class="operate-records-content">
+  <div class="page-wrapper-padding operate-records-content">
     <div class="ag-top-header">
       <bk-form class="search-form" form-type="inline">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker top-form-item-time">
@@ -282,7 +282,6 @@ watch(
 <style lang="scss" scoped>
 .operate-records-content {
   min-height: calc(100vh - 208px);
-  padding: 24px;
 
   .ag-top-header {
     min-height: 32px;

@@ -1,5 +1,5 @@
 <template>
-  <div class="system-container">
+  <div class="page-wrapper-padding system-container">
     <div class="ag-top-header">
       <bk-alert
         type="info"
@@ -13,7 +13,7 @@
         {{ t('新建系统') }}
       </bk-button> -->
       <div
-        class="mt10"
+        class="mt15 mb15"
         style="overflow: hidden"
       >
         <bk-input
@@ -705,9 +705,9 @@ init();
 </script>
 
 <style lang="scss" scoped>
-.system-container {
-  padding: 24px;
-}
+// .system-container {
+//   padding: 24px;
+// }
 span.official {
   margin-left: 2px;
   padding: 2px;
