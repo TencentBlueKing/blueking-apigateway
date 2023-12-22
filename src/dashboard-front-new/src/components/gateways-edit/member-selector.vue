@@ -1,5 +1,5 @@
 <template>
-  <div class="gateways-edit-member-selector" :style="styles">
+  <div ref="memberSelectorEditRef" class="gateways-edit-member-selector" :style="styles">
     <template v-if="!isEditable">
       <div class="edit-wrapper">
         <div class="edit-content">
@@ -72,6 +72,7 @@ const props = defineProps({
 const emit = defineEmits(['on-change']);
 
 const memberSelectorRef = ref();
+const memberSelectorEditRef = ref();
 const isShowError = ref(false);
 const isEditable = ref(false);
 const errorTips = ref('');
@@ -108,17 +109,11 @@ const hideEdit = (event: any) => {
     isShowError.value = true;
     return;
   }
-  if (event.path && event.path.length > 0) {
-    for (const i of event.path) {
-      const target = event.path[i];
-      console.log(target.className);
-      if (target.className === 'gateways-edit-member-selector') {
-        return;
-      }
-    }
+  if (memberSelectorEditRef.value?.contains(event.target)) {
+    return;
   }
-  // isEditable.value = false;
   handleValidate();
+  triggerChange();
 };
 
 const triggerChange = () => {
@@ -151,13 +146,13 @@ watch(
   (payload: any[]) => {
     displayValue.value = [...payload];
   },
+  { immediate: true },
 );
 
 watch(
   () => props.errorValue,
   (payload: string) => {
     errorTips.value = payload;
-    console.log(errorTips.value, 444);
   },
   { immediate: true },
 );
