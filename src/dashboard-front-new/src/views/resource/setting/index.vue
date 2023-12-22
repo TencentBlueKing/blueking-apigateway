@@ -185,6 +185,7 @@
             <bk-table-column
               :label="t('更新时间')"
               prop="updated_time"
+              :sort="true"
               v-if="!isDetail"
             >
             </bk-table-column>

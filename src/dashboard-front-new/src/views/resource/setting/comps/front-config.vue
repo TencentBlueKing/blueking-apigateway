@@ -55,8 +55,8 @@ const { t } = useI18n();
 const cloneTips = ref(t('请求方法+请求路径在网关下唯一，请至少调整其中一项'));
 const common = useCommon();
 const frontConfigData = ref({
-  path: 'GET',
-  method: '',
+  path: '',
+  method: 'GET',
   match_subpath: false,
 });
 
