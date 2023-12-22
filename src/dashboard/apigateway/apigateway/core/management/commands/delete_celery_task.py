@@ -33,17 +33,17 @@ class Command(BaseCommand):
     def handle(self, task_name: str, *args, **kwargs):
         # 查询任务是否存在
         with connection.cursor() as cursor:
-            cursor.execute(f"SELECT COUNT(*) FROM django_celery_beat_periodictask WHERE name='{task_name}';")
+            cursor.execute("SELECT COUNT(*) FROM django_celery_beat_periodictask WHERE name=%s", [task_name])
             task_exists = cursor.fetchone()[0]
 
         if not task_exists:
             raise CommandError(f'Task "{task_name}" does not exist.')
 
         # 构建 SQL 语句
-        sql = f"DELETE FROM django_celery_beat_periodictask WHERE name='{task_name}';"
+        sql = "DELETE FROM django_celery_beat_periodictask WHERE name=%s"
 
         # 执行 SQL 语句
         with connection.cursor() as cursor:
-            cursor.execute(sql)
+            cursor.execute(sql, [task_name])
 
         logger.info("Task %s deleted successfully. ", task_name)
