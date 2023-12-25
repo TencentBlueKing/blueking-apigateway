@@ -106,7 +106,7 @@
               </bk-option>
             </bk-select>
             <strong class="title" v-else
-            >{{ sourceVersion.version }} ({{ sourceVersion.comment }})</strong
+            >{{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}</strong
             >
           </div>
         </div>
@@ -133,7 +133,7 @@
               </bk-option>
             </bk-select>
             <strong class="title" v-else
-            >{{ targetVersion.version }} ({{ targetVersion.comment }})</strong
+            >{{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}</strong
             >
           </div>
           <div class="marked">{{ $t("目标版本") }}</div>
@@ -367,10 +367,12 @@ import { useRoute } from 'vue-router';
 import resourceDetail from '@/components/resource-detail';
 import { useI18n } from 'vue-i18n';
 import { Spinner } from 'bkui-vue/lib/icon';
-import { resourceVersionsDiff, getResourceVersionsList } from '@/http';
+import { useCommon } from '@/store';
+import { resourceVersionsDiff, getResourceVersionsList, getGatewayLabels } from '@/http';
 
 const { t } = useI18n();
 const route = useRoute();
+const common = useCommon();
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
@@ -612,9 +614,19 @@ const getApigwVersions = async () => {
   }
 };
 
+const getLabels = async () => {
+  try {
+    const res = await getGatewayLabels(apigwId.value);
+    common.setGatewayLabels(res);
+  } catch (e) {
+    console.log(e);
+  }
+};
+
 const init = () => {
   getDiffData();
   getApigwVersions();
+  getLabels();
 };
 
 watch(
