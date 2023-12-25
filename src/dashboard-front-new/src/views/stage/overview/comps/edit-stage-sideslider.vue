@@ -459,7 +459,7 @@ const handleConfirmCreate = async () => {
       theme: 'success',
     });
     // 重新获取环境列表(全局事件总线实现)
-    mitt.emit('get-stage-list');
+    mitt.emit('get-stage-list', true);
     // 数据重置
     closeSideslider();
     // 关闭dialog

@@ -31,6 +31,10 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    hasDeleteIcon: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['change', 'input', 'blur', 'focus'],
   setup(props, ctx) {
@@ -107,6 +111,7 @@ export default defineComponent({
         saveKey="username"
         is-async-list
         searchKey={searchKey}
+        hasDeleteIcon={props?.hasDeleteIcon}
         // filterCallback={handleSearch}
         modelValue={props.modelValue}
         onChange={handleChange}
