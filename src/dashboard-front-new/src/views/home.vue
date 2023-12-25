@@ -282,7 +282,7 @@ const init = async () => {
     item.tagOrder = '3';
     item.labelTextData = item.stages.reduce((prev: any, label: any, index: number) => {
       if (index > item.tagOrder - 1) {
-        prev.push({ name: label.name, released: item.released });
+        prev.push({ name: label.name, released: label.released });
       }
       return prev;
     }, []);
@@ -354,10 +354,11 @@ const handleChange = (v: string) => {
 };
 
 const tipsContent = (data: any[]) => {
+  console.log('data', data);
   return h('div', {}, [
     data.map((item: any) => h('div', { style: 'display: flex; align-items: center', class: 'mt5 tips-cls' }, [h('i', {
       class: `ag-dot mr5 ${item.released ? 'success' : ''}`,
-    }), item.name])),
+    }), item.name + item.released])),
   ]);
 };
 
