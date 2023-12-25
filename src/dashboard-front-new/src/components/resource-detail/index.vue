@@ -683,12 +683,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue';
+import { ref, watch, computed } from 'vue';
 import cookie from 'cookie';
-import dayjs from 'dayjs';
+// import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
-import { getGatewayLabels, getBackendsListData } from '@/http';
+import { getBackendsListData } from '@/http';
 import { useRoute } from 'vue-router';
+import { useCommon } from '@/store';
+
+const common = useCommon();
 
 const { t } = useI18n();
 // 网关id
@@ -712,12 +715,12 @@ const props = defineProps({
   },
 });
 
-const weightMap = reactive({
-  roundrobin: t('轮询(Round-Robin)'),
-  'weighted-roundrobin': t('加权轮询(Weighted Round-Robin)'),
-});
+// const weightMap = reactive({
+//   roundrobin: t('轮询(Round-Robin)'),
+//   'weighted-roundrobin': t('加权轮询(Weighted Round-Robin)'),
+// });
 
-const diffMap = ref({});
+const diffMap = ref<any>({});
 const localData = ref<any>({
   name: '',
   disabled_stages: [],
@@ -742,14 +745,14 @@ const localData = ref<any>({
 
 const localLanguage =  cookie.parse(document.cookie).blueking_language || 'zh-cn';
 
-const formatDate = (value) => {
-  if (value) {
-    return dayjs(value).format('YYYY-MM-DD HH:mm:ss');
-  }
-  return '--';
-};
+// const formatDate = (value: any) => {
+//   if (value) {
+//     return dayjs(value).format('YYYY-MM-DD HH:mm:ss');
+//   }
+//   return '--';
+// };
 
-const isEmptyObject = (data) => {
+const isEmptyObject = (data: any) => {
   if (data) {
     const keys = Object.keys(data);
     return !!keys.length;
@@ -757,7 +760,7 @@ const isEmptyObject = (data) => {
   return false;
 };
 
-const isString = (str) => {
+const isString = (str: any) => {
   return typeof str === 'string';
 };
 
@@ -841,7 +844,7 @@ const initDiff = () => {
   }
 };
 
-const findAllDiff = (value, prePath = 'localData', index) => {
+const findAllDiff = (value: any, prePath = 'localData', index?: number) => {
   if (Array.isArray(value)) {
     if (value.length) {
       value.forEach((item, index) => {
@@ -865,32 +868,24 @@ const findAllDiff = (value, prePath = 'localData', index) => {
   }
 };
 
-const checkDiff = (path) => {
+const checkDiff = (path: any) => {
   const keys = Object.keys(diffMap.value);
   return keys.some(item => item.startsWith(path));
 };
 
-const checkAuthConfigDiff = () => {
-  return (
-    checkDiff('localData.contexts.resource_auth.config.app_verified_required')
-    || checkDiff('localData.contexts.resource_auth.config.auth_verified_required')
-    || checkDiff('localData.contexts.resource_auth.config.resource_perm_required')
-    || checkDiff('localData.disabled_stages')
-  );
-};
+// const checkAuthConfigDiff = () => {
+//   return (
+//     checkDiff('localData.contexts.resource_auth.config.app_verified_required')
+//     || checkDiff('localData.contexts.resource_auth.config.auth_verified_required')
+//     || checkDiff('localData.contexts.resource_auth.config.resource_perm_required')
+//     || checkDiff('localData.disabled_stages')
+//   );
+// };
 
 const checkPluginsDiff = () => {};
 
 // 网关标签
-const labels = ref<any[]>([]);
-const getLabels = async () => {
-  try {
-    const res = await getGatewayLabels(apigwId.value);
-    labels.value = res;
-  } catch (e) {
-    console.log(e);
-  }
-};
+const labels = computed(() => common.gatewayLabels || []);
 
 // 后端服务列表
 const getBackendsList = async () => {
@@ -912,7 +907,6 @@ watch(
 
 initDiff();
 initLocalData();
-getLabels();
 </script>
 
 <style lang="scss" scoped>

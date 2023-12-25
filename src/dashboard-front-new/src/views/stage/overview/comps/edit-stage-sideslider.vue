@@ -3,7 +3,7 @@
     <bk-sideslider
       v-model:isShow="isShow"
       :title="isAdd ? t('新建环境') : t('编辑环境')"
-      quick-close
+      :quick-close="false"
       width="960"
       ext-cls="stage-sideslider-cls"
       @hidden="closeSideslider"
@@ -32,6 +32,7 @@
                     <bk-input
                       :placeholder="t('请输入 2-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头')"
                       v-model="curStageData.name"
+                      :disabled="!isAdd"
                     ></bk-input>
                     <p
                       slot="tip"
@@ -67,7 +68,7 @@
               v-for="(backend, backendIndex) in curStageData.backends"
               :key="backend.name"
             >
-              <div class="title">
+              <div class="title" v-if="backendIndex === 0">
                 <i class="apigateway-icon icon-ag-down-shape"></i>
                 {{ t('后端服务配置') }}
               </div>
@@ -110,7 +111,7 @@
                       >
                         <div class="host-item mb10">
                           <bk-input
-                            :placeholder="$t('格式: http(s)://host:port')"
+                            :placeholder="$t('格式: host:port')"
                             v-model="hostItem.host"
                             :key="backend.config.loadbalance"
                           >
@@ -152,7 +153,11 @@
                           <i
                             class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
                             :class="{ disabled: backend.config.hosts.length < 2 }"
-                            @click="handleDeleteServiceAddress(backend.name, index)"
+                            @click="
+                              backend.config.hosts.length < 2 ?
+                                ''
+                                :
+                                handleDeleteServiceAddress(backend.name, index)"
                           ></i>
                         </div>
                       </bk-form-item>
@@ -168,9 +173,8 @@
                         <bk-input
                           type="number"
                           :min="1"
-                          :show-controls="false"
+                          :max="300"
                           v-model="backend.config.timeout"
-                          class="time-input"
                         >
                           <template #suffix>
                             <div class="group-text group-text-style">{{ $t('秒') }}</div>
@@ -233,17 +237,19 @@ const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 
 // 默认值
-const defaultConfig = {
-  type: 'node',
-  timeout: 30,
-  loadbalance: 'weighted-roundrobin',
-  hosts: [
-    {
-      scheme: 'http',
-      host: '',
-      weight: 100,
-    },
-  ],
+const defaultConfig = () => {
+  return {
+    type: 'node',
+    timeout: 30,
+    loadbalance: 'weighted-roundrobin',
+    hosts: [
+      {
+        scheme: 'http',
+        host: '',
+        weight: 100,
+      },
+    ],
+  };
 };
 
 const curStageData = ref({
@@ -252,7 +258,7 @@ const curStageData = ref({
   backends: [
     {
       name: '',
-      config: defaultConfig,
+      config: defaultConfig(),
     },
   ],
 });
@@ -274,8 +280,8 @@ const schemeList = [{ value: 'http' }, { value: 'https' }];
 
 // 访问地址
 const stageAddress = computed(() => {
-  const keys = {
-    api_name: common.apigwName,
+  const keys: any = {
+    api_name: common.apigwName?.name,
     stage_name: curStageData.value.name,
     resource_path: '',
   };
@@ -365,7 +371,7 @@ const addInit = async () => {
     return {
       id: item.id,
       name: item.name,
-      config: defaultConfig,
+      config: defaultConfig(),
     };
   });
   isDialogLoading.value = false;
@@ -400,7 +406,7 @@ const closeSideslider = () => {
     backends: [
       {
         name: '',
-        config: defaultConfig,
+        config: defaultConfig(),
       },
     ],
   };
@@ -453,7 +459,7 @@ const handleConfirmCreate = async () => {
       theme: 'success',
     });
     // 重新获取环境列表(全局事件总线实现)
-    mitt.emit('get-stage-list');
+    mitt.emit('get-stage-list', true);
     // 数据重置
     closeSideslider();
     // 关闭dialog
@@ -600,8 +606,10 @@ defineExpose({
     }
   }
 
-  :deep(.bk-input--number-control) {
-    display: none;
+  .weights-input {
+    :deep(.bk-input--number-control) {
+      display: none;
+    }
   }
 }
 

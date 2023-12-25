@@ -285,6 +285,7 @@ watch(
       getResourceVersions();
       if (props.version?.id) {
         formData.resource_version_id = props.version?.id;
+        handleVersionChange(props.version?.id);
       }
     } else {
       stepsConfig.value.curStep = 1;

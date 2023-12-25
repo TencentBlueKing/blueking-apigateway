@@ -75,15 +75,15 @@ let timeId: any = null;
 // 改变当前选中值
 const handleTimelineChange = (data: any) => {
   const { tag } = data;
-  let detail: any = {};
+  let detail = '';
   for (let i = 0; i < state.objectSteps?.length; i++) {
     const item = state.objectSteps[i];
     if (item?.tag === tag) {
-      detail = item?.detail || {};
+      detail = item?.detail;
       break;
     }
   }
-  logBody.value = JSON.stringify(detail || {});
+  logBody.value = detail || '';
 };
 
 // 获取日志列表
@@ -98,10 +98,11 @@ const getLogsList = async () => {
     // 整理步骤
     const steps: any = [];
     state.totalDuration = 0;
+    const subStep = res?.events[res?.events?.length - 1]?.step || 0;
 
     res?.events_template?.forEach((item: any, index: number) => {
       item.size = 'large';
-      const subStep = res?.events[res?.events?.length - 1]?.step || 0;
+
       if (item?.step < subStep) {
         item.color = 'green';
         item.filled = true;
@@ -134,12 +135,17 @@ const getLogsList = async () => {
       const duration = date2.diff(date1, 's', true);
       state.totalDuration += duration;
 
+      const itemLogs: string[] = [];
+      children?.forEach((c: any) => {
+        itemLogs?.push(`${c.created_time}  ${c.name}  ${c.status}`);
+      });
+
       steps[index].children = children;
       steps[index].content = `<span style="font-size: 12px;">${duration} s</span>`;
-      steps[index].detail = children[children.length - 1]?.detail;
+      steps[index].detail = itemLogs.join('\n');
     });
     state.objectSteps = steps;
-    logBody.value = JSON.stringify(steps[steps.length - 1]?.detail || {});
+    logBody.value = steps[subStep]?.detail || '';
   } catch (e) {
     clearInterval(timeId);
     console.log(e);

@@ -133,7 +133,9 @@
                 theme="primary"
                 outline
                 @click="handleClickCopyLink(row)"
-                :loading="isShareLoading"> {{ $t('复制分享链接') }} </bk-button>
+                :loading="isShareLoading">
+                {{ $t('复制分享链接') }}
+              </bk-button>
             </dl>
           </template>
           <template #empty>
@@ -329,6 +331,7 @@ const setTableHeader = () => {
       type: 'expand',
       width: 30,
       minWidth: 30,
+      showOverflowTooltip: false,
     },
     {
       field: 'timestamp',
@@ -481,7 +484,8 @@ const handlePageChange = (current: number) => {
   getSearchData();
 };
 
-const handleRowClick = (event: any, row: any) => {
+const handleRowClick = (e: Event, row: Record<string, any>) => {
+  e.stopPropagation();
   row.isExpand = !row.isExpand;
   nextTick(() => {
     tableRef.value.setRowExpand(row,  row.isExpand);
@@ -584,7 +588,7 @@ onBeforeUnmount(() => {
       }
 
       .ag-form-item-inline {
-        margin-left: 8px !important;
+        margin-right: 8px !important;
         margin-top: 0px !important;
 
         .bk-form-content {

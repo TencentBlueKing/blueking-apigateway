@@ -31,8 +31,12 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    hasDeleteIcon: {
+      type: Boolean,
+      default: false,
+    },
   },
-  emits: ['change', 'input', 'blur'],
+  emits: ['change', 'input', 'blur', 'focus'],
   setup(props, ctx) {
     const tagInputRef = ref(null);
     const staffStore = useStaffStore();
@@ -65,9 +69,15 @@ export default defineComponent({
       ctx.emit('change', val);
     }
 
+    function handleFocus(val: Staff[]) {
+      ctx.emit('focus', val);
+    }
+
     function handleBlur(val: Staff[]) {
       ctx.emit('blur', val);
     }
+
+    ctx.expose({ tagInputRef });
 
     const getUserList = _.debounce((userName: string) => {
       if (staffStore.fetching || !userName) return;
@@ -101,9 +111,11 @@ export default defineComponent({
         saveKey="username"
         is-async-list
         searchKey={searchKey}
+        hasDeleteIcon={props?.hasDeleteIcon}
         // filterCallback={handleSearch}
         modelValue={props.modelValue}
         onChange={handleChange}
+        onFocus={handleFocus}
         onBlur={handleBlur}
         onInput={handleInput}
         tpl={tpl}

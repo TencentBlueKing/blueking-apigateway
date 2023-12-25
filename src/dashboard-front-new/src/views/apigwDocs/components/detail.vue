@@ -412,7 +412,7 @@ watch(
 watch(
   () => route,
   () => {
-    if (route?.params?.apigwId && route?.params?.resourceId) {
+    if (route.params?.apigwId) {
       init();
     }
   },

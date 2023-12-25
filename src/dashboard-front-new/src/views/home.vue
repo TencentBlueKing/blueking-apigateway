@@ -74,8 +74,15 @@
                 </bk-tag>
               </div>
             </div>
-            <div class="flex-1 of1 text-c" :class="item.resource_count ? 'default-c' : ''">
-              {{ item.resource_count }}</div>
+            <div
+              :class="[
+                'flex-1 of1 text-c',
+                { 'default-c': item.hasOwnProperty('resource_count') }
+              ]"
+              @click="handleGoPage('apigwResource', item.id)"
+            >
+              {{ item.resource_count }}
+            </div>
             <div class="flex-1 of2">
               <bk-button
                 text
@@ -460,6 +467,10 @@ init();
     &-name{
       color: #979BA5 !important;
     }
+  }
+
+  .default-c {
+    cursor: pointer;
   }
 }
 .ag-dot{
