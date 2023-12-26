@@ -85,28 +85,28 @@
             >
               {{ t('编辑') }}
             </bk-button>
-            <bk-dropdown trigger="manual" v-model:is-show="showDropdown">
+            <bk-dropdown trigger="click" v-model:is-show="showDropdown">
               <bk-button class="more-cls" @click="showDropdown = true">
                 <i class="apigateway-icon icon-ag-gengduo"></i>
               </bk-button>
               <template #content>
                 <bk-dropdown-menu ext-cls="stage-more-actions">
                   <bk-dropdown-item
-                    :ext-cls="formatOffShelf"
+                    :ext-cls="{ disabled: stageData.status !== 1 }"
                     v-bk-tooltips="
                       stageData.release.status === 'unreleased' ?
                         t('尚未发布，不可下架') :
-                        stageData.status === 0 ?
+                        stageData.status === 0 && stageData.release.status !== 'unreleased' ?
                           t('已下架') :
                           t('下架环境')"
-                    @click="handleStageUnlist()"
+                    @click="stageData.status === 1 ? handleStageUnlist() : void 0"
                   >
                     {{ t('下架') }}
                   </bk-dropdown-item>
                   <bk-dropdown-item
-                    :ext-cls="{ disabled: stageData.status === 1 }"
+                    :ext-cls="{ disabled: stageData.status !== 0 }"
                     v-bk-tooltips="stageData.status === 1 ? t('环境下线后，才能删除') : t('删除环境')"
-                    @click="handleStageDelete()"
+                    @click="stageData.status === 0 ? handleStageDelete() : void 0"
                   >
                     {{ t('删除') }}
                   </bk-dropdown-item>
@@ -220,20 +220,14 @@ const panels = [
 // 网关id
 const apigwId = +route.params.id;
 
-const formatOffShelf = computed(() => {
-  if (['unreleased', 'failure', 0].includes(stageData.value.release.status)) {
-    return 'disabled';
-  }
-  return '';
-});
-
 onMounted(() => {
   handleTabChange('resourceInfo');
 });
 
 // 发布成功，重新请求环境详情
-const handleReleaseSuccess = () => {
-  stageTopBarRef.value?.getStageDetailFun(stageData.value?.id);
+const handleReleaseSuccess = async () => {
+  // stageTopBarRef.value?.getStageDetailFun(stageData.value?.id);
+  await mitt.emit('get-stage-list');
 };
 
 // 重新加载子组件
@@ -268,9 +262,7 @@ const handleRelease = () => {
 
 // 下架环境
 const handleStageUnlist = async () => {
-  if (['unreleased', 'failure', 0].includes(stageData.value.release.status)) {
-    return;
-  }
+  showDropdown.value = false;
   InfoBox({
     title: t('确认下架吗？'),
     onConfirm: async () => {
@@ -296,8 +288,11 @@ const handleStageUnlist = async () => {
 // 删除环境
 const handleStageDelete = async () => {
   showDropdown.value = false;
-  if (stageData.value.status === 1) {
-    return;
+  if (stageData.value.name === 'prod') {
+    return Message({
+      message: t('prod环境不可删除'),
+      theme: 'warning',
+    });
   }
 
   InfoBox({

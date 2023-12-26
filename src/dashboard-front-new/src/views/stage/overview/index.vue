@@ -2,7 +2,7 @@
   <div>
     <!-- 自定义头部 -->
     <stage-top-bar />
-    <div class="stage-overview-wrapper">
+    <div class="page-wrapper-padding stage-overview-wrapper">
       <bk-loading
         :loading="stageStore.realStageMainLoading"
       >
@@ -31,9 +31,6 @@ const stageStore = useStage();
         background: red;
         margin: 0 10px;
     }
-}
-.stage-overview-wrapper {
-  padding: 20px;
 }
 </style>
 

@@ -1,5 +1,5 @@
 <template>
-  <bk-dropdown :trigger="triggerType" class="mr10" @show="isOpen = true" @hide="isOpen = false">
+  <bk-dropdown :trigger="triggerType" class="mr8" @show="isOpen = true" @hide="isOpen = false">
     <bk-button :disabled="isDisabled">
       {{ text }}
       <i :class="['apigateway-icon icon-ag-down-small apigateway-select-icon', { 'is-open': isOpen }]">
