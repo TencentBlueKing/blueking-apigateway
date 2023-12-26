@@ -34,7 +34,7 @@
               width="600px"
               :placeholder="t('请输入描述')"
               :content="basicInfoData.description"
-              @on-change="(e:Record<string, any>) => handleInfoChange(e, 'description')"
+              @on-change="(e:Record<string, any>) => handleInfoChange(e)"
             />
           </div>
           <div class="header-info-button">
@@ -114,7 +114,7 @@
                   :content="basicInfoData.maintainers"
                   :is-error-class="'maintainers-error-tip'"
                   :error-value="t('维护人员不能为空')"
-                  @on-change="(e:Record<string, any>) => handleInfoChange(e, 'maintainers')"
+                  @on-change="(e:Record<string, any>) => handleInfoChange(e)"
                 />
               </div>
             </div>
@@ -480,16 +480,11 @@ const handleDownload = () => {
   URL.revokeObjectURL(blob);
 };
 
-const handleInfoChange = async ({ description, maintainers }: Record<string, string>, type: string) => {
+const handleInfoChange = async (payload: Record<string, string>) => {
   const params = {
     ...basicInfoData.value,
+    ...payload,
   };
-  if (type === 'description') {
-    params.description = description;
-  }
-  if (type === 'maintainers') {
-    params.maintainers = [...maintainers];
-  }
   await editGateWays(apigwId.value, params);
   basicInfoData.value = Object.assign(basicInfoData.value, params);
   Message({

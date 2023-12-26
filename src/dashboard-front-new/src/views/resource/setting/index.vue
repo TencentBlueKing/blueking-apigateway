@@ -77,6 +77,8 @@
             @selection-change="handleSelectionChange"
             @row-mouse-enter="handleMouseEnter"
             @row-mouse-leave="handleMouseLeave"
+            @column-sort="handleSortChange"
+            @column-filter="handleFilterChange"
             row-hover="auto"
             :row-class="is24HoursAgoClsFunc"
           >
@@ -102,6 +104,7 @@
               :label="t('前端请求方法')"
               prop="method"
               width="120"
+              :filter="renderMethodFilter"
               v-if="!isDetail"
             >
               <template #default="{ data }">
@@ -367,7 +370,7 @@
     <version-sideslider ref="versionSidesliderRef" />
   </div>
 </template>
-<script setup lang="ts">
+<script setup lang="tsx">
 import { reactive, ref, watch, onMounted, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -388,6 +391,7 @@ import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { cloneDeep } from 'lodash';
 import { is24HoursAgo } from '@/common/util';
+
 const props = defineProps({
   apigwId: {
     type: Number,
@@ -423,7 +427,7 @@ const exportDropData = ref<IDropList[]>([
 
 const router = useRouter();
 
-const filterData = ref<any>({ keyword: '' });
+const filterData = ref<any>({ keyword: '', order_by: '' });
 
 // ref
 const versionSidesliderRef = ref(null);
@@ -462,6 +466,16 @@ const searchData = shallowRef([
     name: '资源名称',
     id: 'name',
     placeholder: '请输入资源名称',
+  },
+  {
+    name: '前端请求路径',
+    id: 'path',
+    placeholder: '请输入前端请求路径',
+  },
+  {
+    name: '前端请求方法',
+    id: 'method',
+    placeholder: '请输入前端请求方法',
   },
 ]);
 
@@ -585,6 +599,41 @@ const handleDeleteResource = async (id: number) => {
     theme: 'success',
   });
   getList();
+};
+
+const renderMethodFilter = ref({
+  filterScope: 'all',
+  btnSave: false,
+  list: [
+    {
+      text: 'GET', value: 'GET',
+    },
+    {
+      text: 'DELETE', value: 'DELETE',
+    },
+    {
+      text: 'PUT', value: 'PUT',
+    },
+    {
+      text: 'PATCH', value: 'PATCH',
+    },
+    {
+      text: 'ANY', value: 'ANY',
+    },
+  ],
+  btnReset: false,
+});
+
+const handleSortChange = ({ column, type }: Record<string, any>) => {
+  filterData.value.order_by = column.field;
+  if (type === 'null') {
+    delete filterData.value.order_by;
+  }
+  getList();
+};
+
+const handleFilterChange = (payload: any) => {
+  console.log(payload, 555);
 };
 
 // 展示右边内容
@@ -977,5 +1026,15 @@ onMounted(() => {
 }
 .rosource-number{
   color: #c4c6cc;
+}
+
+:deep(.bk-popover) {
+  .bk-pop2-content {
+    .bk-table-head-filter {
+      .content-footer {
+        display: none;
+      }
+    }
+  }
 }
 </style>
