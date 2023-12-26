@@ -1,5 +1,5 @@
 <template>
-  <div class="app-content">
+  <div class="page-wrapper-padding app-content">
     <div class="ag-top-header">
       <bk-form class="search-form" form-type="inline" label-width="84">
         <bk-form-item :label="$t('选择时间')" class="ag-form-item-datepicker top-form-item-time">
@@ -712,7 +712,7 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 .app-content {
-  padding: 24px;
+  padding-bottom: 24px;
 }
 .page-content {
   min-height: calc(100vh - 268px);

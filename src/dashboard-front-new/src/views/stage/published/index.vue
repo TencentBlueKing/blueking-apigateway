@@ -1,5 +1,5 @@
 <template>
-  <div class="publish-container p20">
+  <div class="page-wrapper-padding publish-container">
     <div class="operate flex-row justify-content-between mb20">
       <div class="flex-1 flex-row align-items-center">
         <bk-date-picker

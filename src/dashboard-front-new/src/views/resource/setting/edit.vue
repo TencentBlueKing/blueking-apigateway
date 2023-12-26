@@ -1,7 +1,7 @@
 <template>
   <div class="edit-container">
     <bk-collapse
-      class="collapse-cls p20"
+      class="page-wrapper-padding collapse-cls"
       v-model="activeIndex"
       use-card-theme
     >
@@ -143,6 +143,7 @@ init();
     :deep(.collapse-cls){
       .bk-collapse-item{
         background: #fff;
+        margin-bottom: 16px;
         .bk-collapse-header{
           display: none;
         }
