@@ -141,6 +141,7 @@ class ESBChannelManager(models.Manager):
                 "description",
                 "description_en",
                 "permission_level",
+                "system_id",
                 "system__name",
             )
         )
@@ -152,6 +153,7 @@ class ESBChannelManager(models.Manager):
                 "description": item["description"],
                 "description_en": item["description_en"],
                 "permission_level": item["permission_level"],
+                "system_id": item["system_id"],
                 "system_name": item["system__name"],
             }
             for item in data

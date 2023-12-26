@@ -39,6 +39,7 @@ class ResourcePermission(BaseModel):
     id: int
     name: str
     api_name: str
+    gateway_id: Optional[int] = None
     description: str
     description_en: Optional[str] = None
     resource_perm_required: bool
@@ -53,6 +54,7 @@ class ResourcePermission(BaseModel):
             "id": self.id,
             "name": self.name,
             "api_name": self.api_name,
+            "gateway_id": self.gateway_id,
             "description": self.description,
             "description_en": self.description_en,
             "doc_link": self.doc_link,
@@ -137,6 +139,7 @@ class ResourcePermissionBuilder:
 
         for resource in resources:
             resource["api_name"] = self.gateway.name
+            resource["gateway_id"] = self.gateway.id
             resource["doc_link"] = doc_links.get(resource["id"], "")
             resource["api_permission"] = self.api_permission
             resource["resource_permission"] = self.resource_permission_map.get(resource["id"])
@@ -222,6 +225,7 @@ class AppPermissionBuilder:
         for resource_id, resource in resource_map.items():
             resource_fields = resource_id_to_fields.get(resource_id, {})
             resource["api_name"] = resource_fields.get("gateway__name", "")
+            resource["gateway_id"] = resource_fields.get("gateway_id")
             resource["doc_link"] = doc_links.get(resource_id, "")
             resource["api_permission_apply_status"] = gateway_id_to_permission_apply_status.get(
                 resource_fields.get("gateway_id"), ""
