@@ -27,8 +27,8 @@
           :class="{ active: curStage?.name === item?.name }"
           @click="handleChangeStage(item?.name)"
         >
-          <spinner v-if="item?.release.status === 'doing'" fill="#3A84FF" />
-          <span v-else :class="['dot', item?.release.status]"></span>
+          <spinner v-if="getStatus(item) === 'doing'" fill="#3A84FF" />
+          <span v-else :class="['dot', getStatus(item)]"></span>
           <span v-overflow-title>{{ item?.name }}</span>
         </li>
       </ul>
@@ -66,6 +66,7 @@ import { useStage, useCommon } from '@/store';
 import { useI18n } from 'vue-i18n';
 import mitt from '@/common/event-bus';
 import { Spinner, Plus } from 'bkui-vue/lib/icon';
+import { getStatus } from '@/common/util';
 import editStageSideslider from '@/views/stage/overview/comps/edit-stage-sideslider.vue';
 import { throttle } from 'lodash';
 
@@ -106,14 +107,21 @@ const init = async (isUpdate?: Boolean, isDelete?: Boolean) => {
     const data = await getStageList(apigwId.value);
     stageStore.setStageList(data);
 
-    if (route.query?.stage) {
+    if (isDelete) {
+      curStage.value = data[0];
+      router.push({
+        query: {
+          stage: curStage.value.name,
+        },
+      });
+    } else if (route.query?.stage && !isUpdate) { // 更新停留当前环境
       curStage.value = stageStore.stageList?.find(stage => stage.name === route.query.stage);
-    } else if (!isUpdate) { // 更新停留当前环境
+    }
+
+    if (!curStage.value?.id) {
       curStage.value = data[0];
     }
-    if (!isDelete) {
-      getStageDetailFun(curStage.value?.id);
-    }
+    getStageDetailFun(curStage.value?.id);
   } catch (error) {
     console.error(error);
   } finally {
@@ -173,6 +181,7 @@ const switchModelType = (key: string, routeName: string, stageName?: string) => 
 
 // 切换环境
 const handleChangeStage = async (name: string, isDelete?: Boolean) => {
+  if (name === curStage.value.name) return;
   // 获取切换环境的名字
   const data = stageStore.stageList.find(item => item?.name === name);
   if (!isDelete) {
@@ -417,6 +426,11 @@ defineExpose({
         }
 
         &.unreleased {
+          border: 1px solid #C4C6CC;
+          background: #F0F1F5;
+        }
+
+        &.delist {
           border: 1px solid #C4C6CC;
           background: #F0F1F5;
         }
