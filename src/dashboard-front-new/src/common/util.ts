@@ -429,3 +429,15 @@ export const getMethodsTheme = (methods: string) => {
   };
   return theme;
 };
+
+// 环境状态
+export const getStatus = (stageData: any) => {
+  if (stageData?.status === 1) {
+    return stageData?.release?.status;
+  }
+  // stageData.status = 0
+  if (stageData?.release?.status === 'unreleased') { // 未发布
+    return 'unreleased';
+  }
+  return 'delist';
+};

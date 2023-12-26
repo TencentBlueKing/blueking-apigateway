@@ -3,8 +3,8 @@
     <div class="card-item" v-for="(stageData, index) in stageList" :key="index">
       <div class="title">
         <div class="title-lf">
-          <spinner v-if="stageData.release.status === 'doing'" fill="#3A84FF" />
-          <span v-else :class="['dot', stageData.release.status]"></span>
+          <spinner v-if="getStatus(stageData) === 'doing'" fill="#3A84FF" />
+          <span v-else :class="['dot', getStatus(stageData)]"></span>
           {{ stageData.name }}
         </div>
         <div class="title-rg">
@@ -18,6 +18,7 @@
           <bk-button
             class="ml10"
             size="small"
+            :disabled="stageData.status !== 1"
             @click="handleStageUnlist(stageData.id)"
           >
             下架
@@ -81,7 +82,7 @@
 <script setup lang="ts">
 import { ref, toRefs, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { copy } from '@/common/util';
+import { copy, getStatus } from '@/common/util';
 import editStageSideslider from './edit-stage-sideslider.vue';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import mitt from '@/common/event-bus';
@@ -322,6 +323,11 @@ const handleAddStage = () => {
     }
 
     &.unreleased {
+      border: 1px solid #C4C6CC;
+      background: #F0F1F5;
+    }
+
+    &.delist {
       border: 1px solid #C4C6CC;
       background: #F0F1F5;
     }
