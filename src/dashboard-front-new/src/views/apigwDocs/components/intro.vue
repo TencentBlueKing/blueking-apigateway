@@ -239,12 +239,10 @@ const init = async () => {
   getApigwSDK('python');
 };
 
-init();
-
 watch(
   () => route,
-  () => {
-    if (route?.params?.apigwId) {
+  (value: any) => {
+    if (value?.params?.apigwId && ['apigwAPIDetailIntro'].includes(value.name)) {
       init();
     }
   },

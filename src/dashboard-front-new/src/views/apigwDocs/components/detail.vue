@@ -113,7 +113,7 @@
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
-import { getGatewaysDetailsDocs, getApigwStagesDocs, getGatewaysDocs, getApigwResourcesDocs } from '@/http';
+import { getApigwStagesDocs, getGatewaysDocs, getApigwResourcesDocs } from '@/http';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -124,6 +124,7 @@ const curApigw = ref<any>({});
 const resourceList = ref<any>([]);
 const stageList = ref<any>([]);
 const curStageId = ref<any>('');
+const apigwId = ref('');
 const originResourceGroup = ref<any>({});
 const curComponentName = ref<any>('');
 const activeName = ref<any>([]);
@@ -178,14 +179,14 @@ const resourceGroup = computed(() => {
   return group;
 });
 
-const getApigwAPIDetail = async () => {
-  try {
-    const res = await getGatewaysDetailsDocs(curApigwId.value);
-    curApigw.value = res;
-  } catch (e) {
-    console.log(e);
-  }
-};
+// const getApigwAPIDetail = async () => {
+//   try {
+//     const res = await getGatewaysDetailsDocs(curApigwId.value);
+//     curApigw.value = res;
+//   } catch (e) {
+//     console.log(e);
+//   }
+// };
 
 const getApigwStages = async () => {
   try {
@@ -223,6 +224,7 @@ const getApigwStages = async () => {
         query: { stage: resStage },
       });
     }
+    await getApigwResources();
   } catch (e) {
     console.log(e);
   }
@@ -251,63 +253,67 @@ const getApigwAPI = async () => {
 };
 
 const getApigwResources = async () => {
-  try {
-    const query = {
-      limit: 10000,
-      offset: 0,
-      stage_name: curStageId.value,
-    };
-    const res = await getApigwResourcesDocs(curApigwId.value, query);
-
-    const group: any = {};
-    const defaultItem: any = {
-      labelId: 'default',
-      labelName: t('默认'),
-      resources: [],
-    };
-    resourceList.value = res;
-    resourceList.value?.forEach((resource: any) => {
-      const { labels } = resource;
-      if (labels?.length) {
-        labels.forEach((label: any) => {
-          if (typeof label === 'object') {
-            if (group[label.id]) {
-              group[label.id]?.resources.push(resource);
+  if (stageList.value.length) {
+    try {
+      const query = {
+        limit: 10000,
+        offset: 0,
+        stage_name: curStageId.value,
+      };
+      const res = await getApigwResourcesDocs(curApigwId.value, query);
+      const group: any = {};
+      const defaultItem: any = {
+        labelId: 'default',
+        labelName: t('默认'),
+        resources: [],
+      };
+      resourceList.value = res;
+      resourceList.value?.forEach((resource: any) => {
+        const { labels } = resource;
+        if (labels?.length) {
+          labels.forEach((label: any) => {
+            if (typeof label === 'object') {
+              if (group[label.id]) {
+                group[label.id]?.resources.push(resource);
+              } else {
+                if (group[label.name]) {
+                  group[label.name]?.resources.push(resource);
+                } else {
+                  const obj = {
+                    labelId: label.id,
+                    labelName: label.name,
+                    resources: [resource],
+                  };
+                  group[label.name] = obj;
+                }
+              }
             } else {
-              if (group[label.name]) {
-                group[label.name]?.resources.push(resource);
+              if (group[label]) {
+                group[label]?.resources?.push(resource);
               } else {
                 const obj = {
-                  labelId: label.id,
-                  labelName: label.name,
+                  labelId: label,
+                  labelName: label,
                   resources: [resource],
                 };
-                group[label.name] = obj;
+                group[label] = obj;
               }
             }
-          } else {
-            if (group[label]) {
-              group[label]?.resources?.push(resource);
-            } else {
-              const obj = {
-                labelId: label,
-                labelName: label,
-                resources: [resource],
-              };
-              group[label] = obj;
-            }
-          }
-        });
-      } else {
-        defaultItem.resources.push(resource);
+          });
+        } else {
+          defaultItem.resources.push(resource);
+        }
+      });
+      if (defaultItem.resources.length) {
+        group['默认'] = defaultItem;
       }
-    });
-    if (defaultItem.resources.length) {
-      group['默认'] = defaultItem;
+      originResourceGroup.value = group;
+    } catch (e) {
+      console.log(e);
     }
-    originResourceGroup.value = group;
-  } catch (e) {
-    console.log(e);
+  } else {
+    originResourceGroup.value = {};
+    resourceList.value = [];
   }
 };
 
@@ -328,6 +334,7 @@ const handleShowDoc = (resource: any) => {
     },
     query: {
       stage: curStageId.value,
+      curPage: 'detail',
     },
   });
 };
@@ -364,10 +371,9 @@ const init = async () => {
   const routeParams = route.params;
   curApigwId.value = routeParams.apigwId;
   curComponentName.value = routeParams.resourceId;
-  getApigwAPIDetail();
+  // getApigwAPIDetail();
   getApigwAPI();
   await getApigwStages();
-  getApigwResources();
 
   // 回到页头
   const container = document.documentElement || document.body;
@@ -411,15 +417,17 @@ watch(
 
 watch(
   () => route,
-  () => {
-    if (route.params?.apigwId) {
-      init();
+  (payload: any) => {
+    if (payload.params?.apigwId) {
+      curApigw.value = { name: payload.params?.apigwId };
+      if (apigwId.value !== payload.params?.apigwId && ['apigwAPIDetailIntro', 'apigwAPIDetailDoc'].includes(payload.name)) {
+        apigwId.value = payload.params?.apigwId as string;
+        init();
+      }
     }
   },
   { immediate: true, deep: true },
 );
-
-init();
 
 </script>
 
