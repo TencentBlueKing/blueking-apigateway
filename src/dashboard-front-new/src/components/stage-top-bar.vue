@@ -235,7 +235,7 @@ watch(() => stageStore.stageList, async () => {
 
 // 判断是否需要隐藏或显示控制按钮
 const toggleControlButtons = () => {
-  if (envListElement.value.scrollWidth <= envContainerElement.value.clientWidth - 52) {
+  if (envListElement.value?.scrollWidth <= envContainerElement.value?.clientWidth - 52) {
     scrollState.value.isShowIcon = false;
     isNextClick = false;
   } else {
@@ -250,7 +250,7 @@ const calculateMaxScroll = () => {
   }
   const actionbuts = 52;
   const previousMaxScrollLeft = maxScrollLeft.value;
-  maxScrollLeft.value = (envListElement.value.scrollWidth - envContainerElement.value.clientWidth) + actionbuts;
+  maxScrollLeft.value = (envListElement.value?.scrollWidth - envContainerElement.value?.clientWidth) + actionbuts;
 
   // 当元素滚动到最右侧，拖动窗口列表需要跟随滚动
   if (isWiden.value && scrollState.value.isShowIcon && isNextClick) {
