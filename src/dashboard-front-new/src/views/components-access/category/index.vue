@@ -1,5 +1,5 @@
 <template>
-  <div class="category-container">
+  <div class="page-wrapper-padding category-container">
     <div class="ag-top-header">
       <!-- 新建文档分类操作 -->
       <!-- <bk-button theme="primary" @click="handleCreate"> {{ t('新建文档分类') }} </bk-button> -->
@@ -436,7 +436,7 @@ init();
 
 <style lang="scss" scoped>
 .category-container {
-  padding: 24px;
+  // padding: 24px;
   .ag-top-header {
     min-height: 32px;
     margin-bottom: 20px;

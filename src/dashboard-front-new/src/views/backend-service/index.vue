@@ -1,6 +1,6 @@
 <template>
-  <div class="backend-service-container p20">
-    <div class="header flex-row justify-content-between mb24">
+  <div class="backend-service-container page-wrapper-padding">
+    <div class="header flex-row justify-content-between mb15">
       <div class="header-btn flex-row ">
         <span class="mr10">
           <bk-button theme="primary" class="mr5 w80" @click="handleAdd">

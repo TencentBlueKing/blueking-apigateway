@@ -1,6 +1,6 @@
 <template>
-  <div class="resource-container p20">
-    <div class="operate flex-row justify-content-between mt10 mb10">
+  <div class="resource-container page-wrapper-padding">
+    <div class="operate flex-row justify-content-between mb15">
       <div class="flex-1 flex-row align-items-center">
         <div class="mr10">
           <bk-button theme="primary" @click="handleShowDiff" :disabled="diffDisabled">
