@@ -20,7 +20,7 @@
           >
           </bk-date-picker>
         </bk-form-item>
-        <bk-form-item>
+        <bk-form-item class="ag-form-item-search">
           <bk-search-select
             v-model="searchValue"
             unique-select
@@ -428,6 +428,11 @@ watch(
     .top-clear-button {
       margin-top: 10px;
     }
+  }
+
+  .ag-form-item-search {
+    margin-left: 0px !important;
+    margin-top: 10px !important;
   }
 }
 </style>

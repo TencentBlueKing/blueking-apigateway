@@ -907,6 +907,9 @@ watch(
       order_by: filterData.value.order_by,
       keyword: '',
     };
+    if (!filterData.value.order_by) {
+      delete filterData.value.order_by;
+    }
     if (v.length) {
       v.forEach((e: any) => {
         if (e.id === e.name) {
