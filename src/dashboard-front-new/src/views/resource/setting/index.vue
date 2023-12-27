@@ -104,7 +104,6 @@
               :label="t('前端请求方法')"
               prop="method"
               width="120"
-              :filter="renderMethodFilter"
               v-if="!isDetail"
             >
               <template #default="{ data }">
@@ -607,31 +606,8 @@ const handleDeleteResource = async (id: number) => {
   getList();
 };
 
-const renderMethodFilter = ref({
-  filterScope: 'all',
-  btnSave: false,
-  list: [
-    {
-      text: 'GET', value: 'GET',
-    },
-    {
-      text: 'DELETE', value: 'DELETE',
-    },
-    {
-      text: 'PUT', value: 'PUT',
-    },
-    {
-      text: 'PATCH', value: 'PATCH',
-    },
-    {
-      text: 'ANY', value: 'ANY',
-    },
-  ],
-  btnReset: false,
-});
-
 const handleSortChange = ({ column, type }: Record<string, any>) => {
-  const typeMap: any = {
+  const typeMap: Record<string, Function> = {
     asc: () => {
       filterData.value.order_by = column.field;
     },
@@ -934,7 +910,7 @@ onMounted(() => {
 </script>
 <style lang="scss" scoped>
 .resource-container{
-  height: 100%;
+  // height: 100%;
   .operate{
     &-input{
       width: 450px;
