@@ -11,6 +11,7 @@
           <bk-button
             theme="primary"
             size="small"
+            :disabled="getStatus(stageData) === 'doing' || getStatus(stageData) === 'delist'"
             @click="handleRelease(stageData)"
           >
             发布资源
@@ -32,7 +33,14 @@
           <div class="value url">
             <p
               class="link"
+              v-if="getStageAddress(stageData.name)"
               v-bk-tooltips="{ content: getStageAddress(stageData.name) }">
+              {{ getStageAddress(stageData.name) || '--' }}
+            </p>
+            <p
+              v-else
+              class="link"
+            >
               {{ getStageAddress(stageData.name) || '--' }}
             </p>
             <i
@@ -80,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRefs, computed } from 'vue';
+import { ref, toRefs, computed, onUnmounted, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { copy, getStatus } from '@/common/util';
 import editStageSideslider from './edit-stage-sideslider.vue';
@@ -102,6 +110,7 @@ const apigwId = computed(() => +route.params.id);
 
 const releaseSidesliderRef = ref();
 const currentStage = ref<any>({});
+let timeId: any = null;
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -186,6 +195,17 @@ const stageSidesliderRef = ref(null);
 const handleAddStage = () => {
   stageSidesliderRef.value.handleShowSideslider('add');
 };
+
+onMounted(() => {
+  timeId = setInterval(() => {
+    // 获取网关列表
+    mitt.emit('get-stage-list');
+  }, 1000 * 30);
+});
+
+onUnmounted(() => {
+  clearInterval(timeId);
+});
 
 </script>
 

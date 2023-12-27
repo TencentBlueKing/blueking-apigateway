@@ -131,8 +131,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue';
+import { ref, reactive, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { getStatus } from '@/common/util';
 import { useQueryList, useSelection } from '@/hooks';
 import { getResourceVersionsList, getStageList } from '@/http';
 import createSdk from '../components/createSdk.vue';
@@ -246,6 +247,12 @@ const showRelease = async (row: any) => {
 
 // 展示发布弹窗
 const handleClickStage = (stage: any, row: any) => {
+  if (getStatus(stage) === 'doing') {
+    return Message({
+      theme: 'warning',
+      message: t('该环境正在发布资源，请稍后再试'),
+    });
+  }
   stageData.value = stage;
   versionData.value = row;
   releaseSidesliderRef.value.showReleaseSideslider();
@@ -265,4 +272,14 @@ watch(
     deep: true,
   },
 );
+
+let timeId: any = null;
+onMounted(() => {
+  timeId = setInterval(() => {
+    getList();
+  }, 1000 * 30);
+});
+onUnmounted(() => {
+  clearInterval(timeId);
+});
 </script>

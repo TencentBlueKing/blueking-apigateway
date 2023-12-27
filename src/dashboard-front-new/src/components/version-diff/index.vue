@@ -83,7 +83,7 @@
     <div :class="['diff-wrapper', { 'no-result': !hasResult }]">
       <div class="diff-header">
         <div class="source-header">
-          <div class="marked">{{ $t("源版本") }}</div>
+          <!-- <div class="marked">{{ $t("源版本") }}</div> -->
           <div class="version">
             <bk-select
               class="fl mr10"
@@ -105,9 +105,14 @@
               >
               </bk-option>
             </bk-select>
-            <strong class="title" v-else
-            >{{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}</strong
-            >
+            <strong class="title" v-else>
+              <template v-if="sourceVersion.version">
+                {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
+              </template>
+              <template v-else>
+                当前最新资源列表
+              </template>
+            </strong>
           </div>
         </div>
         <div class="target-header">
@@ -116,7 +121,7 @@
               class="fl mr10"
               v-model="localTargetId"
               v-if="targetSwitch"
-              :placeholder="$t('请选择源版本')"
+              :placeholder="$t('请选择目标版本')"
               :clearable="false"
               :input-search="false"
               :filterable="true"
@@ -132,11 +137,11 @@
               >
               </bk-option>
             </bk-select>
-            <strong class="title" v-else
-            >{{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}</strong
-            >
+            <strong class="title" v-else>
+              {{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}
+            </strong>
           </div>
-          <div class="marked">{{ $t("目标版本") }}</div>
+          <!-- <div class="marked">{{ $t("目标版本") }}</div> -->
         </div>
         <button
           class="switch-btn"
@@ -406,7 +411,7 @@ const props = defineProps({
 
 const width = ref<number>(1240);
 const isDataLoading = ref<boolean>(false);
-const localSourceId = ref(props.sourceId);
+const localSourceId = ref(props.sourceId || 'current');
 const localTargetId = ref(props.targetId || 'current');
 const localVersionList = ref<any[]>(props.versionList);
 const diffData = reactive<any>({
@@ -437,15 +442,15 @@ const diffTypeList = reactive([
 ]);
 
 const hasResult = computed(() => {
-  const addItem = diffData.add.some((item) => {
+  const addItem = diffData.add.some((item: any) => {
     return checkMatch(item, 'add');
   });
 
-  const deleteItem = diffData.delete.some((item) => {
+  const deleteItem = diffData.delete.some((item: any) => {
     return checkMatch(item, 'delete');
   });
 
-  const updateItem = diffData.update.some((item) => {
+  const updateItem = diffData.update.some((item: any) => {
     return (
       checkMatch(item.source, 'update') || checkMatch(item.target, 'update')
     );
@@ -480,7 +485,7 @@ const targetVersion = computed(() => {
   };
 });
 
-const handleToggle = (item) => {
+const handleToggle = (item: any) => {
   item.isExpanded = !item.isExpanded;
 };
 
@@ -500,7 +505,7 @@ const handleSwitch = () => {
   getDiffData();
 };
 
-const checkMatch = (item, type) => {
+const checkMatch = (item: any, type: any) => {
   if (searchParams.diffType && searchParams.diffType !== type) {
     return false;
   }
@@ -515,7 +520,7 @@ const checkMatch = (item, type) => {
   );
 };
 
-const renderTitle = (item) => {
+const renderTitle = (item: any) => {
   let { method, path } = item;
   if (searchKeyword.value) {
     const reg = new RegExp(`(${searchKeyword.value})`, 'ig');
@@ -561,13 +566,13 @@ const getDiffData = async () => {
       ),
     });
 
-    res.add.forEach((item) => {
+    res.add.forEach((item: any) => {
       item.isExpanded = false;
     });
-    res.delete.forEach((item) => {
+    res.delete.forEach((item: any) => {
       item.isExpanded = false;
     });
-    res.update.forEach((item) => {
+    res.update.forEach((item: any) => {
       item.isExpanded = false;
     });
 
@@ -632,8 +637,11 @@ const init = () => {
 watch(
   () => [props.sourceId, props.targetId],
   (newArr) => {
-    localSourceId.value = newArr[0];
-    localTargetId.value = newArr[1];
+    const [sourceId, targetId] = newArr;
+    localSourceId.value = sourceId || 'current';
+    localTargetId.value = targetId || 'current';
+    isDataLoading.value = false;
+    getDiffData();
   },
 );
 
