@@ -29,7 +29,7 @@
         >
           <spinner v-if="getStatus(item) === 'doing'" fill="#3A84FF" />
           <span v-else :class="['dot', getStatus(item)]"></span>
-          <span v-overflow-title>{{ item?.name }}</span>
+          <span>{{ item?.name }}</span>
         </li>
       </ul>
 
@@ -104,6 +104,7 @@ const curStage = ref(stageStore.curStageData || stageStore.defaultStage);
 const init = async (isUpdate?: Boolean, isDelete?: Boolean) => {
   stageStore.setStageMainLoading(true);
   try {
+    // 获取环境列表
     const data = await getStageList(apigwId.value);
     stageStore.setStageList(data);
 
@@ -134,7 +135,7 @@ init();
 
 // 是否为详情模式
 const isDetailMode = computed(() => {
-  return route.path.includes('/detail-mode');
+  return route.path.includes('/stage-detail');
 });
 
 // 当前环境概览模式
@@ -142,6 +143,9 @@ const curActive = ref(isDetailMode.value ? 'detail' : 'abbreviation');
 
 // 获取环境详情
 const getStageDetailFun = (id: number) => {
+  if (curActive.value === 'abbreviation') {
+    return;
+  }
   if (!id) {
     curStage.value = stageStore.stageList[0];
     id = curStage.value.id;
@@ -165,7 +169,7 @@ const switchModelType = (key: string, routeName: string, stageName?: string) => 
   const data = {
     name: routeName,
     params: {
-      id: route.params.id,
+      id: apigwId.value,
     },
     query: {
       stage: stageName || curStage.value.name,
