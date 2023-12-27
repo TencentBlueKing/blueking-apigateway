@@ -15,12 +15,13 @@
                   theme="info"
                   :title="$t('尚未发布')"
                   v-if="currentAssets.release.status === 'unreleased'"
-                  class="mt15 mb15" closable />
+                  class="mt15 mb15" />
                 <bk-alert
                   v-else
                   theme="info"
-                  :title="`当前版本号: ${currentAssets.resource_version.version || '--'}, 于${currentAssets.release.created_time || '--'}发布成功; 资源发布成功后, 需发布到指定的环, 方可生效`"
-                  class="mt15 mb15" closable />
+                  :title="`当前版本号: ${currentAssets.resource_version.version || '--'},
+                  于${currentAssets.release.created_time || '--'}发布成功; 资源发布成功后, 需发布到指定的环, 方可生效`"
+                  class="mt15 mb15" />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
                   <bk-form-item

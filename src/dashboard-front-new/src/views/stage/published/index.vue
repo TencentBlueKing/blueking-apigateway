@@ -99,7 +99,7 @@
 
 <script setup lang="ts">
 import { useQueryList, useDatePicker } from '@/hooks';
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { PublishSourceEnum, PublishStatusEnum } from '@/types';
 import logDetails from '@/components/log-details/index.vue';
@@ -121,6 +121,7 @@ const {
   isLoading,
   handlePageChange,
   handlePageSizeChange,
+  getList,
 } = useQueryList(getReleaseHistories, filterData);
 
 // datepicker 时间选择器 hooks 适用于列表筛选
@@ -145,6 +146,17 @@ const showLogs = (id: string) => {
   historyId.value = id;
   logDetailsRef.value?.showSideslider();
 };
+
+let timeId: any = null;
+onMounted(() => {
+  timeId = setInterval(() => {
+    getList();
+  }, 1000 * 30);
+});
+onUnmounted(() => {
+  clearInterval(timeId);
+});
+
 </script>
 
 <style lang="scss" scoped>

@@ -13,7 +13,9 @@
               <div class="resource-diff-main">
                 <version-diff
                   ref="diffRef"
-                  :source-id="diffSourceId" :target-id="diffTargetId"
+                  :source-id="diffSourceId"
+                  :target-id="diffTargetId"
+                  :source-switch="false"
                 >
                 </version-diff>
               </div>
@@ -23,12 +25,13 @@
                 <!-- <bk-alert
                   theme="info"
                   :title="$t('尚未发布')"
-                  class="mt15 mb15" closable /> -->
-                <!-- <bk-alert
+                  v-if="!versionList?.length"
+                  class="mt15 mb15" /> -->
+                <bk-alert
                   theme="info"
-                  :title="`当前版本号: ${currentAssets.resource_version.version || '--'},
-                  于${currentAssets.release.created_time || '--'}发布成功; 资源发布成功后, 需发布到指定的环, 方可生效`"
-                  class="mt15 mb15" closable /> -->
+                  :title="`最新版本号: ${versionList[0]?.version || '--'},
+                  于 ${versionList[0]?.created_time || '--'} 创建`"
+                  class="mt15 mb15" />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
                   <bk-form-item
@@ -37,7 +40,10 @@
                     class="mt20"
                     required>
                     <bk-input v-model="formData.version" :placeholder="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')" />
-                    <!-- <span class="common-form-tips">{{ t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}</span> -->
+                    <div class="form-tips">
+                      <i class="apigateway-icon icon-ag-info"></i>
+                      {{ t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}
+                    </div>
                     <section class="ft12">
                       <span>
                         {{ $t("新增") }}
@@ -97,7 +103,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { ref, reactive, watch } from 'vue';
-import { getResourceVersionsList, createResourceVersion } from '@/http';
+import { getResourceVersionsList, createResourceVersion, resourceVersionsDiff } from '@/http';
 import { useRoute, useRouter } from 'vue-router';
 import versionDiff from '@/components/version-diff/index.vue';
 import CustomDialog from '@/components/custom-dialog/index.vue';
@@ -183,6 +189,25 @@ const handleBuildVersion = async () => {
   }
 };
 
+const getDiffData = async () => {
+  diffData.value.add = [];
+  diffData.value.delete = [];
+  diffData.value.update = [];
+
+  try {
+    const res = await resourceVersionsDiff(apigwId, {
+      source_resource_version_id: diffSourceId.value,
+      target_resource_version_id: diffTargetId.value,
+    });
+
+    diffData.value.add = res.add;
+    diffData.value.delete = res.delete;
+    diffData.value.update = res.update;
+  } catch (e) {
+    console.log(e);
+  }
+};
+
 // 显示侧边栏
 const showReleaseSideslider = () => {
   isShow.value = true;
@@ -191,8 +216,9 @@ const showReleaseSideslider = () => {
 // 获取资源版本列表
 const getResourceVersions = async () => {
   try {
-    const res = await getResourceVersionsList(apigwId, { offset: 1, limit: 1000 });
+    const res = await getResourceVersionsList(apigwId, { offset: 0, limit: 999 });
     versionList.value = res.results;
+    diffTargetId.value = versionList.value[0]?.id || '';
   } catch (e) {
     console.log(e);
   }
@@ -202,6 +228,7 @@ const getResourceVersions = async () => {
 const handleNext = async () => {
   await formRef.value?.validate();
   stepsConfig.value.curStep = 2;
+  getDiffData();
 };
 
 // 上一步
@@ -275,6 +302,11 @@ defineExpose({
     .operate2 {
       padding: 0px 24px 24px;
     }
+  }
+
+  .form-tips {
+    font-size: 12px;
+    color: #63656e;
   }
   </style>
 
