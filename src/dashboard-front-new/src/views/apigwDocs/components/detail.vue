@@ -233,15 +233,6 @@ const getApigwStages = async () => {
   }
 };
 
-const handleApigwChange = (data: any) => {
-  router.push({
-    name: 'apigwAPIDetailIntro',
-    params: {
-      apigwId: data,
-    },
-  });
-};
-
 const getApigwAPI = async () => {
   if (apigwList.value.length) {
     return;
@@ -356,6 +347,19 @@ const hightlight = (value: string) => {
     return value.replace(new RegExp(`(${keyword.value})`), '<em class="ag-keyword">$1</em>');
   }
   return value;
+};
+
+const handleApigwChange = async (data: any) => {
+  reset();
+  await getApigwResources();
+  router.push({
+    name: 'apigwAPIDetailIntro',
+    params: {
+      apigwId: data,
+      stage: curStageId.value,
+    },
+    query: { stage: curStageId.value },
+  });
 };
 
 const handleStageChange = async () => {
