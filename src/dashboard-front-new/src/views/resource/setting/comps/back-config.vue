@@ -379,7 +379,7 @@ defineExpose({
 
   .w568 {
     max-width: 568px !important;
-    width: 55% !important;
+    // width: 55% !important;
   }
 
   .ag-primary {

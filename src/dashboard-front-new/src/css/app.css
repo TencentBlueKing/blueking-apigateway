@@ -2,6 +2,19 @@
 /* stylelint-disable indentation */
 @import './variable.css';
 
+html,
+body {
+    font-family: PingFang SC,Microsoft Yahei,Helvetica,Aria;
+}
+
+.mac {
+    font-family: PingFang SC,Microsoft Yahei,Helvetica,Aria !important;
+}
+
+.win {
+    font-family: Microsoft Yahei,Helvetica,Aria !important;
+}
+
 .ag-tag {
     display: inline-block;
     background: #F0F1F5;
@@ -142,4 +155,8 @@
     &.warning {
         color: $warningColor;
     }
+}
+
+.page-wrapper-padding {
+    padding: 20px 24px;
 }

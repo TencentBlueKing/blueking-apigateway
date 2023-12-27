@@ -1,13 +1,14 @@
 <template>
-  <div class="resource-container pt10 pl20 pr20">
+  <div class="resource-container page-wrapper-padding">
     <bk-alert
       v-if="versionConfigs.needNewVersion && !isDetail"
       theme="warning"
+      class="mb20"
       :title="versionConfigs.versionMessage"
     />
-    <div class="operate flex-row justify-content-between mt10 mb10">
+    <div class="operate flex-row justify-content-between mb15">
       <div class="flex-1 flex-row align-items-center">
-        <div class="mr10">
+        <div class="mr8">
           <bk-button
             theme="primary"
             @click="handleCreateResource"
@@ -28,7 +29,7 @@
           :text="t('导出')"
           :dropdown-list="exportDropData"
           @on-change="handleExport"></ag-dropdown>
-        <div class="mr10">
+        <div class="mr8">
           <bk-button
             @click="handleCreateResourceVersion"
           >
@@ -55,7 +56,7 @@
       :data="searchData"
       unique-select
       style="width: 400px; background:#fff"
-      class="mb10"
+      class="mb15"
       placeholder="请输入资源名称或选择条件搜索, 按Enter确认"
       :value-split-code="'+'"
     />
@@ -76,6 +77,8 @@
             @selection-change="handleSelectionChange"
             @row-mouse-enter="handleMouseEnter"
             @row-mouse-leave="handleMouseLeave"
+            @column-sort="handleSortChange"
+            @column-filter="handleFilterChange"
             row-hover="auto"
             :row-class="is24HoursAgoClsFunc"
           >
@@ -184,6 +187,7 @@
             <bk-table-column
               :label="t('更新时间')"
               prop="updated_time"
+              :sort="true"
               v-if="!isDetail"
             >
             </bk-table-column>
@@ -365,7 +369,7 @@
     <version-sideslider ref="versionSidesliderRef" />
   </div>
 </template>
-<script setup lang="ts">
+<script setup lang="tsx">
 import { reactive, ref, watch, onMounted, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -386,6 +390,8 @@ import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { cloneDeep } from 'lodash';
 import { is24HoursAgo } from '@/common/util';
+import {  useCommon } from '@/store';
+
 const props = defineProps({
   apigwId: {
     type: Number,
@@ -408,6 +414,7 @@ interface IexportDialog extends IDialog {
 }
 
 const methodsEnum: any = ref(MethodsEnum);
+const common = useCommon();
 const { t } = useI18n();
 // 批量下拉的item
 const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
@@ -421,7 +428,7 @@ const exportDropData = ref<IDropList[]>([
 
 const router = useRouter();
 
-const filterData = ref<any>({ keyword: '' });
+const filterData = ref<any>({ keyword: '', order_by: '' });
 
 // ref
 const versionSidesliderRef = ref(null);
@@ -449,17 +456,31 @@ const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
 
+
+const methodsTypeList =  ref(common.methodList);
+
 const searchValue = ref([]);
 const searchData = shallowRef([
   {
-    name: '模糊查询',
+    name: t('模糊查询'),
     id: 'keyword',
-    placeholder: '请输入资源名称，前端请求路径',
+    placeholder: t('请输入资源名称，前端请求路径'),
   },
   {
-    name: '资源名称',
+    name: t('资源名称'),
     id: 'name',
-    placeholder: '请输入资源名称',
+    placeholder: t('请输入资源名称'),
+  },
+  {
+    name: t('前端请求路径'),
+    id: 'path',
+    placeholder: t('请输入前端请求路径'),
+  },
+  {
+    name: t('前端请求方法'),
+    id: 'method',
+    placeholder: t('请输入前端请求方法'),
+    children: methodsTypeList.value,
   },
 ]);
 
@@ -583,6 +604,25 @@ const handleDeleteResource = async (id: number) => {
     theme: 'success',
   });
   getList();
+};
+
+const handleSortChange = ({ column, type }: Record<string, any>) => {
+  const typeMap: Record<string, Function> = {
+    asc: () => {
+      filterData.value.order_by = column.field;
+    },
+    desc: () => {
+      filterData.value.order_by = `-${column.field}`;
+    },
+    null: () => {
+      delete filterData.value.order_by;
+    },
+  };
+  return typeMap[type]();
+};
+
+const handleFilterChange = (payload: any) => {
+  console.log(payload, 555);
 };
 
 // 展示右边内容
@@ -846,8 +886,12 @@ watch(
   () => searchValue.value,
   (v: any[]) => {
     filterData.value = {
+      order_by: filterData.value.order_by,
       keyword: '',
     };
+    if (!filterData.value.order_by) {
+      delete filterData.value.order_by;
+    }
     if (v.length) {
       v.forEach((e: any) => {
         if (e.id === e.name) {
@@ -866,7 +910,7 @@ onMounted(() => {
 </script>
 <style lang="scss" scoped>
 .resource-container{
-  height: 100%;
+  // height: 100%;
   .operate{
     &-input{
       width: 450px;
@@ -882,6 +926,7 @@ onMounted(() => {
       position: relative;
       background: #fff;
       transition: all .15s;
+      margin-bottom: 24px;
       .toggle-button{
         align-items: center;
         background: #dcdee5;
@@ -974,5 +1019,15 @@ onMounted(() => {
 }
 .rosource-number{
   color: #c4c6cc;
+}
+
+:deep(.bk-popover) {
+  .bk-pop2-content {
+    .bk-table-head-filter {
+      .content-footer {
+        display: none;
+      }
+    }
+  }
 }
 </style>

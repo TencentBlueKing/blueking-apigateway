@@ -82,6 +82,8 @@ const headerList = ref([
 
 ]);
 
+const systemCls = ref('mac');
+
 const apigwId = computed(() => {
   if (route.params.id !== undefined) {
     return route.params.id;
@@ -93,7 +95,6 @@ watch(
   () => route.fullPath,
   () => {
     const { meta } = route;
-
     let index = 0;
     for (let i = 0; i < headerList.value.length; i++) {
       const item = headerList.value[i];
@@ -103,6 +104,10 @@ watch(
       }
     }
     activeIndex.value = index;
+    const platform = window.navigator.platform.toLowerCase();
+    if (platform.indexOf('win') === 0) {
+      systemCls.value = 'win';
+    }
   },
 );
 
@@ -145,41 +150,43 @@ const goPage = (routeName: string) => {
 </script>
 
 <template>
-  <bk-navigation
-    class="navigation-content"
-    navigation-type="top-bottom"
-    :need-menu="false"
-    :default-open="true"
-  >
-    <template #side-icon>
-      <!-- v-if="localLanguage === 'en'" -->
-      <img src="@/images/APIgataway-c.png" class="api-logo">
+  <div id="app" :class="[systemCls]">
+    <bk-navigation
+      class="navigation-content"
+      navigation-type="top-bottom"
+      :need-menu="false"
+      :default-open="true"
+    >
+      <template #side-icon>
+        <!-- v-if="localLanguage === 'en'" -->
+        <img src="@/images/APIgataway-c.png" class="api-logo">
       <!-- <img v-else src="@/images/APIgataway-c.png" class="api-logo"> -->
-    </template>
-    <div class="content">
-      <router-view v-if="userLoading"></router-view>
-    </div>
-    <template #header>
-      <div
-        class="header"
-      >
-        <div class="header-nav">
-          <div
-            v-for="(item, index) in headerList"
-            :key="item.id"
-            class="header-nav-item"
-            :class="{ 'item-active': index === activeIndex }"
-          >
-            <span
-              v-if="!isExternalLink(item.url)"
-              @click="handleToPage(item.url, index, item.link)">{{item.name}}</span>
-            <a :href="item.url" target="_blank" v-else>{{item.name}}</a>
-          </div>
-        </div>
-        <user-info v-if="userLoading" />
+      </template>
+      <div class="content">
+        <router-view v-if="userLoading"></router-view>
       </div>
-    </template>
-  </bk-navigation>
+      <template #header>
+        <div
+          class="header"
+        >
+          <div class="header-nav">
+            <div
+              v-for="(item, index) in headerList"
+              :key="item.id"
+              class="header-nav-item"
+              :class="{ 'item-active': index === activeIndex }"
+            >
+              <span
+                v-if="!isExternalLink(item.url)"
+                @click="handleToPage(item.url, index, item.link)">{{item.name}}</span>
+              <a :href="item.url" target="_blank" v-else>{{item.name}}</a>
+            </div>
+          </div>
+          <user-info v-if="userLoading" />
+        </div>
+      </template>
+    </bk-navigation>
+  </div>
 </template>
 
 <style>

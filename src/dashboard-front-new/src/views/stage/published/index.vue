@@ -1,5 +1,5 @@
 <template>
-  <div class="publish-container p20">
+  <div class="page-wrapper-padding publish-container">
     <div class="operate flex-row justify-content-between mb20">
       <div class="flex-1 flex-row align-items-center">
         <bk-date-picker
@@ -54,6 +54,8 @@
           :label="t('操作状态')"
         >
           <template #default="{ data }">
+            <spinner v-if="data?.status === 'doing'" fill="#3A84FF" />
+            <span v-else :class="['dot', data?.status]"></span>
             {{ publishStatusEnum[data?.status] }}
           </template>
         </bk-table-column>
@@ -97,11 +99,12 @@
 
 <script setup lang="ts">
 import { useQueryList, useDatePicker } from '@/hooks';
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { PublishSourceEnum, PublishStatusEnum } from '@/types';
 import logDetails from '@/components/log-details/index.vue';
 import publishDetails from './comps/publish-details.vue';
+import { Spinner } from 'bkui-vue/lib/icon';
 import {
   getReleaseHistories,
 } from '@/http';
@@ -118,6 +121,7 @@ const {
   isLoading,
   handlePageChange,
   handlePageSizeChange,
+  getList,
 } = useQueryList(getReleaseHistories, filterData);
 
 // datepicker 时间选择器 hooks 适用于列表筛选
@@ -142,6 +146,17 @@ const showLogs = (id: string) => {
   historyId.value = id;
   logDetailsRef.value?.showSideslider();
 };
+
+let timeId: any = null;
+onMounted(() => {
+  timeId = setInterval(() => {
+    getList();
+  }, 1000 * 30);
+});
+onUnmounted(() => {
+  clearInterval(timeId);
+});
+
 </script>
 
 <style lang="scss" scoped>
@@ -152,4 +167,20 @@ const showLogs = (id: string) => {
     }
   }
 }
+
+.dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 2px;
+    &.success {
+      border: 1px solid #3FC06D;
+      background: #E5F6EA;
+    }
+    &.failure {
+      border: 1px solid #EA3636;
+      background: #FFE6E6;
+    }
+  }
 </style>

@@ -88,7 +88,6 @@ const routes: RouteRecordRaw[] = [
           title: '环境管理',
           matchRoute: 'apigwStageOverview',
           topMenu: 'home',
-          customHeader: true,
         },
       },
       {
@@ -99,7 +98,6 @@ const routes: RouteRecordRaw[] = [
           title: '环境概览',
           matchRoute: 'apigwStageOverview',
           topMenu: 'home',
-          customHeader: true,
         },
         children: [
           {

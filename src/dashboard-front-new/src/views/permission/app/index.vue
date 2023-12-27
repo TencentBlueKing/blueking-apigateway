@@ -1,5 +1,5 @@
 <template>
-  <div class="permission-app-container p20">
+  <div class="permission-app-container page-wrapper-padding">
     <div class="header mb5">
       <div class="header-btn flex-1 flex-row align-items-center">
         <span class="mr10" v-bk-tooltips="{ content: t('请选择待续期的权限'), disabled: selections.length }">

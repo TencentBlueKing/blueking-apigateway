@@ -1,5 +1,5 @@
 <template>
-  <div class="alarm-strategy-container p20">
+  <div class="page-wrapper-padding alarm-strategy-container">
     <div class="header flex-row justify-content-between mb24">
       <div class="header-btn flex-row ">
         <span class="mr10">

@@ -1,5 +1,5 @@
 <template>
-  <div class="permission-apply-container p20">
+  <div class="permission-apply-container page-wrapper-padding">
     <div class="header flex-row justify-content-between mb5">
       <span v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: selections.length }">
         <bk-button theme="primary" :disabled="!selections.length" @click="handleBatchApply">

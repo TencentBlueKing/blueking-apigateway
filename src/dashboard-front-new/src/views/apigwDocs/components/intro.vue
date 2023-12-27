@@ -232,23 +232,20 @@ const init = async () => {
     top: 0,
     behavior: 'smooth',
   });
-
   const routeParams = route.params;
   curApigwId.value = routeParams.apigwId;
   getApigwAPIDetail();
   getApigwSDK('python');
 };
 
-init();
-
 watch(
   () => route,
-  () => {
-    if (route?.params?.apigwId) {
+  (value: any) => {
+    if (value?.params?.apigwId && ['apigwAPIDetailIntro'].includes(value.name)) {
       init();
     }
   },
-  { immediate: true, deep: true },
+  { immediate: true },
 );
 </script>
 

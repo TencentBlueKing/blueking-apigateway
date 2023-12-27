@@ -1,5 +1,5 @@
 <template>
-  <div class="permission-record-container p20">
+  <div class="permission-record-container page-wrapper-padding">
     <div class="header ">
       <bk-form class="flex-row">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker mb15" label-width="85">

@@ -1,5 +1,5 @@
 <template>
-  <div class="alarm-history-container p20">
+  <div class="page-wrapper-padding alarm-history-container">
     <div class="header flex-row justify-content-between">
       <bk-form class="flex-row">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker" label-width="85">

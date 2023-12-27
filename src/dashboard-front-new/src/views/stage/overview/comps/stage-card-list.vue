@@ -3,14 +3,15 @@
     <div class="card-item" v-for="(stageData, index) in stageList" :key="index">
       <div class="title">
         <div class="title-lf">
-          <spinner v-if="stageData.release.status === 'doing'" fill="#3A84FF" />
-          <span v-else :class="['dot', stageData.release.status]"></span>
+          <spinner v-if="getStatus(stageData) === 'doing'" fill="#3A84FF" />
+          <span v-else :class="['dot', getStatus(stageData)]"></span>
           {{ stageData.name }}
         </div>
         <div class="title-rg">
           <bk-button
             theme="primary"
             size="small"
+            :disabled="getStatus(stageData) === 'doing' || getStatus(stageData) === 'delist'"
             @click="handleRelease(stageData)"
           >
             发布资源
@@ -18,6 +19,7 @@
           <bk-button
             class="ml10"
             size="small"
+            :disabled="stageData.status !== 1"
             @click="handleStageUnlist(stageData.id)"
           >
             下架
@@ -31,7 +33,14 @@
           <div class="value url">
             <p
               class="link"
+              v-if="getStageAddress(stageData.name)"
               v-bk-tooltips="{ content: getStageAddress(stageData.name) }">
+              {{ getStageAddress(stageData.name) || '--' }}
+            </p>
+            <p
+              v-else
+              class="link"
+            >
               {{ getStageAddress(stageData.name) || '--' }}
             </p>
             <i
@@ -79,9 +88,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRefs, computed } from 'vue';
+import { ref, toRefs, computed, onUnmounted, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { copy } from '@/common/util';
+import { copy, getStatus } from '@/common/util';
 import editStageSideslider from './edit-stage-sideslider.vue';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import mitt from '@/common/event-bus';
@@ -101,6 +110,7 @@ const apigwId = computed(() => +route.params.id);
 
 const releaseSidesliderRef = ref();
 const currentStage = ref<any>({});
+let timeId: any = null;
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -185,6 +195,17 @@ const stageSidesliderRef = ref(null);
 const handleAddStage = () => {
   stageSidesliderRef.value.handleShowSideslider('add');
 };
+
+onMounted(() => {
+  timeId = setInterval(() => {
+    // 获取网关列表
+    mitt.emit('get-stage-list');
+  }, 1000 * 30);
+});
+
+onUnmounted(() => {
+  clearInterval(timeId);
+});
 
 </script>
 
@@ -322,6 +343,11 @@ const handleAddStage = () => {
     }
 
     &.unreleased {
+      border: 1px solid #C4C6CC;
+      background: #F0F1F5;
+    }
+
+    &.delist {
       border: 1px solid #C4C6CC;
       background: #F0F1F5;
     }
