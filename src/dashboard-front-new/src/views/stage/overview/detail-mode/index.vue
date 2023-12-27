@@ -15,7 +15,6 @@
                 <div class="value url">
                   <p
                     class="link"
-                    v-overflow-title
                     v-bk-tooltips="{ content: getStageAddress(stageData.name) }"
                   >
                     {{ getStageAddress(stageData.name) || '--' }}
@@ -41,10 +40,7 @@
               </div>
               <div class="apigw-form-item">
                 <div class="label">{{ `${t('描述')}：` }}</div>
-                <div
-                  class="value"
-                  v-overflow-title
-                >
+                <div class="value">
                   {{ stageData.description || '--' }}
                 </div>
               </div>
@@ -217,8 +213,11 @@ const panels = [
   { name: 'variableManage', label: '变量管理', routeName: 'apigwStageVariableManage' },
 ];
 
+// 是否正在删除
+const isDeleteLoading = ref(false);
+
 // 网关id
-const apigwId = +route.params.id;
+const apigwId = computed(() => common.apigwId);
 
 onMounted(() => {
   handleTabChange('resourceInfo');
@@ -246,7 +245,7 @@ const handleTabChange = (name: string) => {
   const data: any = {
     name: curPanel.routeName,
     params: {
-      id: apigwId,
+      id: apigwId.value,
     },
   };
   if (route.query?.stage) {
@@ -266,11 +265,15 @@ const handleStageUnlist = async () => {
   InfoBox({
     title: t('确认下架吗？'),
     onConfirm: async () => {
+      if (isDeleteLoading.value) {
+        return;
+      }
+      isDeleteLoading.value = true;
       const data = {
         status: 0,
       };
       try {
-        await removalStage(apigwId, stageData.value.id, data);
+        await removalStage(apigwId.value, stageData.value.id, data);
         Message({
           message: t('下架成功'),
           theme: 'success',
@@ -280,6 +283,8 @@ const handleStageUnlist = async () => {
         // 开启loading
       } catch (error) {
         console.error(error);
+      } finally {
+        showDropdown.value = false;
       }
     },
   });
@@ -299,7 +304,7 @@ const handleStageDelete = async () => {
     title: t('确认删除吗？'),
     onConfirm: async () => {
       try {
-        await deleteStage(apigwId, stageData.value.id);
+        await deleteStage(apigwId.value, stageData.value.id);
         Message({
           message: t('删除成功'),
           theme: 'success',
