@@ -391,6 +391,7 @@ import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { cloneDeep } from 'lodash';
 import { is24HoursAgo } from '@/common/util';
+import {  useCommon } from '@/store';
 
 const props = defineProps({
   apigwId: {
@@ -414,6 +415,7 @@ interface IexportDialog extends IDialog {
 }
 
 const methodsEnum: any = ref(MethodsEnum);
+const common = useCommon();
 const { t } = useI18n();
 // 批量下拉的item
 const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
@@ -455,27 +457,31 @@ const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
 
+
+const methodsTypeList =  ref(common.methodList);
+
 const searchValue = ref([]);
 const searchData = shallowRef([
   {
-    name: '模糊查询',
+    name: t('模糊查询'),
     id: 'keyword',
-    placeholder: '请输入资源名称，前端请求路径',
+    placeholder: t('请输入资源名称，前端请求路径'),
   },
   {
-    name: '资源名称',
+    name: t('资源名称'),
     id: 'name',
-    placeholder: '请输入资源名称',
+    placeholder: t('请输入资源名称'),
   },
   {
-    name: '前端请求路径',
+    name: t('前端请求路径'),
     id: 'path',
-    placeholder: '请输入前端请求路径',
+    placeholder: t('请输入前端请求路径'),
   },
   {
-    name: '前端请求方法',
+    name: t('前端请求方法'),
     id: 'method',
-    placeholder: '请输入前端请求方法',
+    placeholder: t('请输入前端请求方法'),
+    children: methodsTypeList.value,
   },
 ]);
 
