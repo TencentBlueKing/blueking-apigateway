@@ -281,7 +281,7 @@ const schemeList = [{ value: 'http' }, { value: 'https' }];
 // 访问地址
 const stageAddress = computed(() => {
   const keys: any = {
-    api_name: common.apigwName?.name,
+    api_name: common.apigwName,
     stage_name: curStageData.value.name,
     resource_path: '',
   };

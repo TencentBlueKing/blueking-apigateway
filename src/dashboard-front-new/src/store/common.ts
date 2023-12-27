@@ -4,8 +4,8 @@ export const useCommon = defineStore('common', {
   state: () => ({
     // 网关id
     apigwId: 0,
-    // 网关对象
-    apigwName: {},
+    // 网关name
+    apigwName: '',
     methodList: [
       {
         id: 'GET',
@@ -49,7 +49,7 @@ export const useCommon = defineStore('common', {
     setApigwId(apigwId: number) {
       this.apigwId = apigwId;
     },
-    setApigwName(name: any) {
+    setApigwName(name: string) {
       this.apigwName = name;
     },
     setCurApigwData(data: any) {
