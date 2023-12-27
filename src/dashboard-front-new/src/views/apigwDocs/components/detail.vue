@@ -188,6 +188,10 @@ const getApigwAPIDetail = async () => {
 };
 
 const getApigwStages = async () => {
+  // 避免重复调用
+  if (stageList.value.length) {
+    return;
+  }
   try {
     const query = {
       limit: 10000,
@@ -223,6 +227,7 @@ const getApigwStages = async () => {
         query: { stage: resStage },
       });
     }
+    await getApigwResources();
   } catch (e) {
     console.log(e);
   }
@@ -238,6 +243,9 @@ const handleApigwChange = (data: any) => {
 };
 
 const getApigwAPI = async () => {
+  if (apigwList.value.length) {
+    return;
+  }
   const pageParams = {
     limit: 10000,
     offset: 0,
@@ -251,63 +259,67 @@ const getApigwAPI = async () => {
 };
 
 const getApigwResources = async () => {
-  try {
-    const query = {
-      limit: 10000,
-      offset: 0,
-      stage_name: curStageId.value,
-    };
-    const res = await getApigwResourcesDocs(curApigwId.value, query);
-
-    const group: any = {};
-    const defaultItem: any = {
-      labelId: 'default',
-      labelName: t('默认'),
-      resources: [],
-    };
-    resourceList.value = res;
-    resourceList.value?.forEach((resource: any) => {
-      const { labels } = resource;
-      if (labels?.length) {
-        labels.forEach((label: any) => {
-          if (typeof label === 'object') {
-            if (group[label.id]) {
-              group[label.id]?.resources.push(resource);
+  if (stageList.value.length) {
+    try {
+      const query = {
+        limit: 10000,
+        offset: 0,
+        stage_name: curStageId.value,
+      };
+      const res = await getApigwResourcesDocs(curApigwId.value, query);
+      const group: any = {};
+      const defaultItem: any = {
+        labelId: 'default',
+        labelName: t('默认'),
+        resources: [],
+      };
+      resourceList.value = res;
+      resourceList.value?.forEach((resource: any) => {
+        const { labels } = resource;
+        if (labels?.length) {
+          labels.forEach((label: any) => {
+            if (typeof label === 'object') {
+              if (group[label.id]) {
+                group[label.id]?.resources.push(resource);
+              } else {
+                if (group[label.name]) {
+                  group[label.name]?.resources.push(resource);
+                } else {
+                  const obj = {
+                    labelId: label.id,
+                    labelName: label.name,
+                    resources: [resource],
+                  };
+                  group[label.name] = obj;
+                }
+              }
             } else {
-              if (group[label.name]) {
-                group[label.name]?.resources.push(resource);
+              if (group[label]) {
+                group[label]?.resources?.push(resource);
               } else {
                 const obj = {
-                  labelId: label.id,
-                  labelName: label.name,
+                  labelId: label,
+                  labelName: label,
                   resources: [resource],
                 };
-                group[label.name] = obj;
+                group[label] = obj;
               }
             }
-          } else {
-            if (group[label]) {
-              group[label]?.resources?.push(resource);
-            } else {
-              const obj = {
-                labelId: label,
-                labelName: label,
-                resources: [resource],
-              };
-              group[label] = obj;
-            }
-          }
-        });
-      } else {
-        defaultItem.resources.push(resource);
+          });
+        } else {
+          defaultItem.resources.push(resource);
+        }
+      });
+      if (defaultItem.resources.length) {
+        group['默认'] = defaultItem;
       }
-    });
-    if (defaultItem.resources.length) {
-      group['默认'] = defaultItem;
+      originResourceGroup.value = group;
+    } catch (e) {
+      console.log(e);
     }
-    originResourceGroup.value = group;
-  } catch (e) {
-    console.log(e);
+  } else {
+    originResourceGroup.value = {};
+    resourceList.value = [];
   }
 };
 
@@ -361,20 +373,22 @@ const handleStageChange = async () => {
 };
 
 const init = async () => {
+  const curRoute = route as any;
   const routeParams = route.params;
   curApigwId.value = routeParams.apigwId;
   curComponentName.value = routeParams.resourceId;
-  getApigwAPIDetail();
-  getApigwAPI();
-  await getApigwStages();
-  getApigwResources();
-
   // 回到页头
   const container = document.documentElement || document.body;
   container.scrollTo({
     top: 0,
     behavior: 'smooth',
   });
+  getApigwAPI();
+  if (['apigwAPIDetailIntro', 'apigwAPIDetailDoc'].includes(curRoute.name)) {
+    await getApigwStages();
+    return;
+  }
+  getApigwAPIDetail();
 };
 
 watch(
@@ -411,15 +425,14 @@ watch(
 
 watch(
   () => route,
-  () => {
-    if (route.params?.apigwId) {
+  (payload: any) => {
+    if (payload.params?.apigwId) {
+      curApigw.value = { name: payload.params?.apigwId };
       init();
     }
   },
   { immediate: true, deep: true },
 );
-
-init();
 
 </script>
 

@@ -79,9 +79,13 @@
                 'flex-1 of1 text-c',
                 { 'default-c': item.hasOwnProperty('resource_count') }
               ]"
-              @click="handleGoPage('apigwResource', item.id)"
             >
-              {{ item.resource_count }}
+              <!-- {{ item.resource_count }} -->
+              <router-link :to="{ name: 'apigwResource', params: { id: item.id } }" target="_blank">
+                <span style="color: #3a84ff;">
+                  {{ item.resource_count }}
+                </span>
+              </router-link>
             </div>
             <div class="flex-1 of2">
               <bk-button
@@ -289,7 +293,7 @@ const init = async () => {
     item.tagOrder = '3';
     item.labelTextData = item.stages.reduce((prev: any, label: any, index: number) => {
       if (index > item.tagOrder - 1) {
-        prev.push({ name: label.name, released: item.released });
+        prev.push({ name: label.name, released: label.released });
       }
       return prev;
     }, []);

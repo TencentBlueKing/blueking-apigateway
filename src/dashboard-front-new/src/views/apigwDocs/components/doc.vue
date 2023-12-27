@@ -323,34 +323,30 @@ const getApigwAPIDetail = async () => {
   }
 };
 
-const init = () => {
+const getRouteData = () => {
   const routeParams = route.params;
   curApigwId.value = routeParams.apigwId as string;
   curStage.value = route.query.stage as string;
   curResourceId.value = routeParams.resourceId as string;
-
-  Promise.all([
-    getApigwAPIDetail(),
-    getApigwResourceDetail(),
-    getApigwResourceDoc(),
-    getApigwSDK('python'),
-  ]).finally(() => {
-
-  });
 };
 
-init();
+const init = () => {
+  getRouteData();
+  getApigwAPIDetail();
+  getApigwResourceDetail();
+  getApigwResourceDoc();
+  getApigwSDK('python');
+};
 
 watch(
   () => route,
-  () => {
-    if (route?.params?.apigwId && route?.params?.resourceId && route?.query?.stage) {
+  async (payload: any) => {
+    if (payload?.params?.apigwId && payload?.params?.resourceId && payload?.query?.stage && ['apigwAPIDetailDoc'].includes(payload.name)) {
       init();
     }
   },
   { immediate: true, deep: true },
 );
-
 </script>
 
 <style lang="scss" scoped>
