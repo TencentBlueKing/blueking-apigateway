@@ -177,7 +177,7 @@ const handleStageUnlist = async (id: number) => {
 // 访问地址
 const getStageAddress = (name: string) => {
   const keys: any = {
-    api_name: common.apigwName?.name,
+    api_name: common.apigwName,
     stage_name: name,
     resource_path: '',
   };

@@ -112,8 +112,8 @@ const handleCollapse = (v: boolean) => {
 
 // 设置网关名
 const handleSetApigwName = () => {
-  const apigwName = gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {};
-  common.setApigwName(apigwName);
+  const apigwObj = gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {};
+  common.setApigwName(apigwObj?.name);
 };
 
 // 监听当前路由
