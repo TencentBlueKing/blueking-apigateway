@@ -22,7 +22,7 @@
         <span class="column-key"> {{ t('SDK地址') }}: </span>
       </div>
       <div class="value">
-        <bk-popover placement="top" width="600">
+        <bk-popover placement="top" width="600" :disabled="!params.sdk?.url">
           <span class="column-value vm">{{params?.sdk?.url || '--'}}</span>
           <template #content>
             <div style="white-space: normal;word-break: break-all;">

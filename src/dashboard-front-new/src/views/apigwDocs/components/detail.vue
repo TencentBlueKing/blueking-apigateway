@@ -113,7 +113,7 @@
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
-import { getApigwStagesDocs, getGatewaysDocs, getApigwResourcesDocs } from '@/http';
+import { getGatewaysDetailsDocs, getApigwStagesDocs, getGatewaysDocs, getApigwResourcesDocs } from '@/http';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -124,7 +124,6 @@ const curApigw = ref<any>({});
 const resourceList = ref<any>([]);
 const stageList = ref<any>([]);
 const curStageId = ref<any>('');
-const apigwId = ref('');
 const originResourceGroup = ref<any>({});
 const curComponentName = ref<any>('');
 const activeName = ref<any>([]);
@@ -179,16 +178,20 @@ const resourceGroup = computed(() => {
   return group;
 });
 
-// const getApigwAPIDetail = async () => {
-//   try {
-//     const res = await getGatewaysDetailsDocs(curApigwId.value);
-//     curApigw.value = res;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+const getApigwAPIDetail = async () => {
+  try {
+    const res = await getGatewaysDetailsDocs(curApigwId.value);
+    curApigw.value = res;
+  } catch (e) {
+    console.log(e);
+  }
+};
 
 const getApigwStages = async () => {
+  // 避免重复调用
+  if (stageList.value.length) {
+    return;
+  }
   try {
     const query = {
       limit: 10000,
@@ -240,6 +243,9 @@ const handleApigwChange = (data: any) => {
 };
 
 const getApigwAPI = async () => {
+  if (apigwList.value.length) {
+    return;
+  }
   const pageParams = {
     limit: 10000,
     offset: 0,
@@ -334,7 +340,6 @@ const handleShowDoc = (resource: any) => {
     },
     query: {
       stage: curStageId.value,
-      curPage: 'detail',
     },
   });
 };
@@ -368,19 +373,22 @@ const handleStageChange = async () => {
 };
 
 const init = async () => {
+  const curRoute = route as any;
   const routeParams = route.params;
   curApigwId.value = routeParams.apigwId;
   curComponentName.value = routeParams.resourceId;
-  // getApigwAPIDetail();
-  getApigwAPI();
-  await getApigwStages();
-
   // 回到页头
   const container = document.documentElement || document.body;
   container.scrollTo({
     top: 0,
     behavior: 'smooth',
   });
+  getApigwAPI();
+  if (['apigwAPIDetailIntro', 'apigwAPIDetailDoc'].includes(curRoute.name)) {
+    await getApigwStages();
+    return;
+  }
+  getApigwAPIDetail();
 };
 
 watch(
@@ -420,10 +428,7 @@ watch(
   (payload: any) => {
     if (payload.params?.apigwId) {
       curApigw.value = { name: payload.params?.apigwId };
-      if (apigwId.value !== payload.params?.apigwId && ['apigwAPIDetailIntro', 'apigwAPIDetailDoc'].includes(payload.name)) {
-        apigwId.value = payload.params?.apigwId as string;
-        init();
-      }
+      init();
     }
   },
   { immediate: true, deep: true },

@@ -232,7 +232,6 @@ const init = async () => {
     top: 0,
     behavior: 'smooth',
   });
-
   const routeParams = route.params;
   curApigwId.value = routeParams.apigwId;
   getApigwAPIDetail();
@@ -246,7 +245,7 @@ watch(
       init();
     }
   },
-  { immediate: true, deep: true },
+  { immediate: true },
 );
 </script>
 

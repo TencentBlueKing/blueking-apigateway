@@ -625,11 +625,18 @@ const renderMethodFilter = ref({
 });
 
 const handleSortChange = ({ column, type }: Record<string, any>) => {
-  filterData.value.order_by = column.field;
-  if (type === 'null') {
-    delete filterData.value.order_by;
-  }
-  getList();
+  const typeMap: any = {
+    asc: () => {
+      filterData.value.order_by = column.field;
+    },
+    desc: () => {
+      filterData.value.order_by = `-${column.field}`;
+    },
+    null: () => {
+      delete filterData.value.order_by;
+    },
+  };
+  return typeMap[type]();
 };
 
 const handleFilterChange = (payload: any) => {
@@ -897,6 +904,7 @@ watch(
   () => searchValue.value,
   (v: any[]) => {
     filterData.value = {
+      order_by: filterData.value.order_by,
       keyword: '',
     };
     if (v.length) {
