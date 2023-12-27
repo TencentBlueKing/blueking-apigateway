@@ -14,7 +14,7 @@
             :disabled="getStatus(stageData) === 'doing' || getStatus(stageData) === 'delist'"
             @click="handleRelease(stageData)"
           >
-            发布资源
+            {{ t('发布资源') }}
           </bk-button>
           <bk-button
             class="ml10"
@@ -22,7 +22,7 @@
             :disabled="stageData.status !== 1"
             @click="handleStageUnlist(stageData.id)"
           >
-            下架
+            {{ t('下架') }}
           </bk-button>
 
         </div>
@@ -177,7 +177,7 @@ const handleStageUnlist = async (id: number) => {
 // 访问地址
 const getStageAddress = (name: string) => {
   const keys: any = {
-    api_name: common.apigwName?.name,
+    api_name: common.apigwName,
     stage_name: name,
     resource_path: '',
   };

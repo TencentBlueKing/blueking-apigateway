@@ -91,7 +91,7 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: ':id/stage/detail-mode',
+        path: ':id/stage-detail',
         name: 'apigwStageDetail',
         component: apigwStageDetail,
         meta: {

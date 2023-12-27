@@ -15,4 +15,4 @@ export const getLogs = (apigwId: number, historyId: number) => fetch.get(`${BK_D
  * @param data 数据
  * @returns
  */
-export const createReleases = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/`, data);
+export const createReleases = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/`, data, { globalError: false });
