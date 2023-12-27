@@ -213,6 +213,9 @@ const panels = [
   { name: 'variableManage', label: '变量管理', routeName: 'apigwStageVariableManage' },
 ];
 
+// 是否正在删除
+const isDeleteLoading = ref(false);
+
 // 网关id
 const apigwId = computed(() => common.apigwId);
 
@@ -262,6 +265,10 @@ const handleStageUnlist = async () => {
   InfoBox({
     title: t('确认下架吗？'),
     onConfirm: async () => {
+      if (isDeleteLoading.value) {
+        return;
+      }
+      isDeleteLoading.value = true;
       const data = {
         status: 0,
       };
@@ -276,6 +283,8 @@ const handleStageUnlist = async () => {
         // 开启loading
       } catch (error) {
         console.error(error);
+      } finally {
+        showDropdown.value = false;
       }
     },
   });

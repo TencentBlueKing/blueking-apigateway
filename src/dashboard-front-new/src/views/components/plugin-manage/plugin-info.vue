@@ -113,8 +113,6 @@ const handleAdd = async () => {
   const { scopeInfo: { scopeType, scopeId, apigwId } } = props;
   const { curPlugin: { code } } = props;
   // await formRef.value?.validate();
-  console.log('schemaFormData', schemaFormData.value);
-  debugger;
   try {
     if (isAdd.value) {
       await creatPlugin(apigwId, scopeType, scopeId, code, schemaFormData.value);
