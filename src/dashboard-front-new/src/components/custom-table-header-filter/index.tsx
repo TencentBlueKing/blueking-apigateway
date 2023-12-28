@@ -3,6 +3,7 @@ import { Popover } from 'bkui-vue';
 import { Funnel } from 'bkui-vue/lib/icon';
 import { cloneDeep } from 'lodash';
 import './custom-table-header-filter.scss';
+import i18n from '@/language/i18n';
 
 export default defineComponent({
   props: {
@@ -14,6 +15,10 @@ export default defineComponent({
       type: [String, Number],
       default: '',
     },
+    hasAll: {
+      type: Boolean,
+      default: true,
+    },
     list: {
       type: Array,
       default: () => {
@@ -23,6 +28,7 @@ export default defineComponent({
   },
   emits: ['selected'],
   setup(props, ctx) {
+    const { t } = i18n.global;
     const popoverRef = ref();
     const isShowFilterPopover = ref(false);
     const curSelectValue = ref('') as any;
@@ -53,7 +59,6 @@ export default defineComponent({
 
     watch(
       () => props.selectValue, (payload: string | number) => {
-        console.log(111, payload);
         curSelectValue.value = cloneDeep(payload);
       },
       { immediate: true, deep: true },
@@ -61,7 +66,7 @@ export default defineComponent({
 
     watch(
       () => props.list, (payload: any[]) => {
-        filterList.value = cloneDeep(payload);
+        filterList.value = props.hasAll ? cloneDeep([...[{ id: 'ALL', name: t('全部') }], ...payload]) : cloneDeep(payload);
       },
       { immediate: true, deep: true },
     );

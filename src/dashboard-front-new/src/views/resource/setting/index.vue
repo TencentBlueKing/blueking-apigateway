@@ -369,10 +369,10 @@
     <version-sideslider ref="versionSidesliderRef" />
   </div>
 </template>
-<script setup lang="tsx">
-import { reactive, ref, watch, onMounted, shallowRef } from 'vue';
+<script setup lang="ts">
+import { reactive, ref, watch, onMounted, shallowRef, h } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
 import {
   getResourceListData, deleteResources,
@@ -427,6 +427,7 @@ const exportDropData = ref<IDropList[]>([
   { value: 'filtered', label: t('已筛选资源'), disabled: false },
   { value: 'selected', label: t('已选资源'), disabled: false }]);
 
+const route = useRoute();
 const router = useRouter();
 
 const filterData = ref<any>({ keyword: '', order_by: '' });
@@ -480,8 +481,13 @@ const searchData = shallowRef([
   {
     name: t('前端请求方法'),
     id: 'method',
-    placeholder: t('请输入前端请求方法'),
+    placeholder: t('请选择前端请求方法'),
     children: methodsTypeList.value,
+  },
+  {
+    name: t('后端服务ID'),
+    id: 'backend_id',
+    placeholder: t('请输入后端服务ID'),
   },
 ]);
 
@@ -551,50 +557,54 @@ const columns = [
   },
 ];
 
-const customMethodsList = shallowRef([...[{ id: 'ALL', name: t('全部')}], ...common.methodList])
+const customMethodsList = shallowRef(common.methodList);
 
 const curSelectMethod = ref('ALL');
 
 const tableKey =  ref(-1);
 
 const renderMethodsLabel = () => {
-  return (
-    <div>
-      <RenderCustomColumn 
-        key={tableKey.value}
-        columnLabel={t('前端请求方法')}
-        selectValue={curSelectMethod.value}
-        list={customMethodsList.value}
-        onSelected={handleSelectMethod}
-      />
-    </div>
-  )
+  return h('div', { class: 'resource-setting-custom-label' }, [
+    h(
+      RenderCustomColumn,
+      {
+        key: tableKey.value,
+        hasAll: true,
+        columnLabel: t('前端请求方法'),
+        selectValue: curSelectMethod.value,
+        list: customMethodsList.value,
+        onSelected: (value: Record<string, string>) => {
+          handleSelectMethod(value);
+        },
+      },
+    ),
+  ]);
 };
 
-const handleSelectMethod = (payload: {id: string, name: string}) => {
-  const { id, name} = payload;
+const handleSelectMethod = (payload: Record<string, string>) => {
+  const { id, name } = payload;
   filterData.value.method = payload.id;
-  const hasMethodData = searchValue.value.find((item:Record<string, any>) => ['method'].includes(item.id))
-  if(hasMethodData) {
+  const hasMethodData = searchValue.value.find((item: Record<string, any>) => ['method'].includes(item.id));
+  if (hasMethodData) {
     hasMethodData.values = [{
       id,
-      name
-    }]
-  } else {    
+      name,
+    }];
+  } else {
     searchValue.value.push({
-      id: "method",
-      name: t("前端请求方法"),
+      id: 'method',
+      name: t('前端请求方法'),
       values: [{
         id,
-        name
-      }]
-    })
+        name,
+      }],
+    });
   }
-  if(['ALL'].includes(payload.id)) {
-    delete filterData.value.method
-    searchValue.value = searchValue.value.filter((item:Record<string, any>) => !['method'].includes(item.id))
+  if (['ALL'].includes(payload.id)) {
+    delete filterData.value.method;
+    searchValue.value = searchValue.value.filter((item: Record<string, any>) => !['method'].includes(item.id));
   }
-}
+};
 
 // 列表hooks
 const {
@@ -947,6 +957,29 @@ watch(
     tableKey.value = +new Date();
   },
 );
+
+watch(() => route, () => {
+  if (route?.query?.backend_id) {
+    const { backend_id } =  route?.query;
+    filterData.value.backend_id = backend_id;
+    const hasData = searchValue.value.find((item: any) => item.id === 'backend_id');
+    if (hasData) {
+      hasData.values = [{
+        name: 'backend_id',
+        id: backend_id,
+      }];
+    } else {
+      searchValue.value.push({
+        id: 'backend_id',
+        name: t('后端服务'),
+        values: [{
+          id: backend_id,
+          name: backend_id,
+        }],
+      });
+    }
+  }
+}, { immediate: true, deep: true });
 
 onMounted(() => {
   init();
