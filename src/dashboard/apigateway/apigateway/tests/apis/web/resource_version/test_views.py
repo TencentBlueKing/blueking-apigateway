@@ -92,7 +92,7 @@ class TestResourceVersionListCreateApi:
         assert released_stages == expected_release_stages
 
 
-class TestResourceVersionDiffRetrieveApi:
+class TestResourceVersionRetrieveApi:
     def test_retrieve(
         self, request_view, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2, echo_plugin_stage_binding
     ):
