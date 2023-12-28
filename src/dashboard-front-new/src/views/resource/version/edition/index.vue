@@ -126,6 +126,7 @@
       :current-assets="stageData"
       :version="versionData"
       ref="releaseSidesliderRef"
+      @hidden="getList()"
       @release-success="getList()" />
   </div>
 </template>

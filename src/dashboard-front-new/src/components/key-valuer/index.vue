@@ -17,7 +17,11 @@
 
           <span class="operator">:</span>
 
-          <bk-form class="mr5 biz-value-form" :ref="(el) => setRefs(el, `value-${index}`)" :label-width="0" :model="keyItem">
+          <bk-form
+            class="mr5 biz-value-form"
+            :ref="(el) => setRefs(el, `value-${index}`)"
+            :label-width="0"
+            :model="keyItem">
             <bk-form-item
               :rules="rules.value" :property="'value'" :error-display-type="'normal'"
               style="margin-bottom: 0px;">

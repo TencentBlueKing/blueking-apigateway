@@ -1,6 +1,11 @@
 <template>
   <div class="release-sideslider">
-    <bk-sideslider v-model:isShow="isShow" :width="1050" :title="`发布资源至环境【${currentAssets.name}】`" quick-close>
+    <bk-sideslider
+      v-model:isShow="isShow"
+      :width="1050"
+      @hidden="emit('hidden')"
+      :title="`发布资源至环境【${currentAssets.name}】`"
+      quick-close>
       <template #default>
         <div class="sideslider-content">
           <div class="top-steps">
@@ -20,7 +25,7 @@
                   v-else
                   theme="info"
                   :title="`当前版本号: ${currentAssets.resource_version.version || '--'},
-                  于${currentAssets.release.created_time || '--'}发布成功; 资源发布成功后, 需发布到指定的环, 方可生效`"
+                  于${currentAssets.release.created_time || '--'}发布成功; 资源发布成功后, 需发布到指定的环境, 方可生效`"
                   class="mt15 mb15" />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
@@ -144,7 +149,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits<(e: 'release-success') => void>();
+const emit = defineEmits<(e: 'release-success' | 'hidden') => void>();
 
 const resourceVersion = computed(() => {
   let version = '';

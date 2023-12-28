@@ -88,7 +88,7 @@
             <bk-select
               class="fl mr10"
               v-model="localSourceId"
-              v-if="sourceSwitch"
+              v-if="sourceSwitch || pageType === 'createVersion'"
               :placeholder="$t('请选择源版本')"
               :clearable="false"
               :input-search="false"
@@ -106,12 +106,7 @@
               </bk-option>
             </bk-select>
             <strong class="title" v-else>
-              <template v-if="sourceVersion.version">
-                {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
-              </template>
-              <template v-else>
-                当前最新资源列表
-              </template>
+              {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
             </strong>
           </div>
         </div>
@@ -120,7 +115,7 @@
             <bk-select
               class="fl mr10"
               v-model="localTargetId"
-              v-if="targetSwitch"
+              v-if="targetSwitch && pageType !== 'createVersion'"
               :placeholder="$t('请选择目标版本')"
               :clearable="false"
               :input-search="false"
@@ -138,7 +133,12 @@
               </bk-option>
             </bk-select>
             <strong class="title" v-else>
-              {{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}
+              <template v-if="pageType !== 'createVersion'">
+                {{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}
+              </template>
+              <template v-else>
+                当前最新资源列表
+              </template>
             </strong>
           </div>
           <!-- <div class="marked">{{ $t("目标版本") }}</div> -->
@@ -407,11 +407,15 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  pageType: {
+    type: String,
+    default: '',
+  },
 });
 
 const width = ref<number>(1240);
 const isDataLoading = ref<boolean>(false);
-const localSourceId = ref(props.sourceId || 'current');
+const localSourceId = ref(props.sourceId);
 const localTargetId = ref(props.targetId || 'current');
 const localVersionList = ref<any[]>(props.versionList);
 const diffData = reactive<any>({
@@ -638,7 +642,7 @@ watch(
   () => [props.sourceId, props.targetId],
   (newArr) => {
     const [sourceId, targetId] = newArr;
-    localSourceId.value = sourceId || 'current';
+    localSourceId.value = sourceId;
     localTargetId.value = targetId || 'current';
     isDataLoading.value = false;
     getDiffData();
