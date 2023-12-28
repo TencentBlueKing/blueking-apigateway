@@ -137,12 +137,8 @@ class NeedNewVersionOutputSLZ(serializers.Serializer):
 
 
 class ResourceVersionDiffQueryInputSLZ(serializers.Serializer):
-    source_resource_version_id = serializers.IntegerField(
-        required=False, allow_null=True, help_text="对比源的版本号id"
-    )
-    target_resource_version_id = serializers.IntegerField(
-        required=False, allow_null=True, help_text="对比目标的版本号id"
-    )
+    source_resource_version_id = serializers.IntegerField(allow_null=True, help_text="对比源的版本号id")
+    target_resource_version_id = serializers.IntegerField(allow_null=True, help_text="对比目标的版本号id")
 
 
 class ResourceVersionResourceSLZ(serializers.Serializer):

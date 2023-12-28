@@ -219,19 +219,17 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
         source_resource_version_id = data.get("source_resource_version_id")
         target_resource_version_id = data.get("target_resource_version_id")
 
+        # 如果source_resource_version_id为空，需要将source_resource_data置为空，相当于
+        # target_resource_data 和 空版本对比
+        source_resource_data = (
+            ResourceVersionHandler.get_data_by_id_or_new(request.gateway, source_resource_version_id)
+            if source_resource_version_id
+            else []
+        )
+
         target_resource_data = ResourceVersionHandler.get_data_by_id_or_new(
             request.gateway, target_resource_version_id
         )
-
-        source_resource_data = []
-
-        if not source_resource_version_id and not target_resource_version_id:
-            # 如果source和dest都为空，source_resource_data[]
-            pass
-        else:
-            source_resource_data = ResourceVersionHandler.get_data_by_id_or_new(
-                request.gateway, source_resource_version_id
-            )
 
         data = ResourceDifferHandler.diff_resource_version_data(
             source_resource_data,
