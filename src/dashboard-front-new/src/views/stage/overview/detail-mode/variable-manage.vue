@@ -19,24 +19,42 @@
         border="outer"
       >
         <bk-table-column :label="t('变量名称')" prop="name">
-          <template #default="{ row }">
+          <template #default="{ row, index }">
             <span v-show="!row.isEdit">{{ row?.name }}</span>
-            <bk-input
-              v-model="row.name"
-              clearable
-              v-show="row.isEdit"
-              maxlength="50"
-            />
+            <template v-if="row.isEdit">
+              <bk-form :ref="(el) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
+                <bk-form-item
+                  :rules="varRules.name"
+                  property="name"
+                  error-display-type="tooltips"
+                  class="table-form-item">
+                  <bk-input
+                    v-model="row.name"
+                    clearable
+                    maxlength="50"
+                  />
+                </bk-form-item>
+              </bk-form>
+            </template>
           </template>
         </bk-table-column>
         <bk-table-column :label="t('变量值')" prop="value">
-          <template #default="{ row }">
+          <template #default="{ row, index }">
             <span v-show="!row.isEdit">{{ row?.value }}</span>
-            <bk-input
-              v-model="row.value"
-              clearable
-              v-show="row.isEdit"
-            />
+            <template v-if="row.isEdit">
+              <bk-form :ref="(el) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
+                <bk-form-item
+                  :rules="varRules.value"
+                  property="value"
+                  error-display-type="tooltips"
+                  class="table-form-item">
+                  <bk-input
+                    v-model="row.value"
+                    clearable
+                  />
+                </bk-form-item>
+              </bk-form>
+            </template>
           </template>
         </bk-table-column>
         <!-- <bk-table-column :label="t('应用资源数')" prop="sourceNumber">
@@ -96,7 +114,7 @@
       >
         保存
       </bk-button>
-      <bk-button class="ml10" @click="cancelTableEdit">
+      <bk-button class="ml10" @click="cancelTableEdit" v-bk-tooltips="{ content: '取消编辑' }">
         取消
       </bk-button>
     </div>
@@ -153,51 +171,79 @@ onMounted(() => {
   getData();
 });
 
-const validateName = (name: string) => {
-  if (!name) {
-    Message({
-      theme: 'error',
-      message: '请填写变量名',
-    });
-    return false;
+const formRefs = ref(new Map());
+const setRefs = (el: any, name: string) => {
+  if (el) {
+    formRefs.value?.set(name, el);
   }
-
-  const reg = new RegExp(/^[a-zA-Z][a-zA-Z0-9_]{0,49}$/);
-  if (!reg.test(name)) {
-    Message({
-      theme: 'error',
-      message: '变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符',
-    });
-    return false;
-  }
-
-  // 去重
-  const alikeArr: any = tableData.value?.filter((item: any) => item.name === name);
-  if (alikeArr?.length > 1) {
-    Message({
-      theme: 'error',
-      message: '变量名不能重复',
-    });
-    return false;
-  }
-
-  return true;
 };
 
-const confirmRowEdit = (index: number) => {
-  if (validateName(tableData.value[index].name)) {
+const varRules = {
+  name: [
+    {
+      required: true,
+      message: t('必填项'),
+      trigger: 'blur',
+    },
+    {
+      validator(value: any) {
+        const reg = /^[a-zA-Z][a-zA-Z0-9_]{0,49}$/;
+        return reg.test(value);
+      },
+      message: t('由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符'),
+      trigger: 'blur',
+    },
+    {
+      validator(value: any) {
+        // 去重
+        const alikeArr: any = tableData.value?.filter((item: any) => item.name === value);
+        if (alikeArr?.length > 1) {
+          return false;
+        }
+        return true;
+      },
+      message: t('变量名不可重复'),
+      trigger: 'blur',
+    },
+  ],
+  value: [
+    {
+      required: true,
+      message: t('必填项'),
+      trigger: 'blur',
+    },
+  ],
+};
+
+const validateName = async (index: number) => {
+  let flag = true;
+  await formRefs.value?.get(`name-${index}`)?.validate()
+    .then(() => {}, () => { // 校验不通过
+      flag = false;
+    });
+  await formRefs.value?.get(`value-${index}`)?.validate()
+    .then(() => {}, () => { // 校验不通过
+      flag = false;
+    });
+
+  return flag;
+};
+
+const confirmRowEdit = async (index: number) => {
+  if (await validateName(index)) {
     tableData.value[index].isEdit = false;
   };
 };
 
-const cancelRowEdit = (index: number) => {
-  if (!tableData.value[index]?.name) {
-    tableData.value?.splice(index, 1);
-    return;
-  }
-  if (validateName(tableData.value[index]?.name)) {
-    tableData.value[index].isEdit = false;
-  }
+const cancelRowEdit = async (index: number) => {
+  // if (!tableData.value[index]?.name) {
+  //   tableData.value?.splice(index, 1);
+  //   return;
+  // }
+  // if (await validateName(index)) {
+  //   tableData.value[index].isEdit = false;
+  // }
+  tableData.value?.splice(index, 1);
 };
 
 const editTable = () => {
@@ -211,10 +257,11 @@ const editTable = () => {
 };
 
 const cancelTableEdit = () => {
+  getData();
   tableIsEdit.value = false;
-  tableData.value?.forEach((row: any) => {
-    row.isEdit = false;
-  });
+  // tableData.value?.forEach((row: any) => {
+  //   row.isEdit = false;
+  // });
 };
 
 const addRow = (index: number) => {
@@ -227,14 +274,18 @@ const delRow = (index: number) => {
 
 const handleSave = async () => {
   try {
-    const flag = tableData.value?.find((item: any) => !validateName(item.name));
-    if (flag) return;
+    let flag = true;
+    for (let i = 0; i < tableData.value?.length; i++) {
+      if (!(await validateName(i))) {
+        flag = false;
+        break;
+      }
+    }
+    if (!flag) return;
 
     const data: any = {};
     tableData.value?.forEach((item: any) => {
-      if (!item.isEdit) {
-        data[item.name] = item.value;
-      }
+      data[item.name] = item.value;
     });
 
     await updateStageVars(common.apigwId, props.stageId, { vars: data });
@@ -284,5 +335,14 @@ const handleSave = async () => {
     font-size: 16px;
     cursor: pointer;
   }
+}
+
+.table-form-item {
+  margin-bottom: 12px;
+  padding-top: 12px;
+}
+
+.edit-status {
+  padding-top: 8px;
 }
 </style>
