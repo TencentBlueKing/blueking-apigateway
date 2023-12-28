@@ -92,7 +92,7 @@ class TestResourceVersionListCreateApi:
         assert released_stages == expected_release_stages
 
 
-class TestResourceVersionRetrieveApi:
+class ResourceVersionDiffRetrieveApi:
     def test_retrieve(
         self, request_view, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2, echo_plugin_stage_binding
     ):
@@ -223,3 +223,61 @@ class TestResourceVersionNeedNewVersionRetrieveApi:
 
             assert resp.status_code == 200
             assert result["data"]["need_new_version"] == test["expected"]["need_new_version"]
+
+
+class TestResourceVersionDiffApi:
+    def test_resource_version_diff(
+        self, request_view, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2, echo_plugin_stage_binding
+    ):
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.diff",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_id": fake_gateway.id,
+            },
+            data={"source_resource_version_id": "", "target_resource_version_id": ""},
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {
+            "data": {
+                "add": [
+                    {
+                        "id": 1,
+                        "name": "Red",
+                        "description": "",
+                        "method": "HEAD",
+                        "path": "posts/search/wp-content",
+                        "match_subpath": False,
+                        "is_public": True,
+                        "allow_apply_permission": True,
+                        "proxy": {
+                            "type": "http",
+                            "config": {
+                                "method": "POST",
+                                "path": "wp-content",
+                                "match_subpath": False,
+                                "timeout": 540,
+                                "upstreams": {},
+                                "transform_headers": {},
+                            },
+                        },
+                        "contexts": {
+                            "resource_auth": {
+                                "config": {
+                                    "auth_verified_required": True,
+                                    "app_verified_required": True,
+                                    "resource_perm_required": True,
+                                }
+                            }
+                        },
+                        "disabled_stages": [],
+                        "plugins": [],
+                        "doc_updated_time": {},
+                    }
+                ],
+                "delete": [],
+                "update": [],
+            }
+        }

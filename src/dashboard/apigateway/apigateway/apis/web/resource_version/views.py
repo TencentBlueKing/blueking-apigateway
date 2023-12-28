@@ -215,13 +215,23 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-        source_resource_data = ResourceVersionHandler.get_data_by_id_or_new(
-            request.gateway, data.get("source_resource_version_id")
-        )
+
+        source_resource_version_id = data.get("source_resource_version_id")
+        target_resource_version_id = data.get("target_resource_version_id")
 
         target_resource_data = ResourceVersionHandler.get_data_by_id_or_new(
-            request.gateway, data.get("target_resource_version_id")
+            request.gateway, target_resource_version_id
         )
+
+        source_resource_data = []
+
+        if not source_resource_version_id and not target_resource_version_id:
+            # 如果source和dest都为空，source_resource_data[]
+            pass
+        else:
+            source_resource_data = ResourceVersionHandler.get_data_by_id_or_new(
+                request.gateway, source_resource_version_id
+            )
 
         data = ResourceDifferHandler.diff_resource_version_data(
             source_resource_data,
