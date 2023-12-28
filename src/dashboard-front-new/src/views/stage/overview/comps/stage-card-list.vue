@@ -14,7 +14,7 @@
             :disabled="getStatus(stageData) === 'doing'"
             @click="handleRelease(stageData)"
           >
-            发布资源
+            {{ t('发布资源') }}
           </bk-button>
           <bk-button
             class="ml10"
@@ -22,7 +22,7 @@
             :disabled="stageData.status !== 1"
             @click="handleStageUnlist(stageData.id)"
           >
-            下架
+            {{ t('下架') }}
           </bk-button>
 
         </div>

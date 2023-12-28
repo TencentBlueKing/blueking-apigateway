@@ -127,11 +127,13 @@ import { IDialog } from '@/types';
 import { useI18n } from 'vue-i18n';
 import { ref, reactive, watch, computed } from 'vue';
 import { getResourceVersionsList, resourceVersionsDiff, createReleases } from '@/http';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import versionDiff from '@/components/version-diff';
 import logDetails from '@/components/log-details/index.vue';
+import { Message } from 'bkui-vue';
 
 const route = useRoute();
+const router = useRouter();
 const apigwId = computed(() => +route.params.id);
 
 const { t } = useI18n();
@@ -219,8 +221,39 @@ const handlePublish = async () => {
     isShow.value = false;
     dialogConfig.isShow = false;
     logDetailsRef.value.showSideslider();
-  } catch (e) {
-    console.log(e);
+  } catch (e: any) {
+    // 自定义错误处理
+    const regex = /`([^`]+?)`/;
+    const msg = e?.message || '';
+    const match = msg.match(regex);
+    if (match?.[1]?.includes('后端服务')) {
+      // 后端服务地址为空需要单独处理
+      Message({
+        theme: 'error',
+        actions: [
+          {
+            id: 'customize',
+            text: () => t('后端服务'),
+            onClick: () => {
+              router.push({
+                name: 'apigwBackendService',
+                params: {
+                  id: apigwId.value,
+                },
+              });
+            },
+          },
+        ],
+        message: {
+          code: e.code,
+          overview: e.message || '',
+          suggestion: '',
+        },
+        extCls: 'customize-error-message-cls',
+      });
+    } else {
+      Message({ theme: 'error', message: e.message });
+    }
   }
 };
 
@@ -345,6 +378,16 @@ defineExpose({
   }
   .operate2 {
     padding: 0px 24px 24px;
+  }
+}
+</style>
+<style lang="scss">
+.customize-error-message-cls .bk-message-content .overview .tools {
+  .assistant,
+  .details,
+  .fix {
+    display: none !important;
+    opacity: 0 !important;
   }
 }
 </style>
