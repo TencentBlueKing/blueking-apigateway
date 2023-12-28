@@ -41,6 +41,7 @@
         :pagination="pagination"
         :remote-pagination="true"
         :show-overflow-tooltip="true"
+        @column-sort="handleSortChange"
         @page-value-change="handlePageChange"
         @page-limit-change="handlePageSizeChange"
       >
@@ -67,7 +68,7 @@
           </template>
         </bk-table-column>
         <bk-table-column :label="t('操作人')" prop="username" />
-        <bk-table-column :label="t('操作时间')" prop="op_time" />
+        <bk-table-column :label="t('操作时间')" prop="op_time" :sort="true" />
         <bk-table-column :label="t('描述')" prop="comment" />
         <template #empty>
           <TableEmpty
@@ -109,6 +110,7 @@ const defaultSearchData = ref<DefaultSearchParamsInterface>({
   username: '',
   time_start: '',
   time_end: '',
+  order_by: '',
 });
 const defaultFilterData = ref<DefaultSearchParamsInterface>({
   op_type: 'ALL',
@@ -285,6 +287,22 @@ const renderStatusLabel = () => {
   ]);
 };
 
+const handleSortChange = ({ column, type }: Record<string, any>) => {
+  const typeMap: Record<string, Function> = {
+    asc: () => {
+      filterData.value.order_by = column.field;
+    },
+    desc: () => {
+      filterData.value.order_by = `-${column.field}`;
+    },
+    null: () => {
+      delete filterData.value.order_by;
+    },
+  };
+  typeMap[type]();
+  refreshTableData();
+};
+
 const formatDatetime = (timeRange: number[]) => {
   return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
 };
@@ -366,10 +384,13 @@ const refreshTableData = () => {
 
 watch(
   () => searchValue.value,
-  async (newVal: any[]) => {
+  (newVal: any[]) => {
     if (!newVal.length) {
       filterData.value = cloneDeep(defaultSearchData.value);
       curSelectData.value =  cloneDeep(defaultFilterData.value);
+      if (!filterData.value.order_by) {
+        delete filterData.value.order_by;
+      }
       tableKey.value = +new Date();
       refreshTableData();
       return;

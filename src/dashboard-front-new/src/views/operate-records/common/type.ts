@@ -7,6 +7,7 @@ export interface DefaultSearchParamsInterface {
   time_start?: string
   time_end?: string
   keyword?: string
+  order_by?: string
 }
 
 export type TableEmptyConfType = {
