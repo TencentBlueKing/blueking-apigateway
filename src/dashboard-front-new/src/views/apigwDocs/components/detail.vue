@@ -188,7 +188,6 @@ const getApigwAPIDetail = async () => {
 };
 
 const getApigwStages = async () => {
-  // 避免重复调用
   if (stageList.value.length) {
     return;
   }
@@ -231,15 +230,6 @@ const getApigwStages = async () => {
   } catch (e) {
     console.log(e);
   }
-};
-
-const handleApigwChange = (data: any) => {
-  router.push({
-    name: 'apigwAPIDetailIntro',
-    params: {
-      apigwId: data,
-    },
-  });
 };
 
 const getApigwAPI = async () => {
@@ -356,6 +346,22 @@ const hightlight = (value: string) => {
     return value.replace(new RegExp(`(${keyword.value})`), '<em class="ag-keyword">$1</em>');
   }
   return value;
+};
+
+const handleApigwChange = async (data: string) => {
+  reset();
+  stageList.value = [];
+  curApigwId.value = data;
+  await getApigwStages();
+  router.push({
+    name: 'apigwAPIDetailIntro',
+    params: {
+      apigwId: data,
+    },
+    query: {
+      stage: curStageId.value,
+    },
+  });
 };
 
 const handleStageChange = async () => {
