@@ -41,12 +41,12 @@
         :pagination="pagination"
         :remote-pagination="true"
         :show-overflow-tooltip="true"
+        @column-sort="handleSortChange"
         @page-value-change="handlePageChange"
         @page-limit-change="handlePageSizeChange"
       >
         <bk-table-column
-          width="300"
-          :label="t('操作对象')"
+          :label="renderObjectLabel"
         >
           <template #default="{ row }">
             <div class="cell-field">
@@ -56,19 +56,19 @@
           </template>
         </bk-table-column>
         <bk-table-column :label="t('实例')" prop="op_object" :show-overflow-tooltip="true" />
-        <bk-table-column :label="t('操作类型')">
+        <bk-table-column :label="renderTypeLabel">
           <template #default="{ row }">
             {{ getOpTypeText(row.op_type) || '--'}}
           </template>
         </bk-table-column>
-        <bk-table-column :label="t('操作状态')">
+        <bk-table-column :label="renderStatusLabel">
           <template #default="{ row }">
             <span :class="['ag-dot', row.op_status]"></span>
             <span class="status-text">{{ getStatusText(row.op_status) }}</span>
           </template>
         </bk-table-column>
         <bk-table-column :label="t('操作人')" prop="username" />
-        <bk-table-column :label="t('操作时间')" prop="op_time" />
+        <bk-table-column :label="t('操作时间')" prop="op_time" :sort="true" />
         <bk-table-column :label="t('描述')" prop="comment" />
         <template #empty>
           <TableEmpty
@@ -86,7 +86,8 @@
 <script lang="ts" setup>
 import i18n from '@/language/i18n';
 import TableEmpty from '@/components/table-empty.vue';
-import { ref, shallowRef, reactive, watch } from 'vue';
+import RenderCustomColumn from '@/components/custom-table-header-filter/index';
+import { ref, shallowRef, reactive, watch, h } from 'vue';
 import { cloneDeep } from 'lodash';
 import { useQueryList } from '@/hooks';
 import { useAccessLog, useOperateRecords } from '@/store';
@@ -100,7 +101,7 @@ const { t } = i18n.global;
 const AccessLogStore = useAccessLog();
 const OperateRecords = useOperateRecords();
 
-const defaultFilterData = ref<DefaultSearchParamsInterface>({
+const defaultSearchData = ref<DefaultSearchParamsInterface>({
   keyword: '',
   op_type: '',
   op_object: '',
@@ -109,8 +110,16 @@ const defaultFilterData = ref<DefaultSearchParamsInterface>({
   username: '',
   time_start: '',
   time_end: '',
+  order_by: '',
 });
-const filterData = ref<{[key: string]: any}>(cloneDeep(defaultFilterData));
+const defaultFilterData = ref<DefaultSearchParamsInterface>({
+  op_type: 'ALL',
+  op_object_type: 'ALL',
+  op_status: 'ALL',
+});
+const tableKey = ref(-1);
+const curSelectData = ref<{[key: string]: any}>(cloneDeep(defaultFilterData));
+const filterData = ref<{[key: string]: any}>(cloneDeep(defaultSearchData));
 const {
   tableData,
   pagination,
@@ -186,6 +195,114 @@ const searchData = shallowRef([
   },
 ]);
 
+const handleFilterData = (payload: Record<string, string>, curData: Record<string, string>) => {
+  const { id, name } = payload;
+  filterData.value[curData.id] = payload.id;
+  const hasMethodData = searchValue.value.find((item: Record<string, any>) => [curData.id].includes(item.id));
+  if (hasMethodData) {
+    hasMethodData.values = [{
+      id,
+      name,
+    }];
+  } else {
+    searchValue.value.push({
+      id: curData.id,
+      name: curData.name,
+      values: [{
+        id,
+        name,
+      }],
+    });
+  }
+  if (['ALL'].includes(payload.id)) {
+    delete filterData.value[curData.id];
+    searchValue.value = searchValue.value.filter((item: Record<string, any>) => ![curData.id].includes(item.id));
+  }
+  // refreshTableData();
+};
+
+const renderObjectLabel = () => {
+  return h('div', { class: 'operate-records-custom-label' }, [
+    h(
+      RenderCustomColumn,
+      {
+        key: tableKey.value,
+        hasAll: true,
+        columnLabel: t('操作对象'),
+        selectValue: curSelectData.value.op_object_type,
+        list: OperateRecordObjectType.value,
+        onSelected: (payload: Record<string, string>) => {
+          const curData = {
+            id: 'op_object_type',
+            name: t('操作对象'),
+          };
+          handleFilterData(payload, curData);
+        },
+      },
+    ),
+  ]);
+};
+
+const renderTypeLabel = () => {
+  return h('div', { class: 'operate-records-custom-label' }, [
+    h(
+      RenderCustomColumn,
+      {
+        key: tableKey.value,
+        hasAll: true,
+        columnLabel: t('操作类型'),
+        selectValue: curSelectData.value.op_type,
+        list: OperateRecordType.value,
+        onSelected: (payload: Record<string, string>) => {
+          const curData = {
+            id: 'op_type',
+            name: t('操作类型'),
+          };
+          handleFilterData(payload, curData);
+        },
+      },
+    ),
+  ]);
+};
+
+const renderStatusLabel = () => {
+  return h('div', { class: 'operate-records-custom-label' }, [
+    h(
+      RenderCustomColumn,
+      {
+        key: tableKey.value,
+        hasAll: true,
+        columnLabel: t('操作状态'),
+        selectValue: curSelectData.value.op_status,
+        list: OperateRecordStatus.value,
+        onSelected: (payload: Record<string, string>) => {
+          const curData = {
+            id: 'op_status',
+            name: t('操作状态'),
+          };
+          handleFilterData(payload, curData);
+        },
+      },
+    ),
+  ]);
+};
+
+const handleSortChange = ({ column, type }: Record<string, any>) => {
+  const typeMap: Record<string, Function> = {
+    asc: () => {
+      filterData.value.order_by = column.field;
+    },
+    desc: () => {
+      filterData.value.order_by = `-${column.field}`;
+    },
+    null: () => {
+      delete filterData.value.order_by;
+    },
+  };
+  typeMap[type]();
+  refreshTableData();
+};
+
 const formatDatetime = (timeRange: number[]) => {
   return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
 };
@@ -246,7 +363,7 @@ const handleShortcutChange = (value: Record<string, any>, index: number) => {
 
 const handleClearFilterKey = () => {
   members.value = [];
-  filterData.value = cloneDeep(defaultFilterData.value);
+  filterData.value = cloneDeep(defaultSearchData.value);
   searchValue.value = [];
   handleTimeClear();
   dateKey.value = String(+new Date());
@@ -260,22 +377,33 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.keyword = '';
 };
 
+const refreshTableData = () => {
+  getList();
+  updateTableEmptyConfig();
+};
+
 watch(
   () => searchValue.value,
   (newVal: any[]) => {
     if (!newVal.length) {
-      filterData.value = cloneDeep(defaultFilterData.value);
-      getList();
-      updateTableEmptyConfig();
+      filterData.value = cloneDeep(defaultSearchData.value);
+      curSelectData.value =  cloneDeep(defaultFilterData.value);
+      if (!filterData.value.order_by) {
+        delete filterData.value.order_by;
+      }
+      tableKey.value = +new Date();
+      refreshTableData();
       return;
     }
     Object.keys(filterData.value).forEach((item: string) => {
       const hasData = newVal.find((v: Record<string, any>) => v.id === item);
       filterData.value[item] = hasData ? hasData.values[0].id : '';
+      curSelectData.value[item] = hasData ? hasData.values[0].id : '';
     });
-    getList();
-    updateTableEmptyConfig();
+    tableKey.value = +new Date();
+    refreshTableData();
   },
+  { deep: true },
 );
 </script>
 

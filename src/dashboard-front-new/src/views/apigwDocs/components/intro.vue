@@ -245,7 +245,7 @@ watch(
       init();
     }
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 );
 </script>
 

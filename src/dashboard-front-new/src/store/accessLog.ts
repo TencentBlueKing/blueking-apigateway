@@ -297,14 +297,14 @@ export const useAccessLog = defineStore('accessLog', {
           name: t('发布'),
           value: 'release',
         },
-        {
-          name: t('策略'),
-          value: 'access_strategy',
-        },
-        {
-          name: t('IP分组'),
-          value: 'ip_group',
-        },
+        // {
+        //   name: t('策略'),
+        //   value: 'access_strategy',
+        // },
+        // {
+        //   name: t('IP分组'),
+        //   value: 'ip_group',
+        // },
         {
           name: t('标签'),
           value: 'gateway_label',
