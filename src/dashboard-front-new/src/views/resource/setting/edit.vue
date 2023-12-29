@@ -110,8 +110,6 @@ const handleSubmit = async () => {
       ...frontFormData,
       backend: backFormData,
     };
-    console.log('params', params);
-    debugger;
     if (resourceId.value && !isClone.value) {
       await updateResources(apigwId, resourceId.value, params);
     } else {

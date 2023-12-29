@@ -418,7 +418,7 @@ const handleResource = (data: any) => {
       id: apigwId,
     },
     query: {
-      name: data.name,
+      backend_id: data.id,
     },
   };
   router.push(params);

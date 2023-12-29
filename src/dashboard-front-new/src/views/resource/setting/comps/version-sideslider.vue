@@ -15,7 +15,7 @@
                   ref="diffRef"
                   :source-id="diffSourceId"
                   :target-id="diffTargetId"
-                  :source-switch="false"
+                  page-type="createVersion"
                 >
                 </version-diff>
               </div>
@@ -102,7 +102,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import { getResourceVersionsList, createResourceVersion, resourceVersionsDiff } from '@/http';
 import { useRoute, useRouter } from 'vue-router';
 import versionDiff from '@/components/version-diff/index.vue';
@@ -110,7 +110,7 @@ import CustomDialog from '@/components/custom-dialog/index.vue';
 
 const route = useRoute();
 const router = useRouter();
-const apigwId = +route.params.id;
+const apigwId = computed(() => +route.params.id);
 
 const { t } = useI18n();
 
@@ -178,7 +178,7 @@ const handleBuildVersion = async () => {
   try {
     await formRef.value?.validate();
     loading.value = true;
-    await createResourceVersion(apigwId, formData);
+    await createResourceVersion(apigwId.value, formData);
     // 弹窗并关闭侧栏
     dialogShow.value = true;
     isShow.value = false;
@@ -195,7 +195,7 @@ const getDiffData = async () => {
   diffData.value.update = [];
 
   try {
-    const res = await resourceVersionsDiff(apigwId, {
+    const res = await resourceVersionsDiff(apigwId.value, {
       source_resource_version_id: diffSourceId.value,
       target_resource_version_id: diffTargetId.value,
     });
@@ -216,9 +216,9 @@ const showReleaseSideslider = () => {
 // 获取资源版本列表
 const getResourceVersions = async () => {
   try {
-    const res = await getResourceVersionsList(apigwId, { offset: 0, limit: 999 });
+    const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
     versionList.value = res.results;
-    diffTargetId.value = versionList.value[0]?.id || '';
+    diffSourceId.value = versionList.value[0]?.id || '';
   } catch (e) {
     console.log(e);
   }

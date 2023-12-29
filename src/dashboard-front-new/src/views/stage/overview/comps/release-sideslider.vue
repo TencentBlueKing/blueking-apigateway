@@ -1,6 +1,11 @@
 <template>
   <div class="release-sideslider">
-    <bk-sideslider v-model:isShow="isShow" :width="1050" :title="`发布资源至环境【${currentAssets.name}】`" quick-close>
+    <bk-sideslider
+      v-model:isShow="isShow"
+      :width="1050"
+      @hidden="emit('hidden')"
+      :title="`发布资源至环境【${currentAssets.name}】`"
+      quick-close>
       <template #default>
         <div class="sideslider-content">
           <div class="top-steps">
@@ -20,7 +25,7 @@
                   v-else
                   theme="info"
                   :title="`当前版本号: ${currentAssets.resource_version.version || '--'},
-                  于${currentAssets.release.created_time || '--'}发布成功; 资源发布成功后, 需发布到指定的环, 方可生效`"
+                  于${currentAssets.release.created_time || '--'}发布成功; 资源发布成功后, 需发布到指定的环境, 方可生效`"
                   class="mt15 mb15" />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
@@ -122,11 +127,13 @@ import { IDialog } from '@/types';
 import { useI18n } from 'vue-i18n';
 import { ref, reactive, watch, computed } from 'vue';
 import { getResourceVersionsList, resourceVersionsDiff, createReleases } from '@/http';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import versionDiff from '@/components/version-diff';
 import logDetails from '@/components/log-details/index.vue';
+import { Message } from 'bkui-vue';
 
 const route = useRoute();
+const router = useRouter();
 const apigwId = computed(() => +route.params.id);
 
 const { t } = useI18n();
@@ -142,7 +149,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits<(e: 'release-success') => void>();
+const emit = defineEmits<(e: 'release-success' | 'hidden') => void>();
 
 const resourceVersion = computed(() => {
   let version = '';
@@ -214,8 +221,39 @@ const handlePublish = async () => {
     isShow.value = false;
     dialogConfig.isShow = false;
     logDetailsRef.value.showSideslider();
-  } catch (e) {
-    console.log(e);
+  } catch (e: any) {
+    // 自定义错误处理
+    const regex = /`([^`]+?)`/;
+    const msg = e?.message || '';
+    const match = msg.match(regex);
+    if (match?.[1]?.includes('后端服务')) {
+      // 后端服务地址为空需要单独处理
+      Message({
+        theme: 'error',
+        actions: [
+          {
+            id: 'customize',
+            text: () => t('后端服务'),
+            onClick: () => {
+              router.push({
+                name: 'apigwBackendService',
+                params: {
+                  id: apigwId.value,
+                },
+              });
+            },
+          },
+        ],
+        message: {
+          code: e.code,
+          overview: e.message || '',
+          suggestion: '',
+        },
+        extCls: 'customize-error-message-cls',
+      });
+    } else {
+      Message({ theme: 'error', message: e.message });
+    }
   }
 };
 
@@ -340,6 +378,16 @@ defineExpose({
   }
   .operate2 {
     padding: 0px 24px 24px;
+  }
+}
+</style>
+<style lang="scss">
+.customize-error-message-cls .bk-message-content .overview .tools {
+  .assistant,
+  .details,
+  .fix {
+    display: none !important;
+    opacity: 0 !important;
   }
 }
 </style>

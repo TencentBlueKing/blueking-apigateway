@@ -138,6 +138,9 @@ const getLogsList = async () => {
       const itemLogs: string[] = [];
       children?.forEach((c: any) => {
         itemLogs?.push(`${c.created_time}  ${c.name}  ${c.status}`);
+        if (c.detail?.err_msg && c.status === 'failure') {
+          itemLogs?.push(`  err_msg: ${c.detail?.err_msg}`);
+        }
       });
 
       steps[index].children = children;

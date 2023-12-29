@@ -87,22 +87,30 @@
           :label="t('操作')"
           prop="name"
         >
-          <bk-button
-            text
-            theme="primary"
-            class="mr10"
-          >
-            {{ t('查看资源详情') }}
-          </bk-button>
-          <bk-button
-            text
-            theme="primary"
-          >
-            {{ t('复制资源地址') }}
-          </bk-button>
+          <template #default="{ row }">
+            <bk-button
+              text
+              theme="primary"
+              class="mr10"
+              @click="showDetails(row)"
+            >
+              {{ t('查看资源详情') }}
+            </bk-button>
+            <bk-button
+              text
+              theme="primary"
+              @click="copyPath(row)"
+            >
+              {{ t('复制资源地址') }}
+            </bk-button>
+          </template>
+
         </bk-table-column>
       </bk-table>
     </bk-loading>
+
+    <!-- 资源详情 -->
+    <resource-details ref="resourceDetailsRef" :info="info" />
   </div>
 </template>
 
@@ -111,6 +119,8 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getResourceVersionsInfo, getGatewayLabels } from '@/http';
 import { useCommon, useStage } from '@/store';
+import resourceDetails from './resource-details.vue';
+import { copy } from '@/common/util';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -121,7 +131,8 @@ const props = defineProps<{
 }>();
 
 const searchValue = ref<string>('');
-
+const info = ref<any>({});
+const resourceDetailsRef = ref();
 const isReload = ref(false);
 const emptyText = ref<string>('暂无数据');
 
@@ -145,6 +156,15 @@ const getLabels = async () => {
   } catch (e) {
     console.log(e);
   }
+};
+
+const showDetails = (row: any) => {
+  info.value = row;
+  resourceDetailsRef.value?.showSideslider();
+};
+
+const copyPath = (row: any) => {
+  copy(row?.path);
 };
 
 // 资源信息

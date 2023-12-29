@@ -11,10 +11,10 @@
           <bk-button
             theme="primary"
             size="small"
-            :disabled="getStatus(stageData) === 'doing' || getStatus(stageData) === 'delist'"
+            :disabled="getStatus(stageData) === 'doing'"
             @click="handleRelease(stageData)"
           >
-            发布资源
+            {{ t('发布资源') }}
           </bk-button>
           <bk-button
             class="ml10"
@@ -22,7 +22,7 @@
             :disabled="stageData.status !== 1"
             @click="handleStageUnlist(stageData.id)"
           >
-            下架
+            {{ t('下架') }}
           </bk-button>
 
         </div>
@@ -83,6 +83,7 @@
       :current-assets="currentStage"
       ref="releaseSidesliderRef"
       @release-success="handleReleaseSuccess"
+      @hidden="handleReleaseSuccess"
     />
   </div>
 </template>
@@ -92,7 +93,7 @@ import { ref, toRefs, computed, onUnmounted, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { copy, getStatus } from '@/common/util';
 import editStageSideslider from './edit-stage-sideslider.vue';
-import releaseSideslider from '../comps/release-sideslider.vue';
+import releaseSideslider from './release-sideslider.vue';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties } from '@/hooks';
 import { useCommon } from '@/store';
