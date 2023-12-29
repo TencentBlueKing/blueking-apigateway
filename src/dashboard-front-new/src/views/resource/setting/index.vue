@@ -21,21 +21,28 @@
           :dropdown-list="batchDropData"
           @on-change="handleBatchOperate"
           :is-disabled="!selections.length"></ag-dropdown>
-        <ag-dropdown
-          :text="t('导入')"
-          :dropdown-list="importDropData"
-          @on-change="handleImport"></ag-dropdown>
-        <ag-dropdown
-          :text="t('导出')"
-          :dropdown-list="exportDropData"
-          @on-change="handleExport"></ag-dropdown>
-        <div class="mr8">
-          <bk-button
-            @click="handleCreateResourceVersion"
-          >
-            {{ t('生成版本') }}
+        <section v-if="isDetail">
+          <bk-button>
+            {{ t('更多') }}
           </bk-button>
-        </div>
+        </section>
+        <section class="flex-row align-items-center" v-else>
+          <ag-dropdown
+            :text="t('导入')"
+            :dropdown-list="importDropData"
+            @on-change="handleImport"></ag-dropdown>
+          <ag-dropdown
+            :text="t('导出')"
+            :dropdown-list="exportDropData"
+            @on-change="handleExport"></ag-dropdown>
+          <div class="mr8">
+            <bk-button
+              @click="handleCreateResourceVersion"
+            >
+              {{ t('生成版本') }}
+            </bk-button>
+          </div>
+        </section>
       </div>
       <div class="flex-1 flex-row justify-content-end">
         <!-- <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input> -->
@@ -55,13 +62,13 @@
       v-model="searchValue"
       :data="searchData"
       unique-select
-      style="width: 400px; background:#fff"
+      style="width: 320px; background:#fff"
       class="mb15"
       placeholder="请输入资源名称或选择条件搜索, 按Enter确认"
       :value-split-code="'+'"
     />
     <div class="flex-row resource-content">
-      <div class="left-wraper" :style="{ width: isDetail ? isShowLeft ? '400px' : '0' : '100%' }">
+      <div class="left-wraper" :style="{ width: isDetail ? isShowLeft ? '320px' : '0' : '100%' }">
         <bk-loading
           :loading="isLoading"
         >
@@ -955,7 +962,7 @@ onMounted(() => {
       transition: all .15s;
       position: absolute;
       top: 51px;
-      left: 420px;
+      left: 338px;
       bottom: 0;
       right: 0;
       .close-btn{
