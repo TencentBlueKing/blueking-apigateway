@@ -129,12 +129,11 @@
               :label="item.label"
               render-directive="if"
             >
-              <router-view
-                :ref="item.name"
+              <component
+                :is="curTabComponent"
                 :stage-id="stageData.id"
-                :key="routeIndex"
-                :version-id="stageData.resource_version.id"
-              ></router-view>
+                :version-id="stageData.resource_version.id">
+              </component>
             </bk-tab-panel>
           </bk-tab>
         </div>
@@ -166,12 +165,16 @@ import { useGetGlobalProperties } from '@/hooks';
 import { deleteStage, removalStage } from '@/http';
 import { Message, InfoBox } from 'bkui-vue';
 import mitt from '@/common/event-bus';
+import resourceInfo from './resource-info.vue';
+import pluginManage from './plugin-manage.vue';
+import variableManage from './variable-manage.vue';
 
 const { t } = useI18n();
 const stageStore = useStage();
 const route = useRoute();
 const router = useRouter();
 const common = useCommon();
+type TabComponents = typeof resourceInfo | typeof pluginManage | typeof variableManage;
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -182,6 +185,9 @@ const stageSidesliderRef = ref(null);
 const stageTopBarRef = ref(null);
 
 const showDropdown = ref<boolean>(false);
+
+// 当前tab
+const curTabComponent = ref<TabComponents>(resourceInfo);
 
 // 当前环境信息
 const stageData: any = computed(() => {
@@ -208,9 +214,9 @@ const stageData: any = computed(() => {
 const active = ref('resourceInfo');
 // tab 选项卡
 const panels = [
-  { name: 'resourceInfo', label: '资源信息', routeName: 'apigwStageResourceInfo' },
-  { name: 'pluginManage', label: '插件管理', routeName: 'apigwStagePluginManage' },
-  { name: 'variableManage', label: '变量管理', routeName: 'apigwStageVariableManage' },
+  { name: 'resourceInfo', label: '资源信息', component: resourceInfo },
+  { name: 'pluginManage', label: '插件管理', component: pluginManage },
+  { name: 'variableManage', label: '变量管理', component: variableManage },
 ];
 
 // 是否正在删除
@@ -219,8 +225,17 @@ const isDeleteLoading = ref(false);
 // 网关id
 const apigwId = computed(() => common.apigwId);
 
+// 设置动态组件
+const setDynamicComponents = (name: string) => {
+  const curPanel = panels.find(item => item.name === name) || panels[0];
+  curTabComponent.value = curPanel.component;
+};
+
 onMounted(() => {
-  handleTabChange('resourceInfo');
+  if (route.query.tab !== 'resourceInfo') {
+    active.value = (route.query.tab || 'resourceInfo') as string;
+    setDynamicComponents(active.value);
+  }
 });
 
 // 发布成功，重新请求环境详情
@@ -240,18 +255,15 @@ watch(
 
 // 选项卡切换
 const handleTabChange = (name: string) => {
-  const curPanel = panels.find(item => item.name === name);
-
-  const data: any = {
-    name: curPanel.routeName,
-    params: {
-      id: apigwId.value,
+  setDynamicComponents(name);
+  active.value = name;
+  // 更新query参数
+  router.push({
+    query: {
+      stage: stageData.value?.name,
+      tab: name,
     },
-  };
-  if (route.query?.stage) {
-    data.query = { ...route.query };
-  }
-  router.push(data);
+  });
 };
 
 // 发布资源

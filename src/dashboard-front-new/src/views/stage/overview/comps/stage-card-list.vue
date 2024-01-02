@@ -126,18 +126,7 @@ const { stageList } = toRefs(props);
 
 // 环境详情
 const handleToDetail = (data: any) => {
-  console.log('data', data);
   mitt.emit('switch-mode', { id: data.id, name: data.name });
-  // 改变tab
-  // router.push({
-  //   name: 'apigwStageDetail',
-  //   params: {
-  //     id: route.params.id,
-  //   },
-  //   query: {
-  //     stage: data.name,
-  //   }
-  // });
 };
 
 // 发布资源
@@ -256,6 +245,9 @@ onUnmounted(() => {
       span {
         margin-right: 8px;
       }
+    }
+    .title-rg {
+      display: flex;
     }
   }
 
