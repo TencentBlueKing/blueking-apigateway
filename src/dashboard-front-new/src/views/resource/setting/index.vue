@@ -398,7 +398,7 @@ import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { cloneDeep } from 'lodash';
 import { is24HoursAgo } from '@/common/util';
 import {  useCommon } from '@/store';
-import RenderCustomColumn from '@/components/custom-table-header-filter/index';
+import RenderCustomColumn from '@/components/custom-table-header-filter';
 
 const props = defineProps({
   apigwId: {
