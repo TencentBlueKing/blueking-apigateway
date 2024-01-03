@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-box">
+  <div class="chat-box" v-if="allowCreateAppChat">
     <a href="javascript: void(0);" class="support-btn" @click="handleShowDialog">
       <i class="ag-doc-icon doc-qw f16 apigateway-icon icon-ag-qw" style="margin-right: 3px;"></i> {{ $t('一键拉群') }}
     </a>
@@ -35,10 +35,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, computed, watch } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
-import { createChat, sendChat } from '@/http';
+import { createChat, sendChat, getFeatures } from '@/http';
 import { useStage } from '@/store';
 
 const stageStore = useStage();
@@ -74,6 +74,7 @@ const chatDialog = reactive<any>({
   visible: false,
 });
 const userlist = ref([...props.defaultUserList]);
+const allowCreateAppChat = ref(false);
 
 const curStage = computed(() => stageStore.curStageData?.id);
 
@@ -131,6 +132,19 @@ const handleConfirm = async () => {
   }
 };
 
+const fetchFeature = async () => {
+  try {
+    const params = {
+      limit: 10000,
+      offset: 0,
+    };
+    const res = await getFeatures(params);
+    allowCreateAppChat.value = res?.ALLOW_CREATE_APPCHAT;
+  } catch (e) {
+    console.log(e);
+  }
+};
+
 watch(
   () => props.defaultUserList,
   () => {
@@ -142,6 +156,10 @@ watch(
     renderKey.value += 1;
   },
 );
+
+onMounted(() => {
+  fetchFeature();
+});
 
 </script>
 

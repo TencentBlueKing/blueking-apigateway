@@ -396,7 +396,6 @@ const handeleJumpResource = (item: any) => {
 };
 
 const init = () => {
-  console.log(route.path);
   const isStage = route.path.includes('stage');
   scopeType.value = isStage ? 'stage' : 'resource';
   scopeId.value = isStage ? curStageId : props.resourceId;
