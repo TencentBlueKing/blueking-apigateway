@@ -3,11 +3,11 @@
     <!-- 自定义头部 -->
     <stage-top-bar />
     <div class="page-wrapper-padding stage-overview-wrapper">
-      <bk-loading
+      <!-- <bk-loading
         :loading="stageStore.realStageMainLoading"
-      >
-        <stage-card-list :stage-list="stageStore.stageList" />
-      </bk-loading>
+      > -->
+      <stage-card-list :stage-list="stageStore.stageList" />
+      <!-- </bk-loading> -->
     </div>
   </div>
 </template>
