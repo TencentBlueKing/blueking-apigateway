@@ -99,38 +99,6 @@ const routes: RouteRecordRaw[] = [
           matchRoute: 'apigwStageOverview',
           topMenu: 'home',
         },
-        children: [
-          {
-            path: 'resource-info',
-            name: 'apigwStageResourceInfo',
-            component: apigwStageResourceInfo,
-            meta: {
-              title: '环境概览',
-              matchRoute: 'apigwStageOverview',
-              topMenu: 'home',
-            },
-          },
-          {
-            path: 'plugin-manage',
-            name: 'apigwStagePluginManage',
-            component: apigwStagePluginManage,
-            meta: {
-              title: '环境概览',
-              matchRoute: 'apigwStageOverview',
-              topMenu: 'home',
-            },
-          },
-          {
-            path: 'variable-manage',
-            name: 'apigwStageVariableManage',
-            component: apigwStageVariableManage,
-            meta: {
-              title: '环境概览',
-              matchRoute: 'apigwStageOverview',
-              topMenu: 'home',
-            },
-          },
-        ],
       },
       {
         path: '/:id/published',

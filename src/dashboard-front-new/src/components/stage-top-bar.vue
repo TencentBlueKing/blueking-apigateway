@@ -100,6 +100,8 @@ const handleAddStage = () => {
 
 // 当前环境
 const curStage = ref(stageStore.curStageData || stageStore.defaultStage);
+// 当前选中环境name
+const curStageName = ref('prod');
 
 const init = async (isUpdate?: Boolean, isDelete?: Boolean) => {
   stageStore.setStageMainLoading(true);
@@ -107,22 +109,25 @@ const init = async (isUpdate?: Boolean, isDelete?: Boolean) => {
     // 获取环境列表
     const data = await getStageList(apigwId.value);
     stageStore.setStageList(data);
-
+    // 删除环境
     if (isDelete) {
       curStage.value = data[0];
       router.push({
         query: {
           stage: curStage.value.name,
+          tab: 'resourceInfo',
         },
       });
     } else if (route.query?.stage && !isUpdate) { // 更新停留当前环境
+      // 停留当前环境
       curStage.value = stageStore.stageList?.find(stage => stage.name === route.query.stage);
+    } else {
+      curStage.value = data.find((item: { name: string; }) => item.name === curStageName.value) || data[0];
     }
+    curStageName.value = curStage.value?.name;
 
-    if (!curStage.value?.id) {
-      curStage.value = data[0];
-    }
-    getStageDetailFun(curStage.value?.id);
+    // 获取当前环境的详情数据
+    await getStageDetailFun(curStage.value?.id);
   } catch (error) {
     console.error(error);
   } finally {
@@ -133,17 +138,12 @@ const init = async (isUpdate?: Boolean, isDelete?: Boolean) => {
 };
 init();
 
-// 是否为详情模式
-const isDetailMode = computed(() => {
-  return route.path.includes('/stage-detail');
-});
-
 // 当前环境概览模式
-const curActive = ref(isDetailMode.value ? 'detail' : 'abbreviation');
+const curActive = ref(route.path.includes('/stage-detail') ? 'detail' : 'abbreviation');
 
 // 获取环境详情
 const getStageDetailFun = (id: number) => {
-  if (curActive.value === 'abbreviation') {
+  if (curActive.value === 'abbreviation' || !route.path.includes('/stage-detail')) {
     return;
   }
   if (!id) {
@@ -173,6 +173,7 @@ const switchModelType = (key: string, routeName: string, stageName?: string) => 
     },
     query: {
       stage: stageName || curStage.value.name,
+      tab: 'resourceInfo',
     },
   };
   if (key === 'abbreviation') {
@@ -185,6 +186,7 @@ const switchModelType = (key: string, routeName: string, stageName?: string) => 
 
 // 切换环境
 const handleChangeStage = async (name: string, isDelete?: Boolean) => {
+  curStageName.value = name;
   if (name === curStage.value.name) return;
   // 获取切换环境的名字
   const data = stageStore.stageList.find(item => item?.name === name);

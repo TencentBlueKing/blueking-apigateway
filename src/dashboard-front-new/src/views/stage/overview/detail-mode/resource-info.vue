@@ -86,6 +86,7 @@
         <bk-table-column
           :label="t('操作')"
           prop="name"
+          width="200"
         >
           <template #default="{ row }">
             <bk-button
@@ -115,20 +116,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getResourceVersionsInfo, getGatewayLabels } from '@/http';
+import { getResourceVersionsInfo, getGatewayLabels, getStageList } from '@/http';
 import { useCommon, useStage } from '@/store';
 import resourceDetails from './resource-details.vue';
 import { copy } from '@/common/util';
+import { useRoute } from 'vue-router';
 
 const { t } = useI18n();
+const route = useRoute();
 const common = useCommon();
 const stageStore = useStage();
-
-const props = defineProps<{
-  versionId: number;
-}>();
 
 const searchValue = ref<string>('');
 const info = ref<any>({});
@@ -140,8 +139,9 @@ const emptyText = ref<string>('暂无数据');
 const labels = ref<any[]>([]);
 
 // 网关id
-const { apigwId } = common;
+const apigwId = computed(() => common.apigwId);
 const isLoading = ref(false);
+const paramsStage = ref(route.params.stage || 'prod');
 
 const pagination = ref({
   current: 1,
@@ -151,10 +151,10 @@ const pagination = ref({
 
 const getLabels = async () => {
   try {
-    const res = await getGatewayLabels(apigwId);
+    const res = await getGatewayLabels(apigwId.value);
     labels.value = res;
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
@@ -170,31 +170,22 @@ const copyPath = (row: any) => {
 // 资源信息
 const resourceVersionList = ref([]);
 
-watch(
-  () => props.versionId,
-  () => {
-    if (isReload.value) {
-      // 页面强制刷新 versionId 为空处理
-      getResourceVersionsData();
-    }
-  },
-);
-
 // 获取资源信息数据
-const getResourceVersionsData = async () => {
+const getResourceVersionsData = async (curStageData: any) => {
   isLoading.value = true;
-  if (props.versionId === undefined) {
+  const curVersionId = curStageData?.resource_version?.id;
+  if (curVersionId === undefined) {
     isReload.value = true;
     return;
   }
   // 没有版本无需请求
-  if (props.versionId === 0) {
+  if (curVersionId === 0) {
     isLoading.value = false;
     emptyText.value = '环境没有发布，数据为空';
     return;
   }
   try {
-    const res = await getResourceVersionsInfo(apigwId, props.versionId, { stage_id: stageStore.curStageId });
+    const res = await getResourceVersionsInfo(apigwId.value, curVersionId, { stage_id: curStageData.value?.id });
     pagination.value.count = res.resources.length;
     resourceVersionList.value = res.resources || [];
   } catch (e) {
@@ -207,8 +198,13 @@ const getResourceVersionsData = async () => {
     emptyText.value = '暂无数据';
   }
 };
-getResourceVersionsData();
-getLabels();
+onMounted(async () => {
+  const data = await getStageList(apigwId.value);
+  const curStageData = data.find((item: { name: string; }) => item.name === paramsStage.value)
+  || stageStore.stageList[0];
+  getResourceVersionsData(curStageData);
+  getLabels();
+});
 
 // 当前页数据
 const curPageData = computed(() => {
