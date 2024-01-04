@@ -242,7 +242,7 @@ onMounted(() => {
 // 发布成功，重新请求环境详情
 const handleReleaseSuccess = async () => {
   // stageTopBarRef.value?.getStageDetailFun(stageData.value?.id);
-  await mitt.emit('get-stage-list');
+  await mitt.emit('rerun-init');
 };
 
 // 重新加载子组件
@@ -292,7 +292,7 @@ const handleStageUnlist = async () => {
           theme: 'success',
         });
         // 获取网关列表
-        await mitt.emit('get-stage-list');
+        await mitt.emit('rerun-init');
         // 开启loading
       } catch (error) {
         console.error(error);
@@ -323,7 +323,7 @@ const handleStageDelete = async () => {
           theme: 'success',
         });
         // 获取网关列表
-        await mitt.emit('get-stage-list', { isUpdate: false, isDelete: true });
+        await mitt.emit('rerun-init', { isUpdate: false, isDelete: true });
         // 切换前一个环境, 并且不需要获取当前环境详情
         await mitt.emit('switch-stage', true);
         // 开启loading

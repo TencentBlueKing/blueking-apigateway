@@ -83,7 +83,7 @@
       :current-assets="currentStage"
       ref="releaseSidesliderRef"
       @release-success="handleReleaseSuccess"
-      @hidden="handleReleaseSuccess"
+      @hidden="handleReleaseSuccess(false)"
     />
   </div>
 </template>
@@ -136,8 +136,8 @@ const handleRelease = (stage: any) => {
 };
 
 // 发布成功
-const handleReleaseSuccess = async () => {
-  await mitt.emit('get-stage-list');
+const handleReleaseSuccess = async (loading = true) => {
+  await mitt.emit('get-environment-list-data', loading);
 };
 
 // 下架环境
@@ -155,7 +155,7 @@ const handleStageUnlist = async (id: number) => {
           theme: 'success',
         });
         // 获取网关列表
-        await mitt.emit('get-stage-list');
+        await mitt.emit('get-environment-list-data', true);
         // 开启loading
       } catch (error) {
         console.error(error);
