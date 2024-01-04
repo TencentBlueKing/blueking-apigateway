@@ -111,33 +111,34 @@
             </bk-dropdown>
           </div>
         </section>
-        <bk-alert
-          type="warning"
-          title="环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作"
-          class="mt15 mb15"
-        ></bk-alert>
-        <div class="tab-wrapper">
-          <bk-tab
-            v-model:active="active"
-            type="card-tab"
-            @change="handleTabChange"
-          >
-            <bk-tab-panel
-              v-for="item in panels"
-              :key="item.name"
-              :name="item.name"
-              :label="item.label"
-              render-directive="if"
-            >
-              <component
-                :is="curTabComponent"
-                :stage-id="stageData.id"
-                :version-id="stageData.resource_version.id">
-              </component>
-            </bk-tab-panel>
-          </bk-tab>
-        </div>
       </bk-loading>
+      <bk-alert
+        type="warning"
+        title="环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作"
+        class="mt15 mb15"
+      ></bk-alert>
+      <div class="tab-wrapper">
+        <bk-tab
+          v-model:active="active"
+          type="card-tab"
+          @change="handleTabChange"
+        >
+          <bk-tab-panel
+            v-for="item in panels"
+            :key="item.name"
+            :name="item.name"
+            :label="item.label"
+            render-directive="if"
+          >
+            <component
+              :is="curTabComponent"
+              :stage-id="stageData.id"
+              :version-id="stageData.resource_version.id">
+            </component>
+          </bk-tab-panel>
+        </bk-tab>
+      </div>
+
 
       <!-- 环境侧边栏 -->
       <edit-stage-sideslider ref="stageSidesliderRef" />

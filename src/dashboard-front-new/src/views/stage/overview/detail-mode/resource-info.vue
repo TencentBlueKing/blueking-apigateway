@@ -141,7 +141,6 @@ const labels = ref<any[]>([]);
 // 网关id
 const apigwId = computed(() => common.apigwId);
 const isLoading = ref(false);
-const paramsStage = ref(route.params.stage || 'prod');
 
 const pagination = ref({
   current: 1,
@@ -174,8 +173,10 @@ const resourceVersionList = ref([]);
 const getResourceVersionsData = async (curStageData: any) => {
   isLoading.value = true;
   const curVersionId = curStageData?.resource_version?.id;
+  resourceVersionList.value = [];
   if (curVersionId === undefined) {
     isReload.value = true;
+    isLoading.value = false;
     return;
   }
   // 没有版本无需请求
@@ -198,12 +199,25 @@ const getResourceVersionsData = async (curStageData: any) => {
     emptyText.value = '暂无数据';
   }
 };
-onMounted(async () => {
+
+const init = async () => {
   const data = await getStageList(apigwId.value);
-  const curStageData = data.find((item: { name: string; }) => item.name === paramsStage.value)
+  const paramsStage = route.query.stage || 'prod';
+
+  const curStageData = data.find((item: { name: string; }) => item.name === paramsStage)
   || stageStore.stageList[0];
   getResourceVersionsData(curStageData);
   getLabels();
+};
+
+// 切换环境重新获取资源信息
+watch(() => stageStore.curStageId, () => {
+  init();
+});
+
+// 切换环境重新执行
+onMounted(() => {
+  init();
 });
 
 // 当前页数据
