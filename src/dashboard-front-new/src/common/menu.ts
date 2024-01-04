@@ -17,6 +17,11 @@ export const menuData: IMenu[]  = [
     ],
   },
   {
+    name: 'apigwBackendService',
+    title: '后端服务',
+    icon: 'panel-permission',
+  },
+  {
     name: 'apigwResourceManage',
     title: '资源管理',
     icon: 'runtime',
@@ -28,11 +33,6 @@ export const menuData: IMenu[]  = [
       {
         name: 'apigwResourceVersion',
         title: '资源版本',
-      },
-      {
-        name: 'apigwBackendService',
-        title: '后端服务',
-        icon: 'panel-permission',
       },
     ],
   },

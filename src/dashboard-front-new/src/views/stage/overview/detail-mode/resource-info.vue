@@ -185,7 +185,7 @@ const getResourceVersionsData = async (curStageData: any) => {
     return;
   }
   try {
-    const res = await getResourceVersionsInfo(apigwId.value, curVersionId, { stage_id: curStageData.value?.id });
+    const res = await getResourceVersionsInfo(apigwId.value, curVersionId, { stage_id: curStageData?.id });
     pagination.value.count = res.resources.length;
     resourceVersionList.value = res.resources || [];
   } catch (e) {

@@ -291,6 +291,7 @@ const init = async () => {
   gatewaysList.value.forEach((item: any) => {
     item.is24HoursAgo = is24HoursAgo(item.created_time);
     item.tagOrder = '3';
+    item.stages?.sort((a: any, b: any) => (b.released - a.released));
     item.labelTextData = item.stages.reduce((prev: any, label: any, index: number) => {
       if (index > item.tagOrder - 1) {
         prev.push({ name: label.name, released: label.released });
