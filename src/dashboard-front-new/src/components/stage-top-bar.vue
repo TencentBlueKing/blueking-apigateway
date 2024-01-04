@@ -309,7 +309,7 @@ onMounted(() => {
   // 监听窗口变化
   window.addEventListener('resize', throttle(onWindowResize, 100));
 
-  // 事件总线监听重新获取环境列表
+  // 事件总线监听重新获取环境列表，并获取当前环境详情
   mitt.on('get-stage-list', (data) => {
     if (typeof data === 'boolean') {
       init(data);
@@ -326,12 +326,18 @@ onMounted(() => {
   mitt.on('switch-stage', async (isDelete?: Boolean) => {
     handleChangeStage(curStage.value.name, isDelete);
   });
+  // 不开启loading，只获取环境列表
+  mitt.on('get-environment-list-data', async () => {
+    const data = await getStageList(apigwId.value);
+    stageStore.setStageList(data);
+  });
 });
 
 onBeforeMount(() => {
   mitt.off('get-stage-list');
   mitt.off('switch-mode');
   mitt.off('switch-stage');
+  mitt.off('get-environment-list-data');
   window.removeEventListener('resize', onWindowResize);
 });
 

@@ -189,7 +189,7 @@ const handleAddStage = () => {
 onMounted(() => {
   timeId = setInterval(() => {
     // 获取网关列表
-    mitt.emit('get-stage-list');
+    mitt.emit('get-environment-list-data');
   }, 1000 * 30);
 });
 
