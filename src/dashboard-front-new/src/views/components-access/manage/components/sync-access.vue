@@ -2,8 +2,8 @@
   <div class="app-content apigw-access-manager-wrapper">
     <div class="wrapper">
       <div class="f14 ag-table-header">
-        <p>
-          {{ $t('请确认以下组件对应网关资源的变更：') }}
+        <p class="ag-table-change">
+          {{ t('请确认以下组件对应网关资源的变更：') }}
           <!-- eslint-disable-next-line vue/no-v-html -->
           <span v-html="addInfo"></span>
           <!-- eslint-disable-next-line vue/no-v-html -->
@@ -14,160 +14,137 @@
         <bk-input
           :clearable="true"
           v-model="pathUrl"
-          :placeholder="$t('请输入组件名称、请求路径，按Enter搜索')"
+          :placeholder="t('请输入组件名称、请求路径，按Enter搜索')"
           :right-icon="'bk-icon icon-search'"
           style="width: 328px;"
           @enter="filterData">
         </bk-input>
       </div>
-      <ag-loader
-        :offset-top="0"
-        :offset-left="0"
-        loader="stage-loader"
-        :is-loading="false">
-        <bk-table
-          ref="componentRef"
-          style="margin-top: 16px;"
-          :data="componentList"
-          size="small"
-          :pagination="pagination"
-          v-bkloading="{ isLoading, opacity: 1 }"
-          @select="handlerChange"
-          @select-all="handlerAllChange"
-          remote-pagination
-          @page-value-change="handlePageChange"
-          @page-limit-change="handlePageLimitChange"
-          @filter-change="handleFilterChange">
-          <template #empty>
+
+      <bk-table
+        ref="componentRef"
+        border="outer"
+        style="margin-top: 16px;"
+        :data="componentList"
+        size="small"
+        :pagination="pagination"
+        v-bkloading="{ isLoading, opacity: 1 }"
+        @select="handlerChange"
+        @select-all="handlerAllChange"
+        remote-pagination
+        @page-value-change="handlePageChange"
+        @page-limit-change="handlePageLimitChange"
+        @filter-change="handleFilterChange">
+        <bk-table-column :label="t('系统名称')" prop="system_name">
+          <template #default="{ data }">
+            {{data?.system_name || '--'}}
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('组件名称')" prop="component_name">
+          <template #default="{ data }">
+            {{data?.component_name || '--'}}
+          </template>
+        </bk-table-column>
+        <bk-table-column
+          :label="t('组件请求方法')"
+          :filters="methodFilters"
+          :filter-multiple="true"
+          column-key="component_method"
+          prop="component_method">
+          <template #default="{ data }">
+            {{data?.component_method || '--'}}
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('组件请求路径')" prop="component_path" :min-width="200">
+          <template #default="{ data }">
+            {{data?.component_path || '--'}}
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('资源')" prop="resource_id" :show-overflow-tooltip="false">
+          <template #default="{ data }">
+            <span
+              v-if="data?.resource_name"
+              :class="['text-resource', { 'resource-disabled': !data?.resource_id }]"
+              v-bk-tooltips.top="{ content: data?.resource_id ? data?.resource_name : t('资源不存在') }"
+              @click.stop="handleEditResource(data, data?.resource_id)">{{ data?.resource_name }}</span>
+            <template v-else>
+              --
+            </template>
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('组件ID')" prop="component_id">
+          <template #default="{ data }">
+            {{data?.component_id || '--'}}
+          </template>
+        </bk-table-column>
+        <bk-table-column
+          :label="t('操作类型')" width="150"
+          :filters="statusFilters"
+          :filter-multiple="true"
+          column-key="status"
+          prop="status">
+          <template #default="{ data }">
+            <span style="color: #2DCB56;" v-if="!data?.resource_id"> {{ t('新建') }} </span>
+            <span style="color: #ffb400;" v-if="data?.resource_id && data?.component_path"> {{ t('更新') }} </span>
+            <span style="color: #EA3536;" v-if="data?.resource_id && !data?.component_path"> {{ t('删除') }} </span>
+          </template>
+        </bk-table-column>
+      </bk-table>
+
+      <div class="mt20">
+        <bk-popconfirm
+          ref="resourcePopconfirm"
+          trigger="click"
+          ext-cls="import-resource-popconfirm-wrapper"
+          v-if="componentList.length">
+          <template #content>
             <div>
-              <table-empty
-                :keyword="tableEmptyConf.keyword"
-                :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="getComponents(true)"
-                @clear-filter="clearFilterKey"
-              />
+              <div class="content-text"> {{ t('将组件配置同步到网关 bk-esb，创建网关的资源版本并发布到网关所有环境') }} </div>
+              <div class="btn-wrapper">
+                <bk-button
+                  size="small"
+                  theme="primary"
+                  class="btn"
+                  :disabled="confirmIsLoading"
+                  @click="confirm">
+                  {{ t('确认') }}
+                </bk-button>
+                <bk-button
+                  size="small"
+                  class="btn"
+                  @click="resourcePopconfirm?.cancel()">
+                  {{ t('取消') }}
+                </bk-button>
+              </div>
             </div>
           </template>
 
-          <bk-table-column :label="$t('系统名称')" prop="system_name">
-            <template #default="{ data }">
-              {{data?.system_name || '--'}}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="$t('组件名称')" prop="component_name">
-            <template #default="{ data }">
-              {{data?.component_name || '--'}}
-            </template>
-          </bk-table-column>
-          <bk-table-column
-            :label="$t('组件请求方法')"
-            :filters="methodFilters"
-            :filter-multiple="true"
-            column-key="component_method"
-            prop="component_method">
-            <template #default="{ data }">
-              {{data?.component_method || '--'}}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="$t('组件请求路径')" prop="component_path" :min-width="200">
-            <template #default="{ data }">
-              {{data?.component_path || '--'}}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="$t('资源')" prop="resource_id" :show-overflow-tooltip="false">
-            <template #default="{ data }">
-              <span
-                v-if="data?.resource_name"
-                :class="['text-resource', { 'resource-disabled': !data?.resource_id }]"
-                v-bk-tooltips.top="{ content: data?.resource_id ? data?.resource_name : $t('资源不存在') }"
-                @click.stop="handleEditResource(data, data?.resource_id)">{{ data?.resource_name }}</span>
-              <template v-else>
-                --
-              </template>
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="$t('组件ID')" prop="component_id">
-            <template #default="{ data }">
-              {{data?.component_id || '--'}}
-            </template>
-          </bk-table-column>
-          <bk-table-column
-            :label="$t('操作类型')" width="150"
-            :filters="statusFilters"
-            :filter-multiple="true"
-            column-key="status"
-            prop="status">
-            <template #default="{ data }">
-              <span style="color: #2DCB56;" v-if="!data?.resource_id"> {{ $t('新建') }} </span>
-              <span style="color: #ffb400;" v-if="data?.resource_id && data?.component_path"> {{ $t('更新') }} </span>
-              <span style="color: #EA3536;" v-if="data?.resource_id && !data?.component_path"> {{ $t('删除') }} </span>
-            </template>
-          </bk-table-column>
-        </bk-table>
-
-        <div class="mt20">
-          <bk-popconfirm
-            ref="resourcePopconfirm"
-            trigger="click"
-            ext-cls="import-resource-popconfirm-wrapper"
-            v-if="componentList.length">
-            <template #content>
-              <div>
-                <div class="content-text"> {{ $t('将组件配置同步到网关 bk-esb，创建网关的资源版本并发布到网关所有环境') }} </div>
-                <div class="btn-wrapper">
-                  <bk-button
-                    size="small"
-                    theme="primary"
-                    class="btn"
-                    :disabled="confirmIsLoading"
-                    @click="confirm">
-                    {{ $t('确认') }}
-                  </bk-button>
-                  <bk-button
-                    size="small"
-                    class="btn"
-                    @click="resourcePopconfirm?.cancel()">
-                    {{ $t('取消') }}
-                  </bk-button>
-                </div>
-              </div>
-            </template>
-
-            <bk-button
-              class="mr10"
-              theme="primary"
-              type="button"
-              :title="$t('下一步')"
-              :loading="confirmIsLoading">
-              {{ $t('确认同步') }}
-            </bk-button>
-          </bk-popconfirm>
           <bk-button
-            v-else
             class="mr10"
             theme="primary"
             type="button"
-            :disabled="true">
-            {{ $t('确认同步') }}
+            :title="t('下一步')"
+            :loading="confirmIsLoading">
+            {{ t('确认同步') }}
           </bk-button>
-          <!-- <bk-button
-              class="mr10"
-              theme="primary"
-              type="button"
-              title="下一步"
-              @click.stop.prevent="checkData" :loading="isDataLoading">
-              下一步
-          </bk-button> -->
-          <bk-button
-            theme="default"
-            type="button"
-            :title="$t('取消')"
-            :disabled="isLoading"
-            @click="goBack">
-            {{ $t('取消') }}
-          </bk-button>
-        </div>
-      </ag-loader>
+        </bk-popconfirm>
+        <bk-button
+          v-else
+          class="mr10"
+          theme="primary"
+          type="button"
+          :disabled="true">
+          {{ t('确认同步') }}
+        </bk-button>
+        <bk-button
+          theme="default"
+          type="button"
+          :title="t('取消')"
+          :disabled="isLoading"
+          @click="goBack">
+          {{ t('取消') }}
+        </bk-button>
+      </div>
     </div>
   </div>
 </template>
@@ -176,7 +153,7 @@
 import { ref, reactive, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { clearFilter, isTableFilter } from '@/common/util';
+import { isTableFilter } from '@/common/util';
 import { checkSyncComponent, syncReleaseData, getEsbGateway } from '@/http';
 import { useCommon } from '@/store';
 
@@ -184,75 +161,32 @@ const { t } = useI18n();
 const router = useRouter();
 const common = useCommon();
 
-// const systemFilterRef = ref();
-// const form = ref();
-// const configRef = ref();
 const resourcePopconfirm = ref();
 const componentRef = ref();
 
-// const getDefaultData = () => {
-//   return {
-//     system_id: '',
-//     name: '',
-//     description: '',
-//     method: '',
-//     path: '',
-//     component_codename: '',
-//     permission_level: '',
-//     timeout: 30,
-//     is_active: true,
-//     config_fields: [],
-//   };
-// };
-
-// const searchValue = ref<string>('');
 const componentList = ref<any>([]);
 const pagination = reactive({
   current: 1,
   count: 0,
   limit: 10,
 });
-// const formData = reactive(getDefaultData());
-// const componentData = ref<any>({});
-// const isSliderShow = ref<boolean>(false);
-// const submitLoading = ref<boolean>(false);
+
 const isLoading = ref<boolean>(false);
-// const detailLoading = ref<boolean>(false);
-// const isReleasing =  ref<boolean>(false);
-// const needNewVersion = ref<boolean>(false);
-// const isFilter = ref<boolean>(false);
-// const versionMessage = ref<string>('');
 const pathUrl = ref<string>('');
 const esb = ref<any>({});
 const filterList = ref<any>({});
 const allData = ref<any>([]);
 const displayData = ref<any>([]);
 const curSelectList = ref<any>([]);
-// const displayDataLocal = ref<any>([]);
 const requestQueue = reactive<any>(['component']);
 const tableEmptyConf = reactive<any>({
   keyword: '',
   isAbnormal: false,
 });
-// const deleteDialogConf = reactive<any>({
-//   visiable: false,
-//   loading: false,
-//   ids: [],
-// });
 const statusFilters = reactive<any>([
   { value: 'delete', text: t('删除') },
   { value: 'update', text: t('更新') },
   { value: 'create', text: t('新建') }]);
-// const levelList = reactive<any>([
-//   {
-//     id: 'unlimited',
-//     name: t('无限制'),
-//   },
-//   {
-//     id: 'normal',
-//     name: t('普通'),
-//   },
-// ]);
 
 const createNum = computed(() => {
   const results = allData.value?.filter((item: any) => !item?.resource_id);
@@ -331,56 +265,6 @@ const handlerAllChange = (payload: any) => {
   curSelectList.value = [...payload];
 };
 
-// const handleSysSelect = (value, option) => {
-//   const tempList = formData?.component_codename?.split('.');
-//   let customStr = '';
-//   if (tempList?.length === 3) {
-//     customStr = tempList[2];
-//   }
-//   formData.component_codename = `generic.${option.lowerName}.${customStr}`;
-//   systemFilterRef.value?.setSelected(value);
-// };
-
-// const handleCancel = () => {
-//   isSliderShow.value = false;
-// };
-
-// const handleSubmit = () => {
-//   form.value?.validate().then(async (validator) => {
-//     submitLoading.value = true;
-//     const tempData = Object.assign({}, formData);
-//     if (!tempData?.timeout) {
-//       tempData.timeout = null;
-//     }
-//     if (tempData?.method === '*') {
-//       tempData.method = '';
-//     }
-//     if (tempData?.config_fields?.length > 0) {
-//       tempData.config = configRef.value?.getData();
-//       delete tempData.config_fields;
-//     }
-//     if (!isEdit.value) {
-//       delete tempData.config_fields;
-//     }
-//     try {
-//       const methods = isEdit.value ? 'updateComponent' : 'addComponent';
-//       const params = isEdit.value ? {
-//         id: componentData.value?.id,
-//         data: tempData,
-//       } : tempData;
-//       await this.$store.dispatch(`component/${methods}`, params);
-//       isSliderShow.value = false;
-//       getComponents(true);
-//     } catch (e) {
-//       console.log(e);
-//     } finally {
-//       submitLoading.value = false;
-//     }
-//   }, (validator) => {
-//     console.error(validator);
-//   });
-// };
-
 const confirm = () => {
   checkReleaseData();
   resourcePopconfirm.value?.cancel();
@@ -409,34 +293,9 @@ const handlePageChange = (page: number) => {
   componentList.value?.splice(0, componentList.value?.length, ...data);
 };
 
-// const handlesyncRouter = () => {
-//   router.push({
-//     name: 'syncApigwAccess',
-//   });
-// };
-
 const goBack = () => {
-  router.push({
-    name: 'apigwAccess',
-  });
+  router.back();
 };
-
-// const handlesync = async () => {
-//   try {
-//     const res = await this.$store.dispatch('component/getReleaseStatus');
-//     isReleasing.value = res.data.is_releasing;
-//     if (isReleasing.value) {
-//       setTimeout(() => {
-//         isReleasing.value = false;
-//       }, 3000);
-//     } else {
-//       handlesyncRouter();
-//     }
-//   } catch (e) {
-//     console.warn(e);
-//     return false;
-//   }
-// };
 
 const filterData = () => {
   displayData.value = allData.value?.filter((e: any) => {
@@ -498,14 +357,6 @@ const handleEditResource = (data: any, resourceId: any) => {
   window.open(routeData.href, '_blank');
 };
 
-const clearFilterKey = () => {
-  pathUrl.value = '';
-  componentRef.value?.clearFilter();
-  if (componentRef.value?.$refs.tableHeader) {
-    clearFilter(componentRef.value?.$refs.tableHeader);
-  }
-};
-
 const updateTableEmptyConfig = () => {
   const isFilter = isTableFilter(filterList.value);
   if (pathUrl.value || isFilter) {
@@ -522,15 +373,6 @@ const init = () => {
 
 init();
 
-// watch(
-//   () => requestQueue,
-//   (value) => {
-//     if (value?.length < 1) {
-//       this.$store.commit('setMainContentLoading', false);
-//     }
-//   },
-// );
-
 watch(
   () => pathUrl.value,
   (value) => {
@@ -545,11 +387,8 @@ watch(
 
 <style lang="scss" scoped>
 .apigw-access-manager-wrapper {
-  display: flex;
-  justify-content: flex-start;
   .wrapper {
-    padding: 0 10px;
-    width: 100%
+    padding: 24px;
   }
   .search-wrapper {
     display: flex;
@@ -559,6 +398,9 @@ watch(
     display: flex;
     justify-content: space-between;
     align-items: center;
+    .ag-table-change {
+      color: #313238;
+    }
   }
   .bk-table {
     .api-name,
