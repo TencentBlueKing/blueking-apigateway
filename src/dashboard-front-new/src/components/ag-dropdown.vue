@@ -1,27 +1,38 @@
 <template>
-  <bk-dropdown :trigger="triggerType" class="mr8" @show="isOpen = true" @hide="isOpen = false">
-    <bk-button :disabled="isDisabled">
+  <bk-dropdown :trigger="triggerType" class="mr8" @show="isOpen = true" @hide="isOpen = false" :placement="placement">
+    <template v-if="isText">
+      <div class="dropdown-text">{{ text }} <angle-right class="f22" /></div>
+    </template>
+    <bk-button :disabled="isDisabled" v-else>
       {{ text }}
       <i :class="['apigateway-icon icon-ag-down-small apigateway-select-icon', { 'is-open': isOpen }]">
       </i>
     </bk-button>
     <template #content>
       <bk-dropdown-menu v-if="isOpen">
-        <bk-dropdown-item
-          v-for="item in dropdownList"
-          @click="handleDropdownClick(item)"
-          :class="{ disabled: item.disabled }"
-          :key="item.value"
-        >
-          {{ item.label }}
-        </bk-dropdown-item>
+        <template v-if="slots?.default">
+          <slot></slot>
+        </template>
+        <template v-else>
+          <bk-dropdown-item
+            v-for="item in dropdownList"
+            @click="handleDropdownClick(item)"
+            :class="{ disabled: item.disabled }"
+            :key="item.value"
+          >
+            {{ item.label }}
+          </bk-dropdown-item>
+        </template>
       </bk-dropdown-menu>
     </template>
   </bk-dropdown>
 </template>
 <script setup lang="ts">
-import { ref, PropType } from 'vue';
+import { ref, PropType, useSlots } from 'vue';
 import { IDropList } from '@/types';
+import { AngleRight } from 'bkui-vue/lib/icon';
+
+const slots = useSlots();
 
 const props = defineProps({
   text: {
@@ -39,6 +50,14 @@ const props = defineProps({
   isDisabled: {
     type: Boolean,
     default: false,
+  },
+  isText: {
+    type: Boolean,
+    default: false,
+  },
+  placement: {
+    type: String,
+    default: 'bottom',
   },
 });
 const dropdownList = ref(props.dropdownList);
@@ -58,5 +77,12 @@ const handleDropdownClick = (data: IDropList) => {
 .disabled{
   cursor: not-allowed;
   color: #dcdee5;
+}
+.dropdown-text {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  line-height: 34px;
+  cursor: pointer;
 }
 </style>

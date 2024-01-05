@@ -11,6 +11,7 @@
         <div class="mr8">
           <bk-button
             theme="primary"
+            :class="{ 'super-big-button': isDetail }"
             @click="handleCreateResource"
           >
             {{ t('新建') }}
@@ -21,11 +22,25 @@
           :dropdown-list="batchDropData"
           @on-change="handleBatchOperate"
           :is-disabled="!selections.length"></ag-dropdown>
-        <section v-if="isDetail">
-          <bk-button>
-            {{ t('更多') }}
-          </bk-button>
-        </section>
+        <ag-dropdown
+          :text="t('更多')"
+          v-if="isDetail"
+        >
+          <div class="nest-dropdown">
+            <ag-dropdown
+              :text="t('导入')"
+              :is-text="true"
+              placement="right-start"
+              :dropdown-list="importDropData"
+              @on-change="handleImport"></ag-dropdown>
+            <ag-dropdown
+              :text="t('导出')"
+              :is-text="true"
+              placement="right-start"
+              :dropdown-list="exportDropData"
+              @on-change="handleExport"></ag-dropdown>
+          </div>
+        </ag-dropdown>
         <section class="flex-row align-items-center" v-else>
           <ag-dropdown
             :text="t('导入')"
@@ -666,7 +681,7 @@ const handleDeleteResource = async (id: number) => {
     message: t('删除成功'),
     theme: 'success',
   });
-  getList();
+  handleSuccess();
 };
 
 const handleSortChange = ({ column, type }: Record<string, any>) => {
@@ -1113,5 +1128,15 @@ onMounted(() => {
       }
     }
   }
+}
+
+.nest-dropdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.super-big-button {
+  padding: 5px 58px;
 }
 </style>
