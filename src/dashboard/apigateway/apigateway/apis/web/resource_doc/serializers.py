@@ -77,6 +77,7 @@ class ResourceFilterConditionSLZ(serializers.Serializer):
     method = serializers.CharField(allow_blank=True, required=False, help_text="请求方法，完整匹配")
     label_ids = serializers.ListField(child=serializers.IntegerField(), required=False, help_text="标签 ID 列表")
     backend_id = serializers.IntegerField(allow_null=True, required=False, help_text="后端服务 ID")
+    backend_name = serializers.CharField(allow_blank=True, required=False, help_text="后端服务名称，完整匹配")
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="筛选条件，支持模糊匹配资源名称，前端请求路径"
     )
