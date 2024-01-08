@@ -3,7 +3,6 @@
     <bk-sideslider
       v-model:isShow="isShow"
       :width="1050"
-      @hidden="emit('hidden')"
       :title="`发布资源至环境【${currentAssets.name}】`"
       quick-close>
       <template #default>
@@ -338,6 +337,7 @@ watch(
         delete: [],
         update: [],
       };
+      emit('hidden');
     };
   },
 );

@@ -523,8 +523,8 @@ const init = async () => {
     const res = await getStageList(apigwId);
     stageList.value = res;
     console.log(stageList.value);
-    res.forEach((item: any) => {
-      activeIndex.value.push(item.name);
+    res.forEach((item: any, index: number) => {
+      activeIndex.value.push(index);
     });
     isPublish.value = stageList.value.some((item: any) => item.publish_id !== 0);
     console.log(isPublish.value);
