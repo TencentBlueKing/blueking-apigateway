@@ -1,89 +1,92 @@
 <template>
   <div class="resource-container page-wrapper-padding">
-    <bk-alert
-      v-if="versionConfigs.needNewVersion && !isDetail"
-      theme="warning"
-      class="mb20"
-      :title="versionConfigs.versionMessage"
-    />
-    <div class="operate flex-row justify-content-between mb15">
-      <div class="flex-1 flex-row align-items-center">
-        <div class="mr8">
-          <bk-button
-            theme="primary"
-            :class="{ 'super-big-button': isDetail }"
-            @click="handleCreateResource"
+
+    <div class="resource-container-lf" :style="{ width: isDetail ? isShowLeft ? '320px' : '0' : '100%' }">
+      <bk-alert
+        v-show="versionConfigs.needNewVersion && !isDetail"
+        theme="warning"
+        class="mb20"
+        :title="versionConfigs.versionMessage"
+      />
+      <div class="operate flex-row justify-content-between mb15">
+        <div class="flex-1 flex-row align-items-center">
+          <div class="mr8">
+            <bk-button
+              v-show="isShowLeft"
+              theme="primary"
+              :class="{ 'super-big-button': isDetail }"
+              @click="handleCreateResource"
+            >
+              {{ t('新建') }}
+            </bk-button>
+          </div>
+          <ag-dropdown
+            v-show="isShowLeft"
+            :text="t('批量')"
+            :dropdown-list="batchDropData"
+            @on-change="handleBatchOperate"
+            :is-disabled="!selections.length"></ag-dropdown>
+          <ag-dropdown
+            :text="t('更多')"
+            v-show="isDetail && isShowLeft"
           >
-            {{ t('新建') }}
-          </bk-button>
-        </div>
-        <ag-dropdown
-          :text="t('批量')"
-          :dropdown-list="batchDropData"
-          @on-change="handleBatchOperate"
-          :is-disabled="!selections.length"></ag-dropdown>
-        <ag-dropdown
-          :text="t('更多')"
-          v-if="isDetail"
-        >
-          <div class="nest-dropdown">
+            <div class="nest-dropdown">
+              <ag-dropdown
+                :text="t('导入')"
+                :is-text="true"
+                placement="right-start"
+                :dropdown-list="importDropData"
+                @on-change="handleImport"></ag-dropdown>
+              <ag-dropdown
+                :text="t('导出')"
+                :is-text="true"
+                placement="right-start"
+                :dropdown-list="exportDropData"
+                @on-change="handleExport"></ag-dropdown>
+            </div>
+          </ag-dropdown>
+          <section class="flex-row align-items-center" v-show="!isDetail">
             <ag-dropdown
               :text="t('导入')"
-              :is-text="true"
-              placement="right-start"
               :dropdown-list="importDropData"
               @on-change="handleImport"></ag-dropdown>
             <ag-dropdown
               :text="t('导出')"
-              :is-text="true"
-              placement="right-start"
               :dropdown-list="exportDropData"
               @on-change="handleExport"></ag-dropdown>
-          </div>
-        </ag-dropdown>
-        <section class="flex-row align-items-center" v-else>
-          <ag-dropdown
-            :text="t('导入')"
-            :dropdown-list="importDropData"
-            @on-change="handleImport"></ag-dropdown>
-          <ag-dropdown
-            :text="t('导出')"
-            :dropdown-list="exportDropData"
-            @on-change="handleExport"></ag-dropdown>
-          <div class="mr8">
-            <bk-button
-              @click="handleCreateResourceVersion"
-            >
-              {{ t('生成版本') }}
-            </bk-button>
-          </div>
-        </section>
+            <div class="mr8">
+              <bk-button
+                @click="handleCreateResourceVersion"
+              >
+                {{ t('生成版本') }}
+              </bk-button>
+            </div>
+          </section>
+        </div>
+        <div class="flex-1 flex-row justify-content-end">
+          <bk-search-select
+            v-show="!isDetail"
+            v-model="searchValue"
+            :data="searchData"
+            unique-select
+            style="width: 450px; background:#fff"
+            :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
+            :value-split-code="'+'"
+          />
+        </div>
       </div>
-      <div class="flex-1 flex-row justify-content-end">
-        <!-- <bk-input class="ml10 mr10 operate-input" placeholder="请输入网关名" v-model="filterData.query"></bk-input> -->
-        <bk-search-select
-          v-if="!isDetail"
-          v-model="searchValue"
-          :data="searchData"
-          unique-select
-          style="width: 450px; background:#fff"
-          :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
-          :value-split-code="'+'"
-        />
-      </div>
-    </div>
-    <bk-search-select
-      v-if="isDetail"
-      v-model="searchValue"
-      :data="searchData"
-      unique-select
-      style="width: 320px; background:#fff"
-      class="mb15"
-      placeholder="请输入资源名称或选择条件搜索, 按Enter确认"
-      :value-split-code="'+'"
-    />
-    <div class="flex-row resource-content">
-      <div class="left-wraper" :style="{ width: isDetail ? isShowLeft ? '320px' : '0' : '100%' }">
+      <bk-search-select
+        v-show="isDetail && isShowLeft"
+        v-model="searchValue"
+        :data="searchData"
+        unique-select
+        style="width: 320px; background:#fff"
+        class="mb15"
+        placeholder="请输入资源名称或选择条件搜索, 按Enter确认"
+        :value-split-code="'+'"
+      />
+
+      <div class="left-wraper">
         <bk-loading
           :loading="isLoading"
         >
@@ -253,20 +256,27 @@
             </bk-table-column>
           </bk-table>
         </bk-loading>
-        <div class="toggle-button" v-if="isDetail" @click="isShowLeft = !isShowLeft">
-          <i class="icon apigateway-icon icon-ag-ag-arrow-left" :class="[{ 'is-left': !isShowLeft }]"></i>
-        </div>
       </div>
-      <div class="flex-1 right-wraper ml20" v-if="isDetail">
+
+      <div class="toggle-button toggle-button-lf" v-show="isDetail && isShowLeft" @click="handleToggleLf">
+        <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
+      </div>
+    </div>
+
+    <!-- <div class="demarcation-button" v-show="isDetail && isShowLeft">
+      ......
+    </div> -->
+
+    <div class="resource-container-rg flex-1" v-show="isDetail" :style="{ marginLeft: isShowLeft ? '24px' : '0' }">
+      <div class="toggle-button toggle-button-rg" @click="handleToggleRg">
+        <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
+      </div>
+      <div class="right-wraper">
         <bk-tab
           v-model:active="active"
           type="card-tab"
+          class="resource-tab-panel"
         >
-          <template #setting>
-            <div class="close-btn" @click="handleShowList">
-              <i class="icon apigateway-icon icon-ag-icon-close"></i>
-            </div>
-          </template>
           <bk-tab-panel
             v-for="item in panels"
             :key="item.name"
@@ -300,6 +310,7 @@
         </bk-tab>
       </div>
     </div>
+
     <!-- 批量删除dialog -->
     <bk-dialog
       :is-show="dialogData.isShow"
@@ -684,6 +695,23 @@ const handleDeleteResource = async (id: number) => {
   handleSuccess();
 };
 
+const handleToggleLf = () => {
+  if (isDetail.value) {
+    isShowLeft.value = false;
+  } else {
+    isDetail.value = true;
+  }
+};
+
+const handleToggleRg = () => {
+  if (isShowLeft.value) {
+    isDetail.value = false;
+    handleShowList();
+  } else {
+    isShowLeft.value = true;
+  }
+};
+
 const handleSortChange = ({ column, type }: Record<string, any>) => {
   const typeMap: Record<string, Function> = {
     asc: () => {
@@ -1009,111 +1037,110 @@ onMounted(() => {
 </script>
 <style lang="scss" scoped>
 .resource-container{
-  // height: 100%;
+  display: flex;
+  align-items: flex-start;
+  height: calc(100vh - 112px);
+  .resource-container-lf,
+  .resource-container-rg{
+    position: relative;
+  }
+  .resource-container-lf {
+    transition: all .2s;
+  }
+  .resource-container-rg {
+    height: calc(100% + 40px);
+    background: #fff;
+    margin-top: -20px;
+    margin-right: -24px;
+    margin-bottom: -20px;
+  }
+  // .demarcation-button {
+  //   // margin-left: 4px;
+  //   color: #63656E;
+  //   // display: flex;
+  //   // align-items: center;
+  //   transform: rotate(90deg);
+  // }
   .operate{
     &-input{
       width: 450px;
     }
   }
-  // .dialog-content{
-  //   max-height: 280px;
-  // }
-  .resource-content{
-    height: calc(100% - 68px);
-    min-height: 600px;
-    .left-wraper{
+  .left-wraper{
+    position: relative;
+    background: #fff;
+    padding-bottom: 24px;
+    .document-info{
+      color: #3a84ff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .plus-class{
+      font-size: 12px;
+      cursor: pointer;
+      color: #979BA5;
+      background: #EAEBF0;
+      padding: 5px;
+      &:hover {
+        color: #3A84FF;
+        background: #E1ECFF;
+      }
+    }
+
+    .table-layout{
+      :deep(.row-cls){
+        td{
+          background: #F2FFF4 !important;
+        }
+      }
+    }
+
+    .text-warp{
       position: relative;
-      background: #fff;
-      transition: all .15s;
-      margin-bottom: 24px;
-      .toggle-button{
-        align-items: center;
-        background: #dcdee5;
-        border-bottom-right-radius: 6px;
-        border-top-right-radius: 6px;
-        color: #fff;
-        cursor: pointer;
-        display: flex;
-        font-size: 16px;
-        height: 64px;
-        justify-content: center;
+      cursor: pointer;
+      .edit-icon{
         position: absolute;
-        right: -14px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 14px;
-        .icon {
-          transition: transform .15s !important;
-          &.is-left {
-            transform: rotate(180deg) !important;
-          }
-        }
-      }
-      .document-info{
-        color: #3a84ff;
-        font-size: 12px;
+        font-size: 24px;
         cursor: pointer;
-      }
-      .plus-class{
-        font-size: 12px;
-        cursor: pointer;
-        color: #979BA5;
-        background: #EAEBF0;
-        padding: 5px;
-        &:hover {
-          color: #3A84FF;
-          background: #E1ECFF;
-        }
-      }
-
-      .table-layout{
-        :deep(.row-cls){
-          td{
-            background: #F2FFF4 !important;
-          }
-        }
-      }
-
-      .text-warp{
-        position: relative;
-        cursor: pointer;
-        .edit-icon{
-          position: absolute;
-          font-size: 24px;
-          cursor: pointer;
-          color: #3A84FF;
-          top: 8px;
-          right: -20px;
-        }
-      }
-      .tag-cls{
-        cursor: pointer;
+        color: #3A84FF;
+        top: 8px;
+        right: -20px;
       }
     }
-
-    .right-wraper{
-      background: #fff;
-      transition: all .15s;
-      position: absolute;
-      top: 51px;
-      left: 338px;
-      bottom: 0;
-      right: 0;
-      .close-btn{
-        align-items: center;
-        border-radius: 50%;
-        color: #c4c6cc;
-        cursor: pointer;
-        display: flex;
-        font-size: 32px;
-        height: 26px;
-        justify-content: center;
-        position: absolute;
-        right: 5px;
-        top: 5px;
-        width: 26px;
-      }
+    .tag-cls{
+      cursor: pointer;
     }
+  }
+
+  .toggle-button{
+    width: 20px;
+    height: 32px;
+    background: #FAFBFD;
+    border: 1px solid #3A84FF;
+    box-shadow: 0 2px 4px 0 #0000001a;
+    border-radius: 4px 0 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3A84FF;
+    cursor: pointer;
+    font-size: 16px;
+    position: absolute;
+    z-index: 99;
+    transform: translateY(-50%);
+    .icon {
+      transition: transform .15s !important;
+    }
+  }
+  .toggle-button-lf {
+    right: -25px;
+    top: -4px;
+  }
+  .toggle-button-rg {
+    left: 0px;
+    top: 0;
+    transform: rotate(180deg) !important;
+    border-radius: 4px 0 0 4px;
   }
 }
 .rosource-number{
@@ -1138,5 +1165,11 @@ onMounted(() => {
 
 .super-big-button {
   padding: 5px 58px;
+}
+
+.resource-tab-panel {
+  :deep(.bk-tab-header-item) {
+    padding: 0 24px !important;
+  }
 }
 </style>
