@@ -12,87 +12,79 @@
       </div>
     </div>
     <div :class="['right-wrapper', { 'is-expand': !isExpand }]">
-      <ag-loader
-        :offset-top="0"
-        :offset-left="0"
-        loader="stage-loader"
-        :is-loading="false">
-        <bk-alert
-          v-if="needNewVersion && syncEsbToApigwEnabled"
-          class="mb15"
-          type="warning"
-          :title="$t('组件配置有更新，新增组件或更新组件请求方法、请求路径、权限级别、用户认证，需同步到网关才能生效')">
-        </bk-alert>
-        <div class="search-wrapper">
-          <div class="action-wrapper">
-            <bk-button
-              theme="primary"
-              @click="handleCreate">
-              {{ $t('新建组件') }}
-            </bk-button>
-            <bk-button
-              :disabled="curSelectList.length < 1"
-              @click="handleBatchDelete">
-              {{ $t('批量删除') }}
-            </bk-button>
-            <bk-button
-              v-if="syncEsbToApigwEnabled"
-              :disabled="isReleasing"
-              :icon="isReleasing ? 'loading' : ''"
-              @click="handlesync">
-              <span
-                v-bk-tooltips="{ content: $t('组件正在同步及发布中，请不要重复操作'), disabled: !isReleasing }">
-                {{ isReleasing ? $t('正在同步中') : $t('同步到网关') }}
-              </span>
-            </bk-button>
-          </div>
-          <div class="component-flex">
-            <bk-input
-              style="width: 300px; margin-right: 10px"
-              :placeholder="$t('请输入组件名称、请求路径，按Enter搜索')"
-              v-model="searchValue"
-              clearable
-              right-icon="bk-icon icon-search"
-              @enter="handleSearch">
-            </bk-input>
-            <i
-              class="apigateway-icon icon-ag-cc-history history-icon"
-              v-bk-tooltips="$t('查看同步历史')"
-              @click="handlerRouter"
-              v-if="syncEsbToApigwEnabled">
-            </i>
-          </div>
+      <bk-alert
+        v-if="needNewVersion && syncEsbToApigwEnabled"
+        class="mb15"
+        theme="warning"
+        :title="t('组件配置有更新，新增组件或更新组件请求方法、请求路径、权限级别、用户认证，需同步到网关才能生效')">
+      </bk-alert>
+      <div class="search-wrapper">
+        <div class="action-wrapper">
+          <bk-button
+            theme="primary"
+            @click="handleCreate">
+            {{ t('新建组件') }}
+          </bk-button>
+          <bk-button
+            :disabled="curSelectList.length < 1"
+            @click="handleBatchDelete">
+            {{ t('批量删除') }}
+          </bk-button>
+          <bk-button
+            v-if="syncEsbToApigwEnabled"
+            :disabled="isReleasing"
+            :icon="isReleasing ? 'loading' : ''"
+            @click="handlesync">
+            <span
+              v-bk-tooltips="{ content: t('组件正在同步及发布中，请不要重复操作'), disabled: !isReleasing }">
+              {{ isReleasing ? t('正在同步中') : t('同步到网关') }}
+            </span>
+          </bk-button>
         </div>
+        <div class="component-flex">
+          <bk-input
+            style="width: 300px; margin-right: 10px"
+            :placeholder="t('请输入组件名称、请求路径，按Enter搜索')"
+            v-model="searchValue"
+            clearable
+            right-icon="bk-icon icon-search"
+            @enter="handleSearch">
+          </bk-input>
+          <i
+            class="apigateway-icon icon-ag-cc-history history-icon"
+            v-bk-tooltips="t('查看同步历史')"
+            @click="handlerRouter"
+            v-if="syncEsbToApigwEnabled">
+          </i>
+        </div>
+      </div>
+      <bk-loading
+        :loading="isLoading"
+        opacity="1"
+      >
         <bk-table
+          border="outer"
           style="margin-top: 16px;"
           :data="componentList"
           :size="setting.size"
+          @setting-change="handleSettingChange"
           :pagination="pagination"
           remote-pagination
-          v-bkloading="{ isLoading, opacity: 1 }"
           @select="handlerChange"
           @select-all="handlerAllChange"
           @page-value-change="handlePageChange"
           @row-mouse-enter="changeEnter"
           @row-mouse-leave="changeLeave"
           @page-limit-change="handlePageLimitChange">
-          <template #empty>
-            <table-empty
-              :keyword="tableEmptyConf.keyword"
-              :abnormal="tableEmptyConf.isAbnormal"
-              @reacquire="getComponents(true)"
-              @clear-filter="clearFilterKey"
-            />
-          </template>
-          <bk-table-column type="selection" width="60" :selectable="setDefaultSelect"></bk-table-column>
-          <bk-table-column :label="$t('系统名称')" prop="system_name">
+          <bk-table-column type="selection" width="60" align="center" :selectable="setDefaultSelect"></bk-table-column>
+          <bk-table-column :label="t('系统名称')" prop="system_name">
             <template #default="{ data }">
               {{ data?.system_name || '--' }}
             </template>
           </bk-table-column>
           <bk-table-column
             v-if="flagComponentName.length"
-            :label="$t('组件名称')"
+            :label="t('组件名称')"
             prop="name"
             key="name"
           >
@@ -102,20 +94,20 @@
                   {{ data?.name || '--' }}
                 </span>
                 <div v-if="syncEsbToApigwEnabled">
-                  <span class="ag-tag primary ml5" v-if="data?.is_created"> {{ $t('新创建') }} </span>
-                  <span class="ag-tag success ml5" v-else-if="data?.has_updated"> {{ $t('有更新') }} </span>
+                  <span class="ag-tag primary ml5" v-if="data?.is_created"> {{ t('新创建') }} </span>
+                  <span class="ag-tag success ml5" v-else-if="data?.has_updated"> {{ t('有更新') }} </span>
                 </div>
               </div>
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('请求方法')" :width="90">
+          <bk-table-column :label="t('请求方法')" :width="90">
             <template #default="{ row }">
               {{ row.method || '--' }}
             </template>
           </bk-table-column>
           <bk-table-column
             v-if="flagUrl.length"
-            :label="$t('请求路径')"
+            :label="t('请求路径')"
             prop="path"
             :min-width="220"
             :show-overflow-tooltip="true"
@@ -123,7 +115,7 @@
           </bk-table-column>
           <bk-table-column
             v-if="flagApiUrl.length"
-            :label="$t('API地址')"
+            :label="t('API地址')"
             prop="api_url"
             :min-width="180"
             :max-width="260"
@@ -145,7 +137,7 @@
           </bk-table-column>
           <bk-table-column
             v-if="flagDocumnetUrl.length"
-            :label="$t('文档地址')"
+            :label="t('文档地址')"
             prop="doc_link"
             :min-width="180"
             :max-width="260"
@@ -167,30 +159,30 @@
           </bk-table-column>
           <bk-table-column
             v-if="flagUpdatedTime.length"
-            :label="$t('更新时间')"
+            :label="t('更新时间')"
             prop="updated_time"
             :min-width="90"
             :show-overflow-tooltip="true"
 
           ></bk-table-column>
-          <bk-table-column :label="$t('操作')" width="150">
+          <bk-table-column :label="t('操作')" width="150">
             <template #default="{ row }">
-              <bk-button theme="primary" class="mr10" text @click="handleEdit(row)"> {{ $t('编辑') }} </bk-button>
+              <bk-button theme="primary" class="mr10" text @click="handleEdit(row)"> {{ t('编辑') }} </bk-button>
               <bk-button
                 text
                 theme="primary"
                 :disabled="row.is_official"
                 @click="handleDelete(row)">
                 <template v-if="row.is_official">
-                  <span v-bk-tooltips="$t('官方组件，不可删除')"> {{ $t('删除') }} </span>
+                  <span v-bk-tooltips="t('官方组件，不可删除')"> {{ t('删除') }} </span>
                 </template>
                 <template v-else>
-                  {{ $t('删除') }}
+                  {{ t('删除') }}
                 </template>
               </bk-button>
             </template>
           </bk-table-column>
-          <bk-table-column type="setting">
+          <!-- <bk-table-column type="setting">
             <bk-table-setting-content
               :fields="setting.fields"
               :selected="setting.selectedFields"
@@ -198,10 +190,11 @@
               :max="setting.max"
               @setting-change="handleSettingChange">
             </bk-table-setting-content>
-          </bk-table-column>
+          </bk-table-column> -->
         </bk-table>
-      </ag-loader>
+      </bk-loading>
     </div>
+
 
     <bk-sideslider
       v-model:is-show="isSliderShow"
@@ -212,148 +205,152 @@
       ext-cls="apigw-access-manager-slider-cls"
       @animation-end="handleAnimationEnd">
       <template #default>
-        <div style="padding: 20px; padding-bottom: 40px;" v-bkloading="{ isLoading: detailLoading, opacity: 1 }">
-          <bk-form :label-width="180" :rules="rules" ref="form" :model="formData" v-show="!detailLoading">
-            <bk-form-item :label="$t('系统')" :required="true" property="system_id" :error-display-type="'normal'">
-              <bk-select
-                :disabled="isDisabled"
-                :clearable="false"
-                v-model="formData.system_id"
-                @selected="handleSysSelect">
-                <bk-option
-                  v-for="option in systemList"
-                  :key="option.id"
-                  :id="option.id"
-                  :name="option.name">
-                </bk-option>
-              </bk-select>
-            </bk-form-item>
-            <bk-form-item :label="$t('组件名称simple')" :required="true" property="name" :error-display-type="'normal'">
-              <bk-input
-                :maxlength="128"
-                :disabled="isDisabled"
-                v-model="formData.name"
-                :placeholder="$t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于128个字符')">
-              </bk-input>
-              <p
-                class="tips"
-              >
-                <i class="apigateway-icon icon-ag-info"></i>
-                {{ $t('组件名称在具体系统下应唯一，将用于展示组件时的标识') }}
-              </p>
-            </bk-form-item>
-            <bk-form-item
-              :label="$t('组件描述simple')"
-              :required="true"
-              property="description"
-              :error-display-type="'normal'">
-              <bk-input
-                :maxlength="128"
-                :disabled="isDisabled"
-                v-model="formData.description"
-                :placeholder="$t('不超过128个字符')">
-              </bk-input>
-            </bk-form-item>
-            <bk-form-item :label="$t('请求方法')" :required="true" property="method" :error-display-type="'normal'">
-              <bk-select
-                :disabled="isDisabled"
-                :clearable="false"
-                v-model="formData.method">
-                <bk-option
-                  v-for="option in methodList"
-                  :key="option.id"
-                  :id="option.id"
-                  :name="option.name">
-                </bk-option>
-              </bk-select>
-            </bk-form-item>
-            <bk-form-item :label="$t('组件路径')" :required="true" property="path" :error-display-type="'normal'">
-              <bk-input
-                :disabled="isDisabled"
-                :maxlength="255"
-                v-model="formData.path"
-                :placeholder="$t('以斜杠开头，可包含斜杠、字母、数字、下划线(_)、连接符(-)，长度小于255个字符')">
-              </bk-input>
-              <p class="tips">
-                <i class="apigateway-icon icon-ag-info"></i>
-                {{ $t(`可设置为'/{system_name}/{component_name}/'，例如'/host/get_host_list/'`) }}
-              </p>
-            </bk-form-item>
-            <bk-form-item
-              :label="$t('组件类代号')"
-              :required="true"
-              property="component_codename"
-              :error-display-type="'normal'">
-              <bk-input
-                :disabled="isDisabled"
-                v-model="formData.component_codename"
-                :placeholder="$t('包含小写字母、数字、下划线或点号，长度小于255个字符')">
-              </bk-input>
-              <p class="tips">
-                <i class="apigateway-icon icon-ag-info"></i>
-                {{ $t('一般由三部分组成：“前缀(generic).小写的系统名.小写的组件类名”，例如 "generic.host.get_host_list"') }}
-              </p>
-            </bk-form-item>
-            <bk-form-item
-              :label="$t('权限级别')"
-              :required="true"
-              property="permission_level"
-              :error-display-type="'normal'">
-              <bk-select :clearable="false" v-model="formData.permission_level">
-                <bk-option
-                  v-for="option in levelList"
-                  :key="option.id"
-                  :id="option.id"
-                  :name="option.name">
-                </bk-option>
-              </bk-select>
-              <p class="tips">
-                <i class="apigateway-icon icon-ag-info"></i>
-                {{ $t('无限制，应用不需申请组件API权限；普通权限，应用需在开发者中心申请组件API权限，审批通过后访问') }}
-              </p>
-            </bk-form-item>
-            <bk-form-item
-              :label="$t('用户认证')"
-              :required="true"
-              property="verified_user_required"
-              :error-display-type="'normal'">
-              <bk-checkbox
-                :true-value="true"
-                :false-value="false"
-                v-model="formData.verified_user_required">
-              </bk-checkbox>
-              <p class="ag-tip mt5">
-                <i class="apigateway-icon icon-ag-info"></i>
-                {{ $t('用户认证，请求方需提供蓝鲸用户身份信息') }}
-              </p>
-            </bk-form-item>
-            <bk-form-item :label="$t('超时时长')">
-              <bk-input type="number" :max="600" :min="1" :precision="0" v-model="formData.timeout">
-                <template #suffix>
-                  <section class="timeout-append">
-                    <div>{{$t('秒')}}</div>
-                  </section>
-                </template>
+        <div style="padding: 20px; padding-bottom: 40px;">
+          <bk-loading
+            :loading="detailLoading"
+          >
+            <bk-form :label-width="180" :rules="rules" ref="form" :model="formData">
+              <bk-form-item :label="t('系统')" :required="true" property="system_id" :error-display-type="'normal'">
+                <bk-select
+                  :disabled="isDisabled"
+                  :clearable="false"
+                  v-model="formData.system_id"
+                  @selected="handleSysSelect">
+                  <bk-option
+                    v-for="option in systemList"
+                    :key="option.id"
+                    :id="option.id"
+                    :name="option.name">
+                  </bk-option>
+                </bk-select>
+              </bk-form-item>
+              <bk-form-item :label="t('组件名称simple')" :required="true" property="name" :error-display-type="'normal'">
+                <bk-input
+                  :maxlength="128"
+                  :disabled="isDisabled"
+                  v-model="formData.name"
+                  :placeholder="t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于128个字符')">
+                </bk-input>
+                <p
+                  class="tips"
+                >
+                  <i class="apigateway-icon icon-ag-info"></i>
+                  {{ t('组件名称在具体系统下应唯一，将用于展示组件时的标识') }}
+                </p>
+              </bk-form-item>
+              <bk-form-item
+                :label="t('组件描述simple')"
+                :required="true"
+                property="description"
+                :error-display-type="'normal'">
+                <bk-input
+                  :maxlength="128"
+                  :disabled="isDisabled"
+                  v-model="formData.description"
+                  :placeholder="t('不超过128个字符')">
+                </bk-input>
+              </bk-form-item>
+              <bk-form-item :label="t('请求方法')" :required="true" property="method" :error-display-type="'normal'">
+                <bk-select
+                  :disabled="isDisabled"
+                  :clearable="false"
+                  v-model="formData.method">
+                  <bk-option
+                    v-for="option in methodList"
+                    :key="option.id"
+                    :id="option.id"
+                    :name="option.name">
+                  </bk-option>
+                </bk-select>
+              </bk-form-item>
+              <bk-form-item :label="t('组件路径')" :required="true" property="path" :error-display-type="'normal'">
+                <bk-input
+                  :disabled="isDisabled"
+                  :maxlength="255"
+                  v-model="formData.path"
+                  :placeholder="t('以斜杠开头，可包含斜杠、字母、数字、下划线(_)、连接符(-)，长度小于255个字符')">
+                </bk-input>
+                <p class="tips">
+                  <i class="apigateway-icon icon-ag-info"></i>
+                  {{ t(`可设置为'/{system_name}/{component_name}/'，例如'/host/get_host_list/'`) }}
+                </p>
+              </bk-form-item>
+              <bk-form-item
+                :label="t('组件类代号')"
+                :required="true"
+                property="component_codename"
+                :error-display-type="'normal'">
+                <bk-input
+                  :disabled="isDisabled"
+                  v-model="formData.component_codename"
+                  :placeholder="t('包含小写字母、数字、下划线或点号，长度小于255个字符')">
+                </bk-input>
+                <p class="tips">
+                  <i class="apigateway-icon icon-ag-info"></i>
+                  {{ t('一般由三部分组成：“前缀(generic).小写的系统名.小写的组件类名”，例如 "generic.host.get_host_list"') }}
+                </p>
+              </bk-form-item>
+              <bk-form-item
+                :label="t('权限级别')"
+                :required="true"
+                property="permission_level"
+                :error-display-type="'normal'">
+                <bk-select :clearable="false" v-model="formData.permission_level">
+                  <bk-option
+                    v-for="option in levelList"
+                    :key="option.id"
+                    :id="option.id"
+                    :name="option.name">
+                  </bk-option>
+                </bk-select>
+                <p class="tips">
+                  <i class="apigateway-icon icon-ag-info"></i>
+                  {{ t('无限制，应用不需申请组件API权限；普通权限，应用需在开发者中心申请组件API权限，审批通过后访问') }}
+                </p>
+              </bk-form-item>
+              <bk-form-item
+                :label="t('用户认证')"
+                :required="true"
+                property="verified_user_required"
+                :error-display-type="'normal'">
+                <bk-checkbox
+                  :true-value="true"
+                  :false-value="false"
+                  v-model="formData.verified_user_required">
+                </bk-checkbox>
+                <p class="ag-tip mt5">
+                  <i class="apigateway-icon icon-ag-info"></i>
+                  {{ t('用户认证，请求方需提供蓝鲸用户身份信息') }}
+                </p>
+              </bk-form-item>
+              <bk-form-item :label="t('超时时长')">
+                <bk-input type="number" :max="600" :min="1" :precision="0" v-model="formData.timeout">
+                  <template #suffix>
+                    <section class="timeout-append">
+                      <div>{{t('秒')}}</div>
+                    </section>
+                  </template>
 
-              </bk-input>
-              <p
-                class="tips"
-              >
-                <i class="apigateway-icon icon-ag-info"></i>
-                {{ $t('未设置时使用系统的超时时长，最大600秒') }}
-              </p>
-            </bk-form-item>
-            <bk-form-item :label="$t('组件配置')" v-if="formData.config_fields.length > 0">
-              <render-config :list="formData.config_fields" ref="configRef" />
-            </bk-form-item>
-            <bk-form-item :label="$t('是否开启')">
-              <bk-checkbox
-                :true-value="true"
-                :false-value="false"
-                v-model="formData.is_active">
-              </bk-checkbox>
-            </bk-form-item>
-          </bk-form>
+                </bk-input>
+                <p
+                  class="tips"
+                >
+                  <i class="apigateway-icon icon-ag-info"></i>
+                  {{ t('未设置时使用系统的超时时长，最大600秒') }}
+                </p>
+              </bk-form-item>
+              <bk-form-item :label="t('组件配置')" v-if="formData.config_fields.length > 0">
+                <render-config :list="formData.config_fields" ref="configRef" />
+              </bk-form-item>
+              <bk-form-item :label="t('是否开启')">
+                <bk-checkbox
+                  :true-value="true"
+                  :false-value="false"
+                  v-model="formData.is_active">
+                </bk-checkbox>
+              </bk-form-item>
+            </bk-form>
+          </bk-loading>
         </div>
       </template>
       <template #footer>
@@ -362,9 +359,9 @@
             theme="primary"
             :loading="submitLoading"
             @click="handleSubmit">
-            {{ $t('保存') }}
+            {{ t('保存') }}
           </bk-button>
-          <bk-button style="margin-left: 6px;" theme="default" @click="handleCancel"> {{ $t('取消') }} </bk-button>
+          <bk-button style="margin-left: 6px;" @click="handleCancel"> {{ t('取消') }} </bk-button>
         </div>
       </template>
     </bk-sideslider>
@@ -373,17 +370,17 @@
       width="480"
       :mask-close="true"
       v-model="deleteDialogConf.visiable"
-      :title="$t('确认删除？')"
+      :title="t('确认删除？')"
       @after-leave="handleAfterLeave">
-      <div> {{ $t('该操作不可恢复，是否继续？') }} </div>
+      <div> {{ t('该操作不可恢复，是否继续？') }} </div>
       <template #footer>
         <bk-button
           theme="primary"
           :loading="deleteDialogConf.loading"
           @click="handleDeleteComponent">
-          {{ $t('确定') }}
+          {{ t('确定') }}
         </bk-button>
-        <bk-button theme="default" @click="deleteDialogConf.visiable = false"> {{ $t('取消') }} </bk-button>
+        <bk-button theme="default" @click="deleteDialogConf.visiable = false"> {{ t('取消') }} </bk-button>
       </template>
     </bk-dialog>
   </div>
@@ -891,19 +888,6 @@ const handlerRouter = () => {
 
 const handleClickCopyField = (field: any) => {
   copy(field);
-  // this.$copyText(field).then(() => {
-  //   Message({
-  //     theme: 'success',
-  //     limit: 1,
-  //     message: t('复制成功'),
-  //   });
-  // }, () => {
-  //   Message({
-  //     theme: 'error',
-  //     limit: 1,
-  //     message: t('复制失败'),
-  //   });
-  // });
 };
 
 const changeEnter = (col: any, even: any, rowData: any) => {
@@ -948,7 +932,7 @@ const handleBeforeClose = () => {
 
 const init = () => {
   getSystemList();
-  getComponents();
+  getComponents(true);
   getStatus();
   getFeature();
 };

@@ -3,7 +3,7 @@
     <div class="title">
       {{ t('基本信息') }}
     </div>
-    <bk-form ref="formRef" :model="formData" class="form-cls flex-row">
+    <bk-form ref="baseFormRef" :model="formData" :rules="rules" class="form-cls flex-row">
       <bk-form-item
         property="name"
         class="form-item-cls"
@@ -11,13 +11,22 @@
         <template #label>
           <span class="label-cls">{{ t('名称：') }}</span>
         </template>
-        <span class="value-cls">{{ formData.name }}</span>
-      <!-- <bk-input
-        v-model="formData.name"
-        class="w700"
-        :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
-        clearable
-      /> -->
+        <div v-if="!nameEdit">
+          <span class="value-cls">{{ formData.name }}</span>
+          <i @click="nameEdit = true" class="apigateway-icon icon-ag-edit-line"></i>
+          <i class="apigateway-icon icon-ag-copy-info" @click="copy(formData.name)"></i>
+        </div>
+
+        <div class="edit-name" v-else>
+          <bk-input
+            size="small"
+            behavior="simplicity"
+            v-model="formData.name"
+            :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
+          />
+          <close v-bk-tooltips="{ content: '取消' }" @click="handleNameCancel" class="edit-name-icon" />
+          <success v-bk-tooltips="{ content: '保存' }" @click="handleNameSave" class="edit-name-icon" />
+        </div>
       </bk-form-item>
       <bk-form-item class="form-item-cls">
         <template #label>
@@ -58,12 +67,13 @@
           {{ formData.allow_apply_permission ? t('（允许申请权限）') : t('（不允许申请权限）') }}
         </span>
       </bk-form-item>
-      <!-- <bk-form-item class="form-item-cls">
+      <bk-form-item class="form-item-cls">
         <template #label>
           <span class="label-cls">{{ t('已使用的环境:') }}</span>
         </template>
-        <span>{{ formData.name }}</span>
-      </bk-form-item> -->
+        <span v-if="!servicesData?.config?.length">--</span>
+        <span v-else>{{ servicesData?.config?.map(item => item?.stage?.name)?.join(', ') }}</span>
+      </bk-form-item>
     </bk-form>
     <div class="title">
       {{ t('前端配置') }}
@@ -115,6 +125,9 @@
             :label="t('超时时间')"
             prop="timeout"
           >
+            <template #default="{ data }">
+              {{ data?.timeout }}s
+            </template>
           </bk-table-column>
         </bk-table>
       </bk-form-item>
@@ -155,9 +168,13 @@
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { getResourceDetailData, getBackendsDetailData, deleteResources } from '@/http';
+import { getResourceDetailData, getBackendsDetailData, deleteResources, updateResources } from '@/http';
 import { Message } from 'bkui-vue';
+import { copy } from '@/common/util';
+import { Close, Success } from 'bkui-vue/lib/icon';
 import { MethodsEnum } from '@/types';
+
+const { t } = useI18n();
 
 const router = useRouter();
 
@@ -172,9 +189,28 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['done', 'deleted-success']);
+const rules = {
+  name: [
+    {
+      required: true,
+      message: t('请填写名称'),
+      trigger: 'blur',
+    },
+    {
+      validator: (value: string) => {
+        const reg = /^[a-zA-Z][a-zA-Z0-9_]{0,255}$|^$/;
+        return reg.test(value);
+      },
+      message: '由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符',
+      trigger: 'blur',
+    },
+  ],
+};
 
-const { t } = useI18n();
+const baseFormRef = ref();
+const nameEdit = ref<boolean>(false);
+
+const emit = defineEmits(['done', 'deleted-success']);
 
 const formData = ref<any>({});
 
@@ -187,8 +223,8 @@ const methodsEnum: any = ref(MethodsEnum);
 const getResourceDetails = async () => {
   try {
     const res = await getResourceDetailData(props.apigwId, props.resourceId);
+    res.primitiveName = res.name;
     formData.value = res;
-    console.log('resourceDetail.value', formData.value);
     getServiceData();
   } catch (error) {
 
@@ -214,9 +250,32 @@ const handleEditResource = (id: number) => {
   });
 };
 
+// 取消修改
+const handleNameCancel = () => {
+  baseFormRef.value?.clearValidate();
+  formData.value.name = formData.value?.primitiveName;
+  nameEdit.value = false;
+};
+
+// 修改资源名称
+const handleNameSave = async () => {
+  await baseFormRef.value?.validate();
+  try {
+    const params = { ...formData.value };
+    await updateResources(props.apigwId, props.resourceId, params);
+    Message({
+      message: t('更新成功'),
+      theme: 'success',
+    });
+    nameEdit.value = false;
+    formData.value.primitiveName = formData.value.name;
+  } catch (e) {
+    console.error(e);
+  };
+};
+
 // 删除资源
 const handleDeleteResource = async (id: number) => {
-  console.log('props.apigwId', props);
   await deleteResources(props.apigwId, id);
   Message({
     message: t('删除成功'),
@@ -229,7 +288,6 @@ watch(
   () => props.resourceId,
   (v: number) => {
     if (v) {
-      console.log('v', v);
       getResourceDetails();
     }
   },
@@ -250,7 +308,7 @@ watch(
       flex-flow: wrap;
       :deep(.form-item-cls){
         flex: 0 0 50%;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
         .bk-form-label{
           padding-right: 10px;
         }
@@ -265,6 +323,25 @@ watch(
     }
     .resource-btn-cls{
       margin-left: 150px;
+    }
+
+    .apigateway-icon {
+      cursor: pointer;
+      color: #3A84FF;
+      font-size: 14px;
+      padding: 2px;
+    }
+
+    .edit-name {
+      display: flex;
+      align-items: center;
+      .edit-name-icon {
+        color: #3A84FF;
+        margin-left: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 2px;
+      }
     }
 }
 </style>

@@ -1,8 +1,8 @@
 <template>
   <div class="apigw-component-config-wrapper">
     <section class="item header">
-      <div class="key"> {{ $t('变量名') }} </div>
-      <div class="value"> {{ $t('变量值') }} </div>
+      <div class="key"> {{ t('变量名') }} </div>
+      <div class="value"> {{ t('变量值') }} </div>
     </section>
     <section
       v-for="(item, index) in configList"
@@ -52,6 +52,9 @@
 <script lang="ts" setup>
 import _ from 'lodash';
 import { ref, watch, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
   list: {

@@ -2,13 +2,13 @@
   <div class="app-content apigw-access-manager-wrapper">
     <div class="wrapper">
       <bk-form form-type="inline">
-        <bk-form-item :label="$t('选择时间')">
+        <bk-form-item :label="t('选择时间')" label-width="86">
           <bk-date-picker
             ref="topDatePicker"
             style="width: 320px;"
             v-model="dateTimeRange"
-            :placeholder="$t('选择日期时间范围')"
-            :type="'datetimerange'"
+            :placeholder="t('选择日期时间范围')"
+            type="datetimerange"
             :shortcuts="datepickerShortcuts"
             :shortcut-close="true"
             :use-shortcut-text="true"
@@ -25,6 +25,7 @@
         loader="stage-loader"
         :is-loading="false">
         <bk-table
+          border="outer"
           style="margin-top: 16px;"
           :data="componentList"
           size="small"
@@ -33,17 +34,6 @@
           remote-pagination
           @page-value-change="handlePageChange"
           @page-limit-change="handlePageLimitChange">
-          <template #empty>
-            <div>
-              <table-empty
-                :keyword="tableEmptyConf.keyword"
-                :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="getComponents(true)"
-                @clear-filter="clearFilterKey"
-              />
-            </div>
-          </template>
-
           <bk-table-column label="ID" prop="resource_version_title">
             <template #default="{ data }">
               <bk-button theme="primary" class="mr10" text @click="handleVersion(data?.id)">
@@ -51,29 +41,29 @@
               </bk-button>
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('同步时间')" prop="created_time"></bk-table-column>
-          <bk-table-column :label="$t('同步版本号（版本标题）')" prop="resource_version_name">
+          <bk-table-column :label="t('同步时间')" prop="created_time"></bk-table-column>
+          <bk-table-column :label="t('同步版本号（版本标题）')" prop="resource_version_name">
             <template #default="{ data }">
               {{data?.resource_version_display || '--'}}
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('操作人')" prop="component_name">
+          <bk-table-column :label="t('操作人')" prop="component_name">
             <template #default="{ data }">
               {{data?.created_by || '--'}}
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('操作结果')">
+          <bk-table-column :label="t('操作结果')">
             <template #default="{ data }">
               <template v-if="data?.status === 'releasing'">
                 <round-loading />
-                {{ $t('同步中') }}
+                {{ t('同步中') }}
               </template>
               <template v-else>
                 <span :class="`ag-dot ${data?.status} mr5`"></span> {{ statusMap[data?.status] }}
               </template>
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('操作日志')" prop="message"></bk-table-column>
+          <bk-table-column :label="t('操作日志')" prop="message"></bk-table-column>
         </bk-table>
       </ag-loader>
     </div>
@@ -195,6 +185,9 @@ const setSearchTimeRange = () => {
     const formatTimeRange = formatDatetime(timeRange);
     searchParams.value.time_start = formatTimeRange[0] || '';
     searchParams.value.time_end = formatTimeRange[1] || '';
+  } else {
+    searchParams.value.time_start = '';
+    searchParams.value.time_end = '';
   }
 };
 
@@ -257,6 +250,7 @@ const handleShortcutChange = (value: string, index: number) => {
 const handleTimeClear = () => {
   pagination.current = 1;
   shortcutSelectedIndex.value = -1;
+  dateTimeRange.value = [];
   nextTick(() => {
     getComponents();
   });
@@ -269,23 +263,9 @@ const handleTimeChange = () => {
   });
 };
 
-const clearFilterKey = () => {
-  dateTimeRange.value = [];
-  topDatePicker.value?.handleClear();
-};
-
 const init = () => {
   getComponents();
 };
-
-// watch(
-//   () => requestQueue,
-//   (value) => {
-//     if (value?.length < 1) {
-//       this.$store.commit('setMainContentLoading', false);
-//     }
-//   },
-// );
 
 init();
 
@@ -293,11 +273,8 @@ init();
 
 <style lang="scss" scoped>
 .apigw-access-manager-wrapper {
-  display: flex;
-  justify-content: flex-start;
   .wrapper {
-    padding: 0 10px;
-    width: 100%;
+    padding: 24px;
   }
   .search-wrapper {
     display: flex;

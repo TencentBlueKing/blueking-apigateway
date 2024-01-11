@@ -111,33 +111,34 @@
             </bk-dropdown>
           </div>
         </section>
-        <bk-alert
-          type="warning"
-          title="环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作"
-          class="mt15 mb15"
-        ></bk-alert>
-        <div class="tab-wrapper">
-          <bk-tab
-            v-model:active="active"
-            type="card-tab"
-            @change="handleTabChange"
-          >
-            <bk-tab-panel
-              v-for="item in panels"
-              :key="item.name"
-              :name="item.name"
-              :label="item.label"
-              render-directive="if"
-            >
-              <component
-                :is="curTabComponent"
-                :stage-id="stageData.id"
-                :version-id="stageData.resource_version.id">
-              </component>
-            </bk-tab-panel>
-          </bk-tab>
-        </div>
       </bk-loading>
+      <bk-alert
+        type="warning"
+        title="环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作"
+        class="mt15 mb15"
+      ></bk-alert>
+      <div class="tab-wrapper">
+        <bk-tab
+          v-model:active="active"
+          type="card-tab"
+          @change="handleTabChange"
+        >
+          <bk-tab-panel
+            v-for="item in panels"
+            :key="item.name"
+            :name="item.name"
+            :label="item.label"
+            render-directive="if"
+          >
+            <component
+              :is="curTabComponent"
+              :stage-id="stageData.id"
+              :version-id="stageData.resource_version.id">
+            </component>
+          </bk-tab-panel>
+        </bk-tab>
+      </div>
+
 
       <!-- 环境侧边栏 -->
       <edit-stage-sideslider ref="stageSidesliderRef" />
@@ -241,7 +242,7 @@ onMounted(() => {
 // 发布成功，重新请求环境详情
 const handleReleaseSuccess = async () => {
   // stageTopBarRef.value?.getStageDetailFun(stageData.value?.id);
-  await mitt.emit('get-stage-list');
+  await mitt.emit('rerun-init');
 };
 
 // 重新加载子组件
@@ -291,7 +292,7 @@ const handleStageUnlist = async () => {
           theme: 'success',
         });
         // 获取网关列表
-        await mitt.emit('get-stage-list');
+        await mitt.emit('rerun-init');
         // 开启loading
       } catch (error) {
         console.error(error);
@@ -322,7 +323,7 @@ const handleStageDelete = async () => {
           theme: 'success',
         });
         // 获取网关列表
-        await mitt.emit('get-stage-list', { isUpdate: false, isDelete: true });
+        await mitt.emit('rerun-init', { isUpdate: false, isDelete: true });
         // 切换前一个环境, 并且不需要获取当前环境详情
         await mitt.emit('switch-stage', true);
         // 开启loading
