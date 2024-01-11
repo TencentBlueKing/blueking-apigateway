@@ -157,7 +157,7 @@
               width="80"
             >
               <template #default="{ data }">
-                <section v-if="data?.docs.length" @click="handleShowDoc(data)">
+                <section v-if="data?.docs?.length" @click="handleShowDoc(data)">
                   <span class="document-info">
                     <i class="bk-icon apigateway-icon icon-ag-document"></i>
                     {{ $t('详情') }}
@@ -181,7 +181,7 @@
               <template #default="{ data }">
                 <section class="text-warp" v-if="!data?.isEditLabel" @click="handleEditLabel(data)">
                   <section
-                    v-if="data?.labels.length"
+                    v-if="data?.labels?.length"
                     v-bk-tooltips="{ content: data?.labelText.join(';') }">
                     <span v-for="(item, index) in data?.labels" :key="item.id">
                       <bk-tag @click="handleEditLabel(data)" v-if="index < data.tagOrder">{{ item.name }}</bk-tag>
@@ -423,7 +423,7 @@ import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { cloneDeep } from 'lodash';
 import { is24HoursAgo } from '@/common/util';
 import {  useCommon } from '@/store';
-import RenderCustomColumn from '@/components/custom-table-header-filter/index';
+import RenderCustomColumn from '@/components/custom-table-header-filter';
 
 const props = defineProps({
   apigwId: {
@@ -517,9 +517,9 @@ const searchData = shallowRef([
     children: methodsTypeList.value,
   },
   {
-    name: t('后端服务ID'),
-    id: 'backend_id',
-    placeholder: t('请输入后端服务ID'),
+    name: t('后端服务'),
+    id: 'backend_name',
+    placeholder: t('请输入后端服务'),
   },
 ]);
 
@@ -982,7 +982,7 @@ watch(
     tableData.value.forEach((item: any) => {
       item.is24HoursAgo = is24HoursAgo(item.created_time);
       item.tagOrder = '3';
-      item.labelText = item.labels.map((label: any) => {
+      item.labelText = item.labels?.map((label: any) => {
         return label.name;
       });
       item.isEditLabel = false;
@@ -1048,22 +1048,6 @@ watch(() => route, () => {
   if (route?.query?.backend_id) {
     const { backend_id } =  route?.query;
     filterData.value.backend_id = backend_id;
-    const hasData = searchValue.value.find((item: any) => item.id === 'backend_id');
-    if (hasData) {
-      hasData.values = [{
-        name: 'backend_id',
-        id: backend_id,
-      }];
-    } else {
-      searchValue.value.push({
-        id: 'backend_id',
-        name: t('后端服务'),
-        values: [{
-          id: backend_id,
-          name: backend_id,
-        }],
-      });
-    }
   }
 }, { immediate: true, deep: true });
 

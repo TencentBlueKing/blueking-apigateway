@@ -86,7 +86,7 @@
 <script lang="ts" setup>
 import i18n from '@/language/i18n';
 import TableEmpty from '@/components/table-empty.vue';
-import RenderCustomColumn from '@/components/custom-table-header-filter/index';
+import RenderCustomColumn from '@/components/custom-table-header-filter';
 import { ref, shallowRef, reactive, watch, h } from 'vue';
 import { cloneDeep } from 'lodash';
 import { useQueryList } from '@/hooks';
