@@ -55,6 +55,15 @@
           <div class="value">
             <span class="unrelease" v-if="stageData.release.status === 'unreleased'">{{ t('未发布') }}</span>
             <span v-else>{{ stageData.resource_version.version || '--' }}</span>
+            <template v-if="getStatus(stageData) === 'doing'">
+              <bk-tag theme="info">发布中</bk-tag>,
+              <bk-button
+                text
+                theme="primary"
+                @click.stop="showLogs(stageData.publish_id)">
+                查看日志
+              </bk-button>
+            </template>
           </div>
         </div>
         <div class="apigw-form-item">
@@ -85,6 +94,9 @@
       @release-success="handleReleaseSuccess"
       @hidden="handleReleaseSuccess(false)"
     />
+
+    <!-- 日志抽屉 -->
+    <log-details ref="logDetailsRef" :history-id="historyId" />
   </div>
 </template>
 
@@ -94,6 +106,7 @@ import { useI18n } from 'vue-i18n';
 import { copy, getStatus } from '@/common/util';
 import editStageSideslider from './edit-stage-sideslider.vue';
 import releaseSideslider from './release-sideslider.vue';
+import logDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties } from '@/hooks';
 import { useCommon } from '@/store';
@@ -109,6 +122,8 @@ const route = useRoute();
 // 网关id
 const apigwId = computed(() => +route.params.id);
 
+const logDetailsRef = ref(null);
+const historyId = ref();
 const releaseSidesliderRef = ref();
 const currentStage = ref<any>({});
 let timeId: any = null;
@@ -138,6 +153,12 @@ const handleRelease = (stage: any) => {
 // 发布成功
 const handleReleaseSuccess = async (loading = true) => {
   await mitt.emit('get-environment-list-data', loading);
+};
+
+// 查看日志
+const showLogs = (id: string) => {
+  historyId.value = id;
+  logDetailsRef.value?.showSideslider();
 };
 
 // 下架环境
