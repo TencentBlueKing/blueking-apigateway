@@ -83,7 +83,7 @@ class PluginConfigViewSet(viewsets.ModelViewSet):
         return (
             PluginConfig.objects.prefetch_related("type")
             .filter(api=self.request.gateway)
-            .filter(~Q(type__code="bk-header-rewrite"))
+            .exclude(type__code="bk-header-rewrite")
         )
 
     def perform_create(self, serializer):
