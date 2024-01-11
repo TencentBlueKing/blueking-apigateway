@@ -80,7 +80,11 @@ class PluginConfigViewSet(viewsets.ModelViewSet):
     ordering_fields = ["name", "-name", "type", "-type", "updated_time", "-updated_time"]
 
     def get_queryset(self):
-        return PluginConfig.objects.prefetch_related("type").filter(api=self.request.gateway)
+        return (
+            PluginConfig.objects.prefetch_related("type")
+            .filter(api=self.request.gateway)
+            .exclude(type__code="bk-header-rewrite")
+        )
 
     def perform_create(self, serializer):
         super().perform_create(serializer)
