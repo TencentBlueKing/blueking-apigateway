@@ -5,7 +5,7 @@
         class="fr"
         :clearable="true"
         v-model="pathUrl"
-        :placeholder="$t('请输入组件名称、请求路径，按Enter搜索')"
+        :placeholder="t('请输入组件名称、请求路径，按Enter搜索')"
         :right-icon="'bk-icon icon-search'"
         style="width: 328px; margin-bottom: 10px"
         @enter="filterData">
@@ -26,29 +26,18 @@
           @page-value-change="handlePageChange"
           @page-limit-change="handlePageLimitChange"
           @filter-change="handleFilterChange">
-          <template #empty>
-            <div>
-              <table-empty
-                :keyword="tableEmptyConf.keyword"
-                :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="getComponents(true)"
-                @clear-filter="clearFilterKey"
-              />
-            </div>
-          </template>
-
-          <bk-table-column :label="$t('系统名称')" prop="system_name">
+          <bk-table-column :label="t('系统名称')" prop="system_name">
             <template #default="{ data }">
               {{data?.system_name || '--'}}
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('组件名称')" prop="component_name">
+          <bk-table-column :label="t('组件名称')" prop="component_name">
             <template #default="{ data }">
               {{data?.component_name || '--'}}
             </template>
           </bk-table-column>
           <bk-table-column
-            :label="$t('组件请求方法')"
+            :label="t('组件请求方法')"
             :filters="methodFilters"
             :filter-multiple="false"
             column-key="component_method"
@@ -57,23 +46,23 @@
               {{data?.component_method || '--'}}
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('组件请求路径')" prop="component_path">
+          <bk-table-column :label="t('组件请求路径')" prop="component_path">
             <template #default="{ data }">
               {{data?.component_path || '--'}}
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('资源ID')" prop="resource_id">
+          <bk-table-column :label="t('资源ID')" prop="resource_id">
             <template #default="{ data }">
               {{data?.resource_id || '--'}}
             </template>
           </bk-table-column>
-          <bk-table-column :label="$t('组件ID')" prop="component_id">
+          <bk-table-column :label="t('组件ID')" prop="component_id">
             <template #default="{ data }">
               {{data?.component_id || '--'}}
             </template>
           </bk-table-column>
           <bk-table-column
-            :label="$t('权限级别')" width="150"
+            :label="t('权限级别')" width="150"
             :filters="levelFilters"
             :filter-multiple="false"
             column-key="component_permission_level"
@@ -218,13 +207,13 @@ const handleFilterChange = ((filters: any) => {
   }
 });
 
-const clearFilterKey = () => {
-  pathUrl.value = '';
-  componentTableRef.value?.clearFilter();
-  if (componentTableRef.value?.$refs?.tableHeader) {
-    clearFilter(componentTableRef.value.$refs?.tableHeader);
-  }
-};
+// const clearFilterKey = () => {
+//   pathUrl.value = '';
+//   componentTableRef.value?.clearFilter();
+//   if (componentTableRef.value?.$refs?.tableHeader) {
+//     clearFilter(componentTableRef.value.$refs?.tableHeader);
+//   }
+// };
 
 const init = () => {
   getComponents();
@@ -256,11 +245,8 @@ init();
 
 <style lang="scss" scoped>
 .apigw-access-manager-wrapper {
-  display: flex;
-  justify-content: flex-start;
   .wrapper {
-    padding: 0 10px;
-    width: 100%;
+    padding: 24px;
   }
   .search-wrapper {
     display: flex;

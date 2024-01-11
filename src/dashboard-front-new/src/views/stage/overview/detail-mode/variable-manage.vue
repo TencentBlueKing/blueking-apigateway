@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { EditLine } from 'bkui-vue/lib/icon';
 import { useI18n } from 'vue-i18n';
 import { getStageVars, updateStageVars } from '@/http';
@@ -151,6 +151,8 @@ const isLoading = ref<boolean>(false);
 const tableData = ref<any>([]);
 
 const getData = async () => {
+  if (!common.apigwId || !props.stageId) return;
+
   try {
     const res = await getStageVars(common.apigwId, props.stageId);
     const list: any = [];
@@ -298,6 +300,15 @@ const handleSave = async () => {
     console.error(e);
   };
 };
+
+watch(
+  () => props.stageId,
+  (v) => {
+    if (v) {
+      getData();
+    }
+  },
+);
 
 </script>
 

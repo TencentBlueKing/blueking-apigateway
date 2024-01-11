@@ -6,7 +6,7 @@
       <section style="padding: 0 10px;">
         <bk-input
           ext-cls="system-input-cls"
-          :placeholder="$t('请输入系统名称、描述')"
+          :placeholder="t('请输入系统名称、描述')"
           v-model="searchValue"
           clearable
           right-icon="bk-icon icon-search"
@@ -18,7 +18,7 @@
           <div :class="['item all-item', { active: curSelect === '*' }]" @click="handleSelectAll">
             <p class="name all-wrapper">
               <i class="apigateway-icon icon-ag-zonghe"></i>
-              <span>{{ $t('全部系统') }}</span>
+              <span>{{ t('全部系统') }}</span>
               <span class="all-count fr">
                 <span class="count">{{ allCount }}</span>
               </span>
@@ -36,7 +36,7 @@
                 <span v-html="highlight(item)"></span>
               </span>
               <span v-if="item.is_official" class="tag">
-                {{ $t('官方') }}
+                {{ t('官方') }}
               </span>
               <span class="count fr">{{ item.component_count }}</span>
             </p>

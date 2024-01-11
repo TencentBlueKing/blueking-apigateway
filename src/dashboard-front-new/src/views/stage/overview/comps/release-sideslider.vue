@@ -3,7 +3,6 @@
     <bk-sideslider
       v-model:isShow="isShow"
       :width="1050"
-      @hidden="emit('hidden')"
       :title="`发布资源至环境【${currentAssets.name}】`"
       quick-close>
       <template #default>
@@ -24,8 +23,11 @@
                 <bk-alert
                   v-else
                   theme="info"
-                  :title="`当前版本号: ${currentAssets.resource_version.version || '--'},
-                  于${currentAssets.release.created_time || '--'}发布成功; 资源发布成功后, 需发布到指定的环境, 方可生效`"
+                  :title="
+                    currentAssets.resource_version.version ?
+                      `当前版本号: ${currentAssets.resource_version.version},
+                  于${currentAssets.release.created_time}发布成功; 资源更新成功后, 需发布到指定的环境, 方可生效` :
+                      '资源更新成功后, 需发布到指定的环境, 方可生效'"
                   class="mt15 mb15" />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
@@ -335,6 +337,7 @@ watch(
         delete: [],
         update: [],
       };
+      emit('hidden');
     };
   },
 );

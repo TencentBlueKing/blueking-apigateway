@@ -167,6 +167,9 @@ watch(
     if (!v && logDetails.value?.status === 'success') {
       emit('release-success');
     }
+    if (!v) {
+      clearInterval(timeId);
+    }
   },
 );
 

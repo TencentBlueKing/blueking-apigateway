@@ -2,40 +2,50 @@
   <div class="app-content online-test p20">
     <div class="panel-content">
       <div class="request-panel">
-        <div class="panel-title"> {{ $t('请求') }} </div>
+        <div class="panel-title"> {{ t('请求') }} </div>
         <bk-form ref="form" :label-width="120">
-          <bk-form-item :label="$t('环境')" :property="'name'">
-            <bk-select :clearable="false" filterable :input-search="false" v-model="params.stage_id" @change="handleStageChange">
+          <bk-form-item :label="t('环境')" :property="'name'">
+            <bk-select
+              :clearable="false"
+              filterable
+              :input-search="false"
+              v-model="params.stage_id"
+              @change="handleStageChange">
               <bk-option v-for="option in stageList" :key="option.id" :id="option.id" :name="option.name">
               </bk-option>
             </bk-select>
           </bk-form-item>
-          <bk-form-item :required="true" :label="$t('请求资源')" :error-display-type="'normal'">
-            <bk-select :clearable="false" filterable :input-search="false" v-model="formData.path" @change="handleResourceChange">
+          <bk-form-item :required="true" :label="t('请求资源')" :error-display-type="'normal'">
+            <bk-select
+              :clearable="false"
+              filterable
+              :input-search="false"
+              v-model="formData.path"
+              @change="handleResourceChange">
               <bk-option v-for="option in resourceList" :key="option" :id="option" :name="option">
               </bk-option>
             </bk-select>
             <div class="resource-empty" v-show="!isPageLoading && resourceEmpty">
-              {{ $t('未找到可用的请求资源，因为当前选择环境未发布版本，请先发布版本到该环境') }}
+              {{ t('未找到可用的请求资源，因为当前选择环境未发布版本，请先发布版本到该环境') }}
             </div>
             <p class="ag-tip mt5">
-              <i class="apigateway-icon icon-ag-info"></i>{{ $t('资源必须发布到对应环境，才支持选择及调试') }}
+              <i class="apigateway-icon icon-ag-info"></i>{{ t('资源必须发布到对应环境，才支持选择及调试') }}
             </p>
           </bk-form-item>
-          <bk-form-item :required="true" :label="$t('请求方法')" :error-display-type="'normal'">
+          <bk-form-item :required="true" :label="t('请求方法')" :error-display-type="'normal'">
             <bk-select :clearable="false" v-model="formData.method" @change="handleMethodChange">
               <bk-option v-for="option in methodList" :key="option.id" :id="option.id" :name="option.name">
               </bk-option>
             </bk-select>
           </bk-form-item>
-          <bk-form-item :label="$t('子路径')" v-if="isMatchAnyMethod || isShowSubpath">
+          <bk-form-item :label="t('子路径')" v-if="isMatchAnyMethod || isShowSubpath">
             <bk-input v-model="formData.subpath"></bk-input>
             <p class="ag-tip mt5">
               <i class="apigateway-icon icon-ag-info"></i>
-              {{ $t('请求资源中，资源请求路径*部分的子路径') }}
+              {{ t('请求资源中，资源请求路径*部分的子路径') }}
             </p>
           </bk-form-item>
-          <bk-form-item v-show="hasPathParmas" :required="true" :label="$t('路径参数')">
+          <bk-form-item v-show="hasPathParmas" :required="true" :label="t('路径参数')">
             <apigw-key-valuer
               style="margin-right: 69px;" class="kv-wrapper" ref="pathKeyValuer" :key-readonly="true"
               :key-regex-rule="{}" :buttons="false" :value="formData.params.path">
@@ -50,46 +60,46 @@
           <bk-form-item label="Query">
             <apigw-key-valuer
               class="kv-wrapper" ref="queryKeyValuer"
-              :key-regex-rule="{ regex: /^[\w-]+$/, message: $t('键由英文字母、数字、连接符（-）、下划线（_）组成') }"
+              :key-regex-rule="{ regex: /^[\w-]+$/, message: t('键由英文字母、数字、连接符（-）、下划线（_）组成') }"
               :value="formData.params.query" @toggle-height="controlToggle">
             </apigw-key-valuer>
           </bk-form-item>
           <bk-form-item label="Body">
-            <bk-input class="ag-textarea" type="textarea" :placeholder="$t('请输入')" v-model="params.body">
+            <bk-input class="ag-textarea" type="textarea" :placeholder="t('请输入')" v-model="params.body">
             </bk-input>
           </bk-form-item>
-          <bk-form-item :label="$t('应用认证')">
+          <bk-form-item :label="t('应用认证')">
             <div class="bk-button-group">
               <bk-button
                 class="ag-tab-button" :class="{ 'is-selected': isDefaultAppAuth }"
                 @click="formData.appAuth = 'use_test_app'">
-                {{ $t('默认测试应用') }}
+                {{ t('默认测试应用') }}
               </bk-button>
               <bk-button
                 class="ag-tab-button" :class="{ 'is-selected': formData.appAuth === 'use_custom_app' }"
                 @click="formData.appAuth = 'use_custom_app'">
-                {{ $t('自定义应用') }}
+                {{ t('自定义应用') }}
               </bk-button>
             </div>
             <template v-if="isDefaultAppAuth">
-              <bk-input class="mt5" :value="testAppCode" :disabled="true" :placeholder="$t('请输入蓝鲸应用ID')">
+              <bk-input class="mt5" :value="testAppCode" :disabled="true" :placeholder="t('请输入蓝鲸应用ID')">
                 <template #prefix>
                   <div class="group-text" style="width: 130px; text-align: right;">bk_app_code</div>
                 </template>
               </bk-input>
-              <bk-input class="mt5" :value="'******'" :disabled="true" :placeholder="$t('请输入蓝鲸应用密钥')">
+              <bk-input class="mt5" :value="'******'" :disabled="true" :placeholder="t('请输入蓝鲸应用密钥')">
                 <template #prefix>
                   <div class="group-text" style="width: 130px; text-align: right;">bk_app_secret</div>
                 </template>
               </bk-input>
             </template>
             <template v-else>
-              <bk-input class="mt5" v-model="formData.authorization.bk_app_code" :placeholder="$t('请输入蓝鲸应用ID')">
+              <bk-input class="mt5" v-model="formData.authorization.bk_app_code" :placeholder="t('请输入蓝鲸应用ID')">
                 <template #prefix>
                   <div class="group-text" style="width: 130px; text-align: right;">bk_app_code</div>
                 </template>
               </bk-input>
-              <bk-input class="mt5" v-model="formData.authorization.bk_app_secret" :placeholder="$t('请输入蓝鲸应用密钥')">
+              <bk-input class="mt5" v-model="formData.authorization.bk_app_secret" :placeholder="t('请输入蓝鲸应用密钥')">
                 <template #prefix>
                   <div class="group-text" style="width: 130px; text-align: right;">bk_app_secret</div>
                 </template>
@@ -97,20 +107,20 @@
             </template>
             <p class="ag-tip mt5">
               <i class="apigateway-icon icon-ag-info"></i>
-              {{ $t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}
+              {{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}
             </p>
           </bk-form-item>
-          <bk-form-item :label="$t('用户认证')" :key="tokenInputRender" v-if="curResource.verified_user_required">
+          <bk-form-item :label="t('用户认证')" :key="tokenInputRender" v-if="curResource.verified_user_required">
             <div class="bk-button-group">
               <bk-button
                 class="ag-tab-button" :class="{ 'is-selected': formData.useUserFromCookies }"
                 @click="formData.useUserFromCookies = true">
-                {{ $t('默认用户认证') }}
+                {{ t('默认用户认证') }}
               </bk-button>
               <bk-button
                 class="ag-tab-button" :class="{ 'is-selected': !formData.useUserFromCookies }"
                 @click="formData.useUserFromCookies = false">
-                {{ $t('自定义用户认证') }}
+                {{ t('自定义用户认证') }}
               </bk-button>
             </div>
             <template v-if="formData.useUserFromCookies">
@@ -127,7 +137,7 @@
               <bk-input
                 v-for="(item, index) in cookieNames" class="mt5 token-input"
                 v-model="formData.authorization[item[0]]"
-                :placeholder="$t(`请输入 Cookies 中字段 {tokenName} 的值`, { tokenName: item[1] })" :key="index">
+                :placeholder="t(`请输入 Cookies 中字段 ${item[1]} 的值`)" :key="index">
                 <template #prefix>
                   <div class="group-text" style="width: 130px; text-align: right;">{{ item[0] }}</div>
                 </template>
@@ -135,7 +145,7 @@
             </template>
             <p class="ag-tip mt5">
               <i class="apigateway-icon icon-ag-info"></i>
-              {{ $t('默认用户认证，将默认从 Cookies 中获取用户认证信息；自定义用户认证，可自定义用户认证信息') }}
+              {{ t('默认用户认证，将默认从 Cookies 中获取用户认证信息；自定义用户认证，可自定义用户认证信息') }}
             </p>
           </bk-form-item>
         </bk-form>
@@ -143,32 +153,32 @@
           <bk-button
             v-if="!sendButtonDisabled" theme="primary" class="mr10" :loading="requestStatus === 0"
             @click.stop.prevent="handleSendRequest">
-            {{ $t('发送请求') }}
+            {{ t('发送请求') }}
           </bk-button>
-          <bk-popover :content="$t('请完善请求信息')" v-else>
+          <bk-popover :content="t('请完善请求信息')" v-else>
             <bk-button theme="primary" class="mr10" disabled>
-              {{ $t('发送请求') }}
+              {{ t('发送请求') }}
             </bk-button>
           </bk-popover>
-          <bk-button @click.stop.prevent="handleReset"> {{ $t('重置') }} </bk-button>
+          <bk-button @click.stop.prevent="handleReset"> {{ t('重置') }} </bk-button>
         </div>
       </div>
       <div class="divider"></div>
       <div class="response-panel">
-        <div class="panel-title"> {{ $t('请求详情') }} </div>
+        <div class="panel-title"> {{ t('请求详情') }} </div>
         <div class="request-detail">
           <div v-if="requestStatus !== -1">{{ response.curl }}</div>
           <div v-else>
             <i class="apigateway-icon icon-ag-info"></i>
-            {{ $t('无') }}
+            {{ t('无') }}
           </div>
         </div>
-        <div class="panel-title"> {{ $t('响应') }} </div>
+        <div class="panel-title"> {{ t('响应') }} </div>
         <template v-if="requestStatus !== -1">
           <bk-form class="response-form" :label-width="90">
             <bk-form-item label="Time：">
               <span class="value">{{ response.proxy_time }}</span>
-              <span class="unit"> {{ $t('毫秒') }} </span>
+              <span class="unit"> {{ t('毫秒') }} </span>
             </bk-form-item>
             <bk-form-item label="Status：">
               <span class="value">{{ response.status_code }}</span>
@@ -196,7 +206,7 @@
         <div v-else>
           <span class="unsent">
             <i class="apigateway-icon icon-ag-info"></i>
-            {{ $t('请先发送请求') }}
+            {{ t('请先发送请求') }}
           </span>
         </div>
       </div>
@@ -206,14 +216,14 @@
       <bk-button
         v-if="!sendButtonDisabled" theme="primary" class="mr10" :loading="requestStatus === 0"
         @click.stop.prevent="handleSendRequest">
-        {{ $t('发送请求') }}
+        {{ t('发送请求') }}
       </bk-button>
-      <bk-popover :content="$t('请完善请求信息')" v-else>
+      <bk-popover :content="t('请完善请求信息')" v-else>
         <bk-button theme="primary" class="mr10" disabled>
-          {{ $t('发送请求') }}
+          {{ t('发送请求') }}
         </bk-button>
       </bk-popover>
-      <bk-button @click.stop.prevent="handleReset"> {{ $t('重置') }} </bk-button>
+      <bk-button @click.stop.prevent="handleReset"> {{ t('重置') }} </bk-button>
     </div>
   </div>
 </template>
@@ -492,10 +502,12 @@ const handleSendRequest = async () => {
   params.value.path_params = pathKeyValuer.value?.getValue();
   params.value.subpath = isMatchAnyMethod.value || isShowSubpath ? formData.value.subpath : '';
   // 用户认证
-  params.value.use_user_from_cookies = curResource.value?.verified_user_required ? formData.value?.useUserFromCookies : false;
+  params.value.use_user_from_cookies = curResource.value?.verified_user_required
+    ? formData.value?.useUserFromCookies
+    : false;
   params.value.authorization = formData.value.authorization;
   params.value.use_test_app = isDefaultAppAuth.value;
-  const data = cloneDeep(params.value);
+  const data: any = cloneDeep(params.value);
 
   // 默认应用认证数据过滤
   if (isDefaultAppAuth.value) {

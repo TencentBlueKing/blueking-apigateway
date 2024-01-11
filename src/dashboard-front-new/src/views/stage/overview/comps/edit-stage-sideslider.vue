@@ -459,7 +459,7 @@ const handleConfirmCreate = async () => {
       theme: 'success',
     });
     // 重新获取环境列表(全局事件总线实现)
-    mitt.emit('get-stage-list', true);
+    mitt.emit('rerun-init', true);
     // 数据重置
     closeSideslider();
     // 关闭dialog
@@ -484,7 +484,7 @@ const handleConfirmEdit = async () => {
       theme: 'success',
     });
     // 重新获取环境列表(全局事件总线实现)
-    mitt.emit('get-stage-list', true);
+    mitt.emit('rerun-init', true);
     // 关闭dialog
     isShow.value = false;
   } catch (error) {
