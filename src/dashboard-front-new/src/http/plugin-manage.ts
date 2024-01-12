@@ -14,7 +14,7 @@ export const getPluginListData = (apigwId: number, data: any) => fetch.get(`${BK
  * @param apigwId 网关id
  * @param code 插件code
  */
-export const getPluginBindingsList = (apigwId: number, code: string) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${code}/bindings`);
+export const getPluginBindingsList = (apigwId: number, code: string) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${code}/bindings/`);
 
 /**
  * 获取插件类型对应的动态表单

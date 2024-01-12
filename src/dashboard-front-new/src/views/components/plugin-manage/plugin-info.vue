@@ -39,7 +39,7 @@
         </bk-loading>
       </bk-form> -->
       <BkSchemaForm
-        class="mt20"
+        class="mt20 plugin-form"
         v-model="schemaFormData"
         :schema="formConfig.schema"
         :layout="formConfig.layout"
@@ -201,6 +201,17 @@ init();
     .bound {
       color: #4b8ceb;
       font-weight: 700;
+    }
+  }
+}
+
+.plugin-form {
+  :deep(.bk-schema-form-group-content) {
+    gap: 10px !important;
+    .bk-form-content {
+      .bk-input {
+        width: 76%;
+      }
     }
   }
 }
