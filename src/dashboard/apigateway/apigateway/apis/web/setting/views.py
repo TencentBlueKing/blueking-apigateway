@@ -26,13 +26,29 @@ from rest_framework import generics, status
 from apigateway.apps.feature.models import UserFeatureFlag
 from apigateway.utils.responses import OKJsonResponse
 
+from .serializers import UserAuthTypeOutputSLZ
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: UserAuthTypeOutputSLZ},
+        operation_description="获取 user_auth_type",
+        tags=["WebAPI.Settings"],
+    ),
+)
+class UserAuthTypeRetrieveApi(generics.RetrieveAPIView):
+    def get(self, request, *args, **kwargs):
+        slz = UserAuthTypeOutputSLZ(settings.USER_AUTH_TYPE)
+        return OKJsonResponse(data=slz.data)
+
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         operation_description="获取 feature flag 全局特性开关列表",
-        tags=["WebAPI.Feature"],
+        tags=["WebAPI.Settings"],
     ),
 )
 class FeatureFlagListApi(generics.ListAPIView):

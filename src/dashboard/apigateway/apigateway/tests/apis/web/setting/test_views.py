@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.apis.web.feature.views import FeatureFlagListApi
+from apigateway.apis.web.setting.views import FeatureFlagListApi
 from apigateway.tests.utils.testing import get_response_json
 
 
@@ -33,7 +33,7 @@ class TestFeatureFlagListApi:
     def test_list(self, settings, request_factory, mocker, faker, is_superuser, expected):
         settings.DEFAULT_FEATURE_FLAG = {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
         mocker.patch(
-            "apigateway.apis.web.feature.views.UserFeatureFlag.objects.get_feature_flags",
+            "apigateway.apis.web.setting.views.UserFeatureFlag.objects.get_feature_flags",
             return_value={faker.color_name(): False},
         )
 
