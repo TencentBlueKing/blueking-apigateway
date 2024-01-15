@@ -58,7 +58,7 @@ urlpatterns = [
     path("backend/docs/", include("apigateway.apis.web.docs.urls")),
     # web api
     path("backend/i18n/setlang/", set_language, name="set_language"),
-    path("backend/feature/", include("apigateway.apis.web.feature.urls")),
+    path("backend/settings/", include("apigateway.apis.web.setting.urls")),
     path("backend/gateways/", include("apigateway.apis.web.gateway.urls")),
     path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
     path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),

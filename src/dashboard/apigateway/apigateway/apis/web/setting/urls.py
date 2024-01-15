@@ -18,8 +18,9 @@
 #
 from django.urls import path
 
-from apigateway.apis.web.feature import views
+from .views import FeatureFlagListApi, UserAuthTypeRetrieveApi
 
 urlpatterns = [
-    path("flags/", views.FeatureFlagListApi.as_view(), name="feature.flags"),
+    path("feature_flags/", FeatureFlagListApi.as_view(), name="settings.feature_flags"),
+    path("user_auth_type/", UserAuthTypeRetrieveApi.as_view(), name="settings.user_auth_type"),
 ]
