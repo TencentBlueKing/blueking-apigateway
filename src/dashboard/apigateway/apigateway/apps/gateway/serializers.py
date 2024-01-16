@@ -33,7 +33,7 @@ from apigateway.core.constants import (
     UserAuthTypeEnum,
 )
 from apigateway.core.models import Gateway
-from apigateway.core.validators import ReservedAPINameValidator
+from apigateway.core.validators import NameValidator, ReservedAPINameValidator
 from apigateway.utils.crypto import calculate_fingerprint
 
 
@@ -42,7 +42,7 @@ class GatewayCreateSLZ(serializers.ModelSerializer):
         API_NAME_PATTERN,
         label="网关名称",
         max_length=64,
-        validators=[ReservedAPINameValidator()],
+        validators=[ReservedAPINameValidator(), NameValidator()],
     )
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     developers = serializers.ListField(child=serializers.CharField(), allow_empty=True, default=list)
