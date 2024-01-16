@@ -187,7 +187,7 @@ import pluginInfo from './plugin-info.vue';
 import { InfoBox, Message } from 'bkui-vue';
 import { ref, reactive, computed, watch, defineEmits } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useCommon, useStage } from '@/store';
+import { useCommon } from '@/store';
 import { useRoute, useRouter } from 'vue-router';
 import {
   getPluginListData,
@@ -202,16 +202,15 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  stageId: Number,
 });
 const { t } = useI18n();
 const emit = defineEmits(['on-jump']);
 const route = useRoute();
 const router = useRouter();
 const common = useCommon();
-const stage = useStage();
 
 const { apigwId } = common; // 网关id
-const { curStageId } = stage; // 当前stage_id
 
 const scopeType = ref<string>('');
 const scopeId = ref<number>(-1);
@@ -398,7 +397,7 @@ const handeleJumpResource = (item: any) => {
 const init = () => {
   const isStage = route.path.includes('stage');
   scopeType.value = isStage ? 'stage' : 'resource';
-  scopeId.value = isStage ? curStageId : props.resourceId;
+  scopeId.value = isStage ? props.stageId : props.resourceId;
   curScopeInfo.scopeType = scopeType.value;
   curScopeInfo.scopeId = scopeId.value;
   curScopeInfo.apigwId = apigwId;
@@ -406,6 +405,8 @@ const init = () => {
     scope_type: scopeType.value,
     scope_id: scopeId.value,
   };
+
+  if (!scopeId.value) return;
   getBindingDetails();
   getPluginListDetails(params);
 };
@@ -494,6 +495,13 @@ const handelNext = () => {
 const handleCancel = () => {
   resetData();
 };
+
+watch(
+  () => props.stageId,
+  () => {
+    init();
+  },
+);
 init();
 </script>
 

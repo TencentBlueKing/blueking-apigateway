@@ -128,7 +128,7 @@
                 v-for="(item, index) in cookieNames" class="mt5 token-input" v-model="userPlaceholder"
                 :key="index" :disabled="true">
                 <template #prefix>
-                  <div class="group-text" style="width: 130px; text-align: right;">{{ item[0] }}</div>
+                  <div class="group-text" style="width: 130px; text-align: right;">{{ item.cookie_name }}</div>
                 </template>
               </bk-input>
             </template>
@@ -136,10 +136,10 @@
             <template v-else>
               <bk-input
                 v-for="(item, index) in cookieNames" class="mt5 token-input"
-                v-model="formData.authorization[item[0]]"
-                :placeholder="t(`请输入 Cookies 中字段 ${item[1]} 的值`)" :key="index">
+                v-model="formData.authorization[item.key]"
+                :placeholder="t(`请输入 Cookies 中字段 ${item.cookie_name} 的值`)" :key="index">
                 <template #prefix>
-                  <div class="group-text" style="width: 130px; text-align: right;">{{ item[0] }}</div>
+                  <div class="group-text" style="width: 130px; text-align: right;">{{ item.cookie_name }}</div>
                 </template>
               </bk-input>
             </template>
@@ -233,7 +233,7 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '@/store';
-import { getReleaseResources, getStages, postAPITest, getApiDetail } from '@/http';
+import { getReleaseResources, getStages, postAPITest, getApiDetail, getUserAuthType } from '@/http';
 import ApigwKeyValuer from '@/components/key-valuer';
 import editorMonaco from '@/components/ag-editor.vue';
 import { cloneDeep } from 'lodash';
@@ -335,21 +335,8 @@ const curResource = computed(() => {
   }
   return {};
 });
-// const authTypeDetail = computed(() => {
-//   const types = this.$store.state.userAuthType;
-//   const match = types.find((item: any) => item.name === curApigw.value.user_auth_type);
-//   return match;
-// });
 const tokenName = computed(() => {
-  // if (!authTypeDetail.value) {
-  //   return 'bk_ticket';
-  // }
-  // const tokens = authTypeDetail.value?.login_ticket?.key_to_cookie_name;
-  // if (tokens.length) {
-  //   cookieNames.value = tokens;
-  //   return tokens[0][0];
-  // }
-  return 'bk_ticket';
+  return cookieNames.value[0]?.cookie_name;
 });
 const isShowSubpath = computed(() => {
   if (formData.value.method && formData.value.path) {
@@ -386,6 +373,12 @@ const hasPathParmas = computed(() => Object.keys(formData.value.params.path).len
 const resourceList = computed(() => Object.keys(resources.value));
 const resourceEmpty = computed(() => !resourceList.value.length);
 const sendButtonDisabled = computed(() => resourceEmpty.value || !params.value?.resource_id);
+
+const getUserAuthTypeData = async () => {
+  const res = await getUserAuthType();
+  cookieNames.value = res.login_ticket;
+};
+getUserAuthTypeData();
 
 watch(
   () => response.value?.body,
@@ -517,7 +510,7 @@ const handleSendRequest = async () => {
   // 默认用户认证数据过滤
   if (formData.value.useUserFromCookies) {
     cookieNames.value.forEach((item) => {
-      data.authorization[item[0]] = '';
+      data.authorization[item.key] = '';
     });
   }
 
@@ -666,7 +659,7 @@ const clearAuthData = () => {
   formData.value.authorization.bk_app_secret = '';
   formData.value.authorization.bk_app_code = '';
   cookieNames.value.forEach((item) => {
-    formData.value.authorization[item[0]] = '';
+    formData.value.authorization[item.key] = '';
   });
 };
 

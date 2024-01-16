@@ -401,7 +401,7 @@ const handleEdit = async (data: any) => {
     const res = await getBackendServiceDetail(apigwId, data.id);
     curServiceDetail.value = res;
     stageConfig.value = res.configs.map((item: any) => {
-      return { configs: item };
+      return { configs: item, name: item?.stage?.name, id: item?.stage?.id };
     });
     sidesliderConfi.isShow = true;
   } catch (error) {

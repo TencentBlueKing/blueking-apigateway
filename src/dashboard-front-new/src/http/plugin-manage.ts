@@ -29,7 +29,7 @@ export const getPluginForm = (apigwId: number, code: string) => fetch.get(`${BK_
  * @param scopeType 类型
  * @param scopeId 类型id
  */
-export const getScopeBindingPluginList = (apigwId: number, scopeType: string, scopeId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${scopeType}/${scopeId}`);
+export const getScopeBindingPluginList = (apigwId: number, scopeType: string, scopeId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${scopeType}/${scopeId}/`);
 
 /**
  * 创建一个插件，并且绑定到对应的 scope_type + scope_id

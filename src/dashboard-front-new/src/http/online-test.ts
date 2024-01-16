@@ -31,3 +31,9 @@ export const postAPITest = (apigwId: number, data: any) => fetch.post(`${BK_DASH
  * @returns
  */
 export const getApiDetail = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/`);
+
+/**
+ *  获取 user_auth_type
+ * @returns
+ */
+export const getUserAuthType = () => fetch.get(`${BK_DASHBOARD_URL}/settings/user_auth_type/`);
