@@ -175,6 +175,19 @@ class TestGatewayCreateInputSLZ:
                 },
                 None,
             ),
+            # name ends with invalid character
+            (
+                False,
+                {
+                    "name": "test-",
+                    "description": "test",
+                    "maintainers": ["admin"],
+                    "status": 1,
+                    "is_public": True,
+                    "user_auth_type": "ieod",
+                },
+                None,
+            ),
             # name exists
             (
                 False,

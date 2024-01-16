@@ -22,6 +22,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.biz.constants import APP_CODE_PATTERN
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
+from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
     GatewayStatusEnum,
@@ -77,7 +78,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         GATEWAY_NAME_PATTERN,
         label="网关名称",
         max_length=64,
-        validators=[ReservedGatewayNameValidator()],
+        validators=[ReservedGatewayNameValidator(), NameValidator()],
         help_text="网关名称",
     )
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")

@@ -25,6 +25,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.validators import MaxCountPerGatewayValidator
+from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import STAGE_NAME_PATTERN, ReleaseStatusEnum, StageStatusEnum
@@ -99,7 +100,11 @@ class BackendSLZ(serializers.Serializer):
 
 class StageInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    name = serializers.RegexField(STAGE_NAME_PATTERN, help_text="名称")
+    name = serializers.RegexField(
+        STAGE_NAME_PATTERN,
+        help_text="名称",
+        validators=[NameValidator()],
+    )
     description = serializers.CharField(
         allow_blank=True, allow_null=True, max_length=512, required=False, help_text="描述"
     )
