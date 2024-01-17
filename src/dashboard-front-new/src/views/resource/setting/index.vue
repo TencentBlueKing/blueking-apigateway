@@ -1,7 +1,11 @@
 <template>
-  <div class="resource-container page-wrapper-padding">
+  <div class="resource-container page-wrapper-padding" id="resourceId">
 
-    <div class="resource-container-lf" :style="{ width: isDetail ? isShowLeft ? '320px' : '0' : '100%' }">
+    <div
+      class="resource-container-lf"
+      id="resourceLf"
+      :style="{ width: isDetail ? isShowLeft ? '320px' : '0' : '100%' }"
+    >
       <bk-alert
         v-show="versionConfigs.needNewVersion && !isDetail"
         theme="warning"
@@ -80,7 +84,7 @@
         v-model="searchValue"
         :data="searchData"
         unique-select
-        style="width: 320px; background:#fff"
+        style="background:#fff"
         class="mb15"
         placeholder="请输入资源名称或选择条件搜索, 按Enter确认"
         :value-split-code="'+'"
@@ -113,6 +117,7 @@
             />
             <bk-table-column
               :label="t('资源名称')"
+              width="160"
             >
               <template #default="{ data }">
                 <bk-button
@@ -125,18 +130,7 @@
               </template>
             </bk-table-column>
             <bk-table-column
-              prop="method"
-              :label="renderMethodsLabel"
-              :show-overflow-tooltip="false"
-              v-if="!isDetail"
-              width="160"
-            >
-              <template #default="{ data }">
-                <bk-tag :theme="methodsEnum[data?.method]">{{ data?.method }}</bk-tag>
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              width="120"
+              width="130"
               :label="t('后端服务')"
             >
               <template #default="{ data }">
@@ -144,15 +138,23 @@
               </template>
             </bk-table-column>
             <bk-table-column
+              prop="method"
+              :label="renderMethodsLabel"
+              :show-overflow-tooltip="false"
+              width="120"
+            >
+              <template #default="{ data }">
+                <bk-tag :theme="methodsEnum[data?.method]">{{ data?.method }}</bk-tag>
+              </template>
+            </bk-table-column>
+            <bk-table-column
               :label="t('前端请求路径')"
               prop="path"
-              v-if="!isDetail"
             >
             </bk-table-column>
             <bk-table-column
               :label="t('文档')"
               width="80"
-              v-if="!isDetail"
             >
               <template #default="{ data }">
                 <section v-if="data?.docs?.length" @click="handleShowDoc(data)">
@@ -175,7 +177,6 @@
               :label="t('标签')"
               prop="labels"
               width="280"
-              v-if="!isDetail"
             >
               <template #default="{ data }">
                 <section class="text-warp" v-if="!data?.isEditLabel" @click="handleEditLabel(data)">
@@ -213,13 +214,11 @@
               :label="t('更新时间')"
               prop="updated_time"
               :sort="true"
-              v-if="!isDetail"
             >
             </bk-table-column>
             <bk-table-column
               :label="t('操作')"
               width="140"
-              v-if="!isDetail"
             >
               <template #default="{ data }">
                 <bk-button
@@ -263,11 +262,11 @@
       </div>
     </div>
 
-    <!-- <div class="demarcation-button" v-show="isDetail && isShowLeft">
-      ......
-    </div> -->
+    <div class="demarcation-button" id="resourceLine" draggable="true" v-show="isDetail && isShowLeft">
+      <span>......</span>
+    </div>
 
-    <div class="resource-container-rg flex-1" v-show="isDetail" :style="{ marginLeft: isShowLeft ? '24px' : '0' }">
+    <div class="resource-container-rg flex-1" id="resourceRg" v-show="isDetail">
       <div class="toggle-button toggle-button-rg" @click="handleToggleRg">
         <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
       </div>
@@ -712,6 +711,43 @@ const handleToggleRg = () => {
   }
 };
 
+const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string, rightBoxId: string) => {
+  const resize: any = document.getElementById(resizeId);
+  const leftBox = document.getElementById(leftBoxId);
+  const rightBox = document.getElementById(rightBoxId);
+  const box = document.getElementById(contentId);
+
+  resize.onmousedown = function (e: any) {
+    const startX = e.clientX;
+    resize.left = resize.offsetLeft;
+    document.onmousemove = function (e) {
+      const endX = e.clientX;
+      let moveLen = resize.left + (endX - startX);
+      const maxT = box.clientWidth - resize.offsetWidth;
+      if (moveLen < 215) {
+        moveLen = 0;
+        isShowLeft.value = false;
+        document.onmouseup(e);
+      };
+      if (moveLen > maxT - 770) {
+        moveLen = maxT;
+        handleShowList();
+        document.onmouseup(e);
+      };
+      resize.style.left = moveLen;
+      leftBox.style.width = `${moveLen}px`;
+      rightBox.style.width = `${box.clientWidth - moveLen - 5}px`;
+    };
+    document.onmouseup = function () {
+      document.onmousemove = null;
+      document.onmouseup = null;
+      resize.releaseCapture?.();
+    };
+    resize.setCapture?.();
+    return false;
+  };
+};
+
 const handleSortChange = ({ column, type }: Record<string, any>) => {
   const typeMap: Record<string, Function> = {
     asc: () => {
@@ -1017,6 +1053,7 @@ watch(() => route, () => {
 
 onMounted(() => {
   init();
+  dragTwoColDiv('resourceId', 'resourceLf', 'resourceLine', 'resourceRg');
 });
 </script>
 <style lang="scss" scoped>
@@ -1029,22 +1066,27 @@ onMounted(() => {
     position: relative;
   }
   .resource-container-lf {
-    transition: all .2s;
+    // transition: all .1s;
   }
   .resource-container-rg {
-    height: calc(100% + 40px);
+    min-height: calc(100% + 40px);
     background: #fff;
     margin-top: -20px;
     margin-right: -24px;
     margin-bottom: -20px;
   }
-  // .demarcation-button {
-  //   // margin-left: 4px;
-  //   color: #63656E;
-  //   // display: flex;
-  //   // align-items: center;
-  //   transform: rotate(90deg);
-  // }
+  .demarcation-button {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    span {
+      color: #63656E;
+      transform: rotate(90deg);
+      padding-bottom: 6px;
+    }
+  }
   .operate{
     &-input{
       width: 450px;
@@ -1076,6 +1118,9 @@ onMounted(() => {
         td{
           background: #F2FFF4 !important;
         }
+      }
+      :deep(.bk-table-body) {
+        overflow: hidden;
       }
     }
 

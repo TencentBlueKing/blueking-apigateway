@@ -4,6 +4,7 @@ import { Message } from 'bkui-vue';
 // import FileSaver from 'file-saver';
 // import axios from 'axios';
 import i18n from '@/language/i18n';
+import jsYaml from 'js-yaml';
 
 const { t } = i18n.global;
 
@@ -441,3 +442,17 @@ export const getStatus = (stageData: any) => {
   }
   return 'delist';
 };
+
+export const json2yaml = (jsonStr: string) => {
+  try {
+    return {
+      data: jsYaml.dump(JSON.parse(jsonStr)),
+      error: false,
+    };
+  } catch (err) {
+    return {
+      data: '',
+      error: true,
+    };
+  }
+}
