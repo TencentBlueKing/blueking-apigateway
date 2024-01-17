@@ -69,7 +69,7 @@ export const backendsPathCheck = (apigwId: number, data: any) => fetch.get(`${BK
  * @param versionId 版本id
  * @returns
  */
-export const getResourceVersionsInfo = (apigwId: number, id: number, data?: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/${id}?${json2Query(data)}`);
+export const getResourceVersionsInfo = (apigwId: number, id: number, data?: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/${id}/?${json2Query(data)}`);
 
 /**
  *  资源版本列表

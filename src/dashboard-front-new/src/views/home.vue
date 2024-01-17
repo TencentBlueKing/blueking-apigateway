@@ -279,16 +279,11 @@ const {
   dataList,
 } = useGetApiList(filterNameData);
 
-// 赋值给列表
-watch(() => dataList.value, (val: any[]) => {
-  gatewaysList.value = val;
-});
+// 处理列表项
+const handleGatewaysList = (arr: any) => {
+  if (!arr) return [];
 
-
-// 页面初始化
-const init = async () => {
-  gatewaysList.value = await getGatewaysListData();
-  gatewaysList.value.forEach((item: any) => {
+  arr?.forEach((item: any) => {
     item.is24HoursAgo = is24HoursAgo(item.created_time);
     item.tagOrder = '3';
     item.stages?.sort((a: any, b: any) => (b.released - a.released));
@@ -299,6 +294,20 @@ const init = async () => {
       return prev;
     }, []);
   });
+
+  return arr;
+};
+
+// 赋值给列表
+watch(() => dataList.value, (val: any[]) => {
+  gatewaysList.value = handleGatewaysList(val);
+});
+
+
+// 页面初始化
+const init = async () => {
+  const list = await getGatewaysListData();
+  gatewaysList.value = handleGatewaysList(list);
 };
 
 // 新建网关弹窗

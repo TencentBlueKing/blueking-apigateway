@@ -39,7 +39,7 @@
         </bk-loading>
       </bk-form> -->
       <BkSchemaForm
-        class="mt20"
+        class="mt20 plugin-form"
         v-model="schemaFormData"
         :schema="formConfig.schema"
         :layout="formConfig.layout"
@@ -63,6 +63,7 @@ import { useI18n } from 'vue-i18n';
 import { getPluginForm, creatPlugin, updatePluginConfig } from '@/http';
 import { Message } from 'bkui-vue';
 import createForm from '@/common/index.umd';
+import { json2yaml } from '@/common/util';
 const BkSchemaForm = createForm();
 
 const { t } = useI18n();
@@ -103,6 +104,7 @@ const pluginCodeFirst = computed(() => {
     return code.charAt(3).toUpperCase();
   };
 });
+const typeId = ref<number>();
 
 // 上一页
 const handlePre = () => {
@@ -114,11 +116,18 @@ const handleAdd = async () => {
   const { curPlugin: { code } } = props;
   // await formRef.value?.validate();
   try {
+    const data: any = { ...schemaFormData.value };
     if (isAdd.value) {
-      await creatPlugin(apigwId, scopeType, scopeId, code, schemaFormData.value);
+      data.name = props.curPlugin?.name;
+      data.type_id = typeId.value;
+      data.yaml = json2yaml(JSON.stringify(schemaFormData.value)).data;
+      await creatPlugin(apigwId, scopeType, scopeId, code, data);
       emit('on-change', 'addSuccess');
     } else {
-      await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, schemaFormData.value);
+      data.name = props.editPlugin?.name;
+      data.type_id = props.editPlugin?.type_id;
+      data.yaml = props.editPlugin?.yaml;
+      await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, data);
       emit('on-change', 'editSuccess');
     }
     Message({
@@ -148,6 +157,7 @@ const init = async () => {
     isPluginFormLoading.value = false;
     infoNotes.value = res.notes;
     formConfig.value = res.config;
+    typeId.value = res.type_id;
   } catch (error) {
     console.log('error', error);
   }

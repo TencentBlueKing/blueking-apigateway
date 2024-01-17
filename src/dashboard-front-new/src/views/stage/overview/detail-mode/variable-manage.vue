@@ -107,7 +107,7 @@
       {{ t('变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符') }}
     </div>
 
-    <div class="footer-btn">
+    <div class="footer-btn" v-show="tableIsEdit">
       <bk-button
         theme="primary"
         @click="handleSave"
@@ -296,6 +296,7 @@ const handleSave = async () => {
       message: t('更新成功'),
     });
     getData();
+    tableIsEdit.value = false;
   } catch (e) {
     console.error(e);
   };

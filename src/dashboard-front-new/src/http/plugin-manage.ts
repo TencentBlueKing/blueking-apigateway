@@ -14,7 +14,7 @@ export const getPluginListData = (apigwId: number, data: any) => fetch.get(`${BK
  * @param apigwId 网关id
  * @param code 插件code
  */
-export const getPluginBindingsList = (apigwId: number, code: string) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${code}/bindings`);
+export const getPluginBindingsList = (apigwId: number, code: string) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${code}/bindings/`);
 
 /**
  * 获取插件类型对应的动态表单
@@ -29,7 +29,7 @@ export const getPluginForm = (apigwId: number, code: string) => fetch.get(`${BK_
  * @param scopeType 类型
  * @param scopeId 类型id
  */
-export const getScopeBindingPluginList = (apigwId: number, scopeType: string, scopeId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${scopeType}/${scopeId}`);
+export const getScopeBindingPluginList = (apigwId: number, scopeType: string, scopeId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${scopeType}/${scopeId}/`);
 
 /**
  * 创建一个插件，并且绑定到对应的 scope_type + scope_id
