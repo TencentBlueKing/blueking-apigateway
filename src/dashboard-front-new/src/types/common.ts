@@ -16,6 +16,7 @@ export interface IMenu {
   name: string
   title: string
   icon?: string
+  enabled?: boolean
   children?: IMenu[]
 }
 
