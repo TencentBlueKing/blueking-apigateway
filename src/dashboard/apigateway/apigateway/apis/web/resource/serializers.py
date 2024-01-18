@@ -33,6 +33,7 @@ from apigateway.biz.gateway_label import GatewayLabelHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerImporter
 from apigateway.biz.validators import MaxCountPerGatewayValidator
+from apigateway.common.django.validators import NameValidator
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
@@ -169,7 +170,13 @@ class HttpBackendSLZ(serializers.Serializer):
 
 class ResourceInputSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True, help_text="资源名称")
+    name = serializers.RegexField(
+        RESOURCE_NAME_PATTERN,
+        max_length=256,
+        required=True,
+        help_text="资源名称",
+        validators=[NameValidator()],
+    )
     path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="前端请求路径")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
     backend = HttpBackendSLZ(help_text="后端服务")
@@ -426,7 +433,13 @@ class PluginConfigImportSLZ(serializers.Serializer):
 
 
 class ResourceDataImportSLZ(serializers.ModelSerializer):
-    name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True, help_text="资源名称")
+    name = serializers.RegexField(
+        RESOURCE_NAME_PATTERN,
+        max_length=256,
+        required=True,
+        help_text="资源名称",
+        validators=[NameValidator()],
+    )
     path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="请求路径")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
     backend_name = serializers.CharField(help_text="后端服务名称")
