@@ -137,6 +137,20 @@ class TestAPICreateSLZ:
                 None,
                 True,
             ),
+            # name ends with invalid charactor
+            (
+                False,
+                {
+                    "name": "test-",
+                    "description": "test",
+                    "maintainers": ["admin"],
+                    "status": 1,
+                    "is_public": True,
+                    "user_auth_type": "ieod",
+                },
+                None,
+                True,
+            ),
             # name exists
             (
                 False,

@@ -51,7 +51,7 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Resource, StageResourceDisabled
 from apigateway.core.utils import get_path_display, get_resource_url
-from apigateway.core.validators import MaxCountPerGatewayValidator
+from apigateway.core.validators import MaxCountPerGatewayValidator, NameValidator
 
 
 class ResourceHostSLZ(HostSLZ):
@@ -224,7 +224,12 @@ class ProxyConfigsSLZ(serializers.Serializer):
 
 class ResourceSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     api = serializers.HiddenField(default=CurrentGatewayDefault())
-    name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True)
+    name = serializers.RegexField(
+        RESOURCE_NAME_PATTERN,
+        max_length=256,
+        required=True,
+        validators=[NameValidator()],
+    )
     path = serializers.RegexField(PATH_PATTERN, max_length=2048)
     label_ids = serializers.ListField(label="标签ID", child=serializers.IntegerField(), allow_empty=True, required=False)
     proxy_type = serializers.ChoiceField(choices=ProxyTypeEnum.get_choices())

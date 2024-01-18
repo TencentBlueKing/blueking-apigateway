@@ -536,6 +536,30 @@ class TestStageSLZ:
                 },
                 False,
             ),
+            (
+                {
+                    "name": "test-",  # name not valid
+                    "description": "test",
+                    "vars": {
+                        "test": "123",
+                    },
+                    "proxy_http": {
+                        "timeout": 30,
+                        "upstreams": {
+                            "loadbalance": "roundrobin",
+                            "hosts": [
+                                {
+                                    "host": "http://www.a.com",
+                                }
+                            ],
+                        },
+                        "transform_headers": {
+                            "set": {"k1": "v1"},
+                        },
+                    },
+                },
+                True,
+            ),
         ],
     )
     def test_create(self, mocker, data, will_error, fake_gateway, fake_request):

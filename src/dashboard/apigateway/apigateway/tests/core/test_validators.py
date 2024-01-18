@@ -29,6 +29,7 @@ from apigateway.core.validators import (
     BKAppCodeListValidator,
     BKAppCodeValidator,
     MaxCountPerGatewayValidator,
+    NameValidator,
     ReservedAPINameValidator,
     ResourceIDValidator,
 )
@@ -256,6 +257,30 @@ class TestReservedAPINameValidator:
         settings.RESERVED_GATEWAY_NAME_PREFIXES = reserved_gateway_name_prefixes
 
         slz = self.APISLZ(data={"name": api_name})
+        slz.is_valid()
+
+        if will_error:
+            assert slz.errors
+        else:
+            assert not slz.errors
+
+
+class TestNameValidator:
+    class GatewaySLZ(serializers.Serializer):
+        name = serializers.CharField(validators=[NameValidator()])
+
+    @pytest.mark.parametrize(
+        "name, will_error",
+        [
+            ("abc", False),
+            ("abc-", True),
+            ("abc--", True),
+            ("abc_", True),
+            ("abc__", True),
+        ],
+    )
+    def test_validate(self, settings, name, will_error):
+        slz = self.GatewaySLZ(data={"name": name})
         slz.is_valid()
 
         if will_error:

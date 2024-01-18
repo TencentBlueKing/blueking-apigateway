@@ -84,6 +84,26 @@ class ReservedAPINameValidator:
                 raise serializers.ValidationError(_("网关名不能以【{prefix}】开头，其为官方保留字。").format(prefix=prefix))
 
 
+class NameValidator:
+    """currently:
+    - gateway_name can be endswith '-'
+    - stage name can be endswith '-' and '_'
+    - resource name can be endswith '-'
+    while build the key/name of etcd/helm/sdk, the '-'/'_' will be striped,
+    it would cause some problem if a-/a convert to the same key/name,
+    so, we check the name while creating gateway/stage/resource
+
+    since: 2024-01-16, make standardization
+    """
+
+    def __call__(self, value: str):
+        if value.endswith("-"):
+            raise serializers.ValidationError(_("名称不能以【-】结尾。"))
+
+        if value.endswith("_"):
+            raise serializers.ValidationError(_("名称不能以【_】结尾。"))
+
+
 class BKAppCodeValidator:
     def __call__(self, value):
         if not value:

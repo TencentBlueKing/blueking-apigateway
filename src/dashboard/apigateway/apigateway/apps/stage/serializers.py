@@ -41,7 +41,7 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import MicroGateway, Stage
 from apigateway.core.signals import reversion_update_signal
-from apigateway.core.validators import MaxCountPerGatewayValidator
+from apigateway.core.validators import MaxCountPerGatewayValidator, NameValidator
 
 
 class HostSLZ(serializers.Serializer):
@@ -128,7 +128,10 @@ class RateLimitSLZ(serializers.Serializer):
 
 class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     api = serializers.HiddenField(default=CurrentGatewayDefault())
-    name = serializers.RegexField(STAGE_NAME_PATTERN)
+    name = serializers.RegexField(
+        STAGE_NAME_PATTERN,
+        validators=[NameValidator()],
+    )
     vars = serializers.DictField(
         label="环境变量",
         child=serializers.CharField(allow_blank=True, required=True),

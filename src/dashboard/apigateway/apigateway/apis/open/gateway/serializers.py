@@ -33,7 +33,7 @@ from apigateway.core.constants import (
     UserAuthTypeEnum,
 )
 from apigateway.core.models import Gateway, ReleaseHistory
-from apigateway.core.validators import BKAppCodeListValidator
+from apigateway.core.validators import BKAppCodeListValidator, NameValidator
 
 
 class GatewayQueryV1SLZ(serializers.Serializer):
@@ -78,7 +78,12 @@ class UserConfigSLZ(serializers.Serializer):
 
 
 class GatewaySyncSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
-    name = serializers.RegexField(API_NAME_PATTERN, label="网关名称", max_length=64)
+    name = serializers.RegexField(
+        API_NAME_PATTERN,
+        label="网关名称",
+        max_length=64,
+        validators=[NameValidator()],
+    )
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
     status = serializers.ChoiceField(choices=APIStatusEnum.choices(), default=APIStatusEnum.ACTIVE.value)
     # 只允许指定为普通网关或官方网关，不能指定为超级官方网关，超级官方网关会传递敏感参数到后端接口
