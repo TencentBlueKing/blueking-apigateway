@@ -2,7 +2,7 @@
   <div class="page-wrapper-padding runtime-data-wrapper">
     <div class="top-header mb15">
       <strong class="f16" style="color: #63656e; font-weight: normal">
-        {{ $t("所有运营系统实时概况") }}
+        {{ t("所有运营系统实时概况") }}
       </strong>
       <bk-select
         v-model="timeRange" :clearable="false" :scroll-height="300" style="width: 200px; right: 15px"
@@ -12,8 +12,10 @@
       </bk-select>
       <div class="filter">
         <div class="auto-refresh">
-          <bk-switcher class="mr10" v-model="autoEnable" theme="primary"></bk-switcher><span class="vm f13"> {{
-            $t("每分钟自动刷新") }} </span>
+          <bk-switcher class="mr10" v-model="autoEnable" theme="primary" />
+          <span class="vm f13">
+            {{t("每分钟自动刷新") }}
+          </span>
         </div>
       </div>
     </div>
@@ -46,7 +48,7 @@
                 </div>
                 <div class="ring-wrapper">
                   <Ring
-                    v-if="chart.rate_availability.value < 1" v-bk-tooltips="$t('可用率低于100%')"
+                    v-if="chart.rate_availability.value < 1" v-bk-tooltips="t('可用率低于100%')"
                     :percent="chart.rate_availability.value_str" :size="80" :stroke-width="8" :fill-width="8"
                     :fill-color="initRingColor(chart)" :text-style="initRingTextStyle(chart)">
                   </Ring>
@@ -66,7 +68,7 @@
             background: #fff;
             margin-right: 15px;
           ">
-          <span>{{ $t("暂无数据") }}</span>
+          <span>{{ t("暂无数据") }}</span>
         </bk-exception>
       </div>
 
@@ -84,6 +86,7 @@ import moment from 'moment';
 import i18n from '@/language/i18n';
 import { useCommon } from '@/store';
 import { useRouter } from 'vue-router';
+import { getApigwRuntime, getApigwTimeline } from '@/http';
 
 const { t } = i18n.global;
 const router = useRouter();
@@ -99,6 +102,7 @@ const timeList = shallowRef([
   { id: '12h', name: t('最近 12 小时') },
   { id: '24h', name: t('最近 24 小时') },
 ]);
+console.log(commonStore.apigwId);
 const apigwId = ref(commonStore.apigwId);
 const timer = ref(null);
 const autoEnable = ref(true);
@@ -161,22 +165,22 @@ const handleGoDetail = (chart: any) => {
   });
 };
 
-const getRuntime = () => {
-  // try {
-  //   const res = await this.$store.dispatch('runtime/getApigwRuntime', {
-  //     timeRange: this.timeRange,
-  //   });
-  //   this.charts = res.data;
-  // } catch (e) {
-  //   catchErrorHandler(e, this);
-  // }
+const getRuntime = async () => {
+  try {
+    const res = await getApigwRuntime({
+      timeRange: timeRange.value,
+    });
+    charts.value = res || [];
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 const getTimeline = async () => {
   try {
     console.log(apigwId.value);
-    // const res = await this.$store.dispatch('runtime/getApigwTimeline', { apigwId });
-    // timeLines.value = res.data;
+    const res = await getApigwTimeline();
+    timeLines.value = res || [];
     initTimeline();
   } catch (e) {
     console.error(e);
@@ -192,11 +196,12 @@ const initTimeline = () => {
       filled: false,
       type: '',
     };
+    const { rate_availability, requests } = item.data;
     const typeMap: Record<string, Function> = {
       errors_occurred: () => {
         data.type = 'warning';
-        data.content = t('偶发 {errorCount} 次请求错误', {
-          errorCount: item.data.requests.error_count,
+        data.content = t(`偶发 ${requests.error_count || 0} 次请求错误`, {
+          errorCount: requests.error_count,
         });
       },
       availability_restored: () => {
@@ -205,9 +210,9 @@ const initTimeline = () => {
         const end = moment(item.mts_end);
         const timeSpan = end.from(start, true);
         data.content = t(
-          '<div>可用率恢复至 {value_str}%, 低可用持续时间: <strong> {time}</strong></div>',
+          `<div>可用率恢复至 ${rate_availability.value_str}%, 低可用持续时间: <strong> ${timeSpan}</strong></div>`,
           {
-            value_str: item.data.rate_availability.value_str,
+            value_str: rate_availability.value_str,
             time: timeSpan,
           },
         );
@@ -215,11 +220,11 @@ const initTimeline = () => {
       availability_dropped: () => {
         data.type = 'danger';
         data.content = t(
-          '<div>可用率下降至 <strong>{value_str}%</strong>, 调用错误数/总次数: <strong> {error_count}/{count}</strong></div>',
+          `<div>可用率下降至 <strong>${rate_availability.value_str}%</strong>, 调用错误数/总次数: <strong> ${requests.error_count || 0}/${requests.count || 0}</strong></div>`,
           {
-            value_str: item.data.rate_availability.value_str,
-            error_count: item.data.requests.error_count,
-            count: item.data.requests.count,
+            value_str: rate_availability.value_str,
+            error_count: requests.error_count,
+            count: requests.count,
           },
         );
       },
@@ -249,7 +254,7 @@ const clearAutoRefresh = () => {
 };
 
 watch(
-  () => autoEnable,
+  () => autoEnable.value,
   () => {
     enableAutoRefresh();
   },
