@@ -16,6 +16,7 @@
         </bk-breadcrumb>
         <chat
           class="ag-chat"
+          v-if="userStore.featureFlags?.ALLOW_CREATE_APPCHAT"
           :default-user-list="userList"
           :owner="curUser.username"
           :name="chatName"
@@ -51,7 +52,11 @@
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="curComponent.markdownHtml"></div>
         </bk-tab-panel>
-        <bk-tab-panel :name="'sdk '" :label="t('SDK及示例')" id="sdk-markdown">
+        <bk-tab-panel
+          :name="'sdk '"
+          :label="t('SDK及示例')"
+          v-if="userStore.featureFlags?.ENABLE_SDK"
+          id="sdk-markdown">
           <div>
             <div class="bk-button-group mb5">
               <bk-button class="is-selected">Python</bk-button>

@@ -13,6 +13,7 @@
         </bk-breadcrumb>
         <chat
           class="ag-chat"
+          v-if="userStore.featureFlags?.ALLOW_CREATE_APPCHAT"
           :default-user-list="userList"
           :owner="curUser.username"
           :name="chatName"
@@ -33,60 +34,64 @@
         <h3> {{ $t('网关访问地址') }} </h3>
         <p class="mb30">{{curApigw.api_url}}</p>
 
-        <h3> {{ $t('网关 SDK') }} </h3>
-        <div class="bk-button-group">
-          <bk-button class="is-selected">Python</bk-button>
-        </div>
+        <template v-if="userStore.featureFlags?.ENABLE_SDK">
+          <h3> {{ $t('网关 SDK') }} </h3>
+          <div class="bk-button-group">
+            <bk-button class="is-selected">Python</bk-button>
+          </div>
+        </template>
       </div>
 
-      <bk-table
-        style="margin-top: 15px;"
-        :data="sdks"
-        show-overflow-tooltip
-        :border="['outer']"
-        :size="'small'">
-        <!-- <template #empty>
+      <template v-if="userStore.featureFlags?.ENABLE_SDK">
+        <bk-table
+          style="margin-top: 15px;"
+          :data="sdks"
+          show-overflow-tooltip
+          :border="['outer']"
+          :size="'small'">
+          <!-- <template #empty>
           <table-empty
             :abnormal="isAbnormal"
             @reacquire="getApigwSDK('python')"
           />
         </template> -->
 
-        <bk-table-column :label="$t('网关环境')" field="stage_name">
-          <template #default="{ data }">
-            {{data?.stage?.name || '--'}}
-          </template>
-        </bk-table-column>
-
-        <bk-table-column :label="$t('网关API资源版本')" field="resource_version_display">
-          <template #default="{ data }">
-            {{data?.resource_version?.version || '--'}}
-          </template>
-        </bk-table-column>
-
-        <bk-table-column :label="$t('SDK 版本号')" field="sdk_version_number">
-          <template #default="{ data }">
-            {{data?.sdk?.version || '--'}}
-          </template>
-        </bk-table-column>
-
-        <bk-table-column :label="$t('SDK下载')">
-          <template #default="{ data }">
-            <template v-if="data?.sdk?.url">
-              <bk-button theme="primary" class="mr5" text @click="handleShow(data)"> {{ $t('查看') }} </bk-button>
-              <bk-button theme="primary" text @click="handleDownload(data)"> {{ $t('下载') }} </bk-button>
+          <bk-table-column :label="$t('网关环境')" field="stage_name">
+            <template #default="{ data }">
+              {{data?.stage?.name || '--'}}
             </template>
-            <template v-else>
-              {{ $t('未生成-doc') }}
-            </template>
-          </template>
-        </bk-table-column>
-      </bk-table>
+          </bk-table-column>
 
-      <p class="ag-tip mt5">
-        <info-line style="margin-right: 8px;" />
-        {{ $t('若资源版本对应的SDK未生成，可联系网关负责人生成SDK') }}
-      </p>
+          <bk-table-column :label="$t('网关API资源版本')" field="resource_version_display">
+            <template #default="{ data }">
+              {{data?.resource_version?.version || '--'}}
+            </template>
+          </bk-table-column>
+
+          <bk-table-column :label="$t('SDK 版本号')" field="sdk_version_number">
+            <template #default="{ data }">
+              {{data?.sdk?.version || '--'}}
+            </template>
+          </bk-table-column>
+
+          <bk-table-column :label="$t('SDK下载')">
+            <template #default="{ data }">
+              <template v-if="data?.sdk?.url">
+                <bk-button theme="primary" class="mr5" text @click="handleShow(data)"> {{ $t('查看') }} </bk-button>
+                <bk-button theme="primary" text @click="handleDownload(data)"> {{ $t('下载') }} </bk-button>
+              </template>
+              <template v-else>
+                {{ $t('未生成-doc') }}
+              </template>
+            </template>
+          </bk-table-column>
+        </bk-table>
+
+        <p class="ag-tip mt5">
+          <info-line style="margin-right: 8px;" />
+          {{ $t('若资源版本对应的SDK未生成，可联系网关负责人生成SDK') }}
+        </p>
+      </template>
 
       <bk-sideslider
         :width="720"

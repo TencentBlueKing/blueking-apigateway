@@ -8,7 +8,7 @@ import * as UserInfo from '@/components/user-info.vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { useUser } from '@/store';
-import { getUser } from '@/http';
+import { getUser, getFeatureFlags } from '@/http';
 import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
@@ -30,6 +30,13 @@ getUser()
     Message('获取用户信息失败，请检查后再试');
   });
 
+getFeatureFlags({ limit: 10000, offset: 0 }).then((data) => {
+  user.setFeatureFlags(data);
+})
+  .catch(() => {
+    Message('获取功能权限失败，请检查后再试');
+  });
+
 const headerList = ref([
   {
     name: t('我的网关'),
@@ -42,7 +49,7 @@ const headerList = ref([
     name: t('组件管理'),
     id: 2,
     url: 'componentsMain',
-    enabled: true,
+    enabled: user.featureFlags?.MENU_ITEM_ESB_API,
     link: '',
   },
   {
@@ -56,7 +63,7 @@ const headerList = ref([
     name: t('组件API文档'),
     id: 4,
     url: 'componentDoc',
-    enabled: true,
+    enabled: user.featureFlags?.MENU_ITEM_ESB_API_DOC,
     link: '',
   },
   {
@@ -66,7 +73,7 @@ const headerList = ref([
       type: 'apigateway',
     },
     url: 'apigwSDK',
-    enabled: true,
+    enabled: user.featureFlags?.ENABLE_SDK,
     link: '',
   },
   {
@@ -76,7 +83,7 @@ const headerList = ref([
       type: 'esb',
     },
     url: 'esbSDK',
-    enabled: true,
+    enabled: user.featureFlags?.ENABLE_SDK,
     link: '',
   },
 
@@ -170,17 +177,19 @@ const goPage = (routeName: string) => {
           class="header"
         >
           <div class="header-nav">
-            <div
-              v-for="(item, index) in headerList"
-              :key="item.id"
-              class="header-nav-item"
-              :class="{ 'item-active': index === activeIndex }"
-            >
-              <span
-                v-if="!isExternalLink(item.url)"
-                @click="handleToPage(item.url, index, item.link)">{{item.name}}</span>
-              <a :href="item.url" target="_blank" v-else>{{item.name}}</a>
-            </div>
+            <template v-for="(item, index) in headerList">
+              <div
+                :key="item.id"
+                class="header-nav-item"
+                :class="{ 'item-active': index === activeIndex }"
+                v-if="item.enabled"
+              >
+                <span
+                  v-if="!isExternalLink(item.url)"
+                  @click="handleToPage(item.url, index, item.link)">{{item.name}}</span>
+                <a :href="item.url" target="_blank" v-else>{{item.name}}</a>
+              </div>
+            </template>
           </div>
           <user-info v-if="userLoading" />
         </div>

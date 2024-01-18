@@ -487,7 +487,7 @@ const handleConfirm = async () => {
       InfoBox({
         title: t('内容保存成功，正在发布至环境中'),
         infoType: 'success',
-        subTitle: t('服务修改后将会立即发布至环境中'),
+        subTitle: t('如果编辑的后端服务绑定的环境有发布就会立即发布到对应环境当中'),
         confirmText: t('去查看'),
         cancelText: t('关闭'),
         onConfirm: () => {

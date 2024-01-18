@@ -3,15 +3,16 @@
     <bk-tab :active="resourceVersionStore.tabActive || 'edition'" type="unborder-card" @change="handleChange">
       <bk-tab-panel name="edition" label="版本列表">
       </bk-tab-panel>
-      <bk-tab-panel name="sdk" label="SDK列表">
+      <bk-tab-panel name="sdk" label="SDK列表" v-if="user.featureFlags?.ALLOW_UPLOAD_SDK_TO_REPOSITORY">
       </bk-tab-panel>
     </bk-tab>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useResourceVersion } from '@/store';
+import { useResourceVersion, useUser } from '@/store';
 
+const user = useUser();
 const resourceVersionStore = useResourceVersion();
 
 const handleChange = (key: string) => {
