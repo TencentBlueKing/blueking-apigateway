@@ -13,6 +13,7 @@
         </bk-breadcrumb>
         <chat
           class="ag-chat"
+          v-if="userStore.featureFlags?.ALLOW_CREATE_APPCHAT"
           :default-user-list="userList"
           :owner="curUser.username"
           :name="chatName"
@@ -25,7 +26,7 @@
         <p class="mb30">{{ curSystem.comment || t('暂无简介') }}</p>
         <h3>{{ t('系统负责人') }}</h3>
         <p class="mb30">{{ curSystem.maintainers && curSystem.maintainers.join(', ') || '--' }}</p>
-        <template v-if="GLOBAL_CONFIG">
+        <template v-if="userStore.featureFlags?.ENABLE_SDK">
           <h3>{{ t('组件API SDK') }}</h3>
           <div class="bk-button-group">
             <bk-button class="is-selected">Python</bk-button>

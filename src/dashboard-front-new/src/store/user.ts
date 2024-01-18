@@ -7,10 +7,14 @@ export const useUser = defineStore('user', {
       username: '',
       avatar_url: '',
     },
+    featureFlags: {},
   }),
   actions: {
     setUser(user: IUser) {
       this.user = user;
+    },
+    setFeatureFlags(data: any) {
+      this.featureFlags = data;
     },
   },
 });

@@ -70,7 +70,11 @@
             </bk-table-column>
             <bk-table-column :label="t('操作')" min-width="140">
               <template #default="{ data }">
-                <bk-button text theme="primary" @click="openCreateSdk(data.id)">
+                <bk-button
+                  text
+                  theme="primary"
+                  @click="openCreateSdk(data.id)"
+                  v-if="user.featureFlags?.ALLOW_UPLOAD_SDK_TO_REPOSITORY">
                   {{ t("生成SDK") }}
                 </bk-button>
                 <bk-dropdown trigger="click" :is-show="!!data?.isReleaseMenuShow">
@@ -140,10 +144,11 @@ import { getResourceVersionsList, getStageList } from '@/http';
 import createSdk from '../components/createSdk.vue';
 import resourceDetail from '../components/resourceDetail.vue';
 import versionDiff from '@/components/version-diff';
-import { useResourceVersion } from '@/store';
+import { useResourceVersion, useUser } from '@/store';
 import { Message } from 'bkui-vue';
 import { useRoute } from 'vue-router';
 import releaseSideslider from '@/views/stage/overview/comps/release-sideslider.vue';
+const user = useUser();
 
 const route = useRoute();
 const { t } = useI18n();

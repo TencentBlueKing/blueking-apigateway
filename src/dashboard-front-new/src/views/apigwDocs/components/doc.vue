@@ -19,6 +19,7 @@
 
         <chat
           class="ag-chat"
+          v-if="userStore.featureFlags?.ALLOW_CREATE_APPCHAT"
           :default-user-list="userList"
           :owner="curUser.username"
           :name="chatName"
@@ -67,6 +68,7 @@
         <bk-tab-panel
           :name="'sdk'"
           :label="$t('SDK及示例')"
+          v-if="userStore.featureFlags?.ENABLE_SDK"
         >
           <div id="sdk-markdown">
             <div class="bk-button-group">
