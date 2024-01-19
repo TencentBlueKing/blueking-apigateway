@@ -179,10 +179,8 @@
               ],
               "ui:component": {
                 "name": "bfInput",
-                "props": {
-                  "min": -1,
-                  "unit": "秒"
-                }
+                "min": -1,
+                "unit": "秒"
               }
             },
             "allow_credential": {
@@ -270,10 +268,8 @@
               ],
               "ui:component": {
                 "name": "bfInput",
-                "props": {
-                  "min": -1,
-                  "unit": "Seconds"
-                }
+                "min": -1,
+                "unit": "Seconds"
               }
             },
             "allow_credential": {
@@ -360,7 +356,7 @@
                     "description": "您可以设置请求头的键，请求头的键中不能包含冒号（:）。",
                     "type": "string",
                     "maxLength": 1024,
-                    "pattern": "^[!-~&&[^:]]+$",
+                    "pattern": "^[\\w-]+$",
                     "ui:rules": [
                       "required"
                     ]
@@ -400,7 +396,7 @@
                     "description": "您可以删除请求头的键，请求头的键中不能包含冒号（:）。",
                     "type": "string",
                     "maxLength": 1024,
-                    "pattern": "^[!-~&&[^:]]+$",
+                    "pattern": "^[\\w-]+$",
                     "ui:rules": [
                       "required"
                     ]
@@ -448,7 +444,7 @@
                     "description": "You can set the key of the request header, but colons (:) cannot appear in the key of the request header.",
                     "type": "string",
                     "maxLength": 1024,
-                    "pattern": "^[!-~&&[^:]]+$",
+                    "pattern": "^[\\w-]+$",
                     "ui:rules": [
                       "required"
                     ]
@@ -488,7 +484,7 @@
                     "description": "You can remove the key of the request header, but colons (:) cannot appear in the key of the request header.",
                     "type": "string",
                     "maxLength": 1024,
-                    "pattern": "^[!-~&&[^:]]+$",
+                    "pattern": "^[\\w-]+$",
                     "ui:rules": [
                       "required"
                     ]
@@ -669,10 +665,8 @@
                   "minLength": 7,
                   "title": "白名单",
                   "ui:component": {
-                    "props": {
-                      "type": "textarea",
-                      "rows": 10
-                    }
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
@@ -689,19 +683,15 @@
                   "minLength": 7,
                   "title": "黑名单",
                   "ui:component": {
-                    "props": {
-                      "type": "textarea",
-                      "rows": 10
-                    }
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
             }
           ],
           "ui:oneOf": {
-            "props": {
-              "title": "类型"
-            }
+            "title": "类型"
           }
         },
         "layout": [],
@@ -736,10 +726,8 @@
                   "minLength": 7,
                   "title": "whitelist",
                   "ui:component": {
-                    "props": {
-                      "type": "textarea",
-                      "rows": 10
-                    }
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
@@ -756,19 +744,15 @@
                   "minLength": 7,
                   "title": "blacklist",
                   "ui:component": {
-                    "props": {
-                      "type": "textarea",
-                      "rows": 10
-                    }
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
             }
           ],
           "ui:oneOf": {
-            "props": {
-              "title": "Type"
-            }
+            "title": "Type"
           }
         },
         "layout": [],
@@ -866,10 +850,8 @@
                   "type": "object",
                   "title": "默认频率限制",
                   "ui:group": {
-                    "props": {
-                      "type": "card",
-                      "showTitle": true
-                    },
+                    "type": "card",
+                    "showTitle": true,
                     "style": {
                       "background": "#F5F7FA",
                       "padding": "10px 20px 10px 30px"
@@ -889,9 +871,7 @@
                       ],
                       "ui:component": {
                         "name": "bfInput",
-                        "props": {
-                          "min": 1
-                        }
+                        "min": 1
                       }
                     },
                     "period": {
@@ -903,27 +883,25 @@
                       ],
                       "ui:component": {
                         "name": "select",
-                        "props": {
-                          "datasource": [
-                            {
-                              "label": "秒",
-                              "value": 1
-                            },
-                            {
-                              "label": "分",
-                              "value": 60
-                            },
-                            {
-                              "label": "时",
-                              "value": 3600
-                            },
-                            {
-                              "label": "天",
-                              "value": 86400
-                            }
-                          ],
-                          "clearable": false
-                        }
+                        "datasource": [
+                          {
+                            "label": "秒",
+                            "value": 1
+                          },
+                          {
+                            "label": "分",
+                            "value": 60
+                          },
+                          {
+                            "label": "时",
+                            "value": 3600
+                          },
+                          {
+                            "label": "天",
+                            "value": 86400
+                          }
+                        ],
+                        "clearable": false
                       }
                     }
                   }
@@ -932,10 +910,8 @@
                   "type": "array",
                   "title": "特殊应用频率限制",
                   "ui:group": {
-                    "props": {
-                      "type": "card",
-                      "showTitle": true
-                    },
+                    "type": "card",
+                    "showTitle": true,
                     "style": {
                       "background": "#F5F7FA",
                       "padding": "10px 20px 20px 20px"
@@ -964,9 +940,7 @@
                         ],
                         "ui:component": {
                           "name": "bfInput",
-                          "props": {
-                            "min": 1
-                          }
+                          "min": 1
                         }
                       },
                       "period": {
@@ -978,27 +952,25 @@
                         ],
                         "ui:component": {
                           "name": "select",
-                          "props": {
-                            "datasource": [
-                              {
-                                "label": "秒",
-                                "value": 1
-                              },
-                              {
-                                "label": "分",
-                                "value": 60
-                              },
-                              {
-                                "label": "时",
-                                "value": 3600
-                              },
-                              {
-                                "label": "天",
-                                "value": 86400
-                              }
-                            ],
-                            "clearable": false
-                          }
+                          "datasource": [
+                            {
+                              "label": "秒",
+                              "value": 1
+                            },
+                            {
+                              "label": "分",
+                              "value": 60
+                            },
+                            {
+                              "label": "时",
+                              "value": 3600
+                            },
+                            {
+                              "label": "天",
+                              "value": 86400
+                            }
+                          ],
+                          "clearable": false
                         }
                       },
                       "bk_app_code": {
@@ -1082,10 +1054,8 @@
                   "type": "object",
                   "title": "Default Rate Limit",
                   "ui:group": {
-                    "props": {
-                      "type": "card",
-                      "showTitle": true
-                    },
+                    "type": "card",
+                    "showTitle": true,
                     "style": {
                       "background": "#F5F7FA",
                       "padding": "10px 20px 10px 30px"
@@ -1105,9 +1075,7 @@
                       ],
                       "ui:component": {
                         "name": "bfInput",
-                        "props": {
-                          "min": 1
-                        }
+                        "min": 1
                       }
                     },
                     "period": {
@@ -1119,27 +1087,25 @@
                       ],
                       "ui:component": {
                         "name": "select",
-                        "props": {
-                          "datasource": [
-                            {
-                              "label": "Second",
-                              "value": 1
-                            },
-                            {
-                              "label": "Minute",
-                              "value": 60
-                            },
-                            {
-                              "label": "Hour",
-                              "value": 3600
-                            },
-                            {
-                              "label": "Day",
-                              "value": 86400
-                            }
-                          ],
-                          "clearable": false
-                        }
+                        "datasource": [
+                          {
+                            "label": "Second",
+                            "value": 1
+                          },
+                          {
+                            "label": "Minute",
+                            "value": 60
+                          },
+                          {
+                            "label": "Hour",
+                            "value": 3600
+                          },
+                          {
+                            "label": "Day",
+                            "value": 86400
+                          }
+                        ],
+                        "clearable": false
                       }
                     }
                   }
@@ -1148,10 +1114,8 @@
                   "type": "array",
                   "title": "Special Apps Rate Limit",
                   "ui:group": {
-                    "props": {
-                      "type": "card",
-                      "showTitle": true
-                    },
+                    "type": "card",
+                    "showTitle": true,
                     "style": {
                       "background": "#F5F7FA",
                       "padding": "10px 20px 20px 20px"
@@ -1180,9 +1144,7 @@
                         ],
                         "ui:component": {
                           "name": "bfInput",
-                          "props": {
-                            "min": 1
-                          }
+                          "min": 1
                         }
                       },
                       "period": {
@@ -1194,27 +1156,25 @@
                         ],
                         "ui:component": {
                           "name": "select",
-                          "props": {
-                            "datasource": [
-                              {
-                                "label": "Second",
-                                "value": 1
-                              },
-                              {
-                                "label": "Minute",
-                                "value": 60
-                              },
-                              {
-                                "label": "Hour",
-                                "value": 3600
-                              },
-                              {
-                                "label": "Day",
-                                "value": 86400
-                              }
-                            ],
-                            "clearable": false
-                          }
+                          "datasource": [
+                            {
+                              "label": "Second",
+                              "value": 1
+                            },
+                            {
+                              "label": "Minute",
+                              "value": 60
+                            },
+                            {
+                              "label": "Hour",
+                              "value": 3600
+                            },
+                            {
+                              "label": "Day",
+                              "value": 86400
+                            }
+                          ],
+                          "clearable": false
                         }
                       },
                       "bk_app_code": {
