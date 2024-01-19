@@ -360,7 +360,7 @@
                     "description": "您可以设置请求头的键，请求头的键中不能包含冒号（:）。",
                     "type": "string",
                     "maxLength": 1024,
-                    "pattern": "^[!-~&&[^:]]+$",
+                    "pattern": "^[^\s:]+$",
                     "ui:rules": [
                       "required"
                     ]
@@ -400,7 +400,7 @@
                     "description": "您可以删除请求头的键，请求头的键中不能包含冒号（:）。",
                     "type": "string",
                     "maxLength": 1024,
-                    "pattern": "^[!-~&&[^:]]+$",
+                    "pattern": "^[^\s:]+$",
                     "ui:rules": [
                       "required"
                     ]
@@ -448,7 +448,7 @@
                     "description": "You can set the key of the request header, but colons (:) cannot appear in the key of the request header.",
                     "type": "string",
                     "maxLength": 1024,
-                    "pattern": "^[!-~&&[^:]]+$",
+                    "pattern": "^[^\s:]+$",
                     "ui:rules": [
                       "required"
                     ]
@@ -488,7 +488,7 @@
                     "description": "You can remove the key of the request header, but colons (:) cannot appear in the key of the request header.",
                     "type": "string",
                     "maxLength": 1024,
-                    "pattern": "^[!-~&&[^:]]+$",
+                    "pattern": "^[^\s:]+$",
                     "ui:rules": [
                       "required"
                     ]
