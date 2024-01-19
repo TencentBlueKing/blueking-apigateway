@@ -15,218 +15,9 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-@import './bk-patch-doc.css';
-@import './mixins/scroller.css';
+ /* stylelint-disable */
 
-#app {
-    background: #FAFBFD;
-    padding-top: 52px;
-    height: 100%;
-}
-
-.full-width {
-    width: 100%;
-}
-
-.center-content {
-    background-color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.ag-container {
-    width: 1200px;
-    display: flex;
-    margin: 16px auto 20px auto;
-    align-items: stretch;
-    
-    > .left {
-        width: 260px;
-        margin-right: 16px;
-        position: relative;
-    } 
-
-    > .right {
-        flex: 1;
-        height: auto;
-
-        > div {
-            height: 100%;
-        }
-
-        .intro-doc,
-        .component-doc {
-            height: 100%;
-        }
-
-        .version-name {
-            font-size: 16px;
-            font-weight: 700;
-            text-align: left;
-            color: #313238;
-            line-height: 21px;
-            padding: 10px 0 15px 0;
-
-            svg {
-                width: 20px;
-                height: 20px;
-                vertical-align: middle;
-                margin-right: 3px;
-            }
-
-            span {
-                vertical-align: middle;
-            }
-        }
-    }
-}
-
-.side-nav {
-    width: 260px;
-    background: #fff;
-    box-shadow: 0px 2px 6px 0px rgba(0,0,0,0.1);
-    padding: 17px 0 30px 22px;
-    margin-right: 16px;
-    position: relative;
-    @mixin scroller;
-
-    &.fixed {
-        top: 68px;
-        position: fixed;
-        overflow: auto;
-    }
-
-    .group {
-        border-left: 1px solid #F0F1F5;
-        position: relative;
-    }
-
-    .category-title {
-        font-size: 14px;
-        font-weight: 700;
-        text-align: left;
-        color: #63656e;
-        line-height: 19px;
-        margin-bottom: 10px;
-        position: relative;
-        display: block;
-        padding-left: 40px;
-
-        &::after {
-            content: '';
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #c4c6cc;
-            position: absolute;
-            left: -10px;
-            top: 0;
-            border-radius: 50%;
-            border: 6px solid #FFF;
-        }
-    }
-
-    .group {
-        position: relative;
-
-        .category-icon {
-            width: 23px;
-            height: 23px;
-            position: absolute;
-            left: 12px;
-            top: -2px;
-        }
-    }
-
-    .list {
-        margin-bottom: 10px;
-
-        > li {
-            padding-left: 40px;
-
-            &.selected {
-                border-left: 1px solid #3A84FF;
-                left: -1px;
-                position: relative;
-
-                a {
-                    color: #3A84FF;
-                }
-            }
-        }
-
-        a {
-            font-size: 14px;
-            text-align: left;
-            color: #63656e;
-            line-height: 36px;
-
-            &:hover {
-                color: #3A84FF;
-            }
-        }
-    }
-}
-
-.ag-card {
-    background: #ffffff;
-    padding: 18px 16px 10px 16px;
-    box-shadow: 0px 2px 6px 0px rgba(0,0,0,0.1); 
-
-    .card-title {
-        font-size: 14px;
-        font-weight: 700;
-        text-align: left;
-        color: #63656e;
-        line-height: 19px;
-
-        .total {
-            font-size: 14px;
-            color: #979ba5;
-            font-weight: normal;
-        }
-    }
-
-    .card-content {
-        margin-top: 20px;
-    }
-
-    & + .ag-card {
-        margin-top: 16px;
-    }
-
-    .systems {
-        display: flex;
-        flex-wrap: wrap;
-
-        > li {
-            width: 25%;
-            margin-bottom: 20px;
-        }
-
-        a {
-            font-size: 14px;
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .desc {
-            font-size: 12px;
-            color: #C4C6CC;
-        }
-    }
-}
-
-.ag-tip {
-    font-size: 13px;
-    color: #63656e;
-    line-height: 16px;
-    clear: both;
-    font-weight: normal;
-}
-
-.ag-markdown-view {
+ .ag-markdown-view {
     font-size: 14px;
     text-align: left;
     color: #63656e;
@@ -240,7 +31,7 @@
     h5,
     h6 {
         padding: 0;
-        margin: 25px 0 10px 0;
+        margin: 10px 0 10px 0;
         font-weight: bold;
         text-align: left;
         color: #313238;
@@ -382,7 +173,22 @@
             margin: -10px;
         }
     }
+
+    .hljs {
+        padding: 10px 15px;
+        border-radius: 3px;
+        overflow-x: auto;
+        &::-webkit-scrollbar {
+            width: 4px;
+        }
+        &::-webkit-scrollbar-thumb {
+            border-radius: 2px;
+            background-color: #ccc;
+        }
+        }
 }
+
+
 
 .ag-copy-btn {
     position: absolute;
@@ -499,4 +305,16 @@
 
 .pre-wrapper {
     position: relative;
+}
+
+/* markdown 样式 */
+.v-note-wrapper .v-note-panel .v-note-edit.divarea-wrapper .content-input-wrapper,
+.auto-textarea-wrapper .auto-textarea-input {
+	background: #313238 !important;
+	color: #FFF !important;
+}
+
+.v-note-wrapper .v-note-panel .v-note-edit.divarea-wrapper .content-input-wrapper {
+	min-height: 300px;
+	border-radius: 0 0 4px 4px;
 }
