@@ -8,7 +8,7 @@ build.yml
 
 .envrc
 src/dashboard/apigateway/apigateway/editions/te
-src/dashboard-front-new/.bk.local.env
+src/dashboard-front/.bk.local.env
 
 
 pre-*-bkcodeai
