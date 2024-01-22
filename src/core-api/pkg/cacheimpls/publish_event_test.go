@@ -37,7 +37,6 @@ func TestPublishEvent_Key(t *testing.T) {
 }
 
 func TestPublishEventExistsAndSet(t *testing.T) {
-
 	key := PublishEventKey{
 		GatewayID: 1,
 		StageID:   2,
@@ -53,5 +52,4 @@ func TestPublishEventExistsAndSet(t *testing.T) {
 
 	exists = PublishEventExists(context.Background(), key)
 	assert.Equal(t, true, exists)
-
 }

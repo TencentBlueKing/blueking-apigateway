@@ -59,7 +59,7 @@ class BackendQuerySetMixin:
     ),
 )
 class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
-    queryset = Backend.objects.order_by("id")
+    queryset = Backend.objects.order_by("-updated_time")
     serializer_class = BackendListOutputSLZ
     filterset_class = BackendFilter
 

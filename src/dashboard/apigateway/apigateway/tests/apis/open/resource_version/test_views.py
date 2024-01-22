@@ -120,7 +120,7 @@ class TestResourceVersionReleaseApi:
 
         mocker.patch("apigateway.apis.open.resource_version.views.Lock", return_value=MagicMock())
 
-        mocker.patch("apigateway.apis.open.resource_version.views.Releaser.release")
+        mocker.patch("apigateway.apis.open.resource_version.views.release")
 
         response = request_view(
             "POST",

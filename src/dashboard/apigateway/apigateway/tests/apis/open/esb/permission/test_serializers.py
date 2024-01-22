@@ -36,6 +36,7 @@ class TestAppPermissionComponentSLZ:
                     "id": 1,
                     "name": "test",
                     "system_name": "test",
+                    "system_id": 1,
                     "description": "desc",
                     "description_en": "desc_en",
                     "expires_in": 10,
@@ -48,6 +49,7 @@ class TestAppPermissionComponentSLZ:
                     "id": 1,
                     "name": "test",
                     "system_name": "test",
+                    "system_id": 1,
                     "description": "desc",
                     "description_en": "desc_en",
                     "expires_in": 10,
@@ -117,6 +119,7 @@ class TestAppPermissionComponentSLZ:
     @pytest.mark.parametrize(
         "permission_status, expected",
         [
+            ("unlimited", False),
             ("pending", False),
             ("owned", False),
             ("rejected", True),
@@ -132,6 +135,8 @@ class TestAppPermissionComponentSLZ:
     @pytest.mark.parametrize(
         "permission_status, expires_in, expected",
         [
+            ("unlimited", -math.inf, False),
+            ("unlimited", math.inf, False),
             ("pending", -math.inf, False),
             ("owned", 10, True),
             ("owned", time.to_seconds(RENEWABLE_EXPIRE_DAYS) + 100, False),

@@ -21,10 +21,10 @@ from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from tencent_apigateway_common.django.translation import get_current_language_code
 
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.sdk.models import DummySDKDocContext
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Release, ResourceVersion
 from apigateway.utils.responses import OKJsonResponse

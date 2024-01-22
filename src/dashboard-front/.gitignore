@@ -59,7 +59,9 @@ typings/
 .env
 package-lock.json
 webpack-stats.json
+
 webpack_cache/
+
 test/unit/coverage
 
 *.bak*
@@ -71,12 +73,6 @@ test/unit/coverage
 *.ntvs*
 *.njsproj
 *.sln
+dist/
 
-dist
-static/js/bklogout.js
-static/json/config.js
-static/runtime/runtime.js
-static/lib-manifest.json
-static/lib.bundle.js
-
-.envrc
+.prettierrc

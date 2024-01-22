@@ -32,7 +32,9 @@ pytestmark = pytest.mark.django_db
 
 
 class TestReleaseCreateApi:
-    def test_release_with_hosts(self, request_view, fake_admin_user, mocker, fake_gateway, fake_resource_version):
+    def test_release_with_hosts(
+        self, request_view, fake_admin_user, mocker, fake_gateway, fake_resource_version, fake_shared_gateway
+    ):
         """Test release API with different hosts config of stage objects."""
         stage_1 = G(Stage, gateway=fake_gateway, name="prod", status=0)
         stage_2 = G(Stage, gateway=fake_gateway, name="test", status=0)
@@ -61,7 +63,7 @@ class TestReleaseCreateApi:
                 created_time=dummy_time.time,
             )
             # TODO: mock the releaser
-            mocker.patch("apigateway.biz.releaser.Releaser.release", return_value=release_history)
+            mocker.patch("apigateway.apis.web.release.views.release", return_value=release_history)
 
             data = {
                 "gateway_id": fake_gateway.id,

@@ -33,6 +33,7 @@ from apigateway.biz.gateway_label import GatewayLabelHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerImporter
 from apigateway.biz.validators import MaxCountPerGatewayValidator
+from apigateway.common.django.validators import NameValidator
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
@@ -49,6 +50,7 @@ class ResourceQueryInputSLZ(serializers.Serializer):
     method = serializers.CharField(allow_blank=True, required=False, help_text="资源请求方法，完整匹配")
     label_ids = serializers.CharField(allow_blank=True, required=False, help_text="标签 ID，多个以逗号 , 分割")
     backend_id = serializers.IntegerField(allow_null=True, required=False, help_text="后端服务 ID")
+    backend_name = serializers.CharField(allow_blank=True, required=False, help_text="后端服务名称，完整匹配")
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="资源筛选条件，支持模糊匹配资源名称，前端请求路径"
     )
@@ -168,7 +170,13 @@ class HttpBackendSLZ(serializers.Serializer):
 
 class ResourceInputSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True, help_text="资源名称")
+    name = serializers.RegexField(
+        RESOURCE_NAME_PATTERN,
+        max_length=256,
+        required=True,
+        help_text="资源名称",
+        validators=[NameValidator()],
+    )
     path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="前端请求路径")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
     backend = HttpBackendSLZ(help_text="后端服务")
@@ -425,7 +433,13 @@ class PluginConfigImportSLZ(serializers.Serializer):
 
 
 class ResourceDataImportSLZ(serializers.ModelSerializer):
-    name = serializers.RegexField(RESOURCE_NAME_PATTERN, max_length=256, required=True, help_text="资源名称")
+    name = serializers.RegexField(
+        RESOURCE_NAME_PATTERN,
+        max_length=256,
+        required=True,
+        help_text="资源名称",
+        validators=[NameValidator()],
+    )
     path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="请求路径")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
     backend_name = serializers.CharField(help_text="后端服务名称")

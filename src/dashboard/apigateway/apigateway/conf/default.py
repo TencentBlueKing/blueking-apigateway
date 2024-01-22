@@ -32,8 +32,10 @@ from typing import Any, Dict, List
 from urllib.parse import quote
 
 from celery.schedules import crontab
-from tencent_apigateway_common.env import Env
+from django.core.exceptions import ImproperlyConfigured
+from django.utils.encoding import force_bytes
 
+from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
 from apigateway.conf.log_utils import get_logging_config, makedirs_when_not_exists
@@ -41,7 +43,6 @@ from apigateway.conf.utils import get_default_keepalive_options
 
 env = Env()
 
-ENCRYPT_KEY = env.str("ENCRYPT_KEY")
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -59,8 +60,26 @@ DEFAULT_TEST_APP = {
     "bk_app_secret": env.str("DEFAULT_TEST_APP_SECRET", BK_APP_SECRET),
 }
 
+# legacy apigateway custom crypto
+CRYPTO_TYPE_APIGW_CUSTOM = "APIGW_CUSTOM"
+
+ENCRYPT_KEY = env.str("ENCRYPT_KEY")
 JWT_CRYPTO_KEY = ENCRYPT_KEY
 LOG_LINK_SECRET = ENCRYPT_KEY
+
+# bk crypto, support 'SHANGMI' , 'CLASSIC'
+BK_CRYPTO_TYPE = env.str("BK_CRYPTO_TYPE", CRYPTO_TYPE_APIGW_CUSTOM)
+if BK_CRYPTO_TYPE not in ("SHANGMI", "CLASSIC", CRYPTO_TYPE_APIGW_CUSTOM):
+    raise ImproperlyConfigured(
+        f"Set BK_CRYPTO_TYPE environment variable, should be one of 'SHANGMI' , 'CLASSIC', current is {BK_CRYPTO_TYPE}"
+    )
+ENCRYPT_CIPHER_TYPE = "SM4CTR" if BK_CRYPTO_TYPE == "SHANGMI" else "FernetCipher"
+BKKRILL_ENCRYPT_SECRET_KEY = force_bytes(env.str("BKKRILL_ENCRYPT_SECRET_KEY", ""))
+if BK_CRYPTO_TYPE != CRYPTO_TYPE_APIGW_CUSTOM and BKKRILL_ENCRYPT_SECRET_KEY == "":
+    raise ImproperlyConfigured(
+        f"the BK_CRYPTO_TYPE is {BK_CRYPTO_TYPE}, so the BKKRILL_ENCRYPT_SECRET_KEY can not be empty"
+    )
+
 
 # use the same nonce, should not be changed at all!!!!!!
 CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
@@ -368,6 +387,11 @@ ETCD_CONFIG = {
 
 # celery 配置
 # 修改 Redis 连接时的 keepalive 配置，让连接更健壮
+# 开启CeleryWorker发送任务事件
+CELERY_WORKER_SEND_TASK_EVENTS = True
+# 开启任务发送 sent 事件
+CELERY_TASK_SEND_SENT_EVENT = True
+
 REDIS_CONNECTION_OPTIONS = {
     "socket_timeout": 3,
     "socket_connect_timeout": 3,
@@ -561,13 +585,14 @@ DEFAULT_STAGE_RATE_LIMIT_CONFIG = {
 
 # 微网关 chart 信息
 BCS_MICRO_GATEWAY_CHART_NAME = "bk-micro-gateway"
-BCS_MICRO_GATEWAY_CHART_VERSION = "v1.0.0-alpha.2"
-BCS_MICRO_GATEWAY_IMAGE_REGISTRY = ""
+BCS_MICRO_GATEWAY_CHART_VERSION = env.str("BCS_MICRO_GATEWAY_CHART_VERSION", "v1.12.7")
+BCS_MICRO_GATEWAY_IMAGE_REGISTRY = env.str("BCS_MICRO_GATEWAY_IMAGE_REGISTRY", "")
 BCS_MICRO_GATEWAY_SENTRY_DSN = env.str("BCS_MICRO_GATEWAY_SENTRY_DSN", "")
 
 # 公共 chart 仓库
 BCS_PUBLIC_CHART_PROJECT = "bcs-public-project"
 BCS_PUBLIC_CHART_REPOSITORY = "public-repo"
+BCS_REPOSITORY_URL = env.str("BCS_REPOSITORY_URL", "")
 
 # BCS 为网关分配的认证 Token
 BCS_API_GATEWAY_TOKEN = env.str("BCS_API_GATEWAY_TOKEN", "")
@@ -741,6 +766,9 @@ FAKE_SEND_NOTICE = env.bool("FAKE_SEND_NOTICE", default=False)
 # so we do a special process for them
 LEGACY_INVALID_PARAMS_GATEWAY_NAMES = env.list("LEGACY_INVALID_PARAMS_GATEWAY_NAMES", default=[])
 
+# 使用网关 bk-esb 管理组件 API 的权限
+USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS = env.bool("USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS", True)
+
 # ==============================================================================
 # OTEL
 # ==============================================================================
@@ -784,6 +812,10 @@ USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
 USE_BKAPI_BKMONITORV3 = env.bool("USE_BKAPI_BKMONITORV3", False)
 # 是否使用 bklog 网关 API
 USE_BKAPI_BK_LOG = env.bool("USE_BKAPI_BK_LOG", False)
+
+# paas 开发者中心权限续期地址
+BK_PAAS3_URL = env.str("BK_PAAS3_URL", "")
+PAAS_RENEW_API_PERMISSION_URL = f"{BK_PAAS3_URL}/developer-center/apps/{{bk_app_code}}/cloudapi"
 
 # ==============================================================================
 # Feature Flag
@@ -899,4 +931,17 @@ ESB_BOARD_CONFIGS = {
         },
         "sdk_description": gettext("访问蓝鲸智云组件 API"),
     },
+}
+
+# ==============================================================================
+# 版本差异配置
+# ==============================================================================
+# 用户验证类型
+USER_AUTH_TYPE = {
+    "login_ticket": [
+        {
+            "key": "bk_token",
+            "cookie_name": "bk_token",
+        }
+    ],
 }

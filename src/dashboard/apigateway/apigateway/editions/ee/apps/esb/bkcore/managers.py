@@ -141,6 +141,7 @@ class ESBChannelManager(models.Manager):
                 "description",
                 "description_en",
                 "permission_level",
+                "system_id",
                 "system__name",
             )
         )
@@ -152,6 +153,7 @@ class ESBChannelManager(models.Manager):
                 "description": item["description"],
                 "description_en": item["description_en"],
                 "permission_level": item["permission_level"],
+                "system_id": item["system_id"],
                 "system_name": item["system__name"],
             }
             for item in data
@@ -345,9 +347,11 @@ class AppComponentPermissionManager(models.Manager):
         component_ids: List[int],
         expire_days: int,
     ):
-        self.filter(bk_app_code=bk_app_code, component_id__in=component_ids).update(
-            expires=to_datetime_from_now(days=expire_days),
-        )
+        queryset = self.filter(bk_app_code=bk_app_code, component_id__in=component_ids)
+        # 仅续期权限期限小于待续期时间的权限
+        expires = to_datetime_from_now(days=expire_days)
+        queryset = queryset.filter(expires__lt=expires)
+        queryset.update(expires=expires)
 
     def renew_permission_by_ids(self, ids: List[int], expire_days: int):
         self.filter(id__in=ids).update(
@@ -438,7 +442,7 @@ class AppPermissionApplyRecordManager(models.Manager):
             expire_days=expire_days,
         )
 
-    def get_component_permisson_status(
+    def get_component_permission_status(
         self,
         bk_app_code: str,
         system_id: Optional[int],

@@ -34,7 +34,7 @@ class TestDeployMicroGateway:
         micro_gateway.is_managed = False
         micro_gateway.save()
 
-        deploy_micro_gateway(micro_gateway.id, "access_token", "")
+        deploy_micro_gateway(micro_gateway.id, "", None)
 
         micro_gateway.refresh_from_db()
         assert micro_gateway.status == MicroGatewayStatusEnum.UPDATED.value
@@ -49,7 +49,7 @@ class TestDeployMicroGateway:
         release_helper.ensure_release.return_value = mocker.MagicMock(revision=revision)
         username = faker.pystr()
 
-        deploy_micro_gateway(micro_gateway.id, "access_token", username)
+        deploy_micro_gateway(micro_gateway.id, username, None)
 
         micro_gateway.refresh_from_db()
         assert micro_gateway.status == MicroGatewayStatusEnum.INSTALLED.value
@@ -71,7 +71,7 @@ class TestDeployMicroGateway:
     def test_release_fail(self, micro_gateway, release_helper):
         release_helper.ensure_release.side_effect = ValueError("testing")
 
-        deploy_micro_gateway(micro_gateway.id, "access_token", "")
+        deploy_micro_gateway(micro_gateway.id, "", None)
 
         micro_gateway.refresh_from_db()
         assert micro_gateway.status == MicroGatewayStatusEnum.ABNORMAL.value

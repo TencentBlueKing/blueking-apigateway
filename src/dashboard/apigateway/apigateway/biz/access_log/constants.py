@@ -31,6 +31,16 @@ ES_LOG_FIELDS = [
         "is_filter": False,
     },
     {
+        "label": _("蓝鲸应用"),
+        "field": "app_code",
+        "is_filter": True,
+    },
+    {
+        "label": _("客户端IP"),
+        "field": "client_ip",
+        "is_filter": True,
+    },
+    {
         "label": _("环境"),
         "field": "stage",
         "is_filter": True,
@@ -46,16 +56,6 @@ ES_LOG_FIELDS = [
         "is_filter": True,
     },
     {
-        "label": _("蓝鲸应用"),
-        "field": "app_code",
-        "is_filter": True,
-    },
-    {
-        "label": _("客户端IP"),
-        "field": "client_ip",
-        "is_filter": True,
-    },
-    {
         "label": _("请求方法"),
         "field": "method",
         "is_filter": True,
@@ -68,6 +68,16 @@ ES_LOG_FIELDS = [
     {
         "label": _("请求路径"),
         "field": "http_path",
+        "is_filter": True,
+    },
+    {
+        "label": "QueryString",
+        "field": "params",
+        "is_filter": True,
+    },
+    {
+        "label": "Body",
+        "field": "body",
         "is_filter": True,
     },
     {
@@ -91,16 +101,6 @@ ES_LOG_FIELDS = [
         "is_filter": True,
     },
     {
-        "label": "QueryString",
-        "field": "params",
-        "is_filter": True,
-    },
-    {
-        "label": "Body",
-        "field": "body",
-        "is_filter": True,
-    },
-    {
         "label": _("响应正文"),
         "field": "response_body",
         "is_filter": True,
@@ -110,11 +110,11 @@ ES_LOG_FIELDS = [
         "field": "status",
         "is_filter": True,
     },
-    {
-        "label": _("请求头"),
-        "field": "headers",
-        "is_filter": False,
-    },
+    # {
+    #     "label": _("请求头"),
+    #     "field": "headers",
+    #     "is_filter": False,
+    # },
     {
         "label": _("请求总耗时"),
         "field": "request_duration",

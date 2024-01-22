@@ -255,7 +255,7 @@ class TestComponentSyncViewSet:
         result = get_response_json(response)
         assert result["data"] == {"is_releasing": True}
         mock_sync_and_release.assert_called_once_with(
-            args=(api_id, "admin", request.user.token.access_token, False),
+            args=(api_id, "admin", False),
             expires=ESB_RELEASE_TASK_EXPIRES,
             ignore_result=True,
         )

@@ -23,6 +23,7 @@ from urllib.parse import urljoin
 
 from django.db import transaction
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -68,6 +69,10 @@ from .serializers import (
 class ResourceQuerySetMixin:
     def get_queryset(self):
         return Resource.objects.filter(gateway=self.request.gateway)
+
+
+class BackendHostIsEmpty(Exception):
+    """后端服务地址为空，如新创建的 prod 环境默认后端的地址"""
 
 
 @method_decorator(
@@ -528,10 +533,25 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
             return {}
 
         backend_configs = BackendConfig.objects.filter(gateway=self.request.gateway, backend_id=backend_id)
-        return {
-            backend_config.stage_id: [f"{host['scheme']}://{host['host']}" for host in backend_config.config["hosts"]]
-            for backend_config in backend_configs
-        }
+        backend_hosts = {}
+        for backend_config in backend_configs:
+            hosts = []
+            for host in backend_config.config["hosts"]:
+                if not host["host"]:
+                    raise BackendHostIsEmpty(
+                        _(
+                            "网关环境 {stage_name} 下，后端服务 {backend_name} 的服务地址为空，请在环境管理 -> 环境概览中，更新该环境后端服务的服务地址。"
+                        ).format(
+                            stage_name=backend_config.stage.name,
+                            backend_name=backend_config.backend.name,
+                        )
+                    )
+
+                hosts.append(f"{host['scheme']}://{host['host']}")
+
+            backend_hosts[backend_config.stage_id] = hosts
+
+        return backend_hosts
 
     def _get_backend_url(self, host: str, path: str, vars: Dict[str, Any]) -> str:
         url = urljoin(host, path)

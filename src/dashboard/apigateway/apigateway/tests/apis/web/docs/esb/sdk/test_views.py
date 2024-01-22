@@ -18,7 +18,7 @@
 class TestSDKListApi:
     def test_list(self, mocker, faker, request_view):
         mocker.patch(
-            "apigateway.apis.web.docs.esb.sdk.views.SDKFactory.get_sdk",
+            "apigateway.apis.web.docs.esb.sdk.views.ESBSDKFetcher.get_sdk",
             return_value=mocker.MagicMock(
                 board_label=faker.pystr(),
                 sdk_name=faker.pystr(),
@@ -48,7 +48,7 @@ class TestSDKListApi:
 class TestSDKRetrieveApi:
     def test_retrieve(self, mock_board, mocker, faker, request_view):
         mocker.patch(
-            "apigateway.apis.web.docs.esb.sdk.views.SDKFactory.get_sdk",
+            "apigateway.apis.web.docs.esb.sdk.views.ESBSDKFetcher.get_sdk",
             return_value=None,
         )
         resp = request_view(
@@ -64,7 +64,7 @@ class TestSDKRetrieveApi:
         assert resp.status_code == 404
 
         mocker.patch(
-            "apigateway.apis.web.docs.esb.sdk.views.SDKFactory.get_sdk",
+            "apigateway.apis.web.docs.esb.sdk.views.ESBSDKFetcher.get_sdk",
             return_value=mocker.MagicMock(
                 board_label=faker.pystr(),
                 sdk_name=faker.pystr(),

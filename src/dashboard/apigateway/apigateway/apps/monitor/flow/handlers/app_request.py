@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse, urlunparse
 
 from pydantic import BaseModel
 
@@ -94,8 +95,11 @@ class AppRequestAlerter(Alerter):
         )
 
     def _get_request_info(self, record_source: Dict[str, Any]) -> str:
+        parsed_path = urlparse(record_source["http_path"])
+        path_without_querystring = urlunparse((parsed_path.scheme, parsed_path.netloc, parsed_path.path, "", "", ""))
+
         return "{}, {}, {}".format(
             record_source["method"],
             record_source["http_host"],
-            record_source["http_path"],
+            path_without_querystring,
         )

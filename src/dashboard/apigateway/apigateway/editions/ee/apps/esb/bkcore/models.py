@@ -24,12 +24,12 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
-from tencent_apigateway_common.i18n.field import I18nProperty
 
 from apigateway.apps.esb.bkcore import managers
 from apigateway.apps.esb.constants import ComponentDocTypeEnum, DataTypeEnum, LanguageEnum
 from apigateway.apps.permission.constants import ApplyStatusEnum, PermissionApplyExpireDaysEnum, PermissionLevelEnum
 from apigateway.apps.permission.models import generate_expire_time
+from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.utils.time import NeverExpiresTime
@@ -207,6 +207,11 @@ class AppPermissionApplyRecord(ModelWithBoard, TimestampedModelMixin):
     handled_component_ids = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
     status = models.CharField(max_length=16, choices=ApplyStatusEnum.get_choices(), db_index=True)
     comment = models.CharField(max_length=512, blank=True, default="")
+    gateway_apply_record_id = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="网关 bk-esb 权限申请单ID，用于关联申请单，以获取网关申请单状态",
+    )
 
     objects = managers.AppPermissionApplyRecordManager()
 

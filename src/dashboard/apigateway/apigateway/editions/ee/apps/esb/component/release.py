@@ -24,7 +24,7 @@ from django.db import transaction
 from django.utils.translation import gettext as _
 
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
-from apigateway.biz.releaser import Releaser
+from apigateway.biz.releaser import release
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Gateway, ResourceVersion, Stage
@@ -36,7 +36,6 @@ class ComponentReleaser:
     username: str
     release_history: Optional[ComponentReleaseHistory] = None
     resource_version: Optional[ResourceVersion] = None
-    access_token: str = ""
 
     def create_release_history(self):
         self.release_history = ComponentReleaseHistory.objects.create(
@@ -68,16 +67,14 @@ class ComponentReleaser:
         """发布组件对应的网关，并记录组件发布历史记录"""
         assert self.resource_version
 
-        releaser = Releaser(access_token=self.access_token)
-        releaser.release(
-            self.gateway,
-            {
-                "stage_ids": Stage.objects.get_ids(self.gateway.id),
-                "resource_version_id": self.resource_version.id,
-                "comment": _("同步组件到 API 网关"),
-            },
-            self.username,
-        )
+        for stage_id in Stage.objects.get_ids(self.gateway.id):
+            release(
+                gateway=self.gateway,
+                stage_id=stage_id,
+                resource_version_id=self.resource_version.id,
+                comment=_("同步组件到 API 网关"),
+                username=self.username,
+            )
 
     def record_updated_resources(self, updated_resources: List[Dict[str, Any]]):
         # 在 mark success or fail 时统一 save

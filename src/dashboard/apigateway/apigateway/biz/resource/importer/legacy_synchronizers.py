@@ -153,7 +153,7 @@ class LegacyBackendCreator:
 
     def _sort_hosts(self, hosts: List[Dict[str, Dict]]) -> List[Dict[str, Dict]]:
         # 排序 host，使用 "==" 对比配置时顺序一致
-        return sorted(hosts, key=lambda x: "{}://{}#{}".format(x["scheme"], x["host"], x["weight"]))
+        return sorted(hosts, key=lambda x: "{}://{}#{}".format(x["scheme"], x["host"], x.get("weight", 0)))
 
     def _get_max_legacy_backend_number(self) -> int:
         """获取网关创建的后端中，后端名称中已使用的最大序号"""

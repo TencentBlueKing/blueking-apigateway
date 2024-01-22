@@ -39,7 +39,7 @@ urlpatterns = [
         name="apigateway.apps.esb.components.gateway",
     ),
     path(
-        "sync/need_new_release/",
+        "sync/need-new-release/",
         ComponentSyncViewSet.as_view({"get": "need_new_release"}),
         name="apigateway.apps.esb.components.need_new_release",
     ),

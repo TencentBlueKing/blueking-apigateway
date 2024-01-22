@@ -1,60 +1,236 @@
-/*
- * TencentBlueKing is pleased to support the open source community by making
- * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
- * Licensed under the MIT License (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- *     http://opensource.org/licenses/MIT
- *
- * Unless required by applicable law or agreed to in writing, software distributed under
- * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * We undertake not to change the open source license (MIT license) applicable
- * to the current version of the project delivered to anyone in the future.
- */
-/* // 浏览器重置样式 */
-
-* {
-    box-sizing: border-box;
-}
-
+/* stylelint-disable */
+/*CSS Reset*/
 html,
-body {
-    margin: 0;
-    padding: 0;
-}
-
-ul,
-li {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
+body,
+div,
 dl,
 dt,
 dd,
-p {
-    margin: 0;
-    padding: 0;
+ul,
+ol,
+li,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+pre,
+code,
+form,
+fieldset,
+legend,
+input,
+textarea,
+p,
+blockquote,
+tr,
+ 
+th,
+td,
+hgroup,
+nav,
+section,
+article,
+aside,
+footer,
+figure,
+figcaption,
+menu,
+button,
+applet,
+object,
+ 
+iframe,
+a,
+abbr,
+ 
+acronym,
+ 
+address,
+big,
+ 
+cite,
+ 
+code,
+del,
+ 
+dfn,
+ 
+em,
+ 
+img,
+ 
+ins,
+ 
+kbd,
+ 
+q,
+s,
+ 
+samp,
+small,
+ 
+strike,
+ 
+strong,
+ 
+sub,
+ 
+sup,
+ 
+tt,
+ 
+var,
+b,
+u,
+ 
+i,
+ 
+center,
+label,
+table,
+ 
+caption,
+ 
+tbody,
+ 
+tfoot,
+ 
+thead,
+ 
+canvas,
+ 
+details,
+embed,
+main,
+ 
+output,
+ 
+ruby,
+ 
+summary,
+time,
+ 
+mark,
+ 
+audio,
+ 
+video {
+  margin: 0;
+  padding: 0;
 }
 
-a {
-    text-decoration: none;
+/* HTML5 display-role reset for older browsers */
+article,
+ 
+aside,
+ 
+details,
+ 
+figcaption,
+ 
+figure,
+ 
+footer,
+ 
+hgroup,
+ 
+menu,
+ 
+nav,
+ 
+section {
+  display: block;
 }
 
-button {
-    outline: none;
+body {
+  line-height: 1.5;
+  font-size: 14px;
+  color: #000;
+  /* user-select: none;
+  user-select: none; */
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  outline: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: 100%;
+  font-weight: normal;
 }
 
 table {
-    border-collapse: collapse;
-    border-spacing: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
 }
-td,
-th {
-    padding: 0;
+
+fieldset,
+img {
+  border: 0;
+}
+
+li {
+  list-style: none;
+}
+
+ins {
+  text-decoration: none;
+}
+
+del {
+  text-decoration: line-through;
+}
+
+input,
+button,
+textarea,
+select,
+optgroup,
+option {
+  font-family: inherit;
+  font-size: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  outline: 0;
+}
+
+/* different browsers have different calculation methods for the box model width of input, select, and textarea */
+input,
+select,
+textarea {
+  box-sizing: content-box;
+  box-sizing: content-box;
+  box-sizing: content-box;
+}
+
+button {
+  appearance: none;
+  border: 0;
+  background: none;
+}
+
+a {
+  -webkit-touch-callout: none;
+  text-decoration: none;
+}
+
+:focus {
+  outline: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+em,
+i {
+  font-style: normal;
+}
+
+.bk-table .bk-table-footer {
+  background: #fff !important;
+  padding-left: 20px;
 }

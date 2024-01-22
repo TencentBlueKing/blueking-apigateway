@@ -1,0 +1,16 @@
+bkpkg: v1
+name: bk_apigateway
+description: "蓝鲸 API 网关（API Gateway），是一种高性能、高可用的 API 托管服务，可以帮助开发者创建、发布、维护、监控和保护 API， 以快速、低成本、低风险地对外开放蓝鲸应用或其他系统的数据或服务"
+type: file+tar
+contains:
+relations:
+- rationale: "应用身份认证"
+  requires:
+  - bkauth^0.0.13
+- rationale: "access_token 认证"
+  suggests:
+  - bkssm^1.0.12
+- rationale: "用户登录态认证(bk-login)"
+  suggests:
+  - bkpaas^2.14.0 OR bk-user^1.4.14
+bkimports:

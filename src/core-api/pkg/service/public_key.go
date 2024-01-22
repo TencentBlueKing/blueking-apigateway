@@ -30,6 +30,7 @@ import (
 // GatewayPublicKeyService is the interface of gateway public key service
 type GatewayPublicKeyService interface {
 	Get(ctx context.Context, instanceID, gatewayName string) (string, error)
+	GetByGatewayName(ctx context.Context, gatewayName string) (string, error)
 }
 
 type gatewayPublicKeyService struct {
@@ -57,5 +58,20 @@ func (s *gatewayPublicKeyService) Get(ctx context.Context, instanceID, gatewayNa
 		return "", err
 	}
 
+	return publicKey, nil
+}
+
+// GetByGatewayName will get the gateway public key from cache by gatewayName
+func (s *gatewayPublicKeyService) GetByGatewayName(ctx context.Context, gatewayName string) (string, error) {
+	// get gateway
+	gateway, err := cacheimpls.GetGatewayByName(ctx, gatewayName)
+	if err != nil {
+		return "", err
+	}
+	// query jwt
+	publicKey, err := cacheimpls.GetJWTPublicKey(ctx, gateway.ID)
+	if err != nil {
+		return "", err
+	}
 	return publicKey, nil
 }

@@ -21,11 +21,12 @@ from typing import Optional
 from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
 from apigateway.biz.validators import BKAppCodeListValidator
+from apigateway.common.django.validators import NameValidator
+from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
     GatewayStatusEnum,
     GatewayTypeEnum,
@@ -74,7 +75,12 @@ class UserConfigSLZ(serializers.Serializer):
 
 
 class GatewaySyncInputSLZ(serializers.ModelSerializer):
-    name = serializers.RegexField(GATEWAY_NAME_PATTERN, label="网关名称", max_length=64)
+    name = serializers.RegexField(
+        GATEWAY_NAME_PATTERN,
+        label="网关名称",
+        max_length=64,
+        validators=[NameValidator()],
+    )
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
     status = serializers.ChoiceField(choices=GatewayStatusEnum.get_choices(), default=GatewayStatusEnum.ACTIVE.value)
     # 只允许指定为普通网关或官方网关，不能指定为超级官方网关，超级官方网关会传递敏感参数到后端接口

@@ -19,7 +19,6 @@
 import math
 
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.esb.helpers import BoardConfigManager
 from apigateway.apps.esb.permission.serializers import AppPermissionApplyRecordSLZ
@@ -33,6 +32,7 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
+from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.utils import time
 
 
@@ -44,6 +44,7 @@ class AppPermissionComponentSLZ(serializers.Serializer):
     id = serializers.IntegerField(label="ID", read_only=True)
     name = serializers.CharField()
     system_name = serializers.CharField()
+    system_id = serializers.IntegerField(required=False, allow_null=True)
     description = SerializerTranslatedField(translated_fields={"en": "description_en"})
     description_en = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     expires_in = serializers.SerializerMethodField()
@@ -78,12 +79,12 @@ class AppPermissionComponentSLZ(serializers.Serializer):
         return permission_status not in [
             PermissionStatusEnum.PENDING.value,
             PermissionStatusEnum.OWNED.value,
+            PermissionStatusEnum.UNLIMITED.value,
         ]
 
     def _need_to_renew_permission(self, permission_status, expires_in):
-        if permission_status in [PermissionStatusEnum.OWNED.value] and 0 < expires_in < time.to_seconds(
-            days=RENEWABLE_EXPIRE_DAYS
-        ):
+        renewable_end_time = time.to_seconds(days=RENEWABLE_EXPIRE_DAYS)
+        if permission_status in [PermissionStatusEnum.OWNED.value] and 0 < expires_in < renewable_end_time:
             return True
 
         return False

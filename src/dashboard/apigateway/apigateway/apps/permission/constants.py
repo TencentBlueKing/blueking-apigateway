@@ -31,12 +31,13 @@ class ApplyStatusEnum(StructuredEnum):
 # Restricted Enum subclassing
 # https://docs.python.org/3/library/enum.html#restricted-subclassing-of-enumerations
 class PermissionStatusEnum(StructuredEnum):
-    APPROVED = EnumField("approved")
-    REJECTED = EnumField("rejected")
-    PENDING = EnumField("pending")
-    NEED_APPLY = EnumField("need_apply")
-    OWNED = EnumField("owned")
-    EXPIRED = EnumField("expired")
+    UNLIMITED = EnumField("unlimited", label="无限制")
+    APPROVED = EnumField("approved", label="已审批")
+    REJECTED = EnumField("rejected", label="已拒绝")
+    PENDING = EnumField("pending", label="申请中")
+    NEED_APPLY = EnumField("need_apply", label="待申请")
+    OWNED = EnumField("owned", label="已申请，且未过期")
+    EXPIRED = EnumField("expired", label="已过期")
 
 
 class PermissionActionEnum(StructuredEnum):
@@ -59,15 +60,15 @@ class PermissionApplyExpireDaysEnum(StructuredEnum):
 
 class GrantTypeEnum(StructuredEnum):
     # 初始化方式主动授权
-    INITIALIZE = EnumField("initialize")
+    INITIALIZE = EnumField("initialize", label=_("主动授权"))
     # 申请审批方式授权
-    APPLY = EnumField("apply")
+    APPLY = EnumField("apply", label=_("申请审批"))
     # 续期
-    RENEW = EnumField("renew")
+    RENEW = EnumField("renew", label=_("续期"))
     # 自动续期
-    AUTO_RENEW = EnumField("auto_renew")
+    AUTO_RENEW = EnumField("auto_renew", label=_("自动续期"))
     # 资源权限同步自按网关权限
-    SYNC = EnumField("sync")
+    SYNC = EnumField("sync", label=_("按网关授权同步"))
 
 
 class GrantDimensionEnum(StructuredEnum):
@@ -82,4 +83,4 @@ class GrantDimensionEnum(StructuredEnum):
 # 默认的权限有效期天数
 DEFAULT_PERMISSION_EXPIRE_DAYS = 180
 # 可续期的过期天数，权限有效期小于此值，允许续期，否则，不允许
-RENEWABLE_EXPIRE_DAYS = 30
+RENEWABLE_EXPIRE_DAYS = 360

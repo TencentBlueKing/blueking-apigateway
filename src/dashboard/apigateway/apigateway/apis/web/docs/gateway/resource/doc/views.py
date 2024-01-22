@@ -19,11 +19,11 @@
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from tencent_apigateway_common.django.translation import get_current_language_code
 
 from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
 from apigateway.biz.released_resource_doc.generators import DocGenerator
 from apigateway.biz.resource_doc import ResourceDocHandler
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.utils.responses import OKJsonResponse
@@ -54,11 +54,8 @@ class DocRetrieveApi(generics.RetrieveAPIView):
             resource_name=resource_name,
             language=ResourceDocHandler.get_doc_language(get_current_language_code()),
         )
-        if not (resource_data and doc_data):
-            raise error_codes.NOT_FOUND
-
         # 不公开的资源，对用户来说，就是一个不存在的资源
-        if not resource_data.is_public:
+        if not (resource_data and resource_data.is_public and doc_data):
             raise error_codes.NOT_FOUND
 
         generator = DocGenerator(

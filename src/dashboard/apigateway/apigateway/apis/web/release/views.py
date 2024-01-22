@@ -28,10 +28,10 @@ from rest_framework import generics, status
 
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.biz.releaser import ReleaseError, Releaser
+from apigateway.biz.releaser import ReleaseError, release
 from apigateway.common.error_codes import error_codes
+from apigateway.common.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import Release, ReleaseHistory
-from apigateway.utils.access_token import get_user_access_token_from_request
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
@@ -114,19 +114,19 @@ class ReleaseCreateApi(generics.CreateAPIView):
         stage_id = slz.validated_data["stage_id"]
         gateway_id = request.gateway.id
 
-        releaser = Releaser(access_token=get_user_access_token_from_request(request))
         try:
             with Lock(
                 f"{gateway_id}_{stage_id}",
                 timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
                 try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
             ):
-                history = releaser.release(
-                    request.gateway,
-                    slz.validated_data["stage_id"],
-                    slz.validated_data["resource_version_id"],
-                    slz.validated_data.get("comment", ""),
-                    request.user.username,
+                history = release(
+                    gateway=request.gateway,
+                    stage_id=slz.validated_data["stage_id"],
+                    resource_version_id=slz.validated_data["resource_version_id"],
+                    comment=slz.validated_data.get("comment", ""),
+                    username=request.user.username,
+                    user_credentials=get_user_credentials_from_request(request),
                 )
         except LockTimeout as err:
             logger.exception("retrieve lock timeout")

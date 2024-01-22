@@ -58,7 +58,7 @@ urlpatterns = [
     path("backend/docs/", include("apigateway.apis.web.docs.urls")),
     # web api
     path("backend/i18n/setlang/", set_language, name="set_language"),
-    path("backend/feature/", include("apigateway.apis.web.feature.urls")),
+    path("backend/settings/", include("apigateway.apis.web.setting.urls")),
     path("backend/gateways/", include("apigateway.apis.web.gateway.urls")),
     path("backend/gateways/<int:gateway_id>/logs/", include("apigateway.apis.web.access_log.urls")),
     path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
@@ -72,7 +72,7 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/docs/", include("apigateway.apis.web.resource_doc.urls")),
     path("backend/gateways/<int:gateway_id>/releases/", include("apigateway.apis.web.release.urls")),
     path("backend/gateways/<int:gateway_id>/plugins/", include("apigateway.apis.web.plugin.urls")),
-    path("backend/gateways/<int:gateway_id>/resource_versions/", include("apigateway.apis.web.resource_version.urls")),
+    path("backend/gateways/<int:gateway_id>/resource-versions/", include("apigateway.apis.web.resource_version.urls")),
     path("backend/gateways/<int:gateway_id>/sdks/", include("apigateway.apis.web.sdk.urls")),
     path("backend/gateways/<int:gateway_id>/audits/", include("apigateway.apis.web.audit.urls")),
     # TODO: refactor or remove

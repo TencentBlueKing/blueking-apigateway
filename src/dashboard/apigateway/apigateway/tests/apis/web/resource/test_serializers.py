@@ -187,6 +187,18 @@ class TestResourceInputSLZ:
         slz.is_valid(raise_exception=True)
         assert slz.validated_data["resource"] == fake_resource
 
+        invalid_name_data = data.copy()
+        invalid_name_data["name"] = "test-"
+        slz = ResourceInputSLZ(
+            fake_resource,
+            data=invalid_name_data,
+            context={
+                "gateway": fake_gateway,
+                "stages": Stage.objects.filter(gateway=fake_gateway),
+            },
+        )
+        assert not slz.is_valid(raise_exception=False)
+
     def test_validate_method(self, fake_gateway):
         r1 = G(Resource, gateway=fake_gateway, method="POST", path="/foo")
         r2 = G(Resource, gateway=fake_gateway, method="ANY", path="/bar")

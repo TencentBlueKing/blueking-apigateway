@@ -20,7 +20,6 @@ import math
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
@@ -34,6 +33,7 @@ from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.common.fields import TimestampField
+from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.utils import time
 
 
@@ -49,6 +49,7 @@ class AppResourcePermissionOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(label="ID", read_only=True)
     name = serializers.CharField()
     api_name = serializers.CharField()
+    gateway_id = serializers.IntegerField(required=False, allow_null=True)
     description = SerializerTranslatedField(translated_fields={"en": "description_en"})
     description_en = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     expires_in = serializers.SerializerMethodField()
@@ -82,12 +83,12 @@ class AppResourcePermissionOutputSLZ(serializers.Serializer):
         return permission_status not in [
             PermissionStatusEnum.PENDING.value,
             PermissionStatusEnum.OWNED.value,
+            PermissionStatusEnum.UNLIMITED.value,
         ]
 
     def _need_to_renew_permission(self, permission_status, expires_in):
-        if permission_status in [PermissionStatusEnum.OWNED.value] and 0 < expires_in < time.to_seconds(
-            days=RENEWABLE_EXPIRE_DAYS
-        ):
+        renewable_end_time = time.to_seconds(days=RENEWABLE_EXPIRE_DAYS)
+        if permission_status in [PermissionStatusEnum.OWNED.value] and 0 < expires_in < renewable_end_time:
             return True
 
         return False

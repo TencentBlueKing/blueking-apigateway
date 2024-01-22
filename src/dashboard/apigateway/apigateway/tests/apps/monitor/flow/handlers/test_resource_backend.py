@@ -129,3 +129,36 @@ class TestResourceBackendAlerter:
         }
         result = self.alerter.get_message(mock_event)
         assert result != ""
+
+    @pytest.mark.parametrize(
+        "record_source, expected",
+        [
+            (
+                {
+                    "backend_scheme": "http",
+                    "backend_host": "bkapi.example.com",
+                    "backend_path": "/",
+                },
+                "http://bkapi.example.com/",
+            ),
+            (
+                {
+                    "backend_scheme": "https",
+                    "backend_host": "bkapi.example.com",
+                    "backend_path": "/foo",
+                },
+                "https://bkapi.example.com/foo",
+            ),
+            (
+                {
+                    "backend_scheme": "https",
+                    "backend_host": "bkapi.example.com",
+                    "backend_path": "/foo?color=red&size=large",
+                },
+                "https://bkapi.example.com/foo",
+            ),
+        ],
+    )
+    def test_get_backend_url(self, record_source, expected):
+        result = self.alerter._get_backend_url(record_source)
+        assert result == expected

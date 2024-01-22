@@ -21,11 +21,11 @@ from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from tencent_apigateway_common.django.translation import get_current_language_code
 
 from apigateway.biz.esb.decorators import check_board_exist
 from apigateway.biz.esb.sdk.models import DocTemplates, DummySDKDocContext, SDKDocContext
-from apigateway.biz.esb.sdk.sdk_factory import SDKFactory
+from apigateway.biz.esb.sdk.sdk_factory import ESBSDKFetcher
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import OKJsonResponse
 
@@ -58,7 +58,7 @@ class SDKListApi(generics.ListAPIView):
         sdks = []
 
         for board in settings.ESB_BOARD_CONFIGS:
-            sdk = SDKFactory.get_sdk(board, slz.validated_data["language"])
+            sdk = ESBSDKFetcher.get_sdk(board, slz.validated_data["language"])
             if not sdk:
                 continue
             sdks.append(sdk)
@@ -83,7 +83,7 @@ class SDKRetrieveApi(generics.RetrieveAPIView):
         slz = SDKRetrieveInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        sdk = SDKFactory.get_sdk(board, slz.validated_data["language"])
+        sdk = ESBSDKFetcher.get_sdk(board, slz.validated_data["language"])
         if not sdk:
             raise error_codes.NOT_FOUND
 

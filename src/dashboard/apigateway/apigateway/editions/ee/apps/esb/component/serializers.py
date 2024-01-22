@@ -23,7 +23,6 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apps.esb.bkcore.models import ComponentSystem, ESBChannel, ESBChannelExtend
 from apigateway.apps.esb.component.config_fields import enrich_config_fields
@@ -36,6 +35,7 @@ from apigateway.apps.esb.constants import (
 from apigateway.apps.esb.helpers import get_component_doc_link
 from apigateway.apps.esb.mixins import OfficialWriteFields
 from apigateway.common.fields import TimestampField
+from apigateway.common.i18n.field import SerializerTranslatedField
 
 
 class ESBChannelSLZ(OfficialWriteFields, serializers.ModelSerializer):

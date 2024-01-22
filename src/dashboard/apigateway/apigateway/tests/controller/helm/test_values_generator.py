@@ -97,6 +97,17 @@ class TestMicroGatewayValuesGenerator:
                     },
                 },
             },
+            "defaultGatewayConfigEnabled": True,
+            "defaultGatewayConfig": {
+                "instanceID": micro_gateway.instance_id,
+                "controller": {
+                    "endpoints": [settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")],
+                    "basePath": settings.EDGE_CONTROLLER_API_BASE_PATH,
+                    "jwtAuth": {
+                        "secret": "jwt_secret_key",
+                    },
+                },
+            },
         }
 
     def test_generate_values_with_extra_config(self, micro_gateway):

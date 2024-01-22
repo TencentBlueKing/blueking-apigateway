@@ -1,34 +1,27 @@
-ARG IMAGE="node"
-ARG TAG="12-stretch-slim"
-
-FROM ${IMAGE}:${TAG} AS builder
-
-COPY . /app
+# npm part
+FROM node:14.17.6 AS builder
 
 WORKDIR /app
-
-ARG NPM_REGISTRY="https://registry.npmjs.org/"
-
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
+COPY . /app
 
 ARG EDITION=ee
 ENV APP_VERSION=${EDITION}
 
-RUN npm install --no-optional --registry="${NPM_REGISTRY:?}"
+RUN npm install --unsafe-perm --registry=https://mirrors.tencent.com/npm/
 RUN npm run build:${EDITION:?}
 
-FROM ${IMAGE}:${TAG}
+# nginx part
+FROM smebberson/alpine-nginx:3.0.0
 
-RUN useradd blueking --home-dir /app --create-home
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tencent.com/g' /etc/apk/repositories
 
-COPY --from=builder --chown=blueking /app/.babelrc /app/.babelrc
-COPY --from=builder --chown=blueking /app/build /app/build
-COPY --from=builder --chown=blueking /app/dist /app/dist
-COPY --from=builder --chown=blueking /app/node_modules /app/node_modules
-COPY --from=builder --chown=blueking /app/package.json /app/package.json
+RUN apk update && apk add gettext
+RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
+    ln -sf /dev/stderr /var/log/nginx/error.log
 
-USER blueking
-WORKDIR /app
-
-CMD [ "npm", "run", "server" ]
+# clean useless files
+RUN cd /var/www && rm -r localhost
+# cp nginx files
+COPY custom-configs/default /etc/nginx/conf.d/default.conf
+COPY custom-configs/30-render /etc/cont-init.d/30-render
+COPY --from=0 /app/dist/ /var/www/

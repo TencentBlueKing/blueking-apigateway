@@ -18,10 +18,9 @@
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, List, Type
 
-from tencent_apigateway_common.pypi.pip import PipHelper
-
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.common.pypi.pip import PipHelper
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.pypi import RepositoryConfig
 
@@ -131,7 +130,6 @@ class Distributor:
 @dataclass
 class SDKManager:
     name: str = ""
-    include_private_resources: bool = False
     is_public: bool = False
 
     def handle(self, output_dir: str, resource_version: ResourceVersion) -> SDKContext:

@@ -39,6 +39,7 @@ class ResourcePermission(BaseModel):
     id: int
     name: str
     api_name: str
+    gateway_id: Optional[int] = None
     description: str
     description_en: Optional[str] = None
     resource_perm_required: bool
@@ -53,6 +54,7 @@ class ResourcePermission(BaseModel):
             "id": self.id,
             "name": self.name,
             "api_name": self.api_name,
+            "gateway_id": self.gateway_id,
             "description": self.description,
             "description_en": self.description_en,
             "doc_link": self.doc_link,
@@ -70,18 +72,27 @@ class ResourcePermission(BaseModel):
 
     @property
     def permission_status(self):
-        if not self.resource_perm_required or self.expires_in == math.inf:
+        # 如果资源不需要权限校验，则权限类型为：无限制，即默认拥有权限
+        if not self.resource_perm_required:
+            return PermissionStatusEnum.UNLIMITED.value
+
+        # 如果权限记录中，有效期为永久有效；权限不需要再申请，优先展示
+        if self.expires_in == math.inf:
             return PermissionStatusEnum.OWNED.value
 
+        # 如果权限已有申请状态，如已拒绝、申请中；优先展示
         if self.api_permission_apply_status or self.resource_permission_apply_status:
             return self.api_permission_apply_status or self.resource_permission_apply_status
 
+        # 有权限且未过期
         if self.expires_in > 0:
             return PermissionStatusEnum.OWNED.value
 
+        # 有权限，但是已过期
         if self.expires_in > -math.inf:
             return PermissionStatusEnum.EXPIRED.value
 
+        # 无权限，待申请
         return PermissionStatusEnum.NEED_APPLY.value
 
     @cached_property
@@ -128,6 +139,7 @@ class ResourcePermissionBuilder:
 
         for resource in resources:
             resource["api_name"] = self.gateway.name
+            resource["gateway_id"] = self.gateway.id
             resource["doc_link"] = doc_links.get(resource["id"], "")
             resource["api_permission"] = self.api_permission
             resource["resource_permission"] = self.resource_permission_map.get(resource["id"])
@@ -187,6 +199,8 @@ class AppPermissionBuilder:
     def build(self) -> list:
         api_permission_map = self._get_api_permission_map()
         resource_permission_map = self._get_resource_permission_map()
+        gateway_id_to_permission_apply_status = self._get_gateway_id_to_permission_apply_status()
+        resource_id_to_permission_apply_status = self._get_resource_id_to_permission_apply_status()
 
         resource_map: defaultdict = defaultdict(dict)
         for gateway_id in api_permission_map:
@@ -200,14 +214,23 @@ class AppPermissionBuilder:
             resource.update({"resource_permission": resource_permission_map.get(resource["id"])})
             resource_map[resource["id"]].update(resource)
 
-        resource_id_to_gateway_name = dict(
-            Resource.objects.filter(id__in=list(resource_map.keys())).values_list("id", "gateway__name")
-        )
+        resource_id_to_fields = {
+            item["id"]: item
+            for item in Resource.objects.filter(id__in=list(resource_map.keys())).values(
+                "id", "gateway_id", "gateway__name"
+            )
+        }
 
         doc_links = ReleasedResourceHandler.get_latest_doc_link(list(resource_map.keys()))
         for resource_id, resource in resource_map.items():
-            resource["api_name"] = resource_id_to_gateway_name.get(resource_id, "")
+            resource_fields = resource_id_to_fields.get(resource_id, {})
+            resource["api_name"] = resource_fields.get("gateway__name", "")
+            resource["gateway_id"] = resource_fields.get("gateway_id")
             resource["doc_link"] = doc_links.get(resource_id, "")
+            resource["api_permission_apply_status"] = gateway_id_to_permission_apply_status.get(
+                resource_fields.get("gateway_id"), ""
+            )
+            resource["resource_permission_apply_status"] = resource_id_to_permission_apply_status.get(resource_id, "")
 
         resource_permissions = parse_obj_as(List[ResourcePermission], list(resource_map.values()))
         return [perm.as_dict() for perm in resource_permissions]
@@ -223,3 +246,19 @@ class AppPermissionBuilder:
             perm.resource_id: perm
             for perm in AppResourcePermission.objects.filter_public_permission_by_app(bk_app_code=self.target_app_code)
         }
+
+    def _get_gateway_id_to_permission_apply_status(self):
+        return dict(
+            AppPermissionApplyStatus.objects.filter(
+                bk_app_code=self.target_app_code,
+                grant_dimension=GrantDimensionEnum.API.value,
+            ).values_list("gateway_id", "status")
+        )
+
+    def _get_resource_id_to_permission_apply_status(self):
+        return dict(
+            AppPermissionApplyStatus.objects.filter(
+                bk_app_code=self.target_app_code,
+                grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            ).values_list("resource_id", "status")
+        )

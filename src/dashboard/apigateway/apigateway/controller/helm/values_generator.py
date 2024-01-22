@@ -22,24 +22,18 @@ from typing import Any, Dict
 from django.conf import settings
 
 from apigateway.controller.crds.config_controller import create_config_controller
-from apigateway.core.micro_gateway_config import MicroGatewayHTTPInfo
-from apigateway.core.models import MicroGateway, Stage
+from apigateway.core.micro_gateway_config import MicroGatewayJWTAuth
+from apigateway.core.models import MicroGateway
 
 
 @dataclass
 class MicroGatewayValuesGenerator:
     micro_gateway: MicroGateway
-    stage: Stage = field(init=False)
     micro_gateway_config: Dict[str, Any] = field(init=False)
-    http_info: MicroGatewayHTTPInfo = field(init=False)
     values: Dict[str, Any] = field(init=False)
 
     def __post_init__(self):
         self.micro_gateway_config = self.micro_gateway.config
-        self.stage = self.micro_gateway.stage_set.first()
-        self.http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(
-            self.micro_gateway_config
-        )  # NOTE 配置一个 url, 用于状态上报
         self.values = self.micro_gateway_config.get("values", {})
 
     def _merge_dict(self, to: Dict[str, Any], from_: Dict[str, Any]):
@@ -50,15 +44,6 @@ class MicroGatewayValuesGenerator:
                 to[k] = v
 
         return to
-
-    def _get_stage_values(self):
-        if not self.stage:
-            return {}
-
-        return {
-            "desc": self.stage.description,
-            "vars": self.stage.vars,
-        }
 
     def generate_values(self) -> Dict[str, Any]:
         values = {
@@ -79,36 +64,30 @@ class MicroGatewayValuesGenerator:
         }
         self._merge_dict(values, deepcopy(self.values))
 
-        # TODO 暂时不支持配置，等状态上报的方案确定
-        # jwt_auth_info = MicroGatewayJWTAuth.from_micro_gateway_config(self.micro_gateway.config)
-        # self._merge_dict(
-        #     values,
-        #     {
-        #         "gatewayConfigEnabled": True,
-        #         "gatewayConfig": {
-        #             "instance_id": self.micro_gateway.instance_id,
-        #             "controller": {
-        #                 "endpoints": [settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")],
-        #                 "base_path": settings.EDGE_CONTROLLER_API_BASE_PATH,
-        #                 "jwt_auth": {
-        #                     "secret": jwt_auth_info.secret_key,
-        #                 },
-        #             },
-        #         },
-        #         "gatewayStageEnabled": False,
-        #     },
-        # )
+        # 配置默认的 gatewayConfig CR
+        jwt_auth_info = MicroGatewayJWTAuth.from_micro_gateway_config(self.micro_gateway.config)
+        self._merge_dict(
+            values,
+            {
+                "defaultGatewayConfigEnabled": True,
+                "defaultGatewayConfig": {
+                    "instanceID": self.micro_gateway.instance_id,
+                    "controller": {
+                        "endpoints": [settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")],
+                        "basePath": settings.EDGE_CONTROLLER_API_BASE_PATH,
+                        "jwtAuth": {
+                            "secret": jwt_auth_info.secret_key,
+                        },
+                    },
+                },
+            },
+        )
 
         return values
 
     def _get_apisix_config(self) -> Dict[str, Any]:
         controller = create_config_controller(self.micro_gateway)
         config = {
-            # TODO 后续需要支持bk_gateway的全套配置
-            # "bk_gateway": {
-            #     "instance_id": self.micro_gateway.instance_id,
-            #     "controller": controller.dict(),
-            # }
             "bkGateway": {
                 "instance": {
                     "id": self.micro_gateway.instance_id,

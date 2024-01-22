@@ -24,13 +24,14 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from tencent_apigateway_common.i18n.field import SerializerTranslatedField
 
 from apigateway.apis.web.stage.validators import StageVarsValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.validators import MaxCountPerGatewayValidator
+from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
+from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 from apigateway.core.constants import (
@@ -139,7 +140,10 @@ class StageProxyHTTPConfigSLZ(serializers.Serializer):
 
 class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    name = serializers.RegexField(STAGE_NAME_PATTERN)
+    name = serializers.RegexField(
+        STAGE_NAME_PATTERN,
+        validators=[NameValidator()],
+    )
     vars = serializers.DictField(
         label="环境变量",
         child=serializers.CharField(allow_blank=True, required=True),
