@@ -77,5 +77,6 @@ sync_bk_esb_buffet
 sync_bk_apigateway_inner
 
 # 1.13 同步所有网关数据, 确保数据最新; 这个需要在1.14中删除
-python manage.py sync_releases_to_shared_micro_gateway_parallel
+# 不能导致 post_migrate job 失败, 否则job 失败后会一直重试, 导致所有网关一直处于发布状态, 带来不必要的负载; 如果失败, 手工执行
+python manage.py sync_releases_to_shared_micro_gateway_parallel && echo "sync_releases_to_shared_micro_gateway success!" || echo "sync_releases_to_shared_micro_gateway fail!"
 # 1.13 同步所有网关数据, 确保数据最新; 这个需要在1.14中删除
