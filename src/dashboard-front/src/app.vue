@@ -37,7 +37,7 @@ getFeatureFlags({ limit: 10000, offset: 0 }).then((data) => {
     Message('获取功能权限失败，请检查后再试');
   });
 
-const headerList = ref([
+const headerList = computed(() => ([
   {
     name: t('我的网关'),
     id: 1,
@@ -86,8 +86,7 @@ const headerList = ref([
     enabled: user.featureFlags?.ENABLE_SDK,
     link: '',
   },
-
-]);
+]));
 
 const systemCls = ref('mac');
 
