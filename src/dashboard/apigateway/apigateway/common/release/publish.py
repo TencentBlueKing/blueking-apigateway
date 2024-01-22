@@ -115,7 +115,7 @@ def _trigger_rolling_publish(
             publish_id=publish_id,
             release_id=release.pk,
         )
-    return None
+    return True
 
 
 def _trigger_revoke_publish_for_disable(
@@ -187,6 +187,9 @@ def trigger_gateway_publish(
         qs = qs.filter(stage_id=stage_id)
 
     release_list = qs.prefetch_related("gateway", "stage").all()
+    # if not released before, skip
+    if not release_list:
+        return True
 
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE:
         return _trigger_rolling_publish(source, author, release_list, is_sync=is_sync)
