@@ -169,7 +169,11 @@ watch(
   () => props.editPlugin,
   (val: any) => {
     if (!isAdd.value) {
-      schemaFormData.value = jsYaml.load(val.yaml);
+      try {
+        schemaFormData.value = jsYaml.load(val.yaml);
+      } catch (e) {
+        console.error(e);
+      };
     }
   },
   {
