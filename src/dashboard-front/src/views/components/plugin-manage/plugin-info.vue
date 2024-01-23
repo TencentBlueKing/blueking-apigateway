@@ -58,13 +58,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, defineEmits, toRefs } from 'vue';
+import { computed, ref, defineEmits, toRefs, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPluginForm, creatPlugin, updatePluginConfig } from '@/http';
 import { Message } from 'bkui-vue';
-//@ts-ignore
+// @ts-ignore
 import createForm from '@blueking/bkui-form';
 import { json2yaml } from '@/common/util';
+import jsYaml from 'js-yaml';
 const BkSchemaForm = createForm();
 
 const { t } = useI18n();
@@ -118,16 +119,15 @@ const handleAdd = async () => {
   // await formRef.value?.validate();
   try {
     const data: any = { ...schemaFormData.value };
+    data.yaml = json2yaml(JSON.stringify(schemaFormData.value)).data;
     if (isAdd.value) {
       data.name = props.curPlugin?.name;
       data.type_id = typeId.value;
-      data.yaml = json2yaml(JSON.stringify(schemaFormData.value)).data;
       await creatPlugin(apigwId, scopeType, scopeId, code, data);
       emit('on-change', 'addSuccess');
     } else {
       data.name = props.editPlugin?.name;
       data.type_id = props.editPlugin?.type_id;
-      data.yaml = props.editPlugin?.yaml;
       await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, data);
       emit('on-change', 'editSuccess');
     }
@@ -164,6 +164,18 @@ const init = async () => {
   }
 };
 init();
+
+watch(
+  () => props.editPlugin,
+  (val: any) => {
+    if (!isAdd.value) {
+      schemaFormData.value = jsYaml.load(val.yaml);
+    }
+  },
+  {
+    immediate: true,
+  },
+);
 </script>
 
 <style lang="scss" scoped>

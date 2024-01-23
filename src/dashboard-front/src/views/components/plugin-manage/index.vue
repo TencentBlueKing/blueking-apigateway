@@ -35,7 +35,7 @@
               <div v-for="(item, key) in slotProps.config" :key="key">
                 <div class="flex-row align-items-center">
                   <div class="form-key-cls">{{key}}：</div>
-                  <div class="form-val-cls">{{item || '--'}}</div>
+                  <div class="form-val-cls">{{item}}</div>
                 </div>
               </div>
             </div>
@@ -269,6 +269,7 @@ const handleOperate = (operate: string) => {
       isAddSuccess.value = true;
       break;
     case 'editSuccess':
+      getBindingDetails();
       isEditVisible.value = false;
       break;
     default:
