@@ -4,3 +4,4 @@ postcss.config.js
 bk.config.js
 paas-server
 mock-server
+node_modules
