@@ -540,7 +540,7 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
                 if not host["host"]:
                     raise BackendHostIsEmpty(
                         _(
-                            "网关环境 {stage_name} 下，后端服务 {backend_name} 的服务地址为空，请在环境管理 -> 环境概览中，更新该环境后端服务的服务地址。"
+                            "网关环境 {stage_name} 下，后端服务 {backend_name} 的服务地址为空，请在 后端服务 -> 编辑 {backend_name} ，更新该环境的后端服务地址。"
                         ).format(
                             stage_name=backend_config.stage.name,
                             backend_name=backend_config.backend.name,
