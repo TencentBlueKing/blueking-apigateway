@@ -55,6 +55,7 @@
     "@blueking/eslint-config-bk": "^2.1.0-beta.14",
     "@blueking/stylelint-config-bk": "^2.1.0-beta.10",
     "@types/cookie": "^0.5.2",
+    "@types/js-yaml": "^4.0.9",
     "@types/lodash": "^4.14.201",
     "@types/node": "^20.6.3",
     "enhanced-resolve": "^5.10.0",

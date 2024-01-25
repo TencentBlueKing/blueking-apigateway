@@ -27,7 +27,7 @@
         </bk-select>
       </div>
     </div>
-    <div class="table-container">
+    <div class="table-container" v-bkloading="{ loading: isLoading, opacity: 1, color: '#f5f7fb' }">
       <section v-if="gatewaysList.length">
         <div class="table-header flex-row">
           <div class="flex-1 of3">{{ t('网关名') }}</div>
@@ -116,14 +116,26 @@
         </div>
       </section>
       <section v-else>
-        <div class="text-c">
-          {{ t('暂无数据') }}
+        <div class="table-header flex-row">
+          <div class="flex-1 of3">{{ t('网关名') }}</div>
+          <div class="flex-1 of1">{{ t('创建者') }}</div>
+          <div class="flex-1 of3">{{ t('环境列表') }}</div>
+          <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
+          <div class="flex-1 of2">{{ t('操作') }}</div>
         </div>
+        <bk-table
+          class="empty-table"
+          empty-text="没有数据"
+          :columns="emptyColumns"
+          :data="[]"
+        />
       </section>
 
       <div class="footer-container">
         <div>
-          <bk-link theme="primary">技术支持</bk-link> | <bk-link theme="primary">产品官网</bk-link>
+          <bk-link theme="primary" :href="bkAppVersion === 'te' ? 'wxwork://message/?username=BK%E5%8A%A9%E6%89%8B' : 'https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true'" target="_blank">技术支持</bk-link> |
+          <bk-link theme="primary" href="https://bk.tencent.com/s-mart/community" target="_blank">社区论坛</bk-link> |
+          <bk-link theme="primary" href="https://bk.tencent.com/index" target="_blank">产品官网</bk-link>
         </div>
         Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved.
       </div>
@@ -230,6 +242,34 @@ const initDialogData: IinitDialogData = {
   is_public: true,
 };
 
+const bkAppVersion = window.BK_APP_VERSION;
+const emptyColumns = [
+  {
+    label: '网关名',
+    field: 'ip',
+    width: 100,
+  },
+  {
+    label: '创建者',
+    field: 'source',
+    width: 80,
+  },
+  {
+    label: '环境列表',
+    field: 'create_time',
+  },
+  {
+    label: '资源数量',
+    field: 'priority',
+  },
+  {
+    label: '操作',
+    field: 'priority',
+  },
+];
+
+const isLoading = ref(true);
+
 const rules = {
   name: [
     {
@@ -306,8 +346,12 @@ watch(() => dataList.value, (val: any[]) => {
 
 // 页面初始化
 const init = async () => {
+  isLoading.value = true;
   const list = await getGatewaysListData();
   gatewaysList.value = handleGatewaysList(list);
+  setTimeout(() => {
+    isLoading.value = false;
+  }, 100);
 };
 
 // 新建网关弹窗
@@ -467,14 +511,30 @@ init();
     .of3{
       flex: 0 0 30%;
     }
+
+    .empty-table {
+      :deep(.bk-table-head) {
+        display: none;
+      }
+    }
   }
 
   .footer-container{
-    text-align: center;
-    height: 52px;
+    position: relative;
+    left: 0;
+    height: 50px;
+    line-height: 20px;
+    padding: 20px 0;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+    font-size: 12px;
+    .bk-link {
+      font-size: 12px;
+    }
   }
 
-  .deact{
+  .deact {
     background: #EAEBF0 !important;
     color: #fff !important;
     &-name{

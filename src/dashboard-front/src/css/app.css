@@ -15,6 +15,28 @@ body {
     font-family: Microsoft Yahei,Helvetica,Aria !important;
 }
 
+.ap-nodata {
+    text-align: center;
+    font-size: 12px;
+    color: #63656e;
+    padding: 60px 0;
+
+    .bk-table-empty-icon {
+        font-size: 35px;
+        color: #c3cdd7;
+    }
+
+    &.fixed {
+        width: 100%;
+        position: absolute;
+        left: 0;
+        top: 50%;
+        z-index: 1000;
+        transform: translate(0, -50%);
+        color: #c3cdd7;
+    }
+}
+
 .ag-tag {
     display: inline-block;
     background: #F0F1F5;

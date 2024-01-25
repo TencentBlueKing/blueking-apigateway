@@ -129,6 +129,10 @@ const route = useRoute();
 const common = useCommon();
 const stageStore = useStage();
 
+const props = defineProps({
+  stageAddress: String,
+});
+
 const searchValue = ref<string>('');
 const info = ref<any>({});
 const resourceDetailsRef = ref();
@@ -163,7 +167,7 @@ const showDetails = (row: any) => {
 };
 
 const copyPath = (row: any) => {
-  copy(row?.path);
+  copy(props.stageAddress.replace(/\/$/, '') + row?.path);
 };
 
 // 资源信息
@@ -222,9 +226,9 @@ onMounted(() => {
 
 // 当前页数据
 const curPageData = computed(() => {
-  let allData = resourceVersionList.value;
+  let curAllData = resourceVersionList.value;
   if (searchValue.value) {
-    allData = allData?.filter((row: any) => {
+    curAllData = curAllData?.filter((row: any) => {
       if (
         row?.proxy?.backend?.name?.toLowerCase()?.includes(searchValue.value)
       || row?.name?.toLowerCase()?.includes(searchValue.value)
@@ -244,10 +248,12 @@ const curPageData = computed(() => {
   if (startIndex < 0) {
     startIndex = 0;
   }
-  if (endIndex > allData.length) {
-    endIndex = allData.length;
+  if (endIndex > curAllData.length) {
+    endIndex = curAllData.length;
   }
-  return allData.slice(startIndex, endIndex);
+
+  pagination.value.count = curAllData.length;
+  return curAllData.slice(startIndex, endIndex);
 });
 
 // 页码变化发生的事件
