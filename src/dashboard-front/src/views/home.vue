@@ -115,7 +115,7 @@
           </div>
         </div>
       </section>
-      <section v-else>
+      <div class="empty-container" v-else>
         <div class="table-header flex-row">
           <div class="flex-1 of3">{{ t('网关名') }}</div>
           <div class="flex-1 of1">{{ t('创建者') }}</div>
@@ -123,22 +123,21 @@
           <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
           <div class="flex-1 of2">{{ t('操作') }}</div>
         </div>
-        <bk-table
-          class="empty-table"
-          empty-text="没有数据"
-          :columns="emptyColumns"
-          :data="[]"
+        <bk-exception
+          class="empty-exception"
+          type="empty"
+          scene="part"
+          description="没有数据"
         />
-      </section>
-
-      <div class="footer-container">
-        <div>
-          <bk-link theme="primary" :href="bkAppVersion === 'te' ? 'wxwork://message/?username=BK%E5%8A%A9%E6%89%8B' : 'https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true'" target="_blank">技术支持</bk-link> |
-          <bk-link theme="primary" href="https://bk.tencent.com/s-mart/community" target="_blank">社区论坛</bk-link> |
-          <bk-link theme="primary" href="https://bk.tencent.com/index" target="_blank">产品官网</bk-link>
-        </div>
-        Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved.
       </div>
+    </div>
+    <div class="footer-container">
+      <div>
+        <bk-link theme="primary" :href="bkAppVersion === 'te' ? 'wxwork://message/?username=BK%E5%8A%A9%E6%89%8B' : 'https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true'" target="_blank">技术支持</bk-link> |
+        <bk-link theme="primary" href="https://bk.tencent.com/s-mart/community" target="_blank">社区论坛</bk-link> |
+        <bk-link theme="primary" href="https://bk.tencent.com/index" target="_blank">产品官网</bk-link>
+      </div>
+      Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved.
     </div>
 
     <bk-dialog
@@ -243,30 +242,6 @@ const initDialogData: IinitDialogData = {
 };
 
 const bkAppVersion = window.BK_APP_VERSION;
-const emptyColumns = [
-  {
-    label: '网关名',
-    field: 'ip',
-    width: 100,
-  },
-  {
-    label: '创建者',
-    field: 'source',
-    width: 80,
-  },
-  {
-    label: '环境列表',
-    field: 'create_time',
-  },
-  {
-    label: '资源数量',
-    field: 'priority',
-  },
-  {
-    label: '操作',
-    field: 'priority',
-  },
-];
 
 const isLoading = ref(true);
 
@@ -455,7 +430,7 @@ init();
   }
   .table-container{
     width: 100%;
-    height: calc(100vh - 192px);
+    min-height: calc(100vh - 192px);
     .table-header{
       width: 100%;
       color: #979BA5;
@@ -517,6 +492,12 @@ init();
         display: none;
       }
     }
+    .empty-container {
+      .empty-exception {
+        background-color: #fff;
+        padding-bottom: 40px;
+      }
+    }
   }
 
   .footer-container{
@@ -524,7 +505,7 @@ init();
     left: 0;
     height: 50px;
     line-height: 20px;
-    padding: 20px 0;
+    // padding: 20px 0;
     display: flex;
     flex-flow: column;
     align-items: center;
