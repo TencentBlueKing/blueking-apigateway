@@ -62,7 +62,7 @@ import { computed, ref, defineEmits, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPluginForm, creatPlugin, updatePluginConfig } from '@/http';
 import { Message } from 'bkui-vue';
-//@ts-ignore
+// @ts-ignore
 import createForm from '@blueking/bkui-form';
 import { json2yaml } from '@/common/util';
 const BkSchemaForm = createForm();

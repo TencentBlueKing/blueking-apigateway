@@ -411,7 +411,7 @@ const handleConfirmEdit = async () => {
   } finally {
     setTimeout(() => {
       dialogEditData.value.loading = false;
-    }, 200)
+    }, 200);
   }
 };
 

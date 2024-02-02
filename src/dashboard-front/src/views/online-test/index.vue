@@ -342,7 +342,7 @@ const isShowSubpath = computed(() => {
   if (formData.value.method && formData.value.path) {
     let paths = [];
     const resourceId = formData.value.method.split('_')[0];
-    for (const key in resources.value) {
+    for (const key of Object.keys(resources.value)) {
       if (key === formData.value.path) {
         paths = resources.value[key];
       }
@@ -573,7 +573,8 @@ const handleMethodChange = (value: string) => {
     // 存在资源但匹配不到则认为是any，any取第一个元素的id
     params.value.resource_id = resourceList[0].id;
     // any没有id值，[0]元素即为method名称
-    params.value.method = methodValue[0];
+    // params.value.method = methodValue[0];
+    [params.value.method] = methodValue;
   } else {
     params.value.resource_id = '';
     params.value.method = '';

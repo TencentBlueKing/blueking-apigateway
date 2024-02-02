@@ -146,7 +146,7 @@ watch(
   (value) => {
     list.splice(0, list.length, ...[]);
 
-    for (const key in value) {
+    for (const key of Object.keys(value)) {
       list.push({
         id: itemIndex.value,
         key,
