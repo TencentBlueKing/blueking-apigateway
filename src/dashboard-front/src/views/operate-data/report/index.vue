@@ -251,7 +251,7 @@ const getDataByDimension = async () => {
     });
     return false;
   }
-  const requests = metricsList.value?.map((metrics: any) => {
+  metricsList.value?.map((metrics: any) => {
     const params = {
       ...searchParams,
       dimension: dimension.value,
@@ -265,10 +265,10 @@ const getDataByDimension = async () => {
   try {
     // const res = await Promise.all(requests);
     chartData.value = {};
-    metricsList.value?.forEach((metrics: any, index: number) => {
+    metricsList.value?.forEach((metrics: any) => {
       // chartData.value[metrics] = res[index];
       chartData.value[metrics] = {
-        metrics: [], series: []
+        metrics: [], series: [],
       };
     });
 
@@ -403,7 +403,7 @@ const handleClickLegend = (chartInstId: any, index: number) => {
       batch: legend.map(({ name }: any) => ({ name })),
     });
 
-    legend.forEach((item: any, i: number) => (item.selected = 0));
+    legend.forEach((item: any) => (item.selected = 0));
     chartLegend.value = { ...chartLegend.value, ...{ [chartInstId]: legend } };
   }
 };

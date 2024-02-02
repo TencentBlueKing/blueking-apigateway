@@ -59,6 +59,8 @@
 </template>
 
 <script setup lang="ts">
+/* eslint-disable prefer-destructuring */
+
 import { computed, ref, watch, onBeforeMount, onMounted, nextTick, Ref  } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { getStageList, getStageDetail } from '@/http';

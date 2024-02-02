@@ -825,7 +825,7 @@ const initDiff = () => {
   findAllDiff(props.diffData);
 
   // 处理后端配置使用默认配置情况
-  if (diffMap.value.hasOwnProperty('localData.proxy.config.timeout')) {
+  if (diffMap.value['localData.proxy.config.timeout']) {
     diffMap.value['localData.useDefaultTimeout'] = true;
   }
 
@@ -844,12 +844,12 @@ const initDiff = () => {
   }
 };
 
-const findAllDiff = (value: any, prePath = 'localData', index?: number) => {
+const findAllDiff = (value: any, prePath = 'localData') => {
   if (Array.isArray(value)) {
     if (value.length) {
-      value.forEach((item, index) => {
+      value.forEach((item) => {
         const path = `${prePath}`;
-        findAllDiff(item, path, index);
+        findAllDiff(item, path);
       });
     } else {
       diffMap.value[prePath] = '[]';
@@ -858,7 +858,7 @@ const findAllDiff = (value: any, prePath = 'localData', index?: number) => {
     if (JSON.stringify(value) === '{}') {
       diffMap.value[prePath] = '{}';
     } else {
-      for (const key in value) {
+      for (const key of Object.keys(value)) {
         const path = `${prePath}.${key}`;
         findAllDiff(value[key], path);
       }

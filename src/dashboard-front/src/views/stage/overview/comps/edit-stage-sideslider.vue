@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-deprecated-slot-attribute -->
 <template>
   <div class="sideslider-wrapper">
     <bk-sideslider
@@ -123,8 +124,8 @@
                                 :clearable="false"
                               >
                                 <bk-option
-                                  v-for="(item, index) in schemeList"
-                                  :key="index"
+                                  v-for="(item, index1) in schemeList"
+                                  :key="index1"
                                   :value="item.value"
                                   :label="item.value"
                                 />
@@ -217,7 +218,7 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-import { getBackendsListData, createStage, getStageDetail, getStageBackends, updateStage, getStageList } from '@/http';
+import { getBackendsListData, createStage, getStageDetail, getStageBackends, updateStage } from '@/http';
 import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash';
 import { useCommon, useStage } from '@/store';
@@ -287,7 +288,7 @@ const stageAddress = computed(() => {
   };
 
   let url = GLOBAL_CONFIG.STAGE_DOMAIN;
-  for (const name in keys) {
+  for (const name of Object.keys(keys)) {
     const reg = new RegExp(`{${name}}`);
     url = url?.replace(reg, keys[name]);
   }
@@ -500,7 +501,7 @@ const handleCancel = () => {
 };
 
 // 添加服务地址
-const handleAddServiceAddress = (name: string, index: number) => {
+const handleAddServiceAddress = (name: string) => {
   console.log('add', curStageData.value);
   curStageData.value.backends.forEach((v) => {
     if (v.name === name) {

@@ -63,8 +63,8 @@ import {
 const { t } = useI18n();
 const route = useRoute();
 const userStore = useUser();
-const globalProperties = useGetGlobalProperties();
-const { GLOBAL_CONFIG } = globalProperties;
+// const globalProperties = useGetGlobalProperties();
+// const { GLOBAL_CONFIG } = globalProperties;
 
 const curVersion = ref<string>('');
 const curSystemName = ref<string>('');
@@ -378,5 +378,3 @@ init();
   }
 }
 </style>
-
-
