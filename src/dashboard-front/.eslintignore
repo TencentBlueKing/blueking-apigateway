@@ -9,3 +9,5 @@ node_modules
 src/views/resource/setting/comps/back-config.vue
 src/views/permission/record/index.vue
 src/views/permission/apply/index.vue
+src/assets/**
+*bak*
