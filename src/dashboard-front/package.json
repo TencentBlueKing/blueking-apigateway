@@ -24,7 +24,7 @@
   "dependencies": {
     "@blueking/bkui-form": "^1.0.0-beta.3",
     "art-template": "^4.13.2",
-    "bkui-vue": "0.0.2-beta.109",
+    "bkui-vue": "0.0.2-beta.136",
     "connect-history-api-fallback": "^2.0.0",
     "cookie": "^0.5.0",
     "cookie-parser": "^1.4.5",
