@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import { ref, nextTick, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useGetGlobalProperties } from '@/hooks';
+// import { useGetGlobalProperties } from '@/hooks';
 import { slugify } from 'transliteration';
 import { useRoute } from 'vue-router';
 import sideNav from '@/components/side-nav/index.vue';
