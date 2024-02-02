@@ -340,6 +340,8 @@ const handleEditStage = () => {
   stageSidesliderRef.value.handleShowSideslider('edit');
 };
 
+console.log(12);
+
 // 访问地址
 const getStageAddress = (name: string) => {
   const keys: any = {
