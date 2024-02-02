@@ -129,6 +129,10 @@ const route = useRoute();
 const common = useCommon();
 const stageStore = useStage();
 
+const props = defineProps({
+  stageUrl: { type: [String] },
+});
+console.log(props, 4444);
 const searchValue = ref<string>('');
 const info = ref<any>({});
 const resourceDetailsRef = ref();
@@ -163,7 +167,8 @@ const showDetails = (row: any) => {
 };
 
 const copyPath = (row: any) => {
-  copy(row?.path);
+  console.log(props);
+  copy(`${props.stageUrl}${row?.path}`);
 };
 
 // 资源信息
