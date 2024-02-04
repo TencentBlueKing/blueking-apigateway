@@ -141,7 +141,7 @@
               prop="method"
               :label="renderMethodsLabel"
               :show-overflow-tooltip="false"
-              width="120"
+              width="180"
             >
               <template #default="{ data }">
                 <bk-tag :theme="methodsEnum[data?.method]">{{ data?.method }}</bk-tag>
