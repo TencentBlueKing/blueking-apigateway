@@ -132,7 +132,6 @@ const stageStore = useStage();
 const props = defineProps({
   stageUrl: { type: [String] },
 });
-console.log(props, 4444);
 const searchValue = ref<string>('');
 const info = ref<any>({});
 const resourceDetailsRef = ref();
