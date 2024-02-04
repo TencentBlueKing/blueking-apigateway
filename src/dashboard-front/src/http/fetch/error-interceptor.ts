@@ -19,8 +19,12 @@ export default (errorData: any, config: IFetchConfig) => {
       break;
     // 用户登录状态失效
     case 401:
-      mitt.emit('show-login-modal', loginPlainUrl || `${BK_LOGIN_URL}/?c_url=${window.location.href}`);
-      // window.location.href = `${BK_LOGIN_URL}/?c_url=${window.location.href}`;
+      if (loginPlainUrl) {
+        mitt.emit('show-login-modal', loginPlainUrl);
+      } else {
+        // 兼容本地开发后台没有重定向地址，直接跳转登录页
+        window.location.href = `${BK_LOGIN_URL}/?c_url=${window.location.href}`;
+      }
       break;
   }
   // 全局捕获错误给出提示
