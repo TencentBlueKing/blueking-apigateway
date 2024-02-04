@@ -160,7 +160,6 @@ const goPage = (routeName: string) => {
 
 onMounted(() => {
   mitt.on('show-login-modal', (payload: string) => {
-    console.log(payload, authRef.value);
     authRef.value.showLoginModal(payload);
   });
   mitt.on('close-login-modal', () => {
