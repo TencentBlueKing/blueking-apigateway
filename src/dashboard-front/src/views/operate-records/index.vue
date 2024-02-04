@@ -131,6 +131,7 @@ const {
 
 const topDatePicker = ref(null);
 const dateKey = ref('dateKey');
+const orderBy = ref('');
 const shortcutSelectedIndex = shallowRef(-1);
 const dateTimeRange = ref([]);
 const members = ref([]);
@@ -290,13 +291,13 @@ const renderStatusLabel = () => {
 const handleSortChange = ({ column, type }: Record<string, any>) => {
   const typeMap: Record<string, Function> = {
     asc: () => {
-      filterData.value.order_by = column.field;
+      orderBy.value = column.field;
     },
     desc: () => {
-      filterData.value.order_by = `-${column.field}`;
+      orderBy.value = `-${column.field}`;
     },
     null: () => {
-      delete filterData.value.order_by;
+      orderBy.value = '';
     },
   };
   typeMap[type]();
@@ -388,9 +389,7 @@ watch(
     if (!newVal.length) {
       filterData.value = cloneDeep(defaultSearchData.value);
       curSelectData.value =  cloneDeep(defaultFilterData.value);
-      if (!filterData.value.order_by) {
-        delete filterData.value.order_by;
-      }
+      filterData.value.order_by = orderBy.value;
       tableKey.value = +new Date();
       refreshTableData();
       return;
@@ -400,6 +399,7 @@ watch(
       filterData.value[item] = hasData ? hasData.values[0].id : '';
       curSelectData.value[item] = hasData ? hasData.values[0].id : '';
     });
+    filterData.value.order_by = orderBy;
     tableKey.value = +new Date();
     refreshTableData();
   },

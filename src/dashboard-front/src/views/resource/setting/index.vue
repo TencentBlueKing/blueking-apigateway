@@ -86,7 +86,7 @@
         unique-select
         style="background:#fff"
         class="mb15"
-        placeholder="请输入资源名称或选择条件搜索, 按Enter确认"
+        :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
         :value-split-code="'+'"
       />
 
@@ -141,7 +141,7 @@
               prop="method"
               :label="renderMethodsLabel"
               :show-overflow-tooltip="false"
-              width="120"
+              width="180"
             >
               <template #default="{ data }">
                 <bk-tag :theme="methodsEnum[data?.method]">{{ data?.method }}</bk-tag>
@@ -253,6 +253,14 @@
                 </bk-pop-confirm>
               </template>
             </bk-table-column>
+            <template #empty>
+              <TableEmpty
+                :keyword="tableEmptyConf.keyword"
+                :abnormal="tableEmptyConf.isAbnormal"
+                @reacquire="getSearchResourceList"
+                @clear-filter="handleClearFilterKey"
+              />
+            </template>
           </bk-table>
         </bk-loading>
       </div>
@@ -419,11 +427,12 @@ import SelectCheckBox from './comps/select-check-box.vue';
 import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
 import ResourcesDoc from '@/views/components/resources-doc/index.vue';
+import TableEmpty from '@/components/table-empty.vue';
+import RenderCustomColumn from '@/components/custom-table-header-filter';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { cloneDeep } from 'lodash';
 import { is24HoursAgo } from '@/common/util';
 import {  useCommon } from '@/store';
-import RenderCustomColumn from '@/components/custom-table-header-filter';
 
 const props = defineProps({
   apigwId: {
@@ -446,6 +455,11 @@ interface IexportDialog extends IDialog {
   exportFileDocType: string
 }
 
+type TableEmptyConfType = {
+  keyword: string
+  isAbnormal: boolean
+};
+
 const methodsEnum: any = ref(MethodsEnum);
 const common = useCommon();
 const { t } = useI18n();
@@ -463,6 +477,11 @@ const route = useRoute();
 const router = useRouter();
 
 const filterData = ref<any>({ keyword: '', order_by: '' });
+
+const tableEmptyConf = ref<TableEmptyConfType>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 // ref
 const versionSidesliderRef = ref(null);
@@ -659,6 +678,32 @@ const {
 const init =  () => {
   handleShowVersion();
   getLabelsData();
+};
+
+const getSearchResourceList = async () => {
+  refreshTableData();
+};
+
+const refreshTableData = () => {
+  getList();
+  updateTableEmptyConfig();
+};
+
+const handleClearFilterKey = () => {
+  filterData.value = cloneDeep({ keyword: '', order_by: '' });
+  searchValue.value = [];
+};
+
+const updateTableEmptyConfig = () => {
+  if (searchValue.value.length || !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (searchValue.value.length) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
 };
 
 // isPublic为true allowApply才可选
@@ -1041,6 +1086,7 @@ watch(
     }
     curSelectMethod.value = filterData.value.method || 'ALL';
     tableKey.value = +new Date();
+    updateTableEmptyConfig();
   },
 );
 

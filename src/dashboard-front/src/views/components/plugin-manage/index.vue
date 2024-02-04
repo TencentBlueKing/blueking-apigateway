@@ -140,8 +140,14 @@
                   </div>
                 </div>
               </div>
+              <TableEmpty
+                v-if="!pluginListDate.length"
+                :keyword="tableEmptyConf.keyword"
+                :abnormal="tableEmptyConf.isAbnormal"
+                @reacquire="handleSearch"
+                @clear-filter="handleClearFilterKey"
+              />
             </bk-loading>
-
           </div>
           <!-- 配置插件 -->
           <div class="plugin-config pl40 pr40 pt20 pb20" v-else>
@@ -184,6 +190,7 @@
 
 <script setup lang="ts">
 import pluginInfo from './plugin-info.vue';
+import TableEmpty from '@/components/table-empty.vue';
 import { InfoBox, Message } from 'bkui-vue';
 import { ref, reactive, computed, watch, defineEmits } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -221,7 +228,7 @@ const curType = ref<string>('');
 const isEditVisible = ref(false);
 const isAddSuccess = ref(false);
 const searchValue = ref<string>('');
-const pluginListDate = ref<any>({});
+const pluginListDate = ref([]);
 const curBindingScopeData = ref<any>({});
 const curHover = ref<string>('');
 const curHoverHead = ref<string>('');
@@ -240,6 +247,10 @@ const state = reactive({
     { title: t('配置插件'), icon: 2 },
   ],
   curStep: 1,
+});
+const tableEmptyConf = ref({
+  keyword: '',
+  isAbnormal: false,
 });
 
 // 监听是否成功添加
@@ -314,6 +325,11 @@ const handleTitleHover = (data: any) => {
 };
 const handleTitleLeave = () => {
   curHoverHead.value = '';
+};
+
+const handleClearFilterKey = () => {
+  searchValue.value = '';
+  handleSearch();
 };
 
 // 编辑插件
@@ -438,9 +454,9 @@ const getPluginListDetails = async (params: { scope_type: string; scope_id: numb
   try {
     isPluginListLoading.value = true;
     const res = await getPluginListData(apigwId, params);
-    pluginListDate.value = res.results;
-    console.log(pluginListDate.value);
+    pluginListDate.value = res.results || [];
   } catch (error) {
+    pluginListDate.value = [];
     console.log('error', error);
   } finally {
     isPluginListLoading.value = false;
@@ -465,6 +481,7 @@ const handleChoosePlugin = (obj: any) => {
   curChoosePlugin.value = obj;
   console.log(curChoosePlugin.value);
 };
+
 // enter搜索
 const handleSearch = () => {
   const params = {
@@ -474,10 +491,14 @@ const handleSearch = () => {
   };
   try {
     getPluginListDetails(params);
+    updateTableEmptyConfig();
+    tableEmptyConf.value.isAbnormal = false;
   } catch (error) {
     console.log('error', error);
+    tableEmptyConf.value.isAbnormal = false;
   }
 };
+
 // 清空搜索框
 const handleClear = () => {
   const params = {
@@ -486,6 +507,7 @@ const handleClear = () => {
   };
   getPluginListDetails(params);
 };
+
 // 下一页
 const handelNext = () => {
   state.curStep = 2;
@@ -494,6 +516,18 @@ const handelNext = () => {
 // 取消添加
 const handleCancel = () => {
   resetData();
+};
+
+const updateTableEmptyConfig = () => {
+  if (searchValue.value || !pluginListDate.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (searchValue.value) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
 };
 
 watch(

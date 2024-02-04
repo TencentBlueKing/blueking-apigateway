@@ -4,7 +4,7 @@
     <bk-sideslider
       v-model:isShow="isShow"
       :title="isAdd ? t('新建环境') : t('编辑环境')"
-      :quick-close="false"
+      :quick-close="true"
       width="960"
       ext-cls="stage-sideslider-cls"
       @hidden="closeSideslider"

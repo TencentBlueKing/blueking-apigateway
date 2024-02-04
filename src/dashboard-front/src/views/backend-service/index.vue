@@ -75,7 +75,7 @@
     </div>
     <!-- 新建/编辑sideslider -->
     <bk-sideslider
-      v-model:isShow="sidesliderConfi.isShow" :title="sidesliderConfi.title" :quick-close="false"
+      v-model:isShow="sidesliderConfi.isShow" :title="sidesliderConfi.title" :quick-close="true"
       ext-cls="backend-service-slider" width="800">
       <template #default>
         <div class="content">
