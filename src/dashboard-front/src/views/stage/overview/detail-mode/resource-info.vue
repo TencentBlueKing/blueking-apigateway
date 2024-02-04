@@ -167,7 +167,6 @@ const showDetails = (row: any) => {
 };
 
 const copyPath = (row: any) => {
-  console.log(props);
   copy(`${props.stageUrl}${row?.path}`);
 };
 
