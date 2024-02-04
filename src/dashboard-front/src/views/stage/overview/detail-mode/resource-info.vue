@@ -128,10 +128,6 @@ const { t } = useI18n();
 const route = useRoute();
 const common = useCommon();
 const stageStore = useStage();
-
-const props = defineProps({
-  stageUrl: { type: [String] },
-});
 const searchValue = ref<string>('');
 const info = ref<any>({});
 const resourceDetailsRef = ref();
@@ -166,7 +162,7 @@ const showDetails = (row: any) => {
 };
 
 const copyPath = (row: any) => {
-  copy(`${props.stageUrl}${row?.path}`);
+  copy(`${row?.path}`);
 };
 
 // 资源信息

@@ -133,7 +133,6 @@
             <component
               :is="curTabComponent"
               :stage-id="stageData.id"
-              :stage-url="getStageAddress(stageData.name) || '--'"
               :version-id="stageData.resource_version.id">
             </component>
           </bk-tab-panel>

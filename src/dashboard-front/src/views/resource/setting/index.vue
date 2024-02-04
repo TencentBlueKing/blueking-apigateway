@@ -682,7 +682,6 @@ const init =  () => {
 
 const getSearchResourceList = async () => {
   refreshTableData();
-  console.log(pagination.value.count, 888888);
 };
 
 const refreshTableData = () => {
