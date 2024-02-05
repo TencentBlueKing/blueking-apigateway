@@ -99,7 +99,7 @@
                 class="exception-wrap-item exception-part"
                 type="empty"
                 scene="part"
-                description="没有数据"
+                :description="t('暂无数据')"
               />
             </div>
           </div>
@@ -110,9 +110,10 @@
 </template>
 
 <script lang="ts" setup>
+// @ts-nocheck
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import dayjs from 'dayjs';
-import merge from 'lodash.merge';
+import { merge } from 'lodash';
 import echarts from 'echarts/lib/echarts';
 import 'echarts/lib/chart/line';
 import 'echarts/lib/component/tooltip';
@@ -124,7 +125,7 @@ import { useCommon, useAccessLog } from '@/store';
 import { Message } from 'bkui-vue';
 import { getApigwMetrics, getApigwStages, getApigwResources } from '@/http';
 import { userChartIntervalOption } from '@/hooks';
-import { getColorHue } from '@/common/util.ts';
+import { getColorHue } from '@/common/util';
 
 const {
   getChartIntervalOption,
@@ -250,7 +251,7 @@ const getDataByDimension = async () => {
     });
     return false;
   }
-  const requests = metricsList.value?.map((metrics: any) => {
+  metricsList.value?.map((metrics: any) => {
     const params = {
       ...searchParams,
       dimension: dimension.value,
@@ -262,10 +263,13 @@ const getDataByDimension = async () => {
 
   isDataLoading.value = true;
   try {
-    const res = await Promise.all(requests);
+    // const res = await Promise.all(requests);
     chartData.value = {};
-    metricsList.value?.forEach((metrics: any, index: number) => {
-      chartData.value[metrics] = res[index];
+    metricsList.value?.forEach((metrics: any) => {
+      // chartData.value[metrics] = res[index];
+      chartData.value[metrics] = {
+        metrics: [], series: [],
+      };
     });
 
     renderChart();
@@ -399,7 +403,7 @@ const handleClickLegend = (chartInstId: any, index: number) => {
       batch: legend.map(({ name }: any) => ({ name })),
     });
 
-    legend.forEach((item: any, i: number) => (item.selected = 0));
+    legend.forEach((item: any) => (item.selected = 0));
     chartLegend.value = { ...chartLegend.value, ...{ [chartInstId]: legend } };
   }
 };
@@ -776,6 +780,12 @@ onBeforeUnmount(() => {
       margin-right: 3px;
     }
   }
+
+  .ap-nodata {
+    :deep(.bk-exception-description) {
+      margin-top: 0;
+    }
+  }
 }
 
 .search-form {
@@ -816,4 +826,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-

@@ -456,3 +456,18 @@ export const json2yaml = (jsonStr: string) => {
     };
   }
 };
+
+export const yaml2json = (yamlStr: string) => {
+  yamlStr = yamlStr.replace(/\|-(?!\s*\n)/g, '|-\n');
+  try {
+    return {
+      data: jsYaml.load(yamlStr),
+      error: false,
+    };
+  } catch (err) {
+    return {
+      data: '',
+      error: true,
+    };
+  }
+};

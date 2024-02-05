@@ -11,19 +11,18 @@
       <bk-table
         class="table-layout mt15"
         :data="curPageData"
-        remote-pagination
         :pagination="pagination"
         :empty-text="emptyText"
         show-overflow-tooltip
         row-hover="auto"
         border="outer"
-        settings
+        :settings="settings"
         @page-limit-change="handlePageSizeChange"
         @page-value-change="handlePageChange"
       >
-        <bk-table-column :label="t('后端服务')">
-          <template #default="{ data }">
-            {{ data?.proxy?.backend?.name }}
+        <bk-table-column prop="backend" :label="t('后端服务')">
+          <template #default="{ row }">
+            {{ row?.proxy?.backend?.name }}
           </template>
         </bk-table-column>
         <bk-table-column
@@ -44,7 +43,7 @@
           prop="path"
           sort
         ></bk-table-column>
-        <bk-table-column :label="t('标签')">
+        <bk-table-column prop="gateway_label_ids" :label="t('标签')">
           <template #default="{ row }">
             <template v-if="row?.gateway_label_ids?.length">
               <bk-tag
@@ -59,12 +58,10 @@
             <template v-else>--</template>
           </template>
         </bk-table-column>
-        <bk-table-column
-          :label="t('生效的插件')"
-        >
-          <template #default="{ data }">
-            <template v-if="data?.plugins?.length">
-              <span v-for="p in data.plugins" :key="p?.id">
+        <bk-table-column prop="plugins" :label="t('生效的插件')">
+          <template #default="{ row }">
+            <template v-if="row?.plugins?.length">
+              <span v-for="p in row.plugins" :key="p?.id">
                 <bk-tag theme="success" v-if="p?.binding_type === 'stage'">环</bk-tag>
                 <bk-tag theme="info" v-if="p?.binding_type === 'resource'">资</bk-tag>
                 {{ p?.name }}
@@ -73,10 +70,7 @@
             <span v-else>--</span>
           </template>
         </bk-table-column>
-        <bk-table-column
-          :label="t('是否公开')"
-          prop="is_public"
-        >
+        <bk-table-column :label="t('是否公开')" prop="is_public">
           <template #default="{ row }">
             <span :style="{ color: row.is_public ? '#FE9C00' : '#63656e' }">
               {{ row.is_public ? t('是') : t('否') }}
@@ -85,7 +79,7 @@
         </bk-table-column>
         <bk-table-column
           :label="t('操作')"
-          prop="name"
+          prop="act"
           width="200"
         >
           <template #default="{ row }">
@@ -204,31 +198,11 @@ const getResourceVersionsData = async (curStageData: any) => {
   }
 };
 
-const init = async () => {
-  const data = await getStageList(apigwId.value);
-  const paramsStage = route.query.stage || 'prod';
-
-  const curStageData = data.find((item: { name: string; }) => item.name === paramsStage)
-  || stageStore.stageList[0];
-  getResourceVersionsData(curStageData);
-  getLabels();
-};
-
-// 切换环境重新获取资源信息
-watch(() => stageStore.curStageId, () => {
-  init();
-});
-
-// 切换环境重新执行
-onMounted(() => {
-  init();
-});
-
 // 当前页数据
 const curPageData = computed(() => {
-  let allData = resourceVersionList.value;
+  let curAllData = resourceVersionList.value;
   if (searchValue.value) {
-    allData = allData?.filter((row: any) => {
+    curAllData = curAllData?.filter((row: any) => {
       if (
         row?.proxy?.backend?.name?.toLowerCase()?.includes(searchValue.value)
       || row?.name?.toLowerCase()?.includes(searchValue.value)
@@ -248,10 +222,12 @@ const curPageData = computed(() => {
   if (startIndex < 0) {
     startIndex = 0;
   }
-  if (endIndex > allData.length) {
-    endIndex = allData.length;
+  if (endIndex > curAllData.length) {
+    endIndex = curAllData.length;
   }
-  return allData.slice(startIndex, endIndex);
+
+  pagination.value.count = curAllData.length;
+  return curAllData.slice(startIndex, endIndex);
 });
 
 // 页码变化发生的事件
@@ -271,6 +247,68 @@ const handlePageSizeChange = (limit: number) => {
     isLoading.value = false;
   }, 200);
 };
+
+const settings = {
+  trigger: 'click',
+  fields: [
+    {
+      name: t('后端服务'),
+      field: 'backend',
+      disabled: true,
+    },
+    {
+      name: t('资源名称'),
+      field: 'name',
+    },
+    {
+      name: t('前端请求方法'),
+      field: 'method',
+    },
+    {
+      name: t('前端请求路径'),
+      field: 'path',
+    },
+    {
+      name: t('标签'),
+      field: 'gateway_label_ids',
+    },
+    {
+      name: t('生效的插件'),
+      field: 'plugins',
+    },
+    {
+      name: t('是否公开'),
+      field: 'is_public',
+    },
+  ],
+  checked: ['backend', 'name', 'method', 'path', 'gateway_label_ids', 'plugins', 'is_public'],
+};
+
+const init = async () => {
+  const data = await getStageList(apigwId.value);
+  const paramsStage = route.query.stage || 'prod';
+
+  const curStageData = data.find((item: { name: string; }) => item.name === paramsStage)
+  || stageStore.stageList[0];
+  getResourceVersionsData(curStageData);
+  getLabels();
+};
+
+// 切换环境重新获取资源信息
+watch(() => stageStore.curStageId, () => {
+  init();
+});
+
+// 切换环境重新执行
+onMounted(() => {
+  init();
+});
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.table-layout {
+  :deep(.bk-table-head) {
+    scrollbar-gutter: auto;
+  }
+}
+</style>

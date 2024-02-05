@@ -80,9 +80,9 @@ const {
 } = useQueryList(getGatewaysDocs, filterData);
 
 
-const handleGoApigw = () => {
-  window.open(window.BK_DASHBOARD_URL);
-};
+// const handleGoApigw = () => {
+//   window.open(window.BK_DASHBOARD_URL);
+// };
 
 const gotoDetails = (data: any) => {
   router.push({

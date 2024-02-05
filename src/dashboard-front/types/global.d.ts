@@ -14,4 +14,5 @@ declare interface Window {
   BK_APIGATEWAY_VERSION: string
   GLOBAL_CONFIG: any
   BK_COMPONENT_API_URL: string
+  BK_APP_VERSION: string
 }
