@@ -1,6 +1,6 @@
 <template>
   <div class="release-sideslider">
-    <bk-sideslider v-model:isShow="isShow" :width="1050" :title="t('生成资源版本')" quick-close>
+    <bk-sideslider v-model:isShow="isShow" :width="960" :title="t('生成资源版本')" quick-close>
       <template #default>
         <div class="sideslider-content">
           <div class="top-steps">

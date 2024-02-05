@@ -75,8 +75,14 @@
     </div>
     <!-- 新建/编辑sideslider -->
     <bk-sideslider
-      v-model:isShow="sidesliderConfi.isShow" :title="sidesliderConfi.title" :quick-close="true"
-      ext-cls="backend-service-slider" width="800">
+      v-model:isShow="sidesliderConfi.isShow"
+      :title="sidesliderConfi.title"
+      :quick-close="true"
+      ext-cls="backend-service-slider"
+      width="960"
+      :before-close="handleBeforeClose"
+      @animation-end="handleAnimationEnd"
+    >
       <template #default>
         <div class="content">
           <bk-alert theme="warning" :title="editTitle" class="mb20" v-if="curOperate === 'edit' && isPublish" />
@@ -189,7 +195,7 @@ import { InfoBox, Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
 import { useCommon } from '@/store';
 import { timeFormatter } from '@/common/util';
-import { useQueryList } from '@/hooks';
+import { useQueryList, useSidebar } from '@/hooks';
 import {
   getStageList,
   getBackendServiceList,
@@ -198,6 +204,7 @@ import {
   updateBackendService,
   deleteBackendService,
 } from '@/http';
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
 const { t } = useI18n();
 const common = useCommon();
@@ -361,6 +368,12 @@ const handleAdd = () => {
   });
   sidesliderConfi.isShow = true;
   sidesliderConfi.title = t('新建后端服务');
+  const sliderParams = {
+    curServiceDetail: curServiceDetail.value,
+    stageConfig: stageConfig.value,
+    baseInfo: baseInfo.value,
+  };
+  initSidebarFormData(sliderParams);
 };
 
 // 增加服务地址
@@ -404,6 +417,12 @@ const handleEdit = async (data: any) => {
       return { configs: item, name: item?.stage?.name, id: item?.stage?.id };
     });
     sidesliderConfi.isShow = true;
+    const sliderParams = {
+      curServiceDetail: curServiceDetail.value,
+      stageConfig: stageConfig.value,
+      baseInfo: baseInfo.value,
+    };
+    initSidebarFormData(sliderParams);
   } catch (error) {
     console.log('error', error);
   }
@@ -510,6 +529,19 @@ const handleConfirm = async () => {
   } finally {
     isSaveLoading.value = false;
   }
+};
+
+const handleBeforeClose = async () => {
+  const sliderParams = {
+    curServiceDetail: curServiceDetail.value,
+    stageConfig: stageConfig.value,
+    baseInfo: baseInfo.value,
+  };
+  return updateFormData(JSON.stringify(sliderParams));
+};
+
+const handleAnimationEnd = () => {
+  handleCancel();
 };
 
 // 取消btn

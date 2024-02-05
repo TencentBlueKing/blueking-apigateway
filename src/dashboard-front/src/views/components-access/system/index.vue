@@ -150,7 +150,7 @@
 
     <bk-sideslider
       v-model:isShow="isSliderShow"
-      :width="750"
+      :width="640"
       :title="sliderTitle"
       quick-close
       @hidden="handleHidden"

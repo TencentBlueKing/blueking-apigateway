@@ -198,7 +198,7 @@
 
     <bk-sideslider
       v-model:is-show="isSliderShow"
-      :width="850"
+      :width="960"
       :title="sliderTitle"
       :quick-close="true"
       :before-close="handleBeforeClose"
