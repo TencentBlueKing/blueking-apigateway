@@ -271,9 +271,9 @@ const setTableHeader = () => {
           return (
             <div class="perm-apply-dot">
               <span class={[
-                'dot', 
+                'dot',
                 {[data.status]: data?.status}
-              ]} 
+              ]}
               />
               {statusMap[data?.status as keyof typeof statusMap]}
             </div>

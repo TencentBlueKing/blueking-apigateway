@@ -72,7 +72,7 @@
           <span class="label-cls">{{ t('已使用的环境:') }}</span>
         </template>
         <span v-if="!servicesData?.config?.length">--</span>
-        <span v-else>{{ servicesData?.config?.map(item => item?.stage?.name)?.join(', ') }}</span>
+        <span v-else>{{ servicesData?.config?.map((item: any) => item?.stage?.name)?.join(', ') }}</span>
       </bk-form-item>
     </bk-form>
     <div class="title">

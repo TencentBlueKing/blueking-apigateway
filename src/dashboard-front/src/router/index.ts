@@ -370,7 +370,7 @@ const routes: RouteRecordRaw[] = [
         },
         children: [
           {
-            path: 'apigw-api/:apigwId/intro',
+            path: 'intro',
             alias: '',
             name: 'apigwAPIDetailIntro',
             component: ApigwAPIDetailIntro,
@@ -381,7 +381,7 @@ const routes: RouteRecordRaw[] = [
             },
           },
           {
-            path: 'apigw-api/:apigwId/:resourceId/doc',
+            path: ':resourceId/doc',
             alias: '',
             name: 'apigwAPIDetailDoc',
             component: ApigwAPIDetailDoc,
