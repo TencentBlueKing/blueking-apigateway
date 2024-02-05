@@ -101,6 +101,13 @@
           </template>
 
         </bk-table-column>
+        <template #empty>
+          <TableEmpty
+            :keyword="tableEmptyConf.keyword"
+            :abnormal="tableEmptyConf.isAbnormal"
+            @clear-filter="handleClearFilterKey"
+          />
+        </template>
       </bk-table>
     </bk-loading>
 
@@ -115,6 +122,7 @@ import { useI18n } from 'vue-i18n';
 import { getResourceVersionsInfo, getGatewayLabels, getStageList } from '@/http';
 import { useCommon, useStage } from '@/store';
 import resourceDetails from './resource-details.vue';
+import TableEmpty from '@/components/table-empty.vue';
 import { copy } from '@/common/util';
 import { useRoute } from 'vue-router';
 
@@ -144,6 +152,11 @@ const pagination = ref({
   current: 1,
   limit: 10,
   count: 0,
+});
+
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
 });
 
 const getLabels = async () => {
@@ -198,8 +211,7 @@ const getResourceVersionsData = async (curStageData: any) => {
   }
 };
 
-// 当前页数据
-const curPageData = computed(() => {
+const getPageData = () => {
   let curAllData = resourceVersionList.value;
   if (searchValue.value) {
     curAllData = curAllData?.filter((row: any) => {
@@ -212,6 +224,7 @@ const curPageData = computed(() => {
       }
       return false;
     });
+    updateTableEmptyConfig();
   }
 
   // 当前页数
@@ -225,9 +238,13 @@ const curPageData = computed(() => {
   if (endIndex > curAllData.length) {
     endIndex = curAllData.length;
   }
-
   pagination.value.count = curAllData.length;
-  return curAllData.slice(startIndex, endIndex);
+  return curAllData;
+};
+
+// 当前页数据
+const curPageData = computed(() => {
+  return getPageData();
 });
 
 // 页码变化发生的事件
@@ -246,6 +263,28 @@ const handlePageSizeChange = (limit: number) => {
   setTimeout(() => {
     isLoading.value = false;
   }, 200);
+};
+
+const updateTableEmptyConfig = () => {
+  if (searchValue.value || !curPageData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (searchValue.value) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+const handleClearFilterKey = () => {
+  searchValue.value = '';
+  pagination.value = Object.assign(pagination.value, {
+    current: 1,
+    limit: 10,
+    count: resourceVersionList.value.length,
+  });
+  getPageData();
 };
 
 const settings = {

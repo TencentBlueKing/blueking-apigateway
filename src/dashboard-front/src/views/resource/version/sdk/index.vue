@@ -88,6 +88,14 @@
                 </bk-button>
               </template>
             </bk-table-column>
+            <template #empty>
+              <TableEmpty
+                :keyword="tableEmptyConf.keyword"
+                :abnormal="tableEmptyConf.isAbnormal"
+                @reacquire="getList"
+                @clear-filter="handleClearFilterKey"
+              />
+            </template>
           </bk-table>
         </bk-loading>
       </div>
@@ -109,12 +117,17 @@ import { getSdksList } from '@/http';
 import { copy } from '@/common/util';
 import { useResourceVersion } from '@/store';
 import createSdk from '../components/createSdk.vue';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const resourceVersionStore = useResourceVersion();
 
 const createSdkRef = ref(null);
 const filterData = ref({ keyword: '' });
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 // 列表hooks
 const {
@@ -142,6 +155,30 @@ const handleShowInfo = () => {};
 const openCreateSdk = () => {
   createSdkRef.value?.showCreateSdk();
 };
+
+const handleClearFilterKey = () => {
+  filterData.value.keyword = '';
+  getList();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  if (filterData.value.keyword && !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (filterData.value.keyword) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+watch(() => filterData.value, () => {
+  updateTableEmptyConfig();
+}, {
+  deep: true,
+});
 
 watch(
   () => resourceVersionStore.getResourceFilter,

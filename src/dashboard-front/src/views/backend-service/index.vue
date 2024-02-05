@@ -569,8 +569,7 @@ const handleClearFilterKey = () => {
 };
 
 const updateTableEmptyConfig = () => {
-  console.log(555, filterData.value.name || !tableData.value.length);
-  if (filterData.value.name || !tableData.value.length) {
+  if (filterData.value.name && !tableData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }

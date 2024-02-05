@@ -695,7 +695,7 @@ const handleClearFilterKey = () => {
 };
 
 const updateTableEmptyConfig = () => {
-  if (searchValue.value.length || !tableData.value.length) {
+  if (searchValue.value.length && !tableData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
@@ -1033,6 +1033,7 @@ watch(
       item.isEditLabel = false;
     });
     console.log('tableData.value', tableData.value);
+    updateTableEmptyConfig();
   },
   { immediate: true },
 );
