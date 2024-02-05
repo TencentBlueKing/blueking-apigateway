@@ -9,7 +9,7 @@
         </span>
       </div>
       <div class="header-search">
-        <bk-input class="search-input w500" :placeholder="t('请输入服务名称')" v-model="filterData.name"></bk-input>
+        <bk-input class="search-input w500" :placeholder="t('请输入服务名称')" v-model="filterData.name" />
       </div>
     </div>
     <div class="backend-service-content">
@@ -70,13 +70,27 @@
               </span>
             </template>
           </bk-table-column>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getList"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
     </div>
     <!-- 新建/编辑sideslider -->
     <bk-sideslider
-      v-model:isShow="sidesliderConfi.isShow" :title="sidesliderConfi.title" :quick-close="true"
-      ext-cls="backend-service-slider" width="800">
+      v-model:isShow="sidesliderConfi.isShow"
+      :title="sidesliderConfi.title"
+      :quick-close="true"
+      ext-cls="backend-service-slider"
+      width="960"
+      :before-close="handleBeforeClose"
+      @animation-end="handleAnimationEnd"
+    >
       <template #default>
         <div class="content">
           <bk-alert theme="warning" :title="editTitle" class="mb20" v-if="curOperate === 'edit' && isPublish" />
@@ -183,13 +197,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { InfoBox, Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
 import { useCommon } from '@/store';
 import { timeFormatter } from '@/common/util';
-import { useQueryList } from '@/hooks';
+import { useQueryList, useSidebar } from '@/hooks';
 import {
   getStageList,
   getBackendServiceList,
@@ -198,7 +212,9 @@ import {
   updateBackendService,
   deleteBackendService,
 } from '@/http';
+import TableEmpty from '@/components/table-empty.vue';
 
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t } = useI18n();
 const common = useCommon();
 const router = useRouter();
@@ -232,6 +248,10 @@ const loadbalanceList = reactive([
 ]);
 // scheme 类型
 const schemeList = [{ value: 'http' }, { value: 'https' }];
+const tableEmptyConf = ref({
+  keyword: '',
+  isAbnormal: false,
+});
 // 基础信息
 const baseInfo = ref({
   name: '',
@@ -361,6 +381,12 @@ const handleAdd = () => {
   });
   sidesliderConfi.isShow = true;
   sidesliderConfi.title = t('新建后端服务');
+  const sliderParams = {
+    curServiceDetail: curServiceDetail.value,
+    stageConfig: stageConfig.value,
+    baseInfo: baseInfo.value,
+  };
+  initSidebarFormData(sliderParams);
 };
 
 // 增加服务地址
@@ -404,6 +430,12 @@ const handleEdit = async (data: any) => {
       return { configs: item, name: item?.stage?.name, id: item?.stage?.id };
     });
     sidesliderConfi.isShow = true;
+    const sliderParams = {
+      curServiceDetail: curServiceDetail.value,
+      stageConfig: stageConfig.value,
+      baseInfo: baseInfo.value,
+    };
+    initSidebarFormData(sliderParams);
   } catch (error) {
     console.log('error', error);
   }
@@ -512,10 +544,41 @@ const handleConfirm = async () => {
   }
 };
 
+const handleBeforeClose = async () => {
+  const sliderParams = {
+    curServiceDetail: curServiceDetail.value,
+    stageConfig: stageConfig.value,
+    baseInfo: baseInfo.value,
+  };
+  return isSidebarClosed(JSON.stringify(sliderParams));
+};
+
+const handleAnimationEnd = () => {
+  handleCancel();
+};
+
 // 取消btn
 const handleCancel = () => {
   sidesliderConfi.isShow = false;
   stageConfigRef.value = [];
+};
+
+const handleClearFilterKey = () => {
+  filterData.value = { name: '', type: '' };
+  getList();
+};
+
+const updateTableEmptyConfig = () => {
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  if (filterData.value.name && !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (filterData.value.name) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
 };
 
 const init = async () => {
@@ -533,6 +596,13 @@ const init = async () => {
   }
 };
 init();
+
+watch(
+  () => filterData.value, () => {
+    updateTableEmptyConfig();
+  },
+  { deep: true },
+);
 </script>
 
 <style lang="scss" scoped>

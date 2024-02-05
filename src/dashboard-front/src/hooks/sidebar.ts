@@ -28,7 +28,7 @@ export function useSidebar() {
           title: t('确认离开当前页？'),
           subTitle: t('离开将会导致未保存信息丢失'),
           confirmText: t('离开'),
-          confirmFn() {
+          onConfirm() {
             resolve(true);
           },
           cancelFn() {

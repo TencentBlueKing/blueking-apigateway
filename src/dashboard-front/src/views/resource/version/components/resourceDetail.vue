@@ -4,7 +4,7 @@
   <div class="release-sideslider">
     <bk-sideslider
       v-model:isShow="isShow"
-      :width="1050"
+      :width="960"
       :title="`${$t('资源详情')}【${info.version}】`"
       quick-close
     >
