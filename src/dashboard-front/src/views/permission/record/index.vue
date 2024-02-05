@@ -4,7 +4,7 @@
       <bk-form class="flex-row">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker mb15" label-width="85">
           <bk-date-picker
-            class="w320" v-model="initDateTimeRange" :placeholder="t('选择日期时间范围')"
+            class="w320" v-model="initDateTimeRange" :placeholder="t('选择日期时间范围')" :key="dateKey"
             :type="'datetimerange'" :shortcuts="datepickerShortcuts" :shortcut-close="true" :use-shortcut-text="true"
             @clear="handleTimeClear" :shortcut-selected-index="shortcutSelectedIndex"
             @shortcut-change="handleShortcutChange" @pick-success="handleTimeChange">
@@ -68,6 +68,14 @@
                 </bk-table-column>
               </bk-table>
             </div>
+          </template>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getList"
+              @clear-filter="handleClearFilterKey"
+            />
           </template>
         </bk-table>
       </bk-loading>
@@ -163,17 +171,20 @@
 </template>
 
 <script setup lang="tsx">
-import { nextTick, reactive, ref, onMounted } from 'vue';
+import { nextTick, reactive, ref, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPermissionRecordList } from '@/http';
 import { useCommon } from '@/store';
 import { useQueryList } from '@/hooks';
 import { sortByKey } from '@/common/util';
+import TableEmpty from '@/components/table-empty.vue';
+
 const { t } = useI18n();
-const common = useCommon();
 
-const { apigwId } = common; // 网关id
-
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 const filterData = ref({
   bk_app_code: '',
   grant_dimension: '',
@@ -183,6 +194,7 @@ const filterData = ref({
 const initDateTimeRange = ref([]);
 const resourceList = ref([]);
 const shortcutSelectedIndex = ref<number>(-1);
+const dateKey = ref('dateKey');
 const curRecord = ref({
   bk_app_code: '',
   applied_by: '',
@@ -350,7 +362,7 @@ const {
   isLoading,
   handlePageChange,
   handlePageSizeChange,
-  // getList,
+  getList,
 } = useQueryList(getPermissionRecordList, filterData);
 
 const handleRowClick = (e: Event, row: Record<string, any>) => {
@@ -403,10 +415,45 @@ const handleShowRecord = (e: Event, data: any) => {
   detailSliderConf.isShow = true;
 };
 
+const handleClearFilterKey = async() => {
+  filterData.value =Object.assign({}, {
+    bk_app_code: '',
+    grant_dimension: '',
+    time_start: '',
+    time_end: '',
+  });
+  shortcutSelectedIndex.value = -1;
+  initDateTimeRange.value = [];
+  dateKey.value = String(+new Date());
+  await getList();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  const searchParams = {
+    ...filterData.value,
+  };
+  const list = Object.values(searchParams).filter(item => item !== '');
+  if (list.length && !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (list.length) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
 
 const init = () => {
   setTableHeader();
 };
+
+watch(() => filterData.value, () => {
+  updateTableEmptyConfig()
+}, {
+  deep: true
+})
 
 onMounted(() => {
   init();

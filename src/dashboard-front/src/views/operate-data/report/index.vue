@@ -5,7 +5,9 @@
         <bk-form-item :label="$t('选择时间')" class="ag-form-item-datepicker top-form-item-time">
           <bk-date-picker
             style="width: 320px;"
+            ref="datePickerRef"
             v-model="dateTimeRange"
+            :key="dateKey"
             :placeholder="$t('选择日期时间范围')"
             :type="'datetimerange'"
             :shortcuts="shortcutsInDay"
@@ -95,11 +97,11 @@
               </div>
             </div>
             <div v-show="chartEmpty[`${key}_${chart.id}`] && !isPageLoading" class="ap-nodata">
-              <bk-exception
-                class="exception-wrap-item exception-part"
-                type="empty"
-                scene="part"
-                :description="t('暂无数据')"
+              <TableEmpty
+                :keyword="tableEmptyConf.keyword"
+                :abnormal="tableEmptyConf.isAbnormal"
+                @reacquire="init"
+                @clear-filter="handleClearFilterKey"
               />
             </div>
           </div>
@@ -126,6 +128,8 @@ import { Message } from 'bkui-vue';
 import { getApigwMetrics, getApigwStages, getApigwResources } from '@/http';
 import { userChartIntervalOption } from '@/hooks';
 import { getColorHue } from '@/common/util';
+import TableEmpty from '@/components/table-empty.vue';
+import { Console } from 'console';
 
 const {
   getChartIntervalOption,
@@ -137,9 +141,15 @@ const chartInstances: any = {};
 const { t } = useI18n();
 const isPageLoading = ref<boolean>(true);
 const isDataLoading = ref<boolean>(false);
+const datePickerRef = ref(null);
+const dateKey = ref('dateKey');
 const dateTimeRange = ref<Array<any>>([]);
 const shortcutSelectedIndex = ref<number>(1);
-const searchParams = reactive<any>({
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
+let searchParams = reactive<any>({
   stage_id: '',
   resource_id: '',
   time_start: '',
@@ -225,6 +235,7 @@ const chartResize = () => {
       chart.resize();
     });
   });
+  updateTableEmptyConfig();
 };
 
 const initChart = () => {
@@ -429,6 +440,7 @@ const handleTimeChange = () => {
 
 const handleShortcutChange = (value: any, index: number) => {
   shortcutSelectedIndex.value = index;
+  updateTableEmptyConfig();
 };
 
 const handleRefresh = () => {
@@ -672,6 +684,36 @@ const getChartOption = (chartId: any, chartInstId: any) => {
   }
 
   return merge(baseOption, chartOption, moreOption);
+};
+
+const handleClearFilterKey = () => {
+  [datePickerRef.value.shortcut] = [AccessLogStore.datepickerShortcuts[1]];
+  dateTimeRange.value = [];
+  shortcutSelectedIndex.value = 1;
+  searchParams = Object.assign({}, {
+    stage_id: '',
+    resource_id: '',
+    time_start: '',
+    time_end: '',
+    dimension: '',
+  });
+  dateKey.value = String(+new Date());
+  setSearchTimeRange();
+  init();
+};
+
+const updateTableEmptyConfig = () => {
+  const time = dateTimeRange.value.some(Boolean);
+  const list = Object.values(searchParams).filter(item => item !== '');
+  if (time || list.length > 0) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (searchParams.value.stage_id || time) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
 };
 
 const renderChart = () => {

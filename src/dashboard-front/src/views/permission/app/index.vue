@@ -74,6 +74,14 @@
               <bk-button theme="primary" text @click="handleRemove(data)"> {{ t('删除') }} </bk-button>
             </template>
           </bk-table-column>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getList"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
     </div>
@@ -186,8 +194,6 @@
               </template>
             </bk-table-column>
           </template>
-
-
         </bk-table>
       </div>
     </bk-dialog>
@@ -252,6 +258,7 @@ import { reactive, ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { sortByKey, timeFormatter } from '@/common/util';
 import agDropdown from '@/components/ag-dropdown.vue';
+import TableEmpty from '@/components/table-empty.vue';
 import {
   getResourceListData,
   getApiPermissionList,
@@ -273,14 +280,14 @@ const { t } = useI18n();
 const common = useCommon();
 const { apigwId } = common; // 网关id
 
-const filterData = ref({ bk_app_code: '', keyword: '', grant_type: '', resource_id: '' });
+const filterData = ref({ bk_app_code: '', keyword: '', grant_type: '', grant_dimension: '', resource_id: '' });
 const isExportDropdownShow = ref<boolean>(false);
 const resourceList = ref([]);
 const isVisible = ref<boolean>(false);
 const isBatchApplyLoaading = ref<boolean>(false);
 const tableIndex = ref<number>(0);
 const curPermission = ref({ bk_app_code: '', detail: [], id: -1 });
-const dimension = ref<string>('resource');
+const dimension = ref<string>('');
 const searchQuery = ref<string>('');
 const applyNewTime = ref<string>('');
 const curSelections = ref([]);
@@ -315,6 +322,10 @@ const curAuthData = ref({
   expire_days: 180,
   resource_ids: [],
   dimension: 'api',
+});
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
 });
 // 批量续期dialog
 const batchApplyDialogConf = reactive({
@@ -375,10 +386,11 @@ const {
 // 监听授权维度是否变化
 watch(
   () => dimension.value,
-  () => {
+  async (value: string) => {
+    filterData.value.grant_dimension = value;
     resetSelections();
     const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-    getList(method);
+    await getList(method);
   },
   { deep: true },
 );
@@ -395,6 +407,7 @@ watch(
         e.disabled = isEmpty;
       }
     });
+    updateTableEmptyConfig();
   },
   { deep: true },
 );
@@ -420,6 +433,14 @@ watch(
     });
   },
   {  deep: true },
+);
+watch(
+  () => filterData.value, () => {
+    updateTableEmptyConfig();
+  },
+  {
+    deep: true,
+  },
 );
 
 // 获取资源列表数据
@@ -689,6 +710,32 @@ const handleSave = () => {
 // 主动授权取消btn
 const handleSidesliderCancel = () => {
   authSliderConf.isShow = false;
+};
+
+const handleClearFilterKey = () => {
+  filterData.value = { bk_app_code: '', keyword: '', grant_type: '', grant_dimension: '', resource_id: '' };
+  dimension.value = '';
+  searchQuery.value = '';
+  getList();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  const searchParams = {
+    ...filterData.value,
+    searchQuery: searchQuery.value,
+    dimension: dimension.value,
+  };
+  const list = Object.values(searchParams).filter(item => item !== '');
+  if (list.length && !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (list.length) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
 };
 
 const init = () => {

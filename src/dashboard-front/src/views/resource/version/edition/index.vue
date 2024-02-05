@@ -192,7 +192,6 @@ const stageList = ref<any>([]);
 const stageData = ref();
 const versionData = ref();
 const releaseSidesliderRef = ref(null);
-
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',
   isAbnormal: false,
