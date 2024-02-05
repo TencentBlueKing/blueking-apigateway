@@ -10,7 +10,6 @@ import {
 } from 'vue';
 import { IPagination } from '@/types';
 import { useCommon } from '@/store';
-const getMethod = ref<any>(null);
 
 export function useQueryList(apiMethod: Function, filterData?: any, id?: number) {
   const common = useCommon();
@@ -25,6 +24,7 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
   const pagination = ref<IPagination>({ ...initPagination });
   const isLoading = ref(false);
   const tableData = ref([]);
+  const getMethod = ref<any>(null);
 
   // 获取列表数据的方法
   const getList = async (fetchMethod = apiMethod) => {
