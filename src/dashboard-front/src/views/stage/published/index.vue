@@ -11,6 +11,8 @@
           v-model="dateValue"
           style="width: 100%;"
           type="datetimerange"
+          :shortcut-selected-index="shortcutSelectedIndex"
+          :key="dateKey"
           @change="handleChange"
           @pick-success="handleComfirm"
         >
@@ -124,7 +126,9 @@ const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',
   isAbnormal: false,
 });
+const shortcutSelectedIndex = ref(-1);
 const datePickerRef = ref(null);
+const dateKey = ref('dateKey');
 const publishSourceEnum: any = ref(PublishSourceEnum);
 const publishStatusEnum: any = ref(PublishStatusEnum);
 
@@ -168,6 +172,8 @@ const handleClearFilterKey = () => {
     time_end: '',
   });
   dateValue.value = [];
+  shortcutSelectedIndex.value = -1;
+  dateKey.value = String(+new Date());
   getList();
   updateTableEmptyConfig();
 };
