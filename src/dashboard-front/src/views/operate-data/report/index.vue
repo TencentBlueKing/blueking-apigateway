@@ -704,7 +704,6 @@ const handleClearFilterKey = () => {
 const updateTableEmptyConfig = () => {
   const time = dateTimeRange.value.some(Boolean);
   const list = Object.values(searchParams).filter(item => item !== '');
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (time || list.length > 0) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
