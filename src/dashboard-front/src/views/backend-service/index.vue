@@ -204,8 +204,8 @@ import {
   updateBackendService,
   deleteBackendService,
 } from '@/http';
-const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t } = useI18n();
 const common = useCommon();
 const router = useRouter();
@@ -537,7 +537,7 @@ const handleBeforeClose = async () => {
     stageConfig: stageConfig.value,
     baseInfo: baseInfo.value,
   };
-  return updateFormData(JSON.stringify(sliderParams));
+  return isSidebarClosed(JSON.stringify(sliderParams));
 };
 
 const handleAnimationEnd = () => {
