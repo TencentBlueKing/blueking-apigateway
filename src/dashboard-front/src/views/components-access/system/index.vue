@@ -488,7 +488,6 @@ const handleConfirm = async () => {
 };
 
 const handleBeforeClose = () => {
-  console.log(formData.value);
   return isSidebarClosed(JSON.stringify(formData.value));
 };
 

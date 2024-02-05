@@ -9,7 +9,7 @@
         </span>
       </div>
       <div class="header-search">
-        <bk-input class="search-input w500" :placeholder="t('请输入服务名称')" v-model="filterData.name"></bk-input>
+        <bk-input class="search-input w500" :placeholder="t('请输入服务名称')" v-model="filterData.name" />
       </div>
     </div>
     <div class="backend-service-content">
@@ -70,6 +70,14 @@
               </span>
             </template>
           </bk-table-column>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getList"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
     </div>
@@ -189,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { InfoBox, Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
@@ -204,6 +212,7 @@ import {
   updateBackendService,
   deleteBackendService,
 } from '@/http';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t } = useI18n();
@@ -239,6 +248,10 @@ const loadbalanceList = reactive([
 ]);
 // scheme 类型
 const schemeList = [{ value: 'http' }, { value: 'https' }];
+const tableEmptyConf = ref({
+  keyword: '',
+  isAbnormal: false,
+});
 // 基础信息
 const baseInfo = ref({
   name: '',
@@ -550,6 +563,24 @@ const handleCancel = () => {
   stageConfigRef.value = [];
 };
 
+const handleClearFilterKey = () => {
+  filterData.value = { name: '', type: '' };
+  getList();
+};
+
+const updateTableEmptyConfig = () => {
+  console.log(555, filterData.value.name || !tableData.value.length);
+  if (filterData.value.name || !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (filterData.value.name) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
 const init = async () => {
   try {
     const res = await getStageList(apigwId);
@@ -565,6 +596,13 @@ const init = async () => {
   }
 };
 init();
+
+watch(
+  () => filterData.value, () => {
+    updateTableEmptyConfig();
+  },
+  { deep: true },
+);
 </script>
 
 <style lang="scss" scoped>
