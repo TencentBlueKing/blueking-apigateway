@@ -457,6 +457,7 @@ const getPluginListDetails = async (params: { scope_type: string; scope_id: numb
     pluginListDate.value = res.results || [];
   } catch (error) {
     pluginListDate.value = [];
+    tableEmptyConf.value.isAbnormal = true;
     console.log('error', error);
   } finally {
     isPluginListLoading.value = false;

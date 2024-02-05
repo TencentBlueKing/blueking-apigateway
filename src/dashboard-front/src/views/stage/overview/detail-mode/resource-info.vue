@@ -266,6 +266,7 @@ const handlePageSizeChange = (limit: number) => {
 };
 
 const updateTableEmptyConfig = () => {
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (searchValue.value || !curPageData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;

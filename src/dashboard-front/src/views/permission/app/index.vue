@@ -727,6 +727,7 @@ const updateTableEmptyConfig = () => {
     dimension: dimension.value,
   };
   const list = Object.values(searchParams).filter(item => item !== '');
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (list.length && !tableData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;

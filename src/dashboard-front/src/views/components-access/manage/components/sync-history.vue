@@ -193,6 +193,7 @@ const setSearchTimeRange = () => {
 
 const updateTableEmptyConfig = () => {
   const isEmpty = dateTimeRange.value?.some(Boolean);
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (isEmpty) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;

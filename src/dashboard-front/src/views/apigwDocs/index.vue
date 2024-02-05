@@ -53,6 +53,14 @@
               {{ data?.maintainers?.join(', ') || '--' }}
             </template>
           </bk-table-column>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getList"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
     </div>
@@ -60,11 +68,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useQueryList } from '@/hooks';
 import { useI18n } from 'vue-i18n';
 import { getGatewaysDocs } from '@/http';
 import { useRouter } from 'vue-router';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -77,12 +86,17 @@ const {
   isLoading,
   handlePageChange,
   handlePageSizeChange,
+  getList,
 } = useQueryList(getGatewaysDocs, filterData);
 
 
 // const handleGoApigw = () => {
 //   window.open(window.BK_DASHBOARD_URL);
 // };
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 const gotoDetails = (data: any) => {
   router.push({
@@ -92,6 +106,38 @@ const gotoDetails = (data: any) => {
     },
   });
 };
+
+const handleClearFilterKey = () => {
+  filterData.value = { keyword: '' };
+  getList();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  const searchParams = {
+    ...filterData.value,
+  };
+  const list = Object.values(searchParams).filter(item => item !== '');
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  if (list.length && !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (list.length) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+watch(
+  () => tableData.value, () => {
+    updateTableEmptyConfig();
+  },
+  {
+    deep: true,
+  },
+);
 
 </script>
 

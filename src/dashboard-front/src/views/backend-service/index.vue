@@ -569,6 +569,7 @@ const handleClearFilterKey = () => {
 };
 
 const updateTableEmptyConfig = () => {
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (filterData.value.name && !tableData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
