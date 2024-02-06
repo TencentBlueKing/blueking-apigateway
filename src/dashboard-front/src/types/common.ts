@@ -4,6 +4,7 @@ export interface IPagination {
   offset: number
   limit: number
   count: number
+  abnormal?: boolean
 }
 
 export interface IDialog {

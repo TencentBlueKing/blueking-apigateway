@@ -1,7 +1,7 @@
 <template>
   <bk-sideslider
     v-model:isShow="isShow"
-    :width="1050"
+    :width="960"
     quick-close
   >
     <template #header>

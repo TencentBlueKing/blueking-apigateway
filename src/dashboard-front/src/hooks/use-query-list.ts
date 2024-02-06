@@ -19,6 +19,8 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
     limit: 10,
     count: 0,
     small: false,
+    // 获取接口是否异常
+    abnormal: false,
   };
 
   const pagination = ref<IPagination>({ ...initPagination });
@@ -40,9 +42,12 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
     try {
       const res = id ? await method(apigwId, id, paramsData) : await method(apigwId, paramsData);
       tableData.value = res.results || res.data;
-      pagination.value.count = res.count;
+      pagination.value = Object.assign(pagination.value, {
+        count: res.count || 0,
+        abnormal: false,
+      });
     } catch (error) {
-
+      pagination.value.abnormal = true;
     } finally {
       isLoading.value = false;
     }

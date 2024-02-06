@@ -152,10 +152,11 @@
 
     <bk-sideslider
       v-model:isShow="isSliderShow"
-      :width="750"
+      :width="640"
       :title="sliderTitle"
       quick-close
-      @hidden="handleHidden"
+      :before-close="handleBeforeClose"
+      @animation-end="handleAnimationEnd"
     >
       <div style="padding: 20px; height: calc(100vh - 107px);">
         <bk-loading :loading="detailLoading">
@@ -347,8 +348,10 @@ import {
   updateSystem,
   deleteSystem,
 } from '@/http';
+import { useSidebar } from '@/hooks';
 
 const { t } = useI18n();
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
 const getDefaultData = () => {
   return {
@@ -486,19 +489,19 @@ const handleConfirm = async () => {
   }
 };
 
-const handleHidden = () => {
-  curSystem.value = {};
-  categoryList.value = [];
-  formData.value = Object.assign({}, getDefaultData());
+const handleBeforeClose = () => {
+  return isSidebarClosed(JSON.stringify(formData.value));
 };
 
-// const handleAfterLeave = () => {
-//   curSystem.value = {};
-//   formRemoveConfirmCode.value = '';
-// };
+const handleAnimationEnd = () => {
+  handleCancel();
+};
 
 const handleCancel = () => {
   isSliderShow.value = false;
+  curSystem.value = {};
+  categoryList.value = [];
+  formData.value = Object.assign({}, getDefaultData());
 };
 
 const handleSubmit = async () => {
@@ -667,6 +670,8 @@ const handleEditSys = async (data) => {
     formData.value.doc_category_id = data.doc_category_id;
     formData.value.comment = comment;
     formData.value.timeout = timeout;
+    console.log(formData.value);
+    initSidebarFormData(formData.value);
   } catch (e) {
     // catchErrorHandler(e, this)
     console.error(e);
@@ -696,14 +701,6 @@ const handleDeleteSys = (data) => {
 //   }
 //   tableEmptyConf.value.keyword = '';
 // };
-
-// 表单型弹窗关闭验证
-// const handleBeforeClose = async () => {
-//   return true;
-//   // userRef.value?.handleBlur();
-//   // return this.$isSidebarClosed(JSON.stringify(this.formData));
-// };
-
 init();
 </script>
 
