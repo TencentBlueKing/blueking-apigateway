@@ -117,7 +117,9 @@
     />
 
     <!-- 资源详情 -->
-    <resource-detail :id="resourceVersionId" ref="resourceDetailRef" />
+    <resource-detail
+      :id="resourceVersionId" :is-show="resourceDetailShow" ref="resourceDetailRef"
+      @hidden="handleHidden" />
 
     <!-- 版本对比 -->
     <bk-sideslider
@@ -225,10 +227,16 @@ const handleShowDiff = () => {
   resetSelections();
 };
 
+const resourceDetailShow = ref(false);
+
 // 展示详情
 const handleShowInfo = (id: number) => {
   resourceVersionId.value = id;
-  resourceDetailRef.value?.showSideslider();
+  resourceDetailShow.value = true;
+};
+
+const handleHidden = () => {
+  resourceDetailShow.value = false;
 };
 
 // 生成sdk成功，跳转列表
