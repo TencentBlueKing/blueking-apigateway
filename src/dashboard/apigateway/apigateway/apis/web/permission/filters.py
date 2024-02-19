@@ -54,7 +54,7 @@ class AppResourcePermissionFilter(filters.FilterSet):
 
 class AppPermissionApplyFilter(filters.FilterSet):
     bk_app_code = filters.CharFilter(lookup_expr="icontains")
-    applied_by = filters.CharFilter()
+    applied_by = filters.CharFilter(lookup_expr="icontains")
     grant_dimension = filters.ChoiceFilter(choices=GrantDimensionEnum.get_choices())
 
     class Meta:
