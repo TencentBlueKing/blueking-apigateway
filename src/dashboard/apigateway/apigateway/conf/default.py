@@ -537,7 +537,7 @@ APIGW_MANAGERS = env.list("APIGW_MANAGERS", default=["admin"])
 
 # 网关 jwt 签发者，必须与 apigateway 后端服务保持一致，
 # apigw-manager sdk 利用 issuer 支持获取不同网关实例同名网关的公钥，以支持同一后端服务接入不同网关实例
-JWT_ISSUER = env.str("BK_APIGW_JWT_ISSUER", "")
+JWT_ISSUER = env.str("BK_APIGW_JWT_ISSUER", "APIGW")
 
 # 检查保留的官方网关名
 CHECK_RESERVED_GATEWAY_NAME = True
