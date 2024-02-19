@@ -61,6 +61,14 @@
               <bk-table-column prop="method" :label="t('请求方法')" />
             </bk-table>
           </template>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getList"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
     </div>
@@ -139,6 +147,8 @@ import { getPermissionApplyList, updatePermissionStatus } from '@/http';
 import { useCommon, usePermission } from '@/store';
 import { useQueryList, useSelection } from '@/hooks';
 import { Message, Loading } from 'bkui-vue';
+import TableEmpty from '@/components/table-empty.vue';
+
 const { t } = useI18n();
 const common = useCommon();
 const permission = usePermission();
@@ -177,6 +187,10 @@ const curPermission = ref({
   grant_dimension: '',
   isSelectAll: true,
   resource_ids: [],
+});
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
 });
 const dimensionList = reactive([
   { id: 'api', name: t('按网关') },
@@ -271,9 +285,9 @@ const setTableHeader = () => {
           return (
             <div class="perm-apply-dot">
               <span class={[
-                'dot', 
+                'dot',
                 {[data.status]: data?.status}
-              ]} 
+              ]}
               />
               {statusMap[data?.status as keyof typeof statusMap]}
             </div>
@@ -484,9 +498,34 @@ const handleRowClick = (e: Event, row: Record<string, any>) => {
   });
 };
 
+const handleClearFilterKey = () => {
+  filterData.value = { bk_app_code: '', applied_by: '', grant_dimension: '' };
+  getList();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  const list = Object.values(filterData.value).filter((item) => item !== '')
+  if (list.length && !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (list.length) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
 const init = () => {
   setTableHeader();
 };
+
+watch(() => filterData.value, () => {
+  updateTableEmptyConfig();
+},{
+  deep: true
+})
 
 onMounted(() => {
   init();

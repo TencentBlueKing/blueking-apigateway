@@ -2,9 +2,11 @@
   <div class="release-sideslider">
     <bk-sideslider
       v-model:isShow="isShow"
-      :width="1050"
+      :width="960"
       :title="`发布资源至环境【${currentAssets.name}】`"
-      quick-close>
+      quick-close
+      :before-close="handleBeforeClose"
+      @animation-end="handleAnimationEnd">
       <template #default>
         <div class="sideslider-content">
           <div class="top-steps">
@@ -133,9 +135,12 @@ import { useRoute, useRouter } from 'vue-router';
 import versionDiff from '@/components/version-diff';
 import logDetails from '@/components/log-details/index.vue';
 import { Message } from 'bkui-vue';
+import { useSidebar } from '@/hooks';
 
 const route = useRoute();
 const router = useRouter();
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
+
 const apigwId = computed(() => +route.params.id);
 
 const { t } = useI18n();
@@ -261,6 +266,12 @@ const handlePublish = async () => {
 
 // 显示侧边栏
 const showReleaseSideslider = () => {
+  const params = {
+    stepsConfig: stepsConfig.value,
+    formData,
+    diffData: diffData.value,
+  };
+  initSidebarFormData(params);
   isShow.value = true;
 };
 
@@ -314,9 +325,34 @@ const handleBack = () => {
   stepsConfig.value.curStep = 1;
 };
 
+const handleBeforeClose = async () => {
+  const params = {
+    stepsConfig: stepsConfig.value,
+    formData,
+    diffData: diffData.value,
+  };
+  return isSidebarClosed(JSON.stringify(params));
+};
+
+const handleAnimationEnd = () => {
+  handleCancel();
+};
+
 // 取消
 const handleCancel = () => {
   isShow.value = false;
+  resetSliderData();
+};
+
+const resetSliderData = () => {
+  stepsConfig.value.curStep = 1;
+  formData.resource_version_id = undefined;
+  formData.comment = '';
+  diffData.value = {
+    add: [],
+    delete: [],
+    update: [],
+  };
 };
 
 watch(
@@ -329,14 +365,7 @@ watch(
         handleVersionChange(props.version?.id);
       }
     } else {
-      stepsConfig.value.curStep = 1;
-      formData.resource_version_id = undefined;
-      formData.comment = '';
-      diffData.value = {
-        add: [],
-        delete: [],
-        update: [],
-      };
+      resetSliderData();
       emit('hidden');
     };
   },

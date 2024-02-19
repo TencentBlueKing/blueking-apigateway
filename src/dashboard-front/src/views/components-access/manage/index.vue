@@ -198,7 +198,7 @@
 
     <bk-sideslider
       v-model:is-show="isSliderShow"
-      :width="850"
+      :width="960"
       :title="sliderTitle"
       :quick-close="true"
       :before-close="handleBeforeClose"
@@ -405,8 +405,8 @@ import {
   getReleaseStatus,
   getFeatures,
 } from '@/http';
-import RenderSystem from './components/render-system';
-import RenderConfig from './components/render-config';
+import RenderSystem from './components/render-system.vue';
+import RenderConfig from './components/render-config.vue';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -645,7 +645,8 @@ const handleSysSelect = (value: any, option: any) => {
   const tempList = formData.value?.component_codename?.split('.');
   let customStr = '';
   if (tempList.length === 3) {
-    customStr = tempList[2];
+    // customStr = tempList[2];
+    [, , customStr] = tempList;
   }
   formData.value.component_codename = `generic.${option.lowerName}.${customStr}`;
   systemFilterRef.value?.setSelected(value);
@@ -918,9 +919,9 @@ const getFeature = async () => {
   }
 };
 
-const clearFilterKey = () => {
-  searchValue.value = '';
-};
+// const clearFilterKey = () => {
+//   searchValue.value = '';
+// };
 
 const updateTableEmptyConfig = () => {
   tableEmptyConf.keyword = searchValue.value;

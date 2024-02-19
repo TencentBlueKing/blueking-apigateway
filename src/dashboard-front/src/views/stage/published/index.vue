@@ -11,6 +11,8 @@
           v-model="dateValue"
           style="width: 100%;"
           type="datetimerange"
+          :shortcut-selected-index="shortcutSelectedIndex"
+          :key="dateKey"
           @change="handleChange"
           @pick-success="handleComfirm"
         >
@@ -86,6 +88,14 @@
             </bk-button>
           </template>
         </bk-table-column>
+        <template #empty>
+          <TableEmpty
+            :keyword="tableEmptyConf.keyword"
+            :abnormal="tableEmptyConf.isAbnormal"
+            @reacquire="getList"
+            @clear-filter="handleClearFilterKey"
+          />
+        </template>
       </bk-table>
     </bk-loading>
 
@@ -99,7 +109,7 @@
 
 <script setup lang="ts">
 import { useQueryList, useDatePicker } from '@/hooks';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { PublishSourceEnum, PublishStatusEnum } from '@/types';
 import logDetails from '@/components/log-details/index.vue';
@@ -108,9 +118,17 @@ import { Spinner } from 'bkui-vue/lib/icon';
 import {
   getReleaseHistories,
 } from '@/http';
+import TableEmpty from '@/components/table-empty.vue';
+
 const { t } = useI18n();
 const filterData = ref({ keyword: '' });
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
+const shortcutSelectedIndex = ref(-1);
 const datePickerRef = ref(null);
+const dateKey = ref('dateKey');
 const publishSourceEnum: any = ref(PublishSourceEnum);
 const publishStatusEnum: any = ref(PublishStatusEnum);
 
@@ -146,6 +164,40 @@ const showLogs = (id: string) => {
   historyId.value = id;
   logDetailsRef.value?.showSideslider();
 };
+
+const handleClearFilterKey = () => {
+  filterData.value = Object.assign(filterData.value, {
+    keyword: '',
+    time_start: '',
+    time_end: '',
+  });
+  dateValue.value = [];
+  shortcutSelectedIndex.value = -1;
+  dateKey.value = String(+new Date());
+  getList();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  const isSearch = dateValue.value.length > 0 || filterData.value.keyword;
+  if (isSearch || !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (isSearch) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+watch(() => filterData.value, () => {
+  updateTableEmptyConfig();
+}, {
+  deep: true,
+});
+
 
 let timeId: any = null;
 onMounted(() => {

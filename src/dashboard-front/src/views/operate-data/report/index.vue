@@ -5,7 +5,9 @@
         <bk-form-item :label="$t('选择时间')" class="ag-form-item-datepicker top-form-item-time">
           <bk-date-picker
             style="width: 320px;"
+            ref="datePickerRef"
             v-model="dateTimeRange"
+            :key="dateKey"
             :placeholder="$t('选择日期时间范围')"
             :type="'datetimerange'"
             :shortcuts="shortcutsInDay"
@@ -95,11 +97,11 @@
               </div>
             </div>
             <div v-show="chartEmpty[`${key}_${chart.id}`] && !isPageLoading" class="ap-nodata">
-              <bk-exception
-                class="exception-wrap-item exception-part"
-                type="empty"
-                scene="part"
-                description="没有数据"
+              <TableEmpty
+                :keyword="tableEmptyConf.keyword"
+                :abnormal="tableEmptyConf.isAbnormal"
+                @reacquire="init"
+                @clear-filter="handleClearFilterKey"
               />
             </div>
           </div>
@@ -110,9 +112,10 @@
 </template>
 
 <script lang="ts" setup>
+// @ts-nocheck
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import dayjs from 'dayjs';
-import merge from 'lodash.merge';
+import { merge } from 'lodash';
 import echarts from 'echarts/lib/echarts';
 import 'echarts/lib/chart/line';
 import 'echarts/lib/component/tooltip';
@@ -124,7 +127,8 @@ import { useCommon, useAccessLog } from '@/store';
 import { Message } from 'bkui-vue';
 import { getApigwMetrics, getApigwStages, getApigwResources } from '@/http';
 import { userChartIntervalOption } from '@/hooks';
-import { getColorHue } from '@/common/util.ts';
+import { getColorHue } from '@/common/util';
+import TableEmpty from '@/components/table-empty.vue';
 
 const {
   getChartIntervalOption,
@@ -136,9 +140,15 @@ const chartInstances: any = {};
 const { t } = useI18n();
 const isPageLoading = ref<boolean>(true);
 const isDataLoading = ref<boolean>(false);
+const datePickerRef = ref(null);
+const dateKey = ref('dateKey');
 const dateTimeRange = ref<Array<any>>([]);
 const shortcutSelectedIndex = ref<number>(1);
-const searchParams = reactive<any>({
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
+let searchParams = reactive<any>({
   stage_id: '',
   resource_id: '',
   time_start: '',
@@ -224,6 +234,7 @@ const chartResize = () => {
       chart.resize();
     });
   });
+  updateTableEmptyConfig();
 };
 
 const initChart = () => {
@@ -250,7 +261,7 @@ const getDataByDimension = async () => {
     });
     return false;
   }
-  const requests = metricsList.value?.map((metrics: any) => {
+  metricsList.value?.map((metrics: any) => {
     const params = {
       ...searchParams,
       dimension: dimension.value,
@@ -262,10 +273,13 @@ const getDataByDimension = async () => {
 
   isDataLoading.value = true;
   try {
-    const res = await Promise.all(requests);
+    // const res = await Promise.all(requests);
     chartData.value = {};
-    metricsList.value?.forEach((metrics: any, index: number) => {
-      chartData.value[metrics] = res[index];
+    metricsList.value?.forEach((metrics: any) => {
+      // chartData.value[metrics] = res[index];
+      chartData.value[metrics] = {
+        metrics: [], series: [],
+      };
     });
 
     renderChart();
@@ -399,7 +413,7 @@ const handleClickLegend = (chartInstId: any, index: number) => {
       batch: legend.map(({ name }: any) => ({ name })),
     });
 
-    legend.forEach((item: any, i: number) => (item.selected = 0));
+    legend.forEach((item: any) => (item.selected = 0));
     chartLegend.value = { ...chartLegend.value, ...{ [chartInstId]: legend } };
   }
 };
@@ -425,6 +439,7 @@ const handleTimeChange = () => {
 
 const handleShortcutChange = (value: any, index: number) => {
   shortcutSelectedIndex.value = index;
+  updateTableEmptyConfig();
 };
 
 const handleRefresh = () => {
@@ -670,6 +685,36 @@ const getChartOption = (chartId: any, chartInstId: any) => {
   return merge(baseOption, chartOption, moreOption);
 };
 
+const handleClearFilterKey = () => {
+  [datePickerRef.value.shortcut] = [AccessLogStore.datepickerShortcuts[1]];
+  dateTimeRange.value = [];
+  shortcutSelectedIndex.value = 1;
+  searchParams = Object.assign({}, {
+    stage_id: '',
+    resource_id: '',
+    time_start: '',
+    time_end: '',
+    dimension: '',
+  });
+  dateKey.value = String(+new Date());
+  setSearchTimeRange();
+  init();
+};
+
+const updateTableEmptyConfig = () => {
+  const time = dateTimeRange.value.some(Boolean);
+  const list = Object.values(searchParams).filter(item => item !== '');
+  if (time || list.length > 0) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (searchParams.value.stage_id || time) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
 const renderChart = () => {
   chartConfig.value[dimension.value].forEach((config: any) => {
     const chartId = config.id;
@@ -776,6 +821,12 @@ onBeforeUnmount(() => {
       margin-right: 3px;
     }
   }
+
+  .ap-nodata {
+    :deep(.bk-exception-description) {
+      margin-top: 0;
+    }
+  }
 }
 
 .search-form {
@@ -816,4 +867,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-

@@ -95,6 +95,14 @@
                 </bk-dropdown>
               </template>
             </bk-table-column>
+            <template #empty>
+              <TableEmpty
+                :keyword="tableEmptyConf.keyword"
+                :abnormal="tableEmptyConf.isAbnormal"
+                @reacquire="getList"
+                @clear-filter="handleClearFilterKey"
+              />
+            </template>
           </bk-table>
         </bk-loading>
       </div>
@@ -109,7 +117,9 @@
     />
 
     <!-- 资源详情 -->
-    <resource-detail :id="resourceVersionId" ref="resourceDetailRef" />
+    <resource-detail
+      :id="resourceVersionId" :is-show="resourceDetailShow" ref="resourceDetailRef"
+      @hidden="handleHidden" />
 
     <!-- 版本对比 -->
     <bk-sideslider
@@ -148,6 +158,7 @@ import { useResourceVersion, useUser } from '@/store';
 import { Message } from 'bkui-vue';
 import { useRoute } from 'vue-router';
 import releaseSideslider from '@/views/stage/overview/comps/release-sideslider.vue';
+import TableEmpty from '@/components/table-empty.vue';
 const user = useUser();
 
 const route = useRoute();
@@ -183,6 +194,10 @@ const stageList = ref<any>([]);
 const stageData = ref();
 const versionData = ref();
 const releaseSidesliderRef = ref(null);
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 // 生成sdk
 const openCreateSdk = (id: number) => {
@@ -212,10 +227,16 @@ const handleShowDiff = () => {
   resetSelections();
 };
 
+const resourceDetailShow = ref(false);
+
 // 展示详情
 const handleShowInfo = (id: number) => {
   resourceVersionId.value = id;
-  resourceDetailRef.value?.showSideslider();
+  resourceDetailShow.value = true;
+};
+
+const handleHidden = () => {
+  resourceDetailShow.value = false;
 };
 
 // 生成sdk成功，跳转列表
@@ -264,6 +285,31 @@ const handleClickStage = (stage: any, row: any) => {
   releaseSidesliderRef.value.showReleaseSideslider();
   row.isReleaseMenuShow = false;
 };
+
+const handleClearFilterKey = () => {
+  filterData.value.keyword = '';
+  getList();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  if (filterData.value.keyword || !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (filterData.value.keyword) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+watch(() => filterData.value, () => {
+  updateTableEmptyConfig();
+}, {
+  deep: true,
+});
 
 watch(
   () => selections.value,

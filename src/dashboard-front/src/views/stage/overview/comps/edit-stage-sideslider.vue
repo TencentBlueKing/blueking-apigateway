@@ -1,12 +1,14 @@
+<!-- eslint-disable vue/no-deprecated-slot-attribute -->
 <template>
   <div class="sideslider-wrapper">
     <bk-sideslider
       v-model:isShow="isShow"
       :title="isAdd ? t('新建环境') : t('编辑环境')"
-      :quick-close="false"
+      :quick-close="true"
       width="960"
       ext-cls="stage-sideslider-cls"
-      @hidden="closeSideslider"
+      :before-close="handleBeforeClose"
+      @animation-end="handleAnimationEnd"
     >
       <template #default>
         <bk-loading :loading="isDialogLoading">
@@ -123,8 +125,8 @@
                                 :clearable="false"
                               >
                                 <bk-option
-                                  v-for="(item, index) in schemeList"
-                                  :key="index"
+                                  v-for="(item, index1) in schemeList"
+                                  :key="index1"
                                   :value="item.value"
                                   :label="item.value"
                                 />
@@ -217,17 +219,18 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-import { getBackendsListData, createStage, getStageDetail, getStageBackends, updateStage, getStageList } from '@/http';
+import { getBackendsListData, createStage, getStageDetail, getStageBackends, updateStage } from '@/http';
 import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash';
 import { useCommon, useStage } from '@/store';
 import { copy } from '@/common/util';
 import mitt from '@/common/event-bus';
-import { useGetGlobalProperties } from '@/hooks';
+import { useGetGlobalProperties, useSidebar } from '@/hooks';
 
 const { t } = useI18n();
 const common = useCommon();
 const stageStore = useStage();
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const route = useRoute();
 
 const isShow = ref(false);
@@ -287,7 +290,7 @@ const stageAddress = computed(() => {
   };
 
   let url = GLOBAL_CONFIG.STAGE_DOMAIN;
-  for (const name in keys) {
+  for (const name of Object.keys(keys)) {
     const reg = new RegExp(`{${name}}`);
     url = url?.replace(reg, keys[name]);
   }
@@ -398,7 +401,7 @@ const getStageBackendList = async () => {
 };
 
 // 关闭侧边栏回调
-const closeSideslider = () => {
+const handleCloseSideSlider = () => {
   // 数据重置
   curStageData.value = {
     name: '',
@@ -413,9 +416,9 @@ const closeSideslider = () => {
 };
 
 // 显示侧边栏
-const handleShowSideslider = (type: string) => {
+const handleShowSideslider = async (type: string) => {
   // 数据重置
-  closeSideslider();
+  handleCloseSideSlider();
   // 新建环境获取当前网关下的所有后端服务进行配置
   if (type === 'add') {
     isAdd.value = true;
@@ -423,10 +426,13 @@ const handleShowSideslider = (type: string) => {
   } else {
     isAdd.value = false;
     // 编辑环境
-    getStageDetailFun();
-    // 获取对应环境下的后端服务列表
-    getStageBackendList();
+    await Promise.all([
+      getStageDetailFun(),
+      // 获取对应环境下的后端服务列表
+      getStageBackendList(),
+    ]);
   }
+  initSidebarFormData(curStageData.value);
   isShow.value = true;
 };
 
@@ -461,7 +467,7 @@ const handleConfirmCreate = async () => {
     // 重新获取环境列表(全局事件总线实现)
     mitt.emit('rerun-init', true);
     // 数据重置
-    closeSideslider();
+    handleCloseSideSlider();
     // 关闭dialog
     isShow.value = false;
   } catch (error) {
@@ -492,15 +498,23 @@ const handleConfirmEdit = async () => {
   }
 };
 
+const handleBeforeClose = async () => {
+  return isSidebarClosed(JSON.stringify(curStageData.value));
+};
+
+const handleAnimationEnd = () => {
+  handleCancel();
+};
+
 // 取消关闭侧边栏
 const handleCancel = () => {
   isShow.value = false;
   // 数据重置
-  closeSideslider();
+  handleCloseSideSlider();
 };
 
 // 添加服务地址
-const handleAddServiceAddress = (name: string, index: number) => {
+const handleAddServiceAddress = (name: string) => {
   console.log('add', curStageData.value);
   curStageData.value.backends.forEach((v) => {
     if (v.name === name) {

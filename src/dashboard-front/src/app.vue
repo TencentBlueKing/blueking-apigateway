@@ -3,8 +3,12 @@ import {
   ref,
   computed,
   watch,
+  onMounted,
+  onBeforeMount,
 } from 'vue';
 import * as UserInfo from '@/components/user-info.vue';
+import AppAuth from '@/components/auth/index.vue';
+import mitt from '@/common/event-bus';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { useUser } from '@/store';
@@ -89,6 +93,7 @@ const headerList = computed(() => ([
 ]));
 
 const systemCls = ref('mac');
+const authRef = ref();
 
 const apigwId = computed(() => {
   if (route.params.id !== undefined) {
@@ -153,6 +158,23 @@ const goPage = (routeName: string) => {
   }
 };
 
+onMounted(() => {
+  mitt.on('show-login-modal', (payload: string) => {
+    authRef.value.showLoginModal(payload);
+  });
+  mitt.on('close-login-modal', () => {
+    authRef.value.hideLoginModal();
+    setTimeout(() => {
+      window.location.reload();
+    }, 0);
+  });
+});
+
+onBeforeMount(() => {
+  mitt.off('show-login-modal');
+  mitt.off('close-login-modal');
+});
+
 </script>
 
 <template>
@@ -194,6 +216,7 @@ const goPage = (routeName: string) => {
         </div>
       </template>
     </bk-navigation>
+    <AppAuth ref="authRef" />
   </div>
 </template>
 

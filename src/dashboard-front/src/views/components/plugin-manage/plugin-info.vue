@@ -64,8 +64,7 @@ import { getPluginForm, creatPlugin, updatePluginConfig } from '@/http';
 import { Message } from 'bkui-vue';
 // @ts-ignore
 import createForm from '@blueking/bkui-form';
-import { json2yaml } from '@/common/util';
-import jsYaml from 'js-yaml';
+import { json2yaml, yaml2json } from '@/common/util';
 const BkSchemaForm = createForm();
 
 const { t } = useI18n();
@@ -128,6 +127,8 @@ const handleAdd = async () => {
     } else {
       data.name = props.editPlugin?.name;
       data.type_id = props.editPlugin?.type_id;
+      // data.yaml = props.editPlugin?.yaml;
+      data.yaml = json2yaml(JSON.stringify(schemaFormData.value)).data;
       await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, data);
       emit('on-change', 'editSuccess');
     }
@@ -155,10 +156,229 @@ const init = async () => {
   try {
     isPluginFormLoading.value = true;
     const res = await getPluginForm(apigwId, code);
+    // const res = {
+    //   id: 7,
+    //   language: '',
+    //   notes: '默认频率限制，表示单个应用的默认频率限制；特殊应用频率限制，对指定应用设置单独的频率限制。频率控制插件，绑定环境时，表示应用对环境下所有资源的总频率限制；绑定资源时，表示应用对单个资源的频率限制',
+    //   style: 'dynamic',
+    //   default_value: '',
+    //   config: {
+    //     schema: {
+    //       title: '频率控制',
+    //       type: 'object',
+    //       properties: {
+    //         rates: {
+    //           type: 'object',
+    //           properties: {
+    //             default: {
+    //               type: 'object',
+    //               title: '默认频率限制',
+    //               'ui:group': {
+    //                 type: 'card',
+    //                 showTitle: true,
+    //                 style: {
+    //                   background: '#F5F7FA',
+    //                   padding: '10px 20px 10px 30px',
+    //                 },
+    //               },
+    //               required: [
+    //                 'tokens',
+    //                 'period',
+    //               ],
+    //               properties: {
+    //                 tokens: {
+    //                   type: 'integer',
+    //                   title: '次数',
+    //                   default: 100,
+    //                   'ui:rules': [
+    //                     'required',
+    //                   ],
+    //                   'ui:component': {
+    //                     name: 'bfInput',
+    //                     min: 1,
+    //                   },
+    //                   'ui:props': {
+    //                     labelWidth: 100,
+    //                   },
+    //                 },
+    //                 period: {
+    //                   type: 'integer',
+    //                   title: '时间范围',
+    //                   default: 1,
+    //                   'ui:rules': [
+    //                     'required',
+    //                   ],
+    //                   'ui:component': {
+    //                     name: 'select',
+    //                     datasource: [
+    //                       {
+    //                         label: '秒',
+    //                         value: 1,
+    //                       },
+    //                       {
+    //                         label: '分',
+    //                         value: 60,
+    //                       },
+    //                       {
+    //                         label: '时',
+    //                         value: 3600,
+    //                       },
+    //                       {
+    //                         label: '天',
+    //                         value: 86400,
+    //                       },
+    //                     ],
+    //                     clearable: false,
+    //                   },
+    //                   'ui:props': {
+    //                     labelWidth: 100,
+    //                   },
+    //                 },
+    //               },
+    //             },
+    //             specials: {
+    //               type: 'array',
+    //               title: '特殊应用频率限制',
+    //               'ui:group': {
+    //                 type: 'card',
+    //                 showTitle: true,
+    //                 style: {
+    //                   background: '#F5F7FA',
+    //                   padding: '10px 20px 20px 20px',
+    //                 },
+    //               },
+    //               items: {
+    //                 type: 'object',
+    //                 required: [
+    //                   'tokens',
+    //                   'period',
+    //                   'bk_app_code',
+    //                 ],
+    //                 'ui:group': {
+    //                   style: {
+    //                     background: '#FFF',
+    //                     padding: '10px 10px 10px 10px',
+    //                   },
+    //                 },
+    //                 properties: {
+    //                   tokens: {
+    //                     type: 'integer',
+    //                     title: '次数',
+    //                     default: 1,
+    //                     'ui:rules': [
+    //                       'required',
+    //                     ],
+    //                     'ui:component': {
+    //                       name: 'bfInput',
+    //                       min: 1,
+    //                     },
+    //                     'ui:props': {
+    //                       labelWidth: 100,
+    //                     },
+    //                   },
+    //                   period: {
+    //                     type: 'integer',
+    //                     title: '时间范围',
+    //                     default: 1,
+    //                     'ui:rules': [
+    //                       'required',
+    //                     ],
+    //                     'ui:component': {
+    //                       name: 'select',
+    //                       datasource: [
+    //                         {
+    //                           label: '秒',
+    //                           value: 1,
+    //                         },
+    //                         {
+    //                           label: '分',
+    //                           value: 60,
+    //                         },
+    //                         {
+    //                           label: '时',
+    //                           value: 3600,
+    //                         },
+    //                         {
+    //                           label: '天',
+    //                           value: 86400,
+    //                         },
+    //                       ],
+    //                       clearable: false,
+    //                     },
+    //                     'ui:props': {
+    //                       labelWidth: 100,
+    //                     },
+    //                   },
+    //                   bk_app_code: {
+    //                     type: 'string',
+    //                     title: '蓝鲸应用ID',
+    //                     pattern: '^[a-z0-9][a-z0-9_-]{0,31}$',
+    //                     'ui:rules': [
+    //                       'required',
+    //                     ],
+    //                   },
+    //                 },
+    //               },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //     layout: [
+    //       [
+    //         {
+    //           prop: 'rates',
+    //           group: [
+    //             [
+    //               {
+    //                 prop: 'default',
+    //                 container: {
+    //                   'grid-template-columns': '250px 200px',
+    //                 },
+    //                 group: [
+    //                   [
+    //                     'tokens',
+    //                     'period',
+    //                   ],
+    //                 ],
+    //               },
+    //             ],
+    //             [
+    //               {
+    //                 prop: 'specials',
+    //                 container: {
+    //                   'grid-template-columns': '250px 200px 250px',
+    //                 },
+    //                 group: [
+    //                   [
+    //                     'tokens',
+    //                     'period',
+    //                     'bk_app_code',
+    //                   ],
+    //                 ],
+    //               },
+    //             ],
+    //           ],
+    //         },
+    //       ],
+    //     ],
+    //     formData: {},
+    //     rules: {},
+    //   },
+    //   type_id: 4,
+    //   type_code: 'bk-rate-limit',
+    //   type_name: '频率控制',
+    // };
+
     isPluginFormLoading.value = false;
     infoNotes.value = res.notes;
     formConfig.value = res.config;
     typeId.value = res.type_id;
+
+    if (!isAdd.value) {
+      const yamlData = yaml2json(props.editPlugin.yaml).data;
+      schemaFormData.value = { ...(yamlData as {}) };
+    }
   } catch (error) {
     console.log('error', error);
   }

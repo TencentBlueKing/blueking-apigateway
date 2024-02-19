@@ -403,12 +403,15 @@ const handleConfirmEdit = async () => {
     Message({
       message: t('编辑成功'),
       theme: 'success',
+      width: 'auto',
     });
     dialogEditData.value.isShow = false;
     await getBasicInfo();
   } catch (error) {
   } finally {
-    dialogEditData.value.loading = false;
+    setTimeout(() => {
+      dialogEditData.value.loading = false;
+    }, 200);
   }
 };
 
