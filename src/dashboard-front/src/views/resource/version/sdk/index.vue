@@ -32,16 +32,7 @@
             row-hover="auto"
           >
             <!-- <bk-table-column width="80" type="selection" align="center" /> -->
-            <bk-table-column :label="t('SDK版本号')" min-width="120">
-              <template #default="{ data }">
-                <bk-button
-                  text
-                  theme="primary"
-                  @click="handleShowInfo(data.id)"
-                >
-                  {{ data?.version_number }}
-                </bk-button>
-              </template>
+            <bk-table-column :label="t('SDK版本号')" min-width="120" prop="version_number">
             </bk-table-column>
             <bk-table-column :label="t('SDK名称')" prop="name" min-width="120">
             </bk-table-column>
@@ -147,9 +138,6 @@ const handleDownload = (row: any) => {
   const { download_url } = row;
   window.open(download_url);
 };
-
-// 展示详情
-const handleShowInfo = () => {};
 
 // 显示生成sdk弹窗
 const openCreateSdk = () => {
