@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="tsx">
-import { ref, unref, defineExpose, watch, onMounted } from 'vue';
+import { ref, unref, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
 import { useCommon } from '../../../../store';

@@ -159,6 +159,7 @@ const getPermiList = async () => {
 
 onMounted(async () => {
   gatewaysList.value = await getGatewaysListData();
+  console.log('gatewaysList', gatewaysList);
   // 初始化设置一次
   handleSetApigwName();
   getPermiList();
