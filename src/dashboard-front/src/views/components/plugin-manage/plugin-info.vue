@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, defineEmits, toRefs, watch } from 'vue';
+import { computed, ref, defineEmits, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPluginForm, creatPlugin, updatePluginConfig } from '@/http';
 import { Message } from 'bkui-vue';
@@ -383,22 +383,6 @@ const init = async () => {
   }
 };
 init();
-
-watch(
-  () => props.editPlugin,
-  (val: any) => {
-    if (!isAdd.value) {
-      try {
-        schemaFormData.value = jsYaml.load(val.yaml);
-      } catch (e) {
-        console.error(e);
-      };
-    }
-  },
-  {
-    immediate: true,
-  },
-);
 </script>
 
 <style lang="scss" scoped>
