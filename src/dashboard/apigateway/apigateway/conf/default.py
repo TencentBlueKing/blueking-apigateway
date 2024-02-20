@@ -829,8 +829,6 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", True),
     # 是否展示 "运行数据" => 统计报表 子菜单
     "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True),
-    # 隐藏 SDK 列表 相关功能
-    "ALLOW_UPLOAD_SDK_TO_REPOSITORY": env.bool("FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY", False),
     # 是否展示”组件管理“菜单项，企业版展示，上云版不展示
     "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
     # 是否展示”组件 API 文档“菜单项
@@ -841,8 +839,11 @@ DEFAULT_FEATURE_FLAG = {
     "GATEWAY_DEVELOPERS_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_DEVELOPERS_ENABLED", False),
     # 网关编辑页，是否支持填写网关“绑定应用”
     "GATEWAY_APP_BINDING_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_APP_BINDING_ENABLED", False),
+    # FIXME: 为什么有两个 SDK 特性变量，并且容器化版本有 bkrepo 配置的话，默认应该都是 true?
     # 为 False，表示不启用 SDK 功能，网关 API 文档、组件 API 文档中，不展示 SDK 相关页面，隐藏“网关 APISDK”、“组件 APISDK”菜单项，隐藏网关中 SDK 创建、SDK 列表等功能项
     "ENABLE_SDK": env.bool("FEATURE_FLAG_ENABLE_SDK", False),
+    # 隐藏 SDK 列表 相关功能
+    "ALLOW_UPLOAD_SDK_TO_REPOSITORY": env.bool("FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY", False),
     # 是否允许创建企业微信群，上云版一键拉群功能
     "ALLOW_CREATE_APPCHAT": env.bool("FEATURE_FLAG_ALLOW_CREATE_APPCHAT", False),
 }
