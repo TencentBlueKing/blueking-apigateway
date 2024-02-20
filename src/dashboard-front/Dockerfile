@@ -1,5 +1,5 @@
 # npm part
-FROM node:14.17.6 AS builder
+FROM node:16.20.2  AS builder
 
 WORKDIR /app
 COPY . /app
@@ -7,7 +7,7 @@ COPY . /app
 ARG EDITION=ee
 ENV APP_VERSION=${EDITION}
 
-RUN npm install --unsafe-perm --registry=https://mirrors.tencent.com/npm/
+RUN npm install --unsafe-perm --force --registry=https://mirrors.tencent.com/npm/
 RUN npm run build:${EDITION:?}
 
 # nginx part
