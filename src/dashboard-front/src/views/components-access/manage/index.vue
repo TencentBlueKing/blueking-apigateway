@@ -68,6 +68,7 @@
           :data="componentList"
           :size="setting.size"
           @setting-change="handleSettingChange"
+          :is-row-select-enable="setDefaultSelect"
           :pagination="pagination"
           remote-pagination
           @select="handlerChange"
@@ -76,7 +77,7 @@
           @row-mouse-enter="changeEnter"
           @row-mouse-leave="changeLeave"
           @page-limit-change="handlePageLimitChange">
-          <bk-table-column type="selection" width="60" align="center" :selectable="setDefaultSelect"></bk-table-column>
+          <bk-table-column type="selection" width="60" align="center"></bk-table-column>
           <bk-table-column :label="t('系统名称')" prop="system_name">
             <template #default="{ data }">
               {{ data?.system_name || '--' }}
@@ -369,7 +370,7 @@
     <bk-dialog
       width="480"
       :mask-close="true"
-      v-model="deleteDialogConf.visiable"
+      :is-show="deleteDialogConf.visiable"
       :title="t('确认删除？')"
       @after-leave="handleAfterLeave">
       <div> {{ t('该操作不可恢复，是否继续？') }} </div>
@@ -629,16 +630,24 @@ const getComponents = async (loading = false) => {
   }
 };
 
-const setDefaultSelect = (payload: any) => {
-  return !payload?.is_official;
+const setDefaultSelect = ({ row }: any) => {
+  return !row?.is_official;
 };
 
-const handlerChange = (payload: any) => {
-  curSelectList.value = [...payload];
+const handlerChange = ({ row, checked }: any) => {
+  if (checked) {
+    curSelectList.value?.push(row);
+  } else {
+    curSelectList.value = curSelectList.value?.filter((item: any) => item.id !== row.id);
+  }
 };
 
-const handlerAllChange = (payload: any) => {
-  curSelectList.value = [...payload];
+const handlerAllChange = ({ checked, data }: any) => {
+  if (checked) {
+    curSelectList.value = [...data];
+  } else {
+    curSelectList.value = [];
+  }
 };
 
 const handleSysSelect = (value: any, option: any) => {
