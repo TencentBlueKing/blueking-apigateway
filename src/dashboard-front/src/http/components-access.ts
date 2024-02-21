@@ -35,4 +35,4 @@ export const getSyncVersion = (id: any) => fetch.get(`${BK_DASHBOARD_URL}/esb/co
  * @param data 分页参数
  * @returns
  */
-export const getFeatures = (data?: any) => fetch.get(`${BK_DASHBOARD_URL}/feature/flags/?${json2Query(data)}`);
+export const getFeatures = (data?: any) => fetch.get(`${BK_DASHBOARD_URL}/settings/feature_flags/?${json2Query(data)}`);
