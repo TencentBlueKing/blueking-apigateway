@@ -823,31 +823,42 @@ PAAS_RENEW_API_PERMISSION_URL = f"{BK_PAAS3_URL}/developer-center/apps/{{bk_app_
 # 全局功能开关，用于控制站点全局性的一些功能，将与 DEFAULT_USER_FEATURE_FLAG、Model UserFeatureFlag 中数据合并
 # 优先级：Model UserFeatureFlag > DEFAULT_USER_FEATURE_FLAG > DEFAULT_FEATURE_FLAG
 DEFAULT_FEATURE_FLAG = {
+    # 是否展示"监控告警“子菜单
     "ENABLE_MONITOR": env.bool("FEATURE_FLAG_ENABLE_MONITOR", False),
+    # 是否展示”运行数据“子菜单
     "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", True),
+    # 是否展示 "运行数据" => 统计报表 子菜单
     "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True),
-    "ALLOW_UPLOAD_SDK_TO_REPOSITORY": env.bool("FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY", False),
-    "MENU_ITEM_HELP": env.bool("FEATURE_FLAG_MENU_ITEM_HELP", False),
+    # 是否展示”组件管理“菜单项，企业版展示，上云版不展示
     "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
+    # 是否展示”组件 API 文档“菜单项
     "MENU_ITEM_ESB_API_DOC": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API_DOC", True),
+    # 是否将 ESB 数据同步到网关。需要考虑这个是否还需要
     "SYNC_ESB_TO_APIGW_ENABLED": env.bool("FEATURE_FLAG_SYNC_ESB_TO_APIGW_ENABLED", True),
+    # 网关编辑页，是否支持填写”网关开发者“
     "GATEWAY_DEVELOPERS_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_DEVELOPERS_ENABLED", False),
+    # 网关编辑页，是否支持填写网关“绑定应用”
     "GATEWAY_APP_BINDING_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_APP_BINDING_ENABLED", False),
-    # api-support
+    # FIXME: 为什么有两个 SDK 特性变量，并且容器化版本有 bkrepo 配置的话，默认应该都是 true?
+    # 为 False，表示不启用 SDK 功能，网关 API 文档、组件 API 文档中，不展示 SDK 相关页面，隐藏“网关 APISDK”、“组件 APISDK”菜单项，隐藏网关中 SDK 创建、SDK 列表等功能项
     "ENABLE_SDK": env.bool("FEATURE_FLAG_ENABLE_SDK", False),
+    # 隐藏 SDK 列表 相关功能
+    "ALLOW_UPLOAD_SDK_TO_REPOSITORY": env.bool("FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY", False),
+    # 是否允许创建企业微信群，上云版一键拉群功能
     "ALLOW_CREATE_APPCHAT": env.bool("FEATURE_FLAG_ALLOW_CREATE_APPCHAT", False),
-    "MENU_ITEM_TOOLS": env.bool("FEATURE_FLAG_MENU_ITEM_TOOLS", False),
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
 DEFAULT_USER_FEATURE_FLAG = {
-    "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
+    # 2024-02-20 in 1.13 has no support for FEATURE_FLAG_MICRO_GATEWAY_ENABLED, comment it until it's supported
+    # "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
 }
 
 # 网关功能开关
 GLOBAL_GATEWAY_FEATURE_FLAG = {
     "OFFICIAL_API_TIPS_ENABLED": env.bool("OFFICIAL_API_TIPS_ENABLED", True),
-    "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
+    # 2024-02-20 in 1.13 has no support for FEATURE_FLAG_MICRO_GATEWAY_ENABLED, comment it until it's supported
+    # "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
     "PLUGIN_ENABLED": env.bool("FEATURE_FLAG_PLUGIN_ENABLED", True),
     "STAGE_RATE_LIMIT_ENABLED": env.bool("FEATURE_FLAG_STAGE_RATE_LIMIT_ENABLED", False),
     "RESOURCE_WITH_MOCK_ENABLED": env.bool("FEATURE_FLAG_RESOURCE_WITH_MOCK_ENABLED", False),
