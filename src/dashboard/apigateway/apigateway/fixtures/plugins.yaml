@@ -872,6 +872,9 @@
                       "ui:component": {
                         "name": "bfInput",
                         "min": 1
+                      },
+                      "ui:props": {
+                        "labelWidth": 100
                       }
                     },
                     "period": {
@@ -902,6 +905,9 @@
                           }
                         ],
                         "clearable": false
+                      },
+                      "ui:props": {
+                        "labelWidth": 100
                       }
                     }
                   }
@@ -941,6 +947,9 @@
                         "ui:component": {
                           "name": "bfInput",
                           "min": 1
+                        },
+                        "ui:props": {
+                          "labelWidth": 100
                         }
                       },
                       "period": {
@@ -971,6 +980,9 @@
                             }
                           ],
                           "clearable": false
+                        },
+                        "ui:props": {
+                          "labelWidth": 100
                         }
                       },
                       "bk_app_code": {
@@ -997,7 +1009,7 @@
                   {
                     "prop": "default",
                     "container": {
-                      "grid-template-columns": "300px 250px"
+                      "grid-template-columns": "250px 200px"
                     },
                     "group": [
                       [
@@ -1011,7 +1023,7 @@
                   {
                     "prop": "specials",
                     "container": {
-                      "grid-template-columns": "300px 250px 300px"
+                      "grid-template-columns": "250px 200px 250px"
                     },
                     "group": [
                       [
@@ -1076,6 +1088,9 @@
                       "ui:component": {
                         "name": "bfInput",
                         "min": 1
+                      },
+                      "ui:props": {
+                        "labelWidth": 100
                       }
                     },
                     "period": {
@@ -1106,6 +1121,9 @@
                           }
                         ],
                         "clearable": false
+                      },
+                      "ui:props": {
+                        "labelWidth": 100
                       }
                     }
                   }
@@ -1145,6 +1163,9 @@
                         "ui:component": {
                           "name": "bfInput",
                           "min": 1
+                        },
+                        "ui:props": {
+                          "labelWidth": 100
                         }
                       },
                       "period": {
@@ -1175,6 +1196,9 @@
                             }
                           ],
                           "clearable": false
+                        },
+                        "ui:props": {
+                          "labelWidth": 100
                         }
                       },
                       "bk_app_code": {
@@ -1201,7 +1225,7 @@
                   {
                     "prop": "default",
                     "container": {
-                      "grid-template-columns": "300px 250px"
+                      "grid-template-columns": "250px 200px"
                     },
                     "group": [
                       [
@@ -1215,7 +1239,7 @@
                   {
                     "prop": "specials",
                     "container": {
-                      "grid-template-columns": "300px 250px 300px"
+                      "grid-template-columns": "250px 200px 250px"
                     },
                     "group": [
                       [
