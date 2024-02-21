@@ -147,25 +147,25 @@ export const componentsMenu: IMenu[] = [
     title: '文档分类',
     icon: 'document',
   },
-  {
-    name: 'componentsPermission',
-    title: '权限管理',
-    icon: 'my-perm',
-    children: [
-      {
-        name: 'permissionApply',
-        title: '权限审批',
-      },
-      {
-        name: 'permissionPower',
-        title: '应用权限',
-      },
-      {
-        name: 'permissionRecord',
-        title: '审批历史',
-      },
-    ],
-  },
+  // {
+  //   name: 'componentsPermission',
+  //   title: '权限管理',
+  //   icon: 'my-perm',
+  //   children: [
+  //     {
+  //       name: 'permissionApply',
+  //       title: '权限审批',
+  //     },
+  //     {
+  //       name: 'permissionPower',
+  //       title: '应用权限',
+  //     },
+  //     {
+  //       name: 'permissionRecord',
+  //       title: '审批历史',
+  //     },
+  //   ],
+  // },
   {
     name: 'componentsRuntimeData',
     title: '实时运行数据',

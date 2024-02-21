@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, defineEmits, toRefs, watch } from 'vue';
+import { computed, ref, defineEmits, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPluginForm, creatPlugin, updatePluginConfig } from '@/http';
 import { Message } from 'bkui-vue';
@@ -128,7 +128,6 @@ const handleAdd = async () => {
       data.name = props.editPlugin?.name;
       data.type_id = props.editPlugin?.type_id;
       // data.yaml = props.editPlugin?.yaml;
-      data.yaml = json2yaml(JSON.stringify(schemaFormData.value)).data;
       await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, data);
       emit('on-change', 'editSuccess');
     }
@@ -384,22 +383,6 @@ const init = async () => {
   }
 };
 init();
-
-watch(
-  () => props.editPlugin,
-  (val: any) => {
-    if (!isAdd.value) {
-      try {
-        schemaFormData.value = jsYaml.load(val.yaml);
-      } catch (e) {
-        console.error(e);
-      };
-    }
-  },
-  {
-    immediate: true,
-  },
-);
 </script>
 
 <style lang="scss" scoped>
