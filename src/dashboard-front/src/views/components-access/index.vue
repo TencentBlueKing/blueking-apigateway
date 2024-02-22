@@ -43,7 +43,7 @@
             </bk-submenu>
             <bk-menu-item
               v-else
-              :key="menu.title"
+              :key="menu.name"
               @click="handleGoPage(menu.name, apigwId)">
               <template #icon>
                 <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
