@@ -29,6 +29,7 @@
             :placeholder="t('请输入关键字或选择条件搜索')"
             :clearable="false"
             :value-split-code="'+'"
+            :value-behavior="'need-key'"
           />
         </bk-form-item>
       </bk-form>
@@ -169,18 +170,21 @@ const searchData = shallowRef([
     name: t('操作对象'),
     id: 'op_object_type',
     placeholder: t('请选择操作对象'),
+    onlyRecommendChildren: true,
     children: OperateRecordObjectType.value,
   },
   {
     name: t('操作类型'),
     id: 'op_type',
     placeholder: t('请选择操作类型'),
+    onlyRecommendChildren: true,
     children: OperateRecordType.value,
   },
   {
     name: t('操作状态'),
     id: 'op_status',
     placeholder: t('请选择操作状态'),
+    onlyRecommendChildren: true,
     children: OperateRecordStatus.value,
   },
 
