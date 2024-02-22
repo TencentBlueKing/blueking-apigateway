@@ -470,6 +470,9 @@ RAVEN_CONFIG = {
     "dsn": env.str("BK_APIGW_SENTRY_DSN", ""),
 }
 
+# version log
+VERSION_LOG_DIR = os.path.join(BASE_DIR, "data/version_log")
+
 # Elasticsearch 配置
 BK_APIGW_ES_USER = env.str("BK_APIGW_ES_USER", BK_APP_CODE)
 # 密码中可能包含特殊字符
