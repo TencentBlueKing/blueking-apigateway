@@ -437,6 +437,7 @@ const routes: RouteRecordRaw[] = [
     path: '/components',
     name: 'componentsMain',
     component: ComponentsMain,
+    redirect: '/components/access',
     meta: {
       title: '组件管理',
       matchRoute: 'componentsMain',
@@ -459,7 +460,7 @@ const routes: RouteRecordRaw[] = [
         component: ComponentsSystem,
         meta: {
           title: '系统管理',
-          matchRoute: 'ComponentsSystem',
+          matchRoute: 'componentsSystem',
           topMenu: 'componentsMain',
         },
       },
@@ -469,7 +470,7 @@ const routes: RouteRecordRaw[] = [
         component: ComponentsManage,
         meta: {
           title: '组件管理',
-          matchRoute: 'ComponentsManage',
+          matchRoute: 'componentsManage',
           topMenu: 'componentsMain',
         },
       },
@@ -512,7 +513,7 @@ const routes: RouteRecordRaw[] = [
         component: ComponentsCategory,
         meta: {
           title: '文档分类',
-          matchRoute: 'ComponentsCategory',
+          matchRoute: 'componentsCategory',
           topMenu: 'componentsMain',
         },
       },
