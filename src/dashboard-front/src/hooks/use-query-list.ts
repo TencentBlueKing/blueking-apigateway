@@ -68,23 +68,23 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
   // 监听筛选条件的变化
   watch(
     () => filterData,
-    () => {
+    async () => {
       pagination.value = { ...initPagination };
-      fetchList();
+      await fetchList();
     },
     { deep: true },
   );
 
-  const fetchList = () => {
+  const fetchList = async () => {
     if (getMethod.value) {
-      getList(getMethod.value);
+      await getList(getMethod.value);
     } else {
-      getList();
+      await getList();
     }
   };
 
-  onMounted(() => {
-    getList();
+  onMounted(async () => {
+    await getList();
   });
 
 

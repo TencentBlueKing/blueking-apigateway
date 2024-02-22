@@ -407,7 +407,7 @@ watch(
         e.disabled = isEmpty;
       }
     });
-    updateTableEmptyConfig();
+    // updateTableEmptyConfig();
   },
   { deep: true },
 );
@@ -436,7 +436,10 @@ watch(
 );
 watch(
   () => filterData.value, () => {
-    updateTableEmptyConfig();
+    // filterData 变化重新请求列表数据，数据还未返回时执行 updateTableEmptyConfig 偶现问题，因此加入延迟
+    setTimeout(() => {
+      updateTableEmptyConfig();
+    }, 100);
   },
   {
     deep: true,

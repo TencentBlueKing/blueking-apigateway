@@ -29,6 +29,7 @@
             @page-limit-change="handlePageSizeChange"
             @page-value-change="handlePageChange"
             @selection-change="handleSelectionChange"
+            @select-all="handleSelecAllChange"
             row-hover="auto"
           >
             <bk-table-column width="80" type="selection" align="center" />
@@ -39,7 +40,7 @@
                   theme="primary"
                   @click="handleShowInfo(data.id)"
                 >
-                  {{ data?.version }}
+                  {{ data?.version }}--id {{ data?.id }}
                 </bk-button>
               </template>
             </bk-table-column>
@@ -181,7 +182,7 @@ const {
 } = useQueryList(getResourceVersionsList, filterData);
 
 // 列表多选
-const { selections, bkTableRef, handleSelectionChange, resetSelections } = useSelection();
+const { selections, bkTableRef, handleSelectionChange, handleSelecAllChange, resetSelections } = useSelection();
 
 // 当前操作的行
 const resourceVersionId = ref();
@@ -327,8 +328,13 @@ watch(
 
 let timeId: any = null;
 onMounted(() => {
-  timeId = setInterval(() => {
-    getList();
+  timeId = setInterval(async () => {
+    await getList();
+    tableData.value.forEach((item) => {
+      if (selections.value.find(sel => sel.id === item.id)) {
+        bkTableRef.value?.toggleRowSelection(item, true);
+      }
+    });
   }, 1000 * 30);
 });
 onUnmounted(() => {
