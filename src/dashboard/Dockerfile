@@ -3,7 +3,7 @@ ARG TAG=3.6.15-slim-buster
 FROM ${IMAGE}:${TAG}
 
 RUN apt-get update && apt-get install -y libssl-dev default-libmysqlclient-dev libffi-dev \
-    build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps
+    build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl
 
 ARG PYPI="https://pypi.org/simple/"
 RUN pip config set global.index-url "${PYPI}"
