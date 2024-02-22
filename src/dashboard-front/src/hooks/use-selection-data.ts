@@ -17,21 +17,13 @@ export const useSelection = () => {
   const bkTableRef = ref();
 
   const handleSelectionChange = (selection: SelectionType) => {
-    // 全选
-    if (selection.isAll && selection.checked) {
-      selections.value = JSON.parse(JSON.stringify(selection.data));
-    }
-    // 取消全选
-    if (selection.isAll && !selection.checked) {
-      selections.value = [];
-    }
     // 选择某一个
-    if (!selection.isAll && selection.checked) {
+    if (selection.checked) {
       selections.value.push(selection.row);
     }
     // 取消选择某一个
-    if (!selection.isAll && !selection.checked) {
-      const index = selections.value.findIndex((item: any) => item === selection.row);
+    if (!selection.checked) {
+      const index = selections.value.findIndex((item: any) => item.id === selection.row.id);
       selections.value.splice(index, 1);
     }
   };

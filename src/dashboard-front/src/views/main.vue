@@ -12,11 +12,11 @@
           :opened-keys="openedKeys"
           :active-key="activeMenuKey"
         >
-          <template v-for="menu in menuData">
+          <template v-for="(menu, index) in menuData">
             <template v-if="menu.enabled">
               <bk-submenu
                 v-if="menu.children?.length"
-                :key="menu.name"
+                :key="index"
                 :title="menu.title"
               >
                 <template #icon>
@@ -29,18 +29,19 @@
                   >
                   </bk-badge>
                 </template>
-                <bk-menu-item
-                  v-for="child in menu.children" :key="child.name" @click="handleGoPage(child.name, apigwId)">
-                  {{ child.title }}
-                  <bk-badge
-                    :count="permission.count"
-                    :max="99"
-                    theme="danger"
-                    style="margin-left: 5px"
-                    v-if="child.name === 'apigwPermissionApplys' && permission.count !== 0"
-                  >
-                  </bk-badge>
-                </bk-menu-item>
+                <template v-for="child in menu.children">
+                  <bk-menu-item v-if="child.enabled" :key="child.name" @click="handleGoPage(child.name, apigwId)">
+                    {{ child.title }}
+                    <bk-badge
+                      :count="permission.count"
+                      :max="99"
+                      theme="danger"
+                      style="margin-left: 5px"
+                      v-if="child.name === 'apigwPermissionApplys' && permission.count !== 0"
+                    >
+                    </bk-badge>
+                  </bk-menu-item>
+                </template>
               </bk-submenu>
               <bk-menu-item
                 v-else

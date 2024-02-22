@@ -35,10 +35,17 @@
                 <bk-exception
                   v-else
                   class="exception-wrap-item exception-part"
-                  type="empty"
+                  :type="exceptionType"
                   scene="part"
-                  :description="$t('暂无数据')"
-                />
+                  :description="exceptionDesc"
+                >
+                  <div class="search-empty-tips">
+                    {{ t('可以尝试 调整关键词 或') }}
+                    <span class="clear-search" @click="handleClearSearch()">
+                      {{ t('清空搜索条件') }}
+                    </span>
+                  </div>
+                </bk-exception>
               </div>
             </div>
             <div class="sideslider-rg">
@@ -422,11 +429,25 @@ const changeCurrentSource = (source: any) => {
   }
 };
 
+const exceptionType = ref('empty');
+const exceptionDesc = ref(t('暂无数据'));
+
 const keywords = ref('');
 // 搜索
 const getResources = computed(() => {
+  if (keywords.value === '') {
+    exceptionType.value = 'empty';
+    exceptionDesc.value = t('暂无数据');
+  } else {
+    exceptionType.value = 'search-empty';
+    exceptionDesc.value = t('搜索结果为空');
+  }
   return info.value?.resources?.filter((item: any) => item.name?.includes(keywords.value));
 });
+
+const handleClearSearch = () => {
+  keywords.value = '';
+};
 
 const renderTitle = (name: string) => {
   let showName = name;
@@ -486,6 +507,16 @@ watch(
     .sideslider-lf-ul {
       height: calc(100% - 94px);
       overflow-y: scroll;
+      .search-empty-tips {
+        font-size: 12px;
+        margin-top: 8px;
+        color: #979ba5;
+
+        .clear-search {
+            cursor: pointer;
+            color: #3a84ff;
+        }
+      }
     }
     .sideslider-lf-li {
       cursor: pointer;

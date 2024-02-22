@@ -314,7 +314,7 @@ const formRemoveConfirmApigw = ref('');
 const basicInfoDetailLoading = ref(false);
 // 当前基本信息
 const basicInfoData = ref<BasicInfoParams>({
-  status: 0,
+  status: 1,
   name: '',
   url: '',
   description: '',
@@ -365,11 +365,12 @@ const handleChangeApigwStatus = async () => {
   const status = basicInfoData.value.status === 1 ? 0 : 1;
   try {
     const res = await toggleGateWaysStatus(apigwId.value, { status });
-    if (res && res.code === 0) {
+    if (res) {
       basicInfoData.value = Object.assign(basicInfoData.value, { status });
       Message({
         theme: 'success',
         message: t('更新成功'),
+        width: 'auto',
       });
     }
     await getBasicInfo();

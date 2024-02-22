@@ -296,14 +296,14 @@ const setTableHeader = () => {
       field: 'bk_app_code',
       label: t('蓝鲸应用ID'),
     },
-    { 
-      field: 'grant_dimension_display', 
+    {
+      field: 'grant_dimension_display',
       label: t('授权维度'),
       render: ({ data }: Record<string, any>) => {
         return data.grant_dimension_display || '--'
       }
      },
-    { 
+    {
       field: 'expire_days_display',
       label: t('权限期限'),
       render: ({ data }: Record<string, any>) => {
@@ -313,8 +313,8 @@ const setTableHeader = () => {
     { field: 'applied_by', label: t('申请人') },
     { field: 'handled_time', label: t('审批时间') },
     { field: 'handled_by', label: t('审批人') },
-    { 
-      field: 'status', 
+    {
+      field: 'status',
       label: t('审批状态'),
       render: ({ data }: Record<string, any>) => {
         if(['rejected'].includes(data?.status)) {
@@ -340,11 +340,11 @@ const setTableHeader = () => {
       render: ({ data }: Record<string, any>) => {
         return (
           <div>
-            <bk-button 
+            <bk-button
               class="mr10"
               theme="primary"
               text
-              onClick={(e:Event) => {handleShowRecord(e,data)}}  
+              onClick={(e:Event) => {handleShowRecord(e,data)}}
             >
               { t('详情') }
             </bk-button>
@@ -538,12 +538,12 @@ onMounted(() => {
       vertical-align: middle;
       background: #C4C6CC;
       border-radius: 50%;
-  
+
       &.default {
         background: #f0f1f5;
         border: 1px solid #c9cad2;
       }
-  
+
       &.primary,
       &.releasing,
       &.pending {
