@@ -18,10 +18,11 @@
 #
 import math
 
+from django.conf import settings
 from rest_framework import serializers
 
+from apigateway.apps.esb.bkcore.models import AppPermissionApplyRecord
 from apigateway.apps.esb.helpers import BoardConfigManager
-from apigateway.apps.esb.permission.serializers import AppPermissionApplyRecordSLZ
 from apigateway.apps.esb.validators import ComponentIDValidator
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
@@ -135,8 +136,63 @@ class AppPermissionApplyRecordQuerySLZ(serializers.Serializer):
     query = serializers.CharField(allow_blank=True, required=False)
 
 
+class ComponentInRecordSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    description = SerializerTranslatedField(translated_fields={"en": "description_en"})
+    description_en = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    apply_status = serializers.CharField()
+
+
+class AppPermissionApplyRecordSLZ(serializers.ModelSerializer):
+    system_name = serializers.CharField(read_only=True)
+    apply_status = serializers.CharField(read_only=True)
+    apply_status_display = serializers.SerializerMethodField()
+    handled_by = serializers.SerializerMethodField()
+    comment = serializers.SerializerMethodField()
+    tag = serializers.SerializerMethodField()
+    components = serializers.ListField(child=ComponentInRecordSLZ())
+
+    class Meta:
+        model = AppPermissionApplyRecord
+        _common_fields = [
+            "id",
+            "bk_app_code",
+            "applied_by",
+            "applied_time",
+            "handled_by",
+            "handled_time",
+            "apply_status",
+            "apply_status_display",
+            "comment",
+            "reason",
+            "expire_days",
+            "system_name",
+        ]
+        fields = _common_fields + ["tag", "components"]
+
+    def get_apply_status_display(self, obj):
+        return ApplyStatusEnum.get_choice_label(obj.apply_status)
+
+    def get_handled_by(self, obj):
+        if obj.handled_by:
+            return [obj.handled_by]
+        return settings.ESB_MANAGERS
+
+    def get_comment(self, obj):
+        return obj.comment or ""
+
+    def get_tag(self, obj):
+        return BoardConfigManager.get_optional_display_label(obj.board)
+
+
 class AppPermissionApplyRecordV1SLZ(AppPermissionApplyRecordSLZ):
     components = None
 
     class Meta(AppPermissionApplyRecordSLZ.Meta):
         fields = AppPermissionApplyRecordSLZ.Meta._common_fields
+
+
+class AppPermissionApplyRecordDetailSLZ(AppPermissionApplyRecordSLZ):
+    class Meta(AppPermissionApplyRecordSLZ.Meta):
+        fields = AppPermissionApplyRecordSLZ.Meta._common_fields + ["components"]
