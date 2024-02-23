@@ -1,8 +1,11 @@
 import { defineStore } from 'pinia';
-import type { IUser } from '@/types/store';
+import type { IUser, IFeatureFlags } from '@/types/store';
 
 export const useUser = defineStore('user', {
-  state: () => ({
+  state: (): {
+    user: IUser,
+    featureFlags: IFeatureFlags,
+  } => ({
     user: {
       username: '',
       avatar_url: '',
@@ -13,7 +16,7 @@ export const useUser = defineStore('user', {
     setUser(user: IUser) {
       this.user = user;
     },
-    setFeatureFlags(data: any) {
+    setFeatureFlags(data: IFeatureFlags) {
       this.featureFlags = data;
     },
   },

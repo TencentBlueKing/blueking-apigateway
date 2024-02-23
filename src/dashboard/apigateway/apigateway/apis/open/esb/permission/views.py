@@ -29,7 +29,6 @@ from apigateway.apps.esb.bkcore.models import (
     ComponentSystem,
     ESBChannel,
 )
-from apigateway.apps.esb.permission.serializers import AppPermissionApplyRecordDetailSLZ
 from apigateway.biz.esb.permissions import ComponentPermissionManager
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import V1OKJsonResponse
@@ -180,5 +179,5 @@ class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
         manager = ComponentPermissionManager.get_manager()
         manager.patch_permission_apply_records([record])
 
-        slz = AppPermissionApplyRecordDetailSLZ(record)
+        slz = serializers.AppPermissionApplyRecordDetailSLZ(record)
         return V1OKJsonResponse("OK", data=slz.data)

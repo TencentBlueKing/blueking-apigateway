@@ -16,11 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import include, path
+from django.urls import path
+
+from . import views
 
 urlpatterns = [
-    path("systems/", include("apigateway.apps.esb.system.urls")),
-    path("components/", include("apigateway.apps.esb.component.urls")),
-    path("doc-categories/", include("apigateway.apps.esb.doc_category.urls")),
-    path("status/", include("apigateway.apps.esb.status.urls")),
+    path("", views.VersionLogListApi.as_view(), name="version_log.list_versions"),
 ]

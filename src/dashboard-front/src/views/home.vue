@@ -133,11 +133,22 @@
     </div>
     <div class="footer-container">
       <div>
-        <bk-link theme="primary" :href="bkAppVersion === 'te' ? 'wxwork://message/?username=BK%E5%8A%A9%E6%89%8B' : 'https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true'" target="_blank">技术支持</bk-link> |
-        <bk-link theme="primary" href="https://bk.tencent.com/s-mart/community" target="_blank">社区论坛</bk-link> |
-        <bk-link theme="primary" href="https://bk.tencent.com/index" target="_blank">产品官网</bk-link>
+        <bk-link theme="primary" :href="GLOBAL_CONFIG.FOOT_INFO.NAMEHREF" target="_blank">
+          {{ $t(GLOBAL_CONFIG.FOOT_INFO.NAME) }}
+        </bk-link>
+        <span>|</span>
+        <bk-link theme="primary" :href="GLOBAL_CONFIG.FOOT_INFO.COMMUNITYHREF" target="_blank">
+          {{ $t(GLOBAL_CONFIG.FOOT_INFO.COMMUNITY) }}
+        </bk-link>
+        <span v-if="GLOBAL_CONFIG.FOOT_INFO.PRODUCT">|</span>
+        <bk-link
+          v-if="GLOBAL_CONFIG.FOOT_INFO.PRODUCT"
+          theme="primary"
+          :href="GLOBAL_CONFIG.FOOT_INFO.PRODUCTHREF" target="_blank">
+          {{ $t(GLOBAL_CONFIG.FOOT_INFO.PRODUCT) }}
+        </bk-link>
       </div>
-      Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved.
+      Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved. V{{GLOBAL_CONFIG.FOOT_INFO.VERSION}}
     </div>
 
     <bk-dialog
@@ -202,7 +213,7 @@ import { useUser } from '@/store/user';
 import { Message } from 'bkui-vue';
 import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
-import { useGetApiList } from '@/hooks';
+import { useGetApiList, useGetGlobalProperties } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import MemberSelect from '@/components/member-select';
 import {
@@ -233,6 +244,9 @@ interface IinitDialogData {
   is_public: boolean
 }
 
+const globalProperties = useGetGlobalProperties();
+const { GLOBAL_CONFIG } = globalProperties;
+
 // dialog弹窗数据
 const initDialogData: IinitDialogData = {
   name: '',
@@ -241,7 +255,7 @@ const initDialogData: IinitDialogData = {
   is_public: true,
 };
 
-const bkAppVersion = window.BK_APP_VERSION;
+// const bkAppVersion = window.BK_APP_VERSION;
 
 const isLoading = ref(true);
 

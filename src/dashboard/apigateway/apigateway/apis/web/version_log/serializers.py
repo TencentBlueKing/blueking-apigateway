@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,11 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import include, path
 
-urlpatterns = [
-    path("systems/", include("apigateway.apps.esb.system.urls")),
-    path("components/", include("apigateway.apps.esb.component.urls")),
-    path("doc-categories/", include("apigateway.apps.esb.doc_category.urls")),
-    path("status/", include("apigateway.apps.esb.status.urls")),
-]
+from rest_framework import serializers
+
+
+class VersionLogSLZ(serializers.Serializer):
+    version = serializers.CharField(label="版本号")
+    date = serializers.CharField(label="更新日期")
+    content = serializers.CharField(label="版本内容", help_text="markdown 文件内容")
