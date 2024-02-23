@@ -21,79 +21,80 @@
         </bk-input>
       </div>
 
-      <bk-table
-        ref="componentRef"
-        border="outer"
-        style="margin-top: 16px;"
-        :data="componentList"
-        size="small"
-        :pagination="pagination"
-        v-bkloading="{ isLoading, opacity: 1 }"
-        @select="handlerChange"
-        @select-all="handlerAllChange"
-        remote-pagination
-        @page-value-change="handlePageChange"
-        @page-limit-change="handlePageLimitChange"
-        @filter-change="handleFilterChange">
-        <bk-table-column :label="t('系统名称')" prop="system_name">
-          <template #default="{ data }">
-            {{data?.system_name || '--'}}
-          </template>
-        </bk-table-column>
-        <bk-table-column :label="t('组件名称')" prop="component_name">
-          <template #default="{ data }">
-            {{data?.component_name || '--'}}
-          </template>
-        </bk-table-column>
-        <bk-table-column
-          :label="t('组件请求方法')"
-          :filters="methodFilters"
-          :filter-multiple="true"
-          column-key="component_method"
-          prop="component_method">
-          <template #default="{ data }">
-            {{data?.component_method || '--'}}
-          </template>
-        </bk-table-column>
-        <bk-table-column :label="t('组件请求路径')" prop="component_path" :min-width="200">
-          <template #default="{ data }">
-            {{data?.component_path || '--'}}
-          </template>
-        </bk-table-column>
-        <bk-table-column :label="t('资源')" prop="resource_id" :show-overflow-tooltip="false">
-          <template #default="{ data }">
-            <span
-              v-if="data?.resource_name"
-              :class="['text-resource', { 'resource-disabled': !data?.resource_id }]"
-              v-bk-tooltips.top="{ content: data?.resource_id ? data?.resource_name : t('资源不存在') }"
-              @click.stop="handleEditResource(data, data?.resource_id)">{{ data?.resource_name }}</span>
-            <template v-else>
-              --
+      <bk-loading :loading="isLoading">
+        <bk-table
+          ref="componentRef"
+          border="outer"
+          style="margin-top: 16px;"
+          :data="componentList"
+          size="small"
+          :pagination="pagination"
+          @select="handlerChange"
+          @select-all="handlerAllChange"
+          remote-pagination
+          @page-value-change="handlePageChange"
+          @page-limit-change="handlePageLimitChange"
+          @filter-change="handleFilterChange">
+          <bk-table-column :label="t('系统名称')" prop="system_name">
+            <template #default="{ data }">
+              {{data?.system_name || '--'}}
             </template>
-          </template>
-        </bk-table-column>
-        <bk-table-column :label="t('组件ID')" prop="component_id">
-          <template #default="{ data }">
-            {{data?.component_id || '--'}}
-          </template>
-        </bk-table-column>
-        <bk-table-column
-          :label="t('操作类型')" width="150"
-          :filters="statusFilters"
-          :filter-multiple="true"
-          column-key="status"
-          prop="status">
-          <template #default="{ data }">
-            <span style="color: #2DCB56;" v-if="!data?.resource_id"> {{ t('新建') }} </span>
-            <span style="color: #ffb400;" v-if="data?.resource_id && data?.component_path"> {{ t('更新') }} </span>
-            <span style="color: #EA3536;" v-if="data?.resource_id && !data?.component_path"> {{ t('删除') }} </span>
-          </template>
-        </bk-table-column>
-      </bk-table>
-
+          </bk-table-column>
+          <bk-table-column :label="t('组件名称')" prop="component_name">
+            <template #default="{ data }">
+              {{data?.component_name || '--'}}
+            </template>
+          </bk-table-column>
+          <bk-table-column
+            :label="t('组件请求方法')"
+            :filters="methodFilters"
+            :filter-multiple="true"
+            column-key="component_method"
+            prop="component_method">
+            <template #default="{ data }">
+              {{data?.component_method || '--'}}
+            </template>
+          </bk-table-column>
+          <bk-table-column :label="t('组件请求路径')" prop="component_path" :min-width="200">
+            <template #default="{ data }">
+              {{data?.component_path || '--'}}
+            </template>
+          </bk-table-column>
+          <bk-table-column :label="t('资源')" prop="resource_id" :show-overflow-tooltip="false">
+            <template #default="{ data }">
+              <span
+                v-if="data?.resource_name"
+                :class="['text-resource', { 'resource-disabled': !data?.resource_id }]"
+                v-bk-tooltips.top="{ content: data?.resource_id ? data?.resource_name : t('资源不存在') }"
+                @click.stop="handleEditResource(data, data?.resource_id)">{{ data?.resource_name }}</span>
+              <template v-else>
+                --
+              </template>
+            </template>
+          </bk-table-column>
+          <bk-table-column :label="t('组件ID')" prop="component_id">
+            <template #default="{ data }">
+              {{data?.component_id || '--'}}
+            </template>
+          </bk-table-column>
+          <bk-table-column
+            :label="t('操作类型')" width="150"
+            :filters="statusFilters"
+            :filter-multiple="true"
+            column-key="status"
+            prop="status">
+            <template #default="{ data }">
+              <span style="color: #2DCB56;" v-if="!data?.resource_id"> {{ t('新建') }} </span>
+              <span style="color: #ffb400;" v-if="data?.resource_id && data?.component_path"> {{ t('更新') }} </span>
+              <span style="color: #EA3536;" v-if="data?.resource_id && !data?.component_path"> {{ t('删除') }} </span>
+            </template>
+          </bk-table-column>
+        </bk-table>
+      </bk-loading>
       <div class="mt20">
-        <bk-popconfirm
+        <bk-pop-confirm
           ref="resourcePopconfirm"
+          :is-show="confirmSyncShow"
           trigger="click"
           ext-cls="import-resource-popconfirm-wrapper"
           v-if="componentList.length">
@@ -112,7 +113,7 @@
                 <bk-button
                   size="small"
                   class="btn"
-                  @click="resourcePopconfirm?.cancel()">
+                  @click="confirmSyncShow = false">
                   {{ t('取消') }}
                 </bk-button>
               </div>
@@ -124,10 +125,11 @@
             theme="primary"
             type="button"
             :title="t('下一步')"
+            @click="confirmSyncShow = true"
             :loading="confirmIsLoading">
             {{ t('确认同步') }}
           </bk-button>
-        </bk-popconfirm>
+        </bk-pop-confirm>
         <bk-button
           v-else
           class="mr10"
@@ -137,7 +139,6 @@
           {{ t('确认同步') }}
         </bk-button>
         <bk-button
-          theme="default"
           type="button"
           :title="t('取消')"
           :disabled="isLoading"
@@ -171,6 +172,7 @@ const pagination = reactive({
   limit: 10,
 });
 
+const confirmSyncShow = ref<boolean>(false);
 const isLoading = ref<boolean>(false);
 const pathUrl = ref<string>('');
 const esb = ref<any>({});
@@ -237,8 +239,8 @@ const getDataByPage = (page?: any) => {
   return displayData.value?.slice(startIndex, endIndex);
 };
 
-const getComponents = async (loading = false) => {
-  isLoading.value = loading;
+const getComponents = async () => {
+  isLoading.value = true;
   try {
     const res = await checkSyncComponent();
     allData.value = Object.freeze(res);
@@ -267,14 +269,14 @@ const handlerAllChange = (payload: any) => {
 
 const confirm = () => {
   checkReleaseData();
-  resourcePopconfirm.value?.cancel();
+  confirmSyncShow.value = false;
 };
 
 const checkReleaseData = async () => {
   try {
     await syncReleaseData();
     router.push({
-      name: 'apigwAccess',
+      path: '/components/access',
     });
   } catch (e) {
     console.log(e);
@@ -450,18 +452,6 @@ watch(
   width: 44px;
 }
 
-.btn-wrapper {
-  padding-top: 10px;
-  .btn {
-    &:nth-child(1) {
-      right: 100px;
-    }
-    &:nth-child(2) {
-      right: 35px;
-    }
-  }
-}
-
 .text-resource {
   color: #3a84ff;
   cursor: pointer;
@@ -471,5 +461,32 @@ watch(
   color: #dcdee5;
   cursor: not-allowed;
   user-select: none;
+}
+</style>
+
+<style lang="scss">
+.import-resource-popconfirm-wrapper.bk-popover {
+  padding: 16px;
+  .bk-pop-confirm {
+    .btn-wrapper {
+      padding-top: 10px;
+      position: relative;
+      height: 26px;
+      .btn {
+        min-width: 50px;
+        padding: 0 6px;
+        position: absolute;
+        &:nth-child(1) {
+          right: 100px;
+        }
+        &:nth-child(2) {
+          right: 35px;
+        }
+      }
+    }
+    .bk-pop-confirm-footer {
+      display: none !important;
+    }
+  }
 }
 </style>
