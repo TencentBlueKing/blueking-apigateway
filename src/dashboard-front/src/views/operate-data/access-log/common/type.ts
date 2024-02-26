@@ -17,8 +17,8 @@ export interface ChartInterface {
 export interface LogDetailInterface {
   offset?: number
   limit?: number
-  bk_nonce: number
+  bk_nonce: string
   bk_signature: string
+  bk_timestamp: string
   shared_by: string
-  request_id: string
 }

@@ -8,6 +8,7 @@ const lang: ILANG = {
   '你好世界': ['hello world'],
   '我的网关': ['My Gateway'],
   '组件管理': ['Components'],
+  '蓝鲸应用ID [{detailsAppCode}] 访问API网关 [{currentApigwName}] 资源的请求详情': ['App [{detailsAppCode}] Request details for accessing resources of the gateway [{currentApigwName}]'],
   //   '111': ['111'],
   //   '111': ['111'],
   //   '111': ['111'],

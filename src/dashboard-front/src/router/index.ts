@@ -245,6 +245,7 @@ const routes: RouteRecordRaw[] = [
           title: '流水日志',
           matchRoute: 'apigwAccessLogDetail',
           topMenu: 'home',
+          isMenu: false,
         },
       },
       {

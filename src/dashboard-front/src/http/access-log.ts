@@ -26,7 +26,7 @@ export const fetchApigwAccessLogShareLink = (apigwId: number, params: { request_
  *  获取流程日志详情
  * @param apigwId 网关id
  */
-export const fetchApigwAccessLogDetail = (apigwId: number, params: LogDetailInterface) => fetch.get(`${BK_DASHBOARD_URL}}/gateways/${apigwId}/logs/${params.request_id}/?${json2Query(params)}`);
+export const fetchApigwAccessLogDetail = (apigwId: number, requestId: string, params: LogDetailInterface) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/logs/${requestId}/?${json2Query(params)}`);
 
 
 /**
