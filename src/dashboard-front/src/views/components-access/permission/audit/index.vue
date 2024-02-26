@@ -29,21 +29,21 @@
         </bk-form-item>
       </bk-form>
     </div>
-    <bk-table
-      style="margin-top: 15px;"
-      ref="permissionTable"
-      class="ag-apply-table"
-      :data="permissionApplyList"
-      :size="'medium'"
-      :pagination="pagination"
-      v-bkloading="{ isLoading: isDataLoading }"
-      @page-limit-change="handlePageLimitChange"
-      @page-change="handlePageChange"
-      @select="handlePageSelect"
-      @selection-change="handlePageSelectionChange"
-      @expand-change="handlePageExpandChange"
-      @row-click="handleRowClick">
-      <!-- <div slot="empty">
+    <bk-loading :loading="isDataLoading">
+      <bk-table
+        style="margin-top: 15px;"
+        ref="permissionTable"
+        class="ag-apply-table"
+        :data="permissionApplyList"
+        :size="'medium'"
+        :pagination="pagination"
+        @page-limit-change="handlePageLimitChange"
+        @page-change="handlePageChange"
+        @select="handlePageSelect"
+        @selection-change="handlePageSelectionChange"
+        @expand-change="handlePageExpandChange"
+        @row-click="handleRowClick">
+        <!-- <div slot="empty">
         <table-empty
           :keyword="tableEmptyConf.keyword"
           :abnormal="tableEmptyConf.isAbnormal"
@@ -51,85 +51,85 @@
           @clear-filter="clearFilterKey"
         />
       </div> -->
-      <bk-table-column type="selection" width="60" align="center"></bk-table-column>
-      <bk-table-column type="expand" width="30" class="ag-expand-cell">
-        <template #default="props">
-          <bk-table
-            :ref="(el) => setPermissionDetail(`permissionDetail_${props.row.id}`, el)"
-            :max-height="378"
-            :size="'small'"
-            :key="props.row.id"
-            :data="props.row.components"
-            :outer-border="false"
-            :header-cell-style="{ background: '#fafbfd', borderRight: 'none' }"
-            ext-cls="ag-expand-table"
-            @selection-change="handleRowSelectionChange">
-            <!-- <div slot="empty">
+        <bk-table-column type="selection" width="60" align="center"></bk-table-column>
+        <bk-table-column type="expand" width="30" class="ag-expand-cell">
+          <template #default="props">
+            <bk-table
+              :ref="(el) => setPermissionDetail(`permissionDetail_${props.row.id}`, el)"
+              :max-height="378"
+              :size="'small'"
+              :key="props.row.id"
+              :data="props.row.components"
+              :outer-border="false"
+              :header-cell-style="{ background: '#fafbfd', borderRight: 'none' }"
+              ext-cls="ag-expand-table"
+              @selection-change="handleRowSelectionChange">
+              <!-- <div slot="empty">
               <table-empty empty />
             </div> -->
-            <bk-table-column type="index" label="" width="60"></bk-table-column>
-            <bk-table-column type="selection" width="50"></bk-table-column>
-            <bk-table-column prop="name" :label="t('组件名称')"></bk-table-column>
-            <bk-table-column prop="description" :label="t('组件描述')"></bk-table-column>
-          </bk-table>
-        </template>
-      </bk-table-column>
-      <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
-      <bk-table-column :label="t('组件系统')" prop="system_name">
-        <template #default="props">
-          <span>{{props.row.system_name || '--'}}</span>
-        </template>
-      </bk-table-column>
-      <bk-table-column :label="t('权限期限')" prop="expire_days_display">
-        <template #default="props">
-          <span>{{props.row.expire_days ? getMonths(props.row.expire_days) : '--'}}</span>
-        </template>
-      </bk-table-column>
-      <bk-table-column :label="t('申请理由')" prop="reason">
-        <template #default="props">
-          <span>{{props.row.reason || '--'}}</span>
-        </template>
-      </bk-table-column>
-      <bk-table-column :label="t('申请人')" prop="applied_by"></bk-table-column>
-      <bk-table-column
-        :label="t('申请时间')"
-        prop="applied_time"
-        width="200"
-        :show-overflow-tooltip="true">
-      </bk-table-column>
-      <bk-table-column :label="t('审批状态')" prop="status">
-        <template #default="props">
-          {{ statusMap[props.row['apply_status']] }}
-        </template>
-      </bk-table-column>
-      <bk-table-column :label="t('操作')" width="200" :key="renderTableIndex">
-        <template #default="props">
-          <bk-popover
-            :content="t('请选择组件')"
-            v-if="expandRows.includes(props.row.id) && props.row.selection.length === 0"
-          >
+              <bk-table-column type="index" label="" width="60"></bk-table-column>
+              <bk-table-column type="selection" width="50"></bk-table-column>
+              <bk-table-column prop="name" :label="t('组件名称')"></bk-table-column>
+              <bk-table-column prop="description" :label="t('组件描述')"></bk-table-column>
+            </bk-table>
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
+        <bk-table-column :label="t('组件系统')" prop="system_name">
+          <template #default="props">
+            <span>{{props.row.system_name || '--'}}</span>
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('权限期限')" prop="expire_days_display">
+          <template #default="props">
+            <span>{{props.row.expire_days ? getMonths(props.row.expire_days) : '--'}}</span>
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('申请理由')" prop="reason">
+          <template #default="props">
+            <span>{{props.row.reason || '--'}}</span>
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('申请人')" prop="applied_by"></bk-table-column>
+        <bk-table-column
+          :label="t('申请时间')"
+          prop="applied_time"
+          width="200"
+          :show-overflow-tooltip="true">
+        </bk-table-column>
+        <bk-table-column :label="t('审批状态')" prop="status">
+          <template #default="props">
+            {{ statusMap[props.row['apply_status']] }}
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('操作')" width="200" :key="renderTableIndex">
+          <template #default="props">
+            <bk-popover
+              :content="t('请选择组件')"
+              v-if="expandRows.includes(props.row.id) && props.row.selection.length === 0"
+            >
+              <bk-button
+                class="mr10 is-disabled"
+                theme="primary"
+                text
+                @click.stop.prevent="handlePrevent">
+                {{ t('全部通过') }}
+              </bk-button>
+            </bk-popover>
             <bk-button
-              class="mr10 is-disabled"
+              class="mr10"
+              theme="primary"
+              v-else
+              text
+              @click="handleApplyApprove(props.row)">
+              {{props.row.isSelectAll ? t('全部通过') : t('部分通过')}}
+            </bk-button>
+            <bk-button
               theme="primary"
               text
-              @click.stop.prevent="handlePrevent">
-              {{ t('全部通过') }}
+              @click="handleApplyReject(props.row)">
+              {{ t('全部驳回') }}
             </bk-button>
-          </bk-popover>
-          <bk-button
-            class="mr10"
-            theme="primary"
-            v-else
-            text
-            @click="handleApplyApprove(props.row)">
-            {{props.row.isSelectAll ? t('全部通过') : t('部分通过')}}
-          </bk-button>
-          <bk-button
-            theme="primary"
-            text
-            @click="handleApplyReject(props.row)">
-            {{ t('全部驳回') }}
-          </bk-button>
           <!-- <bk-button
           class="mr10"
           theme="primary"
@@ -138,10 +138,10 @@
            {{props.row.isSelectAll ? '全部通过' : t('部分通过')}}
            </bk-button> -->
           <!-- <bk-button theme="primary" text @click="handleApplyReject(props.row)"> {{ t('全部驳回') }} </bk-button> -->
-        </template>
-      </bk-table-column>
-    </bk-table>
-
+          </template>
+        </bk-table-column>
+      </bk-table>
+    </bk-loading>
     <bk-dialog
       v-model="batchApplyDialogConf.isShow"
       theme="primary"
@@ -158,13 +158,11 @@
             {{ t('全部通过') }}
           </bk-button>
           <bk-button
-            theme="default"
             @click="batchRejectPermission"
             :loading="curAction.status === 'rejected' && batchApplyDialogConf.isLoading">
             {{ t('全部驳回') }}
           </bk-button>
           <bk-button
-            theme="default"
             @click="batchApplyDialogConf.isShow = false">
             {{ t('取消') }}
           </bk-button>

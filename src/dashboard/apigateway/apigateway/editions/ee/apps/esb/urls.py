@@ -23,5 +23,4 @@ urlpatterns = [
     path("components/", include("apigateway.apps.esb.component.urls")),
     path("doc-categories/", include("apigateway.apps.esb.doc_category.urls")),
     path("status/", include("apigateway.apps.esb.status.urls")),
-    path("permissions/", include("apigateway.apps.esb.permission.urls")),
 ]

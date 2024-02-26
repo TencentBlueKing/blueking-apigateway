@@ -381,7 +381,7 @@
           @click="handleDeleteComponent">
           {{ t('确定') }}
         </bk-button>
-        <bk-button theme="default" @click="deleteDialogConf.visiable = false"> {{ t('取消') }} </bk-button>
+        <bk-button @click="deleteDialogConf.visiable = false"> {{ t('取消') }} </bk-button>
       </template>
     </bk-dialog>
   </div>
