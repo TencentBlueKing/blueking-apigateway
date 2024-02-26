@@ -66,7 +66,7 @@
           @click="handleSaveMarkdown"
           :loading="isSaving">{{isUpdate ? $t('更新') : $t('提交')}}</bk-button>
         <bk-button
-          theme="default" style="width: 100px;"
+          style="width: 100px;"
           @click="handleCancelMarkdown"> {{ $t('取消') }} </bk-button>
       </template>
       <template v-else>

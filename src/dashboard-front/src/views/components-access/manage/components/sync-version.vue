@@ -10,11 +10,7 @@
         style="width: 328px; margin-bottom: 10px"
         @enter="filterData">
       </bk-input>
-      <ag-loader
-        :offset-top="0"
-        :offset-left="0"
-        loader="stage-loader"
-        :is-loading="false">
+      <bk-loading :loading="isLoading">
         <bk-table
           ref="componentTableRef"
           style="margin-top: 16px;"
@@ -22,7 +18,6 @@
           size="small"
           :pagination="pagination"
           remote-pagination
-          v-bkloading="{ isLoading, opacity: 1 }"
           @page-value-change="handlePageChange"
           @page-limit-change="handlePageLimitChange"
           @filter-change="handleFilterChange">
@@ -72,7 +67,7 @@
             </template>
           </bk-table-column>
         </bk-table>
-      </ag-loader>
+      </bk-loading>
     </div>
   </div>
 </template>
@@ -121,8 +116,8 @@ const methodFilters = computed(() => {
   });
 });
 
-const getComponents = async (loading = false) => {
-  isLoading.value = loading;
+const getComponents = async () => {
+  isLoading.value = true;
   try {
     const res = await getSyncVersion(id.value);
     allData.value = Object.freeze(res);

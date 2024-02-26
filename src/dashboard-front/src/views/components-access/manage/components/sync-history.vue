@@ -19,18 +19,13 @@
           </bk-date-picker>
         </bk-form-item>
       </bk-form>
-      <ag-loader
-        :offset-top="0"
-        :offset-left="0"
-        loader="stage-loader"
-        :is-loading="false">
+      <bk-loading :loading="isLoading">
         <bk-table
           border="outer"
           style="margin-top: 16px;"
           :data="componentList"
           size="small"
           :pagination="pagination"
-          v-bkloading="{ isLoading, opacity: 1 }"
           remote-pagination
           @page-value-change="handlePageChange"
           @page-limit-change="handlePageLimitChange">
@@ -65,7 +60,7 @@
           </bk-table-column>
           <bk-table-column :label="t('操作日志')" prop="message"></bk-table-column>
         </bk-table>
-      </ag-loader>
+      </bk-loading>
     </div>
   </div>
 </template>
@@ -201,8 +196,8 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
-const getComponents = async (loading = false) => {
-  isLoading.value = loading;
+const getComponents = async () => {
+  isLoading.value = true;
   setSearchTimeRange();
   const pageParams = {
     limit: pagination.limit,
