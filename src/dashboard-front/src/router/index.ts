@@ -55,6 +55,7 @@ const ComponentsAudit = () => import(/* webpackChunkName: 'components-main'*/'@/
 const ComponentsPower = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/permission/power/index.vue');
 const ComponentsHistory = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/permission/history/index.vue');
 const ComponentsRuntimeData = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/runtime-data/index.vue');
+const ComponentsRuntimeDetail = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/runtime-data/detail.vue');
 
 
 // 文档一级路由出口
@@ -566,6 +567,16 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '实时运行数据',
           matchRoute: 'componentsRuntimeData',
+          topMenu: 'componentsMain',
+        },
+      },
+      {
+        path: 'system/:system/detail',
+        name: 'componentsRuntimeDetail',
+        component: ComponentsRuntimeDetail,
+        meta: {
+          title: '系统实时概况',
+          matchRoute: 'componentsRuntimeDetail',
           topMenu: 'componentsMain',
         },
       },
