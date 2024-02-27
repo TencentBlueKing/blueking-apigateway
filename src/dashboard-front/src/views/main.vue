@@ -3,6 +3,7 @@
     <bk-navigation
       :class="['navigation-main-content', route.name === 'apigwResourceVersion' ? 'custom-height-navigation' : '']"
       :default-open="collapse"
+      :need-menu="needMenu"
       navigation-type="left-right"
       @toggle="handleCollapse"
     >
@@ -131,6 +132,8 @@ const handleSetApigwDeatail = async () => {
   common.setCurApigwData(curApigwDataDetail);
 };
 
+const needMenu = ref(true);
+
 // 监听当前路由
 watch(
   () => route,
@@ -144,6 +147,11 @@ watch(
     handleSetApigwName();
     // 设置当前网关详情
     handleSetApigwDeatail();
+    console.error(val);
+
+    if (val.meta.isMenu === false) {
+      needMenu.value = false;
+    }
   },
   { immediate: true, deep: true },
 );
