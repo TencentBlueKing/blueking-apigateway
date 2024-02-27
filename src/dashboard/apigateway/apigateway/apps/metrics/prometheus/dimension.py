@@ -85,7 +85,8 @@ class FailedRequestsMetrics(BaseDimensionMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
-                ("proxy_error", "=", "1"),
+                ("status", ">=", "500"),
+                # ("proxy_error", "=", "1"),
             ]
         )
         return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
@@ -166,7 +167,8 @@ class ResourceFailedRequestsMetrics(BaseDimensionMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
-                ("proxy_error", "=", "1"),
+                ("status", ">=", "500"),
+                # ("proxy_error", "=", "1"),
             ]
         )
         return (
