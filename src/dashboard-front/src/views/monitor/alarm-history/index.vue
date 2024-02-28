@@ -4,7 +4,8 @@
       <bk-form class="flex-row">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker" label-width="85">
           <bk-date-picker
-            class="w320" v-model="initDateTimeRange" :placeholder="t('选择日期时间范围')" :type="'datetimerange'"
+            class="w320" v-model="initDateTimeRange" :key="dateKey"
+            :placeholder="t('选择日期时间范围')" :type="'datetimerange'"
             :shortcuts="datepickerShortcuts" :shortcut-close="true" :use-shortcut-text="true" @clear="handleTimeClear"
             :shortcut-selected-index="shortcutSelectedIndex" @shortcut-change="handleShortcutChange"
             @pick-success="handleTimeChange">
@@ -18,13 +19,16 @@
             :scroll-loading="scrollLoading"
             @scroll-end="handleScrollEnd"
             @toggle="handleToggle"
+            @change="handleStrategyChange"
+            @clear="handleStrategyClear"
           >
             <bk-option v-for="option in alarmStrategies" :key="option.id" :value="option.value" :label="option.label">
             </bk-option>
           </bk-select>
         </bk-form-item>
         <bk-form-item :label="t('告警状态')" class="mb10" label-width="119">
-          <bk-select v-model="filterData.status">
+          {{ filterData.status }}
+          <bk-select v-model="filterData.status" @change="handleStatusChange" @clear="handleStatusClear">
             <bk-option v-for="option in alarmStatus" :key="option.value" :value="option.value" :label="option.name">
             </bk-option>
           </bk-select>
@@ -80,6 +84,14 @@
               <span class="status-text">{{ getAlarmStatusText(data?.status) }}</span>
             </template>
           </bk-table-column>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getList"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
     </div>
@@ -129,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, reactive } from 'vue';
+import { ref, nextTick, computed, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon, useAccessLog } from '@/store';
 import { useQueryList } from '@/hooks';
@@ -137,6 +149,8 @@ import {
   getStrategyList,
   getRecordList,
 } from '@/http';
+import { cloneDeep } from 'lodash';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -144,6 +158,7 @@ const accessLog = useAccessLog();
 const { apigwId } = common; // 网关id
 const { datepickerShortcuts, alarmStatus } = accessLog;
 
+const dateKey = ref('dateKey');
 const shortcutSelectedIndex = ref<number>(-1);
 const scrollLoading = ref<boolean>(false);
 const initDateTimeRange = ref([]);
@@ -154,12 +169,13 @@ const initParams = reactive({
   offset: 0,
   order_by: 'name',
 });
-const filterData = ref({
-  alarm_strategy_id: null,
+const initFilterData = ref({
+  alarm_strategy_id: '',
   status: '',
   time_start: '',
   time_end: '',
 });
+const filterData = cloneDeep(initFilterData);
 const sidesliderConfig = reactive({
   isShow: false,
   title: t('告警详情'),
@@ -179,9 +195,13 @@ const {
   isLoading,
   handlePageChange,
   handlePageSizeChange,
-  // getList,
+  getList,
 } = useQueryList(getRecordList, filterData);
 
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 // table 标签的tooltip
 const labelTooltip = computed(() => {
@@ -194,10 +214,11 @@ const labelTooltip = computed(() => {
 });
 
 // 日期清除
-const handleTimeClear = () => {
+const handleTimeClear = async () => {
   shortcutSelectedIndex.value = -1;
   filterData.value.time_start = '';
   filterData.value.time_end = '';
+  await fetchRefreshTable();
 };
 // 日期快捷方式改变触发
 const handleShortcutChange = (value: any, index: any) => {
@@ -205,7 +226,7 @@ const handleShortcutChange = (value: any, index: any) => {
 };
 // 日期快捷方式改变触发
 const handleTimeChange = () => {
-  nextTick(() => {
+  nextTick(async () => {
     const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
     const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
     // eslint-disable-next-line radix
@@ -214,6 +235,7 @@ const handleTimeChange = () => {
     const end: any = parseInt(endStr);
     filterData.value.time_start = satrt;
     filterData.value.time_end = end;
+    await fetchRefreshTable();
   });
 };
 
@@ -247,6 +269,31 @@ const handleScrollEnd = async () => {
     console.log('error', error);
   }
 };
+
+const handleStrategyChange = async () => {
+  await fetchRefreshTable();
+};
+
+const handleStrategyClear = async () => {
+  filterData.value.alarm_strategy_id = '';
+  await fetchRefreshTable();
+};
+
+const handleStatusChange = async () => {
+  await fetchRefreshTable();
+};
+
+const handleStatusClear = async () => {
+  filterData.value.status = '';
+  await fetchRefreshTable();
+};
+
+// 刷新表格
+const fetchRefreshTable = async () => {
+  await getList();
+  updateTableEmptyConfig();
+};
+
 // 切换告警策略选项下拉折叠状态
 const handleToggle = () => {
   initParams.offset = 0;
@@ -260,7 +307,37 @@ const handleRowClick = (e: any, row: any) => {
   sidesliderConfig.data = row;
 };
 
+const handleClearFilterKey = async () => {
+  initDateTimeRange.value = [];
+  shortcutSelectedIndex.value = -1;
+  dateKey.value = String(+new Date());
+  filterData.value = Object.assign({}, {
+    alarm_strategy_id: '',
+    status: '',
+    time_start: '',
+    time_end: '',
+  });
+  await fetchRefreshTable();
+};
 
+const updateTableEmptyConfig = () => {
+  const list = Object.values(filterData.value).filter(item => item !== '');
+  if (list.length && !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (list.length) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+watch(() => filterData.value,  () => {
+  updateTableEmptyConfig();
+}, {
+  deep: true,
+});
 </script>
 
 <style lang="scss" scoped>
