@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from apigateway.apps.access_strategy.constants import AccessStrategyTypeEnum
 from apigateway.apps.access_strategy.models import IPGroup
@@ -44,7 +44,7 @@ def _parse_ip_content_list(ip_content_list: List[str]) -> List[str]:
     return list(ips)
 
 
-def parse_ip_access_control(access_strategy: AccessStrategy) -> Optional[PluginConfig]:
+def parse_ip_access_control(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[PluginConfig]]:
     """
     input:
         {"type": "allow", "ip_group_list": [23, 25, 16, 17, 18]}
@@ -65,12 +65,14 @@ def parse_ip_access_control(access_strategy: AccessStrategy) -> Optional[PluginC
 
             0.0.0.0
     """
+    plugin_type = PluginType.objects.get(code="bk-ip-restriction")
+
     config = access_strategy.config
 
     # if got an empty ip list, unbind the plugin!!!!!!
     ip_group_list = config["ip_group_list"]
     if not ip_group_list:
-        return None
+        return plugin_type, None
 
     ip_content_list = [group._ips for group in IPGroup.objects.filter(id__in=ip_group_list)]
     ip_list = _parse_ip_content_list(ip_content_list)
@@ -78,7 +80,7 @@ def parse_ip_access_control(access_strategy: AccessStrategy) -> Optional[PluginC
     # NOTE: incase the 404 after upgrade(the apisix required at least 1 item, otherwise load fail)
     # if got an empty ip list, unbind the plugin!!!!!!
     if not ip_list:
-        return None
+        return plugin_type, None
 
     # keep the origin comments
     content = "\n".join(ip_content_list)
@@ -90,17 +92,17 @@ def parse_ip_access_control(access_strategy: AccessStrategy) -> Optional[PluginC
     elif config["type"] == "deny":
         data = {"blacklist": content}
     else:
-        return None
+        return plugin_type, None
 
-    return PluginConfig(
+    return plugin_type, PluginConfig(
         gateway=access_strategy.api,
         name=access_strategy.name,
-        type=PluginType.objects.get(code="bk-ip-restriction"),
+        type=plugin_type,
         yaml=yaml_dumps_multiline_string(data),
     )
 
 
-def parse_rate_limit(access_strategy: AccessStrategy) -> Optional[PluginConfig]:
+def parse_rate_limit(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[PluginConfig]]:
     """
     input:
         {"rates": {"__default": [{"tokens": 100, "period": 3600}]}}
@@ -113,15 +115,17 @@ def parse_rate_limit(access_strategy: AccessStrategy) -> Optional[PluginConfig]:
             - period: 1
               tokens: 100
     """
-    return PluginConfig(
+    plugin_type = PluginType.objects.get(code="bk-rate-limit")
+
+    return plugin_type, PluginConfig(
         gateway=access_strategy.api,
         name=access_strategy.name,
-        type=PluginType.objects.get(code="bk-rate-limit"),
+        type=plugin_type,
         yaml=yaml_dumps(access_strategy.config),
     )
 
 
-def parse_user_verified_unrequired_apps(access_strategy: AccessStrategy) -> Optional[PluginConfig]:
+def parse_user_verified_unrequired_apps(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[PluginConfig]]:
     """
     input:
         {"bk_app_code_list": ["sss", "xxxdfd"]}
@@ -139,9 +143,11 @@ def parse_user_verified_unrequired_apps(access_strategy: AccessStrategy) -> Opti
         - bk_app_code: bk_bcs_app
         dimension: api
     """
+    plugin_type = PluginType.objects.get(code="bk-verified-user-exempted-apps")
+
     app_code_list = access_strategy.config.get("bk_app_code_list")
     if not app_code_list:
-        return None
+        return plugin_type, None
 
     data = {
         "exempted_apps": [
@@ -153,15 +159,15 @@ def parse_user_verified_unrequired_apps(access_strategy: AccessStrategy) -> Opti
             for app_code in app_code_list
         ]
     }
-    return PluginConfig(
+    return plugin_type, PluginConfig(
         gateway=access_strategy.api,
         name=access_strategy.name,
-        type=PluginType.objects.get(code="bk-verified-user-exempted-apps"),
+        type=plugin_type,
         yaml=yaml_dumps(data),
     )
 
 
-def parse_error_status_code_200(access_strategy: AccessStrategy) -> Optional[PluginConfig]:
+def parse_error_status_code_200(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[PluginConfig]]:
     """
     input:
         {"allow": true}
@@ -169,15 +175,17 @@ def parse_error_status_code_200(access_strategy: AccessStrategy) -> Optional[Plu
     output:
         {}
     """
-    return PluginConfig(
+    plugin_type = PluginType.objects.get(code="bk-status-rewrite")
+
+    return plugin_type, PluginConfig(
         gateway=access_strategy.api,
         name=access_strategy.name,
-        type=PluginType.objects.get(code="bk-status-rewrite"),
+        type=plugin_type,
         yaml="{}",
     )
 
 
-def parse_cors(access_strategy: AccessStrategy) -> Optional[PluginConfig]:
+def parse_cors(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[PluginConfig]]:
     """_summary_
     input:
         {"allowed_origins": ["sss"], "allowed_methods": ["GET", "POST", "PATCH"], "allowed_headers": ["Origin", "Accept", "Content-Type", "X-Requested-With"], "exposed_headers": [], "max_age": 86400, "allow_credentials": true, "option_passthrough": false}
@@ -209,11 +217,13 @@ def parse_cors(access_strategy: AccessStrategy) -> Optional[PluginConfig]:
         max_age: 86400
         allow_credential: true
     """
+    plugin_type = PluginType.objects.get(code="bk-cors")
+
     data = CorsASC()._to_plugin_config(access_strategy)
-    return PluginConfig(
+    return plugin_type, PluginConfig(
         gateway=access_strategy.api,
         name=access_strategy.name,
-        type=PluginType.objects.get(code="bk-cors"),
+        type=plugin_type,
         yaml=yaml_dumps(data),
     )
 
@@ -227,5 +237,5 @@ parse_funcs = {
 }
 
 
-def parse_to_plugin_config(access_strategy: AccessStrategy) -> Optional[PluginConfig]:
+def parse_to_plugin_config(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[PluginConfig]]:
     return parse_funcs[access_strategy.type](access_strategy)
