@@ -62,6 +62,14 @@
               </bk-button>
             </template>
           </bk-table-column>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getList"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
     </div>
@@ -214,7 +222,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon, useAccessLog } from '@/store';
 import { InfoBox, Message } from 'bkui-vue';
@@ -228,13 +236,17 @@ import {
   updateStrategy,
   updateStrategyStatus,
 } from '@/http';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const common = useCommon();
 const accessLog = useAccessLog();
 const { apigwId } = common; // 网关id
 const { alarmStrategyOptions } = accessLog; // 触发条件的option
-
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 const filterData = ref({ keyword: '' });
 const curOperate = ref<string>('add');
 const statusSwitcherDisabled = ref<boolean>(false);
@@ -423,6 +435,38 @@ const init = async () => {
   }
 };
 init();
+
+const handleClearFilterKey = () => {
+  filterData.value = { keyword: '' };
+  getList();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  const searchParams = {
+    ...filterData.value,
+  };
+  const list = Object.values(searchParams).filter(item => item !== '');
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  if (list.length && !tableData.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (list.length) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+watch(
+  () => tableData.value, () => {
+    updateTableEmptyConfig();
+  },
+  {
+    deep: true,
+  },
+);
 </script>
 
 <style lang="scss" scoped>
