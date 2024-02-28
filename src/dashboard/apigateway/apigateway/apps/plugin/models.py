@@ -23,6 +23,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.plugin.constants import (
     PluginBindingScopeEnum,
+    PluginBindingSourceEnum,
     PluginStyleEnum,
     PluginTypeEnum,
     PluginTypeScopeEnum,
@@ -198,6 +199,12 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
     )
     scope_id = models.IntegerField()
     config = models.ForeignKey(PluginConfig, on_delete=models.PROTECT, null=True)
+    source = models.CharField(
+        max_length=32,
+        choices=PluginBindingSourceEnum.get_choices(),
+        default=PluginBindingSourceEnum.USER_CREATE.value,
+        null=True,
+    )
 
     # FIXME: remove in 1.14
     type = models.CharField(max_length=32, choices=PluginTypeEnum.get_choices(), null=True)

@@ -20,6 +20,7 @@ import pytest
 from ddf import G
 
 from apigateway.apps.label.models import APILabel
+from apigateway.apps.plugin.constants import PluginBindingSourceEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
 from apigateway.biz.resource.importer import (
@@ -490,6 +491,7 @@ class TestResourcesImporter:
 
         plugin_config_1 = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type_bk_header_rewrite)
         plugin_config_2 = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type_bk_header_rewrite)
+
         G(
             PluginBinding,
             gateway=fake_gateway,
@@ -503,6 +505,18 @@ class TestResourcesImporter:
             config=plugin_config_2,
             scope_type="resource",
             scope_id=resource_2.id,
+        )
+
+        resource_3 = G(Resource, gateway=fake_gateway, method="PUT")
+        plugin_config_3_yaml_import = G(PluginConfig, gateway=fake_gateway, type=fake_plugin_type_bk_header_rewrite)
+
+        G(
+            PluginBinding,
+            gateway=fake_gateway,
+            config=plugin_config_3_yaml_import,
+            source=PluginBindingSourceEnum.YALM_IMPORT.value,
+            scope_type="resource",
+            scope_id=resource_3.id,
         )
 
         resource_data_list = [
@@ -523,13 +537,18 @@ class TestResourcesImporter:
                 },
                 deep=True,
             ),
+            fake_resource_data.copy(
+                update={"resource": resource_3, "plugin_configs": None, "name": "foo2", "method": "PUT"}, deep=True
+            ),
         ]
 
         importer = ResourcesImporter(fake_gateway, resource_data_list)
         importer._sync_plugins()
 
-        assert PluginBinding.objects.filter(scope_type="resource", scope_id=resource_1.id).count() == 1
+        assert PluginBinding.objects.filter(scope_type="resource", scope_id=resource_1.id).count() == 0
         assert PluginBinding.objects.get(scope_type="resource", scope_id=resource_2.id).config.config == {
             "set": [{"key": "foo", "value": "bar"}],
             "remove": [],
         }
+        # 配置插件为空，删除之前import的插件配置
+        assert PluginBinding.objects.filter(scope_type="resource", scope_id=resource_3.id).count() == 0

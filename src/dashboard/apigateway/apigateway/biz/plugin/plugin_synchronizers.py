@@ -19,7 +19,7 @@ from typing import Dict, List, Tuple
 
 from pydantic import BaseModel
 
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginBindingSourceEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
 from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.utils.time import now_datetime
@@ -67,6 +67,8 @@ class PluginSynchronizer:
                     plugin_config_obj.updated_by = username
                     plugin_config_obj.updated_time = now
                     update_plugin_configs.append(plugin_config_obj)
+                    existing_binding.source = PluginBindingSourceEnum.YALM_IMPORT.value
+                    existing_binding.save()
                 else:
                     plugin_type = code_to_plugin_type[plugin_config_data.type]
                     add_bindings.append(
@@ -98,6 +100,7 @@ class PluginSynchronizer:
                         gateway_id=gateway_id,
                         scope_type=scope_type.value,
                         scope_id=scope_id,
+                        source=PluginBindingSourceEnum.YALM_IMPORT.value,
                         config=plugin_configs[plugin_config.name],
                         created_by=username,
                     )
@@ -110,8 +113,13 @@ class PluginSynchronizer:
             )
 
         if remaining_key_to_binding:
-            # 已创建且当前存在的 binding 已被 pop 出去，剩余的即为需要删除的 binding
-            PluginBindingHandler.delete_by_bindings(gateway_id, list(remaining_key_to_binding.values()))
+            # 已创建且当前存在的 binding 已被 pop 出去，剩余的(排除用户创建的)即为需要删除的 binding
+            bindings_to_delete: List[PluginBinding] = [
+                binding
+                for binding in remaining_key_to_binding.values()
+                if binding.source == PluginBindingSourceEnum.YALM_IMPORT.value
+            ]
+            PluginBindingHandler.delete_by_bindings(gateway_id, bindings_to_delete)
 
     def _generate_plugin_name(self, scope_type: PluginBindingScopeEnum, scope_id: int, type_id: int) -> str:
         # 因 plugin_type code 可能较长，故使用 type_id
