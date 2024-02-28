@@ -142,7 +142,7 @@ class StageProxyHTTPConfigSLZ(serializers.Serializer):
     transform_headers = TransformHeadersSLZ(required=False, default=dict)
 
 
-class StagePluginConfigSLZ(serializers.Serializer):
+class PluginConfigSLZ(serializers.Serializer):
     type = serializers.CharField(help_text="插件类型名称")
     yaml = serializers.CharField(help_text="插件yaml配置")
 
@@ -161,7 +161,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     proxy_http = StageProxyHTTPConfigSLZ()
 
     plugin_configs = serializers.ListSerializer(
-        help_text="插件配置", child=StagePluginConfigSLZ(), allow_null=True, required=False
+        help_text="插件配置", child=PluginConfigSLZ(), allow_null=True, required=False
     )
 
     micro_gateway_id = serializers.UUIDField(allow_null=True, required=False)
@@ -369,14 +369,16 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                 raise serializers.ValidationError(_("插件类型重复：{plugin_type}。").format(plugin_type=plugin_type))
             types.add(plugin_type)
 
-        exist_plugin_types = set(PluginType.objects.all().values_list("code", flat=True))
+        all_plugin_type = PluginType.objects.all()
+
+        exist_plugin_types = set(all_plugin_type.values_list("code", flat=True))
         not_exist_types = types - exist_plugin_types
         if not_exist_types:
             raise serializers.ValidationError(
                 _("插件类型 {not_exist_types} 不存在。").format(not_exist_types=", ".join(not_exist_types))
             )
 
-        plugin_types = {plugin_type.code: plugin_type for plugin_type in PluginType.objects.all()}
+        plugin_types = {plugin_type.code: plugin_type for plugin_type in all_plugin_type}
         yaml_validator = PluginConfigYamlValidator()
 
         for plugin_config in plugin_configs:

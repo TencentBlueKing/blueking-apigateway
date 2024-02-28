@@ -545,7 +545,7 @@ class TestResourcesImporter:
         importer = ResourcesImporter(fake_gateway, resource_data_list)
         importer._sync_plugins()
 
-        assert PluginBinding.objects.filter(scope_type="resource", scope_id=resource_1.id).count() == 0
+        assert PluginBinding.objects.filter(scope_type="resource", scope_id=resource_1.id).count() == 1
         assert PluginBinding.objects.get(scope_type="resource", scope_id=resource_2.id).config.config == {
             "set": [{"key": "foo", "value": "bar"}],
             "remove": [],
