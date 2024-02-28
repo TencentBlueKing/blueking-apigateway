@@ -27,7 +27,6 @@
           </bk-select>
         </bk-form-item>
         <bk-form-item :label="t('告警状态')" class="mb10" label-width="119">
-          {{ filterData.status }}
           <bk-select v-model="filterData.status" @change="handleStatusChange" @clear="handleStatusClear">
             <bk-option v-for="option in alarmStatus" :key="option.value" :value="option.value" :label="option.name">
             </bk-option>
