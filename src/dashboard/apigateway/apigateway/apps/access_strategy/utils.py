@@ -125,46 +125,46 @@ def parse_rate_limit(access_strategy: AccessStrategy) -> Tuple[PluginType, Optio
     )
 
 
-def parse_user_verified_unrequired_apps(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[PluginConfig]]:
-    """
-    input:
-        {"bk_app_code_list": ["sss", "xxxdfd"]}
-        {"bk_app_code_list": []}
+# def parse_user_verified_unrequired_apps(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[PluginConfig]]:
+#     """
+#     input:
+#         {"bk_app_code_list": ["sss", "xxxdfd"]}
+#         {"bk_app_code_list": []}
 
 
-    output:
-        exempted_apps:
-        - bk_app_code: bk_apigateway
+#     output:
+#         exempted_apps:
+#         - bk_app_code: bk_apigateway
 
-        exempted_apps:
-        - bk_app_code: bk_apigateway
-        dimension: api
-        resource_ids: []
-        - bk_app_code: bk_bcs_app
-        dimension: api
-    """
-    plugin_type = PluginType.objects.get(code="bk-verified-user-exempted-apps")
+#         exempted_apps:
+#         - bk_app_code: bk_apigateway
+#         dimension: api
+#         resource_ids: []
+#         - bk_app_code: bk_bcs_app
+#         dimension: api
+#     """
+#     plugin_type = PluginType.objects.get(code="bk-verified-user-exempted-apps")
 
-    app_code_list = access_strategy.config.get("bk_app_code_list")
-    if not app_code_list:
-        return plugin_type, None
+#     app_code_list = access_strategy.config.get("bk_app_code_list")
+#     if not app_code_list:
+#         return plugin_type, None
 
-    data = {
-        "exempted_apps": [
-            {
-                "bk_app_code": app_code,
-                "dimension": "api",
-                "resource_ids": [],
-            }
-            for app_code in app_code_list
-        ]
-    }
-    return plugin_type, PluginConfig(
-        gateway=access_strategy.api,
-        name=access_strategy.name,
-        type=plugin_type,
-        yaml=yaml_dumps(data),
-    )
+#     data = {
+#         "exempted_apps": [
+#             {
+#                 "bk_app_code": app_code,
+#                 "dimension": "api",
+#                 "resource_ids": [],
+#             }
+#             for app_code in app_code_list
+#         ]
+#     }
+#     return plugin_type, PluginConfig(
+#         gateway=access_strategy.api,
+#         name=access_strategy.name,
+#         type=plugin_type,
+#         yaml=yaml_dumps(data),
+#     )
 
 
 def parse_error_status_code_200(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[PluginConfig]]:
@@ -231,7 +231,8 @@ def parse_cors(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[Pl
 parse_funcs = {
     AccessStrategyTypeEnum.IP_ACCESS_CONTROL.value: parse_ip_access_control,
     AccessStrategyTypeEnum.RATE_LIMIT.value: parse_rate_limit,
-    AccessStrategyTypeEnum.USER_VERIFIED_UNREQUIRED_APPS.value: parse_user_verified_unrequired_apps,
+    # DO NOT do the parse for USER_VERIFIED_UNREQUIRED_APPS
+    # AccessStrategyTypeEnum.USER_VERIFIED_UNREQUIRED_APPS.value: parse_user_verified_unrequired_apps,
     AccessStrategyTypeEnum.ERROR_STATUS_CODE_200.value: parse_error_status_code_200,
     AccessStrategyTypeEnum.CORS.value: parse_cors,
 }
@@ -239,3 +240,6 @@ parse_funcs = {
 
 def parse_to_plugin_config(access_strategy: AccessStrategy) -> Tuple[PluginType, Optional[PluginConfig]]:
     return parse_funcs[access_strategy.type](access_strategy)
+
+
+# TODO: parse the `USER_VERIFIED_UNREQUIRED_APPS` in the future

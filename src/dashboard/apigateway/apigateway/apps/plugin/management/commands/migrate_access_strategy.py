@@ -39,7 +39,12 @@ class Command(BaseCommand):
             # 不需要转换的在这里过滤
             if binding.type == AccessStrategyTypeEnum.CIRCUIT_BREAKER.value:
                 self.stdout.write(f"skip binding: {binding}, the strategy type is CIRCUIT_BREAKER")
+                continue
 
+            if binding.type == AccessStrategyTypeEnum.USER_VERIFIED_UNREQUIRED_APPS.value:
+                self.stdout.write(
+                    f"skip binding: {binding}, the strategy type is USER_VERIFIED_UNREQUIRED_APPS, do migrate in another place"
+                )
                 continue
 
             scope_type = binding.scope_type
