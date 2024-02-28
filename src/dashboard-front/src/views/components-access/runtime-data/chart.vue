@@ -63,7 +63,7 @@ const render_chart = () => {
 
   // 绘制 系统实时概况 图表
   getApigwChartDetail({
-    system,
+    system: system.value,
     start: props.startTime,
     end: props.endTime,
   }).then((result: any) => {
@@ -71,7 +71,7 @@ const render_chart = () => {
     //     $('#chart-status').html('<div>' + gettext('获取系统最新状态数据失败') + ', ' + result.error_message + '</div>')
     //     return;
     // }
-    const d = result.data;
+    const d = result;
     // if (!d) {
     //     $('#chart-status').html('<div>' + gettext('系统最新状态数据为空') + '</div>');
     //     return;
@@ -323,7 +323,7 @@ const get_series_options = (d: any) => {
         type: 'line',
         position: 'left',
         yAxisIndex: 0,
-        data: d.rate_availability.data,
+        data: d?.rate_availability?.data,
         symbolSize: 2,
         showSymbol: false,
         lineStyle: {
@@ -341,7 +341,7 @@ const get_series_options = (d: any) => {
         name: gettext(t('请求数')),
         type: 'line',
         yAxisIndex: 1,
-        data: d.requests.data,
+        data: d?.requests?.data,
         showSymbol: false,
         symbolSize: 2,
         lineStyle: {
@@ -358,7 +358,7 @@ const get_series_options = (d: any) => {
       {
         name: gettext(t('平均响应时间')),
         type: 'line',
-        data: d.avg_resp_time.data,
+        data: d?.avg_resp_time?.data,
         yAxisIndex: 2,
         showSymbol: false,
         symbolSize: 2,
@@ -377,7 +377,7 @@ const get_series_options = (d: any) => {
       {
         name: gettext(t('统计响应时间')),
         type: 'line',
-        data: d.perc95_resp_time.data,
+        data: d?.perc95_resp_time?.data,
         yAxisIndex: 2,
         symbolSize: 2,
         showSymbol: false,

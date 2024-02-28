@@ -7,7 +7,7 @@
           style="color: #63656e; font-weight: normal;">
           {{ systemName }}
           <span class="f12" v-if="principalFlag">
-            （{{ t('负责人：') }}{{summaryData.basic_info.maintainers.join(', ')}}）
+            （{{ t('负责人：') }}{{summaryData?.basic_info?.maintainers?.join(', ')}}）
           </span>
         </strong>
         <div class="auto-refresh fr">
@@ -26,228 +26,238 @@
       <chart-view @time-change="handlTimeChnage" :start-time="dayStartTime" :end-time="endTime"></chart-view>
     </div>
 
-    <div class="card-box" v-bkloading="{ isLoading: isSummaryDataLoading }">
-      <div class="card">
-        <div class="value">{{summaryData.requests.count_str || '--'}}</div>
-        <div class="key"> {{ t('请求数') }} </div>
-      </div>
-      <div class="card">
-        <div class="value">{{summaryData.rate_availability.value_str || '--'}}%</div>
-        <div class="key">
-          {{ t('可用率') }}
-          <span v-bk-tooltips="t('该系统在指定时间范围内可用率低于100%')" v-if="summaryData.rate_availability.value < 1">
-            <i class="apigateway-icon icon-ag-info"></i>
-          </span>
+    <bk-loading :loading="isSummaryDataLoading">
+      <div class="card-box">
+        <div class="card">
+          <div class="value">{{summaryData?.requests?.count_str || '--'}}</div>
+          <div class="key"> {{ t('请求数') }} </div>
+        </div>
+        <div class="card">
+          <div class="value">{{summaryData?.rate_availability?.value_str || '--'}}%</div>
+          <div class="key">
+            {{ t('可用率') }}
+            <span v-bk-tooltips="t('该系统在指定时间范围内可用率低于100%')" v-if="summaryData?.rate_availability?.value < 1">
+              <i class="apigateway-icon icon-ag-info"></i>
+            </span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="value">{{summaryData?.perc95_resp_time?.value_str || '--'}}ms</div>
+          <div class="key">
+            {{ t('统计响应时间') }}
+            <span v-bk-tooltips="t('根据百分位计算出的响应时间，相比平均响应时间，更能反映问题')" v-if="summaryData?.rate_availability?.value < 1">
+              <i class="apigateway-icon icon-ag-help"></i>
+            </span>
+          </div>
         </div>
       </div>
-      <div class="card">
-        <div class="value">{{summaryData.perc95_resp_time.value_str || '--'}}ms</div>
-        <div class="key">
-          {{ t('统计响应时间') }}
-          <span v-bk-tooltips="t('根据百分位计算出的响应时间，相比平均响应时间，更能反映问题')" v-if="summaryData.rate_availability.value < 1">
-            <i class="apigateway-icon icon-ag-help"></i>
-          </span>
-        </div>
-      </div>
-    </div>
+    </bk-loading>
 
     <div class="runtime-container">
       <bk-tab v-model:active="active" type="unborder-card" @tab-change="handleTabChange">
         <bk-tab-panel name="req_component_name" :label="t('按组件')">
-          <bk-table
-            :data="requests"
-            :border="false"
-            :outer-border="false"
-            :header-border="true"
-            v-bkloading="{ isLoading: isDataLoading, opacity: 1, delay: 1000 }"
-            :size="'small'">
-            <!-- <div slot="empty">
+          <bk-loading :loading="isDataLoading">
+            <bk-table
+              :data="requests"
+              :border="false"
+              :outer-border="false"
+              :header-border="true"
+              :size="'small'">
+              <!-- <div slot="empty">
               <table-empty empty />
             </div> -->
-            <bk-table-column type="index" :label="t('序列')" width="60"></bk-table-column>
-            <bk-table-column :label="t('组件名')" prop="req_component_name"></bk-table-column>
-            <bk-table-column :label="t('错误 / 总次数')" prop="req_component_name" sortable :sort-method="handleSortCount">
-              <template #default="props">
-                <span v-if="props.row.requests.error_count">
-                  {{props.row.requests.error_count}} /
-                </span>
-                <span>{{props.row.requests.count}}</span>
-                <bk-button
-                  v-if="props.row.requests.error_count"
-                  :text="true"
-                  @click="handleShowDetail(props.row)"
-                  class="ml5">
-                  {{ t('详情') }}
-                </bk-button>
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('统计响应时间(ms)')"
-              prop="req_component_name"
-              sortable
-              :sort-method="handleSortRespTime">
-              <template #default="props">
-                {{props.row.perc95_resp_time.value}}
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('平均响应时间(ms)')"
-              prop="req_component_name"
-              sortable
-              :sort-method="handleSortAvgTime">
-              <template #default="props">
-                {{props.row.avg_resp_time.value}}
-              </template>
-            </bk-table-column>
-            <bk-table-column :label="t('可用率')" prop="req_component_name" sortable :sort-method="handleSortRate">
-              <template #default="props">
-                {{props.row.rate_availability.value_str}}%
-              </template>
-            </bk-table-column>
-          </bk-table>
+              <bk-table-column type="index" :label="t('序列')" width="60"></bk-table-column>
+              <bk-table-column :label="t('组件名')" prop="req_component_name"></bk-table-column>
+              <bk-table-column :label="t('错误 / 总次数')" prop="req_component_name" :sort="true" :sort-fn="handleSortCount">
+                <template #default="props">
+                  <span v-if="props?.row?.requests?.error_count">
+                    {{props?.row?.requests?.error_count}} /
+                  </span>
+                  <span>{{props?.row?.requests?.count}}</span>
+                  <bk-button
+                    v-if="props?.row?.requests?.error_count"
+                    :text="true"
+                    @click="handleShowDetail(props?.row)"
+                    class="ml5">
+                    {{ t('详情') }}
+                  </bk-button>
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('统计响应时间(ms)')"
+                prop="req_component_name"
+                :sort="true"
+
+                :sort-fn="handleSortRespTime">
+                <template #default="props">
+                  {{props?.row?.perc95_resp_time?.value}}
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('平均响应时间(ms)')"
+                prop="req_component_name"
+                :sort="true"
+
+                :sort-fn="handleSortAvgTime">
+                <template #default="props">
+                  {{props?.row?.avg_resp_time?.value}}
+                </template>
+              </bk-table-column>
+              <bk-table-column :label="t('可用率')" prop="req_component_name" :sort="true" :sort-fn="handleSortRate">
+                <template #default="props">
+                  {{props?.row?.rate_availability?.value_str}}%
+                </template>
+              </bk-table-column>
+            </bk-table>
+          </bk-loading>
         </bk-tab-panel>
 
         <bk-tab-panel name="req_app_code" :label="t('按APP')">
-          <bk-table
-            :data="requests"
-            :border="false"
-            :outer-border="false"
-            :header-border="true"
-            v-bkloading="{ isLoading: isDataLoading, opacity: 1, delay: 1000 }"
-            :size="'small'">
-            <!-- <div slot="empty">
+          <bk-loading :loading="isDataLoading">
+            <bk-table
+              :data="requests"
+              :border="false"
+              :outer-border="false"
+              :header-border="true"
+              :size="'small'">
+              <!-- <div slot="empty">
               <table-empty empty />
             </div> -->
-            <bk-table-column type="index" :label="t('序列')" width="60"></bk-table-column>
-            <bk-table-column label="app_code" prop="req_app_code"></bk-table-column>
-            <bk-table-column :label="t('错误 / 总次数')" prop="req_component_name" sortable :sort-method="handleSortCount">
-              <template #default="props">
-                <span v-if="props.row.requests.error_count">
-                  {{props.row.requests.error_count}} /
-                </span>
-                <span>{{props.row.requests.count}}</span>
-                <bk-button
-                  v-if="props.row.requests.error_count"
-                  :text="true"
-                  @click="handleShowDetail(props.row)"
-                  class="ml5">
-                  {{ t('详情') }}
-                </bk-button>
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('统计响应时间(ms)')"
-              prop="req_component_name"
-              sortable
-              :sort-method="handleSortRespTime">
-              <template #default="props">
-                {{props.row.perc95_resp_time.value}}
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('平均响应时间(ms)')"
-              prop="req_component_name"
-              sortable
-              :sort-method="handleSortAvgTime">
-              <template #default="props">
-                {{props.row.avg_resp_time.value}}
-              </template>
-            </bk-table-column>
-            <bk-table-column :label="t('可用率')" prop="req_component_name" sortable :sort-method="handleSortRate">
-              <template #default="props">
-                {{props.row.rate_availability.value_str}}%
-              </template>
-            </bk-table-column>
-          </bk-table>
+              <bk-table-column type="index" :label="t('序列')" width="60"></bk-table-column>
+              <bk-table-column label="app_code" prop="req_app_code"></bk-table-column>
+              <bk-table-column :label="t('错误 / 总次数')" prop="req_component_name" :sort="true" :sort-fn="handleSortCount">
+                <template #default="props">
+                  <span v-if="props?.row?.requests?.error_count">
+                    {{props?.row?.requests?.error_count}} /
+                  </span>
+                  <span>{{props?.row?.requests?.count}}</span>
+                  <bk-button
+                    v-if="props?.row?.requests?.error_count"
+                    :text="true"
+                    @click="handleShowDetail(props?.row)"
+                    class="ml5">
+                    {{ t('详情') }}
+                  </bk-button>
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('统计响应时间(ms)')"
+                prop="req_component_name"
+                :sort="true"
+                :sort-fn="handleSortRespTime">
+                <template #default="props">
+                  {{props?.row?.perc95_resp_time?.value}}
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('平均响应时间(ms)')"
+                prop="req_component_name"
+                :sort="true"
+                :sort-fn="handleSortAvgTime">
+                <template #default="props">
+                  {{props?.row?.avg_resp_time?.value}}
+                </template>
+              </bk-table-column>
+              <bk-table-column :label="t('可用率')" prop="req_component_name" :sort="true" :sort-fn="handleSortRate">
+                <template #default="props">
+                  {{props?.row?.rate_availability?.value_str}}%
+                </template>
+              </bk-table-column>
+            </bk-table>
+          </bk-loading>
         </bk-tab-panel>
 
         <bk-tab-panel name="req_url" :label="t('按URL')">
-          <bk-table
-            :data="requests"
-            :border="false"
-            :outer-border="false"
-            :header-border="true"
-            v-bkloading="{ isLoading: isDataLoading, opacity: 1, delay: 1000 }"
-            :size="'small'">
-            <!-- <div slot="empty">
+          <bk-loading :loading="isDataLoading">
+            <bk-table
+              :data="requests"
+              :border="false"
+              :outer-border="false"
+              :header-border="true"
+              :size="'small'">
+              <!-- <div slot="empty">
               <table-empty empty />
             </div> -->
-            <bk-table-column type="index" :label="t('序列')" width="60"></bk-table-column>
-            <bk-table-column label="URL" prop="req_url" :min-width="200"></bk-table-column>
-            <bk-table-column :label="t('错误 / 总次数')" prop="req_component_name" sortable :sort-method="handleSortCount">
-              <template #default="props">
-                <span v-if="props.row.requests.error_count">
-                  {{props.row.requests.error_count}} /
-                </span>
-                <span>{{props.row.requests.count}}</span>
-                <bk-button
-                  v-if="props.row.requests.error_count"
-                  :text="true"
-                  @click="handleShowDetail(props.row)"
-                  class="ml5">
-                  {{ t('详情') }}
-                </bk-button>
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('统计响应时间(ms)')"
-              prop="req_component_name"
-              :sortable="true"
-              :sort-method="handleSortRespTime">
-              <template #default="props">
-                {{props.row.perc95_resp_time.value}}
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('平均响应时间(ms)')"
-              prop="req_component_name"
-              :sortable="true"
-              :sort-method="handleSortAvgTime">
-              <template #default="props">
-                {{props.row.avg_resp_time.value}}
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('可用率')"
-              prop="req_component_name"
-              :sortable="true"
-              :sort-method="handleSortRate">
-              <template #default="props">
-                {{props.row.rate_availability.value_str}}%
-              </template>
-            </bk-table-column>
-          </bk-table>
+              <bk-table-column type="index" :label="t('序列')" width="60"></bk-table-column>
+              <bk-table-column label="URL" prop="req_url" :min-width="200"></bk-table-column>
+              <bk-table-column :label="t('错误 / 总次数')" prop="req_component_name" :sort="true" :sort-fn="handleSortCount">
+                <template #default="props">
+                  <span v-if="props?.row?.requests?.error_count">
+                    {{props?.row?.requests?.error_count}} /
+                  </span>
+                  <span>{{props?.row?.requests?.count}}</span>
+                  <bk-button
+                    v-if="props?.row?.requests?.error_count"
+                    :text="true"
+                    @click="handleShowDetail(props?.row)"
+                    class="ml5">
+                    {{ t('详情') }}
+                  </bk-button>
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('统计响应时间(ms)')"
+                prop="req_component_name"
+                :sort="true"
+                :sort-fn="handleSortRespTime">
+                <template #default="props">
+                  {{props?.row?.perc95_resp_time?.value}}
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('平均响应时间(ms)')"
+                prop="req_component_name"
+                :sort="true"
+                :sort-fn="handleSortAvgTime">
+                <template #default="props">
+                  {{props?.row?.avg_resp_time?.value}}
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('可用率')"
+                prop="req_component_name"
+                :sort="true"
+                :sort-fn="handleSortRate">
+                <template #default="props">
+                  {{props?.row?.rate_availability?.value_str}}%
+                </template>
+              </bk-table-column>
+            </bk-table>
+          </bk-loading>
         </bk-tab-panel>
       </bk-tab>
     </div>
 
     <bk-dialog
-      v-model="detailDialog.visiable"
+      :is-show="detailDialog.visiable"
+      @closed="detailDialog.visiable = false"
       theme="primary"
       :width="900"
-      :mask-close="true"
-      :header-position="'left'"
+      :quick-close="true"
+      :header-align="'left'"
       :title="t('错误请求详情')"
-      :show-footer="false">
-      <div v-bkloading="{ isLoading: isErrorDataLoading, opacity: 1, delay: 1000 }">
-        <div class="mb10">
-          <strong>{{detailDialog.name}}</strong>
-        </div>
-        <bk-alert class="mb10" type="info" :title="t('此处最多展示最近 200 条错误信息')"></bk-alert>
-        <bk-table
-          :data="errorRequests"
-          :header-border="true"
-          :max-height="400"
-          :size="'small'">
-          <!-- <div slot="empty">
+      dialog-type="show">
+      <bk-loading :loading="isErrorDataLoading">
+        <div>
+          <div class="mb10">
+            <strong>{{detailDialog.name}}</strong>
+          </div>
+          <bk-alert class="mb10" type="info" :title="t('此处最多展示最近 200 条错误信息')"></bk-alert>
+          <bk-table
+            :data="errorRequests"
+            :header-border="true"
+            :max-height="400"
+            :size="'small'">
+            <!-- <div slot="empty">
             <table-empty empty />
           </div> -->
-          <bk-table-column :label="t('时间')" prop="datetime" width="120"></bk-table-column>
-          <bk-table-column :label="t('错误信息')" prop="message"></bk-table-column>
-          <bk-table-column :label="t('耗时')" prop="time" width="120"></bk-table-column>
-          <bk-table-column :label="t('响应状态')" prop="status" width="80"></bk-table-column>
-        </bk-table>
-      </div>
+            <bk-table-column :label="t('时间')" prop="datetime" width="120"></bk-table-column>
+            <bk-table-column :label="t('错误信息')" prop="message"></bk-table-column>
+            <bk-table-column :label="t('耗时')" prop="time" width="120"></bk-table-column>
+            <bk-table-column :label="t('响应状态')" prop="status" width="80"></bk-table-column>
+          </bk-table>
+        </div>
+      </bk-loading>
     </bk-dialog>
   </div>
 </template>
@@ -297,7 +307,7 @@ const isErrorDataLoading = ref<boolean>(false);
 const errorRequests = ref<any>([]);
 
 const principalFlag = computed(() => {
-  if (summaryData.value.basic_info?.maintainers.length) {
+  if (summaryData.value?.basic_info?.maintainers?.length) {
     return true;
   }
   return false;
@@ -313,12 +323,12 @@ const getRuntimeRequest = async () => {
   isDataLoading.value = true;
   try {
     const res = await getApigwRuntimeRequest({
-      type: active,
+      type: active.value,
       system: system.value,
-      start: startTime,
-      end: endTime,
+      start: startTime.value,
+      end: endTime.value,
     });
-    requests.value = res.data;
+    requests.value = res;
   } catch (e) {
     console.log(e);
   } finally {
@@ -371,10 +381,10 @@ const getSystemSummary = async () => {
   try {
     const res = await getApigwSystemSummary({
       system: system.value,
-      start: startTime,
-      end: endTime,
+      start: startTime.value,
+      end: endTime.value,
     });
-    summaryData.value = res.data;
+    summaryData.value = res;
   } catch (e) {
     console.log(e);
   } finally {
@@ -419,10 +429,10 @@ const handleShowDetail = async (data: any) => {
       appCode: data.req_app_code || '',
       componentName: data.req_component_name || '',
       requestUrl: data.req_url || '',
-      start: startTime,
-      end: endTime,
+      start: startTime.value,
+      end: endTime.value,
     });
-    errorRequests.value = res.data.data.data_list.map((item: any) => {
+    errorRequests.value = res.data.data_list.map((item: any) => {
       const datetime = moment(item.timestamp).format('MM-DD HH:mm');
       const endTime = moment(item.req_end_time).valueOf();
       const startTime = moment(item.req_start_time).valueOf();
@@ -466,6 +476,9 @@ watch(
 </script>
 
 <style lang="scss" scoped>
+.app-content {
+  padding: 24px;
+}
 .chart-box {
   width: 100%;
   background: #FFF;

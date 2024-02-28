@@ -579,6 +579,7 @@ const routes: RouteRecordRaw[] = [
           title: '系统实时概况',
           matchRoute: 'componentsRuntimeDetail',
           topMenu: 'componentsMain',
+          showBackIcon: true,
         },
       },
     ],
