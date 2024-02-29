@@ -40,7 +40,7 @@
                   theme="primary"
                   @click="handleShowInfo(data.id)"
                 >
-                  {{ data?.version }}--id {{ data?.id }}
+                  {{ data?.version }}
                 </bk-button>
               </template>
             </bk-table-column>
@@ -50,7 +50,7 @@
               min-width="120"
             >
               <template #default="{ data }">
-                {{ data?.released_stages?.map((item) => item.name).join(", ") }}
+                {{ data?.released_stages?.map((item: any) => item.name).join(", ") }}
               </template>
             </bk-table-column>
             <bk-table-column
@@ -154,7 +154,7 @@ import { useQueryList, useSelection } from '@/hooks';
 import { getResourceVersionsList, getStageList } from '@/http';
 import createSdk from '../components/createSdk.vue';
 import resourceDetail from '../components/resourceDetail.vue';
-import versionDiff from '@/components/version-diff';
+import versionDiff from '@/components/version-diff/index.vue';
 import { useResourceVersion, useUser } from '@/store';
 import { Message } from 'bkui-vue';
 import { useRoute } from 'vue-router';
@@ -329,7 +329,7 @@ watch(
 let timeId: any = null;
 onMounted(() => {
   timeId = setInterval(async () => {
-    await getList();
+    await getList(getResourceVersionsList, false);
     tableData.value.forEach((item) => {
       if (selections.value.find(sel => sel.id === item.id)) {
         bkTableRef.value?.toggleRowSelection(item, true);

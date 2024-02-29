@@ -29,10 +29,10 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
   const getMethod = ref<any>(null);
 
   // 获取列表数据的方法
-  const getList = async (fetchMethod = apiMethod) => {
+  const getList = async (fetchMethod = apiMethod, needLoading = true) => {
     getMethod.value = fetchMethod;
     const method = fetchMethod;
-    isLoading.value = true;
+    isLoading.value = needLoading;
     // 列表参数
     const paramsData = {
       offset: pagination.value.offset,
