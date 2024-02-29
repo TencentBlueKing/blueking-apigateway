@@ -67,7 +67,9 @@ class PluginSynchronizer:
                     plugin_config_obj.updated_by = username
                     plugin_config_obj.updated_time = now
                     update_plugin_configs.append(plugin_config_obj)
-                    existing_binding.source = PluginBindingSourceEnum.YALM_IMPORT.value
+
+                    # 以yaml配置为，如果yaml更新了用户创建插件配置,绑定来源也同步更新为yaml导入
+                    existing_binding.source = PluginBindingSourceEnum.YAML_IMPORT.value
                     existing_binding.save()
                 else:
                     plugin_type = code_to_plugin_type[plugin_config_data.type]
@@ -100,7 +102,7 @@ class PluginSynchronizer:
                         gateway_id=gateway_id,
                         scope_type=scope_type.value,
                         scope_id=scope_id,
-                        source=PluginBindingSourceEnum.YALM_IMPORT.value,
+                        source=PluginBindingSourceEnum.YAML_IMPORT.value,
                         config=plugin_configs[plugin_config.name],
                         created_by=username,
                     )
@@ -117,7 +119,8 @@ class PluginSynchronizer:
             bindings_to_delete: List[PluginBinding] = [
                 binding
                 for binding in remaining_key_to_binding.values()
-                if binding.source == PluginBindingSourceEnum.YALM_IMPORT.value
+                # 排除用户创建的插件配置，主要是防止自动同步的覆盖掉用户创建新增的配置
+                if binding.source == PluginBindingSourceEnum.YAML_IMPORT.value
             ]
             PluginBindingHandler.delete_by_bindings(gateway_id, bindings_to_delete)
 

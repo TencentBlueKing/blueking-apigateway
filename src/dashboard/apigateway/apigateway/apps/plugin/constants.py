@@ -59,5 +59,5 @@ class PluginStyleEnum(StructuredEnum):
 
 
 class PluginBindingSourceEnum(StructuredEnum):
-    YALM_IMPORT = EnumField("yalm_import", label=_("yalm导入"))
+    YAML_IMPORT = EnumField("yaml_import", label=_("yaml导入"))
     USER_CREATE = EnumField("user_create", label=_("用户创建"))

@@ -514,7 +514,7 @@ class TestResourcesImporter:
             PluginBinding,
             gateway=fake_gateway,
             config=plugin_config_3_yaml_import,
-            source=PluginBindingSourceEnum.YALM_IMPORT.value,
+            source=PluginBindingSourceEnum.YAML_IMPORT.value,
             scope_type="resource",
             scope_id=resource_3.id,
         )

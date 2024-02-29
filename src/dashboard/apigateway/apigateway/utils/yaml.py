@@ -72,9 +72,8 @@ def _force_quoted_string_representer(dumper, data):
 
     if data in _yaml_10_boolean_values:
         node.style = "'"
-        return node
 
-    return dumper.represent_scalar("tag:yaml.org,2002:str", data)
+    return node
 
 
 _yaml.representer.add_representer(str, _force_quoted_string_representer)
