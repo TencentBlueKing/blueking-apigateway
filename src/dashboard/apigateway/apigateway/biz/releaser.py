@@ -134,7 +134,7 @@ class BaseGatewayReleaser:
             username=self.username,
             gateway_id=self.gateway.id,
             instance_id=instance.id,
-            instance_name=f"{self.stage.name}:{instance.resource_version.name}",
+            instance_name=f"{self.stage.name}:{instance.resource_version.version}",
             data_before={},
             data_after=get_model_dict(instance),
         )
@@ -176,10 +176,9 @@ class BaseGatewayReleaser:
                 if not constants.HOST_WITHOUT_SCHEME_PATTERN.match(host["host"]):
                     raise ReleaseValidationError(
                         _(
-                            "网关环境【{stage_name}】中的配置Scheme【{scheme}】不合法。请在网关 `基本设置 -> 后端服务` 中进行配置。"
+                            "网关环境【{stage_name}】中的配置【后端服务地址】不合法。请在网关 `后端服务` 中进行配置。"
                         ).format(
                             stage_name=stage.name,
-                            scheme=host["scheme"],
                         )
                     )
 
