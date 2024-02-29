@@ -45,7 +45,7 @@ export const deleteStrategy = (apigwId: number, id: number) => fetch.delete(`${B
  * @param id 告警策略id
  * @param data 更新状态参数
  */
-export const updateStrategyStatus = (apigwId: number, id: number, data: any) => fetch.patch(`${BK_DASHBOARD_URL}/gateways/${apigwId}/monitors/alarm/strategies/${id}/status`, data);
+export const updateStrategyStatus = (apigwId: number, id: number, data: any) => fetch.patch(`${BK_DASHBOARD_URL}/gateways/${apigwId}/monitors/alarm/strategies/${id}/status/`, data);
 
 /**
  *  获取告警记录统计

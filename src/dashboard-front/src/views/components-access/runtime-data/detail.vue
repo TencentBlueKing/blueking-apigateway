@@ -125,7 +125,7 @@
             </div> -->
               <bk-table-column type="index" :label="t('序列')" width="60"></bk-table-column>
               <bk-table-column label="app_code" prop="req_app_code"></bk-table-column>
-              <bk-table-column :label="t('错误 / 总次数')" prop="req_component_name" :sort="true" :sort-fn="handleSortCount">
+              <bk-table-column :label="t('错误 / 总次数')" prop="req_app_code" :sort="true" :sort-fn="handleSortCount">
                 <template #default="props">
                   <span v-if="props?.row?.requests?.error_count">
                     {{props?.row?.requests?.error_count}} /
@@ -142,7 +142,7 @@
               </bk-table-column>
               <bk-table-column
                 :label="t('统计响应时间(ms)')"
-                prop="req_component_name"
+                prop="req_app_code"
                 :sort="true"
                 :sort-fn="handleSortRespTime">
                 <template #default="props">
@@ -151,14 +151,14 @@
               </bk-table-column>
               <bk-table-column
                 :label="t('平均响应时间(ms)')"
-                prop="req_component_name"
+                prop="req_app_code"
                 :sort="true"
                 :sort-fn="handleSortAvgTime">
                 <template #default="props">
                   {{props?.row?.avg_resp_time?.value}}
                 </template>
               </bk-table-column>
-              <bk-table-column :label="t('可用率')" prop="req_component_name" :sort="true" :sort-fn="handleSortRate">
+              <bk-table-column :label="t('可用率')" prop="req_app_code" :sort="true" :sort-fn="handleSortRate">
                 <template #default="props">
                   {{props?.row?.rate_availability?.value_str}}%
                 </template>
@@ -180,7 +180,7 @@
             </div> -->
               <bk-table-column type="index" :label="t('序列')" width="60"></bk-table-column>
               <bk-table-column label="URL" prop="req_url" :min-width="200"></bk-table-column>
-              <bk-table-column :label="t('错误 / 总次数')" prop="req_component_name" :sort="true" :sort-fn="handleSortCount">
+              <bk-table-column :label="t('错误 / 总次数')" prop="req_url" :sort="true" :sort-fn="handleSortCount">
                 <template #default="props">
                   <span v-if="props?.row?.requests?.error_count">
                     {{props?.row?.requests?.error_count}} /
@@ -197,7 +197,7 @@
               </bk-table-column>
               <bk-table-column
                 :label="t('统计响应时间(ms)')"
-                prop="req_component_name"
+                prop="req_url"
                 :sort="true"
                 :sort-fn="handleSortRespTime">
                 <template #default="props">
@@ -206,7 +206,7 @@
               </bk-table-column>
               <bk-table-column
                 :label="t('平均响应时间(ms)')"
-                prop="req_component_name"
+                prop="req_url"
                 :sort="true"
                 :sort-fn="handleSortAvgTime">
                 <template #default="props">
@@ -215,7 +215,7 @@
               </bk-table-column>
               <bk-table-column
                 :label="t('可用率')"
-                prop="req_component_name"
+                prop="req_url"
                 :sort="true"
                 :sort-fn="handleSortRate">
                 <template #default="props">
