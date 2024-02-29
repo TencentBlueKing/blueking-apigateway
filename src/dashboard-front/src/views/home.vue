@@ -127,7 +127,7 @@
           class="empty-exception"
           type="empty"
           scene="part"
-          description="没有数据"
+          description="暂无数据"
         />
       </div>
     </div>
@@ -424,17 +424,21 @@ init();
   margin: 0 auto;
   font-size: 14px;
   min-width: 1200px;
-  .title-container{
+  .title-container {
     width: 100%;
     padding: 28px 16px;
-    .left{
+    position: sticky;
+    top: 0;
+    z-index: 9;
+    background-color: #f5f7fa;
+    .left {
       font-size: 20px;
       color: #313238;
       flex: 0 0 60%;
     }
   }
-  .select-cls{
-    .prefix-cls{
+  .select-cls {
+    .prefix-cls {
       background: #fff;
       color: #979ba5;
       i{
@@ -442,14 +446,17 @@ init();
       }
     }
   }
-  .table-container{
+  .table-container {
     width: 100%;
     min-height: calc(100vh - 192px);
-    .table-header{
+    .table-header {
       width: 100%;
-      color: #979BA5;
+      color: #979ba5;
       padding: 0 16px;
       margin-bottom: 16px;
+      position: sticky;
+      top: 88px;
+      background-color: #f5f7fa;
     }
     .table-list{
       height: calc(100% - 45px);
