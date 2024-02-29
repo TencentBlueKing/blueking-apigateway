@@ -1,5 +1,5 @@
-
 const mockServer = require('./mock-server');
+// const { DefinePlugin } = require('webpack');
 
 module.exports = {
   host: process.env.BK_APP_HOST,
@@ -21,4 +21,13 @@ module.exports = {
       },
     };
   },
+
+  // chainWebpack: config => {
+  //   config
+  //   .plugin('feature-flags')
+  //   .use(DefinePlugin, [{
+  //     "__VUE_PROD_DEVTOOLS__": true,
+  //   }]);
+  //   return config
+  // }
 };
