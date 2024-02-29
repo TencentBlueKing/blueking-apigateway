@@ -19,63 +19,63 @@
         </div>
       </div>
     </div>
-    <div
-      class="runtime-container mt20" :style="{ height: containerHeight, position: 'relative' }"
-      v-bkloading="{ isLoading: isDataLoading, opacity: 1 }">
-      <div class="chart-box" style="position: relative">
-        <template v-if="charts.length">
-          <div class="chart-card" v-for="(chart, index) of charts" :key="index" @click="handleGoDetail(chart)">
-            <div class="card-content">
-              <div class="header">
-                <p>
-                  {{ chart.basic_info.description }}
-                  <span class="f12" style="color: #979ba5">
-                    ({{ chart.basic_info.name }})
-                  </span>
-                </p>
-              </div>
-              <div class="wrapper">
-                <div class="detail-wrapper">
-                  <div class="per_response_time">
-                    <strong>{{
-                      chart.perc95_resp_time ? chart.perc95_resp_time.value : "0"
-                    }}</strong>
-                    ms
-                  </div>
-                  <div class="response_count">
-                    {{ chart.requests ? chart.requests.count : "0" }} 次
-                  </div>
+    <bk-loading :loading="isDataLoading">
+      <div class="runtime-container mt20" :style="{ height: containerHeight, position: 'relative' }">
+        <div class="chart-box" style="position: relative">
+          <template v-if="charts.length">
+            <div class="chart-card" v-for="(chart, index) of charts" :key="index" @click="handleGoDetail(chart)">
+              <div class="card-content">
+                <div class="header">
+                  <p>
+                    {{ chart.basic_info.description }}
+                    <span class="f12" style="color: #979ba5">
+                      ({{ chart.basic_info.name }})
+                    </span>
+                  </p>
                 </div>
-                <div class="ring-wrapper">
-                  <Ring
-                    v-if="chart.rate_availability.value < 1" v-bk-tooltips="t('可用率低于100%')"
-                    :percent="chart.rate_availability.value_str" :size="80" :stroke-width="8" :fill-width="8"
-                    :fill-color="initRingColor(chart)" :text-style="initRingTextStyle(chart)">
-                  </Ring>
-                  <Ring
-                    v-else :percent="chart.rate_availability.value_str" :size="80" :stroke-width="8" :fill-width="8"
-                    :fill-color="initRingColor(chart)" :text-style="initRingTextStyle(chart)">
-                  </Ring>
+                <div class="wrapper">
+                  <div class="detail-wrapper">
+                    <div class="per_response_time">
+                      <strong>{{
+                        chart.perc95_resp_time ? chart.perc95_resp_time.value : "0"
+                      }}</strong>
+                      ms
+                    </div>
+                    <div class="response_count">
+                      {{ chart.requests ? chart.requests.count : "0" }} 次
+                    </div>
+                  </div>
+                  <div class="ring-wrapper">
+                    <Ring
+                      v-if="chart.rate_availability.value < 1" v-bk-tooltips="t('可用率低于100%')"
+                      :percent="chart.rate_availability.value_str" :size="80" :stroke-width="8" :fill-width="8"
+                      :fill-color="initRingColor(chart)" :text-style="initRingTextStyle(chart)">
+                    </Ring>
+                    <Ring
+                      v-else :percent="chart.rate_availability.value_str" :size="80" :stroke-width="8" :fill-width="8"
+                      :fill-color="initRingColor(chart)" :text-style="initRingTextStyle(chart)">
+                    </Ring>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </template>
-        <bk-exception
-          v-else type="empty" scene="part" style="
+          </template>
+          <bk-exception
+            v-else type="empty" scene="part" style="
             border: 1px solid #eee;
             border-raidus: 2px;
             background: #fff;
             margin-right: 15px;
           ">
-          <span>{{ t("暂无数据") }}</span>
-        </bk-exception>
-      </div>
+            <span>{{ t("暂无数据") }}</span>
+          </bk-exception>
+        </div>
 
-      <div class="timeline-box" v-if="statusList.length">
-        <bk-timeline :list="statusList" />
+        <div class="timeline-box" v-if="statusList.length">
+          <bk-timeline :list="statusList" />
+        </div>
       </div>
-    </div>
+    </bk-loading>
   </div>
 </template>
 
@@ -155,7 +155,7 @@ const initRingTextStyle = (chart: Record<string, any>) => {
 
 const handleGoDetail = (chart: any) => {
   router.push({
-    name: 'runtimeDetail',
+    name: 'componentsRuntimeDetail',
     params: {
       system: chart.system_name,
     },
