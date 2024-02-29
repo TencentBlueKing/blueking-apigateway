@@ -2,7 +2,7 @@
   <div class="navigation-main">
     <bk-navigation
       :class="['navigation-main-content', route.name === 'apigwResourceVersion' ? 'custom-height-navigation' : '']"
-      :default-open="collapse"
+      :default-open="true"
       :need-menu="needMenu"
       navigation-type="left-right"
       @toggle="handleCollapse"
@@ -12,12 +12,13 @@
           :collapse="collapse"
           :opened-keys="openedKeys"
           :active-key="activeMenuKey"
+          :unique-open="false"
         >
-          <template v-for="(menu, index) in menuData">
+          <template v-for="menu in menuData">
             <template v-if="menu.enabled">
               <bk-submenu
                 v-if="menu.children?.length"
-                :key="index"
+                :key="menu.name"
                 :title="menu.title"
               >
                 <template #icon>
@@ -109,7 +110,7 @@ const collapse = ref(true);
 // 选中的菜单
 const activeMenuKey = ref('');
 const gatewaysList = ref<any>([]);
-const openedKeys = menuData.map(e => e.name);
+const openedKeys = ref<string[]>([]);
 
 // 当前网关Id
 const apigwId = ref(0);
@@ -147,11 +148,21 @@ watch(
     handleSetApigwName();
     // 设置当前网关详情
     handleSetApigwDeatail();
-    console.error(val);
 
     if (val.meta.isMenu === false) {
       needMenu.value = false;
     }
+
+    const curOpenedKeys = openedKeys.value;
+    const menuDataLen = menuData.length;
+    for (let i = 0; i < menuDataLen; i++) {
+      const item = menuData[i];
+      const finded = item.children?.find(child => child.name === activeMenuKey.value);
+      if (finded) {
+        curOpenedKeys.push(item.name);
+      }
+    }
+    openedKeys.value = curOpenedKeys;
   },
   { immediate: true, deep: true },
 );
