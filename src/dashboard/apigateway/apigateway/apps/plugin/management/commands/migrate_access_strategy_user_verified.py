@@ -37,7 +37,7 @@ def init_stage_app_code_plugin_config(gateway: Gateway) -> Dict[int, Dict[str, D
         }
     }
     """
-    stages = Stage.objects.filter(api=gateway).all()
+    stages = Stage.objects.filter(gateway=gateway).all()
 
     stage_plugin_config: Dict[int, Dict[str, Dict]] = {}
     # get all stage bindings
@@ -104,6 +104,7 @@ def init_app_plugin_config(gateway: Gateway) -> Dict[str, Dict]:
 def merge_plugin_config(
     stage_app_code_plugin_config: Dict[int, Dict[str, Dict]], app_code_plugin_config: Dict[str, Dict]
 ) -> Dict[int, Dict[str, Dict]]:
+    assert len(stage_app_code_plugin_config) > 0
     merged_config: Dict[int, Dict[str, Dict]] = {}
 
     for stage_id, s_app_code_plugin_config in stage_app_code_plugin_config.items():
@@ -111,6 +112,10 @@ def merge_plugin_config(
         for app_code, plugin_config in app_code_plugin_config.items():
             if app_code not in s_app_code_plugin_config:
                 s_app_code_plugin_config[app_code] = plugin_config
+            else:
+                print(
+                    f"app_code: {app_code} already in stage: {stage_id}, skip, the resource_ids in {plugin_config} maybe permission amplification"
+                )
 
         merged_config[stage_id] = s_app_code_plugin_config
 
@@ -160,7 +165,7 @@ class Command(BaseCommand):
             plugin_config_name = "merged_user_verified_unrequired_apps"
             # generate pluginConfig and do binding
             for stage_id, app_code_plugin_config in merged_config.items():
-                exempted_apps = app_code_plugin_config.values()
+                exempted_apps = list(app_code_plugin_config.values())
 
                 if not exempted_apps:
                     # TODO: should remove migrated plugin binding?
