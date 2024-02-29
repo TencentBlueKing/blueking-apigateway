@@ -48,14 +48,12 @@ def init_stage_app_code_plugin_config(gateway: Gateway) -> Dict[int, Dict[str, D
             scope_id=stage.id,
         ).first()
         # should generate a empty config for those stage without binding
-        if not binding:
-            stage_plugin_config[stage.id] = {}
-        else:
+        stage_plugin_config[stage.id] = {}
+        if binding:
             # {"bk_app_code_list": ["codm-api-server", "codm-ops-new"]}
             config = binding.access_strategy.config
             bk_app_code_list = config.get("bk_app_code_list", [])
 
-            stage_plugin_config[stage.id] = {}
             # if the bk_app_code_list is empty, here will generate a empty config too
             for app_code in bk_app_code_list:
                 stage_plugin_config[stage.id][app_code] = {
