@@ -33,7 +33,7 @@ def init_stage_app_code_plugin_config(gateway: Gateway) -> Dict[int, Dict[str, D
     """
     {
         123: {
-            "app_123": {"dimension": "api", "resource_ids": []}
+            "app_123": {"bk_app_code": "app_123", "dimension": "api", "resource_ids": []}
         }
     }
     """
@@ -58,7 +58,11 @@ def init_stage_app_code_plugin_config(gateway: Gateway) -> Dict[int, Dict[str, D
             stage_plugin_config[stage.id] = {}
             # if the bk_app_code_list is empty, here will generate a empty config too
             for app_code in bk_app_code_list:
-                stage_plugin_config[stage.id][app_code] = {"dimension": "api", "resource_ids": []}
+                stage_plugin_config[stage.id][app_code] = {
+                    "bk_app_code": app_code,
+                    "dimension": "api",
+                    "resource_ids": [],
+                }
 
     return stage_plugin_config
 
@@ -66,7 +70,8 @@ def init_stage_app_code_plugin_config(gateway: Gateway) -> Dict[int, Dict[str, D
 def init_app_plugin_config(gateway: Gateway) -> Dict[str, Dict]:
     """
     {
-        "app_123": {"dimension": "resource", "resource_ids": [1,2,3]}
+        "app_123": {"bk_app_code": "app_123", "dimension": "resource", "resource_ids": [1,2,3]},
+        "app_456": {"bk_app_code": "app_456", "dimension": "resource", "resource_ids": [1,2,3]}
     }
     """
     # while the resource_id in AccessStrategyBinding is uniq, use list here
@@ -88,6 +93,7 @@ def init_app_plugin_config(gateway: Gateway) -> Dict[str, Dict]:
     app_code_plugin_config = {}
     for app_code, resource_ids in app_code_resource_ids.items():
         app_code_plugin_config[app_code] = {
+            "bk_app_code": app_code,
             "dimension": "resource",
             "resource_ids": resource_ids,
         }
@@ -95,19 +101,20 @@ def init_app_plugin_config(gateway: Gateway) -> Dict[str, Dict]:
     return app_code_plugin_config
 
 
-# TODO: should add unittest for all functions
 def merge_plugin_config(
     stage_app_code_plugin_config: Dict[int, Dict[str, Dict]], app_code_plugin_config: Dict[str, Dict]
 ) -> Dict[int, Dict[str, Dict]]:
-    # FIXME: should not modify the input, deepcopy one?
+    merged_config: Dict[int, Dict[str, Dict]] = {}
 
-    for s_app_code_plugin_config in stage_app_code_plugin_config.values():
+    for stage_id, s_app_code_plugin_config in stage_app_code_plugin_config.items():
         # loop the   app_code => [resource_id]
         for app_code, plugin_config in app_code_plugin_config.items():
             if app_code not in s_app_code_plugin_config:
                 s_app_code_plugin_config[app_code] = plugin_config
 
-    return stage_app_code_plugin_config
+        merged_config[stage_id] = s_app_code_plugin_config
+
+    return merged_config
 
 
 class Command(BaseCommand):
@@ -128,45 +135,45 @@ class Command(BaseCommand):
             # get stage_id => {app_code:*}
             # {
             #     123: {
-            #         "app_123": {"dimension": "api", "resource_ids": []}
+            #         "app_123": {"bk_app_code": "app_123", "dimension": "api", "resource_ids": []}
             #     }
             # }
             stage_app_code_plugin_config = init_stage_app_code_plugin_config(gateway)
 
             # get app_code => [resource_id]
             # {
-            #     "app_123": {"dimension": "resource", "resource_ids": [1,2,3]},
-            #     "app_456": {"dimension": "resource", "resource_ids": [1,2,3]}
+            #     "app_123": {"bk_app_code": "app_123", "dimension": "resource", "resource_ids": [1,2,3]},
+            #     "app_456": {"bk_app_code": "app_456", "dimension": "resource", "resource_ids": [1,2,3]}
             # }
             app_code_plugin_config = init_app_plugin_config(gateway)
 
             # merge
             # {
             #     123: {
-            #         "app_123": {"dimension": "api", "resource_ids": []},
-            #         "app_456": {"dimension": "resource", "resource_ids": [1,2,3]}
+            #         "app_123": {"bk_app_code": "app_123", "dimension": "api", "resource_ids": []},
+            #         "app_456": {"bk_app_code": "app_456", "dimension": "resource", "resource_ids": [1,2,3]}
             #     }
             # }
             merged_config = merge_plugin_config(stage_app_code_plugin_config, app_code_plugin_config)
 
-            # TODO: 一些为空的，提前过滤掉或者处理掉
-
+            plugin_type = PluginType.objects.get(code="bk-verified-user-exempted-apps")
+            plugin_config_name = "merged_user_verified_unrequired_apps"
             # generate pluginConfig and do binding
             for stage_id, app_code_plugin_config in merged_config.items():
-                exempted_apps = []
-                for app_code, plugin_config in app_code_plugin_config.items():
-                    plugin_config["bk_app_code"] = app_code
-                    exempted_apps.append(plugin_config)
+                exempted_apps = app_code_plugin_config.values()
 
                 if not exempted_apps:
-                    # TODO: stdout print here
+                    # TODO: should remove migrated plugin binding?
+                    self.stdout.write(
+                        f"gateway: {gateway}, stage: {stage_id} get no bk-verified-user-exempted-apps plugin_config, skip",
+                    )
                     continue
 
                 data = {"exempted_apps": exempted_apps}
                 plugin_config = PluginConfig(
                     gateway=gateway,
-                    name="merged_user_verified_unrequired_apps",
-                    type=PluginType.objects.get(code="bk-verified-user-exempted-apps"),
+                    name=plugin_config_name,
+                    type=plugin_type,
                     yaml=yaml_dumps(data),
                 )
 
