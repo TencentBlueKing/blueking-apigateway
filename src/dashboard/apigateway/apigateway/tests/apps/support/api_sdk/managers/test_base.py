@@ -42,9 +42,10 @@ def manager(
 
 class TestBaseSDKManager:
     @pytest.mark.parametrize(
-        "resource, expected",
+        "include_private_resources, resource, expected",
         [
             (
+                False,
                 {
                     "method": "GET",
                     "is_public": True,
@@ -52,6 +53,7 @@ class TestBaseSDKManager:
                 True,
             ),
             (
+                True,
                 {
                     "method": "GET",
                     "is_public": False,
@@ -59,6 +61,7 @@ class TestBaseSDKManager:
                 True,
             ),
             (
+                True,
                 {
                     "method": "ANY",
                     "is_public": True,
@@ -66,15 +69,17 @@ class TestBaseSDKManager:
                 False,
             ),
             (
+                False,
                 {
                     "method": "GET",
                     "is_public": False,
                 },
-                True,
+                False,
             ),
         ],
     )
-    def test_should_included_to_sdk(self, manager, resource, expected):
+    def test_should_included_to_sdk(self, manager, include_private_resources, resource, expected):
+        manager.include_private_resources = include_private_resources
         result = manager._should_included_to_sdk(resource)
         assert result is expected
 
@@ -86,6 +91,7 @@ def test_get_private_resources(
     public_api_resources,
     manager,
 ):
+    manager.include_private_resources = True
     resources = manager.get_resources(sdk_context)
 
     for resource in private_api_resources:
@@ -102,10 +108,11 @@ def test_get_public_resources(
     public_api_resources,
     manager,
 ):
+    manager.include_private_resources = False
     resources = manager.get_resources(sdk_context)
 
     for resource in private_api_resources:
-        assert resource in resources
+        assert resource not in resources
 
     for resource in public_api_resources:
         assert resource in resources
@@ -157,10 +164,7 @@ def test_handle_with_distributed(
 
     assert sdk_context.is_distributed
 
-    resources = manager.get_resources(sdk_context)
-    assert len(resources) == len(private_api_resources + public_api_resources)
-
-    mock_generator.generate.assert_called_once_with(output_dir, resources)
+    mock_generator.generate.assert_called_once_with(output_dir, public_api_resources)
     mock_packager.pack.assert_called_once_with(output_dir)
     mock_public_distributor.distribute.assert_called_once_with(output_dir, files)
     mock_private_distributor.distribute.assert_not_called()
@@ -187,10 +191,7 @@ def test_handle_with_non_public_context(
 
     assert not sdk_context.is_distributed
 
-    resources = manager.get_resources(sdk_context)
-    assert len(resources) == len(private_api_resources + public_api_resources)
-
-    mock_generator.generate.assert_called_once_with(output_dir, resources)
+    mock_generator.generate.assert_called_once_with(output_dir, public_api_resources)
     mock_packager.pack.assert_called_once_with(output_dir)
     mock_public_distributor.distribute.assert_not_called()
     mock_private_distributor.distribute.assert_called_once_with(output_dir, files)
