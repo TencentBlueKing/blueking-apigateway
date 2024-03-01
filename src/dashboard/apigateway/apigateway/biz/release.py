@@ -21,6 +21,7 @@ from typing import Any, Dict, List
 
 from django.db.models import Max
 
+from apigateway.biz.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.core.constants import (
     EVENT_FAIL_INTERVAL_TIME,
     GatewayStatusEnum,
@@ -181,3 +182,35 @@ class ReleaseHandler:
     @staticmethod
     def filter_released_gateway_ids(gateway_ids: List[int]) -> List[int]:
         return list(set(Release.objects.filter(gateway_id__in=gateway_ids).values_list("gateway_id", flat=True)))
+
+    @staticmethod
+    def have_other_latest_release_doing(release_history: ReleaseHistory) -> bool:
+        """查找除了本身的release_history之外是否最近还有别的处于running状态"""
+
+        # 获取最近的一个发布历史
+        other_latest_release = (
+            ReleaseHistory.objects.filter(gateway_id=release_history.gateway_id, stage_id=release_history.stage_id)
+            .exclude(id=release_history.id)
+            .order_by("-created_time")
+            .first()
+        )
+
+        if other_latest_release is None:
+            return False
+
+        # 获取其发布状态
+        # 查询发布历史对应的最新发布事件
+        other_latest_release_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+            [other_latest_release.id]
+        )
+
+        latest_event = other_latest_release_event_map[other_latest_release.id]
+        if latest_event:
+            return ReleaseHandler.get_status(latest_event) == ReleaseHistoryStatusEnum.DOING.value
+
+        # 如果还没生成事件,就判断之间的时间间隔
+        release_interval = release_history.created_time - other_latest_release.created_time
+        # 获取时间间隔的总秒数
+        release_interval_in_seconds = release_interval.total_seconds()
+
+        return release_interval_in_seconds < RELEASE_GATEWAY_INTERVAL_SECOND

@@ -17,9 +17,12 @@
 #
 import logging
 import uuid
+from time import sleep
 
 from celery import shared_task
 
+from apigateway.biz.constants import RELEASE_GATEWAY_INTERVAL_SECOND
+from apigateway.biz.release import ReleaseHandler
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.combine import CombineDistributor
@@ -41,6 +44,9 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     # 事件上报要以release维度的stage来上报
     if release_history:
         release_history.stage = release.stage
+        # 如果有正在发布则暂停10s，避免事件收敛导致发布事件丢失导致失败
+        if ReleaseHandler.have_other_latest_release_doing(release_history):
+            sleep(RELEASE_GATEWAY_INTERVAL_SECOND)
 
     PublishEventReporter.report_create_publish_task_success_event(release_history)
 
@@ -98,6 +104,10 @@ def revoke_release(release_id: int, publish_id: int):
         return is_success
 
     release_history = ReleaseHistory.objects.get(id=publish_id)
+
+    # 如果有正在发布则暂停10s，避免事件收敛导致发布事件丢失导致失败
+    if ReleaseHandler.have_other_latest_release_doing(release_history):
+        sleep(RELEASE_GATEWAY_INTERVAL_SECOND)
 
     PublishEventReporter.report_create_publish_task_success_event(release_history)
 
