@@ -348,10 +348,13 @@ const handleAdd = () => {
 
 // 是否启用
 const handleIsEnable = async (item: any) => {
-  console.log(item);
   const { enabled, id } = item;
   try {
     await updateStrategyStatus(apigwId, id, { enabled });
+    Message({
+      message: enabled ? t('启用成功') : t('禁用成功'),
+      theme: 'success',
+    });
     getList();
   } catch (error) {
     console.log('error', error);

@@ -34,6 +34,7 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
+from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
@@ -114,6 +115,9 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
                 "docs": ResourceDocHandler.get_docs(resource_ids),
                 "backends": BackendHandler.get_id_to_instance(request.gateway.id),
                 "proxies": {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)},
+                "plugin_counts": PluginBindingHandler.get_resource_ids_plugin_binding_count(
+                    gateway_id=request.gateway.id, resource_ids=resource_ids
+                ),
                 "latest_version_created_time": ResourceVersionHandler.get_latest_created_time(request.gateway.id),
             },
         )

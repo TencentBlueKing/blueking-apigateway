@@ -15,6 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from ddf import G
+
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.biz.plugin_binding import PluginBindingHandler
 
@@ -28,3 +31,17 @@ class TestPluginBindingHandler:
 
         assert not PluginConfig.objects.filter(gateway=fake_gateway).exists()
         assert not PluginBinding.objects.filter(gateway=fake_gateway).exists()
+
+    def test_get_resource_ids_plugin_binding_count(self, fake_gateway):
+        c1 = G(PluginConfig, gateway=fake_gateway)
+        c2 = G(PluginConfig, gateway=fake_gateway)
+        c3 = G(PluginConfig, gateway=fake_gateway)
+
+        G(PluginBinding, gateway=fake_gateway, scope_type=PluginBindingScopeEnum.RESOURCE.value, config=c1, scope_id=1)
+        G(PluginBinding, gateway=fake_gateway, scope_type=PluginBindingScopeEnum.RESOURCE.value, config=c2, scope_id=2)
+        G(PluginBinding, gateway=fake_gateway, scope_type=PluginBindingScopeEnum.RESOURCE.value, config=c3, scope_id=2)
+
+        data = PluginBindingHandler.get_resource_ids_plugin_binding_count(fake_gateway.id, [1, 2])
+
+        assert data[1] == 1
+        assert data[2] == 2

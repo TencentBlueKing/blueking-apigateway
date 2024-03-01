@@ -22,7 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@blueking/bkui-form": "^1.0.0-beta.4",
+    "@blueking/bkui-form": "1.0.0-beta.4",
     "art-template": "^4.13.2",
     "bkui-vue": "0.0.3-beta.5",
     "connect-history-api-fallback": "^2.0.0",
@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@blueking/babel-preset-bk": "2.1.0-beta.10",
-    "@blueking/cli-service-webpack": "0.0.1-beta.4",
+    "@blueking/cli-service-webpack": "0.0.1-beta.6",
     "@blueking/eslint-config-bk": "^2.1.0-beta.18",
     "@blueking/stylelint-config-bk": "^2.1.0-beta.10",
     "@types/cookie": "^0.5.2",

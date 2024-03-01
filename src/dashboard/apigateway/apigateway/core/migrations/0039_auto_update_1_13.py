@@ -6,6 +6,7 @@ from django.db import migrations
 
 def run_migrate_command(apps, schema_editor):
     call_command("migrate_access_strategy")
+    call_command("migrate_access_strategy_user_verified")
     call_command("migrate_backend")
 
 

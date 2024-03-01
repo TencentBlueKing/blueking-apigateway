@@ -160,8 +160,6 @@ class TestSDKGenerateViewSet:
         )
         helper.create.assert_called_with(
             language="python",
-            include_private_resources=False,
-            is_public=True,
             version=fake_resource_version.version,
             operator=None,
         )
