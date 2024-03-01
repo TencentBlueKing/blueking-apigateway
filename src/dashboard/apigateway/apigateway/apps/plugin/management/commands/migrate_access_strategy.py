@@ -39,7 +39,12 @@ class Command(BaseCommand):
             # 不需要转换的在这里过滤
             if binding.type == AccessStrategyTypeEnum.CIRCUIT_BREAKER.value:
                 self.stdout.write(f"skip binding: {binding}, the strategy type is CIRCUIT_BREAKER")
+                continue
 
+            if binding.type == AccessStrategyTypeEnum.USER_VERIFIED_UNREQUIRED_APPS.value:
+                self.stdout.write(
+                    f"skip binding: {binding}, the strategy type is USER_VERIFIED_UNREQUIRED_APPS, do migrate in another place"
+                )
                 continue
 
             scope_type = binding.scope_type
@@ -47,20 +52,33 @@ class Command(BaseCommand):
             strategy = binding.access_strategy
             gateway = strategy.api
 
-            # here we can't check the plugin_config exists
-            # so, we can delete `delete from plugin_config where id not in (select config_id from plugin_binding);`
-            plugin_config = parse_to_plugin_config(strategy)
-            if not plugin_config:
-                self.stdout.write(
-                    f"skip binding: {binding}, the strategy {strategy} config is empty {strategy.config}",
-                )
-                continue
-
             plugin_scope_type = (
                 PluginBindingScopeEnum.STAGE.value
                 if scope_type == AccessStrategyBindScopeEnum.STAGE.value
                 else PluginBindingScopeEnum.RESOURCE.value
             )
+
+            # here we can't check the plugin_config exists
+            # so, we can delete `delete from plugin_config where id not in (select config_id from plugin_binding);`
+            plugin_type, plugin_config = parse_to_plugin_config(strategy)
+            if not plugin_config:
+                self.stdout.write(
+                    f"skip binding: {binding}, the strategy {strategy} config is empty {strategy.config}",
+                )
+
+                # 重复进入的时候，如果发现为空，但是之前已经创建了，就删除; 适用于迁移后，回滚再迁移
+                deleted, _ = PluginBinding.objects.filter(
+                    gateway=gateway,
+                    scope_type=plugin_scope_type,
+                    scope_id=scope_id,
+                    config__type=plugin_type,
+                ).delete()
+                if deleted > 0:
+                    self.stdout.write(
+                        f"skip binding: {binding}, the strategy {strategy} config is empty {strategy.config}, delete {deleted} plugin bindings!"
+                    )
+
+                continue
 
             # if exist, update
             exist_plugin_binding = PluginBinding.objects.filter(
