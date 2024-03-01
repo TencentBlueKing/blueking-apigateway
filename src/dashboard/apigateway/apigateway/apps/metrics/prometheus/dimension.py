@@ -85,7 +85,7 @@ class FailedRequestsMetrics(BaseDimensionMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
-                ("status", ">=", "500"),
+                ("status", "=~", "5.."),
                 # ("proxy_error", "=", "1"),
             ]
         )
@@ -167,7 +167,7 @@ class ResourceFailedRequestsMetrics(BaseDimensionMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
-                ("status", ">=", "500"),
+                ("status", "=~", "5.."),
                 # ("proxy_error", "=", "1"),
             ]
         )
