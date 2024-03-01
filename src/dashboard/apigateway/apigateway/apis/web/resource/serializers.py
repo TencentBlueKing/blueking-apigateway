@@ -77,6 +77,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
     docs = serializers.SerializerMethodField(help_text="资源文档列表")
     backend = serializers.SerializerMethodField(help_text="后端服务")
     has_updated = serializers.SerializerMethodField(help_text="相对上次发布，是否有更新，true：有更新，false：无更新")
+    plugin_count = serializers.SerializerMethodField(help_text="插件数量")
 
     class Meta:
         model = Resource
@@ -92,6 +93,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
             "labels",
             "docs",
             "has_updated",
+            "plugin_count",
         ]
         read_only_fields = fields
 
@@ -133,6 +135,9 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
     def get_has_updated(self, obj):
         latest_version_created_time = self.context["latest_version_created_time"]
         return not (latest_version_created_time and latest_version_created_time > obj.updated_time)
+
+    def get_plugin_count(self, obj):
+        return self.context["plugin_counts"].get(obj.id, 0)
 
 
 class ResourceAuthConfigSLZ(serializers.Serializer):

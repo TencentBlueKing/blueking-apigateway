@@ -797,6 +797,13 @@ BKAUTH_TOKEN_APP_CODE = BK_APP_CODE
 BKAUTH_TOKEN_SECRET_KEY = BK_APP_SECRET
 BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"
 
+# login 配置
+BK_LOGIN_URL = env.str("BK_LOGIN_URL", default="/")
+# 登录小窗相关
+BK_LOGIN_PLAIN_URL = env.str("BK_LOGIN_PLAIN_URL", default=BK_LOGIN_URL.rstrip("/") + "/plain/")
+BK_LOGIN_PLAIN_WINDOW_WIDTH = env.int("BK_LOGIN_PLAIN_WINDOW_WIDTH", default=510)
+BK_LOGIN_PLAIN_WINDOW_HEIGHT = env.int("BK_LOGIN_PLAIN_WINDOW_HEIGHT", default=510)
+
 # bk-iam 配置
 BK_IAM_SYSTEM_ID = "bk_apigateway"
 BK_IAM_USE_APIGATEWAY = True

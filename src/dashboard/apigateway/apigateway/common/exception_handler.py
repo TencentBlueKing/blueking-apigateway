@@ -19,6 +19,7 @@
 import logging
 
 from blue_krill.web.drf_utils import stringify_validation_error
+from django.conf import settings
 from rest_framework import status
 from rest_framework.exceptions import (
     APIException,
@@ -70,7 +71,14 @@ def custom_exception_handler(exc, context):  # noqa: PLR0911
         is_legacy = True
 
     if isinstance(exc, (NotAuthenticated, AuthenticationFailed)):
-        error = error_codes.UNAUTHENTICATED
+        error = error_codes.UNAUTHENTICATED.set_data(
+            {
+                "login_url": settings.BK_LOGIN_URL,
+                "login_plain_url": settings.BK_LOGIN_PLAIN_URL,
+                "width": settings.BK_LOGIN_PLAIN_WINDOW_WIDTH,
+                "height": settings.BK_LOGIN_PLAIN_WINDOW_HEIGHT,
+            }
+        )
         return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})
 
     if isinstance(exc, ValidationError):
