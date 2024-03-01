@@ -265,12 +265,14 @@ class ResourceImportValidator:
         for resource_data in self.resource_data_list:
             if resource_data.name in unchanged_resource_names:
                 raise ValueError(
-                    _("资源名称重复，name={name} 已被现有资源占用，请检查。").format(name=resource_data.name)
+                    _("资源名称重复，operationId={name} 已被现有资源占用，请检查。").format(name=resource_data.name)
                 )
 
             if resource_data.name in resource_names:
                 raise ValueError(
-                    _("资源名称重复，name={name} 在当前配置数据中被多次使用，请检查。").format(name=resource_data.name)
+                    _("资源名称重复，operationId={name} 在当前配置数据中被多次使用，请检查。").format(
+                        name=resource_data.name
+                    )
                 )
 
             resource_names.add(resource_data.name)
@@ -503,12 +505,11 @@ class ResourcesImporter:
         scope_id_to_plugin_configs: Dict[int, List[PluginConfigData]] = {}
         for resource_data in self.resource_data_list:
             if resource_data.plugin_configs is None:
+                # 没有配置，既也要移除对应的插件配置
+                scope_id_to_plugin_configs[resource_data.resource.id] = []
                 continue
 
             scope_id_to_plugin_configs[resource_data.resource.id] = resource_data.plugin_configs
-
-        if not scope_id_to_plugin_configs:
-            return
 
         synchronizer = PluginSynchronizer()
         synchronizer.sync(

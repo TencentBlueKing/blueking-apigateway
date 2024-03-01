@@ -83,6 +83,29 @@ def yaml_loads(content):
     return _yaml.load(content)
 
 
+def _multiline_string_representer(dumper, data):
+    node = dumper.represent_str(data)
+
+    if data in _yaml_10_boolean_values:
+        node.style = "'"
+        return node
+
+    if "\n" in data:
+        # 以 "|" 格式输出 yaml 字符串
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
+    return node
+
+
+def yaml_export_dumps(data):
+    export_yaml = YAML()
+    export_yaml.width = 10000  # 超过这个宽度会折行，这个特性会在渲染 Chart 的时候导致模板报错，必须设置很大的值
+    export_yaml.representer.add_representer(OrderedDict, _mapping_representer)
+    export_yaml.representer.add_representer(str, _multiline_string_representer)
+    stream = StringIO()
+    export_yaml.dump(data, stream=stream)
+    return stream.getvalue()
+
+
 def yaml_load_all(content):
     return _yaml.load_all(content)
 

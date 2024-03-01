@@ -26,7 +26,12 @@ from rest_framework import generics, status
 from rest_framework.generics import get_object_or_404
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeScopeEnum
+from apigateway.apps.plugin.constants import (
+    PluginBindingScopeEnum,
+    PluginBindingSourceEnum,
+    PluginStyleEnum,
+    PluginTypeScopeEnum,
+)
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.biz.audit import Auditor
 from apigateway.common.error_codes import error_codes
@@ -277,6 +282,7 @@ class PluginConfigCreateApi(
             gateway=self.request.gateway,
             scope_type=scope_type,
             scope_id=scope_id,
+            source=PluginBindingSourceEnum.USER_CREATE.value,
             config=serializer.instance,
         ).save()
 
