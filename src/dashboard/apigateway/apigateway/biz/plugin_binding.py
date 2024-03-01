@@ -15,7 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List
+from typing import Dict, List
+
+from django.db.models import Count
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
@@ -37,3 +39,15 @@ class PluginBindingHandler:
             gateway_id=gateway_id, scope_type=PluginBindingScopeEnum.STAGE.value, scope_id=stage_id
         ).prefetch_related("config", "config__type")
         return {plugin_binding.get_type(): plugin_binding for plugin_binding in stage_plugin_bindings}
+
+    @staticmethod
+    def get_resource_ids_plugin_binding_count(gateway_id: int, resource_ids: List[int]) -> Dict[int, int]:
+        """获取资源绑定的插件数量"""
+        resource_bindings = (
+            PluginBinding.objects.filter(
+                gateway_id=gateway_id, scope_type=PluginBindingScopeEnum.RESOURCE.value, scope_id__in=resource_ids
+            )
+            .values("scope_id")
+            .annotate(count=Count("id"))
+        )
+        return {binding["scope_id"]: binding["count"] for binding in resource_bindings}
