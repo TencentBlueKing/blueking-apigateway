@@ -97,9 +97,7 @@ class SDKGenerateViewSet(viewsets.ViewSet):
                 try:
                     info = helper.create(
                         language=language,
-                        include_private_resources=slz.data["include_private_resources"],
                         version=slz.data["version"] or resource_version.version,
-                        is_public=True,
                         operator=None,
                     )
                     results.append(

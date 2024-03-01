@@ -155,6 +155,8 @@ class GatewaySDK(ConfigModelMixin):
     # 1. 这个版本是公开的
     # 2. 这个版本是最新的
     is_recommended = models.BooleanField(default=False, db_index=True)
+
+    # FIXME: is_public is always True, no private SDK in the future
     # is_public 说明这个版本是公开且发布过的
     is_public = models.BooleanField(default=False, db_index=True)
 

@@ -49,7 +49,6 @@ class SDKGenerateV1SLZ(serializers.Serializer):
         help_text="需要生成SDK的语言列表",
         default=[ProgrammingLanguageEnum.PYTHON.value],
     )
-    include_private_resources = serializers.BooleanField(default=False, help_text="是否包含私有资源")
     version = serializers.CharField(default="", max_length=128, help_text="版本号")
 
 
