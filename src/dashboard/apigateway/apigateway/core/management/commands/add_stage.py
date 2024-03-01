@@ -21,8 +21,8 @@ import logging
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apigateway.apis.open.stage.serializers import StageSLZ
-from apigateway.core.models import Gateway, Stage
+from apigateway.core.constants import DEFAULT_BACKEND_NAME
+from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
 from apigateway.utils.django import get_object_or_None
 
 logger = logging.getLogger(__name__)
@@ -48,33 +48,31 @@ class Command(BaseCommand):
             print(f"Stage [name={name}] exists and ignore")
             return
 
-        # FIXME: 去除对 SLZ 的依赖, 应该直接构造 django model 然后save
-        slz = StageSLZ(
-            data={
-                "name": name,
-                "proxy_http": {
-                    "timeout": 60,
-                    "upstreams": {
-                        "loadbalance": "roundrobin",
-                        "hosts": [
-                            {
-                                "host": "http://0.0.0.1",
-                                "weight": 100,
-                            }
-                        ],
-                    },
-                    "transform_headers": {
-                        "set": {},
-                        "delete": [],
-                    },
-                },
-            },
-            context={
-                "gateway": gateway,
-            },
+        stage = Stage(
+            gateway=gateway,
+            name=name,
+            created_by="admin",
+            updated_by="admin",
+        )
+        stage.save()
+
+        backend, _ = Backend.objects.get_or_create(
+            gateway=gateway,
+            name=DEFAULT_BACKEND_NAME,
         )
 
-        slz.is_valid(raise_exception=True)
-        slz.save(created_by="admin", updated_by="admin")
+        config = {
+            "type": "node",
+            "timeout": 60,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "0.0.0.1", "weight": 100}],
+        }
+        backend_config = BackendConfig(
+            gateway=gateway,
+            backend=backend,
+            stage=stage,
+            config=config,
+        )
+        backend_config.save()
 
         logger.info("Add stage [name=%s] success", name)
