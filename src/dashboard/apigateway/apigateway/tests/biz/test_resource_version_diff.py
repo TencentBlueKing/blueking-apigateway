@@ -221,6 +221,7 @@ class TestResourceProxyDiffer:
                 (
                     {
                         "type": "http",
+                        "backend_id": 0,
                         "config": {
                             "method": "GET",
                             "path": "/",

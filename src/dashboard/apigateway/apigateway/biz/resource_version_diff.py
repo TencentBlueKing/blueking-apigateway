@@ -83,7 +83,7 @@ class ResourceProxyMockConfig(BaseModel, DiffMixin):
 class ResourceHTTPProxy(BaseModel, DiffMixin):
     type: Literal["http"]
     config: Json[ResourceProxyHTTPConfig]
-    backend_id: int = 0
+    backend_id: Optional[int] = 0
 
     def diff_config(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
         return self.config.diff(target.config)

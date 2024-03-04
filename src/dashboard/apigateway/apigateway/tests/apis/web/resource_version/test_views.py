@@ -240,6 +240,7 @@ class TestResourceVersionDiffApi:
         )
         assert resp.status_code == 200
         result = resp.json()
+        print(result)
         assert result == {
             "data": {
                 "add": [
@@ -264,6 +265,7 @@ class TestResourceVersionDiffApi:
                                 "transform_headers": {},
                             },
                         },
+                        "api_labels": [],
                         "contexts": {
                             "resource_auth": {
                                 "config": {
