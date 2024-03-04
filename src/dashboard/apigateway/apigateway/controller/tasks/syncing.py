@@ -105,7 +105,7 @@ def revoke_release(release_id: int, publish_id: int):
 
     release_history = ReleaseHistory.objects.get(id=publish_id)
 
-    # 如果有正在发布则暂停10s，避免事件收敛导致发布事件丢失导致失败
+    # 如果有正在发布则暂停RELEASE_GATEWAY_INTERVAL_SECOND，避免事件收敛导致发布事件丢失导致失败
     if ReleaseHandler.have_other_latest_release_doing(release_history):
         sleep(RELEASE_GATEWAY_INTERVAL_SECOND)
 
