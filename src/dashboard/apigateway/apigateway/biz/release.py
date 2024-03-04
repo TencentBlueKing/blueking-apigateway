@@ -184,7 +184,7 @@ class ReleaseHandler:
         return list(set(Release.objects.filter(gateway_id__in=gateway_ids).values_list("gateway_id", flat=True)))
 
     @staticmethod
-    def have_other_latest_release_doing(release_history: ReleaseHistory) -> bool:
+    def has_another_release_doing(release_history: ReleaseHistory) -> bool:
         """查找除了本身的release_history之外是否最近还有别的处于running状态"""
 
         # 获取最近的一个发布历史
