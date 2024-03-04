@@ -37,5 +37,6 @@ export const useGetApiList = (filter: any) => {
   return {
     getGatewaysListData,
     dataList,
+    pagination,
   };
 };
