@@ -73,6 +73,11 @@ class AppGatewayPermissionExportOutputSLZ(AppGatewayPermissionOutputSLZ):
         default=GrantTypeEnum.get_choice_label(GrantTypeEnum.INITIALIZE.value), help_text="授权类型"
     )
 
+    def get_expires(self, obj):
+        if NeverExpiresTime.is_never_expired(obj.expires):
+            return _("永久有效")
+        return super().get_expires(obj)
+
 
 class AppPermissionInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(label="", max_length=32, required=True, validators=[BKAppCodeValidator()])
@@ -175,6 +180,11 @@ class AppResourcePermissionOutputSLZ(AppGatewayPermissionOutputSLZ):
 
 class AppResourcePermissionExportOutputSLZ(AppResourcePermissionOutputSLZ):
     grant_type = serializers.CharField(source="get_grant_type_display", help_text="授权类型")
+
+    def get_expires(self, obj):
+        if NeverExpiresTime.is_never_expired(obj.expires):
+            return _("永久有效")
+        return super().get_expires(obj)
 
 
 class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):
