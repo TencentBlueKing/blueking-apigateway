@@ -22,6 +22,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache, cached
+from django.conf import settings
 from django.utils.translation import gettext as _
 from packaging import version
 from rest_framework import serializers
@@ -128,10 +129,10 @@ class ResourceVersionHandler:
 
         Auditor.record_resource_version_op_success(
             op_type=OpTypeEnum.CREATE,
-            username=username,
+            username=(username or settings.GATEWAY_DEFAULT_CREATOR),
             gateway_id=gateway.id,
             instance_id=resource_version.id,
-            instance_name=resource_version.name,
+            instance_name=resource_version.version,
             data_before={},
             data_after={"version": data.get("version")},
         )

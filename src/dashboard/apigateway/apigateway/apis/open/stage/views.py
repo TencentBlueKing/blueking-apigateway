@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 from django.http import Http404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
@@ -113,7 +114,7 @@ class StageSyncViewSet(viewsets.ViewSet):
 
         Auditor.record_stage_op_success(
             op_type=OpTypeEnum.MODIFY if instance else OpTypeEnum.CREATE,
-            username=request.user.username,
+            username=request.user.username or settings.GATEWAY_DEFAULT_CREATOR,
             gateway_id=request.gateway.id,
             instance_id=stage.id,
             instance_name=stage.name,
