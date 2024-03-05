@@ -452,8 +452,7 @@ init();
     .table-header {
       width: 100%;
       color: #979ba5;
-      padding: 0 16px;
-      margin-bottom: 16px;
+      padding: 0 16px 10px 16px;
       position: sticky;
       top: 88px;
       background-color: #f5f7fa;

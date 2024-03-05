@@ -183,8 +183,10 @@
                   <section
                     v-if="data?.labels?.length"
                     v-bk-tooltips="{ content: data?.labelText.join(';') }">
-                    <span v-for="(item, index) in data?.labels" :key="item.id">
-                      <bk-tag @click="handleEditLabel(data)" v-if="index < data.tagOrder">{{ item.name }}</bk-tag>
+                    <span style="margin-left: 4px;" v-for="(item, index) in data?.labels" :key="item.id">
+                      <bk-tag @click="handleEditLabel(data)" v-if="index < data.tagOrder">
+                        {{ item.name }}
+                      </bk-tag>
                     </span>
                     <bk-tag
                       v-if="data.labels.length > data.tagOrder"
@@ -239,7 +241,7 @@
                 </bk-button>
 
                 <bk-pop-confirm
-                  :title="t(`确认删除资源${data?.name}？`)"
+                  :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"
                   content="删除操作无法撤回，请谨慎操作！"
                   width="288"
                   trigger="click"

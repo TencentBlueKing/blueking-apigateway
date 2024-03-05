@@ -1,7 +1,11 @@
 <template>
   <div class="navigation-main">
     <bk-navigation
-      :class="['navigation-main-content', route.name === 'apigwResourceVersion' ? 'custom-height-navigation' : '']"
+      :class="[
+        'navigation-main-content',
+        'apigw-navigation',
+        route.name === 'apigwResourceVersion' ? 'custom-height-navigation' : ''
+      ]"
       :default-open="true"
       :need-menu="needMenu"
       navigation-type="left-right"
@@ -16,44 +20,46 @@
         >
           <template v-for="menu in menuData">
             <template v-if="menu.enabled">
-              <bk-submenu
-                v-if="menu.children?.length"
-                :key="menu.name"
-                :title="menu.title"
-              >
-                <template #icon>
-                  <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
-                  <bk-badge
-                    dot
-                    theme="danger"
-                    style="margin-left: 5px"
-                    v-if="menu.name === 'apigwPermissionManage' && permission.count !== 0"
-                  >
-                  </bk-badge>
-                </template>
-                <template v-for="child in menu.children">
-                  <bk-menu-item v-if="child.enabled" :key="child.name" @click="handleGoPage(child.name, apigwId)">
-                    {{ child.title }}
+              <template v-if="menu.children?.length">
+                <bk-submenu
+                  :key="menu.name"
+                  :title="menu.title"
+                >
+                  <template #icon>
+                    <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
                     <bk-badge
-                      :count="permission.count"
-                      :max="99"
+                      dot
                       theme="danger"
                       style="margin-left: 5px"
-                      v-if="child.name === 'apigwPermissionApplys' && permission.count !== 0"
+                      v-if="menu.name === 'apigwPermissionManage' && permission.count !== 0"
                     >
                     </bk-badge>
-                  </bk-menu-item>
-                </template>
-              </bk-submenu>
-              <bk-menu-item
-                v-else
-                :key="menu.title"
-                @click="handleGoPage(menu.name, apigwId)">
-                <template #icon>
-                  <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
-                </template>
-                {{ menu.title }}
-              </bk-menu-item>
+                  </template>
+                  <template v-for="child in menu.children">
+                    <bk-menu-item v-if="child.enabled" :key="child.name" @click="handleGoPage(child.name, apigwId)">
+                      {{ child.title }}
+                      <bk-badge
+                        :count="permission.count"
+                        :max="99"
+                        theme="danger"
+                        style="margin-left: 5px"
+                        v-if="child.name === 'apigwPermissionApplys' && permission.count !== 0"
+                      >
+                      </bk-badge>
+                    </bk-menu-item>
+                  </template>
+                </bk-submenu>
+              </template>
+              <template v-else>
+                <bk-menu-item
+                  :key="menu.name"
+                  @click="handleGoPage(menu.name, apigwId)">
+                  <template #icon>
+                    <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
+                  </template>
+                  {{ menu.title }}
+                </bk-menu-item>
+              </template>
             </template>
           </template>
         </bk-menu>
@@ -108,7 +114,7 @@ const {
 } = useGetApiList(filterData);
 const collapse = ref(true);
 // 选中的菜单
-const activeMenuKey = ref('');
+const activeMenuKey = ref('apigwOperateRecords');
 const gatewaysList = ref<any>([]);
 const openedKeys = ref<string[]>([]);
 
@@ -208,92 +214,102 @@ const handleBack = () => {
   }
 
   :deep(.navigation-nav) {
-      .nav-slider{
-        background: #fff !important;
-        .bk-navigation-title{
-          flex-basis: 51px !important;
-        }
-        .nav-slider-list{
-          border-top: 1px solid #f0f1f5;
+    .nav-slider {
+      background: #fff !important;
+      .bk-navigation-title {
+        flex-basis: 51px !important;
+      }
+      .nav-slider-list {
+        border-top: 1px solid #f0f1f5;
+      }
+    }
+    .footer-icon {
+      &.is-left {
+        color: #63656e;
+        &:hover {
+          background: linear-gradient(270deg, #dee0ea, #eaecf2);
+          color: #63656e;
+          cursor: pointer;
         }
       }
-      .bk-menu{
-        background: #fff !important;
-        .bk-menu-item{
-          color: rgb(99, 101, 110);
-          margin: 0px;
-          .item-icon{
-            .default-icon{
-              background-color: rgb(197, 199, 205);
-            }
-          }
-          &:hover{
-            background: #F0F1F5;
-          }
-        }
-        .bk-menu-item.is-active {
-          color: rgb(58, 132, 255);
-          background: rgb(225, 236, 255);
-          .item-icon{
-            .default-icon{
-              background-color: rgb(58, 132, 255);
-            }
-          }
-        }
-      }
-      .submenu-header{
-        position: relative;
-        .bk-badge-main{
-          position: absolute;
-          left: 120px;
-          top: 1px;
-          .bk-badge{
-            width: 6px;
-            height: 6px;
-            min-width: 6px;
-            background-color: #ff5656;
-          }
-        }
-      }
-      .submenu-list{
-        .bk-menu-item{
-          .item-content{
-            position: relative;
-            .bk-badge-main{
-              position: absolute;
-              top: 6px;
-              left: 56px;
-              .bk-badge{
-                background-color: #ff5656;
-                height: 18px;
-                padding: 0px 2px;
-                font-size: 12px;
-                line-height: 14px;
-                min-width: 18px;
-              }
-            }
-          }
-        }
-      }
-
-      .submenu-header-icon{
+    }
+    .bk-menu{
+      background: #fff !important;
+      .bk-menu-item{
         color: rgb(99, 101, 110);
+        margin: 0px;
+        .item-icon{
+          .default-icon{
+            background-color: rgb(197, 199, 205);
+          }
+        }
+        &:hover{
+          background: #F0F1F5;
+        }
       }
-      .submenu-header-content{
-        color: rgb(99, 101, 110);
+      .bk-menu-item.is-active {
+        color: rgb(58, 132, 255);
+        background: rgb(225, 236, 255);
+        .item-icon{
+          .default-icon{
+            background-color: rgb(58, 132, 255);
+          }
+        }
       }
-      .bk-menu-submenu.is-opened {
-        background: #fff !important;
+    }
+    .submenu-header{
+      position: relative;
+      .bk-badge-main{
+        position: absolute;
+        left: 120px;
+        top: 1px;
+        .bk-badge{
+          width: 6px;
+          height: 6px;
+          min-width: 6px;
+          background-color: #ff5656;
+        }
+      }
+    }
+    .submenu-list{
+      .bk-menu-item{
+        .item-content{
+          position: relative;
+          .bk-badge-main{
+            position: absolute;
+            top: 6px;
+            left: 56px;
+            .bk-badge{
+              background-color: #ff5656;
+              height: 18px;
+              padding: 0px 2px;
+              font-size: 12px;
+              line-height: 14px;
+              min-width: 18px;
+            }
+          }
+        }
       }
     }
 
-    :deep(.navigation-container) {
-      .container-header{
-        height: 0px !important;
-        flex-basis: 0px !important;
-        border-bottom: 0px;
-      }
+    .submenu-header-icon{
+      color: rgb(99, 101, 110);
     }
+    .submenu-header-content{
+      color: rgb(99, 101, 110);
+    }
+    .bk-menu-submenu.is-opened {
+      background: #fff !important;
+    }
+  }
+
+  :deep(.navigation-container) {
+    .container-header{
+      height: 0px !important;
+      flex-basis: 0px !important;
+      border-bottom: 0px;
+    }
+  }
 
   &-content {
     border: 1px solid #ddd;
@@ -331,11 +347,11 @@ const handleBack = () => {
     }
   }
   :deep(.header-select){
-      width: 240px;
-      .bk-input--text{
-        background: rgb(245, 247, 250);
-      }
+    width: 240px;
+    .bk-input--text{
+      background: rgb(245, 247, 250);
     }
+  }
 }
 </style>
 <style lang="scss">
