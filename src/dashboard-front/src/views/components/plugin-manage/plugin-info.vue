@@ -4,9 +4,9 @@
       <bk-alert theme="warning" :title="t(editAlert)"></bk-alert>
     </div>
     <div class="info-header">
-      <span class="cur-icon">{{ pluginCodeFirst(curPluginInfo.code) }}</span>
+      <span class="cur-icon">{{ pluginCodeFirst(curPluginInfo?.code) }}</span>
       <div class="cur-text">
-        <p class="cur-name">{{ curPluginInfo.name }}</p>
+        <p class="cur-name">{{ curPluginInfo?.name }}</p>
         <ul class="cur-binding-info">
           <li>
             {{ t('当前版本：') }}
@@ -14,14 +14,14 @@
           </li>
           <li>
             {{ t('已绑定的资源：') }}
-            <span :class="[curPluginInfo.related_scope_count.resource === 0 ? 'empty' : 'bound',]">
-              {{ curPluginInfo.related_scope_count.resource }}
+            <span :class="[curPluginInfo?.related_scope_count?.resource === 0 ? 'empty' : 'bound',]">
+              {{ curPluginInfo?.related_scope_count?.resource }}
             </span>
           </li>
           <li>
             {{ t('已绑定的环境：') }}
-            <span :class="[curPluginInfo.related_scope_count.stage === 0 ? 'empty' : 'bound',]">
-              {{ curPluginInfo.related_scope_count.stage }}
+            <span :class="[curPluginInfo?.related_scope_count?.stage === 0 ? 'empty' : 'bound',]">
+              {{ curPluginInfo?.related_scope_count?.stage }}
             </span>
           </li>
         </ul>
@@ -38,7 +38,20 @@
           </bk-form-item>
         </bk-loading>
       </bk-form> -->
+
+      <!-- 免用户认证应用白名单策略 -->
+      <div v-if="formStyle === 'raw'">
+        <div class="white-list">
+          <whitelist-table
+            ref="whitelist"
+            :type="type"
+            :yaml-str="editPlugin?.yaml || ''"
+          >
+          </whitelist-table>
+        </div>
+      </div>
       <BkSchemaForm
+        v-else
         class="mt20 plugin-form"
         v-model="schemaFormData"
         :schema="formConfig.schema"
@@ -65,6 +78,7 @@ import { Message } from 'bkui-vue';
 // @ts-ignore
 import createForm from '@blueking/bkui-form';
 import { json2yaml, yaml2json } from '@/common/util';
+import whitelistTable from './whitelist-table.vue';
 const BkSchemaForm = createForm();
 
 const { t } = useI18n();
@@ -94,6 +108,7 @@ const props = defineProps({
 
 const { curPlugin } = toRefs(props);
 const formRef = ref(null);
+const whitelist = ref(null);
 const curPluginInfo = ref<any>(curPlugin);
 const isPluginFormLoading = ref(false);
 const infoNotes = ref('');
@@ -102,10 +117,11 @@ const isStage = ref(false);
 const editAlert = ref(t('修改插件配置将会直接影响线上环境，请谨慎操作'));
 const pluginCodeFirst = computed(() => {
   return function (code: string) {
-    return code.charAt(3).toUpperCase();
+    return code?.charAt(3)?.toUpperCase();
   };
 });
 const typeId = ref<number>();
+const formStyle = ref<string>();
 
 // 上一页
 const handlePre = () => {
@@ -118,7 +134,13 @@ const handleAdd = async () => {
   // await formRef.value?.validate();
   try {
     const data: any = { ...schemaFormData.value };
-    data.yaml = json2yaml(JSON.stringify(schemaFormData.value)).data;
+    if (formStyle.value === 'raw') { // 免用户认证应用白名单
+      const yamlData = whitelist.value?.sendPolicyData();
+      data.yaml = yamlData.data;
+    } else {
+      data.yaml = json2yaml(JSON.stringify(schemaFormData.value)).data;
+    }
+
     if (isAdd.value) {
       data.name = props.curPlugin?.name;
       data.type_id = typeId.value;
@@ -127,7 +149,6 @@ const handleAdd = async () => {
     } else {
       data.name = props.editPlugin?.name;
       data.type_id = props.editPlugin?.type_id;
-      // data.yaml = props.editPlugin?.yaml;
       await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, data);
       emit('on-change', 'editSuccess');
     }
@@ -139,6 +160,7 @@ const handleAdd = async () => {
     console.log('error', error);
   }
 };
+
 // 取消
 const handleCancel = () => {
   if (isAdd.value) {
@@ -373,6 +395,7 @@ const init = async () => {
     infoNotes.value = res.notes;
     formConfig.value = res.config;
     typeId.value = res.type_id;
+    formStyle.value = res.style;
 
     if (!isAdd.value) {
       const yamlData = yaml2json(props.editPlugin.yaml).data;
