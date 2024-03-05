@@ -78,4 +78,4 @@ class Command(BaseCommand):
                         f"mismatch plugin binding: gateway_id={gateway_id}, stage_id={stage_id}, expect={yaml}, actual={exist_plugin_binding.config.yaml}"
                     )
 
-        self.stdout.write("done")
+        self.stdout.write(f"{len(gateway_ids)} gateways checked")
