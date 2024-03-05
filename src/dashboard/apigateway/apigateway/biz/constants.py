@@ -35,8 +35,10 @@ SEMVER_PATTERN = re.compile(
     r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
 )
 
-
 MAX_BACKEND_TIMEOUT_IN_SECOND = settings.MAX_BACKEND_TIMEOUT_IN_SECOND
 
 # stage var
 STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")
+
+# release gateway interval
+RELEASE_GATEWAY_INTERVAL_SECOND = 15

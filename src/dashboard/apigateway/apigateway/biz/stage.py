@@ -81,13 +81,13 @@ class StageHandler:
         BackendConfig.objects.bulk_update(backends.values(), fields=["config", "updated_by", "updated_time"])
 
         # 触发环境发布
-        trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, updated_by, stage.gateway_id, stage.id, is_sync=True)
+        trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, updated_by, stage.gateway_id, stage.id)
 
         return stage
 
     @staticmethod
     def delete(stage: Stage):
-        # 删除stage CR  先删除crd，发布过程需要用到
+        # 删除stage CR  先删除crd，发布过程需要用到,发布过程中有用到release相关数据，这里需要同步发布
         trigger_gateway_publish(PublishSourceEnum.STAGE_DELETE, "admin", stage.gateway_id, stage.id, is_sync=True)
 
         with transaction.atomic():
