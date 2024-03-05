@@ -3,13 +3,14 @@
   <bk-form ref="formRef" :model="formData" :rules="rules" class="resource-baseinfo">
     <bk-form-item
       :label="t('名称')"
+      :description="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
       property="name"
       required
     >
       <bk-input
         v-model="formData.name"
+        :placeholder="t('请输入名称')"
         class="name"
-        :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
         clearable
       />
     </bk-form-item>
@@ -18,7 +19,7 @@
     >
       <bk-input
         v-model="formData.description"
-        :placeholder="t('请输入')"
+        :placeholder="t('请输入描述')"
         clearable
         class="desc"
       />

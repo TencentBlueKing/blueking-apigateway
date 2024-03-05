@@ -216,6 +216,7 @@ const handleBack = () => {
   :deep(.navigation-nav) {
     .nav-slider {
       background: #fff !important;
+      border-right: 1px solid #dcdee5 !important;
       .bk-navigation-title {
         flex-basis: 51px !important;
       }
@@ -327,12 +328,13 @@ const handleBack = () => {
       overflow: hidden;
       .content-header{
         display: flex;
-        flex-basis: 51px;
+        flex-basis: 52px;
         padding: 0 24px;
         background: #fff;
         border-bottom: 1px solid #dcdee5;
-        box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
-        height: 51px;
+        // box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
+        box-shadow: 0 3px 4px 0 #0000000a;
+        height: 52px;
         margin-right: auto;
         color: #313238;
         font-size: 16px;

@@ -16,6 +16,7 @@
         <div class="flex-1 flex-row align-items-center">
           <div class="mr8">
             <bk-button
+              style="width: 142px;"
               v-show="isShowLeft"
               theme="primary"
               :class="{ 'super-big-button': isDetail }"
@@ -109,6 +110,7 @@
             @column-sort="handleSortChange"
             row-hover="auto"
             :row-class="is24HoursAgoClsFunc"
+            border="outer"
           >
             <bk-table-column
               width="80"
@@ -516,11 +518,11 @@ const methodsTypeList =  ref(common.methodList);
 
 const searchValue = ref([]);
 const searchData = shallowRef([
-  {
-    name: t('模糊查询'),
-    id: 'keyword',
-    placeholder: t('请输入资源名称，前端请求路径'),
-  },
+  // {
+  //   name: t('模糊查询'),
+  //   id: 'keyword',
+  //   placeholder: t('请输入资源名称，前端请求路径'),
+  // },
   {
     name: t('资源名称'),
     id: 'name',

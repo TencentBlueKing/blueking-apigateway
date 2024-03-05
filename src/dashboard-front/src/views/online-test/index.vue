@@ -48,7 +48,7 @@
           <bk-form-item v-show="hasPathParmas" :required="true" :label="t('路径参数')">
             <apigw-key-valuer
               style="margin-right: 69px;" class="kv-wrapper" ref="pathKeyValuer" :key-readonly="true"
-              :key-regex-rule="{}" :buttons="false" :value="formData.params.path">
+              :key-regex-rule="{}" :buttons="[]" :value="formData.params.path">
             </apigw-key-valuer>
           </bk-form-item>
           <bk-form-item label="Headers">
@@ -234,7 +234,7 @@ import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '@/store';
 import { getReleaseResources, getStages, postAPITest, getApiDetail, getUserAuthType } from '@/http';
-import ApigwKeyValuer from '@/components/key-valuer';
+import ApigwKeyValuer from '@/components/key-valuer/index.vue';
 import editorMonaco from '@/components/ag-editor.vue';
 import { cloneDeep } from 'lodash';
 

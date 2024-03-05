@@ -137,32 +137,33 @@ const handleCancel = () => {
 init();
 </script>
 <style lang="scss" scoped>
-  .edit-container{
-    :deep(.collapse-cls){
-      .bk-collapse-item{
+  .edit-container {
+    :deep(.collapse-cls) {
+      .bk-collapse-item {
         background: #fff;
+        box-shadow: 0 2px 4px 0 #1919290d;
         margin-bottom: 16px;
-        .bk-collapse-header{
+        .bk-collapse-header {
           display: none;
         }
-        .panel-title{
+        .panel-title {
             color: #323339;
             font-weight: 700;
         }
-        .panel-content{
+        .panel-content {
             max-width: 1100px;
             width: 100%;
         }
       }
     }
-    .edit-footer{
+    .edit-footer {
       background: #fff;
       height: 52px;
       line-height: 52px;
       border: 1px solid #DCDEE5;
     }
   }
-    .bk-collapse-demo {
-      box-shadow: 0 0 8px 0px #ccc;
-    }
-  </style>
+  .bk-collapse-demo {
+    box-shadow: 0 0 8px 0px #ccc;
+  }
+</style>

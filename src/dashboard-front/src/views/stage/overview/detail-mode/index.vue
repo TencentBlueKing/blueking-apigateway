@@ -156,7 +156,7 @@
 
 <script setup lang="ts">
 import { copy } from '@/common/util';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, shallowRef, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useStage, useCommon } from '@/store';
@@ -189,7 +189,7 @@ const stageTopBarRef = ref(null);
 const showDropdown = ref<boolean>(false);
 
 // 当前tab
-const curTabComponent = ref<TabComponents>(resourceInfo);
+const curTabComponent = shallowRef<TabComponents>(resourceInfo);
 
 // 当前环境信息
 const stageData: any = computed(() => {
@@ -277,7 +277,9 @@ const handleRelease = () => {
 const handleStageUnlist = async () => {
   showDropdown.value = false;
   InfoBox({
-    title: t('确认下架吗？'),
+    title: t('确认下架环境？'),
+    subTitle: t('可能会导致正在使用该接口的服务异常，请确认'),
+    confirmText: t('确认下架'),
     onConfirm: async () => {
       if (isDeleteLoading.value) {
         return;

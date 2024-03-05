@@ -39,19 +39,27 @@
               </template>
             </template>
           </bk-table-column>
+          <bk-table-column :label="t('更新时间')" prop="updated_time" width="230"></bk-table-column>
           <bk-table-column :label="t('是否启用')" width="150">
             <template #default="{ row }">
-              <bk-switcher
-                v-model="row.enabled"
-                :true-value="true"
-                :false-value="false"
-                theme="primary"
-                :disabled="statusSwitcherDisabled"
-                @change="handleIsEnable(row)">
-              </bk-switcher>
+              <bk-loading
+                v-if="row.statusUpdating"
+                style="width: 48px;"
+                :loading="true" theme="default" size="small" opacity="1">
+                <div style="height: 20px;" />
+              </bk-loading>
+              <template v-else>
+                <bk-switcher
+                  v-model="row.enabled"
+                  :true-value="true"
+                  :false-value="false"
+                  theme="primary"
+                  :disabled="statusSwitcherDisabled"
+                  @change="handleIsEnable(row)">
+                </bk-switcher>
+              </template>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('更新时间')" prop="updated_time" width="230"></bk-table-column>
           <bk-table-column :label="t('操作')" width="150">
             <template #default="{ data }">
               <bk-button class="mr25" theme="primary" text @click="handleEdit(data)">
@@ -222,7 +230,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch } from 'vue';
+import { ref, computed, reactive, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon, useAccessLog } from '@/store';
 import { InfoBox, Message } from 'bkui-vue';
@@ -350,14 +358,21 @@ const handleAdd = () => {
 const handleIsEnable = async (item: any) => {
   const { enabled, id } = item;
   try {
+    if (item.statusUpdating) {
+      return;
+    }
+    item.statusUpdating = true;
     await updateStrategyStatus(apigwId, id, { enabled });
     Message({
       message: enabled ? t('启用成功') : t('禁用成功'),
       theme: 'success',
+      width: 'auto',
     });
-    getList();
+    await getList(getStrategyList, false);
   } catch (error) {
     console.log('error', error);
+  } finally {
+    item.statusUpdating = false;
   }
 };
 
@@ -432,7 +447,11 @@ const handleCancel = () => {
 const init = async () => {
   try {
     labelList.value = await getGatewayLabels(apigwId);
-    console.log(labelList.value);
+    nextTick(() => {
+      tableData.value.forEach((item) => {
+        item.statusUpdating = false;
+      });
+    });
   } catch (error) {
     console.log('error', error);
   }
@@ -679,5 +698,3 @@ watch(
   }
 }
 </style>
-
-

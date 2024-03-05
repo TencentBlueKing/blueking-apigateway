@@ -88,9 +88,8 @@
               </bk-collapse-panel>
             </template>
           </bk-collapse>
-
           <template v-else-if="keyword">
-            <table-empty
+            <TableEmpty
               :keyword="keyword"
               @clear-filter="keyword = ''"
             />
@@ -114,6 +113,7 @@ import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { getGatewaysDetailsDocs, getApigwStagesDocs, getGatewaysDocs, getApigwResourcesDocs } from '@/http';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const route = useRoute();

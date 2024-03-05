@@ -82,7 +82,7 @@
             >
               <!-- {{ item.resource_count }} -->
               <router-link :to="{ name: 'apigwResource', params: { id: item.id } }" target="_blank">
-                <span style="color: #3a84ff;">
+                <span :style="{ color: item.resource_count === 0 ? '#c4c6cc' : '#3a84ff' }">
                   {{ item.resource_count }}
                 </span>
               </router-link>
@@ -123,11 +123,11 @@
           <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
           <div class="flex-1 of2">{{ t('操作') }}</div>
         </div>
-        <bk-exception
-          class="empty-exception"
-          type="empty"
-          scene="part"
-          description="暂无数据"
+        <TableEmpty
+          :keyword="tableEmptyConf.keyword"
+          :abnormal="tableEmptyConf.isAbnormal"
+          @reacquire="getGatewaysListData"
+          @clear-filter="handleClearFilterKey"
         />
       </div>
     </div>
@@ -156,12 +156,13 @@
       width="600"
       :title="dialogData.title"
       theme="primary"
-      quick-close
+      :quick-close="false"
       :is-loading="dialogData.loading"
       @confirm="handleConfirmCreate"
       @closed="dialogData.isShow = false">
-      <bk-form ref="formRef" form-type="vertical" :model="formData" :rules="rules">
+      <bk-form ref="formRef" form-type="vertical" class="create-gw-form" :model="formData" :rules="rules">
         <bk-form-item
+          class="form-item-name"
           label="名称"
           property="name"
           required
@@ -173,8 +174,10 @@
             :placeholder="$t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
             clearable
           />
-          <span class="common-form-tips">{{ t('网关的唯一标识，创建后不可更改') }}</span>
         </bk-form-item>
+        <span class="common-form-tips form-item-name-tips">
+          {{ t('网关的唯一标识，创建后不可更改') }}
+        </span>
         <bk-form-item
           label="维护人员"
           property="maintainers"
@@ -216,6 +219,7 @@ import { useRouter } from 'vue-router';
 import { useGetApiList, useGetGlobalProperties } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import MemberSelect from '@/components/member-select';
+import TableEmpty from '@/components/table-empty.vue';
 import {
   ref,
   watch,
@@ -254,6 +258,11 @@ const initDialogData: IinitDialogData = {
   description: '',
   is_public: true,
 };
+
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 // const bkAppVersion = window.BK_APP_VERSION;
 
@@ -306,6 +315,7 @@ const filterData = ref([
 const {
   getGatewaysListData,
   dataList,
+  pagination,
 } = useGetApiList(filterNameData);
 
 // 处理列表项
@@ -342,6 +352,7 @@ const init = async () => {
     isLoading.value = false;
   }, 100);
 };
+init();
 
 // 新建网关弹窗
 const showAddDialog = () => {
@@ -415,10 +426,52 @@ const tipsContent = (data: any[]) => {
   ]);
 };
 
-init();
+const handleClearFilterKey = () => {
+  filterNameData.value = { keyword: '' };
+  filterKey.value = 'updated_time';
+  getGatewaysListData();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  const searchParams = {
+    ...filterNameData.value,
+  };
+  const list = Object.values(searchParams).filter(item => item !== '');
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  if (list.length && !gatewaysList.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (list.length) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+watch(
+  () => gatewaysList.value, () => {
+    updateTableEmptyConfig();
+  },
+  {
+    deep: true,
+  },
+);
 </script>
 
 <style lang="scss" scoped>
+.create-gw-form {
+  .form-item-name {
+    :deep(.bk-form-error) {
+      position: relative;
+    }
+  }
+  .form-item-name-tips {
+    position: relative;
+    top: -24px;
+  }
+}
 .home-container{
   width: 80%;
   margin: 0 auto;
