@@ -301,6 +301,13 @@ const handleBack = () => {
     .bk-menu-submenu.is-opened {
       background: #fff !important;
     }
+    .bk-menu-submenu .submenu-header.is-collapse {
+      color: rgb(58, 132, 255);
+      background: rgb(225, 236, 255);
+      .submenu-header-icon {
+        color: rgb(58, 132, 255);
+      }
+    }
   }
 
   :deep(.navigation-container) {
