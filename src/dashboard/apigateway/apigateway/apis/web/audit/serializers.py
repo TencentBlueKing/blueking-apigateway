@@ -68,6 +68,10 @@ class AuditEventLogOutputSLZ(serializers.ModelSerializer):
         if data["comment"]:
             data["comment"] = _(data["comment"])
 
+        # the old version audit log has "api" as op_object_type, we need to convert it to "gateway"
+        if data["op_object_type"] == "api":
+            data["op_object_type"] = "gateway"
+
         if data["data_before"]:
             try:
                 data["data_before"] = json.loads(data["data_before"])

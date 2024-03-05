@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
+from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
@@ -131,7 +132,7 @@ class BaseGatewayReleaser:
         # record audit log
         Auditor.record_release_op_success(
             op_type=OpTypeEnum.CREATE,
-            username=self.username,
+            username=self.username or settings.GATEWAY_DEFAULT_CREATOR,
             gateway_id=self.gateway.id,
             instance_id=instance.id,
             instance_name=f"{self.stage.name}:{instance.resource_version.version}",
