@@ -29,6 +29,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for d in PluginBinding.objects.values("config_id").annotate(cnt=Count("config_id")).filter(cnt__gte=2):
-            self.stdout.write(f"config_id: {d['config_id']} has {d['cnt']} bindings")
+            self.stdout.write(f"check not valid, config_id: {d['config_id']} has {d['cnt']} bindings")
 
         self.stdout.write("Done")
