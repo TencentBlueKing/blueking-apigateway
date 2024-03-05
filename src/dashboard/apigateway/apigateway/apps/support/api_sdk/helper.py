@@ -63,11 +63,15 @@ class SDKHelper:
         self,
         language: str,
         version: str,
+        include_private_resources: bool,
+        is_public: bool,
     ) -> SDKContext:
         resource_version = self.resource_version
         manager = SDKManagerFactory.create(
             language,
             version=version,
+            include_private_resources=include_private_resources,
+            is_public=is_public,
         )
         return manager.handle(self.output_dir, resource_version)
 
@@ -77,9 +81,18 @@ class SDKHelper:
         version: str,
         operator: Optional[str],
     ) -> SDKInfo:
+        # NOTE: we want the sdk contains all apis, including private ones
+        include_private_resources = True
+        # NOTE: it's always be True from 1.13, we try to make the sdks all public! (no private anymore)
+        # but maybe rolling back, so keep the private sdk logical for now
+        is_public = True
+
         context = self.create_context(
             language=language,
             version=version,
+            # those args will make the sdk distributed in public or private
+            include_private_resources=include_private_resources,
+            is_public=is_public,
         )
 
         now = time_utils.now_datetime()
@@ -91,6 +104,8 @@ class SDKHelper:
             version_number=context.version,
             name=context.name,
             url=context.url,
+            include_private_resources=include_private_resources,
+            is_public=is_public,
             schema=SchemaFactory().get_api_sdk_schema(),
             config=context.config,
             created_time=now,
@@ -98,7 +113,7 @@ class SDKHelper:
             created_by=operator,
         )
 
-        if context.is_latest:
+        if instance.is_public and context.is_latest:
             instance.mark_is_recommended()
 
         return SDKInfo(context=context, sdk=instance)
