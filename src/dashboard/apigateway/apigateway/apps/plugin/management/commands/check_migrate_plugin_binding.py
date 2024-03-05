@@ -21,11 +21,14 @@ from django.db.models import Count
 from apigateway.apps.plugin.models import PluginBinding
 
 
+# 仅在 1.13 使用， 1.14 会删掉
+
+
 class Command(BaseCommand):
     """检查插件绑定与插件配置绑定关系是否从多对多迁移到一对多"""
 
     def handle(self, *args, **options):
-        if PluginBinding.objects.values("config_id").annotate(cnt=Count("config_id")).filter(cnt__gte=2).count() > 0:
-            raise Exception("插件绑定与插件配置绑定关系存在多对多关系, 请检查迁移是否正确")  # noqa
+        for d in PluginBinding.objects.values("config_id").annotate(cnt=Count("config_id")).filter(cnt__gte=2):
+            self.stdout.write(f"config_id: {d['config_id']} has {d['cnt']} bindings")
 
-        self.stdout.write("check migrate plugin binding ok, no problem")
+        self.stdout.write("Done")

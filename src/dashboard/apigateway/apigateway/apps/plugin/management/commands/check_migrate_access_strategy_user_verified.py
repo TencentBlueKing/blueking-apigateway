@@ -31,6 +31,9 @@ from .migrate_access_strategy_user_verified import (
 )
 
 
+# 仅在 1.13 使用， 1.14 会删掉
+
+
 class Command(BaseCommand):
     """校验访问策略迁移数据"""
 
@@ -52,19 +55,17 @@ class Command(BaseCommand):
             for stage_id, app_code_plugin_config in merged_config.items():
                 exempted_apps = list(app_code_plugin_config.values())
 
-                if not exempted_apps:
-                    # TODO: should remove migrated plugin binding?
-                    self.stdout.write(
-                        f"gateway: {gateway}, stage: {stage_id} get no bk-verified-user-exempted-apps plugin_config, skip",
-                    )
-                    continue
-
                 exist_plugin_binding = PluginBinding.objects.filter(
                     gateway=gateway,
                     scope_type=PluginBindingScopeEnum.STAGE.value,
                     scope_id=stage_id,
                     config__type=plugin_type,
                 ).first()
+
+                if not exempted_apps and exist_plugin_binding:
+                    self.stdout.write(f"empty exempted_apps: gateway_id={gateway_id}, stage_id={stage_id}, but have binding")
+                    continue
+
                 if not exist_plugin_binding:
                     self.stdout.write(f"missing plugin binding: gateway_id={gateway_id}, stage_id={stage_id}")
                     continue
