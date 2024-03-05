@@ -74,7 +74,7 @@ class TestFailedRequestsMetrics:
                 },
                 "expected": (
                     'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status>="500"}[1m]))'
+                    'stage_name="prod", resource_name="get_foo", status=~"5.."}[1m]))'
                 ),
             },
             {
@@ -86,7 +86,7 @@ class TestFailedRequestsMetrics:
                 },
                 "expected": (
                     'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", status>="500"}[1m]))'
+                    'stage_name="prod", status=~"5.."}[1m]))'
                 ),
             },
         ]
@@ -228,7 +228,7 @@ class TestResourceFailedRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status>="500"}[1m])) by (api_name, resource_name, matched_uri))'
+                    'stage_name="prod", resource_name="get_foo", status=~"5.."}[1m])) by (api_name, resource_name, matched_uri))'
                 ),
             },
             {
@@ -240,7 +240,7 @@ class TestResourceFailedRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", status>="500"}[1m])) by (api_name, resource_name, matched_uri))'
+                    'stage_name="prod", status=~"5.."}[1m])) by (api_name, resource_name, matched_uri))'
                 ),
             },
         ]

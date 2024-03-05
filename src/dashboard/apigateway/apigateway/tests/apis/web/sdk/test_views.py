@@ -137,7 +137,6 @@ class TestGatewaySDKListCreateApi:
                 "params": {
                     "resource_version_id": resource_version.id,
                     "language": "python",
-                    "include_private_resources": False,
                     "need_upload_to_pypi": True,
                 },
                 "expected": {

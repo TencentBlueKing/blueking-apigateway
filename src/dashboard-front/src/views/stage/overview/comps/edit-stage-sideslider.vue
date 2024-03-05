@@ -378,6 +378,7 @@ const addInit = async () => {
     };
   });
   isDialogLoading.value = false;
+  initSidebarFormData(curStageData.value);
 };
 
 // 获取环境详情（编辑）
@@ -431,8 +432,8 @@ const handleShowSideslider = async (type: string) => {
       // 获取对应环境下的后端服务列表
       getStageBackendList(),
     ]);
+    initSidebarFormData(curStageData.value);
   }
-  initSidebarFormData(curStageData.value);
   isShow.value = true;
 };
 

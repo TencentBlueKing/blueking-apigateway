@@ -17,23 +17,27 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import uuid
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
+from pydantic import parse_obj_as
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.stage.validators import StageVarsValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
+from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
+from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
@@ -138,6 +142,11 @@ class StageProxyHTTPConfigSLZ(serializers.Serializer):
     transform_headers = TransformHeadersSLZ(required=False, default=dict)
 
 
+class PluginConfigSLZ(serializers.Serializer):
+    type = serializers.CharField(help_text="插件类型名称")
+    yaml = serializers.CharField(help_text="插件yaml配置")
+
+
 class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(
@@ -150,6 +159,11 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         default=dict,
     )
     proxy_http = StageProxyHTTPConfigSLZ()
+
+    plugin_configs = serializers.ListSerializer(
+        help_text="插件配置", child=PluginConfigSLZ(), allow_null=True, required=False
+    )
+
     micro_gateway_id = serializers.UUIDField(allow_null=True, required=False)
     description = SerializerTranslatedField(
         default_field="description_i18n", allow_blank=True, allow_null=True, max_length=512, required=False
@@ -167,6 +181,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "vars",
             "status",
             "proxy_http",
+            "plugin_configs",
             "micro_gateway_id",
         )
         extra_kwargs = {
@@ -175,7 +190,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             }
         }
         read_only_fields = ("id", "status")
-        non_model_fields = ["proxy_http", "rate_limit"]
+        non_model_fields = ["proxy_http", "plugin_configs", "rate_limit"]
         lookup_field = "id"
 
         validators = [
@@ -194,6 +209,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
     def validate(self, data):
         self._validate_micro_gateway_stage_unique(data.get("micro_gateway_id"))
+        self._validate_plugin_configs(data.get("plugin_configs"))
         return data
 
     def create(self, validated_data):
@@ -248,6 +264,9 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             {instance.id: stage_config},
             self.context["request"].user.username,
         )
+
+        # 5. sync stage plugin
+        self._sync_plugins(instance.gateway_id, instance.id, validated_data.get("plugin_configs", None))
 
         return instance
 
@@ -306,6 +325,9 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             self.context["request"].user.username,
         )
 
+        # 4. sync stage plugin
+        self._sync_plugins(instance.gateway_id, instance.id, validated_data.get("plugin_configs", None))
+
         return instance
 
     def validate_micro_gateway_id(self, value) -> Optional[uuid.UUID]:
@@ -329,3 +351,59 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         if queryset.exists():
             raise serializers.ValidationError(_("微网关实例已绑定到其它环境。"))
+
+    def _validate_plugin_configs(self, plugin_configs):
+        """
+        校验插件配置
+        - 1. 插件类型不能重复
+        - 2. 插件类型必须已存在
+        - 3. 插件配置，必须符合插件类型的 schema 约束
+        """
+        if not plugin_configs:
+            return
+
+        types = set()
+        for plugin_config in plugin_configs:
+            plugin_type = plugin_config["type"]
+            if plugin_type in types:
+                raise serializers.ValidationError(_("插件类型重复：{plugin_type}。").format(plugin_type=plugin_type))
+            types.add(plugin_type)
+
+        all_plugin_type = PluginType.objects.all()
+
+        exist_plugin_types = set(all_plugin_type.values_list("code", flat=True))
+        not_exist_types = types - exist_plugin_types
+        if not_exist_types:
+            raise serializers.ValidationError(
+                _("插件类型 {not_exist_types} 不存在。").format(not_exist_types=", ".join(not_exist_types))
+            )
+
+        plugin_types = {plugin_type.code: plugin_type for plugin_type in all_plugin_type}
+        yaml_validator = PluginConfigYamlValidator()
+
+        for plugin_config in plugin_configs:
+            plugin_type = plugin_types[plugin_config["type"]]
+            try:
+                yaml_validator.validate(
+                    plugin_type.code,
+                    plugin_config["yaml"],
+                    plugin_type.schema and plugin_type.schema.schema,
+                )
+            except Exception as err:
+                raise serializers.ValidationError(
+                    _("插件配置校验失败，插件类型：{plugin_type_code}，错误信息：{err}。").format(
+                        plugin_type_code=plugin_type.code,
+                        err=err,
+                    )
+                )
+
+    def _sync_plugins(self, gateway_id: int, stage_id: int, plugin_configs: Optional[Dict[str, Any]] = None):
+        # plugin_configs为None则，plugin_config_datas 设置[]则清空对应配置
+        plugin_config_datas = parse_obj_as(Optional[List[PluginConfigData]], plugin_configs) if plugin_configs else []
+        scope_id_to_plugin_configs = {stage_id: plugin_config_datas}
+        synchronizer = PluginSynchronizer()
+        synchronizer.sync(
+            gateway_id=gateway_id,
+            scope_type=PluginBindingScopeEnum.STAGE,
+            scope_id_to_plugin_configs=scope_id_to_plugin_configs,
+        )

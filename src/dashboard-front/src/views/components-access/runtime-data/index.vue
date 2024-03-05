@@ -84,13 +84,11 @@ import { ref, shallowRef, watch, onMounted, onUnmounted } from 'vue';
 import Ring from '@/components/ring/index.vue';
 import moment from 'moment';
 import i18n from '@/language/i18n';
-import { useCommon } from '@/store';
 import { useRouter } from 'vue-router';
 import { getApigwRuntime, getApigwTimeline } from '@/http';
 
 const { t } = i18n.global;
 const router = useRouter();
-const commonStore = useCommon();
 
 const isDataLoading = ref(false);
 const timeList = shallowRef([
@@ -102,8 +100,6 @@ const timeList = shallowRef([
   { id: '12h', name: t('最近 12 小时') },
   { id: '24h', name: t('最近 24 小时') },
 ]);
-console.log(commonStore.apigwId);
-const apigwId = ref(commonStore.apigwId);
 const timer = ref(null);
 const autoEnable = ref(true);
 const timeRange = ref('1m');
@@ -178,7 +174,6 @@ const getRuntime = async () => {
 
 const getTimeline = async () => {
   try {
-    console.log(apigwId.value);
     const res = await getApigwTimeline();
     timeLines.value = res || [];
     initTimeline();

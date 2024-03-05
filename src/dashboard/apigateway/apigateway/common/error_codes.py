@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import copy
+from typing import Dict, Optional
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
@@ -54,24 +55,37 @@ class APIError(APIException):
 
         return self
 
+    def set_data(self, data):
+        self.code.data = data
+        return self
+
 
 class ErrorCode:
     """Error code"""
 
-    def __init__(self, code_name: str, code: int, message: str, status_code: int = status.HTTP_400_BAD_REQUEST):
+    def __init__(
+        self,
+        code_name: str,
+        code: int,
+        message: str,
+        status_code: int = status.HTTP_400_BAD_REQUEST,
+        data: Optional[Dict] = None,
+    ):
         self.code_name = code_name
         self.code = code
         self.message = message
         self.status_code = status_code
+        self.data = data
 
     def as_json(self, is_legacy=False):
         if is_legacy:
-            return {"result": False, "code": self.code, "message": self.message, "data": None}
+            return {"result": False, "code": self.code, "message": self.message, "data": self.data}
 
         return {
             "error": {
                 "code": self.code_name,
                 "message": self.message,
+                "data": self.data,
             }
         }
 

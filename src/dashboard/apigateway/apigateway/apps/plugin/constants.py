@@ -56,3 +56,8 @@ class PluginStyleEnum(StructuredEnum):
     RAW = EnumField("raw", label=_("原生"))
     DYNAMIC = EnumField("dynamic", label=_("动态"))
     FIX = EnumField("fix", label=_("固定"))
+
+
+class PluginBindingSourceEnum(StructuredEnum):
+    YAML_IMPORT = EnumField("yaml_import", label=_("yaml导入"))
+    USER_CREATE = EnumField("user_create", label=_("用户创建"))

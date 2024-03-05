@@ -123,11 +123,11 @@
           <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
           <div class="flex-1 of2">{{ t('操作') }}</div>
         </div>
-        <bk-exception
-          class="empty-exception"
-          type="empty"
-          scene="part"
-          description="暂无数据"
+        <TableEmpty
+          :keyword="tableEmptyConf.keyword"
+          :abnormal="tableEmptyConf.isAbnormal"
+          @reacquire="getGatewaysListData"
+          @clear-filter="handleClearFilterKey"
         />
       </div>
     </div>
@@ -216,6 +216,7 @@ import { useRouter } from 'vue-router';
 import { useGetApiList, useGetGlobalProperties } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import MemberSelect from '@/components/member-select';
+import TableEmpty from '@/components/table-empty.vue';
 import {
   ref,
   watch,
@@ -254,6 +255,11 @@ const initDialogData: IinitDialogData = {
   description: '',
   is_public: true,
 };
+
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 // const bkAppVersion = window.BK_APP_VERSION;
 
@@ -306,6 +312,7 @@ const filterData = ref([
 const {
   getGatewaysListData,
   dataList,
+  pagination,
 } = useGetApiList(filterNameData);
 
 // 处理列表项
@@ -342,6 +349,7 @@ const init = async () => {
     isLoading.value = false;
   }, 100);
 };
+init();
 
 // 新建网关弹窗
 const showAddDialog = () => {
@@ -415,7 +423,38 @@ const tipsContent = (data: any[]) => {
   ]);
 };
 
-init();
+const handleClearFilterKey = () => {
+  filterNameData.value = { keyword: '' };
+  filterKey.value = 'updated_time';
+  getGatewaysListData();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  const searchParams = {
+    ...filterNameData.value,
+  };
+  const list = Object.values(searchParams).filter(item => item !== '');
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  if (list.length && !gatewaysList.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (list.length) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+watch(
+  () => gatewaysList.value, () => {
+    updateTableEmptyConfig();
+  },
+  {
+    deep: true,
+  },
+);
 </script>
 
 <style lang="scss" scoped>

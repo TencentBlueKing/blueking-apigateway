@@ -1350,6 +1350,7 @@
     name: 免用户认证应用白名单(不推荐)
     name_en: Exempted user auth apps white list (not recommended)
     is_public: false
+    scope: stage
     schema:
     - bk-verified-user-exempted-apps
     - plugin

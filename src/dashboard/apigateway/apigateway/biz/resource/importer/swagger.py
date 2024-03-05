@@ -27,7 +27,7 @@ import jsonschema
 from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
-from apigateway.utils.yaml import yaml_dumps, yaml_loads
+from apigateway.utils.yaml import yaml_export_dumps, yaml_loads
 
 from .constants import VALID_METHOD_IN_SWAGGER_PATHITEM, SwaggerExtensionEnum
 
@@ -117,7 +117,7 @@ class SwaggerManager:
         if swagger_format == SwaggerFormatEnum.JSON:
             return json.dumps(content, indent=4)
 
-        return yaml_dumps(content)
+        return yaml_export_dumps(content)
 
     def _add_base_path_to_path(self, base_path: str, paths: Dict[str, Any]) -> Dict[str, Any]:
         """将 base_path 添加到 path"""
@@ -266,7 +266,7 @@ class ResourceSwaggerExporter:
         if file_type == SwaggerFormatEnum.JSON.value:
             return json.dumps(content, indent=4)
 
-        return yaml_dumps(content)
+        return yaml_export_dumps(content)
 
     def _generate_paths(self, resources: List[Dict]) -> Dict[str, Any]:
         paths: Dict[str, Any] = {}
