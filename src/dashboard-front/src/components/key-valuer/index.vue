@@ -19,7 +19,7 @@
 
           <bk-form
             class="mr5 biz-value-form"
-            :ref="(el) => setRefs(el, `value-${index}`)"
+            :ref="(el: any) => setRefs(el, `value-${index}`)"
             :label-width="0"
             :model="keyItem">
             <bk-form-item

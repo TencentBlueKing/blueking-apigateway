@@ -131,33 +131,45 @@ const handlePre = () => {
 const handleAdd = async () => {
   const { scopeInfo: { scopeType, scopeId, apigwId } } = props;
   const { curPlugin: { code } } = props;
-  // await formRef.value?.validate();
-  try {
-    const data: any = { ...schemaFormData.value };
-    if (formStyle.value === 'raw') { // 免用户认证应用白名单
-      const yamlData = whitelist.value?.sendPolicyData();
-      data.yaml = yamlData.data;
-    } else {
-      data.yaml = json2yaml(JSON.stringify(schemaFormData.value)).data;
-    }
 
-    if (isAdd.value) {
-      data.name = props.curPlugin?.name;
-      data.type_id = typeId.value;
-      await creatPlugin(apigwId, scopeType, scopeId, code, data);
-      emit('on-change', 'addSuccess');
-    } else {
-      data.name = props.editPlugin?.name;
-      data.type_id = props.editPlugin?.type_id;
-      await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, data);
-      emit('on-change', 'editSuccess');
+  const doSubmit = async (data: any) => {
+    try {
+      if (isAdd.value) {
+        data.name = props.curPlugin?.name;
+        data.type_id = typeId.value;
+        await creatPlugin(apigwId, scopeType, scopeId, code, data);
+        emit('on-change', 'addSuccess');
+      } else {
+        data.name = props.editPlugin?.name;
+        data.type_id = props.editPlugin?.type_id;
+        await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, data);
+        emit('on-change', 'editSuccess');
+      }
+      Message({
+        message: isAdd.value ? t('添加成功') : t('修改成功'),
+        theme: 'success',
+        width: 'auto',
+      });
+    } catch (error) {
+      console.log('error', error);
     }
-    Message({
-      message: isAdd.value ? t('添加成功') : t('修改成功'),
-      theme: 'success',
-    });
-  } catch (error) {
-    console.log('error', error);
+  };
+
+  // 免用户认证应用白名单
+  if (formStyle.value === 'raw') {
+    const data: any = { ...schemaFormData.value };
+    const yamlData = whitelist.value?.sendPolicyData();
+    data.yaml = yamlData.data;
+    await doSubmit(data);
+  } else {
+    formRef.value?.validate().then(async () => {
+      const data: any = { ...schemaFormData.value };
+      data.yaml = json2yaml(JSON.stringify(schemaFormData.value)).data;
+      await doSubmit(data);
+    })
+      .catch((e: any) => {
+        console.error(e);
+      });
   }
 };
 

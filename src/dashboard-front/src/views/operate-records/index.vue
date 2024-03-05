@@ -1,7 +1,7 @@
 <template>
   <div class="page-wrapper-padding operate-records-content">
     <div class="ag-top-header">
-      <bk-form class="search-form" form-type="inline">
+      <bk-form class="search-form">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker top-form-item-time">
           <bk-date-picker
             ref="topDatePicker"

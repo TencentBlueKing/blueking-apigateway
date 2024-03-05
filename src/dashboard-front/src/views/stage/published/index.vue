@@ -202,7 +202,7 @@ watch(() => filterData.value, () => {
 let timeId: any = null;
 onMounted(() => {
   timeId = setInterval(() => {
-    getList();
+    getList(getReleaseHistories, false);
   }, 1000 * 30);
 });
 onUnmounted(() => {
