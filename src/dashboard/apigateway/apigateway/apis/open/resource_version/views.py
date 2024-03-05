@@ -22,9 +22,7 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
-from apigateway.biz.audit import Auditor
 from apigateway.biz.releaser import ReleaseError, release
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.permissions import GatewayRelatedAppPermission
@@ -85,19 +83,6 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
                 resource_version=instance,
                 data=ResourceDocVersion.objects.make_version(request.gateway.id),
             )
-
-        # record audit log
-        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
-        gateway = request.gateway
-        Auditor.record_resource_version_op_success(
-            op_type=OpTypeEnum.CREATE,
-            username=username,
-            gateway_id=gateway.id,
-            instance_id=instance.id,
-            instance_name=instance.version,
-            data_before={},
-            data_after={"version": instance.version},
-        )
 
         return V1OKJsonResponse(
             "OK",
