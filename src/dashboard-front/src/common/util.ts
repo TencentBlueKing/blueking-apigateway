@@ -127,7 +127,7 @@ export function copy(value: string) {
     document.getSelection().removeAllRanges();
     document.getSelection().addRange(selected);
   }
-  Message({ theme: 'primary', message: t('复制成功'), delay: 2000, dismissable: false });
+  Message({ theme: 'success', width: 'auto', message: t('复制成功'), delay: 2000, dismissable: false });
 }
 
 /**

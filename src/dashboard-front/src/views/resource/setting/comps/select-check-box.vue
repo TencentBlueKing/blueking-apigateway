@@ -1,6 +1,6 @@
 <template>
   <bk-select
-    :style="{ width: `${width}px` }"
+    :style="{ maxWidth: `${width}px` }"
     class="select-wrapper mt5"
     filterable
     multiple
@@ -149,6 +149,7 @@ const handleToggle = async (v: boolean) => {
           Message({
             message: t('修改标签成功'),
             theme: 'success',
+            width: 'auto',
           });
           emit('update-success');
         } catch (error) {}
@@ -169,6 +170,7 @@ const addOption = async () => {
     Message({
       message: t('标签新建成功'),
       theme: 'success',
+      width: 'auto',
     });
     optionName.value = '';
   }
@@ -183,6 +185,7 @@ const updateOption = async (name: string, id: number) => {
     Message({
       message: t('标签修改成功'),
       theme: 'success',
+      width: 'auto',
     });
     labelsData.value.forEach((item: any) => {
       item.isEdited = false;
@@ -221,6 +224,7 @@ const handleDeleteOptionItemConfirm = async (e: any) => {
     Message({
       message: t('删除标签成功'),
       theme: 'success',
+      width: 'auto',
     });
     selectRef.value.showPopover();
     emit('update-success');
@@ -245,18 +249,27 @@ const handleMouseLeave = () => {
 };
 </script>
 <style scoped lang="scss">
-  .item-container{
-    width: 100%;
-    position: relative;
-    .icon-container{
-      position: absolute;
-      right: -20px;
-      .icon{
-        &:hover{
-          color: #3a84ff;
+  .select-wrapper {
+    .item-container {
+      width: 100%;
+      position: relative;
+      .icon-container{
+        position: absolute;
+        right: -20px;
+        .icon{
+          &:hover{
+            color: #3a84ff;
+          }
         }
+      }
+    }
+    :deep(.bk-select-tag) {
+      padding-top: 0;
+      .bk-tag {
+        margin-right: 8px;
+        margin-bottom: 4px;
+        margin-top: 4px;
       }
     }
   }
 </style>
-

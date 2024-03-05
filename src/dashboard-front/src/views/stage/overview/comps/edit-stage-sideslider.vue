@@ -150,7 +150,7 @@
 
                           <i
                             class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
-                            @click="handleAddServiceAddress(backend.name, index)"
+                            @click="handleAddServiceAddress(backend.name)"
                           ></i>
                           <i
                             class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
@@ -548,6 +548,7 @@ defineExpose({
   :deep(.bk-sideslider-footer) {
     position: absolute;
     bottom: 0;
+    box-shadow: 0 -1px 0 0 #dcdee5;
   }
 }
 .sideslider-content {
