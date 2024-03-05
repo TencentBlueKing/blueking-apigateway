@@ -166,10 +166,20 @@ class Command(BaseCommand):
                 exempted_apps = list(app_code_plugin_config.values())
 
                 if not exempted_apps:
-                    # TODO: should remove migrated plugin binding?
                     self.stdout.write(
-                        f"gateway: {gateway}, stage: {stage_id} get no bk-verified-user-exempted-apps plugin_config, skip",
+                        f"gateway: {gateway}, stage: {stage_id} get no bk-verified-user-exempted-apps plugin_config, skip, will try to cleanup the plugin bindings",
                     )
+                    # 重复进入的时候，如果发现为空，但是之前已经创建了，就删除; 适用于迁移后，回滚再迁移
+                    deleted, _ = PluginBinding.objects.filter(
+                        gateway=gateway,
+                        scope_type=PluginBindingScopeEnum.STAGE.value,
+                        scope_id=stage_id,
+                        config__type=plugin_type,
+                    ).delete()
+                    if deleted > 0:
+                        self.stdout.write(
+                            f"gateway: {gateway}, stage: {stage_id} get no bk-verified-user-exempted-apps plugin_config, skip, delete {deleted} plugin bindings",
+                        )
                     continue
 
                 data = {"exempted_apps": exempted_apps}
