@@ -566,6 +566,7 @@ const handleCancel = () => {
 const handleClearFilterKey = () => {
   filterData.value = { name: '', type: '' };
   getList();
+  updateTableEmptyConfig();
 };
 
 const updateTableEmptyConfig = () => {
@@ -598,7 +599,7 @@ const init = async () => {
 init();
 
 watch(
-  () => filterData.value, () => {
+  () => tableData.value, () => {
     updateTableEmptyConfig();
   },
   { deep: true },
