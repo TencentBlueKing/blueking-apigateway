@@ -83,6 +83,7 @@ class ResourceProxyMockConfig(BaseModel, DiffMixin):
 class ResourceHTTPProxy(BaseModel, DiffMixin):
     type: Literal["http"]
     config: Json[ResourceProxyHTTPConfig]
+    backend_id: Optional[int] = 0
 
     def diff_config(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
         return self.config.diff(target.config)
@@ -133,6 +134,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
     is_public: bool = True
     allow_apply_permission: bool = True
     proxy: Union[ResourceHTTPProxy, ResourceMockProxy]
+    api_labels: List[Text] = Field(default_factory=list)
     contexts: ResourceContexts
     disabled_stages: List[Text] = Field(default_factory=list)
     plugins: List[ResourcePluginConfig] = Field(default_factory=list)

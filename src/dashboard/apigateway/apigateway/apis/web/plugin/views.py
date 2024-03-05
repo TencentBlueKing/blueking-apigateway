@@ -214,13 +214,7 @@ class PluginConfigBindingPostModificationMixin:
         # if scope_type is stage, should publish
         if scope_type == PluginBindingScopeEnum.STAGE.value:
             # 触发环境发布
-            trigger_gateway_publish(
-                source,
-                self.request.user.username,
-                self.request.gateway.id,
-                scope_id,
-                is_sync=False,
-            )
+            trigger_gateway_publish(source, self.request.user.username, self.request.gateway.id, scope_id)
         elif scope_type == PluginBindingScopeEnum.RESOURCE.value:
             # update the resource updated_time
             Resource.objects.get(id=scope_id).save()
