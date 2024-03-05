@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from django.core.management.base import BaseCommand
 
@@ -84,6 +84,9 @@ class Command(BaseCommand):
         expected_config = self._generate_expected_backend_config(context.config)
         actual_backend_config = BackendConfig.objects.filter(gateway=gateway, stage=stage).first()
 
+        # 需要排序再b
+        actual_backend_config.config["hosts"] = self._sort_hosts(actual_backend_config.config["hosts"])
+
         if not actual_backend_config or actual_backend_config.config != expected_config:
             self.stdout.write(f"Backend config for stage {stage.id} does not match the expected config")
             self.stdout.write(f"Expected config: {expected_config}")
@@ -105,13 +108,20 @@ class Command(BaseCommand):
 
         # 自定义后端应该存在并且与预期配置匹配
         expected_config = self._generate_expected_backend_config(proxy.config)
-        actual_backend_config = BackendConfig.objects.filter(gateway=gateway, backend=proxy.backend).first()
+        actual_backend_configs = BackendConfig.objects.filter(gateway=gateway, backend=proxy.backend)
 
-        if not actual_backend_config or actual_backend_config.config != expected_config:
-            self.stdout.write(f"Backend config for proxy {proxy.id} does not match the expected config")
-            self.stdout.write(f"Expected config: {expected_config}")
-            self.stdout.write(f"Actual config: {actual_backend_config.config if actual_backend_config else 'None'}")
+        # 检查是否存在任何后端配置
+        if not actual_backend_configs.exists():
+            self.stdout.write(f"Backend config is not exist for proxy {proxy.id} does not match the expected config")
             return False
+
+        # 检查所有后端配置是否与预期配置匹配
+        for actual_backend_config in actual_backend_configs:
+            if actual_backend_config.config != expected_config:
+                self.stdout.write(f"Backend config for proxy {proxy.id} does not match the expected config")
+                self.stdout.write(f"Expected config: {expected_config}")
+                self.stdout.write(f"Actual config: {actual_backend_config.config}")
+                return False
 
         return True
 
@@ -129,5 +139,9 @@ class Command(BaseCommand):
             "type": "node",
             "timeout": proxy_http_config["timeout"],
             "loadbalance": proxy_http_config["upstreams"]["loadbalance"],
-            "hosts": hosts,
+            "hosts": self._sort_hosts(hosts),
         }
+
+    def _sort_hosts(self, hosts: List[Dict[str, Dict]]) -> List[Dict[str, Dict]]:
+        # 排序 host，使用 "==" 对比配置时顺序一致
+        return sorted(hosts, key=lambda x: "{}://{}#{}".format(x["scheme"], x["host"], x.get("weight", 0)))

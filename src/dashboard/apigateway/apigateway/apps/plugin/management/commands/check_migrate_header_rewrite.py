@@ -50,13 +50,15 @@ class Command(BaseCommand):
                 type=ContextTypeEnum.STAGE_PROXY_HTTP.value,
             ).first()
 
+            check_no_binding = False
+
             if context and "transform_headers" in context.config:
                 expected_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(
                     context.config.get("transform_headers")
                 )
                 if not expected_config:
-                    continue
-                if not self.is_plugin_config_migrated(
+                    check_no_binding = True
+                if expected_config and not self.is_plugin_config_migrated(
                     stage.gateway_id, PluginBindingScopeEnum.STAGE.value, stage.id, expected_config
                 ):
                     failed_stages = +1
@@ -64,6 +66,20 @@ class Command(BaseCommand):
                     self.stdout.write(
                         f"Gateway {stage.gateway.name} Stage {stage.id}"
                         f" header rewrite plugin config migration check failed"
+                    )
+            else:
+                check_no_binding = True
+
+            if check_no_binding:
+                # 不应该存在插件绑定
+                plugin_binding = self._get_plugin_binding(
+                    stage.gateway_id, PluginBindingScopeEnum.STAGE.value, stage.id
+                )
+                if plugin_binding:
+                    failed_stages = +1
+                    self.stdout.write(
+                        f"Gateway {stage.gateway.name} Stage {stage.id}"
+                        f" has plugin biding[{plugin_binding.config.yaml}] config for no transform_headers "
                     )
 
         self.stdout.write(
@@ -78,15 +94,17 @@ class Command(BaseCommand):
         total_resources = proxies.count()
         failed_resources = 0
         for proxy in proxies:
+            check_no_binding = False
+
             if "transform_headers" in proxy.config:
                 expected_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(
                     proxy.config.get("transform_headers")
                 )
 
                 if not expected_config:
-                    continue
+                    check_no_binding = True
 
-                if not self.is_plugin_config_migrated(
+                if expected_config and not self.is_plugin_config_migrated(
                     proxy.resource.gateway_id,
                     PluginBindingScopeEnum.RESOURCE.value,
                     proxy.resource.id,
@@ -96,10 +114,40 @@ class Command(BaseCommand):
                     self.stdout.write(
                         f"Resource  {proxy.resource.id}" f" header rewrite plugin config migration check failed"
                     )
+            else:
+                check_no_binding = True
+
+            if check_no_binding:
+                # 不应该存在插件绑定
+                plugin_binding = self._get_plugin_binding(
+                    proxy.resource.gateway_id, PluginBindingScopeEnum.RESOURCE.value, proxy.resource.id
+                )
+                if plugin_binding:
+                    failed_resources = +1
+                    self.stdout.write(
+                        f"Resource {proxy.resource.id}"
+                        f" has plugin biding[{plugin_binding.config.yaml}] config for no transform_headers "
+                    )
 
         self.stdout.write(
             f"Finished checking header rewrite plugin migration for resources: "
             f" {total_resources} checked, {failed_resources} failed"
+        )
+
+    def _get_plugin_binding(self, gateway_id, scope_type, scope_id):
+        # 获取插件类型对象
+        plugin_type = PluginType.objects.get(code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value)
+
+        # 获取与scope相关的插件绑定对象
+        return (
+            PluginBinding.objects.filter(
+                gateway_id=gateway_id,
+                scope_type=scope_type,
+                scope_id=scope_id,
+                config__type=plugin_type,
+            )
+            .select_related("config")
+            .first()
         )
 
     def is_plugin_config_migrated(self, gateway_id, scope_type, scope_id, expected_config):
@@ -107,21 +155,7 @@ class Command(BaseCommand):
         Check if the plugin configuration has been migrated correctly.
         """
         try:
-            # 获取插件类型对象
-            plugin_type = PluginType.objects.get(code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value)
-
-            # 获取与scope相关的插件绑定对象
-            plugin_binding = (
-                PluginBinding.objects.filter(
-                    gateway_id=gateway_id,
-                    scope_type=scope_type,
-                    scope_id=scope_id,
-                    config__type=plugin_type,
-                )
-                .select_related("config")
-                .first()
-            )
-
+            plugin_binding = self._get_plugin_binding(gateway_id, scope_type, scope_id)
             # 如果没有找到插件绑定，表示迁移失败
             if not plugin_binding:
                 self.stdout.write(
