@@ -67,6 +67,7 @@ class Command(BaseCommand):
                         f"Gateway {stage.gateway.name} Stage {stage.id}"
                         f" header rewrite plugin config migration check failed"
                     )
+                    continue
             else:
                 check_no_binding = True
 
@@ -114,6 +115,7 @@ class Command(BaseCommand):
                     self.stdout.write(
                         f"Resource  {proxy.resource.id}" f" header rewrite plugin config migration check failed"
                     )
+                    continue
             else:
                 check_no_binding = True
 
