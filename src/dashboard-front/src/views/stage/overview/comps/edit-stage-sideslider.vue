@@ -150,16 +150,13 @@
 
                           <i
                             class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
-                            @click="handleAddServiceAddress(backend.name, index)"
+                            @click="handleAddServiceAddress(backend.name)"
                           ></i>
                           <i
                             class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
                             :class="{ disabled: backend.config.hosts.length < 2 }"
                             @click="
-                              backend.config.hosts.length < 2 ?
-                                ''
-                                :
-                                handleDeleteServiceAddress(backend.name, index)"
+                              backend.config.hosts.length < 2 ? '' : handleDeleteServiceAddress(backend.name, index)"
                           ></i>
                         </div>
                       </bk-form-item>
@@ -369,7 +366,7 @@ const addInit = async () => {
   // 获取当前网关下的backends(获取后端服务列表)
   const res = await getBackendsListData(apigwId);
   console.log('获取all后端服务列表', res);
-  curStageData.value.backends = res.results.map((item) => {
+  curStageData.value.backends = res.results.map((item: any) => {
     // 后端服务配置默认值
     return {
       id: item.id,
@@ -549,6 +546,7 @@ defineExpose({
   :deep(.bk-sideslider-footer) {
     position: absolute;
     bottom: 0;
+    box-shadow: 0 -1px 0 0 #dcdee5;
   }
 }
 .sideslider-content {
@@ -587,6 +585,7 @@ defineExpose({
 
           &.disabled {
             color: #dcdee5;
+            cursor: not-allowed;
           }
         }
         :deep(.bk-form-error) {

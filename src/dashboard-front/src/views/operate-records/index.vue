@@ -1,7 +1,7 @@
 <template>
   <div class="page-wrapper-padding operate-records-content">
     <div class="ag-top-header">
-      <bk-form class="search-form" form-type="inline">
+      <bk-form class="search-form">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker top-form-item-time">
           <bk-date-picker
             ref="topDatePicker"
@@ -382,30 +382,55 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.keyword = '';
 };
 
-const refreshTableData = () => {
-  getList();
+const refreshTableData = async () => {
+  await getList();
   updateTableEmptyConfig();
 };
 
 watch(
   () => searchValue.value,
-  (newVal: any[]) => {
+  async (newVal: any[]) => {
     if (!newVal.length) {
       filterData.value = cloneDeep(defaultSearchData.value);
       curSelectData.value =  cloneDeep(defaultFilterData.value);
       filterData.value.order_by = orderBy.value;
       tableKey.value = +new Date();
-      refreshTableData();
+      await refreshTableData();
       return;
     }
-    Object.keys(filterData.value).forEach((item: string) => {
-      const hasData = newVal.find((v: Record<string, any>) => v.id === item);
-      filterData.value[item] = hasData ? hasData.values[0].id : '';
-      curSelectData.value[item] = hasData ? hasData.values[0].id : '';
+
+    let notRefresh = false;
+
+    Object.keys(filterData.value).forEach((filterDataKey: string) => {
+      const hasData = newVal.find((v: Record<string, any>) => v.id === filterDataKey);
+      let ret = '';
+      if (hasData) {
+        if (!['op_object_type', 'op_type', 'op_status'].includes(hasData.id)) {
+          ret = hasData.values[0].id || '';
+        } else {
+          const alterSearchDataItem: any = searchData.value.find(sd => sd.id === hasData.id) || {};
+          const alterSearchDataItemChildren = alterSearchDataItem.children || [];
+          if (!alterSearchDataItemChildren.every((child: any) => child.id !== hasData.values[0].id)) {
+            ret = hasData.values[0].id || '';
+          } else {
+            // op_object_type, op_type, op_status 三种搜索项，如果没有采用下拉框的备选项而是自己随意输入时，则替换成下拉框的第一个备选项
+            notRefresh = true;
+            searchValue.value.forEach((v: any) => {
+              if (v.id === filterDataKey) {
+                v.values = [alterSearchDataItemChildren[0]];
+              }
+            });
+          }
+        }
+      }
+      filterData.value[filterDataKey] = ret;
+      curSelectData.value[filterDataKey] = ret;
     });
     filterData.value.order_by = orderBy;
     tableKey.value = +new Date();
-    refreshTableData();
+    if (!notRefresh) {
+      await refreshTableData();
+    }
   },
   { deep: true },
 );

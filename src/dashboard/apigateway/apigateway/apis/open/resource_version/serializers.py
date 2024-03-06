@@ -31,7 +31,7 @@ from apigateway.core.models import ResourceVersion
 class ReleaseV1InputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=False)
-    resource_version_name = serializers.CharField(max_length=128, required=False)
+    resource_version_name = serializers.CharField(max_length=128, allow_blank=True, required=False)
     stage_names = serializers.ListField(child=serializers.CharField(max_length=64), allow_empty=True, default=list)
     comment = serializers.CharField(max_length=512, allow_blank=True, default="")
 

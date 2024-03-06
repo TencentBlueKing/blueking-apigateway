@@ -16,6 +16,7 @@
         <div class="flex-1 flex-row align-items-center">
           <div class="mr8">
             <bk-button
+              style="width: 142px;"
               v-show="isShowLeft"
               theme="primary"
               :class="{ 'super-big-button': isDetail }"
@@ -59,9 +60,7 @@
               :dropdown-list="exportDropData"
               @on-change="handleExport"></ag-dropdown>
             <div class="mr8">
-              <bk-button
-                @click="handleCreateResourceVersion"
-              >
+              <bk-button @click="handleCreateResourceVersion" :disabled="!versionConfigs.needNewVersion">
                 {{ t('生成版本') }}
               </bk-button>
             </div>
@@ -109,6 +108,7 @@
             @column-sort="handleSortChange"
             row-hover="auto"
             :row-class="is24HoursAgoClsFunc"
+            border="outer"
           >
             <bk-table-column
               width="80"
@@ -183,8 +183,10 @@
                   <section
                     v-if="data?.labels?.length"
                     v-bk-tooltips="{ content: data?.labelText.join(';') }">
-                    <span v-for="(item, index) in data?.labels" :key="item.id">
-                      <bk-tag @click="handleEditLabel(data)" v-if="index < data.tagOrder">{{ item.name }}</bk-tag>
+                    <span style="margin-left: 4px;" v-for="(item, index) in data?.labels" :key="item.id">
+                      <bk-tag @click="handleEditLabel(data)" v-if="index < data.tagOrder">
+                        {{ item.name }}
+                      </bk-tag>
                     </span>
                     <bk-tag
                       v-if="data.labels.length > data.tagOrder"
@@ -239,7 +241,7 @@
                 </bk-button>
 
                 <bk-pop-confirm
-                  :title="t(`确认删除资源${data?.name}？`)"
+                  :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"
                   content="删除操作无法撤回，请谨慎操作！"
                   width="288"
                   trigger="click"
@@ -514,11 +516,11 @@ const methodsTypeList =  ref(common.methodList);
 
 const searchValue = ref([]);
 const searchData = shallowRef([
-  {
-    name: t('模糊查询'),
-    id: 'keyword',
-    placeholder: t('请输入资源名称，前端请求路径'),
-  },
+  // {
+  //   name: t('模糊查询'),
+  //   id: 'keyword',
+  //   placeholder: t('请输入资源名称，前端请求路径'),
+  // },
   {
     name: t('资源名称'),
     id: 'name',

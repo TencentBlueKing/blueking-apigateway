@@ -16,6 +16,8 @@
                   :source-id="diffSourceId"
                   :target-id="diffTargetId"
                   page-type="createVersion"
+                  :source-switch="false"
+                  :target-switch="false"
                 >
                 </version-diff>
               </div>
@@ -103,8 +105,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { ref, reactive, watch, computed } from 'vue';
-import { getResourceVersionsList, createResourceVersion, resourceVersionsDiff } from '@/http';
+import semver from 'semver';
 import { useRoute, useRouter } from 'vue-router';
+
+import { getResourceVersionsList, createResourceVersion, resourceVersionsDiff } from '@/http';
 import versionDiff from '@/components/version-diff/index.vue';
 import CustomDialog from '@/components/custom-dialog/index.vue';
 
@@ -169,6 +173,16 @@ const rules = {
       required: true,
       message: t('请输入版本号'),
       trigger: 'change',
+    },
+    {
+      message: t('版本号须符合 Semver 规范'),
+      trigger: 'change',
+      validator: (value: any) => {
+        if (semver.valid(value) === null) {
+          return false;
+        }
+        return true;
+      },
     },
   ],
 };
@@ -316,4 +330,3 @@ defineExpose({
     cursor: not-allowed !important;
   }
   </style>
-

@@ -137,7 +137,7 @@ const props = defineProps({
 
 const searchValue = ref<string>('');
 const info = ref<any>({});
-const resourceDetailsRef = ref();
+const resourceDetailsRef = ref(null);
 const isReload = ref(false);
 const emptyText = ref<string>('暂无数据');
 

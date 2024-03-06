@@ -4,7 +4,9 @@
     <div class="values">
       <template v-if="list.length">
         <div class="biz-key-item" v-for="(keyItem, index) in list" :key="index">
-          <bk-form class="biz-key-form" :ref="(el) => setRefs(el, `key-${index}`)" :label-width="0" :model="keyItem">
+          <bk-form
+            class="biz-key-form"
+            :ref="(el: any) => setRefs(el, `key-${index}`)" :label-width="0" :model="keyItem">
             <bk-form-item
               :rules="rules.key" :property="'key'" :error-display-type="'normal'"
               style="margin-bottom: 0px;">
@@ -19,7 +21,7 @@
 
           <bk-form
             class="mr5 biz-value-form"
-            :ref="(el) => setRefs(el, `value-${index}`)"
+            :ref="(el: any) => setRefs(el, `value-${index}`)"
             :label-width="0"
             :model="keyItem">
             <bk-form-item

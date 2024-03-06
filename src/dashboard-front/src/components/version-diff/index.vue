@@ -21,16 +21,16 @@
           {{ $t("个资源") }}，
         </span>
         <span>
-          {{ $t("删除") }}
-          <strong class="ag-strong danger m5">
-            {{ diffData.delete.length }}
+          {{ $t("更新") }}
+          <strong class="ag-strong warning m5">
+            {{ diffData.update.length }}
           </strong>
           {{ $t("个资源") }}，
         </span>
         <span>
-          {{ $t("更新") }}
-          <strong class="ag-strong warning m5">
-            {{ diffData.update.length }}
+          {{ $t("删除") }}
+          <strong class="ag-strong danger m5">
+            {{ diffData.delete.length }}
           </strong>
           {{ $t("个资源") }}
         </span>
@@ -42,7 +42,7 @@
       <bk-input
         clearable
         class="fl mr10"
-        style="width: 365px"
+        style="width: 300px"
         :placeholder="$t('请输入资源名称或请求路径，回车结束')"
         type="search"
         v-model="searchParams.keyword"
@@ -53,7 +53,7 @@
       <bk-select
         class="fl mr10"
         v-model="searchParams.diffType"
-        style="width: 240px"
+        style="width: 140px"
         :clearable="true"
         :placeholder="$t('全部差异类型')"
       >
@@ -171,9 +171,7 @@
                       { active: addItem.isExpanded },
                     ]"
                   ></i>
-                  <span v-bk-overflow-tips class="vm resource-title ml10"
-                  >--</span
-                  >
+                  <span v-bk-overflow-tips class="vm resource-title ml10">--</span>
                 </div>
                 <div class="resource-box pl15 pr15">
                   <!-- <bk-transition :name="animation"> -->
@@ -190,12 +188,7 @@
               </div>
               <div class="target-box">
                 <div class="metadata success" @click="handleToggle(addItem)">
-                  <i
-                    :class="[
-                      'bk-icon icon-right-shape',
-                      { active: addItem.isExpanded },
-                    ]"
-                  ></i>
+                  <i :class="['bk-icon icon-right-shape', { active: addItem.isExpanded }]"></i>
                   <span
                     v-bk-overflow-tips
                     class="vm resource-title"
@@ -371,7 +364,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import resourceDetail from '@/components/resource-detail';
+import resourceDetail from '@/components/resource-detail/index.vue';
 import { useI18n } from 'vue-i18n';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { useCommon } from '@/store';
@@ -663,6 +656,10 @@ onMounted(() => {
   margin-bottom: 15px;
   font-size: 14px;
   color: #63656e;
+  background-color: #f5f7fa;
+  height: 40px;
+  line-height: 40px;
+  padding: 0 16px;
 }
 
 .search-data {

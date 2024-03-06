@@ -349,9 +349,11 @@ const handleEditePlugin = async (item: any) => {
     console.log('error', error);
   }
 };
+
+const pluginDeleting = ref(false);
+
 // 删除插件
 const handleDeletePlugin = (item: any) => {
-  console.log(item);
   const { code, config_id } = item;
   InfoBox({
     title: t('确定停用插件？'),
@@ -360,15 +362,22 @@ const handleDeletePlugin = (item: any) => {
     confirmText: t('停用'),
     cancelText: t('取消'),
     onConfirm: async () => {
+      if (pluginDeleting.value) {
+        return;
+      }
+      pluginDeleting.value = true;
       try {
         await deletePluginConfig(apigwId, scopeType.value, scopeId.value, code, config_id);
         Message({
           message: t('停用成功'),
           theme: 'success',
+          width: 'auto',
         });
         init();
       } catch (error) {
         console.log('error', error);
+      } finally {
+        pluginDeleting.value = false;
       }
     },
   });

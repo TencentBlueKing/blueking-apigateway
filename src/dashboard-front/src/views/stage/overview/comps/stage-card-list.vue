@@ -164,7 +164,10 @@ const showLogs = (id: string) => {
 // 下架环境
 const handleStageUnlist = async (id: number) => {
   InfoBox({
-    title: t('确认下架吗？'),
+    infoType: 'warning',
+    title: t('确认下架环境？'),
+    subTitle: t('可能会导致正在使用该接口的服务异常，请确认'),
+    confirmText: t('确认下架'),
     onConfirm: async () => {
       const data = {
         status: 0,

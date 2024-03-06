@@ -44,6 +44,7 @@
     "monaco-editor": "^0.44.0",
     "pinia": "^2.0.23",
     "request": "^2.88.2",
+    "semver": "^7.6.0",
     "transliteration": "^2.3.5",
     "vue": "^3.2.41",
     "vue-i18n": "^9.5.0",

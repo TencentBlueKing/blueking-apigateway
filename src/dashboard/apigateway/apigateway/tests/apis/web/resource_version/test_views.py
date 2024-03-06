@@ -254,6 +254,7 @@ class TestResourceVersionDiffApi:
                         "allow_apply_permission": True,
                         "proxy": {
                             "type": "http",
+                            "backend_id": 1,
                             "config": {
                                 "method": "POST",
                                 "path": "wp-content",
@@ -263,6 +264,7 @@ class TestResourceVersionDiffApi:
                                 "transform_headers": {},
                             },
                         },
+                        "api_labels": [],
                         "contexts": {
                             "resource_auth": {
                                 "config": {

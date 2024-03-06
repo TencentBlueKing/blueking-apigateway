@@ -3,6 +3,10 @@
     <!-- 自定义头部 -->
     <stage-top-bar ref="stageTopBarRef" />
     <div class="detail-mode">
+      <bk-alert
+        v-if="stageData.status === 0 && stageData.release.status !== 'unreleased'"
+        theme="warning"
+        :title="t('当前环境已下架，所有内容的更新均不会生效，如需重新启用，需要重新发布')" style="margin-bottom: 16px;" />
       <bk-loading :loading="stageStore.realStageMainLoading">
         <section class="stagae-info">
           <div class="stage-name">
@@ -88,7 +92,7 @@
               <template #content>
                 <bk-dropdown-menu ext-cls="stage-more-actions">
                   <bk-dropdown-item
-                    :ext-cls="{ disabled: stageData.status !== 1 }"
+                    :ext-cls="stageData.status !== 1 ? 'disabled' : ''"
                     v-bk-tooltips="
                       stageData.release.status === 'unreleased' ?
                         t('尚未发布，不可下架') :
@@ -100,7 +104,7 @@
                     {{ t('下架') }}
                   </bk-dropdown-item>
                   <bk-dropdown-item
-                    :ext-cls="{ disabled: stageData.status !== 0 }"
+                    :ext-cls="stageData.status !== 0 ? 'disabled' : ''"
                     v-bk-tooltips="stageData.status === 1 ? t('环境下线后，才能删除') : t('删除环境')"
                     @click="stageData.status === 0 ? handleStageDelete() : void 0"
                   >
@@ -114,7 +118,7 @@
       </bk-loading>
       <bk-alert
         type="warning"
-        title="环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作"
+        :title="t('环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作')"
         class="mt15 mb15"
       ></bk-alert>
       <div class="tab-wrapper">
@@ -156,7 +160,7 @@
 
 <script setup lang="ts">
 import { copy } from '@/common/util';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, shallowRef, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useStage, useCommon } from '@/store';
@@ -189,7 +193,7 @@ const stageTopBarRef = ref(null);
 const showDropdown = ref<boolean>(false);
 
 // 当前tab
-const curTabComponent = ref<TabComponents>(resourceInfo);
+const curTabComponent = shallowRef<TabComponents>(resourceInfo);
 
 // 当前环境信息
 const stageData: any = computed(() => {
@@ -277,7 +281,9 @@ const handleRelease = () => {
 const handleStageUnlist = async () => {
   showDropdown.value = false;
   InfoBox({
-    title: t('确认下架吗？'),
+    title: t('确认下架环境？'),
+    subTitle: t('可能会导致正在使用该接口的服务异常，请确认'),
+    confirmText: t('确认下架'),
     onConfirm: async () => {
       if (isDeleteLoading.value) {
         return;

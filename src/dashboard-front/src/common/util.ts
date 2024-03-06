@@ -127,7 +127,7 @@ export function copy(value: string) {
     document.getSelection().removeAllRanges();
     document.getSelection().addRange(selected);
   }
-  Message({ theme: 'primary', message: t('复制成功'), delay: 2000, dismissable: false });
+  Message({ theme: 'success', width: 'auto', message: t('复制成功'), delay: 2000, dismissable: false });
 }
 
 /**
@@ -201,12 +201,12 @@ export function getColorHue(rgb, degree) {
   }
 
   // expects an object and returns a string
-  function hslToRGB(hsl) {
+  function hslToRGB(hsl: any) {
     const { h } = hsl;
     const { s } = hsl;
     const { l } = hsl;
     const c = (1 - Math.abs(2 * l - 1)) * s;
-    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const x = c * (1 - (Math.abs((h / 60) % 2) - 1));
     const m = l - c / 2;
     let r; let g; let b;
 

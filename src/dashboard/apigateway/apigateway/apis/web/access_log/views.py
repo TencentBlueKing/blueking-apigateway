@@ -75,6 +75,17 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse(data=slz.data)
 
 
+def add_extend_fields(logs: List[Dict]):
+    """为日志添加扩展字段"""
+    for log in logs:
+        if log.get("error"):
+            log["response_desc"] = _("网关未请求或请求后端接口异常，响应内容由网关提供。")
+        else:
+            log["response_desc"] = _("网关已请求后端接口，并将其响应原样返回。")
+
+    return logs
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -108,7 +119,7 @@ class SearchLogListApi(generics.ListAPIView):
         # 去除 params、body 中的敏感数据
         logs = DataScrubber().scrub_sensitive_data(logs)
         # 添加扩展数据
-        logs = self._add_extend_fields(logs)
+        logs = add_extend_fields(logs)
 
         paginator = LimitOffsetPaginator(total_count, data["offset"], data["limit"])
 
@@ -117,16 +128,6 @@ class SearchLogListApi(generics.ListAPIView):
         results["fields"] = ES_LOG_FIELDS
 
         return OKJsonResponse(data=results)
-
-    def _add_extend_fields(self, logs: List[Dict]):
-        """为日志添加扩展字段"""
-        for log in logs:
-            if log.get("error"):
-                log["response_desc"] = _("网关未请求或请求后端接口异常，响应内容由网关提供。")
-            else:
-                log["response_desc"] = _("网关已请求后端接口，并将其响应原样返回。")
-
-        return logs
 
 
 @method_decorator(
@@ -153,6 +154,7 @@ class LogDetailListApi(generics.ListAPIView):
         total_count, logs = client.search_logs()
         # 去除 params、body 中的敏感数据
         logs = DataScrubber().scrub_sensitive_data(logs)
+        logs = add_extend_fields(logs)
 
         paginator = LimitOffsetPaginator(total_count, 0, total_count)
 

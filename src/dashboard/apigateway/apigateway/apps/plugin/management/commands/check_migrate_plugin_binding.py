@@ -15,30 +15,19 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import re
+from django.core.management.base import BaseCommand
+from django.db.models import Count
 
-from blue_krill.data_types.enum import EnumField, StructuredEnum
-from django.conf import settings
+from apigateway.apps.plugin.models import PluginBinding
 
-
-class SwaggerFormatEnum(StructuredEnum):
-    YAML = EnumField("yaml", label="YAML")
-    JSON = EnumField("json", label="JSON")
+# 仅在 1.13 使用， 1.14 会删掉
 
 
-# bk app code
-APP_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
+class Command(BaseCommand):
+    """检查插件绑定与插件配置绑定关系是否从多对多迁移到一对多"""
 
-# Semver
-SEMVER_PATTERN = re.compile(
-    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
-    r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-)
+    def handle(self, *args, **options):
+        for d in PluginBinding.objects.values("config_id").annotate(cnt=Count("config_id")).filter(cnt__gte=2):
+            self.stdout.write(f"check not valid, config_id: {d['config_id']} has {d['cnt']} bindings")
 
-MAX_BACKEND_TIMEOUT_IN_SECOND = settings.MAX_BACKEND_TIMEOUT_IN_SECOND
-
-# stage var
-STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")
-
-# release gateway interval
-RELEASE_GATEWAY_INTERVAL_SECOND = 15
+        self.stdout.write("Done")

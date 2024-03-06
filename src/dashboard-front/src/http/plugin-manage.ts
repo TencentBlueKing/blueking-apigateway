@@ -1,4 +1,5 @@
 import fetch from './fetch';
+import { json2Query  } from '@/common/util';
 
 const { BK_DASHBOARD_URL } = window;
 
@@ -72,3 +73,9 @@ export const updatePluginConfig = (apigwId: number, scopeType: string, scopeId: 
  */
 export const deletePluginConfig = (apigwId: number, scopeType: string, scopeId: number, code: string, id: number) => fetch.delete(`${BK_DASHBOARD_URL}/gateways/${apigwId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`);
 
+/**
+ *  过滤出需要认证用户的资源列表，免用户认证应用白名单插件，需要使用此数据过滤资源
+ * @param apigwId 网关id
+ * @param data 参数
+ */
+export const getResources = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/with/verified-user-required/?${json2Query(data)}`);

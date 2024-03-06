@@ -13,6 +13,7 @@ def run_migrate_command(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('plugin', '0012_pluginbinding_source'),
         ('core', '0038_auto_20231023_1526'),
     ]
 

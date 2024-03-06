@@ -14,15 +14,15 @@
           <div class="header-info-name">
             <span class="name">{{ basicInfoData.name }}</span>
             <div class="header-info-tag">
-              <bk-tag ext-cls="website" v-if="basicInfoData.is_official">{{ t('官网') }}</bk-tag>
+              <bk-tag class="website" v-if="basicInfoData.is_official">{{ t('官网') }}</bk-tag>
               <div v-if="basicInfoData.status > 0">
-                <!-- <bk-tag ext-cls="vip">{{ t('专享') }}</bk-tag>? -->
-                <bk-tag ext-cls="enabling">
+                <!-- <bk-tag class="vip">{{ t('专享') }}</bk-tag>? -->
+                <bk-tag class="enabling">
                   <i class="apigateway-icon icon-ag-yiqiyong" />
                   {{ t('启用中') }}
                 </bk-tag>
               </div>
-              <bk-tag ext-cls="deactivated" v-if="!basicInfoData.status">
+              <bk-tag class="deactivated" v-if="!basicInfoData.status">
                 <i class="apigateway-icon icon-ag-minus-circle" />
                 {{ t('已停用') }}
               </bk-tag>
@@ -172,7 +172,7 @@
     <bk-dialog
       width="540"
       :is-show="delApigwDialog.isShow"
-      :title="$t(`确认删除网关【${basicInfoData.name}】？`)"
+      :title="$t(`确认删除网关【{basicInfoDataName}】？`, { basicInfoDataName: basicInfoData.name })"
       :theme="'primary'"
       :loading="delApigwDialog.loading"
       @closed="delApigwDialog.isShow = false">
@@ -360,25 +360,7 @@ const getBasicInfo = async () => {
   }
 };
 
-const handleChangeApigwStatus = async () => {
-  const status = basicInfoData.value.status === 1 ? 0 : 1;
-  try {
-    const res = await toggleGateWaysStatus(apigwId.value, { status });
-    if (res) {
-      basicInfoData.value = Object.assign(basicInfoData.value, { status });
-      Message({
-        theme: 'success',
-        message: t('更新成功'),
-        width: 'auto',
-      });
-    }
-    await getBasicInfo();
-  } catch (e) {
-    console.error(e);
-  }
-};
-
-const  handleDeleteApigw = async () => {
+const handleDeleteApigw = async () => {
   try {
     await deleteGateWays(apigwId.value);
     Message({
@@ -421,7 +403,30 @@ const handleChangePublic = async (value: boolean) => {
   Message({
     message: t('更新成功'),
     theme: 'success',
+    width: 'auto',
   });
+};
+
+const statusChanging = ref(false);
+const handleChangeApigwStatus = async () => {
+  const status = basicInfoData.value.status === 1 ? 0 : 1;
+  try {
+    statusChanging.value = true;
+    const res = await toggleGateWaysStatus(apigwId.value, { status });
+    if (res) {
+      basicInfoData.value = Object.assign(basicInfoData.value, { status });
+      Message({
+        theme: 'success',
+        message: status === 1 ? t('启用网关成功') : t('停用网关成功'),
+        width: 'auto',
+      });
+    }
+    await getBasicInfo();
+  } catch (e) {
+    console.error(e);
+  } finally {
+    statusChanging.value = false;
+  }
 };
 
 const handleOperate = async (type: string) => {
@@ -437,6 +442,9 @@ const handleOperate = async (type: string) => {
       title,
       subTitle,
       onConfirm: () => {
+        if (statusChanging.value) {
+          return;
+        }
         handleChangeApigwStatus();
       },
     });
