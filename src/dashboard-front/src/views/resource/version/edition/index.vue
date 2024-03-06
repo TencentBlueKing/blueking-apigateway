@@ -4,7 +4,7 @@
       <div class="flex-1 flex-row align-items-center">
         <div class="mr10">
           <bk-button theme="primary" @click="handleShowDiff" :disabled="diffDisabled">
-            {{ t("版本对比") }}
+            {{ t('版本对比') }}
           </bk-button>
         </div>
       </div>
@@ -20,7 +20,7 @@
       <div class="left-wraper" style="width: '100%'">
         <bk-loading :loading="isLoading">
           <bk-table
-            class="table-layout"
+            class="edition-table table-layout"
             ref="bkTableRef"
             :data="tableData"
             remote-pagination
@@ -30,16 +30,14 @@
             @page-value-change="handlePageChange"
             @selection-change="handleSelectionChange"
             @select-all="handleSelecAllChange"
+            :cell-class="getCellClass"
             row-hover="auto"
+            border="outer"
           >
             <bk-table-column width="80" type="selection" align="center" />
             <bk-table-column :label="t('版本号')" min-width="120">
               <template #default="{ data }">
-                <bk-button
-                  text
-                  theme="primary"
-                  @click="handleShowInfo(data.id)"
-                >
+                <bk-button text theme="primary" @click="handleShowInfo(data.id)">
                   {{ data?.version }}
                 </bk-button>
               </template>
@@ -53,15 +51,16 @@
                 {{ data?.released_stages?.map((item: any) => item.name).join(", ") }}
               </template>
             </bk-table-column>
-            <bk-table-column
-              :label="t('生成时间')"
-              prop="created_time"
-              min-width="120"
-            >
+            <bk-table-column :label="t('生成时间')" prop="created_time" min-width="120">
             </bk-table-column>
             <bk-table-column min-width="120" :label="t('SDK')">
               <template #default="{ data }">
-                <bk-button text theme="primary" v-if="data?.sdk_count > 0" @click="jumpSdk(data)">
+                <bk-button
+                  text
+                  theme="primary"
+                  v-if="data?.sdk_count > 0"
+                  @click="jumpSdk(data)"
+                >
                   {{ data?.sdk_count }}
                 </bk-button>
                 <span v-else>
@@ -75,12 +74,18 @@
                   text
                   theme="primary"
                   @click="openCreateSdk(data.id)"
-                  v-if="user.featureFlags?.ALLOW_UPLOAD_SDK_TO_REPOSITORY">
-                  {{ t("生成SDK") }}
+                  v-if="user.featureFlags?.ALLOW_UPLOAD_SDK_TO_REPOSITORY"
+                >
+                  {{ t('生成 SDK') }}
                 </bk-button>
                 <bk-dropdown trigger="click" :is-show="!!data?.isReleaseMenuShow">
-                  <bk-button text theme="primary" class="pl10 pr10" @click="showRelease(data)">
-                    {{ t("发布至环境") }}
+                  <bk-button
+                    text
+                    theme="primary"
+                    class="pl10 pr10"
+                    @click="showRelease(data)"
+                  >
+                    {{ t('发布至环境') }}
                   </bk-button>
                   <template #content>
                     <bk-dropdown-menu>
@@ -119,15 +124,19 @@
 
     <!-- 资源详情 -->
     <resource-detail
-      :id="resourceVersionId" :is-show="resourceDetailShow" ref="resourceDetailRef"
-      @hidden="handleHidden" />
+      :id="resourceVersionId"
+      :is-show="resourceDetailShow"
+      ref="resourceDetailRef"
+      @hidden="handleHidden"
+    />
 
     <!-- 版本对比 -->
     <bk-sideslider
       v-model:isShow="diffSidesliderConf.isShow"
       :title="diffSidesliderConf.title"
       :width="diffSidesliderConf.width"
-      :quick-close="true">
+      :quick-close="true"
+    >
       <template #default>
         <div class="p20">
           <version-diff ref="diffRef" :source-id="diffSourceId" :target-id="diffTargetId">
@@ -142,13 +151,18 @@
       :version="versionData"
       ref="releaseSidesliderRef"
       @hidden="getList()"
-      @release-success="getList()" />
+      @release-success="getList()"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { Message } from 'bkui-vue';
+import { useRoute } from 'vue-router';
+import dayjs from 'dayjs';
+
 import { getStatus } from '@/common/util';
 import { useQueryList, useSelection } from '@/hooks';
 import { getResourceVersionsList, getStageList } from '@/http';
@@ -156,8 +170,6 @@ import createSdk from '../components/createSdk.vue';
 import resourceDetail from '../components/resourceDetail.vue';
 import versionDiff from '@/components/version-diff/index.vue';
 import { useResourceVersion, useUser } from '@/store';
-import { Message } from 'bkui-vue';
-import { useRoute } from 'vue-router';
 import releaseSideslider from '@/views/stage/overview/comps/release-sideslider.vue';
 import TableEmpty from '@/components/table-empty.vue';
 const user = useUser();
@@ -182,7 +194,13 @@ const {
 } = useQueryList(getResourceVersionsList, filterData);
 
 // 列表多选
-const { selections, bkTableRef, handleSelectionChange, handleSelecAllChange, resetSelections } = useSelection();
+const {
+  selections,
+  bkTableRef,
+  handleSelectionChange,
+  handleSelecAllChange,
+  resetSelections,
+} = useSelection();
 
 // 当前操作的行
 const resourceVersionId = ref();
@@ -195,7 +213,7 @@ const stageList = ref<any>([]);
 const stageData = ref();
 const versionData = ref();
 const releaseSidesliderRef = ref(null);
-const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+const tableEmptyConf = ref<{ keyword: string; isAbnormal: boolean }>({
   keyword: '',
   isAbnormal: false,
 });
@@ -306,11 +324,26 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
-watch(() => filterData.value, () => {
-  updateTableEmptyConfig();
-}, {
-  deep: true,
-});
+const getCellClass = (_column: any, _index: number, row: any, _rowIndex: number) => {
+  const targetTime = dayjs(row.created_time); // 目标时间
+  const curTime = dayjs();
+  let isWithin24Hours = false;
+  if (targetTime.isBefore(curTime) || targetTime.isSame(curTime)) {
+    const addOneDay = targetTime.add(1, 'day');
+    isWithin24Hours = curTime.isBefore(addOneDay) || curTime.isSame(addOneDay);
+  }
+  return isWithin24Hours ? 'last24hours' : '';
+};
+
+watch(
+  () => filterData.value,
+  () => {
+    updateTableEmptyConfig();
+  },
+  {
+    deep: true,
+  },
+);
 
 watch(
   () => selections.value,
@@ -341,3 +374,13 @@ onUnmounted(() => {
   clearInterval(timeId);
 });
 </script>
+
+<style lang="scss" scoped>
+.edition-table {
+  :deep(.bk-table-body) {
+    table tbody tr td.last24hours {
+      background-color: #f2fcf5;
+    }
+  }
+}
+</style>

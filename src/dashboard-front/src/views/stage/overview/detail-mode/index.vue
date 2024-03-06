@@ -3,6 +3,10 @@
     <!-- 自定义头部 -->
     <stage-top-bar ref="stageTopBarRef" />
     <div class="detail-mode">
+      <bk-alert
+        v-if="stageData.status === 0 && stageData.release.status !== 'unreleased'"
+        theme="warning"
+        :title="t('当前环境已下架，所有内容的更新均不会生效，如需重新启用，需要重新发布')" style="margin-bottom: 16px;" />
       <bk-loading :loading="stageStore.realStageMainLoading">
         <section class="stagae-info">
           <div class="stage-name">
@@ -88,7 +92,7 @@
               <template #content>
                 <bk-dropdown-menu ext-cls="stage-more-actions">
                   <bk-dropdown-item
-                    :ext-cls="{ disabled: stageData.status !== 1 }"
+                    :ext-cls="stageData.status !== 1 ? 'disabled' : ''"
                     v-bk-tooltips="
                       stageData.release.status === 'unreleased' ?
                         t('尚未发布，不可下架') :
@@ -100,7 +104,7 @@
                     {{ t('下架') }}
                   </bk-dropdown-item>
                   <bk-dropdown-item
-                    :ext-cls="{ disabled: stageData.status !== 0 }"
+                    :ext-cls="stageData.status !== 0 ? 'disabled' : ''"
                     v-bk-tooltips="stageData.status === 1 ? t('环境下线后，才能删除') : t('删除环境')"
                     @click="stageData.status === 0 ? handleStageDelete() : void 0"
                   >
@@ -114,7 +118,7 @@
       </bk-loading>
       <bk-alert
         type="warning"
-        title="环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作"
+        :title="t('环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作')"
         class="mt15 mb15"
       ></bk-alert>
       <div class="tab-wrapper">

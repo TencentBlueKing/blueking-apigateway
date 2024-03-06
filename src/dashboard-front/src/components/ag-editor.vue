@@ -84,6 +84,7 @@ const initEditor = () => {
     lineNumbers: 'on', // 行号 取值： "on" | "off" | "relative" | "interval" | function
     lineNumbersMinChars: 5, // 行号最小字符   number
     readOnly: readOnly.value, // 是否只读  取值 true | false
+    lineHeight: 24,
   });
 
   editorMounted(); // 编辑器初始化后

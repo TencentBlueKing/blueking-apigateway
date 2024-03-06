@@ -10,7 +10,7 @@
         :clearable="false"
         v-model="frontConfigData.method"
         @change="clearValidate"
-        class="w700">
+        class="method">
         <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
     </bk-form-item>
@@ -140,11 +140,14 @@ defineExpose({
 });
 </script>
   <style lang="scss" scoped>
-  .front-config-container{
-    .public-switch{
+  .front-config-container {
+    .method {
+      max-width: 700px;
+    }
+    .public-switch {
         height: 32px;
     }
-    .w700{
+    .w700 {
       max-width: 700px;
       width: 70%;
     }

@@ -24,14 +24,14 @@ export function useSidebar() {
       } else {
         // 已编辑
         InfoBox({
-          extCls: 'sideslider-close-cls',
+          'ext-cls': 'sideslider-close-cls',
           title: t('确认离开当前页？'),
           subTitle: t('离开将会导致未保存信息丢失'),
           confirmText: t('离开'),
           onConfirm() {
             resolve(true);
           },
-          cancelFn() {
+          onClosed() {
             resolve(false);
           },
         });

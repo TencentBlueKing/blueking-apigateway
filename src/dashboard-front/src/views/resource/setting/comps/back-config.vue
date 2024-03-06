@@ -7,14 +7,14 @@
     >
       <bk-select
         :input-search="false"
-        class="w700"
+        class="service"
         v-model="backConfigData.id" @change="handleServiceChange">
         <bk-option v-for="item in servicesData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
     </bk-form-item>
     <bk-table
       v-if="backConfigData.id"
-      class="table-layout w700"
+      class="table-layout"
       :data="servicesConfigs"
       :border="['outer']"
     >
@@ -53,7 +53,7 @@
         :input-search="false"
         v-model="backConfigData.config.method"
         :clearable="false"
-        class="w700">
+        class="method">
         <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
     </bk-form-item>
@@ -365,11 +365,18 @@ defineExpose({
 .back-config-container {
   .table-layout {
     margin: 0 0 20px 150px;
-    width: 700px !important;
+    max-width: 700px !important;
+    width: auto !important;
+    // width: 700px !important;
   }
 
   .public-switch {
     height: 32px;
+  }
+
+  .service,
+  .method {
+    max-width: 700px !important;
   }
 
   .w700 {

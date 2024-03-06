@@ -76,7 +76,7 @@ interface CreateDialog {
 // 导出dialog
 const dialogConfig: IDialog = reactive({
   isShow: false,
-  title: t('生成SDK'),
+  title: t('生成 SDK'),
   loading: false,
 });
 
@@ -87,9 +87,7 @@ const formData: CreateDialog = reactive({
   language: 'python',
 });
 
-const emit = defineEmits([
-  'done',
-]);
+const emit = defineEmits(['done']);
 
 // 生成sdk
 const handleCreate = async () => {
