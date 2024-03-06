@@ -13,25 +13,25 @@
           :active-key="activeMenuKey"
         >
           <template v-for="menu in componentsMenu">
-            <bk-submenu
-              v-if="menu?.children?.length"
-              :key="menu.name"
-              :title="menu.title"
-            >
-              <template #icon>
-                <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
-              <!-- <bk-badge
+            <template v-if="menu?.children?.length">
+              <bk-submenu
+                :key="menu.name"
+                :title="menu.title"
+              >
+                <template #icon>
+                  <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
+                  <!-- <bk-badge
                 dot
                 theme="danger"
                 style="margin-left: 5px"
                 v-if="menu.name === 'apigwPermissionManage' && permission.count !== 0"
               >
               </bk-badge> -->
-              </template>
-              <bk-menu-item
-                v-for="child in menu.children" :key="child.name" @click="handleGoPage(child.name, apigwId)">
-                {{ child.title }}
-              <!-- <bk-badge
+                </template>
+                <bk-menu-item
+                  v-for="child in menu.children" :key="child.name" @click="handleGoPage(child.name, apigwId)">
+                  {{ child.title }}
+                  <!-- <bk-badge
                 :count="permission.count"
                 :max="99"
                 theme="danger"
@@ -39,17 +39,19 @@
                 v-if="child.name === 'apigwPermissionApplys' && permission.count !== 0"
               >
               </bk-badge> -->
+                </bk-menu-item>
+              </bk-submenu>
+            </template>
+            <template v-else>
+              <bk-menu-item
+                :key="menu.name"
+                @click="handleGoPage(menu.name, apigwId)">
+                <template #icon>
+                  <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
+                </template>
+                {{ menu.title }}
               </bk-menu-item>
-            </bk-submenu>
-            <bk-menu-item
-              v-else
-              :key="menu.name"
-              @click="handleGoPage(menu.name, apigwId)">
-              <template #icon>
-                <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
-              </template>
-              {{ menu.title }}
-            </bk-menu-item>
+            </template>
           </template>
         </bk-menu>
       </template>
@@ -300,4 +302,3 @@ const handleBack = () => {
     }
 }
 </style>
-

@@ -1,6 +1,7 @@
 <template>
-  <div class="release-sideslider">
+  <div>
     <bk-sideslider
+      class="release-sideslider"
       v-model:isShow="isShow"
       :width="960"
       :title="`发布资源至环境【${currentAssets.name}】`"
@@ -35,7 +36,7 @@
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
                   <bk-form-item
                     property="resource_version_id"
-                    :label="`发布的资源版本(当前版本: ${currentAssets.resource_version.version})`">
+                    :label="`发布的资源版本(当前版本: ${currentAssets.resource_version.version || '--'})`">
                     <bk-select
                       v-model="formData.resource_version_id"
                       :input-search="false"
@@ -51,7 +52,7 @@
                       >
                       </bk-option>
                     </bk-select>
-                    <p>
+                    <p class="change-msg">
                       <span>
                         {{ $t("新增") }}
                         <strong class="ag-strong success">{{ diffData.add.length }}</strong>
@@ -95,11 +96,11 @@
                 <bk-button theme="primary" style="width: 100px" @click="showPublishDia">
                   {{ $t('确认发布') }}
                 </bk-button>
-                <bk-button class="ml10" style="width: 100px" @click="handleBack">
+                <bk-button style="margin-left: 4px; width: 100px" @click="handleBack">
                   {{ $t('上一步') }}
                 </bk-button>
               </template>
-              <bk-button class="ml10" style="width: 100px" @click="handleCancel">
+              <bk-button style="margin-left: 4px; width: 100px" @click="handleCancel">
                 {{ $t('取消') }}
               </bk-button>
             </div>
@@ -132,7 +133,7 @@ import { useI18n } from 'vue-i18n';
 import { ref, reactive, watch, computed } from 'vue';
 import { getResourceVersionsList, resourceVersionsDiff, createReleases } from '@/http';
 import { useRoute, useRouter } from 'vue-router';
-import versionDiff from '@/components/version-diff';
+import versionDiff from '@/components/version-diff/index.vue';
 import logDetails from '@/components/log-details/index.vue';
 import { Message } from 'bkui-vue';
 import { useSidebar } from '@/hooks';
@@ -377,39 +378,46 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
-.sideslider-content {
-  width: 100%;
-
-  .top-steps {
+.release-sideslider {
+  .sideslider-content {
     width: 100%;
-    padding: 16px 300px;
-    border-bottom: 1px solid #dcdee5;
-  }
 
-  .main {
-    padding: 0 100px;
-
-    .add {
-      color: #34d97b;
+    .top-steps {
+      width: 100%;
+      padding: 16px 300px;
+      border-bottom: 1px solid #dcdee5;
     }
 
-    .update {
-      color: #ffb400;
+    .main {
+      padding: 0 100px;
+
+      .add {
+        color: #34d97b;
+      }
+
+      .update {
+        color: #ffb400;
+      }
+
+      .delete {
+        color: #ff5656;
+      }
     }
 
-    .delete {
-      color: #ff5656;
+    .resource-diff-main {
+      padding: 18px 24px 24px;
     }
-  }
+    .operate1 {
+      padding: 8px 100px 24px;
+    }
+    .operate2 {
+      padding: 8px 24px 24px;
+    }
 
-  .resource-diff-main {
-    padding: 18px 24px 24px;
-  }
-  .operate1 {
-    padding: 0px 100px 24px;
-  }
-  .operate2 {
-    padding: 0px 24px 24px;
+    .change-msg {
+      font-size: 12px;
+      color: #63656e;
+    }
   }
 }
 </style>

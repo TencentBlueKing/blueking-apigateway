@@ -348,7 +348,7 @@ const apigwId = computed(() => +route.params.id);
 const localLanguage =  cookie.parse(document.cookie).blueking_language || 'zh-cn';
 
 const props = defineProps<{
-  id: number;
+  id: number | undefined;
   isShow: boolean;
 }>();
 

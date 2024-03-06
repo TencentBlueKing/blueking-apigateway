@@ -121,7 +121,6 @@
             :min-width="180"
             :max-width="260"
             :show-overflow-tooltip="true"
-
           >
             <template #default="{ row }">
               <div class="path-wrapper">
@@ -143,7 +142,6 @@
             :min-width="180"
             :max-width="260"
             :show-overflow-tooltip="true"
-
           >
             <template #default="{ row }">
               <div class="path-wrapper">
@@ -164,7 +162,6 @@
             prop="updated_time"
             :min-width="90"
             :show-overflow-tooltip="true"
-
           ></bk-table-column>
           <bk-table-column :label="t('操作')" width="150">
             <template #default="{ row }">
@@ -195,7 +192,6 @@
         </bk-table>
       </bk-loading>
     </div>
-
 
     <bk-sideslider
       v-model:is-show="isSliderShow"
@@ -331,11 +327,8 @@
                       <div>{{t('秒')}}</div>
                     </section>
                   </template>
-
                 </bk-input>
-                <p
-                  class="tips"
-                >
+                <p class="tips">
                   <i class="apigateway-icon icon-ag-info"></i>
                   {{ t('未设置时使用系统的超时时长，最大600秒') }}
                 </p>

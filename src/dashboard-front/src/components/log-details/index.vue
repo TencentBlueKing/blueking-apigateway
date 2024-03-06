@@ -233,6 +233,25 @@ defineExpose({
       align-items: center;
       .bk-timeline-title {
         padding-bottom: 0px;
+        margin-top: 0;
+      }
+    }
+    :deep(.bk-timeline .bk-timeline-dot) {
+      border-left: 1px dashed #d8d8d8;
+      &.bk-timeline-large {
+        margin-top: 11px;
+        &:before {
+          top: -10px;
+          left: -5px;
+          width: 9px;
+          height: 9px;
+        }
+      }
+      .bk-timeline-icon {
+        top: -12px;
+        left: -6px;
+        width: 9px;
+        height: 9px;
       }
     }
   }
