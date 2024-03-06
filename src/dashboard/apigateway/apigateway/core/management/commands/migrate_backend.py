@@ -104,9 +104,9 @@ class Command(BaseCommand):
         for host in proxy_http_config["upstreams"]["hosts"]:
             if host["host"]:
                 scheme, _host = host["host"].rstrip("/").split("://")
-                hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
+                hosts.append({"scheme": scheme, "host": _host, "weight": host.get("weight", 100)})
             else:
-                hosts.append({"scheme": "http", "host": "", "weight": host["weight"]})
+                hosts.append({"scheme": "http", "host": "", "weight": 100})
 
         config = {
             "type": "node",
