@@ -33,7 +33,8 @@ const handleChange = (key: string) => {
     box-shadow: 0 3px 4px rgba(64, 112, 203, 0.05882);
 
     .bk-tab--top .bk-tab-header-item {
-        padding: 0 10px;
+      padding: 0 10px;
+      font-size: 14px;
     }
 
     .bk-tab--unborder-card .bk-tab-header {

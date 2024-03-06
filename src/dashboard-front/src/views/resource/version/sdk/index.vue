@@ -4,7 +4,7 @@
       <div class="flex-1 flex-row align-items-center">
         <div class="mr10">
           <bk-button theme="primary" @click="openCreateSdk">
-            {{ t("生成SDK") }}
+            {{ t('生成 SDK') }}
           </bk-button>
         </div>
       </div>
@@ -30,9 +30,14 @@
             @page-value-change="handlePageChange"
             @selection-change="handleSelectionChange"
             row-hover="auto"
+            border="outer"
           >
             <!-- <bk-table-column width="80" type="selection" align="center" /> -->
-            <bk-table-column :label="t('SDK版本号')" min-width="120" prop="version_number">
+            <bk-table-column
+              :label="t('SDK版本号')"
+              min-width="120"
+              prop="version_number"
+            >
             </bk-table-column>
             <bk-table-column :label="t('SDK名称')" prop="name" min-width="120">
             </bk-table-column>
@@ -47,22 +52,14 @@
             </bk-table-column>
             <bk-table-column min-width="120" prop="language" :label="t('语言')">
             </bk-table-column>
-            <bk-table-column
-              :label="t('创建人')"
-              prop="created_by"
-              min-width="120"
-            >
+            <bk-table-column :label="t('创建人')" prop="created_by" min-width="120">
             </bk-table-column>
-            <bk-table-column
-              :label="t('生成时间')"
-              prop="created_time"
-              min-width="120"
-            >
+            <bk-table-column :label="t('生成时间')" prop="created_time" min-width="120">
             </bk-table-column>
             <bk-table-column :label="t('操作')" min-width="140">
-              <template #default="{ row,data }">
+              <template #default="{ row, data }">
                 <bk-button text theme="primary" @click="copy(data.download_url)">
-                  {{ t("复制地址") }}
+                  {{ t('复制地址') }}
                 </bk-button>
                 <bk-button
                   text
@@ -70,12 +67,12 @@
                   class="pl10 pr10"
                   v-bk-tooltips="{
                     content: !row.download_url ? $t('暂无下载地址') : '',
-                    disabled: row.download_url
+                    disabled: row.download_url,
                   }"
                   :disabled="!row.download_url"
                   @click="handleDownload(data)"
                 >
-                  {{ t("下载") }}
+                  {{ t('下载') }}
                 </bk-button>
               </template>
             </bk-table-column>
@@ -93,10 +90,7 @@
     </div>
 
     <!-- 生成sdk弹窗 -->
-    <create-sdk
-      @done="getList()"
-      ref="createSdkRef"
-    />
+    <create-sdk @done="getList()" ref="createSdkRef" />
   </div>
 </template>
 
@@ -115,7 +109,7 @@ const resourceVersionStore = useResourceVersion();
 
 const createSdkRef = ref(null);
 const filterData = ref({ keyword: '' });
-const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+const tableEmptyConf = ref<{ keyword: string; isAbnormal: boolean }>({
   keyword: '',
   isAbnormal: false,
 });
@@ -163,11 +157,15 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
-watch(() => filterData.value, () => {
-  updateTableEmptyConfig();
-}, {
-  deep: true,
-});
+watch(
+  () => filterData.value,
+  () => {
+    updateTableEmptyConfig();
+  },
+  {
+    deep: true,
+  },
+);
 
 watch(
   () => resourceVersionStore.getResourceFilter,
@@ -176,6 +174,6 @@ watch(
   },
   {
     immediate: true,
-  },
+  }
 );
 </script>

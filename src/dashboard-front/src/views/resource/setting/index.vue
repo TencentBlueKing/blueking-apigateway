@@ -60,9 +60,7 @@
               :dropdown-list="exportDropData"
               @on-change="handleExport"></ag-dropdown>
             <div class="mr8">
-              <bk-button
-                @click="handleCreateResourceVersion"
-              >
+              <bk-button @click="handleCreateResourceVersion" :disabled="!versionConfigs.needNewVersion">
                 {{ t('生成版本') }}
               </bk-button>
             </div>

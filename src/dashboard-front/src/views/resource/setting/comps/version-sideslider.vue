@@ -16,6 +16,8 @@
                   :source-id="diffSourceId"
                   :target-id="diffTargetId"
                   page-type="createVersion"
+                  :source-switch="false"
+                  :target-switch="false"
                 >
                 </version-diff>
               </div>

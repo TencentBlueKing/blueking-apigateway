@@ -175,15 +175,13 @@
               </bk-col>
             </bk-row>
 
-            <bk-row>
+            <bk-row v-if="currentSource?.proxy?.config?.timeout !== 0">
               <bk-col :span="4">
                 <label class="ag-key">{{ $t("自定义超时时间") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
-                  {{
-                    currentSource?.proxy?.config?.timeout
-                  }}
+                  {{ currentSource?.proxy?.config?.timeout }}
                 </div>
               </bk-col>
             </bk-row>
