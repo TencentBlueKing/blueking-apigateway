@@ -5,7 +5,7 @@
     <bk-sideslider
       v-model:isShow="renderIsShow"
       :width="960"
-      :title="`${$t('资源详情')}【${info.version}】`"
+      :title="`${$t('资源详情')}【${info.version || ''}】`"
       quick-close
       @hidden="handleHidden"
     >
@@ -364,14 +364,13 @@ const getInfo = async () => {
 
   try {
     const res = await getResourceVersionsInfo(apigwId.value, props.id);
-    console.log('res:  ', res);
     info.value = res;
     currentSource.value = res.resources[0] || {};
     if (currentSource.value?.proxy?.config) {
       if (typeof currentSource.value?.proxy?.config === 'string') {
         currentSource.value.proxy.config = JSON.parse(currentSource.value?.proxy?.config);
       } else {
-        currentSource.value.proxy.config = {};
+        // currentSource.value.proxy.config = {};
       }
     }
   } catch (e) {
@@ -424,7 +423,7 @@ const changeCurrentSource = (source: any) => {
     if (typeof currentSource.value?.proxy?.config === 'string') {
       currentSource.value.proxy.config = JSON.parse(currentSource.value?.proxy?.config);
     } else {
-      currentSource.value.proxy.config = {};
+      // currentSource.value.proxy.config = {};
     }
   }
 };

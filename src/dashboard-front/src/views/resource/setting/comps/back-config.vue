@@ -385,6 +385,10 @@ defineExpose({
   .ag-primary {
     color: #3a84ff;
   }
+
+  :deep(.bk-checkbox-label) {
+    white-space: nowrap;
+  }
 }
 
 :deep(.back-config-timeout) {

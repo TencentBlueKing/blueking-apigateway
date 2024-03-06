@@ -129,6 +129,12 @@
                 >
                   {{data?.name}}
                 </bk-button>
+                <span
+                  style="cursor: pointer;"
+                  v-if="data?.has_updated"
+                  v-bk-tooltips="{ content: '资源已更新' }"
+                  class="dot warning">
+                </span>
               </template>
             </bk-table-column>
             <bk-table-column

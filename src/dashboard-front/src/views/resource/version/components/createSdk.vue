@@ -165,6 +165,7 @@ watch(
       if (id && opts) {
         versionOpts.value = opts;
         formData.resource_version_id = id;
+        formData.version = opts?.filter((item: any) => item.id === id)[0]?.version;
       } else {
         getResourceVersions();
       }
