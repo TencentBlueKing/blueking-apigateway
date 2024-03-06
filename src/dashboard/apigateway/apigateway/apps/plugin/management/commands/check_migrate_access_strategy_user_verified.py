@@ -30,7 +30,6 @@ from .migrate_access_strategy_user_verified import (
     merge_plugin_config,
 )
 
-
 # 仅在 1.13 使用， 1.14 会删掉
 
 
@@ -63,7 +62,9 @@ class Command(BaseCommand):
                 ).first()
 
                 if not exempted_apps and exist_plugin_binding:
-                    self.stdout.write(f"empty exempted_apps: gateway_id={gateway_id}, stage_id={stage_id}, but have binding")
+                    self.stdout.write(
+                        f"empty exempted_apps: gateway_id={gateway_id}, stage_id={stage_id}, but have binding"
+                    )
                     continue
 
                 if not exist_plugin_binding:
