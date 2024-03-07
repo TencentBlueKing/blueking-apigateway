@@ -42,11 +42,13 @@ class ResourceInfoSLZ(serializers.Serializer):
     description = serializers.CharField(help_text="资源描述", required=False)
     description_en = serializers.CharField(help_text="资源英文描述", required=False)
     gateway_label_ids = serializers.ListSerializer(
-        source="api_labels", child=serializers.IntegerField(), help_text="标签列表"
+        source="api_labels", required=False, allow_empty=True, child=serializers.IntegerField(), help_text="标签列表"
     )
-    match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
-    is_public = serializers.BooleanField(help_text="是否公开")
-    allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
+    match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径", required=False)
+    is_public = serializers.BooleanField(help_text="是否公开", required=False)
+    allow_apply_permission = serializers.BooleanField(
+        help_text="是否允许应用在开发者中心申请访问资源的权限", required=False
+    )
     doc_updated_time = serializers.SerializerMethodField(help_text="资源文档更新时间")
 
     proxy = serializers.SerializerMethodField(help_text="后端配置")

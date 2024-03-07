@@ -132,11 +132,11 @@ class ReleasedResourceHandler:
                 "resource_version_name": release["resource_version__name"],
                 "resource_version_title": release["resource_version__title"],
                 "resource_version": {
-                    "version": release["resource_version__version"],
+                    "version": release["resource_version__version"]
+                    if release["resource_version__version"] != ""
+                    else release["resource_version__title"]
                 },
-                "resource_version_display": release["resource_version__version"]
-                if release["resource_version__version"] != ""
-                else "{}({})".format(release["resource_version__title"], release["resource_version__name"]),
+                "resource_version_display": release["resource_version__version"],
                 "release_by": release["updated_by"],
             }
             for release in stage_release
