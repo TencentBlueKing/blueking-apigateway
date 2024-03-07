@@ -151,5 +151,8 @@ defineExpose({
       max-width: 700px;
       width: 70%;
     }
+    :deep(.bk-checkbox-label) {
+      white-space: nowrap;
+    }
   }
   </style>
