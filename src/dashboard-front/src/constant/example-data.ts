@@ -21,8 +21,9 @@ export default {
 swagger: '2.0'
 basePath: /
 info:
-  version: '0.1'
+  version: '2.0'
   title: API Gateway Resources
+  description: ''
 schemes:
 - http
 paths:
