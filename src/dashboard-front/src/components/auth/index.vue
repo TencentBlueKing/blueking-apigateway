@@ -27,10 +27,12 @@ const hideLoginModal = () => {
 const showLoginModal = (payload: ILoginData) => {
   const { login_plain_url, width, height } = payload;
   const version = +new Date();
-  iframeSrc.value = `${login_plain_url}&ver=${version}`;
+  const url = new URL(login_plain_url);
+  iframeSrc.value = `${url.toString()}${url.search ? '&' : '?'}ver=${version}`;
+  // iframeSrc.value = `${login_plain_url}&ver=${version}`;
   iframeWidth.value = width || 400;
   iframeHeight.value = height || 400;
-  console.log(iframeSrc.value);
+  console.log('iframeSrc.value', iframeSrc.value);
   setTimeout(() => {
     isShow.value = true;
   }, 1000);

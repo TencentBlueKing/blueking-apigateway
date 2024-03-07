@@ -17,7 +17,7 @@ export default (errorData: any, config: IFetchConfig) => {
       break;
       // 用户登录状态失效
     case 401:
-      console.error('errorerrorerrorerrorerrorerror', error);
+      console.log('401', error);
       if (error?.data?.login_plain_url) {
         const { width, height, login_url, login_plain_url } = error.data;
         mitt.emit('show-login-modal', {
