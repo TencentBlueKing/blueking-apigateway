@@ -287,7 +287,7 @@ const isVisible = ref<boolean>(false);
 const isBatchApplyLoaading = ref<boolean>(false);
 const tableIndex = ref<number>(0);
 const curPermission = ref({ bk_app_code: '', detail: [], id: -1 });
-const dimension = ref<string>('');
+const dimension = ref<string>('resource');
 const searchQuery = ref<string>('');
 const applyNewTime = ref<string>('');
 const curSelections = ref([]);
@@ -361,7 +361,8 @@ const unApplyCount = computed(() => {
 });
 // 删除dialog title
 const removeDialogConfTitle = computed(() => {
-  return t(`确定要删除蓝鲸应用【${curPermission.value.bk_app_code}】的权限？`);
+  // return t(`确定要删除蓝鲸应用【${curPermission.value.bk_app_code}】的权限？`);
+  return t('确定要删除蓝鲸应用【{appCode}】的权限？', { appCode: curPermission.value.bk_app_code });
 });
 
 
@@ -373,6 +374,7 @@ const {
   handlePageChange,
   handlePageSizeChange,
   getList,
+  getMethod,
 } = useQueryList(getResourcePermissionList, filterData);
 
 // checkbox hooks
@@ -387,10 +389,13 @@ const {
 watch(
   () => dimension.value,
   async (value: string) => {
-    filterData.value.grant_dimension = value;
+    // filterData.value.grant_dimension = value;
+    // resetSelections();
+    // const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
+    // await getList(method);
     resetSelections();
-    const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-    await getList(method);
+    getMethod.value = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
+    filterData.value.grant_dimension = value;
   },
   { deep: true },
 );

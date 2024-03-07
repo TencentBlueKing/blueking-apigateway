@@ -54,7 +54,7 @@
             <div class="plugin-search">
               <bk-input
                 v-model="searchValue" clearable type="search" :placeholder="t('请输入插件关键字，按Enter搜索')"
-                @enter="handleSearch" @clear="handleClear" />
+                @enter="handleSearch" />
             </div>
             <bk-loading :loading="isPluginListLoading">
               <div class="plugin-list">
@@ -330,7 +330,7 @@ const handleTitleLeave = () => {
 
 const handleClearFilterKey = () => {
   searchValue.value = '';
-  handleSearch();
+  // handleSearch();
 };
 
 // 编辑插件
@@ -510,15 +510,6 @@ const handleSearch = () => {
   }
 };
 
-// 清空搜索框
-const handleClear = () => {
-  const params = {
-    scope_type: scopeType.value,
-    scope_id: scopeId.value,
-  };
-  getPluginListDetails(params);
-};
-
 // 下一页
 const handelNext = () => {
   state.curStep = 2;
@@ -547,6 +538,17 @@ watch(
     init();
   },
 );
+
+watch(() => searchValue.value, async (v) => {
+  // 清空搜索框
+  if (!v) {
+    const params = {
+      scope_type: scopeType.value,
+      scope_id: scopeId.value,
+    };
+    await getPluginListDetails(params);
+  }
+});
 init();
 </script>
 

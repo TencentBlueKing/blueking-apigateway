@@ -744,6 +744,7 @@ const handleDeleteResource = async (id: number) => {
   Message({
     message: t('删除成功'),
     theme: 'success',
+    width: 'auto',
   });
   handleSuccess();
 };
@@ -879,6 +880,7 @@ const handleExportDownload = async () => {
       Message({
         message: t('导出成功'),
         theme: 'success',
+        width: 'auto',
       });
     }
     exportDialogConfig.isShow = false;
@@ -886,6 +888,7 @@ const handleExportDownload = async () => {
     Message({
       message: error.message,
       theme: 'error',
+      width: 'auto',
     });
   }
 };
@@ -908,6 +911,7 @@ const handleBatchConfirm = async () => {
   Message({
     message: t(`${isBatchDelete.value ? '删除' : '编辑'}成功`),
     theme: 'success',
+    width: 'auto',
   });
   getList();
   resetSelections();
@@ -988,6 +992,7 @@ const handleCreateResourceVersion = async () => {
     Message({
       message: t('资源及资源文档无变更, 不需要生成新版本'),
       theme: 'error',
+      width: 'auto',
     });
     return;
   }

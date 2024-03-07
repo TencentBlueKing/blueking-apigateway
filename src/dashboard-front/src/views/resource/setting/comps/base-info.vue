@@ -140,6 +140,8 @@ const rules = {
   ],
 };
 
+const resourcePermRequiredBackup = ref(false);
+
 watch(
   () => props.detail,
   (val: any) => {
@@ -147,6 +149,7 @@ watch(
       const { name, description, auth_config, is_public, allow_apply_permission, labels } = val;
       const label_ids = labels.map((e: {id: number, name: string}) => e.id);
       formData.value = { name: props.isClone ? `${name}_clone` : name, description, auth_config, is_public, allow_apply_permission, label_ids };
+      resourcePermRequiredBackup.value = !!auth_config?.resource_perm_required;
     }
   },
   { immediate: true },
@@ -157,6 +160,13 @@ watch(
   (val: boolean) => {
     // 必须要公开 才能允许申请权限
     formData.value.allow_apply_permission = val;
+  },
+);
+
+watch(
+  () => formData.value.auth_config.app_verified_required,
+  (val: boolean) => {
+    formData.value.auth_config.resource_perm_required = val ? resourcePermRequiredBackup.value : false;
   },
 );
 
