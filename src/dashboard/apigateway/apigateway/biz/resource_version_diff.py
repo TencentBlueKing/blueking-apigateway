@@ -127,7 +127,7 @@ class ResourcePluginConfig(BaseModel, DiffMixin):
 class ResourceDifferHandler(BaseModel, DiffMixin):
     id: int
     name: Text
-    description: Text = ""
+    description: Optional[Text] = ""
     method: Text
     path: Text
     match_subpath: bool = False

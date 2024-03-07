@@ -134,7 +134,9 @@ class ReleasedResourceHandler:
                 "resource_version": {
                     "version": release["resource_version__version"],
                 },
-                "resource_version_display": release["resource_version__version"],
+                "resource_version_display": release["resource_version__version"]
+                if release["resource_version__version"] != ""
+                else "{}({})".format(release["resource_version__title"], release["resource_version__name"]),
                 "release_by": release["updated_by"],
             }
             for release in stage_release
