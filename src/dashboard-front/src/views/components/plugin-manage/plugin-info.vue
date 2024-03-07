@@ -62,7 +62,14 @@
     </div>
     <div class="info-btn mt20">
       <div class="last-step">
-        <bk-button theme="primary" @click="handleAdd">{{ t('确定') }}</bk-button>
+        <bk-pop-confirm
+          :title="`确认${isAdd ? '添加' : '修改'}插件（${curPluginInfo?.name}）到 ${stageStore?.curStageData?.name} 环境？`"
+          content="插件配置变更后，将立即影响线上环境，请确认。"
+          trigger="click"
+          @confirm="handleAdd"
+        >
+          <bk-button theme="primary">{{ t('确定') }}</bk-button>
+        </bk-pop-confirm>
         <bk-button @click="handlePre" class="ml5" v-if="isAdd">{{ t('上一步') }}</bk-button>
         <bk-button @click="handleCancel" class="ml5">{{ t('取消') }}</bk-button>
       </div>
@@ -79,6 +86,9 @@ import { Message } from 'bkui-vue';
 import createForm from '@blueking/bkui-form';
 import { json2yaml, yaml2json } from '@/common/util';
 import whitelistTable from './whitelist-table.vue';
+import { useStage } from '@/store';
+
+const stageStore = useStage();
 const BkSchemaForm = createForm();
 
 const { t } = useI18n();

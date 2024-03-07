@@ -137,14 +137,20 @@
                               #suffix
                               v-if="backend.config.loadbalance === 'weighted-roundrobin'"
                             >
-                              <bk-input
-                                :class="['suffix-slot-cls', 'weights-input', { 'is-error': hostItem.isRoles }]"
-                                :placeholder="$t('权重')"
-                                type="number"
-                                :min="1"
-                                :max="10000"
-                                v-model="hostItem.weight"
-                              ></bk-input>
+                              <bk-form-item
+                                :rules="rules.weight"
+                                :property="`config.hosts.${index}.weight`"
+                                label=""
+                                style="margin-bottom: 0px;">
+                                <bk-input
+                                  :class="['suffix-slot-cls', 'weights-input', { 'is-error': hostItem.isRoles }]"
+                                  :placeholder="$t('权重')"
+                                  type="number"
+                                  :min="1"
+                                  :max="10000"
+                                  v-model="hostItem.weight"
+                                ></bk-input>
+                              </bk-form-item>
                             </template>
                           </bk-input>
 
@@ -324,6 +330,14 @@ const rules = {
         return reg.test(value);
       },
       message: t('请输入合法Host，如：http://example.com'),
+      trigger: 'blur',
+    },
+  ],
+
+  weight: [
+    {
+      required: true,
+      message: t('必填项'),
       trigger: 'blur',
     },
   ],
@@ -636,7 +650,7 @@ defineExpose({
   font-size: 12px;
   color: #63656e;
   text-align: center;
-  height: 100%;
+  height: 28px;
   border: none;
   border-left: 1px solid #c4c6cc !important;
 }
