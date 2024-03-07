@@ -1351,11 +1351,12 @@ const lang: ILANG = {
   '资源及资源文档无变更, 不需要生成新版本': ['No changes to resources and resource documentation, no need to generate a new version'],
   '不允许申请权限': ['Permission application not allowed'],
 
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
+  '当前环境尚未发布，暂无资源信息': ['The current environment has not been released, there are no resource information available'],
+  '尚未发布': ['Not released yet'],
+  '请输入SDK版本号': ['Please enter the SDK version number'],
+  'SDK仅包含公开资源，生成后会上传到pypi源': ['The SDK only includes public resources, and will be uploaded to the PyPI source after generation'],
+  '生成语言': ['Generation language'],
+
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],

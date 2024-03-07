@@ -1,15 +1,14 @@
 <template>
-
-  <template v-if="curPageData?.length">
-    <div class="resource-info">
-      <bk-input
-        v-model="searchValue"
-        style="width: 520px"
-        clearable
-        type="search"
-        :placeholder="t('请输入后端服务名称、资源名称、请求路径或选择条件搜索')"
-      />
-      <bk-loading :loading="isLoading">
+  <bk-loading :loading="isLoading" :opacity="1">
+    <template v-if="curPageData?.length">
+      <div class="resource-info">
+        <bk-input
+          v-model="searchValue"
+          style="width: 520px"
+          clearable
+          type="search"
+          :placeholder="t('请输入后端服务名称、资源名称、请求路径或选择条件搜索')"
+        />
         <bk-table
           class="table-layout mt15"
           :data="curPageData"
@@ -111,19 +110,19 @@
             />
           </template>
         </bk-table>
-      </bk-loading>
-    </div>
-  </template>
+      </div>
+    </template>
 
-  <template v-else>
-    <div class="exception-empty">
-      <bk-exception
-        type="empty"
-        scene="part"
-        description="当前环境尚未发布, 暂无资源信息"
-      />
-    </div>
-  </template>
+    <template v-else>
+      <div class="exception-empty">
+        <bk-exception
+          type="empty"
+          scene="part"
+          :description="t('当前环境尚未发布，暂无资源信息')"
+        />
+      </div>
+    </template>
+  </bk-loading>
 
   <!-- 资源详情 -->
   <resource-details ref="resourceDetailsRef" :info="info" />
