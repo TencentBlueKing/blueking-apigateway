@@ -466,6 +466,9 @@ const getStageAddress = (name: string) => {
   box-shadow: 0 2px 4px 0 #1919290d;
   border-radius: 0 0 2px 2px;
 
+  :deep(.bk-tab-panel) {
+    min-height: 420px;
+  }
   :deep(.bk-tab-content) {
     padding: 24px;
   }

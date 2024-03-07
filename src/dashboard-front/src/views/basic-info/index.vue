@@ -136,7 +136,7 @@
           <div class="detail-item-title">{{ t('API公钥（指纹）') }}</div>
           <div class="detail-item-content">
             <div class="detail-item-content-item">
-              <div class="label" />
+              <div class="label w0" />
               <div class="value public-key-content">
                 <div class="value-icon-lock">
                   <i class="apigateway-icon icon-ag-lock-fill1"></i>
@@ -157,7 +157,7 @@
               </div>
             </div>
             <div class="detail-item-content-item">
-              <div class="label"></div>
+              <div class="label w0"></div>
               <div class="value more-tip">
                 <i class="apigateway-icon icon-ag-info"></i>
                 <span>{{ t('可用于解密传入后端接口的请求头 X-Bkapi-JWT') }}，</span>
@@ -648,11 +648,15 @@ watch(
         &-item {
           display: flex;
           align-items: center;
-          width: calc(100% - 200px);
           line-height: 32px;
 
           .label {
             color: #63656E;
+            min-width: 60px;
+            text-align: right;
+            &.w0 {
+              min-width: 0px;
+            }
           }
 
           .value {
@@ -660,6 +664,8 @@ watch(
             align-items: center;
             vertical-align: middle;
             margin-left: 8px;
+            flex: 1;
+            color: #313238;
 
             .icon-ag-copy-info {
               margin-left: 3px;

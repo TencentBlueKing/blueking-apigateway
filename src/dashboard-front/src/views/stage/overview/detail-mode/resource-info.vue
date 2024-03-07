@@ -1,119 +1,131 @@
 <template>
-  <div class="resource-info">
-    <bk-input
-      v-model="searchValue"
-      style="width: 520px"
-      clearable
-      type="search"
-      :placeholder="t('请输入后端服务名称、资源名称、请求路径或选择条件搜索')"
-    />
-    <bk-loading :loading="isLoading">
-      <bk-table
-        class="table-layout mt15"
-        :data="curPageData"
-        :pagination="pagination"
-        :empty-text="emptyText"
-        show-overflow-tooltip
-        row-hover="auto"
-        border="outer"
-        :settings="settings"
-        @page-limit-change="handlePageSizeChange"
-        @page-value-change="handlePageChange"
-      >
-        <bk-table-column prop="backend" :label="t('后端服务')">
-          <template #default="{ row }">
-            {{ row?.proxy?.backend?.name }}
-          </template>
-        </bk-table-column>
-        <bk-table-column
-          :label="t('资源名称')"
-          prop="name"
-          sort
-        ></bk-table-column>
-        <bk-table-column
-          :label="t('前端请求方法')"
-          prop="method"
+  <bk-loading :loading="isLoading" :opacity="1">
+    <template v-if="curPageData?.length">
+      <div class="resource-info">
+        <bk-input
+          v-model="searchValue"
+          style="width: 520px"
+          clearable
+          type="search"
+          :placeholder="t('请输入后端服务名称、资源名称、请求路径或选择条件搜索')"
+        />
+        <bk-table
+          class="table-layout mt15"
+          :data="curPageData"
+          :pagination="pagination"
+          :empty-text="emptyText"
+          show-overflow-tooltip
+          row-hover="auto"
+          border="outer"
+          :settings="settings"
+          @page-limit-change="handlePageSizeChange"
+          @page-value-change="handlePageChange"
         >
-          <template #default="{ row }">
-            <span class="ag-tag" :class="row.method?.toLowerCase()">{{row.method}}</span>
-          </template>
-        </bk-table-column>
-        <bk-table-column
-          :label="t('前端请求路径')"
-          prop="path"
-          sort
-        ></bk-table-column>
-        <bk-table-column prop="gateway_label_ids" :label="t('标签')">
-          <template #default="{ row }">
-            <template v-if="row?.gateway_label_ids?.length">
-              <bk-tag
-                v-for="tag in labels?.filter((label) => {
-                  if (row.gateway_label_ids?.includes(label.id))
-                    return true;
-                })"
-                :key="tag.id"
-              >{{ tag.name }}</bk-tag
-              >
+          <bk-table-column prop="backend" :label="t('后端服务')">
+            <template #default="{ row }">
+              {{ row?.proxy?.backend?.name }}
             </template>
-            <template v-else>--</template>
-          </template>
-        </bk-table-column>
-        <bk-table-column prop="plugins" :label="t('生效的插件')">
-          <template #default="{ row }">
-            <template v-if="row?.plugins?.length">
-              <span v-for="p in row.plugins" :key="p?.id">
-                <bk-tag theme="success" v-if="p?.binding_type === 'stage'">环</bk-tag>
-                <bk-tag theme="info" v-if="p?.binding_type === 'resource'">资</bk-tag>
-                {{ p?.name }}
+          </bk-table-column>
+          <bk-table-column
+            :label="t('资源名称')"
+            prop="name"
+            sort
+          ></bk-table-column>
+          <bk-table-column
+            :label="t('前端请求方法')"
+            prop="method"
+          >
+            <template #default="{ row }">
+              <span class="ag-tag" :class="row.method?.toLowerCase()">{{row.method}}</span>
+            </template>
+          </bk-table-column>
+          <bk-table-column
+            :label="t('前端请求路径')"
+            prop="path"
+            sort
+          ></bk-table-column>
+          <bk-table-column prop="gateway_label_ids" :label="t('标签')">
+            <template #default="{ row }">
+              <template v-if="row?.gateway_label_ids?.length">
+                <bk-tag
+                  v-for="tag in labels?.filter((label) => {
+                    if (row.gateway_label_ids?.includes(label.id))
+                      return true;
+                  })"
+                  :key="tag.id"
+                >{{ tag.name }}</bk-tag
+                >
+              </template>
+              <template v-else>--</template>
+            </template>
+          </bk-table-column>
+          <bk-table-column prop="plugins" :label="t('生效的插件')">
+            <template #default="{ row }">
+              <template v-if="row?.plugins?.length">
+                <span v-for="p in row.plugins" :key="p?.id">
+                  <bk-tag theme="success" v-if="p?.binding_type === 'stage'">环</bk-tag>
+                  <bk-tag theme="info" v-if="p?.binding_type === 'resource'">资</bk-tag>
+                  {{ p?.name }}
+                </span>
+              </template>
+              <span v-else>--</span>
+            </template>
+          </bk-table-column>
+          <bk-table-column :label="t('是否公开')" prop="is_public">
+            <template #default="{ row }">
+              <span :style="{ color: row.is_public ? '#FE9C00' : '#63656e' }">
+                {{ row.is_public ? t('是') : t('否') }}
               </span>
             </template>
-            <span v-else>--</span>
-          </template>
-        </bk-table-column>
-        <bk-table-column :label="t('是否公开')" prop="is_public">
-          <template #default="{ row }">
-            <span :style="{ color: row.is_public ? '#FE9C00' : '#63656e' }">
-              {{ row.is_public ? t('是') : t('否') }}
-            </span>
-          </template>
-        </bk-table-column>
-        <bk-table-column
-          :label="t('操作')"
-          prop="act"
-          width="200"
-        >
-          <template #default="{ row }">
-            <bk-button
-              text
-              theme="primary"
-              class="mr10"
-              @click="showDetails(row)"
-            >
-              {{ t('查看资源详情') }}
-            </bk-button>
-            <bk-button
-              text
-              theme="primary"
-              @click="copyPath(row)"
-            >
-              {{ t('复制资源地址') }}
-            </bk-button>
-          </template>
+          </bk-table-column>
+          <bk-table-column
+            :label="t('操作')"
+            prop="act"
+            width="200"
+          >
+            <template #default="{ row }">
+              <bk-button
+                text
+                theme="primary"
+                class="mr10"
+                @click="showDetails(row)"
+              >
+                {{ t('查看资源详情') }}
+              </bk-button>
+              <bk-button
+                text
+                theme="primary"
+                @click="copyPath(row)"
+              >
+                {{ t('复制资源地址') }}
+              </bk-button>
+            </template>
 
-        </bk-table-column>
-        <template #empty>
-          <TableEmpty
-            :keyword="tableEmptyConf.keyword"
-            :abnormal="tableEmptyConf.isAbnormal"
-            @clear-filter="handleClearFilterKey"
-          />
-        </template>
-      </bk-table>
-    </bk-loading>
+          </bk-table-column>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
+        </bk-table>
+      </div>
+    </template>
 
-    <!-- 资源详情 -->
-    <resource-details ref="resourceDetailsRef" :info="info" />
-  </div>
+    <template v-else>
+      <div class="exception-empty">
+        <bk-exception
+          type="empty"
+          scene="part"
+          :description="t('当前环境尚未发布，暂无资源信息')"
+        />
+      </div>
+    </template>
+  </bk-loading>
+
+  <!-- 资源详情 -->
+  <resource-details ref="resourceDetailsRef" :info="info" />
 </template>
 
 <script setup lang="ts">
@@ -350,5 +362,10 @@ onMounted(() => {
   :deep(.bk-table-head) {
     scrollbar-gutter: auto;
   }
+}
+.exception-empty {
+  height: 420px;
+  display: flex;
+  align-items: center;
 }
 </style>

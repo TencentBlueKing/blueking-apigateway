@@ -39,14 +39,14 @@ class Command(BaseCommand):
 
         paginator = Paginator(qs, 100)
         for i in paginator.page_range:
-            logger.info("migrate gateway count %s", (i + 1) * 100)
-
             for gateway in paginator.page(i):
                 self._handle_gateway(gateway)
 
         logger.info("finish migrate gateway backend")
 
     def _handle_gateway(self, gateway: Gateway):
+        logger.info("process gateway id: %d name: %s", gateway.id, gateway.name)
+
         # 创建默认backend
         default_backend, _ = Backend.objects.get_or_create(gateway=gateway, name=DEFAULT_BACKEND_NAME)
 
@@ -104,9 +104,9 @@ class Command(BaseCommand):
         for host in proxy_http_config["upstreams"]["hosts"]:
             if host["host"]:
                 scheme, _host = host["host"].rstrip("/").split("://")
-                hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
+                hosts.append({"scheme": scheme, "host": _host, "weight": host.get("weight", 100)})
             else:
-                hosts.append({"scheme": "http", "host": "", "weight": host["weight"]})
+                hosts.append({"scheme": "http", "host": "", "weight": 100})
 
         config = {
             "type": "node",
