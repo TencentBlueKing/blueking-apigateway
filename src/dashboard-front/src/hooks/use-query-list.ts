@@ -31,7 +31,7 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
   // 获取列表数据的方法
   const getList = async (fetchMethod = apiMethod, needLoading = true) => {
     getMethod.value = fetchMethod;
-    const method = fetchMethod;
+    // const method = fetchMethod;
     isLoading.value = needLoading;
     // 列表参数
     const paramsData = {
@@ -40,7 +40,8 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
       ...filterData.value,
     };
     try {
-      const res = id ? await method(apigwId, id, paramsData) : await method(apigwId, paramsData);
+      // const res = id ? await method(apigwId, id, paramsData) : await method(apigwId, paramsData);
+      const res = id ? await getMethod.value(apigwId, id, paramsData) : await getMethod.value(apigwId, paramsData);
       tableData.value = res.results || res.data;
       pagination.value = Object.assign(pagination.value, {
         count: res.count || 0,
@@ -96,5 +97,6 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
     handlePageSizeChange,
     getList,
     fetchList,
+    getMethod,
   };
 }
