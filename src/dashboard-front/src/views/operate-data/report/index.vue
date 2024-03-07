@@ -26,7 +26,7 @@
             :clearable="false"
             filterable
             :input-search="false"
-            @selected="handleStageSelected">
+            @change="handleStageChange">
             <bk-option
               v-for="option in stageList"
               :key="option.id"
@@ -423,7 +423,7 @@ const handleDimensionChange = (value: any) => {
   getDataByDimension();
 };
 
-const handleStageSelected = (value: any) => {
+const handleStageChange = (value: any) => {
   searchParams.stage_id = value;
   getDataByDimension();
 };
@@ -689,13 +689,13 @@ const handleClearFilterKey = () => {
   [datePickerRef.value.shortcut] = [AccessLogStore.datepickerShortcuts[1]];
   dateTimeRange.value = [];
   shortcutSelectedIndex.value = 1;
-  searchParams = Object.assign({}, {
+  searchParams = {
     stage_id: '',
     resource_id: '',
     time_start: '',
     time_end: '',
     dimension: '',
-  });
+  };
   dateKey.value = String(+new Date());
   setSearchTimeRange();
   init();

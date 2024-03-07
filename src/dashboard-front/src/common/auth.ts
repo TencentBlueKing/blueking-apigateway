@@ -1,6 +1,9 @@
-interface ILoginData {
-  login_url?: string,
+export interface ILoginData {
   target?: string
+  width?: number
+  height?: number
+  login_url?: string
+  login_plain_url?: string
 }
 
 let isShow = false;

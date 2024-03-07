@@ -1,11 +1,12 @@
 <template>
   <bk-loading :loading="isLoading" :opacity="1">
-    <template v-if="curPageData?.length">
+    <template v-if="resourceVersionList?.length">
       <div class="resource-info">
         <bk-input
           v-model="searchValue"
           style="width: 520px"
           clearable
+          @clear="handleSearchClear"
           type="search"
           :placeholder="t('请输入后端服务名称、资源名称、请求路径或选择条件搜索')"
         />
@@ -23,17 +24,25 @@
         >
           <bk-table-column prop="backend" :label="t('后端服务')">
             <template #default="{ row }">
-              {{ row?.proxy?.backend?.name }}
+              <bk-button theme="primary" text @click="handleEditStage">
+                {{ row?.proxy?.backend?.name }}
+              </bk-button>
             </template>
           </bk-table-column>
           <bk-table-column
             :label="t('资源名称')"
             prop="name"
             sort
-          ></bk-table-column>
+          >
+            <template #default="{ row }">
+              <bk-button theme="primary" text @click="showDetails(row)">
+                {{ row?.name }}
+              </bk-button>
+            </template>
+          </bk-table-column>
           <bk-table-column
-            :label="t('前端请求方法')"
             prop="method"
+            :label="renderMethodsLabel"
           >
             <template #default="{ row }">
               <span class="ag-tag" :class="row.method?.toLowerCase()">{{row.method}}</span>
@@ -63,9 +72,9 @@
             <template #default="{ row }">
               <template v-if="row?.plugins?.length">
                 <span v-for="p in row.plugins" :key="p?.id">
-                  <bk-tag theme="success" v-if="p?.binding_type === 'stage'">环</bk-tag>
-                  <bk-tag theme="info" v-if="p?.binding_type === 'resource'">资</bk-tag>
-                  {{ p?.name }}
+                  <span class="plugin-tag success" v-if="p?.binding_type === 'stage'">环</span>
+                  <span class="plugin-tag info" v-if="p?.binding_type === 'resource'">资</span>
+                  <span style="vertical-align: middle;">{{ p?.name }}</span>
                 </span>
               </template>
               <span v-else>--</span>
@@ -126,15 +135,20 @@
 
   <!-- 资源详情 -->
   <resource-details ref="resourceDetailsRef" :info="info" />
+
+  <!-- 环境编辑 -->
+  <edit-stage-sideslider ref="stageSidesliderRef" />
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch, h, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getResourceVersionsInfo, getGatewayLabels, getStageList } from '@/http';
 import { useCommon, useStage } from '@/store';
 import resourceDetails from './resource-details.vue';
 import TableEmpty from '@/components/table-empty.vue';
+import editStageSideslider from '../comps/edit-stage-sideslider.vue';
+import RenderCustomColumn from '@/components/custom-table-header-filter';
 import { copy } from '@/common/util';
 import { useRoute } from 'vue-router';
 
@@ -150,6 +164,7 @@ const props = defineProps({
 const searchValue = ref<string>('');
 const info = ref<any>({});
 const resourceDetailsRef = ref(null);
+const stageSidesliderRef = ref(null);
 const isReload = ref(false);
 const emptyText = ref<string>('暂无数据');
 
@@ -179,6 +194,35 @@ const getLabels = async () => {
     console.error(e);
   }
 };
+
+const tableKey =  ref(-1);
+const curSelectMethod = ref('ALL');
+const customMethodsList = shallowRef(common.methodList);
+const renderMethodsLabel = () => {
+  return h('div', { class: 'resource-setting-custom-label' }, [
+    h(
+      RenderCustomColumn,
+      {
+        key: tableKey.value,
+        hasAll: true,
+        columnLabel: t('前端请求方法'),
+        selectValue: curSelectMethod.value,
+        list: customMethodsList.value,
+        onSelected: (value: Record<string, string>) => {
+          handleSelectMethod(value);
+        },
+      },
+    ),
+  ]);
+};
+
+const handleSelectMethod = (payload: Record<string, string>) => {
+  const { id } = payload;
+  searchValue.value = id === 'ALL' ? undefined : id;
+
+  getPageData();
+};
+
 
 const showDetails = (row: any) => {
   info.value = row;
@@ -223,6 +267,11 @@ const getResourceVersionsData = async (curStageData: any) => {
   }
 };
 
+// 编辑环境
+const handleEditStage = () => {
+  stageSidesliderRef.value?.handleShowSideslider('edit');
+};
+
 const getPageData = () => {
   let curAllData = resourceVersionList.value;
   if (searchValue.value) {
@@ -231,6 +280,7 @@ const getPageData = () => {
         row?.proxy?.backend?.name?.toLowerCase()?.includes(searchValue.value)
       || row?.name?.toLowerCase()?.includes(searchValue.value)
       || row?.path?.toLowerCase()?.includes(searchValue.value)
+      || row?.method?.includes(searchValue.value)
       )  {
         return true;
       }
@@ -292,12 +342,18 @@ const updateTableEmptyConfig = () => {
 
 const handleClearFilterKey = () => {
   searchValue.value = '';
+  handleSearchClear();
   pagination.value = Object.assign(pagination.value, {
     current: 1,
     limit: 10,
     count: resourceVersionList.value.length,
   });
   getPageData();
+};
+
+const handleSearchClear = () => {
+  curSelectMethod.value = 'ALL';
+  tableKey.value = +new Date();
 };
 
 const settings = {
@@ -367,5 +423,24 @@ onMounted(() => {
   height: 420px;
   display: flex;
   align-items: center;
+}
+.plugin-tag {
+  display: inline-block;
+  vertical-align: middle;
+  width: 18px;
+  height: 16px;
+  text-align: center;
+  line-height: 16px;
+  border-radius: 2px;
+  font-family: MicrosoftYaHei;
+  font-size: 10px;
+  &.success {
+    color: #14A568;
+    background: #E4FAF0;
+  }
+  &.info {
+    color: #3A84FF;
+    background: #EDF4FF;
+  }
 }
 </style>

@@ -185,8 +185,8 @@
               width="280"
             >
               <template #default="{ data }">
-                <section class="text-warp" v-if="!data?.isEditLabel" @click="handleEditLabel(data)">
-                  <section
+                <span class="text-warp" v-if="!data?.isEditLabel" @click="handleEditLabel(data)">
+                  <span
                     v-if="data?.labels?.length"
                     v-bk-tooltips="{ content: data?.labelText.join(';') }">
                     <span style="margin-left: 4px;" v-for="(item, index) in data?.labels" :key="item.id">
@@ -200,13 +200,13 @@
                       +{{ data.labels.length - data.tagOrder }}
                       <!-- ... -->
                     </bk-tag>
-                  </section>
-                  <section v-else>--</section>
+                  </span>
+                  <span v-else>--</span>
                   <i
                     v-show="data?.isDoc"
                     @click="handleEditLabel(data)"
                     class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
-                </section>
+                </span>
                 <section v-else>
                   <SelectCheckBox
                     :cur-select-label-ids="curLabelIds"
@@ -1193,8 +1193,9 @@ onMounted(() => {
         font-size: 24px;
         cursor: pointer;
         color: #3A84FF;
-        top: 8px;
-        right: -20px;
+        top: 0;
+        // top: 8px;
+        // right: -20px;
       }
     }
     .tag-cls{
