@@ -20,7 +20,7 @@
         <bk-form-item :label="t('环境')">
           <bk-select
             style="width: 150px" v-model="searchParams.stage_id" :clearable="false" searchable
-            @selected="handleStageSelected">
+            @change="handleStageChange">
             <bk-option v-for="option in stageList" :key="option.id" :id="option.id" :name="option.name">
             </bk-option>
           </bk-select>
@@ -449,7 +449,7 @@ const handlePickerChange = () => {
   });
 };
 
-const handleStageSelected = (value: number) => {
+const handleStageChange = (value: number) => {
   searchParams.value.stage_id = value;
   pagination.value.current = 1;
   getSearchData();
@@ -494,6 +494,9 @@ const handleRowClick = (e: Event, row: Record<string, any>) => {
 
 const handleClearFilterKey = () => {
   keyword.value = '';
+  if (stageList.value.length) {
+    searchParams.value.stage_id = stageList.value[0].id;
+  }
   [datePickerRef.value.shortcut] = [AccessLogStore.datepickerShortcuts[1]];
   dateTimeRange.value = [];
   shortcutSelectedIndex.value = 1;

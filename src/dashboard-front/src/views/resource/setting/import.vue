@@ -30,10 +30,10 @@
           </bk-form>
         </div>
         <div class="flex-row align-items-center">
-          <bk-link theme="primary">
+          <bk-link theme="primary" :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank">
             {{ t('模板示例') }}
           </bk-link>
-          <bk-link theme="primary" class="pl10">
+          <bk-link theme="primary" class="pl10" :href="GLOBAL_CONFIG.DOC.SWAGGER" target="_blank">
             <i class="apigateway-icon icon-ag-info"></i>
             {{ t('Swagger 说明文档') }}
           </bk-link>
@@ -137,7 +137,7 @@ import { getStrFromFile } from '@/common/util';
 import { checkResourceImport, importResource, importResourceDocSwagger } from '@/http';
 import { useCommon } from '@/store';
 import { useRouter } from 'vue-router';
-import { useSelection } from '@/hooks';
+import { useSelection, useGetGlobalProperties } from '@/hooks';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -151,6 +151,8 @@ const isDataLoading = ref<boolean>(false);
 const isImportLoading = ref<boolean>(false);
 const curView = ref<string>('import'); // 当前页面
 const tableData = ref<any[]>([]);
+const globalProperties = useGetGlobalProperties();
+const { GLOBAL_CONFIG } = globalProperties;
 
 // 资源新建条数
 const createNum = computed(() => {

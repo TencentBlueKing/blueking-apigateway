@@ -60,7 +60,7 @@
               <div class="flex-row">
                 <span
                   v-for="(envItem, index) in item.stages" :key="envItem.id">
-                  <bk-tag v-if="index < 3">
+                  <bk-tag v-if="index < 3" class="environment-tag">
                     <i :class="['ag-dot',{ 'success': envItem.released }]"></i>
                     {{ envItem.name }}
                   </bk-tag>
@@ -543,6 +543,9 @@ watch(
         }
         .env{
           overflow: hidden;
+        }
+        .environment-tag {
+          margin-right: 8px;
         }
       }
       .table-item:nth-of-type(1) {

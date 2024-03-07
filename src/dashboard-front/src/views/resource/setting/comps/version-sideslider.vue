@@ -30,10 +30,12 @@
                   v-if="!versionList?.length"
                   class="mt15 mb15" /> -->
                 <bk-alert
+                  v-if="versionList.length && versionList[0].version"
                   theme="info"
-                  :title="`最新版本号: ${versionList[0]?.version || '--'},
-                  于 ${versionList[0]?.created_time || '--'} 创建`"
-                  class="mt15 mb15" />
+                  :title="`${t('最新版本号')}: ${versionList[0]?.version || '--'},
+                  于 ${versionList[0]?.created_time || '--'} ${t('创建')}`"
+                  class="mt15 mb15"
+                />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
                   <bk-form-item
