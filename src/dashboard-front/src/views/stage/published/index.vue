@@ -219,20 +219,4 @@ onUnmounted(() => {
     }
   }
 }
-
-.dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 2px;
-    &.success {
-      border: 1px solid #3FC06D;
-      background: #E5F6EA;
-    }
-    &.failure {
-      border: 1px solid #EA3636;
-      background: #FFE6E6;
-    }
-  }
 </style>

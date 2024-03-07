@@ -118,11 +118,12 @@
         <bk-exception
           type="empty"
           scene="part"
-          description="当前环境尚未发布, 暂无资源信息"
+          :description="t('当前环境尚未发布，暂无资源信息')"
         />
       </div>
     </template>
   </bk-loading>
+
   <!-- 资源详情 -->
   <resource-details ref="resourceDetailsRef" :info="info" />
 </template>
