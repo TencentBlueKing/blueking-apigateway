@@ -42,4 +42,3 @@ paths:
           userVerifiedRequired: false
       `,
 };
-
