@@ -14,6 +14,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useUser } from '@/store';
 import { getUser, getFeatureFlags } from '@/http';
 import { Message } from 'bkui-vue';
+import { ILoginData } from '@/common/auth';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -159,7 +160,7 @@ const goPage = (routeName: string) => {
 };
 
 onMounted(() => {
-  mitt.on('show-login-modal', (payload: string) => {
+  mitt.on('show-login-modal', (payload: ILoginData) => {
     authRef.value.showLoginModal(payload);
   });
   mitt.on('close-login-modal', () => {

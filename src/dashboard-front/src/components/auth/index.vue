@@ -1,13 +1,14 @@
 <template>
   <div class="bk-login-dialog" v-if="isShow">
     <div class="bk-login-wrapper">
-      <iframe :src="iframeSrc" scrolling="no" border="0" width="400" height="400" />
+      <iframe :src="iframeSrc" scrolling="no" border="0" :width="iframeWidth" :height="iframeHeight" />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
+import { ILoginData } from '@/common/auth';
 /**
  * app-auth
  * @desc 统一登录
@@ -16,14 +17,19 @@ import { ref } from 'vue';
 const loginCallbackURL = ref(`${window.SITE_URL}static/login_success.html?is_ajax=1`);
 const iframeSrc = ref(`${window.BK_LOGIN_URL}/?app_code=1&c_url=${loginCallbackURL.value}`);
 const isShow = ref(false);
+const iframeWidth = ref(400);
+const iframeHeight = ref(400);
 
 const hideLoginModal = () => {
   isShow.value = false;
 };
 
-const showLoginModal = (url: string) => {
+const showLoginModal = (payload: ILoginData) => {
+  const { login_plain_url, width, height } = payload;
   const version = +new Date();
-  iframeSrc.value = `${url}&ver=${version}`;
+  iframeSrc.value = `${login_plain_url}&ver=${version}`;
+  iframeWidth.value = width || 400;
+  iframeHeight.value = height || 400;
   console.log(iframeSrc.value);
   setTimeout(() => {
     isShow.value = true;
