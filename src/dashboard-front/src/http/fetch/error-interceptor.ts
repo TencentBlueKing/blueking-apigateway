@@ -9,18 +9,23 @@ export default (errorData: any, config: IFetchConfig) => {
   const {
     status,
     error,
-    response,
   } = errorData;
-  const loginPlainUrl = response?.data?.data?.login_plain_url;
   switch (status) {
     // 参数错误
     case 400:
       console.log('参数错误', error.message);
       break;
-    // 用户登录状态失效
+      // 用户登录状态失效
     case 401:
-      if (loginPlainUrl) {
-        mitt.emit('show-login-modal', loginPlainUrl);
+      console.error('errorerrorerrorerrorerrorerror', error);
+      if (error?.data?.login_plain_url) {
+        const { width, height, login_url, login_plain_url } = error.data;
+        mitt.emit('show-login-modal', {
+          width,
+          height,
+          login_url,
+          login_plain_url,
+        });
       } else {
         // 兼容本地开发后台没有重定向地址，直接跳转登录页
         window.location.href = `${BK_LOGIN_URL}/?c_url=${window.location.href}`;
