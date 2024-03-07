@@ -45,7 +45,7 @@ class Command(BaseCommand):
         logger.info("finish migrate gateway backend")
 
     def _handle_gateway(self, gateway: Gateway):
-        logger.info(f"process gateway id: {gateway.id} name: {gateway.name}")
+        logger.info("process gateway id: %d name: %s", gateway.id, gateway.name)
 
         # 创建默认backend
         default_backend, _ = Backend.objects.get_or_create(gateway=gateway, name=DEFAULT_BACKEND_NAME)
