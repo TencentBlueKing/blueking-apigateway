@@ -35,13 +35,13 @@
     <div class="edit-footer">
       <bk-button
         theme="primary"
-        class="ml20"
+        style="width: 88px; margin-left: 25px;"
         @click="handleSubmit"
         :loading="submitLoading">
         {{ t('提交') }}
       </bk-button>
       <bk-button
-        class="ml10"
+        style="width: 88px; margin-left: 4px;"
         @click="handleCancel">
         {{ t('取消') }}
       </bk-button>
@@ -139,6 +139,7 @@ init();
 <style lang="scss" scoped>
   .edit-container {
     :deep(.collapse-cls) {
+      margin-bottom: 52px;
       .bk-collapse-item {
         background: #fff;
         box-shadow: 0 2px 4px 0 #1919290d;
@@ -147,8 +148,12 @@ init();
           display: none;
         }
         .panel-title {
-            color: #323339;
+            color: #313238;
             font-weight: 700;
+            font-size: 14px;
+            line-height: 1;
+            margin-top: 24px;
+            margin-bottom: 24px;
         }
         .panel-content {
             max-width: 1100px;
@@ -160,7 +165,12 @@ init();
       background: #fff;
       height: 52px;
       line-height: 52px;
-      border: 1px solid #DCDEE5;
+      border: 1px solid #dcdee5;
+      border-left: 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      z-index: 2;
     }
   }
   .bk-collapse-demo {
