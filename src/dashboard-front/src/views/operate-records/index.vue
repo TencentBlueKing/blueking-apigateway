@@ -391,9 +391,16 @@ watch(
   () => searchValue.value,
   async (newVal: any[]) => {
     if (!newVal.length) {
-      filterData.value = cloneDeep(defaultSearchData.value);
+      filterData.value = Object.assign(
+        {},
+        cloneDeep(defaultSearchData.value),
+        {
+          order_by: orderBy.value,
+          time_start: filterData.value.time_start,
+          time_end: filterData.value.time_end,
+        },
+      );
       curSelectData.value =  cloneDeep(defaultFilterData.value);
-      filterData.value.order_by = orderBy.value;
       tableKey.value = +new Date();
       await refreshTableData();
       return;
@@ -423,8 +430,10 @@ watch(
           }
         }
       }
-      filterData.value[filterDataKey] = ret;
-      curSelectData.value[filterDataKey] = ret;
+      if (filterDataKey !== 'time_start' && filterDataKey !== 'time_end') {
+        filterData.value[filterDataKey] = ret;
+        curSelectData.value[filterDataKey] = ret;
+      }
     });
     filterData.value.order_by = orderBy;
     tableKey.value = +new Date();

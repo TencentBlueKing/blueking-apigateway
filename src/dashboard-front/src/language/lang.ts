@@ -1265,7 +1265,7 @@ const lang: ILANG = {
   '检验应用权限': ['Validate application permissions'],
   '蓝鲸应用需申请资源访问权限': ['BlueKing app needs to apply for resource access permission'],
   '请求路径不能为空': ['Request path cannot be empty'],
-  '匹配所有路径': ['Match all paths'],
+  '匹配所有路径': ['Matches all subpaths'],
   '请填写请求路径': ['Please fill in the request path'],
   '服务': ['Service'],
   '后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在{}中，比如：/users/{id}/{env.type}/。': ['Path of backend service, does not contain domain or IP, supports path variables, stage variables, variable contained in {}, e.g. /users/{id}/{env.type}/.'],
@@ -1361,6 +1361,13 @@ const lang: ILANG = {
   '恢复初始值': ['Reset to default'],
   '请输入超时时间': ['Please enter the timeout period'],
   '批量修改超时时间': ['Batch modify timeout period'],
+
+  '确认修改变量配置？': ['Are you sure to modify the variable configuration?'],
+  '将会立即应用在环境上，请谨慎操作！': ['Will be immediately applied to the environment, please use caution!'],
+  '确认修改': ['Confirm modification'],
+
+  '默认后端服务，且被{resourceCount}个资源引用了，不能删除': ['Default back-end service, and referenced by {resourceCount} resources, cannot be deleted'],
+  '服务被{resourceCount}个资源引用了，不能删除': ['Service referenced by {resourceCount} resources, cannot be deleted'],
 
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
