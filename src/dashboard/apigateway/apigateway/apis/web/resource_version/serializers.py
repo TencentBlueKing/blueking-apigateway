@@ -23,7 +23,6 @@ from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import ResourceVersionSchemaEnum
-from apigateway.core.models import ResourceVersion
 
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):
@@ -101,7 +100,7 @@ class ResourceInfoSLZ(serializers.Serializer):
 
 class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="id")
-    version = serializers.SerializerMethodField(help_text="版本号")
+    version = serializers.CharField(source="object_display", help_text="版本号")
     comment = serializers.CharField(help_text="版本日志")
     schema_version = serializers.ChoiceField(
         choices=ResourceVersionSchemaEnum.get_choices(), help_text="版本数据schema版本:1.0(旧)/2.0(新)"
@@ -111,9 +110,6 @@ class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):
     )
     created_time = serializers.DateTimeField(help_text="创建时间")
     created_by = serializers.CharField(help_text="创建人")
-
-    def get_version(self, obj: ResourceVersion):
-        return obj.object_display
 
 
 class ResourceVersionListInputSLZ(serializers.Serializer):
