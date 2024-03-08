@@ -22,10 +22,11 @@
             size="small"
             behavior="simplicity"
             v-model="formData.name"
+            @blur="handleNameSave"
             :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
           />
-          <close v-bk-tooltips="{ content: '取消' }" @click="handleNameCancel" class="edit-name-icon" />
-          <success v-bk-tooltips="{ content: '保存' }" @click="handleNameSave" class="edit-name-icon" />
+          <!-- <close v-bk-tooltips="{ content: '取消' }" @click="handleNameCancel" class="edit-name-icon" />
+          <success v-bk-tooltips="{ content: '保存' }" @click="handleNameSave" class="edit-name-icon" /> -->
         </div>
       </bk-form-item>
       <bk-form-item class="form-item-cls">
@@ -171,7 +172,7 @@ import { useRouter } from 'vue-router';
 import { getResourceDetailData, getBackendsDetailData, deleteResources, updateResources } from '@/http';
 import { Message } from 'bkui-vue';
 import { copy } from '@/common/util';
-import { Close, Success } from 'bkui-vue/lib/icon';
+// import { Close, Success } from 'bkui-vue/lib/icon';
 import { MethodsEnum } from '@/types';
 
 const { t } = useI18n();
@@ -223,7 +224,7 @@ const methodsEnum: any = ref(MethodsEnum);
 const getResourceDetails = async () => {
   try {
     const res = await getResourceDetailData(props.apigwId, props.resourceId);
-    res.primitiveName = res.name;
+    // res.primitiveName = res.name;
     formData.value = res;
     getServiceData();
   } catch (error) {
@@ -251,11 +252,11 @@ const handleEditResource = (id: number) => {
 };
 
 // 取消修改
-const handleNameCancel = () => {
-  baseFormRef.value?.clearValidate();
-  formData.value.name = formData.value?.primitiveName;
-  nameEdit.value = false;
-};
+// const handleNameCancel = () => {
+//   baseFormRef.value?.clearValidate();
+//   formData.value.name = formData.value?.primitiveName;
+//   nameEdit.value = false;
+// };
 
 // 修改资源名称
 const handleNameSave = async () => {
@@ -268,7 +269,7 @@ const handleNameSave = async () => {
       theme: 'success',
     });
     nameEdit.value = false;
-    formData.value.primitiveName = formData.value.name;
+    // formData.value.primitiveName = formData.value.name;
   } catch (e) {
     console.error(e);
   };

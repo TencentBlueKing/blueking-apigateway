@@ -14,7 +14,7 @@ import { ILoginData } from '@/common/auth';
  * @desc 统一登录
  * @example1 <app-auth type="404"></app-auth>
  */
-const loginCallbackURL = ref(`${window.SITE_URL}static/login_success.html?is_ajax=1`);
+const loginCallbackURL = ref(`${window.BK_DASHBOARD_FE_URL}/static/login_success.html?is_ajax=1`);
 const iframeSrc = ref(`${window.BK_LOGIN_URL}/?app_code=1&c_url=${loginCallbackURL.value}`);
 const isShow = ref(false);
 const iframeWidth = ref(400);
@@ -27,10 +27,12 @@ const hideLoginModal = () => {
 const showLoginModal = (payload: ILoginData) => {
   const { login_plain_url, width, height } = payload;
   const version = +new Date();
-  iframeSrc.value = `${login_plain_url}&ver=${version}`;
+  const url = new URL(login_plain_url);
+  iframeSrc.value = `${url.toString()}${url.search ? '&' : '?'}ver=${version}&app_code=1&c_url=${loginCallbackURL.value}`;
+  // iframeSrc.value = `${login_plain_url}&ver=${version}`;
   iframeWidth.value = width || 400;
   iframeHeight.value = height || 400;
-  console.log(iframeSrc.value);
+  console.log('iframeSrc.value', iframeSrc.value);
   setTimeout(() => {
     isShow.value = true;
   }, 1000);

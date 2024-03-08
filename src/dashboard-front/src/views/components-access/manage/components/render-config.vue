@@ -74,13 +74,17 @@ const handleSelected = (value: any) => {
   });
 };
 
-// const getData = () => {
-//   const data = {};
-//   configList.value?.forEach((item: any) => {
-//     data[item.variable] = item.default;
-//   });
-//   return data;
-// };
+const getData = () => {
+  const data: any = {};
+  configList.value?.forEach((item: any) => {
+    data[item.variable] = item.default;
+  });
+  return data;
+};
+
+defineExpose({
+  getData,
+});
 
 const setComponentConfig = () => {
   if (document.querySelectorAll('.value .bk-form-control')) {
