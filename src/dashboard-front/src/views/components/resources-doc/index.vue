@@ -3,7 +3,10 @@
     <section class="content p20" :style="{ height: height }">
       <div class="ag-markdown-view" :class="isEdited ? '' : 'text-c'">
         <h3 v-if="isEdited"> {{ $t('文档类型') }} </h3>
-        <bk-button-group>
+        <template v-if="isEdited">
+          <p class="pb15">{{ language === 'zh' ? t('中文文档') : t('英文文档') }}</p>
+        </template>
+        <bk-button-group v-else>
           <bk-button
             v-for="item in languagesData"
             :selected="language === item.value"
@@ -11,10 +14,7 @@
             :disabled="isEdited && language !== item.value"
             @click="handleSelectLanguage(item.value)"
           >
-            <div
-              v-bk-tooltips="
-                { content: t('请选择待续期的权限'),
-                  placement: 'top',disabled: !isEdited || (isEdited && language === item.value) }">
+            <div>
               {{ item.label }}
             </div>
           </bk-button>

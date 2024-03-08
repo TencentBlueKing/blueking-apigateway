@@ -35,15 +35,14 @@
     </bk-form-item>
     <bk-form-item
       :label="t('认证方式')"
-      :description="t('请求方需提供蓝鲸用户身份信息')"
     >
       <bk-checkbox
         v-model="formData.auth_config.app_verified_required"
         :disabled="!curApigwData.allow_update_gateway_auth">
-        <span v-bk-tooltips="{ content: '请求方需提供蓝鲸应用身份信息' }">{{ t('蓝鲸应用认证') }}</span>
+        <span class="bottom-line" v-bk-tooltips="{ content: '请求方需提供蓝鲸应用身份信息' }">{{ t('蓝鲸应用认证') }}</span>
       </bk-checkbox>
       <bk-checkbox class="ml40" v-model="formData.auth_config.auth_verified_required">
-        <span v-bk-tooltips="{ content: '请求方需提供蓝鲸用户身份信息' }">{{ t('用户认证') }}</span>
+        <span class="bottom-line" v-bk-tooltips="{ content: '请求方需提供蓝鲸用户身份信息' }">{{ t('用户认证') }}</span>
       </bk-checkbox>
     </bk-form-item>
     <bk-form-item
@@ -70,7 +69,9 @@
         <bk-checkbox
           v-if="formData.is_public" class="ml40"
           v-model="formData.allow_apply_permission">
-          <span v-bk-tooltips="{ content: '允许，则任何蓝鲸应用可在蓝鲸开发者中心申请资源的访问权限；否则，只能通过网关管理员主动授权为某应用添加权限' }">
+          <span
+            class="bottom-line"
+            v-bk-tooltips="{ content: '允许，则任何蓝鲸应用可在蓝鲸开发者中心申请资源的访问权限；否则，只能通过网关管理员主动授权为某应用添加权限' }">
             {{ t('允许申请权限') }}
           </span>
         </bk-checkbox>
@@ -199,5 +200,10 @@ defineExpose({
       margin-top: 4px;
     }
   }
+}
+
+.bottom-line {
+  cursor: pointer;
+  border-bottom: 1px dashed #979ba5;
 }
 </style>
