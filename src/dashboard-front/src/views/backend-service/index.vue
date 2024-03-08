@@ -47,7 +47,10 @@
               <span
                 v-if="data?.resource_count !== 0"
                 v-bk-tooltips="{
-                  content: t(`${data?.name === 'default' ? '默认后端服务，且' : '服务'}被${data?.resource_count}个资源引用了，不能删除`),
+                  // content: t(`${data?.name === 'default' ? '默认后端服务，且' : '服务'}被${data?.resource_count}个资源引用了，不能删除`),
+                  content: data?.name === 'default'
+                    ? t('默认后端服务，且被{resourceCount}个资源引用了，不能删除', { resourceCount: data?.resource_count })
+                    : t('服务被{resourceCount}个资源引用了，不能删除', { resourceCount: data?.resource_count }),
                   disabled: data?.resource_count === 0
                 }">
                 <bk-button

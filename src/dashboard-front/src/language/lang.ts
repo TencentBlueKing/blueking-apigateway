@@ -1366,6 +1366,9 @@ const lang: ILANG = {
   '将会立即应用在环境上，请谨慎操作！': ['Will be immediately applied to the environment, please use caution!'],
   '确认修改': ['Confirm modification'],
 
+  '默认后端服务，且被{resourceCount}个资源引用了，不能删除': ['Default back-end service, and referenced by {resourceCount} resources, cannot be deleted'],
+  '服务被{resourceCount}个资源引用了，不能删除': ['Service referenced by {resourceCount} resources, cannot be deleted'],
+
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
