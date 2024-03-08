@@ -1357,10 +1357,11 @@ const lang: ILANG = {
   'SDK仅包含公开资源，生成后会上传到pypi源': ['The SDK only includes public resources, and will be uploaded to the PyPI source after generation'],
   '生成语言': ['Generation language'],
 
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
+  '最大 300s': ['Maximum 300s'],
+  '恢复初始值': ['Reset to default'],
+  '请输入超时时间': ['Please enter the timeout period'],
+  '批量修改超时时间': ['Batch modify timeout period'],
+
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],

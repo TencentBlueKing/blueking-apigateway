@@ -582,6 +582,9 @@ defineExpose({
           font-size: 14px;
           color: #979ba5;
           cursor: pointer;
+          &:hover {
+            color: #63656e;
+          }
 
           &.disabled {
             color: #dcdee5;
