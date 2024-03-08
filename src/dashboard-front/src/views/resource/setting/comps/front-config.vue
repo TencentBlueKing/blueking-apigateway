@@ -27,7 +27,7 @@
           class="w700"
         />
         <bk-checkbox class="ml40" v-model="frontConfigData.match_subpath">
-          {{ t('匹配所有路径') }}
+          {{ t('匹配所有子路径') }}
         </bk-checkbox>
       </div>
     </bk-form-item>

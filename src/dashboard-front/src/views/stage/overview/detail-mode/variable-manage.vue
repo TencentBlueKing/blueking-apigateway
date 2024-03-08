@@ -127,7 +127,7 @@ import { EditLine } from 'bkui-vue/lib/icon';
 import { useI18n } from 'vue-i18n';
 import { getStageVars, updateStageVars } from '@/http';
 import { useCommon } from '@/store';
-import { Message } from 'bkui-vue';
+import { Message, InfoBox } from 'bkui-vue';
 
 const common = useCommon();
 const { t } = useI18n();
@@ -274,32 +274,41 @@ const delRow = (index: number) => {
   tableData.value?.splice(index, 1);
 };
 
-const handleSave = async () => {
-  try {
-    let flag = true;
-    for (let i = 0; i < tableData.value?.length; i++) {
-      if (!(await validateName(i))) {
-        flag = false;
-        break;
-      }
-    }
-    if (!flag) return;
+const handleSave = () => {
+  InfoBox({
+    infoType: 'warning',
+    title: t('确认修改变量配置？'),
+    subTitle: t('将会立即应用在环境上，请谨慎操作！'),
+    confirmText: t('确认修改'),
+    cancelText: t('取消'),
+    onConfirm: async () => {
+      try {
+        let flag = true;
+        for (let i = 0; i < tableData.value?.length; i++) {
+          if (!(await validateName(i))) {
+            flag = false;
+            break;
+          }
+        }
+        if (!flag) return;
 
-    const data: any = {};
-    tableData.value?.forEach((item: any) => {
-      data[item.name] = item.value;
-    });
+        const data: any = {};
+        tableData.value?.forEach((item: any) => {
+          data[item.name] = item.value;
+        });
 
-    await updateStageVars(common.apigwId, props.stageId, { vars: data });
-    Message({
-      theme: 'success',
-      message: t('更新成功'),
-    });
-    getData();
-    tableIsEdit.value = false;
-  } catch (e) {
-    console.error(e);
-  };
+        await updateStageVars(common.apigwId, props.stageId, { vars: data });
+        Message({
+          theme: 'success',
+          message: t('更新成功'),
+        });
+        getData();
+        tableIsEdit.value = false;
+      } catch (e) {
+        console.error(e);
+      };
+    },
+  });
 };
 
 watch(
