@@ -67,9 +67,11 @@
           content="插件配置变更后，将立即影响线上环境，请确认。"
           trigger="click"
           @confirm="handleAdd"
+          v-if="isStage"
         >
           <bk-button theme="primary">{{ t('确定') }}</bk-button>
         </bk-pop-confirm>
+        <bk-button v-else @click="handleAdd" theme="primary">{{ t('确定') }}</bk-button>
         <bk-button @click="handlePre" class="ml5" v-if="isAdd">{{ t('上一步') }}</bk-button>
         <bk-button @click="handleCancel" class="ml5">{{ t('取消') }}</bk-button>
       </div>
