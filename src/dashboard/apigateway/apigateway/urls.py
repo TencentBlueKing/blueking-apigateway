@@ -88,7 +88,7 @@ urlpatterns = [
         name="monitors.alarm_records.summary",
     ),
     # notice
-    url(r"^{}".format(config.ENTRANCE_URL), include(("bk_notice_sdk.urls", "notice"), namespace="notice")),
+    url(r"^notice/", include(("bk_notice_sdk.urls", "notice"), namespace="notice")),
 ]
 
 
