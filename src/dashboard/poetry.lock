@@ -295,13 +295,13 @@ reference = "tencent"
 
 [[package]]
 name = "bk-notice-sdk"
-version = "1.3.0"
+version = "1.3.1"
 description = "A project for fetching and displaying announcement notifications."
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "bk-notice-sdk-1.3.0.tar.gz", hash = "sha256:60292b5a766adb906122825a19ce9aa55a86164c6f002657a5643e727a2fae1b"},
+    {file = "bk-notice-sdk-1.3.1.tar.gz", hash = "sha256:89e4ebf294631034d202a52442310d5516f2e5e3b927b2c4c86522218acf06dd"},
 ]
 
 [package.dependencies]
