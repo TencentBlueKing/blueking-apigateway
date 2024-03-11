@@ -38,6 +38,7 @@
                     property="resource_version_id"
                     :label="`发布的资源版本(当前版本: ${currentAssets.resource_version.version || '--'})`">
                     <bk-select
+                      ref="selectVersionRef"
                       v-model="formData.resource_version_id"
                       :input-search="false"
                       :popover-options="{
@@ -47,7 +48,6 @@
                       filterable
                       id-key="id"
                       display-key="version"
-                      @change="handleVersionChange"
                     >
                       <!-- <bk-option
                         v-for="(item) in versionList"
@@ -62,7 +62,7 @@
                             'version-options',
                             { 'version-options-disabled': item.disabled },
                           ]"
-                          @click.stop="handleSelectVersion(item)"
+                          @click.stop="handleVersionChange(item)"
                         >
                           <span class="version-name">
                             {{ item.version }}
@@ -210,6 +210,7 @@ const isShow = ref(false);
 const versionList = ref<any>([]);
 const formRef = ref(null);
 const logDetailsRef = ref(null);
+const selectVersionRef = ref(null);
 
 interface FormData {
   resource_version_id: number | undefined;
@@ -329,25 +330,28 @@ const getResourceVersions = async () => {
   };
 };
 
-const handleVersionChange = async (val: number) => {
-  if (!val) {
+const handleVersionChange = async (payload: Record<string, string>) => {
+  if (payload.disabled) {
+    return;
+  }
+  if (!payload.id) {
     diffData.value = {
       add: [],
       delete: [],
       update: [],
     };
+    selectVersionRef.value.hidePopover();
     return;
   };
-
   try {
     const query = {
       source_resource_version_id: props.currentAssets?.resource_version?.id,
-      target_resource_version_id: val,
+      target_resource_version_id: payload.id,
     };
-
     const res: any = await resourceVersionsDiff(apigwId.value, query);
-
     diffData.value = res;
+    formData.resource_version_id = payload?.id;
+    selectVersionRef.value.hidePopover();
   } catch (e) {
     console.log(e);
   };
@@ -394,12 +398,6 @@ const resetSliderData = () => {
   };
 };
 
-const handleSelectVersion = (payload: Record<string, any>) => {
-  if (!payload.disabled) {
-    formData.resource_version_id = payload?.resource_version?.id;
-  }
-};
-
 const handleOpenResource = () => {
   const routeData = router.resolve({
     name: 'apigwResource',
@@ -409,12 +407,18 @@ const handleOpenResource = () => {
 
 watch(
   () => isShow.value,
-  (val) => {
+  async (val) => {
     if (val) {
-      getResourceVersions();
+      await getResourceVersions();
       if (props.version?.id) {
-        formData.resource_version_id = props.version?.id;
-        handleVersionChange(props.version?.id);
+        const curVersion = versionList.value.find(item => item.id === props.version?.id);
+        if (curVersion) {
+          formData.resource_version_id = cloneDeep(curVersion);
+          handleVersionChange({
+            disabled: curVersion.disabled,
+            id: props.version?.id,
+          });
+        }
       }
     } else {
       resetSliderData();
@@ -494,6 +498,9 @@ defineExpose({
             &-disabled {
               color: #c4c6cc;
               cursor: not-allowed;
+              .bk-tag {
+                cursor: not-allowed;
+              }
             }
           }
         }
