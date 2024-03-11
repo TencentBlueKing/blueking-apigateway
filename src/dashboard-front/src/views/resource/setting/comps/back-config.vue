@@ -17,6 +17,8 @@
       class="table-layout"
       :data="servicesConfigs"
       :border="['outer']"
+      @row-mouse-enter="handleMouseEnter"
+      @row-mouse-leave="handleMouseLeave"
     >
       <bk-table-column
         :label="t('环境名称')"
@@ -40,8 +42,30 @@
         prop="timeout"
       >
         <template #default="{ row }">
-         <span>{{ row.timeout || '0' }}s</span>
-         <bk-tag theme="warning" v-if="row.isCustom">{{ t('自定义') }}</bk-tag>
+          <span class="time-wrapper"  v-clickOutSide="(e:Event) => handleClickTableOutSide(e, row)">
+            <template v-if="!row.isEditTime">
+              <span>{{ row.timeout || '0' }}s</span>
+              <bk-tag theme="warning" v-if="row.isCustom">{{ t('自定义') }}</bk-tag>
+              <i 
+                v-show="row?.isTime" 
+                class="icon apigateway-icon icon-ag-edit-small edit-icon" 
+                @click.stop="handleEditTime(row)"
+              />
+            </template>
+            <div v-else ref="timeInputRef">
+              <bk-input
+                v-model="row.timeout"
+                :max-length="3"
+                :placeholder="t('请输入超时时间')"
+                :class="row.timeout === '' ? 'time-out-input-error' : ''"
+                :autofocus="true" 
+                @input="(value:string) => handleTableTimeOutInput(value, row)"
+                @keypress="(value:string) => { value = value.replace(/\d/g, '') }"
+                v-bk-tooltips="`${t('初始值')}: ${formatDefaultTime(row)}s`"
+              />
+              <div class='time-input-error' v-if="row.timeout === ''">{{ t('超时时间不能为空') }}</div>
+            </div>
+          </span>
         </template>
       </bk-table-column>
     </bk-table>
@@ -125,7 +149,7 @@
 </template>
 
 <script setup lang="tsx">
-import { ref, unref, watch, onMounted } from 'vue';
+import { ref, unref, watch, computed,  onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
 import { useCommon } from '../../../../store';
@@ -166,6 +190,7 @@ const popoverConfirmRef = ref();
 const timeOutValue = ref('');
 const isShowPopConfirm = ref(false);
 const isTimeEmpty = ref(false);
+const timeInputRef = ref(null)
 // 全局变量
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
@@ -185,6 +210,17 @@ const rules = {
   ],
 };
 
+// 提示默认超时时间
+const formatDefaultTime = computed(() => {
+  return (payload: any) => {
+    const curServices = servicesConfigsStorage.value.find((item) => item?.stage?.id === payload?.stage?.id);
+    if(curServices) {
+      return curServices.timeout
+    }
+    return ''
+  }
+})
+
 const handleTimeOutTotal = (value: any[]) => {
   backConfigData.value.config.timeout = value.reduce((curr,next) => {
     return curr + Number(next.timeout || 0)
@@ -199,6 +235,9 @@ const handleRefreshTime = () => {
 const handleShowPopover = () => {
   isShowPopConfirm.value = true;
   isTimeEmpty.value = false;
+  servicesConfigs.value.forEach((item) => {
+    item.isEditTime = false;
+  })
 };
 
 const handleConfirmTime = () => {
@@ -230,7 +269,7 @@ const handleTimeOutInput = (value:string) => {
   isTimeEmpty.value = !value;
 }
 
-const handleClickOutSide = (e:any) => {
+const handleClickOutSide = (e:Event) => {
   if (
     isShowPopConfirm.value &&
     !unref(popoverConfirmRef).content.el.contains(e.target)
@@ -258,16 +297,18 @@ const renderTimeOutLabel = () => {
                   <bk-input
                     v-model={timeOutValue.value}
                     maxlength={3}
+                    class={isTimeEmpty ? 'time-empty-error' : ''}
                     placeholder={t('请输入超时时间')}
                     onInput={(value:string) => {handleTimeOutInput(value)}}
                     nativeOnKeypress={(value:string) => { value = value.replace(/\d/g, '') }}
+                    autofocus={true}
                     suffix='s'
                   />
                 </div>
                 <div class='back-config-timeout-tip'>{t('最大 300s')}</div>
               </div>
               {
-                isTimeEmpty.value ? <div  class='time-empty-error'>{t('超时时间不能为空')}{isTimeEmpty.value}</div> : ''
+                isTimeEmpty.value ? <div class='time-empty-error'>{t('超时时间不能为空')}{isTimeEmpty.value}</div> : ''
               }
             </div>
           }
@@ -323,6 +364,47 @@ const handleCheckPath = async () => {
   } catch (error) {
 
   }
+};
+
+const handleTableTimeOutInput = (value:string, row:Record<string, any>) => {
+  value = value.replace(/\D/g, '')
+  if(Number(value) > 300) {
+    value = '300';
+  }
+  row.timeout = Number(value);
+  // 判断数据是否有变动，如有更新需要显示自定义标签
+  const configData = servicesConfigsStorage.value.find((item:any) => item?.stage?.id === row?.stage?.id);
+  if(configData) {
+    row.isCustom = String(row.timeout) !== String(configData.timeout) ? true : false;
+  }
+}
+
+const handleClickTableOutSide = (e:Event, row:Record<string, number | string | boolean>) => {
+  if (timeInputRef && !unref(timeInputRef)?.contains(e.target)) {
+    if(!row.timeout) {
+      return;
+    }
+    row.isEditTime = false;
+  }
+}
+
+const handleEditTime = (payload: Record<string, number | string | boolean>) => {
+  servicesConfigs.value.forEach((item) => {
+    item.isEditTime = false;
+  });
+  payload = Object.assign(payload, {  isCustom: false, isEditTime: true });
+}
+
+const handleMouseEnter = (e: Event, row: Record<string, number | string | boolean>) => {
+  setTimeout(() => {
+    row.isTime = true;
+  }, 100);
+};
+
+const handleMouseLeave = (e: Event, row: Record<string, number | string | boolean>) => {
+  setTimeout(() => {
+    row.isTime = false;
+  }, 100);
 };
 
 watch(
@@ -397,6 +479,17 @@ defineExpose({
   :deep(.bk-checkbox-label) {
     white-space: nowrap;
   }
+
+  .time-wrapper {
+    position: relative;
+    .edit-icon {
+      position: absolute;
+      top: -2px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #3A84FF;
+    }
+  }
 }
 
 :deep(.back-config-timeout) {
@@ -413,6 +506,16 @@ defineExpose({
   .refresh-icon {
     margin-left: 15px;
   }
+}
+
+.time-out-input-error {
+  border-color: #ff5656;
+}
+
+.time-input-error {
+  color: #ea3636;
+  line-height: 1;
+  margin-bottom: 10px;
 }
 </style>
 
@@ -440,6 +543,7 @@ defineExpose({
   }
   .time-empty-error {
     color: #ea3636;
+    border-color: #ea3636;
   }
 }
 .back-config-timeout-popover {
