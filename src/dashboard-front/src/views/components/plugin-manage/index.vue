@@ -15,7 +15,11 @@
           <i class="icon apigateway-icon icon-ag-plus pr10 f12"></i>
           {{ t('添加插件') }}
         </bk-button>
-        <bk-collapse header-icon="right-shape" :list="curBindingPlugins" class="binding-plugins mt20">
+        <bk-collapse
+          header-icon="right-shape"
+          :list="curBindingPlugins"
+          v-model="activeIndex"
+          class="binding-plugins mt20">
           <template #title="slotProps">
             <span class="f15" @mouseenter="handleTitleHover(slotProps)" @mouseleave="handleTitleLeave">
               {{ slotProps.name }}
@@ -287,6 +291,8 @@ const handleOperate = (operate: string) => {
       break;
   }
 };
+
+const activeIndex = computed(() => Object.keys(curBindingPlugins.value)?.map((item: string) => Number(item)));
 
 const pluginCodeFirst = computed(() => {
   return function (code: string) {
@@ -782,12 +788,14 @@ init();
   background-color: #fff !important;
 }
 
-.form-key-cls{
+.form-key-cls {
   font-size: 12px;
   color: #63656E;
   padding: 5px 0;
+  width: 170px;
+  text-align: right;
 }
-.form-val-cls{
+.form-val-cls {
   font-size: 12px;
   color: #313238;
 }
