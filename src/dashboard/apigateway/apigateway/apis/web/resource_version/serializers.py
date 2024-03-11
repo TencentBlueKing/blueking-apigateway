@@ -38,14 +38,16 @@ class ResourceInfoSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="资源名称")
     method = serializers.CharField(help_text="前端请求方法")
     path = serializers.CharField(help_text="前端请求路径")
-    description = serializers.CharField(help_text="资源描述")
-    description_en = serializers.CharField(help_text="资源英文描述")
+    description = serializers.CharField(help_text="资源描述", required=False)
+    description_en = serializers.CharField(help_text="资源英文描述", required=False)
     gateway_label_ids = serializers.ListSerializer(
-        source="api_labels", child=serializers.IntegerField(), help_text="标签列表"
+        source="api_labels", required=False, allow_empty=True, child=serializers.IntegerField(), help_text="标签列表"
     )
-    match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
-    is_public = serializers.BooleanField(help_text="是否公开")
-    allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
+    match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径", required=False)
+    is_public = serializers.BooleanField(help_text="是否公开", required=False)
+    allow_apply_permission = serializers.BooleanField(
+        help_text="是否允许应用在开发者中心申请访问资源的权限", required=False
+    )
     doc_updated_time = serializers.SerializerMethodField(help_text="资源文档更新时间")
 
     proxy = serializers.SerializerMethodField(help_text="后端配置")
@@ -98,7 +100,7 @@ class ResourceInfoSLZ(serializers.Serializer):
 
 class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="id")
-    version = serializers.CharField(help_text="版本号")
+    version = serializers.CharField(source="object_display", help_text="版本号")
     comment = serializers.CharField(help_text="版本日志")
     schema_version = serializers.ChoiceField(
         choices=ResourceVersionSchemaEnum.get_choices(), help_text="版本数据schema版本:1.0(旧)/2.0(新)"
@@ -129,7 +131,13 @@ class ResourceVersionListOutputSLZ(serializers.Serializer):
         return self.context["resource_version_ids_sdk_count"].get(obj["id"], 0)
 
     def get_version(self, obj):
-        return obj.get("version")
+        version = obj.get("version")
+        if not version:
+            # 兼容历史数据
+            name = obj.get("name")
+            title = obj.get("title")
+            return f"{title}({name})"
+        return version
 
 
 class NeedNewVersionOutputSLZ(serializers.Serializer):

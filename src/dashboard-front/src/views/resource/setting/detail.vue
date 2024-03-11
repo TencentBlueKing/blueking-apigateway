@@ -70,7 +70,7 @@
       </bk-form-item>
       <bk-form-item class="form-item-cls">
         <template #label>
-          <span class="label-cls">{{ t('已使用的环境:') }}</span>
+          <span class="label-cls">{{ t('已使用的环境：') }}</span>
         </template>
         <span v-if="!servicesData?.config?.length">--</span>
         <span v-else>{{ servicesData?.config?.map((item: any) => item?.stage?.name)?.join(', ') }}</span>
@@ -97,7 +97,7 @@
       {{ t('后端配置') }}
     </div>
     <bk-form ref="formRef" :model="formData" class="form-cls flex-row">
-      <bk-form-item>
+      <bk-form-item class="form-item-cls">
         <template #label>
           <span class="label-cls">{{ t('服务：') }}</span>
         </template>
@@ -159,7 +159,7 @@
       trigger="click"
       @confirm="handleDeleteResource(formData.id)"
     >
-      <bk-button>
+      <bk-button class="resource-btn-cls">
         {{ t('删除') }}
       </bk-button>
     </bk-pop-confirm>
@@ -299,19 +299,22 @@ watch(
 <style lang="scss" scoped>
 .detail-container{
     max-width: 1000px;
-    .title{
+    .title {
         color: #313238;
         font-weight: 700;
         font-size: 14px;
     }
-    .form-cls{
+    .form-cls {
       font-size: 12px;
       flex-flow: wrap;
       :deep(.form-item-cls){
         flex: 0 0 50%;
         margin-bottom: 6px;
-        .bk-form-label{
-          padding-right: 10px;
+        .bk-form-label {
+          font-size: 12px;
+          padding-right: 8px;
+          display: flex;
+          justify-content: flex-end;
         }
       }
       .label-cls{
@@ -320,10 +323,20 @@ watch(
       }
       .value-cls{
         color: #313238;
+        .bk-tag {
+          &:not(&:last-child) {
+            margin-right: 8px;
+          }
+        }
       }
     }
     .resource-btn-cls{
       margin-left: 150px;
+      min-width: 88px;
+      margin-top: 20px;
+      &:last-child {
+        margin-left: 8px;
+      }
     }
 
     .apigateway-icon {
