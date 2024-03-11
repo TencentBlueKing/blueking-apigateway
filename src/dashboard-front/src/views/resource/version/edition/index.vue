@@ -265,7 +265,7 @@ const changeTab = () => {
 
 // 过滤当前资源版本下的sdk
 const jumpSdk = (row: any) => {
-  resourceVersionStore.setResourceFilter(row?.version);
+  resourceVersionStore.setResourceFilter(row);
   resourceVersionStore.setTabActive('sdk');
 };
 

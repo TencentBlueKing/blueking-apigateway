@@ -706,8 +706,16 @@ const handleSubmit = () => {
     try {
       if (!isEdit.value) {
         await addComponent(tempData);
+        Message({
+          message: t('新增成功'),
+          theme: 'success',
+        });
       } else {
         await updateComponent(componentData.value?.id, tempData);
+        Message({
+          message: t('编辑成功'),
+          theme: 'success',
+        });
       }
 
       isSliderShow.value = false;

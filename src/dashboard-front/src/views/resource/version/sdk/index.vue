@@ -12,7 +12,8 @@
         <bk-input
           class="ml10 mr10 operate-input"
           placeholder="请输入关键字或选择条件查询"
-          v-model="filterData.keyword"
+          v-model="keyword"
+          @change="handleKeywordChange"
         ></bk-input>
       </div>
     </div>
@@ -107,8 +108,9 @@ import TableEmpty from '@/components/table-empty.vue';
 const { t } = useI18n();
 const resourceVersionStore = useResourceVersion();
 
+const keyword = ref<string>('');
 const createSdkRef = ref(null);
-const filterData = ref({ keyword: '' });
+const filterData = ref({ keyword: '', resource_version_id: '' });
 const tableEmptyConf = ref<{ keyword: string; isAbnormal: boolean }>({
   keyword: '',
   isAbnormal: false,
@@ -127,6 +129,11 @@ const {
 // 列表多选
 const { bkTableRef, handleSelectionChange } = useSelection();
 
+const handleKeywordChange = () => {
+  filterData.value.resource_version_id = '';
+  filterData.value.keyword = keyword.value;
+};
+
 // 下载单个
 const handleDownload = (row: any) => {
   const { download_url } = row;
@@ -139,6 +146,8 @@ const openCreateSdk = () => {
 };
 
 const handleClearFilterKey = () => {
+  keyword.value = '';
+  filterData.value.resource_version_id = '';
   filterData.value.keyword = '';
   getList();
   updateTableEmptyConfig();
@@ -146,11 +155,11 @@ const handleClearFilterKey = () => {
 
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (filterData.value.keyword && !tableData.value.length) {
+  if (keyword.value && !tableData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
-  if (filterData.value.keyword) {
+  if (keyword.value) {
     tableEmptyConf.value.keyword = '$CONSTANT';
     return;
   }
@@ -169,11 +178,12 @@ watch(
 
 watch(
   () => resourceVersionStore.getResourceFilter,
-  (value: string) => {
-    filterData.value.keyword = value;
+  (value: any) => {
+    keyword.value = value?.version;
+    filterData.value.resource_version_id = value?.id;
   },
   {
     immediate: true,
-  }
+  },
 );
 </script>

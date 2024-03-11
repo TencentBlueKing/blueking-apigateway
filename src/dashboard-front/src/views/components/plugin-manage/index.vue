@@ -51,7 +51,12 @@
     <!-- 添加插件 -->
     <bk-sideslider v-model:isShow="isVisible" :title="t('添加插件')" quick-close ext-cls="plugin-add-slider" width="960">
       <template #default>
-        <bk-steps :cur-step="state.curStep" :steps="state.plugintSteps" ext-cls="plugin-add-steps" />
+        <bk-steps
+          :cur-step="state.curStep"
+          :steps="state.plugintSteps"
+          @click="stepChanged"
+          :controllable="true"
+          ext-cls="plugin-add-steps" />
         <div class="plugin-add-container">
           <!-- 选择插件 -->
           <div class="plugins pl20 pr20" v-if="state.curStep === 1">
@@ -299,6 +304,12 @@ const pluginCodeFirst = computed(() => {
     return code.charAt(3).toUpperCase();
   };
 });
+
+const stepChanged = (index: number) => {
+  if (index === 1) {
+    state.curStep = index;
+  }
+};
 
 const isBound = computed(() => {
   return function (obj: any) {

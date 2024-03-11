@@ -481,4 +481,9 @@ init();
     }
   }
 }
+.plugin-form {
+  :deep(.bk-switcher.is-checked) {
+    background: #3a84ff;
+  }
+}
 </style>
