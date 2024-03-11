@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 export const useResourceVersion = defineStore('resourceVersion', {
   state: () => ({
     tabActive: 'edition',
-    resourceFilter: '',
+    resourceFilter: {},
   }),
   getters: {
     getTabActive(state) {
@@ -17,7 +17,7 @@ export const useResourceVersion = defineStore('resourceVersion', {
     setTabActive(key: string) {
       this.tabActive = key;
     },
-    setResourceFilter(value: string) {
+    setResourceFilter(value: any) {
       this.resourceFilter = value;
     },
   },

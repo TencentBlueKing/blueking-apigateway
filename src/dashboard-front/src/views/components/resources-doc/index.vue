@@ -1,6 +1,6 @@
 <template>
   <div class="resources-doc-container">
-    <section class="content p20" :style="{ height: height }">
+    <section class="content p20">
       <div class="ag-markdown-view" :class="isEdited ? '' : 'text-c'">
         <h3 v-if="isEdited"> {{ $t('文档类型') }} </h3>
         <template v-if="isEdited">
@@ -104,7 +104,7 @@ const props = defineProps({
   height: { type: String, default: 'calc(100vh - 104px)' },
 });
 
-const { curResource, height } = toRefs(props);
+const { curResource } = toRefs(props);
 
 const languagesData = ref([{ label: t('中文文档'), value: 'zh' }, { label: t('英文文档'), value: 'en' }]);
 const isEmpty = ref<boolean>(false);
@@ -260,7 +260,6 @@ onMounted(() => {
 .resources-doc-container{
   .content{
     overflow: auto;
-    max-height: calc(100vh - 104px);
   }
 }
   .doc-btn-wrapper {
