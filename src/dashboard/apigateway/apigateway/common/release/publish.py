@@ -107,7 +107,8 @@ def _trigger_rolling_publish(
 
         # 开始发布
         if is_sync:
-            return rolling_update_release(gateway_id=release.gateway.pk, publish_id=publish_id, release_id=release.pk)
+            rolling_update_release(gateway_id=release.gateway.pk, publish_id=publish_id, release_id=release.pk)
+            continue
 
         delay_on_commit(
             rolling_update_release,
