@@ -128,6 +128,8 @@ INSTALLED_APPS = [
     # TODO: 待启用 IAM 鉴权后，需启用以下两个 django app
     # "apigateway.iam.apigw_iam_migration",
     # "iam.contrib.iam_migration",
+    # 蓝鲸通知中心
+    "bk_notice_sdk",
     # 开源版旧版 ESB 数据
     "apigateway.legacy_esb",
     "apigateway.legacy_esb.paas2",
@@ -818,6 +820,20 @@ BK_IAM_SKIP = env.bool("BK_IAM_SKIP", False)
 # TODO: 待启用 IAM 鉴权时，将默认值改为 True
 USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
 
+# 蓝鲸通知中心配置
+ENABLE_BK_NOTICE = env.bool("ENABLE_BK_NOTICE", False)
+# 对接通知中心的环境，默认为生产环境
+BK_NOTICE_ENV = BK_API_DEFAULT_STAGE_MAPPINGS.get("bk-notice", "prod")
+BK_NOTICE = {
+    "STAGE": BK_NOTICE_ENV,
+    "LANGUAGE_COOKIE_NAME": LANGUAGE_COOKIE_NAME,
+    "DEFAULT_LANGUAGE": "en",
+    "PLATFORM": BK_APP_CODE,  # 平台注册的 code，用于获取系统通知消息时进行过滤
+    "BK_API_URL_TMPL": BK_API_URL_TMPL,
+    "BK_API_APP_CODE": BK_APP_CODE,  # 用于调用 apigw 认证
+    "BK_API_SECRET_KEY": BK_APP_SECRET,  # 用于调用 apigw 认证
+}
+
 # 使用 bkmonitorv3 网关 API，还是 monitor_v3 组件 API
 USE_BKAPI_BKMONITORV3 = env.bool("USE_BKAPI_BKMONITORV3", False)
 # 是否使用 bklog 网关 API
@@ -839,6 +855,8 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", True),
     # 是否展示 "运行数据" => 统计报表 子菜单
     "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True),
+    # 是否展示蓝鲸通知中心组件
+    "ENABLE_BK_NOTICE": ENABLE_BK_NOTICE,
     # 是否展示”组件管理“菜单项，企业版展示，上云版不展示
     "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
     # 是否展示”组件 API 文档“菜单项
