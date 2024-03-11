@@ -60,6 +60,7 @@
                 :class="row.timeout === '' ? 'time-out-input-error' : ''"
                 :autofocus="true" 
                 @input="(value:string) => handleTableTimeOutInput(value, row)"
+                @blur="handleTableTimeOutBlur"
                 @keypress="(value:string) => { value = value.replace(/\d/g, '') }"
                 v-bk-tooltips="`${t('初始值')}: ${formatDefaultTime(row)}s`"
               />
@@ -377,6 +378,10 @@ const handleTableTimeOutInput = (value:string, row:Record<string, any>) => {
   if(configData) {
     row.isCustom = String(row.timeout) !== String(configData.timeout) ? true : false;
   }
+}
+
+const handleTableTimeOutBlur = () => {
+  handleTimeOutTotal(servicesConfigs.value);
 }
 
 const handleClickTableOutSide = (e:Event, row:Record<string, number | string | boolean>) => {
