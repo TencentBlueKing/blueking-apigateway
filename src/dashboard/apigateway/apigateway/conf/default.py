@@ -855,8 +855,6 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", True),
     # 是否展示 "运行数据" => 统计报表 子菜单
     "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True),
-    # 是否展示蓝鲸通知中心组件
-    "ENABLE_BK_NOTICE": ENABLE_BK_NOTICE,
     # 是否展示”组件管理“菜单项，企业版展示，上云版不展示
     "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
     # 是否展示”组件 API 文档“菜单项
@@ -874,6 +872,10 @@ DEFAULT_FEATURE_FLAG = {
     "ALLOW_UPLOAD_SDK_TO_REPOSITORY": env.bool("FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY", False),
     # 是否允许创建企业微信群，上云版一键拉群功能
     "ALLOW_CREATE_APPCHAT": env.bool("FEATURE_FLAG_ALLOW_CREATE_APPCHAT", False),
+
+    # ----------------------------------------------------------------------------
+    # 是否展示蓝鲸通知中心组件
+    "ENABLE_BK_NOTICE": ENABLE_BK_NOTICE,
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并

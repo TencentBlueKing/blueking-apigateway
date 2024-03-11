@@ -30,7 +30,6 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.conf.urls import url
 from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.i18n import set_language
@@ -87,7 +86,7 @@ urlpatterns = [
         name="monitors.alarm_records.summary",
     ),
     # notice
-    url(r"^notice/", include(("bk_notice_sdk.urls", "notice"), namespace="notice")),
+    path("backend/notice/", include(("bk_notice_sdk.urls", "notice"), namespace="notice")),
 ]
 
 
