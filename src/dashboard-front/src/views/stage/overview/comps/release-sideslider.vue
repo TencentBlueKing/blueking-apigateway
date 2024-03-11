@@ -40,17 +40,50 @@
                     <bk-select
                       v-model="formData.resource_version_id"
                       :input-search="false"
+                      :popover-options="{
+                        extCls: 'custom-version-list'
+                      }"
+                      :list="versionList"
                       filterable
+                      id-key="id"
+                      display-key="version"
                       @change="handleVersionChange"
                     >
-                      <bk-option
+                      <!-- <bk-option
                         v-for="(item) in versionList"
                         :key="item.id"
                         :value="item.id"
                         :label="item.version"
                         :disabled="item.disabled"
-                      >
-                      </bk-option>
+                      /> -->
+                      <template #optionRender="{ item }">
+                        <div
+                          :class="[
+                            'version-options',
+                            { 'version-options-disabled': item.disabled },
+                          ]"
+                          @click.stop="handleSelectVersion(item)"
+                        >
+                          <span
+                            :class="[
+                              'version-name',
+                              { 'version-name-disabled': item.disabled }]">
+                            {{ item.version }}
+                          </span>
+                          <span v-if="currentAssets.resource_version.version === item.version" class="cur-version">
+                            {{ t('当前版本') }}
+                          </span>
+                        </div>
+                      </template>
+                      <template #extension>
+                        <div class="extension-add">
+                          <div class="extension-add-content" @click.stop="handleOpenResource">
+                            <i class="apigateway-icon icon-ag-plus-circle add-resource-btn"
+                            />
+                            <span>{{ t('去新建') }}</span>
+                          </div>
+                        </div>
+                      </template>
                     </bk-select>
                     <p class="change-msg">
                       <span>
@@ -211,12 +244,12 @@ const rules = {
     },
   ],
 };
+const publishId = ref();
 
 const showPublishDia = () => {
   dialogConfig.isShow = true;
 };
 
-const publishId = ref();
 const handlePublish = async () => {
   try {
     const params = {
@@ -356,6 +389,19 @@ const resetSliderData = () => {
   };
 };
 
+const handleSelectVersion = (payload: Record<string, any>) => {
+  if (!payload.disabled) {
+    formData.resource_version_id = payload?.resource_version?.id;
+  }
+};
+
+const handleOpenResource = () => {
+  const routeData = router.resolve({
+    name: 'apigwResource',
+  });
+  window.open(routeData.href, '_blank');
+};
+
 watch(
   () => isShow.value,
   (val) => {
@@ -428,6 +474,45 @@ defineExpose({
   .fix {
     display: none !important;
     opacity: 0 !important;
+  }
+}
+.custom-version-list {
+  .bk-select-content {
+    .bk-select-dropdown {
+      .bk-select-options {
+        .bk-select-option {
+          .version-options {
+             width: 100%;
+            .cur-version {
+              background: #EDF4FF;
+              color: #3A84FF;
+              border-radius: 2px;
+              font-size: 12px;
+              padding: 0 4px;
+            }
+            &-disabled {
+              color: #c4c6cc;
+              cursor: not-allowed;
+            }
+          }
+        }
+      }
+    }
+  }
+  .extension-add {
+    margin: 0 auto;
+    cursor: pointer;
+    .extension-add-content {
+      display: flex;
+      align-items: center;
+      color: #63656E;
+      font-size: 12px;
+      .add-resource-btn {
+        margin-right: 5px;
+        font-size: 16px;
+        color: #979BA5;
+      }
+    }
   }
 }
 </style>
