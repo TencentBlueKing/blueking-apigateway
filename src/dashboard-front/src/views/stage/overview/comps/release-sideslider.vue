@@ -64,14 +64,18 @@
                           ]"
                           @click.stop="handleSelectVersion(item)"
                         >
-                          <span
-                            :class="[
-                              'version-name',
-                              { 'version-name-disabled': item.disabled }]">
+                          <span class="version-name">
                             {{ item.version }}
                           </span>
                           <span v-if="currentAssets.resource_version.version === item.version" class="cur-version">
-                            {{ t('当前版本') }}
+                            <bk-tag theme="info">
+                              {{ t('当前版本') }}
+                            </bk-tag>
+                          </span>
+                          <span
+                            v-if="item.isLatestVersion"
+                            :class="[{ 'cur-version': currentAssets.resource_version.version !== item.version }]">
+                            <bk-tag theme="success"> {{ t('最新版本') }}</bk-tag>
                           </span>
                         </div>
                       </template>
@@ -313,10 +317,11 @@ const showReleaseSideslider = () => {
 const getResourceVersions = async () => {
   try {
     const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 1000 });
-    res.results?.forEach((item: any) => {
+    res.results?.forEach((item: any, index: number) => {
       if (item.id === props.currentAssets?.resource_version?.id) {
         item.disabled = true;
       }
+      item.isLatestVersion = index === 0;
     });
     versionList.value = res.results;
   } catch (e) {
@@ -484,11 +489,7 @@ defineExpose({
           .version-options {
              width: 100%;
             .cur-version {
-              background: #EDF4FF;
-              color: #3A84FF;
-              border-radius: 2px;
-              font-size: 12px;
-              padding: 0 4px;
+              margin-left: 6px;
             }
             &-disabled {
               color: #c4c6cc;

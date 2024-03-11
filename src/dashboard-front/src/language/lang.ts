@@ -1361,6 +1361,7 @@ const lang: ILANG = {
   '恢复初始值': ['Reset to default'],
   '请输入超时时间': ['Please enter the timeout period'],
   '批量修改超时时间': ['Batch modify timeout period'],
+  '最新版本': ['Latest version'],
 
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
