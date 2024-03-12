@@ -282,7 +282,10 @@
       <span>......</span>
     </div>
 
-    <div class="resource-container-rg flex-1" id="resourceRg" v-show="isDetail">
+    <div
+      :class="['resource-container-rg', 'flex-1', isDragging ? 'dragging' : '']"
+      id="resourceRg"
+      v-show="isDetail">
       <div class="toggle-button toggle-button-rg" @click="handleToggleRg">
         <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
       </div>
@@ -457,6 +460,7 @@ interface IexportParams {
   label_name?: string
   file_type?: string
   resource_ids?: Array<number>
+  resource_filter_condition?: any
 }
 
 interface IexportDialog extends IDialog {
@@ -766,6 +770,7 @@ const handleToggleRg = () => {
   }
 };
 
+const isDragging = ref<boolean>(false);
 const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string, rightBoxId: string) => {
   const resize: any = document.getElementById(resizeId);
   const leftBox = document.getElementById(leftBoxId);
@@ -775,6 +780,7 @@ const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string, r
   resize.onmousedown = function (e: any) {
     const startX = e.clientX;
     resize.left = resize.offsetLeft;
+    isDragging.value = true;
     document.onmousemove = function (e) {
       const endX = e.clientX;
       let moveLen = resize.left + (endX - startX);
@@ -796,6 +802,7 @@ const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string, r
     document.onmouseup = function () {
       document.onmousemove = null;
       document.onmouseup = null;
+      isDragging.value = false;
       resize.releaseCapture?.();
     };
     resize.setCapture?.();
@@ -855,19 +862,23 @@ const handleBatchOperate = async (data: IDropList) => {
 
 // 处理导出弹窗显示
 const handleExport = async ({ value }: {value: string}) => {
-  exportParams.export_type = value;
-  exportDialogConfig.exportFileDocType = 'resource';
-  exportDialogConfig.isShow = true;
   switch (value) {
     case 'selected':
       exportParams.resource_ids = selections.value.map(e => e.id);
+      exportParams.resource_filter_condition = undefined;
       break;
-    default:
-      exportParams.export_type = value;
-      exportDialogConfig.isShow = true;
+    case 'filtered':
+      exportParams.resource_filter_condition = filterData.value;
+      exportParams.resource_ids = undefined;
+      break;
+    case 'all':
+      exportParams.resource_filter_condition = undefined;
+      exportParams.resource_ids = undefined;
       break;
   }
   exportParams.export_type = value;
+  exportDialogConfig.exportFileDocType = 'resource';
+  exportDialogConfig.isShow = true;
 };
 
 // 导出下载
@@ -1099,10 +1110,17 @@ watch(
         }
       });
     }
+    exportDropData.value.forEach((e: IDropList) => {
+      // 已选资源
+      if (e.value === 'filtered') {
+        e.disabled = !v.length;
+      }
+    });
     curSelectMethod.value = filterData.value.method || 'ALL';
     tableKey.value = +new Date();
     updateTableEmptyConfig();
   },
+  { immediate: true, deep: true },
 );
 
 watch(() => route, () => {
@@ -1135,6 +1153,9 @@ onMounted(() => {
     margin-top: -20px;
     margin-right: -24px;
     margin-bottom: -20px;
+    &.dragging {
+      border-left: 2px solid #3a84ff;
+    }
   }
   .demarcation-button {
     height: 100%;
@@ -1156,7 +1177,7 @@ onMounted(() => {
   .left-wraper{
     position: relative;
     background: #fff;
-    padding-bottom: 24px;
+    // padding-bottom: 24px;
     .document-info{
       color: #3a84ff;
       font-size: 12px;
@@ -1193,7 +1214,7 @@ onMounted(() => {
         font-size: 24px;
         cursor: pointer;
         color: #3A84FF;
-        top: 0;
+        top: -2px;
         // top: 8px;
         // right: -20px;
       }
@@ -1224,11 +1245,11 @@ onMounted(() => {
     }
   }
   .toggle-button-lf {
-    right: -25px;
+    right: -21px;
     top: -4px;
   }
   .toggle-button-rg {
-    left: 0px;
+    left: -1px;
     top: 0;
     transform: rotate(180deg) !important;
     border-radius: 4px 0 0 4px;

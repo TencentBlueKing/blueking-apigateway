@@ -434,51 +434,61 @@ init();
 
 <style lang="scss" scoped>
 .info-header {
-  background-color: #f5f7fb;
+  background-color: #f5f7fa;;
   padding: 15px 20px;
   display: flex;
 
   .cur-icon {
     display: inline-block;
-    width: 60px;
-    height: 60px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    background-color: #eff1f5;
+    background-color: #f0f1f5;
     color: #3a84f6;
     text-align: center;
-    line-height: 60px;
+    line-height: 72px;
     font-weight: 700;
-    font-size: 30px;
+    font-size: 28px;
     margin-right: 18px;
   }
 
   .cur-name {
     font-size: 16px;
     font-weight: 700;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     margin-top: 10px;
+    color: #313238;
   }
 
   .cur-binding-info {
     display: flex;
     width: 370px;
     justify-content: space-between;
-    color: #b9bac1;
+    color: #979ba5;
+    font-size: 12px;
 
     .cur-version {
-      color: #333539;
+      color: #313238;
       font-weight: 700;
     }
 
     .empty {
-      color: #646569;
+      color: #63656e;
       font-weight: 700;
     }
 
     .bound {
-      color: #4b8ceb;
+      color: #3a84ff;
       font-weight: 700;
     }
+  }
+}
+.plugin-form {
+  :deep(.bk-schema-form-group-delete) {
+    top: 18px !important;
+  }
+  :deep(.bk-switcher.is-checked) {
+    background: #3a84ff;
   }
 }
 </style>

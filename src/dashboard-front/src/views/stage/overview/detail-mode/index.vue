@@ -4,13 +4,21 @@
     <stage-top-bar ref="stageTopBarRef" />
     <div class="detail-mode">
       <bk-alert
-        v-if="stageData.status === 0 && stageData.release.status !== 'unreleased'"
+        v-if="!stageStore.realStageMainLoading && stageData.status === 0 && stageData.release.status !== 'unreleased'"
         theme="warning"
         :title="t('当前环境已下架，所有内容的更新均不会生效，如需重新启用，需要重新发布')" style="margin-bottom: 16px;" />
       <bk-loading :loading="stageStore.realStageMainLoading">
-        <section class="stagae-info">
-          <div class="stage-name">
-            <span class="name">{{ stageData.name }}</span>
+        <section class="stage-info">
+          <div :class="['stage-name', stageData.release.status === 'unreleased' ? 'no-release' : '']">
+            <template v-if="stageData.release.status === 'unreleased'">
+              <span class="no-release-label">未发布</span>
+              <span class="no-release-dot"></span>
+              <span class="no-release-icon apigateway-icon icon-ag-edit-line" @click="handleEditStage">
+              </span>
+            </template>
+            <span class="name">
+              {{ stageData.name }}
+            </span>
           </div>
           <div class="info">
             <div class="column">
@@ -143,7 +151,6 @@
           </bk-tab-panel>
         </bk-tab>
       </div>
-
 
       <!-- 环境侧边栏 -->
       <edit-stage-sideslider ref="stageSidesliderRef" />
@@ -368,7 +375,7 @@ const getStageAddress = (name: string) => {
   min-width: calc(1280px - 260px);
   padding: 24px;
   font-size: 12px;
-  .stagae-info {
+  .stage-info {
     display: flex;
     height: 128px;
     padding: 24px;
@@ -379,11 +386,47 @@ const getStageAddress = (name: string) => {
       width: 120px;
       height: 80px;
       margin-right: 35px;
-      background: #f0f5ff;
+      background-color: #f0f5ff;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
+      &.no-release {
+        background-color: #f0f1f5;
+        .name {
+          color: #979ba5;
+        }
+      }
+      .no-release-dot {
+        border: 1px solid #c4c6cc;
+        background: #f0f1f5;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 2px;
+      }
+      .no-release-label {
+        position: absolute;
+        background-color: #fafbfd;
+        top: 3px;
+        left: 3px;
+        border-radius: 2px;
+        color: #63656e;
+        font-size: 12px;
+        padding: 2px 6px;
+      }
+      .no-release-icon {
+        color: #979ba5;
+        background-color: #fff;
+        border-radius: 4px;
+        font-size: 14px;
+        position: absolute;
+        right: 3px;
+        top: 3px;
+        padding: 4px;
+        cursor: pointer;
+      }
     }
 
     .name {
@@ -465,6 +508,7 @@ const getStageAddress = (name: string) => {
   background: #ffffff;
   box-shadow: 0 2px 4px 0 #1919290d;
   border-radius: 0 0 2px 2px;
+  font-size: 14px;
 
   :deep(.bk-tab-panel) {
     min-height: 420px;

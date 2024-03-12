@@ -146,6 +146,14 @@
       </template>
     </bk-sideslider>
 
+    <!-- <bk-dialog
+      :is-show="isBackDialogShow"
+      class="sideslider-close-back-dialog-cls"
+      width="0"
+      height="0"
+      dialog-type="show">
+    </bk-dialog> -->
+
     <!-- 确认发布弹窗 -->
     <bk-dialog
       :is-show="dialogConfig.isShow"
@@ -177,7 +185,7 @@ import { useSidebar } from '@/hooks';
 
 const route = useRoute();
 const router = useRouter();
-const { initSidebarFormData, isSidebarClosed } = useSidebar();
+const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
 
 const apigwId = computed(() => +route.params.id);
 

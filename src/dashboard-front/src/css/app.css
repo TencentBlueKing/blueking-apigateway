@@ -167,15 +167,18 @@ body {
     }
 
     &.success {
-        color: $successColor;
+        /* color: $successColor; */
+        color: #2dcb56;
     }
 
     &.danger {
-        color: $dangerColor;
+        /* color: $dangerColor; */
+        color: #ea3636;
     }
 
     &.warning {
-        color: $warningColor;
+        /* color: $warningColor; */
+        color: #ff9c01;
     }
 }
 
@@ -201,5 +204,11 @@ body {
     &.failure {
         border: 1px solid #EA3636;
         background: #FFE6E6;
+    }
+}
+
+.sideslider-close-back-dialog-cls {
+    .bk-modal-close {
+        display: none;
     }
 }

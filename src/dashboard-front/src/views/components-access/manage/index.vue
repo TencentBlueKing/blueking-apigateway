@@ -60,7 +60,7 @@
       </div>
       <bk-loading
         :loading="isLoading"
-        opacity="1"
+        :opacity="1"
       >
         <bk-table
           border="outer"
@@ -203,9 +203,7 @@
       @animation-end="handleAnimationEnd">
       <template #default>
         <div style="padding: 20px; padding-bottom: 40px;">
-          <bk-loading
-            :loading="detailLoading"
-          >
+          <bk-loading :loading="detailLoading">
             <bk-form :label-width="180" :rules="rules" ref="form" :model="formData">
               <bk-form-item :label="t('系统')" :required="true" property="system_id" :error-display-type="'normal'">
                 <bk-select
@@ -360,6 +358,14 @@
       </template>
     </bk-sideslider>
 
+    <!-- <bk-dialog
+      :is-show="isBackDialogShow"
+      class="sideslider-close-back-dialog-cls"
+      width="0"
+      height="0"
+      dialog-type="show">
+    </bk-dialog> -->
+
     <bk-dialog
       width="480"
       :mask-close="true"
@@ -405,7 +411,7 @@ import RenderConfig from './components/render-config.vue';
 const router = useRouter();
 const { t } = useI18n();
 const common = useCommon();
-const { initSidebarFormData, isSidebarClosed } = useSidebar();
+const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
 
 const systemFilterRef = ref();
 const form = ref();
@@ -704,14 +710,23 @@ const handleSubmit = () => {
       delete tempData.config_fields;
     }
     try {
+      let msg = '';
       if (!isEdit.value) {
         await addComponent(tempData);
+        msg = t('新建成功');
       } else {
         await updateComponent(componentData.value?.id, tempData);
+        msg = t('编辑成功');
       }
 
+      Message({
+        message: msg,
+        theme: 'success',
+        width: 'auto',
+      });
+
       isSliderShow.value = false;
-      getComponents(true);
+      getComponents();
       getSystemList();
     } catch (e) {
       console.log(e);
@@ -838,6 +853,7 @@ const handleDeleteComponent = async () => {
     Message({
       message: t('删除成功'),
       theme: 'success',
+      width: 'auto',
     });
     deleteDialogConf.visiable = false;
     curSelectList.value = [];

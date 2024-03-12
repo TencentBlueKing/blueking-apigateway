@@ -1029,10 +1029,10 @@
     core-js-compat "^3.25.3"
     semver "^7.3.7"
 
-"@blueking/bkui-form@1.0.0-beta.4":
-  version "1.0.0-beta.4"
-  resolved "https://registry.yarnpkg.com/@blueking/bkui-form/-/bkui-form-1.0.0-beta.4.tgz#a89761263cf343f6e2de0ffc88a1587d1a938ace"
-  integrity sha512-05fcXuZUeoWPvLSm7CFp93O1Mr104eGXgS6wTh4I4pEJsz46KO2tctGS/9HeJV+lPtqSnbd79O1CE6lv7soINw==
+"@blueking/bkui-form@1.0.0-beta.5":
+  version "1.0.0-beta.5"
+  resolved "https://registry.yarnpkg.com/@blueking/bkui-form/-/bkui-form-1.0.0-beta.5.tgz#9b18143aa4498bba1ac368c005c9ff2692de299e"
+  integrity sha512-5KprjFnaPeqZlt2mm1hgt9hFAARte6a9V4M+it1pzSBZVHPnGVapVGqGk+iDg1WYfkKuPpUA4/sOBt/N/M7lTQ==
   dependencies:
     ajv "^8.11.0"
     ajv-formats "^2.1.1"
@@ -2667,10 +2667,10 @@ binary-extensions@^2.0.0:
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-2.2.0.tgz#75f502eeaf9ffde42fc98829645be4ea76bd9e2d"
   integrity sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==
 
-bkui-vue@0.0.3-beta.5:
-  version "0.0.3-beta.5"
-  resolved "https://registry.yarnpkg.com/bkui-vue/-/bkui-vue-0.0.3-beta.5.tgz#9a36ce0336311842d9a69b28a8d16094092fb94a"
-  integrity sha512-kt7jl1djyxjzVSkN0kjoVu/OU9u7GfrLe6blzLt1HZa71bYdTKOGsh1ll6wY1pj9mTFcXgk9ldTD8h7JpGrLSA==
+bkui-vue@0.0.3-beta.6:
+  version "0.0.3-beta.6"
+  resolved "https://registry.yarnpkg.com/bkui-vue/-/bkui-vue-0.0.3-beta.6.tgz#79aac5ecd7066241ac00d98e8fa438e123d0c479"
+  integrity sha512-rtPtP+RH5a0OTYIWn9zK3eWSyNyz01zVg17JwIMCzXCL0FfQpwC8dCknG/5cukHRTv/tBIPQ4jS3wNo1I0ZOGw==
   dependencies:
     "@floating-ui/dom" "~1.5.0"
     "@popperjs/core" "~2.11.8"

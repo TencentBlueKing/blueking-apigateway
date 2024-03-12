@@ -173,6 +173,7 @@
             show-word-limit
             :placeholder="$t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
             clearable
+            autofocus
           />
         </bk-form-item>
         <span class="common-form-tips form-item-name-tips">
@@ -273,17 +274,17 @@ const rules = {
     {
       required: true,
       message: t('请填写名称'),
-      trigger: 'blur',
+      trigger: 'change',
     },
     {
       validator: (value: string) => value.length >= 3,
       message: t('不能小于3个字符'),
-      trigger: 'blur',
+      trigger: 'change',
     },
     {
       validator: (value: string) => value.length <= 30,
       message: t('不能多于30个字符'),
-      trigger: 'blur',
+      trigger: 'change',
     },
     {
       validator: (value: string) => {
@@ -291,7 +292,7 @@ const rules = {
         return reg.test(value);
       },
       message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
-      trigger: 'blur',
+      trigger: 'change',
     },
   ],
 };

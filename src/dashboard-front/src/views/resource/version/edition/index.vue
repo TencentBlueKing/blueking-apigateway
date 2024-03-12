@@ -117,7 +117,7 @@
     <!-- 生成sdk弹窗 -->
     <create-sdk
       :version-list="tableData"
-      :resource-version-id="resourceVersionId"
+      :resource-version-id="String(resourceVersionId)"
       @done="changeTab"
       ref="createSdkRef"
     />
@@ -265,7 +265,7 @@ const changeTab = () => {
 
 // 过滤当前资源版本下的sdk
 const jumpSdk = (row: any) => {
-  resourceVersionStore.setResourceFilter(row?.version);
+  resourceVersionStore.setResourceFilter(row);
   resourceVersionStore.setTabActive('sdk');
 };
 

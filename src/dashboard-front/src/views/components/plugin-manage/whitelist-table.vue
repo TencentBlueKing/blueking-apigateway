@@ -218,6 +218,13 @@
         </div>
       </template>
     </bk-sideslider>
+    <!-- <bk-dialog
+      :is-show="isBackDialogShow"
+      class="sideslider-close-back-dialog-cls"
+      width="0"
+      height="0"
+      dialog-type="show">
+    </bk-dialog> -->
   </div>
 </template>
 
@@ -231,7 +238,7 @@ import { Message, InfoBox } from 'bkui-vue';
 import { useSidebar } from '@/hooks';
 import { getResources } from '@/http';
 
-const { initSidebarFormData, isSidebarClosed } = useSidebar();
+const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
 
 const common = useCommon();
 const { t } = useI18n();

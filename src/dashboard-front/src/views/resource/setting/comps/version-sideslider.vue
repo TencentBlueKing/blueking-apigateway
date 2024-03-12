@@ -41,13 +41,14 @@
                   <bk-form-item
                     property="version"
                     :label="t('版本号')"
+                    :description="t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1')"
                     class="mt20"
                     required>
                     <bk-input v-model="formData.version" :placeholder="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')" />
-                    <div class="form-tips">
+                    <!-- <div class="form-tips">
                       <i class="apigateway-icon icon-ag-info"></i>
                       {{ t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}
-                    </div>
+                    </div> -->
                     <section class="ft12">
                       <span>
                         {{ $t("新增") }}
@@ -306,6 +307,10 @@ defineExpose({
 
       .delete {
         color: #ff5656;
+      }
+
+      .ft12 {
+        color: #63656e;
       }
     }
 
