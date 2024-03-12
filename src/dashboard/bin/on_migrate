@@ -45,3 +45,6 @@ python manage.py sync_esb_jwt_key_to_gateway
 python manage.py update_esb_user_verified_unrequired_apps ${esb_verified_user_exempted_apps}
 python manage.py sync_esb_verified_user_exempted_apps_to_gateway
 python manage.py add_plugin_error_status_code_200
+
+# 蓝鲸通知中心
+python manage.py register_to_bk_notice
