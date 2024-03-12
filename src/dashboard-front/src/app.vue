@@ -8,6 +8,8 @@ import {
 } from 'vue';
 import * as UserInfo from '@/components/user-info.vue';
 import AppAuth from '@/components/auth/index.vue';
+import NoticeComponent from '@blueking/notice-component';
+import '@blueking/notice-component/dist/style.css';
 import mitt from '@/common/event-bus';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
@@ -19,13 +21,17 @@ import { ILoginData } from '@/common/auth';
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
-const { BK_PAAS2_ESB_DOC_URL } = window;
+const { BK_PAAS2_ESB_DOC_URL, BK_DASHBOARD_URL } = window;
 
 // 加载完用户数据才会展示页面
 const userLoading = ref(false);
 const activeIndex = ref(0);
 // 获取用户数据
 const user = useUser();
+// 跑马灯数据
+const showNoticeAlert = ref(true);
+const enableShowNotice = ref(false);
+const noticeApi = ref(`${BK_DASHBOARD_URL}/notice/`);
 
 // getUser()
 //   .then((data) => {
@@ -105,6 +111,10 @@ const apigwId = computed(() => {
   return undefined;
 });
 
+const handleShowAlertChange = (payload: boolean) => {
+  showNoticeAlert.value = payload;
+};
+
 const fetchUserInfo = async () => {
   try {
     const res = await getUser();
@@ -118,6 +128,7 @@ const fetchUserInfo = async () => {
 const fetchFeatureFlags = async () => {
   try {
     const res = await getFeatureFlags({ limit: 10000, offset: 0 });
+    enableShowNotice.value = res?.ENABLE_BK_NOTICE || false;
     user.setFeatureFlags(res);
   } catch (e) {
     console.error(e);
@@ -208,6 +219,11 @@ onBeforeMount(() => {
 
 <template>
   <div id="app" :class="[systemCls]">
+    <NoticeComponent
+      v-if="showNoticeAlert && enableShowNotice"
+      :api-url="noticeApi"
+      @show-alert-change="handleShowAlertChange"
+    />
     <bk-navigation
       class="navigation-content"
       navigation-type="top-bottom"
@@ -245,6 +261,7 @@ onBeforeMount(() => {
         </div>
       </template>
     </bk-navigation>
+
     <AppAuth ref="authRef" />
   </div>
 </template>
