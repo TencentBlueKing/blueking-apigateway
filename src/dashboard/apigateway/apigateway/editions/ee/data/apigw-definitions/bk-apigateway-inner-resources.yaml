@@ -464,66 +464,6 @@ paths:
         authConfig:
           userVerifiedRequired: false
         disabledStages: []
-  /api/v1/apis/{api_id}/support/resources/{resource_id}/doc/:
-    get:
-      operationId: get_api_v1_apis_api_id_support_resources_resource_id_doc
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/{api_id}/support/resources/{resource_id}/doc/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/support/stages/sdks/:
-    get:
-      operationId: get_stage_sdks
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/{api_id}/support/stages/sdks/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/support/stages/{stage_name}/resources/{resource_name}/doc/:
-    get:
-      operationId: stage_resource_doc
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: true
-        allowApplyPermission: true
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/{api_id}/support/stages/{stage_name}/resources/{resource_name}/doc/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
   /api/v1/esb/systems/:
     get:
       operationId: get_esb_systems
