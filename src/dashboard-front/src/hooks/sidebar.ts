@@ -5,6 +5,7 @@ import { InfoBox } from 'bkui-vue';
 export function useSidebar() {
   const { t } = useI18n();
   const initDataStr = ref('');
+  // const isBackDialogShow = ref(false);
 
   const initSidebarFormData = (data?: any) => {
     initDataStr.value = JSON.stringify(data);
@@ -22,6 +23,7 @@ export function useSidebar() {
       if (isEqual) {
         resolve(true);
       } else {
+        // isBackDialogShow.value = true;
         // 已编辑
         InfoBox({
           'ext-cls': 'sideslider-close-cls',
@@ -30,9 +32,11 @@ export function useSidebar() {
           confirmText: t('离开'),
           onConfirm() {
             resolve(true);
+            // isBackDialogShow.value = false;
           },
           onClosed() {
             resolve(false);
+            // isBackDialogShow.value = false;
           },
         });
       }
@@ -42,5 +46,6 @@ export function useSidebar() {
   return {
     initSidebarFormData,
     isSidebarClosed,
+    // isBackDialogShow,
   };
 };

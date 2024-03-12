@@ -1065,7 +1065,7 @@ initLocalData();
 
   .ag-key,
   .ag-value {
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 
@@ -1073,7 +1073,7 @@ initLocalData();
   padding: 20px 30px;
   margin: 0 -30px;
   .title {
-    font-size: 13px;
+    font-size: 12px;
     color: #63656e;
     font-weight: bold;
     padding-bottom: 10px;

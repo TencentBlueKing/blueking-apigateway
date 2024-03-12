@@ -38,19 +38,56 @@
                     property="resource_version_id"
                     :label="`发布的资源版本(当前版本: ${currentAssets.resource_version.version || '--'})`">
                     <bk-select
+                      ref="selectVersionRef"
                       v-model="formData.resource_version_id"
                       :input-search="false"
+                      :popover-options="{
+                        extCls: 'custom-version-list'
+                      }"
+                      :list="versionList"
                       filterable
-                      @change="handleVersionChange"
+                      id-key="id"
+                      display-key="version"
                     >
-                      <bk-option
+                      <!-- <bk-option
                         v-for="(item) in versionList"
                         :key="item.id"
                         :value="item.id"
                         :label="item.version"
                         :disabled="item.disabled"
-                      >
-                      </bk-option>
+                      /> -->
+                      <template #optionRender="{ item }">
+                        <div
+                          :class="[
+                            'version-options',
+                            { 'version-options-disabled': item.disabled },
+                          ]"
+                          @click.stop="handleVersionChange(item)"
+                        >
+                          <span class="version-name">
+                            {{ item.version }}
+                          </span>
+                          <span v-if="currentAssets.resource_version.version === item.version" class="cur-version">
+                            <bk-tag theme="info">
+                              {{ t('当前版本') }}
+                            </bk-tag>
+                          </span>
+                          <span
+                            v-if="item.isLatestVersion"
+                            :class="[{ 'cur-version': currentAssets.resource_version.version !== item.version }]">
+                            <bk-tag theme="success"> {{ t('最新版本') }}</bk-tag>
+                          </span>
+                        </div>
+                      </template>
+                      <template #extension>
+                        <div class="extension-add">
+                          <div class="extension-add-content" @click.stop="handleOpenResource">
+                            <i class="apigateway-icon icon-ag-plus-circle add-resource-btn"
+                            />
+                            <span>{{ t('去新建') }}</span>
+                          </div>
+                        </div>
+                      </template>
                     </bk-select>
                     <p class="change-msg">
                       <span>
@@ -109,6 +146,14 @@
       </template>
     </bk-sideslider>
 
+    <!-- <bk-dialog
+      :is-show="isBackDialogShow"
+      class="sideslider-close-back-dialog-cls"
+      width="0"
+      height="0"
+      dialog-type="show">
+    </bk-dialog> -->
+
     <!-- 确认发布弹窗 -->
     <bk-dialog
       :is-show="dialogConfig.isShow"
@@ -140,7 +185,7 @@ import { useSidebar } from '@/hooks';
 
 const route = useRoute();
 const router = useRouter();
-const { initSidebarFormData, isSidebarClosed } = useSidebar();
+const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
 
 const apigwId = computed(() => +route.params.id);
 
@@ -173,6 +218,7 @@ const isShow = ref(false);
 const versionList = ref<any>([]);
 const formRef = ref(null);
 const logDetailsRef = ref(null);
+const selectVersionRef = ref(null);
 
 interface FormData {
   resource_version_id: number | undefined;
@@ -211,12 +257,12 @@ const rules = {
     },
   ],
 };
+const publishId = ref();
 
 const showPublishDia = () => {
   dialogConfig.isShow = true;
 };
 
-const publishId = ref();
 const handlePublish = async () => {
   try {
     const params = {
@@ -280,10 +326,11 @@ const showReleaseSideslider = () => {
 const getResourceVersions = async () => {
   try {
     const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 1000 });
-    res.results?.forEach((item: any) => {
+    res.results?.forEach((item: any, index: number) => {
       if (item.id === props.currentAssets?.resource_version?.id) {
         item.disabled = true;
       }
+      item.isLatestVersion = index === 0;
     });
     versionList.value = res.results;
   } catch (e) {
@@ -291,25 +338,28 @@ const getResourceVersions = async () => {
   };
 };
 
-const handleVersionChange = async (val: number) => {
-  if (!val) {
+const handleVersionChange = async (payload: Record<string, string>) => {
+  if (payload.disabled) {
+    return;
+  }
+  if (!payload.id) {
     diffData.value = {
       add: [],
       delete: [],
       update: [],
     };
+    selectVersionRef.value.hidePopover();
     return;
   };
-
   try {
     const query = {
       source_resource_version_id: props.currentAssets?.resource_version?.id,
-      target_resource_version_id: val,
+      target_resource_version_id: payload.id,
     };
-
     const res: any = await resourceVersionsDiff(apigwId.value, query);
-
     diffData.value = res;
+    formData.resource_version_id = payload?.id;
+    selectVersionRef.value.hidePopover();
   } catch (e) {
     console.log(e);
   };
@@ -356,14 +406,27 @@ const resetSliderData = () => {
   };
 };
 
+const handleOpenResource = () => {
+  const routeData = router.resolve({
+    name: 'apigwResource',
+  });
+  window.open(routeData.href, '_blank');
+};
+
 watch(
   () => isShow.value,
-  (val) => {
+  async (val) => {
     if (val) {
-      getResourceVersions();
+      await getResourceVersions();
       if (props.version?.id) {
-        formData.resource_version_id = props.version?.id;
-        handleVersionChange(props.version?.id);
+        const curVersion = versionList.value.find(item => item.id === props.version?.id);
+        if (curVersion) {
+          formData.resource_version_id = cloneDeep(curVersion);
+          handleVersionChange({
+            disabled: curVersion.disabled,
+            id: props.version?.id,
+          });
+        }
       }
     } else {
       resetSliderData();
@@ -428,6 +491,44 @@ defineExpose({
   .fix {
     display: none !important;
     opacity: 0 !important;
+  }
+}
+.custom-version-list {
+  .bk-select-content {
+    .bk-select-dropdown {
+      .bk-select-options {
+        .bk-select-option {
+          .version-options {
+             width: 100%;
+            .cur-version {
+              margin-left: 6px;
+            }
+            &-disabled {
+              color: #c4c6cc;
+              cursor: not-allowed;
+              .bk-tag {
+                cursor: not-allowed;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  .extension-add {
+    margin: 0 auto;
+    cursor: pointer;
+    .extension-add-content {
+      display: flex;
+      align-items: center;
+      color: #63656E;
+      font-size: 12px;
+      .add-resource-btn {
+        margin-right: 5px;
+        font-size: 16px;
+        color: #979BA5;
+      }
+    }
   }
 }
 </style>

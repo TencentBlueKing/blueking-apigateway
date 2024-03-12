@@ -293,6 +293,14 @@
       </template>
     </bk-sideslider>
 
+    <!-- <bk-dialog
+      :is-show="isBackDialogShow"
+      class="sideslider-close-back-dialog-cls"
+      width="0"
+      height="0"
+      dialog-type="show">
+    </bk-dialog> -->
+
     <bk-dialog
       :is-show="docuCategoryDialog.visible"
       :title="t('新建文档分类')"
@@ -351,7 +359,7 @@ import {
 import { useSidebar } from '@/hooks';
 
 const { t } = useI18n();
-const { initSidebarFormData, isSidebarClosed } = useSidebar();
+const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
 
 const getDefaultData = () => {
   return {

@@ -159,6 +159,8 @@ const stageStore = useStage();
 
 const props = defineProps({
   stageAddress: String,
+  stageId: Number,
+  versionId: Number,
 });
 
 const searchValue = ref<string>('');

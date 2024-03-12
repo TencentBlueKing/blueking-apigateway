@@ -66,7 +66,7 @@
             :placeholder="t('请输入标签，enter保存')"
           />
         </div>
-        <div v-else class="flex-row align-items-center justify-content-center" style="cursor: pointer;">
+        <div v-else class="flex-row align-items-center justify-content-center" style="cursor: pointer; color: #63656e;">
           <div
             class="flex-row align-items-center justify-content-center"
             @click="handleShowEdit"

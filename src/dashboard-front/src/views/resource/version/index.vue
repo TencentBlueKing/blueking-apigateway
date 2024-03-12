@@ -23,7 +23,7 @@ watch(
   () => resourceVersionStore.tabActive,
   (tab) => {
     if (tab === 'edition') {
-      resourceVersionStore.setResourceFilter('');
+      resourceVersionStore.setResourceFilter({});
     }
   },
 );

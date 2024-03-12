@@ -250,9 +250,12 @@ onUnmounted(() => {
   height: 223px;
   background: #ffffff;
   padding: 0 24px;
-  box-shadow: 0 2px 4px 0 #1919290d;
+  box-shadow: 0 2px 4px 0 #1919290d;;
   border-radius: 2px;
   cursor: pointer;
+  &:hover {
+    box-shadow: 0 2px 4px 0 #0000001a, 0 2px 4px 0 #1919290d;
+  }
 
   .title {
     display: flex;
@@ -276,7 +279,7 @@ onUnmounted(() => {
   }
 
   .content {
-    padding-top: 5px;
+    padding-top: 16px;
     font-size: 12px;
 
     .apigw-form-item {
@@ -286,8 +289,8 @@ onUnmounted(() => {
       color: #63656e;
 
       .label {
-        padding-right: 24px;
-        width: 120px;
+        padding-right: 8px;
+        width: 100px;
         text-align: right;
       }
 
@@ -296,7 +299,7 @@ onUnmounted(() => {
         color: #313238;
 
         &.url {
-          max-width: 200px;
+          max-width: 280px;
           display: flex;
           align-items: center;
 
@@ -304,6 +307,7 @@ onUnmounted(() => {
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
+            color: #313238;
           }
 
           i {

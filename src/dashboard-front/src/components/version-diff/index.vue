@@ -292,7 +292,7 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(updateItem.source)"
-                    :title="`【${updateItem?.method}】${updateItem?.path}`"
+                    :title="`【${updateItem?.source?.method}】${updateItem?.source?.path}`"
                   ></span>
                 </div>
                 <div class="resource-box pl15 pr15">
@@ -319,7 +319,7 @@
                     v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(updateItem.target)"
-                    :title="`【${updateItem?.method}】${updateItem?.path}`"
+                    :title="`【${updateItem?.target?.method}】${updateItem?.target?.path}`"
                   ></span>
                 </div>
                 <!-- {{updateItem.source.diff}} -->
@@ -527,7 +527,35 @@ const renderTitle = (item: any) => {
     path = path.replace(reg, '<i class="keyword ag-strong primary">$1</i>');
   }
 
-  return `【${method}】${path}`;
+  // return `【${method}】${path}`;
+
+  // POST = 'info', GET = 'success', DELETE = 'danger', PUT = 'warning', PATCH = 'info', ANY = 'success',
+  let tagCls = 'bk-tag-info';
+  switch (method) {
+    case 'POST':
+      tagCls = 'bk-tag-info';
+      break;
+    case 'GET':
+      tagCls = 'bk-tag-success';
+      break;
+    case 'DELETE':
+      tagCls = 'bk-tag-danger';
+      break;
+    case 'PUT':
+      tagCls = 'bk-tag-warning';
+      break;
+    case 'PATCH':
+      tagCls = 'bk-tag-info';
+      break;
+    case 'ANY':
+      tagCls = 'bk-tag-success';
+      break;
+    default:
+      break;
+  }
+  return `<div class="bk-tag ${tagCls} bk-tag--default" style="border-radius: 2px;margin-right: 4px;">`
+      + `<span class="bk-tag-text">${method}</span>`
+      + `</div>${path}`;
 };
 
 const handleVersionChange = () => {
