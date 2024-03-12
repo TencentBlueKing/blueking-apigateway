@@ -26,21 +26,23 @@ const userLoading = ref(false);
 const activeIndex = ref(0);
 // 获取用户数据
 const user = useUser();
-getUser()
-  .then((data) => {
-    user.setUser(data);
-    userLoading.value = true;
-  })
-  .catch(() => {
-    Message('获取用户信息失败，请检查后再试');
-  });
 
-getFeatureFlags({ limit: 10000, offset: 0 }).then((data) => {
-  user.setFeatureFlags(data);
-})
-  .catch(() => {
-    Message('获取功能权限失败，请检查后再试');
-  });
+// getUser()
+//   .then((data) => {
+//     user.setUser(data);
+//     userLoading.value = true;
+//   })
+//   .catch(() => {
+//     Message('获取用户信息失败，请检查后再试');
+//   });
+
+// getFeatureFlags({ limit: 10000, offset: 0 }).then((data) => {
+//   console.log(data);
+//   user.setFeatureFlags(data);
+// })
+//   .catch(() => {
+//     Message('获取功能权限失败，请检查后再试');
+//   });
 
 const headerList = computed(() => ([
   {
@@ -103,9 +105,29 @@ const apigwId = computed(() => {
   return undefined;
 });
 
+const fetchUserInfo = async () => {
+  try {
+    const res = await getUser();
+    user.setUser(res);
+    userLoading.value = true;
+  } catch (e) {
+    Message('获取用户信息失败，请检查后再试');
+  }
+};
+
+const fetchFeatureFlags = async () => {
+  try {
+    const res = await getFeatureFlags({ limit: 10000, offset: 0 });
+    user.setFeatureFlags(res);
+  } catch (e) {
+    console.error(e);
+    Message('获取功能权限失败，请检查后再试');
+  };
+};
+
 watch(
   () => route.fullPath,
-  () => {
+  async () => {
     const { meta } = route;
     let index = 0;
     for (let i = 0; i < headerList.value.length; i++) {
@@ -120,6 +142,12 @@ watch(
     if (platform.indexOf('win') === 0) {
       systemCls.value = 'win';
     }
+    await fetchUserInfo();
+    await fetchFeatureFlags();
+  },
+  {
+    immediate: true,
+    deep: true,
   },
 );
 
