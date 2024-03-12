@@ -196,24 +196,39 @@
               </div>
             </section>
           </div>
+
+          <div class="footer-btn-wrapper">
+            <bk-button
+              theme="primary"
+              style="padding: 0 30px"
+              @click="handleConfirm"
+            >
+              {{ t('确定') }}
+            </bk-button>
+            <bk-button
+              style="padding: 0 30px"
+              @click="handleCancel"
+            >
+              {{ t('取消') }}
+            </bk-button>
+          </div>
+
+          <div class="fixed-footer-btn-wrapper" v-show="isAdsorb">
+            <bk-button
+              theme="primary"
+              style="padding: 0 30px"
+              @click="handleConfirm"
+            >
+              {{ t('确定') }}
+            </bk-button>
+            <bk-button
+              style="padding: 0 30px"
+              @click="handleCancel"
+            >
+              {{ t('取消') }}
+            </bk-button>
+          </div>
         </bk-loading>
-      </template>
-      <template #footer>
-        <div style="padding-left: 20px">
-          <bk-button
-            theme="primary"
-            style="padding: 0 30px"
-            @click="handleConfirm"
-          >
-            {{ t('确定') }}
-          </bk-button>
-          <bk-button
-            style="padding: 0 30px"
-            @click="handleCancel"
-          >
-            {{ t('取消') }}
-          </bk-button>
-        </div>
       </template>
     </bk-sideslider>
     <!-- <bk-dialog
@@ -227,7 +242,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { getBackendsListData, createStage, getStageDetail, getStageBackends, updateStage } from '@/http';
@@ -245,6 +260,7 @@ const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSide
 const route = useRoute();
 
 const isShow = ref(false);
+const isAdsorb = ref<boolean>(false);
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -545,6 +561,7 @@ const handleAddServiceAddress = (name: string) => {
       });
     }
   });
+  controlToggle();
 };
 
 // 删除服务地址
@@ -555,7 +572,53 @@ const handleDeleteServiceAddress = (name: string, index: number) => {
       v.config.hosts.splice(index, 1);
     }
   });
+  controlToggle();
 };
+
+// 获取按钮底部距离
+const getDistanceToBottom = (element: any) => {
+  const rect = element?.getBoundingClientRect();
+  return Math.max(0, window?.innerHeight - rect?.bottom);
+};
+
+// 元素滚动判断元素是否吸顶
+const controlToggle = () => {
+  const el = document.querySelector('.footer-btn-wrapper');
+  const bottomDistance = getDistanceToBottom(el);
+  const maxDistance = 1000;
+  // 是否吸附
+  if (bottomDistance < 25 || bottomDistance > maxDistance) {
+    isAdsorb.value = true;
+    el.classList.add('is-pinned');
+  } else {
+    isAdsorb.value = false;
+    el?.classList?.remove('is-pinned');
+  }
+};
+
+const observerBtnScroll = () => {
+  const container = document.querySelector('.bk-modal-content');
+  container?.addEventListener('scroll', controlToggle);
+};
+
+const destroyEvent = () => {
+  const container = document.querySelector('.bk-modal-content');
+  container?.removeEventListener('scroll', controlToggle);
+};
+
+watch(
+  () => isShow.value,
+  (v) => {
+    if (v) {
+      setTimeout(() => {
+        controlToggle();
+        observerBtnScroll();
+      }, 200);
+    } else {
+      destroyEvent();
+    }
+  },
+);
 
 // 暴露属性
 defineExpose({
@@ -569,6 +632,9 @@ defineExpose({
     position: absolute;
     bottom: 0;
     box-shadow: 0 -1px 0 0 #dcdee5;
+  }
+  :deep(.bk-modal-content) {
+    overflow-y: auto;
   }
 }
 .sideslider-content {
@@ -718,5 +784,26 @@ defineExpose({
 .backend-item-cls:last-child {
   margin-bottom: 50px !important;
   background: #3a84ff;
+}
+
+.footer-btn-wrapper {
+  bottom: 0;
+  height: 52px;
+  padding-left: 20px;
+}
+.fixed-footer-btn-wrapper {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 0;
+  padding-left: 20px;
+  background: #fff;
+  box-shadow: 0 -2px 4px 0 #0000000f;
+  z-index: 9;
+  transition: .3s;
+}
+.is-pinned {
+  opacity: 0;
 }
 </style>
