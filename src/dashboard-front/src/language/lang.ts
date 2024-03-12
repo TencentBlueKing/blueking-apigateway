@@ -1234,6 +1234,7 @@ const lang: ILANG = {
   '校验应用权限：': ['Validate application permissions:'],
   '不公开': ['Not public'],
   '已使用的环境:': ['Used environments:'],
+  '已使用的环境：': ['Used environments: '],
   '请求方法：': ['Request method:'],
   '请求路径：': ['Request path:'],
   '服务：': ['Service:'],
@@ -1370,8 +1371,7 @@ const lang: ILANG = {
   '确认修改': ['Confirm modification'],
   '默认后端服务，且被{resourceCount}个资源引用了，不能删除': ['Default back-end service, and referenced by {resourceCount} resources, cannot be deleted'],
   '服务被{resourceCount}个资源引用了，不能删除': ['Service referenced by {resourceCount} resources, cannot be deleted'],
-
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
+  '插件已添加，不能再选择': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],

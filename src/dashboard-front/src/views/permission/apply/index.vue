@@ -350,7 +350,7 @@ watch(
 
 // 批量审批dialog的title
 const batchApplyDialogConfTitle = computed(() => {
-  return t(`将对以下${selections.value.length}个权限申请单进行审批`);
+  return t('将对以下{permissionSelectListTemplate}个权限申请单进行审批', { permissionSelectListTemplate: selections.value.length })
 });
 // 审批操作alter的theme
 const alertTheme = computed(() => {

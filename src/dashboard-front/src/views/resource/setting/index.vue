@@ -1214,7 +1214,7 @@ onMounted(() => {
         font-size: 24px;
         cursor: pointer;
         color: #3A84FF;
-        top: 0;
+        top: -2px;
         // top: 8px;
         // right: -20px;
       }

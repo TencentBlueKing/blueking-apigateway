@@ -300,9 +300,10 @@ watch(
 .detail-container{
     max-width: 1000px;
     .title {
-        color: #313238;
-        font-weight: 700;
-        font-size: 14px;
+      color: #313238;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 18px;
     }
     .form-cls {
       font-size: 12px;
@@ -312,7 +313,7 @@ watch(
         margin-bottom: 6px;
         .bk-form-label {
           font-size: 12px;
-          padding-right: 8px;
+          padding-right: 10px;
           display: flex;
           justify-content: flex-end;
         }
@@ -335,7 +336,7 @@ watch(
       min-width: 88px;
       margin-top: 20px;
       &:last-child {
-        margin-left: 8px;
+        margin-left: 4px;
       }
     }
 

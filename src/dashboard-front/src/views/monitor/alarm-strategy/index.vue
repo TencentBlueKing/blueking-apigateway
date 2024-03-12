@@ -81,152 +81,151 @@
         </bk-table>
       </bk-loading>
     </div>
-  </div>
-
-  <!-- 新建/编辑sideslider -->
-  <bk-sideslider
-    ext-cls="alarm-strategy-slider" v-model:isShow="sidesliderConfig.isShow" :title="sidesliderConfig.title"
-    width="750">
-    <template #default>
-      <div class="strategy-form p30">
-        <bk-form ref="strategyFormRef" :label-width="160" :model="formData">
-          <div class="form-bd">
-            <dl class="form-content">
-              <div class="content-panel single">
-                <bk-form-item
-                  class="mb0"
-                  :label="t('告警策略名称')" :required="true" :rules="rules.name" :property="'name'"
-                  :error-display-type="'normal'">
-                  <bk-input :placeholder="t('请输入')" :maxlength="128" v-model="formData.name"></bk-input>
-                </bk-form-item>
-              </div>
-              <div class="content-panel">
-                <dt class="panel-title"> {{ t('触发条件') }} </dt>
-                <dd class="panel-content">
+    <!-- 新建/编辑sideslider -->
+    <bk-sideslider
+      ext-cls="alarm-strategy-slider" v-model:isShow="sidesliderConfig.isShow" :title="sidesliderConfig.title"
+      width="750">
+      <template #default>
+        <div class="strategy-form p30">
+          <bk-form ref="strategyFormRef" :label-width="160" :model="formData">
+            <div class="form-bd">
+              <dl class="form-content">
+                <div class="content-panel single">
                   <bk-form-item
-                    class="mb20"
-                    :label="t('告警规则')" :required="true" :rules="rules.alarm_subtype"
-                    :property="'alarm_subtype'" :error-display-type="'normal'">
-                    <bk-select :clearable="false" v-model="formData.alarm_subtype">
-                      <bk-option
-                        v-for="option in alarmStrategyOptions.alarmSubType" :key="option.value"
-                        :value="option.value" :label="option.name">
-                      </bk-option>
-                    </bk-select>
+                    class="mb0"
+                    :label="t('告警策略名称')" :required="true" :rules="rules.name" :property="'name'"
+                    :error-display-type="'normal'">
+                    <bk-input :placeholder="t('请输入')" :maxlength="128" v-model="formData.name"></bk-input>
                   </bk-form-item>
-                  <bk-form-item :label="t('告警范围')" class="mb20">
-                    <div class="flex-group">
-                      <span class="item label"> {{ t('资源标签包含') }} </span>
-                      <span class="item w328 flex-none">
-                        <bk-select v-model="formData.gateway_label_ids" filterable multiple :input-search="false">
-                          <bk-option
-                            v-for="option in labelList" :key="option.id" :value="option.id" :label="option.name">
-                          </bk-option>
-                        </bk-select>
-                      </span>
-                    </div>
-                  </bk-form-item>
-                  <bk-form-item :label="t('检测算法')" class="mb20">
-                    <div class="flex-groups">
-                      <div class="flex-group flex-2">
-                        <span class="item">
-                          <bk-select
-                            disabled :clearable="false" :popover-min-width="120"
-                            v-model="formData.config.detect_config.duration">
+                </div>
+                <div class="content-panel">
+                  <dt class="panel-title"> {{ t('触发条件') }} </dt>
+                  <dd class="panel-content">
+                    <bk-form-item
+                      class="mb20"
+                      :label="t('告警规则')" :required="true" :rules="rules.alarm_subtype"
+                      :property="'alarm_subtype'" :error-display-type="'normal'">
+                      <bk-select :clearable="false" v-model="formData.alarm_subtype">
+                        <bk-option
+                          v-for="option in alarmStrategyOptions.alarmSubType" :key="option.value"
+                          :value="option.value" :label="option.name">
+                        </bk-option>
+                      </bk-select>
+                    </bk-form-item>
+                    <bk-form-item :label="t('告警范围')" class="mb20">
+                      <div class="flex-group">
+                        <span class="item label"> {{ t('资源标签包含') }} </span>
+                        <span class="item w328 flex-none">
+                          <bk-select v-model="formData.gateway_label_ids" filterable multiple :input-search="false">
                             <bk-option
-                              v-for="option in alarmStrategyOptions.detectConfig.duration" :key="option.value"
-                              :value="option.value" :label="option.name">
-                            </bk-option>
-                          </bk-select>
-                        </span>
-                        <span class="item label"> {{ t('内命中规则次数') }} </span>
-                        <span class="item flex-none w70">
-                          <bk-select disabled :clearable="false" v-model="formData.config.detect_config.method">
-                            <bk-option
-                              v-for="option in alarmStrategyOptions.detectConfig.method" :key="option.value"
-                              :value="option.value" :label="option.name">
+                              v-for="option in labelList" :key="option.id" :value="option.id" :label="option.name">
                             </bk-option>
                           </bk-select>
                         </span>
                       </div>
-                      <div class="flex-group flex-1">
-                        <span class="item">
-                          <bk-input
-                            disabled :placeholder="t('请输入')" type="number" :min="0"
-                            v-model="formData.config.detect_config.count">
-                          </bk-input>
-                        </span>
-                        <span class="item label"> {{ t('时触发') }} </span>
+                    </bk-form-item>
+                    <bk-form-item :label="t('检测算法')" class="mb20">
+                      <div class="flex-groups">
+                        <div class="flex-group flex-2">
+                          <span class="item">
+                            <bk-select
+                              disabled :clearable="false" :popover-min-width="120"
+                              v-model="formData.config.detect_config.duration">
+                              <bk-option
+                                v-for="option in alarmStrategyOptions.detectConfig.duration" :key="option.value"
+                                :value="option.value" :label="option.name">
+                              </bk-option>
+                            </bk-select>
+                          </span>
+                          <span class="item label"> {{ t('内命中规则次数') }} </span>
+                          <span class="item flex-none w70">
+                            <bk-select disabled :clearable="false" v-model="formData.config.detect_config.method">
+                              <bk-option
+                                v-for="option in alarmStrategyOptions.detectConfig.method" :key="option.value"
+                                :value="option.value" :label="option.name">
+                              </bk-option>
+                            </bk-select>
+                          </span>
+                        </div>
+                        <div class="flex-group flex-1">
+                          <span class="item">
+                            <bk-input
+                              disabled :placeholder="t('请输入')" type="number" :min="0"
+                              v-model="formData.config.detect_config.count">
+                            </bk-input>
+                          </span>
+                          <span class="item label"> {{ t('时触发') }} </span>
+                        </div>
                       </div>
-                    </div>
-                  </bk-form-item>
-                  <bk-form-item :label="t('告警收敛')" class="mb0">
-                    <div class="flex-group">
-                      <span class="item label"> {{ t('告警产生后') }}， </span>
-                      <span class="item flex-0-0 w122">
-                        <bk-select disabled :clearable="false" v-model="formData.config.converge_config.duration">
-                          <bk-option
-                            v-for="option in alarmStrategyOptions.convergeConfig.duration" :key="option.value"
-                            :value="option.value" :label="option.name">
-                          </bk-option>
-                        </bk-select>
-                      </span>
-                      <span class="item label flex-1-1"> {{ t('内不再发送告警') }} </span>
-                    </div>
-                  </bk-form-item>
-                </dd>
-              </div>
-              <div class="content-panel">
-                <dt class="panel-title"> {{ t('通知方式') }} </dt>
-                <dd class="panel-content">
-                  <bk-form-item :label="t('通知方式')" :required="true">
-                    <bk-checkbox-group v-model="formData.config.notice_config.notice_way" class="checkbox-group">
-                      <bk-checkbox :label="'wechat'">
-                        <span class="icon apigateway-icon icon-ag-wechat-color"></span>
-                        {{ t('微信') }}
-                      </bk-checkbox>
-                      <bk-checkbox :label="'im'">
-                        <span class="icon apigateway-icon icon-ag-qw"></span>
-                        {{ t('企业微信') }}
-                      </bk-checkbox>
-                      <bk-checkbox :label="'mail'">
-                        <span class="icon apigateway-icon icon-ag-email-color"></span>
-                        {{ t('邮箱') }}
-                      </bk-checkbox>
-                    </bk-checkbox-group>
-                  </bk-form-item>
-                  <bk-form-item :label="t('通知对象')">
-                    <bk-checkbox-group v-model="formData.config.notice_config.notice_role" class="checkbox-group">
-                      <bk-checkbox :label="'maintainer'"> {{ t('网关维护者') }} </bk-checkbox>
-                    </bk-checkbox-group>
-                  </bk-form-item>
-                  <bk-form-item :label="t('其他通知对象')" class="mb0">
-                    <!-- <bk-input
+                    </bk-form-item>
+                    <bk-form-item :label="t('告警收敛')" class="mb0">
+                      <div class="flex-group">
+                        <span class="item label"> {{ t('告警产生后') }}， </span>
+                        <span class="item flex-0-0 w122">
+                          <bk-select disabled :clearable="false" v-model="formData.config.converge_config.duration">
+                            <bk-option
+                              v-for="option in alarmStrategyOptions.convergeConfig.duration" :key="option.value"
+                              :value="option.value" :label="option.name">
+                            </bk-option>
+                          </bk-select>
+                        </span>
+                        <span class="item label flex-1-1"> {{ t('内不再发送告警') }} </span>
+                      </div>
+                    </bk-form-item>
+                  </dd>
+                </div>
+                <div class="content-panel">
+                  <dt class="panel-title"> {{ t('通知方式') }} </dt>
+                  <dd class="panel-content">
+                    <bk-form-item :label="t('通知方式')" :required="true">
+                      <bk-checkbox-group v-model="formData.config.notice_config.notice_way" class="checkbox-group">
+                        <bk-checkbox :label="'wechat'">
+                          <span class="icon apigateway-icon icon-ag-wechat-color"></span>
+                          {{ t('微信') }}
+                        </bk-checkbox>
+                        <bk-checkbox :label="'im'">
+                          <span class="icon apigateway-icon icon-ag-qw"></span>
+                          {{ t('企业微信') }}
+                        </bk-checkbox>
+                        <bk-checkbox :label="'mail'">
+                          <span class="icon apigateway-icon icon-ag-email-color"></span>
+                          {{ t('邮箱') }}
+                        </bk-checkbox>
+                      </bk-checkbox-group>
+                    </bk-form-item>
+                    <bk-form-item :label="t('通知对象')">
+                      <bk-checkbox-group v-model="formData.config.notice_config.notice_role" class="checkbox-group">
+                        <bk-checkbox :label="'maintainer'"> {{ t('网关维护者') }} </bk-checkbox>
+                      </bk-checkbox-group>
+                    </bk-form-item>
+                    <bk-form-item :label="t('其他通知对象')" class="mb0">
+                      <!-- <bk-input
                       :placeholder="t('请输入用户')"
                       :maxlength="128"
                       v-model="formData.config.notice_config.notice_extra_receiver">
                     </bk-input> -->
-                    <bk-tag-input
-                      v-model="formData.config.notice_config.notice_extra_receiver" :placeholder="t('请输入用户')"
-                      allow-create has-delete-icon collapse-tags />
-                    <p class="ag-tip mt5">
-                      <i class="apigateway-icon icon-ag-info"></i> {{ t('通知对象、其他通知对象至少一个有效') }}
-                    </p>
-                  </bk-form-item>
-                </dd>
-              </div>
-            </dl>
-          </div>
-          <div class="form-ft">
-            <bk-button theme="primary" class="mr10" :loading="isSaveLoading" @click="handleSave"> {{ t('保存') }}
-            </bk-button>
-            <bk-button @click="handleCancel"> {{ t('取消') }} </bk-button>
-          </div>
-        </bk-form>
-      </div>
+                      <bk-tag-input
+                        v-model="formData.config.notice_config.notice_extra_receiver" :placeholder="t('请输入用户')"
+                        allow-create has-delete-icon collapse-tags />
+                      <p class="ag-tip mt5">
+                        <i class="apigateway-icon icon-ag-info"></i> {{ t('通知对象、其他通知对象至少一个有效') }}
+                      </p>
+                    </bk-form-item>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+            <div class="form-ft">
+              <bk-button theme="primary" class="mr10" :loading="isSaveLoading" @click="handleSave"> {{ t('保存') }}
+              </bk-button>
+              <bk-button @click="handleCancel"> {{ t('取消') }} </bk-button>
+            </div>
+          </bk-form>
+        </div>
 
-    </template>
-  </bk-sideslider>
+      </template>
+    </bk-sideslider>
+  </div>
 </template>
 
 <script setup lang="ts">

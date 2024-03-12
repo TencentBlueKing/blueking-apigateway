@@ -196,6 +196,13 @@
         </div>
       </template>
     </bk-sideslider>
+    <!-- <bk-dialog
+      :is-show="isBackDialogShow"
+      class="sideslider-close-back-dialog-cls"
+      width="0"
+      height="0"
+      dialog-type="show">
+    </bk-dialog> -->
   </div>
 </template>
 
@@ -217,7 +224,7 @@ import {
 } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
 
-const { initSidebarFormData, isSidebarClosed } = useSidebar();
+const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
 const { t } = useI18n();
 const common = useCommon();
 const router = useRouter();
@@ -425,7 +432,7 @@ const handleEdit = async (data: any) => {
     name: data.name,
     description: data.description,
   };
-  sidesliderConfi.title = t(`编辑后端服务【${data.name}】`);
+  sidesliderConfi.title = t('编辑后端服务【{name}】', { name: data.name });
   try {
     const res = await getBackendServiceDetail(apigwId, data.id);
     curServiceDetail.value = res;

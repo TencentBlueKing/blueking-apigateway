@@ -10,7 +10,7 @@
       @hidden="handleHidden"
     >
       <template #default>
-        <bk-loading :loading="isLoading" color="#ffffff" opacity="1">
+        <bk-loading :loading="isLoading" color="#ffffff" :opacity="1">
           <div class="sideslider-content">
             <div class="sideslider-lf">
               <bk-input class="mb12" type="search" clearable v-model="keywords" />

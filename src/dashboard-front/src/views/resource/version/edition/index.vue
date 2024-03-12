@@ -117,7 +117,7 @@
     <!-- 生成sdk弹窗 -->
     <create-sdk
       :version-list="tableData"
-      :resource-version-id="resourceVersionId"
+      :resource-version-id="String(resourceVersionId)"
       @done="changeTab"
       ref="createSdkRef"
     />

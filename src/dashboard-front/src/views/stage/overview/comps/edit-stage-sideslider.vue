@@ -9,6 +9,7 @@
       ext-cls="stage-sideslider-cls"
       :before-close="handleBeforeClose"
       @animation-end="handleAnimationEnd"
+      :transfer="true"
     >
       <template #default>
         <bk-loading :loading="isDialogLoading">
@@ -215,6 +216,13 @@
         </div>
       </template>
     </bk-sideslider>
+    <!-- <bk-dialog
+      :is-show="isBackDialogShow"
+      class="sideslider-close-back-dialog-cls"
+      width="0"
+      height="0"
+      dialog-type="show">
+    </bk-dialog> -->
   </div>
 </template>
 
@@ -233,7 +241,7 @@ import { useGetGlobalProperties, useSidebar } from '@/hooks';
 const { t } = useI18n();
 const common = useCommon();
 const stageStore = useStage();
-const { initSidebarFormData, isSidebarClosed } = useSidebar();
+const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
 const route = useRoute();
 
 const isShow = ref(false);
@@ -683,11 +691,12 @@ defineExpose({
   :deep(.bk-form-content) {
     .timeout-tip {
       position: absolute;
-      top: 0;
+      top: 1px;
       right: -70px;
       color: #63656e;
       margin-left: 13px;
       white-space: nowrap;
+      font-size: 12px;
     }
   }
 }

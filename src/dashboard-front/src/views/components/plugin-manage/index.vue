@@ -74,11 +74,15 @@
                     <span class="plugin-icon">
                       {{ pluginCodeFirst(item.code) }}
                     </span>
-                    <span v-show="isBound(item)" class="binddingText">
+                    <span v-show="isBound(item)" class="bindding-text">
                       {{ t('已添加') }}
                     </span>
                   </div>
-                  <p class="plugin-name">{{ item.name }}</p>
+                  <p
+                    :class="['plugin-name', isBound(item) ? 'added' : '']" v-bk-tooltips="{
+                      content: t('插件已添加，不能再选择'),
+                      disabled: !isBound(item)
+                    }">{{ item.name }}</p>
                   <div class="binding">
                     <ul class="binding-list">
                       <li>
@@ -394,7 +398,9 @@ const handleDeletePlugin = (item: any) => {
       } catch (error) {
         console.log('error', error);
       } finally {
-        pluginDeleting.value = false;
+        setTimeout(() => {
+          pluginDeleting.value = false;
+        }, 300);
       }
     },
   });
@@ -618,48 +624,57 @@ init();
       margin-right: 18px;
       margin-bottom: 20px;
       width: 32%;
-      padding: 20px;
+      padding: 24px 20px 20px 24px;
       background-color: #fff;
       border-radius: 12px;
-      box-shadow: 5px 6px 11px -11px gray;
+      box-shadow: 0 2px 4px 0 #1919290d;
       overflow: hidden;
 
       .plungin-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 15px;
+        margin-bottom: 12px;
 
         .plugin-icon {
           display: inline-block;
-          width: 60px;
-          height: 60px;
+          width: 48px;
+          height: 48px;
           border-radius: 50%;
           background-color: #e2edfd;
           color: #3a84f6;
           text-align: center;
-          line-height: 60px;
+          line-height: 48px;
           font-weight: 700;
-          font-size: 26px;
+          font-size: 24px;
         }
 
-        .binddingText {
-          color: #b0b2b4;
+        .bindding-text {
+          color: #c4c6cc;
+          font-size: 12px;
         }
       }
 
       .plugin-name {
         font-weight: 700;
-        font-size: 15px;
-        color: #2e2d32;
+        font-size: 14px;
+        color: #313238;
+        &.added {
+          z-index: 2;
+          position: relative;
+          cursor: not-allowed;
+          opacity: 0.5;
+          display: inline-block;
+        }
       }
 
       .binding {
         .binding-list {
           display: flex;
           justify-content: space-between;
-          margin: 5px 0 9px;
-          color: #b0b2b4;
+          margin: 4px 0 12px;
+          color: #979ba5;
+          font-size: 12px;
 
           .binding-empty {
             color: #64666a;
@@ -676,7 +691,8 @@ init();
 
 
       .plugin-notes {
-        color: 808487;
+        color: #63656e;
+        font-size: 12px;
       }
 
       .plugin-chose {
@@ -754,7 +770,8 @@ init();
 
 .plugin-add-slider {
   :deep(.bk-modal-content) {
-    height: calc(100vh - 106px) !important;
+    // height: calc(100vh - 106px) !important;
+    height: calc(100% - 126px) !important;
   }
 
   .slider-footer {
