@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('plugin', '0012_pluginbinding_source'),
         ('core', '0038_auto_20231023_1526'),
+        ('django_celery_beat', '0001_initial'),
     ]
 
     operations = [migrations.RunPython(run_migrate_command)]
