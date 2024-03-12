@@ -46,8 +46,9 @@
         </template>
         <template v-else>
           <div class="empty-wrapper">
-            <table-empty
+            <TableEmpty
               :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
               @clear-filter="clearFilterKey"
             />
           </div>
@@ -61,6 +62,7 @@
 import _ from 'lodash';
 import { ref, reactive, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 
@@ -79,6 +81,7 @@ const curSelect = ref<string>('*');
 const isFilter = ref<boolean>(false);
 const tableEmptyConf = reactive({
   keyword: '',
+  isAbnormal: false,
 });
 
 const allCount = computed(() => {
@@ -88,7 +91,15 @@ const allCount = computed(() => {
 });
 
 const updateTableEmptyConfig = () => {
-  tableEmptyConf.keyword = searchValue.value;
+  if (searchValue.value && !curList.value.length) {
+    tableEmptyConf.keyword = 'placeholder';
+    return;
+  }
+  if (searchValue.value.length) {
+    tableEmptyConf.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.keyword = '';
 };
 
 const handleSearch = _.debounce((payload) => {
@@ -292,6 +303,7 @@ defineExpose({
       padding-left: 20px;
     }
     .empty-wrapper {
+      width: 100%;
       position: absolute;
       top: 208px;
       left: 50%;
