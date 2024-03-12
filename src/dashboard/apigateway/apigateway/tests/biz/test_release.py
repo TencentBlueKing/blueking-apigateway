@@ -25,6 +25,7 @@ from apigateway.core.constants import (
     StageStatusEnum,
 )
 from apigateway.core.models import PublishEvent, Release, Stage
+from apigateway.utils.time import now_datetime
 
 
 class TestReleaseHandler:
@@ -68,7 +69,9 @@ class TestReleaseHandler:
             ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
             == PublishEventStatusTypeEnum.FAILURE.value
         )
+
         fake_publish_event.status = PublishEventStatusTypeEnum.FAILURE.value
+        fake_publish_event.created_time = now_datetime()
         fake_publish_event.save()
 
         assert (
@@ -77,6 +80,7 @@ class TestReleaseHandler:
         )
 
         fake_publish_event.status = PublishEventStatusTypeEnum.SUCCESS.value
+        fake_publish_event.created_time = now_datetime()
         fake_publish_event.save()
 
         assert (
