@@ -772,6 +772,7 @@ init();
   :deep(.bk-modal-content) {
     // height: calc(100vh - 106px) !important;
     height: calc(100% - 126px) !important;
+    overflow-y: auto;
   }
 
   .slider-footer {

@@ -160,6 +160,7 @@
       :title="dialogConfig.title"
       :is-loading="dialogConfig.loading"
       :theme="'primary'"
+      width="380"
       quick-close
       @closed="() => (dialogConfig.isShow = false)"
       @confirm="handlePublish"
@@ -442,6 +443,9 @@ defineExpose({
 
 <style lang="scss" scoped>
 .release-sideslider {
+  :deep(.bk-modal-content) {
+    overflow-y: auto;
+  }
   .sideslider-content {
     width: 100%;
 
