@@ -285,6 +285,9 @@ defineExpose({
 </script>
 
   <style lang="scss" scoped>
+  :deep(.bk-modal-content) {
+    overflow-y: auto;
+  }
   .sideslider-content {
     width: 100%;
 
