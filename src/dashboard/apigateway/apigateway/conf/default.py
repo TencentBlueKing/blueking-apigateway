@@ -872,7 +872,6 @@ DEFAULT_FEATURE_FLAG = {
     "ALLOW_UPLOAD_SDK_TO_REPOSITORY": env.bool("FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY", False),
     # 是否允许创建企业微信群，上云版一键拉群功能
     "ALLOW_CREATE_APPCHAT": env.bool("FEATURE_FLAG_ALLOW_CREATE_APPCHAT", False),
-
     # ----------------------------------------------------------------------------
     # 是否展示蓝鲸通知中心组件
     "ENABLE_BK_NOTICE": ENABLE_BK_NOTICE,

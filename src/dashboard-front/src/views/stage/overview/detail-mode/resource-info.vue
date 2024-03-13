@@ -14,6 +14,7 @@
           class="table-layout mt15"
           :data="curPageData"
           :pagination="pagination"
+          :remote-pagination="true"
           :empty-text="emptyText"
           show-overflow-tooltip
           row-hover="auto"
@@ -274,7 +275,16 @@ const handleEditStage = () => {
   stageSidesliderRef.value?.handleShowSideslider('edit');
 };
 
+watch(
+  () => searchValue.value,
+  () => {
+    pagination.value.current = 1;
+    pagination.value.limit = 10;
+  },
+);
+
 const getPageData = () => {
+  isLoading.value = true;
   let curAllData = resourceVersionList.value;
   if (searchValue.value) {
     curAllData = curAllData?.filter((row: any) => {
@@ -303,7 +313,9 @@ const getPageData = () => {
     endIndex = curAllData.length;
   }
   pagination.value.count = curAllData.length;
-  return curAllData;
+
+  isLoading.value = false;
+  return curAllData?.slice(startIndex, endIndex);
 };
 
 // 当前页数据
@@ -313,20 +325,15 @@ const curPageData = computed(() => {
 
 // 页码变化发生的事件
 const handlePageChange = (current: number) => {
-  isLoading.value = true;
   pagination.value.current = current;
-  setTimeout(() => {
-    isLoading.value = false;
-  }, 200);
+  getPageData();
 };
 
 // 条数变化发生的事件
 const handlePageSizeChange = (limit: number) => {
-  isLoading.value = true;
   pagination.value.limit = limit;
-  setTimeout(() => {
-    isLoading.value = false;
-  }, 200);
+  pagination.value.current = 1;
+  getPageData();
 };
 
 const updateTableEmptyConfig = () => {

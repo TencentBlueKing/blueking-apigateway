@@ -16,11 +16,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import re
 from typing import Any, Dict, List
 
 from django.core.management.base import BaseCommand
 
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, ContextScopeTypeEnum, ContextTypeEnum
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, STAGE_VAR_PATTERN, ContextScopeTypeEnum, ContextTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Proxy, Stage
 
 
@@ -55,6 +56,7 @@ class Command(BaseCommand):
 
         # 检查 stage 后端配置
         stages = Stage.objects.filter(gateway=gateway)
+
         for stage in stages:
             if not self._check_stage_backend(gateway, stage):
                 return False
@@ -106,8 +108,6 @@ class Command(BaseCommand):
                 )
             return no_diff
 
-        # 自定义后端应该存在并且与预期配置匹配
-        expected_config = self._generate_expected_backend_config(proxy.config)
         actual_backend_configs = BackendConfig.objects.filter(gateway=gateway, backend=proxy.backend)
 
         # 检查是否存在任何后端配置
@@ -117,6 +117,11 @@ class Command(BaseCommand):
 
         # 检查所有后端配置是否与预期配置匹配
         for actual_backend_config in actual_backend_configs:
+            # 自定义后端应该存在并且与预期配置匹配
+            expected_config = self._generate_expected_resource_backend_config(
+                proxy.config, actual_backend_config.stage
+            )
+
             if actual_backend_config.config != expected_config:
                 self.stdout.write(f"Backend config for proxy {proxy.id} does not match the expected config")
                 self.stdout.write(f"Expected config: {expected_config}")
@@ -142,6 +147,45 @@ class Command(BaseCommand):
             "hosts": self._sort_hosts(hosts),
         }
 
+    def _generate_expected_resource_backend_config(
+        self, proxy_http_config: Dict[str, Any], stage: Stage
+    ) -> Dict[str, Any]:
+        # 根据 proxy_http_config 生成预期的后端配置
+
+        stage_vars = stage.vars
+
+        context = Context.objects.filter(
+            scope_type=ContextScopeTypeEnum.STAGE.value,
+            scope_id=stage.id,
+            type=ContextTypeEnum.STAGE_PROXY_HTTP.value,
+        ).first()
+
+        timeout = context.config.get("timeout", 0)
+
+        hosts = []
+        for host in proxy_http_config["upstreams"]["hosts"]:
+            scheme, host_ = host["host"].rstrip("/").split("://")
+            hosts.append(
+                {
+                    "scheme": scheme,
+                    "host": self._render_host(stage_vars, host_),
+                    "weight": host["weight"],
+                }
+            )
+
+        return {
+            "type": "node",
+            "timeout": timeout,
+            "loadbalance": proxy_http_config["upstreams"]["loadbalance"],
+            "hosts": self._sort_hosts(hosts),
+        }
+
     def _sort_hosts(self, hosts: List[Dict[str, Dict]]) -> List[Dict[str, Dict]]:
         # 排序 host，使用 "==" 对比配置时顺序一致
         return sorted(hosts, key=lambda x: "{}://{}#{}".format(x["scheme"], x["host"], x.get("weight", 0)))
+
+    def _render_host(self, vars: Dict[str, Any], host: str) -> str:
+        def replace(matched):
+            return vars.get(matched.group(1), matched.group(0))
+
+        return re.sub(STAGE_VAR_PATTERN, replace, host)

@@ -113,6 +113,13 @@
             </bk-button>
           </template>
         </bk-table-column>
+        <template #empty>
+          <TableEmpty
+            :keyword="tableEmptyConf.keyword"
+            :abnormal="tableEmptyConf.isAbnormal"
+            @clear-filter="handleClearFilterKey"
+          />
+        </template>
       </bk-table>
     </bk-loading>
 
@@ -357,6 +364,7 @@ import {
   deleteSystem,
 } from '@/http';
 import { useSidebar } from '@/hooks';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
@@ -379,7 +387,7 @@ const pagination = ref({
   limit: 10,
   count: 0,
 });
-const curSystem = ref({
+const curSystem = ref<any>({
 });
 const deleteDialogConf = ref({
   visiable: false,
@@ -475,6 +483,16 @@ const init = () => {
   getSystemList();
 };
 
+const handleClearFilterKey = () => {
+  keyword.value = '';
+  pagination.value = Object.assign(pagination.value, {
+    current: 1,
+    limit: 10,
+    count: displayData.value.length,
+  });
+  getDataByPage();
+};
+
 const handleCreateCategory = () => {
   docuCategoryDialog.value.visible = true;
 };
@@ -531,18 +549,18 @@ const handleSubmit = async () => {
         submitLoading.value = false;
       }
     },
-    async (validator) => {
+    async (validator: any) => {
       console.error(validator);
     },
   );
 };
 
-const classifyFilterMethod = (value, row, column) => {
+const classifyFilterMethod = (value: any, row: any, column: any) => {
   const { property } = column;
   return row[property] === value;
 };
 
-const handleFilterChange = (filters) => {
+const handleFilterChange = (filters: any) => {
   filterDocCategory.value = filters.doc_category || [];
   // updateTableEmptyConfig();
 };
@@ -553,7 +571,6 @@ const getCategories = async () => {
     const res = await getDocCategorys();
     categoryList.value = res;
   } catch (e) {
-    // catchErrorHandler(e, this);
     console.error(e);
   } finally {
     categoryLoading.value = false;
@@ -580,24 +597,20 @@ const getSystemList = async (loading = false, curPage = 1) => {
     tableEmptyConf.value.isAbnormal = false;
   } catch (e) {
     tableEmptyConf.value.isAbnormal = true;
-    // catchErrorHandler(e, this);
     console.error(e);
   } finally {
-    if (!loading) {
-      // this.$store.commit('setMainContentLoading', false);
-    }
     isLoading.value = false;
   }
 };
 
-const handlePageLimitChange = (limit) => {
+const handlePageLimitChange = (limit: number) => {
   pagination.value.limit = limit;
   pagination.value.offset = 1;
   handlePageChange(pagination.value.offset);
 };
 
 // 改变页码
-const handlePageChange = (page) => {
+const handlePageChange = (page: number) => {
   pagination.value.offset = page;
   const data = getDataByPage(page);
   systemList.value.splice(0, systemList.value.length, ...data);
@@ -617,7 +630,7 @@ const getDataByPage = (page = 1) => {
   if (endIndex > displayData.value.length) {
     endIndex = displayData.value.length;
   }
-  // updateTableEmptyConfig();
+  updateTableEmptyConfig();
   return displayData.value.slice(startIndex, endIndex);
 };
 
@@ -650,7 +663,7 @@ const handleDeleteSystem = async () => {
 };
 
 // 搜索
-const handleSearch = (payload) => {
+const handleSearch = (payload: string) => {
   if (payload === '') {
     return;
   }
@@ -664,7 +677,7 @@ const handleSearch = (payload) => {
   systemList.value = getDataByPage();
 };
 
-const handleEditSys = async (data) => {
+const handleEditSys = async (data: any) => {
   curSystem.value = data;
   isSliderShow.value = true;
   getCategories();
@@ -681,34 +694,29 @@ const handleEditSys = async (data) => {
     console.log(formData.value);
     initSidebarFormData(formData.value);
   } catch (e) {
-    // catchErrorHandler(e, this)
     console.error(e);
   } finally {
     detailLoading.value = false;
   }
 };
 
-const handleDeleteSys = (data) => {
+const handleDeleteSys = (data: any) => {
   curSystem.value = data;
   deleteDialogConf.value.visiable = true;
 };
 
-// const clearFilterKey = () => {
-//   keyword.value = '';
-//   filterDocCategory.value = [];
-//   systemRef.value.clearFilter();
-//   if (systemRef.value?.$refs.tableHeader) {
-//     clearFilter(this.$refs.systemRef.$refs.tableHeader);
-//   }
-// };
-
-// const updateTableEmptyConfig = () => {
-//   if (keyword.value || filterDocCategory.value.length) {
-//     tableEmptyConf.value.keyword = 'placeholder';
-//     return;
-//   }
-//   tableEmptyConf.value.keyword = '';
-// };
+const updateTableEmptyConfig = () => {
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  if (keyword.value || !systemList.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (keyword.value) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
 init();
 </script>
 
