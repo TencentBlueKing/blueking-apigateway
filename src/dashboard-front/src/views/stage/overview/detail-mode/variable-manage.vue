@@ -38,6 +38,7 @@
                     error-display-type="tooltips"
                     class="table-form-item">
                     <bk-input
+                      ref="varInputRef"
                       :autofocus="row.isEdit"
                       v-model="row.name"
                       :clearable="false"
@@ -147,6 +148,7 @@ const props = defineProps({
 
 const tableIsEdit = ref<boolean>(false);
 const isShowVarPopover = ref(false);
+const varInputRef = ref();
 const getVars = () => {
   return {
     name: '',
@@ -269,6 +271,9 @@ const editTable = () => {
   tableData.value?.forEach((row: any) => {
     row.isEdit = true;
   });
+  if (tableData.value.length) {
+    varInputRef.value?.focus();
+  }
   if (tableData.value?.length === 0) {
     tableData.value?.push(getVars());
   }
