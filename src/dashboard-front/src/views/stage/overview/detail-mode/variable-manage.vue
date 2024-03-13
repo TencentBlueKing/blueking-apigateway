@@ -22,7 +22,7 @@
           <template #default="{ row, index }">
             <span v-show="!row.isEdit">{{ row?.name }}</span>
             <template v-if="row.isEdit">
-              <bk-form :ref="(el) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
+              <bk-form :ref="(el: any) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
                 <bk-form-item
                   :rules="varRules.name"
                   property="name"
@@ -42,7 +42,7 @@
           <template #default="{ row, index }">
             <span v-show="!row.isEdit">{{ row?.value }}</span>
             <template v-if="row.isEdit">
-              <bk-form :ref="(el) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
+              <bk-form :ref="(el: any) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
                 <bk-form-item
                   :rules="varRules.value"
                   property="value"
@@ -365,5 +365,13 @@ watch(
 
 .edit-status {
   padding-top: 8px;
+}
+.variable-table {
+  :deep(.bk-table-head) {
+    scrollbar-color: transparent transparent;
+  }
+  :deep(.bk-table-body) {
+    scrollbar-color: transparent transparent;
+  }
 }
 </style>

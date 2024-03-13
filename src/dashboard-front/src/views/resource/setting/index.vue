@@ -109,6 +109,7 @@
             row-hover="auto"
             :row-class="is24HoursAgoClsFunc"
             border="outer"
+            :settings="settings"
           >
             <bk-table-column
               width="80"
@@ -118,18 +119,19 @@
             <bk-table-column
               :label="t('资源名称')"
               width="160"
+              prop="name"
             >
-              <template #default="{ data }">
+              <template #default="{ row }">
                 <bk-button
                   text
                   theme="primary"
-                  @click="handleShowInfo(data.id)"
+                  @click="handleShowInfo(row.id)"
                 >
-                  {{data?.name}}
+                  {{row?.name}}
                 </bk-button>
                 <span
                   style="cursor: pointer;"
-                  v-if="data?.has_updated"
+                  v-if="row?.has_updated"
                   v-bk-tooltips="{ content: '资源已更新' }"
                   class="dot warning">
                 </span>
@@ -138,9 +140,10 @@
             <bk-table-column
               width="130"
               :label="t('后端服务')"
+              prop="backend_name"
             >
-              <template #default="{ data }">
-                {{data?.backend?.name}}
+              <template #default="{ row }">
+                {{row?.backend?.name}}
               </template>
             </bk-table-column>
             <bk-table-column
@@ -149,8 +152,8 @@
               :show-overflow-tooltip="false"
               width="180"
             >
-              <template #default="{ data }">
-                <bk-tag :theme="methodsEnum[data?.method]">{{ data?.method }}</bk-tag>
+              <template #default="{ row }">
+                <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
               </template>
             </bk-table-column>
             <bk-table-column
@@ -159,23 +162,39 @@
             >
             </bk-table-column>
             <bk-table-column
+              :label="t('插件数')"
+              width="60"
+              prop="plugin_count"
+            >
+              <template #default="{ row }">
+                <bk-button
+                  text
+                  theme="primary"
+                  @click="handleShowInfo(row.id, 'pluginManage')"
+                >
+                  {{row?.plugin_count}}
+                </bk-button>
+              </template>
+            </bk-table-column>
+            <bk-table-column
               :label="t('文档')"
               width="80"
+              prop="docs"
             >
-              <template #default="{ data }">
-                <section v-if="data?.docs?.length" @click="handleShowDoc(data)">
+              <template #default="{ row }">
+                <section v-if="row?.docs?.length" @click="handleShowDoc(row)">
                   <span class="document-info">
                     <i class="bk-icon apigateway-icon icon-ag-document"></i>
                     {{ $t('详情') }}
                   </span>
                 </section>
                 <section v-else>
-                  <span v-show="!data?.isDoc">--</span>
+                  <span v-show="!row?.isDoc">--</span>
                   <i
                     class="bk-icon apigateway-icon icon-ag-plus plus-class"
                     v-bk-tooltips="t('添加文档')"
-                    v-show="data?.isDoc"
-                    @click="handleShowDoc(data)"></i>
+                    v-show="row?.isDoc"
+                    @click="handleShowDoc(row)"></i>
                 </section>
               </template>
             </bk-table-column>
@@ -184,27 +203,27 @@
               prop="labels"
               width="280"
             >
-              <template #default="{ data }">
-                <span class="text-warp" v-if="!data?.isEditLabel" @click="handleEditLabel(data)">
+              <template #default="{ row }">
+                <span class="text-warp" v-if="!row?.isEditLabel" @click="handleEditLabel(row)">
                   <span
-                    v-if="data?.labels?.length"
-                    v-bk-tooltips="{ content: data?.labelText.join(';') }">
-                    <span style="margin-left: 4px;" v-for="(item, index) in data?.labels" :key="item.id">
-                      <bk-tag @click="handleEditLabel(data)" v-if="index < data.tagOrder">
+                    v-if="row?.labels?.length"
+                    v-bk-tooltips="{ content: row?.labelText.join(';') }">
+                    <span style="margin-left: 4px;" v-for="(item, index) in row?.labels" :key="item.id">
+                      <bk-tag @click="handleEditLabel(row)" v-if="index < row.tagOrder">
                         {{ item.name }}
                       </bk-tag>
                     </span>
                     <bk-tag
-                      v-if="data.labels.length > data.tagOrder"
+                      v-if="row.labels.length > row.tagOrder"
                       class="tag-cls">
-                      +{{ data.labels.length - data.tagOrder }}
+                      +{{ row.labels.length - row.tagOrder }}
                       <!-- ... -->
                     </bk-tag>
                   </span>
                   <span v-else>--</span>
                   <i
-                    v-show="data?.isDoc"
-                    @click="handleEditLabel(data)"
+                    v-show="row?.isDoc"
+                    @click="handleEditLabel(row)"
                     class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                 </span>
                 <section v-else>
@@ -227,6 +246,7 @@
             <bk-table-column
               :label="t('操作')"
               width="140"
+              prop="act"
             >
               <template #default="{ data }">
                 <bk-button
@@ -833,17 +853,18 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
 };
 
 // 展示右边内容
-const handleShowInfo = (id: number) => {
+const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   resourceId.value = id;
   curResource.value = tableData.value.find((e: any) => e.id === id);
   // console.log('curResource.value', curResource.value);
   if (isDetail.value) {
     isComponentLoading.value = true;
-    active.value = 'resourceInfo';
+    active.value = curActive;
   } else {
     pagination.value.small = true;
     isDetail.value = true;
     document.getElementById('resourceLf').style.width = '320px';
+    active.value = curActive;
   }
 };
 
@@ -1049,6 +1070,22 @@ const is24HoursAgoClsFunc = (v: any) => {
   return v.is24HoursAgo ? '' : 'row-cls';
 };
 
+const settings = {
+  trigger: 'click',
+  fields: [
+    { name: t('资源名称'), field: 'name', disabled: true },
+    { name: t('后端服务'), field: 'backend_name' },
+    { name: t('前端请求方法'), field: 'method' },
+    { name: t('前端请求路径'), field: 'path' },
+    { name: t('插件数'), field: 'plugin_count' },
+    { name: t('文档'), field: 'docs' },
+    { name: t('标签'), field: 'labels' },
+    { name: t('更新时间'), field: 'updated_time' },
+    { name: t('操作'), field: 'act' },
+  ],
+  checked: ['name', 'backend_name', 'method', 'path', 'plugin_count', 'docs', 'labels', 'updated_time', 'act'],
+};
+
 watch(
   () => isShowLeft.value,
   (v) => {
@@ -1239,11 +1276,14 @@ onMounted(() => {
     .table-layout{
       :deep(.row-cls){
         td{
-          background: #F2FFF4 !important;
+          background: #f2fff4 !important;
         }
       }
+      :deep(.bk-table-head) {
+        scrollbar-color: transparent transparent;
+      }
       :deep(.bk-table-body) {
-        overflow: hidden;
+        scrollbar-color: transparent transparent;
       }
     }
 
