@@ -46,7 +46,7 @@
             </div>
             <bk-table
               v-else
-              :ref="`permissionDetail_${row.id}`"
+              :ref="(el: HTMLElement) => setPermissionDetail(`permissionDetail_${row.id}`, el)"
               :max-height="378"
               :size="'small'"
               :key="row.id"
@@ -54,7 +54,7 @@
               :outer-border="false"
               ext-cls="ag-expand-table"
               @selection-change="handleRowSelectionChange">
-              <bk-table-column type="index" label="" width="60" />
+              <bk-table-column type="index" label="" width="60" />        
               <bk-table-column type="selection" width="50" />
               <bk-table-column prop="name" :label="t('资源名称')" />
               <bk-table-column prop="path" :label="t('请求路径')" />
@@ -143,11 +143,13 @@
 <script setup lang="tsx">
 import { reactive, ref, watch, computed, onMounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getPermissionApplyList, updatePermissionStatus } from '@/http';
+import { getPermissionApplyList, getApigwResources, updatePermissionStatus } from '@/http';
 import { useCommon, usePermission } from '@/store';
 import { useQueryList, useSelection } from '@/hooks';
 import { Message, Loading } from 'bkui-vue';
+import { sortByKey } from '@/common/util'
 import TableEmpty from '@/components/table-empty.vue';
+import { cloneDeep } from 'lodash';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -162,7 +164,7 @@ const approveForm = ref(null);
 const permissionTableRef = ref(null);
 const renderTableIndex = ref(0)
 const permissionRowSelection =  ref([]);
-// const resourceList = ref([]);
+const resourceList = ref([]);
 const batchApplyDialogConf = reactive({
   isLoading: false,
   isShow: false,
@@ -179,6 +181,7 @@ const curAction = ref({
   ids: [],
   status: '',
   comment: '',
+  part_resource_ids: {}
 });
 const curPermission = ref({
   bk_app_code: '',
@@ -188,6 +191,7 @@ const curPermission = ref({
   isSelectAll: true,
   resource_ids: [],
 });
+const curExpandRow = ref({}) as any;
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',
   isAbnormal: false,
@@ -328,6 +332,50 @@ const setTableHeader = () => {
   permissionData.value.headers = columns;
 };
 
+const permissionDetailRefs = ref<Map<String, any>>();
+
+const setPermissionDetail = (name: string, el: HTMLElement) => {
+  permissionDetailRefs.value?.set(name, el);
+  const hasDetail = permissionDetailRefs.value?.get(`permissionDetail_${curExpandRow?.value?.id}`);
+  if (hasDetail) {
+    hasDetail?.toggleAllSelection();
+  }
+};
+
+// 获取资源列表数据
+const fetchResources = async () => {
+  const { apigwId } = common;
+  const pageParams = {
+    no_page: true,
+    order_by: 'name',
+    offset: 0,
+    limit: 10000
+  };
+  try {
+    const { results} = await getApigwResources(apigwId, pageParams);
+    resourceList.value = results || [];
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+const initResourceList = () => {
+  tableData.value.forEach((applyItem) => {
+    const results = []
+    applyItem.resourceList = []
+    applyItem.isSelectAll = true
+    applyItem.selection = []
+    applyItem.resource_ids.forEach((resourceId:number) => {
+      resourceList.value.forEach((item) => {
+        if (item.id === resourceId) {
+          results.push(item)
+        }
+      })
+    })
+    applyItem.resourceList = sortByKey(results, 'path')
+  })
+}
+
 // 监听授权维度的变化
 watch(
   () => filterData.value,
@@ -347,6 +395,13 @@ watch(
   { deep: true },
 );
 
+watch(
+  () => tableData.value,
+  () => {
+    initResourceList()
+  },
+  { immediate: true },
+);
 
 // 批量审批dialog的title
 const batchApplyDialogConfTitle = computed(() => {
@@ -388,6 +443,7 @@ const handleBatchApply = () => {
     ids: [],
     status: '',
     comment: '',
+    part_resource_ids: {}
   };
   batchApplyDialogConf.isShow = true;
 };
@@ -397,6 +453,11 @@ const handleRowSelectionChange = (row:any, rowSelections: any[]) => {
   permissionRowSelection.value = rowSelections
   row.selection = rowSelections;
   row.isSelectAll = rowSelections.length ? row.resourceList.length === rowSelections.length : true;
+  if (rowSelections.length) {
+    row.isSelectAll = row.resourceList.length === rowSelections.length
+  } else {
+    row.isSelectAll = true
+  }
   renderTableIndex.value++;
 }
 // 折叠变化
@@ -422,6 +483,13 @@ const updateStatus = async () => {
   await batchForm.value?.validate();
   await approveForm.value?.validate();
   try {
+     // 部分通过
+     const id = data?.ids?.[0] || '';
+    if (data.status === 'approved' && expandRows.value.includes(id) && selections.value.length && !curPermission.value.isSelectAll) {
+      data.part_resource_ids = {};
+      data.status = 'partial_approved';
+      data.part_resource_ids[id] = selections.value.map(item => item.id);
+    }
     await updatePermissionStatus(apigwId, data);
     batchApplyDialogConf.isShow = false;
     applyActionDialogConf.isShow = false;
@@ -463,12 +531,11 @@ const handleApplyApprove = (e: Event, data: any) => {
     ids: [data.id],
     status: 'approved',
     comment: t('全部通过'),
+    part_resource_ids: {}
   };
-  console.log(curPermission.value);
-
-  // if (!curPermission.value.isSelectAll) {
-  //   curAction.value.comment = t('部分通过');
-  // }
+  if (!curPermission.value.isSelectAll) {
+   curAction.value.comment = t('部分通过');
+  }
   applyActionDialogConf.title = t('通过申请');
   applyActionDialogConf.isShow = true;
 };
@@ -480,6 +547,7 @@ const handleApplyReject = (e: Event, data: any) => {
     ids: [data.id],
     status: 'rejected',
     comment: t('全部驳回'),
+    part_resource_ids: {}
   };
   applyActionDialogConf.title = t('驳回申请');
   applyActionDialogConf.isShow = true;
@@ -493,8 +561,12 @@ const handleSubmitApprove = () => {
 const handleRowClick = (e: Event, row: Record<string, any>) => {
   e.stopPropagation();
   row.isExpand = !row.isExpand;
+  // expandRows.value = expandedRows.map((item: any) => {
+  //   return item.id;
+  // });
+  curExpandRow.value = row;
   nextTick(() => {
-    permissionTableRef.value.setRowExpand(row,  row.isExpand);
+    permissionTableRef.value.setRowExpand(curExpandRow.value, row.isExpand);
   });
 };
 
@@ -517,8 +589,9 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
-const init = () => {
+const init = async () => {
   setTableHeader();
+  await fetchResources();
 };
 
 watch(() => filterData.value, () => {

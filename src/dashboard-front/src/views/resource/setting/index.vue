@@ -4,7 +4,7 @@
     <div
       class="resource-container-lf"
       id="resourceLf"
-      :style="{ width: isDetail ? isShowLeft ? '320px' : '0' : '100%' }"
+      :style="{ minWidth: isDetail ? isShowLeft ? '320px' : '0' : '100%' }"
     >
       <bk-alert
         v-show="versionConfigs.needNewVersion && !isDetail"
@@ -89,7 +89,7 @@
         :value-split-code="'+'"
       />
 
-      <div class="left-wraper">
+      <div class="left-wraper" v-show="isShowLeft">
         <bk-loading
           :loading="isLoading"
         >
@@ -273,7 +273,11 @@
         </bk-loading>
       </div>
 
-      <div class="toggle-button toggle-button-lf" v-show="isDetail && isShowLeft" @click="handleToggleLf">
+      <div
+        :class="['toggle-button', 'toggle-button-lf', !isDetail ? 'active' : '']"
+        v-show="isShowLeft"
+        @click="handleToggleLf"
+        :style="{ right: !isDetail ? '-24px' : '-19px' }">
         <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
       </div>
     </div>
@@ -286,7 +290,9 @@
       :class="['resource-container-rg', 'flex-1', isDragging ? 'dragging' : '']"
       id="resourceRg"
       v-show="isDetail">
-      <div class="toggle-button toggle-button-rg" @click="handleToggleRg">
+      <div
+        :class="['toggle-button', 'toggle-button-rg', !isShowLeft ? 'active' : '']"
+        @click="handleToggleRg">
         <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
       </div>
       <div class="right-wraper">
@@ -797,7 +803,8 @@ const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string, r
       };
       resize.style.left = moveLen;
       leftBox.style.width = `${moveLen}px`;
-      rightBox.style.width = `${box.clientWidth - moveLen - 5}px`;
+      // rightBox.style.width = `${box.clientWidth - moveLen - 5}px`;
+      rightBox.style.width = `calc(100% - ${moveLen + 21})px`;
     };
     document.onmouseup = function () {
       document.onmousemove = null;
@@ -829,13 +836,14 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
 const handleShowInfo = (id: number) => {
   resourceId.value = id;
   curResource.value = tableData.value.find((e: any) => e.id === id);
-  console.log('curResource.value', curResource.value);
+  // console.log('curResource.value', curResource.value);
   if (isDetail.value) {
     isComponentLoading.value = true;
     active.value = 'resourceInfo';
   } else {
     pagination.value.small = true;
     isDetail.value = true;
+    document.getElementById('resourceLf').style.width = '320px';
   }
 };
 
@@ -1041,6 +1049,18 @@ const is24HoursAgoClsFunc = (v: any) => {
   return v.is24HoursAgo ? '' : 'row-cls';
 };
 
+watch(
+  () => isShowLeft.value,
+  (v) => {
+    const el = document.getElementById('resourceLf');
+    if (!v) {
+      el.style.width = '0px';
+    } else {
+      el.style.width = '320px';
+    }
+  },
+);
+
 // 监听table数据 如果未点击某行 则设置第一行的id为资源id
 watch(
   () => tableData.value,
@@ -1154,7 +1174,28 @@ onMounted(() => {
     margin-right: -24px;
     margin-bottom: -20px;
     &.dragging {
-      border-left: 2px solid #3a84ff;
+      &::before {
+        content: ' ';
+        position: absolute;
+        z-index: 999;
+        width: 2px;
+        height: 100%;
+        left: -1px;
+        top: 0;
+        background-color: #3a84ff;
+      }
+    }
+  }
+  .demarcation-button:hover + .resource-container-rg {
+    &::before {
+      content: ' ';
+      position: absolute;
+      z-index: 999;
+      width: 2px;
+      height: 100%;
+      left: -1px;
+      top: 0;
+      background-color: #3a84ff;
     }
   }
   .demarcation-button {
@@ -1225,8 +1266,8 @@ onMounted(() => {
   }
 
   .toggle-button{
-    width: 20px;
-    height: 32px;
+    width: 16px;
+    height: 28px;
     background: #FAFBFD;
     border: 1px solid #3A84FF;
     box-shadow: 0 2px 4px 0 #0000001a;
@@ -1236,17 +1277,25 @@ onMounted(() => {
     justify-content: center;
     color: #3A84FF;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 12px;
     position: absolute;
     z-index: 99;
     transform: translateY(-50%);
     .icon {
       transition: transform .15s !important;
     }
+    &:hover {
+      background-color: #3a84ff;
+      color: #fff;
+    }
+    &.active {
+      background-color: #3a84ff;
+      color: #fff;
+    }
   }
   .toggle-button-lf {
-    right: -21px;
-    top: -4px;
+    // right: -19px;
+    top: -6px;
   }
   .toggle-button-rg {
     left: -1px;

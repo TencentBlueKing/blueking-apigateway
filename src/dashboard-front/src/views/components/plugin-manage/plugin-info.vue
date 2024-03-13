@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, defineEmits, toRefs } from 'vue';
+import { computed, ref, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPluginForm, creatPlugin, updatePluginConfig } from '@/http';
 import { Message } from 'bkui-vue';

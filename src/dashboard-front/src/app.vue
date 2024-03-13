@@ -8,6 +8,9 @@ import {
 } from 'vue';
 import * as UserInfo from '@/components/user-info.vue';
 import AppAuth from '@/components/auth/index.vue';
+// @ts-ignore
+import NoticeComponent from '@blueking/notice-component';
+import '@blueking/notice-component/dist/style.css';
 import mitt from '@/common/event-bus';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
@@ -19,28 +22,34 @@ import { ILoginData } from '@/common/auth';
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
-const { BK_PAAS2_ESB_DOC_URL } = window;
+const { BK_PAAS2_ESB_DOC_URL, BK_DASHBOARD_URL } = window;
 
 // 加载完用户数据才会展示页面
 const userLoading = ref(false);
 const activeIndex = ref(0);
 // 获取用户数据
 const user = useUser();
-getUser()
-  .then((data) => {
-    user.setUser(data);
-    userLoading.value = true;
-  })
-  .catch(() => {
-    Message('获取用户信息失败，请检查后再试');
-  });
+// 跑马灯数据
+const showNoticeAlert = ref(true);
+const enableShowNotice = ref(false);
+const noticeApi = ref(`${BK_DASHBOARD_URL}/notice/`);
 
-getFeatureFlags({ limit: 10000, offset: 0 }).then((data) => {
-  user.setFeatureFlags(data);
-})
-  .catch(() => {
-    Message('获取功能权限失败，请检查后再试');
-  });
+// getUser()
+//   .then((data) => {
+//     user.setUser(data);
+//     userLoading.value = true;
+//   })
+//   .catch(() => {
+//     Message('获取用户信息失败，请检查后再试');
+//   });
+
+// getFeatureFlags({ limit: 10000, offset: 0 }).then((data) => {
+//   console.log(data);
+//   user.setFeatureFlags(data);
+// })
+//   .catch(() => {
+//     Message('获取功能权限失败，请检查后再试');
+//   });
 
 const headerList = computed(() => ([
   {
@@ -103,9 +112,34 @@ const apigwId = computed(() => {
   return undefined;
 });
 
+const handleShowAlertChange = (payload: boolean) => {
+  showNoticeAlert.value = payload;
+};
+
+const fetchUserInfo = async () => {
+  try {
+    const res = await getUser();
+    user.setUser(res);
+    userLoading.value = true;
+  } catch (e) {
+    Message('获取用户信息失败，请检查后再试');
+  }
+};
+
+const fetchFeatureFlags = async () => {
+  try {
+    const res = await getFeatureFlags({ limit: 10000, offset: 0 });
+    enableShowNotice.value = res?.ENABLE_BK_NOTICE || false;
+    user.setFeatureFlags(res);
+  } catch (e) {
+    console.error(e);
+    Message('获取功能权限失败，请检查后再试');
+  };
+};
+
 watch(
   () => route.fullPath,
-  () => {
+  async () => {
     const { meta } = route;
     let index = 0;
     for (let i = 0; i < headerList.value.length; i++) {
@@ -120,6 +154,12 @@ watch(
     if (platform.indexOf('win') === 0) {
       systemCls.value = 'win';
     }
+    await fetchUserInfo();
+    await fetchFeatureFlags();
+  },
+  {
+    immediate: true,
+    deep: true,
   },
 );
 
@@ -180,6 +220,11 @@ onBeforeMount(() => {
 
 <template>
   <div id="app" :class="[systemCls]">
+    <NoticeComponent
+      v-if="showNoticeAlert && enableShowNotice"
+      :api-url="noticeApi"
+      @show-alert-change="handleShowAlertChange"
+    />
     <bk-navigation
       class="navigation-content"
       navigation-type="top-bottom"
@@ -217,6 +262,7 @@ onBeforeMount(() => {
         </div>
       </template>
     </bk-navigation>
+
     <AppAuth ref="authRef" />
   </div>
 </template>
