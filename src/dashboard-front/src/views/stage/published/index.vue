@@ -34,6 +34,7 @@
         @page-limit-change="handlePageSizeChange"
         @page-value-change="handlePageChange"
         row-hover="auto"
+        border="outer"
       >
         <bk-table-column
           :label="t('已发布的环境')"
@@ -84,7 +85,7 @@
               {{ t("查看详情") }}
             </bk-button> -->
             <bk-button text theme="primary" @click="showLogs(data.id)">
-              {{ t("操作日志") }}
+              {{ t("发布日志") }}
             </bk-button>
           </template>
         </bk-table-column>
@@ -216,6 +217,18 @@ onUnmounted(() => {
   .operate{
     &-input{
       width: 450px;
+    }
+  }
+  .table-layout{
+    :deep(.bk-table-head) {
+      // scrollbar-gutter: auto;
+      padding-right: 0;
+      scrollbar-color: transparent transparent;
+    }
+    :deep(.bk-table-body) {
+      // scrollbar-gutter: auto;
+      // #fafbfd
+      scrollbar-color: transparent transparent;
     }
   }
 }

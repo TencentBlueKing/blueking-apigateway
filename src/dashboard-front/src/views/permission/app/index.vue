@@ -30,7 +30,8 @@
       <bk-loading :loading="isLoading">
         <bk-table
           show-overflow-tooltip
-          class="mt15" :data="tableData" :size="'small'" :pagination="pagination"
+          class="perm-app-table mt15" :data="tableData" :size="'small'" :pagination="pagination"
+          border="outer"
           remote-pagination
           @page-limit-change="handlePageSizeChange"
           @page-value-change="handlePageChange"
@@ -809,6 +810,15 @@ init();
   label {
     display: block;
     margin-bottom: 10px;
+  }
+}
+
+.perm-app-table {
+  :deep(.bk-table-head) {
+    scrollbar-color: transparent transparent;
+  }
+  :deep(.bk-table-body) {
+    scrollbar-color: transparent transparent;
   }
 }
 

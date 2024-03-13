@@ -21,7 +21,7 @@
       <div class="left-wraper" style="width: '100%'">
         <bk-loading :loading="isLoading">
           <bk-table
-            class="table-layout"
+            class="sdk-table table-layout"
             ref="bkTableRef"
             :data="tableData"
             remote-pagination
@@ -57,7 +57,7 @@
             </bk-table-column>
             <bk-table-column :label="t('生成时间')" prop="created_time" min-width="120">
             </bk-table-column>
-            <bk-table-column :label="t('操作')" min-width="140">
+            <bk-table-column :label="t('操作')" width="200">
               <template #default="{ row, data }">
                 <bk-button text theme="primary" @click="copy(data.download_url)">
                   {{ t('复制地址') }}
@@ -187,3 +187,13 @@ watch(
   },
 );
 </script>
+<style lang="scss" scoped>
+.sdk-table {
+  :deep(.bk-table-head) {
+    scrollbar-color: transparent transparent;
+  }
+  :deep(.bk-table-body) {
+    scrollbar-color: transparent transparent;
+  }
+}
+</style>

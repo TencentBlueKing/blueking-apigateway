@@ -28,6 +28,7 @@
           ref="tableRef"
           size="small"
           class="perm-record-table"
+          border="outer"
           :data="tableData"
           :columns="table.headers"
           :pagination="pagination"
@@ -572,6 +573,12 @@ onMounted(() => {
   th {
     padding: 0 !important;
     height: 42px !important;
+  }
+  .bk-table-head {
+    scrollbar-color: transparent transparent;
+  }
+  .bk-table-body {
+    scrollbar-color: transparent transparent;
   }
 }
 
