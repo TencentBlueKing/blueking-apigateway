@@ -18,7 +18,7 @@
 #
 import logging
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db import connection
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,8 @@ class Command(BaseCommand):
             task_exists = cursor.fetchone()[0]
 
         if not task_exists:
-            raise CommandError(f'Task "{task_name}" does not exist.')
+            logger.info("Task %s doesn't exist ", task_name)
+            return
 
         # 构建 SQL 语句
         sql = "DELETE FROM django_celery_beat_periodictask WHERE name=%s"

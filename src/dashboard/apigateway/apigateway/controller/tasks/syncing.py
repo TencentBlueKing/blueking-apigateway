@@ -28,6 +28,7 @@ from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EV
 from apigateway.controller.distributor.combine import CombineDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
 from apigateway.core.models import MicroGateway, Release, ReleaseHistory
+from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,13 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
         if not is_cli_sync:
             PublishEventReporter.report_distribute_configuration_failure_event(release_history, err_msg)
         procedure_logger.info(msg)
+
     else:
+        # 更新release的发布时间和发布人
+        release.updated_time = now_datetime()
+        release.updated_by = release_history.created_by if release_history else "admin"
+        release.save()
+
         PublishEventReporter.report_distribute_configuration_success_event(release_history)
         procedure_logger.info("distribute succeeded")
 

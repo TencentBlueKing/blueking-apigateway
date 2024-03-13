@@ -61,6 +61,11 @@ class ReleaseHandler:
         # 补全event（由于上报的事件之间时间很短，当时为了减少存储，减少了部分event上报） todo: 后续由底层补齐事件
         new_events = []
         steps = {event.step for event in publish_events}
+
+        # 兼容历史数据,可能没有老的没有历史事件
+        if not steps:
+            return []
+
         max_step = max(steps)
         now = datetime.now().timestamp()
         # 按照step来归类确定事件完整程度来补齐event
@@ -168,12 +173,8 @@ class ReleaseHandler:
                 # 兼容以前，使用以前的状态
                 state["status"] = release_history.status
             else:
-                # 如果最新事件状态是成功，但不是最后一个节点，返回发布中
                 latest_event = publish_id_to_latest_event_map[publish_id]
-                if ReleaseHandler.is_running(latest_event):
-                    state["status"] = PublishEventStatusEnum.DOING.value
-                else:
-                    state["status"] = latest_event.status
+                state["status"] = ReleaseHandler.get_status(latest_event)
 
             stage_publish_status[stage_id] = state
 
@@ -203,8 +204,7 @@ class ReleaseHandler:
         other_latest_release_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
             [other_latest_release.id]
         )
-
-        latest_event = other_latest_release_event_map[other_latest_release.id]
+        latest_event = other_latest_release_event_map.get(other_latest_release.id, None)
         if latest_event:
             return ReleaseHandler.get_status(latest_event) == ReleaseHistoryStatusEnum.DOING.value
 
