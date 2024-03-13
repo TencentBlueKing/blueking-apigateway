@@ -22,6 +22,7 @@
         ext-cls="ag-stage-table"
         @page-limit-change="handlePageLimitChange"
         @page-value-change="handlePageChange"
+        border="outer"
       >
         <!-- <div slot="empty">
         <table-empty
@@ -31,6 +32,14 @@
           @clear-filter="clearFilterKey"
         />
       </div> -->
+        <template #empty>
+          <TableEmpty
+            :keyword="tableEmptyConf.keyword"
+            :abnormal="tableEmptyConf.isAbnormal"
+            @reacquire="getDocCategoryList(true)"
+            @clear-filter="clearFilterKey"
+          />
+        </template>
         <bk-table-column :label="t('名称')">
           <template #default="{ row }">
             {{ row.name }}
@@ -160,6 +169,8 @@
 import { ref, watch, nextTick } from 'vue';
 import { Message, InfoBox } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
+
+import TableEmpty from '@/components/table-empty.vue';
 import {
   getDocCategorys,
   addDocCategory,
@@ -423,9 +434,9 @@ const closeDocCategoryDialog = () => {
   validateFormRef.value?.clearError();
 };
 
-// const clearFilterKey = () => {
-//   keyword.value = '';
-// };
+const clearFilterKey = () => {
+  keyword.value = '';
+};
 
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = keyword.value;

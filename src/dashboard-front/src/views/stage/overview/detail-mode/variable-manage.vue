@@ -438,4 +438,12 @@ watch(
     }
   }
 }
+.variable-table {
+  :deep(.bk-table-head) {
+    scrollbar-color: transparent transparent;
+  }
+  :deep(.bk-table-body) {
+    scrollbar-color: transparent transparent;
+  }
+}
 </style>

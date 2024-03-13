@@ -68,7 +68,7 @@
                 </span>
               </template>
             </bk-table-column>
-            <bk-table-column :label="t('操作')" min-width="140">
+            <bk-table-column :label="t('操作')" width="200">
               <template #default="{ data }">
                 <bk-button
                   text
@@ -381,6 +381,12 @@ onUnmounted(() => {
     table tbody tr td.last24hours {
       background-color: #f2fcf5;
     }
+  }
+  :deep(.bk-table-head) {
+    scrollbar-color: transparent transparent;
+  }
+  :deep(.bk-table-body) {
+    scrollbar-color: transparent transparent;
   }
 }
 </style>

@@ -39,7 +39,8 @@
           @selection-change="handleSelectionChange"
           @row-click="handleRowClick"
           @expand-change="handlePageExpandChange"
-          row-hover="auto">
+          row-hover="auto"
+          border="outer">
           <template #expandRow="row">
             <div class="apply-expand-alert" v-if="['api'].includes(row.grant_dimension)">
               <bk-alert theme="error" :title="t('将申请网关下所有资源的权限，包括未来新创建的资源，请谨慎审批')" />
@@ -54,7 +55,7 @@
               :outer-border="false"
               ext-cls="ag-expand-table"
               @selection-change="handleRowSelectionChange">
-              <bk-table-column type="index" label="" width="60" />        
+              <bk-table-column type="index" label="" width="60" />
               <bk-table-column type="selection" width="50" />
               <bk-table-column prop="name" :label="t('资源名称')" />
               <bk-table-column prop="path" :label="t('请求路径')" />
@@ -622,16 +623,22 @@ onMounted(() => {
   background-color: #fafafa;
 }
 
-:deep(.perm-apply-table),
-:deep(.ag-expand-table) {
-  tr {
+.perm-apply-table,
+.ag-expand-table {
+  :deep(tr) {
     background-color: #fafbfd;
   }
-  th {
+  :deep(th) {
     .head-text {
       font-weight: bold !important;
       color: #63656E !important;
     }
+  }
+  :deep(.bk-table-head) {
+    scrollbar-color: transparent transparent;
+  }
+  :deep(.bk-table-body) {
+    scrollbar-color: transparent transparent;
   }
 }
 :deep(.ag-expand-table) {

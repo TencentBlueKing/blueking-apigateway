@@ -8,6 +8,7 @@ import {
 } from 'vue';
 import * as UserInfo from '@/components/user-info.vue';
 import AppAuth from '@/components/auth/index.vue';
+// @ts-ignore
 import NoticeComponent from '@blueking/notice-component';
 import '@blueking/notice-component/dist/style.css';
 import mitt from '@/common/event-bus';
