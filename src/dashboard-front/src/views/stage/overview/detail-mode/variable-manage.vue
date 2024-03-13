@@ -399,9 +399,10 @@ watch(
 }
 
 :deep(.variable-table) {
-  // .bk-form-error-tips {
-  //   display: none;
-  // }
+  .bk-form-error-tips {
+    // display: none;
+    transform: translate(-50%, 4px);
+  }
   .bk-table-body-content {
     .custom-table-cell {
       // height: 42px;
