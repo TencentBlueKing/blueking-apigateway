@@ -63,7 +63,6 @@
         <bk-table-column
           :label="t('系统负责人')"
           :show-overflow-tooltip="true"
-          :render-header="$renderHeader"
         >
           <template #default="props">
             <template v-if="props.row.maintainers?.length > 0">
@@ -76,7 +75,6 @@
           :label="t('文档分类')"
           column-key="doc_category"
           prop="doc_category_id"
-          :render-header="$renderHeader"
           :filters="classifyFilters"
           :filter-method="classifyFilterMethod"
           :filter-multiple="true"
@@ -243,12 +241,17 @@
             <bk-form-item :label="t('系统负责人')">
               <!-- <user v-model="formData.maintainers" ref="userRef"></user> -->
               <!-- 暂时使用 tag -->
-              <bk-tag-input
+              <!-- <bk-tag-input
                 ref="userRef"
                 v-model="formData.maintainers"
                 allow-create
                 has-delete-icon
                 allow-auto-match
+              /> -->
+              <MemberSelect
+                v-model="formData.maintainers"
+                :placeholder="t('请选择系统负责人')"
+                :has-delete-icon="true"
               />
             </bk-form-item>
             <bk-form-item :label="t('超时时长')">
@@ -354,6 +357,8 @@ import { ref, computed, watch } from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 // import User from '@/components/user';
+import MemberSelect from '@/components/member-select';
+import TableEmpty from '@/components/table-empty.vue';
 import {
   getDocCategorys,
   addDocCategory,
@@ -444,7 +449,7 @@ const rules = ref({
 // refs
 const formRef = ref(null);
 // const systemRef = ref(null);
-const userRef = ref(null);
+// const userRef = ref(null);
 
 const isEdit = computed(() => {
   return Object.keys(curSystem.value).length > 0;
@@ -706,7 +711,6 @@ const handleDeleteSys = (data: any) => {
 };
 
 const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (keyword.value || !systemList.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;

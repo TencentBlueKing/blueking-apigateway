@@ -20,20 +20,26 @@
               :clearable="false"
               filterable
               :input-search="false"
+              :disabled="resourceEmpty"
               v-model="formData.path"
               @change="handleResourceChange">
               <bk-option v-for="option in resourceList" :key="option" :id="option" :name="option">
               </bk-option>
             </bk-select>
-            <div class="resource-empty" v-show="!isPageLoading && resourceEmpty">
+            <!-- <div class="resource-empty" v-show="!isPageLoading && resourceEmpty">
               {{ t('未找到可用的请求资源，因为当前选择环境未发布版本，请先发布版本到该环境') }}
-            </div>
+            </div> -->
             <p class="ag-tip mt5">
               <i class="apigateway-icon icon-ag-info"></i>{{ t('资源必须发布到对应环境，才支持选择及调试') }}
             </p>
           </bk-form-item>
           <bk-form-item :required="true" :label="t('请求方法')" :error-display-type="'normal'">
-            <bk-select :clearable="false" v-model="formData.method" @change="handleMethodChange">
+            <bk-select
+              :clearable="false"
+              :disabled="methodList.length === 0"
+              v-model="formData.method"
+              @change="handleMethodChange"
+            >
               <bk-option v-for="option in methodList" :key="option.id" :id="option.id" :name="option.name">
               </bk-option>
             </bk-select>
@@ -411,7 +417,6 @@ const getApigwReleaseResources = async () => {
     formData.value.path = '';
     formData.value.method = '';
   } catch (e) {
-    console.log(e);
   } finally {
     isPageLoading.value = false;
   }
@@ -425,10 +430,15 @@ const getApigwStages = async () => {
 
   try {
     const res = await getStages(common.apigwId, pageParams);
-    stageList.value = res;
-
-    params.value.stage_id = (stageList.value[0] || {})?.id;
-    getApigwReleaseResources();
+    stageList.value = res || [];
+    if (stageList.value.length) {
+      const { id, release } = stageList.value[0];
+      params.value.stage_id = id;
+      // 如果是未发布或者发布失败则不需要调资源列表
+      if (!['unreleased', 'failure'].includes(release?.status)) {
+        getApigwReleaseResources();
+      }
+    }
   } catch (e) {
     console.log(e);
   }
@@ -581,8 +591,16 @@ const handleMethodChange = (value: string) => {
   }
 };
 
-const handleStageChange = () => {
-  getApigwReleaseResources();
+const handleStageChange = (payload: number) => {
+  const hasData = stageList.value.find((item: Record<string, number>) => item.id === payload);
+  // 如果是未发布或者发布失败则不需要调资源列表
+  if (!['unreleased', 'failure'].includes(hasData?.release?.status)) {
+    getApigwReleaseResources();
+  } else {
+    formData.value = Object.assign(formData.value, { path: '', method: '' });
+    methodList.value = [];
+    resources.value = {};
+  }
 };
 
 const handleReset = () => {

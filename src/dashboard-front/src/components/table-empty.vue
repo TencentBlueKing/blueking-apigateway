@@ -121,5 +121,9 @@ const handleRefresh = () => {
     .bk-table-empty-text {
         padding: 0 !important;
     }
+
+    :deep(.bk-exception-footer) {
+      margin-top: 0
+    }
 }
 </style>

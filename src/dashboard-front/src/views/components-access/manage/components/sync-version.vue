@@ -66,6 +66,14 @@
               {{levelEnum[data?.component_permission_level] || '--'}}
             </template>
           </bk-table-column>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getComponents"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
     </div>
@@ -79,6 +87,7 @@ import { useRoute } from 'vue-router';
 import { /* clearFilter,  */ isTableFilter } from '@/common/util';
 import { useCommon } from '@/store';
 import { getSyncVersion } from '@/http';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -144,6 +153,11 @@ const updateTableEmptyConfig = () => {
     return;
   }
   tableEmptyConf.keyword = '';
+};
+
+const handleClearFilterKey = async () => {
+  pathUrl.value = '';
+  await getComponents();
 };
 
 const getDataByPage = (page?: number) => {
