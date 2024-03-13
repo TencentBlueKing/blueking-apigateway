@@ -205,7 +205,7 @@
 import pluginInfo from './plugin-info.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import { InfoBox, Message } from 'bkui-vue';
-import { ref, reactive, computed, watch, defineEmits } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '@/store';
 import { useRoute, useRouter } from 'vue-router';
