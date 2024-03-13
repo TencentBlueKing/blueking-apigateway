@@ -358,7 +358,6 @@ import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 // import User from '@/components/user';
 import MemberSelect from '@/components/member-select';
-import TableEmpty from '@/components/table-empty.vue';
 import {
   getDocCategorys,
   addDocCategory,
