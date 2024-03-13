@@ -38,6 +38,8 @@
       <bk-table
         size="small"
         ref="tableRef"
+        class="audit-table"
+        border="outer"
         :data="tableData"
         :pagination="pagination"
         :remote-pagination="true"
@@ -448,6 +450,15 @@ watch(
 <style lang="scss" scoped>
 .operate-records-content {
   min-height: calc(100vh - 208px);
+
+  .audit-table {
+    :deep(.bk-table-head) {
+      scrollbar-color: transparent transparent;
+    }
+    :deep(.bk-table-body) {
+      scrollbar-color: transparent transparent;
+    }
+  }
 
   .ag-top-header {
     min-height: 32px;

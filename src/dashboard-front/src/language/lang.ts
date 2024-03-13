@@ -1371,9 +1371,10 @@ const lang: ILANG = {
   '确认修改': ['Confirm modification'],
   '默认后端服务，且被{resourceCount}个资源引用了，不能删除': ['Default back-end service, and referenced by {resourceCount} resources, cannot be deleted'],
   '服务被{resourceCount}个资源引用了，不能删除': ['Service referenced by {resourceCount} resources, cannot be deleted'],
-  '插件已添加，不能再选择': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
+
+  '插件已添加，不能再选择': ['Plugin already added, cannot be selected again'],
+  '默认后端服务，不能删除': ['Default back-end service, cannot be deleted'],
+  '插件数': ['Number of plugins'],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],

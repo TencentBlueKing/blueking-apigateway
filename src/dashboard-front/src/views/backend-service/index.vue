@@ -17,7 +17,8 @@
         <bk-table
           :row-class="isNewCreate"
           class="table-layout" :data="tableData" remote-pagination :pagination="pagination" show-overflow-tooltip
-          @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange" row-hover="auto">
+          @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange" row-hover="auto"
+          border="outer">
           <bk-table-column :label="t('后端服务名称')" prop="name">
             <template #default="{ data }">
               <bk-button text theme="primary" @click="handleEdit(data)">
@@ -679,17 +680,23 @@ watch(
     }
   }
 }
-:deep(.table-layout){
-  .bk-table-body{
-    table{
-      tbody{
-        tr{
-          td{
+.table-layout {
+  :deep(.bk-table-body) {
+    table {
+      tbody {
+        tr {
+          td {
             background-color: rgba(0,0,0,0);
           }
         }
       }
     }
+  }
+  :deep(.bk-table-head) {
+    scrollbar-color: transparent transparent;
+  }
+  :deep(.bk-table-body) {
+    scrollbar-color: transparent transparent;
   }
 }
 .host-item {
