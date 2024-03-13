@@ -20,25 +20,31 @@
               :clearable="false"
               filterable
               :input-search="false"
+              :disabled="resourceEmpty"
               v-model="formData.path"
               @change="handleResourceChange">
               <bk-option v-for="option in resourceList" :key="option" :id="option" :name="option">
               </bk-option>
             </bk-select>
-            <div class="resource-empty" v-show="!isPageLoading && resourceEmpty">
+            <!-- <div class="resource-empty" v-show="!isPageLoading && resourceEmpty">
               {{ t('未找到可用的请求资源，因为当前选择环境未发布版本，请先发布版本到该环境') }}
-            </div>
+            </div> -->
             <p class="ag-tip mt5">
               <i class="apigateway-icon icon-ag-info"></i>{{ t('资源必须发布到对应环境，才支持选择及调试') }}
             </p>
           </bk-form-item>
           <bk-form-item :required="true" :label="t('请求方法')" :error-display-type="'normal'">
-            <bk-select :clearable="false" v-model="formData.method" @change="handleMethodChange">
+            <bk-select
+              :clearable="false"
+              :disabled="methodList.length === 0"
+              v-model="formData.method"
+              @change="handleMethodChange"
+            >
               <bk-option v-for="option in methodList" :key="option.id" :id="option.id" :name="option.name">
               </bk-option>
             </bk-select>
           </bk-form-item>
-          <bk-form-item :label="t('子路径')" v-if="isMatchAnyMethod || isShowSubpath">
+          <bk-form-item :label="t('子路径')" v-show="isShowSubpath">
             <bk-input v-model="formData.subpath"></bk-input>
             <p class="ag-tip mt5">
               <i class="apigateway-icon icon-ag-info"></i>
@@ -306,7 +312,7 @@ const params = ref({ ...defaultValue.params });
 const formData = ref<any>({ ...defaultValue.formData });
 const response = ref<any>({});
 const isResponseBodyJson = ref<boolean>(false);
-const isMatchAnyMethod = ref<boolean>(false);
+// const isMatchAnyMethod = ref<boolean>(false);
 const tokenInputRender = ref<number>(0);
 const curApigw = ref({
   name: '',
@@ -324,7 +330,7 @@ const cookieNames = ref([]);
 const isAdsorb = ref<boolean>(false);
 const fixedLeft = ref(expandWidth);
 const userPlaceholder = '******';
-const allMethodList = ref([common.methodList]);
+const allMethodList = ref(common.methodList);
 const headerViewRef = ref(null);
 
 
@@ -411,7 +417,6 @@ const getApigwReleaseResources = async () => {
     formData.value.path = '';
     formData.value.method = '';
   } catch (e) {
-    console.log(e);
   } finally {
     isPageLoading.value = false;
   }
@@ -425,10 +430,15 @@ const getApigwStages = async () => {
 
   try {
     const res = await getStages(common.apigwId, pageParams);
-    stageList.value = res;
-
-    params.value.stage_id = (stageList.value[0] || {})?.id;
-    getApigwReleaseResources();
+    stageList.value = res || [];
+    if (stageList.value.length) {
+      const { id, release } = stageList.value[0];
+      params.value.stage_id = id;
+      // 如果是未发布或者发布失败则不需要调资源列表
+      if (!['unreleased', 'failure'].includes(release?.status)) {
+        getApigwReleaseResources();
+      }
+    }
   } catch (e) {
     console.log(e);
   }
@@ -461,7 +471,7 @@ const checkFormData = (data: any) => {
   const pathParams = Object.values(data.path_params);
   const reg = /^[\w{}/.-]*$/;
   const codeReg = /^[a-z][a-z0-9-_]+$/;
-  if ((isMatchAnyMethod.value || isShowSubpath) && !reg.test(data.subpath)) {
+  if ((isShowSubpath.value) && !reg.test(data.subpath)) {
     Message({
       theme: 'error',
       message: t('请输入合法的子路径'),
@@ -493,7 +503,7 @@ const handleSendRequest = async () => {
   params.value.headers = headerKeyValuer.value?.getValue();
   params.value.query_params = queryKeyValuer.value?.getValue();
   params.value.path_params = pathKeyValuer.value?.getValue();
-  params.value.subpath = isMatchAnyMethod.value || isShowSubpath ? formData.value.subpath : '';
+  params.value.subpath = isShowSubpath.value ? formData.value.subpath : '';
   // 用户认证
   params.value.use_user_from_cookies = curResource.value?.verified_user_required
     ? formData.value?.useUserFromCookies
@@ -541,10 +551,10 @@ const handleResourceChange = (value: any) => {
   if (methodList.value.length === 1) {
     if (methodList.value[0].name === 'ANY') {
       methodList.value = allMethodList.value?.slice(0, -1);
-      isMatchAnyMethod.value = true;
+      // isMatchAnyMethod.value = true;
     } else {
       formData.value.method = methodList.value[0].id;
-      isMatchAnyMethod.value = false;
+      // isMatchAnyMethod.value = false;
       handleMethodChange(formData.value.method);
     }
   }
@@ -581,8 +591,16 @@ const handleMethodChange = (value: string) => {
   }
 };
 
-const handleStageChange = () => {
-  getApigwReleaseResources();
+const handleStageChange = (payload: number) => {
+  const hasData = stageList.value.find((item: Record<string, number>) => item.id === payload);
+  // 如果是未发布或者发布失败则不需要调资源列表
+  if (!['unreleased', 'failure'].includes(hasData?.release?.status)) {
+    getApigwReleaseResources();
+  } else {
+    formData.value = Object.assign(formData.value, { path: '', method: '' });
+    methodList.value = [];
+    resources.value = {};
+  }
 };
 
 const handleReset = () => {

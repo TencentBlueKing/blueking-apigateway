@@ -6,6 +6,7 @@
           <bk-date-picker
             ref="topDatePicker"
             style="width: 320px;"
+            :key="dateKey"
             v-model="dateTimeRange"
             :placeholder="t('选择日期时间范围')"
             type="datetimerange"
@@ -59,6 +60,14 @@
             </template>
           </bk-table-column>
           <bk-table-column :label="t('操作日志')" prop="message"></bk-table-column>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getComponents"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
     </div>
@@ -70,6 +79,7 @@ import { ref, reactive, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { getSyncHistory } from '@/http';
+import TableEmpty from '@/components/table-empty.vue';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -139,9 +149,9 @@ const STATUS_MAP = {
 };
 
 const topDatePicker = ref();
-
+const dateKey = ref('dateKey');
 const componentList = ref<any>([]);
-const pagination = reactive<any>({
+let pagination = reactive<any>({
   current: 1,
   count: 0,
   limit: 10,
@@ -188,12 +198,18 @@ const setSearchTimeRange = () => {
 
 const updateTableEmptyConfig = () => {
   const isEmpty = dateTimeRange.value?.some(Boolean);
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (isEmpty) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
   tableEmptyConf.value.keyword = '';
+};
+
+
+const handleClearFilterKey = () => {
+  pagination = Object.assign(pagination, { current: 1, limit: 10 });
+  handleTimeClear();
+  dateKey.value = String(+new Date());
 };
 
 const getComponents = async () => {
@@ -241,6 +257,7 @@ const handleVersion = (id: string) => {
 
 const handleShortcutChange = (value: string, index: number) => {
   shortcutSelectedIndex.value = index;
+  updateTableEmptyConfig();
 };
 
 const handleTimeClear = () => {

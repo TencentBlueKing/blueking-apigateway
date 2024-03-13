@@ -150,7 +150,6 @@ import { useQueryList, useSelection } from '@/hooks';
 import { Message, Loading } from 'bkui-vue';
 import { sortByKey } from '@/common/util'
 import TableEmpty from '@/components/table-empty.vue';
-import { cloneDeep } from 'lodash';
 
 const { t } = useI18n();
 const common = useCommon();

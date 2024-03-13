@@ -16,33 +16,45 @@
         :data="tableData"
         show-overflow-tooltip
         row-hover="auto"
+        :cell-class="getCellClass"
         border="outer"
       >
-        <bk-table-column :label="t('变量名称')" prop="name">
+        <bk-table-column :label="t('变量名称')" prop="name" :show-overflow-tooltip="false">
           <template #default="{ row, index }">
-            <span v-show="!row.isEdit">{{ row?.name }}</span>
+            <span v-show="!row.isEdit" class="no-edit-value">{{ row?.name }}</span>
             <template v-if="row.isEdit">
-              <bk-form :ref="(el: any) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
-                <bk-form-item
-                  :rules="varRules.name"
-                  property="name"
-                  error-display-type="tooltips"
-                  class="table-form-item">
-                  <bk-input
-                    v-model="row.name"
-                    clearable
-                    maxlength="50"
-                  />
-                </bk-form-item>
-              </bk-form>
+              <bk-popover
+                placement="top-start"
+                trigger="click"
+                theme="light"
+                :is-show="isShowVarPopover"
+                :content="t('变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符') "
+                :popover-delay="[300, 0]"
+              >
+                <bk-form :ref="(el: HTMLElement) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
+                  <bk-form-item
+                    :rules="varRules.name"
+                    property="name"
+                    error-display-type="tooltips"
+                    class="table-form-item">
+                    <bk-input
+                      ref="varInputRef"
+                      :autofocus="row.isEdit"
+                      v-model="row.name"
+                      :clearable="false"
+                      :max-length="50"
+                    />
+                  </bk-form-item>
+                </bk-form>
+              </bk-popover>
             </template>
           </template>
         </bk-table-column>
-        <bk-table-column :label="t('变量值')" prop="value">
+        <bk-table-column :label="t('变量值')" prop="value" :show-overflow-tooltip="false">
           <template #default="{ row, index }">
-            <span v-show="!row.isEdit">{{ row?.value }}</span>
+            <span v-show="!row.isEdit" class="no-edit-value">{{ row?.value }}</span>
             <template v-if="row.isEdit">
-              <bk-form :ref="(el: any) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
+              <bk-form :ref="(el: HTMLElement) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
                 <bk-form-item
                   :rules="varRules.value"
                   property="value"
@@ -50,7 +62,7 @@
                   class="table-form-item">
                   <bk-input
                     v-model="row.value"
-                    clearable
+                    :clearable="false"
                   />
                 </bk-form-item>
               </bk-form>
@@ -70,13 +82,11 @@
         <bk-table-column
           :label="t('操作')"
           v-if="tableIsEdit"
-          width="100px"
-          align="center"
         >
           <template #default="{ row, index }">
             <div class="normal-status" v-show="!row.isEdit">
-              <i class="apigateway-icon icon-ag-plus-circle mr10" @click="addRow(index)" />
-              <i class="apigateway-icon icon-ag-minus-circle" @click="delRow(index)" />
+              <i class="apigateway-icon icon-ag-plus-circle-shape" @click="addRow(index)" />
+              <i class="apigateway-icon icon-ag-minus-circle-shape" @click="delRow(index)" />
             </div>
             <div class="edit-status" v-show="row.isEdit">
               <bk-button
@@ -85,14 +95,14 @@
                 class="mr10"
                 @click="confirmRowEdit(index)"
               >
-                确定
+                {{ t('确定') }}
               </bk-button>
               <bk-button
                 text
                 theme="primary"
                 @click="cancelRowEdit(index)"
               >
-                取消
+                {{ t('取消') }}
               </bk-button>
             </div>
 
@@ -102,20 +112,20 @@
       </bk-table>
     </bk-loading>
 
-    <div class="tips">
+    <!-- <div class="tips">
       <i class="apigateway-icon icon-ag-info"></i>
       {{ t('变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符') }}
-    </div>
+    </div> -->
 
     <div class="footer-btn" v-show="tableIsEdit">
       <bk-button
         theme="primary"
         @click="handleSave"
       >
-        保存
+        {{ t('保存') }}
       </bk-button>
-      <bk-button class="ml10" @click="cancelTableEdit" v-bk-tooltips="{ content: '取消编辑' }">
-        取消
+      <bk-button @click="cancelTableEdit" v-bk-tooltips="{ content: '取消编辑' }">
+        {{ t('取消') }}
       </bk-button>
     </div>
   </div>
@@ -137,7 +147,8 @@ const props = defineProps({
 });
 
 const tableIsEdit = ref<boolean>(false);
-
+const isShowVarPopover = ref(false);
+const varInputRef = ref();
 const getVars = () => {
   return {
     name: '',
@@ -149,6 +160,13 @@ const getVars = () => {
 
 const isLoading = ref<boolean>(false);
 const tableData = ref<any>([]);
+
+const getCellClass = (payload: any) => {
+  if (payload.index !== 2) {
+    return 'custom-table-cell';
+  }
+  return '';
+};
 
 const getData = async () => {
   if (!common.apigwId || !props.stageId) return;
@@ -253,6 +271,9 @@ const editTable = () => {
   tableData.value?.forEach((row: any) => {
     row.isEdit = true;
   });
+  if (tableData.value.length) {
+    varInputRef.value?.focus();
+  }
   if (tableData.value?.length === 0) {
     tableData.value?.push(getVars());
   }
@@ -349,22 +370,73 @@ watch(
 
 .footer-btn {
   padding-top: 32px;
+  .bk-button {
+    min-width: 88px;
+    &:not(&:last-child) {
+      margin-right: 8px;
+    }
+  }
 }
 
 .normal-status {
   .apigateway-icon {
     font-size: 16px;
+    color: #c4c6cc;
     cursor: pointer;
+  }
+  .icon-ag-plus-circle-shape {
+    margin-right: 18px;
   }
 }
 
-.table-form-item {
-  margin-bottom: 12px;
-  padding-top: 12px;
+// .table-form-item {
+//   margin-bottom: 12px;
+//   padding-top: 12px;
+// }
+
+// .edit-status {
+//   padding-top: 8px;
+// }
+
+.no-edit-value {
+  padding: 0 16px;
+  line-height: 42px;
 }
 
-.edit-status {
-  padding-top: 8px;
+:deep(.variable-table) {
+  .bk-form-error-tips {
+    // display: none;
+    transform: translate(-50%, 4px);
+  }
+  .bk-table-body-content {
+    .custom-table-cell {
+      // height: 42px;
+      // line-height: 42px;
+      .cell {
+        padding: 0;
+        .bk-form {
+          line-height: 42px;
+          .table-form-item {
+            margin-bottom: 0;
+            .bk-form-content {
+              line-height: 42px;
+              .bk-input {
+                height: 42px;
+                line-height: 42px;
+                border: 0;
+                &.is-focused {
+                  border: 1px solid #3A84FF;
+                }
+                &--text {
+                  padding: 0 16px;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 .variable-table {
   :deep(.bk-table-head) {

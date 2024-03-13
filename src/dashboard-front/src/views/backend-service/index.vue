@@ -636,6 +636,7 @@ watch(
 .backend-service-slider {
   :deep(.bk-modal-content) {
     min-height: calc(100vh - 104px) !important;
+    overflow-y: auto;
   }
 
   .base-info {

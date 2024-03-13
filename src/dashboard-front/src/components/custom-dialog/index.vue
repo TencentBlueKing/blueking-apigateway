@@ -63,6 +63,7 @@ const handleCancel = () => {
     :deep(.bk-modal-content) {
       height: calc(100% - 30px) !important;
       max-height: 100vh !important;
+      overflow-y: auto;
     }
     .success-icon{
       background: #F2FFF4;
