@@ -85,6 +85,8 @@ urlpatterns = [
         AlarmRecordSummaryListApi.as_view(),
         name="monitors.alarm_records.summary",
     ),
+    # notice
+    path("backend/notice/", include(("bk_notice_sdk.urls", "notice"), namespace="notice")),
 ]
 
 

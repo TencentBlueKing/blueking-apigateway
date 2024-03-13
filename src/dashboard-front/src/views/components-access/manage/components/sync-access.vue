@@ -17,8 +17,8 @@
           :placeholder="t('请输入组件名称、请求路径，按Enter搜索')"
           :right-icon="'bk-icon icon-search'"
           style="width: 328px;"
-          @enter="filterData">
-        </bk-input>
+          @enter="filterData"
+        />
       </div>
 
       <bk-loading :loading="isLoading">
@@ -89,6 +89,14 @@
               <span style="color: #EA3536;" v-if="data?.resource_id && !data?.component_path"> {{ t('删除') }} </span>
             </template>
           </bk-table-column>
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getComponents"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
       <div class="mt20">
@@ -157,6 +165,7 @@ import { useRouter } from 'vue-router';
 import { isTableFilter } from '@/common/util';
 import { checkSyncComponent, syncReleaseData, getEsbGateway } from '@/http';
 import { useCommon } from '@/store';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -181,7 +190,7 @@ const allData = ref<any>([]);
 const displayData = ref<any>([]);
 const curSelectList = ref<any>([]);
 const requestQueue = reactive<any>(['component']);
-const tableEmptyConf = reactive<any>({
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',
   isAbnormal: false,
 });
@@ -247,9 +256,9 @@ const getComponents = async () => {
     displayData.value = res;
     pagination.count = displayData.value?.length;
     componentList.value = getDataByPage();
-    tableEmptyConf.isAbnormal = false;
+    tableEmptyConf.value.isAbnormal = false;
   } catch (e) {
-    tableEmptyConf.isAbnormal = true;
+    tableEmptyConf.value.isAbnormal = true;
     console.log(e);
   } finally {
     if (requestQueue?.length > 0) {
@@ -362,10 +371,15 @@ const handleEditResource = (data: any, resourceId: any) => {
 const updateTableEmptyConfig = () => {
   const isFilter = isTableFilter(filterList.value);
   if (pathUrl.value || isFilter) {
-    tableEmptyConf.keyword = 'placeholder';
+    tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
-  tableEmptyConf.keyword = '';
+  tableEmptyConf.value.keyword = '';
+};
+
+const handleClearFilterKey = async () => {
+  pathUrl.value = '';
+  await getComponents();
 };
 
 const init = () => {

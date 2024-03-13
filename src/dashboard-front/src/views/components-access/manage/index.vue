@@ -189,6 +189,14 @@
               @setting-change="handleSettingChange">
             </bk-table-setting-content>
           </bk-table-column> -->
+          <template #empty>
+            <TableEmpty
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getComponents"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-table>
       </bk-loading>
     </div>
@@ -407,6 +415,7 @@ import {
 } from '@/http';
 import RenderSystem from './components/render-system.vue';
 import RenderConfig from './components/render-config.vue';
+import TableEmpty from '@/components/table-empty.vue';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -793,6 +802,7 @@ const handleSearch = (payload: any) => {
   });
   pagination.count = displayData.value?.length;
   componentList.value = getDataByPage();
+  updateTableEmptyConfig();
 };
 
 const handlePageLimitChange = (limit: number) => {
@@ -940,9 +950,21 @@ const getFeature = async () => {
 // const clearFilterKey = () => {
 //   searchValue.value = '';
 // };
+const handleClearFilterKey = () => {
+  searchValue.value = '';
+  getComponents(true);
+};
 
 const updateTableEmptyConfig = () => {
-  tableEmptyConf.keyword = searchValue.value;
+  if (searchValue.value && !componentList.value.length) {
+    tableEmptyConf.keyword = 'placeholder';
+    return;
+  }
+  if (searchValue.value.length) {
+    tableEmptyConf.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.keyword = '';
 };
 
 const handleBeforeClose = () => {

@@ -2,6 +2,7 @@
 import { IMenu } from '@/types';
 import { useUser } from '@/store';
 const user = useUser();
+console.log(user, '当前配置接口项');
 
 export const menuData: IMenu[]  = [
   {
