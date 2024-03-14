@@ -23,13 +23,13 @@ from apigateway.apps.esb.bkcore.models import ESBChannel
 
 class ESBChannelFilter(filters.FilterSet):
     name = filters.CharFilter(lookup_expr="icontains")
-    system = filters.CharFilter(field_name="system__name")
+    system_name = filters.CharFilter(field_name="system__name")
     path = filters.CharFilter(lookup_expr="icontains")
 
     class Meta:
         model = ESBChannel
         fields = [
             "name",
-            "system",
+            "system_name",
             "path",
         ]
