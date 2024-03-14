@@ -29,6 +29,7 @@ from rest_framework.permissions import IsAuthenticated
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory, ESBChannel
 from apigateway.apps.esb.component import serializers
 from apigateway.apps.esb.component.constants import ESB_RELEASE_TASK_EXPIRES
+from apigateway.apps.esb.component.filters import ESBChannelFilter
 from apigateway.apps.esb.component.helpers import get_release_lock
 from apigateway.apps.esb.component.sync import ComponentSynchronizer
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
@@ -51,11 +52,14 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, UserAccessESBPermission]
     lookup_field = "id"
 
+    filterset_class = ESBChannelFilter
+
     @swagger_auto_schema(response_serializer=serializers.ESBChannelSLZ(many=True), tags=["ESB.Component"])
     def list(self, request, *args, **kwargs):
         queryset = ESBChannel.objects.exclude(system__data_type=DataTypeEnum.OFFICIAL_HIDDEN.value).order_by(
             "-is_active", "system__name", "path"
         )
+        queryset = self.filter_queryset(queryset)
         page = self.paginate_queryset(queryset)
 
         slz = serializers.ESBChannelSLZ(
