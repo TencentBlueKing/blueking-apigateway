@@ -1,6 +1,11 @@
+
 SDK usage examples for the component API {{component_name}} under the system {{system_name}} are as follows:
 
-- get_client_by_request, suitable for front and backend interaction, can get django request scenario
+### 1. Django Project
+
+#### 1.1 get_client_by_request
+
+nt_by_request , suitable for front and backend interaction, can get django request scenario
 
 ```python
     from {{package_prefix}}.shortcuts import get_client_by_request
@@ -21,8 +26,9 @@ SDK usage examples for the component API {{component_name}} under the system {{s
 
     result = client.{{system_name|lower}}.{{component_name}}(kwargs)
 ```
+#### 1.2 get_client_by_user
 
-- get_client_by_user, suitable for scenarios where the user is specified directly
+get_client_by_user, suitable for scenarios where the user is specified directly
 
 ```python
     from {{package_prefix}}.shortcuts import get_client_by_user
@@ -44,7 +50,9 @@ SDK usage examples for the component API {{component_name}} under the system {{s
     result = client.{{system_name|lower }}.{{component_name}}(kwargs)
 ```
 
-- ComponentClient, suitable for scenarios where the app and user are specified directly
+### 2. Non-Django Python Project
+
+ComponentClient, suitable for scenarios where the app and user are specified directly
 
 ```python
     from {{package_prefix}}.client import ComponentClient
