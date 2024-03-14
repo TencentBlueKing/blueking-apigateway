@@ -1,6 +1,6 @@
 <template>
   <div class="release-sideslider">
-    <bk-sideslider v-model:isShow="isShow" :width="960" :title="t('生成资源版本')" quick-close>
+    <bk-sideslider v-model:isShow="isShow" :width="960" :title="t('生成资源版本')" quick-close class="scroll">
       <template #default>
         <div class="sideslider-content">
           <div class="top-steps">
@@ -285,9 +285,6 @@ defineExpose({
 </script>
 
   <style lang="scss" scoped>
-  :deep(.bk-modal-content) {
-    overflow-y: auto;
-  }
   .sideslider-content {
     width: 100%;
 
@@ -338,5 +335,10 @@ defineExpose({
   .custom-option-disabled {
     color: #c4c6cc !important;
     cursor: not-allowed !important;
+  }
+  .scroll {
+    .bk-modal-content {
+      overflow-y: auto;
+    }
   }
   </style>

@@ -120,7 +120,7 @@
       :mask-close="false"
       @after-leave="docCategoryDialog.categoryName = ''"
       @confirm="handleConfirm"
-      @cancel="closeDocCategoryDialog"
+      @closed="closeDocCategoryDialog"
     >
       <bk-form
         :label-width="90"
@@ -431,7 +431,7 @@ const handleDelete = (data: any) => {
 
 const closeDocCategoryDialog = () => {
   docCategoryDialog.value.visiable = false;
-  validateFormRef.value?.clearError();
+  validateFormRef.value?.clearValidate();
 };
 
 const clearFilterKey = () => {

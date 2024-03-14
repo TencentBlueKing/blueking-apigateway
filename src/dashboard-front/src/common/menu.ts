@@ -9,7 +9,7 @@ export const menuData: IMenu[]  = [
     name: 'apigwStageManage',
     enabled: true,
     title: '环境管理',
-    icon: 'components',
+    icon: 'resource',
     children: [
       {
         name: 'apigwStageOverview',
@@ -27,13 +27,13 @@ export const menuData: IMenu[]  = [
     name: 'apigwBackendService',
     enabled: true,
     title: '后端服务',
-    icon: 'panel-permission',
+    icon: 'fuwuguanli',
   },
   {
     name: 'apigwResourceManage',
     enabled: true,
     title: '资源管理',
-    icon: 'runtime',
+    icon: 'ziyuanguanli',
     children: [
       {
         name: 'apigwResource',
@@ -51,7 +51,7 @@ export const menuData: IMenu[]  = [
     name: 'apigwPermissionManage',
     enabled: true,
     title: '权限管理',
-    icon: 'permission',
+    icon: 'quanxianguanli',
     children: [
       {
         name: 'apigwPermissionApplys',
@@ -74,7 +74,7 @@ export const menuData: IMenu[]  = [
     name: 'apigwOperatingData',
     enabled: user.featureFlags?.ENABLE_RUN_DATA,
     title: '运行数据',
-    icon: 'bar-chart',
+    icon: 'keguancexing',
     children: [
       {
         name: 'apigwAccessLog',
@@ -110,19 +110,19 @@ export const menuData: IMenu[]  = [
     name: 'apigwOnlineTest',
     enabled: true,
     title: '在线调试',
-    icon: 'debug',
+    icon: 'zaixiandiaoshi',
   },
   {
     name: 'apigwBasicInfo',
     enabled: true,
     title: '基本信息',
-    icon: 'document',
+    icon: 'jibenxinxi',
   },
   {
     name: 'apigwOperateRecords',
     enabled: true,
     title: '操作记录',
-    icon: 'audit',
+    icon: 'history',
   },
 ];
 
