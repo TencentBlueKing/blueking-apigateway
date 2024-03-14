@@ -1,4 +1,9 @@
 <template>
+  <ResourceSettingTopBar
+    :latest="versionConfigs.needNewVersion"
+    :current-source="curResource"
+    :is-detail="isDetail"
+  />
   <div class="resource-container page-wrapper-padding" id="resourceId">
 
     <div
@@ -59,11 +64,11 @@
               :text="t('导出')"
               :dropdown-list="exportDropData"
               @on-change="handleExport"></ag-dropdown>
-            <div class="mr8">
+            <!-- <div class="mr8">
               <bk-button @click="handleCreateResourceVersion" :disabled="!versionConfigs.needNewVersion">
                 {{ t('生成版本') }}
               </bk-button>
-            </div>
+            </div> -->
           </section>
         </div>
         <div class="flex-1 flex-row justify-content-end">
@@ -443,7 +448,7 @@
       </template>
     </bk-sideslider>
     <!-- 生成版本 -->
-    <version-sideslider ref="versionSidesliderRef" />
+    <!-- <version-sideslider ref="versionSidesliderRef" /> -->
   </div>
 </template>
 <script setup lang="ts">
@@ -459,13 +464,14 @@ import {
 } from '@/http';
 import { Message } from 'bkui-vue';
 import Detail from './detail.vue';
-import VersionSideslider from './comps/version-sideslider.vue';
+// import VersionSideslider from './comps/version-sideslider.vue';
 import SelectCheckBox from './comps/select-check-box.vue';
 import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
 import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import RenderCustomColumn from '@/components/custom-table-header-filter';
+import ResourceSettingTopBar from '@/components/resource-setting-top-bar.vue';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { cloneDeep } from 'lodash';
 import { is24HoursAgo } from '@/common/util';
@@ -522,7 +528,7 @@ const tableEmptyConf = ref<TableEmptyConfType>({
 });
 
 // ref
-const versionSidesliderRef = ref(null);
+// const versionSidesliderRef = ref(null);
 // 导出参数
 const exportParams: IexportParams = reactive({
   export_type: '',
@@ -1027,18 +1033,18 @@ const handleEditLabel = (data: any) => {
 };
 
 // 生成版本功能
-const handleCreateResourceVersion = async () => {
-  if (!versionConfigs.needNewVersion) {
-    Message({
-      message: t('资源及资源文档无变更, 不需要生成新版本'),
-      theme: 'error',
-      width: 'auto',
-    });
-    return;
-  }
+// const handleCreateResourceVersion = async () => {
+//   if (!versionConfigs.needNewVersion) {
+//     Message({
+//       message: t('资源及资源文档无变更, 不需要生成新版本'),
+//       theme: 'error',
+//       width: 'auto',
+//     });
+//     return;
+//   }
 
-  versionSidesliderRef.value.showReleaseSideslider();
-};
+//   versionSidesliderRef.value.showReleaseSideslider();
+// };
 
 // 获取标签数据
 const getLabelsData = async () => {
