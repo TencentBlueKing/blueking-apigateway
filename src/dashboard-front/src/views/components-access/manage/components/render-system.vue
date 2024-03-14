@@ -31,7 +31,7 @@
             :class="['item set-pf', { active: curSelect === item.id }]"
             @click="handleSelectSys(item)">
             <p class="name">
-              <span class="title-wrapper" v-bk-overflow-tips>
+              <span class="title-wrapper">
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <span v-html="highlight(item)"></span>
               </span>
