@@ -200,6 +200,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-lock-fill1:before {
 	content: "\e15a";
 }
+.icon-ag-history-fill:before {
+	content: "\e179";
+}
 .icon-ag-pa-arrow-left:before {
 	content: "\e16d";
 }
@@ -278,6 +281,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-edit-line:before {
 	content: "\e158";
 }
+.icon-ag-cardd:before {
+	content: "\e178";
+}
 .icon-ag-history:before {
 	content: "\e16a";
 }
@@ -316,4 +322,28 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-ziyuanguanli:before {
 	content: "\e168";
+}
+.icon-ag-chayiduibi-shixin:before {
+	content: "\e16e";
+}
+.icon-ag-lishijilu:before {
+	content: "\e171";
+}
+.icon-ag-shitu-liebiao:before {
+	content: "\e170";
+}
+.icon-ag-dongzuo-xiazai:before {
+	content: "\e172";
+}
+.icon-ag-3-yuan-bohui:before {
+	content: "\e173";
+}
+.icon-ag-mokuai:before {
+	content: "\e174";
+}
+.icon-ag-baocundejilu:before {
+	content: "\e175";
+}
+.icon-ag-jibenxinxi:before {
+	content: "\e177";
 }
