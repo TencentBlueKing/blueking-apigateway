@@ -1356,7 +1356,6 @@ const lang: ILANG = {
   '已下架': ['Taken down'],
   '删除环境': ['Delete environment'],
   '自定义超时时间': ['Custom timeout'],
-  '资源及资源文档无变更, 不需要生成新版本': ['No changes to resources and resource documentation, no need to generate a new version'],
   '不允许申请权限': ['Permission application not allowed'],
 
   '当前环境尚未发布，暂无资源信息': ['The current environment has not been released, there are no resource information available'],
