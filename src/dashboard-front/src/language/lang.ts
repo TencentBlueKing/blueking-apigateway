@@ -1375,7 +1375,7 @@ const lang: ILANG = {
   '插件已添加，不能再选择': ['Plugin already added, cannot be selected again'],
   '默认后端服务，不能删除': ['Default back-end service, cannot be deleted'],
   '插件数': ['Number of plugins'],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
+  '新建成功': ['Created'],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
