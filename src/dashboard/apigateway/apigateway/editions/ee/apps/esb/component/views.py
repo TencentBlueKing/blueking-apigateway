@@ -56,16 +56,17 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
         queryset = ESBChannel.objects.exclude(system__data_type=DataTypeEnum.OFFICIAL_HIDDEN.value).order_by(
             "-is_active", "system__name", "path"
         )
+        page = self.paginate_queryset(queryset)
 
         slz = serializers.ESBChannelSLZ(
-            queryset,
+            page,
             many=True,
             context={
                 "latest_release_time": ComponentReleaseHistory.objects.get_latest_release_time(),
             },
         )
 
-        return OKJsonResponse(data=slz.data)
+        return self.get_paginated_response(slz.data)
 
     @swagger_auto_schema(response_serializer=serializers.ESBChannelDetailSLZ, tags=["ESB.Component"])
     def retrieve(self, request, *args, **kwargs):
