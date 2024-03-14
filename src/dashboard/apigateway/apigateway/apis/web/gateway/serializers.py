@@ -22,6 +22,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.biz.constants import APP_CODE_PATTERN
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
+from apigateway.biz.release import ReleaseHandler
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
@@ -196,6 +197,19 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
         return GatewayHandler.get_api_domain(obj)
 
     def get_docs_url(self, obj):
+        # 如果网关未启用也不显示
+        if not obj.is_active:
+            return ""
+
+        # 如果是非公开的不显示文档链接
+        if not obj.is_public:
+            return ""
+
+        # 对于没有发布过的也不显示
+        stage_ids = ReleaseHandler.get_released_stage_ids([obj.id])
+        if len(stage_ids) == 0:
+            return ""
+
         return GatewayHandler.get_docs_url(obj)
 
     def get_public_key_fingerprint(self, obj):
