@@ -569,25 +569,6 @@ SPECIAL_GATEWAY_AUTH_CONFIGS = {
     },
 }
 
-# 默认环境的默认后端
-DEFAULT_STAGE_UPSTREAMS = {
-    "loadbalance": "roundrobin",
-    "hosts": [
-        {
-            "host": "",
-            "weight": 100,
-        }
-    ],
-}
-
-DEFAULT_STAGE_RATE_LIMIT_CONFIG = {
-    "enabled": False,
-    "rate": {
-        "tokens": 5000,
-        "period": 60,
-    },
-}
-
 # 微网关 chart 信息
 BCS_MICRO_GATEWAY_CHART_NAME = "bk-micro-gateway"
 BCS_MICRO_GATEWAY_CHART_VERSION = env.str("BCS_MICRO_GATEWAY_CHART_VERSION", "v1.12.7")
