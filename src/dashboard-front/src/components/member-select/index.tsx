@@ -47,7 +47,7 @@ export default defineComponent({
     } : {}));
     const popoverProps = {
       boundary: document.body,
-      fixOnBoundary: true,
+      // fixOnBoundary: true,
     };
 
     onMounted(() => {
@@ -105,7 +105,7 @@ export default defineComponent({
         {...ctx.attrs}
         {...maxData.value}
         // disabled={props.disabled || staffStore.fetching}
-        list={userList}
+        list={userList.value}
         ref={tagInputRef}
         displayKey="display_name"
         saveKey="username"
@@ -131,7 +131,6 @@ export default defineComponent({
                 loading={staffStore.fetching}
                 mode="spin"
                 size="mini"
-
               />
             ),
           }}

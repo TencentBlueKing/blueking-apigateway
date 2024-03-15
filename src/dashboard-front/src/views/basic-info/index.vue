@@ -93,13 +93,17 @@
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('文档地址')}：` }}</div>
               <div class="value url">
-                <span class="link">{{ basicInfoData.docs_url || '--' }}</span>
-                <span>
-                  <i class="apigateway-icon icon-ag-jump" @click.stop="handleOpenNav(basicInfoData.docs_url)" />
+                <span class="link" v-bk-tooltips="{ content: t('网关未开启或公开，暂无文档地址'), placement: 'right' }">
+                  {{ basicInfoData.docs_url || '--' }}
                 </span>
-                <span>
-                  <i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(basicInfoData.docs_url)" />
-                </span>
+                <template v-if="basicInfoData.docs_url">
+                  <span>
+                    <i class="apigateway-icon icon-ag-jump" @click.stop="handleOpenNav(basicInfoData.docs_url)" />
+                  </span>
+                  <span>
+                    <i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(basicInfoData.docs_url)" />
+                  </span>
+                </template>
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -219,7 +223,7 @@
             :placeholder="t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
           />
           <div class="gateways-name-tip">
-            <span>{{ t(' 网关唯一标识，创建后不可修改') }}</span>
+            <span>{{ t('网关唯一标识，创建后不可修改') }}</span>
           </div>
         </bk-form-item>
         <bk-form-item
@@ -366,6 +370,7 @@ const handleDeleteApigw = async () => {
     Message({
       theme: 'success',
       message: t('删除成功'),
+      width: 'auto',
     });
     delApigwDialog.value.isShow = false;
     router.push({
@@ -475,6 +480,7 @@ const handleOpenNav = (url: string) => {
     Message({
       theme: 'warning',
       message: t('暂无可跳转链接'),
+      width: 'auto',
     });
   }
 };
@@ -501,6 +507,7 @@ const handleInfoChange = async (payload: Record<string, string>) => {
   Message({
     message: t('编辑成功'),
     theme: 'success',
+    width: 'auto',
   });
 };
 
