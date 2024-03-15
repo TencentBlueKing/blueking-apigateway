@@ -155,7 +155,7 @@
       </div>
 
       <div class="diff-main">
-        <bk-loading :loading="isDataLoading" color="#ffffff" opacity="1" :z-index="1000" class="diff-loading">
+        <bk-loading :loading="isDataLoading" color="#ffffff" :opacity="1" :z-index="1000" class="diff-loading">
           <!-- 新增 -->
           <div
             class="diff-item"
@@ -171,7 +171,7 @@
                       { active: addItem.isExpanded },
                     ]"
                   ></i>
-                  <span v-bk-overflow-tips class="vm resource-title ml10">--</span>
+                  <span class="vm resource-title ml10">--</span>
                 </div>
                 <div class="resource-box pl15 pr15">
                   <!-- <bk-transition :name="animation"> -->
@@ -190,7 +190,6 @@
                 <div class="metadata success" @click="handleToggle(addItem)">
                   <i :class="['bk-icon icon-right-shape', { active: addItem.isExpanded }]"></i>
                   <span
-                    v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(addItem)"
                     :title="`【${addItem?.method}】${addItem?.path}`"
@@ -224,7 +223,6 @@
                     ]"
                   ></i>
                   <span
-                    v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(deleteItem)"
                     :title="`【${deleteItem?.method}】${deleteItem?.path}`"
@@ -248,7 +246,6 @@
                     ]"
                   ></i>
                   <span
-                    v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(deleteItem)"
                     :title="`【${deleteItem?.method}】${deleteItem?.path}`"
@@ -289,7 +286,6 @@
                     ]"
                   ></i>
                   <span
-                    v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(updateItem.source)"
                     :title="`【${updateItem?.source?.method}】${updateItem?.source?.path}`"
@@ -316,7 +312,6 @@
                     ]"
                   ></i>
                   <span
-                    v-bk-overflow-tips
                     class="vm resource-title"
                     v-html="renderTitle(updateItem.target)"
                     :title="`【${updateItem?.target?.method}】${updateItem?.target?.path}`"
