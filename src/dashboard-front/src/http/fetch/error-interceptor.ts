@@ -34,7 +34,9 @@ export default (errorData: any, config: IFetchConfig) => {
   }
   // 全局捕获错误给出提示
   if (config.globalError) {
-    Message({ theme: 'error', message: error.message });
+    if (error.code !== 'UNAUTHENTICATED') {
+      Message({ theme: 'error', message: error.message });
+    }
   }
   return Promise.reject(error);
 };
