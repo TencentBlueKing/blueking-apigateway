@@ -46,6 +46,6 @@ class SDKDocContext:
 
 @dataclass
 class DummySDKDocContext(SDKDocContext):
-    gateway_name: str = "agent"
+    gateway_name: str = "example"
     stage_name: str = "prod"
-    resource_name: str = "get_agent_status"
+    resource_name: str = "get_example_status"
