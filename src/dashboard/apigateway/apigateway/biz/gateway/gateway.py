@@ -251,6 +251,19 @@ class GatewayHandler:
 
     @staticmethod
     def get_docs_url(gateway: Gateway) -> str:
+        # 如果网关未启用则不提供文档地址
+        if not gateway.is_active:
+            return ""
+
+        # 如果是非公开的不显示文档链接
+        if not gateway.is_public:
+            return ""
+
+        # 对于没有发布过的也不显示文档链接
+        stage_ids = ReleaseHandler.get_released_stage_ids([gateway.id])
+        if len(stage_ids) == 0:
+            return ""
+
         # 如果无可展示的资源文档，则不提供文档地址
         if ReleasedResourceDoc.objects.filter(gateway=gateway).exists():
             return settings.API_DOCS_URL_TMPL.format(api_name=gateway.name)

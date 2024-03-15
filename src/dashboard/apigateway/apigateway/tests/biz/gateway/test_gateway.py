@@ -337,14 +337,23 @@ class TestGatewayHandler:
         feature_flag = GatewayHandler.get_feature_flags(fake_gateway.id)
         assert feature_flag == {"FOO": True, "BAR": True}
 
-    def test_get_docs_url(self, settings, fake_gateway):
+    def test_get_docs_url(self, settings, fake_gateway, fake_stage, fake_resource_version):
         settings.API_DOCS_URL_TMPL = "http://apigw.example.com/docs/{api_name}"
         result = GatewayHandler.get_docs_url(fake_gateway)
         assert result == ""
 
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
         G(ReleasedResourceDoc, gateway=fake_gateway)
         result = GatewayHandler.get_docs_url(fake_gateway)
         assert result == f"http://apigw.example.com/docs/{fake_gateway.name}"
+
+        fake_gateway.status = 0
+        result = GatewayHandler.get_docs_url(fake_gateway)
+        assert result == ""
+
+        fake_gateway.is_public = False
+        result = GatewayHandler.get_docs_url(fake_gateway)
+        assert result == ""
 
     def test_get_resource_count(self):
         gateway_1 = G(Gateway)
