@@ -652,7 +652,7 @@ const handlerChange = ({ row, checked }: any) => {
 
 const handlerAllChange = ({ checked, data }: any) => {
   if (checked) {
-    curSelectList.value = [...data];
+    curSelectList.value = [...data.filter((item: any) => !item.is_official)];
   } else {
     curSelectList.value = [];
   }

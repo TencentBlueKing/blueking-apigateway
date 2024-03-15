@@ -227,7 +227,7 @@ class TestGatewayCreateInputSLZ:
 
 
 class TestGatewayRetrieveOutputSLZ:
-    def test_to_representation(self, fake_gateway, mocker):
+    def test_to_representation(self, fake_gateway, fake_release, mocker):
         mocker.patch(
             "apigateway.apis.web.gateway.serializers.GatewayHandler.get_api_domain",
             return_value="http://bkapi.demo.com",

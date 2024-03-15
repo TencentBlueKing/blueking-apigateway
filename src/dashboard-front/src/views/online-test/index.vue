@@ -44,7 +44,7 @@
               </bk-option>
             </bk-select>
           </bk-form-item>
-          <bk-form-item :label="t('子路径')" v-if="isMatchAnyMethod || isShowSubpath">
+          <bk-form-item :label="t('子路径')" v-show="isShowSubpath">
             <bk-input v-model="formData.subpath"></bk-input>
             <p class="ag-tip mt5">
               <i class="apigateway-icon icon-ag-info"></i>
@@ -312,7 +312,7 @@ const params = ref({ ...defaultValue.params });
 const formData = ref<any>({ ...defaultValue.formData });
 const response = ref<any>({});
 const isResponseBodyJson = ref<boolean>(false);
-const isMatchAnyMethod = ref<boolean>(false);
+// const isMatchAnyMethod = ref<boolean>(false);
 const tokenInputRender = ref<number>(0);
 const curApigw = ref({
   name: '',
@@ -330,7 +330,7 @@ const cookieNames = ref([]);
 const isAdsorb = ref<boolean>(false);
 const fixedLeft = ref(expandWidth);
 const userPlaceholder = '******';
-const allMethodList = ref([common.methodList]);
+const allMethodList = ref(common.methodList);
 const headerViewRef = ref(null);
 
 
@@ -471,7 +471,7 @@ const checkFormData = (data: any) => {
   const pathParams = Object.values(data.path_params);
   const reg = /^[\w{}/.-]*$/;
   const codeReg = /^[a-z][a-z0-9-_]+$/;
-  if ((isMatchAnyMethod.value || isShowSubpath) && !reg.test(data.subpath)) {
+  if ((isShowSubpath.value) && !reg.test(data.subpath)) {
     Message({
       theme: 'error',
       message: t('请输入合法的子路径'),
@@ -503,7 +503,7 @@ const handleSendRequest = async () => {
   params.value.headers = headerKeyValuer.value?.getValue();
   params.value.query_params = queryKeyValuer.value?.getValue();
   params.value.path_params = pathKeyValuer.value?.getValue();
-  params.value.subpath = isMatchAnyMethod.value || isShowSubpath ? formData.value.subpath : '';
+  params.value.subpath = isShowSubpath.value ? formData.value.subpath : '';
   // 用户认证
   params.value.use_user_from_cookies = curResource.value?.verified_user_required
     ? formData.value?.useUserFromCookies
@@ -551,10 +551,10 @@ const handleResourceChange = (value: any) => {
   if (methodList.value.length === 1) {
     if (methodList.value[0].name === 'ANY') {
       methodList.value = allMethodList.value?.slice(0, -1);
-      isMatchAnyMethod.value = true;
+      // isMatchAnyMethod.value = true;
     } else {
       formData.value.method = methodList.value[0].id;
-      isMatchAnyMethod.value = false;
+      // isMatchAnyMethod.value = false;
       handleMethodChange(formData.value.method);
     }
   }

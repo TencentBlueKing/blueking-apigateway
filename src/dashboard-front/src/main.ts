@@ -12,6 +12,7 @@ import 'mavon-editor/dist/css/index.css';
 // 全量引入 bkui-vue
 // import bkui from 'bkui-vue';
 import bkui from 'bkui-vue';
+// import bkui, { bkTooltips, overflowTitle } from 'bkui-vue';
 // 全量引入 bkui-vue 样式
 import 'bkui-vue/dist/style.css';
 // 图标
@@ -24,6 +25,8 @@ app.use(i18n)
   .use(directive)
   .use(router)
   .use(createPinia())
-  .use(bkui as any)
+  .use(bkui)
+  // .directive('overflowTitle', overflowTitle)
+  // .directive('bkTooltips', bkTooltips)
   .use(mavonEditor)
   .mount('.app');
