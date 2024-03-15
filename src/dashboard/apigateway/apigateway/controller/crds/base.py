@@ -17,8 +17,9 @@
 #
 from typing import ClassVar, Dict
 
-from django.conf import settings
 from pydantic import BaseModel, Field
+
+BkGatewayResourceLabelPrefix = "gateway.bk.tencent.com/"
 
 
 class KubernetesModel(BaseModel):
@@ -32,7 +33,7 @@ class KubernetesModel(BaseModel):
 
 
 class KubernetesResourceMetadata(BaseModel):
-    label_prefix: ClassVar[str] = settings.BK_GATEWAY_RESOURCE_LABEL_PREFIX
+    label_prefix: ClassVar[str] = BkGatewayResourceLabelPrefix
     name: str = Field(default="", description="名称")
     labels: Dict[str, str] = Field(default_factory=dict, description="标签")
     annotations: Dict[str, str] = Field(default_factory=dict, description="注解")

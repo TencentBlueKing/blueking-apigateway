@@ -28,7 +28,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
 import os
-from typing import Any, Dict, List
+from typing import List
 from urllib.parse import quote
 
 from celery.schedules import crontab
@@ -586,8 +586,6 @@ BCS_API_GATEWAY_TOKEN = env.str("BCS_API_GATEWAY_TOKEN", "")
 # 网关部署集群所属业务ID，影响从蓝鲸监控拉取 Prometheus 数据等功能；开源环境默认部署在蓝鲸业务(业务 ID=2)
 BCS_CLUSTER_BK_BIZ_ID = env.str("BCS_CLUSTER_BK_BIZ_ID", "2")
 
-# edge controller 配置
-EDGE_CONTROLLER_API_NAME = "bk-apigateway"
 # 托管的微网关实例，实例部署所用 chart 由网关生成，
 # 此 chart 中，endpoints + base_path 应为微网关实例访问网关数据的网关接口地址前缀
 EDGE_CONTROLLER_API_BASE_PATH = env.str("EDGE_CONTROLLER_API_BASE_PATH", "/")
@@ -683,10 +681,6 @@ APISIX_CONFIG = {
     },
 }
 
-# 内置的后端服务健康检查，按网关配置
-MICRO_GATEWAY_STAGE_UPSTREAM_CHECKS: Dict[str, Any] = {}
-
-BK_GATEWAY_RESOURCE_LABEL_PREFIX = "gateway.bk.tencent.com/"
 BK_GATEWAY_ETCD_NAMESPACE_PREFIX = env.str("BK_GATEWAY_ETCD_NAMESPACE_PREFIX", default="/bk-gateway-apigw")
 
 # 默认微网关共享实例
@@ -732,12 +726,6 @@ MAX_LABEL_COUNT_PER_GATEWAY = env.int("MAX_LABEL_COUNT_PER_GATEWAY", 100)
 MAX_BACKEND_TIMEOUT_IN_SECOND = env.int("MAX_BACKEND_TIMEOUT_IN_SECOND", 600)
 
 MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION = env.int("MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION", 99)
-
-CACHE_KEY_PREFIX = "apigw:dp:"
-CACHE_VERSION = "v1"
-
-APIGW_REVERSION_UPDATE_CHANNEL_KEY = "apigateway:reversion:update"
-APIGW_REVERSION_UPDATE_SET_KEY = "apigateway:reversion:update:set"
 
 BK_LOGIN_TICKET_KEY = "bk_token"
 BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {
