@@ -45,7 +45,7 @@
               <bk-loading
                 v-if="row.statusUpdating"
                 style="width: 48px;"
-                :loading="true" theme="default" size="small" opacity="1">
+                :loading="true" theme="default" size="small" :opacity="1">
                 <div style="height: 20px;" />
               </bk-loading>
               <template v-else>

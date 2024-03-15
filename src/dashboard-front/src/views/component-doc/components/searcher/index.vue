@@ -18,7 +18,7 @@
         type="text" v-model="keyword" class="input w400" :placeholder="t('请输入API名称')" @input="handleSearch"
         @keydown="handleKeyup">
       <div class="bk-dropdown-content is-show left-align" v-if="keyword">
-        <bk-loading :loading="isLoading" opacity="1">
+        <bk-loading :loading="isLoading" :opacity="1">
           <ul
             ref="searchListContainer" id="result-list" class="bk-dropdown-list"
             :style="{ 'max-height': `${contentMaxHeight}px` }">
@@ -337,5 +337,3 @@ const handleKeyup = (e: any) => {
 
 }
 </style>
-
-

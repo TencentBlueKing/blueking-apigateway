@@ -11,7 +11,7 @@
           checkDiff('localData.name') ||
           checkDiff('localData.path') ||
           checkDiff('localData.description') ||
-          checkDiff('localData.gateway_label_ids') ||
+          checkDiff('localData.api_labels') ||
           checkDiff(
             'localData.contexts.resource_auth.config.auth_verified_required'
           ) ||
@@ -56,21 +56,21 @@
         </bk-col>
       </bk-row>
 
-      <bk-row :class="{ 'ag-diff': checkDiff('localData.gateway_label_ids') }">
+      <bk-row :class="{ 'ag-diff': checkDiff('localData.api_labels') }">
         <bk-col :span="4">
           <label class="ag-key">{{ $t("标签") }}:</label>
         </bk-col>
-        <bk-col :span="10">
-          <template v-if="localData.gateway_label_ids?.length">
+        <bk-col style="margin-bottom: -4px;" :span="10">
+          <template v-if="localData.api_labels?.length">
             <bk-tag
               class="ag-value"
+              style="margin-left: 4px; margin-bottom: 4px;"
               v-for="tag in labels?.filter((label) => {
-                if (localData.gateway_label_ids?.includes(label.id))
+                if (localData.api_labels?.includes(String(label.id)))
                   return true;
               })"
               :key="tag.id"
-            >{{ tag.name }}</bk-tag
-            >
+            >{{ tag.name }}</bk-tag>
           </template>
           <div class="ag-value" v-else>--</div>
         </bk-col>
@@ -812,6 +812,7 @@ const initLocalData = () => {
     }
   }
   localData.value = data;
+
   if (localData.value?.proxy?.backend?.id) {
     getBackendsList();
   }
