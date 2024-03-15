@@ -126,7 +126,14 @@ const getLogsList = async () => {
           children.push(subItem);
         }
       });
-      const firstChild = children[0];
+
+      // 计算耗时，第一个节点用自身的 endTime - startTime ，后面的节点用自身节点的 endTime - 前一个节点的 endTime
+      let firstChild: any = {};
+      if (index === 0) {
+        [firstChild] = children;
+      } else {
+        firstChild = steps[index - 1]?.children[1];
+      }
       const lastChild = children[children.length - 1];
 
       const date1 = dayjs(firstChild?.created_time);
