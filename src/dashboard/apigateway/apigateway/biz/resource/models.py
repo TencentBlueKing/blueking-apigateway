@@ -100,3 +100,19 @@ class ResourceData(BaseModel):
             "backend_config": self.backend_config.dict(),
             "metadata": self.metadata,
         }
+
+    def check_snapshot(self) -> Dict[str, Any]:
+        base_info = {
+            "name": self.name,
+            "description": self.description,
+            "method": self.method,
+            "path": self.path,
+            "match_subpath": self.match_subpath,
+            "is_public": self.is_public,
+            "allow_apply_permission": self.allow_apply_permission,
+            "auth_config": self.auth_config.dict(),
+            "metadata": self.metadata,
+        }
+        if self.resource:
+            base_info["id"] = self.resource.id
+        return base_info

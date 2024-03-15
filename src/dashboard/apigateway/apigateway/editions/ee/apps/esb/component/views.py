@@ -185,7 +185,7 @@ class ComponentSyncViewSet(viewsets.ViewSet):
         validator.validate()
         unspecified_resources = validator.get_unspecified_resources()
 
-        resources = unspecified_resources + [resource_data.snapshot() for resource_data in resource_data_list]
+        resources = unspecified_resources + [resource_data.check_snapshot() for resource_data in resource_data_list]
         slz = serializers.ComponentResourceBindingSLZ(resources, many=True)
         return OKJsonResponse(data=slz.data)
 
