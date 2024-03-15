@@ -121,8 +121,11 @@ const fetchUserInfo = async () => {
     const res = await getUser();
     user.setUser(res);
     userLoading.value = true;
-  } catch (e) {
-    Message('获取用户信息失败，请检查后再试');
+  } catch (e: any) {
+    console.error(e);
+    if (e?.code !== 'UNAUTHENTICATED') {
+      Message('获取用户信息失败，请检查后再试');
+    }
   }
 };
 
@@ -131,9 +134,11 @@ const fetchFeatureFlags = async () => {
     const res = await getFeatureFlags({ limit: 10000, offset: 0 });
     enableShowNotice.value = res?.ENABLE_BK_NOTICE || false;
     user.setFeatureFlags(res);
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    Message('获取功能权限失败，请检查后再试');
+    if (e?.code !== 'UNAUTHENTICATED') {
+      Message('获取功能权限失败，请检查后再试');
+    }
   };
 };
 
