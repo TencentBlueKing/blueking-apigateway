@@ -1319,7 +1319,7 @@ const lang: ILANG = {
   '环境唯一标识，创建后不可修改。创建网关成功后可新增环境': ['Environment unique identifier, cannot be modified after creation. New environments can be added after successful gateway creation'],
   '格式: host:port': ['Format: host:port'],
   '修改成功': ['Successfully modified'],
-
+  '去新建': ['Go to new'],
   '变量名不可重复': ['Variable names cannot be duplicated'],
   '变量名称': ['Variable name'],
   '如果环境和资源已经发布，服务配置修改后，将立即对所有已发布资源生效': ['If the environment and resources have been released, modifications to the service configuration will immediately take effect for all released resources'],

@@ -422,7 +422,7 @@ watch(
       if (props.version?.id) {
         const curVersion = versionList.value.find(item => item.id === props.version?.id);
         if (curVersion) {
-          formData.resource_version_id = cloneDeep(curVersion);
+          formData.resource_version_id = curVersion?.id;
           handleVersionChange({
             disabled: curVersion.disabled,
             id: props.version?.id,
