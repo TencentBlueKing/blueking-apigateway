@@ -16,12 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-""""
+"""
 管理访问 ESB 非公开组件
 
 ESB 非公开组件未包含在 bkapi_component.open 中，
 为方便调用这些组件，此处基于 bkapi_client_core 中的 ESBClient，并参照 bkapi_componet.open 实现，对这些组件进行封装
 """
+
 from bkapi_client_core.esb import ESBClient, Operation, OperationGroup, bind_property
 from bkapi_client_core.esb import generic_type_partial as _partial
 from bkapi_client_core.esb.django_helper import get_client_by_username as _get_client_by_username

@@ -22,6 +22,7 @@
 - apisix 插件的 check_schema 校验失败，将导致绑定了插件的 API 无法访问
 - apisix 插件的 check_schema 除校验 schema 外，可能还有一些额外的校验，这些插件配置的额外校验，放在此模块处理
 """
+
 import ipaddress
 import re
 from abc import ABC, abstractmethod

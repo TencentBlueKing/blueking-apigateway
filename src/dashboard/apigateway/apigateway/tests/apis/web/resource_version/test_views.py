@@ -227,7 +227,14 @@ class TestResourceVersionNeedNewVersionRetrieveApi:
 
 class TestResourceVersionDiffApi:
     def test_resource_version_diff(
-        self, request_view, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2, echo_plugin_stage_binding
+        self,
+        request_view,
+        fake_backend,
+        fake_stage,
+        fake_gateway,
+        fake_resource,
+        fake_resource_version_v2,
+        echo_plugin_stage_binding,
     ):
         resp = request_view(
             method="GET",
@@ -244,7 +251,7 @@ class TestResourceVersionDiffApi:
             "data": {
                 "add": [
                     {
-                        "id": 1,
+                        "id": fake_resource.id,
                         "name": "Red",
                         "description": "",
                         "method": "HEAD",
@@ -254,7 +261,7 @@ class TestResourceVersionDiffApi:
                         "allow_apply_permission": True,
                         "proxy": {
                             "type": "http",
-                            "backend_id": 1,
+                            "backend_id": fake_backend.id,
                             "config": {
                                 "method": "POST",
                                 "path": "wp-content",

@@ -19,6 +19,7 @@
 """
 将 ESB 的 JWT 密钥同步到 API Gateway 网关 bk-esb, apigw
 """
+
 import logging
 
 from django.conf import settings

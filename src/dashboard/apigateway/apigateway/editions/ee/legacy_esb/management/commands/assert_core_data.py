@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 """PaaS2/ESB 核心数据迁移完成后，校验迁移前后数据是否一致"""
+
 from django.core.management.base import BaseCommand
 
 from apigateway.legacy_esb import sync

@@ -19,6 +19,7 @@
 """
 创建 esb JWT 密钥
 """
+
 import logging
 
 from django.core.management.base import BaseCommand

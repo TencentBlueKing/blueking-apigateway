@@ -19,6 +19,7 @@
 """
 创建 esb 相关网关，如 bk-esb、apigw
 """
+
 import logging
 
 from django.conf import settings

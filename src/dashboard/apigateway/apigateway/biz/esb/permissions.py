@@ -57,7 +57,8 @@ class ComponentPermissionManager:
 
     @classmethod
     def get_manager(cls) -> "ComponentPermissionManager":
-        if settings.USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS and ComponentResourceBinding:
+        # NOTE: ComponentResourceBinding is None in te
+        if settings.USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS and ComponentResourceBinding:  # type: ignore
             return ComponentPermissionByGatewayManager()
 
         return ComponentPermissionByEsbManager()
@@ -257,7 +258,7 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
         for component in components:
             resource_id = component_id_to_resource_id.get(component["id"])
             component["component_permission"] = resource_id_to_permission.get(resource_id)
-            component["component_permission_apply_status"] = resource_id_to_apply_status.get(resource_id, None)
+            component["component_permission_apply_status"] = resource_id_to_apply_status.get(resource_id)
 
         component_permissions = parse_obj_as(List[ComponentPermission], components)
 

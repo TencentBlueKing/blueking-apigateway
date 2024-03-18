@@ -3,7 +3,7 @@ FORCE:
 .PHONY: init
 init:
 	pip install -U pip setuptools
-	pip install poetry==1.3.1
+	pip install poetry==1.8.2
 	poetry install
 	pip install pre-commit
 	pre-commit install
@@ -12,7 +12,7 @@ init:
 .PHONY: lint
 lint:
 	ruff format --config=pyproject.toml --force-exclude .
-	ruff --config=pyproject.toml --force-exclude --fix .
+	ruff check --config=pyproject.toml --force-exclude --fix .
 	mypy --config-file=pyproject.toml .
 
 
