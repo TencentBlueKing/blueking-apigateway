@@ -82,6 +82,8 @@ class TestLegacyBackendCreator:
                 "hosts": [{"scheme": "https", "host": "foo.com", "weight": 10}],
                 "retries": 0,
                 "retry_timeout": 0,
+                "hash_on": "",
+                "key": "",
             }
         }
         creator = LegacyBackendCreator(fake_gateway, "admin")
@@ -256,6 +258,8 @@ class TestLegacyBackendCreator:
                     "hosts": [{"scheme": "http", "host": "foo.com", "weight": 100}],
                     "retries": 0,
                     "retry_timeout": 0,
+                    "hash_on": "",
+                    "key": "",
                 }
             },
             b2.id: {
@@ -266,6 +270,8 @@ class TestLegacyBackendCreator:
                     "hosts": [{"scheme": "http", "host": "bar.com", "weight": 100}],
                     "retries": 0,
                     "retry_timeout": 0,
+                    "hash_on": "",
+                    "key": "",
                 }
             },
         }
@@ -374,6 +380,8 @@ class TestLegacyUpstreamToBackendSynchronizer:
             "hosts": [{"scheme": "https", "host": "bar.com", "weight": 10}],
             "retries": 0,
             "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
 

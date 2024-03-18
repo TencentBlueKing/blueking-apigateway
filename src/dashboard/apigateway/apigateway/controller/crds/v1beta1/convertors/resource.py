@@ -171,12 +171,18 @@ class HttpResourceConvertor(BaseConvertor):
         if not upstreams:
             return None
 
+        loadbalance = self._release_data.stage_backend_config.get("loadbalance", UpstreamTypeEnum.ROUNDROBIN.value)
+        hash_one = self._release_data.stage_backend_config.get("hash_on", "")
         upstream = Upstream(
             # 因为路由中设置了超时，此处会被覆盖，加上只是作为防御
             timeout=self._convert_http_resource_timeout(resource_proxy),
-            type=UpstreamTypeEnum.ROUNDROBIN,
+            type=self._convert_upstream_type(loadbalance),
             retries=self._release_data.stage_backend_config.get("retries", 0),
             retryTimeout=self._release_data.stage_backend_config.get("retry_timeout", 0),
+            hash_on=self._convert_chash_hash_one_type(hash_one),
+            key=self._convert_chash_hash_one_type_key(
+                hash_one, self._release_data.stage_backend_config.get("key", "")
+            ),
         )
 
         for host in upstreams.get("hosts", []):

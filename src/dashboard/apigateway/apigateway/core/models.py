@@ -428,6 +428,12 @@ class BackendConfigJSONField(JSONField):
 
             if "retry_timeout" not in data:
                 data["retry_timeout"] = 0
+
+            if "hash_on" not in data:
+                data["hash_on"] = ""
+
+            if "key" not in data:
+                data["key"] = ""
         return data
 
 

@@ -44,6 +44,24 @@ class BackendConfigTypeEnum(StructuredEnum):
 class LoadBalanceTypeEnum(StructuredEnum):
     RR = EnumField("roundrobin", "RR")
     WRR = EnumField("weighted-roundrobin", "Weighted-RR")
+    EWMA = EnumField("ewma", "EWMA")
+    LEAST_CONN = EnumField("least_conn", "Least-Conn")
+    CHASH = EnumField("chash", "CHash")
+
+
+class HashOnEnum(StructuredEnum):
+    VARS = EnumField("vars", label="Vars")
+    QUERY_STRING = EnumField("query_string", label="QueryString")
+    HEADER = EnumField("header", label="Header")
+    COOKIE = EnumField("cookie", label="Cookie")
+
+
+class HashOnVarEnum(StructuredEnum):
+    URI = EnumField("uri", label="URI")
+    REQUEST_URI = EnumField("request_uri", label="RequestURI")
+    REMOTE_PORT = EnumField("remote_port", label="RemotePort")
+    REMOTE_ADDR = EnumField("remote_addr", label="RemoteAddr")
+    QUERY_STRING = EnumField("query_string", label="QueryString")
 
 
 class BackendConfigSchemeEnum(StructuredEnum):

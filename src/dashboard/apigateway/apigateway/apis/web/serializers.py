@@ -21,7 +21,7 @@ from rest_framework import serializers
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN
 
-from .constants import BackendConfigSchemeEnum, BackendConfigTypeEnum, LoadBalanceTypeEnum
+from .constants import BackendConfigSchemeEnum, BackendConfigTypeEnum, HashOnEnum, HashOnVarEnum, LoadBalanceTypeEnum
 
 
 class HostSLZ(serializers.Serializer):
@@ -55,6 +55,8 @@ class BaseBackendConfigSLZ(serializers.Serializer):
     )
     retries = serializers.IntegerField(required=False, default=0, help_text="重试次数")
     retry_timeout = serializers.IntegerField(required=False, default=0, help_text="重试超时时间")
+    hash_on = serializers.CharField(required=False, default="", help_text="hash on", allow_blank=True)
+    key = serializers.CharField(required=False, help_text="key", default="", allow_blank=True)
 
     def validate_hosts(self, value):
         unique_combinations = set()
@@ -65,3 +67,14 @@ class BaseBackendConfigSLZ(serializers.Serializer):
                 raise serializers.ValidationError("hosts中的scheme和host组合必须唯一。")
             unique_combinations.add(scheme_host_combination)
         return value
+
+    def validate(self, attrs):
+        if attrs["loadbalance"] == LoadBalanceTypeEnum.CHASH.value:
+            if attrs["hash_on"] not in dict(HashOnEnum.get_choices()):
+                raise serializers.ValidationError("CHASH类型下必须指定hash_on")
+
+            if attrs["key"] == "" or (
+                attrs["hash_on"] == HashOnEnum.VARS.value and attrs["key"] not in dict(HashOnVarEnum.get_choices())
+            ):
+                raise serializers.ValidationError("CHASH类型下必须指定key")
+        return attrs

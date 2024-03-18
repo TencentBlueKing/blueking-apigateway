@@ -39,6 +39,8 @@ class TestBackendInputSLZ:
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                         "retries": 0,
                         "retry_timeout": 0,
+                        "hash_on": "",
+                        "key": "",
                     }
                 ],
             },
@@ -56,6 +58,8 @@ class TestBackendInputSLZ:
                         "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
                         "retries": 0,
                         "retry_timeout": 0,
+                        "hash_on": "",
+                        "key": "",
                     }
                 ],
                 "will_error": True,
@@ -74,6 +78,8 @@ class TestBackendInputSLZ:
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                         "retries": 0,
                         "retry_timeout": 0,
+                        "hash_on": "",
+                        "key": "",
                     }
                 ],
                 "will_error": True,
@@ -92,6 +98,8 @@ class TestBackendInputSLZ:
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                         "retries": 0,
                         "retry_timeout": 0,
+                        "hash_on": "",
+                        "key": "",
                     },
                     {
                         "stage_id": 0,
@@ -101,6 +109,8 @@ class TestBackendInputSLZ:
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                         "retries": 0,
                         "retryTimeout": 0,
+                        "hash_on": "",
+                        "key": "",
                     },
                 ],
                 "will_error": True,

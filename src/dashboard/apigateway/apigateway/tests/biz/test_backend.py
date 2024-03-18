@@ -55,6 +55,8 @@ class TestBackendHandler:
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
             "retries": 0,
             "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
     def test_update(self, fake_stage):
@@ -111,4 +113,6 @@ class TestBackendHandler:
             "hosts": [{"scheme": "https", "host": "www.example.com", "weight": 1}],
             "retries": 0,
             "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }

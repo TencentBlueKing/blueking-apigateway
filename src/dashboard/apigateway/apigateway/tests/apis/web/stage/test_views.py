@@ -69,6 +69,8 @@ class TestStageApi:
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
             "retries": 0,
             "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
     def test_retrieve(self, request_view, fake_stage):
@@ -116,6 +118,8 @@ class TestStageApi:
             "hosts": [{"scheme": "http", "host": "www.test.com", "weight": 1}],
             "retries": 0,
             "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
     def partial_update(self, request_view, fake_stage):
@@ -222,6 +226,8 @@ class TestStageBackendApi:
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
             "retries": 0,
             "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
     def test_update(self, request_view, fake_stage, fake_backend):
@@ -232,6 +238,8 @@ class TestStageBackendApi:
             "hosts": [{"scheme": "http", "host": "www.test.com", "weight": 100}],
             "retries": 0,
             "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
         response = request_view(
