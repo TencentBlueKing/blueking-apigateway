@@ -105,35 +105,6 @@ class ReleasedResourceDocManager(models.Manager):
         resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
         self.filter(gateway_id=gateway_id).exclude(resource_version_id__in=resource_version_ids).delete()
 
-    def get_latest_released_resource_doc(self, gateway_id: int, resource_id: int) -> dict:
-        """获取最新的已发布资源文档"""
-        # TODO: 暂时仅支持展示中文文档
-        resource_doc = (
-            self.filter(
-                gateway_id=gateway_id,
-                resource_id=resource_id,
-                language=DocLanguageEnum.ZH.value,
-            )
-            .order_by("-resource_version_id")
-            .first()
-        )
-        return resource_doc.data if resource_doc else {}
-
-    def get_released_resource_doc(
-        self,
-        gateway_id: int,
-        resource_version_id: int,
-        resource_id: int,
-        language=DocLanguageEnum.ZH.value,
-    ) -> Optional[dict]:
-        doc = self.filter(
-            gateway_id=gateway_id,
-            resource_version_id=resource_version_id,
-            resource_id=resource_id,
-            language=language,
-        ).first()
-        return doc.data if doc else {}
-
     def get_doc_updated_time(self, gateway_id: int, resource_version_id: int, resource_id: int) -> Dict[str, str]:
         qs = self.filter(gateway_id=gateway_id, resource_version_id=resource_version_id, resource_id=resource_id)
         return {doc.language: doc.data["updated_time"] for doc in qs}
