@@ -40,7 +40,7 @@ class LegacyUpstream:
     def get_stage_id_to_backend_config(
         self,
         stages: List[Stage],
-        stage_id_to_timeout: Dict[int, int],
+        stage_id_to_timeout: Dict[int, Any],
     ) -> Dict[int, Dict]:
         """获取此 upstream 对应的后端，在各个环境的后端配置"""
         backend_configs = {}
@@ -59,10 +59,14 @@ class LegacyUpstream:
                     }
                 )
 
+            timeout = stage_id_to_timeout[stage.id]
+            if isinstance(timeout, int):
+                timeout = {"connect": timeout, "read": timeout, "send": timeout}
+
             backend_configs[stage.id] = {
                 "type": "node",
                 # 新创建的后端，其超时时间，默认使用 default 后端在各环境配置的超时时间
-                "timeout": stage_id_to_timeout[stage.id],
+                "timeout": timeout,
                 "loadbalance": self.upstreams["loadbalance"],
                 "hosts": hosts,
             }

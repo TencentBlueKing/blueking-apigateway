@@ -98,3 +98,10 @@ class BaseConvertor(ABC):
             headers.update(dict.fromkeys(transform_headers.get("delete") or [], ""))
 
         return headers
+
+    def _convert_timeout(self, timeout: Any) -> Dict[str, int]:
+        # 资源没有配置则使用环境的, 兼容 v1/v2 数据
+        if isinstance(timeout, int):
+            return {"connect": timeout, "read": timeout, "send": timeout}
+
+        return timeout

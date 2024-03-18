@@ -144,7 +144,7 @@ class StageHandler:
             stage=stage,
             config={
                 "type": "node",
-                "timeout": 30,
+                "timeout": {"connect": 30, "read": 30, "send": 30},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "http", "host": "", "weight": 100}],
             },

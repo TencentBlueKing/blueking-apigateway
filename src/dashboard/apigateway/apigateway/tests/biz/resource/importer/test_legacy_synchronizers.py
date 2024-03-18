@@ -46,13 +46,13 @@ class TestLegacyUpstream:
         assert result == {
             s1.id: {
                 "type": "node",
-                "timeout": 20,
+                "timeout": {"connect": 20, "read": 20, "send": 20},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "https", "host": "bar.com", "weight": 10}],
             },
             s2.id: {
                 "type": "node",
-                "timeout": 30,
+                "timeout": {"connect": 30, "read": 30, "send": 30},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "https", "host": "baz.com", "weight": 10}],
             },
@@ -77,7 +77,7 @@ class TestLegacyBackendCreator:
         stage_id_to_backend_config = {
             fake_stage.id: {
                 "type": "node",
-                "timeout": 50,
+                "timeout": {"connect": 50, "read": 50, "send": 50},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "https", "host": "foo.com", "weight": 10}],
             }
@@ -91,7 +91,7 @@ class TestLegacyBackendCreator:
         assert result.name == "backend-1"
 
         stage_id_to_backend_config_2 = copy.deepcopy(stage_id_to_backend_config)
-        stage_id_to_backend_config_2[fake_stage.id]["timeout"] = 10
+        stage_id_to_backend_config_2[fake_stage.id]["timeout"] = {"connect": 10, "read": 10, "send": 10}
 
         result = creator.match_or_create_backend(stage_id_to_backend_config_2)
         assert result.name == "backend-2"
@@ -249,7 +249,7 @@ class TestLegacyBackendCreator:
             b1.id: {
                 fake_stage.id: {
                     "type": "node",
-                    "timeout": 50,
+                    "timeout": {"connect": 50, "read": 50, "send": 50},
                     "loadbalance": "roundrobin",
                     "hosts": [{"scheme": "http", "host": "foo.com", "weight": 100}],
                 }
@@ -257,7 +257,7 @@ class TestLegacyBackendCreator:
             b2.id: {
                 fake_stage.id: {
                     "type": "node",
-                    "timeout": 50,
+                    "timeout": {"connect": 50, "read": 50, "send": 50},
                     "loadbalance": "roundrobin",
                     "hosts": [{"scheme": "http", "host": "bar.com", "weight": 100}],
                 }
@@ -363,7 +363,7 @@ class TestLegacyUpstreamToBackendSynchronizer:
         assert fake_resource_data.backend == backend
         assert backend_config.config == {
             "type": "node",
-            "timeout": 30,
+            "timeout": {"connect": 30, "read": 30, "send": 30},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "https", "host": "bar.com", "weight": 10}],
         }

@@ -34,7 +34,7 @@ class TestStageInputSLZ:
                         "id": fake_backend.id,
                         "config": {
                             "type": "node",
-                            "timeout": 1,
+                            "timeout": {"connect": 1, "read": 1, "send": 1},
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                         },
@@ -50,7 +50,7 @@ class TestStageInputSLZ:
                         "id": 0,
                         "config": {
                             "type": "node",
-                            "timeout": 1,
+                            "timeout": {"connect": 1, "read": 1, "send": 1},
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                         },
@@ -74,7 +74,7 @@ class TestStageInputSLZ:
                         "id": fake_backend.id,
                         "config": {
                             "type": "node",
-                            "timeout": 1,
+                            "timeout": {"connect": 1, "read": 1, "send": 1},
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
                         },
@@ -101,13 +101,13 @@ class TestBackendConfigInputSLZ:
         data = [
             {
                 "type": "node",
-                "timeout": 1,
+                "timeout": {"connect": 1, "read": 1, "send": 1},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
             },
             {
                 "type": "node",
-                "timeout": 1,
+                "timeout": {"connect": 1, "read": 1, "send": 1},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
                 "will_error": True,

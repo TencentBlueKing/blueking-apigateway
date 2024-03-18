@@ -68,7 +68,11 @@ class ResourceDataConvertor:
                     "method": "GET",
                     "path": "/v1/test",
                     "match_subpath": False,
-                    "timeout": 0
+                    "timeout": {
+                        "connect": 10,
+                        "read": 10,
+                        "send": 10,
+                    },
                 },
                 "plugin_configs": [
                     {

@@ -31,15 +31,12 @@ class ServiceConvertor(BaseConvertor):
         if not upstreams:
             return []
 
-        timeout = self._release_data.stage_backend_config.get("timeout", 0)
+        # timeout 有可能是从v1 release中获取, 也有可能是从v2 release中获取, 所以需要兼容
+        timeout = self._convert_timeout(self._release_data.stage_backend_config.get("timeout", 0))
 
         upstream = Upstream(
             type=UpstreamTypeEnum.ROUNDROBIN,
-            timeout=TimeoutConfig(
-                connect=timeout,
-                send=timeout,
-                read=timeout,
-            ),
+            timeout=TimeoutConfig(**timeout),
         )
 
         for node in upstreams.get("hosts", []):

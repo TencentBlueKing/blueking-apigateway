@@ -29,7 +29,7 @@ def _create(request_view, fake_stage):
             {
                 "stage_id": fake_stage.id,
                 "type": "node",
-                "timeout": 1,
+                "timeout": {"connect": 1, "read": 1, "send": 1},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
             }
@@ -100,7 +100,7 @@ class TestBackendApi:
                 {
                     "stage_id": fake_stage.id,
                     "type": "node",
-                    "timeout": 1,
+                    "timeout": {"connect": 1, "read": 1, "send": 1},
                     "loadbalance": "roundrobin",
                     "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                 }

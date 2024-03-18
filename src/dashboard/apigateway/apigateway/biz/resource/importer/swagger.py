@@ -202,11 +202,15 @@ class ResourceSwaggerImporter:
         if backend_type != ProxyTypeEnum.HTTP.value:
             raise ValueError(f"unsupported backend type: {backend['type']}")
 
+        timeout = backend.get("timeout", {"connect": 0, "read": 0, "send": 0})
+        if isinstance(timeout, int):
+            timeout = {"connect": timeout, "read": timeout, "send": timeout}
+
         return {
             "method": backend["method"].upper(),
             "path": backend["path"],
             "match_subpath": backend.get("matchSubpath", False),
-            "timeout": backend.get("timeout", 0),
+            "timeout": timeout,
             # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
             "legacy_upstreams": backend.get("upstreams"),
             "legacy_transform_headers": backend.get("transformHeaders"),
@@ -336,7 +340,7 @@ class ResourceSwaggerExporter:
                     "method": backend["config"]["method"].lower(),
                     "path": backend["config"]["path"],
                     "matchSubpath": backend["config"].get("match_subpath", False),
-                    "timeout": backend["config"].get("timeout", 0),
+                    "timeout": self._adapt_timeout(backend["config"].get("timeout", 0)),
                 }
             )
             return result
@@ -348,7 +352,7 @@ class ResourceSwaggerExporter:
                     "method": http_config["method"].lower(),
                     "path": http_config["path"],
                     "matchSubpath": http_config.get("match_subpath", False),
-                    "timeout": http_config["timeout"],
+                    "timeout": self._adapt_timeout(http_config["timeout"]),
                     "upstreams": http_config.get("upstreams", {}),
                     "transformHeaders": http_config.get("transform_headers", {}),
                 }
@@ -357,6 +361,11 @@ class ResourceSwaggerExporter:
             raise ValueError(f"unsupported proxy_type: {proxy_type}")
 
         return result
+
+    def _adapt_timeout(self, timeout: Any) -> Dict[str, int]:
+        if isinstance(timeout, int):
+            return {"connect": timeout, "read": timeout, "send": timeout}
+        return timeout
 
     def _adapt_auth_config(self, auth_config: Dict) -> Dict:
         config = {

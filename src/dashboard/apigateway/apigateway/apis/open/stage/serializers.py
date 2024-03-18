@@ -238,7 +238,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         backend_configs = []
         config = {
             "type": "node",
-            "timeout": 30,
+            "timeout": {"connect": 30, "read": 30, "send": 30},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "", "weight": 100}],
         }
@@ -278,7 +278,11 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         return {
             "type": "node",
-            "timeout": proxy_http_config["timeout"],
+            "timeout": {
+                "connect": proxy_http_config["timeout"],
+                "read": proxy_http_config["timeout"],
+                "send": proxy_http_config["timeout"],
+            },
             "loadbalance": proxy_http_config["upstreams"]["loadbalance"],
             "hosts": hosts,
         }

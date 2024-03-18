@@ -34,7 +34,7 @@ class TestBackendInputSLZ:
                     {
                         "stage_id": fake_stage.id,
                         "type": "node",
-                        "timeout": 1,
+                        "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                     }
@@ -49,7 +49,7 @@ class TestBackendInputSLZ:
                     {
                         "stage_id": fake_stage.id,
                         "type": "node",
-                        "timeout": 1,
+                        "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
                     }
@@ -65,7 +65,7 @@ class TestBackendInputSLZ:
                     {
                         "stage_id": 0,
                         "type": "node",
-                        "timeout": 1,
+                        "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                     }
@@ -81,14 +81,14 @@ class TestBackendInputSLZ:
                     {
                         "stage_id": fake_stage.id,
                         "type": "node",
-                        "timeout": 1,
+                        "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                     },
                     {
                         "stage_id": 0,
                         "type": "node",
-                        "timeout": 1,
+                        "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                     },

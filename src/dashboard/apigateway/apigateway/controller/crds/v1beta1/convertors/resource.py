@@ -185,13 +185,14 @@ class HttpResourceConvertor(BaseConvertor):
         return upstream
 
     def _convert_http_resource_timeout(self, resource_proxy: Dict[str, Any]) -> TimeoutConfig:
-        # 资源没有配置则使用环境的
-        timeout = resource_proxy.get("timeout") or self._release_data.stage_backend_config.get("timeout") or 60
+        # 资源没有配置则使用环境的, 兼容 v1/v2 数据
+        resource_timeout = self._convert_timeout(resource_proxy.get("timeout", 0))
+        stage_timeout = self._convert_timeout(self._release_data.stage_backend_config.get("timeout", 0))
 
         return TimeoutConfig(
-            connect=timeout,
-            send=timeout,
-            read=timeout,
+            connect=resource_timeout["connect"] or stage_timeout["connect"] or 60,
+            send=resource_timeout["send"] or stage_timeout["send"] or 60,
+            read=resource_timeout["read"] or stage_timeout["read"] or 60,
         )
 
     def _convert_http_resource_rewrite(self, resource_proxy: Dict[str, Any]) -> ResourceRewrite:

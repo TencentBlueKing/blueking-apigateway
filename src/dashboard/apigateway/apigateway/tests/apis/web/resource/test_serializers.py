@@ -158,7 +158,7 @@ class TestResourceInputSLZ:
                     "method": "GET",
                     "path": "/test",
                     "match_subpath": False,
-                    "timeout": 0,
+                    "timeout": {"connect": 0, "read": 0, "send": 0},
                 },
             },
             "label_ids": [],

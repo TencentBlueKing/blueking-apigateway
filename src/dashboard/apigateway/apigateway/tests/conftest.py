@@ -180,7 +180,7 @@ def fake_backend(fake_gateway, fake_stage, faker):
         backend=backend,
         config={
             "type": "node",
-            "timeout": 30,
+            "timeout": {"connect": 30, "read": 30, "send": 30},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
         },

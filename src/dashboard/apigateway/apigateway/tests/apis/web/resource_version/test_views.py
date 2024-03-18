@@ -259,7 +259,7 @@ class TestResourceVersionDiffApi:
                                 "method": "POST",
                                 "path": "wp-content",
                                 "match_subpath": False,
-                                "timeout": 540,
+                                "timeout": {"connect": 540, "read": 540, "send": 540},
                                 "upstreams": {},
                                 "transform_headers": {},
                             },

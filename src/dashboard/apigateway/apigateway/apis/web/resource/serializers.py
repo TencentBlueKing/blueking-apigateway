@@ -21,6 +21,7 @@ from typing import List, Optional
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
+from rest_framework.fields import empty
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import ExportTypeEnum
@@ -152,13 +153,20 @@ class ResourceAuthConfigSLZ(serializers.Serializer):
     )
 
 
+class TimeoutSLZ(serializers.Serializer):
+    connect = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, help_text="连接超时时间")
+    read = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, help_text="读取超时时间")
+    send = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, help_text="写入超时时间")
+
+    class Meta:
+        ref_name = "apis.web.resource.TimeoutSLZ"
+
+
 class HttpBackendConfigSLZ(serializers.Serializer):
     method = serializers.ChoiceField(choices=RESOURCE_METHOD_CHOICES, help_text="请求方法")
     path = serializers.RegexField(PATH_PATTERN, help_text="请求路径")
     match_subpath = serializers.BooleanField(required=False, help_text="是否匹配所有子路径")
-    timeout = serializers.IntegerField(
-        max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, required=False, help_text="超时时间"
-    )
+    timeout = TimeoutSLZ(help_text="超时时间", required=False)
     # 1.13 版本：兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
     legacy_upstreams = LegacyUpstreamsSLZ(
         allow_null=True, required=False, help_text="旧版 upstreams，管理端不需要处理"
@@ -166,6 +174,12 @@ class HttpBackendConfigSLZ(serializers.Serializer):
     legacy_transform_headers = LegacyTransformHeadersSLZ(
         allow_null=True, required=False, help_text="旧版 transform_headers，管理端不需要处理"
     )
+
+    def __init__(self, instance=None, data=empty, **kwargs):
+        # 兼容旧版导入数据
+        if data is not empty and "timeout" in data and isinstance(data["timeout"], int):
+            data["timeout"] = {"connect": data["timeout"], "read": data["timeout"], "send": data["timeout"]}
+        super().__init__(instance, data, **kwargs)
 
 
 class HttpBackendSLZ(serializers.Serializer):

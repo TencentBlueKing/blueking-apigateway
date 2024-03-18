@@ -162,9 +162,9 @@ class TestHttpResourceConvertor:
         assert spec.upstream is not None
 
         resource_config = edge_resource_overwrite_stage_proxy.config
-        assert spec.timeout.connect == resource_config["timeout"]
-        assert spec.timeout.read == resource_config["timeout"]
-        assert spec.timeout.send == resource_config["timeout"]
+        assert spec.timeout.connect == resource_config["timeout"]["connect"]
+        assert spec.timeout.read == resource_config["timeout"]["read"]
+        assert spec.timeout.send == resource_config["timeout"]["send"]
 
         assert spec.rewrite.enabled
         assert spec.rewrite.method == resource_config["method"]
