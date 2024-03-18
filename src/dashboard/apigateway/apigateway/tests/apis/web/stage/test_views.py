@@ -67,6 +67,8 @@ class TestStageApi:
             "timeout": {"connect": 1, "read": 1, "send": 1},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+            "retries": 0,
+            "retry_timeout": 0,
         }
 
     def test_retrieve(self, request_view, fake_stage):
@@ -112,6 +114,8 @@ class TestStageApi:
             "timeout": {"connect": 1, "read": 1, "send": 1},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.test.com", "weight": 1}],
+            "retries": 0,
+            "retry_timeout": 0,
         }
 
     def partial_update(self, request_view, fake_stage):
@@ -216,6 +220,8 @@ class TestStageBackendApi:
             "timeout": {"connect": 30, "read": 30, "send": 30},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+            "retries": 0,
+            "retry_timeout": 0,
         }
 
     def test_update(self, request_view, fake_stage, fake_backend):
@@ -224,6 +230,8 @@ class TestStageBackendApi:
             "timeout": {"connect": 30, "read": 30, "send": 30},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.test.com", "weight": 100}],
+            "retries": 0,
+            "retry_timeout": 0,
         }
 
         response = request_view(

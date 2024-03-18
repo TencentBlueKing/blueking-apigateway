@@ -53,6 +53,8 @@ class TestBackendHandler:
             "timeout": {"connect": 1, "read": 1, "send": 1},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+            "retries": 0,
+            "retry_timeout": 0,
         }
 
     def test_update(self, fake_stage):
@@ -107,4 +109,6 @@ class TestBackendHandler:
             "timeout": {"connect": 10, "read": 10, "send": 10},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "https", "host": "www.example.com", "weight": 1}],
+            "retries": 0,
+            "retry_timeout": 0,
         }

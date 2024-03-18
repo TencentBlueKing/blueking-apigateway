@@ -53,6 +53,8 @@ class BaseBackendConfigSLZ(serializers.Serializer):
         allow_empty=False,
         help_text="主机列表",
     )
+    retries = serializers.IntegerField(required=False, default=0, help_text="重试次数")
+    retry_timeout = serializers.IntegerField(required=False, default=0, help_text="重试超时时间")
 
     def validate_hosts(self, value):
         unique_combinations = set()

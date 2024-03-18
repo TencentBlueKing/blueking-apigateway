@@ -175,6 +175,8 @@ class HttpResourceConvertor(BaseConvertor):
             # 因为路由中设置了超时，此处会被覆盖，加上只是作为防御
             timeout=self._convert_http_resource_timeout(resource_proxy),
             type=UpstreamTypeEnum.ROUNDROBIN,
+            retries=self._release_data.stage_backend_config.get("retries", 0),
+            retryTimeout=self._release_data.stage_backend_config.get("retry_timeout", 0),
         )
 
         for host in upstreams.get("hosts", []):

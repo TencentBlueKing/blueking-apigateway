@@ -80,6 +80,8 @@ class TestLegacyBackendCreator:
                 "timeout": {"connect": 50, "read": 50, "send": 50},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "https", "host": "foo.com", "weight": 10}],
+                "retries": 0,
+                "retry_timeout": 0,
             }
         }
         creator = LegacyBackendCreator(fake_gateway, "admin")
@@ -252,6 +254,8 @@ class TestLegacyBackendCreator:
                     "timeout": {"connect": 50, "read": 50, "send": 50},
                     "loadbalance": "roundrobin",
                     "hosts": [{"scheme": "http", "host": "foo.com", "weight": 100}],
+                    "retries": 0,
+                    "retry_timeout": 0,
                 }
             },
             b2.id: {
@@ -260,6 +264,8 @@ class TestLegacyBackendCreator:
                     "timeout": {"connect": 50, "read": 50, "send": 50},
                     "loadbalance": "roundrobin",
                     "hosts": [{"scheme": "http", "host": "bar.com", "weight": 100}],
+                    "retries": 0,
+                    "retry_timeout": 0,
                 }
             },
         }
@@ -366,6 +372,8 @@ class TestLegacyUpstreamToBackendSynchronizer:
             "timeout": {"connect": 30, "read": 30, "send": 30},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "https", "host": "bar.com", "weight": 10}],
+            "retries": 0,
+            "retry_timeout": 0,
         }
 
 

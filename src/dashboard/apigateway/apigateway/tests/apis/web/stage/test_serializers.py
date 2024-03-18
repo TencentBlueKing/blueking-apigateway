@@ -37,6 +37,8 @@ class TestStageInputSLZ:
                             "timeout": {"connect": 1, "read": 1, "send": 1},
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                            "retries": 0,
+                            "retry_timeout": 0,
                         },
                     }
                 ],
@@ -53,6 +55,8 @@ class TestStageInputSLZ:
                             "timeout": {"connect": 1, "read": 1, "send": 1},
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                            "retries": 0,
+                            "retry_timeout": 0,
                         },
                     }
                 ],
@@ -77,6 +81,8 @@ class TestStageInputSLZ:
                             "timeout": {"connect": 1, "read": 1, "send": 1},
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
+                            "retries": 0,
+                            "retry_timeout": 0,
                         },
                     }
                 ],
@@ -104,12 +110,16 @@ class TestBackendConfigInputSLZ:
                 "timeout": {"connect": 1, "read": 1, "send": 1},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                "retries": 0,
+                "retry_timeout": 0,
             },
             {
                 "type": "node",
                 "timeout": {"connect": 1, "read": 1, "send": 1},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
+                "retries": 0,
+                "retry_timeout": 0,
                 "will_error": True,
             },
         ]

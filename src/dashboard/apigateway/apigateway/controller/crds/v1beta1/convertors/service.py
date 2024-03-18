@@ -37,6 +37,8 @@ class ServiceConvertor(BaseConvertor):
         upstream = Upstream(
             type=UpstreamTypeEnum.ROUNDROBIN,
             timeout=TimeoutConfig(**timeout),
+            retries=self._release_data.stage_backend_config.get("retries", 0),
+            retryTimeout=self._release_data.stage_backend_config.get("retry_timeout", 0),
         )
 
         for node in upstreams.get("hosts", []):

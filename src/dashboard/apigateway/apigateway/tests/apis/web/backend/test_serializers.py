@@ -37,6 +37,8 @@ class TestBackendInputSLZ:
                         "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        "retries": 0,
+                        "retry_timeout": 0,
                     }
                 ],
             },
@@ -52,6 +54,8 @@ class TestBackendInputSLZ:
                         "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
+                        "retries": 0,
+                        "retry_timeout": 0,
                     }
                 ],
                 "will_error": True,
@@ -68,6 +72,8 @@ class TestBackendInputSLZ:
                         "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        "retries": 0,
+                        "retry_timeout": 0,
                     }
                 ],
                 "will_error": True,
@@ -84,6 +90,8 @@ class TestBackendInputSLZ:
                         "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        "retries": 0,
+                        "retry_timeout": 0,
                     },
                     {
                         "stage_id": 0,
@@ -91,6 +99,8 @@ class TestBackendInputSLZ:
                         "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        "retries": 0,
+                        "retryTimeout": 0,
                     },
                 ],
                 "will_error": True,

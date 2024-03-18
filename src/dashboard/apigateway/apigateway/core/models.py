@@ -417,9 +417,17 @@ class Backend(TimestampedModelMixin, OperatorModelMixin):
 class BackendConfigJSONField(JSONField):
     def from_db_value(self, *args, **kwargs):
         data = super().from_db_value(*args, **kwargs)
-        # 兼容旧版本timeout数据
-        if isinstance(data, dict) and "timeout" in data and isinstance(data["timeout"], int):
-            data["timeout"] = {"connect": data["timeout"], "read": data["timeout"], "send": data["timeout"]}
+        if isinstance(data, dict):
+            # 兼容旧版本timeout数据
+            if "timeout" in data and isinstance(data["timeout"], int):
+                data["timeout"] = {"connect": data["timeout"], "read": data["timeout"], "send": data["timeout"]}
+
+            # 补充retries和retry_timeout默认值
+            if "retries" not in data:
+                data["retries"] = 0
+
+            if "retry_timeout" not in data:
+                data["retry_timeout"] = 0
         return data
 
 
