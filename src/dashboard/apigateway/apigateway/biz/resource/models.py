@@ -101,7 +101,7 @@ class ResourceData(BaseModel):
             "metadata": self.metadata,
         }
 
-    def check_snapshot(self) -> Dict[str, Any]:
+    def snapshot_for_checking(self) -> Dict[str, Any]:
         base_info = {
             "name": self.name,
             "description": self.description,
