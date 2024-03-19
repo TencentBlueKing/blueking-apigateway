@@ -1344,7 +1344,7 @@ const lang: ILANG = {
   '请输入 Cookies 中字段 bk_token 的值': ['Please enter the value of the bk_token field in Cookies'],
   '网关的唯一标识，创建后不可更改': ['The gateway\'s unique identifier, cannot be changed after creation'],
   '请输入小写字母、数字、连字符(-)，以小写字母开头': ['Please enter lowercase letters, numbers, hyphens (-), starting with a lowercase letter'],
-
+  '系统错误，请稍后重试': ['System error, please try again later'],
   '确认发布': ['Confirm release'],
   '不校验': ['Do not validate'],
   '进行中': ['In progress'],
