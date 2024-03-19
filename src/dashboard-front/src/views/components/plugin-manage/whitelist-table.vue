@@ -324,7 +324,7 @@ const formattedData = computed(() => {
       if (resourceIds.includes(item.id)) {
         return true;
       }
-      return false
+      return false;
     });
     return list.length ? list : '--';
   };
