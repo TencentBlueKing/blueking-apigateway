@@ -18,6 +18,7 @@
 #
 from urllib.parse import urlparse
 
+from packaging.version import InvalidVersion
 from packaging.version import parse as parse_version
 
 
@@ -36,7 +37,13 @@ class PipHelper:
                 commands.append(f"--trusted-host={urlinfo.hostname}")
 
         if version:
-            commands.append(f"{package}=={parse_version(version)}")
+            _version = version
+            try:
+                _version = parse_version(version)
+            except InvalidVersion:
+                pass
+
+            commands.append(f"{package}=={_version}")
         else:
             commands.append(f"{package}")
 

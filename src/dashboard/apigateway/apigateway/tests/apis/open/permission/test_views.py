@@ -140,6 +140,20 @@ class TestResourceViewSet:
     ):
         fake_gateway.name = "test"
 
+        if mocked_resources:
+            for d in mocked_resources:
+                if "gateway_id" in d:
+                    d["gateway_id"] = fake_gateway.id
+
+        if mocked_resource_permissions:
+            for d in mocked_resource_permissions:
+                if "gateway_id" in d:
+                    d["gateway_id"] = fake_gateway.id
+
+        if expected:
+            for d in expected:
+                d["gateway_id"] = fake_gateway.id
+
         mocker.patch(
             "apigateway.core.models.Gateway.is_active_and_public",
             new_callable=mock.PropertyMock(return_value=is_active_and_public),

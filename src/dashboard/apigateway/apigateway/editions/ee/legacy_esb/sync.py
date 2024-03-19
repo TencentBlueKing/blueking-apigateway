@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 """将 PaaS2/ESB 数据迁移至 BK-ESB"""
+
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 

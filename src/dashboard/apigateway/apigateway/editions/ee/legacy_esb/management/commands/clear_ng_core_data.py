@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 """删除新版 BK-ESB 中的部分核心数据，防止迁移旧版 PaaS2/ESB 时数据冲突"""
+
 import logging
 
 from django.core.management.base import BaseCommand
