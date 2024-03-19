@@ -324,6 +324,7 @@ const formattedData = computed(() => {
       if (resourceIds.includes(item.id)) {
         return true;
       }
+      return false;
     });
     return list.length ? list : '--';
   };
@@ -419,6 +420,7 @@ const filterSearchList = (key: any) => {
       &&      item.resource_ids.includes(searchParams.value.resource_id)) {
         return true;
       }
+      return false;
     });
   } else {
     if (key === 'bk_app_code') {
@@ -426,12 +428,14 @@ const filterSearchList = (key: any) => {
         if (item.bk_app_code === searchParams.value[key]) {
           return true;
         }
+        return false;
       });
     } else {
       pagingList.value = dataList.value.filter((item: any) => {
         if (item.resource_ids.includes(searchParams.value[key])) {
           return true;
         }
+        return false;
       });
     }
   }
@@ -584,7 +588,7 @@ const handlerDeletePolicy = (data: any) => {
 const handlerUpdatePolicy = () => {
   const dimension = manner.value;
   const ids = dimension === 'api' ? [] : resourceIds.value;
-  dataList.value.find((item: any) => {
+  dataList.value.forEach((item: any) => {
     if (item.bk_app_code === curResource.bkAppCode) {
       item.dimension = dimension;
       item.resource_ids = ids;

@@ -109,8 +109,9 @@ const routes: RouteRecordRaw[] = [
         component: apigwReleaseHistory,
         meta: {
           title: '发布记录',
-          matchRoute: 'apigwReleaseHistory',
+          matchRoute: 'apigwStageOverview',
           topMenu: 'home',
+          showBackIcon: true,
         },
       },
       {

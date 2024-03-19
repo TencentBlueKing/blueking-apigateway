@@ -16,11 +16,6 @@ export const menuData: IMenu[]  = [
         enabled: true,
         title: '环境概览',
       },
-      {
-        name: 'apigwReleaseHistory',
-        enabled: true,
-        title: '发布记录',
-      },
     ],
   },
   {
