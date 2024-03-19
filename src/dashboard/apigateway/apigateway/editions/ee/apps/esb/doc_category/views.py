@@ -17,11 +17,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.db import transaction
+from django.db.models import Count
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
-from apigateway.apps.esb.bkcore.models import DocCategory, SystemDocCategory
+from apigateway.apps.esb.bkcore.models import ComponentSystem, DocCategory, SystemDocCategory
 from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.esb.doc_category import serializers
 from apigateway.apps.esb.permissions import UserAccessESBPermission
@@ -42,10 +43,21 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         queryset = DocCategory.objects.all().order_by("-priority", "name")
 
+        # only get the system not hidden
+        system_ids = ComponentSystem.objects.exclude(data_type=DataTypeEnum.OFFICIAL_HIDDEN.value).values_list(
+            "id", flat=True
+        )
+        q = (
+            SystemDocCategory.objects.filter(system_id__in=system_ids)
+            .values("doc_category_id")
+            .annotate(count=Count("doc_category_id"))
+        )
+        counts = {i["doc_category_id"]: i["count"] for i in q}
+
         slz = self.get_serializer_class()(
             queryset,
             many=True,
-            context={"system_counts": SystemDocCategory.objects.calculate_system_count_per_doc_category()},
+            context={"system_counts": counts},
         )
 
         return OKJsonResponse(data=slz.data)
