@@ -55,7 +55,7 @@
 
     <div class="flex-1 publish-btn">
       <bk-button text theme="primary" @click="handleToPublish">
-        {{ t("发布日志") }}
+        {{ t("发布记录") }}
       </bk-button>
     </div>
 
