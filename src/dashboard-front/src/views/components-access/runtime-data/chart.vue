@@ -198,8 +198,8 @@ const get_default_options = (start_value: any, end_value: any) => {
         },
         filterMode: 'filter',
         // 初始的开始和结束位置，根据实际情况调整
-        startValue: parseInt(end_value) - 60 * 60 * 1000,
-        endValue: parseInt(end_value),
+        startValue: parseInt(end_value, 10) - 60 * 60 * 1000,
+        endValue: parseInt(end_value, 10),
         realtime: false,
       },
     ],
