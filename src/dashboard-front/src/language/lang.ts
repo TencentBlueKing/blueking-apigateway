@@ -1381,7 +1381,7 @@ const lang: ILANG = {
   '新建成功': ['Created'],
   '请输入网关描述': ['Please enter the gateway description'],
   '网关未开启或公开，暂无文档地址': ['The gateway not enabled or public, and there is no documentation address available'],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
+  '发布记录': ['Release history'],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
