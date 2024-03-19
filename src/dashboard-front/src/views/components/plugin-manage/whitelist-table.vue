@@ -420,6 +420,7 @@ const filterSearchList = (key: any) => {
       &&      item.resource_ids.includes(searchParams.value.resource_id)) {
         return true;
       }
+      return false;
     });
   } else {
     if (key === 'bk_app_code') {
@@ -427,12 +428,14 @@ const filterSearchList = (key: any) => {
         if (item.bk_app_code === searchParams.value[key]) {
           return true;
         }
+        return false;
       });
     } else {
       pagingList.value = dataList.value.filter((item: any) => {
         if (item.resource_ids.includes(searchParams.value[key])) {
           return true;
         }
+        return false;
       });
     }
   }
