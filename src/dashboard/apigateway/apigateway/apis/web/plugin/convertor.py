@@ -29,6 +29,7 @@ NOTE:
 1. 新插件尽量不写 convertor, 直接保存表单的数据，在 转换成 apisix 配置的时候，进行转换 (以确保编辑态的数据顺序和内容)
 2. 存量已经编写了 convertor 的插件暂时不动
 """
+
 from typing import ClassVar, Dict
 
 from django.utils.translation import gettext as _

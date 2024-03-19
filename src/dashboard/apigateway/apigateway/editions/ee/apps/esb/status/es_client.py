@@ -19,6 +19,7 @@
 """
 请求 Elasticsearch 辅助 Client
 """
+
 from typing import ClassVar, Type
 
 from django.conf import settings

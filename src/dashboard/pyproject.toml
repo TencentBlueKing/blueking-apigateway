@@ -5,40 +5,39 @@ description = ""
 authors = []
 
 [tool.poetry.dependencies]
-python = "~3.6.6 || ~3.7"
-dataclasses = {version = "^0.7", python = "~3.6.1"}
-Django = "3.2.18"
+python = ">=3.10,<3.11"
+django = "3.2.25"
+djangorestframework = "3.14.0"
 mysqlclient = "2.1.1"
 # celery = "5.1.2"
 celery = "4.4.7"
 # django-celery-beat = "2.2.1"
 django-celery-beat = "2.2.0"
-gevent = "22.10.2"
-requests = "2.27.1"
-arrow = "1.2.3"
+gevent = "24.2.1"
+requests = "2.31.0"
+arrow = "1.3.0"
 raven = "6.10.0"
-cachetools = "4.2.4"
-gunicorn = "20.1.0"
+cachetools = "5.3.2"
+gunicorn = "21.2.0"
 jsonschema = "3.2.0"
-djangorestframework = "3.14.0"
-drf-yasg = "1.21.5"
-whitenoise = "5.3.0"
+drf-yasg = "1.21.7"
+whitenoise = "6.6.0"
 python-json-logger = "2.0.7"
-django-cors-headers = "3.10.1"
+django-cors-headers = "4.3.1"
 elasticsearch = "7.7.1"
 elasticsearch-dsl = "7.4.1"
 werkzeug = "2.0.3"
 redis = "4.1.4"
-"ruamel.yaml" = "0.17.21"
+"ruamel.yaml" = "0.17.40"
+pyyaml = "6.0.1"
 PyJWT = "1.7.1"
 pydantic = "1.9.2"
 django-environ = "0.8.1"
-typing_extensions = "4.1.1"
 jsonfield = "3.1.0"
 importlib-metadata = "4.8.3"
 greenlet = "2.0.2"
 bkpaas-auth = "2.0.6"
-blue-krill = "1.2.3"
+blue-krill = "2.0.2"
 bk-crypto-python-sdk = "^1.0.4"
 bk-iam = "1.3.4"
 cryptography = "3.4.8"
@@ -55,8 +54,8 @@ etcd3 = "^0.12.0"
 grpcio = "1.44.0"
 bkapi-bk-apigateway = "1.0.11"
 docutils = "0.18.1"
-Pygments = "2.14.0"
-Pillow = "^8.4.0"
+Pygments = "2.17.2"
+Pillow = "10.2.0"
 opentelemetry-api = "1.7.1"
 opentelemetry-sdk = "1.7.1"
 opentelemetry-exporter-otlp = "1.7.1"
@@ -71,37 +70,37 @@ django-filter = "2.4.0"
 django-add-default-value = "0.10.0"
 pypi-simple = "0.8.0"
 bk-notice-sdk = "^1.3.0"
+jinja2 = "3.1.3"
 
 [tool.poetry.group.dev.dependencies]
 nose = "1.3.7"
 django-nose = "1.4.7"
-coverage = "6.2"
-django-dynamic-fixture = "3.1.2"
-pytest-xdist = "3.0.2"
-pytest = "7.0.1"
-pytest-cov = "4.0.0"
-pytest-django = "4.5.2"
-pytest-benchmark = "3.4.1"
-pytest-mock = "3.6.1"
-Faker = "14.2.1"
-responses = "0.17.0"
-pre-commit = "2.17.0"
-mypy = "*"
-rope = "1.1.1"
-watchdog = "^1.0.1"
-tox = "^3.25.1"
+coverage = "7.4.4"
+django-dynamic-fixture = "4.0.1"
+pytest-xdist = "3.5.0"
+pytest = "8.1.1"
+pytest-cov = "4.1.0"
+pytest-django = "4.8.0"
+pytest-benchmark = "4.0.0"
+pytest-mock = "3.12.0"
+Faker = "24.2.0"
+responses = "0.25.0"
+pre-commit = "3.6.2"
+mypy = "1.9.0"
+rope = "1.12.0"
+watchdog = "^1.0.2"
+tox = "4.14.1"
 ipython = "^7"
-fakeredis = "^1.7.4"
-types-requests = "^2.28.11.16"
-types-python-dateutil = "^2.8.19.10"
+fakeredis = "2.20.0"
+ruff = "0.3.3"
+pytest-pretty = "1.2.0"
+types-requests = "2.31.0.20240311"
+types-python-dateutil = "2.9.0.20240316"
 types-redis = "^4.3.21.7"
-types-cachetools = "^5.3.0.4"
-types-pytz = "^2022.7.0.0"
-types-dataclasses = {version = "^0.6.6", python = "~3.6.1"}
-ruff = {version = "^0.1.3", python = "~3.7.0"}
-pytest-pretty = {version = "^1.1.0", python = "~3.7.0"}
-types-docutils = "^0.19.1.6"
-types-PyYAML = "6.0.12.9"
+types-cachetools = "5.3.0.7"
+types-pytz = "2024.1.0.20240203"
+types-docutils = "0.20.0.20240317"
+types-PyYAML = "6.0.12.20240311"
 
 [[tool.poetry.source]]
 name = "tencent"
@@ -138,46 +137,6 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.ruff]
-# Enable Pyflakes `E` and `F` codes by default.
-select = ["E", "F", "W", "I", "C90", "B", "PIE", "C4", "PL", "RET", "N",  "PERF", "G", "TRY", "SIM",]
-# TODO: enable `PT`
-
-# Disable E501 until this issue is fixed: https://github.com/astral-sh/ruff/issues/3825
-ignore = [
-    # https://beta.ruff.rs/docs/rules/assert-raises-exception/
-    "B017",
-    # https://beta.ruff.rs/docs/rules/raise-without-from-inside-except/
-    "B904",
-    # https://beta.ruff.rs/docs/rules/zip-without-explicit-strict/
-    "B905",
-    # https://beta.ruff.rs/docs/rules/line-too-long/
-    "E501",
-    # https://beta.ruff.rs/docs/rules/ambiguous-variable-name/
-    "E741",
-    # https://beta.ruff.rs/docs/rules/unused-variable/
-    "F841",
-    # https://beta.ruff.rs/docs/rules/error-suffix-on-exception-name/
-    "N818",
-    # https://beta.ruff.rs/docs/rules/try-except-in-loop/
-    "PERF203",
-    # https://beta.ruff.rs/docs/rules/too-many-arguments/
-    "PLR0913",
-    # https://beta.ruff.rs/docs/rules/raise-vanilla-args/
-    "TRY003",
-    # https://beta.ruff.rs/docs/rules/reraise-no-cause/
-    "TRY200",
-    # https://beta.ruff.rs/docs/rules/try-consider-else/
-    "TRY300",
-    # https://beta.ruff.rs/docs/rules/raise-within-try/
-    "TRY301",
-    # https://beta.ruff.rs/docs/rules/magic-value-comparison/
-    "PLR2004",
-    # https://beta.ruff.rs/docs/rules/suppressible-exception/
-    "SIM105",
-    # https://beta.ruff.rs/docs/rules/open-file-with-context-handler/
-    "SIM115",
-]
-
 # Exclude a variety of commonly ignored directories.
 exclude = [
     ".bzr",
@@ -206,11 +165,53 @@ exclude = [
 # Same as Black.
 line-length = 119
 
-[tool.ruff.mccabe]
+# Assume Python 3.8
+target-version = "py310"
+
+[tool.ruff.lint]
+# Enable Pyflakes `E` and `F` codes by default.
+select = ["E", "F", "W", "I", "C90", "B", "PIE", "C4", "PL", "RET", "N",  "PERF", "G", "TRY", "SIM",]
+# TODO: enable `PT`
+
+# Disable E501 until this issue is fixed: https://github.com/astral-sh/ruff/issues/3825
+ignore = [
+    # https://beta.ruff.rs/docs/rules/assert-raises-exception/
+    "B017",
+    # https://beta.ruff.rs/docs/rules/raise-without-from-inside-except/
+    "B904",
+    # https://beta.ruff.rs/docs/rules/zip-without-explicit-strict/
+    "B905",
+    # https://beta.ruff.rs/docs/rules/line-too-long/
+    "E501",
+    # https://beta.ruff.rs/docs/rules/ambiguous-variable-name/
+    "E741",
+    # https://beta.ruff.rs/docs/rules/unused-variable/
+    "F841",
+    # https://beta.ruff.rs/docs/rules/error-suffix-on-exception-name/
+    "N818",
+    # https://beta.ruff.rs/docs/rules/try-except-in-loop/
+    "PERF203",
+    # https://beta.ruff.rs/docs/rules/too-many-arguments/
+    "PLR0913",
+    # https://beta.ruff.rs/docs/rules/raise-vanilla-args/
+    "TRY003",
+    # https://beta.ruff.rs/docs/rules/try-consider-else/
+    "TRY300",
+    # https://beta.ruff.rs/docs/rules/raise-within-try/
+    "TRY301",
+    # https://beta.ruff.rs/docs/rules/magic-value-comparison/
+    "PLR2004",
+    # https://beta.ruff.rs/docs/rules/suppressible-exception/
+    "SIM105",
+    # https://beta.ruff.rs/docs/rules/open-file-with-context-handler/
+    "SIM115",
+]
+
+[tool.ruff.lint.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 12
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 relative-imports-order = "closest-to-furthest"
 
 # [tool.ruff.pep8-naming]

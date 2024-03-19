@@ -20,6 +20,7 @@
 同步 Legacy ESB 的可复用数据到新版 ESB
 此部分数据，可重复同步
 """
+
 from django.core.management.base import BaseCommand
 
 from apigateway.legacy_esb.tasks import LegacyESBSynchronizer

@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 """修复 PaaS2/ESB 中的部分数据"""
+
 import logging
 from typing import List
 
