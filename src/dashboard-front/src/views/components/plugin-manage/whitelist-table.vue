@@ -588,7 +588,7 @@ const handlerDeletePolicy = (data: any) => {
 const handlerUpdatePolicy = () => {
   const dimension = manner.value;
   const ids = dimension === 'api' ? [] : resourceIds.value;
-  dataList.value.find((item: any) => {
+  dataList.value.forEach((item: any) => {
     if (item.bk_app_code === curResource.bkAppCode) {
       item.dimension = dimension;
       item.resource_ids = ids;
