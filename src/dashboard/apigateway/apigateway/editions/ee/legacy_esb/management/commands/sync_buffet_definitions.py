@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 """迁移 PaaS2/ESB 自助接入组件至 API Gateway"""
+
 import logging
 import os
 

@@ -372,7 +372,7 @@ class TestComponentPermissionByGatewayManager:
         assert esb_record.handled_component_ids == {"approved": [fake_channel.id], "rejected": []}
 
     def test_get_component_id_to_resource_id(self, fake_channel, faker):
-        if not ComponentResourceBinding:
+        if not ComponentResourceBinding:  # type: ignore
             return
 
         resource_id = faker.pyint()

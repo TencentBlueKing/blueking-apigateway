@@ -20,6 +20,7 @@
 同步 ESB 免用户认证应用白名单到网关
 - 网关 bk-esb 的插件：免用户认证应用白名单
 """
+
 import logging
 import re
 from typing import List, Optional

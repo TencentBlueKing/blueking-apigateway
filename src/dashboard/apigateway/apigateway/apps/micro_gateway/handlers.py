@@ -18,6 +18,7 @@
 """
 微网关实例处理器
 """
+
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Optional
 

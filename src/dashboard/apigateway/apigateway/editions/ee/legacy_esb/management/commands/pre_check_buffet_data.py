@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 """检查 PaaS2/ESB 自助接入组件配置是否满足迁移需求"""
+
 import logging
 import re
 import sys

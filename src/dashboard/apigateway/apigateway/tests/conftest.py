@@ -569,13 +569,6 @@ def patch_redis(mocker, settings):
     mocker.patch("redis.Redis", PatchedRedis)
 
 
-@pytest.fixture(autouse=True)
-def patch_channel_patch(settings):
-    settings.APIGW_REVERSION_UPDATE_CHANNEL_KEY = (
-        f"{settings.REDIS_PREFIX}{settings.APIGW_REVERSION_UPDATE_CHANNEL_KEY}"
-    )
-
-
 @pytest.fixture
 def default_redis():
     return get_default_redis_client()

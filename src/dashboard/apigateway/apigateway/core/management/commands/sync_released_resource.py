@@ -19,6 +19,7 @@
 """
 将已发布版本的资源信息，同步到 ReleasedResource
 """
+
 from typing import List
 
 from django.core.management.base import BaseCommand

@@ -31,7 +31,7 @@ class MicroGatewayConfigStructureMixin:
         return cls(**data)
 
     def to_micro_gateway_config(self) -> Dict[str, Any]:
-        return {self._micro_gateway_config_key: asdict(self)}
+        return {self._micro_gateway_config_key: asdict(self)}  # type: ignore
 
 
 T = TypeVar("T", bound=MicroGatewayConfigStructureMixin)

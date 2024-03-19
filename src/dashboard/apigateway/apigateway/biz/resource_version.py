@@ -24,7 +24,6 @@ from typing import Any, Dict, List, Optional
 from cachetools import TTLCache, cached
 from django.conf import settings
 from django.utils.translation import gettext as _
-from packaging import version
 from rest_framework import serializers
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -43,6 +42,7 @@ from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
+from apigateway.utils.version import max_version
 
 
 class ResourceVersionHandler:
@@ -220,7 +220,8 @@ class ResourceVersionHandler:
             return ""
 
         # 取最大的 version
-        return max([ver["version"] for ver in versions], key=version.parse)
+        # return max([ver["version"] for ver in versions], key=version.parse)
+        return max_version([ver["version"] for ver in versions])
 
     @staticmethod
     def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:

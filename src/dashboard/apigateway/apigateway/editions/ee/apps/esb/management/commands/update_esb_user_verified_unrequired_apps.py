@@ -20,6 +20,7 @@
 更新 ESB 免用户认证应用白名单
 - 此部分数据，可重复更新
 """
+
 import logging
 import re
 from typing import List

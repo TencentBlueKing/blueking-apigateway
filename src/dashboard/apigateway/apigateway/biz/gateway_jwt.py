@@ -15,11 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from blue_krill.encrypt.handler import EncryptHandler
 from django.conf import settings
 from django.utils.encoding import force_bytes, smart_str
 
 from apigateway.common.encrypt.cipher import AESGCMCipher
-from apigateway.common.encrypt.encrypt import EncryptHandler
 from apigateway.core.models import JWT, Gateway
 from apigateway.utils.crypto import KeyGenerator
 

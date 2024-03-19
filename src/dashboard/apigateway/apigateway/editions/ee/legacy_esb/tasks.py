@@ -20,6 +20,7 @@
 同步 Legacy ESB 的可复用数据到新版 ESB
 此部分数据，可重复同步
 """
+
 import logging
 import re
 from typing import Optional, Tuple

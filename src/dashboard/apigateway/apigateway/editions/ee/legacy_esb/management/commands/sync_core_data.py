@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 """迁移 PaaS2/ESB 核心数据至新版 BK-ESB"""
+
 from django.core.management.base import BaseCommand
 
 from apigateway.legacy_esb import sync

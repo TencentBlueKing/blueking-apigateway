@@ -29,6 +29,7 @@ from rest_framework.permissions import IsAuthenticated
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory, ESBChannel
 from apigateway.apps.esb.component import serializers
 from apigateway.apps.esb.component.constants import ESB_RELEASE_TASK_EXPIRES
+from apigateway.apps.esb.component.filters import ESBChannelFilter
 from apigateway.apps.esb.component.helpers import get_release_lock
 from apigateway.apps.esb.component.sync import ComponentSynchronizer
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
@@ -51,21 +52,25 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, UserAccessESBPermission]
     lookup_field = "id"
 
+    filterset_class = ESBChannelFilter
+
     @swagger_auto_schema(response_serializer=serializers.ESBChannelSLZ(many=True), tags=["ESB.Component"])
     def list(self, request, *args, **kwargs):
         queryset = ESBChannel.objects.exclude(system__data_type=DataTypeEnum.OFFICIAL_HIDDEN.value).order_by(
             "-is_active", "system__name", "path"
         )
+        queryset = self.filter_queryset(queryset)
+        page = self.paginate_queryset(queryset)
 
         slz = serializers.ESBChannelSLZ(
-            queryset,
+            page,
             many=True,
             context={
                 "latest_release_time": ComponentReleaseHistory.objects.get_latest_release_time(),
             },
         )
 
-        return OKJsonResponse(data=slz.data)
+        return self.get_paginated_response(slz.data)
 
     @swagger_auto_schema(response_serializer=serializers.ESBChannelDetailSLZ, tags=["ESB.Component"])
     def retrieve(self, request, *args, **kwargs):
@@ -185,7 +190,9 @@ class ComponentSyncViewSet(viewsets.ViewSet):
         validator.validate()
         unspecified_resources = validator.get_unspecified_resources()
 
-        resources = unspecified_resources + [resource_data.snapshot() for resource_data in resource_data_list]
+        resources = unspecified_resources + [
+            resource_data.snapshot_for_checking() for resource_data in resource_data_list
+        ]
         slz = serializers.ComponentResourceBindingSLZ(resources, many=True)
         return OKJsonResponse(data=slz.data)
 

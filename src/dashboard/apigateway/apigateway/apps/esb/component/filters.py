@@ -16,31 +16,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-"""
-创建 esb JWT 密钥
-"""
+from django_filters import rest_framework as filters
 
-import logging
-
-from django.core.management.base import BaseCommand
-
-from apigateway.apps.esb.bkcore.models import FunctionController
-from apigateway.utils.crypto import KeyGenerator
-
-logger = logging.getLogger(__name__)
+from apigateway.apps.esb.bkcore.models import ESBChannel
 
 
-class Command(BaseCommand):
-    def add_arguments(self, parser):
-        parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False)
+class ESBChannelFilter(filters.FilterSet):
+    name = filters.CharFilter(lookup_expr="icontains")
+    system_name = filters.CharFilter(field_name="system__name")
+    path = filters.CharFilter(lookup_expr="icontains")
 
-    def handle(self, dry_run: bool, *args, **options):
-        if FunctionController.objects.get_jwt_key():
-            logger.info("esb jwt key already exists, skip")
-            return
-
-        if not dry_run:
-            private_key, public_key = KeyGenerator().generate_rsa_key()
-            FunctionController.objects.save_jwt_key(private_key, public_key)
-
-        logger.info("create esb jwt key")
+    class Meta:
+        model = ESBChannel
+        fields = [
+            "name",
+            "system_name",
+            "path",
+        ]
