@@ -58,8 +58,6 @@ from apigateway.core.models import (
     Resource,
     ResourceVersion,
     Schema,
-    SslCertificate,
-    SslCertificateBinding,
     Stage,
 )
 from apigateway.schema import instances
@@ -598,23 +596,6 @@ def celery_mock_task_for_testing(celery_task_mocker=None, *args, **kwargs):
 @pytest.fixture()
 def celery_mock_task():
     return celery_mock_task_for_testing
-
-
-@pytest.fixture
-def fake_ssl_certificate(fake_gateway):
-    return G(SslCertificate, gateway=fake_gateway)
-
-
-@pytest.fixture
-def fake_ssl_certificate_binding(fake_ssl_certificate):
-    stage = G(Stage, gateway=fake_ssl_certificate.gateway)
-    return G(
-        SslCertificateBinding,
-        gateway=fake_ssl_certificate.gateway,
-        scope_type="stage",
-        scope_id=stage.id,
-        ssl_certificate=fake_ssl_certificate,
-    )
 
 
 @pytest.fixture()
