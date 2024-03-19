@@ -42,14 +42,23 @@
           </bk-button>
         </div>
         <div class="component-flex">
-          <bk-input
+          <!-- <bk-input
             style="width: 300px; margin-right: 10px"
             :placeholder="t('请输入组件名称、请求路径，按Enter搜索')"
             v-model="searchValue"
             clearable
             right-icon="bk-icon icon-search"
+            @clear="handleSearch"
             @enter="handleSearch">
-          </bk-input>
+          </bk-input> -->
+          <bk-search-select
+            v-model="searchValue"
+            :data="searchData"
+            unique-select
+            style="width: 450px; background:#fff; margin-right: 10px"
+            :placeholder="t('请输入组件名称、请求路径，按Enter搜索')"
+            :value-split-code="'+'"
+          />
           <i
             class="apigateway-icon icon-ag-cc-history history-icon"
             v-bk-tooltips="t('查看同步历史')"
@@ -65,7 +74,7 @@
         <bk-table
           border="outer"
           style="margin-top: 16px;"
-          :data="componentList"
+          :data="displayData"
           :size="setting.size"
           @setting-change="handleSettingChange"
           :is-row-select-enable="setDefaultSelect"
@@ -395,7 +404,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, computed, watch, nextTick } from 'vue';
+import { ref, reactive, computed, shallowRef, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
@@ -467,8 +476,24 @@ const fields = [{
   label: t('文档地址'),
 }];
 
-const searchValue = ref<string>('');
-const componentList = ref<any>([]);
+const searchData = shallowRef([
+  {
+    name: t('组件名称'),
+    id: 'name',
+    placeholder: t('请输入组件名称'),
+  },
+  {
+    name: t('请求路径'),
+    id: 'path',
+    placeholder: t('请输入请求路径'),
+  },
+]);
+
+const searchValue = ref<any[]>([]);
+const searchParams = ref<any>({
+  name: '',
+  path: '',
+});
 const pagination = reactive({
   current: 1,
   count: 0,
@@ -479,7 +504,6 @@ const componentData = ref<any>({});
 const isSliderShow = ref<boolean>(false);
 const systemList = ref<any>([]);
 const requestQueue = reactive(['system', 'component']);
-const allData = ref<any>([]);
 const displayData = ref<any>([]);
 const submitLoading = ref<boolean>(false);
 const isLoading = ref<boolean>(false);
@@ -506,7 +530,6 @@ const tableEmptyConf = reactive<any>({
   isAbnormal: false,
 });
 const isExpand = ref<boolean>(true);
-const isFilter = ref<boolean>(false);
 const curSelectSystemId = ref<string>('*');
 const methodList = ref<any>(common.methodList);
 const levelList = ref<any>([
@@ -599,33 +622,27 @@ const flagUpdatedTime = computed(() => setting.selectedFields?.filter(v => v.lab
 
 const handleSelect = ({ id }: any) => {
   curSelectSystemId.value = id;
-  if (curSelectSystemId.value === '*') {
-    displayData.value = allData.value;
-  } else {
-    displayData.value = allData.value?.filter((item: any) => item.system_id === curSelectSystemId.value);
-  }
   pagination.current = 1;
   pagination.limit = 10;
-  pagination.count = displayData.value?.length;
-  componentList.value = getDataByPage();
+  getComponents(true);
 };
 
 const getComponents = async (loading = false) => {
   isLoading.value = loading;
   try {
-    const params = {
-      limit: 10000,
-      offset: 0,
+    const params: any = {
+      limit: pagination.limit,
+      offset: pagination.current,
     };
 
-    const res = await getEsbComponents(params);
-    allData.value = Object.freeze(res);
-    displayData.value = res;
-    pagination.count = displayData.value?.length;
-    componentList.value = getDataByPage();
-    if (curSelectSystemId.value !== '*') {
-      handleSelect({ id: curSelectSystemId.value });
+    if (curSelectSystemId.value && curSelectSystemId.value !== '*') {
+      const curSystem = systemList.value?.find((item: any) => item?.id === curSelectSystemId.value);
+      params.system_name = curSystem?.name;
     }
+
+    const res = await getEsbComponents({ ...params, ...searchParams.value });
+    pagination.count = res?.count;
+    displayData.value = res?.results;
     tableEmptyConf.isAbnormal = false;
   } catch (e) {
     tableEmptyConf.isAbnormal = true;
@@ -634,6 +651,7 @@ const getComponents = async (loading = false) => {
     if (requestQueue?.length > 0) {
       requestQueue.shift();
     }
+    updateTableEmptyConfig();
     isLoading.value = false;
   }
 };
@@ -772,49 +790,21 @@ const handleCreate = () => {
   });
 };
 
-const getDataByPage = (page?: any) => {
-  if (!page) {
-    page = 1;
-    pagination.current = 1;
-  }
-  let startIndex = (page - 1) * pagination.limit;
-  let endIndex = page * pagination.limit;
-  if (startIndex < 0) {
-    startIndex = 0;
-  }
-  if (endIndex > displayData.value?.length) {
-    endIndex = displayData.value?.length;
-  }
-  updateTableEmptyConfig();
-  return displayData.value?.slice(startIndex, endIndex);
-};
-
-const handleSearch = (payload: any) => {
-  if (payload === '') {
-    return;
-  }
+const handleSearch = () => {
   pagination.current = 1;
   pagination.limit = 10;
-  isFilter.value = true;
-  displayData.value = allData.value?.filter((item: any) => {
-    const reg = new RegExp(`(${payload})`, 'gi');
-    return item?.path?.match(reg) || item?.name?.match(reg);
-  });
-  pagination.count = displayData.value?.length;
-  componentList.value = getDataByPage();
-  updateTableEmptyConfig();
+  getComponents(true);
 };
 
 const handlePageLimitChange = (limit: number) => {
   pagination.limit = limit;
   pagination.current = 1;
-  handlePageChange(pagination.current);
+  getComponents(true);
 };
 
 const handlePageChange = (page: number) => {
   pagination.current = page;
-  const data = getDataByPage(page);
-  componentList.value?.splice(0, componentList.value?.length, ...data);
+  getComponents(true);
 };
 
 const handleEdit = async (payload: any) => {
@@ -947,20 +937,17 @@ const getFeature = async () => {
   }
 };
 
-// const clearFilterKey = () => {
-//   searchValue.value = '';
-// };
 const handleClearFilterKey = () => {
-  searchValue.value = '';
+  searchValue.value = [];
   getComponents(true);
 };
 
 const updateTableEmptyConfig = () => {
-  if (searchValue.value && !componentList.value.length) {
+  if (searchValue.value?.length && !displayData.value?.length) {
     tableEmptyConf.keyword = 'placeholder';
     return;
   }
-  if (searchValue.value.length) {
+  if (searchValue.value?.length) {
     tableEmptyConf.keyword = '$CONSTANT';
     return;
   }
@@ -982,15 +969,15 @@ init();
 
 watch(
   () => searchValue.value,
-  (newVal, oldVal) => {
-    if (newVal === '' && oldVal !== '' && isFilter.value) {
-      isFilter.value = false;
-      pagination.current = 1;
-      pagination.limit = 10;
-      displayData.value = allData.value;
-      pagination.count = displayData.value?.length;
-      componentList.value = getDataByPage();
-    }
+  () => {
+    nextTick(() => {
+      searchParams.value.name = '';
+      searchParams.value.path = '';
+      searchValue.value.forEach((item: any) => {
+        searchParams.value[item.id] = item.values[0].id;
+      });
+      getComponents(true);
+    });
   },
 );
 
