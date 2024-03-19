@@ -19,6 +19,7 @@
 """
 为应用添加访问 ESB 的权限
 """
+
 import logging
 from typing import List
 

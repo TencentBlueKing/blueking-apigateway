@@ -19,6 +19,7 @@
 """
 创建权限申请记录，用于测试
 """
+
 import random
 
 from django.core.management.base import BaseCommand

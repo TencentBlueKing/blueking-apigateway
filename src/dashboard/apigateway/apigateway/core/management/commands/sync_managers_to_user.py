@@ -19,6 +19,7 @@
 """
 将 settings 中的 APIGW_MANAGERS 同步到 django user 表，并将其设置为超级用户
 """
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand

@@ -21,6 +21,7 @@
 
 因同步组件到网关耗时较长，因此，使用后台任务同步
 """
+
 import logging
 
 from celery import shared_task
