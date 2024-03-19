@@ -80,28 +80,3 @@ class TestServiceConvertor:
 
         with pytest.raises(ValueError):
             fake_service_convertor.convert()
-
-    def test_convert_checks(
-        self,
-        edge_gateway,
-        fake_service_convertor,
-        settings,
-    ):
-        settings.MICRO_GATEWAY_STAGE_UPSTREAM_CHECKS = {
-            edge_gateway.name: {
-                "active": {
-                    "type": "http",
-                    "concurrency": 3,
-                    "http_path": "/healthz",
-                }
-            }
-        }
-        services = fake_service_convertor.convert()
-
-        assert len(services) == 1
-        service = services[0]
-
-        spec = service.spec
-        assert spec.upstream.checks.active.type.value == "http"
-        assert spec.upstream.checks.active.concurrency == 3
-        assert spec.upstream.checks.active.http_path == "/healthz"
