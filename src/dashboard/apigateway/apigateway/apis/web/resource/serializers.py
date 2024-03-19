@@ -175,12 +175,6 @@ class HttpBackendConfigSLZ(serializers.Serializer):
         allow_null=True, required=False, help_text="旧版 transform_headers，管理端不需要处理"
     )
 
-    def __init__(self, instance=None, data=empty, **kwargs):
-        # 兼容旧版导入数据
-        if data is not empty and "timeout" in data and isinstance(data["timeout"], int):
-            data["timeout"] = {"connect": data["timeout"], "read": data["timeout"], "send": data["timeout"]}
-        super().__init__(instance, data, **kwargs)
-
 
 class HttpBackendSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="后端服务 ID")
@@ -529,6 +523,18 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
             PathVarsValidator(),
             BackendPathVarsValidator(),
         ]
+
+    def __init__(self, instance=None, data=empty, **kwargs):
+        # 兼容旧版导入数据
+        if (
+            data is not empty
+            and "backend_config" in data
+            and "timeout" in data["backend_config"]
+            and isinstance(data["backend_config"]["timeout"], int)
+        ):
+            _timeout = data["backend_config"]["timeout"]
+            data["backend_config"]["timeout"] = {"connect": _timeout, "read": _timeout, "send": _timeout}
+        super().__init__(instance, data, **kwargs)
 
     def validate_description_en(self, value) -> Optional[str]:
         # description_en 为 None 时，文档中描述会展示 description 内容，

@@ -125,10 +125,10 @@ class BaseConvertor(ABC):
     def _convert_upstream_type(self, loadbalance: str) -> UpstreamTypeEnum:
         return BACKEND_UPSTREAM_TYPE.get(loadbalance, UpstreamTypeEnum.ROUNDROBIN)
 
-    def _convert_chash_hash_one_type(self, hash_one: str) -> Optional[UpstreamHashOnEnum]:
+    def _convert_chash_hash_on_type(self, hash_one: str) -> Optional[UpstreamHashOnEnum]:
         return BACKEND_UPSTREAM_HASH_ON.get(hash_one, None)
 
-    def _convert_chash_hash_one_type_key(self, hash_one: str, key: str) -> Optional[str]:
+    def _convert_chash_hash_on_key(self, hash_one: str, key: str) -> Optional[str]:
         if not key:
             return None
 

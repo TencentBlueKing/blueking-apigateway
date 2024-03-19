@@ -254,6 +254,44 @@ class TestResourceDataImportSLZ:
         result = slz.validate_description_en(description_en)
         assert result == expected
 
+    def test_timeout_int(self):
+        slz = ResourceDataImportSLZ(
+            data={
+                "name": "test",
+                "method": "GET",
+                "path": "/test/",
+                "auth_config": {},
+                "backend_name": "default",
+                "backend_config": {
+                    "method": "GET",
+                    "path": "/test",
+                    "timeout": 10,
+                },
+            },
+            context={"stages": []},
+        )
+        slz.is_valid(raise_exception=True)
+        assert slz.validated_data["backend_config"]["timeout"] == {"connect": 10, "read": 10, "send": 10}
+
+    def test_timeout_dict(self):
+        slz = ResourceDataImportSLZ(
+            data={
+                "name": "test",
+                "method": "GET",
+                "path": "/test/",
+                "auth_config": {},
+                "backend_name": "default",
+                "backend_config": {
+                    "method": "GET",
+                    "path": "/test",
+                    "timeout": {"connect": 10, "read": 10, "send": 10},
+                },
+            },
+            context={"stages": []},
+        )
+        slz.is_valid(raise_exception=True)
+        assert slz.validated_data["backend_config"]["timeout"] == {"connect": 10, "read": 10, "send": 10}
+
 
 class TestResourceImportInputSLZ:
     def test_validate(self, fake_stage, fake_resource_swagger):

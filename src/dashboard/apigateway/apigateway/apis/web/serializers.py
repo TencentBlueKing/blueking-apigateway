@@ -53,10 +53,20 @@ class BaseBackendConfigSLZ(serializers.Serializer):
         allow_empty=False,
         help_text="主机列表",
     )
-    retries = serializers.IntegerField(required=False, default=0, help_text="重试次数")
+    retries = serializers.IntegerField(required=False, default=0, help_text="重试次数", max_value=5)
     retry_timeout = serializers.IntegerField(required=False, default=0, help_text="重试超时时间")
-    hash_on = serializers.CharField(required=False, default="", help_text="hash on", allow_blank=True)
-    key = serializers.CharField(required=False, help_text="key", default="", allow_blank=True)
+    hash_on = serializers.CharField(
+        required=False, default="", help_text="hash on", allow_blank=True, trim_whitespace=True
+    )
+    key = serializers.RegexField(
+        r"^[a-zA-Z_][a-zA-Z0-9_-]*$",
+        required=False,
+        help_text="key",
+        default="",
+        allow_blank=True,
+        max_length=255,
+        trim_whitespace=True,
+    )
 
     def validate_hosts(self, value):
         unique_combinations = set()

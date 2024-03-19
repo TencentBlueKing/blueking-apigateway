@@ -41,8 +41,8 @@ class ServiceConvertor(BaseConvertor):
             timeout=TimeoutConfig(**timeout),
             retries=self._release_data.stage_backend_config.get("retries", 0),
             retryTimeout=self._release_data.stage_backend_config.get("retry_timeout", 0),
-            hash_on=self._convert_chash_hash_one_type(hash_one),
-            key=self._convert_chash_hash_one_type_key(
+            hash_on=self._convert_chash_hash_on_type(hash_one),
+            key=self._convert_chash_hash_on_key(
                 hash_one, self._release_data.stage_backend_config.get("key", "")
             ),
         )
