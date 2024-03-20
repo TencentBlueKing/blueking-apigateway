@@ -313,7 +313,6 @@ class TestGatewayHandler:
         echo_plugin,
         echo_plugin_stage_binding,
         echo_plugin_resource_binding,
-        fake_ssl_certificate,
     ):
         GatewayHandler.delete_gateway(gateway_id=fake_gateway.pk)
 
@@ -325,7 +324,6 @@ class TestGatewayHandler:
             echo_plugin,
             echo_plugin_stage_binding,
             echo_plugin_resource_binding,
-            fake_ssl_certificate,
         ]:
             with pytest.raises(ObjectDoesNotExist):
                 model.refresh_from_db()

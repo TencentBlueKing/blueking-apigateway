@@ -105,41 +105,13 @@ class ReleasedResourceDocManager(models.Manager):
         resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
         self.filter(gateway_id=gateway_id).exclude(resource_version_id__in=resource_version_ids).delete()
 
-    def get_latest_released_resource_doc(self, gateway_id: int, resource_id: int) -> dict:
-        """获取最新的已发布资源文档"""
-        # TODO: 暂时仅支持展示中文文档
-        resource_doc = (
-            self.filter(
-                gateway_id=gateway_id,
-                resource_id=resource_id,
-                language=DocLanguageEnum.ZH.value,
-            )
-            .order_by("-resource_version_id")
-            .first()
-        )
-        return resource_doc.data if resource_doc else {}
-
-    def get_released_resource_doc(
-        self,
-        gateway_id: int,
-        resource_version_id: int,
-        resource_id: int,
-        language=DocLanguageEnum.ZH.value,
-    ) -> Optional[dict]:
-        doc = self.filter(
-            gateway_id=gateway_id,
-            resource_version_id=resource_version_id,
-            resource_id=resource_id,
-            language=language,
-        ).first()
-        return doc.data if doc else {}
-
     def get_doc_updated_time(self, gateway_id: int, resource_version_id: int, resource_id: int) -> Dict[str, str]:
         qs = self.filter(gateway_id=gateway_id, resource_version_id=resource_version_id, resource_id=resource_id)
         return {doc.language: doc.data["updated_time"] for doc in qs}
 
 
 class APISDKManager(models.Manager):
+    # FIXME: move to views.py
     def filter_sdk(
         self,
         gateway,
@@ -222,26 +194,3 @@ class APISDKManager(models.Manager):
             queryset = queryset.filter(gateway_id=gateway_id)
 
         return queryset
-
-    def filter_resource_version_ids_has_sdk(self, gateway_id: int, resource_version_ids: List[int]) -> List[int]:
-        """过滤出有SDK的资源版本ID"""
-        return list(
-            self.filter(gateway_id=gateway_id, resource_version_id__in=resource_version_ids)
-            .order_by("resource_version_id")
-            .distinct()
-            .values_list("resource_version_id", flat=True)
-        )
-
-    def filter_resource_version_public_latest_sdk(self, gateway_id: int, resource_version_ids: List[int]) -> dict:
-        """过滤出指定的资源版本公开且最新的SDK(一个版本可能生成多个SDK，取其中最新且公开的SDK)"""
-        queryset = self.filter(
-            gateway_id=gateway_id,
-            resource_version_id__in=resource_version_ids,
-            is_public=True,
-        ).order_by("id")
-
-        public_latest_sdks = {}
-        for sdk in queryset:
-            public_latest_sdks[sdk.resource_version_id] = sdk
-
-        return public_latest_sdks

@@ -22,7 +22,6 @@ import uuid
 from copy import deepcopy
 from functools import partial
 
-import fakeredis
 import pytest
 from celery import shared_task
 from ddf import G
@@ -58,14 +57,11 @@ from apigateway.core.models import (
     Resource,
     ResourceVersion,
     Schema,
-    SslCertificate,
-    SslCertificateBinding,
     Stage,
 )
 from apigateway.schema import instances
 from apigateway.schema.data.meta_schema import init_meta_schemas
 from apigateway.tests.utils.testing import dummy_time, get_response_json
-from apigateway.utils.redis_utils import REDIS_CLIENTS, get_default_redis_client
 from apigateway.utils.yaml import yaml_dumps
 
 UserModel = get_user_model()
@@ -101,17 +97,6 @@ def request_factory():
     return APIRequestFactory()
 
 
-# class FakeToken:
-#     access_token: str = "access_token"
-
-
-# class FakeUser:
-#     is_active: bool = True
-#     username: str = "admin"
-#     is_authenticated: bool = True
-#     token = FakeToken
-
-
 @pytest.fixture
 def fake_admin_user(mocker):
     return mocker.MagicMock(
@@ -121,17 +106,6 @@ def fake_admin_user(mocker):
         is_anonymous=False,
         is_superuser=True,
         token=mocker.MagicMock(access_token="access_token"),
-    )
-
-
-@pytest.fixture
-def fake_anonymous_user(mocker):
-    return mocker.MagicMock(
-        is_active=True,
-        username="test",
-        is_authenticated=False,
-        is_anonymous=True,
-        is_superuser=False,
     )
 
 
@@ -430,11 +404,6 @@ def fake_released_resource_doc(fake_gateway, fake_resource_version, fake_resourc
     )
 
 
-@pytest.fixture
-def api_factory():
-    return partial(G, Gateway, _maintainers=FAKE_USERNAME)
-
-
 @pytest.fixture(autouse=True)
 def meta_schemas(db):
     schemas = init_meta_schemas()
@@ -459,11 +428,6 @@ def unique_id():
 @pytest.fixture
 def unique_gateway_name(unique_id):
     return f"a{unique_id[:19]}"
-
-
-@pytest.fixture
-def unique_backend_service_name(unique_id):
-    return f"a{unique_id[:20]}".lower()
 
 
 @pytest.fixture
@@ -540,40 +504,6 @@ def request_view(request_factory):
     return fn
 
 
-class FakeRedis(fakeredis.FakeRedis):
-    REDIS_PREFIX: str
-
-    def __init__(self, connection_pool=None, *args, **kwargs):
-        super(FakeRedis, self).__init__(*args, **kwargs)
-
-    def execute_command(self, command, *args, **kwargs):
-        has_prefix = len(args) == 0
-
-        for i in args:
-            # test all redis command has key prefix
-            if isinstance(i, str) and i.startswith(self.REDIS_PREFIX):
-                has_prefix = True
-
-        if not has_prefix:
-            raise KeyError("Redis prefix not found")
-
-        return super(FakeRedis, self).execute_command(command, *args, **kwargs)
-
-
-@pytest.fixture(autouse=True)
-def patch_redis(mocker, settings):
-    class PatchedRedis(FakeRedis):
-        REDIS_PREFIX = settings.REDIS_PREFIX
-
-    REDIS_CLIENTS.clear()
-    mocker.patch("redis.Redis", PatchedRedis)
-
-
-@pytest.fixture
-def default_redis():
-    return get_default_redis_client()
-
-
 @pytest.fixture
 def skip_view_permissions_check(mocker):
     mocker.patch("rest_framework.views.APIView.check_permissions")
@@ -598,23 +528,6 @@ def celery_mock_task_for_testing(celery_task_mocker=None, *args, **kwargs):
 @pytest.fixture()
 def celery_mock_task():
     return celery_mock_task_for_testing
-
-
-@pytest.fixture
-def fake_ssl_certificate(fake_gateway):
-    return G(SslCertificate, gateway=fake_gateway)
-
-
-@pytest.fixture
-def fake_ssl_certificate_binding(fake_ssl_certificate):
-    stage = G(Stage, gateway=fake_ssl_certificate.gateway)
-    return G(
-        SslCertificateBinding,
-        gateway=fake_ssl_certificate.gateway,
-        scope_type="stage",
-        scope_id=stage.id,
-        ssl_certificate=fake_ssl_certificate,
-    )
 
 
 @pytest.fixture()
@@ -767,23 +680,6 @@ def fake_plugin_bk_header_rewrite(fake_plugin_type_bk_header_rewrite, fake_gatew
             }
         ),
     )
-
-
-@pytest.fixture()
-def clone_model():
-    """Clone a django model"""
-
-    def clone(model, **kwargs):
-        new_model = deepcopy(model)
-        new_model.pk = None
-
-        for k, v in kwargs.items():
-            setattr(new_model, k, v)
-
-        new_model.save()
-        return model._meta.model.objects.get(pk=new_model.pk)
-
-    return clone
 
 
 @pytest.fixture()

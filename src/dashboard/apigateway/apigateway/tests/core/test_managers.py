@@ -24,10 +24,8 @@ from django.test import TestCase
 from django_dynamic_fixture import G
 
 from apigateway.biz.stage import StageHandler
-from apigateway.common.exceptions import InstanceDeleteError
 from apigateway.core import constants
 from apigateway.core.constants import (
-    SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
 from apigateway.core.models import (
@@ -38,10 +36,7 @@ from apigateway.core.models import (
     ReleaseHistory,
     Resource,
     ResourceVersion,
-    SslCertificate,
-    SslCertificateBinding,
     Stage,
-    StageResourceDisabled,
 )
 from apigateway.tests.utils.testing import dummy_time
 
@@ -60,19 +55,6 @@ class TestStageManager:
 
         result = Stage.objects.get_ids(gateway.id)
         assert sorted(result) == [s1.id, s2.id]
-
-    def test_get_id_to_fields(self, fake_gateway):
-        result = Stage.objects.get_id_to_fields(gateway_id=fake_gateway.id, fields=["id", "name"])
-        assert result == {}
-
-        s1 = G(Stage, gateway=fake_gateway)
-        s2 = G(Stage, gateway=fake_gateway)
-
-        result = Stage.objects.get_id_to_fields(gateway_id=fake_gateway.id, fields=["id", "name"])
-        assert result == {
-            s1.id: {"id": s1.id, "name": s1.name},
-            s2.id: {"id": s2.id, "name": s2.name},
-        }
 
     def test_get_name_id_map(self):
         gateway = G(Gateway)
@@ -222,32 +204,6 @@ class TestResourceVersionManager:
         )
 
 
-class TestStageResourceDisabledManager(TestCase):
-    def test_get_disabled_stages(self):
-        gateway = G(Gateway)
-        resource = G(Resource, gateway=gateway)
-        stage_prod = G(Stage, gateway=gateway, name="prod")
-        stage_test = G(Stage, gateway=gateway, name="test")
-
-        G(StageResourceDisabled, resource=resource, stage=stage_prod)
-        G(StageResourceDisabled, resource=resource, stage=stage_test)
-
-        result = StageResourceDisabled.objects.get_disabled_stages(resource.id)
-        self.assertEqual(
-            result,
-            [
-                {
-                    "id": stage_prod.id,
-                    "name": stage_prod.name,
-                },
-                {
-                    "id": stage_test.id,
-                    "name": stage_test.name,
-                },
-            ],
-        )
-
-
 class TestReleaseManager:
     def test_get_released_stages(self):
         gateway = G(Gateway)
@@ -367,111 +323,6 @@ class TestReleaseManager:
 
         result = Release.objects.get_released_resource_version_ids(gateway.id, "prod")
         assert result == [rv1.id]
-
-    def test_get_released_stage_count(self):
-        gateway = G(Gateway)
-        s1 = G(Stage, gateway=gateway)
-        s2 = G(Stage, gateway=gateway)
-        s3 = G(Stage, gateway=gateway)
-
-        rv1 = G(ResourceVersion, gateway=gateway)
-        rv2 = G(ResourceVersion, gateway=gateway)
-
-        G(Release, gateway=gateway, resource_version=rv1, stage=s1)
-        G(Release, gateway=gateway, resource_version=rv2, stage=s2)
-        G(Release, gateway=gateway, resource_version=rv1, stage=s3)
-
-        data = [
-            {
-                "params": {
-                    "resource_version_ids": [rv1.id],
-                },
-                "expected": {
-                    rv1.id: 2,
-                },
-            },
-            {
-                "params": {
-                    "resource_version_ids": [rv1.id, rv2.id],
-                },
-                "expected": {
-                    rv1.id: 2,
-                    rv2.id: 1,
-                },
-            },
-        ]
-        for test in data:
-            result = Release.objects.get_released_stage_count(**test["params"])
-            assert result == test["expected"]
-
-    def test_get_stage_id_to_fields_map(self):
-        gateway = G(Gateway)
-        s1 = G(Stage, gateway=gateway)
-        s2 = G(Stage, gateway=gateway)
-        s3 = G(Stage, gateway=gateway)
-
-        rv1 = G(ResourceVersion, gateway=gateway)
-        rv2 = G(ResourceVersion, gateway=gateway)
-
-        G(Release, gateway=gateway, resource_version=rv1, stage=s1)
-        G(Release, gateway=gateway, resource_version=rv2, stage=s2)
-        G(Release, gateway=gateway, resource_version=rv1, stage=s3)
-
-        data = [
-            {
-                "params": {
-                    "gateway_id": gateway.id,
-                    "resource_version_ids": [rv1.id],
-                },
-                "expected": {
-                    s1.id: {
-                        "stage_id": s1.id,
-                        "resource_version_id": rv1.id,
-                    },
-                    s3.id: {
-                        "stage_id": s3.id,
-                        "resource_version_id": rv1.id,
-                    },
-                },
-            },
-            {
-                "params": {
-                    "gateway_id": gateway.id,
-                    "resource_version_ids": [rv1.id, rv2.id],
-                },
-                "expected": {
-                    s1.id: {
-                        "stage_id": s1.id,
-                        "resource_version_id": rv1.id,
-                    },
-                    s2.id: {
-                        "stage_id": s2.id,
-                        "resource_version_id": rv2.id,
-                    },
-                    s3.id: {
-                        "stage_id": s3.id,
-                        "resource_version_id": rv1.id,
-                    },
-                },
-            },
-        ]
-        for test in data:
-            result = Release.objects.get_stage_id_to_fields_map(**test["params"])
-            assert result == test["expected"]
-
-    def test_get_stage_ids_unreleased_the_version(self):
-        gateway = G(Gateway)
-        s1 = G(Stage, gateway=gateway)
-        s2 = G(Stage, gateway=gateway)
-
-        resource_version = G(ResourceVersion, gateway=gateway)
-        G(Release, gateway=gateway, stage=s1, resource_version=resource_version)
-
-        result = Release.objects.get_stage_ids_unreleased_the_version(gateway.id, [s1.id, s2.id], resource_version.id)
-        assert result == [s2.id]
-
-        result = Release.objects.get_stage_ids_unreleased_the_version(gateway.id, [s1.id], resource_version.id)
-        assert result == []
 
 
 class TestReleasedResourceManager:
@@ -677,68 +528,3 @@ class TestReleaseHistoryManager(TestCase):
         for test in data:
             result = ReleaseHistory.objects.filter_release_history(gateway, fuzzy=True, **test["params"])
             self.assertEqual(result.count(), test["expected"]["count"])
-
-
-class TestSslCertificateManager:
-    def test_delete_by_id(self, fake_gateway):
-        ssl_certificate = G(SslCertificate, gateway=fake_gateway)
-        related = G(
-            SslCertificateBinding,
-            gateway=fake_gateway,
-            scope_type=SSLCertificateBindingScopeTypeEnum.STAGE_ITEM_CONFIG.value,
-            scope_id=1,
-            ssl_certificate=ssl_certificate,
-        )
-
-        with pytest.raises(InstanceDeleteError):
-            SslCertificate.objects.delete_by_id(ssl_certificate.id)
-
-        related.delete()
-        SslCertificate.objects.delete_by_id(ssl_certificate.id)
-        assert not SslCertificate.objects.filter(gateway=fake_gateway).exists()
-
-    def test_get_valid_ids(self, fake_ssl_certificate):
-        result = SslCertificate.objects.get_valid_ids(
-            gateway_id=fake_ssl_certificate.gateway.id,
-            ids=[fake_ssl_certificate.id, 0],
-        )
-        assert result == [fake_ssl_certificate.id]
-
-    def test_get_valid_id(self, fake_ssl_certificate):
-        result = SslCertificate.objects.get_valid_id(
-            gateway_id=fake_ssl_certificate.gateway.id,
-            id_=fake_ssl_certificate.id,
-        )
-        assert result == fake_ssl_certificate.id
-
-        result = SslCertificate.objects.get_valid_id(
-            gateway_id=fake_ssl_certificate.gateway.id,
-            id_=0,
-        )
-        assert result is None
-
-
-class TestSslCertificateBindingManager:
-    def test_get_valid_scope_id(self, fake_ssl_certificate_binding):
-        result = SslCertificateBinding.objects.get_valid_scope_id(
-            gateway_id=fake_ssl_certificate_binding.gateway.id,
-            scope_type=fake_ssl_certificate_binding.scope_type,
-            scope_id=fake_ssl_certificate_binding.scope_id,
-        )
-        assert result == fake_ssl_certificate_binding.scope_id
-
-        result = SslCertificateBinding.objects.get_valid_scope_id(
-            gateway_id=fake_ssl_certificate_binding.gateway.id,
-            scope_type=fake_ssl_certificate_binding.scope_type,
-            scope_id=0,
-        )
-        assert result is None
-
-
-class TestMicroGatewayManager:
-    def test_get_count_by_gateway(self, fake_gateway):
-        G(MicroGateway, gateway=fake_gateway)
-        G(MicroGateway, gateway=fake_gateway)
-
-        result = MicroGateway.objects.get_count_by_gateway([fake_gateway.id])
-        assert result == {fake_gateway.id: 2}
