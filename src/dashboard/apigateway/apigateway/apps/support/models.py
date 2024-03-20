@@ -175,6 +175,7 @@ class GatewaySDK(ConfigModelMixin):
 
     @atomic
     def mark_is_recommended(self):
+        # FIXME: should move to manager or biz
         # 清理之前的标记
         GatewaySDK.objects.filter(
             is_recommended=True,

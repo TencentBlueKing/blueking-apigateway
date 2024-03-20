@@ -111,6 +111,7 @@ class ReleasedResourceDocManager(models.Manager):
 
 
 class APISDKManager(models.Manager):
+    # FIXME: move to views.py
     def filter_sdk(
         self,
         gateway,
@@ -193,26 +194,3 @@ class APISDKManager(models.Manager):
             queryset = queryset.filter(gateway_id=gateway_id)
 
         return queryset
-
-    def filter_resource_version_ids_has_sdk(self, gateway_id: int, resource_version_ids: List[int]) -> List[int]:
-        """过滤出有SDK的资源版本ID"""
-        return list(
-            self.filter(gateway_id=gateway_id, resource_version_id__in=resource_version_ids)
-            .order_by("resource_version_id")
-            .distinct()
-            .values_list("resource_version_id", flat=True)
-        )
-
-    def filter_resource_version_public_latest_sdk(self, gateway_id: int, resource_version_ids: List[int]) -> dict:
-        """过滤出指定的资源版本公开且最新的SDK(一个版本可能生成多个SDK，取其中最新且公开的SDK)"""
-        queryset = self.filter(
-            gateway_id=gateway_id,
-            resource_version_id__in=resource_version_ids,
-            is_public=True,
-        ).order_by("id")
-
-        public_latest_sdks = {}
-        for sdk in queryset:
-            public_latest_sdks[sdk.resource_version_id] = sdk
-
-        return public_latest_sdks
