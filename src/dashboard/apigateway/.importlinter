@@ -3,7 +3,7 @@ root_package = apigateway
 include_external_packages = True
 
 [importlinter:contract:layers-apps-biz-core]
-name=apps biz biz core
+name=apps biz core
 type=layers
 layers =
     apigateway.apis : apigateway.apps
