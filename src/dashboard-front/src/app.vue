@@ -7,6 +7,7 @@ import {
   onBeforeMount,
 } from 'vue';
 import UserInfo from '@/components/user-info.vue';
+import ProductInfo from '@/components/product-info.vue';
 import AppAuth from '@/components/auth/index.vue';
 // @ts-ignore
 import NoticeComponent from '@blueking/notice-component';
@@ -280,7 +281,10 @@ onBeforeMount(() => {
               </div>
             </template>
           </div>
-          <user-info v-if="userLoaded" />
+          <div class="flex-row">
+            <product-info></product-info>
+            <user-info v-if="userLoaded" />
+          </div>
         </div>
       </template>
     </bk-navigation>
@@ -319,6 +323,7 @@ onBeforeMount(() => {
     color: #96A2B9;
     .header-nav {
       display: flex;
+      flex: 1;
       padding: 0;
       margin: 0;
       &-item {
