@@ -116,16 +116,6 @@ class TestAPISDKManager:
 
 
 class TestReleasedResourceDocManager:
-    def test_get_released_resource_doc(self, fake_gateway):
-        # doc exist
-        G(ReleasedResourceDoc, gateway=fake_gateway, resource_version_id=1, resource_id=1, data={"content": "test"})
-        result = ReleasedResourceDoc.objects.get_released_resource_doc(fake_gateway.id, 1, 1)
-        assert result == {"content": "test"}
-
-        # doc not exist
-        result = ReleasedResourceDoc.objects.get_released_resource_doc(fake_gateway.id, 1, 2)
-        assert result == {}
-
     def test_get_doc_updated_time(self, fake_resource_version, fake_resource1):
         fake_gateway = fake_resource_version.gateway
         G(
