@@ -36,11 +36,22 @@ update: VERSION requirements
 
 .PHONY: test
 test:
+	cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && pytest \
+		--ds apigateway.settings \
+		--reuse-db \
+		-n auto \
+		--dist loadscope \
+		apigateway/tests
+	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
+
+.PHONY: test-lf
+test-lf:
 	cd apigateway && . apigateway/conf/unittest_env && pytest \
 		--ds apigateway.settings \
 		--reuse-db \
 		-n auto \
 		--dist loadscope \
+		--lf \
 		apigateway/tests
 	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
 

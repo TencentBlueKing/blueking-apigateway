@@ -38,7 +38,7 @@ from apigateway.biz.stage import StageHandler
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
-from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, SslCertificate, Stage
+from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.utils.dict import deep_update
 
 
@@ -231,10 +231,6 @@ class GatewayHandler:
         # plugin bindings
 
         PluginBinding.objects.delete_by_gateway_id(gateway_id)
-
-        # delete ssl-certificate
-
-        SslCertificate.objects.delete_by_gateway_id(gateway_id)
 
         # delete backend
 

@@ -21,111 +21,13 @@ import pytest
 from ddf import G
 
 from apigateway.apps.support.models import (
-    GatewaySDK,
     ReleasedResourceDoc,
 )
-from apigateway.core.models import ResourceVersion
-from apigateway.tests.utils.testing import create_gateway
 
 pytestmark = pytest.mark.django_db
 
 
-class TestAPISDKManager:
-    def test_filter_resource_version_ids_has_sdk(self):
-        gateway = create_gateway()
-
-        rv_1 = G(ResourceVersion, gateway=gateway)
-        rv_2 = G(ResourceVersion, gateway=gateway)
-        rv_3 = G(ResourceVersion, gateway=gateway)
-
-        G(GatewaySDK, gateway=gateway, resource_version=rv_1)
-        G(GatewaySDK, gateway=gateway, resource_version=rv_3)
-
-        data = [
-            {
-                "params": {
-                    "resource_version_ids": [rv_1.id, rv_2.id, rv_3],
-                },
-                "expected": [rv_1.id, rv_3.id],
-            },
-            {
-                "params": {
-                    "resource_version_ids": [rv_2.id],
-                },
-                "expected": [],
-            },
-        ]
-        for test in data:
-            result = GatewaySDK.objects.filter_resource_version_ids_has_sdk(
-                gateway.id,
-                test["params"]["resource_version_ids"],
-            )
-            assert result == test["expected"]
-
-    def test_filter_resource_version_public_latest_sdk(self):
-        gateway = create_gateway()
-
-        rv_1 = G(ResourceVersion, gateway=gateway)
-        rv_2 = G(ResourceVersion, gateway=gateway)
-        rv_3 = G(ResourceVersion, gateway=gateway)
-
-        G(
-            GatewaySDK,
-            gateway=gateway,
-            resource_version=rv_1,
-            language="python",
-            is_public=True,
-        )
-        G(
-            GatewaySDK,
-            gateway=gateway,
-            resource_version=rv_1,
-            language="python",
-            is_public=False,
-        )
-        sdk3 = G(
-            GatewaySDK,
-            gateway=gateway,
-            resource_version=rv_1,
-            language="python",
-            is_public=True,
-        )
-        G(
-            GatewaySDK,
-            gateway=gateway,
-            resource_version=rv_2,
-            language="python",
-            is_public=False,
-        )
-        sdk5 = G(
-            GatewaySDK,
-            gateway=gateway,
-            resource_version=rv_3,
-            language="python",
-            is_public=True,
-        )
-
-        result = GatewaySDK.objects.filter_resource_version_public_latest_sdk(
-            gateway.id,
-            resource_version_ids=[rv_1.id, rv_2.id, rv_3.id],
-        )
-        assert result == {
-            rv_1.id: sdk3,
-            rv_3.id: sdk5,
-        }
-
-
 class TestReleasedResourceDocManager:
-    def test_get_released_resource_doc(self, fake_gateway):
-        # doc exist
-        G(ReleasedResourceDoc, gateway=fake_gateway, resource_version_id=1, resource_id=1, data={"content": "test"})
-        result = ReleasedResourceDoc.objects.get_released_resource_doc(fake_gateway.id, 1, 1)
-        assert result == {"content": "test"}
-
-        # doc not exist
-        result = ReleasedResourceDoc.objects.get_released_resource_doc(fake_gateway.id, 1, 2)
-        assert result == {}
-
     def test_get_doc_updated_time(self, fake_resource_version, fake_resource1):
         fake_gateway = fake_resource_version.gateway
         G(
