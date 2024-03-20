@@ -12,14 +12,14 @@ const userInfo = ref(user.user);
 
 <template>
   <bk-popover
-    extCls="user-home"
+    ext-cls="user-home"
     placement="bottom-end"
     theme="light"
     :arrow="false"
   >
     <div class="user-name">
       {{ userInfo.username }}
-      <angle-down-line class="pl5"/>
+      <angle-down-line class="pl5" />
     </div>
     <template #content>
       <div

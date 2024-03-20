@@ -790,11 +790,11 @@ const handleCreate = () => {
   });
 };
 
-const handleSearch = () => {
-  pagination.current = 1;
-  pagination.limit = 10;
-  getComponents(true);
-};
+// const handleSearch = () => {
+//   pagination.current = 1;
+//   pagination.limit = 10;
+//   getComponents(true);
+// };
 
 const handlePageLimitChange = (limit: number) => {
   pagination.limit = limit;
