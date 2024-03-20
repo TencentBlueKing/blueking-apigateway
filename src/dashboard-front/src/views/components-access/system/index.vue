@@ -545,10 +545,17 @@ const handleSubmit = async () => {
       try {
         isEdit.value ? await updateSystem(curSystem.value.id, tempData) : await addSystem(tempData);
         isSliderShow.value = false;
+        Message({
+          theme: 'success',
+          message: t('操作成功'),
+        });
         getSystemList(true);
       } catch (e) {
-        // catchErrorHandler(e, this);
         console.error(e);
+        Message({
+          theme: 'error',
+          message: t('系统错误，请稍后重试'),
+        });
       } finally {
         submitLoading.value = false;
       }
