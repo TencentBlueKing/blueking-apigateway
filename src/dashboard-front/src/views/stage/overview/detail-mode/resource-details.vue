@@ -355,7 +355,7 @@ defineExpose({
   padding: 24px 24px 0px;
   box-sizing: border-box;
   height: calc(100vh - 52px);
-  overflow-y: scroll;
+  overflow-y: auto;
   .log-name {
     font-size: 12px;
     color: #63656e;
