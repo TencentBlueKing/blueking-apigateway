@@ -1382,6 +1382,8 @@ const lang: ILANG = {
   '请输入网关描述': ['Please enter the gateway description'],
   '网关未开启或公开，暂无文档地址': ['The gateway not enabled or public, and there is no documentation address available'],
   '发布记录': ['Release history'],
+  '变量列表': ['Variable list'],
+  '（可在资源配置中使用）': ['(Can be used in resource allocation)'],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],

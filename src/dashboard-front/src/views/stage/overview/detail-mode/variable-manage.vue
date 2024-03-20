@@ -2,11 +2,11 @@
   <div class="">
     <div class="title">
       <span class="title-name">
-        变量列表
+        {{ t('变量列表') }}
       </span>
-      <span class="title-tips">（可在资源配置中使用）</span>
+      <span class="title-tips">{{ t('（可在资源配置中使用）') }}</span>
       <span class="title-edit">
-        <edit-line @click="editTable" />
+        <edit-line @click.stop="editTable" />
       </span>
     </div>
 
@@ -17,11 +17,12 @@
         show-overflow-tooltip
         row-hover="auto"
         :cell-class="getCellClass"
+        @cell-click="handleCellClick"
         border="outer"
       >
         <bk-table-column :label="t('变量名称')" prop="name" :show-overflow-tooltip="false">
-          <template #default="{ row, index }">
-            <span v-show="!row.isEdit" class="no-edit-value">{{ row?.name }}</span>
+          <template #default="{ row, index, column }">
+            <span v-if="!row.isEdit" class="no-edit-value">{{ row?.name }}</span>
             <template v-if="row.isEdit">
               <bk-popover
                 placement="top-start"
@@ -38,11 +39,12 @@
                     error-display-type="tooltips"
                     class="table-form-item">
                     <bk-input
-                      ref="varInputRef"
-                      :autofocus="row.isEdit"
                       v-model="row.name"
+                      :ref="(el: HTMLElement) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
                       :clearable="false"
                       :max-length="50"
+                      @focus="handleInputFocus(index)"
+                      @blur="handleInputBlur(index)"
                     />
                   </bk-form-item>
                 </bk-form>
@@ -51,7 +53,7 @@
           </template>
         </bk-table-column>
         <bk-table-column :label="t('变量值')" prop="value" :show-overflow-tooltip="false">
-          <template #default="{ row, index }">
+          <template #default="{ row, index, column }">
             <span v-show="!row.isEdit" class="no-edit-value">{{ row?.value }}</span>
             <template v-if="row.isEdit">
               <bk-form :ref="(el: HTMLElement) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
@@ -62,7 +64,10 @@
                   class="table-form-item">
                   <bk-input
                     v-model="row.value"
+                    :ref="(el: HTMLElement) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
                     :clearable="false"
+                    @focus="handleInputFocus(index)"
+                    @blur="handleInputBlur(index)"
                   />
                 </bk-form-item>
               </bk-form>
@@ -81,33 +86,30 @@
         </bk-table-column> -->
         <bk-table-column
           :label="t('操作')"
-          v-if="tableIsEdit"
         >
-          <template #default="{ row, index }">
-            <div class="normal-status" v-show="!row.isEdit">
-              <i class="apigateway-icon icon-ag-plus-circle-shape" @click="addRow(index)" />
+          <template #default="{ row, index, column }">
+            <div class="normal-status" v-show="!row.isFocus">
+              <i class="apigateway-icon icon-ag-plus-circle-shape" @click="addRow(index, column.index)" />
               <i class="apigateway-icon icon-ag-minus-circle-shape" @click="delRow(index)" />
             </div>
-            <div class="edit-status" v-show="row.isEdit">
+            <div class="edit-status" v-show="row.isFocus">
               <bk-button
                 text
                 theme="primary"
                 class="mr10"
-                @click="confirmRowEdit(index)"
+                @click.stop="confirmRowEdit(index)"
               >
                 {{ t('确定') }}
               </bk-button>
               <bk-button
                 text
                 theme="primary"
-                @click="cancelRowEdit(index)"
+                @click.stop="cancelRowEdit(index)"
               >
                 {{ t('取消') }}
               </bk-button>
             </div>
-
           </template>
-
         </bk-table-column>
       </bk-table>
     </bk-loading>
@@ -117,14 +119,14 @@
       {{ t('变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符') }}
     </div> -->
 
-    <div class="footer-btn" v-show="tableIsEdit">
+    <div class="footer-btn">
       <bk-button
         theme="primary"
-        @click="handleSave"
+        @click.stop="handleSave"
       >
         {{ t('保存') }}
       </bk-button>
-      <bk-button @click="cancelTableEdit" v-bk-tooltips="{ content: '取消编辑' }">
+      <bk-button @click.stop="cancelTableEdit" v-bk-tooltips="{ content: '取消编辑' }">
         {{ t('取消') }}
       </bk-button>
     </div>
@@ -132,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import { EditLine } from 'bkui-vue/lib/icon';
 import { useI18n } from 'vue-i18n';
 import { getStageVars, updateStageVars } from '@/http';
@@ -148,13 +150,13 @@ const props = defineProps({
 
 const tableIsEdit = ref<boolean>(false);
 const isShowVarPopover = ref(false);
-const varInputRef = ref();
 const getVars = () => {
   return {
     name: '',
     value: '',
     // sourceNumber: 0,
     isEdit: true,
+    isFocus: true,
   };
 };
 
@@ -179,6 +181,7 @@ const getData = async () => {
         name: key,
         value: res?.vars[key],
         isEdit: false,
+        isFocus: false,
       });
     };
     tableData.value = list;
@@ -192,9 +195,17 @@ onMounted(() => {
 });
 
 const formRefs = ref(new Map());
+const formInputRef  = ref(new Map());
+
 const setRefs = (el: any, name: string) => {
   if (el) {
     formRefs.value?.set(name, el);
+  }
+};
+
+const setInputRefs = (el: any, name: string) => {
+  if (el) {
+    formInputRef.value?.set(name, el);
   }
 };
 
@@ -256,80 +267,108 @@ const confirmRowEdit = async (index: number) => {
 };
 
 const cancelRowEdit = async (index: number) => {
-  // if (!tableData.value[index]?.name) {
-  //   tableData.value?.splice(index, 1);
-  //   return;
-  // }
-  // if (await validateName(index)) {
-  //   tableData.value[index].isEdit = false;
-  // }
-  tableData.value?.splice(index, 1);
+  const { name, value } = tableData.value[index];
+  // 如果没有变量名称或者变量值，取消直接删除
+  if (!name || !value) {
+    tableData.value?.splice(index, 1);
+    return;
+  }
+  if (await validateName(index)) {
+    tableData.value[index].isEdit = false;
+  }
 };
 
 const editTable = () => {
   tableIsEdit.value = true;
-  tableData.value?.forEach((row: any) => {
-    row.isEdit = true;
-  });
   if (tableData.value.length) {
-    varInputRef.value?.focus();
-  }
-  if (tableData.value?.length === 0) {
+    tableData.value.forEach((row: any, index: number) => {
+      if (index === 0) {
+        row.isEdit = true;
+        nextTick(() => {
+          formInputRef.value?.get(`name-input-${index}-0`)?.focus();
+        });
+      }
+    });
+  } else {
     tableData.value?.push(getVars());
   }
 };
 
 const cancelTableEdit = () => {
-  getData();
   tableIsEdit.value = false;
-  // tableData.value?.forEach((row: any) => {
-  //   row.isEdit = false;
-  // });
+  getData();
 };
 
-const addRow = (index: number) => {
-  tableData.value?.splice(index + 1, 0, getVars());
+const addRow = async (index: number, columnIndex: number) => {
+  const nextIndex = index + 1;
+  tableData.value?.splice(nextIndex, 0, getVars());
+  tableData.value[nextIndex] = Object.assign(tableData.value[nextIndex], { isEdit: true, isFocus: true });
+  nextTick(() => {
+    formInputRef.value?.get(`name-input-${nextIndex}-${columnIndex}`)?.focus();
+  });
 };
 
 const delRow = (index: number) => {
   tableData.value?.splice(index, 1);
 };
 
-const handleSave = () => {
-  InfoBox({
-    infoType: 'warning',
-    title: t('确认修改变量配置？'),
-    subTitle: t('将会立即应用在环境上，请谨慎操作！'),
-    confirmText: t('确认修改'),
-    cancelText: t('取消'),
-    onConfirm: async () => {
-      try {
-        let flag = true;
-        for (let i = 0; i < tableData.value?.length; i++) {
-          if (!(await validateName(i))) {
-            flag = false;
-            break;
-          }
-        }
-        if (!flag) return;
+const handleInputFocus = (index: number) => {
+  // 处理新增的场景
+  tableData.value[index].isFocus = true;
+};
 
-        const data: any = {};
-        tableData.value?.forEach((item: any) => {
-          data[item.name] = item.value;
-        });
+const handleInputBlur = (index: number) => {
+  tableData.value[index].isFocus = false;
+  confirmRowEdit(index);
+};
 
-        await updateStageVars(common.apigwId, props.stageId, { vars: data });
-        Message({
-          theme: 'success',
-          message: t('更新成功'),
-        });
-        getData();
-        tableIsEdit.value = false;
-      } catch (e) {
-        console.error(e);
-      };
-    },
+const handleCellClick = async ({ event, column, rowIndex }: any) => {
+  event.stopPropagation();
+  const { field, index } = column;
+  if (!field) {
+    return;
+  }
+  tableData.value[rowIndex] = Object.assign(tableData.value[rowIndex], { isEdit: true, isFocus: true });
+  nextTick(() => {
+    formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.focus();
   });
+};
+
+const handleSave = async () => {
+  let flag = true;
+  for (let i = 0; i < tableData.value?.length; i++) {
+    if (!(await validateName(i))) {
+      flag = false;
+      break;
+    }
+  }
+  if (flag) {
+    InfoBox({
+      infoType: 'warning',
+      title: t('确认修改变量配置？'),
+      subTitle: t('将会立即应用在环境上，请谨慎操作！'),
+      confirmText: t('确认修改'),
+      cancelText: t('取消'),
+      onConfirm: async () => {
+        try {
+          const data: any = {};
+          tableData.value?.forEach((item: any) => {
+            data[item.name] = item.value;
+          });
+
+          await updateStageVars(common.apigwId, props.stageId, { vars: data });
+          Message({
+            theme: 'success',
+            message: t('更新成功'),
+          });
+          getData();
+          tableIsEdit.value = false;
+        } catch (e) {
+          console.error(e);
+        };
+      },
+    });
+  };
 };
 
 watch(
@@ -405,15 +444,15 @@ watch(
 
 :deep(.variable-table) {
   .bk-form-error-tips {
-    // display: none;
     transform: translate(-50%, 4px);
   }
   .bk-table-body-content {
     .custom-table-cell {
-      // height: 42px;
-      // line-height: 42px;
       .cell {
         padding: 0;
+        &:hover {
+          cursor: pointer;
+        }
         .bk-form {
           line-height: 42px;
           .table-form-item {
@@ -441,9 +480,11 @@ watch(
 .variable-table {
   :deep(.bk-table-head) {
     scrollbar-color: transparent transparent;
+    overflow: visible;
   }
   :deep(.bk-table-body) {
     scrollbar-color: transparent transparent;
+    overflow: visible;
   }
 }
 </style>
