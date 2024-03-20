@@ -1099,6 +1099,9 @@ watch(
   }
 }
 .apigw-access-manager-slider-cls {
+  :deep(.bk-modal-content) {
+    overflow-y: auto;
+  }
   .tips {
       line-height: 24px;
       font-size: 12px;

@@ -505,7 +505,7 @@ watch(
     }
     .sideslider-lf-ul {
       height: calc(100% - 94px);
-      overflow-y: scroll;
+      overflow-y: auto;
       .search-empty-tips {
         font-size: 12px;
         margin-top: 8px;
@@ -541,7 +541,7 @@ watch(
     padding: 24px 24px 0px;
     box-sizing: border-box;
     height: calc(100vh - 52px);
-    overflow-y: scroll;
+    overflow-y: auto;
     .log-name {
       font-size: 12px;
       color: #63656e;
