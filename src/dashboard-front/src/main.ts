@@ -10,7 +10,6 @@ import mavonEditor from 'mavon-editor';
 import 'mavon-editor/dist/css/index.css';
 
 // 全量引入 bkui-vue
-// import bkui from 'bkui-vue';
 import bkui from 'bkui-vue';
 // import bkui, { bkTooltips, overflowTitle } from 'bkui-vue';
 // 全量引入 bkui-vue 样式
