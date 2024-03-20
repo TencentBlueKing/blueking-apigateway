@@ -25,15 +25,11 @@ from typing import Any, Dict, Iterable, List, Optional
 from cachetools import TTLCache, cached
 from django.conf import settings
 from django.db import models
-from django.db.models import Count, Q
-from django.utils.translation import gettext as _
+from django.db.models import Q
 
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
-from apigateway.common.error_codes import error_codes
-from apigateway.common.exceptions import InstanceDeleteError
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
-    SSLCertificateBindingScopeTypeEnum,
     StageStatusEnum,
 )
 from apigateway.utils.time import now_datetime
@@ -50,9 +46,6 @@ class StageManager(models.Manager):
 
     def get_name_id_map(self, gateway):
         return dict(self.filter(gateway_id=gateway.id).values_list("name", "id"))
-
-    def get_id_to_fields(self, gateway_id: int, fields: List[str]) -> Dict[int, Dict[str, Any]]:
-        return {stage["id"]: stage for stage in self.filter(gateway_id=gateway_id).values(*fields)}
 
     def get_micro_gateway_id_to_fields(self, gateway_id: int) -> Dict[str, Dict[str, Any]]:
         return {
@@ -77,27 +70,6 @@ class StageManager(models.Manager):
 
     def get_name(self, gateway_id: int, id_: int) -> Optional[str]:
         return self.filter(gateway_id=gateway_id, id=id_).values_list("name", flat=True).first()
-
-
-class StageResourceDisabledManager(models.Manager):
-    def get_disabled_stages(self, resource_id):
-        disabled_stages = self.filter(resource_id=resource_id).values("stage__id", "stage__name")
-        return [
-            {
-                "id": stage["stage__id"],
-                "name": stage["stage__name"],
-            }
-            for stage in disabled_stages
-        ]
-
-    def is_exists(self, stage_id, resource_id):
-        return self.filter(stage__id=stage_id, resource__id=resource_id).exists()
-
-    def delete_enabled_records(self, stage_id, resource_id):
-        return self.filter(stage__id=stage_id, resource__id=resource_id).delete()
-
-    def get_record(self, stage_id, resource_id):
-        return self.get(stage__id=stage_id, resource__id=resource_id)
 
 
 class ResourceVersionManager(models.Manager):
@@ -263,40 +235,6 @@ class ReleaseManager(models.Manager):
             return None
         return ids[0]
 
-    def get_released_stage_count(self, resource_version_ids: List[int]) -> Dict[int, int]:
-        """获取资源版本已发布的环境数量"""
-        count = (
-            self.filter(resource_version_id__in=resource_version_ids)
-            .values("resource_version_id")
-            .annotate(count=Count("resource_version_id"))
-        )
-        return {i["resource_version_id"]: i["count"] for i in count}
-
-    def get_stage_id_to_fields_map(
-        self,
-        gateway_id: int,
-        resource_version_ids: Optional[List[int]] = None,
-    ) -> Dict[int, dict]:
-        """获取已发布环境的信息"""
-        queryset = self.filter(gateway_id=gateway_id)
-        if resource_version_ids is not None:
-            queryset = queryset.filter(resource_version_id__in=resource_version_ids)
-
-        return {release["stage_id"]: dict(release) for release in queryset.values("stage_id", "resource_version_id")}
-
-    def get_stage_ids_unreleased_the_version(
-        self,
-        gateway_id: int,
-        stage_ids: List[int],
-        resource_version_id: int,
-    ) -> List[int]:
-        """获取未发布此版本的环境列表"""
-        released_stage_ids = self.filter(
-            gateway_id=gateway_id,
-            resource_version_id=resource_version_id,
-        ).values_list("stage_id", flat=True)
-        return list(set(stage_ids) - set(released_stage_ids))
-
 
 class ReleasedResourceManager(models.Manager):
     def save_released_resource(self, resource_version, force: bool = False) -> None:
@@ -323,13 +261,6 @@ class ReleasedResourceManager(models.Manager):
             for resource in resource_version.data
         ]
         self.bulk_create(resource_to_add, batch_size=settings.RELEASED_RESOURCE_CREATE_BATCH_SIZE)
-
-    def get_resource_version_id_to_obj_map(self, gateway_id: int, resource_id: int):
-        """获取已发布资源版本 ID 对应的发布资源"""
-        return {
-            resource.resource_version_id: resource
-            for resource in self.filter(gateway_id=gateway_id, resource_id=resource_id)
-        }
 
     def get_released_resource(self, gateway_id: int, resource_version_id: int, resource_name: str) -> Optional[dict]:
         released_resource = self.filter(
@@ -394,6 +325,7 @@ class ReleasedResourceManager(models.Manager):
 
 
 class ReleaseHistoryManager(models.Manager):
+    # FIXME: not common, move to views.py
     def filter_release_history(
         self,
         gateway,
@@ -456,87 +388,3 @@ class MicroGatewayManager(models.Manager):
 
     def get_default_shared_gateway(self):
         return self.get(is_shared=True, id=settings.DEFAULT_MICRO_GATEWAY_ID)
-
-    def get_count_by_gateway(self, gateway_ids: List[int]) -> Dict[int, int]:
-        if not gateway_ids:
-            return {}
-
-        count = self.filter(gateway_id__in=gateway_ids).values("gateway_id").annotate(count=Count("gateway_id"))
-        return {i["gateway_id"]: i["count"] for i in count}
-
-
-class SslCertificateManager(models.Manager):
-    def delete_by_gateway_id(self, gateway_id: int):
-        from apigateway.core.models import SslCertificateBinding
-
-        # delete binding
-        SslCertificateBinding.objects.filter(gateway_id=gateway_id).delete()
-
-        # delete ssl-certificate
-        self.filter(gateway_id=gateway_id).delete()
-
-    def delete_by_id(self, id: int):
-        self._check_for_delete(id)
-        self.filter(id=id).delete()
-
-    def _check_for_delete(self, id: int):
-        """检查是否能被删除"""
-        from apigateway.core.models import SslCertificateBinding
-
-        binding = SslCertificateBinding.objects.filter(ssl_certificate_id=id).first()
-        if not binding:
-            return
-
-        scope_label = SSLCertificateBindingScopeTypeEnum.get_choice_label(binding.scope_type)
-        raise InstanceDeleteError(
-            _("SSL 证书【id={id}】被 {scope_label}【id={scope_id}】引用，无法删除。").format(
-                id=id,
-                scope_label=scope_label,
-                scope_id=binding.scope_id,
-            )
-        )
-
-    def get_valid_ids(self, gateway_id: int, ids: List[int]) -> List[int]:
-        return list(self.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))
-
-    def get_valid_id(self, gateway_id: int, id_: int) -> Optional[int]:
-        return self.filter(gateway_id=gateway_id, id=id_).values_list("id", flat=True).first()
-
-
-class SslCertificateBindingManager(models.Manager):
-    def sync_binding(
-        self,
-        gateway_id: int,
-        scope_type: SSLCertificateBindingScopeTypeEnum,
-        scope_id: int,
-        ssl_certificate_id: Optional[int],
-    ):
-        """同步绑定关系，将新增，更新或删除绑定关系，保持其与实际一致"""
-        if not ssl_certificate_id:
-            self.filter(gateway_id=gateway_id, scope_type=scope_type.value, scope_id=scope_id).delete()
-            return
-
-        self.update_or_create(
-            gateway_id=gateway_id,
-            scope_type=scope_type.value,
-            scope_id=scope_id,
-            defaults={
-                "ssl_certificate_id": ssl_certificate_id,
-            },
-        )
-
-    def get_scope_objects(self, gateway_id: int, scope_type: str, scope_ids: List[int]):
-        if scope_type == SSLCertificateBindingScopeTypeEnum.STAGE.value:
-            from apigateway.core.models import Stage
-
-            return Stage.objects.filter(gateway_id=gateway_id, id__in=scope_ids)
-
-        raise error_codes.INVALID_ARGUMENT.format(f"unsupported scope_type: {scope_type}")
-
-    def get_valid_scope_ids(self, gateway_id: int, scope_type: str, scope_ids: List[int]) -> List[int]:
-        scope_objects = self.get_scope_objects(gateway_id, scope_type, scope_ids)
-        return list(scope_objects.values_list("id", flat=True))
-
-    def get_valid_scope_id(self, gateway_id: int, scope_type: str, scope_id: int) -> Optional[int]:
-        scope_objects = self.get_scope_objects(gateway_id, scope_type, [scope_id])
-        return scope_objects.values_list("id", flat=True).first()

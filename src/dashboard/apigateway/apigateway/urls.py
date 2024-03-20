@@ -78,7 +78,6 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/sdks/", include("apigateway.apis.web.sdk.urls")),
     path("backend/gateways/<int:gateway_id>/audits/", include("apigateway.apis.web.audit.urls")),
     # TODO: refactor or remove
-    path("backend/gateways/<int:gateway_id>/ssl/", include("apigateway.apps.ssl_certificate.urls")),
     path("backend/gateways/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     # todo 不应该放在顶层，后续要想办法挪到下层
     path(
