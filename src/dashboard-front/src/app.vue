@@ -26,7 +26,7 @@ const route = useRoute();
 const { BK_PAAS2_ESB_DOC_URL, BK_DASHBOARD_URL } = window;
 
 // 加载完用户数据才会展示页面
-const userLoading = ref(false);
+const userLoaded = ref(false);
 const activeIndex = ref(0);
 // 获取用户数据
 const user = useUser();
@@ -35,14 +35,14 @@ const showNoticeAlert = ref(true);
 const enableShowNotice = ref(false);
 const noticeApi = ref(`${BK_DASHBOARD_URL}/notice/`);
 
-getUser()
-  .then((data) => {
-    user.setUser(data);
-    userLoading.value = true;
-  })
-  .catch(() => {
-    Message('获取用户信息失败，请检查后再试');
-  });
+// getUser()
+//   .then((data) => {
+//     user.setUser(data);
+//     userLoaded.value = true;
+//   })
+//   .catch(() => {
+//     Message('获取用户信息失败，请检查后再试');
+//   });
 
 // getFeatureFlags({ limit: 10000, offset: 0 }).then((data) => {
 //   console.log(data);
@@ -117,31 +117,31 @@ const handleShowAlertChange = (payload: boolean) => {
   showNoticeAlert.value = payload;
 };
 
-const fetchUserInfo = async () => {
-  try {
-    const res = await getUser();
-    user.setUser(res);
-    userLoading.value = true;
-  } catch (e: any) {
-    console.error(e);
-    if (e?.code !== 'UNAUTHENTICATED') {
-      Message('获取用户信息失败，请检查后再试');
-    }
-  }
-};
+// const fetchUserInfo = async () => {
+//   try {
+//     const res = await getUser();
+//     user.setUser(res);
+//     userLoaded.value = true;
+//   } catch (e: any) {
+//     console.error(e);
+//     if (e?.code !== 'UNAUTHENTICATED') {
+//       Message('获取用户信息失败，请检查后再试');
+//     }
+//   }
+// };
 
-const fetchFeatureFlags = async () => {
-  try {
-    const res = await getFeatureFlags({ limit: 10000, offset: 0 });
-    enableShowNotice.value = res?.ENABLE_BK_NOTICE || false;
-    user.setFeatureFlags(res);
-  } catch (e: any) {
-    console.error(e);
-    if (e?.code !== 'UNAUTHENTICATED') {
-      Message('获取功能权限失败，请检查后再试');
-    }
-  };
-};
+// const fetchFeatureFlags = async () => {
+//   try {
+//     const res = await getFeatureFlags({ limit: 10000, offset: 0 });
+//     enableShowNotice.value = res?.ENABLE_BK_NOTICE || false;
+//     user.setFeatureFlags(res);
+//   } catch (e: any) {
+//     console.error(e);
+//     if (e?.code !== 'UNAUTHENTICATED') {
+//       Message('获取功能权限失败，请检查后再试');
+//     }
+//   };
+// };
 
 watch(
   () => route.fullPath,
@@ -160,8 +160,25 @@ watch(
     if (platform.indexOf('win') === 0) {
       systemCls.value = 'win';
     }
-    await fetchUserInfo();
-    await fetchFeatureFlags();
+
+    try {
+      const [useRes, flagsRes] = await Promise.all([
+        getUser(),
+        getFeatureFlags({ limit: 10000, offset: 0 }),
+      ]);
+
+      user.setUser(useRes);
+
+      enableShowNotice.value = flagsRes?.ENABLE_BK_NOTICE || false;
+      user.setFeatureFlags(flagsRes);
+
+      userLoaded.value = true;
+    } catch (e: any) {
+      console.error(e);
+      if (e?.code !== 'UNAUTHENTICATED') {
+        Message('获取用户信息或功能权限失败，请检查后再试');
+      }
+    }
   },
   {
     immediate: true,
@@ -243,7 +260,7 @@ onBeforeMount(() => {
       <!-- <img v-else src="@/images/APIgataway-c.png" class="api-logo"> -->
       </template>
       <div class="content">
-        <router-view v-if="userLoading"></router-view>
+        <router-view v-if="userLoaded"></router-view>
       </div>
       <template #header>
         <div
@@ -266,7 +283,7 @@ onBeforeMount(() => {
           </div>
           <div class="flex-row">
             <product-info></product-info>
-            <user-info v-if="userLoading" />
+            <user-info v-if="userLoaded" />
           </div>
         </div>
       </template>

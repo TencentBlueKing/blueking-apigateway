@@ -6,10 +6,6 @@ const { t } = useI18n();
 
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
-// 跳转去外部页面
-const handleToExternal = () => {
-
-}
 </script>
 
 <template>
@@ -20,10 +16,11 @@ const handleToExternal = () => {
     :padding="0"
   >
     <div class="info-icon">
-        <span class="icon apigateway-icon icon-ag-help-document-fill"></span>
+      <span class="icon apigateway-icon icon-ag-help-document-fill"></span>
     </div>
     <template #content>
-      <bk-link class="info-item" :href="GLOBAL_CONFIG.HELPER.href" target="_blank"
+      <bk-link
+        class="info-item" :href="GLOBAL_CONFIG.HELPER.href" target="_blank"
         v-if="GLOBAL_CONFIG.HELPER.href && GLOBAL_CONFIG.HELPER.name">
         {{ t(GLOBAL_CONFIG.HELPER.name) }}
       </bk-link>
