@@ -293,7 +293,7 @@ const editTable = () => {
   } else {
     tableData.value?.push(getVars());
     nextTick(() => {
-      formInputRef.value?.get(`name-input-${0}-0`)?.focus();
+      formInputRef.value?.get('name-input-0-0')?.focus();
     });
   }
 };
