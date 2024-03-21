@@ -20,6 +20,8 @@ from typing import Any, Dict, List, Literal, Optional, Text, Tuple, Union
 
 from pydantic import BaseModel, Field, Json, validator
 
+from apigateway.common.timeout import convert_timeout
+
 
 class DiffMixin:
     def diff(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
@@ -76,11 +78,7 @@ class ResourceProxyHTTPConfig(BaseModel, DiffMixin):
 
     def __init__(self, **data: Any) -> None:
         if "timeout" in data and isinstance(data["timeout"], int):
-            data["timeout"] = {
-                "connection": data["timeout"],
-                "read": data["timeout"],
-                "send": data["timeout"],
-            }
+            data["timeout"] = convert_timeout(data["timeout"])
         super().__init__(**data)
 
     @validator("transform_headers")

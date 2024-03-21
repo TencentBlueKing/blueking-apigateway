@@ -38,6 +38,7 @@ from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
 from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
+from apigateway.common.timeout import convert_timeout
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
@@ -278,11 +279,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         return {
             "type": "node",
-            "timeout": {
-                "connect": proxy_http_config["timeout"],
-                "read": proxy_http_config["timeout"],
-                "send": proxy_http_config["timeout"],
-            },
+            "timeout": convert_timeout(proxy_http_config["timeout"]),
             "loadbalance": proxy_http_config["upstreams"]["loadbalance"],
             "hosts": hosts,
         }

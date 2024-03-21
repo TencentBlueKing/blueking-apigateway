@@ -203,12 +203,11 @@ class ResourceSwaggerImporter:
         if backend_type != ProxyTypeEnum.HTTP.value:
             raise ValueError(f"unsupported backend type: {backend['type']}")
 
-        timeout = convert_timeout(backend.get("timeout", 0))
         return {
             "method": backend["method"].upper(),
             "path": backend["path"],
             "match_subpath": backend.get("matchSubpath", False),
-            "timeout": timeout,
+            "timeout": convert_timeout(backend.get("timeout", 0)),
             # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
             "legacy_upstreams": backend.get("upstreams"),
             "legacy_transform_headers": backend.get("transformHeaders"),
