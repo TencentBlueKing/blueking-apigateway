@@ -95,7 +95,6 @@
               :clearable="false"
               :input-search="false"
               :filterable="true"
-              style="width: 320px"
               @change="handleVersionChange"
             >
               <bk-option
@@ -770,7 +769,7 @@ onMounted(() => {
       line-height: 36px;
       border-radius: 2px;
       background: #f0f1f5;
-      border: 1px solid #f0f1f5;
+      // border: 1px solid #f0f1f5;
       font-size: 12px;
       font-weight: bold;
       color: #63656e;
@@ -799,7 +798,7 @@ onMounted(() => {
 
       &.danger {
         background: #fedddc;
-        border-color: #fe9c9c;
+        // border-color: #fe9c9c;
 
         .resource-title {
           &::after {
@@ -816,12 +815,12 @@ onMounted(() => {
 
       &.success {
         background: #dcffe2;
-        border-color: #94f5a4;
+        // border-color: #94f5a4;
       }
 
       &.warning {
         background: #ffe8c3;
-        border-color: #ffd694;
+        // border-color: #ffd694;
       }
     }
   }
@@ -889,7 +888,7 @@ onMounted(() => {
   .target-header {
     width: 50%;
     height: 42px;
-    background: #f0f1f5;
+    background-color: #f0f1f5;
     line-height: 42px;
     display: flex;
 
@@ -911,12 +910,14 @@ onMounted(() => {
       font-size: 13px;
       color: #63656e;
       text-align: center;
+      font-weight: 700;
     }
   }
 
   .source-header {
     border-right: 1px solid #dcdee5;
     border-bottom: 1px solid #dcdee5;
+    background-color: #f5f7fa;
 
     .marked {
       border-right: 1px solid #dcdee5;
@@ -924,12 +925,12 @@ onMounted(() => {
   }
 
   .target-header {
-    background: #dcdee5;
-    border-left: 1px solid #c4c6cc;
-    border-bottom: 1px solid #c4c6cc;
+    background-color: #f0f1f5;
+    border-left: 1px solid #dcdee5;
+    border-bottom: 1px solid #dcdee5;
 
     .marked {
-      border-left: 1px solid #c4c6cc;
+      border-left: 1px solid #dcdee5;
     }
   }
 }
@@ -950,9 +951,12 @@ onMounted(() => {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    font-size: 13px;
+    font-weight: 700;
+    color: #63656e;
     &.is-default-trigger.is-unselected:before {
       width: 280px;
-      font-weight: bold;
+      font-weight: 700;
       color: #63656e;
       font-size: 13px;
       text-align: center;
@@ -965,7 +969,7 @@ onMounted(() => {
     }
     .bk-input--text::placeholder {
       font-size: 13px;
-      font-weight: bold;
+      font-weight: 700;
       color: #63656e;
       text-align: center;
     }

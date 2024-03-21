@@ -47,8 +47,10 @@
               prop="resource_version"
               min-width="120"
             >
-              <template #default="{ data }">
-                {{ data?.resource_version?.version }}
+              <template #default="{ row }">
+                <bk-button text theme="primary" @click="goVersionList(row)">
+                  {{ row?.resource_version?.version }}
+                </bk-button>
               </template>
             </bk-table-column>
             <bk-table-column min-width="120" prop="language" :label="t('语言')">
@@ -98,12 +100,15 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+
 import { useQueryList, useSelection } from '@/hooks';
 import { getSdksList } from '@/http';
 import { copy } from '@/common/util';
 import { useResourceVersion } from '@/store';
 import createSdk from '../components/createSdk.vue';
 import TableEmpty from '@/components/table-empty.vue';
+
+const emits = defineEmits<(event: 'on-show-version', version: string) => void>();
 
 const { t } = useI18n();
 const resourceVersionStore = useResourceVersion();
@@ -164,6 +169,10 @@ const updateTableEmptyConfig = () => {
     return;
   }
   tableEmptyConf.value.keyword = '';
+};
+
+const goVersionList = (data: any) => {
+  emits('on-show-version', data?.resource_version?.version || '');
 };
 
 watch(

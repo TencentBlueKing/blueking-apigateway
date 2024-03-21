@@ -172,6 +172,14 @@ import versionDiff from '@/components/version-diff/index.vue';
 import { useResourceVersion, useUser } from '@/store';
 import releaseSideslider from '@/views/stage/overview/comps/release-sideslider.vue';
 import TableEmpty from '@/components/table-empty.vue';
+
+const props = defineProps({
+  version: {
+    type: String,
+    default: '',
+  },
+});
+
 const user = useUser();
 
 const route = useRoute();
@@ -180,7 +188,7 @@ const resourceVersionStore = useResourceVersion();
 
 const apigwId = computed(() => +route.params.id);
 
-const filterData = ref({ keyword: '' });
+const filterData = ref({ keyword: props.version });
 const diffDisabled = ref<boolean>(true);
 
 // 列表hooks

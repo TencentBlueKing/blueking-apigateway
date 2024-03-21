@@ -14,10 +14,7 @@
         >
           <template v-for="menu in componentsMenu">
             <template v-if="menu?.children?.length">
-              <bk-submenu
-                :key="menu.name"
-                :title="menu.title"
-              >
+              <bk-submenu :key="menu.name" :title="menu.title">
                 <template #icon>
                   <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
                   <!-- <bk-badge
@@ -66,8 +63,7 @@
           {{ headerTitle }}
         </div>
         <div :class="route.meta.customHeader ? 'custom-header-view' : 'default-header-view'">
-          <router-view
-            :key="apigwId" :apigw-id="apigwId">
+          <router-view :apigw-id="apigwId">
           </router-view>
         </div>
       </div>

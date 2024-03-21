@@ -52,6 +52,11 @@
           :label="t('版本号')"
           prop="resource_version_display"
         >
+          <template #default="{ row }">
+            <bk-button text theme="primary" @click="goVersionList(row)">
+              {{ row?.resource_version_display }}
+            </bk-button>
+          </template>
         </bk-table-column>
         <bk-table-column
           :label="t('操作状态')"
@@ -109,8 +114,10 @@
 </template>
 
 <script setup lang="ts">
-import { useQueryList, useDatePicker } from '@/hooks';
 import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+
+import { useQueryList, useDatePicker } from '@/hooks';
 import { useI18n } from 'vue-i18n';
 import { PublishSourceEnum, PublishStatusEnum } from '@/types';
 import logDetails from '@/components/log-details/index.vue';
@@ -120,6 +127,8 @@ import {
   getReleaseHistories,
 } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
+
+const router = useRouter();
 
 const { t } = useI18n();
 const filterData = ref({ keyword: '' });
@@ -191,6 +200,15 @@ const updateTableEmptyConfig = () => {
     return;
   }
   tableEmptyConf.value.keyword = '';
+};
+
+const goVersionList = (data: any) => {
+  router.push({
+    name: 'apigwResourceVersion',
+    query: {
+      version: data?.resource_version_display,
+    },
+  });
 };
 
 watch(() => filterData.value, () => {
