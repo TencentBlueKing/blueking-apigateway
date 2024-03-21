@@ -212,7 +212,7 @@ class ReleaseHandler:
             if now - start_time > 10 * RELEASE_GATEWAY_INTERVAL_SECOND:
                 break
 
-            time.sleep(0.1 * wait_times)
+            time.sleep(1 * wait_times)
 
             wait_times += 1
             other_latest_release_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
