@@ -39,12 +39,6 @@
         @page-limit-change="handlePageLimitChange"
         @select-all="handleSelectAll"
         @selection-change="handleResourceSelect">
-        <!-- <div slot="empty">
-        <table-empty
-          :keyword="tableEmptyConf.keyword"
-          @clear-filter="clearFilterKey"
-        />
-      </div> -->
         <bk-table-column align="center" width="40">
           <template #default="{ row }">
             <div :class="['play-shape', row.isIconView ? 'icon-view' : 'icon-conceal']" v-if="row.dimension !== 'api'">
@@ -128,13 +122,21 @@
             </bk-pop-confirm>
           </template>
         </bk-table-column>
+        <template #empty>
+          <TableEmpty
+            :keyword="tableEmptyConf.keyword"
+            :abnormal="tableEmptyConf.isAbnormal"
+            @reacquire="getTableData"
+            @clear-filter="handleClearFilterKey"
+          />
+        </template>
       </bk-table>
     </bk-loading>
 
     <bk-sideslider
       :title="resourceSliderConf.title"
       :width="800"
-      :is-show="resourceSliderConf.isShow"
+      v-model:isShow="resourceSliderConf.isShow"
       :quick-close="true"
       :before-close="handleBeforeClose"
       @hidden="sidesliderHidden">
@@ -237,6 +239,7 @@ import { useI18n } from 'vue-i18n';
 import { Message, InfoBox } from 'bkui-vue';
 import { useSidebar } from '@/hooks';
 import { getResources } from '@/http';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
 
@@ -311,8 +314,9 @@ const rules = reactive<any>({
     },
   ],
 });
-const tableEmptyConf = reactive<any>({
+const tableEmptyConf = ref<{ keyword: string; isAbnormal: boolean }>({
   keyword: '',
+  isAbnormal: false,
 });
 const sourceEl = ref<any>(null);
 
@@ -340,13 +344,16 @@ const handleBeforeClose = async () => {
   // 添加
   const initData: any = {
     ...curResource,
-    manner,
+    manner: manner.value,
   };
   // 编辑
   if (resourceSliderConf.type === 'edit') {
-    initData.resourceIds = resourceIds;
+    initData.resourceIds = resourceIds.value;
   }
-  return isSidebarClosed(JSON.stringify(initData));
+
+  isSidebarClosed(JSON.stringify(initData)).then((close) => {
+    resourceSliderConf.isShow = !close;
+  });
 };
 
 const removeResourceScroll = () => {
@@ -372,16 +379,23 @@ const handleResourceScroll = async () => {
 };
 
 const updateTableEmptyConfig = () => {
-  tableEmptyConf.keyword = searchFilters.value.length ? 'placeholder' : '';
+  tableEmptyConf.value.isAbnormal = pagination.abnormal;
+  if (searchFilters.value?.length || !pagingList.value.length) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (searchFilters.value?.length) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
 };
 
-// const clearFilterKey = () => {
-//   searchFilters.value = [];
-//   searchParams.value = {
-//     bk_app_code: '',
-//     resource_id: '',
-//   };
-// };
+const handleClearFilterKey = () => {
+  searchFilters.value = [];
+  getTableData();
+  updateTableEmptyConfig();
+};
 
 const getResourcesViewWidth = () => {
   nextTick(() => {
@@ -583,6 +597,10 @@ const handlerDeletePolicy = (data: any) => {
   }
   getSearchDataList();
   getTableData();
+  Message({
+    theme: 'success',
+    message: t('删除成功'),
+  });
 };
 
 const handlerUpdatePolicy = () => {
@@ -596,6 +614,10 @@ const handlerUpdatePolicy = () => {
   });
   handleHideResourceSlider();
   getTableData();
+  Message({
+    theme: 'success',
+    message: t('编辑成功'),
+  });
   confirmLoading.value = false;
 };
 
@@ -611,6 +633,10 @@ const handlerAddPolicy = () => {
   });
   handleHideResourceSlider();
   getTableData();
+  Message({
+    theme: 'success',
+    message: t('新增成功'),
+  });
   confirmLoading.value = false;
 };
 
@@ -719,7 +745,7 @@ const handleAddResource = () => {
   // 添加
   const initData = {
     ...curResource,
-    manner,
+    manner: manner.value,
   };
   initSidebarFormData(initData);
 };
@@ -738,8 +764,8 @@ const handleEditResource = (data: any) => {
   // 编辑需要添加资源选择对比
   const initData = {
     ...curResource,
-    manner,
-    resourceIds,
+    manner: manner.value,
+    resourceIds: resourceIds.value,
   };
   initSidebarFormData(initData);
 };

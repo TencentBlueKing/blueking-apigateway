@@ -399,7 +399,7 @@ watch(
 );
 
 watch(
-  () => isShowSubpath,
+  () => isShowSubpath.value,
   () => {
     formData.value.subpath = '';
   },
