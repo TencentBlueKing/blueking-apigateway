@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 """检查 PaaS2/ESB 中的数据，是否满足迁移条件，如果不满足，则无法直接迁移"""
+
 import logging
 import sys
 

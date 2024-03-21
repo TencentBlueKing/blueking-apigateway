@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,3 +16,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django_filters import rest_framework as filters
+
+from apigateway.apps.esb.bkcore.models import ESBChannel
+
+
+class ESBChannelFilter(filters.FilterSet):
+    name = filters.CharFilter(lookup_expr="icontains")
+    system_name = filters.CharFilter(field_name="system__name")
+    path = filters.CharFilter(lookup_expr="icontains")
+
+    class Meta:
+        model = ESBChannel
+        fields = [
+            "name",
+            "system_name",
+            "path",
+        ]

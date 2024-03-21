@@ -32,9 +32,6 @@ class PluginBindingManager(models.Manager):
     def delete_by_gateway_id(self, gateway_id):
         self.filter(gateway_id=gateway_id).delete()
 
-    def bulk_delete(self, objs):
-        return self.filter(id__in=[i.pk for i in objs]).delete()
-
     def create_or_update_bindings(
         self,
         gateway,

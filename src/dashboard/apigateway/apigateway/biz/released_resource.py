@@ -55,7 +55,7 @@ class ReleasedResourceData:
             method=released_resource_data["method"],
             path=released_resource_data["path"],
             description=released_resource_data.get("description", ""),
-            description_en=released_resource_data.get("description_en", None),
+            description_en=released_resource_data.get("description_en"),
             match_subpath=released_resource_data.get("match_subpath", False),
             is_public=released_resource_data["is_public"],
             allow_apply_permission=released_resource_data.get("allow_apply_permission", True),

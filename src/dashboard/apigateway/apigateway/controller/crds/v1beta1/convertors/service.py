@@ -17,11 +17,9 @@
 #
 from typing import List
 
-from django.conf import settings
-
 from apigateway.controller.crds.constants import UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor, UrlInfo
-from apigateway.controller.crds.v1beta1.models.base import TimeoutConfig, Upstream, UpstreamCheck, UpstreamNode
+from apigateway.controller.crds.v1beta1.models.base import TimeoutConfig, Upstream, UpstreamNode
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService, BkGatewayServiceSpec
 
 
@@ -61,10 +59,6 @@ class ServiceConvertor(BaseConvertor):
                 )
 
             upstream.nodes.append(UpstreamNode(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
-
-        checks = settings.MICRO_GATEWAY_STAGE_UPSTREAM_CHECKS.get(self._release_data.gateway.name)
-        if checks:
-            upstream.checks = UpstreamCheck(**checks)
 
         return [
             BkGatewayService(

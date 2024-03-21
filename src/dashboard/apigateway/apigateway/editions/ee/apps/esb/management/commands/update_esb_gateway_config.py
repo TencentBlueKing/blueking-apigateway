@@ -19,6 +19,7 @@
 """
 将 ESB 组件对应网关的类型设置为 SUPER_OFFICIAL_API，以便于网关向 ESB 传递所有请求参数
 """
+
 import logging
 from enum import Enum
 

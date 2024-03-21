@@ -24,6 +24,7 @@ Rules:
 2. GET 带参数，HEAD 不带参数
 3. 所有请求 json out, 如果 resp.json 报错，则是接口问题
 """
+
 import logging
 
 import requests

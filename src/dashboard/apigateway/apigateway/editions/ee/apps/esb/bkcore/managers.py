@@ -273,10 +273,6 @@ class DocCategoryManager(models.Manager):
 
 
 class SystemDocCategoryManager(models.Manager):
-    def calculate_system_count_per_doc_category(self):
-        counts = self.values("doc_category_id").annotate(count=Count("doc_category_id"))
-        return {i["doc_category_id"]: i["count"] for i in counts}
-
     def get_system_id_to_doc_category_map(self, system_ids: Optional[List[int]] = None) -> Dict[int, dict]:
         qs = self.all()
 

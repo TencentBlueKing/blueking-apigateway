@@ -16,10 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Text, Tuple, Union
 
 from pydantic import BaseModel, Field, Json, validator
-from typing_extensions import Literal
 
 
 class DiffMixin:

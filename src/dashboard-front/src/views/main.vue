@@ -97,7 +97,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { menuData } from '@/common/menu';
+import { createMenuData } from '@/common/menu';
 import { useGetApiList } from '@/hooks';
 import { useCommon, usePermission } from '@/store';
 import { getPermissionApplyList, getGatewaysDetail } from '@/http';
@@ -140,6 +140,7 @@ const handleSetApigwDeatail = async () => {
 };
 
 const needMenu = ref(true);
+const menuData = ref([]);
 
 // 监听当前路由
 watch(
@@ -159,15 +160,18 @@ watch(
       needMenu.value = false;
     }
 
+    menuData.value = createMenuData();
+
     const curOpenedKeys = openedKeys.value;
-    const menuDataLen = menuData.length;
+    const menuDataLen = menuData.value.length;
     for (let i = 0; i < menuDataLen; i++) {
-      const item = menuData[i];
-      const finded = item.children?.find(child => child.name === activeMenuKey.value);
+      const item = menuData.value[i];
+      const finded = item.children?.find((child: any) => child.name === activeMenuKey.value);
       if (finded) {
         curOpenedKeys.push(item.name);
       }
     }
+    console.log('menuData', menuData.value);
     openedKeys.value = curOpenedKeys;
   },
   { immediate: true, deep: true },

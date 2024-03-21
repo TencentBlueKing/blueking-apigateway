@@ -355,8 +355,6 @@ class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
     # can be delete cascade
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
 
-    objects = managers.StageResourceDisabledManager()
-
     def __str__(self):
         return f"<StageResourceDisabled: {self.stage}-{self.resource}>"
 
@@ -522,13 +520,6 @@ class Context(ConfigModelMixin):
 
         super().save(*args, **kwargs)
 
-    def should_do_publish(self):
-        """
-        NOTE: for resource context, is static, will be online after release be published
-        but the context of gateway/stage, is dynamic, will be online after the settings be saved
-        """
-        return self.scope_type in (ContextScopeTypeEnum.GATEWAY.value, ContextScopeTypeEnum.STAGE.value)
-
 
 # ============================================ version and release ============================================
 class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
@@ -562,25 +553,6 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     @data.setter
     def data(self, data: list):
         self._data = json.dumps(data)
-
-    @property
-    def data_display(self) -> list:
-        data = self.data
-        for resource in data:
-            resource["path"] = get_path_display(resource["path"], resource.get("match_subpath"))
-            if resource["proxy"]["type"] == ProxyTypeEnum.HTTP.value:
-                proxy_config = json.loads(resource["proxy"]["config"])
-                proxy_config["path"] = get_path_display(proxy_config["path"], proxy_config.get("match_subpath"))
-                resource["proxy"]["config"] = json.dumps(proxy_config)
-
-        return data
-
-    def get_resource_data(self, resource_id):
-        """获取资源数据"""
-        for resource_data in self.data:
-            if resource_data["id"] == resource_id:
-                return resource_data
-        return None
 
     @property
     def object_display(self):
@@ -906,8 +878,6 @@ class SslCertificate(TimestampedModelMixin, OperatorModelMixin):
     ca_cert = models.TextField(blank=True, default="")
     expires = models.DateTimeField(_("过期时间"))
 
-    objects = managers.SslCertificateManager()
-
     class Meta:
         db_table = "core_ssl_certificate"
 
@@ -926,8 +896,6 @@ class SslCertificateBinding(TimestampedModelMixin, OperatorModelMixin):
     )
     scope_id = models.IntegerField(db_index=True)
     ssl_certificate = models.ForeignKey(SslCertificate, on_delete=models.PROTECT)
-
-    objects = managers.SslCertificateBindingManager()
 
     def __str__(self):
         return f"<SslCertificateBinding: {self.scope_type}/{self.scope_id}>"
