@@ -11,6 +11,7 @@ layers =
     apigateway.core
     apigateway.controller
     apigateway.common
+    apigateway.components
     apigateway.utils
 ignore_imports =
     # 可信的依赖
@@ -41,3 +42,4 @@ ignore_imports =
     apigateway.common.audit.shortcuts -> apigateway.apps.audit.signals
     apigateway.common.release.publish -> apigateway.controller.tasks
     apigateway.common.release.publish -> apigateway.controller.constants
+    apigateway.components.bcs_helper -> apigateway.common.user_credentials
