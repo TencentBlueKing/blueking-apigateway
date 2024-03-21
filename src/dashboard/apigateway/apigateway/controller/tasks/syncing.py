@@ -137,12 +137,11 @@ def revoke_release(release_id: int, publish_id: int):
     else:
         PublishEventReporter.report_distribute_configuration_success_event(release_history)
         procedure_logger.info("revoke succeeded")
+        # 修改对应环境状态
+        stage = release.stage
+        stage.status = StageStatusEnum.INACTIVE.value
+        stage.save()
+        # 删除release数据
+        release.delete()
 
-    # 修改对应环境状态
-    stage = release.stage
-    stage.status = StageStatusEnum.INACTIVE.value
-    stage.save()
-
-    # 删除release数据
-    release.delete()
     return is_success
