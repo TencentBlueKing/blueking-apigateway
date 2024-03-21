@@ -267,15 +267,16 @@ const confirmRowEdit = async (index: number) => {
 };
 
 const cancelRowEdit = async (index: number) => {
-  const { name, value } = tableData.value[index];
+  // const { name, value } = tableData.value[index];
   // 如果没有变量名称或者变量值，取消直接删除
-  if (!name || !value) {
-    tableData.value?.splice(index, 1);
-    return;
-  }
-  if (await validateName(index)) {
-    tableData.value[index].isEdit = false;
-  }
+  // if (!name || !value) {
+  //   tableData.value?.splice(index, 1);
+  //   return;
+  // }
+  // if (await validateName(index)) {
+  //   tableData.value[index].isEdit = false;
+  // }
+  tableData.value[index] = Object.assign(tableData.value[index], { isEdit: false, isFocus: false });
 };
 
 const editTable = () => {
@@ -291,19 +292,25 @@ const editTable = () => {
     });
   } else {
     tableData.value?.push(getVars());
+    nextTick(() => {
+      formInputRef.value?.get('name-input-0-0')?.focus();
+    });
   }
 };
 
 const cancelTableEdit = () => {
   tableIsEdit.value = false;
-  getData();
+  // getData();
+  tableData.value.forEach((item: Record<string, string | boolean>) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    item = Object.assign(item, { isEdit: true, isFocus: false });
+  });
 };
 
-const addRow = async (index: number, columnIndex: number) => {
+const addRow = async (index: number) => {
   const nextIndex = index + 1;
   tableData.value?.splice(nextIndex, 0, getVars());
   tableData.value[nextIndex] = Object.assign(tableData.value[nextIndex], { isEdit: true, isFocus: false });
-  console.log(columnIndex, '列索引');
   // nextTick(() => {
   //   formInputRef.value?.get(`name-input-${nextIndex}-${columnIndex}`)?.focus();
   // });
