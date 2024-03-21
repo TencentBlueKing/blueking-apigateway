@@ -115,24 +115,17 @@ class BaseConvertor(ABC):
 
         return headers
 
-    def _convert_timeout(self, timeout: Any) -> Dict[str, int]:
-        # 资源没有配置则使用环境的, 兼容 v1/v2 数据
-        if isinstance(timeout, int):
-            return {"connect": timeout, "read": timeout, "send": timeout}
-
-        return timeout
-
     def _convert_upstream_type(self, loadbalance: str) -> UpstreamTypeEnum:
         return BACKEND_UPSTREAM_TYPE.get(loadbalance, UpstreamTypeEnum.ROUNDROBIN)
 
-    def _convert_chash_hash_on_type(self, hash_one: str) -> Optional[UpstreamHashOnEnum]:
-        return BACKEND_UPSTREAM_HASH_ON.get(hash_one, None)
+    def _convert_chash_hash_on_type(self, hash_on: str) -> Optional[UpstreamHashOnEnum]:
+        return BACKEND_UPSTREAM_HASH_ON.get(hash_on)
 
-    def _convert_chash_hash_on_key(self, hash_one: str, key: str) -> Optional[str]:
+    def _convert_chash_hash_on_key(self, hash_on: str, key: str) -> Optional[str]:
         if not key:
             return None
 
-        if hash_one == "query_string":
+        if hash_on == "query_string":
             return "arg_{}".format(key)
 
         return key

@@ -17,6 +17,7 @@
 #
 from typing import List
 
+from apigateway.common.timeout import convert_timeout
 from apigateway.controller.crds.constants import UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor, UrlInfo
 from apigateway.controller.crds.v1beta1.models.base import TimeoutConfig, Upstream, UpstreamNode
@@ -30,19 +31,17 @@ class ServiceConvertor(BaseConvertor):
             return []
 
         # timeout 有可能是从v1 release中获取, 也有可能是从v2 release中获取, 所以需要兼容
-        timeout = self._convert_timeout(self._release_data.stage_backend_config.get("timeout", 0))
+        timeout = convert_timeout(self._release_data.stage_backend_config.get("timeout", 0))
 
         loadbalance = self._release_data.stage_backend_config.get("loadbalance", UpstreamTypeEnum.ROUNDROBIN.value)
-        hash_one = self._release_data.stage_backend_config.get("hash_on", "")
+        hash_on = self._release_data.stage_backend_config.get("hash_on", "")
         upstream = Upstream(
             type=self._convert_upstream_type(loadbalance),
             timeout=TimeoutConfig(**timeout),
             retries=self._release_data.stage_backend_config.get("retries", 0),
             retryTimeout=self._release_data.stage_backend_config.get("retry_timeout", 0),
-            hash_on=self._convert_chash_hash_on_type(hash_one),
-            key=self._convert_chash_hash_on_key(
-                hash_one, self._release_data.stage_backend_config.get("key", "")
-            ),
+            hash_on=self._convert_chash_hash_on_type(hash_on),
+            key=self._convert_chash_hash_on_key(hash_on, self._release_data.stage_backend_config.get("key", "")),
         )
 
         for node in upstreams.get("hosts", []):

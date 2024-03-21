@@ -37,6 +37,7 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.fields import CurrentGatewayDefault
+from apigateway.common.timeout import convert_timeout
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
@@ -533,7 +534,7 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
             and isinstance(data["backend_config"]["timeout"], int)
         ):
             _timeout = data["backend_config"]["timeout"]
-            data["backend_config"]["timeout"] = {"connect": _timeout, "read": _timeout, "send": _timeout}
+            data["backend_config"]["timeout"] = convert_timeout(_timeout)
         super().__init__(instance, data, **kwargs)
 
     def validate_description_en(self, value) -> Optional[str]:

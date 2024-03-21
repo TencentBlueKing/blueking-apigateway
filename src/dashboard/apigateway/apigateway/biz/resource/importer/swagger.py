@@ -26,6 +26,7 @@ import jsonschema
 
 from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.common.exceptions import SchemaValidationError
+from apigateway.common.timeout import convert_timeout
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
 from apigateway.utils.yaml import yaml_export_dumps, yaml_loads
 
@@ -202,10 +203,7 @@ class ResourceSwaggerImporter:
         if backend_type != ProxyTypeEnum.HTTP.value:
             raise ValueError(f"unsupported backend type: {backend['type']}")
 
-        timeout = backend.get("timeout", {"connect": 0, "read": 0, "send": 0})
-        if isinstance(timeout, int):
-            timeout = {"connect": timeout, "read": timeout, "send": timeout}
-
+        timeout = convert_timeout(backend.get("timeout", 0))
         return {
             "method": backend["method"].upper(),
             "path": backend["path"],
@@ -340,7 +338,7 @@ class ResourceSwaggerExporter:
                     "method": backend["config"]["method"].lower(),
                     "path": backend["config"]["path"],
                     "matchSubpath": backend["config"].get("match_subpath", False),
-                    "timeout": self._adapt_timeout(backend["config"].get("timeout", 0)),
+                    "timeout": convert_timeout(backend["config"].get("timeout", 0)),
                 }
             )
             return result
@@ -352,7 +350,7 @@ class ResourceSwaggerExporter:
                     "method": http_config["method"].lower(),
                     "path": http_config["path"],
                     "matchSubpath": http_config.get("match_subpath", False),
-                    "timeout": self._adapt_timeout(http_config["timeout"]),
+                    "timeout": convert_timeout(http_config["timeout"]),
                     "upstreams": http_config.get("upstreams", {}),
                     "transformHeaders": http_config.get("transform_headers", {}),
                 }
@@ -361,11 +359,6 @@ class ResourceSwaggerExporter:
             raise ValueError(f"unsupported proxy_type: {proxy_type}")
 
         return result
-
-    def _adapt_timeout(self, timeout: Any) -> Dict[str, int]:
-        if isinstance(timeout, int):
-            return {"connect": timeout, "read": timeout, "send": timeout}
-        return timeout
 
     def _adapt_auth_config(self, auth_config: Dict) -> Dict:
         config = {

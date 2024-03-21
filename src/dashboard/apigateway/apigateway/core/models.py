@@ -29,6 +29,7 @@ from jsonschema import ValidationError, validate
 from apigateway.common.exceptions import SchemaNotExist, SchemaValidationError
 from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
+from apigateway.common.timeout import convert_timeout
 from apigateway.core import managers
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
@@ -306,12 +307,10 @@ class Proxy(ConfigModelMixin):
             return {}
 
         data = json.loads(self._config)
-        print(data)
 
         # 处理timeout兼容数据
         if self.type == ProxyTypeEnum.HTTP.value and isinstance(data.get("timeout", 0), int):
-            _timeout = data.get("timeout", 0)
-            data["timeout"] = {"connect": _timeout, "read": _timeout, "send": _timeout}
+            data["timeout"] = convert_timeout(data.get("timeout", 0))
 
         return data
 
@@ -418,7 +417,7 @@ class BackendConfigJSONField(JSONField):
         if isinstance(data, dict):
             # 兼容旧版本timeout数据
             if "timeout" in data and isinstance(data["timeout"], int):
-                data["timeout"] = {"connect": data["timeout"], "read": data["timeout"], "send": data["timeout"]}
+                data["timeout"] = convert_timeout(data["timeout"])
 
             # 补充retries和retry_timeout默认值
             if "retries" not in data:

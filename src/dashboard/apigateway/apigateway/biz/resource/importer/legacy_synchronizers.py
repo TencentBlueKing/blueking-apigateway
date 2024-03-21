@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.resource.models import ResourceData
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
+from apigateway.common.timeout import convert_timeout
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, STAGE_VAR_PATTERN
 from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
 
@@ -59,14 +60,10 @@ class LegacyUpstream:
                     }
                 )
 
-            timeout = stage_id_to_timeout[stage.id]
-            if isinstance(timeout, int):
-                timeout = {"connect": timeout, "read": timeout, "send": timeout}
-
             backend_configs[stage.id] = {
                 "type": "node",
                 # 新创建的后端，其超时时间，默认使用 default 后端在各环境配置的超时时间
-                "timeout": timeout,
+                "timeout": convert_timeout(stage_id_to_timeout[stage.id]),
                 "loadbalance": self.upstreams["loadbalance"],
                 "hosts": hosts,
             }
