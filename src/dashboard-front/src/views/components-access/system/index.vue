@@ -71,14 +71,8 @@
             <template v-else>--</template>
           </template>
         </bk-table-column>
-        <bk-table-column
-          :label="t('文档分类')"
-          column-key="doc_category"
-          prop="doc_category_id"
-          :filters="classifyFilters"
-          :filter-method="classifyFilterMethod"
-          :filter-multiple="true"
-        >
+        <bk-table-column :label="t('文档分类')" prop="doc_category_id">
+          <!-- :filter="classifyFilters" -->
           <template #default="props">
             {{ props.row.doc_category_name }}
           </template>
@@ -358,6 +352,7 @@ import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 // import User from '@/components/user';
 import MemberSelect from '@/components/member-select';
+import TableEmpty from '@/components/table-empty.vue';
 import {
   getDocCategorys,
   addDocCategory,
@@ -403,7 +398,9 @@ const submitLoading = ref(false);
 const categoryLoading = ref(false);
 const allData = ref([]);
 const displayData = ref([]);
-const classifyFilters = ref([]);
+// const classifyFilters = ref({
+//   list: [],
+// });
 const isLoading = ref(false);
 const formRemoveConfirmCode = ref('');
 const docuCategoryDialog = ref({
@@ -594,14 +591,14 @@ const getSystemList = async (loading = false, curPage = 1) => {
     const res = await getSystems();
     allData.value = Object.freeze(res) || [];
     displayData.value = res;
-    allData.value.forEach((item) => {
-      if (!classifyFilters.value.map(subItem => subItem.value).includes(item.doc_category_id)) {
-        classifyFilters.value.push({
-          text: item.doc_category_name,
-          value: item.doc_category_id,
-        });
-      }
-    });
+    // allData.value.forEach((item) => {
+    //   if (!classifyFilters.value.list.map(subItem => subItem.value).includes(item.doc_category_id)) {
+    //     classifyFilters.value.list.push({
+    //       text: item.doc_category_name,
+    //       value: item.doc_category_id,
+    //     });
+    //   }
+    // });
     pagination.value.count = displayData.value.length;
     systemList.value = getDataByPage(curPage);
     tableEmptyConf.value.isAbnormal = false;
