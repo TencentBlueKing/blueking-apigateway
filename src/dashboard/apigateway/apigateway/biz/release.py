@@ -187,7 +187,7 @@ class ReleaseHandler:
 
     @staticmethod
     def wait_another_release_done(release_history: ReleaseHistory):
-        """等待上一个最近的发布任务执行完成"""
+        """这里主要是为了避免并发发布过程中，如果同时发布导致operator事件收敛导致事件丢失，需要等待上一个最近的发布任务执行完成"""
 
         # 获取最近的一个发布历史
         other_latest_release = (
@@ -205,13 +205,16 @@ class ReleaseHandler:
         # 查询发布历史对应的最新发布事件
         has_another_release_doing = True
         start_time = datetime.now().timestamp()
+        wait_times = 0
         while has_another_release_doing:
             # 如果等待时间超过10*RELEASE_GATEWAY_INTERVAL_SECOND就退出等待
             now = datetime.now().timestamp()
             if now - start_time > 10 * RELEASE_GATEWAY_INTERVAL_SECOND:
                 break
 
-            time.sleep(0.1)
+            time.sleep(0.1 * wait_times)
+
+            wait_times += 1
             other_latest_release_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
                 [other_latest_release.id]
             )

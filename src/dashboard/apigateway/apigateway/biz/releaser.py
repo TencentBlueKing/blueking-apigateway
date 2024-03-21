@@ -23,7 +23,6 @@ from blue_krill.async_utils.django_utils import delay_on_commit
 from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
-from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -241,7 +240,7 @@ class BaseGatewayReleaser:
     def _validate_gateway_status(self, gateway_id: int):
         gateway = Gateway.objects.get(pk=gateway_id)
         if gateway.status != GatewayStatusEnum.ACTIVE.value:
-            raise serializers.ValidationError(
+            raise ReleaseValidationError(
                 _("网关【{gateway_name}】没有启用，不允许发布").format(gateway_name=gateway.name)
             )
 

@@ -31,7 +31,7 @@ from apigateway.biz.releaser import (
     ReleaseValidationError,
 )
 from apigateway.common.user_credentials import UserCredentials
-from apigateway.core.constants import ReleaseStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, ReleaseStatusEnum
 from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -114,6 +114,23 @@ class TestBaseGatewayReleaser:
 
         mock_release.assert_called()
         # mock_post_release.assert_called()
+
+    def test_validate_gateway_status(self, fake_gateway, fake_stage, fake_backend, fake_resource_version):
+        releaser = BaseGatewayReleaser.from_data(
+            fake_gateway,
+            fake_stage.id,
+            fake_resource_version.id,
+            "",
+            user_credentials=UserCredentials(
+                credentials="access_token",
+            ),
+        )
+        assert releaser._validate_gateway_status(fake_gateway.id) is None
+
+        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
+        fake_gateway.save()
+        with pytest.raises(ReleaseValidationError):
+            releaser._validate_gateway_status(fake_gateway.id)
 
     @pytest.mark.parametrize(
         "vars, mock_used_stage_vars, will_error",
