@@ -52,6 +52,7 @@
             @enter="handleSearch">
           </bk-input> -->
           <bk-search-select
+            v-if="delayLoading"
             v-model="searchValue"
             :data="searchData"
             unique-select
@@ -404,7 +405,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, computed, shallowRef, nextTick, watch } from 'vue';
+import { ref, reactive, computed, shallowRef, nextTick, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
@@ -450,6 +451,11 @@ const getDefaultData = () => {
     verified_user_required: true,
   };
 };
+
+const delayLoading = ref<boolean>(false);
+onMounted(() => {
+  delayLoading.value = true;
+});
 
 const fields = [{
   id: 'systemName',
