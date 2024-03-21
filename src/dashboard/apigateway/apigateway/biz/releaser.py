@@ -23,6 +23,7 @@ from blue_krill.async_utils.django_utils import delay_on_commit
 from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
+from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -37,7 +38,7 @@ from apigateway.common.event.event import PublishEventReporter
 from apigateway.common.user_credentials import UserCredentials
 from apigateway.controller.tasks import release_gateway_by_helm, release_gateway_by_registry
 from apigateway.core import constants
-from apigateway.core.constants import PublishSourceEnum, ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import (
     BackendConfig,
     Gateway,
@@ -161,6 +162,10 @@ class BaseGatewayReleaser:
 
     def _validate(self):
         """校验待发布数据"""
+
+        # 校验网关启用状态
+        self._validate_gateway_status(self.gateway.id)
+
         if self.resource_version.is_schema_v2:
             self._validate_stage_backends(self.stage)
             self._validate_stage_plugins(self.stage)
@@ -232,6 +237,13 @@ class BaseGatewayReleaser:
                 "resource_version_id": resource_version_id,
             }
         )
+
+    def _validate_gateway_status(self, gateway_id: int):
+        gateway = Gateway.objects.get(pk=gateway_id)
+        if gateway.status != GatewayStatusEnum.ACTIVE.value:
+            raise serializers.ValidationError(
+                _("网关【{gateway_name}】没有启用，不允许发布").format(gateway_name=gateway.name)
+            )
 
     def _do_release(self, releases: Release, release_history: ReleaseHistory):  # ruff: noqa: B027
         """发布资源版本"""

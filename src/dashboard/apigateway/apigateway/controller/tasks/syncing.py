@@ -17,16 +17,15 @@
 #
 import logging
 import uuid
-from time import sleep
 
 from celery import shared_task
 
-from apigateway.biz.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.combine import CombineDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
+from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import MicroGateway, Release, ReleaseHistory
 from apigateway.utils.time import now_datetime
 
@@ -45,9 +44,8 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     # 事件上报要以release维度的stage来上报
     if release_history:
         release_history.stage = release.stage
-        # 如果有正在发布则暂停RELEASE_GATEWAY_INTERVAL_SECOND，避免事件收敛导致发布事件丢失导致失败
-        if ReleaseHandler.has_another_release_doing(release_history):
-            sleep(RELEASE_GATEWAY_INTERVAL_SECOND)
+        # 如果有正在发布则等待其发布完成，避免事件收敛导致发布事件丢失导致失败
+        ReleaseHandler.wait_another_release_done(release_history)
 
     PublishEventReporter.report_create_publish_task_success_event(release_history)
 
@@ -112,9 +110,8 @@ def revoke_release(release_id: int, publish_id: int):
 
     release_history = ReleaseHistory.objects.get(id=publish_id)
 
-    # 如果有正在发布则暂停RELEASE_GATEWAY_INTERVAL_SECOND，避免事件收敛导致发布事件丢失导致失败
-    if ReleaseHandler.has_another_release_doing(release_history):
-        sleep(RELEASE_GATEWAY_INTERVAL_SECOND)
+    # 如果有正在发布则等待其发布完成，避免事件收敛导致发布事件丢失导致失败
+    ReleaseHandler.wait_another_release_done(release_history)
 
     PublishEventReporter.report_create_publish_task_success_event(release_history)
 
@@ -140,4 +137,12 @@ def revoke_release(release_id: int, publish_id: int):
     else:
         PublishEventReporter.report_distribute_configuration_success_event(release_history)
         procedure_logger.info("revoke succeeded")
+
+    # 修改对应环境状态
+    stage = release.stage
+    stage.status = StageStatusEnum.INACTIVE.value
+    stage.save()
+
+    # 删除release数据
+    release.delete()
     return is_success
