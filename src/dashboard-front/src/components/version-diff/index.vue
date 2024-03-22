@@ -194,6 +194,7 @@
                   <!-- <bk-transition :name="animation"> -->
                   <resource-detail
                     :cur-resource="addItem"
+                    :backends-list="backendsList"
                     v-show="addItem.isExpanded"
                   ></resource-detail>
                   <!-- </bk-transition> -->
@@ -223,6 +224,7 @@
                   <!-- <bk-transition :name="animation"> -->
                   <resource-detail
                     :cur-resource="deleteItem"
+                    :backends-list="backendsList"
                     v-show="deleteItem.isExpanded"
                   ></resource-detail>
                   <!-- </bk-transition> -->
@@ -247,6 +249,7 @@
                   <resource-detail
                     style="opacity: 0.35"
                     :cur-resource="deleteItem"
+                    :backends-list="backendsList"
                     v-show="deleteItem.isExpanded"
                   >
                   </resource-detail>
@@ -280,6 +283,7 @@
                   <resource-detail
                     class="source-version"
                     :cur-resource="updateItem.source"
+                    :backends-list="backendsList"
                     v-show="updateItem.isExpanded"
                     :diff-data="updateItem.target.diff"
                     :only-show-diff="searchParams.onlyUpdated"
@@ -307,6 +311,7 @@
                   <!-- <bk-transition :name="animation"> -->
                   <resource-detail
                     :cur-resource="updateItem.target"
+                    :backends-list="backendsList"
                     v-show="updateItem.isExpanded"
                     :diff-data="updateItem.source.diff"
                     :only-show-diff="searchParams.onlyUpdated"
@@ -347,7 +352,7 @@ import resourceDetail from '@/components/resource-detail/index.vue';
 import { useI18n } from 'vue-i18n';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { useCommon } from '@/store';
-import { resourceVersionsDiff, getResourceVersionsList, getGatewayLabels } from '@/http';
+import { resourceVersionsDiff, getResourceVersionsList, getGatewayLabels, getBackendsListData } from '@/http';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -634,10 +639,24 @@ const getLabels = async () => {
   }
 };
 
-const init = () => {
-  getDiffData();
-  getApigwVersions();
-  getLabels();
+const backendsList = ref([]);
+// 后端服务列表
+const getBackendsList = async () => {
+  try {
+    const res = await getBackendsListData(apigwId.value);
+    backendsList.value = res.results || [];
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+const init = async () => {
+  await Promise.all([
+    getDiffData(),
+    getApigwVersions(),
+    getLabels(),
+    getBackendsList(),
+  ]);
 };
 
 watch(

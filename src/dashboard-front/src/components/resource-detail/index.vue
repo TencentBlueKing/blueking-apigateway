@@ -225,7 +225,7 @@
           </bk-col>
           <bk-col :span="10">
             <div class="ag-value">
-              {{ localData?.proxy?.backend?.name || "--" }}
+              {{ localData?.proxy?.backend_name || "--" }}
             </div>
           </bk-col>
         </bk-row>
@@ -632,10 +632,7 @@
       </bk-row>
     </bk-container> -->
 
-    <p
-      class="title mt15"
-      :class="{ 'ag-diff': checkDiff('localData.doc_updated_time') }"
-    >
+    <p class="title mt15" :class="{ 'ag-diff': checkDiff('localData.doc_updated_time') }">
       {{ $t("文档") }}
     </p>
     <bk-container class="ag-kv-box" :col="14" :margin="6">
@@ -687,16 +684,11 @@ import { ref, watch, computed } from 'vue';
 import cookie from 'cookie';
 // import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
-import { getBackendsListData } from '@/http';
-import { useRoute } from 'vue-router';
 import { useCommon } from '@/store';
 
 const common = useCommon();
 
 const { t } = useI18n();
-// 网关id
-const route = useRoute();
-const apigwId = computed(() => +route.params.id);
 
 const props = defineProps({
   curResource: {
@@ -712,6 +704,10 @@ const props = defineProps({
   onlyShowDiff: {
     type: Boolean,
     default: false,
+  },
+  backendsList: {
+    type: Array,
+    default: [],
   },
 });
 
@@ -777,7 +773,7 @@ const getResourceAuth = (auth: any) => {
   return tmpArr.join(', ');
 };
 
-const initLocalData = () => {
+const initLocalData = async () => {
   const data = JSON.parse(JSON.stringify(props.curResource));
 
   if (data.contexts.resource_auth.config) {
@@ -813,8 +809,12 @@ const initLocalData = () => {
   }
   localData.value = data;
 
-  if (localData.value?.proxy?.backend?.id) {
-    getBackendsList();
+  const backendId = localData.value?.proxy?.backend_id;
+  if (backendId) {
+    const curBackend: any = props.backendsList.find((item: any) => item.id === backendId);
+    if (curBackend) {
+      localData.value.proxy.backend_name = curBackend.name;
+    }
   }
 };
 
@@ -887,16 +887,6 @@ const checkPluginsDiff = () => {};
 
 // 网关标签
 const labels = computed(() => common.gatewayLabels || []);
-
-// 后端服务列表
-const getBackendsList = async () => {
-  try {
-    const res = await getBackendsListData(apigwId.value);
-    console.log('backends: ', res);
-  } catch (e) {
-    console.log(e);
-  }
-};
 
 watch(
   () => props.curResource,

@@ -9,6 +9,7 @@
       @closed="() => (dialogConfig.isShow = false)"
       @confirm="handleCreate"
       width="600"
+      class="dialog-scroll-y"
     >
       <bk-alert
         theme="info"
@@ -157,10 +158,12 @@ const getResourceVersions = async () => {
 watch(
   () => [props.resourceVersionId, props.versionList, dialogConfig.isShow],
   (newArr: any[]) => {
-    const [id, opts, show] = newArr;
+    let [id] = newArr;
+    const [, opts, show] = newArr;
 
     if (show) {
       if (id && opts) {
+        id = Number(id);
         versionOpts.value = opts;
         formData.resource_version_id = id;
         formData.version = opts?.filter((item: any) => item.id === id)[0]?.version;
