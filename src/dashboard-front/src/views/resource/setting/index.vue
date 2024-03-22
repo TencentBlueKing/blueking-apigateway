@@ -4,7 +4,9 @@
     :current-source="curResource"
     :is-detail="isDetail"
   />
-  <div class="resource-container page-wrapper-padding" id="resourceId">
+  <div
+    :class="['resource-container', 'page-wrapper-padding', isDragging ? 'dragging' : '']"
+    id="resourceId">
 
     <div
       class="resource-container-lf"
@@ -504,6 +506,7 @@ type TableEmptyConfType = {
   isAbnormal: boolean
 };
 
+const leftWidth = ref('320px');
 const methodsEnum: any = ref(MethodsEnum);
 const common = useCommon();
 const { t } = useI18n();
@@ -790,6 +793,7 @@ const handleToggleLf = () => {
     isShowLeft.value = false;
   } else {
     isDetail.value = true;
+    document.getElementById('resourceLf').style.width = leftWidth.value;
   }
 };
 
@@ -830,7 +834,7 @@ const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string, r
       resize.style.left = moveLen;
       leftBox.style.width = `${moveLen}px`;
       // rightBox.style.width = `${box.clientWidth - moveLen - 5}px`;
-      rightBox.style.width = `calc(100% - ${moveLen + 21})px`;
+      // rightBox.style.width = `calc(100% - ${moveLen + 21})px`;
     };
     document.onmouseup = function () {
       document.onmousemove = null;
@@ -869,7 +873,7 @@ const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   } else {
     pagination.value.small = true;
     isDetail.value = true;
-    document.getElementById('resourceLf').style.width = '320px';
+    document.getElementById('resourceLf').style.width = leftWidth.value;
     active.value = curActive;
   }
 };
@@ -1099,7 +1103,7 @@ watch(
     if (!v) {
       el.style.width = '0px';
     } else {
-      el.style.width = '320px';
+      el.style.width = leftWidth.value;
     }
   },
 );
@@ -1246,7 +1250,7 @@ onMounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    cursor: pointer;
+    cursor: col-resize;
     span {
       color: #63656E;
       transform: rotate(90deg);
@@ -1378,5 +1382,9 @@ onMounted(() => {
   :deep(.bk-tab-header-item) {
     padding: 0 24px !important;
   }
+}
+
+.resource-container.dragging {
+  cursor: col-resize;
 }
 </style>

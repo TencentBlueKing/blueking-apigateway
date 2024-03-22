@@ -794,9 +794,9 @@ watch(
   }
 }
 
-:deep(.bk-input--number-control) {
-  display: none;
-}
+// :deep(.bk-input--number-control) {
+//   display: none;
+// }
 
 .backend-config-item {
   .item-content {
