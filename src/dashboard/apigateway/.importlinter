@@ -1,0 +1,45 @@
+[importlinter]
+root_package = apigateway
+include_external_packages = True
+
+[importlinter:contract:layers-apps-biz-core]
+name=apps biz core
+type=layers
+layers =
+    apigateway.apis : apigateway.apps
+    apigateway.biz
+    apigateway.core
+    apigateway.controller
+    apigateway.common
+    apigateway.components
+    apigateway.utils
+ignore_imports =
+    # 可信的依赖
+    apigateway.apis.** -> apigateway.apps.**.models
+    apigateway.biz.** -> apigateway.apps.**.models
+    apigateway.controller.** -> apigateway.apps.**.models
+    apigateway.common.** -> apigateway.apps.**.models
+    apigateway.controller.** -> apigateway.core.models
+    apigateway.common.** -> apigateway.core.models
+    apigateway.biz.** -> apigateway.apps.**.constants
+    apigateway.controller.** -> apigateway.apps.**.constants
+    apigateway.common.** -> apigateway.apps.**.constants
+    apigateway.controller.** -> apigateway.core.constants
+    apigateway.common.** -> apigateway.core.constants
+    # 可忽略的依赖
+    apigateway.core.management.commands.* -> apigateway.biz.**
+    # 需要重构的依赖
+    apigateway.biz.esb.permissions -> apigateway.apps.esb.helpers
+    apigateway.biz.esb.permissions -> apigateway.apps.esb.utils
+    apigateway.controller.distributor.helm -> apigateway.core.micro_gateway_config
+    apigateway.controller.tasks.micro_gateway -> apigateway.core.micro_gateway_config
+    apigateway.controller.helm.values_generator -> apigateway.core.micro_gateway_config
+    apigateway.controller.crds.v1beta1.convertors.stage -> apigateway.core.micro_gateway_config
+    apigateway.controller.crds.config_controller -> apigateway.core.micro_gateway_config
+    apigateway.controller.tasks.syncing -> apigateway.biz.constants
+    apigateway.controller.tasks.syncing -> apigateway.biz.release
+    apigateway.controller.crds.release_data.release_data -> apigateway.biz.gateway_jwt
+    apigateway.common.audit.shortcuts -> apigateway.apps.audit.signals
+    apigateway.common.release.publish -> apigateway.controller.tasks
+    apigateway.common.release.publish -> apigateway.controller.constants
+    apigateway.components.bcs_helper -> apigateway.common.user_credentials

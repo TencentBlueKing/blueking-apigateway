@@ -20,6 +20,11 @@ repos:
         types: [python]
         entry: mypy --config-file=src/dashboard/pyproject.toml
         files: src/dashboard/
+      - id: import-linter
+        name: import-linter
+        types: [python]
+        entry: bash -c 'cd src/dashboard/apigateway && lint-imports --config=./.importlinter'
+        files: src/dashboard/
   - repo: local
     hooks:
       - id: black
