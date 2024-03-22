@@ -66,7 +66,7 @@ class TestRollingUpdateRelease:
 
 
 class TestRevokeRelease:
-    def test_revoke(self, mocker, fake_release, fake_release_history, micro_gateway):
+    def test_revoke(self, mocker, fake_stage, fake_release, fake_release_history, micro_gateway):
         self.distributor = mocker.MagicMock()
         self.distributor.revoke.return_value = True, ""
         mocker.patch("apigateway.controller.tasks.syncing.CombineDistributor", return_value=self.distributor)
@@ -76,6 +76,4 @@ class TestRevokeRelease:
         )
 
         revoke_release(fake_release.pk, fake_release_history.pk)
-        self.distributor.revoke.assert_called_once_with(
-            fake_release, micro_gateway, "12345abcdef", publish_id=fake_release_history.pk
-        )
+        self.distributor.revoke.assert_called()

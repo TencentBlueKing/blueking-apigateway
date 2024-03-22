@@ -504,40 +504,6 @@ def request_view(request_factory):
     return fn
 
 
-class FakeRedis(fakeredis.FakeRedis):
-    REDIS_PREFIX: str
-
-    def __init__(self, connection_pool=None, *args, **kwargs):
-        super(FakeRedis, self).__init__(*args, **kwargs)
-
-    def execute_command(self, command, *args, **kwargs):
-        has_prefix = len(args) == 0
-
-        for i in args:
-            # test all redis command has key prefix
-            if isinstance(i, str) and i.startswith(self.REDIS_PREFIX):
-                has_prefix = True
-
-        if not has_prefix:
-            raise KeyError("Redis prefix not found")
-
-        return super(FakeRedis, self).execute_command(command, *args, **kwargs)
-
-
-@pytest.fixture(autouse=True)
-def patch_redis(mocker, settings):
-    class PatchedRedis(FakeRedis):
-        REDIS_PREFIX = settings.REDIS_PREFIX
-
-    REDIS_CLIENTS.clear()
-    mocker.patch("redis.Redis", PatchedRedis)
-
-
-@pytest.fixture
-def default_redis():
-    return get_default_redis_client()
-
-
 @pytest.fixture
 def skip_view_permissions_check(mocker):
     mocker.patch("rest_framework.views.APIView.check_permissions")
