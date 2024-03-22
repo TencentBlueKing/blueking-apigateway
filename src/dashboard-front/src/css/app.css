@@ -212,3 +212,9 @@ body {
         display: none;
     }
 }
+
+.dialog-scroll-y {
+    .bk-modal-content {
+        overflow-y: auto;
+    }
+}

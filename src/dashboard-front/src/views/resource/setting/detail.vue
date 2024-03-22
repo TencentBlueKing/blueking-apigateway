@@ -97,14 +97,14 @@
       {{ t('后端配置') }}
     </div>
     <bk-form ref="formRef" :model="formData" class="form-cls flex-row">
-      <bk-form-item class="form-item-cls">
+      <bk-form-item>
         <template #label>
           <span class="label-cls">{{ t('服务：') }}</span>
         </template>
         <span class="value-cls">{{ servicesData.name }}</span>
         <bk-table
           v-if="formData.id"
-          class="table-layout w700"
+          class="table-layout"
           :data="servicesData.config"
           :border="['outer']"
         >
