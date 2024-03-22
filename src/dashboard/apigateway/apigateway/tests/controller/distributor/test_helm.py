@@ -19,7 +19,7 @@ import pytest
 
 from apigateway.controller.distributor.helm import HelmDistributor
 from apigateway.controller.helm.release import ReleaseInfo
-from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
+from apigateway.controller.micro_gateway_config import MicroGatewayBcsInfo
 
 
 class TestHelmDistributor:
