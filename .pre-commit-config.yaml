@@ -22,6 +22,7 @@ repos:
         files: src/dashboard/
       - id: import-linter
         name: import-linter
+        language: python
         types: [python]
         entry: bash -c 'cd src/dashboard/apigateway && lint-imports --config=./.importlinter'
         files: src/dashboard/
