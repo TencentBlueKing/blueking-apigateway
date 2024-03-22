@@ -15,4 +15,6 @@ declare interface Window {
   GLOBAL_CONFIG: any
   BK_COMPONENT_API_URL: string
   BK_APP_VERSION: string
+  CREATE_CHAT_API: string
+  SEND_CHAT_API: string
 }

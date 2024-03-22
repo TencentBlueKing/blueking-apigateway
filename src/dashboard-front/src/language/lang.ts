@@ -972,8 +972,7 @@ const lang: ILANG = {
   '您尚未创建英文文档': ['You have not created an English document yet'],
   '创建文档': ['Create Doc'],
   '更新文档': ['Update Doc'],
-  'SDK版本号': ['SDK Version'],
-  'SDK名称': ['SDK Name'],
+  'SDK 名称': ['SDK Name'],
   'Header转换': ['Header Transform'],
   'IP分组名称': ['IP分组名称'],
   'IP分组备注': ['IP分组备注'],
@@ -1359,7 +1358,7 @@ const lang: ILANG = {
 
   '当前环境尚未发布，暂无资源信息': ['The current environment has not been released, there are no resource information available'],
   '尚未发布': ['Not released yet'],
-  '请输入SDK版本号': ['Please enter the SDK version number'],
+  '请输入 SDK 版本号': ['Please enter the SDK version number'],
   'SDK仅包含公开资源，生成后会上传到pypi源': ['The SDK only includes public resources, and will be uploaded to the PyPI source after generation'],
   '生成语言': ['Generation language'],
 
@@ -1386,8 +1385,6 @@ const lang: ILANG = {
   '（可在资源配置中使用）': ['(Can be used in resource allocation)'],
   '请输入组件名称': ['Please enter the component name'],
   '退出登陆': ['Log out'],
-
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],

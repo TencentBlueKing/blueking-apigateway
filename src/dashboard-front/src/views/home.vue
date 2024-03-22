@@ -492,11 +492,27 @@ watch(
     }
   }
   .select-cls {
+    :deep(.bk-select-trigger) {
+      background-color: #fff;
+    }
+    :deep(.bk-input) {
+      padding: 0 10px;
+      font-size: 14px;
+    }
+    :deep(.angle-up) {
+      width: 24px;
+      height: 32px;
+      font-size: 24px;
+    }
+    :deep(.bk-input--text) {
+      padding-right: 4px;
+    }
     .prefix-cls {
       background: #fff;
       color: #979ba5;
       i{
         transform: rotate(90deg);
+        font-size: 16px;
       }
     }
   }

@@ -81,10 +81,11 @@
           <div class="operate">
             <div class="line"></div>
             <bk-button
-              theme="primary"
-              class="mr10"
-              @click="handleRelease"
-            >
+              v-if="!basicInfoData.status" :disabled="true" theme="primary" class="mr10"
+              v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
+              {{ t('发布资源') }}
+            </bk-button>
+            <bk-button v-else theme="primary" class="mr10" @click="handleRelease">
               {{ t('发布资源') }}
             </bk-button>
             <bk-button
@@ -166,18 +167,21 @@
 </template>
 
 <script setup lang="ts">
-import { copy } from '@/common/util';
 import { computed, onMounted, shallowRef, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import { Message, InfoBox } from 'bkui-vue';
+
+import { copy } from '@/common/util';
 import { useStage, useCommon } from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import stageTopBar from '@/components/stage-top-bar.vue';
 import { useGetGlobalProperties } from '@/hooks';
-import { deleteStage, removalStage } from '@/http';
-import { Message, InfoBox } from 'bkui-vue';
+import { deleteStage, removalStage, getGateWaysInfo } from '@/http';
 import mitt from '@/common/event-bus';
+import { BasicInfoParams } from '@/views/basic-info/common/type';
+
 import resourceInfo from './resource-info.vue';
 import pluginManage from './plugin-manage.vue';
 import variableManage from './variable-manage.vue';
@@ -243,13 +247,6 @@ const setDynamicComponents = (name: string) => {
   const curPanel = panels.find(item => item.name === name) || panels[0];
   curTabComponent.value = curPanel.component;
 };
-
-onMounted(() => {
-  if (route.query.tab !== 'resourceInfo') {
-    active.value = (route.query.tab || 'resourceInfo') as string;
-    setDynamicComponents(active.value);
-  }
-});
 
 // 发布成功，重新请求环境详情
 const handleReleaseSuccess = async () => {
@@ -368,6 +365,44 @@ const getStageAddress = (name: string) => {
   }
   return url;
 };
+
+// 当前基本信息
+const basicInfoData = ref<BasicInfoParams>({
+  status: 1,
+  name: '',
+  url: '',
+  description: '',
+  description_en: '',
+  public_key_fingerprint: '',
+  bk_app_codes: '',
+  docs_url: '',
+  api_domain: '',
+  created_by: '',
+  created_time: '',
+  public_key: '',
+  maintainers: [],
+  developers: [],
+  is_public: true,
+  is_official: false,
+});
+
+// 获取网关基本信息
+const getBasicInfo = async (apigwId: number) => {
+  try {
+    const res = await getGateWaysInfo(apigwId);
+    basicInfoData.value = Object.assign({}, res);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+onMounted(async () => {
+  if (route.query.tab !== 'resourceInfo') {
+    active.value = (route.query.tab || 'resourceInfo') as string;
+    setDynamicComponents(active.value);
+  }
+  await getBasicInfo(common.apigwId);
+});
 </script>
 
 <style lang="scss" scoped>

@@ -35,12 +35,12 @@
           >
             <!-- <bk-table-column width="80" type="selection" align="center" /> -->
             <bk-table-column
-              :label="t('SDK版本号')"
+              :label="t('SDK 版本号')"
               min-width="120"
               prop="version_number"
             >
             </bk-table-column>
-            <bk-table-column :label="t('SDK名称')" prop="name" min-width="120">
+            <bk-table-column :label="t('SDK 名称')" prop="name" min-width="120">
             </bk-table-column>
             <bk-table-column
               :label="t('资源版本')"
