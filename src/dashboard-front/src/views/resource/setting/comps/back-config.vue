@@ -218,7 +218,6 @@ const formatDefaultTime = computed(() => {
 })
 
 const handleTimeOutTotal = (value: any[]) => {
-  console.error('value', value);
   backConfigData.value.config.timeout = Number(value[0].timeout);
   // backConfigData.value.config.timeout = value.reduce((curr,next) => {
   //   return curr + Number(next.timeout || 0)
@@ -346,7 +345,6 @@ const renderTimeOutLabel = () => {
 const handleServiceChange = async (backendId: number) => {
   const res = await getBackendsDetailData(common.apigwId, backendId);
   const resStorage: any = cloneDeep(res);
-  console.error('res', res);
   const detailTimeout = props.detail?.backend?.config?.timeout;
   if (detailTimeout !== 0) {
     res.configs.forEach((item:any) => {
@@ -431,7 +429,6 @@ watch(
 
 const init = async () => {
   const res = await getBackendsListData(common.apigwId);
-  console.log('res', res);
   servicesData.value = res.results;
 };
 
