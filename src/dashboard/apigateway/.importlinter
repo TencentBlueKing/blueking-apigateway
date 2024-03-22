@@ -36,7 +36,6 @@ ignore_imports =
     apigateway.controller.helm.values_generator -> apigateway.core.micro_gateway_config
     apigateway.controller.crds.v1beta1.convertors.stage -> apigateway.core.micro_gateway_config
     apigateway.controller.crds.config_controller -> apigateway.core.micro_gateway_config
-    apigateway.controller.tasks.syncing -> apigateway.biz.constants
     apigateway.controller.tasks.syncing -> apigateway.biz.release
     apigateway.controller.crds.release_data.release_data -> apigateway.biz.gateway_jwt
     apigateway.common.audit.shortcuts -> apigateway.apps.audit.signals
