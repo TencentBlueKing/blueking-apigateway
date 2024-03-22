@@ -101,7 +101,9 @@ class AppPermissionRecordFilter(filters.FilterSet):
         ]
 
     def time_start_filter(self, queryset, name, value):
+        value = int(value)
         return queryset.filter(handled_time__gte=datetime.fromtimestamp(value))
 
     def time_end_filter(self, queryset, name, value):
+        value = int(value)
         return queryset.filter(handled_time__lt=datetime.fromtimestamp(value))
