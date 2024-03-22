@@ -20,16 +20,12 @@
       @row-mouse-enter="handleMouseEnter"
       @row-mouse-leave="handleMouseLeave"
     >
-      <bk-table-column
-        :label="t('环境名称')"
-      >
+      <bk-table-column :label="t('环境名称')">
         <template #default="{ data }">
           {{data?.stage?.name}}
         </template>
       </bk-table-column>
-      <bk-table-column
-        :label="t('后端服务地址')"
-      >
+      <bk-table-column :label="t('后端服务地址')">
         <template #default="{ data }">
           <span v-if="data?.hosts[0].host">
             {{data?.hosts[0].scheme}}://{{ data?.hosts[0].host }}
@@ -37,18 +33,15 @@
           <span v-else>--</span>
         </template>
       </bk-table-column>
-      <bk-table-column
-        :label="renderTimeOutLabel"
-        prop="timeout"
-      >
+      <bk-table-column :label="renderTimeOutLabel" prop="timeout">
         <template #default="{ row }">
-          <span class="time-wrapper"  v-clickOutSide="(e:Event) => handleClickTableOutSide(e, row)">
+          <!-- <span class="time-wrapper"  v-clickOutSide="(e:Event) => handleClickTableOutSide(e, row)">
             <template v-if="!row.isEditTime">
               <span>{{ row.timeout || '0' }}s</span>
               <bk-tag theme="warning" v-if="row.isCustom">{{ t('自定义') }}</bk-tag>
-              <i 
-                v-show="row?.isTime" 
-                class="icon apigateway-icon icon-ag-edit-small edit-icon" 
+              <i
+                v-show="row?.isTime"
+                class="icon apigateway-icon icon-ag-edit-small edit-icon"
                 @click.stop="handleEditTime(row)"
               />
             </template>
@@ -58,7 +51,7 @@
                 :max-length="3"
                 :placeholder="t('请输入超时时间')"
                 :class="row.timeout === '' ? 'time-out-input-error' : ''"
-                :autofocus="true" 
+                :autofocus="true"
                 @input="(value:string) => handleTableTimeOutInput(value, row)"
                 @blur="handleTableTimeOutBlur"
                 @keypress="(value:string) => { value = value.replace(/\d/g, '') }"
@@ -66,7 +59,9 @@
               />
               <div class='time-input-error' v-if="row.timeout === ''">{{ t('超时时间不能为空') }}</div>
             </div>
-          </span>
+          </span> -->
+          <span>{{ row.timeout || '0' }}s</span>
+          <bk-tag theme="warning" v-if="row.isCustom">{{ t('自定义') }}</bk-tag>
         </template>
       </bk-table-column>
     </bk-table>
@@ -223,9 +218,11 @@ const formatDefaultTime = computed(() => {
 })
 
 const handleTimeOutTotal = (value: any[]) => {
-  backConfigData.value.config.timeout = value.reduce((curr,next) => {
-    return curr + Number(next.timeout || 0)
-  },0)
+  console.error('value', value);
+  backConfigData.value.config.timeout = Number(value[0].timeout);
+  // backConfigData.value.config.timeout = value.reduce((curr,next) => {
+  //   return curr + Number(next.timeout || 0)
+  // },0)
 }
 
 const handleRefreshTime = () => {
@@ -348,7 +345,15 @@ const renderTimeOutLabel = () => {
 // 选择服务获取服务详情数据
 const handleServiceChange = async (backendId: number) => {
   const res = await getBackendsDetailData(common.apigwId, backendId);
-  [servicesConfigs.value, servicesConfigsStorage.value] = [cloneDeep(res.configs || []), cloneDeep(res.configs || [])];
+  const resStorage: any = cloneDeep(res);
+  console.error('res', res);
+  const detailTimeout = props.detail?.backend?.config?.timeout;
+  if (detailTimeout !== 0) {
+    res.configs.forEach((item:any) => {
+      item.timeout = detailTimeout;
+    });
+  }
+  [servicesConfigs.value, servicesConfigsStorage.value] = [cloneDeep(res.configs || []), cloneDeep(resStorage.configs || [])];
 };
 
 // 校验路径

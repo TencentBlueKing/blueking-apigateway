@@ -19,6 +19,7 @@ import './assets/iconfont/style.css';
 
 const app = createApp(App);
 app.config.globalProperties.GLOBAL_CONFIG = globalConfig;
+app.config.warnHandler = () => null;
 
 app.use(i18n)
   .use(directive)

@@ -1395,9 +1395,9 @@ const lang: ILANG = {
   '请求路径:': ['Request path:'],
   '插件:{name}': ['Plugin:{name}'],
 
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
-  // 'ddddddddddddddddddddddddddddddddddddd': [''],
+  '自定义': [''],
+  '请求地址': [''],
+  '请求类型': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
   // 'ddddddddddddddddddddddddddddddddddddd': [''],
