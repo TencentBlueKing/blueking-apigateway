@@ -180,7 +180,7 @@
       </bk-row> -->
     </bk-container>
 
-    <template v-if="localData.proxy?.banckend_id">
+    <template v-if="localData.proxy?.backend_id">
       <p
         class="title mt15"
         :class="{
@@ -659,7 +659,7 @@
     <!-- <template v-if="localData.proxy?.banckend_id"> -->
     <template v-for="plugin in localData.plugins" :key="plugin.id">
       <p class="title mt15" :class="{ 'ag-diff': checkPluginsDiff() }">
-        {{ $t(`插件:${plugin.name}`) }}
+        {{ $t('插件:{name}', { name: plugin.name }) }}
       </p>
       <bk-container class="ag-kv-box" :col="14" :margin="6">
         <bk-row
