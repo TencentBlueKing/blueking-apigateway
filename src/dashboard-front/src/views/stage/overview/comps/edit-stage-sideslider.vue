@@ -187,7 +187,7 @@
                           </template>
                         </bk-input>
                         <p class="timeout-tip">
-                          {{ $t('最大300秒') }}
+                          {{ $t('最大 300 秒') }}
                         </p>
                       </bk-form-item>
                     </bk-form>
@@ -758,7 +758,7 @@ defineExpose({
     .timeout-tip {
       position: absolute;
       top: 1px;
-      right: -70px;
+      right: -77px;
       color: #63656e;
       margin-left: 13px;
       white-space: nowrap;
