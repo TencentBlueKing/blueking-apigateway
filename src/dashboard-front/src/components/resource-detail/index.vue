@@ -656,29 +656,29 @@
       </bk-row>
     </bk-container>
 
-    <template v-if="localData.proxy?.banckend_id">
-      <template v-for="plugin in localData.plugins" :key="plugin.id">
-        <p class="title mt15" :class="{ 'ag-diff': checkPluginsDiff() }">
-          {{ $t(`插件:${plugin.name}`) }}
-        </p>
-        <bk-container class="ag-kv-box" :col="14" :margin="6">
-          <bk-row
-            v-for="key in Object.keys(plugin.config)"
-            :key="key"
-            :class="{ 'ag-diff': checkPluginsDiff() }"
-          >
-            <bk-col :span="4">
-              <label class="ag-key">{{ key }}:</label>
-            </bk-col>
-            <bk-col :span="10">
-              <div class="ag-value">
-                {{ plugin.config[key] || "--" }}
-              </div>
-            </bk-col>
-          </bk-row>
-        </bk-container>
-      </template>
+    <!-- <template v-if="localData.proxy?.banckend_id"> -->
+    <template v-for="plugin in localData.plugins" :key="plugin.id">
+      <p class="title mt15" :class="{ 'ag-diff': checkPluginsDiff() }">
+        {{ $t(`插件:${plugin.name}`) }}
+      </p>
+      <bk-container class="ag-kv-box" :col="14" :margin="6">
+        <bk-row
+          v-for="key in Object.keys(plugin.config)"
+          :key="key"
+          :class="{ 'ag-diff': checkPluginsDiff() }"
+        >
+          <bk-col :span="4">
+            <label class="ag-key">{{ key }}:</label>
+          </bk-col>
+          <bk-col :span="10">
+            <div class="ag-value">
+              {{ plugin.config[key] || "--" }}
+            </div>
+          </bk-col>
+        </bk-row>
+      </bk-container>
     </template>
+    <!-- </template> -->
   </div>
 </template>
 

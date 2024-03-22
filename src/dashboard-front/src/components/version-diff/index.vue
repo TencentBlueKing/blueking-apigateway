@@ -156,11 +156,7 @@
       <div class="diff-main">
         <bk-loading :loading="isDataLoading" color="#ffffff" :opacity="1" :z-index="1000" class="diff-loading">
           <!-- 新增 -->
-          <div
-            class="diff-item"
-            v-for="addItem in diffData.add"
-            :key="addItem.id"
-          >
+          <div class="diff-item" v-for="addItem in diffData.add" :key="addItem.id">
             <template v-if="checkMatch(addItem, 'add')">
               <div class="source-box">
                 <div class="metadata pl10" @click="handleToggle(addItem)">
@@ -207,11 +203,7 @@
           </div>
 
           <!-- 删除 -->
-          <div
-            class="diff-item"
-            v-for="deleteItem in diffData.delete"
-            :key="deleteItem.id"
-          >
+          <div class="diff-item" v-for="deleteItem in diffData.delete" :key="deleteItem.id">
             <template v-if="checkMatch(deleteItem, 'delete')">
               <div class="source-box">
                 <div class="metadata" @click="handleToggle(deleteItem)">
@@ -267,15 +259,8 @@
           <!-- 更新 -->
           <div
             class="diff-item"
-            v-for="updateItem in diffData.update"
-            :key="`${updateItem.source.id}:${updateItem.target.id}`"
-          >
-            <template
-              v-if="
-                checkMatch(updateItem.source, 'update') ||
-                  checkMatch(updateItem.target, 'update')
-              "
-            >
+            v-for="updateItem in diffData.update" :key="`${updateItem.source.id}:${updateItem.target.id}`">
+            <template v-if=" checkMatch(updateItem.source, 'update') || checkMatch(updateItem.target, 'update')">
               <div class="source-box">
                 <div class="metadata" @click="handleToggle(updateItem)">
                   <i
@@ -549,7 +534,7 @@ const renderTitle = (item: any) => {
   }
   return `<div class="bk-tag ${tagCls} bk-tag--default" style="border-radius: 2px;margin-right: 4px;">`
       + `<span class="bk-tag-text">${method}</span>`
-      + `</div>${path}`;
+      + `</div><span class="title-content">${path}</span>`;
 };
 
 const handleVersionChange = () => {
@@ -784,6 +769,7 @@ onMounted(() => {
         white-space: nowrap;
         display: inline-block;
         width: 96%;
+        font-weight: 700;
       }
 
       .bk-icon {
@@ -797,30 +783,31 @@ onMounted(() => {
       }
 
       &.danger {
-        background: #fedddc;
+        background: #fef2f2;
         // border-color: #fe9c9c;
 
         .resource-title {
-          &::after {
-            content: "";
-            width: 100%;
-            height: 1px;
-            background: #63656e;
-            position: absolute;
-            left: 0;
-            top: 50%;
+          color: #ea3636;
+          :deep(.title-content) {
+            text-decoration: line-through;
           }
         }
       }
 
       &.success {
-        background: #dcffe2;
+        background: #f0fcf4;
         // border-color: #94f5a4;
+        .resource-title {
+          color: #2dcb56;
+        }
       }
 
       &.warning {
-        background: #ffe8c3;
+        background: #fff9ef;
         // border-color: #ffd694;
+        .resource-title {
+          color: #ff9c01;
+        }
       }
     }
   }

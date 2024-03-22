@@ -26,9 +26,9 @@
             />
           </bk-select>
         </bk-form-item>
-        <bk-form-item :label="$t('SDK版本号')" required property="version">
+        <bk-form-item :label="$t('SDK 版本号')" required property="version">
           <bk-input
-            :placeholder="$t('请输入SDK版本号')"
+            :placeholder="$t('请输入 SDK 版本号')"
             v-model="formData.version"
             clearable
           />

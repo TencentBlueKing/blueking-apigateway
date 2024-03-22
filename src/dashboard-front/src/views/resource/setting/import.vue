@@ -30,9 +30,10 @@
           </bk-form>
         </div>
         <div class="flex-row align-items-center">
-          <bk-link theme="primary" :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank">
+          <!-- <bk-link theme="primary" :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank">
             {{ t('模板示例') }}
-          </bk-link>
+          </bk-link> -->
+          <bk-button theme="primary" text @click="handleShowExample">{{ t('模板示例') }}</bk-button>
           <bk-link theme="primary" class="pl10" :href="GLOBAL_CONFIG.DOC.SWAGGER" target="_blank">
             <i class="apigateway-icon icon-ag-info"></i>
             {{ t('Swagger 说明文档') }}
@@ -125,19 +126,23 @@
         {{ t('取消') }}
       </bk-button>
     </div>
+
+    <TmplExampleSideslider :is-show="isShowExample" @on-hidden="handleHiddenExample"></TmplExampleSideslider>
   </div>
 </template>
 <script setup lang="ts">
-import editorMonaco from '@/components/ag-editor.vue';
 import { ref, nextTick, computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import exampleData from '@/constant/example-data';
 import { Message } from 'bkui-vue';
+import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
+
+import editorMonaco from '@/components/ag-editor.vue';
+import exampleData from '@/constant/example-data';
 import { getStrFromFile } from '@/common/util';
 import { checkResourceImport, importResource, importResourceDocSwagger } from '@/http';
 import { useCommon } from '@/store';
-import { useRouter } from 'vue-router';
 import { useSelection, useGetGlobalProperties } from '@/hooks';
+import TmplExampleSideslider from '@/views/resource/setting/comps/tmpl-example-sideslider.vue';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -284,6 +289,15 @@ const goBack = () => {
   router.push({
     name: 'apigwResource',
   });
+};
+
+const isShowExample = ref(false);
+const handleShowExample = () => {
+  isShowExample.value = true;
+};
+
+const handleHiddenExample = () => {
+  isShowExample.value = false;
 };
 </script>
 <style scoped lang="scss">

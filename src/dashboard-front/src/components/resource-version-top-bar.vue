@@ -3,15 +3,18 @@
     <bk-tab :active="resourceVersionStore.tabActive || 'edition'" type="unborder-card" @change="handleChange">
       <bk-tab-panel name="edition" label="版本列表">
       </bk-tab-panel>
-      <bk-tab-panel name="sdk" label="SDK列表" v-if="user.featureFlags?.ALLOW_UPLOAD_SDK_TO_REPOSITORY">
+      <bk-tab-panel name="sdk" :label="t('SDK 列表')" v-if="user.featureFlags?.ALLOW_UPLOAD_SDK_TO_REPOSITORY">
       </bk-tab-panel>
     </bk-tab>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
 import { useResourceVersion, useUser } from '@/store';
 
+const { t } = useI18n();
 const user = useUser();
 const resourceVersionStore = useResourceVersion();
 
