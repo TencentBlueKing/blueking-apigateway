@@ -1394,7 +1394,6 @@ const lang: ILANG = {
   '自定义超时时间:': ['Custom timeout period:'],
   '请求路径:': ['Request path:'],
   '插件:{name}': ['Plugin:{name}'],
-
   '自定义': ['Custom'],
   '请求地址': ['Request address'],
   '请求类型': ['Request type'],

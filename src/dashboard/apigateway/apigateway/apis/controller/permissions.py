@@ -22,7 +22,7 @@ from typing import Optional
 from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
-from apigateway.core.micro_gateway_config import MicroGatewayJWTAuth
+from apigateway.controller.micro_gateway_config import MicroGatewayJWTAuth
 from apigateway.core.models import MicroGateway
 
 logger = logging.getLogger(__name__)

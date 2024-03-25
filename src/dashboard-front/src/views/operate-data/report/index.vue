@@ -77,6 +77,7 @@
 
     <bk-loading
       :loading="isDataLoading"
+      :opacity="1"
     >
       <div class="page-content">
         <!-- 按维度分组创建图表容器，切换维度通过控制图表组容器元素进行显示隐藏 -->
@@ -251,6 +252,7 @@ const initChart = () => {
 
 const getDataByDimension = async () => {
   const { apigwId } = common;
+  isDataLoading.value = true;
   setSearchTimeRange();
   // 限制在一天内
   if ((searchParams.time_end - searchParams.time_start) > 24 * 60 * 60) {
@@ -271,7 +273,6 @@ const getDataByDimension = async () => {
     return getApigwMetrics(apigwId, params);
   });
 
-  isDataLoading.value = true;
   try {
     // const res = await Promise.all(requests);
     chartData.value = {};
@@ -304,7 +305,7 @@ const getStages = async () => {
 
     searchParams.stage_id = stageList.value[0]?.id;
   } catch (e) {
-    console.log(e);
+    isDataLoading.value = false;
   }
 };
 
@@ -461,6 +462,7 @@ const getResources = async () => {
     resourceList.value = res.results;
   } catch (e) {
     console.log(e);
+    isDataLoading.value = false;
   }
 };
 
@@ -686,6 +688,7 @@ const getChartOption = (chartId: any, chartInstId: any) => {
 };
 
 const handleClearFilterKey = () => {
+  isDataLoading.value = true;
   [datePickerRef.value.shortcut] = [AccessLogStore.datepickerShortcuts[1]];
   dateTimeRange.value = [];
   shortcutSelectedIndex.value = 1;
