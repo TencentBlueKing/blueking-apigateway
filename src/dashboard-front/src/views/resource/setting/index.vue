@@ -207,6 +207,7 @@
             </bk-table-column>
             <bk-table-column
               :label="t('标签')"
+              :show-overflow-tooltip="false"
               prop="labels"
               width="280"
             >
@@ -215,11 +216,13 @@
                   <span
                     v-if="row?.labels?.length"
                     v-bk-tooltips="{ content: row?.labelText.join(';') }">
-                    <span style="margin-left: 4px;" v-for="(item, index) in row?.labels" :key="item.id">
-                      <bk-tag @click="handleEditLabel(row)" v-if="index < row.tagOrder">
-                        {{ item.name }}
-                      </bk-tag>
-                    </span>
+                    <template v-for="(item, index) in row?.labels" :key="item.id">
+                      <span style="margin-left: 4px;" v-if="index < row.tagOrder">
+                        <bk-tag @click="handleEditLabel(row)">
+                          {{ item.name }}
+                        </bk-tag>
+                      </span>
+                    </template>
                     <bk-tag
                       v-if="row.labels.length > row.tagOrder"
                       class="tag-cls">

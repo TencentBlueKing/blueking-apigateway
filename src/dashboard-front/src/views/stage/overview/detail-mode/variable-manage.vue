@@ -307,13 +307,13 @@ const cancelTableEdit = () => {
   });
 };
 
-const addRow = async (index: number) => {
+const addRow = async (index: number, columnIndex: number) => {
   const nextIndex = index + 1;
   tableData.value?.splice(nextIndex, 0, getVars());
   tableData.value[nextIndex] = Object.assign(tableData.value[nextIndex], { isEdit: true, isFocus: false });
-  // nextTick(() => {
-  //   formInputRef.value?.get(`name-input-${nextIndex}-${columnIndex}`)?.focus();
-  // });
+  nextTick(() => {
+    formInputRef.value?.get(`name-input-${nextIndex}-${columnIndex}`)?.focus();
+  });
 };
 
 const delRow = (index: number) => {

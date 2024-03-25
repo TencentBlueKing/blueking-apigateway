@@ -369,6 +369,7 @@ const handleShortcutChange = (value: Record<string, any>, index: number) => {
 };
 
 const handleClearFilterKey = () => {
+  isLoading.value = true;
   members.value = [];
   filterData.value = cloneDeep(defaultSearchData.value);
   searchValue.value = [];
