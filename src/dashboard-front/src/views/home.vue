@@ -265,8 +265,6 @@ const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   isAbnormal: false,
 });
 
-// const bkAppVersion = window.BK_APP_VERSION;
-
 const isLoading = ref(true);
 
 const rules = {
