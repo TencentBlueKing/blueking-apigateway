@@ -46,6 +46,7 @@
         <div class="ag-markdown-editor">
           <mavon-editor
             ref="markdownRef"
+            class="content-editor"
             v-model="markdownDoc"
             v-show="isEdited"
             :language="language"
@@ -86,10 +87,37 @@
         </bk-pop-confirm>
       </template>
     </div>
+    <div class="fixed-doc-btn-wrapper" v-show="isAdsorb" v-if="!isEmpty">
+      <template v-if="isEdited">
+        <bk-button
+          class="mr5" theme="primary" style="width: 100px;"
+          @click="handleSaveMarkdown"
+          :loading="isSaving">{{isUpdate ? $t('更新') : $t('提交')}}</bk-button>
+        <bk-button
+          style="width: 100px;"
+          @click="handleCancelMarkdown"> {{ $t('取消') }} </bk-button>
+      </template>
+      <template v-else>
+        <bk-button class="mr5" theme="primary" style="width: 100px;" @click="handleEditMarkdown('edit')">
+          {{ $t('修改') }}
+        </bk-button>
+        <bk-pop-confirm
+          :title="t('确认要删除该文档？')"
+          content="将删除相关配置，不可恢复，请确认是否删除"
+          width="288"
+          trigger="click"
+          @confirm="handleDeleteMarkdown"
+        >
+          <bk-button>
+            {{ t('删除') }}
+          </bk-button>
+        </bk-pop-confirm>
+      </template>
+    </div>
   </div>
 </template>
 <script setup lang="ts">
-import { ref, toRefs, onMounted } from 'vue';
+import { ref, toRefs, onMounted, onBeforeUnmount, nextTick, onUpdated } from 'vue';
 import { getResourceDocs, updateResourceDocs, saveResourceDocs, deleteResourceDocs } from '@/http';
 import { useCommon } from '@/store';
 import { cloneDeep } from 'lodash';
@@ -165,6 +193,7 @@ const handleEditMarkdown = (type: string) => {
   emit('on-update', 'update', isUpdate.value);
   const docDataItem = cloneDeep(docData.value).find((e: any) => e.language === language.value);
   markdownDoc.value = docDataItem.content;
+  controlToggle();
 };
 
 // 获取文档信息
@@ -205,6 +234,7 @@ const handleSaveMarkdown = async () => {
       theme: 'success',
       message: t('保存成功！'),
     });
+    controlToggle();
     initData();
     // 执行列表的方法
     emit('fetch');
@@ -231,6 +261,7 @@ const handleDeleteMarkdown = async () => {
     initData();
     // 执行列表的方法
     emit('fetch');
+    controlToggle();
   } catch (error) {
     console.log('error', error);
   }
@@ -241,6 +272,7 @@ const handleSelectLanguage = (payload: string) => {
   if (payload === language.value) return;
   language.value = payload;
   handleDocDataWithLanguage();
+  controlToggle();
 };
 
 // 根据语言找到是否有文档内容
@@ -252,20 +284,100 @@ const handleDocDataWithLanguage = () => {
   markdownHtml.value = markdownRef.value.markdownIt.render(docDataItem.content);
 };
 
+// 是否吸附
+const isAdsorb = ref<boolean>(false);
+
+// 元素滚动判断元素是否吸顶
+const controlToggle = () => {
+  const el = document.querySelector('.doc-btn-wrapper');
+  const bottomDistance = el?.getBoundingClientRect()?.bottom;
+  // 是否吸附
+  if (bottomDistance > window?.innerHeight) {
+    isAdsorb.value = true;
+    el?.classList?.add('is-pinned');
+    nextTick(() => {
+      // 动态设置left
+      const container = document.querySelector('.resources-doc-container');
+      const fixedBtn: any = document.querySelector('.fixed-doc-btn-wrapper');
+      const rect = container.getBoundingClientRect();
+      if (fixedBtn) {
+        fixedBtn.style.left = `${rect.left - 8}px`;
+      }
+    });
+  } else {
+    isAdsorb.value = false;
+    el?.classList?.remove('is-pinned');
+  }
+};
+
+let resizeObserver: any = null;
+const observerBtnScroll = () => {
+  const container = document.querySelector('.resources-doc-container');
+  container?.addEventListener('scroll', controlToggle);
+
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
+  const parentDom = document.querySelector('.resource-container-rg');
+  resizeObserver = new ResizeObserver(() => {
+    controlToggle();
+  });
+  resizeObserver?.observe(parentDom);
+};
+
+const destroyEvent = () => {
+  const container = document.querySelector('.resources-doc-container');
+  container?.removeEventListener('scroll', controlToggle);
+
+  resizeObserver.disconnect();
+};
+
 onMounted(() => {
   initData();
+  // 初始化判断按钮组是否吸附
+  controlToggle();
+  observerBtnScroll();
+});
+
+onUpdated(() => {
+  controlToggle();
+});
+
+onBeforeUnmount(() => {
+  destroyEvent();
 });
 </script>
 <style scoped lang="scss">
-.resources-doc-container{
-  .content{
-    overflow: auto;
+.resources-doc-container {
+  height: calc(100vh - 176px);
+  overflow-y: auto;
+}
+.content-editor {
+  height: calc(100vh - 420px) !important;
+}
+.doc-btn-wrapper {
+  margin-top: 8px;
+  background: #fff;
+  padding-left: 20px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+.fixed-doc-btn-wrapper {
+  position: fixed;
+  bottom: 0;
+  right: 0px;
+  padding: 10px 0;
+  padding-left: 30px;
+  background: #fff;
+  box-shadow: 0 -2px 4px 0 #0000000f;
+  z-index: 1600;
+  // transition: .3s;
+  :deep(.bk-button) {
+    margin-right: 1px !important;
   }
 }
-  .doc-btn-wrapper {
-    padding-top: 10px;
-    background: #fff;
-    padding-left: 20px;
-    height: 52px;
-  }
+.is-pinned {
+  opacity: 0;
+}
 </style>

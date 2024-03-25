@@ -1274,7 +1274,7 @@ const lang: ILANG = {
   '匹配所有路径': ['Matches all subpaths'],
   '请填写请求路径': ['Please fill in the request path'],
   '服务': ['Service'],
-  '后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在{}中，比如：/users/{id}/{env.type}/。': ['Path of backend service, does not contain domain or IP, supports path variables, stage variables, variable contained in {}, e.g. /users/{id}/{env.type}/.'],
+  '后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\'{}\'中，比如：/users/{id}/{env.type}/。': ['The Path of the back-end interface address does not contain the domain name or IP address, and supports path variables and environment variables. Variables can be contained in \'{}\', for example, /users/{id}/{env.type}/.'],
   '校验并查看地址': ['Verify and view address'],
   '环境概览': ['Overview'],
   '请输入 2-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头': ['Please enter 2-20 characters of letters, numbers, hyphens(-), and underscores(_), starting with a letter'],
