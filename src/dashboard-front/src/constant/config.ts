@@ -1,15 +1,15 @@
-
 import i18n from '@/language/i18n';
+
 const { t } = i18n.global;
 const {
   BK_LOGIN_URL,
   BK_LIST_USERS_API_URL,
-  BK_FEED_BACK_LINK,
   BK_API_RESOURCE_URL_TMPL,
   BK_DASHBOARD_FE_URL,
   BK_DOCS_URL_PREFIX_MARKDOWN,
   BK_APIGATEWAY_VERSION,
 } = window;
+
 export default {
   // 登录
   BK_LOGIN_URL,
@@ -35,13 +35,13 @@ export default {
   BK_LIST_USERS_API_URL,
 
   // 问题反馈
-  BK_FEED_BACK_LINK,
+  BK_FEED_BACK_LINK: 'https://bk.tencent.com/s-mart/community/',
 
   // 环境访问地址域名
   STAGE_DOMAIN: BK_API_RESOURCE_URL_TMPL,
 
   // 加入圈子
-  MARKER: '',
+  MARKER: 'https://bk.tencent.com/s-mart/community/',
 
   OA_DOMAIN: '',
 

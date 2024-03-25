@@ -23,7 +23,7 @@ import { ILoginData } from '@/common/auth';
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
-const { BK_PAAS2_ESB_DOC_URL, BK_DASHBOARD_URL } = window;
+const { BK_DASHBOARD_URL } = window;
 
 // 加载完用户数据才会展示页面
 const userLoaded = ref(false);
@@ -190,13 +190,6 @@ const isExternalLink  = (url?: string) => /^https?:\/\//.test(url);
 
 const handleToPage = (routeName: string, index: number, link: string) => {
   activeIndex.value = index;
-  // 文档组件API
-  if (routeName === 'componentAPI') {
-    if (BK_PAAS2_ESB_DOC_URL) {
-      window.open(BK_PAAS2_ESB_DOC_URL);
-      return;
-    }
-  }
   // 常用工具
   if (!!link) {
     window.open(routeName);
