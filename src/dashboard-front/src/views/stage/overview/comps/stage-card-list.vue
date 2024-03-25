@@ -42,7 +42,7 @@
       </div>
       <div class="content" @click="handleToDetail(stageData)">
         <div class="apigw-form-item">
-          <div class="label">{{ `${t('访问地址')}：` }}</div>
+          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('访问地址')}：` }}</div>
           <div class="value url">
             <p
               class="link"
@@ -64,7 +64,7 @@
           </div>
         </div>
         <div class="apigw-form-item">
-          <div class="label">{{ `${t('当前资源版本')}：` }}</div>
+          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('当前资源版本')}：` }}</div>
           <div class="value">
             <span class="unrelease" v-if="stageData.release.status === 'unreleased'">{{ t('未发布') }}</span>
             <span v-else>{{ stageData.resource_version.version || '--' }}</span>
@@ -80,13 +80,13 @@
           </div>
         </div>
         <div class="apigw-form-item">
-          <div class="label">{{ `${t('发布人')}：` }}</div>
+          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('发布人')}：` }}</div>
           <div class="value">
             {{ stageData.release.created_by || '--' }}
           </div>
         </div>
         <div class="apigw-form-item">
-          <div class="label">{{ `${t('发布时间')}：` }}</div>
+          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('发布时间')}：` }}</div>
           <div class="value">
             {{ stageData.release.created_time || '--' }}
           </div>
@@ -131,7 +131,7 @@ import editStageSideslider from './edit-stage-sideslider.vue';
 import releaseSideslider from './release-sideslider.vue';
 
 const common = useCommon();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 
 // 网关id
@@ -339,6 +339,9 @@ onUnmounted(() => {
         padding-right: 8px;
         width: 100px;
         text-align: right;
+        &.en {
+          width: 158px;
+        }
       }
 
       .value {
