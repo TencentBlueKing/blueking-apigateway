@@ -22,7 +22,7 @@ from typing import Any, Dict
 from django.conf import settings
 
 from apigateway.controller.crds.config_controller import create_config_controller
-from apigateway.core.micro_gateway_config import MicroGatewayJWTAuth
+from apigateway.controller.micro_gateway_config import MicroGatewayJWTAuth
 from apigateway.core.models import MicroGateway
 
 

@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.core.micro_gateway_config import MicroGatewayJWTAuth
+from apigateway.controller.micro_gateway_config import MicroGatewayJWTAuth
 
 
 class TestGatewayConfigConvertor:

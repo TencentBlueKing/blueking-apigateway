@@ -26,7 +26,7 @@ from rest_framework import generics, status
 from apigateway.apis.controller.permissions import MicroGatewayInstancePermission
 from apigateway.apis.controller.serializers import MicroGatewayInfoOutputSLZ, MicroGatewayStatusInputSLZ
 from apigateway.controller.constants import MicroGatewayStatusCodeEnum
-from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
+from apigateway.controller.micro_gateway_config import MicroGatewayBcsInfo
 from apigateway.core.models import Gateway, MicroGateway
 from apigateway.utils.responses import OKJsonResponse
 
