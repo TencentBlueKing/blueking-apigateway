@@ -26,8 +26,8 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apigateway.common.factories import SchemaFactory
+from apigateway.controller.micro_gateway_config import MicroGatewayHTTPInfo, MicroGatewayJWTAuth
 from apigateway.core import constants
-from apigateway.core.micro_gateway_config import MicroGatewayHTTPInfo, MicroGatewayJWTAuth
 from apigateway.core.models import Gateway, MicroGateway, Stage
 from apigateway.utils.string import generate_unique_id
 

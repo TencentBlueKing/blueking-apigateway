@@ -28,8 +28,12 @@ from apigateway.apps.micro_gateway.handlers import MicroGatewayHandlerFactory
 from apigateway.common.factories import SchemaFactory
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
+from apigateway.controller.micro_gateway_config import (
+    MicroGatewayBcsInfo,
+    MicroGatewayHTTPInfo,
+    MicroGatewayJWTAuth,
+)
 from apigateway.core.constants import MICRO_GATEWAY_NAME_PATTERN
-from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo, MicroGatewayHTTPInfo, MicroGatewayJWTAuth
 from apigateway.core.models import MicroGateway
 from apigateway.utils.string import generate_unique_id
 from apigateway.utils.time import now_datetime

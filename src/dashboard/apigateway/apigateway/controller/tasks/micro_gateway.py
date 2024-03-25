@@ -22,8 +22,8 @@ from django.conf import settings
 
 from apigateway.controller.helm.release import ReleaseHelper
 from apigateway.controller.helm.values_generator import MicroGatewayValuesGenerator
+from apigateway.controller.micro_gateway_config import MicroGatewayBcsInfo
 from apigateway.core.constants import MicroGatewayStatusEnum
-from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
 from apigateway.core.models import MicroGateway
 from apigateway.utils.procedure_logger import ProcedureLogger
 
