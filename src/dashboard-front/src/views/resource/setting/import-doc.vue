@@ -234,7 +234,7 @@ const editorText = ref<string>(exampleData.content);
 const zipFile = ref<any>('');
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>(); // 实例化
 const { BK_DASHBOARD_URL } = window;
-const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME || `${window.BK_PAAS_APP_ID}_csrftoken`];
+const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME];
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 
