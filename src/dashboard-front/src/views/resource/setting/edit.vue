@@ -6,29 +6,41 @@
       use-card-theme
     >
       <bk-collapse-panel name="baseInfo">
-        <template #content>
-          <div class="panel-title pt5 pb5">{{ t('基础信息') }}</div>
-          <div class="panel-content">
-            <BaseInfo ref="baseInfoRef" :detail="resourceDetail" :is-clone="isClone"></BaseInfo>
+        <template #header>
+          <div class="panel-header">
+            <angle-up-fill v-show="activeIndex?.includes('baseInfo')" />
+            <right-shape v-show="!activeIndex?.includes('baseInfo')" />
+            <div class="title">{{ t('基础信息') }}</div>
           </div>
+        </template>
+        <template #content>
+          <BaseInfo ref="baseInfoRef" :detail="resourceDetail" :is-clone="isClone"></BaseInfo>
         </template>
       </bk-collapse-panel>
 
       <bk-collapse-panel name="frontConfig">
-        <template #content>
-          <div class="panel-title pt5 pb5">{{ t('前端配置') }}</div>
-          <div class="panel-content">
-            <FrontConfig ref="frontConfigRef" :detail="resourceDetail" :is-clone="isClone"></FrontConfig>
+        <template #header>
+          <div class="panel-header">
+            <angle-up-fill v-show="activeIndex?.includes('frontConfig')" />
+            <right-shape v-show="!activeIndex?.includes('frontConfig')" />
+            <div class="title">{{ t('前端配置') }}</div>
           </div>
+        </template>
+        <template #content>
+          <FrontConfig ref="frontConfigRef" :detail="resourceDetail" :is-clone="isClone"></FrontConfig>
         </template>
       </bk-collapse-panel>
 
       <bk-collapse-panel name="backConfig">
-        <template #content>
-          <div class="panel-title pt5 pb5">{{ t('后端配置') }}</div>
-          <div class="panel-content">
-            <BackConfig ref="backConfigRef" :detail="resourceDetail"></BackConfig>
+        <template #header>
+          <div class="panel-header">
+            <angle-up-fill v-show="activeIndex?.includes('backConfig')" />
+            <right-shape v-show="!activeIndex?.includes('backConfig')" />
+            <div class="title">{{ t('后端配置') }}</div>
           </div>
+        </template>
+        <template #content>
+          <BackConfig ref="backConfigRef" :detail="resourceDetail"></BackConfig>
         </template>
       </bk-collapse-panel>
     </bk-collapse>
@@ -58,6 +70,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useCommon } from '@/store';
 import { createResources, getResourceDetailData, updateResources } from '@/http';
 import { Message } from 'bkui-vue';
+import { AngleUpFill, RightShape } from 'bkui-vue/lib/icon';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -144,21 +157,6 @@ init();
         background: #fff;
         box-shadow: 0 2px 4px 0 #1919290d;
         margin-bottom: 16px;
-        .bk-collapse-header {
-          display: none;
-        }
-        .panel-title {
-            color: #313238;
-            font-weight: 700;
-            font-size: 14px;
-            line-height: 1;
-            margin-top: 24px;
-            margin-bottom: 24px;
-        }
-        .panel-content {
-            max-width: 1100px;
-            width: 100%;
-        }
       }
     }
     .edit-footer {
@@ -171,6 +169,29 @@ init();
       bottom: 0;
       width: 100%;
       z-index: 2;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      padding: 24px;
+      cursor: pointer;
+      .title {
+        font-weight: 700;
+        font-size: 14px;
+        color: #313238;
+        margin-left: 8px;
+      }
+    }
+    :deep(.bk-collapse-content) {
+      padding-top: 0px !important;
+      padding-left: 160px !important;
+      .bk-input--text,
+      .bk-select-tag-input {
+        font-size: 14px;
+        &::placeholder {
+          font-size: 14px;
+        }
+      }
     }
   }
   .bk-collapse-demo {

@@ -98,12 +98,12 @@
         >
           {{ t('校验并查看地址') }}
         </bk-button>
-        <bk-checkbox class="ml40" v-model="backConfigData.config.match_subpath" disabled>
+        <bk-checkbox class="ml12" v-model="backConfigData.config.match_subpath" disabled>
           {{ t('追加匹配的子路径') }}
         </bk-checkbox>
       </div>
       <div class="common-form-tips">
-        <!-- {{ t('后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在{}中，比如：/users/{id}/{env.type}/。') }} -->
+        {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在'{}'中，比如：/users/{id}/{env.type}/。") }}
         <a :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank" class="ag-primary">{{ t('更多详情') }}</a>
       </div>
       <div v-if="servicesCheckData.length">
@@ -506,13 +506,13 @@ defineExpose({
   .refresh-icon {
     margin-left: 8px;
     font-size: 16px;
-    color: #1768ef;
+    color: #3A84FF;
     vertical-align: middle;
     cursor: pointer;
   }
-  .refresh-icon {
-    margin-left: 15px;
-  }
+  // .refresh-icon {
+  //   margin-left: 15px;
+  // }
 }
 
 .time-out-input-error {
