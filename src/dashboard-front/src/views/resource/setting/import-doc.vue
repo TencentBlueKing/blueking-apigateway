@@ -24,7 +24,7 @@
               <bk-radio label="swagger" class="ag-type-radio">
                 <div class="pl20">
                   <div class="ag-type-name" :class="{ 'default-c': docType === 'swagger' }">
-                    {{ t('Swagger') }}
+                    Swagger
                   </div>
                   <div class="ag-type-spec pt5" :class="{ 'default-c': docType === 'swagger' }">
                     {{ t('支持 json, yaml 格式') }}
@@ -57,9 +57,10 @@
             </template>
           </bk-upload>
           <div class="flex-row align-items-center">
-            <bk-link theme="primary" :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank">
+            <!-- <bk-link theme="primary" :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank">
               {{ t('模板示例') }}
-            </bk-link>
+            </bk-link> -->
+            <bk-button theme="primary" text @click="handleShowExample">{{ t('模板示例') }}</bk-button>
             <bk-link theme="primary" class="pl10" :href="GLOBAL_CONFIG.DOC.SWAGGER" target="_blank">
               <i class="apigateway-icon icon-ag-info"></i>
               {{ t('Swagger 说明文档') }}
@@ -193,20 +194,24 @@
         {{ t('取消') }}
       </bk-button>
     </div>
+
+    <TmplExampleSideslider :is-show="isShowExample" @on-hidden="handleHiddenExample"></TmplExampleSideslider>
   </div>
 </template>
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
-import editorMonaco from '@/components/ag-editor.vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
+
+import editorMonaco from '@/components/ag-editor.vue';
 import { getStrFromFile } from '@/common/util';
 import { checkResourceImport, importResourceDoc, importResourceDocSwagger } from '@/http';
 import exampleData from '@/constant/example-data';
 import { useCommon } from '@/store';
 import cookie from 'cookie';
 import { useSelection, useGetGlobalProperties } from '@/hooks';
-import { useRouter } from 'vue-router';
+import TmplExampleSideslider from '@/views/resource/setting/comps/tmpl-example-sideslider.vue';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -229,7 +234,7 @@ const editorText = ref<string>(exampleData.content);
 const zipFile = ref<any>('');
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>(); // 实例化
 const { BK_DASHBOARD_URL } = window;
-const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME || `${window.BK_PAAS_APP_ID}_csrftoken`];
+const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME];
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 
@@ -376,6 +381,16 @@ const deDuplication = (data: any[], k: string) => {
   }
   return [...map.values()];
 };
+
+const isShowExample = ref(false);
+const handleShowExample = () => {
+  isShowExample.value = true;
+};
+
+const handleHiddenExample = () => {
+  isShowExample.value = false;
+};
+
 </script>
 <style scoped lang="scss">
 .import-docs-container{

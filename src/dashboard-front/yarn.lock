@@ -2672,10 +2672,10 @@ binary-extensions@^2.0.0:
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-2.2.0.tgz#75f502eeaf9ffde42fc98829645be4ea76bd9e2d"
   integrity sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==
 
-bkui-vue@1.0.3-beta.1:
-  version "1.0.3-beta.1"
-  resolved "https://registry.yarnpkg.com/bkui-vue/-/bkui-vue-1.0.3-beta.1.tgz#751c79f27c496835c678b58d0dc109360f4ad7b6"
-  integrity sha512-M0uXH/cGI4t2ZRtCVcKN4d9kw6qcAzFYHCYXGyNoLveMkao1hwRHSl4tLbxv1UtmA5yeICiN+SwaCpqIRxhwxA==
+bkui-vue@1.0.3-beta.11:
+  version "1.0.3-beta.11"
+  resolved "https://registry.yarnpkg.com/bkui-vue/-/bkui-vue-1.0.3-beta.11.tgz#418eb02e31b0622a803208d74e9f1074ff18760d"
+  integrity sha512-6PJEXTKWqO2H4fDzvTO9mLk2OSRcaipprqMFWBh/B1abU0kAdL1sYkXVxx7pL/C9OiRJrq1CDnnNwuJ7CSNzEQ==
   dependencies:
     "@floating-ui/dom" "~1.5.0"
     "@popperjs/core" "~2.11.8"

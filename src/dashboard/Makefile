@@ -14,6 +14,7 @@ lint:
 	ruff format --config=pyproject.toml --force-exclude .
 	ruff check --config=pyproject.toml --force-exclude --fix .
 	mypy --config-file=pyproject.toml .
+	cd apigateway && lint-imports --config=./.importlinter && cd ..
 
 
 # ====== dependencies ======

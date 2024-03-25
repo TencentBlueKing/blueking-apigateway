@@ -102,7 +102,7 @@ allMethods.forEach((method) => {
       return async (url: string, payload: any, config: IFetchConfig = {}) => {
         const fetchConfig: IFetchConfig = getFetchConfig(method, payload, config);
         // 向 http header 注入 CSRFToken，CSRFToken key 值与后端一起协商制定
-        const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME || `${window.BK_PAAS_APP_ID}_csrftoken`];
+        const CSRFToken = cookie.parse(document.cookie)[window.BK_DASHBOARD_CSRF_COOKIE_NAME];
         if (CSRFToken !== undefined) {
           // @ts-ignore
           fetchConfig.headers['X-CSRFToken'] = CSRFToken;

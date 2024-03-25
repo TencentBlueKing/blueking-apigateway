@@ -179,7 +179,7 @@
                           <div class="group-text group-text-style">{{ t('秒') }}</div>
                         </template>
                       </bk-input>
-                      <span class="timeout-tip"> {{ t('最大300秒') }} </span>
+                      <span class="timeout-tip"> {{ t('最大 300 秒') }} </span>
                     </bk-form-item>
                   </bk-form>
                 </template>
@@ -794,9 +794,9 @@ watch(
   }
 }
 
-:deep(.bk-input--number-control) {
-  display: none;
-}
+// :deep(.bk-input--number-control) {
+//   display: none;
+// }
 
 .backend-config-item {
   .item-content {

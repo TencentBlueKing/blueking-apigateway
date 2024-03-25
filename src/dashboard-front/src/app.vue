@@ -7,6 +7,7 @@ import {
   onBeforeMount,
 } from 'vue';
 import UserInfo from '@/components/user-info.vue';
+import ProductInfo from '@/components/product-info.vue';
 import AppAuth from '@/components/auth/index.vue';
 // @ts-ignore
 import NoticeComponent from '@blueking/notice-component';
@@ -22,7 +23,7 @@ import { ILoginData } from '@/common/auth';
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
-const { BK_PAAS2_ESB_DOC_URL, BK_DASHBOARD_URL } = window;
+const { BK_DASHBOARD_URL } = window;
 
 // 加载完用户数据才会展示页面
 const userLoaded = ref(false);
@@ -189,13 +190,6 @@ const isExternalLink  = (url?: string) => /^https?:\/\//.test(url);
 
 const handleToPage = (routeName: string, index: number, link: string) => {
   activeIndex.value = index;
-  // 文档组件API
-  if (routeName === 'componentAPI') {
-    if (BK_PAAS2_ESB_DOC_URL) {
-      window.open(BK_PAAS2_ESB_DOC_URL);
-      return;
-    }
-  }
   // 常用工具
   if (!!link) {
     window.open(routeName);
@@ -280,7 +274,10 @@ onBeforeMount(() => {
               </div>
             </template>
           </div>
-          <user-info v-if="userLoaded" />
+          <div class="flex-row">
+            <product-info></product-info>
+            <user-info v-if="userLoaded" />
+          </div>
         </div>
       </template>
     </bk-navigation>
@@ -319,6 +316,7 @@ onBeforeMount(() => {
     color: #96A2B9;
     .header-nav {
       display: flex;
+      flex: 1;
       padding: 0;
       margin: 0;
       &-item {

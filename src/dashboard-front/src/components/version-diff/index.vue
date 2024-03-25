@@ -95,7 +95,6 @@
               :clearable="false"
               :input-search="false"
               :filterable="true"
-              style="width: 320px"
               @change="handleVersionChange"
             >
               <bk-option
@@ -157,11 +156,7 @@
       <div class="diff-main">
         <bk-loading :loading="isDataLoading" color="#ffffff" :opacity="1" :z-index="1000" class="diff-loading">
           <!-- 新增 -->
-          <div
-            class="diff-item"
-            v-for="addItem in diffData.add"
-            :key="addItem.id"
-          >
+          <div class="diff-item" v-for="addItem in diffData.add" :key="addItem.id">
             <template v-if="checkMatch(addItem, 'add')">
               <div class="source-box">
                 <div class="metadata pl10" @click="handleToggle(addItem)">
@@ -199,6 +194,7 @@
                   <!-- <bk-transition :name="animation"> -->
                   <resource-detail
                     :cur-resource="addItem"
+                    :backends-list="backendsList"
                     v-show="addItem.isExpanded"
                   ></resource-detail>
                   <!-- </bk-transition> -->
@@ -208,11 +204,7 @@
           </div>
 
           <!-- 删除 -->
-          <div
-            class="diff-item"
-            v-for="deleteItem in diffData.delete"
-            :key="deleteItem.id"
-          >
+          <div class="diff-item" v-for="deleteItem in diffData.delete" :key="deleteItem.id">
             <template v-if="checkMatch(deleteItem, 'delete')">
               <div class="source-box">
                 <div class="metadata" @click="handleToggle(deleteItem)">
@@ -232,6 +224,7 @@
                   <!-- <bk-transition :name="animation"> -->
                   <resource-detail
                     :cur-resource="deleteItem"
+                    :backends-list="backendsList"
                     v-show="deleteItem.isExpanded"
                   ></resource-detail>
                   <!-- </bk-transition> -->
@@ -256,6 +249,7 @@
                   <resource-detail
                     style="opacity: 0.35"
                     :cur-resource="deleteItem"
+                    :backends-list="backendsList"
                     v-show="deleteItem.isExpanded"
                   >
                   </resource-detail>
@@ -268,15 +262,8 @@
           <!-- 更新 -->
           <div
             class="diff-item"
-            v-for="updateItem in diffData.update"
-            :key="`${updateItem.source.id}:${updateItem.target.id}`"
-          >
-            <template
-              v-if="
-                checkMatch(updateItem.source, 'update') ||
-                  checkMatch(updateItem.target, 'update')
-              "
-            >
+            v-for="updateItem in diffData.update" :key="`${updateItem.source.id}:${updateItem.target.id}`">
+            <template v-if=" checkMatch(updateItem.source, 'update') || checkMatch(updateItem.target, 'update')">
               <div class="source-box">
                 <div class="metadata" @click="handleToggle(updateItem)">
                   <i
@@ -296,6 +283,7 @@
                   <resource-detail
                     class="source-version"
                     :cur-resource="updateItem.source"
+                    :backends-list="backendsList"
                     v-show="updateItem.isExpanded"
                     :diff-data="updateItem.target.diff"
                     :only-show-diff="searchParams.onlyUpdated"
@@ -323,6 +311,7 @@
                   <!-- <bk-transition :name="animation"> -->
                   <resource-detail
                     :cur-resource="updateItem.target"
+                    :backends-list="backendsList"
                     v-show="updateItem.isExpanded"
                     :diff-data="updateItem.source.diff"
                     :only-show-diff="searchParams.onlyUpdated"
@@ -363,7 +352,7 @@ import resourceDetail from '@/components/resource-detail/index.vue';
 import { useI18n } from 'vue-i18n';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { useCommon } from '@/store';
-import { resourceVersionsDiff, getResourceVersionsList, getGatewayLabels } from '@/http';
+import { resourceVersionsDiff, getResourceVersionsList, getGatewayLabels, getBackendsListData } from '@/http';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -550,7 +539,7 @@ const renderTitle = (item: any) => {
   }
   return `<div class="bk-tag ${tagCls} bk-tag--default" style="border-radius: 2px;margin-right: 4px;">`
       + `<span class="bk-tag-text">${method}</span>`
-      + `</div>${path}`;
+      + `</div><span class="title-content">${path}</span>`;
 };
 
 const handleVersionChange = () => {
@@ -650,10 +639,24 @@ const getLabels = async () => {
   }
 };
 
-const init = () => {
-  getDiffData();
-  getApigwVersions();
-  getLabels();
+const backendsList = ref([]);
+// 后端服务列表
+const getBackendsList = async () => {
+  try {
+    const res = await getBackendsListData(apigwId.value);
+    backendsList.value = res.results || [];
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+const init = async () => {
+  await Promise.all([
+    getDiffData(),
+    getApigwVersions(),
+    getLabels(),
+    getBackendsList(),
+  ]);
 };
 
 watch(
@@ -770,7 +773,7 @@ onMounted(() => {
       line-height: 36px;
       border-radius: 2px;
       background: #f0f1f5;
-      border: 1px solid #f0f1f5;
+      // border: 1px solid #f0f1f5;
       font-size: 12px;
       font-weight: bold;
       color: #63656e;
@@ -785,6 +788,7 @@ onMounted(() => {
         white-space: nowrap;
         display: inline-block;
         width: 96%;
+        font-weight: 700;
       }
 
       .bk-icon {
@@ -798,30 +802,31 @@ onMounted(() => {
       }
 
       &.danger {
-        background: #fedddc;
-        border-color: #fe9c9c;
+        background: #fef2f2;
+        // border-color: #fe9c9c;
 
         .resource-title {
-          &::after {
-            content: "";
-            width: 100%;
-            height: 1px;
-            background: #63656e;
-            position: absolute;
-            left: 0;
-            top: 50%;
+          color: #ea3636;
+          :deep(.title-content) {
+            text-decoration: line-through;
           }
         }
       }
 
       &.success {
-        background: #dcffe2;
-        border-color: #94f5a4;
+        background: #f0fcf4;
+        // border-color: #94f5a4;
+        .resource-title {
+          color: #2dcb56;
+        }
       }
 
       &.warning {
-        background: #ffe8c3;
-        border-color: #ffd694;
+        background: #fff9ef;
+        // border-color: #ffd694;
+        .resource-title {
+          color: #ff9c01;
+        }
       }
     }
   }
@@ -889,7 +894,7 @@ onMounted(() => {
   .target-header {
     width: 50%;
     height: 42px;
-    background: #f0f1f5;
+    background-color: #f0f1f5;
     line-height: 42px;
     display: flex;
 
@@ -911,12 +916,14 @@ onMounted(() => {
       font-size: 13px;
       color: #63656e;
       text-align: center;
+      font-weight: 700;
     }
   }
 
   .source-header {
     border-right: 1px solid #dcdee5;
     border-bottom: 1px solid #dcdee5;
+    background-color: #f5f7fa;
 
     .marked {
       border-right: 1px solid #dcdee5;
@@ -924,12 +931,12 @@ onMounted(() => {
   }
 
   .target-header {
-    background: #dcdee5;
-    border-left: 1px solid #c4c6cc;
-    border-bottom: 1px solid #c4c6cc;
+    background-color: #f0f1f5;
+    border-left: 1px solid #dcdee5;
+    border-bottom: 1px solid #dcdee5;
 
     .marked {
-      border-left: 1px solid #c4c6cc;
+      border-left: 1px solid #dcdee5;
     }
   }
 }
@@ -950,9 +957,12 @@ onMounted(() => {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    font-size: 13px;
+    font-weight: 700;
+    color: #63656e;
     &.is-default-trigger.is-unselected:before {
       width: 280px;
-      font-weight: bold;
+      font-weight: 700;
       color: #63656e;
       font-size: 13px;
       text-align: center;
@@ -965,7 +975,7 @@ onMounted(() => {
     }
     .bk-input--text::placeholder {
       font-size: 13px;
-      font-weight: bold;
+      font-weight: 700;
       color: #63656e;
       text-align: center;
     }

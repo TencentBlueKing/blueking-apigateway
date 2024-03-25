@@ -9,6 +9,7 @@
       @closed="() => (dialogConfig.isShow = false)"
       @confirm="handleCreate"
       width="600"
+      class="dialog-scroll-y"
     >
       <bk-alert
         theme="info"
@@ -26,9 +27,9 @@
             />
           </bk-select>
         </bk-form-item>
-        <bk-form-item :label="$t('SDK版本号')" required property="version">
+        <bk-form-item :label="$t('SDK 版本号')" required property="version">
           <bk-input
-            :placeholder="$t('请输入SDK版本号')"
+            :placeholder="$t('请输入 SDK 版本号')"
             v-model="formData.version"
             clearable
           />
@@ -157,10 +158,12 @@ const getResourceVersions = async () => {
 watch(
   () => [props.resourceVersionId, props.versionList, dialogConfig.isShow],
   (newArr: any[]) => {
-    const [id, opts, show] = newArr;
+    let [id] = newArr;
+    const [, opts, show] = newArr;
 
     if (show) {
       if (id && opts) {
+        id = Number(id);
         versionOpts.value = opts;
         formData.resource_version_id = id;
         formData.version = opts?.filter((item: any) => item.id === id)[0]?.version;

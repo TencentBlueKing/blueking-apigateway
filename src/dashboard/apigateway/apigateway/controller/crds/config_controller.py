@@ -18,7 +18,7 @@
 from django.conf import settings
 
 from apigateway.controller.crds.v1beta1.models.gateway_config import ConfigController, ConfigControllerAuth
-from apigateway.core.micro_gateway_config import MicroGatewayJWTAuth
+from apigateway.controller.micro_gateway_config import MicroGatewayJWTAuth
 from apigateway.core.models import MicroGateway
 
 

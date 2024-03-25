@@ -8,23 +8,36 @@
           {{ stageData.name }}
         </div>
         <div class="title-rg">
-          <bk-button
-            theme="primary"
-            size="small"
-            :disabled="getStatus(stageData) === 'doing'"
-            @click="handleRelease(stageData)"
-          >
-            {{ t('发布资源') }}
-          </bk-button>
-          <bk-button
-            class="ml10"
-            size="small"
-            :disabled="stageData.status !== 1"
-            @click="handleStageUnlist(stageData.id)"
-          >
-            {{ t('下架') }}
-          </bk-button>
-
+          <template v-if="!basicInfoData.status">
+            <bk-button
+              theme="primary" size="small" :disabled="true"
+              v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
+              {{ t('发布资源') }}
+            </bk-button>
+            <bk-button
+              class="ml10" size="small" :disabled="true"
+              v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
+              {{ t('下架') }}
+            </bk-button>
+          </template>
+          <template v-else>
+            <bk-button
+              theme="primary"
+              size="small"
+              :disabled="getStatus(stageData) === 'doing'"
+              @click="handleRelease(stageData)"
+            >
+              {{ t('发布资源') }}
+            </bk-button>
+            <bk-button
+              class="ml10"
+              size="small"
+              :disabled="stageData.status !== 1"
+              @click="handleStageUnlist(stageData.id)"
+            >
+              {{ t('下架') }}
+            </bk-button>
+          </template>
         </div>
       </div>
       <div class="content" @click="handleToDetail(stageData)">
@@ -102,18 +115,20 @@
 
 <script setup lang="ts">
 import { ref, toRefs, computed, onUnmounted, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { Message, InfoBox } from 'bkui-vue';
+import { Spinner } from 'bkui-vue/lib/icon';
+
 import { copy, getStatus } from '@/common/util';
-import editStageSideslider from './edit-stage-sideslider.vue';
-import releaseSideslider from './release-sideslider.vue';
 import logDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties } from '@/hooks';
 import { useCommon } from '@/store';
-import { Message, InfoBox } from 'bkui-vue';
-import { removalStage } from '@/http';
-import { Spinner } from 'bkui-vue/lib/icon';
-import { useRoute } from 'vue-router';
+import { removalStage, getGateWaysInfo } from '@/http';
+import { BasicInfoParams } from '@/views/basic-info/common/type';
+import editStageSideslider from './edit-stage-sideslider.vue';
+import releaseSideslider from './release-sideslider.vue';
 
 const common = useCommon();
 const { t } = useI18n();
@@ -210,11 +225,43 @@ const handleAddStage = () => {
   stageSidesliderRef.value.handleShowSideslider('add');
 };
 
-onMounted(() => {
+// 当前基本信息
+const basicInfoData = ref<BasicInfoParams>({
+  status: 1,
+  name: '',
+  url: '',
+  description: '',
+  description_en: '',
+  public_key_fingerprint: '',
+  bk_app_codes: '',
+  docs_url: '',
+  api_domain: '',
+  created_by: '',
+  created_time: '',
+  public_key: '',
+  maintainers: [],
+  developers: [],
+  is_public: true,
+  is_official: false,
+});
+
+// 获取网关基本信息
+const getBasicInfo = async (apigwId: number) => {
+  try {
+    const res = await getGateWaysInfo(apigwId);
+    basicInfoData.value = Object.assign({}, res);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+onMounted(async () => {
   timeId = setInterval(() => {
     // 获取网关列表
     mitt.emit('get-environment-list-data');
   }, 1000 * 30);
+
+  await getBasicInfo(common.apigwId);
 });
 
 onUnmounted(() => {

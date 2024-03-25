@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import copy
+import time
 from datetime import datetime
 from typing import Any, Dict, List
 
@@ -185,32 +186,46 @@ class ReleaseHandler:
         return list(set(Release.objects.filter(gateway_id__in=gateway_ids).values_list("gateway_id", flat=True)))
 
     @staticmethod
-    def has_another_release_doing(release_history: ReleaseHistory) -> bool:
-        """查找除了本身的release_history之外是否最近还有别的处于running状态"""
+    def wait_another_release_done(release_history: ReleaseHistory):
+        """这里主要是为了避免并发发布过程中，如果同时发布导致operator事件收敛导致事件丢失，需要等待上一个最近的发布任务执行完成"""
 
         # 获取最近的一个发布历史
         other_latest_release = (
-            ReleaseHistory.objects.filter(gateway_id=release_history.gateway_id, stage_id=release_history.stage_id)
-            .exclude(id=release_history.id)
+            ReleaseHistory.objects.filter(
+                gateway_id=release_history.gateway_id, stage_id=release_history.stage_id, id__lt=release_history.id
+            )
             .order_by("-created_time")
             .first()
         )
 
         if other_latest_release is None:
-            return False
+            return
 
         # 获取其发布状态
         # 查询发布历史对应的最新发布事件
-        other_latest_release_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
-            [other_latest_release.id]
-        )
-        latest_event = other_latest_release_event_map.get(other_latest_release.id, None)
-        if latest_event:
-            return ReleaseHandler.get_status(latest_event) == ReleaseHistoryStatusEnum.DOING.value
+        has_another_release_doing = True
+        start_time = datetime.now().timestamp()
+        wait_times = 0
+        while has_another_release_doing:
+            # 如果等待时间超过10*RELEASE_GATEWAY_INTERVAL_SECOND就退出等待
+            now = datetime.now().timestamp()
+            if now - start_time > 10 * RELEASE_GATEWAY_INTERVAL_SECOND:
+                break
 
-        # 如果还没生成事件,就判断之间的时间间隔
-        release_interval = release_history.created_time - other_latest_release.created_time
-        # 获取时间间隔的总秒数
-        release_interval_in_seconds = release_interval.total_seconds()
+            time.sleep(1 * wait_times)
 
-        return release_interval_in_seconds < RELEASE_GATEWAY_INTERVAL_SECOND
+            wait_times += 1
+            other_latest_release_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                [other_latest_release.id]
+            )
+            latest_event = other_latest_release_event_map.get(other_latest_release.id, None)
+            if latest_event:
+                has_another_release_doing = (
+                    ReleaseHandler.get_status(latest_event) == ReleaseHistoryStatusEnum.DOING.value
+                )
+                continue
+            # 如果还没生成事件,就判断之间的时间间隔
+            release_interval = release_history.created_time - other_latest_release.created_time
+            # 获取时间间隔的总秒数
+            release_interval_in_seconds = release_interval.total_seconds()
+            has_another_release_doing = release_interval_in_seconds < RELEASE_GATEWAY_INTERVAL_SECOND

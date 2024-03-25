@@ -72,7 +72,7 @@
           </bk-table-column>
           <bk-table-column :label="t('告警内容')" prop="message">
             <template #default="{ data }">
-              <span v-bk-tooltips="{ content: data?.message, placement: 'left' }">
+              <span v-bk-tooltips="{ content: data?.message || '', placement: 'left' }">
                 {{ data?.message }}
               </span>
             </template>

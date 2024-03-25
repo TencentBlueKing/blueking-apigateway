@@ -17,7 +17,7 @@
 #
 from django.conf import settings
 
-from apigateway.core.micro_gateway_config import MicroGatewayHTTPInfo
+from apigateway.controller.micro_gateway_config import MicroGatewayHTTPInfo
 from apigateway.core.models import Gateway, MicroGateway, Stage
 
 

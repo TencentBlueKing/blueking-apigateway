@@ -17,9 +17,9 @@
 #
 import pytest
 
+from apigateway.controller.micro_gateway_config import MicroGatewayBcsInfo
 from apigateway.controller.tasks.micro_gateway import deploy_micro_gateway
 from apigateway.core.constants import MicroGatewayStatusEnum
-from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
 
 
 @pytest.fixture()

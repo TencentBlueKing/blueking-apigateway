@@ -41,10 +41,10 @@ from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.helm.chart import ChartHelper
 from apigateway.controller.helm.generator import CrdChartGenerator
 from apigateway.controller.helm.release import ReleaseHelper, ReleaseInfo
+from apigateway.controller.micro_gateway_config import MicroGatewayBcsInfo
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
 from apigateway.controller.registry.base import Registry
 from apigateway.controller.registry.dict import DictRegistry
-from apigateway.core.micro_gateway_config import MicroGatewayBcsInfo
 from apigateway.core.models import MicroGateway, Release, ResourceVersion
 
 logger = logging.getLogger(__name__)
