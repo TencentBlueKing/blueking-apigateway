@@ -107,9 +107,10 @@ allMethods.forEach((method) => {
           // @ts-ignore
           fetchConfig.headers['X-CSRFToken'] = CSRFToken;
         } else {
-          console.warn('Can not find csrftoken in document.cookie');
+          // console.warn('Can not find csrftoken in document.cookie');
           // return;
         }
+
         try {
           const fetchUrl = getFetchUrl(url, method, payload);
           // blob下载

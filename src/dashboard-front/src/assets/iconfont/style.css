@@ -263,6 +263,12 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-download:before {
 	content: "\e159";
 }
+.icon-ag-toggle-chinese:before {
+	content: "\e17a";
+}
+.icon-ag-toggle-english:before {
+	content: "\e17b";
+}
 .icon-ag-version:before {
 	content: "\e15c";
 }

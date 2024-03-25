@@ -1,13 +1,3 @@
-<script setup lang="ts">
-import { useI18n } from 'vue-i18n';
-import { useGetGlobalProperties } from '@/hooks';
-
-const { t } = useI18n();
-
-const globalProperties = useGetGlobalProperties();
-const { GLOBAL_CONFIG } = globalProperties;
-</script>
-
 <template>
   <bk-popover
     placement="bottom"
@@ -35,6 +25,16 @@ const { GLOBAL_CONFIG } = globalProperties;
     </template>
   </bk-popover>
 </template>
+
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+import { useGetGlobalProperties } from '@/hooks';
+
+const { t } = useI18n();
+
+const globalProperties = useGetGlobalProperties();
+const { GLOBAL_CONFIG } = globalProperties;
+</script>
 
 <style lang="scss" scoped>
 .info-icon {

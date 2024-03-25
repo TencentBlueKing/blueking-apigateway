@@ -231,9 +231,9 @@ const stageData: any = computed(() => {
 const active = ref('resourceInfo');
 // tab 选项卡
 const panels = [
-  { name: 'resourceInfo', label: '资源信息', component: resourceInfo },
-  { name: 'pluginManage', label: '插件管理', component: pluginManage },
-  { name: 'variableManage', label: '变量管理', component: variableManage },
+  { name: 'resourceInfo', label: t('资源信息'), component: resourceInfo },
+  { name: 'pluginManage', label: t('插件管理'), component: pluginManage },
+  { name: 'variableManage', label: t('变量管理'), component: variableManage },
 ];
 
 // 是否正在删除

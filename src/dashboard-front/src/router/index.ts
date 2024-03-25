@@ -1,12 +1,11 @@
 /* eslint-disable max-len */
 
-import {
-  createRouter,
-  createWebHistory,
-  RouteRecordRaw,
-} from 'vue-router';
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import i18n from '@/language/i18n';
 
 import globalConfig from '@/constant/config';
+
+const { t } = i18n.global;
 
 const Home = () => import(/* webpackChunkName: "Home" */ '@/views/home.vue');
 const ApigwDocs = () => import(/* webpackChunkName: "ApigwDocs" */ '@/views/apigwDocs/index.vue');
@@ -78,7 +77,7 @@ const routes: RouteRecordRaw[] = [
     name: 'apigwMain',
     component: ApigwMain,
     meta: {
-      title: '资源管理',
+      title: t('资源管理'),
       matchRoute: 'apigwMain',
       topMenu: 'home',
     },
@@ -88,7 +87,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwStageOverview',
         component: apigwStageOverview,
         meta: {
-          title: '环境管理',
+          title: t('环境管理'),
           matchRoute: 'apigwStageOverview',
           topMenu: 'home',
         },
@@ -98,7 +97,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwStageDetail',
         component: apigwStageDetail,
         meta: {
-          title: '环境概览',
+          title: t('环境概览'),
           matchRoute: 'apigwStageOverview',
           topMenu: 'home',
         },
@@ -108,7 +107,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwReleaseHistory',
         component: apigwReleaseHistory,
         meta: {
-          title: '发布记录',
+          title: t('发布记录'),
           matchRoute: 'apigwStageOverview',
           topMenu: 'home',
           showBackIcon: true,
@@ -119,7 +118,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwResource',
         component: ApigwResource,
         meta: {
-          title: '资源配置',
+          title: t('资源配置'),
           matchRoute: 'apigwResource',
           topMenu: 'home',
         },
@@ -129,7 +128,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwResourceCreate',
         component: ApigwResourceEdit,
         meta: {
-          title: '新建资源',
+          title: t('新建资源'),
           matchRoute: 'apigwResource',
           topMenu: 'home',
           showBackIcon: true,
@@ -140,7 +139,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwResourceEdit',
         component: ApigwResourceEdit,
         meta: {
-          title: '编辑资源',
+          title: t('编辑资源'),
           matchRoute: 'apigwResource',
           topMenu: 'home',
           showBackIcon: true,
@@ -151,7 +150,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwResourceClone',
         component: ApigwResourceEdit,
         meta: {
-          title: '克隆资源',
+          title: t('克隆资源'),
           matchRoute: 'apigwResource',
           topMenu: 'home',
           showBackIcon: true,
@@ -162,7 +161,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwResourceVersion',
         component: apigwResourceVersion,
         meta: {
-          title: '资源版本',
+          title: t('资源版本'),
           matchRoute: 'apigwResourceVersion',
           topMenu: 'home',
           isCustomTopbar: 'resourceVersionOverview',
@@ -173,7 +172,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwOnlineTest',
         component: apigwOnlineTest,
         meta: {
-          title: '在线调试',
+          title: t('在线调试'),
           matchRoute: 'apigwOnlineTest',
           topMenu: 'home',
         },
@@ -183,7 +182,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwResourceImport',
         component: ApigwResourceImport,
         meta: {
-          title: '导入资源配置',
+          title: t('导入资源配置'),
           matchRoute: 'apigwResource',
           topMenu: 'home',
           showBackIcon: true,
@@ -194,7 +193,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwBackendService',
         component: ApigwBackendService,
         meta: {
-          title: '后端服务',
+          title: t('后端服务'),
           matchRoute: 'apigwBackendService',
           topMenu: 'home',
         },
@@ -204,7 +203,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwPermissionApplys',
         component: ApigwPermissionApplys,
         meta: {
-          title: '权限审批',
+          title: t('权限审批'),
           matchRoute: 'apigwPermissionApplys',
           topMenu: 'home',
         },
@@ -214,7 +213,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwPermissionApps',
         component: ApigwPermissionApps,
         meta: {
-          title: '应用权限',
+          title: t('应用权限'),
           matchRoute: 'apigwPermissionApps',
           topMenu: 'home',
         },
@@ -224,7 +223,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwPermissionRecords',
         component: ApigwPermissionRecords,
         meta: {
-          title: '审批历史',
+          title: t('审批历史'),
           matchRoute: 'apigwPermissionRecords',
           topMenu: 'home',
         },
@@ -234,7 +233,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwAccessLog',
         component: apigwAccessLog,
         meta: {
-          title: '流水日志',
+          title: t('流水日志'),
           matchRoute: 'apigwAccessLog',
           topMenu: 'home',
         },
@@ -244,7 +243,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwAccessLogDetail',
         component: apigwAccessLogDetail,
         meta: {
-          title: '流水日志',
+          title: t('流水日志'),
           matchRoute: 'apigwAccessLogDetail',
           topMenu: 'home',
           isMenu: false,
@@ -255,7 +254,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwReport',
         component: apigwReport,
         meta: {
-          title: '统计报表',
+          title: t('统计报表'),
           matchRoute: 'apigwReport',
           topMenu: 'home',
         },
@@ -265,7 +264,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwMonitorAlarmStrategy',
         component: ApigwMonitorAlarmStrategy,
         meta: {
-          title: '告警策略',
+          title: t('告警策略'),
           matchRoute: 'apigwMonitorAlarmStrategy',
           topMenu: 'home',
         },
@@ -275,7 +274,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwMonitorAlarmHistory',
         component: ApigwMonitorAlarmHistory,
         meta: {
-          title: '告警历史',
+          title: t('告警历史'),
           matchRoute: 'apigwMonitorAlarmHistory',
           topMenu: 'home',
         },
@@ -285,7 +284,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwResourceImportDoc',
         component: ApigwResourceImportDoc,
         meta: {
-          title: '导入资源文档',
+          title: t('导入资源文档'),
           matchRoute: 'apigwResource',
           topMenu: 'home',
           showBackIcon: true,
@@ -296,7 +295,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwBasicInfo',
         component: ApiBasicInfo,
         meta: {
-          title: '基本信息',
+          title: t('基本信息'),
           matchRoute: 'apigwBasicInfo',
           topMenu: 'home',
         },
@@ -306,7 +305,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwOperateRecords',
         component: ApigwOperateRecords,
         meta: {
-          title: '操作记录',
+          title: t('操作记录'),
           matchRoute: 'apigwOperateRecords',
         },
       },
@@ -442,7 +441,7 @@ const routes: RouteRecordRaw[] = [
     component: ComponentsMain,
     redirect: '/components/access',
     meta: {
-      title: '组件管理',
+      title: t('组件管理'),
       matchRoute: 'componentsMain',
       topMenu: 'componentsMain',
     },
@@ -452,7 +451,7 @@ const routes: RouteRecordRaw[] = [
         name: 'componentsIntro',
         component: ComponentsIntro,
         meta: {
-          title: '简介',
+          title: t('简介'),
           matchRoute: 'componentsIntro',
           topMenu: 'componentsMain',
         },
@@ -462,7 +461,7 @@ const routes: RouteRecordRaw[] = [
         name: 'componentsSystem',
         component: ComponentsSystem,
         meta: {
-          title: '系统管理',
+          title: t('系统管理'),
           matchRoute: 'componentsSystem',
           topMenu: 'componentsMain',
         },
@@ -472,7 +471,7 @@ const routes: RouteRecordRaw[] = [
         name: 'componentsManage',
         component: ComponentsManage,
         meta: {
-          title: '组件管理',
+          title: t('组件管理'),
           matchRoute: 'componentsManage',
           topMenu: 'componentsMain',
         },
@@ -482,7 +481,7 @@ const routes: RouteRecordRaw[] = [
         name: 'syncApigwAccess',
         component: SyncApigwAccess,
         meta: {
-          title: '同步组件配置到 API 网关',
+          title: t('同步组件配置到 API 网关'),
           matchRoute: 'syncApigwAccess',
           topMenu: 'componentsMain',
           showBackIcon: true,
@@ -493,7 +492,7 @@ const routes: RouteRecordRaw[] = [
         name: 'syncHistory',
         component: SyncHistory,
         meta: {
-          title: '组件同步历史',
+          title: t('组件同步历史'),
           matchRoute: 'syncHistory',
           topMenu: 'componentsMain',
           showBackIcon: true,
@@ -504,7 +503,7 @@ const routes: RouteRecordRaw[] = [
         name: 'syncVersion',
         component: SyncVersion,
         meta: {
-          title: '组件同步版本',
+          title: t('组件同步版本'),
           matchRoute: 'syncVersion',
           topMenu: 'componentsMain',
           showBackIcon: true,
@@ -515,7 +514,7 @@ const routes: RouteRecordRaw[] = [
         name: 'componentsCategory',
         component: ComponentsCategory,
         meta: {
-          title: '文档分类',
+          title: t('文档分类'),
           matchRoute: 'componentsCategory',
           topMenu: 'componentsMain',
         },
@@ -525,7 +524,7 @@ const routes: RouteRecordRaw[] = [
         name: 'componentsPermission',
         component: docsComponent,
         meta: {
-          title: '权限管理',
+          title: t('权限管理'),
           matchRoute: 'componentsPermission',
           topMenu: 'componentsMain',
         },
@@ -535,7 +534,7 @@ const routes: RouteRecordRaw[] = [
             name: 'permissionApply',
             component: ComponentsAudit,
             meta: {
-              title: '权限审批',
+              title: t('权限审批'),
               matchRoute: 'permissionApply',
               topMenu: 'componentsMain',
             },
@@ -545,7 +544,7 @@ const routes: RouteRecordRaw[] = [
             name: 'permissionPower',
             component: ComponentsPower,
             meta: {
-              title: '应用权限',
+              title: t('应用权限'),
               matchRoute: 'permissionPower',
               topMenu: 'componentsMain',
             },
@@ -555,7 +554,7 @@ const routes: RouteRecordRaw[] = [
             name: 'permissionRecord',
             component: ComponentsHistory,
             meta: {
-              title: '审批历史',
+              title: t('审批历史'),
               matchRoute: 'permissionRecord',
               topMenu: 'componentsMain',
             },
@@ -567,7 +566,7 @@ const routes: RouteRecordRaw[] = [
         name: 'componentsRuntimeData',
         component: ComponentsRuntimeData,
         meta: {
-          title: '实时运行数据',
+          title: t('实时运行数据'),
           matchRoute: 'componentsRuntimeData',
           topMenu: 'componentsMain',
         },
@@ -577,7 +576,7 @@ const routes: RouteRecordRaw[] = [
         name: 'componentsRuntimeDetail',
         component: ComponentsRuntimeDetail,
         meta: {
-          title: '系统实时概况',
+          title: t('系统实时概况'),
           matchRoute: 'componentsRuntimeDetail',
           topMenu: 'componentsMain',
           showBackIcon: true,
