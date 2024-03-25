@@ -16,10 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 from django.core.management import BaseCommand
 from packaging import version
 
-from apigateway import settings
 from apigateway.biz.releaser import release
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
