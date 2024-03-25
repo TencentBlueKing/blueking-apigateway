@@ -8,6 +8,7 @@ import {
 } from 'vue';
 import UserInfo from '@/components/user-info.vue';
 import ProductInfo from '@/components/product-info.vue';
+import LanguageToggle from '@/components/language-toggle.vue';
 import AppAuth from '@/components/auth/index.vue';
 // @ts-ignore
 import NoticeComponent from '@blueking/notice-component';
@@ -275,6 +276,7 @@ onBeforeMount(() => {
             </template>
           </div>
           <div class="flex-row">
+            <language-toggle></language-toggle>
             <product-info></product-info>
             <user-info v-if="userLoaded" />
           </div>

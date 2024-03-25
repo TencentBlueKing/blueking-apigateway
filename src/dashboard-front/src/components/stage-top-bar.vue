@@ -87,12 +87,12 @@ const { t } = useI18n();
 const modelTypes = ref([
   {
     key: 'abbreviation',
-    text: '缩略模式',
+    text: t('缩略模式'),
     routeName: 'apigwStageOverview',
   },
   {
     key: 'detail',
-    text: '详情模式',
+    text: t('详情模式'),
     routeName: 'apigwStageDetail',
   },
 ]);
