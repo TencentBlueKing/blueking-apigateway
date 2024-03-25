@@ -23,20 +23,32 @@
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
-import { setLanguage } from '@/http';
+import { jsonpRequest } from '@/common/util';
+// import { setLanguage } from '@/http';
 
 const { locale } = useI18n();
 const router = useRouter();
 
 const toggleLanguage = async (idx: string) => {
   // locale.value = idx;
-  const data = new URLSearchParams();
-  data.append('language', idx === 'english' ? 'en' : 'zh-hans');
-  await setLanguage(data);
+  // const data = new URLSearchParams();
+  // data.append('language', idx === 'english' ? 'en' : 'zh-hans');
+  // await setLanguage(data);
   // await setLanguage({
   //   language: idx === 'english' ? 'en' : 'zh-hans',
   // });
-  router.go(0);
+
+  console.error(`${window.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fe_update_user_language/`);
+  const res: any = await jsonpRequest(
+    `${window.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fe_update_user_language/`,
+    {
+      language: idx === 'english' ? 'en' : 'zh-cn',
+    },
+    'languageToggle',
+  );
+  if (res.code === 0) {
+    router.go(0);
+  }
 };
 </script>
 

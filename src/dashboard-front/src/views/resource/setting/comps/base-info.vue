@@ -54,6 +54,7 @@
         v-model="formData.auth_config.resource_perm_required"
         :disabled="!curApigwData.allow_update_gateway_auth"
         theme="primary"
+        size="small"
       />
     </bk-form-item>
     <bk-form-item
@@ -65,6 +66,7 @@
         <bk-switcher
           v-model="formData.is_public"
           theme="primary"
+          size="small"
         />
         <bk-checkbox
           v-if="formData.is_public" class="ml40"

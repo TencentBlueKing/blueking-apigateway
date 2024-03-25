@@ -15,21 +15,21 @@ Object.keys(langMap).forEach((key) => {
 });
 
 // const language = (navigator.language || 'en').toLocaleLowerCase();
-const localLanguage = cookie.parse(document.cookie).blueking_language || 'zh-hans';
+const localLanguage = cookie.parse(document.cookie).blueking_language || 'zh-cn';
 
 const i18n = createI18n({
   silentTranslationWarn: true,
   legacy: false,
   locale: localLanguage,
-  fallbackLocale: 'zh-hans',
+  fallbackLocale: 'zh-cn',
   messages: {
-    // 'zh-hans': Object.assign(lang.zhCN, zh),
-    'zh-hans': zh,
+    // 'zh-cn': Object.assign(lang.zhCN, zh),
+    'zh-cn': zh,
     // en: Object.assign(lang.enUS, en),
     en,
   },
 });
 
-export const isChinese = localLanguage === 'zh-hans';
+export const isChinese = localLanguage === 'zh-cn';
 
 export default i18n;

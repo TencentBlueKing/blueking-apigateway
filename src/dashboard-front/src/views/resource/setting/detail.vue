@@ -76,9 +76,8 @@
         <span v-else>{{ servicesData?.config?.map((item: any) => item?.stage?.name)?.join(', ') }}</span>
       </bk-form-item>
     </bk-form>
-    <div class="title">
-      {{ t('前端配置') }}
-    </div>
+
+    <div class="title">{{ t('前端配置') }}</div>
     <bk-form ref="formRef" :model="formData" class="form-cls flex-row">
       <bk-form-item class="form-item-cls">
         <template #label>
@@ -93,9 +92,8 @@
         <span class="value-cls">{{ formData.path }}</span>
       </bk-form-item>
     </bk-form>
-    <div class="title">
-      {{ t('后端配置') }}
-    </div>
+
+    <div class="title">{{ t('后端配置') }}</div>
     <bk-form ref="formRef" :model="formData" class="form-cls flex-row">
       <bk-form-item>
         <template #label>
@@ -235,6 +233,13 @@ const getResourceDetails = async () => {
 // 选择服务获取服务详情数据
 const getServiceData = async () => {
   const res = await getBackendsDetailData(props.apigwId, formData.value.backend.id);
+
+  const resourceDetailTimeout = formData.value?.backend?.config?.timeout;
+  if (resourceDetailTimeout !== 0) {
+    res.configs.forEach((item: any) => {
+      item.timeout = resourceDetailTimeout;
+    });
+  }
   servicesData.value.config = res.configs;
   servicesData.value.name = res.name;
   emit('done', false);
