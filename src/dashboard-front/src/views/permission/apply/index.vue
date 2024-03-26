@@ -28,7 +28,7 @@
         <bk-table
           ref="permissionTableRef"
           class="perm-apply-table"
-          :data="tableData"
+          :data="permissionApplyList"
           :columns="permissionData.headers"
           :remote-pagination="true"
           :row-style="{ cursor: 'pointer' }"
@@ -53,7 +53,7 @@
               :key="row.id"
               :data="row.resourceList"
               :outer-border="false"
-              ext-cls="ag-expand-table"
+              class="ag-expand-table"
               @selection-change="handleRowSelectionChange">
               <bk-table-column type="index" label="" width="60" />
               <bk-table-column type="selection" width="50" />
@@ -150,6 +150,7 @@ import { useQueryList, useSelection } from '@/hooks';
 import { Message, Loading } from 'bkui-vue';
 import { sortByKey } from '@/common/util'
 import TableEmpty from '@/components/table-empty.vue';
+import { cloneDeep } from 'lodash';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -214,6 +215,7 @@ const rules = reactive({
     },
   ],
 });
+const permissionApplyList = ref([]);
 
 // 列表hooks
 const {
@@ -343,7 +345,7 @@ const setPermissionDetail = (name: string, el: HTMLElement) => {
 };
 
 // 获取资源列表数据
-const fetchResources = async () => {
+ (async () => {
   const { apigwId } = common;
   const pageParams = {
     no_page: true,
@@ -354,13 +356,14 @@ const fetchResources = async () => {
   try {
     const { results} = await getApigwResources(apigwId, pageParams);
     resourceList.value = results || [];
+    permissionApplyList.value = initResourceList(tableData.value)
   } catch (e) {
     console.log(e);
   }
-};
+})();
 
-const initResourceList = () => {
-  tableData.value.forEach((applyItem) => {
+const initResourceList = (payload:any[]) => {
+  payload.forEach((applyItem) => {
     const results = []
     applyItem.resourceList = []
     applyItem.isSelectAll = true
@@ -374,12 +377,14 @@ const initResourceList = () => {
     })
     applyItem.resourceList = sortByKey(results, 'path')
   })
+  return payload
 }
 
 // 监听授权维度的变化
 watch(
   () => filterData.value,
   () => {
+    updateTableEmptyConfig();
     resetSelections();
   },
   {  deep: true },
@@ -390,15 +395,15 @@ watch(
   () => pagination.value,
   (v: any) => {
     permission.setCount(v.count);
-    console.log('newValue', v);
   },
   { deep: true },
 );
 
 watch(
   () => tableData.value,
-  () => {
-    initResourceList()
+  async (value: any[]) => {
+    permissionApplyList.value = await initResourceList(value);
+    updateTableEmptyConfig();
   },
   { immediate: true },
 );
@@ -577,8 +582,8 @@ const handleClearFilterKey = () => {
 };
 
 const updateTableEmptyConfig = () => {
-  const list = Object.values(filterData.value).filter((item) => item !== '')
-  if (list.length && !tableData.value.length) {
+  const list = Object.values(filterData.value).filter((item) => item !== '');
+  if (list.length && !permissionApplyList.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
@@ -591,14 +596,7 @@ const updateTableEmptyConfig = () => {
 
 const init = async () => {
   setTableHeader();
-  await fetchResources();
 };
-
-watch(() => filterData.value, () => {
-  updateTableEmptyConfig();
-},{
-  deep: true
-})
 
 onMounted(() => {
   init();
@@ -642,6 +640,9 @@ onMounted(() => {
   }
 }
 :deep(.ag-expand-table) {
+  .bk-table-body {
+    border-bottom: 0;
+  }
   td,
   th {
     padding: 0 !important;
@@ -659,19 +660,31 @@ onMounted(() => {
 
 :deep(.perm-apply-dot) {
   .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 3px;
-      &.approved {
-        background: #e6f6eb;
-        border: 1px solid #43c472;
-      }
-      &.rejected {
-        background: #FFE6E6;
-        border: 1px solid #EA3636;
-      }
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 3px;
+    &.approved {
+      background: #e6f6eb;
+      border: 1px solid #43c472;
     }
+    &.rejected {
+      background: #FFE6E6;
+      border: 1px solid #EA3636;
+    }
+  }
 }
+
+:deep(.bk-table-expanded-cell) {
+    padding: 0 !important;
+
+    &:hover {
+      cursor: pointer;
+    }
+
+    .bk-table {
+      border: 0;
+    }
+  }
 </style>
