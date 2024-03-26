@@ -119,13 +119,14 @@ class Command(BaseCommand):
                 f"\nnew:{get_next_version(latest_version.object_display)}\n"
             )
         for diff_stage_info in statistics_diff_result:
-            if not diff_stage_info["need_release"]:
-                gateway_stage_info = diff_stage_info["stage"].gateway.name + "_" + diff_stage_info["stage"].name
-                diff_data = diff_stage_info["diff_data"]
-                release_version_same = diff_stage_info["release_version_same"]
-                self.stdout.write(
-                    f"{gateway_stage_info} diff data:{diff_data},release_version_same: {release_version_same}"
-                )
+            need_release = diff_stage_info["need_release"]
+            gateway_stage_info = diff_stage_info["stage"].gateway.name + "_" + diff_stage_info["stage"].name
+            diff_data = diff_stage_info["diff_data"]
+            release_version_same = diff_stage_info["release_version_same"]
+            self.stdout.write(
+                f"{gateway_stage_info}: need_release:{need_release},"
+                f"release_version_same: {release_version_same},diff data:{diff_data}"
+            )
 
     def _is_need_make_new_version(self, is_resource_has_update: bool, latest_version: ResourceVersion) -> bool:
         """判断是否需要进行创建版本"""
@@ -239,15 +240,20 @@ class Command(BaseCommand):
         self.stdout.write("start make version and publish........")
 
         gateway_id_to_stages_for_publish: Dict[int, List[Stage]] = {}
+
+        stage_id_to_resource_version: Dict[int, ResourceVersion] = {}
+
         for diff_stage_info in statistics_diff_result:
             stage = diff_stage_info["stage"]
             if not diff_stage_info["need_release"]:
                 continue
+            stage_id_to_resource_version[stage.id] = diff_stage_info["latest_version"]
             if stage.gateway_id in gateway_id_to_stages_for_publish:
                 gateway_id_to_stages_for_publish[stage.gateway_id].append(stage)
                 continue
             gateway_id_to_stages_for_publish[stage.gateway_id] = [stage]
 
+        # 需要创建版本的先创建版本然后再发布
         for gateway, latest_version in gateway_to_make_new_version.items():
             new_version = self._make_gateway_new_version(gateway, latest_version)
             self.stdout.write(f" make gateway[{gateway.name} old:{latest_version}] new version: {new_version.version}")
@@ -258,6 +264,19 @@ class Command(BaseCommand):
 
             for stage in gateway_id_to_stages_for_publish.get(gateway.id, []):
                 self._make_version_release(stage, new_version.id)
+
+            del (gateway_id_to_stages_for_publish, gateway.id)
+
+        if not pub:
+            return
+
+            # 不需要创建版本的发布
+        for stages in gateway_id_to_stages_for_publish.values():  # noqa: F821
+            for stage in stages:
+                release_resource_version = stage_id_to_resource_version.get(stage.id, None)
+                if not release_resource_version:
+                    continue
+                self._make_version_release(stage, release_resource_version.id)
 
         self.stdout.write("end make new version and publish")
 
