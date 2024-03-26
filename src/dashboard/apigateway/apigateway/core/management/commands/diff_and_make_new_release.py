@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from django.conf import settings
 from django.core.management import BaseCommand
@@ -128,12 +128,14 @@ class Command(BaseCommand):
                 f"release_version_same: {release_version_same},diff data:{diff_data}"
             )
 
-    def _is_need_make_new_version(self, is_resource_has_update: bool, latest_version: ResourceVersion) -> bool:
+    def _is_need_make_new_version(
+        self, is_resource_has_update: bool, latest_version: Optional[ResourceVersion] = None
+    ) -> bool:
         """判断是否需要进行创建版本"""
 
         # 如果是已经打过版本的则不需要重新再生成版本,考虑重复调用的情况
         # 如果是没有生成版本，则也不需要生成
-        if (latest_version.created_by == "apigw_system_admin" and not is_resource_has_update) or not latest_version:
+        if not latest_version or (latest_version.created_by == "apigw_system_admin" and not is_resource_has_update):
             return False
 
         return True
