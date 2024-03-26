@@ -82,7 +82,7 @@ class Command(BaseCommand):
             if resource_has_update:
                 need_release = False
 
-            # 如果是已经打过版本的则不需要重新再生成版本,考虑
+            # 如果是已经打过版本的则不需要重新再生成版本,考虑重复调用的情况
             if latest_version.created_by == "apigw_system_admin" and not resource_has_update:
                 need_make_new_resource_version = False
 
