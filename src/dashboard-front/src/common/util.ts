@@ -471,3 +471,29 @@ export const yaml2json = (yamlStr: string) => {
     };
   }
 };
+
+/**
+ *  jsonp请求
+ *
+ * @param {url} str 请求地址
+ * @param {params} str 请求参数
+ * @param {callback} str 回调名
+ *
+ */
+export function jsonpRequest(url: string, params: any, callbackName?: string) {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    if (callbackName) {
+      callbackName = callbackName + Math.floor((1 + Math.random()) * 0x10000).toString(16)
+        .substring(1);
+    }
+    Object.assign(params, callbackName ? { callback: callbackName } : {});
+    const arr = Object.keys(params).map(key => `${key}=${params[key]}`);
+    script.src = `${url}?${arr.join('&')}`;
+    document.body.appendChild(script);
+    // @ts-ignore
+    window[callbackName] = (data: any) => {
+      resolve(data);
+    };
+  });
+}

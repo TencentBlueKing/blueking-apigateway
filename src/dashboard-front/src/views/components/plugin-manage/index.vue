@@ -474,7 +474,7 @@ const getBindingDetails = async () => {
     // 当前环境或资源绑定的插件
     const res = await getScopeBindingPluginList(apigwId, scopeType.value, scopeId.value);
     curBindingPlugins.value = res;
-    console.log(curBindingPlugins.value);
+    console.log('当前环境或资源绑定的插件', curBindingPlugins.value);
   } catch (error) {
     console.log('error', error);
   } finally {

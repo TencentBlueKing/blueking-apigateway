@@ -1,5 +1,6 @@
 declare interface Window {
   SITE_URL: string,
+  BK_DOMAIN: string
   BK_DASHBOARD_URL: string
   BK_LOGIN_URL: string
   BK_DASHBOARD_CSRF_COOKIE_NAME: string

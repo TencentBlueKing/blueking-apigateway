@@ -39,10 +39,10 @@
       <bk-checkbox
         v-model="formData.auth_config.app_verified_required"
         :disabled="!curApigwData.allow_update_gateway_auth">
-        <span class="bottom-line" v-bk-tooltips="{ content: '请求方需提供蓝鲸应用身份信息' }">{{ t('蓝鲸应用认证') }}</span>
+        <span class="bottom-line" v-bk-tooltips="{ content: t('请求方需提供蓝鲸应用身份信息') }">{{ t('蓝鲸应用认证') }}</span>
       </bk-checkbox>
       <bk-checkbox class="ml40" v-model="formData.auth_config.auth_verified_required">
-        <span class="bottom-line" v-bk-tooltips="{ content: '请求方需提供蓝鲸用户身份信息' }">{{ t('用户认证') }}</span>
+        <span class="bottom-line" v-bk-tooltips="{ content: t('请求方需提供蓝鲸用户身份信息') }">{{ t('用户认证') }}</span>
       </bk-checkbox>
     </bk-form-item>
     <bk-form-item
@@ -54,6 +54,7 @@
         v-model="formData.auth_config.resource_perm_required"
         :disabled="!curApigwData.allow_update_gateway_auth"
         theme="primary"
+        size="small"
       />
     </bk-form-item>
     <bk-form-item
@@ -65,6 +66,7 @@
         <bk-switcher
           v-model="formData.is_public"
           theme="primary"
+          size="small"
         />
         <bk-checkbox
           v-if="formData.is_public" class="ml40"

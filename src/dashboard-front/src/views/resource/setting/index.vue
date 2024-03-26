@@ -97,9 +97,7 @@
       />
 
       <div class="left-wraper" v-show="isShowLeft">
-        <bk-loading
-          :loading="isLoading"
-        >
+        <bk-loading :loading="isLoading">
           <bk-table
             class="table-layout"
             :data="tableData"
@@ -116,24 +114,11 @@
             row-hover="auto"
             :row-class="is24HoursAgoClsFunc"
             border="outer"
-            :settings="settings"
-          >
-            <bk-table-column
-              width="80"
-              type="selection"
-              align="center"
-            />
-            <bk-table-column
-              :label="t('资源名称')"
-              width="160"
-              prop="name"
-            >
+            :settings="settings">
+            <bk-table-column width="80" type="selection" align="center" />
+            <bk-table-column :label="t('资源名称')" width="160" prop="name">
               <template #default="{ row }">
-                <bk-button
-                  text
-                  theme="primary"
-                  @click="handleShowInfo(row.id)"
-                >
+                <bk-button text theme="primary" @click="handleShowInfo(row.id)">
                   {{row?.name}}
                 </bk-button>
                 <span
@@ -255,7 +240,7 @@
             </bk-table-column>
             <bk-table-column
               :label="t('操作')"
-              width="140"
+              width="160"
               prop="act"
             >
               <template #default="{ data }">
@@ -559,7 +544,6 @@ const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
 
-
 const methodsTypeList =  ref(common.methodList);
 
 const searchValue = ref([]);
@@ -810,10 +794,10 @@ const handleToggleRg = () => {
 };
 
 const isDragging = ref<boolean>(false);
-const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string, rightBoxId: string) => {
+const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string/* , rightBoxId: string */) => {
   const resize: any = document.getElementById(resizeId);
   const leftBox = document.getElementById(leftBoxId);
-  const rightBox = document.getElementById(rightBoxId);
+  // const rightBox = document.getElementById(rightBoxId);
   const box = document.getElementById(contentId);
 
   resize.onmousedown = function (e: any) {
@@ -1202,7 +1186,7 @@ watch(() => route, () => {
 
 onMounted(() => {
   init();
-  dragTwoColDiv('resourceId', 'resourceLf', 'resourceLine', 'resourceRg');
+  dragTwoColDiv('resourceId', 'resourceLf', 'resourceLine'/* , 'resourceRg' */);
 });
 </script>
 <style lang="scss" scoped>
