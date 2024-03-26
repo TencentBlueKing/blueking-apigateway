@@ -270,7 +270,7 @@ class Command(BaseCommand):
         if not pub:
             return
 
-            # 不需要创建版本的发布
+        # 不需要创建版本的发布
         for stages in gateway_id_to_stages_for_publish.values():  # noqa: F821
             for stage in stages:
                 release_resource_version = stage_id_to_resource_version.get(stage.id, None)
