@@ -82,12 +82,17 @@ class Command(BaseCommand):
             if resource_has_update:
                 need_release = False
 
+            # 如果是已经打过版本的则不需要重新再生成版本,考虑
+            if latest_version.created_by == "apigw_system_admin" and not resource_has_update:
+                need_make_new_resource_version = False
+
             # 如果当前资源相比最新版本无更新并且最新版本和发布版本不一致，生成版本不发布
             # 如果当前资源相比最新版本无更新并且最新版本和发布版本一致， 生成并发布
             if not resource_has_update and not release_version_same:
                 need_release = False
 
-            gateway_to_make_new_version[stage.gateway] = latest_version
+            if need_make_new_resource_version:
+                gateway_to_make_new_version[stage.gateway] = latest_version
 
             statistics_diff_result.append(
                 {
