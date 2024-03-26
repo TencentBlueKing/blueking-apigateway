@@ -56,6 +56,9 @@ class Command(BaseCommand):
             # 查询当前环境发布的版本
             resource_version_id = Release.objects.get_released_resource_version_id(stage.gateway_id, stage.name)
 
+            if not resource_version_id:
+                continue
+
             # 判断对比资源是否有更新
             is_resource_has_update = self._get_resource_update(stage, latest_version)
 
