@@ -16,83 +16,61 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import Dict, List
+
 from django.conf import settings
 from django.core.management import BaseCommand
-from packaging import version
 
 from apigateway.biz.releaser import release
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
-from apigateway.core.constants import StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ResourceVersion, Stage
-from apigateway.utils import time
 from apigateway.utils.redis_utils import Lock
+from apigateway.utils.version import get_next_version
 
 
 class Command(BaseCommand):
     """批量对比网关发布资源及发布"""
 
     def add_arguments(self, parser):
-        parser.add_argument("--dry-run", action="store_true", dest="dry_run", required=False)
+        parser.add_argument("--run", action="store_true", dest="run", required=False)
         parser.add_argument("--more", action="store_true", dest="more", required=False)
-        parser.add_argument("--no-pub", action="store_true", dest="no_pub", required=False)
+        parser.add_argument("--pub", action="store_true", dest="pub", required=False)
 
-    def handle(self, dry_run: bool, more: bool, no_pub: bool, **options):
-        stages = Stage.objects.filter(status=StageStatusEnum.ACTIVE.value).all()
+    def handle(self, run: bool, more: bool, pub: bool, **options):
+        stages = Stage.objects.filter(
+            status=StageStatusEnum.ACTIVE.value, gateway__status=GatewayStatusEnum.ACTIVE.value
+        ).all()
 
         statistics_diff_result = []
 
         gateway_to_make_new_version = {}
 
         for stage in stages:
-            if not stage.gateway.is_active:
-                continue
             # 查询当前网关的最新版本
             latest_version = ResourceVersion.objects.get_latest_version(stage.gateway_id)
             if not latest_version:
                 continue
 
-            # 查询当前网关是否需要创建版本(是否有变更)
-            resource_has_update = ResourceVersionHandler.need_new_version(stage.gateway_id)
-
-            resource_diff_data = {}
-            if resource_has_update:
-                # 如果有差异，进行对比
-                resource_diff_data = self._get_diff_data(stage, latest_version)
-
-            # 最新资源和最新版本相比是否有更新
-            resource_has_update = (
-                self._len_dict(resource_diff_data.get("source_diff"))
-                + self._len_dict(resource_diff_data.get("target_diff"))
-                > 0
-            )
-
             # 查询当前环境发布的版本
             resource_version_id = Release.objects.get_released_resource_version_id(stage.gateway_id, stage.name)
 
+            # 判断对比资源是否有更新
+            is_resource_has_update = self._get_resource_update(stage, latest_version)
+
             # 当前最新版本和当前环境发布版本是否一致
-            release_version_same = resource_version_id == latest_version.id if latest_version else True
+            release_version_same = resource_version_id == latest_version.id if latest_version else False
 
-            need_make_new_resource_version = True
-
-            need_release = True
-
-            # 如果当前最新资源相比最新版本有更新并且最新版本和发布的版本不一致，生成新版本不发布
-            # 如果当前资源相比最新版本有更新并且最新版本和发布的版本一致，生成版本不发布
-            if resource_has_update:
-                need_release = False
-
-            # 如果是已经打过版本的则不需要重新再生成版本,考虑重复调用的情况
-            if latest_version.created_by == "apigw_system_admin" and not resource_has_update:
-                need_make_new_resource_version = False
-
-            # 如果当前资源相比最新版本无更新并且最新版本和发布版本不一致，生成版本不发布
-            # 如果当前资源相比最新版本无更新并且最新版本和发布版本一致， 生成并发布
-            if not resource_has_update and not release_version_same:
-                need_release = False
-
+            # 判断是否需要创建版本
+            need_make_new_resource_version = self._is_need_make_new_version(is_resource_has_update, latest_version)
             if need_make_new_resource_version:
                 gateway_to_make_new_version[stage.gateway] = latest_version
+
+            # 判断是否需要进行发布
+            need_release = self._is_need_release(
+                is_resource_has_update, release_version_same, latest_version, resource_version_id
+            )
 
             statistics_diff_result.append(
                 {
@@ -100,7 +78,7 @@ class Command(BaseCommand):
                     "need_make_new_version": need_make_new_resource_version,
                     "need_release": need_release,
                     "latest_version": latest_version,
-                    "diff_data": resource_diff_data,
+                    "diff_data": self._get_diff_data(stage, latest_version),
                     "release_version_same": release_version_same,
                 }
             )
@@ -122,17 +100,11 @@ class Command(BaseCommand):
         if more:
             self._output_more_info(gateway_to_make_new_version, statistics_diff_result)
 
-        if dry_run:
+        if not run:
             return
 
-        # 创建版本
-        version_to_id = self._make_versions(gateway_to_make_new_version)
-
-        if no_pub:
-            return
-
-        # 开始发布
-        self._make_versions_publish(statistics_diff_result, version_to_id)
+        # 创建版本并发布
+        self._make_version_and_publish(gateway_to_make_new_version, statistics_diff_result, pub)
 
     def _output_more_info(self, gateway_to_make_new_version, statistics_diff_result):
         """输出更详细信息"""
@@ -141,7 +113,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"{gateway.name}:"
                 f"\nlatest:{latest_version.object_display}"
-                f"\nnew:{self._get_next_version(latest_version.object_display)}\n"
+                f"\nnew:{get_next_version(latest_version.object_display)}\n"
             )
         for diff_stage_info in statistics_diff_result:
             if not diff_stage_info["need_release"]:
@@ -151,6 +123,77 @@ class Command(BaseCommand):
                 self.stdout.write(
                     f"{gateway_stage_info} diff data:{diff_data},release_version_same: {release_version_same}"
                 )
+
+    def _is_need_make_new_version(self, is_resource_has_update: bool, latest_version: ResourceVersion) -> bool:
+        """判断是否需要进行创建版本"""
+
+        # 如果是已经打过版本的则不需要重新再生成版本,考虑重复调用的情况
+        # 如果是没有生成版本，则也不需要生成
+        if (latest_version.created_by == "apigw_system_admin" and not is_resource_has_update) or not latest_version:
+            return False
+
+        return True
+
+    def _is_need_release(
+        self,
+        is_resource_has_update: bool,
+        release_version_same: bool,
+        latest_version: ResourceVersion,
+        release_resource_version_id: int,
+    ) -> bool:
+        """判断是否需要进行发布"""
+
+        # 如果当前最新资源相比最新版本有更新并且最新版本和发布的版本不一致，生成新版本不发布
+        # 如果当前资源相比最新版本有更新并且最新版本和发布的版本一致，生成版本不发布
+        # 如果没有生成过版本则不需要发布
+        if is_resource_has_update or not latest_version:
+            return False
+
+        # 重试场景
+        if latest_version.created_by == "apigw_system_admin":
+            # 如果当前资源最新版本和发布的版本一致则不用发布
+            if release_version_same:
+                return False
+
+            # 获取真正的排除apigw_system_admin创建的最新版本
+            real_latest_resource_version = (
+                ResourceVersion.objects.filter(gateway_id=latest_version.gateway_id)
+                .exclude(
+                    created_by="apigw_system_admin",
+                )
+                .order_by("-created_time")
+                .first()
+            )
+            # 如果真正最新的版本和发布版本一致，则可以发布
+            if real_latest_resource_version and real_latest_resource_version.id == release_resource_version_id:
+                return True
+
+            # 如果真正最新的版本和发布版本不一致，则不可以发布
+            if real_latest_resource_version and real_latest_resource_version.id != release_resource_version_id:
+                return False
+
+        # 非重试场景
+        elif not is_resource_has_update and not release_version_same:
+            return False
+        return True
+
+    def _get_resource_update(self, stage: Stage, latest_version: ResourceVersion):
+        """判断资源是否有更新"""
+
+        # 查询当前网关是否需要创建版本(是否有变更)
+        resource_has_update = ResourceVersionHandler.need_new_version(stage.gateway.id)
+
+        resource_diff_data = {}
+        if resource_has_update:
+            # 如果有差异，进行对比
+            resource_diff_data = self._get_diff_data(stage, latest_version)
+
+        # 最新资源和最新版本相比是否有更新
+        return (
+            self._len_dict(resource_diff_data.get("source_diff"))
+            + self._len_dict(resource_diff_data.get("target_diff"))
+            > 0
+        )
 
     def _make_version_release(self, stage: Stage, resource_version_id: int):
         """进行环境版本发布"""
@@ -175,8 +218,11 @@ class Command(BaseCommand):
 
     def _make_gateway_new_version(self, gateway: Gateway, latest_version: ResourceVersion) -> ResourceVersion:
         """对网关进行新建版本"""
+        new_version = get_next_version(latest_version.object_display)
 
-        new_version = self._get_next_version(latest_version.object_display)
+        # 如果版本有冲突
+        if ResourceVersion.objects.get_id_by_version(gateway.id, new_version):
+            new_version += ".alpha1"
 
         version_data = {
             "version": new_version,
@@ -184,43 +230,33 @@ class Command(BaseCommand):
         }
         return ResourceVersionHandler.create_resource_version(gateway, version_data, "apigw_system_admin")
 
-    def _make_versions(self, gateway_to_make_new_version):
-        # 创建版本
-        self.stdout.write("start make new version........")
+    def _make_version_and_publish(self, gateway_to_make_new_version, statistics_diff_result, pub: bool):
+        """创建版本并且按照网关维度进行发布"""
 
-        version_to_id = {}
-        for gateway, latest_version in gateway_to_make_new_version.items():
-            new_version = self._make_gateway_new_version(gateway, latest_version)
-            version_to_id[new_version.version] = new_version.id
-            self.stdout.write(f" make gateway[{gateway.name} old:{latest_version}] new version: {new_version.version}")
+        self.stdout.write("start make version and publish........")
 
-        self.stdout.write("end make new version success")
-        return version_to_id
-
-    def _make_versions_publish(self, statistics_diff_result, version_to_id):
-        self.stdout.write("begin publish gateways........")
+        gateway_id_to_stages_for_publish: Dict[int, List[Stage]] = {}
         for diff_stage_info in statistics_diff_result:
+            stage = diff_stage_info["stage"]
             if not diff_stage_info["need_release"]:
                 continue
-            if diff_stage_info["need_release"]:
-                new_version = self._get_next_version(diff_stage_info["latest_version"].object_display)
-                resource_version_id = version_to_id.get(new_version)
-                if not resource_version_id:
-                    gateway_stage_info = diff_stage_info["stage"].gateway.name + "_" + diff_stage_info["stage"].name
-                    self.stdout.write(f"{gateway_stage_info} can't find resource_version_id by version:{new_version}")
-                    continue
-                self._make_version_release(diff_stage_info["stage"], resource_version_id)
-        self.stdout.write("end publish gateways........")
+            if stage.gateway_id in gateway_id_to_stages_for_publish:
+                gateway_id_to_stages_for_publish[stage.gateway_id].append(stage)
+                continue
+            gateway_id_to_stages_for_publish[stage.gateway_id] = [stage]
 
-    def _get_next_version(self, current_version: str) -> str:
-        try:
-            std_version = version.parse(current_version)
-            # 避免版本冲突
-            return f"{std_version.major}.{std_version.minor}.{std_version.micro + 1}-alpha6666"
-        except version.InvalidVersion:
-            now = time.now_datetime()
-            now_str = time.format(now, fmt="YYYYMMDDHHmmss")
-            return current_version + f".{now_str}"
+        for gateway, latest_version in gateway_to_make_new_version.items():
+            new_version = self._make_gateway_new_version(gateway, latest_version)
+            self.stdout.write(f" make gateway[{gateway.name} old:{latest_version}] new version: {new_version.version}")
+
+            # 开始进行发布
+            if not pub:
+                continue
+
+            for stage in gateway_id_to_stages_for_publish.get(gateway.id, []):
+                self._make_version_release(stage, new_version.id)
+
+        self.stdout.write("end make new version and publish")
 
     def _len_dict(self, result) -> int:
         if not result:
@@ -228,14 +264,18 @@ class Command(BaseCommand):
         return len(result)
 
     def _get_diff_data(self, stage: Stage, latest_version: ResourceVersion):
+        """获取对比差异结果"""
+
         resource_diff_data = {}
 
         source_resource_data = ResourceVersionHandler().get_data_by_id_or_new(stage.gateway, latest_version.id)
         target_resource_data = ResourceVersionHandler().get_data_by_id_or_new(stage.gateway, None)
 
-        diff_data = self._diff_resource_version_data(
+        diff_data = ResourceDifferHandler.diff_resource_version_data(
             source_resource_data,
             target_resource_data,
+            {},
+            {},
         )
         resource_has_update = len(diff_data["add"]) > 0 or len(diff_data["delete"]) > 0 or len(diff_data["update"]) > 0
 
@@ -274,59 +314,3 @@ class Command(BaseCommand):
                     "target_diff": diff_data["update"][0].get("target", {}).get("diff", {}),
                 }
         return resource_diff_data
-
-    def _diff_resource_version_data(self, source_data: list, target_data: list) -> dict:
-        source_data_map = {}
-        target_data_map = {}
-        for item in source_data:
-            resource_id = item["id"]
-            item["doc_updated_time"] = ""
-            source_data_map[resource_id] = item
-        for item in target_data:
-            resource_id = item["id"]
-            item["doc_updated_time"] = ""
-            target_data_map[resource_id] = item
-
-        resource_add = []
-        resource_delete = []
-        resource_update = []
-
-        for resource_id, source_resource_data_raw in source_data_map.items():
-            source_resource_differ = ResourceDifferHandler.parse_obj(source_resource_data_raw)
-            target_resource_data = target_data_map.pop(resource_id, None)
-
-            # 目标版本中资源不存在，资源被删除
-            if not target_resource_data:
-                resource_delete.append(source_resource_differ.dict())
-                continue
-
-            target_resource_differ = ResourceDifferHandler.parse_obj(target_resource_data)
-            source_diff_value, target_diff_value = source_resource_differ.diff(target_resource_differ)
-
-            # 资源无变化，忽略此资源
-            if not source_diff_value and not target_diff_value:
-                continue
-
-            # 资源有变化，记录资源差异
-            source_resource_data = source_resource_differ.dict()
-            target_resource_data = target_resource_differ.dict()
-            source_resource_data["diff"] = source_diff_value
-            target_resource_data["diff"] = target_diff_value
-            resource_update.append(
-                {
-                    "source": source_resource_data,
-                    "target": target_resource_data,
-                }
-            )
-
-        # 目标版本中，新增的资源
-        if target_data_map:
-            for target_resource_data in target_data_map.values():
-                target_resource_differ = ResourceDifferHandler.parse_obj(target_resource_data)
-                resource_add.append(target_resource_differ.dict())
-
-        return {
-            "add": sorted(resource_add, key=lambda x: x["path"]),
-            "delete": sorted(resource_delete, key=lambda x: x["path"]),
-            "update": sorted(resource_update, key=lambda x: x["target"]["path"]),
-        }
