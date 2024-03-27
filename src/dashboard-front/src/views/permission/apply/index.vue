@@ -326,6 +326,9 @@ const setTableHeader = () => {
               <bk-button class="mr10" theme="primary" text onClick={(e:Event) => { handleApplyApprove(e, data)}}>
                 { data?.isSelectAll ? t('全部通过') : t('部分通过') }
               </bk-button>
+              <bk-button theme="primary" text onClick={(e:Event) => { handleApplyReject(e, data) }}>
+                  { t('全部驳回') }
+              </bk-button>
             </div>
           )
         }
