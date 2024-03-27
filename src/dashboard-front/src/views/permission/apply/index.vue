@@ -46,15 +46,16 @@
             </div>
             <bk-table
               v-else
-              :ref="(el: HTMLElement) => setPermissionDetail(`permissionDetail_${row.id}`, el)"
+              :ref="(el: HTMLElement) =>(childPermTableRef[row.id] = el)"
               :max-height="378"
               :size="'small'"
               :key="row.id"
               :data="row.resourceList"
               :outer-border="false"
               class="ag-expand-table"
-              @select-all="(e:any) => handleRowSelectionAllChange(row, e)"
-              @selection-change="(e:any) => handleRowSelectionChange(row, e)">
+              @select-all="(e: SelectionType) => handleRowSelectionAllChange(row, e)"
+              @selection-change="(e: SelectionType) => handleRowSelectionChange(row, e)"
+            >
               <bk-table-column type="index" label="" width="60" />
               <bk-table-column type="selection" width="50" />
               <bk-table-column prop="name" :label="t('资源名称')" />
@@ -142,11 +143,12 @@
 </template>
 
 <script setup lang="tsx">
-import { reactive, ref, watch, computed, onMounted, nextTick } from 'vue';
+import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPermissionApplyList, getApigwResources, updatePermissionStatus } from '@/http';
 import { useCommon, usePermission } from '@/store';
 import { useQueryList, useSelection } from '@/hooks';
+import type { SelectionType }  from '@/hooks';
 import { Message, Loading } from 'bkui-vue';
 import { sortByKey } from '@/common/util'
 import TableEmpty from '@/components/table-empty.vue';
@@ -164,7 +166,7 @@ const batchForm = ref(null);
 const approveForm = ref(null);
 const permissionTableRef = ref(null);
 const renderTableIndex = ref(0)
-const permissionRowSelection =  ref([]);
+const childPermTableRef = ref([]);
 const resourceList = ref([]);
 const batchApplyDialogConf = reactive({
   isLoading: false,
@@ -338,16 +340,6 @@ const setTableHeader = () => {
   permissionData.value.headers = columns;
 };
 
-const permissionDetailRefs = ref<Map<String, any>>();
-
-const setPermissionDetail = (name: string, el: HTMLElement) => {
-  permissionDetailRefs.value?.set(name, el);
-  // const hasDetail = permissionDetailRefs.value?.get(`permissionDetail_${curExpandRow?.value?.id}`);
-  // if (hasDetail) {
-  //   hasDetail?.toggleAllSelection();
-  // }
-};
-
 // 获取资源列表数据
  (async () => {
   const { apigwId } = common;
@@ -458,7 +450,7 @@ const handleBatchApply = () => {
 };
 
 // 折叠table 多选发生变化触发
-const handleRowSelectionChange = (payload:any, rowSelections: Record<string, any>) => {
+const handleRowSelectionChange = (payload: any, rowSelections: SelectionType) => {
   const { checked, row } = rowSelections
   if(checked) {
     payload.selection.push(row)
@@ -471,7 +463,7 @@ const handleRowSelectionChange = (payload:any, rowSelections: Record<string, any
   setTableHeader()
 }
 
-const handleRowSelectionAllChange= (payload:any, rowSelections: Record<string, any>) => {
+const handleRowSelectionAllChange= (payload: any, rowSelections: SelectionType) => {
   const { checked, data } = rowSelections;
   if(checked) {
     payload = Object.assign(payload, { selection: data, isSelectAll: true })
@@ -564,7 +556,7 @@ const handleSubmitApprove = () => {
   updateStatus();
 };
 
-const handleRowClick = (e: Event, row: Record<string, any>) => {
+const handleRowClick = (e:Event, row:any) => {
   e.stopPropagation();
   row.isExpand = !row.isExpand;
   expandRows.value = expandRows.value.filter((item) => item.id === row.id);
@@ -575,14 +567,18 @@ const handleRowClick = (e: Event, row: Record<string, any>) => {
     curExpandRow.value = {};
     expandRows.value = expandRows.value.filter((item) => item.id === row.id);
   }
-  permissionApplyList.value.forEach((item) => {
-    if(item.id === curExpandRow.value.id) {
-      permissionTableRef.value.setRowExpand(row, row.isExpand);
-    } else {
-      item = Object.assign(item, { isExpand: false, selection: [], isSelectAll: true });
-      permissionTableRef.value.setRowExpand(item, false);
-    }
-  })
+  setTimeout(() => {
+    permissionApplyList.value.forEach((item) => {
+      if(item.id === curExpandRow.value.id) {
+        item.selection = cloneDeep(item.resourceList);
+        permissionTableRef.value.setRowExpand(row, row.isExpand);
+        childPermTableRef.value[row.id]?.toggleAllSelection();
+      } else {
+        item = Object.assign(item, { isExpand: false, selection: [], isSelectAll: true });
+        permissionTableRef.value.setRowExpand(item, false);
+      }
+    })
+  }, 0)
 };
 
 const handleClearFilterKey = () => {
