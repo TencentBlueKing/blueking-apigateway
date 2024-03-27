@@ -28,7 +28,7 @@
         <bk-table
           ref="permissionTableRef"
           class="perm-apply-table"
-          :data="tableData"
+          :data="permissionApplyList"
           :columns="permissionData.headers"
           :remote-pagination="true"
           :row-style="{ cursor: 'pointer' }"
@@ -38,7 +38,6 @@
           @select-all="handleSelecAllChange"
           @selection-change="handleSelectionChange"
           @row-click="handleRowClick"
-          @expand-change="handlePageExpandChange"
           row-hover="auto"
           border="outer">
           <template #expandRow="row">
@@ -53,8 +52,9 @@
               :key="row.id"
               :data="row.resourceList"
               :outer-border="false"
-              ext-cls="ag-expand-table"
-              @selection-change="handleRowSelectionChange">
+              class="ag-expand-table"
+              @select-all="(e:any) => handleRowSelectionAllChange(row, e)"
+              @selection-change="(e:any) => handleRowSelectionChange(row, e)">
               <bk-table-column type="index" label="" width="60" />
               <bk-table-column type="selection" width="50" />
               <bk-table-column prop="name" :label="t('资源名称')" />
@@ -93,9 +93,9 @@
       </template>
       <div>
         <bk-table :data="selections" :size="'small'" :max-height="200" :key="selections.length">
-          <bk-table-column width="250" :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
-          <bk-table-column :label="t('申请人')" prop="applied_by"></bk-table-column>
-          <bk-table-column :label="t('申请时间')" prop="created_time"></bk-table-column>
+          <bk-table-column width="250" :label="t('蓝鲸应用ID')" prop="bk_app_code" />
+          <bk-table-column :label="t('申请人')" prop="applied_by" />
+          <bk-table-column :label="t('申请时间')" prop="created_time" :show-overflow-tooltip="true" />
         </bk-table>
         <bk-form :label-width="0" :model="curAction" :rules="rules" ref="batchForm" class="mt20">
           <bk-form-item class="bk-hide-label" label="" :required="true" :property="'comment'">
@@ -150,6 +150,7 @@ import { useQueryList, useSelection } from '@/hooks';
 import { Message, Loading } from 'bkui-vue';
 import { sortByKey } from '@/common/util'
 import TableEmpty from '@/components/table-empty.vue';
+import { cloneDeep } from 'lodash';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -157,7 +158,7 @@ const permission = usePermission();
 
 const { apigwId } = common; // 网关id
 
-const filterData = ref({ bk_app_code: '', applied_by: '', grant_dimension: 'resource' });
+const filterData = ref({ bk_app_code: '', applied_by: '', grant_dimension: '' });
 const expandRows = ref([]);
 const batchForm = ref(null);
 const approveForm = ref(null);
@@ -214,6 +215,7 @@ const rules = reactive({
     },
   ],
 });
+const permissionApplyList = ref([]);
 
 // 列表hooks
 const {
@@ -303,8 +305,9 @@ const setTableHeader = () => {
       field: 'operate',
       width: 220,
       label: t('操作'),
+      key: renderTableIndex.value,
       render: ({ data }: Record<string, any>) => {
-        if(expandRows.value.includes(data?.id) && data?.selection.length === 0 && data?.grant_dimension !== 'api') {
+        if(expandRows.value.includes(data.id) && data?.selection.length === 0 && data?.grant_dimension !== 'api') {
           return (
             <div>
               <bk-popover content={t('请选择资源')}>
@@ -336,14 +339,14 @@ const permissionDetailRefs = ref<Map<String, any>>();
 
 const setPermissionDetail = (name: string, el: HTMLElement) => {
   permissionDetailRefs.value?.set(name, el);
-  const hasDetail = permissionDetailRefs.value?.get(`permissionDetail_${curExpandRow?.value?.id}`);
-  if (hasDetail) {
-    hasDetail?.toggleAllSelection();
-  }
+  // const hasDetail = permissionDetailRefs.value?.get(`permissionDetail_${curExpandRow?.value?.id}`);
+  // if (hasDetail) {
+  //   hasDetail?.toggleAllSelection();
+  // }
 };
 
 // 获取资源列表数据
-const fetchResources = async () => {
+ (async () => {
   const { apigwId } = common;
   const pageParams = {
     no_page: true,
@@ -354,13 +357,14 @@ const fetchResources = async () => {
   try {
     const { results} = await getApigwResources(apigwId, pageParams);
     resourceList.value = results || [];
+    permissionApplyList.value = initResourceList(tableData.value)
   } catch (e) {
     console.log(e);
   }
-};
+})();
 
-const initResourceList = () => {
-  tableData.value.forEach((applyItem) => {
+const initResourceList = (payload:any[]) => {
+  payload.forEach((applyItem) => {
     const results = []
     applyItem.resourceList = []
     applyItem.isSelectAll = true
@@ -374,12 +378,14 @@ const initResourceList = () => {
     })
     applyItem.resourceList = sortByKey(results, 'path')
   })
+  return payload
 }
 
 // 监听授权维度的变化
 watch(
   () => filterData.value,
   () => {
+    updateTableEmptyConfig();
     resetSelections();
   },
   {  deep: true },
@@ -390,15 +396,15 @@ watch(
   () => pagination.value,
   (v: any) => {
     permission.setCount(v.count);
-    console.log('newValue', v);
   },
   { deep: true },
 );
 
 watch(
   () => tableData.value,
-  () => {
-    initResourceList()
+  async (value: any[]) => {
+    permissionApplyList.value = await initResourceList(value);
+    updateTableEmptyConfig();
   },
   { immediate: true },
 );
@@ -449,46 +455,43 @@ const handleBatchApply = () => {
 };
 
 // 折叠table 多选发生变化触发
-const handleRowSelectionChange = (row:any, rowSelections: any[]) => {
-  permissionRowSelection.value = rowSelections
-  row.selection = rowSelections;
-  row.isSelectAll = rowSelections.length ? row.resourceList.length === rowSelections.length : true;
-  if (rowSelections.length) {
-    row.isSelectAll = row.resourceList.length === rowSelections.length
+const handleRowSelectionChange = (payload:any, rowSelections: Record<string, any>) => {
+  const { checked, row } = rowSelections
+  if(checked) {
+    payload.selection.push(row)
   } else {
-    row.isSelectAll = true
+    payload.selection = payload.selection.filter((item:Record<string, string | any[]>) => item.id !== row.id)
   }
-  renderTableIndex.value++;
+  payload.isSelectAll = payload.resourceList.length === payload.selection.length
+  curPermission.value = Object.assign(curPermission.value, { selection: payload.selection, isSelectAll: true })
+  renderTableIndex.value++
+  setTableHeader()
 }
-// 折叠变化
-const handlePageExpandChange = (row: any, expandedRows: any) => {
-  expandRows.value = expandedRows.map((item: any) => {
-    return item.id;
-  });
-  // if (curExpandRow !== row) {
-  //   permissionTable.value.toggleRowExpansion(curExpandRow, false);
-  // }
-  // curExpandRow = row;
-  // nextTick(() => {
-  //   const table = $refs[`permissionDetail_${row.id}`];
-  //   if (table) {
-  //     table.toggleAllSelection();
-  //   }
-  // });
-};
+
+const handleRowSelectionAllChange= (payload:any, rowSelections: Record<string, any>) => {
+  const { checked, data } = rowSelections;
+  if(checked) {
+    payload = Object.assign(payload, { selection: data, isSelectAll: true })
+    curPermission.value = Object.assign(curPermission.value, { selection: data, isSelectAll: true })
+  } else {
+    payload = Object.assign(payload, { selection: [], isSelectAll: false })
+    curPermission.value = Object.assign(curPermission.value, { selection: [], isSelectAll: false })
+  }
+}
 
 // 批量审批api
 const updateStatus = async () => {
-  const data = { ...curAction.value };
+  let data = cloneDeep({ ...curAction.value });
+  const { isSelectAll, selection } = curPermission.value;
   await batchForm.value?.validate();
   await approveForm.value?.validate();
   try {
      // 部分通过
-     const id = data?.ids?.[0] || '';
-    if (data.status === 'approved' && expandRows.value.includes(id) && selections.value.length && !curPermission.value.isSelectAll) {
+    const id = data?.ids?.[0] || '';
+    if (data.status === 'approved' && expandRows.value.includes(id) && selection.length > 0 && !isSelectAll) {
       data.part_resource_ids = {};
       data.status = 'partial_approved';
-      data.part_resource_ids[id] = selections.value.map(item => item.id);
+      data.part_resource_ids[id] = selection.map(item => item.id);
     }
     await updatePermissionStatus(apigwId, data);
     batchApplyDialogConf.isShow = false;
@@ -561,13 +564,22 @@ const handleSubmitApprove = () => {
 const handleRowClick = (e: Event, row: Record<string, any>) => {
   e.stopPropagation();
   row.isExpand = !row.isExpand;
-  // expandRows.value = expandedRows.map((item: any) => {
-  //   return item.id;
-  // });
-  curExpandRow.value = row;
-  nextTick(() => {
-    permissionTableRef.value.setRowExpand(curExpandRow.value, row.isExpand);
-  });
+  expandRows.value = expandRows.value.filter((item) => item.id === row.id);
+  if(row.isExpand) {
+    curExpandRow.value = row;
+    expandRows.value.push(row.id);
+  } else {
+    curExpandRow.value = {};
+    expandRows.value = expandRows.value.filter((item) => item.id === row.id);
+  }
+  permissionApplyList.value.forEach((item) => {
+    if(item.id === curExpandRow.value.id) {
+      permissionTableRef.value.setRowExpand(row, row.isExpand);
+    } else {
+      item = Object.assign(item, { isExpand: false, selection: [], isSelectAll: true });
+      permissionTableRef.value.setRowExpand(item, false);
+    }
+  })
 };
 
 const handleClearFilterKey = () => {
@@ -577,8 +589,8 @@ const handleClearFilterKey = () => {
 };
 
 const updateTableEmptyConfig = () => {
-  const list = Object.values(filterData.value).filter((item) => item !== '')
-  if (list.length && !tableData.value.length) {
+  const list = Object.values(filterData.value).filter((item) => item !== '');
+  if (list.length && !permissionApplyList.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
@@ -591,14 +603,7 @@ const updateTableEmptyConfig = () => {
 
 const init = async () => {
   setTableHeader();
-  await fetchResources();
 };
-
-watch(() => filterData.value, () => {
-  updateTableEmptyConfig();
-},{
-  deep: true
-})
 
 onMounted(() => {
   init();
@@ -642,6 +647,9 @@ onMounted(() => {
   }
 }
 :deep(.ag-expand-table) {
+  .bk-table-body {
+    border-bottom: 0 !important;
+  }
   td,
   th {
     padding: 0 !important;
@@ -659,19 +667,31 @@ onMounted(() => {
 
 :deep(.perm-apply-dot) {
   .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 3px;
-      &.approved {
-        background: #e6f6eb;
-        border: 1px solid #43c472;
-      }
-      &.rejected {
-        background: #FFE6E6;
-        border: 1px solid #EA3636;
-      }
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 3px;
+    &.approved {
+      background: #e6f6eb;
+      border: 1px solid #43c472;
     }
+    &.rejected {
+      background: #FFE6E6;
+      border: 1px solid #EA3636;
+    }
+  }
 }
+
+:deep(.bk-table-expanded-cell) {
+    padding: 0 !important;
+
+    &:hover {
+      cursor: pointer;
+    }
+
+    .bk-table {
+      border: 0;
+    }
+  }
 </style>
