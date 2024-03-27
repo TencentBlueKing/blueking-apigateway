@@ -263,7 +263,7 @@ const getDataByDimension = async () => {
     });
     return false;
   }
-  metricsList.value?.map((metrics: any) => {
+  const requests = metricsList.value?.map((metrics: any) => {
     const params = {
       ...searchParams,
       dimension: dimension.value,
@@ -274,13 +274,10 @@ const getDataByDimension = async () => {
   });
 
   try {
-    // const res = await Promise.all(requests);
+    const res = await Promise.all(requests);
     chartData.value = {};
-    metricsList.value?.forEach((metrics: any) => {
-      // chartData.value[metrics] = res[index];
-      chartData.value[metrics] = {
-        metrics: [], series: [],
-      };
+    metricsList.value?.forEach((metrics: any, index: number) => {
+      chartData.value[metrics] = res[index];
     });
 
     renderChart();
@@ -557,7 +554,7 @@ const getChartOption = (chartId: any, chartInstId: any) => {
       right: 40,
       feature: {
         dataZoom: {
-          yAxisIndex: false,
+          yAxisIndex: 'none',
         },
       },
     },

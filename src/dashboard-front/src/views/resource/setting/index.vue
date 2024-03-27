@@ -5,7 +5,10 @@
     :is-detail="isDetail"
   />
   <div
-    :class="['resource-container', 'page-wrapper-padding', isDragging ? 'dragging' : '']"
+    :class="['resource-container',
+             'page-wrapper-padding',
+             isDragging ? 'dragging' : '',
+             isDetail && !isShowLeft ? 'welt' : '']"
     id="resourceId">
 
     <div
@@ -1266,6 +1269,8 @@ onBeforeMount(() => {
   .left-wraper{
     position: relative;
     background: #fff;
+    height: calc(100vh - 220px);
+    overflow-y: auto;
     // padding-bottom: 24px;
     .document-info{
       color: #3a84ff;
@@ -1404,5 +1409,8 @@ onBeforeMount(() => {
 
 .resource-container.dragging {
   cursor: col-resize;
+}
+.welt {
+  padding-left: 0px;
 }
 </style>
