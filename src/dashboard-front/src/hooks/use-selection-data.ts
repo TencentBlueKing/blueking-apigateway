@@ -5,7 +5,7 @@ import {
   ref,
 } from 'vue';
 
-type SelectionType = {
+export type SelectionType = {
   checked: boolean;
   data: any[];
   isAll?: boolean;
