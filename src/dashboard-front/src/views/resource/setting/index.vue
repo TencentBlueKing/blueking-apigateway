@@ -103,6 +103,7 @@
             :data="tableData"
             remote-pagination
             :pagination="pagination"
+            :key="tableDataKey"
             :show-overflow-tooltip="true"
             @page-limit-change="handlePageSizeChange"
             @page-value-change="handlePageChange"
@@ -118,15 +119,19 @@
             <bk-table-column width="80" type="selection" align="center" />
             <bk-table-column :label="t('资源名称')" width="160" prop="name">
               <template #default="{ row }">
-                <bk-button text theme="primary" @click="handleShowInfo(row.id)">
-                  {{row?.name}}
-                </bk-button>
-                <span
-                  style="cursor: pointer;"
-                  v-if="row?.has_updated"
-                  v-bk-tooltips="{ content: '资源已更新' }"
-                  class="dot warning">
-                </span>
+                <div class="resource-name">
+                  <div
+                    v-bk-tooltips="{ content: row?.name }"
+                    :class="['name', { 'name-updated': row?.has_updated }]"
+                    @click="handleShowInfo(row.id)">
+                    {{row?.name}}
+                  </div>
+                  <div
+                    v-if="row?.has_updated"
+                    v-bk-tooltips="{ content: '资源已更新' }"
+                    class="dot warning"
+                  />
+                </div>
               </template>
             </bk-table-column>
             <bk-table-column
@@ -442,7 +447,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted, shallowRef, h } from 'vue';
+import { reactive, ref, watch, onMounted, onBeforeMount, shallowRef, h } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { useQueryList, useSelection } from '@/hooks';
@@ -462,6 +467,7 @@ import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import RenderCustomColumn from '@/components/custom-table-header-filter';
 import ResourceSettingTopBar from '@/components/resource-setting-top-bar.vue';
+import mitt from '@/common/event-bus';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { cloneDeep } from 'lodash';
 import { is24HoursAgo } from '@/common/util';
@@ -647,6 +653,7 @@ const customMethodsList = shallowRef(common.methodList);
 const curSelectMethod = ref('ALL');
 
 const tableKey =  ref(-1);
+const tableDataKey = ref(-1);
 
 const renderMethodsLabel = () => {
   return h('div', { class: 'resource-setting-custom-label' }, [
@@ -1187,7 +1194,17 @@ watch(() => route, () => {
 onMounted(() => {
   init();
   dragTwoColDiv('resourceId', 'resourceLf', 'resourceLine'/* , 'resourceRg' */);
+  // 监听其他组件是否触发了资源更新，获取最新的列表数据
+  mitt.on('on-update-plugin', () => {
+    pagination.value = Object.assign(pagination.value, { current: 0, limit: 10 });
+    getList();
+  });
 });
+
+onBeforeMount(() => {
+  mitt.off('on-update-plugin');
+});
+
 </script>
 <style lang="scss" scoped>
 .resource-container{
@@ -1197,9 +1214,6 @@ onMounted(() => {
   .resource-container-lf,
   .resource-container-rg{
     position: relative;
-  }
-  .resource-container-lf {
-    // transition: all .1s;
   }
   .resource-container-rg {
     min-height: calc(100% + 40px);
@@ -1281,6 +1295,23 @@ onMounted(() => {
       }
       :deep(.bk-table-body) {
         scrollbar-color: transparent transparent;
+      }
+      :deep(.resource-name) {
+        display: flex;
+        align-items: center;
+        .name {
+          color: #3a84ff;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          &-updated {
+            max-width: 112px;
+          }
+        }
+        .dot {
+          margin-left: 4px;
+          cursor: pointer;
+        }
       }
     }
 
