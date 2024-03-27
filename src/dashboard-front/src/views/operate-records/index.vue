@@ -535,9 +535,11 @@ watch(
     }
   }
 
-  .operate-records-search {
-    width: calc(100vh - 20px);
-    background: #ffffff;
+  .ag-form-item-search {
+    .operate-records-search {
+      width: calc(100vh - 20px);
+      background: #ffffff;
+    }
   }
 
   .ag-dot {
@@ -598,19 +600,16 @@ watch(
       margin-top: 10px !important;
     }
 
-    .member-selector {
-      width: 320px;
-    }
-
     .top-search-button,
     .top-clear-button {
       margin-top: 10px;
     }
-  }
 
-  .ag-form-item-search {
-    margin-left: 0px !important;
-    margin-top: 10px !important;
+    .ag-form-item-search {
+      .operate-records-search {
+        width: calc(100vh - 144px);
+      }
+    }
   }
 }
 </style>

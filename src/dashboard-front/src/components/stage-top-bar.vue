@@ -423,7 +423,7 @@ defineExpose({
   .stage-list-container {
     display: flex;
     position: relative;
-    margin-right: 276px;
+    // margin-right: 276px;
     height: 100%;
     overflow: hidden;
     flex: 1;

@@ -204,6 +204,7 @@
 <script setup lang="ts">
 import pluginInfo from './plugin-info.vue';
 import TableEmpty from '@/components/table-empty.vue';
+import mitt from '@/common/event-bus';
 import { InfoBox, Message } from 'bkui-vue';
 import { ref, reactive, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -291,10 +292,12 @@ const handleOperate = (operate: string) => {
     case 'addSuccess':
       resetData();
       isAddSuccess.value = true;
+      mitt.emit('on-update-plugin');
       break;
     case 'editSuccess':
       getBindingDetails();
       isEditVisible.value = false;
+      mitt.emit('on-update-plugin');
       break;
     default:
       break;
@@ -366,6 +369,7 @@ const handleEditePlugin = async (item: any) => {
     const res = await getPluginConfig(apigwId, scopeType.value, scopeId.value, code, config_id);
     curEditPlugin.value = res;
     isEditVisible.value = true;
+    mitt.emit('on-update-plugin');
   } catch (error) {
     console.log('error', error);
   }
@@ -394,6 +398,7 @@ const handleDeletePlugin = (item: any) => {
           theme: 'success',
           width: 'auto',
         });
+        mitt.emit('on-update-plugin');
         init();
       } catch (error) {
         console.log('error', error);

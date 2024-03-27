@@ -57,7 +57,7 @@
               @selection-change="(e: SelectionType) => handleRowSelectionChange(row, e)"
             >
               <bk-table-column type="index" label="" width="60" />
-              <bk-table-column type="selection" width="50" />
+              <bk-table-column type="selection" width="50" align="center" />
               <bk-table-column prop="name" :label="t('资源名称')" />
               <bk-table-column prop="path" :label="t('请求路径')" />
               <bk-table-column prop="method" :label="t('请求方法')" />
