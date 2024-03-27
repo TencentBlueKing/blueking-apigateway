@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from django.conf import settings
 from django.core.management import BaseCommand
@@ -62,15 +62,15 @@ class Command(BaseCommand):
             # 判断对比资源是否有更新
             is_resource_has_update = self._get_resource_update(stage, latest_version)
 
-            # 当前最新版本和当前环境发布版本是否一致
-            release_version_same = resource_version_id == latest_version.id if latest_version else False
-
             # 判断是否需要创建版本
             need_make_new_resource_version = self._is_need_make_new_version(is_resource_has_update, latest_version)
             if need_make_new_resource_version:
                 gateway_to_make_new_version[stage.gateway] = latest_version
 
             # 判断是否需要进行发布
+
+            # 当前最新版本和当前环境发布版本是否一致
+            release_version_same = resource_version_id == latest_version.id
             need_release = self._is_need_release(
                 is_resource_has_update, release_version_same, latest_version, resource_version_id
             )
@@ -128,14 +128,12 @@ class Command(BaseCommand):
                 f"release_version_same: {release_version_same},diff data:{diff_data}"
             )
 
-    def _is_need_make_new_version(
-        self, is_resource_has_update: bool, latest_version: Optional[ResourceVersion] = None
-    ) -> bool:
+    def _is_need_make_new_version(self, is_resource_has_update: bool, latest_version: ResourceVersion) -> bool:
         """判断是否需要进行创建版本"""
 
         # 如果是已经打过版本的则不需要重新再生成版本,考虑重复调用的情况
         # 如果是没有生成版本，则也不需要生成
-        if not latest_version or (latest_version.created_by == "apigw_system_admin" and not is_resource_has_update):
+        if latest_version.created_by == "apigw_system_admin" and not is_resource_has_update:
             return False
 
         return True
@@ -152,7 +150,7 @@ class Command(BaseCommand):
         # 如果当前最新资源相比最新版本有更新并且最新版本和发布的版本不一致，生成新版本不发布
         # 如果当前资源相比最新版本有更新并且最新版本和发布的版本一致，生成版本不发布
         # 如果没有生成过版本则不需要发布
-        if is_resource_has_update or not latest_version:
+        if is_resource_has_update:
             return False
 
         # 重试场景
@@ -287,6 +285,13 @@ class Command(BaseCommand):
             return 0
         return len(result)
 
+    def _has_diff(self, resource_diff_data) -> bool:
+        return (
+            self._len_dict(resource_diff_data.get("source_diff"))
+            + self._len_dict(resource_diff_data.get("target_diff"))
+            > 0
+        )
+
     def _get_diff_data(self, stage: Stage, latest_version: ResourceVersion):
         """获取对比差异结果"""
 
@@ -309,30 +314,18 @@ class Command(BaseCommand):
                     "source_diff": diff_data["add"][0].get("source", {}).get("diff", {}),
                     "target_diff": diff_data["add"][0].get("target", {}).get("diff", {}),
                 }
+                if self._has_diff(resource_diff_data):
+                    return resource_diff_data
 
-            if (
-                len(diff_data["delete"]) > 0
-                and diff_data["delete"][0]
-                and (
-                    self._len_dict(resource_diff_data.get("source_diff"))
-                    + self._len_dict(resource_diff_data.get("target_diff"))
-                    == 0
-                )
-            ):
+            if len(diff_data["delete"]) > 0 and diff_data["delete"][0]:
                 resource_diff_data = {
                     "source_diff": diff_data["delete"][0].get("source", {}).get("diff", {}),
                     "target_diff": diff_data["delete"][0].get("target", {}).get("diff", {}),
                 }
+                if self._has_diff(resource_diff_data):
+                    return resource_diff_data
 
-            if (
-                len(diff_data["update"]) > 0
-                and diff_data["update"][0]
-                and (
-                    self._len_dict(resource_diff_data.get("source_diff"))
-                    + self._len_dict(resource_diff_data.get("target_diff"))
-                    == 0
-                )
-            ):
+            if len(diff_data["update"]) > 0 and diff_data["update"][0]:
                 resource_diff_data = {
                     "source_diff": diff_data["update"][0].get("source", {}).get("diff", {}),
                     "target_diff": diff_data["update"][0].get("target", {}).get("diff", {}),
