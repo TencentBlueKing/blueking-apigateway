@@ -546,9 +546,6 @@ const resourceId = ref(0);
 // 当前点击的资源
 const curResource: any = ref({});
 
-// 自定义filterData
-// const customFilterData = ref({});
-
 const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
