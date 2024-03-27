@@ -412,7 +412,8 @@ onMounted(async () => {
   font-size: 12px;
   .stage-info {
     display: flex;
-    height: 128px;
+    // height: 128px;
+    min-height: 128px;
     padding: 24px;
     background: #ffffff;
     box-shadow: 0 2px 4px 0 #1919290d;
