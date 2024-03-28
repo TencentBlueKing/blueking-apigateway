@@ -99,7 +99,7 @@ export const createMenuData = (): IMenu[] => {
         },
         {
           name: 'apigwMonitorAlarmHistory',
-          title: t('告警历史'),
+          title: t('告警记录'),
           enabled: true,
         },
       ],

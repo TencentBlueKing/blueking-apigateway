@@ -69,11 +69,11 @@
           @confirm="handleAdd"
           v-if="isStage"
         >
-          <bk-button theme="primary">{{ t('确定') }}</bk-button>
+          <bk-button theme="primary" class="default-btn">{{ t('确定') }}</bk-button>
         </bk-pop-confirm>
-        <bk-button v-else @click="handleAdd" theme="primary">{{ t('确定') }}</bk-button>
-        <bk-button @click="handlePre" class="ml5" v-if="isAdd">{{ t('上一步') }}</bk-button>
-        <bk-button @click="handleCancel" class="ml5">{{ t('取消') }}</bk-button>
+        <bk-button v-else @click="handleAdd" theme="primary" class="default-btn">{{ t('确定') }}</bk-button>
+        <bk-button @click="handlePre" class="prev-btn ml8" v-if="isAdd">{{ t('上一步') }}</bk-button>
+        <bk-button @click="handleCancel" class="default-btn ml8">{{ t('取消') }}</bk-button>
       </div>
     </div>
   </div>
@@ -489,6 +489,19 @@ init();
   }
   :deep(.bk-switcher.is-checked) {
     background: #3a84ff;
+  }
+}
+
+.last-step {
+  font-size: 0;
+  .default-btn {
+    min-width: 88px;
+  }
+  .prev-btn {
+    min-width: 74px;
+  }
+  .ml8 {
+    margin-left: 8px;
   }
 }
 </style>

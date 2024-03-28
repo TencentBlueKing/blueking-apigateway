@@ -172,9 +172,9 @@
         </div>
       </template>
       <template #footer v-if="state.curStep === 1">
-        <div class="slider-footer pl20">
+        <div class="slider-footer">
           <div class="fist-step">
-            <bk-button theme="primary" @click="handelNext" width="50px" :disabled="!curChoosePlugin">
+            <bk-button theme="primary" @click="handelNext" :disabled="!curChoosePlugin">
               {{ t('下一步') }}
             </bk-button>
             <bk-button @click="handleCancel">{{ t('取消') }}</bk-button>
@@ -776,15 +776,26 @@ init();
 .plugin-add-slider {
   :deep(.bk-modal-content) {
     // height: calc(100vh - 106px) !important;
-    height: calc(100% - 126px) !important;
+    // height: calc(100% - 126px) !important;
     overflow-y: auto;
   }
-
+  :deep(.bk-sideslider-footer) {
+    height: 48px !important;
+  }
   .slider-footer {
     display: flex;
+    padding: 0 24px;
+    height: 32px;
 
     .fist-step {
-      margin-right: 12px;
+      font-size: 0;
+      line-height: 48px;
+      .bk-button {
+        min-width: 88px;
+        &:not(&:first-child) {
+          margin-left: 8px;
+        }
+      }
     }
   }
 }
