@@ -303,6 +303,10 @@ const handleBack = () => {
     .submenu-header-content{
       color: rgb(99, 101, 110);
     }
+    .submenu-header-collapse {
+      width: 20px;
+      font-size: 20px;
+    }
     .bk-menu-submenu.is-opened {
       background: #fff !important;
     }

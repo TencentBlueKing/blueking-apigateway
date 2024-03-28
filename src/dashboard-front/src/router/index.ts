@@ -274,7 +274,7 @@ const routes: RouteRecordRaw[] = [
         name: 'apigwMonitorAlarmHistory',
         component: ApigwMonitorAlarmHistory,
         meta: {
-          title: t('告警历史'),
+          title: t('告警记录'),
           matchRoute: 'apigwMonitorAlarmHistory',
           topMenu: 'home',
         },
