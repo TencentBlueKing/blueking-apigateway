@@ -781,14 +781,15 @@ init();
   }
   :deep(.bk-sideslider-footer) {
     height: 48px !important;
-    line-height: 48px;
   }
   .slider-footer {
     display: flex;
     padding: 0 24px;
+    height: 32px;
 
     .fist-step {
       font-size: 0;
+      line-height: 48px;
       .bk-button {
         min-width: 88px;
         &:not(&:first-child) {

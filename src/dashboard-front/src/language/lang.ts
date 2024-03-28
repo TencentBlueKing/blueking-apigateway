@@ -36,7 +36,7 @@ const lang: ILANG = {
   '统计报表': ['Statistics'],
   '监控告警': ['Monitoring'],
   '告警策略': ['Alarm Strategy'],
-  '告警历史': ['Alarm Histories'],
+  '告警记录': ['Alarm Records'],
   '在线调试': ['API Test'],
   '资源SDK': ['SDKs'],
   '操作审计': ['Audits'],
