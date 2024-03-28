@@ -162,6 +162,7 @@ const handleCreateResourceVersion = async () => {
       padding: 0 12px;
       i {
         font-size: 16px;
+        margin-right: 4px;
       }
       &.bk-button.is-disabled {
         color: #dcdee5;
