@@ -29,13 +29,13 @@ class TestResourceBackendConfig:
                     "method": "GET",
                     "path": "/user",
                     "match_subpath": True,
-                    "timeout": 10,
+                    "timeout": {"connect": 10, "read": 10, "send": 10},
                 },
                 {
                     "method": "GET",
                     "path": "/user",
                     "match_subpath": True,
-                    "timeout": 10,
+                    "timeout": {"connect": 10, "read": 10, "send": 10},
                 },
                 None,
                 None,
@@ -45,7 +45,7 @@ class TestResourceBackendConfig:
                     "method": "GET",
                     "path": "/user",
                     "match_subpath": True,
-                    "timeout": 10,
+                    "timeout": {"connect": 10, "read": 10, "send": 10},
                     "legacy_upstreams": {
                         "loadbalance": "roundrobin",
                         "hosts": [{"host": "http://foo.com", "weight": 10}],
@@ -59,7 +59,7 @@ class TestResourceBackendConfig:
                     "method": "GET",
                     "path": "/user",
                     "match_subpath": True,
-                    "timeout": 10,
+                    "timeout": {"connect": 10, "read": 10, "send": 10},
                 },
                 {
                     "loadbalance": "roundrobin",

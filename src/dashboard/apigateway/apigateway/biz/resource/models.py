@@ -29,11 +29,17 @@ class ResourceAuthConfig(BaseModel):
     resource_perm_required: bool = Field(default=True)
 
 
+class Timeout(BaseModel):
+    connect: int = Field(default=0)
+    read: int = Field(default=0)
+    send: int = Field(default=0)
+
+
 class ResourceBackendConfig(BaseModel):
     method: str
     path: str
     match_subpath: bool = Field(default=False)
-    timeout: int = Field(default=0)
+    timeout: Timeout = Field(default_factory=lambda: Timeout())
     # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
     legacy_upstreams: Optional[dict] = Field(default=None, exclude=True)
     legacy_transform_headers: Optional[dict] = Field(default=None, exclude=True)

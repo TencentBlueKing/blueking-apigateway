@@ -351,7 +351,18 @@
                       "type": "boolean"
                     },
                     "timeout": {
-                      "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"
+                      "anyOf": [
+                        {"$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"},
+                        {
+                          "type": "object",
+                          "properties": {
+                            "connect": {"$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"},
+                            "read": {"$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"},
+                            "send": {"$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"}
+                          },
+                          "additionalProperties": false
+                        }
+                      ]
                     },
                     "upstreams": {
                       "$ref": "#/definitions/x-bk-apigateway-upstreams"

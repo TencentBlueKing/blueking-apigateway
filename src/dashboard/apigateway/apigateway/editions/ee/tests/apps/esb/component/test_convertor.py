@@ -74,7 +74,7 @@ class TestComponent:
                         "method": "GET",
                         "path": "/backend/echo/",
                         "match_subpath": False,
-                        "timeout": 0,
+                        "timeout": {"connect": 0, "read": 0, "send": 0},
                     },
                     "auth_config": {
                         "app_verified_required": False,
@@ -204,7 +204,7 @@ class TestComponentConvertor:
                             "method": "GET",
                             "path": "/backend/echo/",
                             "match_subpath": False,
-                            "timeout": 0,
+                            "timeout": {"connect": 0, "read": 0, "send": 0},
                         },
                         "auth_config": {
                             "app_verified_required": False,

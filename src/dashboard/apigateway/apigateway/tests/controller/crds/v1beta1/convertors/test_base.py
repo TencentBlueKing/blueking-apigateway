@@ -41,3 +41,13 @@ class TestBaseConvertor:
         assert name not in metadata.name
         assert metadata.get_label("gateway") == edge_gateway.name
         assert metadata.get_label("stage") == edge_gateway_stage.name
+
+    def test_convert_chash_hash_on_key(self, fake_base_convertor):
+        key = fake_base_convertor._convert_chash_hash_on_key("query_string", "key")
+        assert key == "arg_key"
+
+        key = fake_base_convertor._convert_chash_hash_on_key("header", "key")
+        assert key == "key"
+
+        key = fake_base_convertor._convert_chash_hash_on_key("header", "")
+        assert key is None

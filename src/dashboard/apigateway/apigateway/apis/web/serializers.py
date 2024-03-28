@@ -21,7 +21,7 @@ from rest_framework import serializers
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN
 
-from .constants import BackendConfigSchemeEnum, BackendConfigTypeEnum, LoadBalanceTypeEnum
+from .constants import BackendConfigSchemeEnum, BackendConfigTypeEnum, HashOnEnum, HashOnVarEnum, LoadBalanceTypeEnum
 
 
 class HostSLZ(serializers.Serializer):
@@ -33,16 +33,39 @@ class HostSLZ(serializers.Serializer):
         ref_name = "apis.web.HostSLZ"
 
 
+class TimeoutSLZ(serializers.Serializer):
+    connect = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1, help_text="连接超时时间")
+    read = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1, help_text="读取超时时间")
+    send = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1, help_text="写入超时时间")
+
+    class Meta:
+        ref_name = "apis.web.TimeoutSLZ"
+
+
 class BaseBackendConfigSLZ(serializers.Serializer):
     type = serializers.ChoiceField(
         choices=BackendConfigTypeEnum.get_choices(), default=BackendConfigTypeEnum.NODE.value, help_text="类型"
     )
-    timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1, help_text="超时时间")
+    timeout = TimeoutSLZ(help_text="超时时间")
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices(), help_text="负载均衡")
     hosts = serializers.ListField(
         child=HostSLZ(),
         allow_empty=False,
         help_text="主机列表",
+    )
+    retries = serializers.IntegerField(required=False, default=0, help_text="重试次数", max_value=5)
+    retry_timeout = serializers.IntegerField(required=False, default=0, help_text="重试超时时间")
+    hash_on = serializers.CharField(
+        required=False, default="", help_text="hash on", allow_blank=True, trim_whitespace=True
+    )
+    key = serializers.RegexField(
+        r"^[a-zA-Z_][a-zA-Z0-9_-]*$",
+        required=False,
+        help_text="key",
+        default="",
+        allow_blank=True,
+        max_length=255,
+        trim_whitespace=True,
     )
 
     def validate_hosts(self, value):
@@ -54,3 +77,14 @@ class BaseBackendConfigSLZ(serializers.Serializer):
                 raise serializers.ValidationError("hosts中的scheme和host组合必须唯一。")
             unique_combinations.add(scheme_host_combination)
         return value
+
+    def validate(self, attrs):
+        if attrs["loadbalance"] == LoadBalanceTypeEnum.CHASH.value:
+            if attrs["hash_on"] not in dict(HashOnEnum.get_choices()):
+                raise serializers.ValidationError("CHASH类型下必须指定hash_on")
+
+            if attrs["key"] == "" or (
+                attrs["hash_on"] == HashOnEnum.VARS.value and attrs["key"] not in dict(HashOnVarEnum.get_choices())
+            ):
+                raise serializers.ValidationError("CHASH类型下必须指定key")
+        return attrs

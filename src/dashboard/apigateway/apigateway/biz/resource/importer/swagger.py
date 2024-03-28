@@ -26,6 +26,7 @@ import jsonschema
 
 from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.common.exceptions import SchemaValidationError
+from apigateway.common.timeout import convert_timeout
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
 from apigateway.utils.yaml import yaml_export_dumps, yaml_loads
 
@@ -206,7 +207,7 @@ class ResourceSwaggerImporter:
             "method": backend["method"].upper(),
             "path": backend["path"],
             "match_subpath": backend.get("matchSubpath", False),
-            "timeout": backend.get("timeout", 0),
+            "timeout": convert_timeout(backend.get("timeout", 0)),
             # 1.13 版本: 兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
             "legacy_upstreams": backend.get("upstreams"),
             "legacy_transform_headers": backend.get("transformHeaders"),
@@ -336,7 +337,7 @@ class ResourceSwaggerExporter:
                     "method": backend["config"]["method"].lower(),
                     "path": backend["config"]["path"],
                     "matchSubpath": backend["config"].get("match_subpath", False),
-                    "timeout": backend["config"].get("timeout", 0),
+                    "timeout": convert_timeout(backend["config"].get("timeout", 0)),
                 }
             )
             return result
@@ -348,7 +349,7 @@ class ResourceSwaggerExporter:
                     "method": http_config["method"].lower(),
                     "path": http_config["path"],
                     "matchSubpath": http_config.get("match_subpath", False),
-                    "timeout": http_config["timeout"],
+                    "timeout": convert_timeout(http_config["timeout"]),
                     "upstreams": http_config.get("upstreams", {}),
                     "transformHeaders": http_config.get("transform_headers", {}),
                 }
