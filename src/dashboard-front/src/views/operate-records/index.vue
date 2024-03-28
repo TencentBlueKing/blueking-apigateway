@@ -22,6 +22,7 @@
         </bk-form-item>
         <bk-form-item class="ag-form-item-search">
           <bk-search-select
+            style="width: 100%"
             v-model="searchValue"
             unique-select
             class="operate-records-search"
@@ -469,7 +470,7 @@ watch(
     :deep(.search-form) {
       width: 100% !important;
       max-width: 100% !important;
-      display: inline-block;
+      display: flex;
 
       .bk-form-item {
         display: inline-flex;
@@ -485,6 +486,7 @@ watch(
           width: auto !important;
           line-height: 32px;
           display: inline-block;
+          min-width: 75px;
           padding: 0 15px 0 0;
 
           span {
@@ -512,10 +514,21 @@ watch(
         }
       }
 
-      .top-search-input {
-        width: 600px;
+      .ag-form-item-datepicker {
+        .bk-form-content {
+          max-width: 320px;
+        }
       }
 
+      .ag-form-item-search {
+        width: calc(100% - 320px);
+        .bk-form-content {
+          width: 100%;
+          .operate-records-search {
+            background: #ffffff;
+          }
+        }
+      }
     }
   }
 
@@ -532,13 +545,6 @@ watch(
       white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
-    }
-  }
-
-  .ag-form-item-search {
-    .operate-records-search {
-      width: calc(100vh - 20px);
-      background: #ffffff;
     }
   }
 
@@ -605,11 +611,11 @@ watch(
       margin-top: 10px;
     }
 
-    .ag-form-item-search {
-      .operate-records-search {
-        width: calc(100vh - 144px);
-      }
-    }
+    // .ag-form-item-search {
+    //   .operate-records-search {
+    //     width: calc(100vh - 144px);
+    //   }
+    // }
   }
 }
 </style>
