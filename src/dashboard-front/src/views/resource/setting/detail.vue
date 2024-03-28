@@ -304,6 +304,8 @@ watch(
 <style lang="scss" scoped>
 .detail-container{
     max-width: 1000px;
+    height: calc(100vh - 175px);
+    overflow: auto;
     .title {
       color: #313238;
       font-weight: 700;
@@ -321,6 +323,19 @@ watch(
           padding-right: 10px;
           display: flex;
           justify-content: flex-end;
+          .bk-form-label-description {
+            border-bottom: none;
+            position: relative;
+            &::after {
+              content: ' ';
+              position: absolute;
+              width: 82%;
+              height: 1px;
+              border-bottom: 1px dashed #979ba5;
+              bottom: 4px;
+              left: 0;
+            }
+          }
         }
       }
       .label-cls{

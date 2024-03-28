@@ -163,6 +163,11 @@ const handleCreateResourceVersion = async () => {
       i {
         font-size: 16px;
       }
+      &.bk-button.is-disabled {
+        color: #dcdee5;
+        cursor: not-allowed;
+        border-color: #dcdee5;
+      }
     }
   }
 }
