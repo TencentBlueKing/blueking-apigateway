@@ -28,7 +28,6 @@
             <bk-timeline
               class="mb20"
               :list="state.objectSteps"
-              @select="handleTimelineChange"
             />
           </div>
         </div>
@@ -73,18 +72,18 @@ const logBody = ref<string>('');
 let timeId: any = null;
 
 // 改变当前选中值
-const handleTimelineChange = (data: any) => {
-  const { tag } = data;
-  let detail = '';
-  for (let i = 0; i < state.objectSteps?.length; i++) {
-    const item = state.objectSteps[i];
-    if (item?.tag === tag) {
-      detail = item?.detail;
-      break;
-    }
-  }
-  logBody.value = detail || '';
-};
+// const handleTimelineChange = (data: any) => {
+//   const { tag } = data;
+//   let detail = '';
+//   for (let i = 0; i < state.objectSteps?.length; i++) {
+//     const item = state.objectSteps[i];
+//     if (item?.tag === tag) {
+//       detail = item?.detail;
+//       break;
+//     }
+//   }
+//   logBody.value = detail || '';
+// };
 
 // 获取日志列表
 const getLogsList = async () => {
@@ -99,6 +98,7 @@ const getLogsList = async () => {
     const steps: any = [];
     state.totalDuration = 0;
     const subStep = res?.events[res?.events?.length - 1]?.step || 0;
+    let allDetail = '';
 
     res?.events_template?.forEach((item: any, index: number) => {
       item.size = 'large';
@@ -153,9 +153,15 @@ const getLogsList = async () => {
       steps[index].children = children;
       steps[index].content = `<span style="font-size: 12px;">${duration} s</span>`;
       steps[index].detail = itemLogs.join('\n');
+
+      if (allDetail) {
+        allDetail = `${allDetail}\n\n${steps[index].detail}`;
+      } else {
+        allDetail = steps[index].detail;
+      }
     });
     state.objectSteps = steps;
-    logBody.value = steps[subStep]?.detail || '';
+    logBody.value = allDetail || '';
   } catch (e) {
     clearInterval(timeId);
     console.log(e);

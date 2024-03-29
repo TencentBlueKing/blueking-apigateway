@@ -303,7 +303,7 @@ watch(
 </script>
 <style lang="scss" scoped>
 .detail-container{
-    max-width: 1000px;
+    // max-width: 1000px;
     height: calc(100vh - 175px);
     overflow: auto;
     .title {

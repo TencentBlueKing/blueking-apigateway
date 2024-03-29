@@ -114,7 +114,7 @@
                   </bk-dropdown-item>
                   <bk-dropdown-item
                     :ext-cls="stageData.status !== 0 ? 'disabled' : ''"
-                    v-bk-tooltips="stageData.status === 1 ? t('环境下线后，才能删除') : t('删除环境')"
+                    v-bk-tooltips="stageData.status === 1 ? t('环境下架后，才能删除') : t('删除环境')"
                     @click="stageData.status === 0 ? handleStageDelete() : void 0"
                   >
                     {{ t('删除') }}

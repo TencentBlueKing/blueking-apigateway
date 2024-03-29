@@ -19,6 +19,7 @@
         class="operate-btn"
         @click="handleCreateResourceVersion"
         :disabled="!latest"
+        v-bk-tooltips="{ content: '资源无更新，无需生成版本', disabled: latest }"
       >
         <i class="apigateway-icon icon-ag-version"></i>
         {{ t('生成版本') }}
@@ -27,7 +28,7 @@
   </div>
 
   <!-- 生成版本 -->
-  <version-sideslider ref="versionSidesliderRef" />
+  <version-sideslider ref="versionSidesliderRef" @done="mitt.emit('on-update-plugin');" />
 
   <!-- 版本对比 -->
   <bk-sideslider
@@ -52,6 +53,7 @@ import { Message } from 'bkui-vue';
 import { getResourceVersionsList } from '@/http';
 import versionDiff from '@/components/version-diff/index.vue';
 import VersionSideslider from '@/views/resource/setting/comps/version-sideslider.vue';
+import mitt from '@/common/event-bus';
 
 const { t } = useI18n();
 
