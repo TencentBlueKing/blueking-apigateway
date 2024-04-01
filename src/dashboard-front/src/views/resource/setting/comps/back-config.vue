@@ -33,7 +33,7 @@
           <span v-else>--</span>
         </template>
       </bk-table-column>
-      <bk-table-column :label="renderTimeOutLabel" prop="timeout">
+      <bk-table-column :label="renderTimeOutLabel" prop="timeout" :resizable="false">
         <template #default="{ row }">
           <!-- <span class="time-wrapper"  v-clickOutSide="(e:Event) => handleClickTableOutSide(e, row)">
             <template v-if="!row.isEditTime">
@@ -65,10 +65,7 @@
         </template>
       </bk-table-column>
     </bk-table>
-    <bk-form-item
-      :label="t('请求方法')"
-      required
-    >
+    <bk-form-item :label="t('请求方法')" required>
       <bk-select
         :input-search="false"
         v-model="backConfigData.config.method"
@@ -77,11 +74,7 @@
         <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
     </bk-form-item>
-    <bk-form-item
-      :label="t('请求路径')"
-      property="config.path"
-      required
-    >
+    <bk-form-item :label="t('请求路径')" property="config.path" required>
       <div class="flex-row aligin-items-center">
         <bk-input
           v-model="backConfigData.config.path"

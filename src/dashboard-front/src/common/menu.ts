@@ -8,18 +8,24 @@ const { t } = i18n.global;
 export const createMenuData = (): IMenu[] => {
   const user = useUser();
   return [
+    // {
+    //   name: 'apigwStageManage',
+    //   enabled: true,
+    //   title: t('环境管理'),
+    //   icon: 'resource',
+    //   children: [
+    //     {
+    //       name: 'apigwStageOverview',
+    //       enabled: true,
+    //       title: t('环境概览'),
+    //     },
+    //   ],
+    // },
     {
-      name: 'apigwStageManage',
+      name: 'apigwStageOverview',
       enabled: true,
-      title: t('环境管理'),
+      title: t('环境概览'),
       icon: 'resource',
-      children: [
-        {
-          name: 'apigwStageOverview',
-          enabled: true,
-          title: t('环境概览'),
-        },
-      ],
     },
     {
       name: 'apigwBackendService',
