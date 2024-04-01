@@ -20,7 +20,9 @@ import { useUser } from '@/store';
 import { getUser, getFeatureFlags } from '@/http';
 import { Message } from 'bkui-vue';
 import { ILoginData } from '@/common/auth';
+import { useSidebar } from '@/hooks';
 
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
@@ -35,6 +37,7 @@ const user = useUser();
 const showNoticeAlert = ref(true);
 const enableShowNotice = ref(false);
 const noticeApi = ref(`${BK_DASHBOARD_URL}/notice/`);
+const curLeavePageData = ref({});
 
 // getUser()
 //   .then((data) => {
@@ -189,7 +192,21 @@ watch(
 
 const isExternalLink  = (url?: string) => /^https?:\/\//.test(url);
 
-const handleToPage = (routeName: string, index: number, link: string) => {
+const handleToPage = async (routeName: string, index: number, link: string) => {
+  let result = true;
+  console.log(curLeavePageData.value);
+  if (Object.keys(curLeavePageData.value).length > 0) {
+    result = await isSidebarClosed(JSON.stringify(curLeavePageData.value)) as boolean;
+    if (result) {
+      getRouteData(routeName, index, link);
+    }
+  } else {
+    getRouteData(routeName, index, link);
+  }
+};
+
+const getRouteData = (routeName: string, index: number, link: string) => {
+  curLeavePageData.value = {};
   activeIndex.value = index;
   // 常用工具
   if (!!link) {
@@ -217,6 +234,11 @@ const goPage = (routeName: string) => {
 };
 
 onMounted(() => {
+  // 处理其他页面离开页面前是否会出现提示框的判断
+  mitt.on('on-leave-page-change', (payload: Record<string, any>) => {
+    curLeavePageData.value = payload;
+    initSidebarFormData(payload);
+  });
   mitt.on('show-login-modal', (payload: ILoginData) => {
     authRef.value.showLoginModal(payload);
   });
@@ -232,7 +254,6 @@ onBeforeMount(() => {
   mitt.off('show-login-modal');
   mitt.off('close-login-modal');
 });
-
 </script>
 
 <template>
