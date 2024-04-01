@@ -73,8 +73,8 @@ import { createResources, getResourceDetailData, updateResources } from '@/http'
 import { Message } from 'bkui-vue';
 import { AngleUpFill, RightShape } from 'bkui-vue/lib/icon';
 import { useSidebar } from '@/hooks';
-const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();

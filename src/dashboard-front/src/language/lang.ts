@@ -1394,6 +1394,7 @@ const lang: ILANG = {
   '变量管理': ['VariableManage'],
   '下架环境': ['Unpublish Stage'],
   '版本列表': ['VersionList'],
+  '请输入网关名称': ['Please enter gateway name'],
   '': [''],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
