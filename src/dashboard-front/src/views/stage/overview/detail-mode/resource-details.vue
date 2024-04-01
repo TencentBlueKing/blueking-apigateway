@@ -5,6 +5,7 @@
       :width="960"
       :title="`${$t('资源详情')}【${info.name}】`"
       quick-close
+      @hidden="emit('hidden')"
     >
       <template #default>
         <div class="sideslider-content">
@@ -266,6 +267,8 @@ const localLanguage =  cookie.parse(document.cookie).blueking_language || 'zh-cn
 const props = defineProps<{
   info: any;
 }>();
+
+const emit = defineEmits(['hidden']);
 
 const isShow = ref(false);
 const currentSource = ref<any>({});
