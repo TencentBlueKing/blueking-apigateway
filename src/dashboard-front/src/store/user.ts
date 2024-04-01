@@ -17,7 +17,6 @@ export const useUser = defineStore('user', {
       this.user = user;
     },
     setFeatureFlags(data: IFeatureFlags) {
-      console.log(data, '调用了配置接口');
       this.featureFlags = data;
     },
   },

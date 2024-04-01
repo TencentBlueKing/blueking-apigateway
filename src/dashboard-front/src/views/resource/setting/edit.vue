@@ -60,7 +60,8 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import mitt from '@/common/event-bus';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BaseInfo from './comps/base-info.vue';
 import FrontConfig from './comps/front-config.vue';
@@ -69,8 +70,10 @@ import { useRouter, useRoute } from 'vue-router';
 import { useCommon } from '@/store';
 import { createResources, getResourceDetailData, updateResources } from '@/http';
 import { Message } from 'bkui-vue';
-import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { AngleUpFill, RightShape } from 'bkui-vue/lib/icon';
+import { useSidebar } from '@/hooks';
 
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
@@ -86,16 +89,18 @@ const backConfigRef = ref(null);
 const submitLoading = ref(false);
 const resourceId = ref<any>(0);
 const resourceDetail = ref<any>({});
+// 获取初始化表单数据做对比
+const formDataBack = ref({});
 
 const isClone = computed(() => {
   return route.name === 'apigwResourceClone';
 });
 
-const init = () => {
+const init = async () => {
   if (route.params.resourceId) {
     resourceId.value = route.params.resourceId;
     // 获取资源详情
-    getResourceDetails();
+    await getResourceDetails();
   }
 };
 const getResourceDetails = async () => {
@@ -142,11 +147,30 @@ const handleSubmit = async () => {
 };
 
 // 取消
-const handleCancel = () => {
-  router.back();
+const handleCancel = async () => {
+  const params = {
+    baseFormData: baseInfoRef.value?.formData,
+    frontFormData: frontConfigRef.value.frontConfigData,
+    backFormData: backConfigRef.value.backConfigData,
+  };
+  const result = await isSidebarClosed(JSON.stringify(params));
+  if (result) {
+    router.back();
+  }
 };
 
-init();
+onMounted(async () => {
+  await init();
+  formDataBack.value = {
+    baseFormData: baseInfoRef.value?.formData,
+    frontFormData: frontConfigRef.value?.frontConfigData,
+    backFormData: backConfigRef.value?.backConfigData,
+  };
+  mitt.emit('on-leave-page-change', formDataBack.value);
+  nextTick(() => {
+    initSidebarFormData(formDataBack.value);
+  });
+});
 </script>
 <style lang="scss" scoped>
   .edit-container {
