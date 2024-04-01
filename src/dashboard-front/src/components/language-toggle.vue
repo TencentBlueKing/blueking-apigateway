@@ -20,32 +20,50 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import jsCookie from 'js-cookie';
-
 import { jsonpRequest } from '@/common/util';
+import { useSidebar } from '@/hooks';
+import mitt from '@/common/event-bus';
 
+const curLeavePageData = ref({});
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { locale } = useI18n();
 const router = useRouter();
 
 const toggleLanguage = async (idx: string) => {
-  const targetLanguage = idx === 'english' ? 'en' : 'zh-cn';
-  const res: any = await jsonpRequest(
-    `${window.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fe_update_user_language/`,
-    {
-      language: targetLanguage,
-    },
-    'languageToggle',
-  );
-  if (res.code === 0) {
-    jsCookie.set('blueking_language', targetLanguage, {
-      domain: window.BK_DOMAIN,
-      path: '/',
-    });
-    router.go(0);
+  let result = true;
+  if (Object.keys(curLeavePageData.value).length > 0) {
+    result = await isSidebarClosed(JSON.stringify(curLeavePageData.value)) as boolean;
+  }
+  if (result) {
+    curLeavePageData.value = {};
+    const targetLanguage = idx === 'english' ? 'en' : 'zh-cn';
+    const res: any = await jsonpRequest(
+      `${window.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fe_update_user_language/`,
+      {
+        language: targetLanguage,
+      },
+      'languageToggle',
+    );
+    if (res.code === 0) {
+      jsCookie.set('blueking_language', targetLanguage, {
+        domain: window.BK_DOMAIN,
+        path: '/',
+      });
+      router.go(0);
+    }
   }
 };
+
+onMounted(() => {
+  mitt.on('on-leave-page-change', (payload: Record<string, any>) => {
+    curLeavePageData.value = payload;
+    initSidebarFormData(payload);
+  });
+});
 </script>
 
 <style lang="scss" scoped>

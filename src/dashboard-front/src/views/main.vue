@@ -36,7 +36,10 @@
                     </bk-badge>
                   </template>
                   <template v-for="child in menu.children">
-                    <bk-menu-item v-if="child.enabled" :key="child.name" @click="handleGoPage(child.name, apigwId)">
+                    <bk-menu-item
+                      v-if="child.enabled"
+                      :key="child.name"
+                      @click.stop="handleGoPage(child.name, apigwId, 'menu')">
                       {{ child.title }}
                       <bk-badge
                         :count="permission.count"
@@ -53,7 +56,8 @@
               <template v-else>
                 <bk-menu-item
                   :key="menu.name"
-                  @click="handleGoPage(menu.name, apigwId)">
+                  @click.stop="handleGoPage(menu.name, apigwId, 'menu')"
+                >
                   <template #icon>
                     <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
                   </template>
@@ -66,9 +70,11 @@
       </template>
       <template #side-header>
         <bk-select
-          class="header-select" filterable
+          ref="apigwSelect"
+          class="header-select"
+          filterable
           v-model="apigwId"
-          @change="handleGoPage(activeMenuKey, apigwId)"
+          @change="handleGoPage(activeMenuKey, apigwId, 'select')"
           :clearable="false">
           <bk-option
             v-for="item in gatewaysList" :key="item.id" :id="item.id" :name="item.name"
@@ -98,16 +104,20 @@
 import { ref, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { createMenuData } from '@/common/menu';
-import { useGetApiList } from '@/hooks';
+import { useGetApiList, useSidebar } from '@/hooks';
 import { useCommon, usePermission } from '@/store';
 import { getPermissionApplyList, getGatewaysDetail } from '@/http';
+import mitt from '@/common/event-bus';
+import { cloneDeep } from 'lodash';
 
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const route = useRoute();
 const router = useRouter();
 // 全局公共字段存储
 const common = useCommon();
 const permission = usePermission();
 const filterData = ref({ name: '' });
+const apigwSelect = ref();
 // 获取网关数据方法
 const {
   getGatewaysListData,
@@ -120,9 +130,14 @@ const openedKeys = ref<string[]>([]);
 
 // 当前网关Id
 const apigwId = ref(0);
+const apigwIdBack = ref(0);
 
 // 页面header名
 const headerTitle = ref('');
+
+// 当前离开页面的数据
+const curLeavePageData = ref({});
+
 const handleCollapse = (v: boolean) => {
   collapse.value = !v;
 };
@@ -148,6 +163,7 @@ watch(
   (val: any) => {
     activeMenuKey.value = val.meta.matchRoute;
     apigwId.value = Number(val.params.id);
+    apigwIdBack.value = cloneDeep(apigwId.value);
     headerTitle.value = val.meta.title;
     // 设置全局网关id
     common.setApigwId(apigwId.value);
@@ -178,7 +194,7 @@ watch(
 );
 
 // 获取权限审批的数量
-const getPermiList = async () => {
+const getPermList = async () => {
   try {
     const res = await getPermissionApplyList(apigwId.value, { offset: 0, limit: 10 });
     permission.setCount(res.count);
@@ -187,29 +203,50 @@ const getPermiList = async () => {
   }
 };
 
-onMounted(async () => {
-  gatewaysList.value = await getGatewaysListData();
-  console.log('gatewaysList', gatewaysList);
-  // 初始化设置一次
-  handleSetApigwName();
-  getPermiList();
-});
+const handleGoPage = async (routeName: string, id?: number, type?: string) => {
+  console.log(type);
+  let result = true;
+  if (Object.keys(curLeavePageData.value).length > 0) {
+    result = await isSidebarClosed(JSON.stringify(curLeavePageData.value)) as boolean;
+    if (result) {
+      getRouteData(routeName, id);
+      // apigwId.value = apigwIdBack.value;
+    }
+  } else {
+    getRouteData(routeName, id);
+  }
+};
 
-const handleGoPage = (routeName: string, apigwId?: number) => {
-  common.setApigwId(apigwId);
+const getRouteData = (routeName: string, id?: number) => {
+  curLeavePageData.value = {};
+  common.setApigwId(id);
   router.push({
     name: routeName,
     params: {
-      id: apigwId,
+      id,
     },
   });
-  getPermiList();
+  getPermList();
 };
 
 const handleBack = () => {
   router.back();
 };
+
+onMounted(async () => {
+  // 处理其他页面离开页面前是否会出现提示框的判断
+  mitt.on('on-leave-page-change', (payload: Record<string, any>) => {
+    curLeavePageData.value = payload;
+    initSidebarFormData(payload);
+  });
+  gatewaysList.value = await getGatewaysListData();
+  console.log('gatewaysList', gatewaysList);
+  // 初始化设置一次
+  handleSetApigwName();
+  getPermList();
+});
 </script>
+
 <style lang="scss" scoped>
 .navigation-main {
   height: calc(100vh - 52px);
