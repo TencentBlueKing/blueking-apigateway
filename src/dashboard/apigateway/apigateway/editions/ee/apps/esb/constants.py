@@ -66,7 +66,7 @@ class FunctionControllerCodeEnum(StructuredEnum):
 
 
 SYSTEM_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
-CHANNEL_PATH_PATTERN = re.compile(r"^/[/a-zA-Z0-9_-]+$")
+CHANNEL_PATH_PATTERN = re.compile(r"^/[\w{}/.-]*$")
 COMPONENT_CODENAME_PATTERN = re.compile(r"^[a-z][a-z0-9._]+[a-z0-9_]$")
 COMPONENT_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
 
