@@ -149,9 +149,24 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
         return self.contexts.diff(target.contexts)
 
     def diff_plugins(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
-        source_plugins = {plugin.type: plugin.dict() for plugin in self.plugins}
-        target_plugins = {plugin.type: plugin.dict() for plugin in target.plugins}
-        return source_plugins, target_plugins
+        source_plugins = {plugin.type: plugin for plugin in self.plugins}
+        target_plugins = {plugin.type: plugin for plugin in target.plugins}
+
+        source_plugins_config = {plugin.type: plugin.dict() for plugin in self.plugins}
+        target_plugins_config = {plugin.type: plugin.dict() for plugin in target.plugins}
+        for plugin_type, source_plugin_config in source_plugins.items():
+            if plugin_type not in target_plugins:
+                continue
+            source_diff_value, target_diff_value = source_plugin_config.diff(target_plugins.get(plugin_type))
+            if not source_diff_value or not target_diff_value:
+                continue
+
+            # 如果没有差异，则对比结果移除该插件
+            if len(source_diff_value) + len(target_diff_value) == 0:
+                del source_plugins_config[plugin_type]
+                del target_plugins_config[plugin_type]
+
+        return source_plugins_config, target_plugins_config
 
     @staticmethod
     def diff_resource_version_data(
