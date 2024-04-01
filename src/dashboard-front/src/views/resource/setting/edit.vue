@@ -70,7 +70,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useCommon } from '@/store';
 import { createResources, getResourceDetailData, updateResources } from '@/http';
 import { Message } from 'bkui-vue';
-import { AngleUpFill, RightShape } from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useSidebar } from '@/hooks';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
