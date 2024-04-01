@@ -55,7 +55,7 @@
                   header-icon="right-shape"
                   class="bk-collapse-source"
                 >
-                  <bk-collapse-panel :name="1">
+                  <bk-collapse-panel :name="1" style="margin-bottom: 24px;">
                     <span><span class="log-name">{{ $t("版本日志") }}</span></span>
                     <!-- <template #header>
                     <div class="bk-collapse-header">

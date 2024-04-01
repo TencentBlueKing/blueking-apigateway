@@ -6,18 +6,15 @@
       property="name"
       required
     >
-      <bk-popover
-        placement="top-start"
-        trigger="click"
-        theme="light"
-        :content="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')">
-        <bk-input
-          v-model="formData.name"
-          :placeholder="t('请输入')"
-          class="name"
-          clearable
-        />
-      </bk-popover>
+      <bk-input
+        v-model="formData.name"
+        :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
+        class="name"
+        clearable
+      />
+      <div class="common-form-tips">
+        {{ t("资源名称在网关下唯一，将在SDK中用作操作名称，若修改，请联系 SDK 用户做相应调整") }}
+      </div>
     </bk-form-item>
     <bk-form-item
       :label="t('描述')"

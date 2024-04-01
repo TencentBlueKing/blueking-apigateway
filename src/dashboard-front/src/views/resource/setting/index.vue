@@ -1201,6 +1201,7 @@ onMounted(() => {
   mitt.on('on-update-plugin', () => {
     pagination.value = Object.assign(pagination.value, { current: 0, limit: 10 });
     getList();
+    handleShowVersion();
   });
 });
 

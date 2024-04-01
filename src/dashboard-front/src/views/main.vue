@@ -364,9 +364,20 @@ const handleBack = () => {
     }
   }
   :deep(.header-select){
-    width: 240px;
-    .bk-input--text{
-      background: rgb(245, 247, 250);
+    width: 224px;
+    .bk-input {
+      border: none;
+      background: #F5F7FA;
+      border-radius: 2px;
+      box-shadow: none;
+      .bk-input--text{
+        background: #F5F7FA;
+        color: #63656E;
+        font-size: 14px;
+      }
+    }
+    &.is-focus {
+      border: 1px solid #3a84ff;
     }
   }
 }
