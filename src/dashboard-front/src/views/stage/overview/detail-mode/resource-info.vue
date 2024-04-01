@@ -22,10 +22,11 @@
           :settings="settings"
           @page-limit-change="handlePageSizeChange"
           @page-value-change="handlePageChange"
+          :row-class="isHighlight"
         >
           <bk-table-column prop="backend" :label="t('后端服务')">
             <template #default="{ row }">
-              <bk-button theme="primary" text @click="handleEditStage">
+              <bk-button theme="primary" text @click="handleEditStage(row.name)">
                 {{ row?.proxy?.backend?.name }}
               </bk-button>
             </template>
@@ -135,10 +136,10 @@
   </bk-loading>
 
   <!-- 资源详情 -->
-  <resource-details ref="resourceDetailsRef" :info="info" />
+  <resource-details ref="resourceDetailsRef" :info="info" @hidden="clearHighlight()" />
 
   <!-- 环境编辑 -->
-  <edit-stage-sideslider ref="stageSidesliderRef" />
+  <edit-stage-sideslider ref="stageSidesliderRef" @hidden="clearHighlight()" />
 </template>
 
 <script setup lang="ts">
@@ -228,6 +229,7 @@ const handleSelectMethod = (payload: Record<string, string>) => {
 
 
 const showDetails = (row: any) => {
+  setHighlight(row.name);
   info.value = row;
   resourceDetailsRef.value?.showSideslider();
 };
@@ -270,8 +272,29 @@ const getResourceVersionsData = async (curStageData: any) => {
   }
 };
 
+const isHighlight = (v: any) => {
+  return v.highlight ? 'row-cls' : '';
+};
+
+const setHighlight = (name: string) => {
+  curPageData.value?.map((item: any) => {
+    if (item.name === name) {
+      item.highlight = true;
+    } else {
+      item.highlight = false;
+    }
+  });
+};
+
+const clearHighlight = () => {
+  curPageData.value?.map((item: any) => {
+    item.highlight = false;
+  });
+};
+
 // 编辑环境
-const handleEditStage = () => {
+const handleEditStage = (name: string) => {
+  setHighlight(name);
   stageSidesliderRef.value?.handleShowSideslider('edit');
 };
 
@@ -424,6 +447,11 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .table-layout {
+  :deep(.row-cls){
+    td{
+      background: #f2fff4 !important;
+    }
+  }
   :deep(.bk-table-head) {
     scrollbar-gutter: auto;
   }

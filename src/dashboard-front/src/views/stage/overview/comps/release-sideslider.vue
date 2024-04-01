@@ -4,7 +4,7 @@
       class="release-sideslider"
       v-model:isShow="isShow"
       :width="960"
-      :title="`发布资源至环境【${currentAssets.name}】`"
+      :title="`发布到环境【${currentAssets.name}】`"
       quick-close
       :before-close="handleBeforeClose"
       @animation-end="handleAnimationEnd">
