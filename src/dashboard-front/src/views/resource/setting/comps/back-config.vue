@@ -20,12 +20,12 @@
       @row-mouse-enter="handleMouseEnter"
       @row-mouse-leave="handleMouseLeave"
     >
-      <bk-table-column :label="t('环境名称')">
+      <bk-table-column :label="t('环境名称')" :resizable="false">
         <template #default="{ data }">
           {{data?.stage?.name}}
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('后端服务地址')">
+      <bk-table-column :label="t('后端服务地址')" :resizable="false">
         <template #default="{ data }">
           <span v-if="data?.hosts[0].host">
             {{data?.hosts[0].scheme}}://{{ data?.hosts[0].host }}
