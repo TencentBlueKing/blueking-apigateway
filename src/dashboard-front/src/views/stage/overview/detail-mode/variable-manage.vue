@@ -20,7 +20,7 @@
         @cell-click="handleCellClick"
         border="outer"
       >
-        <bk-table-column :label="t('变量名称')" prop="name" :show-overflow-tooltip="false">
+        <bk-table-column :label="t('变量名称')" prop="name" :show-overflow-tooltip="false" :resizable="false">
           <template #default="{ row, index, column }">
             <span v-if="!row.isEdit" class="no-edit-value">{{ row?.name }}</span>
             <template v-if="row.isEdit">
@@ -52,7 +52,7 @@
             </template>
           </template>
         </bk-table-column>
-        <bk-table-column :label="t('变量值')" prop="value" :show-overflow-tooltip="false">
+        <bk-table-column :label="t('变量值')" prop="value" :show-overflow-tooltip="false" :resizable="false">
           <template #default="{ row, index, column }">
             <span v-show="!row.isEdit" class="no-edit-value">{{ row?.value }}</span>
             <template v-if="row.isEdit">
@@ -84,9 +84,7 @@
             />
           </template>
         </bk-table-column> -->
-        <bk-table-column
-          :label="t('操作')"
-        >
+        <bk-table-column :label="t('操作')" :resizable="false">
           <template #default="{ row, index, column }">
             <div class="normal-status" v-show="!row.isFocus">
               <i class="apigateway-icon icon-ag-plus-circle-shape" @click="addRow(index, column.index)" />
