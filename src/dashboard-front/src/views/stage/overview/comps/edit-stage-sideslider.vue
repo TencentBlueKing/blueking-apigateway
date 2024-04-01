@@ -9,6 +9,7 @@
       ext-cls="stage-sideslider-cls"
       :before-close="handleBeforeClose"
       @animation-end="handleAnimationEnd"
+      @hidden="emit('hidden')"
       :transfer="true"
     >
       <template #default>
@@ -261,6 +262,8 @@ const route = useRoute();
 
 const isShow = ref(false);
 const isAdsorb = ref<boolean>(false);
+
+const emit = defineEmits(['hidden']);
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();

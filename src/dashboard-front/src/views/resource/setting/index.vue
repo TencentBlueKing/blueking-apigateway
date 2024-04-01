@@ -863,6 +863,13 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   resourceId.value = id;
   curResource.value = tableData.value.find((e: any) => e.id === id);
+  tableData.value?.forEach((item: any) => {
+    if (item.id === id) {
+      item.highlight = true;
+    } else {
+      item.highlight = false;
+    }
+  });
   // console.log('curResource.value', curResource.value);
   if (isDetail.value) {
     isComponentLoading.value = true;
@@ -1074,7 +1081,10 @@ const handleDeleteSuccess = () => {
 };
 
 const is24HoursAgoClsFunc = (v: any) => {
-  return v.is24HoursAgo ? '' : 'row-cls';
+  if (v.highlight || !v.is24HoursAgo) {
+    return 'row-cls';
+  }
+  return '';
 };
 
 const settings = {
@@ -1092,6 +1102,17 @@ const settings = {
   ],
   checked: ['name', 'backend_name', 'method', 'path', 'plugin_count', 'docs', 'labels', 'updated_time', 'act'],
 };
+
+watch(
+  () => isDetail.value,
+  (v) => {
+    if (!v) {
+      tableData.value?.map((item: any) => {
+        item.highlight = false;
+      });
+    }
+  },
+);
 
 watch(
   () => isShowLeft.value,
@@ -1310,6 +1331,7 @@ onBeforeMount(() => {
           overflow: hidden;
           white-space: nowrap;
           text-overflow: ellipsis;
+          cursor: pointer;
           &-updated {
             max-width: 112px;
           }
