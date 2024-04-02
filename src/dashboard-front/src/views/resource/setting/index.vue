@@ -636,8 +636,8 @@ const batchEditData = ref({
 // tab 选项卡
 const panels = [
   { name: 'resourceDetail', label: t('资源配置'), component: Detail },
-  { name: 'pluginManage', label: '插件管理', component: PluginManage },
-  { name: 'resourcesDoc', label: '资源文档', component: ResourcesDoc },
+  { name: 'pluginManage', label: t('插件管理'), component: PluginManage },
+  { name: 'resourcesDoc', label: t('资源文档'), component: ResourcesDoc },
 ];
 
 const columns = [

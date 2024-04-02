@@ -11,7 +11,7 @@
       <div class="flex-1 flex-row justify-content-end">
         <bk-input
           class="ml10 mr10 operate-input"
-          placeholder="请输入版本号"
+          :placeholder="t('请输入版本号')"
           v-model="filterData.keyword"
         ></bk-input>
       </div>

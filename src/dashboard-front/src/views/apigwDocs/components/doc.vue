@@ -108,15 +108,15 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import MarkdownIt from 'markdown-it';
 import { slugify } from 'transliteration';
-import sdkDetail from '@/components/sdk-detail';
-import sideNav from '@/components/side-nav';
+import sdkDetail from '@/components/sdk-detail/index.vue';
+import sideNav from '@/components/side-nav/index.vue';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/monokai-sublime.css';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { getApigwResourceSDKDocs, getApigwResourceDocDocs, getApigwResourcesDocs, getApigwSDKDocs, getGatewaysDetailsDocs } from '@/http';
 import { copy } from '@/common/util';
-import chat from '@/components/chat';
+import chat from '@/components/chat/index.vue';
 import { useUser } from '@/store';
 
 const userStore = useUser();
@@ -165,7 +165,7 @@ const curApigw = ref({
 });
 const componentNavList = ref<any>([]);
 
-const SDKInfo = computed(() => t(`网关当前环境【${curStage.value}】对应的资源版本未生成SDK，可联系网关负责人生成SDK`));
+const SDKInfo = computed(() => t(`网关当前环境【${curStage.value}】对应的资源版本未生成 SDK，可联系网关负责人生成 SDK`));
 const curUser = computed(() => userStore?.user);
 const userList = computed(() => {
   // 去重

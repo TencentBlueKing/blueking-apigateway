@@ -982,7 +982,10 @@ const lang: ILANG = {
   '可设置为\'/{system_name}/{component_name}/\'，例如\'/host/get_host_list/\'': ['Can be set to \'/{system_name}/{component_name}/\', e.g. \'/host/get_host_list/\''],
   '将对以下{permissionSelectListTemplate}个权限申请单进行审批': ['The following {permissionSelectListTemplate} permission records will be approved'],
   '偶发 {errorCount} 次请求错误': ['Occasional {errorCount} request error(s)'],
-  '将给以下  <i class="ag-strong success m5">{applyCount}</i> 个权限续期<i class="ag-strong">180</i>天<span v-if="unApplyCount">；<i class="ag-strong danger m5">{unApplyCount}</i> 个权限不可续期，权限大于30天不支持续期</span>': ['Renew the following <i class="ag-strong success m5">{applyCount}</i> permissions for<i class="ag-strong"> 180 </i>days<span v-if="unApplyCount">; <i class="ag-strong danger m5">{unApplyCount}</i> permission(s) are not renewable, and permissions greater 30 days are non-renewable</span>'],
+  '将给以下': ['Renew the following '],
+  '个权限续期': [' permissions'],
+  '天1': [' days'],
+  '个权限不可续期，权限大于30天不支持续期': [' permissions cannot be extended, as permissions longer than 30 days do not support extension.'],
   '描述(英文)': ['Description(en)'],
   '批量编辑资源共{resourceSelectedLength}个': ['Batch edit resources total {resourceSelectedLength}'],
   '新建 <strong style="color: #2DCB56;"> {createNum} </strong> 条，': ['Create <strong style="color: #2DCB56;"> {createNum} </strong>，'],
@@ -1042,7 +1045,7 @@ const lang: ILANG = {
   '告警成功': ['Alarm success'],
   '告警失败': ['Alarm failure'],
   '个月': ['months'],
-  '最新版本号:': ['Latest version:'],
+  '最新版本号': ['Latest version'],
   '于 {createdTime} 创建': ['created at {createdTime}'],
   '请选择标签': ['Please select a label'],
   '你将对指定的蓝鲸应用添加免用户认证白名单': ['Add the specified app to verified user exempted apps'],
@@ -1397,6 +1400,7 @@ const lang: ILANG = {
   '版本列表': ['VersionList'],
   '请输入网关名称': ['Please enter gateway name'],
   '': [''],
+  '新建后端服务': ['Create backend service'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

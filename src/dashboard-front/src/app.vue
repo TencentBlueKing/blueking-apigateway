@@ -1,3 +1,58 @@
+<template>
+  <BkConfigProvider :locale="bkuiLocale">
+    <div id="app" :class="[systemCls]">
+      <NoticeComponent
+        v-if="showNoticeAlert && enableShowNotice"
+        :api-url="noticeApi"
+        @show-alert-change="handleShowAlertChange"
+      />
+      <bk-navigation
+        class="navigation-content"
+        navigation-type="top-bottom"
+        :need-menu="false"
+        :default-open="true"
+      >
+        <template #side-icon>
+          <!-- v-if="localLanguage === 'en'" -->
+          <img src="@/images/APIgataway-c.png" class="api-logo">
+        <!-- <img v-else src="@/images/APIgataway-c.png" class="api-logo"> -->
+        </template>
+        <div class="content">
+          <router-view v-if="userLoaded"></router-view>
+        </div>
+        <template #header>
+          <div
+            class="header"
+          >
+            <div class="header-nav">
+              <template v-for="(item, index) in headerList">
+                <div
+                  :key="item.id"
+                  class="header-nav-item"
+                  :class="{ 'item-active': index === activeIndex }"
+                  v-if="item.enabled"
+                >
+                  <span
+                    v-if="!isExternalLink(item.url)"
+                    @click="handleToPage(item.url, index, item.link)">{{item.name}}</span>
+                  <a :href="item.url" target="_blank" v-else>{{item.name}}</a>
+                </div>
+              </template>
+            </div>
+            <div class="flex-row">
+              <language-toggle></language-toggle>
+              <product-info></product-info>
+              <user-info v-if="userLoaded" />
+            </div>
+          </div>
+        </template>
+      </bk-navigation>
+
+      <AppAuth ref="authRef" />
+    </div>
+  </BkConfigProvider>
+</template>
+
 <script setup lang="ts">
 import {
   ref,
@@ -6,27 +61,45 @@ import {
   onMounted,
   onBeforeMount,
 } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRouter, useRoute } from 'vue-router';
+import { Message, ConfigProvider as BkConfigProvider } from 'bkui-vue';
+// @ts-ignore
+import zhCn from 'bkui-vue/dist/locale/zh-cn.esm';
+// @ts-ignore
+import en from 'bkui-vue/dist/locale/en.esm';
+
+// @ts-ignore
+import NoticeComponent from '@blueking/notice-component';
+import '@blueking/notice-component/dist/style.css';
+
 import UserInfo from '@/components/user-info.vue';
 import ProductInfo from '@/components/product-info.vue';
 import LanguageToggle from '@/components/language-toggle.vue';
 import AppAuth from '@/components/auth/index.vue';
-// @ts-ignore
-import NoticeComponent from '@blueking/notice-component';
-import '@blueking/notice-component/dist/style.css';
 import mitt from '@/common/event-bus';
-import { useI18n } from 'vue-i18n';
-import { useRouter, useRoute } from 'vue-router';
 import { useUser } from '@/store';
 import { getUser, getFeatureFlags } from '@/http';
-import { Message } from 'bkui-vue';
 import { ILoginData } from '@/common/auth';
 import { useSidebar } from '@/hooks';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const { BK_DASHBOARD_URL } = window;
+
+const bkuiLocaleData = {
+  zhCn,
+  en,
+};
+
+const bkuiLocale = computed(() => {
+  if (locale.value === 'zh-cn') {
+    return bkuiLocaleData.zhCn;
+  }
+  return bkuiLocaleData.en;
+});
 
 // 加载完用户数据才会展示页面
 const userLoaded = ref(false);
@@ -255,59 +328,6 @@ onBeforeMount(() => {
   mitt.off('close-login-modal');
 });
 </script>
-
-<template>
-  <div id="app" :class="[systemCls]">
-    <NoticeComponent
-      v-if="showNoticeAlert && enableShowNotice"
-      :api-url="noticeApi"
-      @show-alert-change="handleShowAlertChange"
-    />
-    <bk-navigation
-      class="navigation-content"
-      navigation-type="top-bottom"
-      :need-menu="false"
-      :default-open="true"
-    >
-      <template #side-icon>
-        <!-- v-if="localLanguage === 'en'" -->
-        <img src="@/images/APIgataway-c.png" class="api-logo">
-      <!-- <img v-else src="@/images/APIgataway-c.png" class="api-logo"> -->
-      </template>
-      <div class="content">
-        <router-view v-if="userLoaded"></router-view>
-      </div>
-      <template #header>
-        <div
-          class="header"
-        >
-          <div class="header-nav">
-            <template v-for="(item, index) in headerList">
-              <div
-                :key="item.id"
-                class="header-nav-item"
-                :class="{ 'item-active': index === activeIndex }"
-                v-if="item.enabled"
-              >
-                <span
-                  v-if="!isExternalLink(item.url)"
-                  @click="handleToPage(item.url, index, item.link)">{{item.name}}</span>
-                <a :href="item.url" target="_blank" v-else>{{item.name}}</a>
-              </div>
-            </template>
-          </div>
-          <div class="flex-row">
-            <language-toggle></language-toggle>
-            <product-info></product-info>
-            <user-info v-if="userLoaded" />
-          </div>
-        </div>
-      </template>
-    </bk-navigation>
-
-    <AppAuth ref="authRef" />
-  </div>
-</template>
 
 <style>
 @import './css/app.css';
