@@ -208,7 +208,7 @@
         <bk-alert theme="info" class="mb15">
           <template #title>
             {{t('将给以下') }} <i class="ag-strong success">{{applyCount}}</i>{{t('个权限续期') }}
-            <i class="ag-strong">180</i>天
+            <i class="ag-strong">180</i>{{t('天1') }}
             <span>；
               <i class="ag-strong danger m5">{{unApplyCount}}</i>
               {{t('个权限不可续期，权限大于30天不支持续期') }}

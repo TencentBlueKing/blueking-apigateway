@@ -11,7 +11,7 @@
       <div class="flex-1 flex-row justify-content-end">
         <bk-input
           class="ml10 mr10 operate-input"
-          placeholder="请输入关键字或选择条件查询"
+          :placeholder="t('请输入关键字或选择条件搜索')"
           v-model="keyword"
           @change="handleKeywordChange"
         ></bk-input>

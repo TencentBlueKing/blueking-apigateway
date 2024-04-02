@@ -196,10 +196,12 @@
                             type="number" :min="1" :max="300"
                             v-model="slotProps.configs.timeout" class="time-input">
                             <template #suffix>
-                              <div class="group-text group-text-style">{{ t('秒') }}</div>
+                              <div class="group-text group-text-style" :class="locale === 'en' ? 'long' : ''">
+                                {{ t('秒') }}
+                              </div>
                             </template>
                           </bk-input>
-                          <span class="timeout-tip"> {{ t('最大 300 秒') }} </span>
+                          <span class="timeout-tip" :class="locale === 'en' ? 'long' : ''"> {{ t('最大 300 秒') }} </span>
                         </bk-form-item>
                       </bk-form>
                     </template>
@@ -249,7 +251,7 @@ import TableEmpty from '@/components/table-empty.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 
 const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const common = useCommon();
 const router = useRouter();
 const { apigwId } = common; // 网关id
@@ -747,11 +749,17 @@ watch(
     position: absolute;
     top: 0px;
     right: -70px;
+    &.long {
+      right: -120px;
+    }
   }
 
   .group-text {
-    width: 30px;
-    text-align: center;
+    width: 20px;
+    text-align: left;
+    &.long {
+      width: 50px;
+    }
   }
 }
 

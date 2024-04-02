@@ -96,7 +96,8 @@
         </bk-checkbox>
       </div>
       <div class="common-form-tips">
-        {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在'{}'中，比如：/users/{id}/{env.type}/。") }}
+        <!-- {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中，比如：/users/{id}/{env.type}/。") }} -->
+        {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中") }}
         <!-- <a :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank" class="ag-primary">{{ t('更多详情') }}</a> -->
       </div>
       <div v-if="servicesCheckData.length">

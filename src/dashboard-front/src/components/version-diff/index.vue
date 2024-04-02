@@ -138,7 +138,7 @@
                 {{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}
               </template>
               <template v-else>
-                当前最新资源列表
+                {{t('当前最新资源列表')}}
               </template>
             </strong>
           </div>

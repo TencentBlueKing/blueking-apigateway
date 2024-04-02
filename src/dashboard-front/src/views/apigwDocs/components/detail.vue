@@ -10,6 +10,7 @@
             filterable
             :input-search="false"
             :clearable="false"
+            :placeholder="t('请输入关键字')"
             @change="handleApigwChange">
             <bk-option
               v-for="option in apigwList"
@@ -133,7 +134,7 @@ const curResource = ref<any>({});
 const mainContentLoading = ref<boolean>(false);
 
 const searchPlaceholder = computed(() => {
-  return t(`在${resourceList.value?.length}个资源中搜索...`);
+  return t('在{resourceLength}个资源中搜索...', { resourceLength: resourceList.value?.length });
 });
 
 const routeName = computed(() => route.name);

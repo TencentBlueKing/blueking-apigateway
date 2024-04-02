@@ -174,7 +174,7 @@ const rules = {
   resource_version_id: [
     {
       required: true,
-      message: '请选择',
+      message: t('请选择'),
       trigger: 'change',
     },
   ],
