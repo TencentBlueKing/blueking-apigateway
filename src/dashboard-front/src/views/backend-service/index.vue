@@ -88,13 +88,21 @@
     <!-- 新建/编辑sideslider -->
     <bk-sideslider
       v-model:isShow="sidesliderConfi.isShow"
-      :title="sidesliderConfi.title"
       :quick-close="true"
       ext-cls="backend-service-slider"
       width="960"
       :before-close="handleBeforeClose"
       @animation-end="handleAnimationEnd"
     >
+      <template #header>
+        <div class="custom-side-header">
+          <div class="title">{{ sidesliderConfi.title }}</div>
+          <template v-if="curOperate === 'edit'">
+            <span></span>
+            <div class="subtitle">{{ baseInfo.name }}</div>
+          </template>
+        </div>
+      </template>
       <template #default>
         <div class="content">
           <bk-alert theme="warning" :title="editTitle" class="service-tips" v-if="curOperate === 'edit' && isPublish" />
@@ -161,9 +169,13 @@
                           </bk-select>
                         </bk-form-item>
                         <bk-form-item
-                          :label="t('后端服务地址')" v-for="(hostItem, i) in slotProps.configs.hosts" :key="i"
-                          :rules="configRules.host" :property="`configs.hosts.${i}.host`"
-                          :class="['backend-item-cls', { 'form-item-special': i !== 0 }]" required>
+                          :label="t('后端服务地址')"
+                          v-for="(hostItem, i) in slotProps.configs.hosts"
+                          :key="i"
+                          :rules="configRules.host"
+                          :property="`configs.hosts.${i}.host`"
+                          :class="['backend-item-cls', { 'form-item-special': i !== 0 }]"
+                          required>
                           <div class="host-item">
                             <bk-input :placeholder="t('格式如：host:port')" v-model="hostItem.host" :key="i">
                               <template #prefix>
@@ -175,9 +187,20 @@
                                 <div class="slash">://</div>
                               </template>
                               <template #suffix v-if="slotProps.configs.loadbalance === 'weighted-roundrobin'">
-                                <bk-input
-                                  class="suffix-slot-cls weights-input" :placeholder="t('权重')" type="number" :min="1"
-                                  :max="10000" v-model="hostItem.weight"></bk-input>
+                                <bk-form-item
+                                  :rules="configRules.weight"
+                                  :property="`configs.hosts.${i}.weight`"
+                                  label=""
+                                  style="margin-bottom: 0px;">
+                                  <bk-input
+                                    class="suffix-slot-cls weights-input"
+                                    :placeholder="t('权重')"
+                                    type="number"
+                                    :min="1"
+                                    :max="10000"
+                                    v-model="hostItem.weight"
+                                  ></bk-input>
+                                </bk-form-item>
                               </template>
                             </bk-input>
                             <i
@@ -336,6 +359,13 @@ const configRules = {
       trigger: 'blur',
     },
   ],
+  weight: [
+    {
+      required: true,
+      message: t('必填项'),
+      trigger: 'change',
+    },
+  ],
   timeout: [
     {
       required: true,
@@ -459,7 +489,7 @@ const handleEdit = async (data: any) => {
     name: data.name,
     description: data.description,
   };
-  sidesliderConfi.title = t('编辑后端服务【{name}】', { name: data.name });
+  sidesliderConfi.title = t('编辑后端服务');
   try {
     const res = await getBackendServiceDetail(apigwId, data.id);
     curServiceDetail.value = res;
@@ -721,12 +751,12 @@ watch(
 }
 
 .suffix-slot-cls {
-  width: 60px;
+  width: 80px;
   line-height: 30px;
   font-size: 12px;
   color: #63656e;
   text-align: center;
-  height: 100%;
+  height: 28px;
   border: none;
   border-left: 1px solid #c4c6cc !important;
 }

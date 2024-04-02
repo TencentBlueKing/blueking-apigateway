@@ -20,7 +20,6 @@
         <div class="edit-name" v-else>
           <bk-input
             size="small"
-            behavior="simplicity"
             v-model="formData.name"
             @blur="handleNameSave"
             :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"

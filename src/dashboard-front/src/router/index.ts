@@ -143,6 +143,7 @@ const routes: RouteRecordRaw[] = [
           matchRoute: 'apigwResource',
           topMenu: 'home',
           showBackIcon: true,
+          showPageName: true,
         },
       },
       {

@@ -107,6 +107,7 @@ const getResourceDetails = async () => {
   try {
     const res = await getResourceDetailData(apigwId, resourceId.value);
     resourceDetail.value = res;
+    mitt.emit('update-name', { name: res.name });
   } catch (error) {
 
   }

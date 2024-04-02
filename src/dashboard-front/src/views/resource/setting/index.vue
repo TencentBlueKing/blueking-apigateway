@@ -300,7 +300,7 @@
         :class="['toggle-button', 'toggle-button-lf', !isDetail ? 'active' : '']"
         v-show="isShowLeft"
         @click="handleToggleLf"
-        :style="{ right: !isDetail ? '-24px' : '-19px' }">
+        :style="{ right: !isDetail ? '-24px' : '-22px' }">
         <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
       </div>
     </div>
