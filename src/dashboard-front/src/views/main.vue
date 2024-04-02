@@ -225,6 +225,13 @@ const handleGoPage = async (routeName: string, id?: number, type?: string) => {
 const getRouteData = (routeName: string, id?: number) => {
   curLeavePageData.value = {};
   common.setApigwId(id);
+  router.push({
+    name: routeName,
+    params: {
+      id,
+    },
+  });
+  getPermList();
 };
 
 mitt.on('update-name', ({ name }) => {
