@@ -115,7 +115,6 @@
             @row-mouse-enter="handleMouseEnter"
             @row-mouse-leave="handleMouseLeave"
             @column-sort="handleSortChange"
-            row-hover="auto"
             :row-class="is24HoursAgoClsFunc"
             border="outer"
             :settings="settings">
@@ -1313,8 +1312,8 @@ onBeforeMount(() => {
 
     .table-layout{
       :deep(.row-cls){
-        td{
-          background: #f2fff4 !important;
+        td {
+          background: #e1ecff !important;
         }
       }
       :deep(.bk-table-head) {
