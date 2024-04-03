@@ -1193,6 +1193,7 @@ const lang: ILANG = {
   '输入SDK版本号、资源版本进行搜索': ['Enter the SDK version or resource version to search'],
   '添加文档': ['Add document'],
   '请输入关键字搜索': ['Please input keyword'],
+  '请输入关键字': ['Please enter keyword'],
   'API Gateway | 腾讯蓝鲸智云': ['API Gateway | BlueKing'],
   '只支持.tar.gz、.tgz、.zip 压缩格式': ['Only supports .tar.gz, .tgz, .zip compression formats'],
   '无该应用访问权限': ['No access permission to this application.'],
