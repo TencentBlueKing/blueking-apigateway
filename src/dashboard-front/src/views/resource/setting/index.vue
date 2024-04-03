@@ -115,7 +115,6 @@
             @row-mouse-enter="handleMouseEnter"
             @row-mouse-leave="handleMouseLeave"
             @column-sort="handleSortChange"
-            row-hover="auto"
             :row-class="is24HoursAgoClsFunc"
             border="outer"
             :settings="settings">
@@ -300,7 +299,7 @@
         :class="['toggle-button', 'toggle-button-lf', !isDetail ? 'active' : '']"
         v-show="isShowLeft"
         @click="handleToggleLf"
-        :style="{ right: !isDetail ? '-24px' : '-19px' }">
+        :style="{ right: !isDetail ? '-24px' : '-22px' }">
         <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
       </div>
     </div>
@@ -636,8 +635,8 @@ const batchEditData = ref({
 // tab 选项卡
 const panels = [
   { name: 'resourceDetail', label: t('资源配置'), component: Detail },
-  { name: 'pluginManage', label: '插件管理', component: PluginManage },
-  { name: 'resourcesDoc', label: '资源文档', component: ResourcesDoc },
+  { name: 'pluginManage', label: t('插件管理'), component: PluginManage },
+  { name: 'resourcesDoc', label: t('资源文档'), component: ResourcesDoc },
 ];
 
 const columns = [
@@ -863,6 +862,13 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   resourceId.value = id;
   curResource.value = tableData.value.find((e: any) => e.id === id);
+  tableData.value?.forEach((item: any) => {
+    if (item.id === id) {
+      item.highlight = true;
+    } else {
+      item.highlight = false;
+    }
+  });
   // console.log('curResource.value', curResource.value);
   if (isDetail.value) {
     isComponentLoading.value = true;
@@ -1074,7 +1080,10 @@ const handleDeleteSuccess = () => {
 };
 
 const is24HoursAgoClsFunc = (v: any) => {
-  return v.is24HoursAgo ? '' : 'row-cls';
+  if (v.highlight || !v.is24HoursAgo) {
+    return 'row-cls';
+  }
+  return '';
 };
 
 const settings = {
@@ -1092,6 +1101,17 @@ const settings = {
   ],
   checked: ['name', 'backend_name', 'method', 'path', 'plugin_count', 'docs', 'labels', 'updated_time', 'act'],
 };
+
+watch(
+  () => isDetail.value,
+  (v) => {
+    if (!v) {
+      tableData.value?.map((item: any) => {
+        item.highlight = false;
+      });
+    }
+  },
+);
 
 watch(
   () => isShowLeft.value,
@@ -1201,6 +1221,7 @@ onMounted(() => {
   mitt.on('on-update-plugin', () => {
     pagination.value = Object.assign(pagination.value, { current: 0, limit: 10 });
     getList();
+    handleShowVersion();
   });
 });
 
@@ -1291,8 +1312,8 @@ onBeforeMount(() => {
 
     .table-layout{
       :deep(.row-cls){
-        td{
-          background: #f2fff4 !important;
+        td {
+          background: #e1ecff !important;
         }
       }
       :deep(.bk-table-head) {
@@ -1309,6 +1330,7 @@ onBeforeMount(() => {
           overflow: hidden;
           white-space: nowrap;
           text-overflow: ellipsis;
+          cursor: pointer;
           &-updated {
             max-width: 112px;
           }

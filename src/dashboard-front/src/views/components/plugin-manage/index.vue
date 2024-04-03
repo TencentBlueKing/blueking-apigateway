@@ -634,6 +634,9 @@ init();
       border-radius: 12px;
       box-shadow: 0 2px 4px 0 #1919290d;
       overflow: hidden;
+      &:hover {
+        box-shadow: 0 2px 4px 0 rgba(25, 25, 41, 0.25098);
+      }
 
       .plungin-head {
         display: flex;
@@ -698,6 +701,7 @@ init();
       .plugin-notes {
         color: #63656e;
         font-size: 12px;
+        line-height: 22px;
       }
 
       .plugin-chose {

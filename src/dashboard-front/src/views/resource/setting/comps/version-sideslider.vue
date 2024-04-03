@@ -126,6 +126,8 @@ const apigwId = computed(() => +route.params.id);
 
 const { t } = useI18n();
 
+const emit  = defineEmits(['done']);
+
 // const resourceVersion = computed(() => {
 //   let version = '';
 //   versionList.value?.forEach((item: any) => {
@@ -172,7 +174,7 @@ const rules = {
   resource_version_id: [
     {
       required: true,
-      message: '请选择',
+      message: t('请选择'),
       trigger: 'change',
     },
   ],
@@ -201,6 +203,7 @@ const handleBuildVersion = async () => {
     await formRef.value?.validate();
     loading.value = true;
     await createResourceVersion(apigwId.value, formData);
+    emit('done');
     // 弹窗并关闭侧栏
     dialogShow.value = true;
     isShow.value = false;

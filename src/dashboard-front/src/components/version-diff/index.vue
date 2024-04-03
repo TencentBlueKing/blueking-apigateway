@@ -88,15 +88,20 @@
           <!-- <div class="marked">{{ $t("源版本") }}</div> -->
           <div class="version">
             <bk-select
-              class="fl mr10"
+              class="fl mr10 choose-version"
               v-model="localSourceId"
               v-if="sourceSwitch || pageType === 'createVersion'"
               :placeholder="$t('请选择源版本')"
               :clearable="false"
               :input-search="false"
               :filterable="true"
-              @change="handleVersionChange"
-            >
+              @change="handleVersionChange">
+              <template #trigger>
+                <span class="trigger-label">
+                  {{ localSourceTriggerLabel }}
+                  <DownShape class="trigger-label-icon" />
+                </span>
+              </template>
               <bk-option
                 v-for="option in localVersionList"
                 :key="option.id"
@@ -114,7 +119,7 @@
         <div class="target-header">
           <div class="version">
             <bk-select
-              class="fl mr10"
+              class="fl mr10 choose-version"
               v-model="localTargetId"
               v-if="targetSwitch && pageType !== 'createVersion'"
               :placeholder="$t('请选择目标版本')"
@@ -122,8 +127,13 @@
               :input-search="false"
               :filterable="true"
               style="width: 320px"
-              @change="handleVersionChange"
-            >
+              @change="handleVersionChange">
+              <template #trigger>
+                <span class="trigger-label">
+                  {{ localTargetTriggerLabel }}
+                  <DownShape class="trigger-label-icon" />
+                </span>
+              </template>
               <bk-option
                 v-for="option in localVersionList"
                 :key="option.id"
@@ -138,7 +148,7 @@
                 {{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}
               </template>
               <template v-else>
-                当前最新资源列表
+                {{t('当前最新资源列表')}}
               </template>
             </strong>
           </div>
@@ -160,13 +170,15 @@
             <template v-if="checkMatch(addItem, 'add')">
               <div class="source-box">
                 <div class="metadata pl10" @click="handleToggle(addItem)">
-                  <i
+                  <!-- <i
                     :class="[
                       'bk-icon icon-right-shape',
                       { active: addItem.isExpanded },
                     ]"
-                  ></i>
-                  <span class="vm resource-title ml10">--</span>
+                  ></i> -->
+                  <RightShape class="expand-icon" v-if="!addItem.isExpanded" />
+                  <DownShape class="expand-icon" v-else />
+                  <span class="vm resource-title">--</span>
                 </div>
                 <div class="resource-box pl15 pr15">
                   <!-- <bk-transition :name="animation"> -->
@@ -183,7 +195,9 @@
               </div>
               <div class="target-box">
                 <div class="metadata success" @click="handleToggle(addItem)">
-                  <i :class="['bk-icon icon-right-shape', { active: addItem.isExpanded }]"></i>
+                  <!-- <i :class="['bk-icon icon-right-shape', { active: addItem.isExpanded }]"></i> -->
+                  <RightShape class="expand-icon" v-if="!addItem.isExpanded" />
+                  <DownShape class="expand-icon" v-else />
                   <span
                     class="vm resource-title"
                     v-html="renderTitle(addItem)"
@@ -208,12 +222,14 @@
             <template v-if="checkMatch(deleteItem, 'delete')">
               <div class="source-box">
                 <div class="metadata" @click="handleToggle(deleteItem)">
-                  <i
+                  <!-- <i
                     :class="[
                       'bk-icon icon-right-shape',
                       { active: deleteItem.isExpanded },
                     ]"
-                  ></i>
+                  ></i> -->
+                  <RightShape class="expand-icon" v-if="!deleteItem.isExpanded" />
+                  <DownShape class="expand-icon" v-else />
                   <span
                     class="vm resource-title"
                     v-html="renderTitle(deleteItem)"
@@ -232,12 +248,14 @@
               </div>
               <div class="target-box">
                 <div class="metadata danger" @click="handleToggle(deleteItem)">
-                  <i
+                  <!-- <i
                     :class="[
                       'bk-icon icon-right-shape',
                       { active: deleteItem.isExpanded },
                     ]"
-                  ></i>
+                  ></i> -->
+                  <RightShape class="expand-icon" v-if="!deleteItem.isExpanded" />
+                  <DownShape class="expand-icon" v-else />
                   <span
                     class="vm resource-title"
                     v-html="renderTitle(deleteItem)"
@@ -266,12 +284,14 @@
             <template v-if=" checkMatch(updateItem.source, 'update') || checkMatch(updateItem.target, 'update')">
               <div class="source-box">
                 <div class="metadata" @click="handleToggle(updateItem)">
-                  <i
+                  <!-- <i
                     :class="[
                       'bk-icon icon-right-shape',
                       { active: updateItem.isExpanded },
                     ]"
-                  ></i>
+                  ></i> -->
+                  <RightShape class="expand-icon" v-if="!updateItem.isExpanded" />
+                  <DownShape class="expand-icon" v-else />
                   <span
                     class="vm resource-title"
                     v-html="renderTitle(updateItem.source)"
@@ -293,12 +313,14 @@
               </div>
               <div class="target-box">
                 <div class="metadata warning" @click="handleToggle(updateItem)">
-                  <i
+                  <!-- <i
                     :class="[
                       'bk-icon icon-right-shape',
                       { active: updateItem.isExpanded },
                     ]"
-                  ></i>
+                  ></i> -->
+                  <RightShape class="expand-icon" v-if="!updateItem.isExpanded" />
+                  <DownShape class="expand-icon" v-else />
                   <span
                     class="vm resource-title"
                     v-html="renderTitle(updateItem.target)"
@@ -350,7 +372,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import resourceDetail from '@/components/resource-detail/index.vue';
 import { useI18n } from 'vue-i18n';
-import { Spinner } from 'bkui-vue/lib/icon';
+import { Spinner, RightShape, DownShape } from 'bkui-vue/lib/icon';
 import { useCommon } from '@/store';
 import { resourceVersionsDiff, getResourceVersionsList, getGatewayLabels, getBackendsListData } from '@/http';
 
@@ -659,6 +681,22 @@ const init = async () => {
   ]);
 };
 
+const localSourceTriggerLabel = computed(() => {
+  const match = localVersionList.value.find((item: any) => item.id === localSourceId.value);
+  if (match) {
+    return match.resource_version_display;
+  }
+  return '';
+});
+
+const localTargetTriggerLabel = computed(() => {
+  const match = localVersionList.value.find((item: any) => item.id === localTargetId.value);
+  if (match) {
+    return match.resource_version_display;
+  }
+  return '';
+});
+
 watch(
   () => [props.sourceId, props.targetId],
   (newArr) => {
@@ -746,7 +784,7 @@ onMounted(() => {
     content: "";
     display: inline-block;
     position: absolute;
-    width: 2px;
+    width: 1px;
     background: #dbdee4;
     left: 50%;
     top: 0;
@@ -779,6 +817,14 @@ onMounted(() => {
       color: #63656e;
       padding-left: 10px;
       cursor: pointer;
+      position: relative;
+
+      .expand-icon {
+        position: absolute;
+        top: 12px;
+        z-index: 1;
+        color: #979ba5;
+      }
 
       .resource-title {
         position: relative;
@@ -789,17 +835,21 @@ onMounted(() => {
         display: inline-block;
         width: 96%;
         font-weight: 700;
-      }
-
-      .bk-icon {
-        display: inline-block;
-        transform-origin: center;
-        transition: all ease 0.3s;
-
-        &.active {
-          transform: rotate(90deg);
+        margin-left: 18px;
+        :deep(.bk-tag-text) {
+          font-weight: 400;
         }
       }
+
+      // .bk-icon {
+      //   display: inline-block;
+      //   transform-origin: center;
+      //   transition: all ease 0.3s;
+
+      //   &.active {
+      //     transform: rotate(90deg);
+      //   }
+      // }
 
       &.danger {
         background: #fef2f2;
@@ -835,9 +885,9 @@ onMounted(() => {
     border-right: 1px solid #dcdee5;
   }
 
-  .target-box {
-    border-left: 1px solid #dcdee5;
-  }
+  // .target-box {
+  //   border-left: 1px solid #dcdee5;
+  // }
 
   .resource-box {
     height: calc(100% - 36px);
@@ -898,6 +948,19 @@ onMounted(() => {
     line-height: 42px;
     display: flex;
 
+    .choose-version {
+      width: 150px;
+      cursor: pointer;
+      .trigger-label {
+        position: relative;
+        display: inline-block;
+        .trigger-label-icon {
+          position: relative;
+          top: 2px;
+        }
+      }
+    }
+
     .marked {
       width: 130px;
       text-align: center;
@@ -932,7 +995,7 @@ onMounted(() => {
 
   .target-header {
     background-color: #f0f1f5;
-    border-left: 1px solid #dcdee5;
+    // border-left: 1px solid #dcdee5;
     border-bottom: 1px solid #dcdee5;
 
     .marked {

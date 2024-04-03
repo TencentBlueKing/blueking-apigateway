@@ -89,6 +89,10 @@
             v-if="route.meta.showBackIcon"
             @click="handleBack"></i>
           {{ headerTitle }}
+          <div class="title-name" v-if="route.meta.showPageName && pageName">
+            <span></span>
+            <div class="name">{{ pageName }}</div>
+          </div>
         </div>
         <div :class="route.meta.customHeader ? 'custom-header-view' : 'default-header-view'">
           <router-view
@@ -101,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { createMenuData } from '@/common/menu';
 import { useGetApiList, useSidebar } from '@/hooks';
@@ -156,6 +160,7 @@ const handleSetApigwDeatail = async () => {
 
 const needMenu = ref(true);
 const menuData = ref([]);
+const pageName = ref<string>('');
 
 // 监听当前路由
 watch(
@@ -228,6 +233,14 @@ const getRouteData = (routeName: string, id?: number) => {
   });
   getPermList();
 };
+
+mitt.on('update-name', ({ name }) => {
+  pageName.value = name;
+});
+
+onBeforeUnmount(() => {
+  mitt.off('update-name');
+});
 
 const handleBack = () => {
   router.back();
@@ -341,8 +354,8 @@ onMounted(async () => {
       color: rgb(99, 101, 110);
     }
     .submenu-header-collapse {
-      width: 20px;
-      font-size: 20px;
+      width: 22px;
+      font-size: 22px;
     }
     .bk-menu-submenu.is-opened {
       background: #fff !important;
@@ -388,6 +401,21 @@ onMounted(async () => {
           color: #3a84ff;
           cursor: pointer;
         }
+        .title-name {
+          display: flex;
+          align-items: center;
+          margin-left: 8px;
+          span {
+            width: 1px;
+            height: 14px;
+            background: #DCDEE5;
+            margin-right: 8px;
+          }
+          .name {
+            font-size: 14px;
+            color: #979BA5;
+          }
+        }
       }
       .default-header-view{
         height: calc(100vh - 105px);
@@ -401,9 +429,20 @@ onMounted(async () => {
     }
   }
   :deep(.header-select){
-    width: 240px;
-    .bk-input--text{
-      background: rgb(245, 247, 250);
+    width: 224px;
+    .bk-input {
+      border: none;
+      background: #F5F7FA;
+      border-radius: 2px;
+      box-shadow: none;
+      .bk-input--text{
+        background: #F5F7FA;
+        color: #63656E;
+        font-size: 14px;
+      }
+    }
+    &.is-focus {
+      border: 1px solid #3a84ff;
     }
   }
 }
@@ -412,6 +451,25 @@ onMounted(async () => {
 .custom-height-navigation {
   .content-header {
     border-bottom: none !important;
+  }
+}
+.custom-side-header {
+  display: flex;
+  align-items: center;
+  .title {
+    font-size: 16px;
+    font-weight: 400;
+    color: #313238;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #979BA5;
+  }
+  span {
+    width: 1px;
+    height: 14px;
+    background: #DCDEE5;
+    margin: 0 8px;
   }
 }
 </style>

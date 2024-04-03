@@ -160,7 +160,7 @@ const permission = usePermission();
 
 const { apigwId } = common; // 网关id
 
-const filterData = ref({ bk_app_code: '', applied_by: '', grant_dimension: '' });
+const filterData = ref({ bk_app_code: '', applied_by: '', grant_dimension: 'resource' });
 const expandRows = ref([]);
 const batchForm = ref(null);
 const approveForm = ref(null);

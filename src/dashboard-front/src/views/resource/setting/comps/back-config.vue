@@ -20,12 +20,12 @@
       @row-mouse-enter="handleMouseEnter"
       @row-mouse-leave="handleMouseLeave"
     >
-      <bk-table-column :label="t('环境名称')">
+      <bk-table-column :label="t('环境名称')" :resizable="false">
         <template #default="{ data }">
           {{data?.stage?.name}}
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('后端服务地址')">
+      <bk-table-column :label="t('后端服务地址')" :resizable="false">
         <template #default="{ data }">
           <span v-if="data?.hosts[0].host">
             {{data?.hosts[0].scheme}}://{{ data?.hosts[0].host }}
@@ -33,7 +33,7 @@
           <span v-else>--</span>
         </template>
       </bk-table-column>
-      <bk-table-column :label="renderTimeOutLabel" prop="timeout">
+      <bk-table-column :label="renderTimeOutLabel" prop="timeout" :resizable="false">
         <template #default="{ row }">
           <!-- <span class="time-wrapper"  v-clickOutSide="(e:Event) => handleClickTableOutSide(e, row)">
             <template v-if="!row.isEditTime">
@@ -65,10 +65,7 @@
         </template>
       </bk-table-column>
     </bk-table>
-    <bk-form-item
-      :label="t('请求方法')"
-      required
-    >
+    <bk-form-item :label="t('请求方法')" required>
       <bk-select
         :input-search="false"
         v-model="backConfigData.config.method"
@@ -77,11 +74,7 @@
         <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
     </bk-form-item>
-    <bk-form-item
-      :label="t('请求路径')"
-      property="config.path"
-      required
-    >
+    <bk-form-item :label="t('请求路径')" property="config.path" required>
       <div class="flex-row aligin-items-center">
         <bk-input
           v-model="backConfigData.config.path"
@@ -103,8 +96,9 @@
         </bk-checkbox>
       </div>
       <div class="common-form-tips">
-        {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在'{}'中，比如：/users/{id}/{env.type}/。") }}
-        <a :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank" class="ag-primary">{{ t('更多详情') }}</a>
+        <!-- {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中，比如：/users/{id}/{env.type}/。") }} -->
+        {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中") }}
+        <!-- <a :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank" class="ag-primary">{{ t('更多详情') }}</a> -->
       </div>
       <div v-if="servicesCheckData.length">
         <bk-alert

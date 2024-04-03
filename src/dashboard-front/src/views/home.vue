@@ -9,7 +9,7 @@
         >
           {{ t('新建网关') }}
         </bk-button>
-        <bk-input class="ml10 mr10 search-input" v-model="filterNameData.keyword" placeholder="请输入网关名"></bk-input>
+        <bk-input class="ml10 mr10 search-input" v-model="filterNameData.keyword" :placeholder="t('请输入网关名称')" />
         <bk-select
           v-model="filterKey"
           :clearable="false"

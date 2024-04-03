@@ -208,7 +208,7 @@
         <bk-alert theme="info" class="mb15">
           <template #title>
             {{t('将给以下') }} <i class="ag-strong success">{{applyCount}}</i>{{t('个权限续期') }}
-            <i class="ag-strong">180</i>天
+            <i class="ag-strong">180</i>{{t('天1') }}
             <span>；
               <i class="ag-strong danger m5">{{unApplyCount}}</i>
               {{t('个权限不可续期，权限大于30天不支持续期') }}
@@ -386,20 +386,6 @@ const {
   resetSelections,
 } = useSelection();
 
-// 监听授权维度是否变化
-watch(
-  () => dimension.value,
-  async (value: string) => {
-    // filterData.value.grant_dimension = value;
-    // resetSelections();
-    // const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-    // await getList(method);
-    resetSelections();
-    getMethod.value = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-    filterData.value.grant_dimension = value;
-  },
-  { deep: true },
-);
 // 监听搜索是否变化
 watch(
   () => searchQuery.value,
@@ -753,6 +739,22 @@ const init = () => {
   console.log(selections.value);
 };
 init();
+
+// 监听授权维度是否变化
+watch(
+  () => dimension.value,
+  async (value: string) => {
+    // filterData.value.grant_dimension = value;
+    // resetSelections();
+    // const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
+    // await getList(method);
+    resetSelections();
+    getMethod.value = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
+    filterData.value.grant_dimension = value;
+    updateTableEmptyConfig();
+  },
+  { deep: true, immediate: true },
+);
 </script>
 
 <style lang="scss" scoped>

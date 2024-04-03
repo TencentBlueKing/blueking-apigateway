@@ -664,10 +664,10 @@
           :key="key"
           :class="{ 'ag-diff': checkPluginsDiff() }"
         >
-          <bk-col :span="4">
+          <bk-col :span="5">
             <label class="ag-key">{{ key }}:</label>
           </bk-col>
-          <bk-col :span="10">
+          <bk-col :span="9">
             <div class="ag-value">
               {{ plugin.config[key] || "--" }}
             </div>

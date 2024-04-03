@@ -9,6 +9,7 @@
       ext-cls="stage-sideslider-cls"
       :before-close="handleBeforeClose"
       @animation-end="handleAnimationEnd"
+      @hidden="emit('hidden')"
       :transfer="true"
     >
       <template #default>
@@ -183,10 +184,12 @@
                           v-model="backend.config.timeout"
                         >
                           <template #suffix>
-                            <div class="group-text group-text-style">{{ $t('秒') }}</div>
+                            <div class="group-text group-text-style" :class="locale === 'en' ? 'long' : ''">
+                              {{ $t('秒') }}
+                            </div>
                           </template>
                         </bk-input>
-                        <p class="timeout-tip">
+                        <p class="timeout-tip" :class="locale === 'en' ? 'long' : ''">
                           {{ $t('最大 300 秒') }}
                         </p>
                       </bk-form-item>
@@ -253,7 +256,7 @@ import { copy } from '@/common/util';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties, useSidebar } from '@/hooks';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const common = useCommon();
 const stageStore = useStage();
 const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
@@ -261,6 +264,8 @@ const route = useRoute();
 
 const isShow = ref(false);
 const isAdsorb = ref<boolean>(false);
+
+const emit = defineEmits(['hidden']);
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -729,11 +734,13 @@ defineExpose({
   border-left: 1px solid #c4c6cc !important;
 }
 .group-text-style {
-  width: 32px;
+  width: 20px;
   color: #63656e;
-  text-align: center;
-  background: #fafbfd;
-  border-left: 1px solid #c4c6cc;
+  text-align: left;
+  background: #f5f7fa;
+  &.long {
+    width: 50px;
+  }
 }
 .scheme-select-cls {
   color: #63656e;
@@ -763,6 +770,9 @@ defineExpose({
       margin-left: 13px;
       white-space: nowrap;
       font-size: 12px;
+      &.long {
+        right: -110px;
+      }
     }
   }
 }

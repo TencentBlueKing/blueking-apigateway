@@ -88,104 +88,151 @@
     <!-- 新建/编辑sideslider -->
     <bk-sideslider
       v-model:isShow="sidesliderConfi.isShow"
-      :title="sidesliderConfi.title"
       :quick-close="true"
       ext-cls="backend-service-slider"
       width="960"
       :before-close="handleBeforeClose"
       @animation-end="handleAnimationEnd"
     >
+      <template #header>
+        <div class="custom-side-header">
+          <div class="title">{{ sidesliderConfi.title }}</div>
+          <template v-if="curOperate === 'edit'">
+            <span></span>
+            <div class="subtitle">{{ baseInfo.name }}</div>
+          </template>
+        </div>
+      </template>
       <template #default>
         <div class="content">
-          <bk-alert theme="warning" :title="editTitle" class="mb20" v-if="curOperate === 'edit' && isPublish" />
-          <div class="base-info mb20">
-            <p class="title"><span class="icon apigateway-icon icon-ag-down-shape"></span>{{ t('基础信息') }}</p>
-            <bk-form
-              ref="baseInfoRef" class="base-info-form mt20" :model="baseInfo"
-              form-type="vertical">
-              <bk-form-item :label="t('服务名称')" property="name" required :rules="baseInfoRules.name">
-                <bk-input
-                  v-model="baseInfo.name" :placeholder="t('请输入 1-20 字符的字母、数字、连字符(-)，以字母开头')"
-                  :disabled="curOperate === 'edit'" />
-                <p class="aler-text">{{ t('后端服务唯一标识，创建后不可修改') }}</p>
-              </bk-form-item>
-              <bk-form-item :label="t('描述')" property="description">
-                <bk-input v-model="baseInfo.description" :placeholder="t('请输入描述')" />
-              </bk-form-item>
-            </bk-form>
-          </div>
-          <div class="stage-config">
-            <div class="header-title flex-row justify-content-between">
-              <p class="title"><span class="icon apigateway-icon icon-ag-down-shape"></span>{{ t('各环境的服务配置') }}</p>
-            </div>
-            <div class="stage mt20">
-              <bk-collapse :list="stageConfig" header-icon="right-shape" v-model="activeIndex">
-                <template #title="slotProps">
-                  <span class="fw700 stage-name">
-                    {{ slotProps.name || slotProps.configs.stage.name}}
-                  </span>
-                </template>
-                <template #content="slotProps">
+          <bk-alert theme="warning" :title="editTitle" class="service-tips" v-if="curOperate === 'edit' && isPublish" />
+
+          <bk-collapse v-model="activeKey" class="bk-collapse-service">
+            <bk-collapse-panel name="base-info">
+              <template #header>
+                <div class="panel-header">
+                  <angle-up-fill
+                    :class="[activeKey?.includes('base-info') ? 'panel-header-show' : 'panel-header-hide']"
+                  />
+                  <div class="title">{{ t('基础信息') }}</div>
+                </div>
+              </template>
+              <template #content>
+                <div>
                   <bk-form
-                    :ref="getSatgeConfigRef"
-                    class="stage-config-form " :model="slotProps" form-type="vertical">
-                    <bk-form-item
-                      :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
-                      <bk-select
-                        v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
-                      >
-                        <bk-option
-                          v-for="option of loadbalanceList" :key="option.id" :value="option.id"
-                          :label="option.name">
-                        </bk-option>
-                      </bk-select>
-                    </bk-form-item>
-                    <bk-form-item
-                      :label="t('后端服务地址')" v-for="(hostItem, i) in slotProps.configs.hosts" :key="i"
-                      :rules="configRules.host" :property="`configs.hosts.${i}.host`"
-                      :class="['backend-item-cls', { 'form-item-special': i !== 0 }]" required>
-                      <div class="host-item">
-                        <bk-input :placeholder="t('格式如：host:port')" v-model="hostItem.host" :key="i">
-                          <template #prefix>
-                            <bk-select v-model="hostItem.scheme" class="scheme-select-cls w80" :clearable="false">
-                              <bk-option
-                                v-for="(item, index) in schemeList" :key="index" :value="item.value"
-                                :label="item.value" />
-                            </bk-select>
-                            <div class="slash">://</div>
-                          </template>
-                          <template #suffix v-if="slotProps.configs.loadbalance === 'weighted-roundrobin'">
-                            <bk-input
-                              class="suffix-slot-cls weights-input" :placeholder="t('权重')" type="number" :min="1"
-                              :max="10000" v-model="hostItem.weight"></bk-input>
-                          </template>
-                        </bk-input>
-                        <i
-                          class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
-                          @click="handleAddServiceAddress(slotProps.name)"></i>
-                        <i
-                          class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
-                          :class="{ disabled: slotProps.configs.hosts.length < 2 }"
-                          @click="handleDeleteServiceAddress(slotProps.name, i)"></i>
-                      </div>
-                    </bk-form-item>
-                    <bk-form-item
-                      :label="t('超时时间')" :required="true" :property="'configs.timeout'" class="timeout-item"
-                      :rules="configRules.timeout" :error-display-type="'normal'">
+                    ref="baseInfoRef" class="base-info-form" :model="baseInfo"
+                    form-type="vertical">
+                    <bk-form-item :label="t('服务名称')" property="name" required :rules="baseInfoRules.name">
                       <bk-input
-                        type="number" :min="1" :max="300"
-                        v-model="slotProps.configs.timeout" class="time-input">
-                        <template #suffix>
-                          <div class="group-text group-text-style">{{ t('秒') }}</div>
-                        </template>
-                      </bk-input>
-                      <span class="timeout-tip"> {{ t('最大 300 秒') }} </span>
+                        v-model="baseInfo.name" :placeholder="t('请输入 1-20 字符的字母、数字、连字符(-)，以字母开头')"
+                        :disabled="curOperate === 'edit'" />
+                      <p class="aler-text">{{ t('后端服务唯一标识，创建后不可修改') }}</p>
+                    </bk-form-item>
+                    <bk-form-item :label="t('描述')" property="description" class="last-form-item">
+                      <bk-input v-model="baseInfo.description" :placeholder="t('请输入描述')" />
                     </bk-form-item>
                   </bk-form>
-                </template>
-              </bk-collapse>
-            </div>
-          </div>
+                </div>
+              </template>
+            </bk-collapse-panel>
+
+            <bk-collapse-panel name="stage-config">
+              <template #header>
+                <div class="panel-header">
+                  <angle-up-fill
+                    :class="[activeKey?.includes('stage-config') ? 'panel-header-show' : 'panel-header-hide']"
+                  />
+                  <div class="title">{{ t('各环境的服务配置') }}</div>
+                </div>
+              </template>
+              <template #content>
+                <div class="stage">
+                  <bk-collapse :list="stageConfig" header-icon="right-shape" v-model="activeIndex">
+                    <template #title="slotProps">
+                      <span class="stage-name">
+                        {{ slotProps.name || slotProps.configs.stage.name}}
+                      </span>
+                    </template>
+                    <template #content="slotProps">
+                      <bk-form
+                        :ref="getSatgeConfigRef"
+                        class="stage-config-form " :model="slotProps" form-type="vertical">
+                        <bk-form-item
+                          :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
+                          <bk-select
+                            v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
+                          >
+                            <bk-option
+                              v-for="option of loadbalanceList" :key="option.id" :value="option.id"
+                              :label="option.name">
+                            </bk-option>
+                          </bk-select>
+                        </bk-form-item>
+                        <bk-form-item
+                          :label="t('后端服务地址')"
+                          v-for="(hostItem, i) in slotProps.configs.hosts"
+                          :key="i"
+                          :rules="configRules.host"
+                          :property="`configs.hosts.${i}.host`"
+                          :class="['backend-item-cls', { 'form-item-special': i !== 0 }]"
+                          required>
+                          <div class="host-item">
+                            <bk-input :placeholder="t('格式如：host:port')" v-model="hostItem.host" :key="i">
+                              <template #prefix>
+                                <bk-select v-model="hostItem.scheme" class="scheme-select-cls w80" :clearable="false">
+                                  <bk-option
+                                    v-for="(item, index) in schemeList" :key="index" :value="item.value"
+                                    :label="item.value" />
+                                </bk-select>
+                                <div class="slash">://</div>
+                              </template>
+                              <template #suffix v-if="slotProps.configs.loadbalance === 'weighted-roundrobin'">
+                                <bk-form-item
+                                  :rules="configRules.weight"
+                                  :property="`configs.hosts.${i}.weight`"
+                                  label=""
+                                  style="margin-bottom: 0px;">
+                                  <bk-input
+                                    class="suffix-slot-cls weights-input"
+                                    :placeholder="t('权重')"
+                                    type="number"
+                                    :min="1"
+                                    :max="10000"
+                                    v-model="hostItem.weight"
+                                  ></bk-input>
+                                </bk-form-item>
+                              </template>
+                            </bk-input>
+                            <i
+                              class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
+                              @click="handleAddServiceAddress(slotProps.name)"></i>
+                            <i
+                              class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
+                              :class="{ disabled: slotProps.configs.hosts.length < 2 }"
+                              @click="handleDeleteServiceAddress(slotProps.name, i)"></i>
+                          </div>
+                        </bk-form-item>
+                        <bk-form-item
+                          :label="t('超时时间')" :required="true" :property="'configs.timeout'" class="timeout-item"
+                          :rules="configRules.timeout" :error-display-type="'normal'">
+                          <bk-input
+                            type="number" :min="1" :max="300"
+                            v-model="slotProps.configs.timeout" class="time-input">
+                            <template #suffix>
+                              <div class="group-text group-text-style" :class="locale === 'en' ? 'long' : ''">
+                                {{ t('秒') }}
+                              </div>
+                            </template>
+                          </bk-input>
+                          <span class="timeout-tip" :class="locale === 'en' ? 'long' : ''"> {{ t('最大 300 秒') }} </span>
+                        </bk-form-item>
+                      </bk-form>
+                    </template>
+                  </bk-collapse>
+                </div>
+              </template>
+            </bk-collapse-panel>
+          </bk-collapse>
         </div>
       </template>
       <template #footer>
@@ -224,9 +271,10 @@ import {
   deleteBackendService,
 } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
 
 const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const common = useCommon();
 const router = useRouter();
 const { apigwId } = common; // 网关id
@@ -248,6 +296,7 @@ const curServiceDetail = ref({
 const stageList = ref([]);
 const stageConfig = ref([]);
 const activeIndex = ref([]);
+const activeKey = ref(['base-info', 'stage-config']);
 const sidesliderConfi = reactive({
   isShow: false,
   title: '',
@@ -308,6 +357,13 @@ const configRules = {
       },
       message: t('请输入合法Host，如：example.com'),
       trigger: 'blur',
+    },
+  ],
+  weight: [
+    {
+      required: true,
+      message: t('必填项'),
+      trigger: 'change',
     },
   ],
   timeout: [
@@ -433,7 +489,7 @@ const handleEdit = async (data: any) => {
     name: data.name,
     description: data.description,
   };
-  sidesliderConfi.title = t('编辑后端服务【{name}】', { name: data.name });
+  sidesliderConfi.title = t('编辑后端服务');
   try {
     const res = await getBackendServiceDetail(apigwId, data.id);
     curServiceDetail.value = res;
@@ -631,7 +687,7 @@ watch(
   background-color: #f1fcf5 !important;
 }
 .content{
-  padding: 20px 30px 30px;
+  padding: 20px 40px 30px;
 }
 .backend-service-slider {
   :deep(.bk-modal-content) {
@@ -643,40 +699,6 @@ watch(
     .base-info-form {
       .aler-text {
         color: #A5A4A7;
-      }
-    }
-  }
-
-  .stage-config {
-    .header-title {
-      .switch {
-        color: #6E6F74;
-        font-size: 14px;
-      }
-    }
-
-    .stage {
-      :deep(.bk-collapse-item) {
-        background-color: #F5F7FB;
-        margin-bottom: 25px;
-
-        .bk-collapse-content {
-          padding: 5px 40px;
-        }
-      }
-
-      .stage-name {
-        color: #6D6F75;
-      }
-
-      :deep(.bk-collapse-icon) {
-        left: 17px;
-        top: 17px;
-        color: #979AA2;
-
-        svg {
-          font-size: 13px;
-        }
       }
     }
   }
@@ -729,12 +751,12 @@ watch(
 }
 
 .suffix-slot-cls {
-  width: 60px;
+  width: 80px;
   line-height: 30px;
   font-size: 12px;
   color: #63656e;
   text-align: center;
-  height: 100%;
+  height: 28px;
   border: none;
   border-left: 1px solid #c4c6cc !important;
 }
@@ -757,11 +779,17 @@ watch(
     position: absolute;
     top: 0px;
     right: -70px;
+    &.long {
+      right: -120px;
+    }
   }
 
   .group-text {
-    width: 30px;
-    text-align: center;
+    width: 20px;
+    text-align: left;
+    &.long {
+      width: 50px;
+    }
   }
 }
 
@@ -821,6 +849,74 @@ watch(
         position: relative;
       }
     }
+  }
+}
+
+.service-tips {
+  margin-bottom: 12px;
+}
+.bk-collapse-service {
+  .panel-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 0px;
+    cursor: pointer;
+    .title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #313238;
+      margin-left: 8px;
+    }
+
+    .panel-header-show {
+      transition: .2s;
+      transform: rotate(0deg);
+    }
+    .panel-header-hide {
+      transition: .2s;
+      transform: rotate(-90deg);
+    }
+  }
+
+  :deep(.bk-collapse-content) {
+    padding: 0px;
+  }
+
+  .stage {
+    :deep(.bk-collapse-title) {
+      margin-left: 23px;
+      font-size: 14px;
+      color: #63656E;
+      font-weight: 700;
+    }
+    :deep(.bk-collapse-item) {
+      background-color: #F5F7FB;
+      margin-bottom: 25px;
+
+      .bk-collapse-content {
+        padding: 5px 40px;
+      }
+    }
+
+    .stage-name {
+      color: #63656E;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    :deep(.bk-collapse-icon) {
+      left: 17px;
+      top: 17px;
+      color: #979AA2;
+
+      svg {
+        font-size: 13px;
+      }
+    }
+  }
+
+  .last-form-item {
+    margin-bottom: 12px;
   }
 }
 </style>

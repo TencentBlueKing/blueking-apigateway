@@ -2,7 +2,7 @@
   <div class="app-content apigw-access-manager-wrapper">
     <div class="wrapper">
       <bk-form form-type="inline">
-        <bk-form-item :label="t('选择时间')" label-width="86">
+        <bk-form-item :label="t('选择时间')" :label-width="locale === 'zh-cn' ? 86 : 100">
           <bk-date-picker
             ref="topDatePicker"
             style="width: 320px;"
@@ -82,7 +82,7 @@ import { getSyncHistory } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
 
 const router = useRouter();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const datepickerShortcuts = [
   {

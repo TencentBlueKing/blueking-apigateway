@@ -214,11 +214,11 @@ const deleteNum = computed(() => {
   return results?.length;
 });
 
-const addInfo = computed(() => t(`新建 <strong style="color: #2DCB56;"> ${createNum.value} </strong> 条，`));
+const addInfo = computed(() => t('新建 <strong style="color: #2DCB56;"> {createNum} </strong> 条，', { createNum: createNum.value }));
 
-const updateInfo = computed(() => t(`更新 <strong style="color: #ffb400;"> ${updateNum.value} </strong> 条，`));
+const updateInfo = computed(() => t('更新 <strong style="color: #ffb400;"> {updateNum} </strong> 条，', { updateNum: updateNum.value }));
 
-const deleteInfo = computed(() => t(`删除 <strong style="color: #EA3536;"> ${deleteNum.value} </strong> 条`));
+const deleteInfo = computed(() => t('删除 <strong style="color: #EA3536;"> {deleteNum} </strong> 条', { deleteNum: deleteNum.value }));
 
 const confirmIsLoading = computed(() => isLoading.value);
 

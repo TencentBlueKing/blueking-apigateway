@@ -4,7 +4,7 @@
       class="release-sideslider"
       v-model:isShow="isShow"
       :width="960"
-      :title="`发布资源至环境【${currentAssets.name}】`"
+      :title="`发布到环境【${currentAssets.name}】`"
       quick-close
       :before-close="handleBeforeClose"
       @animation-end="handleAnimationEnd">
@@ -107,7 +107,7 @@
                       </span>
                     </p>
                   </bk-form-item>
-                  <bk-form-item property="comment" :label="$t('版本日志')">
+                  <bk-form-item property="comment" :label="$t('发布日志')">
                     <bk-input v-model="formData.comment" type="textarea" :rows="4" :maxlength="100" />
                   </bk-form-item>
                 </bk-form>

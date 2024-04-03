@@ -8,8 +8,7 @@
       <bk-collapse-panel name="baseInfo">
         <template #header>
           <div class="panel-header">
-            <angle-up-fill v-show="activeIndex?.includes('baseInfo')" />
-            <right-shape v-show="!activeIndex?.includes('baseInfo')" />
+            <angle-up-fill :class="[activeIndex?.includes('baseInfo') ? 'panel-header-show' : 'panel-header-hide']" />
             <div class="title">{{ t('基础信息') }}</div>
           </div>
         </template>
@@ -21,8 +20,9 @@
       <bk-collapse-panel name="frontConfig">
         <template #header>
           <div class="panel-header">
-            <angle-up-fill v-show="activeIndex?.includes('frontConfig')" />
-            <right-shape v-show="!activeIndex?.includes('frontConfig')" />
+            <angle-up-fill
+              :class="[activeIndex?.includes('frontConfig') ? 'panel-header-show' : 'panel-header-hide']"
+            />
             <div class="title">{{ t('前端配置') }}</div>
           </div>
         </template>
@@ -34,8 +34,7 @@
       <bk-collapse-panel name="backConfig">
         <template #header>
           <div class="panel-header">
-            <angle-up-fill v-show="activeIndex?.includes('backConfig')" />
-            <right-shape v-show="!activeIndex?.includes('backConfig')" />
+            <angle-up-fill :class="[activeIndex?.includes('backConfig') ? 'panel-header-show' : 'panel-header-hide']" />
             <div class="title">{{ t('后端配置') }}</div>
           </div>
         </template>
@@ -71,7 +70,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useCommon } from '@/store';
 import { createResources, getResourceDetailData, updateResources } from '@/http';
 import { Message } from 'bkui-vue';
-import { AngleUpFill, RightShape } from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useSidebar } from '@/hooks';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
@@ -108,6 +107,7 @@ const getResourceDetails = async () => {
   try {
     const res = await getResourceDetailData(apigwId, resourceId.value);
     resourceDetail.value = res;
+    mitt.emit('update-name', { name: res.name });
   } catch (error) {
 
   }
@@ -204,6 +204,14 @@ onMounted(async () => {
         font-size: 14px;
         color: #313238;
         margin-left: 8px;
+      }
+      .panel-header-show {
+        transition: .2s;
+        transform: rotate(0deg);
+      }
+      .panel-header-hide {
+        transition: .2s;
+        transform: rotate(-90deg);
       }
     }
     :deep(.bk-collapse-content) {

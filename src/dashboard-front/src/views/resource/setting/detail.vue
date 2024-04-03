@@ -20,7 +20,6 @@
         <div class="edit-name" v-else>
           <bk-input
             size="small"
-            behavior="simplicity"
             v-model="formData.name"
             @blur="handleNameSave"
             :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
@@ -100,30 +99,18 @@
           <span class="label-cls">{{ t('服务：') }}</span>
         </template>
         <span class="value-cls">{{ servicesData.name }}</span>
-        <bk-table
-          v-if="formData.id"
-          class="table-layout"
-          :data="servicesData.config"
-          :border="['outer']"
-        >
-          <bk-table-column
-            :label="t('环境名称')"
-          >
+        <bk-table v-if="formData.id" class="table-layout" :data="servicesData.config" :border="['outer']">
+          <bk-table-column :label="t('环境名称')" :resizable="false">
             <template #default="{ data }">
               {{data?.stage?.name}}
             </template>
           </bk-table-column>
-          <bk-table-column
-            :label="t('后端服务地址')"
-          >
+          <bk-table-column :label="t('后端服务地址')" :resizable="false">
             <template #default="{ data }">
               {{data?.hosts[0].scheme}}://{{ data?.hosts[0].host }}
             </template>
           </bk-table-column>
-          <bk-table-column
-            :label="t('超时时间')"
-            prop="timeout"
-          >
+          <bk-table-column :label="t('超时时间')" prop="timeout" :resizable="false">
             <template #default="{ data }">
               {{ data?.timeout }}s
             </template>
@@ -303,7 +290,7 @@ watch(
 </script>
 <style lang="scss" scoped>
 .detail-container{
-    max-width: 1000px;
+    // max-width: 1000px;
     height: calc(100vh - 175px);
     overflow: auto;
     .title {
