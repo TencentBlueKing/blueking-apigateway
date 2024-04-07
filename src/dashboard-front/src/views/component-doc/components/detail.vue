@@ -40,7 +40,10 @@
             </li>
           </ul>
           <template v-else-if="keyword">
-            <table-empty :keyword="keyword" @clear-filter="keyword = ''" />
+            <TableEmpty
+              :keyword="keyword"
+              @clear-filter="keyword = ''"
+            />
           </template>
         </div>
       </div>
@@ -122,6 +125,7 @@ import logo1 from '@/images/1.svg';
 import logo2 from '@/images/2.svg';
 import logo3 from '@/images/3.svg';
 import logo4 from '@/images/4.svg';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -762,5 +766,3 @@ init();
   }
 }
 </style>
-
-

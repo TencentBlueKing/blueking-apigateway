@@ -115,7 +115,7 @@
             @row-mouse-enter="handleMouseEnter"
             @row-mouse-leave="handleMouseLeave"
             @column-sort="handleSortChange"
-            :row-class="is24HoursAgoClsFunc"
+            :row-class="handleRowClass"
             border="outer"
             :settings="settings">
             <bk-table-column width="80" type="selection" align="center" />
@@ -861,9 +861,10 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
 // 展示右边内容
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   resourceId.value = id;
-  curResource.value = tableData.value.find((e: any) => e.id === id);
+  // curResource.value = tableData.value.find((e: any) => e.id === id);
   tableData.value?.forEach((item: any) => {
     if (item.id === id) {
+      curResource.value = item;
       item.highlight = true;
     } else {
       item.highlight = false;
@@ -1079,11 +1080,15 @@ const handleDeleteSuccess = () => {
   handleShowList();
 };
 
-const is24HoursAgoClsFunc = (v: any) => {
-  if (v.highlight || !v.is24HoursAgo) {
-    return 'row-cls';
+const handleRowClass = (v: any) => {
+  const ret = [];
+  if (!v.is24HoursAgo) {
+    ret.push('row-cls-in-24hours');
   }
-  return '';
+  if (v.highlight) {
+    ret.push('row-cls-highlight');
+  }
+  return ret.join(' ');
 };
 
 const settings = {
@@ -1311,7 +1316,12 @@ onBeforeMount(() => {
     }
 
     .table-layout{
-      :deep(.row-cls){
+      :deep(.row-cls-in-24hours) {
+        td {
+          background: #f2fff4 !important;
+        }
+      }
+      :deep(.row-cls-highlight) {
         td {
           background: #e1ecff !important;
         }
