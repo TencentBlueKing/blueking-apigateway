@@ -82,7 +82,9 @@ BK_SYSTEMS = {
         "name": "CC",
         "label": _("蓝鲸配置平台"),
         "label_en": "Configuration System",
-        "remark": _("蓝鲸配置平台是一款面向应用的CMDB，在ITIL体系里，CMDB是构建其它流程的基石，而在蓝鲸智云体系里，配置平台就扮演着基石的角色，为应用提供了各种运维场景的配置数据服务。"),
+        "remark": _(
+            "蓝鲸配置平台是一款面向应用的CMDB，在ITIL体系里，CMDB是构建其它流程的基石，而在蓝鲸智云体系里，配置平台就扮演着基石的角色，为应用提供了各种运维场景的配置数据服务。"
+        ),
         "remark_en": (
             "The BlueKing Configuration System is an application-oriented CMDB. In the "
             "ITIL system, CMDB is the cornerstone for building other processes, while in "
@@ -327,5 +329,21 @@ BK_SYSTEMS = {
         "remark_en": "WEIXIN",
         "doc_category": SystemDocCategoryEnum.DEFAULT.value,
         "is_public": False,
+    },
+    "NODEMAN": {
+        "name": "NODEMAN",
+        "label": "NODEMAN",
+        "label_en": "NODEMAN",
+        "remark": "NODEMAN",
+        "remark_en": "NODEMAN",
+        "doc_category": SystemDocCategoryEnum.DEFAULT.value,
+    },
+    "GSEKIT": {
+        "name": "GSEKIT",
+        "label": "GSEKIT",
+        "label_en": "GSEKIT",
+        "remark": "GSEKIT",
+        "remark_en": "GSEKIT",
+        "doc_category": SystemDocCategoryEnum.DEFAULT.value,
     },
 }
