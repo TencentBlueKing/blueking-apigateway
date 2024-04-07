@@ -1171,7 +1171,7 @@ const lang: ILANG = {
   'SDK地址': ['URL'],
   '在{resourceLength}个资源中搜索...': ['Search in {resourceLength} resources'],
   'SDK使用样例': ['SDK Usage Sample'],
-  '网关当前环境【{curStageText}】对应的资源版本未生成SDK，可联系网关负责人生成SDK': ['Gateway resource version corresponding to the stage [{curStageText}] does not generate SDK, you can contact the gateway maintainers to generate SDK'],
+  '网关当前环境【{curStageText}】对应的资源版本未生成 SDK，可联系网关负责人生成 SDK': ['Gateway resource version corresponding to the stage [{curStageText}] does not generate SDK, you can contact the gateway maintainers to generate SDK'],
   'SDK及示例': ['SDK & Sample'],
   'SDK信息-doc': ['SDK'],
   '[蓝鲸网关API咨询] 网关': ['[BK APIGateway] Gateway'],
@@ -1402,6 +1402,7 @@ const lang: ILANG = {
   '请输入网关名称': ['Please enter gateway name'],
   '': [''],
   '新建后端服务': ['Create backend service'],
+  '于': ['at'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

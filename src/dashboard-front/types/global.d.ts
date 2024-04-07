@@ -15,3 +15,8 @@ declare interface Window {
   CREATE_CHAT_API: string
   SEND_CHAT_API: string
 }
+
+declare module "*.svg" {
+  const content: any;
+  export default content;
+}

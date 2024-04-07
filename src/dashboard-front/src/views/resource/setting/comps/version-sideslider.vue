@@ -33,7 +33,7 @@
                   v-if="versionList.length && versionList[0].version"
                   theme="info"
                   :title="`${t('最新版本号')}: ${versionList[0]?.version || '--'},
-                  于 ${versionList[0]?.created_time || '--'} ${t('创建')}`"
+                  ${t('于')} ${versionList[0]?.created_time || '--'} ${t('创建')}`"
                   class="mt15 mb15"
                 />
 
