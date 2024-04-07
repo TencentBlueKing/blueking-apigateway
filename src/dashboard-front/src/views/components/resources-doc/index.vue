@@ -46,7 +46,7 @@
         <div class="ag-markdown-editor">
           <mavon-editor
             ref="markdownRef"
-            class="content-editor"
+            :class="{ 'content-editor': !isFullscreen }"
             v-model="markdownDoc"
             v-show="isEdited"
             :language="language"
@@ -56,6 +56,7 @@
             :code-style="'monokai'"
             :toolbars="toolbars"
             :tab-size="4"
+            @full-screen="handleFullscreen"
           />
         </div>
       </div>
@@ -194,6 +195,11 @@ const handleEditMarkdown = (type: string) => {
   const docDataItem = cloneDeep(docData.value).find((e: any) => e.language === language.value);
   markdownDoc.value = docDataItem.content;
   controlToggle();
+};
+
+const isFullscreen = ref<Boolean>(false);
+const handleFullscreen = (full: Boolean) => {
+  isFullscreen.value = full;
 };
 
 // 获取文档信息
