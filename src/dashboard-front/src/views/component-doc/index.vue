@@ -8,8 +8,9 @@
         <div class="left">
           <div :class="['side-nav', { 'fixed': isFixed }]">
             <div class="group" v-for="(component, index) of componentList" :key="index">
-              <strong class="category-title" @click="handleScrollTo(component.board)">{{
-                component.board_label }}</strong>
+              <strong class="category-title" @click="handleScrollTo(component.board)">
+                {{component.board_label }}
+              </strong>
               <!-- <svg aria-hidden="true" class="category-icon">
                 <use :xlink:href="`#doc-icon${index % 4}`"></use>
               </svg> -->
@@ -379,5 +380,3 @@ background-color: #fff;
   white-space: nowrap;
 }
 </style>
-
-

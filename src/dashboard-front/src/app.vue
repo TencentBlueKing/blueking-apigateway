@@ -334,9 +334,14 @@ onBeforeMount(() => {
 </style>
 <style lang="scss" scoped>
 .navigation-content {
+  // :deep(.bk-navigation-header) {
+  //   min-width: 1280px;
+  // }
+
   :deep(.bk-navigation-wrapper) {
     .container-content{
       padding: 0px !important;
+      min-width: 1280px;
     }
   }
 

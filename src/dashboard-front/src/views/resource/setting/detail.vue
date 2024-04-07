@@ -144,7 +144,7 @@
       trigger="click"
       @confirm="handleDeleteResource(formData.id)"
     >
-      <bk-button class="resource-btn-cls">
+      <bk-button class="resource-btn-cls" style="margin-left: 4px;">
         {{ t('删除') }}
       </bk-button>
     </bk-pop-confirm>
