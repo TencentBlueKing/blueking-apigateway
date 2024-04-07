@@ -269,9 +269,12 @@ const handleCancel = () => {
 
 // 版本生成成功确认
 const handleComfirm = () => {
-  router.push({
-    name: 'apigwResourceVersion',
-  });
+  handleCancel();
+  setTimeout(() => {
+    router.push({
+      name: 'apigwResourceVersion',
+    });
+  }, 300);
 };
 
 watch(

@@ -8,7 +8,6 @@
           <i
             class="more ag-doc-icon doc-menu apigateway-icon icon-ag-menu" v-bk-tooltips.top="t('所有系统')"
             @click="handleTogglePanel"></i>
-
           <div
             :class="`version-logo ${curVersion}`"
             :style="{ backgroundImage: `url(${versionLogoMap[curVersionIndex % 4].logo})` }">
@@ -40,10 +39,7 @@
             </li>
           </ul>
           <template v-else-if="keyword">
-            <TableEmpty
-              :keyword="keyword"
-              @clear-filter="keyword = ''"
-            />
+            <TableEmpty :keyword="keyword" @clear-filter="keyword = ''" />
           </template>
         </div>
       </div>
@@ -97,7 +93,7 @@
               </div>
             </template>
             <template v-else-if="panelKeyword">
-              <table-empty :keyword="keyword" @clear-filter="keyword = ''" />
+              <TableEmpty :keyword="panelKeyword" @clear-filter="panelKeyword = ''" />
             </template>
           </div>
         </div>

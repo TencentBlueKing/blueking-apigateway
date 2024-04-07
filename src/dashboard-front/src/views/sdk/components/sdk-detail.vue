@@ -84,6 +84,9 @@
                 </template>
               </template>
             </bk-table-column>
+            <template #empty>
+              <TableEmpty :keyword="keyword" @clear-filter="keyword = ''" />
+            </template>
           </bk-table>
         </bk-loading>
       </bk-tab-panel>
@@ -212,10 +215,12 @@
 import { ref, watch, reactive, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-import { copy } from '@/common/util';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/monokai-sublime.css';
+
+import { copy } from '@/common/util';
+import TableEmpty from '@/components/table-empty.vue';
 import {
   getGatewaySDKlist,
   getESBSDKlist,
@@ -716,5 +721,3 @@ watch(
   width: 300px;
 }
 </style>
-
-

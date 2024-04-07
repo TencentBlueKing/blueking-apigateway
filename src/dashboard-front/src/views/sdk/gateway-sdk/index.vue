@@ -11,5 +11,3 @@ const type = ref('apigateway');
 </script>
 
 <style lang="scss" scoped></style>
-
-
