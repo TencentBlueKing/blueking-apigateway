@@ -26,9 +26,12 @@
         >
           <bk-table-column prop="backend" :label="t('后端服务')">
             <template #default="{ row }">
-              <bk-button theme="primary" text @click="handleEditStage(row.name)">
-                {{ row?.proxy?.backend?.name }}
-              </bk-button>
+              <div class="backend-td">
+                <bk-button theme="primary" text>
+                  {{ row?.proxy?.backend?.name }}
+                </bk-button>
+                <edit-line class="backend-edit" @click="handleEditStage(row.name)" fill="#1768EF" />
+              </div>
             </template>
           </bk-table-column>
           <bk-table-column
@@ -151,6 +154,7 @@ import resourceDetails from './resource-details.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import RenderCustomColumn from '@/components/custom-table-header-filter';
+import { EditLine } from 'bkui-vue/lib/icon';
 import { copy } from '@/common/util';
 import { useRoute } from 'vue-router';
 
@@ -478,6 +482,21 @@ onMounted(() => {
   &.info {
     color: #3A84FF;
     background: #EDF4FF;
+  }
+}
+.backend-td {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  .backend-edit {
+    margin-left: 4px;
+    cursor: pointer;
+    opacity: 0;
+  }
+  &:hover {
+    .backend-edit {
+      opacity: 1;
+    }
   }
 }
 </style>

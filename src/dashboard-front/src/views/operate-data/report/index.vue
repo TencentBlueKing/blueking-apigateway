@@ -606,7 +606,7 @@ const getChartOption = (chartId: any, chartInstId: any) => {
     chartOption.tooltip.formatter = (params: any) => {
       const html = [`<p>${dayjs(params[0].data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>`];
       params.forEach((param: any) => {
-        html.push(`<p><span>${param.marker}${param.seriesName}: </span><span>${param.data[1] !== null ? param.data[1].toLocaleString() : '0'} ${t('次')}</span></p>`);
+        html.push(`<p><span>${param.marker}${param.seriesName}: </span><span>${param.data[1] !== null ? param?.data[1]?.toLocaleString() : '0'} ${t('次')}</span></p>`);
       });
       return html.join('');
     };
@@ -633,7 +633,7 @@ const getChartOption = (chartId: any, chartInstId: any) => {
       chartOption.tooltip.formatter = (params: any) => {
         const html = [`<p>${dayjs(params[0].data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>`];
         params.forEach((param: any) => {
-          html.push(`<p>${param.marker}${param.data[1] !== null ? param.data[1].toLocaleString() : '0'} ${t('次')}</p>`);
+          html.push(`<p>${param.marker}${param.data[1] !== null ? param?.data[1]?.toLocaleString() : '0'} ${t('次')}</p>`);
         });
         return html.join('');
       };
@@ -672,7 +672,7 @@ const getChartOption = (chartId: any, chartInstId: any) => {
       chartOption.tooltip.formatter = (params: any) => {
         const html = [`<p>${dayjs(params[0].data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>`];
         params.forEach((param: any) => {
-          html.push(`<p><span>${param.marker}${param.seriesName}: </span><span>${param.data[1].toLocaleString()} ms</span></p>`);
+          html.push(`<p><span>${param.marker}${param.seriesName}: </span><span>${param?.data[1]?.toLocaleString()} ms</span></p>`);
         });
         return html.join('');
       };
