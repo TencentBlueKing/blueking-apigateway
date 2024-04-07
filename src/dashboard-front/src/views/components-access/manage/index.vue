@@ -449,7 +449,7 @@ const getDefaultData = () => {
     is_active: true,
     config_fields: [],
     verified_user_required: true,
-  };
+  } as any;
 };
 
 const delayLoading = ref<boolean>(false);
@@ -501,7 +501,7 @@ const searchParams = ref<any>({
   path: '',
 });
 const pagination = reactive({
-  current: 1,
+  current: 0,
   count: 0,
   limit: 10,
 });
@@ -628,7 +628,7 @@ const flagUpdatedTime = computed(() => setting.selectedFields?.filter(v => v.lab
 
 const handleSelect = ({ id }: any) => {
   curSelectSystemId.value = id;
-  pagination.current = 1;
+  pagination.current = 0;
   pagination.limit = 10;
   getComponents(true);
 };
@@ -804,7 +804,7 @@ const handleCreate = () => {
 
 const handlePageLimitChange = (limit: number) => {
   pagination.limit = limit;
-  pagination.current = 1;
+  pagination.current = 0;
   getComponents(true);
 };
 
