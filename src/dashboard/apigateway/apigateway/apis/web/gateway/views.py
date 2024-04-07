@@ -272,6 +272,7 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
         # 触发网关发布
         if is_need_publish:
+            # 由于没有办法知道停用状态(网关停用会变更环境的发布状态)之前的各环境发布状态，则启用会发布所有环境
             source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
             trigger_gateway_publish(source, request.user.username, instance.id)
 
