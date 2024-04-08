@@ -158,9 +158,9 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
             if plugin_type not in target_plugins:
                 continue
             source_diff_value, target_diff_value = source_plugin_config.diff(target_plugins.get(plugin_type))
-            if not source_diff_value or not target_diff_value:
-                continue
 
+            if source_diff_value is None or target_diff_value is None:
+                continue
             # 如果没有差异，则对比结果移除该插件
             if len(source_diff_value) + len(target_diff_value) == 0:
                 del source_plugins_config[plugin_type]
