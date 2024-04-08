@@ -1111,7 +1111,7 @@ watch(
   () => isDetail.value,
   (v) => {
     if (!v) {
-      tableData.value?.map((item: any) => {
+      tableData.value?.forEach((item: any) => {
         item.highlight = false;
       });
     }

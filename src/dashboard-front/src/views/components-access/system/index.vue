@@ -562,10 +562,10 @@ const handleSubmit = async () => {
   );
 };
 
-const classifyFilterMethod = (value: any, row: any, column: any) => {
-  const { property } = column;
-  return row[property] === value;
-};
+// const classifyFilterMethod = (value: any, row: any, column: any) => {
+//   const { property } = column;
+//   return row[property] === value;
+// };
 
 const handleFilterChange = (filters: any) => {
   filterDocCategory.value = filters.doc_category || [];
