@@ -51,7 +51,7 @@ def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) ->
         msg = f"release(id={release.pk}) has not stage, ignored"
         return False, msg
 
-    # 非 TRIGGER_REVOKE_DISABLE_RELEASE 并且不是网关启用场景 场景才需要校验状态
+    # 非 TRIGGER_REVOKE_DISABLE_RELEASE 并且不是网关启用场景才需要校验状态
     if (
         trigger_publish_type != TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE
         and source != PublishSourceEnum.GATEWAY_ENABLE
