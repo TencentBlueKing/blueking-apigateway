@@ -31,7 +31,7 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.permission import PermissionDimensionManager
-from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator
+from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.utils import time
@@ -104,7 +104,7 @@ class PaaSAppPermissionApplyInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
     resource_ids = serializers.ListField(
         child=serializers.IntegerField(),
-        validators=[ResourceIDValidator()],
+        # validators=[ResourceIDValidator()], PaaS中的列表资源本身获取的就是网关所有环境生效资源版本资源的并集，这里不需要再进行校验
         allow_empty=True,
         required=False,
     )
