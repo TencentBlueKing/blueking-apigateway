@@ -118,7 +118,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, toRefs, onMounted, onBeforeUnmount, nextTick, onUpdated } from 'vue';
+import { ref, toRefs, onMounted, onUnmounted, onBeforeUnmount, nextTick, onUpdated } from 'vue';
 import { getResourceDocs, updateResourceDocs, saveResourceDocs, deleteResourceDocs } from '@/http';
 import { useCommon } from '@/store';
 import { cloneDeep } from 'lodash';
@@ -338,11 +338,25 @@ const destroyEvent = () => {
   resizeObserver.disconnect();
 };
 
+const escHandler = (e: KeyboardEvent) => {
+  if (e.code === 'Escape') {
+    if (markdownRef.value?.s_fullScreen) {
+      markdownRef.value.s_fullScreen = false;
+    }
+  }
+};
+
 onMounted(() => {
   initData();
   // 初始化判断按钮组是否吸附
   controlToggle();
   observerBtnScroll();
+
+  document.addEventListener('keydown', escHandler);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', escHandler);
 });
 
 onUpdated(() => {

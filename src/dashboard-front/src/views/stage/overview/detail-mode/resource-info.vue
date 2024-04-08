@@ -453,7 +453,7 @@ onMounted(() => {
 .table-layout {
   :deep(.row-cls){
     td{
-      background: #f2fff4 !important;
+      background: #e1ecff !important;
     }
   }
   :deep(.bk-table-head) {

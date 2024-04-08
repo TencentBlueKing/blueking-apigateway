@@ -736,6 +736,7 @@ watch(
 
     &.disabled {
       color: #dcdee5;
+      cursor: not-allowed;
     }
   }
 
