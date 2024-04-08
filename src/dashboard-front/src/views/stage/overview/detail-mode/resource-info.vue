@@ -281,7 +281,7 @@ const isHighlight = (v: any) => {
 };
 
 const setHighlight = (name: string) => {
-  curPageData.value?.map((item: any) => {
+  curPageData.value?.forEach((item: any) => {
     if (item.name === name) {
       item.highlight = true;
     } else {
@@ -291,7 +291,7 @@ const setHighlight = (name: string) => {
 };
 
 const clearHighlight = () => {
-  curPageData.value?.map((item: any) => {
+  curPageData.value?.forEach((item: any) => {
     item.highlight = false;
   });
 };
