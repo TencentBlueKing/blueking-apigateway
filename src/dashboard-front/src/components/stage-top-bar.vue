@@ -383,6 +383,7 @@ defineExpose({
   background: #fff;
   border-bottom: 1px solid #dcdee5;
   box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
+  min-width: 1280px;
 
   .top-title-wrapper {
     display: flex;
@@ -394,9 +395,9 @@ defineExpose({
     color: #313238;
     font-size: 16px;
   }
-  .publish-btn{
-    text-align: right;
-    margin-left: 86px;
+  .publish-btn {
+    position: absolute;
+    right: 24px;
   }
   .model-type {
     display: flex;

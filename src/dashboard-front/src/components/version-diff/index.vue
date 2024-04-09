@@ -97,10 +97,10 @@
               :filterable="true"
               @change="handleVersionChange">
               <template #trigger>
-                <span class="trigger-label">
+                <span class="trigger-label" v-bk-tooltips="{ content: localSourceTriggerLabel, delay: 300 }">
                   {{ localSourceTriggerLabel }}
-                  <DownShape class="trigger-label-icon" />
                 </span>
+                <DownShape class="trigger-label-icon" />
               </template>
               <bk-option
                 v-for="option in localVersionList"
@@ -953,16 +953,27 @@ onMounted(() => {
     display: flex;
 
     .choose-version {
-      width: 150px;
+      width: 180px;
       cursor: pointer;
+      :deep(.bk-select-trigger) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
       .trigger-label {
         position: relative;
         display: inline-block;
-        .trigger-label-icon {
-          position: relative;
-          top: 2px;
-        }
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 4px;
       }
+      // .trigger-label-icon {
+      //   position: absolute;
+      //   top: 15px;
+      //   right: 0;
+      // }
     }
 
     .marked {
