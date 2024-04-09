@@ -104,6 +104,7 @@
           <bk-table
             class="table-layout"
             :data="tableData"
+            :max-height="660"
             remote-pagination
             :pagination="pagination"
             :key="tableDataKey"
@@ -1295,8 +1296,8 @@ onBeforeMount(() => {
   .left-wraper{
     position: relative;
     background: #fff;
-    height: calc(100vh - 220px);
-    overflow-y: auto;
+    // height: calc(100vh - 220px);
+    // overflow-y: auto;
     // padding-bottom: 24px;
     .document-info{
       color: #3a84ff;
