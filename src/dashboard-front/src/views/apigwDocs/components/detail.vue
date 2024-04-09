@@ -218,13 +218,25 @@ const getApigwStages = async () => {
       } else {
         curStageId.value = resStage;
         router.push({
-          query: { stage: resStage },
+          name: 'apigwAPIDetailIntro',
+          params: {
+            apigwId: curApigwId.value,
+          },
+          query: {
+            stage: curStageId.value,
+          },
         });
       }
     } else {
       curStageId.value = resStage;
       router.push({
-        query: { stage: resStage },
+        name: 'apigwAPIDetailIntro',
+        params: {
+          apigwId: curApigwId.value,
+        },
+        query: {
+          stage: curStageId.value,
+        },
       });
     }
     await getApigwResources();
