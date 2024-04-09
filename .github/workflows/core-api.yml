@@ -34,6 +34,13 @@ jobs:
       with:
         version: v1.52.2
         working-directory: src/core-api
+    
+    - name: Aqua Security Trivy
+      uses: aquasecurity/trivy-action@0.19.0
+      continue-on-error: true
+      with:
+        scan-type: 'fs'
+        scan-ref: 'src/core-api'
 
     - name: Test
       run: make dep && make test
