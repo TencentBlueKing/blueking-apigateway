@@ -795,6 +795,10 @@ onMounted(() => {
 }
 
 .diff-main {
+  max-height: calc(100vh - 362px);
+  min-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
   .diff-loading {
     min-height: 300px;
     padding: 6px 0px;
@@ -881,9 +885,9 @@ onMounted(() => {
     }
   }
 
-  .source-box {
-    border-right: 1px solid #dcdee5;
-  }
+  // .source-box {
+  //   border-right: 1px solid #dcdee5;
+  // }
 
   // .target-box {
   //   border-left: 1px solid #dcdee5;
