@@ -38,7 +38,7 @@
     :quick-close="true"
   >
     <template #default>
-      <div class="p20">
+      <div class="p20 pure-diff">
         <version-diff ref="diffRef" :source-id="diffSourceId" :target-id="diffTargetId" />
       </div>
     </template>
@@ -177,6 +177,12 @@ const handleCreateResourceVersion = async () => {
         border-color: #dcdee5;
       }
     }
+  }
+}
+
+.pure-diff {
+  :deep(.diff-main) {
+    max-height: calc(100vh - 240px) !important;
   }
 }
 </style>

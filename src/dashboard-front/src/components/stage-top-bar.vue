@@ -53,7 +53,7 @@
       />
     </div>
 
-    <div class="flex-1 publish-btn">
+    <div class="publish-btn">
       <bk-button text theme="primary" @click="handleToPublish">
         {{ t("发布记录") }}
       </bk-button>
@@ -396,6 +396,7 @@ defineExpose({
   }
   .publish-btn{
     text-align: right;
+    margin-left: 86px;
   }
   .model-type {
     display: flex;
