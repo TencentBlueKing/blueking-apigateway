@@ -265,7 +265,8 @@ class Command(BaseCommand):
             for stage in gateway_id_to_stages_for_publish.get(gateway.id, []):
                 self._make_version_release(stage, new_version.id)
 
-            del (gateway_id_to_stages_for_publish, gateway.id)
+            if gateway.id in gateway_id_to_stages_for_publish:
+                del gateway_id_to_stages_for_publish[gateway.id]
 
         if not pub:
             return
