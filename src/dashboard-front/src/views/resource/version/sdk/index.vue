@@ -160,11 +160,11 @@ const handleClearFilterKey = () => {
 
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (keyword.value && !tableData.value.length) {
+  if (filterData.value.keyword && !tableData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
-  if (keyword.value) {
+  if (filterData.value.keyword) {
     tableEmptyConf.value.keyword = '$CONSTANT';
     return;
   }

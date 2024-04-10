@@ -22,7 +22,16 @@
           </bk-select>
         </bk-form-item>
         <bk-form-item label="" class="mb0" label-width="10">
-          <bk-input class="search-input w400" :placeholder="t('请输入应用ID')" v-model="searchQuery"></bk-input>
+          <bk-search-select
+            :placeholder="t('搜索')"
+            :clearable="true"
+            :data="dimension === 'resource' ? searchResourceCondition : searchApiCondition"
+            v-model="searchValue"
+            :key="componentKey"
+            :value-split-code="'+'"
+            unique-select
+            style="width: 450px; background:#fff"
+          />
         </bk-form-item>
       </bk-form>
     </div>
@@ -272,6 +281,8 @@ import {
   batchUpdateResourcePermission,
   exportApiPermission,
   exportResourcePermission,
+  getApiPermissionAppList,
+  getResourcePermissionAppList,
 } from '@/http';
 import { useCommon } from '@/store';
 import { useQueryList, useSelection } from '@/hooks';
@@ -289,7 +300,6 @@ const isBatchApplyLoaading = ref<boolean>(false);
 const tableIndex = ref<number>(0);
 const curPermission = ref({ bk_app_code: '', detail: [], id: -1 });
 const dimension = ref<string>('resource');
-const searchQuery = ref<string>('');
 const applyNewTime = ref<string>('');
 const curSelections = ref([]);
 const renewableConfi = reactive({
@@ -349,6 +359,38 @@ interface IexportParams {
   permission_ids?: Array<number>
   grant_type?: string
 }
+const searchValue = ref([]);
+const componentKey = ref(0);
+const searchResourceCondition = ref([
+  {
+    name: t('蓝鲸应用ID'),
+    id: 'bk_app_code',
+    children: [],
+    onlyRecommendChildren: true,
+  },
+  {
+    name: t('资源名称'),
+    id: 'resource_id',
+    children: [],
+    onlyRecommendChildren: true,
+  },
+  {
+    name: t('模糊搜索'),
+    id: 'keyword',
+  },
+]);
+const searchApiCondition = ref([
+  {
+    name: t('蓝鲸应用ID'),
+    id: 'bk_app_code',
+    children: [],
+    onlyRecommendChildren: true,
+  },
+  {
+    name: t('模糊搜索'),
+    id: 'keyword',
+  },
+]);
 
 // 可续期的数量
 const applyCount = computed(() => {
@@ -388,20 +430,24 @@ const {
 
 // 监听搜索是否变化
 watch(
-  () => searchQuery.value,
-  (v: string) => {
+  () => searchValue.value,
+  (v: any[]) => {
     resetSelections();
-    filterData.value.keyword = v;
-    const isEmpty = v.trim() === '';
+    filterData.value.keyword = '';
+    filterData.value.bk_app_code = '';
+    filterData.value.resource_id = '';
+    v?.forEach(((item: any) => {
+      filterData.value[item.id] = item.values[0].id;
+    }));
+    const isEmpty = v?.length === 0;
     exportDropData.value.forEach((e: IDropList) => {
       // 已选资源
       if (e.value === 'filtered') {
         e.disabled = isEmpty;
       }
     });
-    // updateTableEmptyConfig();
   },
-  { deep: true },
+  { immediate: true, deep: true },
 );
 // 监听授权有效时间的类型
 watch(
@@ -438,6 +484,24 @@ watch(
   },
 );
 
+const getBkAppCodes = async () => {
+  try {
+    const fn = dimension.value === 'resource' ? getResourcePermissionAppList : getApiPermissionAppList;
+    const res = await fn(apigwId);
+    const resources = res?.map((item: any) => {
+      return {
+        id: item,
+        name: item,
+      };
+    });
+    searchResourceCondition.value[0].children = resources;
+    searchApiCondition.value[0].children = resources;
+    componentKey.value += 1;
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 // 获取资源列表数据
 const getApigwResources = async () => {
   const pageParams = {
@@ -456,6 +520,14 @@ const getApigwResources = async () => {
       };
     });
     resourceList.value = sortByKey(results, 'name');
+    const filterSource = resourceList.value?.map((item: any) => {
+      return {
+        id: item.id,
+        name: item.name,
+      };
+    });
+    searchResourceCondition.value[1].children = filterSource;
+    componentKey.value += 1;
   } catch (error) {
     console.log('error', error);
   }
@@ -471,7 +543,9 @@ const handleExport = async ({ value }: {value: string}) => {
       exportParams.permission_ids = selections.value.map(e => e.id);
       break;
     case 'filtered':
-      exportParams.keyword = searchQuery.value;
+      searchValue.value?.forEach((item: any) => {
+        exportParams[item.id] = item.values[0]?.id;
+      });
       break;
     default:
       break;
@@ -710,17 +784,19 @@ const handleSidesliderCancel = () => {
 const handleClearFilterKey = () => {
   filterData.value = { bk_app_code: '', keyword: '', grant_type: '', grant_dimension: '', resource_id: '' };
   dimension.value = '';
-  searchQuery.value = '';
+  searchValue.value = [];
   getList();
   updateTableEmptyConfig();
 };
 
 const updateTableEmptyConfig = () => {
-  const searchParams = {
+  const searchParams: any = {
     ...filterData.value,
-    searchQuery: searchQuery.value,
     dimension: dimension.value,
   };
+  searchValue.value?.forEach((item: any) => {
+    searchParams[item.id] = item.values[0]?.id;
+  });
   const list = Object.values(searchParams).filter(item => item !== '');
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (list.length && !tableData.value.length) {
@@ -735,8 +811,8 @@ const updateTableEmptyConfig = () => {
 };
 
 const init = () => {
+  getBkAppCodes();
   getApigwResources();
-  console.log(selections.value);
 };
 init();
 
