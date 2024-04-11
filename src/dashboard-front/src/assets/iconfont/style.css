@@ -128,6 +128,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-weixin-shape:before {
 	content: "\e11d";
 }
+.icon-ag-bulk-edit:before {
+	content: "\e17c";
+}
 .icon-ag-clipboard:before {
 	content: "\e11b";
 }
@@ -292,6 +295,12 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-history:before {
 	content: "\e16a";
+}
+.icon-ag-link:before {
+	content: "\e17d";
+}
+.icon-ag-undo-2:before {
+	content: "\e17e";
 }
 .icon-ag-zonghe:before {
 	content: "\e148";

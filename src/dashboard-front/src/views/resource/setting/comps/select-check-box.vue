@@ -9,6 +9,9 @@
     :show-on-init="!isAdd"
     v-model="curLabelIds"
     selected-style="checkbox"
+    :popover-options="{
+      extCls: 'select-check-box-popover-wrapper'
+    }"
     @toggle="handleToggle">
     <bk-option v-for="(option, index) in labelsData" :key="option.name" :id="option.id" :name="option.name">
       <template #default>
@@ -24,7 +27,7 @@
           {{ option.name }}
           <div class="icon-container" v-if="hoverIndex === index">
             <i
-              class="icon apigateway-icon icon-ag-edit-line"
+              class="icon apigateway-icon icon-ag-edit-line" style="margin-right: 6px;"
               @click.stop="handleEditOptionItem(option)"></i>
             <bk-pop-confirm
               title="确认删除该标签？"
@@ -67,11 +70,8 @@
           />
         </div>
         <div v-else class="flex-row align-items-center justify-content-center" style="cursor: pointer; color: #63656e;">
-          <div
-            class="flex-row align-items-center justify-content-center"
-            @click="handleShowEdit"
-          >
-            <plus style="font-size: 18px;" />
+          <div class="flex-row align-items-center justify-content-center" @click="handleShowEdit">
+            <i class="apigateway-icon icon-ag-plus-circle plus-icon" />
             {{ t('新建标签') }}
           </div>
         </div>
@@ -81,7 +81,6 @@
 </template>
 <script setup lang="ts">
 import { ref, computed, toRefs, PropType, nextTick, watch } from 'vue';
-import { Plus } from 'bkui-vue/lib/icon';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 
@@ -249,27 +248,48 @@ const handleMouseLeave = () => {
 };
 </script>
 <style scoped lang="scss">
-  .select-wrapper {
-    .item-container {
-      width: 100%;
-      position: relative;
-      .icon-container{
-        position: absolute;
-        right: -20px;
-        .icon{
-          &:hover{
-            color: #3a84ff;
-          }
+.select-wrapper {
+  :deep(.bk-select-tag-wrapper) {
+    padding: 0;
+  }
+  :deep(.bk-select-tag) {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    .bk-tag {
+      margin-right: 2px;
+      margin-bottom: 0;
+      margin-top: 0;
+    }
+  }
+}
+.select-check-box-popover-wrapper {
+  .item-container {
+    width: 100%;
+    position: relative;
+    .icon-container {
+      position: absolute;
+      right: -20px;
+      .icon {
+        &:hover {
+          color: #3a84ff;
         }
       }
     }
-    :deep(.bk-select-tag) {
-      padding-top: 0;
-      .bk-tag {
-        margin-right: 8px;
-        margin-bottom: 4px;
-        margin-top: 4px;
-      }
+  }
+
+  // &.bk-popover.bk-pop2-content.bk-select-popover {
+  //   .bk-select-content-wrapper {
+  //     .bk-select-option.is-multiple {
+  //       padding-right: 12px;
+  //     }
+  //   }
+  // }
+  .custom-extension {
+    .plus-icon {
+      color: #979ba5;
+      font-size: 14px;
+      margin-right: 5px;
     }
   }
+}
 </style>
