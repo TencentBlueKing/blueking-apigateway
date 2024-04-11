@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-25 17:45+0800\n"
+"POT-Creation-Date: 2024-04-11 12:11+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -89,7 +89,8 @@ msgstr "When the loadbalance type is Weighted-RR, the Host weight is required."
 #: apigateway/apis/web/resource/legacy_serializers.py:56
 msgid "Header 键由字母、数字、连接符（-）组成，长度小于100个字符。"
 msgstr ""
-"Header key must be less than 100 characters and only contain letters, numbers, and hyphens (-)."
+"Header key must be less than 100 characters and only contain letters, "
+"numbers, and hyphens (-)."
 
 #: apigateway/apis/open/stage/serializers.py:200
 #: apigateway/apis/web/stage/serializers.py:120
@@ -125,7 +126,9 @@ msgstr "Plugin type {not_exist_types} does not exist."
 #: apigateway/apis/open/stage/serializers.py:394
 #, python-brace-format
 msgid "插件配置校验失败，插件类型：{plugin_type_code}，错误信息：{err}。"
-msgstr "Plugin configuration verification failed, plugin type: {plugin_type_code}, error message: {err}."
+msgstr ""
+"Plugin configuration verification failed, plugin type: {plugin_type_code}, "
+"error message: {err}."
 
 #: apigateway/apis/open/support/views.py:111
 msgid "网关下无资源，无法生成 SDK。"
@@ -187,12 +190,15 @@ msgstr "Backend service name already exists under the gateway."
 #: apigateway/apis/web/backend/serializers.py:64
 #, python-brace-format
 msgid "网关【{gateway}】下不存在id为【{stage_id}】的环境。"
-msgstr "There is no stage with the ID [{stage_id}] under the gateway [{gateway}]"
+msgstr ""
+"There is no stage with the ID [{stage_id}] under the gateway [{gateway}]"
 
 #: apigateway/apis/web/backend/serializers.py:73
 #, python-brace-format
 msgid "后端服务缺少网关【{gateway}】下【{stage_name}】环境配置。"
-msgstr "The backend service lacks the [{stage_name}] stage configuration under the gateway [{gateway}]"
+msgstr ""
+"The backend service lacks the [{stage_name}] stage configuration under the "
+"gateway [{gateway}]"
 
 #: apigateway/apis/web/backend/serializers.py:83
 #, python-brace-format
@@ -228,8 +234,7 @@ msgstr "Up to {max_count} labels per gateway."
 
 #: apigateway/apis/web/monitor/serializers.py:59
 msgid "通知对象、其他通知对象不能同时为空。"
-msgstr ""
-"Notification and other notification receivers cannot both be empty"
+msgstr "Notification and other notification receivers cannot both be empty"
 
 #: apigateway/apis/web/monitor/serializers.py:97
 #: apigateway/apis/web/resource/serializers.py:321
@@ -307,6 +312,7 @@ msgid "当前选择环境未发布版本，请先发布版本到该环境。"
 msgstr "The stage has not released, please release first."
 
 #: apigateway/apis/web/resource/doc/serializers.py:49
+#, python-brace-format
 msgid "该资源语言 {value} 的文档已存在。"
 msgstr "Document in {value} language for this resource already exists."
 
@@ -329,7 +335,9 @@ msgstr "Resource name already exists under the gateway."
 
 #: apigateway/apis/web/resource/serializers.py:253
 msgid "网关前端配置中，请求方法+请求路径已经存在。"
-msgstr "The combination of request method and path already exists in the gateway configuration."
+msgstr ""
+"The combination of request method and path already exists in the gateway "
+"configuration."
 
 #: apigateway/apis/web/resource/serializers.py:289
 #, python-brace-format
@@ -386,19 +394,22 @@ msgstr ""
 #, python-brace-format
 msgid "前端请求路径 {path} 中的路径变量 {var_name} 不符合规则。"
 msgstr ""
-"The resource request path {path} contains the path variable [{var_name}] is invalid."
+"The resource request path {path} contains the path variable [{var_name}] is "
+"invalid."
 
 #: apigateway/apis/web/resource/validators.py:51
 #, python-brace-format
 msgid "前端请求路径 {path} 中的路径变量 {var_name} 重复。"
 msgstr ""
-"The resource request path {path} contains the path variable [{var_name}] repeated."
+"The resource request path {path} contains the path variable [{var_name}] "
+"repeated."
 
 #: apigateway/apis/web/resource/validators.py:93
 #, python-brace-format
 msgid "后端请求路径中的路径变量 {var_name} 不符合规则。"
 msgstr ""
-"The resource request backend path contains the path variable [{var_name}] is invalid."
+"The resource request backend path contains the path variable [{var_name}] is "
+"invalid."
 
 #: apigateway/apis/web/resource/validators.py:106
 #, python-brace-format
@@ -406,8 +417,8 @@ msgid ""
 "后端请求路径 {backend_path} 中的路径变量 {var_name} 在前端请求路径 {path} 中"
 "不存在。"
 msgstr ""
-"The path variable [{var_name}] in the backend path [{backend_path}] does not exist in the "
-"resource request path [{path}]."
+"The path variable [{var_name}] in the backend path [{backend_path}] does not "
+"exist in the resource request path [{path}]."
 
 #: apigateway/apis/web/resource/validators.py:120
 #, python-brace-format
@@ -415,15 +426,18 @@ msgid ""
 "后端请求路径 {backend_path} 中的路径变量 {var_name} 在网关环境 {stage_name} "
 "中不存在。"
 msgstr ""
-"The stage variable [{var_name}] in the backend path [{backend_path}] does not exist in the "
-"stage [{stage_name}]."
+"The stage variable [{var_name}] in the backend path [{backend_path}] does "
+"not exist in the stage [{stage_name}]."
 
 #: apigateway/apis/web/resource/views.py:547
 #, python-brace-format
 msgid ""
 "网关环境 {stage_name} 下，后端服务 {backend_name} 的服务地址为空，请在 后端服"
 "务 -> 编辑 {backend_name} ，更新该环境的后端服务地址。"
-msgstr "Under the gateway stage {stage_name}, the service address of the backend service {backend_name} is empty. Please go to Backend Service->Edit {backend_name} to update the backend service address of the stage."
+msgstr ""
+"Under the gateway stage {stage_name}, the service address of the backend "
+"service {backend_name} is empty. Please go to Backend Service->Edit "
+"{backend_name} to update the backend service address of the stage."
 
 #: apigateway/apis/web/resource_doc/views.py:168
 msgid "选中的资源未创建文档。"
@@ -472,17 +486,22 @@ msgstr "Distribute SDK failed."
 #: apigateway/apis/web/stage/serializers.py:138
 #, python-brace-format
 msgid "网关下不存在id为【{backend_id}】的后端服务。"
-msgstr "There is no backend service with the ID [{backend_id}] under the gateway."
+msgstr ""
+"There is no backend service with the ID [{backend_id}] under the gateway."
 
 #: apigateway/apis/web/stage/serializers.py:145
 #, python-brace-format
 msgid "请求参数中，缺少后端服务【{backend_id}】的配置。"
-msgstr "In the request parameters, the configuration of the backend service [{backend_id}] is missing."
+msgstr ""
+"In the request parameters, the configuration of the backend service "
+"[{backend_id}] is missing."
 
 #: apigateway/apis/web/stage/serializers.py:161
 #, python-brace-format
 msgid "后端服务【{backend_name}】的配置Scheme【{scheme}】不合法。"
-msgstr "The configuration Scheme [{scheme}] of the backend service [{backend_name}] is illegal."
+msgstr ""
+"The configuration Scheme [{scheme}] of the backend service [{backend_name}] "
+"is illegal."
 
 #: apigateway/apis/web/stage/validators.py:54
 #, python-brace-format
@@ -690,31 +709,35 @@ msgstr "Delete stage"
 msgid "版本发布"
 msgstr "Release"
 
-#: apigateway/apps/audit/constants.py:79
+#: apigateway/apps/audit/constants.py:78
+msgid "生成版本"
+msgstr "Create Resource Version"
+
+#: apigateway/apps/audit/constants.py:80
 msgid "环境状态变更"
 msgstr "Stage state changes"
 
-#: apigateway/apps/audit/constants.py:80
+#: apigateway/apps/audit/constants.py:81
 msgid "更新环境变量"
 msgstr "Update Stage Variables"
 
-#: apigateway/apps/audit/constants.py:81
+#: apigateway/apps/audit/constants.py:82
 msgid "批量更新资源"
 msgstr "Batch update resources"
 
-#: apigateway/apps/audit/constants.py:82
+#: apigateway/apps/audit/constants.py:83
 msgid "批量删除资源"
 msgstr "Batch delete resources"
 
-#: apigateway/apps/audit/constants.py:83
+#: apigateway/apps/audit/constants.py:84
 msgid "创建环境后端配置"
 msgstr "Create stage backend config"
 
-#: apigateway/apps/audit/constants.py:84
+#: apigateway/apps/audit/constants.py:85
 msgid "更新环境后端配置"
 msgstr "Update stage backend config"
 
-#: apigateway/apps/audit/constants.py:85
+#: apigateway/apps/audit/constants.py:86
 msgid "删除环境后端配置"
 msgstr "Delete stage backend config"
 
@@ -867,7 +890,8 @@ msgstr "Function whitelist"
 #: apigateway/editions/ee/apps/esb/bkcore/models.py:388
 msgid "支持两种格式数据，以逗号、分号分隔的字符串，及JSON格式字符串"
 msgstr ""
-"Supports two data formats: comma or semicolon-separated strings, and JSON-formatted strings."
+"Supports two data formats: comma or semicolon-separated strings, and JSON-"
+"formatted strings."
 
 #: apigateway/apps/esb/bkcore/models.py:416
 #: apigateway/editions/ee/apps/esb/bkcore/models.py:416
@@ -914,7 +938,9 @@ msgstr "Event Timestamp"
 #: apigateway/apps/esb/component/convertor.py:119
 #: apigateway/editions/ee/apps/esb/component/convertor.py:119
 msgid "拉取待同步组件列表失败，请稍后重试。"
-msgstr "Failed to retrieve the list of components to synchronize, please try again later."
+msgstr ""
+"Failed to retrieve the list of components to synchronize, please try again "
+"later."
 
 #: apigateway/apps/esb/component/convertor.py:130
 #: apigateway/editions/ee/apps/esb/component/convertor.py:130
@@ -1440,7 +1466,9 @@ msgstr ""
 #: apigateway/biz/releaser.py:206
 #, python-brace-format
 msgid "网关环境【{stage_name}】存在绑定多个相同类型[{plugin_code}]的插件。"
-msgstr "Multiple plugins of the same type [{plugin_code}] are bound in the gateway environment [{stage_name}]."
+msgstr ""
+"Multiple plugins of the same type [{plugin_code}] are bound in the gateway "
+"environment [{stage_name}]."
 
 #: apigateway/biz/releaser.py:222
 #, python-brace-format
@@ -1470,19 +1498,28 @@ msgstr "The backend service (name={name}) does not exist."
 msgid ""
 "资源重复，id={resource_id}, method={method}, path={path} 在当前配置数据中被多"
 "次使用，请检查。"
-msgstr "Duplicate resource, id={resource_id}, method={method}, path={path} are used multiple times in the current configuration data, please check."
+msgstr ""
+"Duplicate resource, id={resource_id}, method={method}, path={path} are used "
+"multiple times in the current configuration data, please check."
 
 #: apigateway/biz/resource/importer/importers.py:227
 #, python-brace-format
 msgid ""
-"资源请求方法+请求路径重复，method={method}, path={path} 已被现有资源占用，请检查。"
-msgstr "The resource request method + request path are duplicated. method={method}, path={path} are already occupied by existing resources, please check."
+"资源请求方法+请求路径重复，method={method}, path={path} 已被现有资源占用，请"
+"检查。"
+msgstr ""
+"The resource request method + request path are duplicated. method={method}, "
+"path={path} are already occupied by existing resources, please check."
 
 #: apigateway/biz/resource/importer/importers.py:235
 #, python-brace-format
 msgid ""
-"资源请求方法+请求路径重复，method={method}, path={path} 在当前配置数据中被多次使用，请检查。"
-msgstr "Resource request method + request path are repeated, method={method}, path={path} are used multiple times in the current configuration data, please check."
+"资源请求方法+请求路径重复，method={method}, path={path} 在当前配置数据中被多"
+"次使用，请检查。"
+msgstr ""
+"Resource request method + request path are repeated, method={method}, "
+"path={path} are used multiple times in the current configuration data, "
+"please check."
 
 #: apigateway/biz/resource/importer/importers.py:256
 #, python-brace-format
@@ -1490,12 +1527,15 @@ msgid ""
 "当前配置数据及已有资源数据中，请求路径 {path} 下，同时存在 {method_any} 及其"
 "它请求方法。"
 msgstr ""
-"Under request path [{path}], there exists [{method_any}] and other request methods."
+"Under request path [{path}], there exists [{method_any}] and other request "
+"methods."
 
 #: apigateway/biz/resource/importer/importers.py:268
 #, python-brace-format
 msgid "资源名称重复，operationId={name} 已被现有资源占用，请检查。"
-msgstr "The resource name is duplicated, operationId={name} is already occupied by an existing resource, please check."
+msgstr ""
+"The resource name is duplicated, operationId={name} is already occupied by "
+"an existing resource, please check."
 
 #: apigateway/biz/resource/importer/importers.py:273
 #, python-brace-format
@@ -1505,12 +1545,13 @@ msgstr ""
 "the current configuration data."
 
 #: apigateway/biz/resource/importer/importers.py:285
+#, python-brace-format
 msgid ""
 "当前配置数据中，资源 method={method}, path={path}，前端配置中的 "
 "match_subpath 与后端配置中的 match_subpath 值必需相同。"
 msgstr ""
-"The matchSubpath of resource [method={method}, path={path}] value in frontend config must be the same as the "
-"matchSubpath value in backend config."
+"The matchSubpath of resource [method={method}, path={path}] value in "
+"frontend config must be the same as the matchSubpath value in backend config."
 
 #: apigateway/biz/resource/importer/importers.py:293
 #, python-brace-format
@@ -1522,26 +1563,35 @@ msgstr "Up to {count} resources per gateway."
 msgid ""
 "资源绑定的插件类型重复，资源名称：{resource_name}，重复的插件类型："
 "{duplicate_types}"
-msgstr "The plugin type bound to the resource is duplicated, resource name: {resource_name}, duplicate plugin type: {duplicate_types}"
+msgstr ""
+"The plugin type bound to the resource is duplicated, resource name: "
+"{resource_name}, duplicate plugin type: {duplicate_types}"
 
 #: apigateway/biz/resource/importer/importers.py:364
 #, python-brace-format
 msgid ""
 "资源的插件配置校验失败，资源名称：{resource_name}，插件类型："
 "{plugin_type_code}，错误信息：{err}。"
-msgstr "The plugin configuration verification of the resource failed. Resource name: {resource_name}, plugin type: {plugin_type_code}, error message: {err}."
+msgstr ""
+"The plugin configuration verification of the resource failed. Resource name: "
+"{resource_name}, plugin type: {plugin_type_code}, error message: {err}."
 
 #: apigateway/biz/resource/savers.py:115
 #, python-brace-format
 msgid ""
 "根据资源名称匹配资源时，匹配资源的 method + path 和用户输入的不一致，请检查资"
 "源 (name={name}) 是否已存在。"
-msgstr "When matching resources based on resource names, the method + path of the matching resource is inconsistent with the one entered by the user. Please check whether the resource (name={name}) already exists."
+msgstr ""
+"When matching resources based on resource names, the method + path of the "
+"matching resource is inconsistent with the one entered by the user. Please "
+"check whether the resource (name={name}) already exists."
 
 #: apigateway/biz/resource/savers.py:133
 #, python-brace-format
 msgid "网关资源 (id={resource_ids}) 存在多个后端配置，请联系网关管理员检查。"
-msgstr "There are multiple backend configurations for the gateway resource (id={resource_ids}), please contact the gateway administrator to check."
+msgstr ""
+"There are multiple backend configurations for the gateway resource "
+"(id={resource_ids}), please contact the gateway administrator to check."
 
 #: apigateway/biz/resource_doc/exceptions.py:29
 msgid "Jinja2 模板错误"
@@ -1578,6 +1628,7 @@ msgid "环境【{stage_name}】不存在。"
 msgstr "Stage [{stage_name}] does not exist."
 
 #: apigateway/biz/validators.py:75
+#, python-brace-format
 msgid "网关【id={gateway_id}】下指定的部分资源ID不存在。"
 msgstr "Some resource IDs do not exist under gateway [id={gateway_id}]."
 
@@ -1888,20 +1939,26 @@ msgstr "Operator"
 #: apigateway/iam/exceptions.py:28
 #, python-brace-format
 msgid "网关 (id={gateway_id}) 的 IAM 分级管理员已存在，请不要重复创建。"
-msgstr "The IAM grade manager for the gateway (id={gateway_id}) already exists, please do not create it again."
+msgstr ""
+"The IAM grade manager for the gateway (id={gateway_id}) already exists, "
+"please do not create it again."
 
 #: apigateway/iam/exceptions.py:38
 #, python-brace-format
 msgid ""
 "网关 (id={gateway_id}) 的 IAM 分级管理员不存在，请联系系统负责人初始化数据。"
-msgstr "The IAM grade manager for the gateway (id={gateway_id}) does not exist. Please contact the system admin to initialize the data."
+msgstr ""
+"The IAM grade manager for the gateway (id={gateway_id}) does not exist. "
+"Please contact the system admin to initialize the data."
 
 #: apigateway/iam/exceptions.py:50
 #, python-brace-format
 msgid ""
 "网关 (id={gateway_id}) {role_label}的 IAM 用户组不存在，请联系系统负责人初始"
 "化数据。"
-msgstr "The IAM user group of gateway (id={gateway_id}) {role_label} does not exist. Please contact the system admin to initialize the data."
+msgstr ""
+"The IAM user group of gateway (id={gateway_id}) {role_label} does not exist. "
+"Please contact the system admin to initialize the data."
 
 #: apigateway/iam/handlers/user_group.py:63
 #, python-brace-format
@@ -1921,20 +1978,26 @@ msgstr "API Gateway-{gateway_name}-Operator"
 #: apigateway/iam/handlers/user_group.py:73
 #, python-brace-format
 msgid "API网关 ({gateway_name}) 管理员，拥有网关的全部权限。"
-msgstr "API gateway ({gateway_name}) administrator has all the permissions of the gateway."
+msgstr ""
+"API gateway ({gateway_name}) administrator has all the permissions of the "
+"gateway."
 
 #: apigateway/iam/handlers/user_group.py:75
 #, python-brace-format
 msgid ""
 "API网关 ({gateway_name}) 开发者，拥有网关的开发权限，如管理资源，查看日志，在"
 "线测试等。"
-msgstr "API gateway ({gateway_name}) developer has the development rights of the gateway, such as managing resources, viewing logs, online testing, etc."
+msgstr ""
+"API gateway ({gateway_name}) developer has the development rights of the "
+"gateway, such as managing resources, viewing logs, online testing, etc."
 
 #: apigateway/iam/handlers/user_group.py:79
 #, python-brace-format
 msgid ""
 "API网关 ({gateway_name}) 运营者，拥有网关的运营权限，如管理权限，查看日志等。"
-msgstr "API gateway ({gateway_name}) operator has the operational permissions of the gateway, such as management permissions, viewing logs, etc."
+msgstr ""
+"API gateway ({gateway_name}) operator has the operational permissions of the "
+"gateway, such as management permissions, viewing logs, etc."
 
 #: apigateway/iam/models.py:37 apigateway/iam/models.py:38
 msgid "IAM 分级管理员"
