@@ -514,13 +514,15 @@ const checkMatch = (item: any, type: any) => {
   if (searchParams.diffType && searchParams.diffType !== type) {
     return false;
   }
-  const method = item.method.toLowerCase();
-  const path = item.path.toLowerCase();
-  const name = item.name.toLowerCase();
+  const method = item?.method?.toLowerCase();
+  const path = item?.path?.toLowerCase();
+  const backendPath = item?.proxy?.config?.path?.toLowerCase();
+  const name = item?.name?.toLowerCase();
   const keyword = searchKeyword.value.toLowerCase();
   return (
     method.indexOf(keyword) > -1
     || path.indexOf(keyword) > -1
+    || backendPath.indexOf(keyword) > -1
     || name.indexOf(keyword) > -1
   );
 };
