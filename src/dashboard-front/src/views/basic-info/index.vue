@@ -93,7 +93,13 @@
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('文档地址')}：` }}</div>
               <div class="value url">
-                <span class="link" v-bk-tooltips="{ content: t('网关未开启或公开，暂无文档地址'), placement: 'right' }">
+                <span
+                  class="link"
+                  v-bk-tooltips="{
+                    content: t('网关未开启或公开，暂无文档地址'),
+                    placement: 'right',
+                    disabled: !!basicInfoData.docs_url }"
+                >
                   {{ basicInfoData.docs_url || '--' }}
                 </span>
                 <template v-if="basicInfoData.docs_url">

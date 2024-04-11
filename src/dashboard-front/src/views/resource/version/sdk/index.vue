@@ -31,8 +31,7 @@
             @page-value-change="handlePageChange"
             @selection-change="handleSelectionChange"
             row-hover="auto"
-            border="outer"
-          >
+            border="outer">
             <!-- <bk-table-column width="80" type="selection" align="center" /> -->
             <bk-table-column
               :label="t('SDK 版本号')"
@@ -164,8 +163,9 @@ const updateTableEmptyConfig = () => {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
-  if (filterData.value.keyword) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+  if (keyword.value) {
+    // tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.keyword = keyword.value;
     return;
   }
   tableEmptyConf.value.keyword = '';

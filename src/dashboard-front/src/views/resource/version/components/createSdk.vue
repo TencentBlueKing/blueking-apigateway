@@ -102,8 +102,10 @@ const handleCreate = async () => {
       message: t('创建成功'),
       theme: 'success',
     });
-    emit('done');
     dialogConfig.isShow = false;
+    setTimeout(() => {
+      emit('done');
+    }, 300);
   } catch (e) {
     console.log(e);
   } finally {

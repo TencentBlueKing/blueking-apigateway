@@ -1403,6 +1403,7 @@ const lang: ILANG = {
   '': [''],
   '新建后端服务': ['Create backend service'],
   '于': ['at'],
+  '超时时间不能为空': ['Timeout cannot be empty'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

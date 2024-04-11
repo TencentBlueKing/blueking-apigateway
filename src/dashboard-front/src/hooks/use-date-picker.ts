@@ -52,22 +52,33 @@ export const useDatePicker = (filterData?: any) => {
     dateValue.value = date;
   };
 
+  const handleClear = () => {
+    dateValue.value = ['', ''];
+    setFilterDate(dateValue.value);
+  };
+
   const handleComfirm = () => {
     setFilterDate(dateValue.value);
   };
 
   // 格式化时间
   const setFilterDate = (date: any[]) => {
-    // @ts-ignore
-    filterData.value.time_start = parseInt((+new Date(date[0])) / 1000, 10);
-    // @ts-ignore
-    filterData.value.time_end = parseInt((+new Date(date[1])) / 1000, 10);
+    if (date[0] && date[1]) {
+      // @ts-ignore
+      filterData.value.time_start = parseInt((+new Date(date[0])) / 1000, 10);
+      // @ts-ignore
+      filterData.value.time_end = parseInt((+new Date(date[1])) / 1000, 10);
+    } else {
+      filterData.value.time_start = '';
+      filterData.value.time_end = '';
+    }
   };
 
   return {
     shortcutsRange,
     dateValue,
     handleChange,
+    handleClear,
     handleComfirm,
   };
 };

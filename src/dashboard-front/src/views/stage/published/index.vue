@@ -14,12 +14,13 @@
           :shortcut-selected-index="shortcutSelectedIndex"
           :key="dateKey"
           @change="handleChange"
+          @clear="handleClear"
           @pick-success="handleComfirm"
         >
         </bk-date-picker>
       </div>
       <div class="flex-1 flex-row justify-content-end">
-        <bk-input class="ml10 mr10 operate-input" placeholder="请输入环境、版本标题或版本号" v-model="filterData.keyword"></bk-input>
+        <bk-input class="ml10 mr10 operate-input" placeholder="请输入已发布的环境或版本号" v-model="filterData.keyword"></bk-input>
       </div>
     </div>
     <bk-loading
@@ -157,6 +158,7 @@ const {
   shortcutsRange,
   dateValue,
   handleChange,
+  handleClear,
   handleComfirm,
 } = useDatePicker(filterData);
 

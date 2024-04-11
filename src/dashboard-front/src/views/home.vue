@@ -89,28 +89,18 @@
             </div>
             <div class="flex-1 of2">
               <bk-button
-                text
-                theme="primary"
-                @click="handleGoPage('apigwStageOverview', item.id)"
-              >
-                环境概览
-              </bk-button>
+                text theme="primary"
+                @click="handleGoPage('apigwStageOverview', item.id)">{{ $t('环境概览') }}</bk-button>
               <bk-button
                 text
                 theme="primary"
                 class="pl20"
-                @click="handleGoPage('apigwResource', item.id)"
-              >
-                资源配置
-              </bk-button>
+                @click="handleGoPage('apigwResource', item.id)">{{ $t('资源配置') }}</bk-button>
               <bk-button
                 text
                 theme="primary"
                 class="pl20"
-                @click="handleGoPage('apigwAccessLog', item.id)"
-              >
-                流水日志
-              </bk-button>
+                @click="handleGoPage('apigwAccessLog', item.id)">{{ $t('流水日志') }}</bk-button>
             </div>
           </div>
         </div>
@@ -163,7 +153,7 @@
       <bk-form ref="formRef" form-type="vertical" class="create-gw-form" :model="formData" :rules="rules">
         <bk-form-item
           class="form-item-name"
-          label="名称"
+          :label="t('名称')"
           property="name"
           required
         >
@@ -180,31 +170,31 @@
           {{ t('网关的唯一标识，创建后不可更改') }}
         </span>
         <bk-form-item
-          label="维护人员"
+          :label="t('维护人员')"
           property="maintainers"
           required
         >
           <member-select v-model="formData.maintainers" />
         </bk-form-item>
         <bk-form-item
-          label="描述"
+          :label="t('描述')"
           property="description"
         >
           <bk-input
             type="textarea"
             v-model="formData.description"
-            placeholder="请输入网关描述"
+            :placeholder="t('请输入网关描述')"
             :maxlength="500"
             clearable
           />
         </bk-form-item>
         <bk-form-item
-          label="是否公开"
+          :label="t('是否公开')"
           property="is_public"
           required
         >
           <bk-switcher theme="primary" v-model="formData.is_public" />
-          <span class="common-form-tips">公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏</span>
+          <span class="common-form-tips">{{ $t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
         </bk-form-item>
       </bk-form>
     </bk-dialog>
