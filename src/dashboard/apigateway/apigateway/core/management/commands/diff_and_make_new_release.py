@@ -136,6 +136,10 @@ class Command(BaseCommand):
         if latest_version.created_by == "apigw_system_admin" and not is_resource_has_update:
             return False
 
+        # 如果当前最新版本已经是基于1.13创建的则也不需要
+        if latest_version.is_schema_v2:
+            return False
+
         return True
 
     def _is_need_release(

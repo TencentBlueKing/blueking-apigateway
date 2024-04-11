@@ -1,5 +1,7 @@
 release:
-  comment: "迁移蓝鲸 ESB 自助接入组件"
+  version: 1.2.0
+  comment: "comment: 网关升级1.13"
+
 
 apigateway:
   description: "蓝鲸 ESB 自助接入组件(BUFFET)，迁移自蓝鲸旧版 ESB"

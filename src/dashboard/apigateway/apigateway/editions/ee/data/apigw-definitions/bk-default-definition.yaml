@@ -1,5 +1,6 @@
 release:
-  comment: "default"
+  version: 1.2.0
+  comment: 网关升级1.13
 
 apigateway:
   description: 蓝鲸 API 网关（Blueking API Gateway）默认内置网关，用于托管共享微网关实例，不对外提供接口。(官方内置网关, 请勿修改!)
