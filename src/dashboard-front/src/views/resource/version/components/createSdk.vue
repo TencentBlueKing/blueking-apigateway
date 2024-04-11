@@ -103,7 +103,6 @@ const handleCreate = async () => {
       theme: 'success',
     });
     dialogConfig.isShow = false;
-
     setTimeout(() => {
       emit('done');
     }, 300);
