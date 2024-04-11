@@ -294,6 +294,7 @@ const renderTimeOutLabel = () => {
                     nativeOnKeypress={(value:string) => { value = value.replace(/\d/g, '') }}
                     autofocus={true}
                     suffix='s'
+                    onEnter={() => handleConfirmTime()}
                   />
                 </div>
                 <div class='back-config-timeout-tip'>{t('最大 300s')}</div>
@@ -307,7 +308,7 @@ const renderTimeOutLabel = () => {
           onCancel={() => handleCancelTime()}
         >
           <i
-            class="apigateway-icon icon-ag-edit-line edit-action"
+            class="apigateway-icon icon-ag-bulk-edit edit-action"
             v-bk-tooltips={{
               content: (
                 <div>
@@ -320,12 +321,10 @@ const renderTimeOutLabel = () => {
           />
         </bk-pop-confirm>
         <i
-          class="apigateway-icon icon-ag-cc-history refresh-icon"
+          class="apigateway-icon icon-ag-undo-2 refresh-icon"
           v-bk-tooltips={{
             content: (
-              <div>
-                {t('恢复初始值')}
-              </div>
+              <div>{t('恢复初始值')}</div>
             )
           }}
           onClick={() => handleRefreshTime()}
@@ -409,6 +408,15 @@ const handleMouseLeave = (e: Event, row: Record<string, number | string | boolea
   }, 100);
 };
 
+const init = async () => {
+  const res = await getBackendsListData(common.apigwId);
+  servicesData.value = res.results;
+};
+
+const validate = async () => {
+  await backRef.value?.validate();
+};
+
 watch(
   () => props.detail,
   (val: any) => {
@@ -420,15 +428,6 @@ watch(
   },
   { immediate: true },
 );
-
-const init = async () => {
-  const res = await getBackendsListData(common.apigwId);
-  servicesData.value = res.results;
-};
-
-const validate = async () => {
-  await backRef.value?.validate();
-};
 
 onMounted(() => {
   // 事件总线监听重新获取环境列表

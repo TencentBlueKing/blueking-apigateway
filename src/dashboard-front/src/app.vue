@@ -13,9 +13,8 @@
         :default-open="true"
       >
         <template #side-icon>
-          <!-- v-if="localLanguage === 'en'" -->
-          <img src="@/images/APIgataway-c.png" class="api-logo">
-        <!-- <img v-else src="@/images/APIgataway-c.png" class="api-logo"> -->
+          <img v-if="locale === 'en'" src="@/images/APIgataway-en.png" class="api-logo">
+          <img v-else src="@/images/APIgataway-c.png" class="api-logo">
         </template>
         <div class="content">
           <router-view v-if="userLoaded"></router-view>

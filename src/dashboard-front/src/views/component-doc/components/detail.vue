@@ -45,7 +45,9 @@
       </div>
 
       <!-- eslint-disable-next-line vue/valid-v-on -->
-      <div class="nav-panel" ref="panel" v-if="isNavPanelShow" v-clickOutSide="handleTogglePanel">
+      <div
+        class="nav-panel" ref="panel" v-if="isNavPanelShow"
+        v-clickOutSide="handleTogglePanel">
         <div class="version-panel">
           <bk-dropdown ref="dropdown" :popover-options="popoverOptions" class="m16">
             <div class="version-name">
@@ -64,7 +66,9 @@
             </template>
           </bk-dropdown>
 
-          <bk-input class="searcher" :placeholder="t('请输入系统名称')" clearable v-model="panelKeyword"></bk-input>
+          <bk-input
+            class="searcher" :placeholder="t('请输入系统名称')" clearable v-model="panelKeyword"
+            @clear="handleClear"></bk-input>
           <div class="panel-container">
             <template v-if="filterData.categories.length">
               <div class="ag-card" v-for="(category, index) of filterData.categories" :key="index">
@@ -93,7 +97,7 @@
               </div>
             </template>
             <template v-else-if="panelKeyword">
-              <TableEmpty :keyword="panelKeyword" @clear-filter="panelKeyword = ''" />
+              <TableEmpty :keyword="panelKeyword" @clear-filter="handleClear" />
             </template>
           </div>
         </div>
@@ -138,6 +142,7 @@ const originComponentList = ref([]);
 const isNavPanelShow = ref<boolean>(false);
 const mainContentLoading = ref<boolean>(false);
 const toggleTimer = ref(null);
+const clearTimer = ref(null);
 const dropdown = ref(null);
 const panel = ref(null);
 const curComponent = ref({
@@ -256,11 +261,18 @@ const getSystemDetail = async () => {
   }
 };
 
+const handleClear = () => {
+  clearTimeout(clearTimer.value);
+  clearTimer.value = setTimeout(() => {
+    panelKeyword.value = '';
+    isNavPanelShow.value = true;
+  }, 1);
+};
 const handleTogglePanel = () => {
   clearTimeout(toggleTimer.value);
   toggleTimer.value = setTimeout(() => {
     isNavPanelShow.value = !isNavPanelShow.value;
-  }, 100);
+  }, 0);
 };
 const handleShowIntro = () => {
   curComponentName.value = '';
