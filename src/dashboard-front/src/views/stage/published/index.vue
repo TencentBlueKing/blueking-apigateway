@@ -15,17 +15,14 @@
           :key="dateKey"
           @change="handleChange"
           @clear="handleClear"
-          @pick-success="handleComfirm"
-        >
+          @pick-success="handleComfirm">
         </bk-date-picker>
       </div>
       <div class="flex-1 flex-row justify-content-end">
         <bk-input class="ml10 mr10 operate-input" placeholder="请输入已发布的环境或版本号" v-model="filterData.keyword"></bk-input>
       </div>
     </div>
-    <bk-loading
-      :loading="isLoading"
-    >
+    <bk-loading :loading="isLoading">
       <bk-table
         class="table-layout"
         :data="tableData"
@@ -35,16 +32,13 @@
         @page-limit-change="handlePageSizeChange"
         @page-value-change="handlePageChange"
         row-hover="auto"
-        border="outer"
-      >
+        border="outer">
         <bk-table-column
           :label="t('已发布的环境')"
           prop="stage.name"
         >
         </bk-table-column>
-        <bk-table-column
-          :label="t('类型')"
-        >
+        <bk-table-column :label="t('类型')">
           <template #default="{ data }">
             {{ publishSourceEnum[data?.source] }}
           </template>
@@ -59,33 +53,20 @@
             </bk-button>
           </template>
         </bk-table-column>
-        <bk-table-column
-          :label="t('操作状态')"
-        >
+        <bk-table-column :label="t('操作状态')">
           <template #default="{ data }">
             <spinner v-if="data?.status === 'doing'" fill="#3A84FF" />
             <span v-else :class="['dot', data?.status]"></span>
             {{ publishStatusEnum[data?.status] }}
           </template>
         </bk-table-column>
-        <bk-table-column
-          :label="t('操作时间')"
-          prop="created_time"
-        >
+        <bk-table-column :label="t('操作时间')" prop="created_time">
         </bk-table-column>
-        <bk-table-column
-          :label="t('操作人')"
-          prop="created_by"
-        >
+        <bk-table-column :label="t('操作人')" prop="created_by">
         </bk-table-column>
-        <bk-table-column
-          :label="t('耗时')"
-          prop="duration"
-        >
+        <bk-table-column :label="t('耗时')" prop="duration">
         </bk-table-column>
-        <bk-table-column
-          :label="t('操作')"
-        >
+        <bk-table-column :label="t('操作')">
           <template #default="{ data }">
             <!-- <bk-button text theme="primary" @click="showDetails(data.id)">
               {{ t("查看详情") }}
@@ -174,6 +155,7 @@ const detailsRef = ref(null);
 
 const showLogs = (id: string) => {
   historyId.value = id;
+  console.error('id', id);
   logDetailsRef.value?.showSideslider();
 };
 

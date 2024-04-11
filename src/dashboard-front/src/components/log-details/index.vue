@@ -96,6 +96,7 @@ const getLogsList = async () => {
 
     // 整理步骤
     const steps: any = [];
+    state.objectSteps = [];
     state.totalDuration = 0;
     const subStep = res?.events[res?.events?.length - 1]?.step || 0;
     let allDetail = '';
@@ -137,7 +138,9 @@ const getLogsList = async () => {
       const lastChild = children[children.length - 1];
 
       const date1 = dayjs(firstChild?.created_time);
-      const date2 = dayjs(lastChild?.created_time);
+
+      // 如果失败了，那么 lastChild 不存在，此时 dayjs(lastChild) 就是 dayjs(null) 或 dayjs(undefined) 就是当前的时间
+      const date2 = dayjs(lastChild?.created_time || firstChild?.created_time);
 
       const duration = date2.diff(date1, 's', true);
       state.totalDuration += duration;
