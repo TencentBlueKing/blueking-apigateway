@@ -10,8 +10,7 @@
         class="navigation-content"
         navigation-type="top-bottom"
         :need-menu="false"
-        :default-open="true"
-      >
+        :default-open="true">
         <template #side-icon>
           <img v-if="locale === 'en'" src="@/images/APIgataway-en.png" class="api-logo">
           <img v-else src="@/images/APIgataway-c.png" class="api-logo">
@@ -20,17 +19,14 @@
           <router-view v-if="userLoaded"></router-view>
         </div>
         <template #header>
-          <div
-            class="header"
-          >
+          <div class="header">
             <div class="header-nav">
               <template v-for="(item, index) in headerList">
                 <div
                   :key="item.id"
                   class="header-nav-item"
                   :class="{ 'item-active': index === activeIndex }"
-                  v-if="item.enabled"
-                >
+                  v-if="item.enabled">
                   <span
                     v-if="!isExternalLink(item.url)"
                     @click="handleToPage(item.url, index, item.link)">{{item.name}}</span>

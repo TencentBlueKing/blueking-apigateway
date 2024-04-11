@@ -24,6 +24,7 @@
   "dependencies": {
     "@blueking/bkui-form": "1.0.0-beta.5",
     "@blueking/notice-component": "^2.0.2",
+    "@blueking/release-note": "^0.0.1-beta.7",
     "art-template": "^4.13.2",
     "bkui-vue": "1.0.3-beta.32",
     "connect-history-api-fallback": "^2.0.0",
