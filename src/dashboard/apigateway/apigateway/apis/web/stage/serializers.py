@@ -65,11 +65,20 @@ class StageOutputSLZ(serializers.ModelSerializer):
         )
 
     def get_release(self, obj):
+        # 获取stage发布状态
+        has_release = self.context["stage_release"].get(obj.id, {}).get("release_status", False)
+
+        # 如果stage有发布，则获取其实时发布z
+        status = (
+            self.context["stage_publish_status"].get(obj.id, {}).get("status", ReleaseStatusEnum.SUCCESS.value)
+            if has_release
+            else ReleaseStatusEnum.UNRELEASED.value
+        )
+
         release_time = self.context["stage_release"].get(obj.id, {}).get("release_time", "")
+
         return {
-            "status": self.context["stage_publish_status"]
-            .get(obj.id, {})
-            .get("status", ReleaseStatusEnum.UNRELEASED.value),
+            "status": status,
             "created_time": serializers.DateTimeField(allow_null=True, required=False).to_representation(release_time),
             "created_by": self.context["stage_release"].get(obj.id, {}).get("release_by", ""),
         }
