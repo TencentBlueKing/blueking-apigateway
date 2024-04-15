@@ -326,7 +326,8 @@ const updateTableEmptyConfig = () => {
     return;
   }
   if (filterData.value.keyword) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    // tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.keyword = filterData.value.keyword;
     return;
   }
   tableEmptyConf.value.keyword = '';

@@ -10,6 +10,9 @@
       <span class="icon apigateway-icon icon-ag-help-document-fill"></span>
     </div>
     <template #content>
+      <bk-link class="info-item" :href="GLOBAL_CONFIG.DOC.GUIDE" target="_blank">
+        {{ t('产品文档') }}
+      </bk-link>
       <span text class="info-item" @click="showVersionLog">
         {{ t('版本日志') }}
       </span>
