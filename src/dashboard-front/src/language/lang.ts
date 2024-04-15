@@ -1351,7 +1351,7 @@ const lang: ILANG = {
   '当前环境尚未发布，暂无资源信息': ['The current environment has not been released, there are no resource information available'],
   '尚未发布': ['Not released yet'],
   '请输入 SDK 版本号': ['Please enter the SDK version number'],
-  'SDK仅包含公开资源，生成后会上传到pypi源': ['The SDK only includes public resources, and will be uploaded to the PyPI source after generation'],
+  'SDK仅包含公开资源，生成后会上传到pypi源或bkrepo': ['The SDK only includes public resources, and will be uploaded to the PyPI or BKRepo source after generation'],
   '生成语言': ['Generation language'],
 
   '最大 300s': ['Maximum 300s'],
