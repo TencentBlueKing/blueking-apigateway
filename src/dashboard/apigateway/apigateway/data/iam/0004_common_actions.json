@@ -24,6 +24,18 @@
               "id": "api_test"
             },
             {
+              "id": "create_backend"
+            },
+            {
+              "id": "edit_backend"
+            },
+            {
+              "id": "delete_backend"
+            },
+            {
+              "id": "view_backend"
+            },
+            {
               "id": "create_stage"
             },
             {
@@ -72,6 +84,9 @@
               "id": "bind_plugin_config"
             },
             {
+              "id": "create_version"
+            },
+            {
               "id": "view_version"
             },
             {
@@ -93,6 +108,9 @@
               "id": "view_statistics"
             },
             {
+              "id": "manage_alarm"
+            },
+            {
               "id": "view_audit"
             }
           ]
@@ -109,6 +127,9 @@
             },
             {
               "id": "api_test"
+            },
+            {
+              "id": "view_backend"
             },
             {
               "id": "view_stage"

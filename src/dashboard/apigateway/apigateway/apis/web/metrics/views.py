@@ -25,6 +25,7 @@ from rest_framework import generics, status
 from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
 from apigateway.apps.metrics.prometheus.dimension import DimensionMetricsFactory
 from apigateway.core.models import Resource, Stage
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import SmartTimeRange
 
@@ -75,6 +76,10 @@ class MetricsSmartTimeRange(SmartTimeRange):
 
 
 class QueryRangeApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_STATISTICS.value,
+    }
+
     @swagger_auto_schema(
         query_serializer=MetricsQueryInputSLZ,
         responses={status.HTTP_200_OK: ""},

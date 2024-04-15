@@ -150,6 +150,110 @@
     {
       "operation": "upsert_action",
       "data": {
+        "id": "create_backend",
+        "name": "后端服务新建",
+        "name_en": "Create Backend",
+        "auth_type": "rbac",
+        "type": "create",
+        "related_resource_types": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway",
+            "related_instance_selections": [
+              {
+                "system_id": "bk_apigateway",
+                "id": "gateway_list",
+                "ignore_iam_path": true
+              }
+            ]
+          }
+        ],
+        "related_actions": [],
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_action",
+      "data": {
+        "id": "view_backend",
+        "name": "后端服务查看",
+        "name_en": "View Backend",
+        "auth_type": "rbac",
+        "type": "view",
+        "related_resource_types": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway",
+            "related_instance_selections": [
+              {
+                "system_id": "bk_apigateway",
+                "id": "gateway_list",
+                "ignore_iam_path": true
+              }
+            ]
+          }
+        ],
+        "related_actions": [],
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_action",
+      "data": {
+        "id": "edit_backend",
+        "name": "后端服务编辑",
+        "name_en": "Edit Backend",
+        "auth_type": "rbac",
+        "type": "edit",
+        "related_resource_types": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway",
+            "related_instance_selections": [
+              {
+                "system_id": "bk_apigateway",
+                "id": "gateway_list",
+                "ignore_iam_path": true
+              }
+            ]
+          }
+        ],
+        "related_actions": [
+          "view_backend"
+        ],
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_action",
+      "data": {
+        "id": "delete_backend",
+        "name": "后端服务删除",
+        "name_en": "Delete Backend",
+        "auth_type": "rbac",
+        "type": "delete",
+        "related_resource_types": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway",
+            "related_instance_selections": [
+              {
+                "system_id": "bk_apigateway",
+                "id": "gateway_list",
+                "ignore_iam_path": true
+              }
+            ]
+          }
+        ],
+        "related_actions": [
+          "view_backend"
+        ],
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_action",
+      "data": {
         "id": "create_stage",
         "name": "环境新建",
         "name_en": "Create Stage",
@@ -183,11 +287,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "stage",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "stage_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -208,11 +312,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "stage",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "stage_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -235,11 +339,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "stage",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "stage_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -262,11 +366,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "stage",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "stage_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -314,12 +418,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "resource",
-            "selection_mode": "instance",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "resource_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -340,12 +443,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "resource",
-            "selection_mode": "instance",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "resource_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -368,12 +470,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "resource",
-            "selection_mode": "instance",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "resource_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -396,12 +497,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "resource",
-            "selection_mode": "instance",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "resource_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -472,11 +572,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "plugin_config",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "plugin_config_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -497,11 +597,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "plugin_config",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "plugin_config_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -524,11 +624,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "plugin_config",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "plugin_config_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -551,11 +651,11 @@
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",
-            "id": "plugin_config",
+            "id": "gateway",
             "related_instance_selections": [
               {
                 "system_id": "bk_apigateway",
-                "id": "plugin_config_list",
+                "id": "gateway_list",
                 "ignore_iam_path": true
               }
             ]
@@ -574,6 +674,31 @@
         "id": "view_version",
         "name": "版本查看",
         "name_en": "View Version",
+        "auth_type": "rbac",
+        "type": "view",
+        "related_resource_types": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway",
+            "related_instance_selections": [
+              {
+                "system_id": "bk_apigateway",
+                "id": "gateway_list",
+                "ignore_iam_path": true
+              }
+            ]
+          }
+        ],
+        "related_actions": [],
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_action",
+      "data": {
+        "id": "create_version",
+        "name": "版本生成",
+        "name_en": "Create Version",
         "auth_type": "rbac",
         "type": "view",
         "related_resource_types": [
@@ -755,6 +880,30 @@
         "name_en": "View Audit",
         "auth_type": "rbac",
         "type": "view",
+        "related_resource_types": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway",
+            "related_instance_selections": [
+              {
+                "system_id": "bk_apigateway",
+                "id": "gateway_list",
+                "ignore_iam_path": true
+              }
+            ]
+          }
+        ],
+        "related_actions": [],
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_action",
+      "data": {
+        "id": "manage_alarm",
+        "name": "告警管理",
+        "name_en": "Manage Alarm",
+        "type": "manage",
         "related_resource_types": [
           {
             "system_id": "bk_apigateway",

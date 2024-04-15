@@ -32,6 +32,7 @@ from apigateway.biz.releaser import ReleaseError, release
 from apigateway.common.error_codes import error_codes
 from apigateway.common.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import Release, ReleaseHistory
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
@@ -53,6 +54,10 @@ logger = logging.getLogger(__name__)
     ),
 )
 class ReleaseAvailableResourceListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.API_TEST.value,
+    }
+
     lookup_field = "stage_id"
 
     def get_queryset(self):
@@ -100,6 +105,10 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
     ),
 )
 class ReleaseCreateApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.RELEASE_STAGE.value,
+    }
+
     serializer_class = ReleaseInputSLZ
     lookup_field = "id"
 
@@ -156,6 +165,10 @@ class ReleaseCreateApi(generics.CreateAPIView):
     ),
 )
 class ReleaseHistoryListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.RELEASE_STAGE.value,
+    }
+
     serializer_class = ReleaseHistoryOutputSLZ
 
     def get_queryset(self):
@@ -200,6 +213,10 @@ class ReleaseHistoryListApi(generics.ListAPIView):
     ),
 )
 class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.RELEASE_STAGE.value,
+    }
+
     serializer_class = ReleaseHistoryOutputSLZ
 
     def get_queryset(self):
@@ -233,6 +250,10 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
     ),
 )
 class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.RELEASE_STAGE.value,
+    }
+
     serializer_class = ReleaseHistoryEventRetrieveOutputSLZ
     lookup_url_kwarg = "history_id"
 

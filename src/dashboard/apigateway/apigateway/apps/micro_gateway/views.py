@@ -27,11 +27,19 @@ from apigateway.apps.micro_gateway.handlers import MicroGatewayHandlerFactory
 from apigateway.biz.audit import Auditor
 from apigateway.common.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import MicroGateway, Stage
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 
 class MicroGatewayViewSet(viewsets.ModelViewSet):
+    method_permission = {
+        "get": ActionEnum.VIEW_GATEWAY.value,
+        "post": ActionEnum.MANAGE_GATEWAY.value,
+        "put": ActionEnum.MANAGE_GATEWAY.value,
+        "delete": ActionEnum.MANAGE_GATEWAY.value,
+    }
+
     serializer_class = serializers.MicroGatewaySLZ
     lookup_field = "id"
 

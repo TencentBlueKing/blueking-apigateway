@@ -34,6 +34,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
@@ -68,7 +69,7 @@ from .serializers import (
 class GatewayListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         # 获取用户有权限的网关列表，后续切换到 IAM
-        gateways = GatewayHandler.list_gateways_by_user(request.user.username)
+        gateways = GatewayHandler().list_gateways_by_user(request.user.username)
         gateway_ids = [gateway.id for gateway in gateways]
 
         slz = GatewayListInputSLZ(data=request.query_params)
@@ -177,6 +178,13 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
     ),
 )
 class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_GATEWAY.value,
+        "put": ActionEnum.MANAGE_GATEWAY.value,
+        "patch": ActionEnum.MANAGE_GATEWAY.value,
+        "delete": ActionEnum.MANAGE_GATEWAY.value,
+    }
+
     queryset = Gateway.objects.all()
     serializer_class = GatewayRetrieveOutputSLZ
     lookup_url_kwarg = "gateway_id"
@@ -255,6 +263,10 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     ),
 )
 class GatewayUpdateStatusApi(generics.UpdateAPIView):
+    method_permission = {
+        "put": ActionEnum.MANAGE_GATEWAY.value,
+    }
+
     queryset = Gateway.objects.all()
     serializer_class = GatewayUpdateStatusInputSLZ
     lookup_url_kwarg = "gateway_id"
@@ -298,6 +310,10 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
     ),
 )
 class GatewayFeatureFlagsApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_GATEWAY.value,
+    }
+
     queryset = Gateway.objects.all()
     serializer_class = GatewayFeatureFlagsOutputSLZ
     lookup_url_kwarg = "gateway_id"

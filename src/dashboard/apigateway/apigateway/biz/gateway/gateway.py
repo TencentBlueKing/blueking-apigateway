@@ -23,6 +23,8 @@ from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db.models import Count
+from iam import IAM, Action, Request, Subject
+from iam.eval.constants import OP
 
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
@@ -38,17 +40,60 @@ from apigateway.biz.stage import StageHandler
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
-from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
+from apigateway.core.models import (
+    Backend,
+    BackendConfig,
+    Context,
+    Gateway,
+    Release,
+    Resource,
+    Stage,
+)
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.dict import deep_update
 
 
 class GatewayHandler:
-    @staticmethod
-    def list_gateways_by_user(username: str) -> List[Gateway]:
+    # iam client
+    iam_client = IAM(
+        app_code=settings.BK_APP_CODE,
+        app_secret=settings.BK_APP_SECRET,
+        bk_apigateway_url=settings.BK_IAM_APIGATEWAY_URL,
+    )
+
+    def list_gateways_by_user(self, username: str) -> List[Gateway]:
         """获取用户有权限的的网关列表"""
-        # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
-        queryset = Gateway.objects.filter(_maintainers__contains=username)
-        return [gateway for gateway in queryset if gateway.has_permission(username)]
+        if not settings.USE_BK_IAM_PERMISSION:
+            # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
+            queryset = Gateway.objects.filter(_maintainers__contains=username)
+            return [gateway for gateway in queryset if gateway.has_permission(username)]
+
+        # 从IAM 查询用户有权限查看的网关
+        request = Request(
+            settings.BK_IAM_SYSTEM_ID,
+            Subject("user", username),
+            Action(ActionEnum.VIEW_GATEWAY.value),
+            [],
+            None,
+        )
+        policies = self.iam_client._do_policy_query(request, with_resources=False)
+        if not policies:
+            return []
+
+        ids = self._iam_policies_to_gateway_ids(policies)
+        return list(Gateway.objects.filter(id__in=ids))
+
+    def _iam_policies_to_gateway_ids(self, data) -> List[str]:
+        if data["op"] == OP.EQ:
+            return [data["value"]]
+        if data["op"] == OP.IN:
+            return data["value"]
+        if data["op"] == OP.OR:
+            res = []
+            for i in data["content"]:
+                res.extend(self._iam_policies_to_gateway_ids(i))
+            return res
+        return []
 
     @staticmethod
     def get_stages_with_release_status(gateway_ids: List[int]) -> Dict[int, list]:
@@ -282,5 +327,6 @@ class GatewayHandler:
     @staticmethod
     def get_max_resource_count(gateway_name: str):
         return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
-            gateway_name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
+            gateway_name,
+            settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"],
         )

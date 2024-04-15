@@ -39,6 +39,7 @@ from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.common.renderers import BkStandardApiJSONRenderer
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Resource, Stage
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
@@ -63,6 +64,10 @@ from .serializers import (
     ),
 )
 class PluginTypeListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_PLUGIN_CONFIG.value,
+    }
+
     serializer_class = PluginTypeOutputSLZ
 
     def get_serializer_context(self):
@@ -143,6 +148,10 @@ class PluginTypeListApi(generics.ListAPIView):
     ),
 )
 class PluginFormRetrieveApi(generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_PLUGIN_CONFIG.value,
+    }
+
     serializer_class = PluginFormOutputSLZ
     renderer_classes = [BkStandardApiJSONRenderer]
 
@@ -245,6 +254,10 @@ class PluginConfigCreateApi(
     PluginTypeCodeValidationMixin,
     PluginConfigBindingPostModificationMixin,
 ):
+    method_permission = {
+        "post": ActionEnum.CREATE_PLUGIN_CONFIG.value,
+    }
+
     serializer_class = PluginConfigCreateInputSLZ
     renderer_classes = [BkStandardApiJSONRenderer]
 
@@ -322,6 +335,12 @@ class PluginConfigRetrieveUpdateDestroyApi(
     PluginTypeCodeValidationMixin,
     PluginConfigBindingPostModificationMixin,
 ):
+    method_permission = {
+        "get": ActionEnum.VIEW_PLUGIN_CONFIG.value,
+        "put": ActionEnum.EDIT_PLUGIN_CONFIG.value,
+        "delete": ActionEnum.DELETE_PLUGIN_CONFIG.value,
+    }
+
     serializer_class = PluginConfigRetrieveUpdateInputSLZ
     renderer_classes = [BkStandardApiJSONRenderer]
 
@@ -391,6 +410,10 @@ class PluginConfigRetrieveUpdateDestroyApi(
 
 
 class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
+    method_permission = {
+        "get": ActionEnum.VIEW_PLUGIN_CONFIG.value,
+    }
+
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: PluginBindingListOutputSLZ()},
         operation_description="获取某个插件绑定的环境列表和资源列表",
@@ -426,6 +449,10 @@ class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
 
 
 class ScopePluginConfigListApi(generics.ListAPIView, ScopeValidationMixin):
+    method_permission = {
+        "get": ActionEnum.VIEW_PLUGIN_CONFIG.value,
+    }
+
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ScopePluginConfigListOutputSLZ(many=True)},
         operation_description="获取某个环境或资源绑定的插件列表 (插件类型 + 插件配置)",

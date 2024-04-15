@@ -30,7 +30,7 @@ class IAMHandler:
         - 网关创建者，将添加到分级管理员及管理员用户组中
         """
         grade_manager_handler = IAMGradeManagerHandler()
-        members = [gateway.creator] if gateway.creator else []
+        members = gateway.maintainers
 
         # 1. 创建分级管理员，创建者为分级管理员的成员
         grade_manager_handler.create_grade_manager(gateway.id, gateway.name, members)

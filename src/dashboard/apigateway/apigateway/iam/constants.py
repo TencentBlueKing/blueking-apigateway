@@ -44,9 +44,6 @@ GATEWAY_DEFAULT_ROLES = [
 
 class ResourceTypeEnum(str, StructuredEnum):
     GATEWAY = EnumField("gateway", label="网关")
-    STAGE = EnumField("stage", label="环境")
-    RESOURCE = EnumField("resource", label="资源")
-    PLUGIN_CONFIG = EnumField("plugin_config", label="插件配置")
 
 
 class ActionEnum(str, StructuredEnum):
@@ -71,7 +68,7 @@ class ActionEnum(str, StructuredEnum):
             "role": [UserRoleEnum.MANAGER.value],
         },
     )
-    MANAGE_MEMBERS = ExtendEnumField(
+    MANAGE_MEMBERS = ExtendEnumField(  # TODO RBAC权限管理需要完善
         "manage_members",
         label="成员管理",
         metadata={
@@ -95,6 +92,39 @@ class ActionEnum(str, StructuredEnum):
             "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value],
         },
     )
+    # 后端服务
+    CREATE_BACKEND = ExtendEnumField(
+        "create_backend",
+        label="后端服务新建",
+        metadata={
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
+            "role": [UserRoleEnum.MANAGER.value],
+        },
+    )
+    VIEW_BACKEND = ExtendEnumField(
+        "view_backend",
+        label="后端服务查看",
+        metadata={
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
+            "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value],
+        },
+    )
+    EDIT_BACKEND = ExtendEnumField(
+        "edit_backend",
+        label="后端服务编辑",
+        metadata={
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
+            "role": [UserRoleEnum.MANAGER.value],
+        },
+    )
+    DELETE_BACKEND = ExtendEnumField(
+        "delete_backend",
+        label="后端服务删除",
+        metadata={
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
+            "role": [UserRoleEnum.MANAGER.value],
+        },
+    )
     # 环境
     CREATE_STAGE = ExtendEnumField(
         "create_stage",
@@ -108,7 +138,7 @@ class ActionEnum(str, StructuredEnum):
         "view_stage",
         label="环境查看",
         metadata={
-            "related_resource_type": ResourceTypeEnum.STAGE.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value],
         },
     )
@@ -116,7 +146,7 @@ class ActionEnum(str, StructuredEnum):
         "edit_stage",
         label="环境编辑",
         metadata={
-            "related_resource_type": ResourceTypeEnum.STAGE.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value],
         },
     )
@@ -124,7 +154,7 @@ class ActionEnum(str, StructuredEnum):
         "release_stage",
         label="环境发布",
         metadata={
-            "related_resource_type": ResourceTypeEnum.STAGE.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value],
         },
     )
@@ -132,7 +162,7 @@ class ActionEnum(str, StructuredEnum):
         "delete_stage",
         label="环境删除",
         metadata={
-            "related_resource_type": ResourceTypeEnum.STAGE.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value],
         },
     )
@@ -149,7 +179,7 @@ class ActionEnum(str, StructuredEnum):
         "view_resource",
         label="资源查看",
         metadata={
-            "related_resource_type": ResourceTypeEnum.RESOURCE.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value],
         },
     )
@@ -157,7 +187,7 @@ class ActionEnum(str, StructuredEnum):
         "edit_resource",
         label="资源编辑",
         metadata={
-            "related_resource_type": ResourceTypeEnum.RESOURCE.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value],
         },
     )
@@ -165,7 +195,7 @@ class ActionEnum(str, StructuredEnum):
         "delete_resource",
         label="资源删除",
         metadata={
-            "related_resource_type": ResourceTypeEnum.RESOURCE.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value],
         },
     )
@@ -173,7 +203,7 @@ class ActionEnum(str, StructuredEnum):
         "manage_resource_doc",
         label="资源文档管理",
         metadata={
-            "related_resource_type": ResourceTypeEnum.RESOURCE.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value, UserRoleEnum.OPERATOR.value],
         },
     )
@@ -199,7 +229,7 @@ class ActionEnum(str, StructuredEnum):
         "view_plugin_config",
         label="插件查看",
         metadata={
-            "related_resource_type": ResourceTypeEnum.PLUGIN_CONFIG.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value],
         },
     )
@@ -207,7 +237,7 @@ class ActionEnum(str, StructuredEnum):
         "edit_plugin_config",
         label="插件编辑",
         metadata={
-            "related_resource_type": ResourceTypeEnum.PLUGIN_CONFIG.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value],
         },
     )
@@ -215,7 +245,7 @@ class ActionEnum(str, StructuredEnum):
         "bind_plugin_config",
         label="插件绑定",
         metadata={
-            "related_resource_type": ResourceTypeEnum.PLUGIN_CONFIG.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value],
         },
     )
@@ -223,7 +253,7 @@ class ActionEnum(str, StructuredEnum):
         "delete_plugin_config",
         label="插件删除",
         metadata={
-            "related_resource_type": ResourceTypeEnum.PLUGIN_CONFIG.value,
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value],
         },
     )
@@ -234,6 +264,14 @@ class ActionEnum(str, StructuredEnum):
         metadata={
             "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value],
+        },
+    )
+    CREATE_VERSION = ExtendEnumField(
+        "create_version",
+        label="版本生成",
+        metadata={
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
+            "role": [UserRoleEnum.MANAGER.value],
         },
     )
     # 权限
@@ -284,6 +322,15 @@ class ActionEnum(str, StructuredEnum):
         metadata={
             "related_resource_type": ResourceTypeEnum.GATEWAY.value,
             "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value, UserRoleEnum.OPERATOR.value],
+        },
+    )
+    # 告警
+    MANAGE_ALARM = ExtendEnumField(
+        "manage_alarm",
+        label="告警管理",
+        metadata={
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
+            "role": [UserRoleEnum.MANAGER.value],
         },
     )
     # 审计
