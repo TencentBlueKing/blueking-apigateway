@@ -14,7 +14,7 @@
       <bk-alert
         theme="info"
         class="mb15"
-        :title="$t('SDK仅包含公开资源，生成后会上传到pypi源')"
+        :title="$t('SDK仅包含公开资源，生成后会上传到pypi源或bkrepo')"
       />
       <bk-form ref="baseInfoRef" form-type="vertical" :model="formData" :rules="rules">
         <bk-form-item :label="$t('资源版本')" property="resource_version_id" required>
