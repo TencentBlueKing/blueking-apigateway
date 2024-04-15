@@ -955,7 +955,7 @@ onMounted(() => {
     display: flex;
 
     .choose-version {
-      width: 180px;
+      width: 320px;
       cursor: pointer;
       :deep(.bk-select-trigger) {
         display: flex;
