@@ -68,7 +68,6 @@ class Command(BaseCommand):
                 gateway_to_make_new_version[stage.gateway] = latest_version
 
             # 判断是否需要进行发布
-
             # 当前最新版本和当前环境发布版本是否一致
             release_version_same = resource_version_id == latest_version.id
             need_release = self._is_need_release(
@@ -154,7 +153,11 @@ class Command(BaseCommand):
         # 如果当前最新资源相比最新版本有更新并且最新版本和发布的版本不一致，生成新版本不发布
         # 如果当前资源相比最新版本有更新并且最新版本和发布的版本一致，生成版本不发布
         # 如果没有生成过版本则不需要发布
-        if is_resource_has_update:
+        # 如果最新发布的版本是v2，则也不需要发布
+
+        release_resource_version = ResourceVersion.objects.get(id=release_resource_version_id)
+
+        if is_resource_has_update or release_resource_version.is_schema_v2:
             return False
 
         # 重试场景

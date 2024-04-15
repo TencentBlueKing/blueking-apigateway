@@ -9,7 +9,6 @@ def run_migrate_command(apps, schema_editor):
     call_command("migrate_access_strategy_user_verified")
     call_command("migrate_backend")
     call_command("delete_celery_task", task_name="apigateway.controller.tasks.syncing.release_updated_check")
-    call_command("diff_and_make_new_release", run=True, more=True, pub=True)
 
 
 class Migration(migrations.Migration):
