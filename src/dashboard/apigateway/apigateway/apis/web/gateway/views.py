@@ -484,6 +484,10 @@ class GatewayRoleApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         instance = self.get_object()
 
+        if not settings.USE_BK_IAM_PERMISSION:
+            role = UserRoleEnum.MANAGER.value if instance.has_permission(request.user.username) else None
+            return OKJsonResponse(data={"role": role})
+
         roles = self.iam_handler.get_user_role(instance.id, request.user.username)
         if roles:
             return OKJsonResponse(data={"role": roles[0].value})
