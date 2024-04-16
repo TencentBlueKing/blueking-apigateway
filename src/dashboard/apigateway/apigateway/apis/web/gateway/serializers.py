@@ -262,8 +262,8 @@ class GatewayFeatureFlagsOutputSLZ(serializers.Serializer):
 
 class GatewayRoleMembersInputSLZ(serializers.Serializer):
     username = serializers.CharField(help_text="用户名称")
-    role = serializers.CharField(help_text="角色名称", choices=UserRoleEnum.get_choices())
+    role = serializers.ChoiceField(help_text="角色名称", choices=UserRoleEnum.get_choices())
 
 
 class GatewayRoleOutputSLZ(serializers.Serializer):
-    role = serializers.CharField(help_text="角色名称", choices=UserRoleEnum.get_choices())
+    role = serializers.ChoiceField(help_text="角色名称", choices=UserRoleEnum.get_choices())

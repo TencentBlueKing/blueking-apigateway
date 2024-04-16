@@ -335,7 +335,7 @@ class GatewayFeatureFlagsApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取网关成员列表",
-        responses={status.HTTP_200_OK: serializers.ListField(child=GatewayRoleMembersInputSLZ())},
+        responses={status.HTTP_200_OK: GatewayRoleMembersInputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
 )
