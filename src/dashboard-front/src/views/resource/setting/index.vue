@@ -218,9 +218,9 @@
                     </template>
                     <bk-tag
                       v-if="row.labels.length > row.tagOrder"
+                      @click="handleEditLabel(row)"
                       class="tag-cls">
                       +{{ row.labels.length - row.tagOrder }}
-                      <!-- ... -->
                     </bk-tag>
                   </span>
                   <span v-else>--</span>
@@ -229,7 +229,7 @@
                     @click="handleEditLabel(row)"
                     class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                 </span>
-                <section v-else>
+                <section style="position: absolute;" v-else>
                   <SelectCheckBox
                     :cur-select-label-ids="curLabelIds"
                     :resource-id="resourceId"
@@ -1141,7 +1141,7 @@ watch(
     // 设置显示的tag值
     tableData.value.forEach((item: any) => {
       item.is24HoursAgo = is24HoursAgo(item.created_time);
-      item.tagOrder = '3';
+      item.tagOrder = 2;
       item.labelText = item.labels?.map((label: any) => {
         return label.name;
       });
