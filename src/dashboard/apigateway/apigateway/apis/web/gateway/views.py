@@ -22,7 +22,7 @@ from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, serializers, status
+from rest_framework import generics, status
 
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -494,7 +494,7 @@ class GatewayRoleApi(generics.ListAPIView):
 
         # 特殊用户, 比如超级管理员, 可能会有any权限, 直接返回MANAGER
         policies = self.iam_auth_handler.query_policies(request.user.username, ActionEnum.VIEW_GATEWAY.value)
-        if self.iam_auth_handler.is_any_policies(policies):
+        if policies and self.iam_auth_handler.is_any_policies(policies):
             return OKJsonResponse(data={"role": UserRoleEnum.MANAGER.value})
 
         return OKJsonResponse(data={"role": None})
