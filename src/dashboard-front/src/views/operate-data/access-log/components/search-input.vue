@@ -1,6 +1,6 @@
 <template>
   <div ref="searchInputRef">
-    <bk-input class="search-input" v-model="localValue" :placeholder="placeholder" @enter="handleEnter">
+    <bk-input class="search-input" v-model="localValue" :placeholder="localPlaceholder" @enter="handleEnter">
       <template #suffix>
         <bk-button theme="primary" class="search-input-button" @click="handleSearch"> {{ t("搜索") }} </bk-button>
       </template>
@@ -20,13 +20,16 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: '请输入查询条件',
+    default: '',
   },
 });
+
 const emit = defineEmits(['input', 'search']);
 
 const searchInputRef = ref(null);
 const localValue = ref('');
+const localPlaceholder = ref('');
+localPlaceholder.value = props.placeholder || t('请输入查询条件');
 
 const handleEnter = () => {
   emit('search', localValue.value);

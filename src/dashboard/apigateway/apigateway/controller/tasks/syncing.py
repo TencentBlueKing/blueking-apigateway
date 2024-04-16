@@ -25,7 +25,7 @@ from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.combine import CombineDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
-from apigateway.core.constants import StageStatusEnum
+from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import MicroGateway, Release, ReleaseHistory
 from apigateway.utils.time import now_datetime
 
@@ -87,6 +87,12 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
         release.updated_by = release_history.created_by if release_history else "admin"
         release.save()
 
+        # 如果是网关启用，需要更新环境状态
+        if release_history and release_history.source == PublishSourceEnum.GATEWAY_ENABLE.value:
+            stage = release.stage
+            stage.status = StageStatusEnum.ACTIVE.value
+            stage.save()
+
         PublishEventReporter.report_distribute_configuration_success_event(release_history)
         procedure_logger.info("distribute succeeded")
 
@@ -141,7 +147,5 @@ def revoke_release(release_id: int, publish_id: int):
         stage = release.stage
         stage.status = StageStatusEnum.INACTIVE.value
         stage.save()
-        # 删除release数据
-        release.delete()
 
     return is_success

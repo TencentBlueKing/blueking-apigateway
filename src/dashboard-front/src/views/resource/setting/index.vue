@@ -104,6 +104,7 @@
           <bk-table
             class="table-layout"
             :data="tableData"
+            :max-height="660"
             remote-pagination
             :pagination="pagination"
             :key="tableDataKey"
@@ -115,7 +116,7 @@
             @row-mouse-enter="handleMouseEnter"
             @row-mouse-leave="handleMouseLeave"
             @column-sort="handleSortChange"
-            :row-class="is24HoursAgoClsFunc"
+            :row-class="handleRowClass"
             border="outer"
             :settings="settings">
             <bk-table-column width="80" type="selection" align="center" />
@@ -861,9 +862,10 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
 // 展示右边内容
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   resourceId.value = id;
-  curResource.value = tableData.value.find((e: any) => e.id === id);
+  // curResource.value = tableData.value.find((e: any) => e.id === id);
   tableData.value?.forEach((item: any) => {
     if (item.id === id) {
+      curResource.value = item;
       item.highlight = true;
     } else {
       item.highlight = false;
@@ -1079,11 +1081,15 @@ const handleDeleteSuccess = () => {
   handleShowList();
 };
 
-const is24HoursAgoClsFunc = (v: any) => {
-  if (v.highlight || !v.is24HoursAgo) {
-    return 'row-cls';
+const handleRowClass = (v: any) => {
+  const ret = [];
+  if (!v.is24HoursAgo) {
+    ret.push('row-cls-in-24hours');
   }
-  return '';
+  if (v.highlight) {
+    ret.push('row-cls-highlight');
+  }
+  return ret.join(' ');
 };
 
 const settings = {
@@ -1106,7 +1112,7 @@ watch(
   () => isDetail.value,
   (v) => {
     if (!v) {
-      tableData.value?.map((item: any) => {
+      tableData.value?.forEach((item: any) => {
         item.highlight = false;
       });
     }
@@ -1290,8 +1296,8 @@ onBeforeMount(() => {
   .left-wraper{
     position: relative;
     background: #fff;
-    height: calc(100vh - 220px);
-    overflow-y: auto;
+    // height: calc(100vh - 220px);
+    // overflow-y: auto;
     // padding-bottom: 24px;
     .document-info{
       color: #3a84ff;
@@ -1311,7 +1317,12 @@ onBeforeMount(() => {
     }
 
     .table-layout{
-      :deep(.row-cls){
+      :deep(.row-cls-in-24hours) {
+        td {
+          background: #f2fff4 !important;
+        }
+      }
+      :deep(.row-cls-highlight) {
         td {
           background: #e1ecff !important;
         }

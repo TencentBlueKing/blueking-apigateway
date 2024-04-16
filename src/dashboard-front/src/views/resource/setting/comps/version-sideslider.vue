@@ -33,7 +33,7 @@
                   v-if="versionList.length && versionList[0].version"
                   theme="info"
                   :title="`${t('最新版本号')}: ${versionList[0]?.version || '--'},
-                  于 ${versionList[0]?.created_time || '--'} ${t('创建')}`"
+                  ${t('于')} ${versionList[0]?.created_time || '--'} ${t('创建')}`"
                   class="mt15 mb15"
                 />
 
@@ -269,9 +269,12 @@ const handleCancel = () => {
 
 // 版本生成成功确认
 const handleComfirm = () => {
-  router.push({
-    name: 'apigwResourceVersion',
-  });
+  handleCancel();
+  setTimeout(() => {
+    router.push({
+      name: 'apigwResourceVersion',
+    });
+  }, 300);
 };
 
 watch(

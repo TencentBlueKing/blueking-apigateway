@@ -315,7 +315,34 @@ class TestResourceProxyDiffer:
                             }
                         },
                     ),
-                )
+                ),
+                (
+                    [
+                        {
+                            "id": 1,
+                            "name": "bk-mock",
+                            "type": "2",
+                            "config": {
+                                "response_status": 200,
+                                "response_example": "success",
+                                "response_headers": "application/text",
+                            },
+                        }
+                    ],
+                    [
+                        {
+                            "id": 1,
+                            "name": "bk-mock",
+                            "type": "2",
+                            "config": {
+                                "response_status": 200,
+                                "response_example": "success",
+                                "response_headers": "application/text",
+                            },
+                        }
+                    ],
+                    ([{}, {}]),
+                ),
             ],
         )
         def test_diff_plugin(self, source_plugins, target_plugins, expected):

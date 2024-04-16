@@ -6,3 +6,5 @@ const { BK_DASHBOARD_URL } = window;
 export const getUser = () => fetch.get(`${BK_DASHBOARD_URL}/accounts/userinfo/`);
 
 export const getFeatureFlags = (data: any) => fetch.get(`${BK_DASHBOARD_URL}/settings/feature_flags/?${json2Query(data)}`);
+
+export const getVersionLog = () => fetch.get(`${BK_DASHBOARD_URL}/version-log`);

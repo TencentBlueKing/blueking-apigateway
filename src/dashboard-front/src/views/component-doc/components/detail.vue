@@ -8,7 +8,6 @@
           <i
             class="more ag-doc-icon doc-menu apigateway-icon icon-ag-menu" v-bk-tooltips.top="t('所有系统')"
             @click="handleTogglePanel"></i>
-
           <div
             :class="`version-logo ${curVersion}`"
             :style="{ backgroundImage: `url(${versionLogoMap[curVersionIndex % 4].logo})` }">
@@ -40,13 +39,15 @@
             </li>
           </ul>
           <template v-else-if="keyword">
-            <table-empty :keyword="keyword" @clear-filter="keyword = ''" />
+            <TableEmpty :keyword="keyword" @clear-filter="keyword = ''" />
           </template>
         </div>
       </div>
 
       <!-- eslint-disable-next-line vue/valid-v-on -->
-      <div class="nav-panel" ref="panel" v-if="isNavPanelShow" v-clickOutSide="handleTogglePanel">
+      <div
+        class="nav-panel" ref="panel" v-if="isNavPanelShow"
+        v-clickOutSide="handleTogglePanel">
         <div class="version-panel">
           <bk-dropdown ref="dropdown" :popover-options="popoverOptions" class="m16">
             <div class="version-name">
@@ -65,7 +66,9 @@
             </template>
           </bk-dropdown>
 
-          <bk-input class="searcher" :placeholder="t('请输入系统名称')" clearable v-model="panelKeyword"></bk-input>
+          <bk-input
+            class="searcher" :placeholder="t('请输入系统名称')" clearable v-model="panelKeyword"
+            @clear="handleClear"></bk-input>
           <div class="panel-container">
             <template v-if="filterData.categories.length">
               <div class="ag-card" v-for="(category, index) of filterData.categories" :key="index">
@@ -94,7 +97,7 @@
               </div>
             </template>
             <template v-else-if="panelKeyword">
-              <table-empty :keyword="keyword" @clear-filter="keyword = ''" />
+              <TableEmpty :keyword="panelKeyword" @clear-filter="handleClear" />
             </template>
           </div>
         </div>
@@ -122,6 +125,7 @@ import logo1 from '@/images/1.svg';
 import logo2 from '@/images/2.svg';
 import logo3 from '@/images/3.svg';
 import logo4 from '@/images/4.svg';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -138,6 +142,7 @@ const originComponentList = ref([]);
 const isNavPanelShow = ref<boolean>(false);
 const mainContentLoading = ref<boolean>(false);
 const toggleTimer = ref(null);
+const clearTimer = ref(null);
 const dropdown = ref(null);
 const panel = ref(null);
 const curComponent = ref({
@@ -256,11 +261,18 @@ const getSystemDetail = async () => {
   }
 };
 
+const handleClear = () => {
+  clearTimeout(clearTimer.value);
+  clearTimer.value = setTimeout(() => {
+    panelKeyword.value = '';
+    isNavPanelShow.value = true;
+  }, 1);
+};
 const handleTogglePanel = () => {
   clearTimeout(toggleTimer.value);
   toggleTimer.value = setTimeout(() => {
     isNavPanelShow.value = !isNavPanelShow.value;
-  }, 100);
+  }, 0);
 };
 const handleShowIntro = () => {
   curComponentName.value = '';
@@ -762,5 +774,3 @@ init();
   }
 }
 </style>
-
-

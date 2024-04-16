@@ -10,28 +10,23 @@
         class="navigation-content"
         navigation-type="top-bottom"
         :need-menu="false"
-        :default-open="true"
-      >
+        :default-open="true">
         <template #side-icon>
-          <!-- v-if="localLanguage === 'en'" -->
-          <img src="@/images/APIgataway-c.png" class="api-logo">
-        <!-- <img v-else src="@/images/APIgataway-c.png" class="api-logo"> -->
+          <img v-if="locale === 'en'" src="@/images/APIgataway-en.png" class="api-logo">
+          <img v-else src="@/images/APIgataway-c.png" class="api-logo">
         </template>
         <div class="content">
           <router-view v-if="userLoaded"></router-view>
         </div>
         <template #header>
-          <div
-            class="header"
-          >
+          <div class="header">
             <div class="header-nav">
               <template v-for="(item, index) in headerList">
                 <div
                   :key="item.id"
                   class="header-nav-item"
                   :class="{ 'item-active': index === activeIndex }"
-                  v-if="item.enabled"
-                >
+                  v-if="item.enabled">
                   <span
                     v-if="!isExternalLink(item.url)"
                     @click="handleToPage(item.url, index, item.link)">{{item.name}}</span>
@@ -334,9 +329,14 @@ onBeforeMount(() => {
 </style>
 <style lang="scss" scoped>
 .navigation-content {
+  // :deep(.bk-navigation-header) {
+  //   min-width: 1280px;
+  // }
+
   :deep(.bk-navigation-wrapper) {
     .container-content{
       padding: 0px !important;
+      min-width: 1280px;
     }
   }
 

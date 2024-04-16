@@ -1171,7 +1171,7 @@ const lang: ILANG = {
   'SDK地址': ['URL'],
   '在{resourceLength}个资源中搜索...': ['Search in {resourceLength} resources'],
   'SDK使用样例': ['SDK Usage Sample'],
-  '网关当前环境【{curStageText}】对应的资源版本未生成SDK，可联系网关负责人生成SDK': ['Gateway resource version corresponding to the stage [{curStageText}] does not generate SDK, you can contact the gateway maintainers to generate SDK'],
+  '网关当前环境【{curStageText}】对应的资源版本未生成 SDK，可联系网关负责人生成 SDK': ['Gateway resource version corresponding to the stage [{curStageText}] does not generate SDK, you can contact the gateway maintainers to generate SDK'],
   'SDK及示例': ['SDK & Sample'],
   'SDK信息-doc': ['SDK'],
   '[蓝鲸网关API咨询] 网关': ['[BK APIGateway] Gateway'],
@@ -1351,7 +1351,7 @@ const lang: ILANG = {
   '当前环境尚未发布，暂无资源信息': ['The current environment has not been released, there are no resource information available'],
   '尚未发布': ['Not released yet'],
   '请输入 SDK 版本号': ['Please enter the SDK version number'],
-  'SDK仅包含公开资源，生成后会上传到pypi源': ['The SDK only includes public resources, and will be uploaded to the PyPI source after generation'],
+  'SDK仅包含公开资源，生成后会上传到pypi源或bkrepo': ['The SDK only includes public resources, and will be uploaded to the PyPI or BKRepo source after generation'],
   '生成语言': ['Generation language'],
 
   '最大 300s': ['Maximum 300s'],
@@ -1402,6 +1402,8 @@ const lang: ILANG = {
   '请输入网关名称': ['Please enter gateway name'],
   '': [''],
   '新建后端服务': ['Create backend service'],
+  '于': ['at'],
+  '超时时间不能为空': ['Timeout cannot be empty'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

@@ -97,10 +97,10 @@
               :filterable="true"
               @change="handleVersionChange">
               <template #trigger>
-                <span class="trigger-label">
+                <span class="trigger-label" v-bk-tooltips="{ content: localSourceTriggerLabel, delay: 300 }">
                   {{ localSourceTriggerLabel }}
-                  <DownShape class="trigger-label-icon" />
                 </span>
+                <DownShape class="trigger-label-icon" />
               </template>
               <bk-option
                 v-for="option in localVersionList"
@@ -514,13 +514,15 @@ const checkMatch = (item: any, type: any) => {
   if (searchParams.diffType && searchParams.diffType !== type) {
     return false;
   }
-  const method = item.method.toLowerCase();
-  const path = item.path.toLowerCase();
-  const name = item.name.toLowerCase();
+  const method = item?.method?.toLowerCase();
+  const path = item?.path?.toLowerCase();
+  const backendPath = item?.proxy?.config?.path?.toLowerCase();
+  const name = item?.name?.toLowerCase();
   const keyword = searchKeyword.value.toLowerCase();
   return (
     method.indexOf(keyword) > -1
     || path.indexOf(keyword) > -1
+    || backendPath.indexOf(keyword) > -1
     || name.indexOf(keyword) > -1
   );
 };
@@ -795,6 +797,10 @@ onMounted(() => {
 }
 
 .diff-main {
+  max-height: calc(100vh - 362px);
+  min-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
   .diff-loading {
     min-height: 300px;
     padding: 6px 0px;
@@ -881,9 +887,9 @@ onMounted(() => {
     }
   }
 
-  .source-box {
-    border-right: 1px solid #dcdee5;
-  }
+  // .source-box {
+  //   border-right: 1px solid #dcdee5;
+  // }
 
   // .target-box {
   //   border-left: 1px solid #dcdee5;
@@ -949,16 +955,27 @@ onMounted(() => {
     display: flex;
 
     .choose-version {
-      width: 150px;
+      width: 320px;
       cursor: pointer;
+      :deep(.bk-select-trigger) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
       .trigger-label {
         position: relative;
         display: inline-block;
-        .trigger-label-icon {
-          position: relative;
-          top: 2px;
-        }
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 4px;
       }
+      // .trigger-label-icon {
+      //   position: absolute;
+      //   top: 15px;
+      //   right: 0;
+      // }
     }
 
     .marked {

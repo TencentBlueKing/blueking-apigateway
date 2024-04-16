@@ -20,6 +20,8 @@ from typing import List
 
 from packaging import version
 
+from apigateway.utils import time
+
 
 def _filter_the_valid_versions(versions: List[str]) -> List[str]:
     data = []
@@ -49,6 +51,16 @@ def max_version(versions: List[str]) -> str:
 
         # use the string comp
         return max(versions)
+
+
+def get_next_version(current_version: str) -> str:
+    try:
+        std_version = version.parse(current_version)
+        return f"{std_version.major}.{std_version.minor}.{std_version.micro + 1}"
+    except version.InvalidVersion:
+        now = time.now_datetime()
+        now_str = time.format(now, fmt="YYYYMMDDHHmmss")
+        return current_version + f".{now_str}"
 
 
 def is_version1_greater_than_version2(version1: str, version2: str) -> bool:

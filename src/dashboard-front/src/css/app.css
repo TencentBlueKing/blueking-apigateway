@@ -218,3 +218,10 @@ body {
         overflow-y: auto;
     }
 }
+.bk-table {
+    .__is-empty {
+        .bk-table-body-content {
+            border-bottom: none !important;
+        }
+    }
+}

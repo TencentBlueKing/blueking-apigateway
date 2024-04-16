@@ -38,7 +38,7 @@
     :quick-close="true"
   >
     <template #default>
-      <div class="p20">
+      <div class="p20 pure-diff">
         <version-diff ref="diffRef" :source-id="diffSourceId" :target-id="diffTargetId" />
       </div>
     </template>
@@ -132,6 +132,7 @@ const handleCreateResourceVersion = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-width: 1280px;
   .top-title-wrapper {
     display: flex;
     align-items: center;
@@ -172,6 +173,12 @@ const handleCreateResourceVersion = async () => {
         border-color: #dcdee5;
       }
     }
+  }
+}
+
+.pure-diff {
+  :deep(.diff-main) {
+    max-height: calc(100vh - 240px) !important;
   }
 }
 </style>

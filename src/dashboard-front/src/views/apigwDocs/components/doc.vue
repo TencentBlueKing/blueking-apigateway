@@ -165,7 +165,7 @@ const curApigw = ref({
 });
 const componentNavList = ref<any>([]);
 
-const SDKInfo = computed(() => t(`网关当前环境【${curStage.value}】对应的资源版本未生成 SDK，可联系网关负责人生成 SDK`));
+const SDKInfo = computed(() => t('网关当前环境【{curStageText}】对应的资源版本未生成 SDK，可联系网关负责人生成 SDK', { curStageText: curStage.value }));
 const curUser = computed(() => userStore?.user);
 const userList = computed(() => {
   // 去重

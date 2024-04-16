@@ -93,7 +93,13 @@
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('文档地址')}：` }}</div>
               <div class="value url">
-                <span class="link" v-bk-tooltips="{ content: t('网关未开启或公开，暂无文档地址'), placement: 'right' }">
+                <span
+                  class="link"
+                  v-bk-tooltips="{
+                    content: t('网关未开启或公开，暂无文档地址'),
+                    placement: 'right',
+                    disabled: !!basicInfoData.docs_url }"
+                >
                   {{ basicInfoData.docs_url || '--' }}
                 </span>
                 <template v-if="basicInfoData.docs_url">
@@ -188,10 +194,7 @@
         </div>
       </div>
       <template #footer>
-        <bk-button
-          theme="primary"
-          :disabled="!formRemoveApigw"
-          @click="handleDeleteApigw">
+        <bk-button theme="primary" :disabled="!formRemoveApigw" @click="handleDeleteApigw">
           {{ t('确定') }}
         </bk-button>
         <bk-button
@@ -260,13 +263,14 @@
 </template>
 
 <script setup lang="ts">
-import _ from 'lodash';
-import {  copy } from '@/common/util';
-import { useGetGlobalProperties } from '@/hooks';
 import {  ref, computed, watch } from 'vue';
+import _ from 'lodash';
 import { Message, InfoBox } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+
+import {  copy } from '@/common/util';
+import { useGetGlobalProperties } from '@/hooks';
 // import { useStage } from '@/store';
 import { BasicInfoParams, DialogParams } from './common/type';
 import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays } from '@/http';
@@ -373,9 +377,11 @@ const handleDeleteApigw = async () => {
       width: 'auto',
     });
     delApigwDialog.value.isShow = false;
-    router.push({
-      name: 'home',
-    });
+    setTimeout(() => {
+      router.push({
+        name: 'home',
+      });
+    }, 300);
   } catch (e) {
     console.error(e);
   }

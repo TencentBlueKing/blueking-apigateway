@@ -46,7 +46,7 @@
         <div class="ag-markdown-editor">
           <mavon-editor
             ref="markdownRef"
-            class="content-editor"
+            :class="{ 'content-editor': !isFullscreen }"
             v-model="markdownDoc"
             v-show="isEdited"
             :language="language"
@@ -56,6 +56,7 @@
             :code-style="'monokai'"
             :toolbars="toolbars"
             :tab-size="4"
+            @full-screen="handleFullscreen"
           />
         </div>
       </div>
@@ -117,7 +118,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, toRefs, onMounted, onBeforeUnmount, nextTick, onUpdated } from 'vue';
+import { ref, toRefs, onMounted, onUnmounted, onBeforeUnmount, nextTick, onUpdated } from 'vue';
 import { getResourceDocs, updateResourceDocs, saveResourceDocs, deleteResourceDocs } from '@/http';
 import { useCommon } from '@/store';
 import { cloneDeep } from 'lodash';
@@ -194,6 +195,11 @@ const handleEditMarkdown = (type: string) => {
   const docDataItem = cloneDeep(docData.value).find((e: any) => e.language === language.value);
   markdownDoc.value = docDataItem.content;
   controlToggle();
+};
+
+const isFullscreen = ref<Boolean>(false);
+const handleFullscreen = (full: Boolean) => {
+  isFullscreen.value = full;
 };
 
 // 获取文档信息
@@ -332,11 +338,25 @@ const destroyEvent = () => {
   resizeObserver.disconnect();
 };
 
+const escHandler = (e: KeyboardEvent) => {
+  if (e.code === 'Escape') {
+    if (markdownRef.value?.s_fullScreen) {
+      markdownRef.value.s_fullScreen = false;
+    }
+  }
+};
+
 onMounted(() => {
   initData();
   // 初始化判断按钮组是否吸附
   controlToggle();
   observerBtnScroll();
+
+  document.addEventListener('keydown', escHandler);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', escHandler);
 });
 
 onUpdated(() => {

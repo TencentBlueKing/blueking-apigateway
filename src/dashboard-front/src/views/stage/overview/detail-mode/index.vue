@@ -126,7 +126,7 @@
         </section>
       </bk-loading>
       <bk-alert
-        type="warning"
+        theme="warning"
         :title="t('环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作')"
         class="mt15 mb15"
       ></bk-alert>
