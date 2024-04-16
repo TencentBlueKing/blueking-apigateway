@@ -20,12 +20,15 @@ from typing import Dict, List
 
 from django.conf import settings
 from django.core.management import BaseCommand
+from packaging import version
 
 from apigateway.biz.releaser import release
+from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Release, ResourceVersion, Stage
+from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
+from apigateway.utils import time
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.version import get_next_version
 
@@ -167,16 +170,12 @@ class Command(BaseCommand):
                 return False
 
             # 获取真正的排除apigw_system_admin创建的最新版本
-            real_latest_resource_version = (
-                ResourceVersion.objects.filter(gateway_id=latest_version.gateway_id)
-                .exclude(
-                    created_by="apigw_system_admin",
-                )
-                .order_by("-created_time")
-                .first()
-            )
-            # 如果真正最新的版本和发布版本一致，则可以发布
-            if real_latest_resource_version and real_latest_resource_version.id == release_resource_version_id:
+            real_latest_resource_version = self.get_real_latest_resource_version(latest_version)
+
+            # 如果真正最新的版本和发布版本一致并且没有更新，则可以发布
+            if not is_resource_has_update and (
+                real_latest_resource_version and real_latest_resource_version.id == release_resource_version_id
+            ):
                 return True
 
             # 如果真正最新的版本和发布版本不一致，则不可以发布
@@ -184,19 +183,24 @@ class Command(BaseCommand):
                 return False
 
         # 非重试场景
-        elif not is_resource_has_update and not release_version_same:
-            return False
-        return True
+        # 如果最新资源没有更新，并且发布资源版本和最新资源一致，则可以发布
+        elif not is_resource_has_update and release_version_same:
+            return True
+
+        return False
 
     def _get_resource_update(self, stage: Stage, latest_version: ResourceVersion):
         """判断资源是否有更新"""
 
+        latest_version = self.get_real_latest_resource_version(latest_version)
+
         # 查询当前网关是否需要创建版本(是否有变更)
-        resource_has_update = ResourceVersionHandler.need_new_version(stage.gateway.id)
+        resource_has_update = self.need_new_version(latest_version)
 
         resource_diff_data = {}
         if resource_has_update:
             # 如果有差异，进行对比
+
             resource_diff_data = self._get_diff_data(stage, latest_version)
 
         # 最新资源和最新版本相比是否有更新
@@ -205,6 +209,47 @@ class Command(BaseCommand):
             + self._len_dict(resource_diff_data.get("target_diff"))
             > 0
         )
+
+    def get_real_latest_resource_version(self, latest_version: ResourceVersion) -> ResourceVersion:
+        """
+        获取非升级之前的最新版本
+        """
+
+        # 重试场景,排除升级脚本创建的版本
+        if latest_version.is_schema_v2:
+            latest_version = (
+                ResourceVersion.objects.filter(gateway_id=latest_version.gateway.id)
+                .exclude(created_by="apigw_system_admin")
+                .last()
+            )
+
+        return latest_version
+
+    def need_new_version(self, latest_version: ResourceVersion):
+        """
+        是否需要创建新的资源版本
+        """
+
+        resource_last_updated_time = ResourceHandler.get_last_updated_time(latest_version.gateway.id)
+
+        if not (latest_version or resource_last_updated_time):
+            return False
+
+        # 无资源版本
+        if not latest_version:
+            return True
+
+        # 如果有最近更新的资源，最近的更新资源时间 > 最新版本生成时间
+        if resource_last_updated_time and resource_last_updated_time > latest_version.created_time:
+            return True
+
+        # 版本中资源数量是否发生变化
+        # some resource could be deleted
+        resource_count = Resource.objects.filter(gateway_id=latest_version.gateway.id).count()
+        if resource_count != len(latest_version.data):
+            return True
+
+        return False
 
     def _make_version_release(self, stage: Stage, resource_version_id: int):
         """进行环境版本发布"""
@@ -229,7 +274,17 @@ class Command(BaseCommand):
 
     def _make_gateway_new_version(self, gateway: Gateway, latest_version: ResourceVersion) -> ResourceVersion:
         """对网关进行新建版本"""
+
         new_version = get_next_version(latest_version.object_display)
+        # 如果是注册网关指定了版本，为了保持和之前版本一致需要特殊处理
+        # eg: 1.2.0+20240307031201
+        if "+" in latest_version.object_display:
+            try:
+                latest_version_std = version.parse(latest_version.version)
+                now_str = time.format(time.now_datetime(), fmt="YYYYMMDDHHmmss")
+                new_version = "%s+%s" % (latest_version_std.public, now_str)
+            except version.InvalidVersion:
+                pass
 
         # 如果版本有冲突
         if ResourceVersion.objects.get_id_by_version(gateway.id, new_version):
@@ -302,6 +357,8 @@ class Command(BaseCommand):
 
     def _get_diff_data(self, stage: Stage, latest_version: ResourceVersion):
         """获取对比差异结果"""
+
+        latest_version = self.get_real_latest_resource_version(latest_version)
 
         resource_diff_data = {}
 
