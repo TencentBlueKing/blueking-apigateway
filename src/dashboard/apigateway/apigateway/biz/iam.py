@@ -15,9 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import List
+
+from django.conf import settings
+from iam import IAM, Action, Request, Resource, Subject
+from iam.eval.constants import OP
 
 from apigateway.core.models import Gateway
-from apigateway.iam.constants import UserRoleEnum
+from apigateway.iam.constants import ResourceTypeEnum, UserRoleEnum
 from apigateway.iam.handlers.grade_manager import IAMGradeManagerHandler
 from apigateway.iam.handlers.user_group import IAMUserGroupHandler
 
@@ -55,3 +60,56 @@ class IAMHandler:
         # 2. 删除分级管理员
         grade_manager_handler = IAMGradeManagerHandler()
         grade_manager_handler.delete_grade_manager(gateway_id)
+
+
+class IAMAuthHandler:
+    iam_client = IAM(
+        app_code=settings.BK_APP_CODE,
+        app_secret=settings.BK_APP_SECRET,
+        bk_apigateway_url=settings.BK_IAM_APIGATEWAY_URL,
+    )
+
+    def is_allowed(self, username: str, action: str, gateway_id: int) -> bool:
+        """鉴权"""
+        resource = Resource(
+            settings.BK_IAM_SYSTEM_ID,
+            ResourceTypeEnum.GATEWAY.value,
+            str(gateway_id),
+            {},
+        )
+        request = Request(
+            settings.BK_IAM_SYSTEM_ID,
+            Subject("user", username),
+            Action(action),
+            [resource],
+            None,
+        )
+        return self.iam_client.is_allowed_with_cache(request)
+
+    def query_policies(self, username: str, action: str) -> dict:
+        """查询权限"""
+        request = Request(
+            settings.BK_IAM_SYSTEM_ID,
+            Subject("user", username),
+            Action(action),
+            [],
+            None,
+        )
+        return self.iam_client._do_policy_query(request, with_resources=False)
+
+    def is_any_policies(self, data: dict) -> bool:
+        if data["op"] == OP.ANY:
+            return True
+        return False
+
+    def policies_to_gateway_ids(self, data) -> List[str]:
+        if data["op"] == OP.EQ:
+            return [data["value"]]
+        if data["op"] == OP.IN:
+            return data["value"]
+        if data["op"] == OP.OR:
+            res = []
+            for i in data["content"]:
+                res.extend(self.policies_to_gateway_ids(i))
+            return res
+        return []

@@ -37,3 +37,4 @@ ignore_imports =
     apigateway.common.release.publish -> apigateway.controller.tasks
     apigateway.common.release.publish -> apigateway.controller.constants
     apigateway.components.bcs_helper -> apigateway.common.user_credentials
+    apigateway.common.permissions.permissions -> apigateway.biz.iam

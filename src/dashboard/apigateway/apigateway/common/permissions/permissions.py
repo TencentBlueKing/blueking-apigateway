@@ -20,12 +20,11 @@ from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy
-from iam import IAM, Action, Request, Resource, Subject
 from rest_framework import permissions
 
+from apigateway.biz.iam import IAMAuthHandler
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp
-from apigateway.iam.constants import ResourceTypeEnum
 from apigateway.utils.django import get_object_or_None
 
 
@@ -36,12 +35,7 @@ class GatewayPermission(permissions.BasePermission):
 
     message = gettext_lazy("当前用户无访问网关权限")
 
-    # iam client
-    iam_client = IAM(
-        app_code=settings.BK_APP_CODE,
-        app_secret=settings.BK_APP_SECRET,
-        bk_apigateway_url=settings.BK_IAM_APIGATEWAY_URL,
-    )
+    iam_handler = IAMAuthHandler()
 
     def has_permission(self, request, view):
         gateway_obj = self.get_gateway_object(view)
@@ -67,7 +61,7 @@ class GatewayPermission(permissions.BasePermission):
             if method not in view.method_permission:
                 return True
 
-            return self._is_iam_allowed(request, view.method_permission[method], gateway_obj)
+            return self.iam_handler.is_allowed(request.user.username, view.method_permission[method], gateway_obj.id)
 
         return False
 
@@ -84,22 +78,6 @@ class GatewayPermission(permissions.BasePermission):
 
         filter_kwargs = {"id": view.kwargs[lookup_url_kwarg]}
         return get_object_or_404(Gateway, **filter_kwargs)
-
-    def _is_iam_allowed(self, request, action, gateway) -> bool:
-        resource = Resource(
-            settings.BK_IAM_SYSTEM_ID,
-            ResourceTypeEnum.GATEWAY.value,
-            str(gateway.id),
-            {},
-        )
-        request = Request(
-            settings.BK_IAM_SYSTEM_ID,
-            Subject("user", request.user.username),
-            Action(action),
-            [resource],
-            None,
-        )
-        return self.iam_client.is_allowed_with_cache(request)
 
 
 class GatewayRelatedAppPermission(permissions.BasePermission):

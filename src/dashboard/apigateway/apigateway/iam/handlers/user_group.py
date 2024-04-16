@@ -20,7 +20,11 @@ from typing import List
 from django.utils.translation import gettext as _
 
 from apigateway.components.bk_iam_bkapi import BKIAMClient
-from apigateway.iam.constants import GATEWAY_DEFAULT_ROLES, NEVER_EXPIRE_TIMESTAMP, UserRoleEnum
+from apigateway.iam.constants import (
+    GATEWAY_DEFAULT_ROLES,
+    NEVER_EXPIRE_TIMESTAMP,
+    UserRoleEnum,
+)
 from apigateway.iam.exceptions import IAMGradeManagerNotExist, IAMUserRoleNotExist
 from apigateway.iam.handlers.authorization_scopes import AuthorizationScopes
 from apigateway.iam.models import IAMGradeManager, IAMUserGroup
@@ -154,6 +158,18 @@ class IAMUserGroupHandler:
 
         user_group_id = self._get_user_group_id(gateway_id, role)
         self._bk_iam_client.delete_user_group_members(user_group_id, members)
+
+    def get_user_role(self, gateway_id: int, username: str) -> List[UserRoleEnum]:
+        """
+        获取用户组角色
+
+        :param gateway_id: 网关 ID
+        :param username: 用户名
+        :returns: 用户组角色
+        """
+        role_group_id = {i.role: i.user_group_id for i in IAMUserGroup.objects.filter(gateway_id=gateway_id)}
+        data = self._bk_iam_client.check_user_group_belong(username, list(role_group_id.values()))
+        return [i for i in GATEWAY_DEFAULT_ROLES if data[role_group_id[i.value]]["belong"]]
 
     def grant_user_group_policies(self, gateway_id: int, gateway_name: str):
         """

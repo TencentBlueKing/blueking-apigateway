@@ -33,6 +33,10 @@ class UserRoleEnum(str, StructuredEnum):
     DEVELOPER = EnumField("developer", label=_("开发者"))
     OPERATOR = EnumField("operator", label=_("运营者"))
 
+    @classmethod
+    def get(cls, value: str) -> "UserRoleEnum":
+        return {role.value: role for role in cls.get_field_members().values()}[value]
+
 
 # 网关默认的用户角色，需为这些角色创建用户组
 GATEWAY_DEFAULT_ROLES = [

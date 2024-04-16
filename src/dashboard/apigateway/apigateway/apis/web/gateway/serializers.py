@@ -28,6 +28,7 @@ from apigateway.core.constants import (
     GatewayStatusEnum,
 )
 from apigateway.core.models import Gateway
+from apigateway.iam.constants import UserRoleEnum
 from apigateway.utils.crypto import calculate_fingerprint
 
 from .constants import GATEWAY_NAME_PATTERN
@@ -257,3 +258,12 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
 
 class GatewayFeatureFlagsOutputSLZ(serializers.Serializer):
     feature_flags = serializers.DictField(help_text="网关特性集")
+
+
+class GatewayRoleMembersInputSLZ(serializers.Serializer):
+    username = serializers.CharField(help_text="用户名称")
+    role = serializers.CharField(help_text="角色名称", choices=UserRoleEnum.get_choices())
+
+
+class GatewayRoleOutputSLZ(serializers.Serializer):
+    role = serializers.CharField(help_text="角色名称", choices=UserRoleEnum.get_choices())

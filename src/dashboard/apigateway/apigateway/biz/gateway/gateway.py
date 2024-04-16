@@ -23,8 +23,6 @@ from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db.models import Count
-from iam import IAM, Action, Request, Subject
-from iam.eval.constants import OP
 
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
@@ -32,7 +30,7 @@ from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
-from apigateway.biz.iam import IAMHandler
+from apigateway.biz.iam import IAMAuthHandler, IAMHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -54,12 +52,7 @@ from apigateway.utils.dict import deep_update
 
 
 class GatewayHandler:
-    # iam client
-    iam_client = IAM(
-        app_code=settings.BK_APP_CODE,
-        app_secret=settings.BK_APP_SECRET,
-        bk_apigateway_url=settings.BK_IAM_APIGATEWAY_URL,
-    )
+    iam_handler = IAMAuthHandler()
 
     def list_gateways_by_user(self, username: str) -> List[Gateway]:
         """获取用户有权限的的网关列表"""
@@ -69,31 +62,15 @@ class GatewayHandler:
             return [gateway for gateway in queryset if gateway.has_permission(username)]
 
         # 从IAM 查询用户有权限查看的网关
-        request = Request(
-            settings.BK_IAM_SYSTEM_ID,
-            Subject("user", username),
-            Action(ActionEnum.VIEW_GATEWAY.value),
-            [],
-            None,
-        )
-        policies = self.iam_client._do_policy_query(request, with_resources=False)
+        policies = self.iam_handler.query_policies(username, ActionEnum.VIEW_GATEWAY.value)
         if not policies:
             return []
 
-        ids = self._iam_policies_to_gateway_ids(policies)
-        return list(Gateway.objects.filter(id__in=ids))
+        if self.iam_handler.is_any_policies(policies):
+            return Gateway.objects.all()
 
-    def _iam_policies_to_gateway_ids(self, data) -> List[str]:
-        if data["op"] == OP.EQ:
-            return [data["value"]]
-        if data["op"] == OP.IN:
-            return data["value"]
-        if data["op"] == OP.OR:
-            res = []
-            for i in data["content"]:
-                res.extend(self._iam_policies_to_gateway_ids(i))
-            return res
-        return []
+        ids = self.iam_handler.policies_to_gateway_ids(policies)
+        return Gateway.objects.filter(id__in=ids)
 
     @staticmethod
     def get_stages_with_release_status(gateway_ids: List[int]) -> Dict[int, list]:

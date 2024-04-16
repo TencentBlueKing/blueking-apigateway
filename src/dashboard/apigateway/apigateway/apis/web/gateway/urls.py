@@ -32,4 +32,13 @@ urlpatterns = [
             ]
         ),
     ),
+    path(
+        "<int:gateway_id>/members/",
+        include(
+            [
+                path("", views.GatewayRoleMembersApi.as_view(), name="gateway_members.list_create_update_destroy"),
+            ]
+        ),
+    ),
+    path("<int:gateway_id>/role/", views.GatewayRoleApi.as_view(), name="gateway_role.list"),
 ]
