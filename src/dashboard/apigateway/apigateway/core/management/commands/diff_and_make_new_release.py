@@ -20,6 +20,7 @@ from typing import Dict, List
 
 from django.conf import settings
 from django.core.management import BaseCommand
+from packaging import version
 
 from apigateway.biz.releaser import release
 from apigateway.biz.resource import ResourceHandler
@@ -278,8 +279,12 @@ class Command(BaseCommand):
         # 如果是注册网关指定了版本，为了保持和之前版本一致需要特殊处理
         # eg: 1.2.0+20240307031201
         if "+" in latest_version.object_display:
-            now_str = time.format(time.now_datetime(), fmt="YYYYMMDDHHmmss")
-            new_version = "%s+%s" % (latest_version.version, now_str)
+            try:
+                latest_version_std = version.parse(latest_version.version)
+                now_str = time.format(time.now_datetime(), fmt="YYYYMMDDHHmmss")
+                new_version = "%s+%s" % (latest_version_std.public, now_str)
+            except version.InvalidVersion:
+                pass
 
         # 如果版本有冲突
         if ResourceVersion.objects.get_id_by_version(gateway.id, new_version):
