@@ -407,7 +407,7 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .detail-mode {
-  // min-width: calc(1280px - 260px);
+  min-width: calc(1280px - 260px);
   padding: 24px;
   font-size: 12px;
   .stage-info {
