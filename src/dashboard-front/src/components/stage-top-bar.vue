@@ -410,7 +410,8 @@ defineExpose({
   }
   .publish-btn {
     min-width: 96px;
-    text-align: right;
+    position: absolute;
+    right: 0;
   }
   .model-type {
     display: flex;

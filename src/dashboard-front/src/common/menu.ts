@@ -95,7 +95,8 @@ export const createMenuData = (): IMenu[] => {
     {
       name: 'apigwMonitorAlarm',
       title: t('监控告警'),
-      icon: 'monitor',
+      // icon: 'monitor',
+      icon: 'notification',
       enabled: user.featureFlags?.ENABLE_MONITOR,
       children: [
         {

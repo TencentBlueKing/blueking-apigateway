@@ -49,7 +49,7 @@
             size="small"
             @enter="updateOption(option.name, option.id)"
             @input="handleInputFocus"
-            :placeholder="t('请输入标签， enter保存')"
+            :placeholder="t('请输入标签，enter保存')"
           />
         </div>
       </template>
@@ -83,6 +83,7 @@
 import { ref, computed, toRefs, PropType, nextTick, watch } from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
+import { cloneDeep } from 'lodash';
 
 import { updateResourcesLabels, createResourcesLabels, deleteResourcesLabels, updateResourcesLabelItem } from '@/http';
 
@@ -113,7 +114,7 @@ const editInputRef = ref(null);
 const hoverIndex = ref<number>(null);
 const isIconClick = ref<boolean>(false);  // 是否点击了icon
 
-const curLabelIdsbackUp = ref(curLabelIds.value);
+const curLabelIdsbackUp = ref(cloneDeep(curLabelIds.value));
 
 // 相同的标签
 const isSameLabels = computed(() => {
@@ -164,17 +165,22 @@ const handleToggle = async (v: boolean) => {
 
 // 新增标签
 const addOption = async () => {
-  if (optionName.value.trim()) {
-    await createResourcesLabels(apigwId, { name: optionName.value });
+  const optionNameTmp = optionName.value.trim();
+  if (optionNameTmp) {
+    const ret = await createResourcesLabels(apigwId, { name: optionNameTmp });
     Message({
       message: t('标签新建成功'),
       theme: 'success',
       width: 'auto',
     });
     optionName.value = '';
+    if (curLabelIds.value.length < 10) {
+      curLabelIds.value.push(ret.id);
+      await updateResourcesLabels(apigwId, resourceId.value, { label_ids: curLabelIds.value });
+    }
+    emit('label-add-success', ret.id);
   }
   showEdit.value = false;
-  emit('label-add-success');
 };
 
 // 更新标签

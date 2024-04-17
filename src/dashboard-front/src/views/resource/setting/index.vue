@@ -140,8 +140,7 @@
             <bk-table-column
               width="130"
               :label="t('后端服务')"
-              prop="backend_name"
-            >
+              prop="backend_name">
               <template #default="{ row }">
                 {{row?.backend?.name}}
               </template>
@@ -150,22 +149,19 @@
               prop="method"
               :label="renderMethodsLabel"
               :show-overflow-tooltip="false"
-              width="180"
-            >
+              width="180">
               <template #default="{ row }">
                 <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
               </template>
             </bk-table-column>
             <bk-table-column
               :label="t('前端请求路径')"
-              prop="path"
-            >
+              prop="path">
             </bk-table-column>
             <bk-table-column
               :label="t('插件数')"
               width="60"
-              prop="plugin_count"
-            >
+              prop="plugin_count">
               <template #default="{ row }">
                 <bk-button
                   text
@@ -179,8 +175,7 @@
             <bk-table-column
               :label="t('文档')"
               width="80"
-              prop="docs"
-            >
+              prop="docs">
               <template #default="{ row }">
                 <section v-if="row?.docs?.length" @click="handleShowDoc(row)">
                   <span class="document-info">
@@ -202,13 +197,12 @@
               :label="t('标签')"
               :show-overflow-tooltip="false"
               prop="labels"
-              width="280"
-            >
+              width="280">
               <template #default="{ row }">
                 <span class="text-warp" v-if="!row?.isEditLabel" @click="handleEditLabel(row)">
                   <span
                     v-if="row?.labels?.length"
-                    v-bk-tooltips="{ content: row?.labelText.join(';') }">
+                    v-bk-tooltips="{ content: tipsContent(row?.labelText), theme: 'light', placement: 'left' }">
                     <template v-for="(item, index) in row?.labels" :key="item.id">
                       <span style="margin-left: 4px;" v-if="index < row.tagOrder">
                         <bk-tag @click="handleEditLabel(row)">
@@ -229,7 +223,7 @@
                     @click="handleEditLabel(row)"
                     class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                 </span>
-                <section style="position: absolute;" v-else>
+                <section style="position: absolute; width: 100%;" v-else>
                   <SelectCheckBox
                     :cur-select-label-ids="curLabelIds"
                     :resource-id="resourceId"
@@ -243,20 +237,17 @@
             <bk-table-column
               :label="t('更新时间')"
               prop="updated_time"
-              :sort="true"
-            >
+              :sort="true">
             </bk-table-column>
             <bk-table-column
               :label="t('操作')"
               width="160"
-              prop="act"
-            >
+              prop="act">
               <template #default="{ data }">
                 <bk-button
                   text
                   theme="primary"
-                  @click="handleEditResource(data.id, 'edit')"
-                >
+                  @click="handleEditResource(data.id, 'edit')">
                   {{ t('编辑') }}
                 </bk-button>
 
@@ -264,8 +255,7 @@
                   text
                   theme="primary"
                   class="pl10 pr10"
-                  @click="handleEditResource(data.id, 'clone')"
-                >
+                  @click="handleEditResource(data.id, 'clone')">
                   {{ t('克隆') }}
                 </bk-button>
 
@@ -274,8 +264,7 @@
                   content="删除操作无法撤回，请谨慎操作！"
                   width="288"
                   trigger="click"
-                  @confirm="handleDeleteResource(data.id)"
-                >
+                  @confirm="handleDeleteResource(data.id)">
                   <bk-button
                     text
                     theme="primary">
@@ -453,6 +442,9 @@
 import { reactive, ref, watch, onMounted, onBeforeMount, shallowRef, h } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
+import { cloneDeep } from 'lodash';
+import { Message } from 'bkui-vue';
+
 import { useQueryList, useSelection } from '@/hooks';
 import {
   getResourceListData, deleteResources,
@@ -460,7 +452,6 @@ import {
   exportResources, exportDocs, checkNeedNewVersion,
   getGatewayLabels,
 } from '@/http';
-import { Message } from 'bkui-vue';
 import Detail from './detail.vue';
 // import VersionSideslider from './comps/version-sideslider.vue';
 import SelectCheckBox from './comps/select-check-box.vue';
@@ -472,7 +463,6 @@ import RenderCustomColumn from '@/components/custom-table-header-filter';
 import ResourceSettingTopBar from '@/components/resource-setting-top-bar.vue';
 import mitt from '@/common/event-bus';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
-import { cloneDeep } from 'lodash';
 import { is24HoursAgo } from '@/common/util';
 import {  useCommon } from '@/store';
 
@@ -719,7 +709,7 @@ const {
   resetSelections,
 } = useSelection();
 
-const init =  () => {
+const init = () => {
   handleShowVersion();
   getLabelsData();
 };
@@ -1092,6 +1082,12 @@ const handleRowClass = (v: any) => {
   return ret.join(' ');
 };
 
+const tipsContent = (data: any[]) => {
+  return h('div', {}, [
+    data.map((item: string) => h('div', { style: 'display: flex; align-items: center', class: 'mt5 tips-cls' }, [item])),
+  ]);
+};
+
 const settings = {
   trigger: 'click',
   fields: [
@@ -1445,5 +1441,23 @@ onBeforeMount(() => {
 }
 .welt {
   padding-left: 0px;
+}
+.ag-dot {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 50%;
+  border: 1px solid #C4C6CC;
+}
+
+.tips-cls {
+  background: #f0f1f5;
+  padding: 3px 8px;
+  border-radius: 2px;
+  cursor: default;
+  &:hover {
+    background: #d7d9e1 !important;
+  }
 }
 </style>
