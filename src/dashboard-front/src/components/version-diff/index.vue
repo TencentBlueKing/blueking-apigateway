@@ -42,12 +42,13 @@
       <bk-input
         clearable
         class="fl mr10"
-        style="width: 300px"
-        :placeholder="$t('请输入资源名称或请求路径，回车结束')"
+        style="width: 310px"
+        :placeholder="$t('请输入资源名称、资源地址或请求路径，回车结束')"
         type="search"
         v-model="searchParams.keyword"
         @enter="handleSearch"
         @clear="handleClear"
+        @change="updateTableEmptyConfig()"
       >
       </bk-input>
       <bk-select
@@ -56,6 +57,7 @@
         style="width: 140px"
         :clearable="true"
         :placeholder="$t('全部差异类型')"
+        @change="updateTableEmptyConfig()"
       >
         <bk-option
           v-for="option in diffTypeList"
@@ -344,23 +346,30 @@
             </template>
           </div>
 
-          <!-- 无数据 -->
-          <bk-exception
-            class="mt50"
-            type="search-empty"
-            scene="part"
-            v-if="!hasResult && !isDataLoading"
-          >
-            {{
-              !localSourceId
-                ? $t("请选择源版本")
-                : !localTargetId
-                  ? $t("请选择目标版本")
-                  : hasFilter
-                    ? $t("无匹配内容")
+          <template v-if="!hasResult && !isDataLoading">
+            <!-- 无数据 -->
+            <bk-exception
+              class="mt50"
+              type="search-empty"
+              scene="part"
+              v-if="!localSourceId || !localTargetId || !hasFilter"
+            >
+              {{
+                !localSourceId
+                  ? $t("请选择源版本")
+                  : !localTargetId
+                    ? $t("请选择目标版本")
                     : $t("版本资源配置无差异")
-            }}
-          </bk-exception>
+              }}
+            </bk-exception>
+            <TableEmpty
+              v-else
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getDiffData"
+              @clear-filter="handleClearFilterKey"
+            />
+          </template>
         </bk-loading>
       </div>
     </div>
@@ -374,6 +383,7 @@ import resourceDetail from '@/components/resource-detail/index.vue';
 import { useI18n } from 'vue-i18n';
 import { Spinner, RightShape, DownShape } from 'bkui-vue/lib/icon';
 import { useCommon } from '@/store';
+import TableEmpty from '@/components/table-empty.vue';
 import { resourceVersionsDiff, getResourceVersionsList, getGatewayLabels, getBackendsListData } from '@/http';
 
 const { t } = useI18n();
@@ -382,6 +392,10 @@ const common = useCommon();
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
+const tableEmptyConf = ref<{ keyword: string; isAbnormal: boolean }>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 const props = defineProps({
   versionList: {
@@ -564,6 +578,27 @@ const renderTitle = (item: any) => {
   return `<div class="bk-tag ${tagCls} bk-tag--default" style="border-radius: 2px;margin-right: 4px;">`
       + `<span class="bk-tag-text">${method}</span>`
       + `</div><span class="title-content">${path}</span>`;
+};
+
+const updateTableEmptyConfig = () => {
+  const isSearch = !!searchParams.keyword || !!searchParams.diffType;
+  if (isSearch && !hasResult.value) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (isSearch) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+const handleClearFilterKey = () => {
+  searchParams.keyword = '';
+  searchParams.diffType = '';
+  searchKeyword.value = '';
+  getDiffData();
+  updateTableEmptyConfig();
 };
 
 const handleVersionChange = () => {

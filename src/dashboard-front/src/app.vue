@@ -336,7 +336,7 @@ onBeforeMount(() => {
   :deep(.bk-navigation-wrapper) {
     .container-content{
       padding: 0px !important;
-      min-width: 1280px;
+      // min-width: 1280px;
     }
   }
 
