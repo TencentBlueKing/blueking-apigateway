@@ -125,9 +125,8 @@ INSTALLED_APPS = [
     "apigateway.controller",
     "apigateway.healthz",
     "apigateway.iam",
-    # TODO: 待启用 IAM 鉴权后，需启用以下两个 django app
-    # "apigateway.iam.apigw_iam_migration",
-    # "iam.contrib.iam_migration",
+    "apigateway.iam.apigw_iam_migration",
+    "iam.contrib.iam_migration",
     # 蓝鲸通知中心
     "bk_notice_sdk",
     # 开源版旧版 ESB 数据

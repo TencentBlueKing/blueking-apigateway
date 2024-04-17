@@ -98,11 +98,11 @@ class IAMAuthHandler:
         return self.iam_client._do_policy_query(request, with_resources=False)
 
     def is_any_policies(self, data: dict) -> bool:
-        if data["op"] == OP.ANY:
-            return True
-        return False
+        return data["op"] == OP.ANY
 
     def policies_to_gateway_ids(self, data) -> List[str]:
+        # 从权限表达式中解析出有权限的网关 ID
+        # 由于网关的权限模型走RBAC, 并且只有一种资源ID, 所以这里预期只会出现eq/in/or的条件, 如有其它条件直接忽略
         if data["op"] == OP.EQ:
             return [data["value"]]
         if data["op"] == OP.IN:
