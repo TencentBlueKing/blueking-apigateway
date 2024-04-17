@@ -1406,6 +1406,10 @@ const lang: ILANG = {
   '新建后端服务': ['Create backend service'],
   '于': ['at'],
   '超时时间不能为空': ['Timeout cannot be empty'],
+  '标签新建成功': ['Label created successfully'],
+  '修改标签成功': ['Label modified successfully'],
+  '标签修改成功': ['Label modified successfully'],
+  '删除标签成功': ['Label deleted successfully'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

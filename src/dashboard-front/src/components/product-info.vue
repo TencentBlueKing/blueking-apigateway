@@ -30,12 +30,7 @@
         {{ t('开源社区') }}
       </bk-link>
     </template>
-    <ReleaseNote
-      v-model:show="showSyncReleaseNote"
-      :list="syncReleaseList"
-      :detail="releaseNoteDetail"
-      :loading="syncReleaseNoteLoading"
-      @selected="handleSelectRelease" />
+    <ReleaseNote v-model:show="showSyncReleaseNote" :list="syncReleaseList" />
   </bk-popover>
 </template>
 
@@ -59,17 +54,6 @@ const showVersionLog = () => {
 };
 
 const showSyncReleaseNote = ref(false);
-const syncReleaseNoteLoading = ref(false);
-const releaseNoteDetail = ref('');
-
-const handleSelectRelease = (version: any) => {
-  syncReleaseNoteLoading.value = true;
-  setTimeout(() => {
-    releaseNoteDetail.value = version.content;
-    syncReleaseNoteLoading.value = false;
-  }, 500);
-};
-
 const syncReleaseList = ref([]);
 
 onMounted(async () => {
@@ -77,6 +61,7 @@ onMounted(async () => {
   list.forEach((item: any) => {
     syncReleaseList.value.push({
       title: item.version,
+      detail: item.content,
       ...item,
     });
   });
