@@ -118,7 +118,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"{gateway.name}:"
                 f"\nlatest:{latest_version.object_display}"
-                f"\nnew:{get_next_version(latest_version.object_display)}\n"
+                f"\nnew:{self._get_next_version(gateway,latest_version)}\n"
             )
         for diff_stage_info in statistics_diff_result:
             need_release = diff_stage_info["need_release"]
@@ -275,6 +275,13 @@ class Command(BaseCommand):
     def _make_gateway_new_version(self, gateway: Gateway, latest_version: ResourceVersion) -> ResourceVersion:
         """对网关进行新建版本"""
 
+        version_data = {
+            "version": self._get_next_version(gateway, latest_version),
+            "comment": "apigw upgrade 1.13",
+        }
+        return ResourceVersionHandler.create_resource_version(gateway, version_data, "apigw_system_admin")
+
+    def _get_next_version(self, gateway: Gateway, latest_version: ResourceVersion) -> str:
         new_version = get_next_version(latest_version.object_display)
         # 如果是注册网关指定了版本，为了保持和之前版本一致需要特殊处理
         # eg: 1.2.0+20240307031201
@@ -290,11 +297,7 @@ class Command(BaseCommand):
         if ResourceVersion.objects.get_id_by_version(gateway.id, new_version):
             new_version += ".alpha1"
 
-        version_data = {
-            "version": new_version,
-            "comment": "apigw upgrade 1.13",
-        }
-        return ResourceVersionHandler.create_resource_version(gateway, version_data, "apigw_system_admin")
+        return new_version
 
     def _make_version_and_publish(self, gateway_to_make_new_version, statistics_diff_result, pub: bool):
         """创建版本并且按照网关维度进行发布"""
