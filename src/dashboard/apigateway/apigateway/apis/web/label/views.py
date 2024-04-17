@@ -62,7 +62,7 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        slz.save(
+        instance = slz.save(
             created_by=request.user.username,
             updated_by=request.user.username,
         )
@@ -77,7 +77,7 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
             data_after=get_model_dict(slz.instance),
         )
 
-        return OKJsonResponse(status=status.HTTP_201_CREATED)
+        return OKJsonResponse(data=GatewayLabelOutputSLZ(instance).data)
 
 
 @method_decorator(
