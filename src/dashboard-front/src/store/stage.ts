@@ -5,6 +5,7 @@ export const useStage = defineStore('stage', {
     stageList: [],
     curStageData: {
       id: null,
+      name: '',
     },
     curStageId: -1,
     stageMainLoading: false,
