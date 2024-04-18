@@ -505,6 +505,8 @@ defineExpose({
       &.active {
         border-top: 3px solid #3a84ff;
         background-color: #f0f5ff;
+        font-weight: bold;
+        color: #3a84ff;
       }
     }
   }
