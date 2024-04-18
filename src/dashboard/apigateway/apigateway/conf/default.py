@@ -125,7 +125,6 @@ INSTALLED_APPS = [
     "apigateway.controller",
     "apigateway.healthz",
     "apigateway.iam",
-    "apigateway.iam.apigw_iam_migration",
     "iam.contrib.iam_migration",
     # 蓝鲸通知中心
     "bk_notice_sdk",
@@ -787,6 +786,8 @@ BK_IAM_SKIP = env.bool("BK_IAM_SKIP", False)
 # 使用权限中心数据进行鉴权（创建网关时，会创建分级管理员、用户组，校验权限时依赖权限中心）
 # TODO: 待启用 IAM 鉴权时，将默认值改为 True
 USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
+if USE_BK_IAM_PERMISSION:
+    INSTALLED_APPS.append("apigateway.iam.apigw_iam_migration")
 
 # 蓝鲸通知中心配置
 ENABLE_BK_NOTICE = env.bool("ENABLE_BK_NOTICE", False)
