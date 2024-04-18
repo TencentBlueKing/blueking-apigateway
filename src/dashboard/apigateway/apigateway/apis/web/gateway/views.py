@@ -401,7 +401,7 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
 
         self.iam_handler.add_user_group_members(instance.id, UserRoleEnum.get(role), [username])
 
-        Auditor.record_gateway_member_success(
+        Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.CREATE,
             username=request.user.username,
             gateway_id=instance.id,
@@ -426,7 +426,7 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
         role = slz.validated_data["role"]
         self.iam_handler.add_user_group_members(instance.id, UserRoleEnum.get(role), [username])
 
-        Auditor.record_gateway_member_success(
+        Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=instance.id,
@@ -449,7 +449,7 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
 
         self.iam_handler.delete_user_group_members(instance.id, UserRoleEnum.get(role), [username])
 
-        Auditor.record_gateway_member_success(
+        Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.DELETE,
             username=request.user.username,
             gateway_id=instance.id,

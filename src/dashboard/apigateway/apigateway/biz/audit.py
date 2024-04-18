@@ -90,7 +90,7 @@ class Auditor:
         )
 
     @staticmethod
-    def record_gateway_member_success(
+    def record_gateway_member_op_success(
         op_type: OpTypeEnum,
         username: str,
         gateway_id: int,
@@ -102,9 +102,9 @@ class Auditor:
     ):
         if comment is None:
             comment = {
-                OpTypeEnum.CREATE: "创建网关标签",
-                OpTypeEnum.MODIFY: "更新网关标签",
-                OpTypeEnum.DELETE: "删除网关标签",
+                OpTypeEnum.CREATE: "新增网关成员",
+                OpTypeEnum.MODIFY: "更新网关成员",
+                OpTypeEnum.DELETE: "删除网关成员",
             }.get(op_type, "-")
 
         record_audit_log(

@@ -57,9 +57,9 @@ class GatewayPermission(permissions.BasePermission):
         # 校验 IAM 权限
         if hasattr(view, "method_permission"):
             method = request.method.lower()
-            # 没有在 method_permission 中配置的的 method 不需要鉴权, 直接通过
+            # 没有在 method_permission 中配置的的 method 不能通过
             if method not in view.method_permission:
-                return True
+                return False
 
             return self.iam_handler.is_allowed(request.user.username, view.method_permission[method], gateway_obj.id)
 
