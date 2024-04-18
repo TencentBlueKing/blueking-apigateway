@@ -26,7 +26,7 @@
         "description_en": "Gateway in API Gateway",
         "parents": [],
         "provider_config": {
-          "path": "/backend/api/iam/v1/gateway/"
+          "path": "/api/iam/v1/gateway/"
         },
         "version": 1
       }

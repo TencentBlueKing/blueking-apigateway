@@ -48,3 +48,6 @@ python manage.py add_plugin_error_status_code_200
 
 # 蓝鲸通知中心
 python manage.py register_to_bk_notice
+
+# 迁移权限数据到权限中心
+python manage.py migrate_iam_manager

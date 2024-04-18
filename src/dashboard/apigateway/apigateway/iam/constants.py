@@ -35,7 +35,11 @@ class UserRoleEnum(str, StructuredEnum):
 
     @classmethod
     def get(cls, value: str) -> "UserRoleEnum":
-        return {role.value: role for role in cls.get_field_members().values()}[value]
+        return {
+            "manager": cls.MANAGER,
+            "developer": cls.DEVELOPER,
+            "operator": cls.OPERATOR,
+        }[value]
 
 
 # 网关默认的用户角色，需为这些角色创建用户组

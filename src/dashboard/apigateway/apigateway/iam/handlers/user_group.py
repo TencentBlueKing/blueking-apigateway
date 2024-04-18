@@ -167,7 +167,7 @@ class IAMUserGroupHandler:
         :param username: 用户名
         :returns: 用户组角色
         """
-        role_group_id = {i.role: i.user_group_id for i in IAMUserGroup.objects.filter(gateway_id=gateway_id)}
+        role_group_id = {i.role: str(i.user_group_id) for i in IAMUserGroup.objects.filter(gateway_id=gateway_id)}
         data = self._bk_iam_client.check_user_group_belong(username, list(role_group_id.values()))
         return [i for i in GATEWAY_DEFAULT_ROLES if data[role_group_id[i.value]]["belong"]]
 
