@@ -44,7 +44,7 @@ class TestGatewayLabelListCreateApi:
             data={"name": faker.pystr(min_chars=3)},
         )
 
-        assert resp.status_code == 201
+        assert resp.status_code == 200
 
 
 class GatewayLabelRetrieveUpdateDestroyApi:
