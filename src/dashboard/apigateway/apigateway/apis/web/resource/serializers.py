@@ -134,7 +134,11 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
 
     def get_has_updated(self, obj):
         latest_version_created_time = self.context["latest_version_created_time"]
-        return not (latest_version_created_time and latest_version_created_time > obj.updated_time)
+        # FIXME: only true when released and updated_time > latest_version_created_time
+        if not latest_version_created_time:
+            return False
+
+        return latest_version_created_time < obj.updated_time
 
     def get_plugin_count(self, obj):
         return self.context["plugin_counts"].get(obj.id, 0)
