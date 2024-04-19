@@ -22,9 +22,8 @@ from ddf import G
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apps.plugin.apps import PluginConfig
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.apps.plugin.models import PluginBinding
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.biz.validators import (
     BKAppCodeListValidator,
     BKAppCodeValidator,

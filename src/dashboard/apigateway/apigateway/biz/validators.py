@@ -31,7 +31,6 @@ from .constants import APP_CODE_PATTERN, STAGE_VAR_FOR_PATH_PATTERN
 from .resource_version import ResourceVersionHandler
 from ..apps.plugin.constants import PluginBindingScopeEnum
 from ..apps.plugin.models import PluginBinding
-from ..common.contexts import StageProxyHTTPContext
 
 
 class ReleaseValidationError(Exception):
@@ -224,21 +223,6 @@ class PublishValidator:
                     )
                 )
             stage_plugin_type_set.add(stage_plugin.config.type.code)
-
-    def _validate_stage_upstreams(self):
-        """检查环境的代理配置，如果未配置任何有效的上游主机地址（Hosts），则报错。
-
-        :raise ReleaseValidationError: 当未配置 Hosts 时。
-        """
-        if not StageProxyHTTPContext().contain_hosts(self.stage.id):
-            raise ReleaseValidationError(
-                _(
-                    "网关环境【{stage_name}】中代理配置 Hosts 未配置，请在网关 `基本设置 -> 环境管理` 中进行配置。"
-                ).format(
-                    # noqa: E501
-                    stage_name=self.stage.name,
-                )
-            )
 
     def _validate_stage_vars(self, stage: Stage, resource_version_id: int):
         validator = StageVarsValuesValidator()
