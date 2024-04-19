@@ -156,7 +156,7 @@ class ResourceHandler:
             queryset = queryset.filter(path=condition["path"])
 
         if condition.get("method"):
-            queryset = queryset.filter(method=condition["method"])
+            queryset = queryset.filter(method__in=condition["method"].split(","))
 
         if condition.get("backend_id"):
             resource_ids = Proxy.objects.filter(
