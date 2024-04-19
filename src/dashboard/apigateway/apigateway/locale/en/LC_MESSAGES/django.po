@@ -454,8 +454,8 @@ msgid "生成SDK操作过于频繁，请间隔 10 秒再试。"
 msgstr "Generate SDK too often, please try again after 10 seconds."
 
 #: apigateway/apis/web/sdk/views.py:104
-msgid "网关下无符合条件的资源，无法生成 SDK。"
-msgstr "No suitable resources under the gateway to generate SDK."
+msgid "网关下无符合条件(请求方法为非ANY)的资源，无法生成 SDK。"
+msgstr "No resources matching the condition (request method is not ANY) were found under the gateway, unable to generate SDK."
 
 #: apigateway/apis/web/sdk/views.py:106
 msgid "网关 SDK 生成失败。"

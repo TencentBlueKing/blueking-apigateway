@@ -22,16 +22,21 @@ from ddf import G
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from apigateway.apps.plugin.apps import PluginConfig
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginBinding
 from apigateway.biz.validators import (
     BKAppCodeListValidator,
     BKAppCodeValidator,
     MaxCountPerGatewayValidator,
+    PublishValidator,
+    ReleaseValidationError,
     ResourceIDValidator,
     ResourceVersionValidator,
 )
 from apigateway.common.factories import SchemaFactory
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import ProxyTypeEnum
+from apigateway.core.constants import GatewayStatusEnum, ProxyTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
 
@@ -205,3 +210,127 @@ class TestResourceVersionValidator:
                     "version": "1.0.0",
                 }
             )
+
+
+class TestPublishValidator:
+    def test_validate_gateway_status(self, fake_gateway, fake_stage, fake_backend, fake_resource_version):
+        publish_validator = PublishValidator(fake_gateway, fake_stage, fake_resource_version)
+        assert publish_validator._validate_gateway_status() is None
+
+        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
+        fake_gateway.save()
+        with pytest.raises(ReleaseValidationError):
+            publish_validator._validate_gateway_status()
+
+    @pytest.mark.parametrize(
+        "vars, mock_used_stage_vars, will_error",
+        [
+            # ok
+            (
+                {
+                    "prefix": "/o",
+                    "domain": "bking.com",
+                },
+                {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                False,
+            ),
+            # var in path not exist
+            (
+                {
+                    "domain": "bking.com",
+                },
+                {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                True,
+            ),
+            # var in path invalid
+            (
+                {
+                    "prefix": "/test/?a=b",
+                    "domain": "bking.com",
+                },
+                {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                True,
+            ),
+            # var in hosts not exist
+            (
+                {
+                    "prefix": "/test/",
+                },
+                {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                True,
+            ),
+            # var in hosts invalid
+            (
+                {
+                    "prefix": "/test/",
+                    "domain": "http://bking.com",
+                },
+                {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                True,
+            ),
+        ],
+    )
+    def test_validate_stage_vars(
+        self, mocker, fake_gateway, fake_stage, fake_resource_version, vars, mock_used_stage_vars, will_error
+    ):
+        mocker.patch(
+            "apigateway.biz.validators.ResourceVersionHandler.get_used_stage_vars",
+            return_value=mock_used_stage_vars,
+        )
+
+        fake_stage.vars = vars
+        fake_stage.save(update_fields=["_vars"])
+        publish_validator = PublishValidator(fake_gateway, fake_stage, fake_resource_version)
+
+        if will_error:
+            with pytest.raises(Exception):
+                publish_validator._validate_stage_vars(fake_stage, fake_resource_version.id)
+            return
+
+        assert publish_validator._validate_stage_vars(fake_stage, fake_resource_version.id) is None
+
+    def test_validate_stage_plugins(
+        self,
+        fake_stage,
+        fake_gateway,
+        fake_resource_version,
+        echo_plugin_type,
+        echo_plugin_stage_binding,
+        faker,
+    ):
+        echo_plugin2 = G(
+            PluginConfig,
+            gateway=fake_gateway,
+            name="echo-plugin",
+            type=echo_plugin_type,
+            yaml=json.dumps(
+                {
+                    faker.random_element(["before_body", "body", "after_body"]): faker.pystr(),
+                }
+            ),
+        )
+        echo_plugin_stage_binding2 = G(
+            PluginBinding,
+            gateway=echo_plugin2.gateway,
+            config=echo_plugin2,
+            scope_type=PluginBindingScopeEnum.STAGE.value,
+            scope_id=fake_stage.pk,
+        )
+        publish_validator = PublishValidator(fake_gateway, fake_stage, fake_resource_version)
+        with pytest.raises(ReleaseValidationError):
+            publish_validator._validate_stage_plugins()
