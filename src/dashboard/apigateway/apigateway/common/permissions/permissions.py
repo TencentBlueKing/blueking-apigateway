@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy
@@ -25,6 +24,7 @@ from rest_framework import permissions
 from apigateway.biz.iam import IAMAuthHandler
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp
+from apigateway.iam.models import IAMGradeManager
 from apigateway.utils.django import get_object_or_None
 
 
@@ -51,7 +51,7 @@ class GatewayPermission(permissions.BasePermission):
             return True
 
         # 没有开启 IAM，判断是否是网关维护者
-        if not settings.USE_BK_IAM_PERMISSION:
+        if not IAMGradeManager.objects.filter(gateway=gateway_obj).exists():
             return gateway_obj.has_permission(request.user.username)
 
         # 校验 IAM 权限

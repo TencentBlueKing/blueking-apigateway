@@ -48,6 +48,7 @@ from apigateway.core.models import (
     Stage,
 )
 from apigateway.iam.constants import ActionEnum
+from apigateway.iam.models import IAMGradeManager
 from apigateway.utils.dict import deep_update
 
 
@@ -56,7 +57,7 @@ class GatewayHandler:
 
     def list_gateways_by_user(self, username: str) -> List[Gateway]:
         """获取用户有权限的的网关列表"""
-        if not settings.USE_BK_IAM_PERMISSION:
+        if not IAMGradeManager.objects.exists():
             # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
             queryset = Gateway.objects.filter(_maintainers__contains=username)
             return [gateway for gateway in queryset if gateway.has_permission(username)]
@@ -216,13 +217,14 @@ class GatewayHandler:
             GatewayAppBindingHandler.update_gateway_app_bindings(gateway, app_codes_to_binding)
 
         # 7. 在权限中心注册分级管理员，创建用户组
-        if settings.USE_BK_IAM_PERMISSION:
+        if IAMGradeManager.objects.exists():
             IAMHandler.register_grade_manager_and_builtin_user_groups(gateway)
 
     @staticmethod
     def delete_gateway(gateway_id: int):
         # 0. 删除权限中心中网关的分级管理员和用户组
-        IAMHandler.delete_grade_manager_and_builtin_user_groups(gateway_id)
+        if IAMGradeManager.objects.filter(gateway_id=gateway_id).exists():
+            IAMHandler.delete_grade_manager_and_builtin_user_groups(gateway_id)
 
         # 1. delete gateway context
 

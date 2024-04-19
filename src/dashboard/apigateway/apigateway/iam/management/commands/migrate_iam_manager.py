@@ -33,7 +33,7 @@ class Command(BaseCommand):
     """迁移网关权限数据到iam分级管理员"""
 
     def handle(self, *args, **options):
-        if not settings.USE_BK_IAM_PERMISSION:
+        if not settings.DO_BK_IAM_MIGRATE:
             return
 
         # 遍历gateway, 迁移proxy配置

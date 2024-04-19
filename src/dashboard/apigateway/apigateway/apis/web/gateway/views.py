@@ -37,6 +37,7 @@ from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 from apigateway.iam.constants import GATEWAY_DEFAULT_ROLES, ActionEnum, UserRoleEnum
 from apigateway.iam.handlers.user_group import IAMUserGroupHandler
+from apigateway.iam.models import IAMGradeManager
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
@@ -484,7 +485,7 @@ class GatewayRoleApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        if not settings.USE_BK_IAM_PERMISSION:
+        if not IAMGradeManager.objects.filter(gateway=instance).exists():
             role = UserRoleEnum.MANAGER.value if instance.has_permission(request.user.username) else None
             return OKJsonResponse(data={"role": role})
 

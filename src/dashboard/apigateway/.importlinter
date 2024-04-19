@@ -26,6 +26,8 @@ ignore_imports =
     apigateway.common.** -> apigateway.apps.**.constants
     apigateway.controller.** -> apigateway.core.constants
     apigateway.common.** -> apigateway.core.constants
+    apigateway.common.permissions.permissions -> apigateway.iam.models
+    apigateway.iam.models -> apigateway.core.models
     # 可忽略的依赖
     apigateway.core.management.commands.* -> apigateway.biz.**
     # 需要重构的依赖
