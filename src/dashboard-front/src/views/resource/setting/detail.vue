@@ -333,7 +333,7 @@ watch(
         color: #313238;
         .bk-tag {
           &:not(&:last-child) {
-            margin-right: 8px;
+            margin-right: 4px;
           }
         }
       }
