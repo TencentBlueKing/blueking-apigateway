@@ -55,12 +55,6 @@
       />
     </div>
 
-    <div class="publish-btn">
-      <bk-button text theme="primary" @click="handleToPublish">
-        {{ t("发布记录") }}
-      </bk-button>
-    </div>
-
     <!-- 环境侧边栏 -->
     <edit-stage-sideslider ref="stageSidesliderRef" />
   </div>
@@ -210,16 +204,6 @@ const handleChangeStage = async (name: string, isDelete?: Boolean) => {
   router.push({
     query: {
       stage: data.name,
-    },
-  });
-};
-
-// 跳转到发布记录
-const handleToPublish = () => {
-  router.push({
-    name: 'apigwReleaseHistory',
-    params: {
-      id: apigwId.value,
     },
   });
 };
@@ -407,11 +391,6 @@ defineExpose({
   .title {
     color: #313238;
     font-size: 16px;
-  }
-  .publish-btn {
-    min-width: 96px;
-    position: absolute;
-    right: 0;
   }
   .model-type {
     display: flex;
