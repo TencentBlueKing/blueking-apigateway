@@ -1,7 +1,7 @@
 <template>
   <div class="page-wrapper-padding publish-container">
-    <div class="operate flex-row justify-content-between mb20">
-      <div class="flex-1 flex-row align-items-center">
+    <div class="operate flex-row mb20">
+      <div class="flex-row align-items-center">
         <bk-date-picker
           ref="datePickerRef"
           use-shortcut-text
@@ -9,7 +9,7 @@
           :shortcuts="shortcutsRange"
           clearable
           v-model="dateValue"
-          style="width: 100%;"
+          style="width: 500px"
           type="datetimerange"
           :shortcut-selected-index="shortcutSelectedIndex"
           :key="dateKey"
@@ -18,8 +18,13 @@
           @pick-success="handleComfirm">
         </bk-date-picker>
       </div>
-      <div class="flex-1 flex-row justify-content-end">
-        <bk-input class="ml10 mr10 operate-input" placeholder="请输入已发布的环境或版本号" v-model="filterData.keyword"></bk-input>
+      <div class="flex-row justify-content-end">
+        <bk-input
+          class="ml10 mr10 operate-input"
+          style="width: 500px"
+          placeholder="请输入已发布的环境或版本号"
+          v-model="filterData.keyword">
+        </bk-input>
       </div>
     </div>
     <bk-loading :loading="isLoading">

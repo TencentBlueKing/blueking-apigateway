@@ -119,8 +119,8 @@
             :row-class="handleRowClass"
             border="outer"
             :settings="settings">
-            <bk-table-column width="80" type="selection" align="center" />
-            <bk-table-column :label="t('资源名称')" width="160" prop="name">
+            <bk-table-column width="80" type="selection" align="center" fixed />
+            <bk-table-column :label="t('资源名称')" width="160" prop="name" fixed>
               <template #default="{ row }">
                 <div class="resource-name">
                   <div
@@ -242,6 +242,7 @@
             <bk-table-column
               :label="t('操作')"
               width="160"
+              fixed="right"
               prop="act">
               <template #default="{ data }">
                 <bk-button

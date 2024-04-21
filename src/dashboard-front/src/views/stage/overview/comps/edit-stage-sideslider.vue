@@ -3,7 +3,6 @@
   <div class="sideslider-wrapper">
     <bk-sideslider
       v-model:isShow="isShow"
-      :title="isAdd ? t('新建环境') : t('编辑环境')"
       :quick-close="true"
       width="960"
       ext-cls="stage-sideslider-cls"
@@ -12,6 +11,15 @@
       @hidden="emit('hidden')"
       :transfer="true"
     >
+      <template #header>
+        <div class="custom-side-header">
+          <div class="title">{{ isAdd ? t('新建环境') : t('编辑环境') }}</div>
+          <template v-if="!isAdd">
+            <span></span>
+            <div class="subtitle">{{ curStageData.name }}</div>
+          </template>
+        </div>
+      </template>
       <template #default>
         <bk-loading :loading="isDialogLoading">
           <div class="sideslider-content">
