@@ -1,5 +1,11 @@
 <template>
   <div class="resource-container page-wrapper-padding">
+    <bk-alert
+      v-if="!tableData?.length"
+      theme="warning"
+      title="如需生成新版本，请前往'资源配置'页面操作"
+      class="mb20"
+    />
     <div class="operate flex-row justify-content-between mb15">
       <div class="flex-1 flex-row align-items-center">
         <div class="mr10">
