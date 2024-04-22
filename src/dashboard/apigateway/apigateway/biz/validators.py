@@ -16,16 +16,25 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import Optional
+
 from django.db.models import Count
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN
-from apigateway.core.models import Proxy, Resource, ResourceVersion
+from apigateway.core import constants as core_constants
+from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, GatewayStatusEnum
+from apigateway.core.models import BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
 from .constants import APP_CODE_PATTERN, STAGE_VAR_FOR_PATH_PATTERN
 from .resource_version import ResourceVersionHandler
+from ..apps.plugin.constants import PluginBindingScopeEnum
+from ..apps.plugin.models import PluginBinding
+
+
+class ReleaseValidationError(Exception):
+    """发布校验失败"""
 
 
 class MaxCountPerGatewayValidator(GetGatewayFromContextMixin):
@@ -165,6 +174,85 @@ class StageVarsValuesValidator:
                         key=key,
                     )
                 )
+
+
+class PublishValidator:
+    """
+    网关环境发布校验器
+    """
+
+    def __init__(self, gateway: Gateway, stage: Stage, resource_version: Optional[ResourceVersion] = None):
+        self.gateway = gateway
+        self.stage = stage
+        self.resource_version = resource_version
+
+    def _validate_stage_backends(self):
+        """校验待发布环境的backend配置"""
+        backend_configs = BackendConfig.objects.filter(stage=self.stage)
+        for backend_config in backend_configs:
+            for host in backend_config.config["hosts"]:
+                if not core_constants.HOST_WITHOUT_SCHEME_PATTERN.match(host["host"]):
+                    raise ReleaseValidationError(
+                        _(
+                            "网关环境【{stage_name}】中的配置【后端服务地址】不合法。请在网关 `后端服务` 中进行配置。"
+                        ).format(
+                            stage_name=self.stage.name,
+                        )
+                    )
+
+    def _validate_stage_plugins(self):
+        """校验待发布环境的plugin配置"""
+
+        # 环境绑定的插件，同一类型，只能绑定一个即同一个类型的PluginConfig只能绑定一个环境
+        stage_plugins = (
+            PluginBinding.objects.filter(
+                scope_id=self.stage.id,
+                scope_type=PluginBindingScopeEnum.STAGE.value,
+            )
+            .prefetch_related("config")
+            .all()
+        )
+        stage_plugin_type_set = set()
+        for stage_plugin in stage_plugins:
+            if stage_plugin.config.type.code in stage_plugin_type_set:
+                raise ReleaseValidationError(
+                    _("网关环境【{stage_name}】存在绑定多个相同类型[{plugin_code}]的插件。").format(
+                        # noqa: E501
+                        stage_name=self.stage.name,
+                        plugin_code=stage_plugin.config.type.code,
+                    )
+                )
+            stage_plugin_type_set.add(stage_plugin.config.type.code)
+
+    def _validate_stage_vars(self, stage: Stage, resource_version_id: int):
+        validator = StageVarsValuesValidator()
+        validator(
+            {
+                "gateway": self.gateway,
+                "stage_name": stage.name,
+                "vars": stage.vars,
+                "resource_version_id": resource_version_id,
+            }
+        )
+
+    def _validate_gateway_status(self):
+        if self.gateway.status != GatewayStatusEnum.ACTIVE.value:
+            raise ReleaseValidationError(
+                _("网关【{gateway_name}】没有启用，不允许发布").format(gateway_name=self.gateway.name)
+            )
+
+    def __call__(self):
+        """校验待发布数据"""
+
+        # 校验网关启用状态
+        self._validate_gateway_status()
+
+        # stage相关配置
+        self._validate_stage_backends()
+        self._validate_stage_plugins()
+
+        if self.resource_version:
+            self._validate_stage_vars(self.stage, self.resource_version.id)
 
 
 class ResourceVersionValidator:
