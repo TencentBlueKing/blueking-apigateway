@@ -34,7 +34,7 @@
                   theme="info"
                   :title="`${t('最新版本号')}: ${versionList[0]?.version || '--'},
                   ${t('于')} ${versionList[0]?.created_time || '--'} ${t('创建')}`"
-                  class="mt15 mb15"
+                  class="mb15"
                 />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
@@ -306,7 +306,7 @@ defineExpose({
     }
 
     .main {
-      padding: 0 100px;
+      padding: 15px 100px 0px;
 
       .add {
         color: #34d97b;
