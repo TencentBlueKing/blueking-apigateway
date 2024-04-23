@@ -43,6 +43,8 @@ class Command(BaseCommand):
             .distinct()
         )
 
+        total_count = 0
+        fail_count = 0
         for gateway_id in gateway_ids:
             gateway = Gateway.objects.get(id=gateway_id)
             stage_app_code_plugin_config = init_stage_app_code_plugin_config(gateway)
@@ -52,6 +54,7 @@ class Command(BaseCommand):
             plugin_type = PluginType.objects.get(code="bk-verified-user-exempted-apps")
 
             for stage_id, app_code_plugin_config in merged_config.items():
+                total_count += 1
                 exempted_apps = list(app_code_plugin_config.values())
 
                 exist_plugin_binding = PluginBinding.objects.filter(
@@ -63,20 +66,21 @@ class Command(BaseCommand):
 
                 if not exempted_apps and exist_plugin_binding:
                     self.stdout.write(
-                        f"empty exempted_apps: gateway_id={gateway_id}, stage_id={stage_id}, but have binding"
+                        f"[INFO] empty exempted_apps: gateway_id={gateway_id}, stage_id={stage_id}, but have binding"
                     )
                     continue
 
                 if not exist_plugin_binding:
-                    self.stdout.write(f"missing plugin binding: gateway_id={gateway_id}, stage_id={stage_id}")
+                    self.stdout.write(f"[INFO] missing plugin binding: gateway_id={gateway_id}, stage_id={stage_id}")
                     continue
 
                 data = {"exempted_apps": exempted_apps}
                 yaml = yaml_dumps(data)
 
                 if exist_plugin_binding.config.yaml != yaml:
+                    fail_count += 1
                     self.stdout.write(
-                        f"mismatch plugin binding: gateway_id={gateway_id}, stage_id={stage_id}, expect={yaml}, actual={exist_plugin_binding.config.yaml}"
+                        f"[ERROR] mismatch plugin binding: gateway_id={gateway_id}, stage_id={stage_id}, expect={yaml}, actual={exist_plugin_binding.config.yaml}"
                     )
 
-        self.stdout.write(f"{len(gateway_ids)} gateways checked")
+        self.stdout.write(f"{len(gateway_ids)} gateways with {total_count} status checked, {fail_count} stages failed")
