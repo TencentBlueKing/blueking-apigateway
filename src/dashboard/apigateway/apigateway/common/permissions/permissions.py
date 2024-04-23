@@ -16,11 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from cachetools import TTLCache, cached
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
+from apigateway.common.constants import CACHE_MAXSIZE
 from apigateway.biz.iam import IAMAuthHandler
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp
@@ -51,7 +53,7 @@ class GatewayPermission(permissions.BasePermission):
             return True
 
         # 没有开启 IAM，判断是否是网关维护者
-        if not IAMGradeManager.objects.filter(gateway=gateway_obj).exists():
+        if not self._has_iam_grade_manager(gateway_obj.id):
             return gateway_obj.has_permission(request.user.username)
 
         # 校验 IAM 权限
@@ -64,6 +66,10 @@ class GatewayPermission(permissions.BasePermission):
             return self.iam_handler.is_allowed(request.user.username, view.method_permission[method], gateway_obj.id)
 
         return False
+
+    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=10))
+    def _has_iam_grade_manager(self, gateway_id: int) -> bool:
+        return IAMGradeManager.objects.filter(gateway_id=gateway_id).exists()
 
     def get_gateway_object(self, view):
         """
