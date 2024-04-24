@@ -20,7 +20,7 @@ from django.db.models import Count
 
 from apigateway.apps.plugin.models import PluginBinding
 
-# 仅在 1.13 使用， 1.14 会删掉
+# 仅在 1.13 使用，1.14 会删掉
 
 
 class Command(BaseCommand):
@@ -28,6 +28,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for d in PluginBinding.objects.values("config_id").annotate(cnt=Count("config_id")).filter(cnt__gte=2):
-            self.stdout.write(f"check not valid, config_id: {d['config_id']} has {d['cnt']} bindings")
+            self.stdout.write(f"[ERROR] check not valid, config_id: {d['config_id']} has {d['cnt']} bindings")
 
-        self.stdout.write("Done")
+        self.stdout.write("OK")
