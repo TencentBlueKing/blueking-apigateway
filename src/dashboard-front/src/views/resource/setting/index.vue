@@ -465,7 +465,7 @@ import ResourceSettingTopBar from '@/components/resource-setting-top-bar.vue';
 import mitt from '@/common/event-bus';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { is24HoursAgo } from '@/common/util';
-import {  useCommon } from '@/store';
+import {  useCommon, useResourceVersion } from '@/store';
 
 const props = defineProps({
   apigwId: {
@@ -497,6 +497,7 @@ type TableEmptyConfType = {
 const leftWidth = ref('320px');
 const methodsEnum: any = ref(MethodsEnum);
 const common = useCommon();
+const resourceVersionStore = useResourceVersion();
 const { t } = useI18n();
 // 批量下拉的item
 const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
@@ -1217,6 +1218,29 @@ watch(() => route, () => {
   }
 }, { immediate: true, deep: true });
 
+watch(
+  () => [isDetail.value, isShowLeft.value],
+  () => {
+    resourceVersionStore.setPageStatus({
+      isDetail: isDetail.value,
+      isShowLeft: isShowLeft.value,
+    });
+  },
+);
+
+const recoverPageStatus = () => {
+  const { isDetail: d, isShowLeft: l } = resourceVersionStore.getPageStatus;
+  isDetail.value = d;
+  isShowLeft.value = l;
+
+  const el = document.getElementById('resourceLf');
+  if (!l) {
+    el.style.width = '0px';
+  } else {
+    el.style.width = leftWidth.value;
+  }
+};
+
 onMounted(() => {
   init();
   dragTwoColDiv('resourceId', 'resourceLf', 'resourceLine'/* , 'resourceRg' */);
@@ -1226,6 +1250,8 @@ onMounted(() => {
     getList();
     handleShowVersion();
   });
+
+  recoverPageStatus();
 });
 
 onBeforeMount(() => {

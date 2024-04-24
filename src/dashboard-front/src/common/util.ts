@@ -443,6 +443,26 @@ export const getStatus = (stageData: any) => {
   return 'delist';
 };
 
+// 环境状态文字
+export const getStatusText = (status: string) => {
+  let text = '';
+  switch (status) {
+    case 'success':
+      text = '已上线';
+      break;
+    case 'unreleased':
+      text = '未发布';
+      break;
+    case 'delist':
+      text = '已下架';
+      break;
+    case 'failure':
+      text = '发布失败';
+      break;
+  }
+  return text;
+};
+
 export const json2yaml = (jsonStr: string) => {
   try {
     return {

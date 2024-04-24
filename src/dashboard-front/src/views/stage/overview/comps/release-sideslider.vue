@@ -290,6 +290,8 @@ const handlePublish = async () => {
             id: 'customize',
             text: () => t('后端服务'),
             onClick: () => {
+              isShow.value = false;
+              dialogConfig.isShow = false;
               router.push({
                 name: 'apigwBackendService',
                 params: {

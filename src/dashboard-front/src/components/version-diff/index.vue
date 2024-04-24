@@ -348,11 +348,18 @@
 
           <template v-if="!hasResult && !isDataLoading">
             <!-- 无数据 -->
+            <TableEmpty
+              v-if="hasFilter"
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getDiffData"
+              @clear-filter="handleClearFilterKey"
+            />
             <bk-exception
-              class="mt50"
+              class="mt50 diff-tips"
               type="search-empty"
               scene="part"
-              v-if="!localSourceId || !localTargetId || !hasFilter"
+              v-else
             >
               {{
                 !localSourceId
@@ -362,13 +369,6 @@
                     : $t("版本资源配置无差异")
               }}
             </bk-exception>
-            <TableEmpty
-              v-else
-              :keyword="tableEmptyConf.keyword"
-              :abnormal="tableEmptyConf.isAbnormal"
-              @reacquire="getDiffData"
-              @clear-filter="handleClearFilterKey"
-            />
           </template>
         </bk-loading>
       </div>
@@ -1098,5 +1098,8 @@ onMounted(() => {
       box-shadow: none;
     }
   }
+}
+.diff-tips {
+  color: #63656E;
 }
 </style>

@@ -464,6 +464,14 @@ onMounted(() => {
   height: 420px;
   display: flex;
   align-items: center;
+  :deep(.bk-exception-description) {
+    font-size: 14px;
+    margin-top: 0px;
+  }
+  :deep(.bk-exception-img) {
+    width: 220px;
+    height: 130px;
+  }
 }
 .plugin-tag {
   display: inline-block;

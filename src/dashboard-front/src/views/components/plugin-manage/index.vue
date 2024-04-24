@@ -316,6 +316,16 @@ const stepChanged = (index: number) => {
   if (index === 1) {
     state.curStep = index;
   }
+  if (index === 2) {
+    if (curChoosePlugin.value) {
+      state.curStep = index;
+    } else {
+      Message({
+        theme: 'warning',
+        message: '请先勾选插件',
+      });
+    }
+  }
 };
 
 const isBound = computed(() => {
