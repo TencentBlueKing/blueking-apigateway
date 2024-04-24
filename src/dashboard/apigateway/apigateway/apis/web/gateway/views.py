@@ -24,6 +24,7 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apigateway.iam.handlers.grade_manager import IAMGradeManagerHandler
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
@@ -378,7 +379,8 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
     queryset = Gateway.objects.all()
     lookup_url_kwarg = "gateway_id"
 
-    iam_handler = IAMUserGroupHandler()
+    group_handler = IAMUserGroupHandler()
+    grade_manager_handler = IAMGradeManagerHandler()
 
     def list(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -386,7 +388,7 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
         role_members = []
         for role in GATEWAY_DEFAULT_ROLES:
             exists_usernames = {i["username"] for i in role_members}
-            usernames = self.iam_handler.fetch_user_group_members(instance.id, role)
+            usernames = self.group_handler.fetch_user_group_members(instance.id, role)
             role_members.extend([{"username": i, "role": role.value} for i in usernames if i not in exists_usernames])
 
         return OKJsonResponse(data=role_members)
@@ -400,7 +402,10 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
 
         instance = self.get_object()
 
-        self.iam_handler.add_user_group_members(instance.id, UserRoleEnum.get(role), [username])
+        if role == UserRoleEnum.MANAGER.value:
+            self.grade_manager_handler.add_grade_manager_members(instance.id, [username])
+
+        self.group_handler.add_user_group_members(instance.id, UserRoleEnum.get(role), [username])
 
         Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.CREATE,
@@ -421,11 +426,16 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
         instance = self.get_object()
 
         username = slz.validated_data["username"]
-        for role in self.iam_handler.get_user_role(instance.id, username):
-            self.iam_handler.delete_user_group_members(instance.id, role, [username])
+        for role in self.group_handler.get_user_role(instance.id, username):
+            if role == UserRoleEnum.MANAGER:
+                self.grade_manager_handler.delete_grade_manager_members(instance.id, [username])
+            self.group_handler.delete_user_group_members(instance.id, role, [username])
 
         role = slz.validated_data["role"]
-        self.iam_handler.add_user_group_members(instance.id, UserRoleEnum.get(role), [username])
+        if role == UserRoleEnum.MANAGER.value:
+            self.grade_manager_handler.add_grade_manager_members(instance.id, [username])
+
+        self.group_handler.add_user_group_members(instance.id, UserRoleEnum.get(role), [username])
 
         Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -448,7 +458,10 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
 
         instance = self.get_object()
 
-        self.iam_handler.delete_user_group_members(instance.id, UserRoleEnum.get(role), [username])
+        if role == UserRoleEnum.MANAGER.value:
+            self.grade_manager_handler.delete_grade_manager_members(instance.id, [username])
+
+        self.group_handler.delete_user_group_members(instance.id, UserRoleEnum.get(role), [username])
 
         Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.DELETE,
@@ -489,8 +502,9 @@ class GatewayRoleApi(generics.ListAPIView, generics.DestroyAPIView):
     queryset = Gateway.objects.all()
     lookup_url_kwarg = "gateway_id"
 
-    iam_handler = IAMUserGroupHandler()
-    iam_auth_handler = IAMAuthHandler()
+    group_handler = IAMUserGroupHandler()
+    grade_manager_handler = IAMGradeManagerHandler()
+    auth_handler = IAMAuthHandler()
 
     def list(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -499,13 +513,13 @@ class GatewayRoleApi(generics.ListAPIView, generics.DestroyAPIView):
             role = UserRoleEnum.MANAGER.value if instance.has_permission(request.user.username) else None
             return OKJsonResponse(data={"role": role})
 
-        roles = self.iam_handler.get_user_role(instance.id, request.user.username)
+        roles = self.group_handler.get_user_role(instance.id, request.user.username)
         if roles:
             return OKJsonResponse(data={"role": roles[0].value})
 
         # 特殊用户, 比如超级管理员, 可能会有any权限, 直接返回MANAGER
-        policies = self.iam_auth_handler.query_policies(request.user.username, ActionEnum.VIEW_GATEWAY.value)
-        if policies and self.iam_auth_handler.is_any_policies(policies):
+        policies = self.auth_handler.query_policies(request.user.username, ActionEnum.VIEW_GATEWAY.value)
+        if policies and self.auth_handler.is_any_policies(policies):
             return OKJsonResponse(data={"role": UserRoleEnum.MANAGER.value})
 
         return OKJsonResponse(data={"role": None})
@@ -518,7 +532,10 @@ class GatewayRoleApi(generics.ListAPIView, generics.DestroyAPIView):
 
         instance = self.get_object()
 
-        self.iam_handler.delete_user_group_members(instance.id, UserRoleEnum.get(role), [request.user.username])
+        if role == UserRoleEnum.MANAGER.value:
+            self.grade_manager_handler.delete_grade_manager_members(instance.id, [request.user.username])
+
+        self.group_handler.delete_user_group_members(instance.id, UserRoleEnum.get(role), [request.user.username])
 
         Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.DELETE,
