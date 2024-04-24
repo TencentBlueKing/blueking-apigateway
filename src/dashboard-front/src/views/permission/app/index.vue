@@ -935,20 +935,6 @@ watch(
   min-height: 600px;
 }
 
-.auth-sideslider {
-  :deep(.bk-modal-content) {
-    padding: 30px;
-  }
-
-  :deep(.bk-radio-label) {
-    font-size: 14px !important;
-  }
-
-  .code-input {
-    width: 256px;
-  }
-}
-
 .attention-dialog {
   :deep(.bk-dialog-header) {
     padding: 5px !important;
@@ -983,6 +969,21 @@ watch(
     height: 280px;
     max-height: 280px;
     justify-content: center;
+  }
+}
+</style>
+<style lang="scss">
+.auth-sideslider {
+  .bk-modal-content {
+    padding: 30px;
+  }
+
+  .bk-radio-label {
+    font-size: 14px !important;
+  }
+
+  .code-input {
+    width: 256px;
   }
 }
 </style>

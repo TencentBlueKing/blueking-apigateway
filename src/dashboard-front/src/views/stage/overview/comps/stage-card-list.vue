@@ -4,7 +4,14 @@
       <div class="title">
         <div class="title-lf">
           <spinner v-if="getStatus(stageData) === 'doing'" fill="#3A84FF" />
-          <span v-else :class="['dot', getStatus(stageData)]"></span>
+          <span
+            v-else
+            :class="['dot', getStatus(stageData)]"
+            v-bk-tooltips="{
+              content: getStatusText(getStatus(stageData)),
+              disabled: !getStatusText(getStatus(stageData)) }"
+          >
+          </span>
           {{ stageData.name }}
         </div>
         <div class="title-rg">
@@ -120,7 +127,7 @@ import { useI18n } from 'vue-i18n';
 import { Message, InfoBox } from 'bkui-vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 
-import { copy, getStatus } from '@/common/util';
+import { copy, getStatus, getStatusText } from '@/common/util';
 import logDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties } from '@/hooks';
@@ -406,7 +413,7 @@ onUnmounted(() => {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-
+    cursor: pointer;
     &.success {
       border: 1px solid #3FC06D;
       background: #E5F6EA;
