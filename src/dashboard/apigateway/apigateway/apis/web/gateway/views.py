@@ -24,7 +24,6 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apigateway.iam.handlers.grade_manager import IAMGradeManagerHandler
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
@@ -37,6 +36,7 @@ from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 from apigateway.iam.constants import GATEWAY_DEFAULT_ROLES, ActionEnum, UserRoleEnum
+from apigateway.iam.handlers.grade_manager import IAMGradeManagerHandler
 from apigateway.iam.handlers.user_group import IAMUserGroupHandler
 from apigateway.iam.models import IAMGradeManager
 from apigateway.utils.django import get_model_dict
