@@ -265,5 +265,5 @@ class GatewayRoleMembersInputSLZ(serializers.Serializer):
     role = serializers.ChoiceField(help_text="角色名称", choices=UserRoleEnum.get_choices())
 
 
-class GatewayRoleOutputSLZ(serializers.Serializer):
+class GatewayRoleInputSLZ(serializers.Serializer):
     role = serializers.ChoiceField(help_text="角色名称", choices=UserRoleEnum.get_choices())

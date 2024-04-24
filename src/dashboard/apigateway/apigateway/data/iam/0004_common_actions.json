@@ -15,6 +15,9 @@
               "id": "view_gateway"
             },
             {
+              "id": "view_members"
+            },
+            {
               "id": "manage_members"
             },
             {
@@ -123,6 +126,9 @@
               "id": "view_gateway"
             },
             {
+              "id": "view_members"
+            },
+            {
               "id": "manage_sdk"
             },
             {
@@ -184,6 +190,9 @@
           "actions": [
             {
               "id": "view_gateway"
+            },
+            {
+              "id": "view_members"
             },
             {
               "id": "manage_resource_doc"

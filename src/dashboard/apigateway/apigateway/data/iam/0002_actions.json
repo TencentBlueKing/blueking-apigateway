@@ -69,6 +69,33 @@
     {
       "operation": "upsert_action",
       "data": {
+        "id": "view_members",
+        "name": "成员查看",
+        "name_en": "View Members",
+        "auth_type": "rbac",
+        "type": "manage",
+        "related_resource_types": [
+          {
+            "system_id": "bk_apigateway",
+            "id": "gateway",
+            "related_instance_selections": [
+              {
+                "system_id": "bk_apigateway",
+                "id": "gateway_list",
+                "ignore_iam_path": true
+              }
+            ]
+          }
+        ],
+        "related_actions": [
+          "view_gateway"
+        ],
+        "version": 1
+      }
+    },
+    {
+      "operation": "upsert_action",
+      "data": {
         "id": "manage_members",
         "name": "成员管理",
         "name_en": "Manage Members",

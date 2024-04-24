@@ -22,6 +22,9 @@
                   "id": "view_gateway"
                 },
                 {
+                  "id": "view_members"
+                },
+                {
                   "id": "manage_members"
                 },
                 {

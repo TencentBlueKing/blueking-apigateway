@@ -76,7 +76,15 @@ class ActionEnum(str, StructuredEnum):
             "role": [UserRoleEnum.MANAGER.value],
         },
     )
-    MANAGE_MEMBERS = ExtendEnumField(  # TODO RBAC权限管理需要完善
+    VIEW_MEMBERS = ExtendEnumField(
+        "view_members",
+        label="成员查看",
+        metadata={
+            "related_resource_type": ResourceTypeEnum.GATEWAY.value,
+            "role": [UserRoleEnum.MANAGER.value, UserRoleEnum.DEVELOPER.value, UserRoleEnum.OPERATOR.value],
+        },
+    )
+    MANAGE_MEMBERS = ExtendEnumField(
         "manage_members",
         label="成员管理",
         metadata={
