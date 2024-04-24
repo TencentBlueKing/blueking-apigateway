@@ -8,7 +8,7 @@
     >
       <bk-input
         v-model="formData.name"
-        :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
+        :placeholder="t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符')"
         class="name"
         clearable
       />
