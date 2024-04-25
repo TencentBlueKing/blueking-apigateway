@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .importers import ResourcesImporter  # noqa
-from .parser import ResourceDataConvertor  # noqa
-from .validate import ResourceImportValidator  # noqa
+from django.apps import AppConfig
+
+
+class OpenAPIConfig(AppConfig):
+    name = "apigateway.apps.openapi"

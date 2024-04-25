@@ -25,7 +25,7 @@ from django.utils.translation import gettext as _
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.biz.constants import SwaggerFormatEnum
+from apigateway.biz.constants import OpenAPIFormatEnum
 from apigateway.biz.resource.importer.swagger import SwaggerManager
 from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
@@ -179,7 +179,7 @@ class SwaggerParser(BaseParser):
                         path: {method: operation},
                     },
                     title=operation["operationId"],
-                    swagger_format=SwaggerFormatEnum.YAML,
+                    swagger_format=OpenAPIFormatEnum.YAML,
                 )
                 docs.append(
                     SwaggerDoc(

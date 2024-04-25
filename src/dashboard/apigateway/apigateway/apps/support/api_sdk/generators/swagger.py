@@ -26,7 +26,7 @@ from bkapi_client_generator import GenerateFailed, generate_client
 
 from apigateway.apps.support.api_sdk import exceptions
 from apigateway.apps.support.api_sdk.models import Generator
-from apigateway.biz.constants import SwaggerFormatEnum
+from apigateway.biz.constants import OpenAPIFormatEnum
 from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
 from apigateway.utils.file import write_to_file
 
@@ -61,7 +61,7 @@ class SwaggerTemplateGenerator(Generator):
             include_bk_apigateway_resource=False,
         )
 
-        swagger = exporter.to_swagger(resources, SwaggerFormatEnum.YAML.value)
+        swagger = exporter.to_swagger(resources, OpenAPIFormatEnum.YAML.value)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             swagger_path = os.path.join(temp_dir, "swagger.yaml")

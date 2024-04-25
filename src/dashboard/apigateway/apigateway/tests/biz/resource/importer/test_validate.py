@@ -24,8 +24,248 @@ from apigateway.apps.plugin.constants import PluginBindingSourceEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
 from apigateway.biz.resource.importer import ResourcesImporter
+from apigateway.biz.resource.importer.validate import ResourceImportValidator
 from apigateway.core.models import Backend, Resource
 from apigateway.utils.yaml import yaml_dumps
+
+
+class TestResourceImportValidator:
+    def test_validate(self, fake_gateway, fake_resource_data):
+        resource_data_list = [
+            fake_resource_data.copy(deep=True),
+        ]
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, True)
+        validator.validate()
+
+    def test_get_unchanged_resources(self, fake_gateway, fake_resource_data):
+        resource_1 = G(Resource, gateway=fake_gateway)
+        resource_2 = G(Resource, gateway=fake_gateway)
+
+        resource_data_list = [
+            fake_resource_data.copy(update={"resource": resource_1}, deep=True),
+            fake_resource_data.copy(deep=True),
+        ]
+
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, True)
+        result = validator._get_unchanged_resources()
+        assert result == []
+
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+        result = validator._get_unchanged_resources()
+        assert len(result) == 1
+        assert result[0]["id"] == resource_2.id
+
+    def test_get_unspecified_resources(self, fake_gateway, fake_resource_data):
+        resource_1 = G(Resource, gateway=fake_gateway)
+        resource_2 = G(Resource, gateway=fake_gateway)
+
+        resource_data_list = [
+            fake_resource_data.copy(update={"resource": resource_1}, deep=True),
+            fake_resource_data.copy(deep=True),
+        ]
+
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+        result = validator.get_unspecified_resources()
+        assert len(result) == 1
+        assert result[0]["id"] == resource_2.id
+
+    def test_validate_resources__error(self, fake_resource, fake_resource_data):
+        resource_data_list = [
+            fake_resource_data.copy(update={"resource": fake_resource}, deep=True),
+            fake_resource_data.copy(update={"resource": fake_resource}, deep=True),
+        ]
+
+        validator = ResourceImportValidator(fake_resource.gateway, resource_data_list, True)
+        with pytest.raises(ValueError):
+            validator._validate_resources()
+
+    def test_validate_method_path__error(self, fake_resource, fake_resource_data):
+        resource_data_list = [
+            fake_resource_data.copy(update={"method": fake_resource.method, "path": fake_resource.path}, deep=True),
+        ]
+        validator = ResourceImportValidator(fake_resource.gateway, resource_data_list, False)
+        with pytest.raises(ValueError):
+            validator._validate_method_path()
+
+        resource_data_list = [
+            fake_resource_data.copy(update={"method": "GET", "path": "/foo"}, deep=True),
+            fake_resource_data.copy(update={"method": "GET", "path": "/foo"}, deep=True),
+        ]
+        validator = ResourceImportValidator(fake_resource.gateway, resource_data_list, True)
+        with pytest.raises(ValueError):
+            validator._validate_method_path()
+
+    def test_validate_method__error(self, fake_gateway, fake_resource_data):
+        G(Resource, gateway=fake_gateway, method="GET", path="/foo")
+
+        resource_data_list = [
+            fake_resource_data.copy(update={"method": "ANY", "path": "/foo"}, deep=True),
+        ]
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+        with pytest.raises(ValueError):
+            validator._validate_method()
+
+    def test_validate_name__error(self, fake_gateway, fake_resource_data):
+        G(Resource, gateway=fake_gateway, name="foo")
+        resource_data_list = [
+            fake_resource_data.copy(update={"name": "foo"}, deep=True),
+        ]
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+        with pytest.raises(ValueError):
+            validator._validate_name()
+
+    def test_validate_match_subpath(self, fake_gateway, fake_resource_data):
+        resource_data = fake_resource_data.copy(deep=True)
+        resource_data.match_subpath = True
+        resource_data.backend_config.match_subpath = False
+
+        resource_data_list = [
+            resource_data,
+        ]
+
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+        with pytest.raises(ValueError):
+            validator._validate_match_subpath()
+
+    def test_validate_resource_count__error(self, settings, fake_resource, fake_resource_data):
+        settings.API_GATEWAY_RESOURCE_LIMITS = {
+            "max_resource_count_per_gateway_whitelist": {"foo": 2},
+            "max_resource_count_per_gateway": 1000,
+        }
+        resource_data_list = [
+            fake_resource_data.copy(deep=True),
+            fake_resource_data.copy(deep=True),
+        ]
+        fake_gateway = fake_resource.gateway
+        fake_gateway.name = "foo"
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+        with pytest.raises(ValueError):
+            validator._validate_resource_count()
+
+    @pytest.mark.parametrize(
+        "resources, labels, expected",
+        [
+            (
+                [{"labels": ["foo", "bar"]}],
+                ["green", "blue"],
+                ValueError,
+            ),
+            (
+                [{"labels": ["foo", "bar"]}, {"labels": []}],
+                [],
+                ValueError,
+            ),
+            (
+                [{"labels": ["foo"]}, {"labels": []}],
+                ["foo"],
+                None,
+            ),
+            (
+                [{}, {"labels": []}],
+                ["green", "blue"],
+                None,
+            ),
+        ],
+    )
+    def test_validate_label_count(self, settings, fake_gateway, fake_resource_data, resources, labels, expected):
+        settings.MAX_LABEL_COUNT_PER_GATEWAY = 1
+
+        resource_data_list = [
+            fake_resource_data.copy(update={"metadata": resource}, deep=True) for resource in resources
+        ]
+        for name in labels:
+            G(APILabel, gateway=fake_gateway, name=name)
+
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+
+        if expected is None:
+            validator._validate_label_count()
+            return
+
+        with pytest.raises(expected):
+            validator._validate_label_count()
+
+    @pytest.mark.parametrize(
+        "plugin_configs, expected",
+        [
+            (
+                {
+                    "plugin_configs": None,
+                },
+                None,
+            ),
+            (
+                {"plugin_configs": [PluginConfigData(type="echo", yaml="")]},
+                None,
+            ),
+            (
+                {
+                    "plugin_configs": [
+                        PluginConfigData(type="echo", yaml=""),
+                        PluginConfigData(type="echo", yaml=""),
+                    ]
+                },
+                ValueError,
+            ),
+            (
+                {"plugin_configs": [PluginConfigData(type="not-exist-code", yaml="")]},
+                ValueError,
+            ),
+        ],
+    )
+    def test_validate_plugin_type(self, fake_gateway, fake_resource_data, echo_plugin_type, plugin_configs, expected):
+        resource_data_list = [
+            fake_resource_data.copy(update=plugin_configs, deep=True),
+        ]
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+
+        if expected is None:
+            validator._validate_plugin_type()
+            return
+
+        with pytest.raises(expected):
+            validator._validate_plugin_type()
+
+    @pytest.mark.parametrize(
+        "plugin_configs, expected",
+        [
+            (
+                {
+                    "plugin_configs": None,
+                },
+                None,
+            ),
+            (
+                {
+                    "plugin_configs": [
+                        PluginConfigData(
+                            type="bk-header-rewrite",
+                            yaml=yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+                        )
+                    ]
+                },
+                None,
+            ),
+            (
+                {"plugin_configs": [PluginConfigData(type="bk-header-rewrite", yaml=yaml_dumps({}))]},
+                ValueError,
+            ),
+        ],
+    )
+    def test_validate_plugin_config(
+        self, fake_gateway, fake_resource_data, fake_plugin_type_bk_header_rewrite, plugin_configs, expected
+    ):
+        resource_data_list = [
+            fake_resource_data.copy(update=plugin_configs, deep=True),
+        ]
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+
+        if expected is None:
+            validator._validate_plugin_config()
+            return
+
+        with pytest.raises(expected):
+            validator._validate_plugin_config()
 
 
 class TestResourcesImporter:

@@ -35,9 +35,10 @@ from apigateway.apps.esb.component.sync import ComponentSynchronizer
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
 from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.esb.permissions import UserAccessESBPermission
+from apigateway.biz.resource.importer.parser import ResourceDataConvertor
+from apigateway.biz.resource.importer.validate import ResourceImportValidator
 
 # FIXME: 将 views 挪到 apis.web 模块
-from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.django import get_object_or_None

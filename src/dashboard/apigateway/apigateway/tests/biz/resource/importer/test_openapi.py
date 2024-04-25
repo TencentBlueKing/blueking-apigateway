@@ -20,7 +20,7 @@ import json
 
 import pytest
 
-from apigateway.biz.constants import SwaggerFormatEnum
+from apigateway.biz.constants import OpenAPIFormatEnum
 from apigateway.biz.resource.importer.swagger import (
     ResourceSwaggerExporter,
     ResourceSwaggerImporter,
@@ -66,8 +66,8 @@ class TestSwaggerManager:
     @pytest.mark.parametrize(
         "swagger, expected",
         [
-            ('{"swagger": "2.0"}', SwaggerFormatEnum.JSON),
-            ('swagger: "2.0"', SwaggerFormatEnum.YAML),
+            ('{"swagger": "2.0"}', OpenAPIFormatEnum.JSON),
+            ('swagger: "2.0"', OpenAPIFormatEnum.YAML),
         ],
     )
     def test_guess_swagger_format(self, swagger, expected):
@@ -112,10 +112,10 @@ class TestSwaggerManager:
             }
         }
 
-        result = SwaggerManager.to_swagger(paths=paths, swagger_format=SwaggerFormatEnum.YAML)
+        result = SwaggerManager.to_swagger(paths=paths, swagger_format=OpenAPIFormatEnum.YAML)
         assert not result.startswith("{")
 
-        result = SwaggerManager.to_swagger(paths=paths, swagger_format=SwaggerFormatEnum.JSON)
+        result = SwaggerManager.to_swagger(paths=paths, swagger_format=OpenAPIFormatEnum.JSON)
         assert result.startswith("{")
 
     @pytest.mark.parametrize(

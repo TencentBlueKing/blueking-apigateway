@@ -24,12 +24,12 @@ from typing import Any, Dict, List, Optional
 
 import jsonschema
 
-from apigateway.biz.constants import SwaggerFormatEnum
+from apigateway.biz.constants import OpenAPIFormatEnum
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
 from apigateway.utils.yaml import yaml_export_dumps, yaml_loads
 
-from .constants import VALID_METHOD_IN_SWAGGER_PATHITEM, SwaggerExtensionEnum
+from .constants import VALID_METHOD_IN_SWAGGER_PATHITEM, OpenAPIExtensionEnum
 
 logger = logging.getLogger(__name__)
 
@@ -64,18 +64,18 @@ class SwaggerManager:
     @classmethod
     def load_from_swagger(cls, swagger: str) -> "SwaggerManager":
         swagger_format = cls.guess_swagger_format(swagger)
-        if swagger_format == SwaggerFormatEnum.JSON:
+        if swagger_format == OpenAPIFormatEnum.JSON:
             return cls(swagger_data=json.loads(swagger))
 
         return cls(swagger_data=yaml_loads(swagger))
 
     @classmethod
-    def guess_swagger_format(cls, swagger: str) -> SwaggerFormatEnum:
+    def guess_swagger_format(cls, swagger: str) -> OpenAPIFormatEnum:
         # 内容以 "{" 开头，则为 json 串，否则为 yaml 串
         if swagger.strip().startswith("{"):
-            return SwaggerFormatEnum.JSON
+            return OpenAPIFormatEnum.JSON
 
-        return SwaggerFormatEnum.YAML
+        return OpenAPIFormatEnum.YAML
 
     def validate(self):
         try:
@@ -95,7 +95,7 @@ class SwaggerManager:
     def to_swagger(
         cls,
         paths: Dict[str, Any],
-        swagger_format: SwaggerFormatEnum,
+        swagger_format: OpenAPIFormatEnum,
         version: Optional[str] = None,
         title: Optional[str] = None,
         description: Optional[str] = None,
@@ -114,7 +114,7 @@ class SwaggerManager:
             "paths": paths,
         }
 
-        if swagger_format == SwaggerFormatEnum.JSON:
+        if swagger_format == OpenAPIFormatEnum.JSON:
             return json.dumps(content, indent=4)
 
         return yaml_export_dumps(content)
@@ -156,7 +156,7 @@ class ResourceSwaggerImporter:
             for method_raw, operation in path_item.items():
                 method = self._adapt_method(method_raw)
 
-                extension_resource = operation.get(SwaggerExtensionEnum.RESOURCE.value, {})
+                extension_resource = operation.get(OpenAPIExtensionEnum.RESOURCE.value, {})
 
                 backend = extension_resource.get("backend") or {
                     "type": ProxyTypeEnum.HTTP.value,
@@ -189,7 +189,7 @@ class ResourceSwaggerImporter:
         """
         适配 method
         """
-        if method == SwaggerExtensionEnum.METHOD_ANY.value:
+        if method == OpenAPIExtensionEnum.METHOD_ANY.value:
             return HTTP_METHOD_ANY
 
         return method.upper()
@@ -263,7 +263,7 @@ class ResourceSwaggerExporter:
             "paths": self._generate_paths(resources),
         }
 
-        if file_type == SwaggerFormatEnum.JSON.value:
+        if file_type == OpenAPIFormatEnum.JSON.value:
             return json.dumps(content, indent=4)
 
         return yaml_export_dumps(content)
@@ -294,7 +294,7 @@ class ResourceSwaggerExporter:
     def _generate_bk_apigateway_resource(self, operation: Dict[str, Any], resource: Dict[str, Any]):
         backend = resource.get("backend", {})
 
-        operation[SwaggerExtensionEnum.RESOURCE.value] = {
+        operation[OpenAPIExtensionEnum.RESOURCE.value] = {
             "isPublic": resource["is_public"],
             "allowApplyPermission": resource["allow_apply_permission"],
             "matchSubpath": resource.get("match_subpath", False),
@@ -317,7 +317,7 @@ class ResourceSwaggerExporter:
 
     def _adapt_method(self, method: str) -> str:
         if method == HTTP_METHOD_ANY:
-            return SwaggerExtensionEnum.METHOD_ANY.value
+            return OpenAPIExtensionEnum.METHOD_ANY.value
 
         return method.lower()
 

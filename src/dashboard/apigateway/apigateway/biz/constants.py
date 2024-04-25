@@ -21,7 +21,7 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.conf import settings
 
 
-class SwaggerFormatEnum(StructuredEnum):
+class OpenAPIFormatEnum(StructuredEnum):
     YAML = EnumField("yaml", label="YAML")
     JSON = EnumField("json", label="JSON")
 

@@ -30,6 +30,7 @@ from apigateway.core.models import Context, Gateway, Proxy, Resource
 from apigateway.utils.time import now_datetime
 
 from .models import ResourceData
+from ...apps.openapi.models import OpenAPIResourceSchema
 
 BULK_BATCH_SIZE = 100
 
@@ -65,6 +66,7 @@ class ResourcesSaver:
         self._save_proxies(resource_ids)
         self._save_auth_configs(resource_ids)
         self._save_resource_labels(resource_ids)
+        self._save_resource_openapi_schema(resource_ids)
 
         return [resource_data.resource for resource_data in self.resource_data_list if resource_data.resource]
 
@@ -250,3 +252,63 @@ class ResourcesSaver:
 
         if remaining_resource_labels:
             ResourceLabel.objects.filter(id__in=remaining_resource_labels.values()).delete()
+
+    def _save_resource_openapi_schema(self, resource_ids: List[int]):
+        """
+        保存resource openapi schema
+        """
+
+        remaining_resource_schemas: Dict[int, OpenAPIResourceSchema] = {}
+        for resource_openapi_schema in OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids):
+            remaining_resource_schemas[resource_openapi_schema.resource_id] = resource_openapi_schema
+
+        add_resource_openapi_schemas = []
+        update_resource_openapi_schemas = []
+        del_resource_openapi_schema_ids = []
+        for resource_data in self.resource_data_list:
+            assert resource_data.resource
+            no_schema = False
+            if (
+                len(resource_data.openapi_schema.get("requestBody", {}))
+                + len(resource_data.openapi_schema.get("parameters", {}))
+                + len(resource_data.openapi_schema.get("responses", {}))
+                == 0
+            ):
+                no_schema = True
+
+            if resource_data.resource.id in remaining_resource_schemas:
+                old_resource_openapi_schema = remaining_resource_schemas[resource_data.resource.id]
+                if no_schema:
+                    del_resource_openapi_schema_ids.append(old_resource_openapi_schema.id)
+                    continue
+                # 更新schema
+                old_resource_openapi_schema.schema = resource_data.openapi_schema
+                old_resource_openapi_schema.update_by = self.username
+                old_resource_openapi_schema.updated_time = now_datetime()
+                update_resource_openapi_schemas.append(old_resource_openapi_schema)
+            else:
+                if no_schema:
+                    continue
+
+                # 新增schema
+                add_resource_openapi_schemas.append(
+                    OpenAPIResourceSchema(
+                        resource=resource_data.resource,
+                        schema=resource_data.openapi_schema,
+                        created_by=self.username,
+                        updated_by=self.username,
+                    )
+                )
+
+        if len(add_resource_openapi_schemas) > 0:
+            OpenAPIResourceSchema.objects.bulk_create(add_resource_openapi_schemas, batch_size=BULK_BATCH_SIZE)
+
+        if len(del_resource_openapi_schema_ids) > 0:
+            OpenAPIResourceSchema.objects.filter(id__in=del_resource_openapi_schema_ids).delete()
+
+        if len(update_resource_openapi_schemas) > 0:
+            OpenAPIResourceSchema.objects.bulk_update(
+                update_resource_openapi_schemas,
+                fields=["schema", "updated_time", "updated_by"],
+                batch_size=BULK_BATCH_SIZE,
+            )
