@@ -89,32 +89,37 @@
         <div class="source-header">
           <!-- <div class="marked">{{ $t("源版本") }}</div> -->
           <div class="version">
-            <bk-select
-              class="fl mr10 choose-version"
-              v-model="localSourceId"
-              v-if="sourceSwitch || pageType === 'createVersion'"
-              :placeholder="$t('请选择源版本')"
-              :clearable="false"
-              :input-search="false"
-              :filterable="true"
-              @change="handleVersionChange">
-              <template #trigger>
-                <span class="trigger-label" v-bk-tooltips="{ content: localSourceTriggerLabel, delay: 300 }">
-                  {{ localSourceTriggerLabel }}
-                </span>
-                <DownShape class="trigger-label-icon" />
-              </template>
-              <bk-option
-                v-for="option in localVersionList"
-                :key="option.id"
-                :id="option.id"
-                :disabled="option.id === localTargetId"
-                :name="option.resource_version_display"
-              >
-              </bk-option>
-            </bk-select>
+            <template v-if="localSourceId">
+              <bk-select
+                class="fl mr10 choose-version"
+                v-model="localSourceId"
+                v-if="sourceSwitch || pageType === 'createVersion'"
+                :placeholder="$t('请选择源版本')"
+                :clearable="false"
+                :input-search="false"
+                :filterable="true"
+                @change="handleVersionChange">
+                <template #trigger>
+                  <span class="trigger-label" v-bk-tooltips="{ content: localSourceTriggerLabel, delay: 300 }">
+                    {{ localSourceTriggerLabel }}
+                  </span>
+                  <DownShape class="trigger-label-icon" />
+                </template>
+                <bk-option
+                  v-for="option in localVersionList"
+                  :key="option.id"
+                  :id="option.id"
+                  :disabled="option.id === localTargetId"
+                  :name="option.resource_version_display"
+                >
+                </bk-option>
+              </bk-select>
+              <strong class="title" v-else>
+                {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
+              </strong>
+            </template>
             <strong class="title" v-else>
-              {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
+              暂无版本
             </strong>
           </div>
         </div>
@@ -362,11 +367,9 @@
               v-else
             >
               {{
-                !localSourceId
-                  ? $t("请选择源版本")
-                  : !localTargetId
-                    ? $t("请选择目标版本")
-                    : $t("版本资源配置无差异")
+                !localTargetId
+                  ? $t("请选择目标版本")
+                  : $t("版本资源配置无差异")
               }}
             </bk-exception>
           </template>

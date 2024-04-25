@@ -4,11 +4,10 @@
     <bk-form-item
       :label="t('名称')"
       property="name"
-      required
-    >
+      required>
       <bk-input
         v-model="formData.name"
-        :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
+        :placeholder="t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符')"
         class="name"
         clearable
       />
@@ -16,9 +15,7 @@
         {{ t("资源名称在网关下唯一，将在SDK中用作操作名称，若修改，请联系 SDK 用户做相应调整") }}
       </div>
     </bk-form-item>
-    <bk-form-item
-      :label="t('描述')"
-    >
+    <bk-form-item :label="t('描述')">
       <bk-input
         v-model="formData.description"
         :placeholder="t('请输入描述')"
@@ -35,9 +32,7 @@
         @update-success="init"
         @label-add-success="init"></SelectCheckBox>
     </bk-form-item>
-    <bk-form-item
-      :label="t('认证方式')"
-    >
+    <bk-form-item :label="t('认证方式')">
       <bk-checkbox
         v-model="formData.auth_config.app_verified_required"
         :disabled="!curApigwData.allow_update_gateway_auth">

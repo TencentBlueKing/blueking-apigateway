@@ -55,7 +55,7 @@
                   header-icon="right-shape"
                   class="bk-collapse-source"
                 >
-                  <bk-collapse-panel :name="1" style="margin-bottom: 24px;">
+                  <bk-collapse-panel :name="1" style="margin-bottom: 12px;">
                     <span><span class="log-name">{{ $t("版本日志") }}</span></span>
                     <!-- <template #header>
                     <div class="bk-collapse-header">
@@ -579,6 +579,11 @@ watch(
 .sideslider-rg-version-collapse .bk-collapse-source {
   .bk-collapse-header {
     background-color: #f0f1f5;
+    height: 36px;
+    line-height: 36px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #63656E;
   }
   .bk-collapse-content {
     padding: 12px 0px 24px;

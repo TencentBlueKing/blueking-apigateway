@@ -3,8 +3,7 @@
     <bk-collapse
       class="page-wrapper-padding collapse-cls"
       v-model="activeIndex"
-      use-card-theme
-    >
+      use-card-theme>
       <bk-collapse-panel name="baseInfo">
         <template #header>
           <div class="panel-header">

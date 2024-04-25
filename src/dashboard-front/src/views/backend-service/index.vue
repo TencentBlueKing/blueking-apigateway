@@ -179,7 +179,11 @@
                           <div class="host-item">
                             <bk-input :placeholder="t('格式如：host:port')" v-model="hostItem.host" :key="i">
                               <template #prefix>
-                                <bk-select v-model="hostItem.scheme" class="scheme-select-cls w80" :clearable="false">
+                                <bk-select
+                                  v-model="hostItem.scheme"
+                                  class="scheme-select-cls w80"
+                                  :filterable="false"
+                                  :clearable="false">
                                   <bk-option
                                     v-for="(item, index) in schemeList" :key="index" :value="item.value"
                                     :label="item.value" />
