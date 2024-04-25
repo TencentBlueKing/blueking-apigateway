@@ -758,6 +758,10 @@ const handleCreateResource = () => {
 // 编辑资源
 const handleEditResource = (id: number, type: string) => {
   const name = type === 'edit' ? 'apigwResourceEdit' : 'apigwResourceClone';
+  resourceVersionStore.setPageStatus({
+    isDetail: false,
+    isShowLeft: true,
+  });
   router.push({
     name,
     params: {
@@ -1250,8 +1254,9 @@ onMounted(() => {
     getList();
     handleShowVersion();
   });
-
-  recoverPageStatus();
+  if (route.meta.pageStatus) {
+    recoverPageStatus();
+  }
 });
 
 onBeforeMount(() => {
@@ -1328,11 +1333,12 @@ onBeforeMount(() => {
       cursor: pointer;
     }
     .plus-class{
-      font-size: 12px;
+      font-size: 14px;
+      font-weight: bold;
       cursor: pointer;
       color: #979BA5;
       background: #EAEBF0;
-      padding: 5px;
+      padding: 4px;
       &:hover {
         color: #3A84FF;
         background: #E1ECFF;
