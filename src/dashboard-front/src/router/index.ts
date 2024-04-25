@@ -586,7 +586,19 @@ const routes: RouteRecordRaw[] = [
     ],
   },
 ];
-export default createRouter({
+
+const router = createRouter({
   history: createWebHistory(window.SITE_URL),
   routes,
 });
+
+router.beforeEach((to: any, from: any) => {
+  const { name: toName } = to;
+  const { name: fromName } = from;
+  if (toName === 'apigwResource' && fromName === 'apigwResourceEdit') {
+    to.meta.pageStatus = true;
+  }
+  return true;
+});
+
+export default router;

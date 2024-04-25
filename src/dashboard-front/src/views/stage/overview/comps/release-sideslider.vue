@@ -154,20 +154,6 @@
       dialog-type="show">
     </bk-dialog> -->
 
-    <!-- 确认发布弹窗 -->
-    <bk-dialog
-      :is-show="dialogConfig.isShow"
-      :title="dialogConfig.title"
-      :is-loading="dialogConfig.loading"
-      :theme="'primary'"
-      width="380"
-      quick-close
-      @closed="() => (dialogConfig.isShow = false)"
-      @confirm="handlePublish"
-    >
-      将发布资源 {{ resourceVersion }} 版本至【{{ currentAssets.name }}】环境
-    </bk-dialog>
-
     <!-- 日志弹窗 -->
     <log-details ref="logDetailsRef" :history-id="publishId" @release-success="emit('release-success')"></log-details>
   </div>
@@ -181,7 +167,7 @@ import { getResourceVersionsList, resourceVersionsDiff, createReleases } from '@
 import { useRoute, useRouter } from 'vue-router';
 import versionDiff from '@/components/version-diff/index.vue';
 import logDetails from '@/components/log-details/index.vue';
-import { Message } from 'bkui-vue';
+import { Message, InfoBox } from 'bkui-vue';
 import { useSidebar } from '@/hooks';
 
 const route = useRoute();
@@ -243,12 +229,6 @@ const stepsConfig = ref({
   controllable: true,
 });
 
-const dialogConfig: IDialog = reactive({
-  isShow: false,
-  title: t('确认发布资源?'),
-  loading: false,
-});
-
 const rules = {
   resource_version_id: [
     {
@@ -261,7 +241,15 @@ const rules = {
 const publishId = ref();
 
 const showPublishDia = () => {
-  dialogConfig.isShow = true;
+  InfoBox({
+    title: '确认发布资源？',
+    subTitle: `将发布资源 ${resourceVersion.value} 版本至【${props.currentAssets.name}】环境`,
+    confirmText: '确定',
+    cancelText: '取消',
+    onConfirm: () => {
+      handlePublish();
+    },
+  });
 };
 
 const handlePublish = async () => {
@@ -274,7 +262,6 @@ const handlePublish = async () => {
 
     publishId.value = res?.id;
     isShow.value = false;
-    dialogConfig.isShow = false;
     logDetailsRef.value.showSideslider();
   } catch (e: any) {
     // 自定义错误处理
@@ -291,7 +278,6 @@ const handlePublish = async () => {
             text: () => t('后端服务'),
             onClick: () => {
               isShow.value = false;
-              dialogConfig.isShow = false;
               router.push({
                 name: 'apigwBackendService',
                 params: {
