@@ -18,7 +18,9 @@
 from typing import List, Optional
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -36,7 +38,7 @@ from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 from apigateway.iam.constants import GATEWAY_DEFAULT_ROLES, ActionEnum, UserRoleEnum
-from apigateway.iam.handlers.grade_manager import IAMGradeManagerHandler
+from apigateway.iam.handlers.gateway_member import GatewayMemberHandler
 from apigateway.iam.handlers.user_group import IAMUserGroupHandler
 from apigateway.iam.models import IAMGradeManager
 from apigateway.utils.django import get_model_dict
@@ -350,37 +352,17 @@ class GatewayFeatureFlagsApi(generics.ListAPIView):
         tags=["WebAPI.Gateway"],
     ),
 )
-@method_decorator(
-    name="put",
-    decorator=swagger_auto_schema(
-        operation_description="切换网关成员角色",
-        request_body=GatewayRoleMembersInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["WebAPI.Gateway"],
-    ),
-)
-@method_decorator(
-    name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除网关成员",
-        request_body=GatewayRoleMembersInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["WebAPI.Gateway"],
-    ),
-)
-class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, generics.DestroyAPIView):
+class GatewayRoleMembersListCreateApi(generics.ListCreateAPIView):
     method_permission = {
         "get": ActionEnum.VIEW_MEMBERS.value,
         "post": ActionEnum.MANAGE_MEMBERS.value,
-        "put": ActionEnum.MANAGE_MEMBERS.value,
-        "delete": ActionEnum.MANAGE_MEMBERS.value,
     }
 
     queryset = Gateway.objects.all()
     lookup_url_kwarg = "gateway_id"
 
+    member_handler = GatewayMemberHandler()
     group_handler = IAMUserGroupHandler()
-    grade_manager_handler = IAMGradeManagerHandler()
 
     def list(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -402,10 +384,7 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
 
         instance = self.get_object()
 
-        if role == UserRoleEnum.MANAGER.value:
-            self.grade_manager_handler.add_grade_manager_members(instance.id, [username])
-
-        self.group_handler.add_user_group_members(instance.id, UserRoleEnum.get(role), [username])
+        self.member_handler.add_member(instance, UserRoleEnum.get(role), username)
 
         Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.CREATE,
@@ -419,23 +398,50 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
 
         return OKJsonResponse()
 
+
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        operation_description="切换网关成员角色",
+        request_body=GatewayRoleInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_description="删除网关成员",
+        request_body=GatewayRoleInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayRoleMembersUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
+    method_permission = {
+        "put": ActionEnum.MANAGE_MEMBERS.value,
+        "delete": ActionEnum.MANAGE_MEMBERS.value,
+    }
+
+    queryset = Gateway.objects.all()
+    lookup_url_kwarg = "gateway_id"
+
+    member_handler = GatewayMemberHandler()
+    group_handler = IAMUserGroupHandler()
+
     def update(self, request, *args, **kwargs):
-        slz = GatewayRoleMembersInputSLZ(data=request.data)
+        slz = GatewayRoleInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         instance = self.get_object()
 
-        username = slz.validated_data["username"]
+        username = kwargs["username"]
+        get_object_or_404(get_user_model(), username=username)
         for role in self.group_handler.get_user_role(instance.id, username):
-            if role == UserRoleEnum.MANAGER:
-                self.grade_manager_handler.delete_grade_manager_members(instance.id, [username])
-            self.group_handler.delete_user_group_members(instance.id, role, [username])
+            self.member_handler.delete_member(instance, role, username)
 
         role = slz.validated_data["role"]
-        if role == UserRoleEnum.MANAGER.value:
-            self.grade_manager_handler.add_grade_manager_members(instance.id, [username])
-
-        self.group_handler.add_user_group_members(instance.id, UserRoleEnum.get(role), [username])
+        self.member_handler.add_member(instance, UserRoleEnum.get(role), username)
 
         Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -450,18 +456,16 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     def destroy(self, request, *args, **kwargs):
-        slz = GatewayRoleMembersInputSLZ(data=request.data)
+        slz = GatewayRoleInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        username = slz.validated_data["username"]
+        username = kwargs["username"]
+        get_object_or_404(get_user_model(), username=username)
         role = slz.validated_data["role"]
 
         instance = self.get_object()
 
-        if role == UserRoleEnum.MANAGER.value:
-            self.grade_manager_handler.delete_grade_manager_members(instance.id, [username])
-
-        self.group_handler.delete_user_group_members(instance.id, UserRoleEnum.get(role), [username])
+        self.member_handler.delete_member(instance, UserRoleEnum.get(role), username)
 
         Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.DELETE,
@@ -493,7 +497,7 @@ class GatewayRoleMembersApi(generics.ListCreateAPIView, generics.UpdateAPIView, 
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayRoleApi(generics.ListAPIView, generics.DestroyAPIView):
+class GatewayRoleRetrieveDestroyApi(generics.RetrieveAPIView, generics.DestroyAPIView):
     method_permission = {
         "get": ActionEnum.VIEW_GATEWAY.value,
         "delete": ActionEnum.VIEW_GATEWAY.value,
@@ -503,10 +507,10 @@ class GatewayRoleApi(generics.ListAPIView, generics.DestroyAPIView):
     lookup_url_kwarg = "gateway_id"
 
     group_handler = IAMUserGroupHandler()
-    grade_manager_handler = IAMGradeManagerHandler()
+    member_handler = GatewayMemberHandler()
     auth_handler = IAMAuthHandler()
 
-    def list(self, request, *args, **kwargs):
+    def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
         if not IAMGradeManager.objects.filter(gateway=instance).exists():
@@ -532,10 +536,7 @@ class GatewayRoleApi(generics.ListAPIView, generics.DestroyAPIView):
 
         instance = self.get_object()
 
-        if role == UserRoleEnum.MANAGER.value:
-            self.grade_manager_handler.delete_grade_manager_members(instance.id, [request.user.username])
-
-        self.group_handler.delete_user_group_members(instance.id, UserRoleEnum.get(role), [request.user.username])
+        self.member_handler.delete_member(instance, UserRoleEnum.get(role), request.user.username)
 
         Auditor.record_gateway_member_op_success(
             op_type=OpTypeEnum.DELETE,

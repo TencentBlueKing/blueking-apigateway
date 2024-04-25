@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import Optional
+
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext as _
 
@@ -34,12 +36,12 @@ class UserRoleEnum(str, StructuredEnum):
     OPERATOR = EnumField("operator", label=_("运营者"))
 
     @classmethod
-    def get(cls, value: str) -> "UserRoleEnum":
+    def get(cls, value: str) -> Optional["UserRoleEnum"]:
         return {
             "manager": cls.MANAGER,
             "developer": cls.DEVELOPER,
             "operator": cls.OPERATOR,
-        }[value]
+        }.get(value)
 
 
 # 网关默认的用户角色，需为这些角色创建用户组
