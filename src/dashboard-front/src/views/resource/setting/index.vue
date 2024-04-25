@@ -10,12 +10,10 @@
              isDragging ? 'dragging' : '',
              isDetail && !isShowLeft ? 'welt' : '']"
     id="resourceId">
-
     <div
       class="resource-container-lf"
       id="resourceLf"
-      :style="{ minWidth: isDetail ? isShowLeft ? '320px' : '0' : '100%' }"
-    >
+      :style="{ minWidth: isDetail ? isShowLeft ? '320px' : '0' : '100%' }">
       <bk-alert
         v-show="versionConfigs.needNewVersion && !isDetail"
         theme="warning"
@@ -149,7 +147,7 @@
               prop="method"
               :label="renderMethodsLabel"
               :show-overflow-tooltip="false"
-              width="180">
+              width="130">
               <template #default="{ row }">
                 <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
               </template>
@@ -160,14 +158,13 @@
             </bk-table-column>
             <bk-table-column
               :label="t('插件数')"
-              width="60"
+              width="40"
               prop="plugin_count">
               <template #default="{ row }">
                 <bk-button
                   text
                   theme="primary"
-                  @click="handleShowInfo(row.id, 'pluginManage')"
-                >
+                  @click="handleShowInfo(row.id, 'pluginManage')">
                   {{row?.plugin_count}}
                 </bk-button>
               </template>
@@ -197,7 +194,7 @@
               :label="t('标签')"
               :show-overflow-tooltip="false"
               prop="labels"
-              width="280">
+              width="180">
               <template #default="{ row }">
                 <span class="text-warp" v-if="!row?.isEditLabel" @click="handleEditLabel(row)">
                   <span
@@ -241,7 +238,7 @@
             </bk-table-column>
             <bk-table-column
               :label="t('操作')"
-              width="160"
+              width="140"
               fixed="right"
               prop="act">
               <template #default="{ data }">
@@ -312,19 +309,14 @@
         <bk-tab
           v-model:active="active"
           type="card-tab"
-          class="resource-tab-panel"
-        >
+          class="resource-tab-panel">
           <bk-tab-panel
             v-for="item in panels"
             :key="item.name"
             :name="item.name"
             :label="item.label"
-            render-directive="if"
-          >
-            <bk-loading
-              :opacity="1"
-              :loading="isComponentLoading"
-            >
+            render-directive="if">
+            <bk-loading :opacity="1" :loading="isComponentLoading">
               <!-- deleted-success 删除成功需要请求一次列表数据 更新详情 -->
               <component
                 v-if="item.name === active && resourceId"
@@ -1143,7 +1135,7 @@ watch(
     // 设置显示的tag值
     tableData.value.forEach((item: any) => {
       item.is24HoursAgo = is24HoursAgo(item.created_time);
-      item.tagOrder = 2;
+      item.tagOrder = 1;
       item.labelText = item.labels?.map((label: any) => {
         return label.name;
       });
@@ -1382,10 +1374,10 @@ onBeforeMount(() => {
       }
     }
 
-    .text-warp{
+    .text-warp {
       position: relative;
       cursor: pointer;
-      .edit-icon{
+      .edit-icon {
         position: absolute;
         font-size: 24px;
         cursor: pointer;
@@ -1393,6 +1385,9 @@ onBeforeMount(() => {
         top: -2px;
         // top: 8px;
         // right: -20px;
+      }
+      :deep(.bk-tag-text) {
+        max-width: 80px;
       }
     }
     .tag-cls{
