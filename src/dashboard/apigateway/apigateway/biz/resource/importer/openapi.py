@@ -19,7 +19,7 @@
 import json
 from typing import Any, Dict, List
 
-from openapi_spec_validator.versions import OPENAPIV2, SpecVersion, get_spec_version
+from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
 from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
 from prance import ResolvingParser
 
@@ -148,7 +148,6 @@ class OpenAPIExportManager:
 
     def __init__(
         self,
-        openapi_version: SpecVersion = OPENAPIV2,
         api_version: str = "2.0",
         include_bk_apigateway_resource: bool = True,
         title: str = "API Gateway Resources",
@@ -158,12 +157,9 @@ class OpenAPIExportManager:
         self.include_bk_apigateway_resource = include_bk_apigateway_resource
         self.title = title
         self.description = description
-        self.openapi_version = openapi_version
 
     def _get_exporter(self) -> BaseExporter:
-        if self.openapi_version == OPENAPIV2:
-            return BaseExporter(self.api_version, self.include_bk_apigateway_resource, self.title, self.description)
-        return None
+        return BaseExporter(self.api_version, self.include_bk_apigateway_resource, self.title, self.description)
 
     def export(self, resources: list, file_type: str = ""):
         """

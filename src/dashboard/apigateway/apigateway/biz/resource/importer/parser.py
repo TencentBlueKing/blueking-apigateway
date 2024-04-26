@@ -28,6 +28,11 @@ from pydantic import parse_obj_as
 from apigateway.biz.constants import OpenAPIFormatEnum
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
 from apigateway.biz.resource.importer.constants import VALID_METHOD_IN_SWAGGER_PATHITEM, OpenAPIExtensionEnum
+from apigateway.biz.resource.importer.schema import (
+    convert_swagger_formdata_to_openapi,
+    convert_swagger_parameters_to_openapi,
+    convert_swagger_response_headers_to_openapi,
+)
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
 from apigateway.core.models import Backend, Gateway, Resource
@@ -102,11 +107,21 @@ class BaseParser:
           }
         }
         """
-        return {
-            "requestBody": self._get_request_body(operation),
-            "parameters": self._get_parameters(operation),
-            "responses": self._get_responses(operation),
-        }
+        openapi_schema = {}
+        request_body = self._get_request_body(operation)
+        if len(request_body) > 0:
+            openapi_schema["requestBody"] = request_body
+
+        parameters = self._get_parameters(operation)
+        if len(parameters) > 0:
+            openapi_schema["parameters"] = parameters
+
+        responses = self._get_responses(operation)
+
+        if len(responses) > 0:
+            openapi_schema["responses"] = responses
+
+        return openapi_schema
 
     def _get_parameters(self, operation: Dict[str, Any]):
         """
@@ -114,7 +129,13 @@ class BaseParser:
         """
         parameters = operation.get("parameters", [])
 
-        return [parameter for parameter in parameters if parameter.get("in", "") != "body"]
+        without_body_parameters = [
+            parameter
+            for parameter in parameters
+            if parameter.get("in", "") != "body" and parameter.get("in", "") != "formData"
+        ]
+
+        return convert_swagger_parameters_to_openapi(without_body_parameters)
 
     def _get_request_body(self, operation: Dict[str, Any]):
         """
@@ -150,16 +171,31 @@ class BaseParser:
 
         parameters = operation.get("parameters", [])
 
-        parameter = {}
-        for parameter_item in parameters:
-            if parameter_item.get("in", "") == "body":
-                parameter = parameter_item
-                break
-
+        parameter_schema = {}
         std_parameters = {}
 
+        # formdata参数
+        form_data_params = []
+        for parameter_item in parameters:
+            if parameter_item.get("in", "") == "body":
+                parameter_schema = parameter_item.get("schema", {})
+                std_parameters["description"] = parameter_item.get("description", "")
+                if "required" in parameter_item:
+                    std_parameters["required"] = parameter_item["required"]
+                break
+            if parameter_item.get("in", "") == "formData":
+                form_data_params.append(parameter_item)
+
+        content = {}
         for content_type in content_types:
-            std_parameters[content_type] = parameter
+            if len(parameter_schema) > 0:
+                content[content_type] = {"schema": parameter_schema}
+
+        if len(content) > 0:
+            std_parameters["content"] = content
+
+        if len(std_parameters) == 0 and len(form_data_params) > 0:
+            std_parameters = convert_swagger_formdata_to_openapi(form_data_params, content_types)
 
         return std_parameters
 
@@ -182,7 +218,24 @@ class BaseParser:
           }
         }
         """
-        return operation.get("responses", [])
+        openapi_v3_response = {}
+        produces = operation.get("produces", ["application/json"])
+        for status_code, response in operation.get("responses", {}).items():
+            # OpenAPI 3.0 uses 'content' instead of 'schema' for the response body
+            content = response.get("schema", {})
+            for produce in produces:
+                openapi_v3_response[status_code] = {
+                    "description": response.get("description", "default response"),
+                    "content": {produce: {"schema": content}},
+                }
+                if "headers" in response:
+                    openapi_v3_response[status_code]["headers"] = convert_swagger_response_headers_to_openapi(
+                        response.get("headers")
+                    )
+                if "examples" in response:
+                    openapi_v3_response[status_code]["examples"] = response.get("examples")
+
+        return openapi_v3_response
 
     def _add_base_path_to_path(self, base_path: str, paths: Dict[str, Any]) -> Dict[str, Any]:
         """将 base_path 添加到 path"""
@@ -386,7 +439,7 @@ class ResourceDataConvertor:
 
 class BaseExporter:
     """
-    openapi 导出器
+    openapi 导出器(暂时只支持openapi3.0)
     """
 
     def __init__(
@@ -402,22 +455,24 @@ class BaseExporter:
         self.description = description
 
     def to_openapi(self, resources: list, file_type: str = "") -> str:
-        content = {
-            "swagger": "2.0",
-            "basePath": "/",
-            "info": {
-                "version": self.api_version,
-                "title": self.title,
-                "description": self.description,
-            },
-            "schemes": ["http"],
-            "paths": self._generate_paths(resources),
-        }
+        content = self._get_openapi_content(resources)
 
         if file_type == OpenAPIFormatEnum.JSON.value:
             return json.dumps(content, indent=4)
 
         return yaml_export_dumps(content)
+
+    def _get_openapi_content(self, resources: list) -> Dict[str, Any]:
+        return {
+            "openapi": "3.0.1",
+            "servers": [{"url": "/"}],
+            "info": {
+                "version": self.api_version,
+                "title": self.title,
+                "description": self.description,
+            },
+            "paths": self._generate_paths(resources),
+        }
 
     def _generate_paths(self, resources: List[Dict]) -> Dict[str, Any]:
         paths: Dict[str, Any] = {}
@@ -445,41 +500,7 @@ class BaseExporter:
         return paths
 
     def _generate_openapi_schema(self, operation: Dict[str, Any], schema: Dict[str, Any]):
-        """
-        获取openapi schema
-        """
-        # 获取consumer
-        consumers = list(schema.get("requestBody", {}).keys())
-
-        # 获取parameters
-        parameters = schema.get("parameters", [])
-
-        request_body = schema.get("requestBody", {})
-
-        for value in request_body.values():
-            if len(value) == 0:
-                continue
-            parameters.append(value)
-            break
-
-        # response
-        response = schema.get(
-            "responses",
-            {
-                "default": {"description": ""},
-            },
-        )
-
-        schema_result = {
-            "responses": response,
-        }
-        if len(parameters) != 0:
-            schema_result["parameters"] = parameters
-
-        if len(consumers) != 0:
-            schema_result["consumes"] = consumers
-
-        operation.update(schema_result)
+        operation.update(schema)
 
     def _generate_bk_apigateway_resource(self, operation: Dict[str, Any], resource: Dict[str, Any]):
         backend = resource.get("backend", {})
@@ -558,12 +579,3 @@ class BaseExporter:
             config["resourcePermissionRequired"] = False
 
         return config
-
-
-class BaseV3Exporter(BaseExporter):
-    """
-    openapi3.0导出器
-    """
-
-    def _generate_openapi_schema(self, operation: Dict[str, Any], schema: Dict[str, Any]):
-        return {}

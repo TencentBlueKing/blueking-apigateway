@@ -19,7 +19,7 @@
 from functools import partial
 from importlib.resources import as_file, files
 from os import path
-from typing import Any, Hashable, List, Mapping, Tuple
+from typing import Any, Dict, Hashable, List, Mapping, Tuple
 
 from jsonschema.validators import Draft4Validator, Draft202012Validator
 from jsonschema_path.readers import FilePathReader
@@ -84,6 +84,124 @@ def set_openapi_parser_schema_validator(spec_version: SpecVersion):
     get_apigw_schema_content = Proxy(partial(_get_apigw_schema_content, spec_version))
 
     SPEC2VALIDATOR[spec_version].schema_validator = Proxy(partial(Draft4Validator, get_apigw_schema_content))
+
+
+def convert_swagger_formdata_to_openapi(formdata_params: List[Dict[str, Any]], consumers: List[str]) -> Dict[str, Any]:
+    """
+    将Swagger 2.0的formData参数转换为OpenAPI 3.0的requestBody。
+    """
+
+    # 初始化openapi_request_body的结构
+    openapi_request_body = {}
+
+    # 如果只有一个consumer且为application/json，则替换为multipart/form-data
+    if len(consumers) == 1 and consumers[0] == "application/json":
+        consumers[0] = "multipart/form-data"
+
+    # 遍历每个consumer类型
+    for content_type in consumers:
+        properties = {}
+        required = []
+
+        # 遍历每个参数
+        for param in formdata_params:
+            prop_type = "string" if param["type"] == "file" else param.get("type", "string")
+            prop = {"type": prop_type}
+            # 处理其他可选属性
+            for key in ["format", "items", "enum", "default"]:
+                if key in param:
+                    prop[key] = param[key]
+
+            # 添加属性到properties字典
+            properties[param["name"]] = prop
+
+            # 处理必需字段
+            if param.get("required", False):
+                required.append(param["name"])
+
+        # 构建content字典
+        schema = {"type": "object", "properties": properties}
+        if required:
+            schema["required"] = required
+        openapi_request_body = {
+            "content": {
+                content_type: schema,
+            }
+        }
+
+    return openapi_request_body
+
+
+def convert_swagger_parameters_to_openapi(parameters):
+    """
+    将 swagger parameters 转成openapi
+    """
+    openapi_params = []
+    for param in parameters:
+        openapi_param = {
+            "name": param.get("name"),
+            "in": param.get("in"),
+            "required": param.get("required", False),
+            "description": param.get("description", ""),
+            "schema": {},
+        }
+
+        # Swagger 2.0 'type' is moved to 'schema' in OpenAPI 3.0
+        if "type" in param:
+            openapi_param["schema"]["type"] = param["type"]
+
+        # Swagger 2.0 'items' and 'collectionFormat' are moved inside 'schema' in OpenAPI 3.0
+        if "items" in param:
+            openapi_param["schema"]["items"] = param["items"]
+        if "collectionFormat" in param:
+            openapi_param["style"] = "form" if param["collectionFormat"] == "multi" else "simple"
+
+        # Swagger 2.0 'format' is moved to 'schema' in OpenAPI 3.0
+        if "format" in param:
+            openapi_param["schema"]["format"] = param["format"]
+
+        # Swagger 2.0 'enum' is moved to 'schema' in OpenAPI 3.0
+        if "enum" in param:
+            openapi_param["schema"]["enum"] = param["enum"]
+
+        # Swagger 2.0 'default' is moved to 'schema' in OpenAPI 3.0
+        if "default" in param:
+            openapi_param["schema"]["default"] = param["default"]
+
+        # Add other Swagger 2.0 to OpenAPI 3.0 conversions as needed
+
+        openapi_params.append(openapi_param)
+
+    return openapi_params
+
+
+def convert_swagger_response_headers_to_openapi(headers: dict) -> dict:
+    """
+    将swagger2.0 response headers 转为openapi3.0
+    """
+    openapi_headers = {}
+    for header_name, header_spec in headers.items():
+        openapi_header = {
+            "schema": {"type": header_spec.get("type")},
+            "description": header_spec.get("description", ""),
+        }
+
+        # Swagger 2.0 'format' is moved to 'schema' in OpenAPI 3.0
+        if "format" in header_spec:
+            openapi_header["schema"]["format"] = header_spec["format"]
+
+        # Swagger 2.0 'items' is moved to 'schema' in OpenAPI 3.0 for arrays
+        if "items" in header_spec:
+            openapi_header["schema"]["items"] = header_spec["items"]
+
+        # Swagger 2.0 'enum' is moved to 'schema' in OpenAPI 3.0
+        if "enum" in header_spec:
+            openapi_header["schema"]["enum"] = header_spec["enum"]
+
+        # Add other Swagger 2.0 to OpenAPI 3.0 conversions as needed
+
+        openapi_headers[header_name] = openapi_header
+    return openapi_headers
 
 
 class SchemaValidateErr:
