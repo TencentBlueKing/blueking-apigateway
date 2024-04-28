@@ -307,8 +307,32 @@
         <template #label>
           <span class="label-cls">{{ t('服务：') }}</span>
         </template>
-        <span class="value-cls">{{ servicesData.name }}</span>
-        <bk-table v-if="formData.id" class="table-layout" :data="servicesData.config" :border="['outer']">
+
+        <div v-if="!backServicesEdit" class="value-container">
+          <span class="value-cls">{{ servicesData.name }}</span>
+          <span class="operate-btn">
+            <i @click="backServicesEdit = true" class="apigateway-icon icon-ag-edit-line"></i>
+          </span>
+        </div>
+
+        <div v-else class="edit-name" style="margin-bottom: 12px;">
+          <bk-select
+            :input-search="false"
+            :clearable="false"
+            class="service"
+            v-model="formData.backend.id" @change="getServiceData(true)">
+            <bk-option v-for="item in backendsList" :key="item.id" :value="item.id" :label="item.name" />
+          </bk-select>
+        </div>
+
+        <bk-table
+          v-if="formData.id"
+          class="table-layout"
+          :data="servicesData.config"
+          :border="['outer']"
+          @row-mouse-enter="backServicesEdit ? handleMouseEnter : ''"
+          @row-mouse-leave="backServicesEdit ? handleMouseLeave : ''"
+        >
           <bk-table-column :label="t('环境名称')" :resizable="false">
             <template #default="{ data }">
               {{data?.stage?.name}}
@@ -316,12 +340,21 @@
           </bk-table-column>
           <bk-table-column :label="t('后端服务地址')" :resizable="false">
             <template #default="{ data }">
-              {{data?.hosts[0].scheme}}://{{ data?.hosts[0].host }}
+              <span v-if="data?.hosts[0].host">
+                {{data?.hosts[0].scheme}}://{{ data?.hosts[0].host }}
+              </span>
+              <span v-else>--</span>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('超时时间')" prop="timeout" :resizable="false">
+          <bk-table-column v-if="!backServicesEdit" :label="t('超时时间')" prop="timeout" :resizable="false">
             <template #default="{ data }">
-              {{ data?.timeout }}s
+              <span>{{ data?.timeout || '0' }}s</span>
+            </template>
+          </bk-table-column>
+          <bk-table-column v-else :label="renderTimeOutLabel" prop="timeout" :resizable="false">
+            <template #default="{ data }">
+              <span>{{ data?.timeout || '0' }}s</span>
+              <bk-tag theme="warning" v-if="data?.isCustom">{{ t('自定义') }}</bk-tag>
             </template>
           </bk-table-column>
         </bk-table>
@@ -353,7 +386,108 @@
         <template #label>
           <span class="label-cls">{{ t('请求路径：') }}</span>
         </template>
-        <span class="value-cls">{{ formData.backend?.config?.path }}</span>
+        
+        <div v-if="!backPathEdit" class="value-container">
+          <span class="value-cls">{{ formData.backend?.config?.path }}</span>
+          <span class="operate-btn">
+            <i @click="backPathEdit = true" class="apigateway-icon icon-ag-edit-line"></i>
+            <i class="apigateway-icon icon-ag-copy-info" @click="copy(formData.backend?.config?.path)"></i>
+          </span>
+        </div>
+
+        <div class="edit-name" v-else>
+          <bk-popover
+            disable-outside-click
+            trigger="click"
+            :is-show="backPathEdit"
+            :component-event-delay="300"
+            :offset="16"
+            placement="bottom"
+            theme="light"
+            width="740"
+          >
+            <span class="value-cls">{{ formData.backend?.config?.path_copy }}</span>
+            <template #content>
+              <div style="padding: 4px;">
+                <bk-form :model="formData" form-type="vertical">
+                  <bk-form-item :label="t('请求路径')" style="margin-bottom: 8px;">
+                    <div class="flex-row aligin-items-center">
+                      <bk-input
+                        v-model="formData.backend.config.path_copy"
+                        :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
+                        clearable
+                      />
+                      <bk-button
+                        theme="primary"
+                        outline
+                        class="ml10"
+                        @click="handleCheckPath"
+                        :disabled="!formData.backend.id || !formData.backend?.config?.path"
+                      >
+                        {{ t('校验并查看地址') }}
+                      </bk-button>
+                    </div>
+                    <bk-checkbox v-model="formData.backend.config.match_subpath" disabled>
+                      {{ t('追加匹配的子路径') }}
+                    </bk-checkbox>
+                    <div class="common-form-tips">
+                      {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中") }}
+                    </div>
+                    <div v-if="servicesCheckData?.length">
+                      <bk-alert
+                        theme="success"
+                        class="w700 mt10"
+                        :title="t('路径校验通过，路径合法，请求将被转发到以下地址')"
+                      />
+                      <bk-table
+                        class="w700 mt10"
+                        :data="servicesCheckData"
+                        :border="['outer']"
+                      >
+                        <bk-table-column
+                          :label="t('环境名称')"
+                        >
+                          <template #default="{ data }">
+                            {{data?.stage?.name}}
+                          </template>
+                        </bk-table-column>
+                        <bk-table-column
+                          :label="t('请求类型')"
+                        >
+                          <template #default="{ data }">
+                            {{formData.backend.config.method || data?.stage?.name}}
+                          </template>
+                        </bk-table-column>
+                        <bk-table-column
+                          :label="t('请求地址')"
+                        >
+                          <template #default="{ data }">
+                            {{data?.backend_urls[0]}}
+                          </template>
+                        </bk-table-column>
+                      </bk-table>
+                    </div>
+                  </bk-form-item>
+                  <bk-form-item style="margin-bottom: 0;text-align: right;">
+                    <bk-button
+                      theme="primary"
+                      native-type="button"
+                      @click="backPathSubmit"
+                    >
+                      确定
+                    </bk-button>
+                    <bk-button
+                      style="margin-left: 8px;"
+                      @click="backPathCancel"
+                    >
+                      取消
+                    </bk-button>
+                  </bk-form-item>
+                </bk-form>
+              </div>
+            </template>
+          </bk-popover>
+        </div>
       </bk-form-item>
     </bk-form>
     <bk-button
@@ -376,16 +510,25 @@
     </bk-pop-confirm>
   </div>
 </template>
-<script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+<script setup lang="tsx">
+import { ref, watch, nextTick, unref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { getResourceDetailData, getBackendsDetailData, deleteResources, updateResources, getGatewayLabels } from '@/http';
+import {
+  getResourceDetailData,
+  getBackendsDetailData,
+  deleteResources,
+  updateResources,
+  getGatewayLabels,
+  getBackendsListData,
+  backendsPathCheck,
+} from '@/http';
 import { Message } from 'bkui-vue';
 import { copy } from '@/common/util';
 import SelectCheckBox from './comps/select-check-box.vue';
 import { MethodsEnum } from '@/types';
 import { useCommon } from '@/store';
+import { cloneDeep } from 'lodash';
 
 const { t } = useI18n();
 
@@ -434,6 +577,11 @@ const publicEdit = ref<boolean>(false);
 const frontMethodEdit = ref<boolean>(false);
 const frontPathEdit = ref<boolean>(false);
 const backMethodEdit = ref<boolean>(false);
+const backServicesEdit = ref<boolean>(false);
+const backPathEdit = ref<boolean>(false);
+
+// 校验列表
+const servicesCheckData = ref([]);
 
 const emit = defineEmits(['done', 'deleted-success']);
 
@@ -465,7 +613,8 @@ const getResourceDetails = async () => {
 
       formData.value.path_copy = res?.path;
       formData.value.match_subpath_copy = res?.match_subpath;
-      console.log('xxxxxxxxxxxxxxxxx', formData.value);
+
+      formData.value.backend.config.path_copy = formData.value.backend.config.path;
     });
 
     getServiceData();
@@ -482,7 +631,7 @@ const handleUpdateLabelSuccess = () => {
 };
 
 // 选择服务获取服务详情数据
-const getServiceData = async () => {
+const getServiceData = async (update?: boolean) => {
   const res = await getBackendsDetailData(props.apigwId, formData.value.backend.id);
 
   const resourceDetailTimeout = formData.value?.backend?.config?.timeout;
@@ -493,7 +642,171 @@ const getServiceData = async () => {
   }
   servicesData.value.config = res.configs;
   servicesData.value.name = res.name;
+
+  servicesConfigsStorage.value = cloneDeep(res.configs || []);
   emit('done', false);
+
+  if (update) {
+    handleEditSave();
+  }
+};
+
+// 服务列表下拉框数据
+const backendsList = ref([]);
+// 获取服务列表数据
+const getBackendsList = async () => {
+  const res = await getBackendsListData(common.apigwId);
+  backendsList.value = res.results;
+};
+getBackendsList();
+
+const handleMouseEnter = (e: Event, row: Record<string, number | string | boolean>) => {
+  setTimeout(() => {
+    row.isTime = true;
+  }, 100);
+};
+
+const handleMouseLeave = (e: Event, row: Record<string, number | string | boolean>) => {
+  setTimeout(() => {
+    row.isTime = false;
+  }, 100);
+};
+
+const popoverConfirmRef = ref();
+const isShowPopConfirm = ref(false);
+const isTimeEmpty = ref(false);
+const timeOutValue = ref('');
+// 服务详情缓存数据
+const servicesConfigsStorage = ref([]);
+
+const handleClickOutSide = (e: Event) => {
+  if (
+    isShowPopConfirm.value
+    && !unref(popoverConfirmRef)?.content?.el?.contains(e?.target)
+  ) {
+    handleCancelTime();
+  }
+};
+const handleShowPopover = () => {
+  isShowPopConfirm.value = true;
+  isTimeEmpty.value = false;
+  servicesData.value.config.forEach((item: any) => {
+    item.isEditTime = false;
+  });
+};
+const handleCancelTime = () => {
+  isTimeEmpty.value = false;
+  isShowPopConfirm.value = false;
+  timeOutValue.value = '';
+};
+const handleTimeOutTotal = (value: any[]) => {
+  formData.value.backend.config.timeout = Number(value[0].timeout);
+};
+const handleRefreshTime = () => {
+  servicesData.value.config = cloneDeep(servicesConfigsStorage.value);
+  handleTimeOutTotal(servicesData.value.config);
+};
+const handleTimeOutInput = (value: string) => {
+  value = value.replace(/\D/g, '');
+  if (Number(value) > 300) {
+    value = '300';
+  }
+  timeOutValue.value = value.replace(/\D/g, '');
+  isTimeEmpty.value = !value;
+};
+const handleConfirmTime = () => {
+  if (!timeOutValue.value) {
+    isTimeEmpty.value = true;
+    return;
+  }
+  servicesData.value.config.forEach((item: Record<string, string | boolean>) => {
+    item.isCustom = true;
+    item.timeout = timeOutValue.value;
+  });
+  handleTimeOutTotal(servicesData.value.config);
+  isShowPopConfirm.value = false;
+  timeOutValue.value = '';
+  handleEditSave();
+};
+const renderTimeOutLabel = () => {
+  return (
+    <div>
+      <div class='back-config-timeout'>
+        <span>{t('超时时间')}</span>
+        <bk-pop-confirm
+          width='280'
+          trigger='manual'
+          ref={popoverConfirmRef}
+          title={t('批量修改超时时间')}
+          extCls='back-config-timeout-popover'
+          is-show={isShowPopConfirm.value}
+          content={
+            <div class='back-config-timeout-wrapper'>
+              <div class='back-config-timeout-content'>
+                <div class='back-config-timeout-input'>
+                  <bk-input
+                    v-model={timeOutValue.value}
+                    maxlength={3}
+                    overMaxLengthLimit={true}
+                    class={isTimeEmpty ? 'time-empty-error' : ''}
+                    placeholder={t('请输入超时时间')}
+                    onInput={(value:string) => {handleTimeOutInput(value)}}
+                    nativeOnKeypress={(value:string) => { value = value.replace(/\d/g, '') }}
+                    autofocus={true}
+                    suffix='s'
+                    onEnter={() => handleConfirmTime()}
+                  />
+                </div>
+                <div class='back-config-timeout-tip'>{t('最大 300s')}</div>
+              </div>
+              {
+                isTimeEmpty.value ? <div class='time-empty-error'>{t('超时时间不能为空')}{isTimeEmpty.value}</div> : ''
+              }
+            </div>
+          }
+          onConfirm={() => handleConfirmTime()}
+          onCancel={() => handleCancelTime()}
+        >
+          <i
+            class="apigateway-icon icon-ag-bulk-edit edit-action"
+            v-bk-tooltips={{
+              content: (
+                <div>
+                  {t('自定义超时时间')}
+                </div>
+              )
+            }}
+            onClick={() => handleShowPopover()}
+            v-clickOutSide={(e:any) => handleClickOutSide(e)}
+          />
+        </bk-pop-confirm>
+        <i
+          class="apigateway-icon icon-ag-undo-2 refresh-icon"
+          v-bk-tooltips={{
+            content: (
+              <div>{t('恢复初始值')}</div>
+            )
+          }}
+          onClick={() => handleRefreshTime()}
+        />
+      </div>
+    </div>
+  );
+};
+
+// 校验路径
+const handleCheckPath = async () => {
+  try {
+    const params = {
+      path: formData.value.path,
+      backend_id: formData.value.backend.id,
+      backend_path: formData.value.backend.config.path_copy,
+    };
+    const res = await backendsPathCheck(common.apigwId, params);
+    servicesCheckData.value = res;
+  } catch (error) {
+
+  }
 };
 
 const verifiedRequired = (auth_config: any = {}) => {
@@ -539,6 +852,8 @@ const handleEditSave = async () => {
     frontMethodEdit.value = false;
     frontPathEdit.value = false;
     backMethodEdit.value = false;
+    backServicesEdit.value = false;
+    backPathEdit.value = false;
   } catch (e) {
     console.error(e);
   };
@@ -559,6 +874,18 @@ const frontPathSubmit = () => {
   formData.value.match_subpath = formData.value.match_subpath_copy;
 
   handleEditSave();
+};
+
+// 后端请求路径修改
+const backPathSubmit = () => {
+  formData.value.backend.config.path = formData.value.backend.config.path_copy;
+  handleEditSave();
+};
+
+const backPathCancel = () => {
+  formData.value.backend.config.path_copy = formData.value.backend.config.path;
+  servicesCheckData.value = [];
+  backPathEdit.value = false;
 };
 
 // 删除资源
@@ -673,5 +1000,17 @@ watch(
         padding: 2px;
       }
     }
+    :deep(.back-config-timeout) {
+    display: inline-block;
+
+    .edit-action,
+    .refresh-icon {
+      margin-left: 8px;
+      font-size: 16px;
+      color: #3A84FF;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+  }
 }
 </style>
