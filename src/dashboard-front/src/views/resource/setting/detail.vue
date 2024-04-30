@@ -490,13 +490,14 @@
         </div>
       </bk-form-item>
     </bk-form>
-    <bk-button
-      theme="primary"
-      class="resource-btn-cls"
-      @click="handleEditResource(formData.id)"
-    >
-      {{t('编辑')}}
-    </bk-button>
+    <router-link :to="{name: 'apigwResourceEdit', params:{'resourceId': `${formData?.id}`}}">
+      <bk-button
+        theme="primary"
+        class="resource-btn-cls"
+      >
+        {{t('编辑')}}
+      </bk-button>
+    </router-link>
     <bk-pop-confirm
       :title="t('确认删除资源{resourceName}？', { resourceName: formData?.name || '' })"
       content="删除操作无法撤回，请谨慎操作！"
@@ -513,7 +514,7 @@
 <script setup lang="tsx">
 import { ref, watch, nextTick, unref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+// import { useRouter } from 'vue-router';
 import {
   getResourceDetailData,
   getBackendsDetailData,
@@ -532,7 +533,7 @@ import { cloneDeep } from 'lodash';
 
 const { t } = useI18n();
 
-const router = useRouter();
+// const router = useRouter();
 const common = useCommon();
 const { curApigwData } = common;
 const methodData = ref(common.methodList);
@@ -824,14 +825,14 @@ const verifiedRequired = (auth_config: any = {}) => {
 };
 
 // 编辑资源
-const handleEditResource = (id: number) => {
-  router.push({
-    name: 'apigwResourceEdit',
-    params: {
-      resourceId: id,
-    },
-  });
-};
+// const handleEditResource = (id: number) => {
+//   router.push({
+//     name: 'apigwResourceEdit',
+//     params: {
+//       resourceId: id,
+//     },
+//   });
+// };
 
 // 修改资源
 const handleEditSave = async () => {
