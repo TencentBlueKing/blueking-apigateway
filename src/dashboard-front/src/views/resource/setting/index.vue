@@ -18,8 +18,18 @@
         v-show="versionConfigs.needNewVersion && !isDetail"
         theme="warning"
         class="mb20"
-        :title="versionConfigs.versionMessage"
-      />
+      >
+        <template #title>
+          {{ versionConfigs.versionMessage }}
+          <bk-button
+            text
+            theme="primary"
+            v-if="versionConfigs.needNewVersion"
+            @click="handleCreateResourceVersion">
+            立即生成版本
+          </bk-button>
+        </template>
+      </bk-alert>
       <div class="operate flex-row justify-content-between mb15">
         <div class="flex-1 flex-row align-items-center">
           <div class="mr8">
@@ -41,8 +51,7 @@
             :is-disabled="!selections.length"></ag-dropdown>
           <ag-dropdown
             :text="t('更多')"
-            v-show="isDetail && isShowLeft"
-          >
+            v-show="isDetail && isShowLeft">
             <div class="nest-dropdown">
               <ag-dropdown
                 :text="t('导入')"
@@ -220,7 +229,7 @@
                     @click="handleEditLabel(row)"
                     class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                 </span>
-                <section style="position: absolute; width: 100%;" v-else>
+                <section style="position: absolute; width: 160px;" v-else>
                   <SelectCheckBox
                     :cur-select-label-ids="curLabelIds"
                     :resource-id="resourceId"
@@ -427,8 +436,9 @@
           :cur-resource="curResource" @fetch="handleSuccess" @on-update="handleUpdateTitle"></ResourcesDoc>
       </template>
     </bk-sideslider>
+
     <!-- 生成版本 -->
-    <!-- <version-sideslider ref="versionSidesliderRef" /> -->
+    <version-sideslider ref="versionSidesliderRef" @done="mitt.emit('on-update-plugin');" />
   </div>
 </template>
 <script setup lang="ts">
@@ -446,7 +456,7 @@ import {
   getGatewayLabels,
 } from '@/http';
 import Detail from './detail.vue';
-// import VersionSideslider from './comps/version-sideslider.vue';
+import VersionSideslider from './comps/version-sideslider.vue';
 import SelectCheckBox from './comps/select-check-box.vue';
 import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
@@ -512,7 +522,7 @@ const tableEmptyConf = ref<TableEmptyConfType>({
 });
 
 // ref
-// const versionSidesliderRef = ref(null);
+const versionSidesliderRef = ref(null);
 // 导出参数
 const exportParams: IexportParams = reactive({
   export_type: '',
@@ -1030,18 +1040,9 @@ const handleEditLabel = (data: any) => {
 };
 
 // 生成版本功能
-// const handleCreateResourceVersion = async () => {
-//   if (!versionConfigs.needNewVersion) {
-//     Message({
-//       message: t('资源及资源文档无变更, 不需要生成新版本'),
-//       theme: 'error',
-//       width: 'auto',
-//     });
-//     return;
-//   }
-
-//   versionSidesliderRef.value.showReleaseSideslider();
-// };
+const handleCreateResourceVersion = async () => {
+  versionSidesliderRef.value.showReleaseSideslider();
+};
 
 // 获取标签数据
 const getLabelsData = async () => {

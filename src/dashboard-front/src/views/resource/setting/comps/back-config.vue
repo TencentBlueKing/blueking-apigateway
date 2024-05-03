@@ -185,6 +185,7 @@ const timeInputRef = ref(null)
 // 全局变量
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
+import { Message } from 'bkui-vue';
 
 const rules = {
   'config.path': [
@@ -416,7 +417,23 @@ const init = async () => {
 };
 
 const validate = async () => {
-  await backRef.value?.validate();
+  let isHost = true;
+  for (let i = 0; i < servicesConfigs.value?.length; i++) {
+    const item = servicesConfigs.value[i];
+    if (!item?.hosts[0]?.host) {
+      isHost = false;
+      break;
+    }
+  }
+  if (isHost) {
+    await backRef.value?.validate();
+  } else {
+    Message({
+      theme: 'warning',
+      message: '请先配置后端服务地址',
+    });
+    return Promise.reject('请先配置后端服务地址');
+  }
 };
 
 watch(

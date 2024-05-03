@@ -25,12 +25,12 @@
           v-if="!option.isEdited"
           @mouseenter="handleMouseEnter(index)"
           @mouseleave="handleMouseLeave">
-          <div class="select-option-row-name">
+          <div class="select-option-row-name" :title="option.name">
             {{ option.name }}
           </div>
           <div class="icon-container" v-if="hoverIndex === index">
             <i
-              class="icon apigateway-icon icon-ag-edit-line" style="margin-right: 6px;"
+              class="icon apigateway-icon icon-ag-edit-line" style="margin-right: 3px;"
               @click.stop="handleEditOptionItem(option)"></i>
             <bk-pop-confirm
               title="确认删除该标签？"
@@ -319,7 +319,7 @@ const handleMouseLeave = () => {
   &.bk-popover.bk-pop2-content.bk-select-popover {
     .bk-select-content-wrapper {
       .bk-select-option.is-multiple {
-        padding-right: 14px;
+        padding-right: 10px;
       }
     }
   }
@@ -347,7 +347,7 @@ const handleMouseLeave = () => {
       }
     }
     .select-option-row-name {
-      width: 80%;
+      width: 74%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
