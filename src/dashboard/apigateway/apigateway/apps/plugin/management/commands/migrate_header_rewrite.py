@@ -62,7 +62,7 @@ class Command(BaseCommand):
                     stage.gateway_id,
                     PluginBindingScopeEnum.STAGE.value,
                     {stage.id: stage_config},
-                    "admin",
+                    "apigw_system_admin",
                 )
 
                 # TODO 1.14 执行清理
@@ -95,7 +95,7 @@ class Command(BaseCommand):
                     proxy.resource.gateway_id,
                     PluginBindingScopeEnum.RESOURCE.value,
                     {proxy.resource.id: resource_config},
-                    "admin",
+                    "apigw_system_admin",
                 )
 
                 # TODO 1.14 执行清理
