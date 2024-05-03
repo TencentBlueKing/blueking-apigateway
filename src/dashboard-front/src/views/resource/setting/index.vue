@@ -51,8 +51,7 @@
             :is-disabled="!selections.length"></ag-dropdown>
           <ag-dropdown
             :text="t('更多')"
-            v-show="isDetail && isShowLeft"
-          >
+            v-show="isDetail && isShowLeft">
             <div class="nest-dropdown">
               <ag-dropdown
                 :text="t('导入')"
@@ -230,7 +229,7 @@
                     @click="handleEditLabel(row)"
                     class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                 </span>
-                <section style="position: absolute; width: 100%;" v-else>
+                <section style="position: absolute; width: 160px;" v-else>
                   <SelectCheckBox
                     :cur-select-label-ids="curLabelIds"
                     :resource-id="resourceId"
