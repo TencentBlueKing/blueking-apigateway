@@ -19,12 +19,13 @@
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
-from django.conf import settings
 from django.db import models
 from django.db.models import Count, Q
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.core.constants import GatewayStatusEnum
+
+RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE = 50
 
 
 class ResourceDocVersionManager(models.Manager):
@@ -96,7 +97,7 @@ class ReleasedResourceDocManager(models.Manager):
             )
             for doc in resource_doc_version.data
         ]
-        self.bulk_create(resource_doc_to_add, batch_size=settings.RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE)
+        self.bulk_create(resource_doc_to_add, batch_size=RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE)
 
     def clear_unreleased_resource_doc(self, gateway_id: int) -> None:
         """清理未发布的资源文档，如已发布版本被新版本替代的情况"""
