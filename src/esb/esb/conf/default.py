@@ -47,7 +47,6 @@ INSTALLED_APPS = (
     "django.contrib.staticfiles",
     "esb",
     "esb.bkcore",
-    "esb.paas2",
     "django_prometheus",
 )
 
@@ -98,8 +97,6 @@ TEMPLATES = [
     },
 ]
 
-
-DATABASE_ROUTERS = ["esb.utils.db_router.DBRouter"]
 
 # mysql pool options
 DJ_POOL_OPTIONS = {"pool_size": 10, "max_overflow": 100, "recycle": 600}
@@ -159,25 +156,8 @@ DATABASES = {
             "utf8_general_ci",
         ),
     },
-    "paas2": {
-        "ENGINE": env.str("BK_PAAS2_DATABASE_ENGINE", "django.db.backends.mysql"),
-        "NAME": env.str("BK_PAAS2_DATABASE_NAME", "open_paas"),
-        "USER": env.str("BK_PAAS2_DATABASE_USER", ""),
-        "PASSWORD": env.str("BK_PAAS2_DATABASE_PASSWORD", ""),
-        "HOST": env.str("BK_PAAS2_DATABASE_HOST", ""),
-        "PORT": env.int("BK_PAAS2_DATABASE_PORT", 3306),
-        "TEST_CHARSET": env.str("DATABASE_TEST_CHARSET", "utf8"),
-        "TEST_COLLATION": env.str(
-            "DATABASE_TEST_COLLATION",
-            "utf8_general_ci",
-        ),
-    },
 }
 
-BK_PAAS2_ENABLED = all([DATABASES["paas2"]["NAME"], DATABASES["paas2"]["USER"], DATABASES["paas2"]["HOST"]])
-# 如果 paas2 database 未配置，则去除
-if not BK_PAAS2_ENABLED:
-    DATABASES.pop("paas2", None)
 
 # log 配置
 LOG_DIR = env.str("BK_ESB_LOG_PATH", "")
