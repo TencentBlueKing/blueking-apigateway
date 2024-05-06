@@ -39,6 +39,12 @@
         </bk-loading>
       </bk-form> -->
 
+      <bk-alert
+        theme="warning"
+        title="allow_origins 与 allow_origins_by_regex 不能同时为空"
+        v-show="typeId === 1"
+      />
+
       <!-- 免用户认证应用白名单策略 -->
       <div v-if="formStyle === 'raw'">
         <div class="white-list">
@@ -57,6 +63,7 @@
         :schema="formConfig.schema"
         :layout="formConfig.layout"
         :rules="formConfig.rules"
+        :label-width="180"
         ref="formRef">
       </BkSchemaForm>
     </div>
