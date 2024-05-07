@@ -25,7 +25,7 @@ from rest_framework import generics, status
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import DocImporter
-from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, SwaggerParser
+from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.permissions import GatewayRelatedAppPermission
@@ -81,7 +81,7 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
         slz = DocImportBySwaggerV1InputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        parser = SwaggerParser(gateway_id=request.gateway.id)
+        parser = OpenAPIParser(gateway_id=request.gateway.id)
         try:
             docs = parser.parse(
                 swagger=slz.validated_data["swagger"],

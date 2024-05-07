@@ -191,6 +191,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
                 "auth_config": ResourceAuthContext().get_config(instance.id),
                 "labels": ResourceLabelHandler.get_labels([instance.id]),
                 "proxy": Proxy.objects.get(resource_id=instance.id),
+                "resource_id_to_schema": ResourceHandler.get_id_to_schema([instance.id]),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -385,9 +386,17 @@ class ResourceImportCheckApi(generics.CreateAPIView):
         if len(validate_err_list) != 0:
             return OKJsonResponse(status=status.HTTP_400_BAD_REQUEST, data=validate_err_list)
 
+        doc_language = slz.validated_data.get("doc_language", "")
+
+        resource_data_list = validate_result.get("resource_list", [])
+        resource_ids = [resource_data.resource.id for resource_data in resource_data_list if resource_data.resource]
         slz = ResourceImportCheckOutputSLZ(
-            data=validate_result.get("resource_list", []),
+            data=resource_data_list,
             many=True,
+            context={
+                "doc_language": doc_language,
+                "docs": ResourceDocHandler.get_docs_by_language(resource_ids, doc_language),
+            },
         )
         slz.is_valid()
         return OKJsonResponse(data=slz.data)

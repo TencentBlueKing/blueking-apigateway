@@ -44,7 +44,7 @@ class ArchiveDoc(BaseDoc):
 
 
 @dataclass
-class SwaggerDoc(BaseDoc):
+class OpenAPIDoc(BaseDoc):
     """从 Swagger 中解析出来的文档"""
 
-    swagger: str = ""
+    openapi: str = ""

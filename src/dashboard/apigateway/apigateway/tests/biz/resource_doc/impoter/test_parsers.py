@@ -20,7 +20,7 @@ import pytest
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
 from apigateway.biz.resource_doc.importer.models import ArchiveDoc
-from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, BaseParser, SwaggerParser
+from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, BaseParser, OpenAPIParser
 from apigateway.core.models import Resource
 
 
@@ -175,8 +175,8 @@ class TestSwagger:
             ),
         )
 
-        docs = SwaggerParser(1)._parse("swagger", DocLanguageEnum.ZH)
+        docs = OpenAPIParser(1)._parse("openapi", DocLanguageEnum.ZH)
         assert docs[0].resource_name == "get_user"
         assert docs[0].language == DocLanguageEnum.ZH
         assert docs[0].content != ""
-        assert docs[0].swagger != ""
+        assert docs[0].openapi != ""

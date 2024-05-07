@@ -24,9 +24,9 @@ class OpenAPIExtensionEnum(StructuredEnum):
     RESOURCE = EnumField("x-bk-apigateway-resource")
 
 
-# openAPI类型
-class OpenAPITypeEnum(StructuredEnum):
-    Swagger = EnumField("swagger")
+# openAPI版本字段的key
+class OpenAPIVersionKeyEnum(StructuredEnum):
+    Swagger = EnumField("openapi")
     OpenAPI = EnumField("openapi")
 
 

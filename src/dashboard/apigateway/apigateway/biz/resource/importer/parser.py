@@ -42,14 +42,14 @@ from apigateway.utils.yaml import yaml_export_dumps
 @dataclass
 class BaseParser:
     """
-    默认base_parser为 swagger
+    默认base_parser为 openapi
     """
 
     _openapi_data: Dict[str, Any]
 
     def get_resources(self) -> List[Dict[str, Any]]:
         resources = []
-        for path, path_item in self._get_paths().items():
+        for path, path_item in self.get_paths().items():
             for method_raw, operation in path_item.items():
                 method = self._adapt_method(method_raw)
 
@@ -84,7 +84,7 @@ class BaseParser:
 
         return resources
 
-    def _get_paths(self):
+    def get_paths(self):
         paths = self._openapi_data["paths"]
         paths = self._remove_invalid_method(paths)
         return self._add_base_path_to_path(self._get_base_path(), paths)
@@ -288,7 +288,7 @@ class BaseParser:
         }
 
     def _adapt_description(self, summary: Optional[str], description: Optional[str]):
-        """与根据 swagger 协议生成资源文档保持一致"""
+        """与根据 openapi 协议生成资源文档保持一致"""
         parts = []
 
         if summary:
@@ -330,11 +330,17 @@ class OpenAPIV3Parser(BaseParser):
         return parsed_url.path
 
     def _get_openapi_schema(self, operation: Dict[str, Any]):
-        return {
-            "parameters": operation.get("parameters", []),
-            "requestBody": operation.get("requestBody", {}),
-            "responses": operation.get("responses", {}),
-        }
+        openapi_schema = {}
+        if "parameters" in operation:
+            openapi_schema["parameters"] = operation.get("parameters", [])
+
+        if "requestBody" in operation:
+            openapi_schema["requestBody"] = operation.get("requestBody", [])
+
+        if "responses" in operation:
+            openapi_schema["responses"] = operation.get("responses", [])
+
+        return openapi_schema
 
 
 class ResourceDataConvertor:
@@ -342,7 +348,7 @@ class ResourceDataConvertor:
         """
         将资源数据转换为 ResourceData
 
-        :param resources: 资源数据，可由 swagger yaml 解析而来或者自主构造。样例：
+        :param resources: 资源数据，可由 openapi yaml 解析而来或者自主构造。样例：
             {
                 "id": 1,  # 可为 None
                 "method": "GET",

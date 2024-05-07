@@ -326,6 +326,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
     auth_config = serializers.SerializerMethodField(help_text="认证配置")
     backend = serializers.SerializerMethodField(help_text="后端服务")
     labels = serializers.SerializerMethodField(help_text="标签列表")
+    schema = serializers.SerializerMethodField(help_text="参数协议")
 
     class Meta:
         model = Resource
@@ -342,6 +343,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
             "auth_config",
             "backend",
             "labels",
+            "schema",
         ]
         read_only_fields = fields
 
@@ -386,6 +388,13 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])
+
+    def get_schema(self, obj):
+        resource_schema = self.context["resource_id_to_schema"].get(obj.id)
+        if resource_schema:
+            return resource_schema.schema
+
+        return {}
 
 
 class ResourceBatchUpdateInputSLZ(serializers.Serializer):
@@ -546,7 +555,7 @@ class ResourceImportInputSLZ(serializers.Serializer):
         return data
 
     def _validate_content(self, content: str):
-        # 将 swagger 内容转换为内部资源数据；
+        # 将 openapi 内容转换为内部资源数据；
         # 此部分主要使用 SLZ 做数据转换 + 单字段值有效性校验（如正则）,
         # 不做复杂的业务逻辑校验，业务逻辑校验统一放到 ResourceImportValidator 处理
         validate_result = {}
@@ -599,6 +608,7 @@ class ResourceImportCheckOutputSLZ(serializers.Serializer):
     description = serializers.CharField(read_only=True, help_text="资源描述")
     method = serializers.CharField(read_only=True, help_text="请求方法")
     path = serializers.SerializerMethodField(help_text="请求路径")
+    doc = serializers.SerializerMethodField(help_text="资源文档")
     schema = serializers.SerializerMethodField(help_text="参数协议")
     plugin_configs = serializers.ListField(
         child=PluginConfigImportSLZ(),
@@ -613,6 +623,10 @@ class ResourceImportCheckOutputSLZ(serializers.Serializer):
 
     def get_path(self, obj):
         return get_path_display(obj.path, obj.match_subpath)
+
+    def get_doc(self, obj):
+        resource_id = self.get_id(obj)
+        return self.context["docs"].get(resource_id, {"id": None, "language": self.context["doc_language"]})
 
     def get_schema(self, obj):
         return obj.openapi_schema
@@ -673,7 +687,7 @@ class ResourceExportOutputSLZ(serializers.Serializer):
         return [binding.config for binding in self.context["resource_id_to_plugin_bindings"].get(obj.id, [])]
 
     def get_schema(self, obj):
-        return self.context["resource_id_to_schema"].get(obj.id, None)
+        return self.context["resource_id_to_schema"].get(obj.id, {})
 
 
 class BackendPathCheckInputSLZ(serializers.Serializer):

@@ -253,5 +253,5 @@ class ResourceHandler:
         return list(Resource.objects.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))
 
     @staticmethod
-    def get_id_to_schema(ids: List) -> Dict[int, OpenAPIResourceSchema]:
+    def get_id_to_schema(ids: List[int]) -> Dict[int, OpenAPIResourceSchema]:
         return {s.resource.id: s for s in OpenAPIResourceSchema.objects.filter(resource_id__in=ids)}

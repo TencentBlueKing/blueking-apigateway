@@ -17,14 +17,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
 from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
 from prance import ResolvingParser
 
 from apigateway.biz.constants import OpenAPIFormatEnum
-from apigateway.biz.resource.importer.constants import OpenAPITypeEnum
+from apigateway.biz.resource.importer.constants import OpenAPIVersionKeyEnum
 from apigateway.biz.resource.importer.parser import BaseExporter, BaseParser, OpenAPIV3Parser, ResourceDataConvertor
 from apigateway.biz.resource.importer.schema import (
     SchemaValidateErr,
@@ -34,7 +34,7 @@ from apigateway.biz.resource.importer.schema import (
 from apigateway.biz.resource.importer.validate import ResourceImportValidator
 from apigateway.biz.resource.models import ResourceData
 from apigateway.core.models import Gateway
-from apigateway.utils.yaml import yaml_loads
+from apigateway.utils.yaml import yaml_export_dumps, yaml_loads
 
 
 class OpenAPIImportManager:
@@ -48,6 +48,7 @@ class OpenAPIImportManager:
         self.gateway = gateway
         self.raw_resource_list: List[Dict[str, Any]] = []
         self.resource_list: List[ResourceData] = []
+        self.parser = None
 
     @classmethod
     def load_from_openapi_content(cls, gateway: Gateway, openapi_data: str) -> "OpenAPIImportManager":
@@ -108,14 +109,14 @@ class OpenAPIImportManager:
         """
         获取 openapi 版本校验失败的 SchemaValidateErr
         """
-        openapi_type = OpenAPITypeEnum.OpenAPI.value
-        openapi_type_version = self.openapi_data.get(OpenAPITypeEnum.OpenAPI.value, None)
-        if not openapi_type_version:
-            openapi_type_version = self.openapi_data.get(OpenAPITypeEnum.Swagger.value, None)
-            openapi_type = OpenAPITypeEnum.Swagger.value
+        openapi_type = OpenAPIVersionKeyEnum.OpenAPI.value
+        openapi_type_key = self.openapi_data.get(OpenAPIVersionKeyEnum.OpenAPI.value, None)
+        if not openapi_type_key:
+            openapi_type_key = self.openapi_data.get(OpenAPIVersionKeyEnum.Swagger.value, None)
+            openapi_type = OpenAPIVersionKeyEnum.Swagger.value
 
-        if openapi_type_version:
-            return SchemaValidateErr(f"{openapi_type_version} is not support", f"$.{openapi_type}", [openapi_type])
+        if openapi_type_key:
+            return SchemaValidateErr(f"{openapi_type_key} is not support", f"$.{openapi_type}", [openapi_type])
         return SchemaValidateErr("invalid openapi version", "", [])
 
     def parse(self):
@@ -131,6 +132,7 @@ class OpenAPIImportManager:
         # 获取对应的parser
         parser = self._get_parser(parse_result)
 
+        self.parser = parser
         self.raw_resource_list = parser.get_resources()
         self.resource_list = ResourceDataConvertor(self.gateway, self.raw_resource_list).convert()
 
@@ -166,3 +168,31 @@ class OpenAPIExportManager:
         file_type: json/yaml
         """
         return self._get_exporter().to_openapi(resources, file_type)
+
+    @classmethod
+    def get_openapi(
+        cls,
+        paths: Dict[str, Any],
+        openapi_format: OpenAPIFormatEnum,
+        version: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> str:
+        info = {
+            "version": version,
+            "title": title,
+            "description": description,
+        }
+
+        content = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {key: value for key, value in info.items() if value is not None},
+            "schemes": ["http"],
+            "paths": paths,
+        }
+
+        if openapi_format == OpenAPIFormatEnum.JSON:
+            return json.dumps(content, indent=4)
+
+        return yaml_export_dumps(content)
