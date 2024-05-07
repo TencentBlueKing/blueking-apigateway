@@ -55,25 +55,23 @@
                   header-icon="right-shape"
                   class="bk-collapse-source"
                 >
-                  <bk-collapse-panel :name="1" style="margin-bottom: 12px;">
-                    <span><span class="log-name">{{ $t("版本日志") }}</span></span>
-                    <!-- <template #header>
-                    <div class="bk-collapse-header">
-                      <right-shape v-show="!activeIndex.includes(1)" />
-                      <angle-up-fill v-show="activeIndex.includes(1)" />
-                      <span class="log-name">版本日志</span>
-                    </div>
-                  </template> -->
+                  <bk-collapse-panel :name="1" class="mb12">
+                    <span class="log-name">{{ $t("版本日志") }}</span>
                     <template #content>
                       <div style="padding-left: 32px">
                         <p>{{ info.comment }}</p>
                       </div>
                     </template>
                   </bk-collapse-panel>
-                  <bk-collapse-panel :name="2">
+                  <bk-collapse-panel
+                    v-for="(source, index) in info?.resources"
+                    :key="source?.name"
+                    :name="index + 2"
+                    :class="`source-${source.name}`"
+                    class="mb12">
                     <span>
-                      <bk-tag :theme="getMethodsTheme(currentSource.method)">{{ currentSource.method }}</bk-tag>
-                      <span class="log-name">{{ currentSource.name }}</span>
+                      <bk-tag :theme="getMethodsTheme(source.method)">{{ source.method }}</bk-tag>
+                      <span class="log-name">{{ source.name }}</span>
                     </span>
                     <template #content>
                       <div class="sideslider-rg-content">
@@ -90,7 +88,7 @@
                             <bk-col :span="10">
                               <div class="ag-value">
                                 <bk-tag theme="success">
-                                  {{ currentSource.name }}
+                                  {{ source.name }}
                                 </bk-tag>
                               </div>
                             </bk-col>
@@ -101,7 +99,7 @@
                               <label class="ag-key">{{ $t("资源地址") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
-                              <div class="ag-value">{{ currentSource.path }}</div>
+                              <div class="ag-value">{{ source.path }}</div>
                             </bk-col>
                           </bk-row>
 
@@ -110,7 +108,7 @@
                               <label class="ag-key">{{ $t("描述") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
-                              <div class="ag-value">{{ currentSource.description }}</div>
+                              <div class="ag-value">{{ source.description }}</div>
                             </bk-col>
                           </bk-row>
 
@@ -120,10 +118,10 @@
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
-                                <template v-if="currentSource.gateway_label_ids?.length">
+                                <template v-if="source.gateway_label_ids?.length">
                                   <bk-tag
                                     v-for="tag in labels?.filter((label) => {
-                                      if (currentSource.gateway_label_ids?.includes(label.id))
+                                      if (source.gateway_label_ids?.includes(label.id))
                                         return true;
                                     })"
                                     :key="tag.id"
@@ -145,7 +143,7 @@
                               <div class="ag-value">
                                 {{
                                   getResourceAuth(
-                                    currentSource?.contexts?.resource_auth?.config
+                                    source?.contexts?.resource_auth?.config
                                   )
                                 }}</div>
                             </bk-col>
@@ -159,7 +157,7 @@
                               <div class="ag-value">
                                 {{
                                   getPermRequired(
-                                    currentSource?.contexts?.resource_auth?.config
+                                    source?.contexts?.resource_auth?.config
                                   )
                                 }}
                               </div>
@@ -172,9 +170,9 @@
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
-                                {{ currentSource?.is_public ? $t("是") : $t("否") }}
+                                {{ source?.is_public ? $t("是") : $t("否") }}
                                 {{
-                                  currentSource?.allow_apply_permission
+                                  source?.allow_apply_permission
                                     ? `(${ $t("允许申请权限") })`
                                     : `(${ $t("不允许申请权限") })`
                                 }}
@@ -195,8 +193,8 @@
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
-                                <bk-tag :theme="getMethodsTheme(currentSource.method)">
-                                  {{ currentSource.method }}
+                                <bk-tag :theme="getMethodsTheme(source.method)">
+                                  {{ source.method }}
                                 </bk-tag>
                               </div>
                             </bk-col>
@@ -207,7 +205,7 @@
                               <label class="ag-key">{{ $t("请求路径") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
-                              <div class="ag-value">{{ currentSource.path }}</div>
+                              <div class="ag-value">{{ source.path }}</div>
                             </bk-col>
                           </bk-row>
                         </bk-container>
@@ -226,7 +224,7 @@
                               <bk-col :span="10">
                                 <div class="ag-value">
                                   {{
-                                    currentSource?.proxy?.backend?.name
+                                    source?.proxy?.backend?.name
                                   }}
                                 </div>
                               </bk-col>
@@ -238,9 +236,9 @@
                               </bk-col>
                               <bk-col :span="10">
                                 <div class="ag-value">
-                                  <bk-tag :theme="getMethodsTheme(currentSource?.proxy?.config?.method)">
+                                  <bk-tag :theme="getMethodsTheme(source?.proxy?.config?.method)">
                                     {{
-                                      currentSource?.proxy?.config?.method
+                                      source?.proxy?.config?.method
                                     }}
                                   </bk-tag>
                                 </div>
@@ -254,7 +252,7 @@
                               <bk-col :span="10">
                                 <div class="ag-value">
                                   {{
-                                    currentSource?.proxy?.config?.timeout
+                                    source?.proxy?.config?.timeout
                                   }}
                                 </div>
                               </bk-col>
@@ -267,7 +265,7 @@
                               <bk-col :span="10">
                                 <div class="ag-value">
                                   {{
-                                    currentSource?.proxy?.config?.path
+                                    source?.proxy?.config?.path
                                   }}
                                 </div>
                               </bk-col>
@@ -288,10 +286,10 @@
                             <bk-col :span="10">
                               <div class="ag-value">
                                 <template v-if="localLanguage === 'en'">
-                                  {{ currentSource?.doc_updated_time?.en || "--" }}
+                                  {{ source?.doc_updated_time?.en || "--" }}
                                 </template>
                                 <template v-else>
-                                  {{ currentSource?.doc_updated_time?.zh || "--" }}
+                                  {{ source?.doc_updated_time?.zh || "--" }}
                                 </template>
                               </div>
                             </bk-col>
@@ -299,7 +297,7 @@
                         </bk-container>
 
                         <template v-if="info.schema_version === '2.0'">
-                          <template v-for="plugin in currentSource.plugins" :key="plugin.id">
+                          <template v-for="plugin in source.plugins" :key="plugin.id">
                             <p
                               class="title mt15"
                             >
@@ -354,7 +352,7 @@ const props = defineProps<{
 
 const emits = defineEmits<(event: 'hidden') => void>();
 
-const activeIndex = ref([1, 2]);
+const activeIndex = ref([1]);
 const info = ref<any>({});
 const currentSource = ref<any>({});
 
@@ -366,13 +364,19 @@ const getInfo = async () => {
     const res = await getResourceVersionsInfo(apigwId.value, props.id);
     info.value = res;
     currentSource.value = res.resources[0] || {};
-    if (currentSource.value?.proxy?.config) {
-      if (typeof currentSource.value?.proxy?.config === 'string') {
-        currentSource.value.proxy.config = JSON.parse(currentSource.value?.proxy?.config);
-      } else {
-        // currentSource.value.proxy.config = {};
+
+    activeIndex.value = [1];
+    res?.resources?.forEach((item: any, index: number) => {
+      activeIndex.value?.push(index + 2);
+
+      if (item?.proxy?.config) {
+        if (typeof item?.proxy?.config === 'string') {
+          item.proxy.config = JSON.parse(item?.proxy?.config);
+        } else {
+          // item.proxy.config = {};
+        }
       }
-    }
+    });
   } catch (e) {
     console.log(e);
   }
@@ -419,13 +423,12 @@ getLabels();
 // 切换资源
 const changeCurrentSource = (source: any) => {
   currentSource.value = source;
-  if (currentSource.value?.proxy?.config) {
-    if (typeof currentSource.value?.proxy?.config === 'string') {
-      currentSource.value.proxy.config = JSON.parse(currentSource.value?.proxy?.config);
-    } else {
-      // currentSource.value.proxy.config = {};
-    }
-  }
+
+  const el = document.querySelector(`.source-${source.name}`);
+  el.scrollIntoView({
+    behavior: 'smooth', // 平滑滚动
+    block: 'start', // 元素顶部与视口顶部对齐
+  });
 };
 
 const exceptionType = ref('empty');
