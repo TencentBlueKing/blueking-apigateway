@@ -21,14 +21,6 @@ from django.utils.translation import gettext_lazy as _
 from apigateway.core.constants import ScopeTypeEnum
 
 
-class PluginTypeEnum(StructuredEnum):
-    IP_RESTRICTION = EnumField("ip-restriction", label=_("IP访问控制"))
-    RATE_LIMIT = EnumField("rate_limit", label=_("频率控制"))
-    CORS = EnumField("cors", label="CORS")
-    # CIRCUIT_BREAKER = EnumField("circuit_breaker", label=_("断路器"))
-    VERIFIED_USER_EXEMPTED_APPS = EnumField("bk-verified-user-exempted-apps", label=_("免用户认证应用白名单"))
-
-
 class PluginTypeCodeEnum(StructuredEnum):
     BK_RATE_LIMIT = EnumField("bk-rate-limit", label=_("频率控制"))
     BK_CORS = EnumField("bk-cors", label="CORS")

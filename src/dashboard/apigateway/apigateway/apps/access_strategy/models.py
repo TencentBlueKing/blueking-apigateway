@@ -37,7 +37,7 @@ from apigateway.schema.models import Schema
 logger = logging.getLogger(__name__)
 
 
-# FIXME: remove in 1.14
+# FIXME: remove after pre-version make and release use the newest code(drop the legacy config data)
 class IPGroup(TimestampedModelMixin, OperatorModelMixin):
     """
     IPGroup, manager the ip list
@@ -72,7 +72,7 @@ class IPGroup(TimestampedModelMixin, OperatorModelMixin):
         self._ips = data
 
 
-# FIXME: remove in 1.14
+# FIXME: remove after pre-version make and release use the newest code(drop the legacy config data)
 class AccessStrategy(ConfigModelMixin):
     """
     access strategy
@@ -120,7 +120,7 @@ class AccessStrategy(ConfigModelMixin):
         self.config = config
 
 
-# FIXME: remove in 1.14
+# FIXME: remove after pre-version make and release use the newest code(drop the legacy config data)
 class AccessStrategyBinding(TimestampedModelMixin, OperatorModelMixin):
     """
     strategy binding

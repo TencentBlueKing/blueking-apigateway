@@ -48,21 +48,6 @@ class MicroGatewayStatusEnum(StructuredEnum):
     ABNORMAL = EnumField("abnormal", _("安装异常"))
 
 
-class BackendUpstreamTypeEnum(StructuredEnum):
-    """后端 upstream 类型"""
-
-    NODE = EnumField("node", _("节点"))
-    SERVICE_DISCOVERY = EnumField("service_discovery", _("服务发现"))
-
-
-class BackendConfigTypeEnum(StructuredEnum):
-    """资源 Proxy 配置类型"""
-
-    DEFAULT = EnumField("default", _("默认后端服务"))
-    CUSTOM = EnumField("custom", _("自定义后端服务"))
-    EXISTED = EnumField("existed", _("已存在的后端服务"))
-
-
 class ServiceDiscoveryTypeEnum(StructuredEnum):
     """服务发现注册中心类型"""
 
@@ -74,21 +59,6 @@ class EtcdSecureTypeEnum(StructuredEnum):
 
     SSL = EnumField("ssl", "SSL")
     PASSWORD = EnumField("password", "Password")
-
-
-class SSLCertificateTypeEnum(StructuredEnum):
-    """证书类型"""
-
-    CLIENT = EnumField("client", _("客户端证书"))
-    SERVER = EnumField("server", _("服务端证书"))
-    CLIENT_REF = EnumField("client_ref", _("客户端引用证书"))
-    SERVER_REF = EnumField("server_ref", _("服务端引用证书"))
-
-
-class SSLCertificateBindingScopeTypeEnum(StructuredEnum):
-    STAGE = EnumField("stage", _("环境"))
-    STAGE_ITEM_CONFIG = EnumField("stage_item_config", _("环境配置"))
-    BACKEND_SERVICE_DISCOVERY_CONFIG = EnumField("backend_service_discovery_config", _("后端服务发现配置"))
 
 
 class GatewayTypeEnum(StructuredEnum):
