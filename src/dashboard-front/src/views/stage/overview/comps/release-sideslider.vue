@@ -75,7 +75,7 @@
                           <span
                             v-if="item.isLatestVersion"
                             :class="[{ 'cur-version': currentAssets.resource_version.version !== item.version }]">
-                            <bk-tag theme="success"> {{ t('最新版本') }}</bk-tag>
+                            <bk-tag theme="success" @click.stop="handleVersionChange(item)"> {{ t('最新版本') }}</bk-tag>
                           </span>
                         </div>
                       </template>
