@@ -49,6 +49,8 @@ DEFAULT_TEST_APP = {
 # ==============================================================================
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", False)
+# 是否为本地开发环境
+IS_LOCAL = env.bool("DASHBOARD_IS_LOCAL", default=False)
 
 ALLOWED_HOSTS = ["*"]
 
@@ -151,23 +153,6 @@ DATABASE_ROUTERS = [
 # django 3.2 add
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
-# Password validation
-# https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
 
 # CSRF Config
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
@@ -201,28 +186,19 @@ LANGUAGES = (
 )
 
 LANGUAGE_COOKIE_PATH = "/"
-
 # 国际化 cookie 信息必须跟整个蓝鲸体系保存一致
 LANGUAGE_COOKIE_NAME = "blueking_language"
-
 # 国际化 cookie 默认写在整个蓝鲸的根域下
 LANGUAGE_COOKIE_DOMAIN = env.str("DASHBOARD_LANGUAGE_COOKIE_DOMAIN", None) or CSRF_COOKIE_DOMAIN
-
-# django translation, 避免循环引用
-gettext = lambda s: s  # noqa
 
 # 站点 URL
 SITE_URL = "/"
 
 # Static files (CSS, JavaScript, Images)
 STATIC_VERSION = "1.0"
-
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
-
-# 是否为本地开发环境
-IS_LOCAL = env.bool("DASHBOARD_IS_LOCAL", default=False)
 
 # static root and dirs to find static
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
@@ -469,12 +445,13 @@ CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
 # 模板变量
 # ==============================================================================
 BK_API_URL_TMPL = env.str("BK_API_URL_TMPL", "").rstrip("/")
-BK_COMPONENT_API_URL = env.str("BK_COMPONENT_API_URL", "")
+BK_API_INNER_URL_TMPL = env.str("BK_API_INNER_URL_TMPL", "") or BK_API_URL_TMPL
 API_RESOURCE_URL_TMPL = env.str("API_RESOURCE_URL_TMPL", "")
 API_DOCS_URL_TMPL = env.str("API_DOCS_URL_TMPL", "")
 RESOURCE_DOC_URL_TMPL = env.str("RESOURCE_DOC_URL_TMPL", "")
 COMPONENT_DOC_URL_TMPL = env.str("COMPONENT_DOC_URL_TMPL", "")
-BK_API_INNER_URL_TMPL = env.str("BK_API_INNER_URL_TMPL", "") or BK_API_URL_TMPL
+
+BK_COMPONENT_API_URL = env.str("BK_COMPONENT_API_URL", "")
 BK_COMPONENT_API_INNER_URL = env.str("BK_COMPONENT_API_INNER_URL", "") or BK_COMPONENT_API_URL
 BK_PAAS3_API_URL = BK_API_INNER_URL_TMPL.format(api_name="bkpaas3")
 BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
@@ -564,6 +541,10 @@ BK_LOGIN_PLAIN_WINDOW_HEIGHT = env.int("BK_LOGIN_PLAIN_WINDOW_HEIGHT", default=3
 # ==============================================================================
 # bk-iam 配置
 # ==============================================================================
+# 使用权限中心数据进行鉴权（创建网关时，会创建分级管理员、用户组，校验权限时依赖权限中心）
+# TODO: 待启用 IAM 鉴权时，将默认值改为 True
+USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
+
 BK_IAM_SYSTEM_ID = "bk_apigateway"
 BK_IAM_USE_APIGATEWAY = True
 BK_IAM_GATEWAY_STAGE = BK_API_DEFAULT_STAGE_MAPPINGS.get("bk-iam", "prod")
@@ -573,9 +554,6 @@ BK_IAM_MIGRATION_APP_NAME = "apigateway.iam.apigw_iam_migration"
 BK_IAM_RESOURCE_API_HOST = env.str("BK_IAM_RESOURCE_API_HOST", DASHBOARD_URL)
 # 跳过注册权限模型到权限中心（注意：仅跳过注册权限模型，不关注权限校验是否依赖权限中心）
 BK_IAM_SKIP = env.bool("BK_IAM_SKIP", False)
-# 使用权限中心数据进行鉴权（创建网关时，会创建分级管理员、用户组，校验权限时依赖权限中心）
-# TODO: 待启用 IAM 鉴权时，将默认值改为 True
-USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
 
 # ==============================================================================
 # bkrepo 配置
@@ -602,6 +580,7 @@ PYPI_MIRRORS_REPOSITORY = env.str("PYPI_INDEX_URL", "https://pypi.org/simple/")
 # 蓝鲸通知中心配置
 # ==============================================================================
 ENABLE_BK_NOTICE = env.bool("ENABLE_BK_NOTICE", False)
+
 # 对接通知中心的环境，默认为生产环境
 BK_NOTICE_ENV = BK_API_DEFAULT_STAGE_MAPPINGS.get("bk-notice", "prod")
 BK_NOTICE = {
@@ -674,6 +653,7 @@ PROMETHEUS_DEFAULT_LABELS = [
 # ==============================================================================
 # tracing: otel 相关配置
 ENABLE_OTEL_TRACE = env.bool("BK_APIGW_ENABLE_OTEL_TRACE", default=False)
+
 OTEL_TYPE = env.str("BK_APIGW_OTEL_TYPE", default="grpc")
 OTEL_GRPC_HOST = env.str("BK_APIGW_OTEL_GRPC_HOST", default="")
 OTEL_HTTP_URL = env.str("BK_APIGW_OTEL_HTTP_URL", default="")
@@ -702,7 +682,7 @@ BCS_REPOSITORY_URL = env.str("BCS_REPOSITORY_URL", "")
 # BCS 为网关分配的认证 Token
 BCS_API_GATEWAY_TOKEN = env.str("BCS_API_GATEWAY_TOKEN", "")
 
-# 网关部署集群所属业务ID，影响从蓝鲸监控拉取 Prometheus 数据等功能；开源环境默认部署在蓝鲸业务(业务 ID=2)
+# 网关部署集群所属业务 ID，影响从蓝鲸监控拉取 Prometheus 数据等功能；开源环境默认部署在蓝鲸业务 (业务 ID=2)
 BCS_CLUSTER_BK_BIZ_ID = env.str("BCS_CLUSTER_BK_BIZ_ID", "2")
 
 # 托管的微网关实例，实例部署所用 chart 由网关生成，
@@ -876,10 +856,9 @@ for k, v in env.dict("MAX_RESOURCE_COUNT_PER_GATEWAY_WHITELIST", default={}).ite
 
 # 网关下对象的最大数量
 MAX_LABEL_COUNT_PER_GATEWAY = env.int("MAX_LABEL_COUNT_PER_GATEWAY", 100)
-
 # 管理端支持的最大超时时间
 MAX_BACKEND_TIMEOUT_IN_SECOND = env.int("MAX_BACKEND_TIMEOUT_IN_SECOND", 600)
-
+# 每一个版本能生成的最大 python sdk 数量
 MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION = env.int("MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION", 99)
 
 # ==============================================================================
@@ -914,6 +893,9 @@ SYNC_ESB_JWT_KEY_GATEWAY_NAMES = {
         "is_public": False,
     },
 }
+
+# django translation, 避免循环引用
+gettext = lambda s: s  # noqa
 
 ESB_BOARD_CONFIGS = {
     "default": {
