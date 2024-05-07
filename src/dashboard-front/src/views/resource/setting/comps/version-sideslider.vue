@@ -188,6 +188,9 @@ const rules = {
       message: t('版本号须符合 Semver 规范'),
       trigger: 'change',
       validator: (value: any) => {
+        if (value?.indexOf('v') !== -1) {
+          return false;
+        }
         if (semver.valid(value) === null) {
           return false;
         }
