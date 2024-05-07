@@ -182,11 +182,10 @@ class OpenAPIParser(BaseParser):
                 converted_operation = original_operation
                 if openapi_manager.openapi_version != OPENAPIV2:
                     converted_operation = convert_openapi3_operation_to_openapi2(original_operation)
-                openapi = OpenAPIExportManager.get_openapi(
+                openapi = OpenAPIExportManager(title=converted_operation["operationId"]).get_swagger_by_paths(
                     paths={
                         path: {method: converted_operation},
                     },
-                    title=converted_operation["operationId"],
                     openapi_format=OpenAPIFormatEnum.YAML,
                 )
                 docs.append(

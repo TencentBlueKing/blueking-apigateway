@@ -472,7 +472,7 @@ class ResourceExportApi(generics.CreateAPIView):
 
         file_type = slz.validated_data["file_type"]
         exporter = OpenAPIExportManager()
-        content = exporter.export(output_slz.data, file_type=file_type)
+        content = exporter.export_openapi(output_slz.data, file_type=file_type)
 
         # 导出的文件名，需满足规范：bk_产品名_功能名_文件名.后缀
         export_filename = f"bk_apigw_resources_{self.request.gateway.name}.{file_type}"

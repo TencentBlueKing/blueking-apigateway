@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.apps.support.api_sdk.generators.swagger import PythonTemplateGenerator
+from apigateway.apps.support.api_sdk.generators.openapi import PythonTemplateGenerator
 
 
 @pytest.fixture

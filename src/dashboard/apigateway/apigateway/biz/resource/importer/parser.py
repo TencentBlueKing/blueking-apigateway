@@ -445,7 +445,7 @@ class ResourceDataConvertor:
 
 class BaseExporter:
     """
-    openapi 导出器(暂时只支持openapi3.0)
+    openapi 导出器
     """
 
     def __init__(
@@ -480,6 +480,30 @@ class BaseExporter:
             "paths": self._generate_paths(resources),
         }
 
+    def get_swagger_by_paths(
+        self,
+        paths: Dict[str, Any],
+        openapi_format: OpenAPIFormatEnum,
+    ) -> str:
+        info = {
+            "version": self.api_version,
+            "title": self.title,
+            "description": self.description,
+        }
+
+        content = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {key: value for key, value in info.items() if value is not None},
+            "schemes": ["http"],
+            "paths": paths,
+        }
+
+        if openapi_format == OpenAPIFormatEnum.JSON:
+            return json.dumps(content, indent=4)
+
+        return yaml_export_dumps(content)
+
     def _generate_paths(self, resources: List[Dict]) -> Dict[str, Any]:
         paths: Dict[str, Any] = {}
         for resource in resources:
@@ -503,6 +527,46 @@ class BaseExporter:
 
             paths[path][method] = operation
 
+        return paths
+
+    def get_swagger_by_resource(self, resources: List[Dict], file_type: str = ""):
+        content = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {
+                "version": self.api_version,
+                "title": self.title,
+                "description": self.description,
+            },
+            "schemes": ["http"],
+            "paths": self._gen_swagger_paths(resources),
+        }
+
+        if file_type == OpenAPIFormatEnum.JSON.value:
+            return json.dumps(content, indent=4)
+
+        return yaml_export_dumps(content)
+
+    def _gen_swagger_paths(self, resources: List[Dict]) -> Dict[str, Any]:
+        paths: Dict[str, Any] = {}
+        for resource in resources:
+            path = resource["path"]
+            paths.setdefault(path, {})
+
+            method = self._adapt_method(resource["method"])
+            operation = {
+                "operationId": resource["name"],
+                "description": resource["description"],
+                "tags": resource.get("labels", []),
+                "responses": {
+                    "default": {"description": ""},
+                },
+            }
+
+            if self.include_bk_apigateway_resource:
+                self._generate_bk_apigateway_resource(operation, resource)
+
+            paths[path][method] = operation
         return paths
 
     def _generate_openapi_schema(self, operation: Dict[str, Any], schema: Dict[str, Any]):

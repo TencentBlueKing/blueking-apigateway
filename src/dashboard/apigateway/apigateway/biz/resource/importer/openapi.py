@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
 from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
@@ -34,7 +34,7 @@ from apigateway.biz.resource.importer.schema import (
 from apigateway.biz.resource.importer.validate import ResourceImportValidator
 from apigateway.biz.resource.models import ResourceData
 from apigateway.core.models import Gateway
-from apigateway.utils.yaml import yaml_export_dumps, yaml_loads
+from apigateway.utils.yaml import yaml_loads
 
 
 class OpenAPIImportManager:
@@ -51,12 +51,14 @@ class OpenAPIImportManager:
         self.parser = None
 
     @classmethod
-    def load_from_openapi_content(cls, gateway: Gateway, openapi_data: str) -> "OpenAPIImportManager":
-        swagger_format = cls.guess_openapi_format(openapi_data)
-        if swagger_format == OpenAPIFormatEnum.JSON:
-            return cls(gateway=gateway, openapi_data=json.loads(openapi_data))
+    def load_from_openapi_content(cls, gateway: Gateway, content: str) -> "OpenAPIImportManager":
+        openapi_format = cls.guess_openapi_format(content)
 
-        return cls(gateway=gateway, openapi_data=yaml_loads(openapi_data))
+        loads_func = yaml_loads
+        if openapi_format == OpenAPIFormatEnum.JSON:
+            loads_func = json.loads
+
+        return cls(gateway=gateway, openapi_data=loads_func(content))
 
     @classmethod
     def guess_openapi_format(cls, open_api_config: str) -> OpenAPIFormatEnum:
@@ -163,36 +165,24 @@ class OpenAPIExportManager:
     def _get_exporter(self) -> BaseExporter:
         return BaseExporter(self.api_version, self.include_bk_apigateway_resource, self.title, self.description)
 
-    def export(self, resources: list, file_type: str = ""):
+    def export_openapi(self, resources: list, file_type: str = ""):
         """
         file_type: json/yaml
         """
         return self._get_exporter().to_openapi(resources, file_type)
 
-    @classmethod
-    def get_openapi(
-        cls,
+    def get_swagger_by_paths(
+        self,
         paths: Dict[str, Any],
         openapi_format: OpenAPIFormatEnum,
-        version: Optional[str] = None,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
     ) -> str:
-        info = {
-            "version": version,
-            "title": title,
-            "description": description,
-        }
+        """
+        获取swagger2.0的格式导出(主要用于文档生成)
+        """
+        return self._get_exporter().get_swagger_by_paths(paths, openapi_format)
 
-        content = {
-            "swagger": "2.0",
-            "basePath": "/",
-            "info": {key: value for key, value in info.items() if value is not None},
-            "schemes": ["http"],
-            "paths": paths,
-        }
-
-        if openapi_format == OpenAPIFormatEnum.JSON:
-            return json.dumps(content, indent=4)
-
-        return yaml_export_dumps(content)
+    def get_swagger_by_resources(self, resources: List[Dict], file_type: str = "") -> str:
+        """
+        获取swagger2.0的格式导出(主要用于sdk生成)
+        """
+        return self._get_exporter().get_swagger_by_resource(resources, file_type)

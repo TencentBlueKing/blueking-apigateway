@@ -26,7 +26,7 @@ class OpenAPIExtensionEnum(StructuredEnum):
 
 # openAPI版本字段的key
 class OpenAPIVersionKeyEnum(StructuredEnum):
-    Swagger = EnumField("openapi")
+    Swagger = EnumField("swagger")
     OpenAPI = EnumField("openapi")
 
 

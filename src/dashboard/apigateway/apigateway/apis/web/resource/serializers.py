@@ -558,7 +558,6 @@ class ResourceImportInputSLZ(serializers.Serializer):
         # 将 openapi 内容转换为内部资源数据；
         # 此部分主要使用 SLZ 做数据转换 + 单字段值有效性校验（如正则）,
         # 不做复杂的业务逻辑校验，业务逻辑校验统一放到 ResourceImportValidator 处理
-        validate_result = {}
         try:
             openapi_manager = OpenAPIImportManager.load_from_openapi_content(self.context["gateway"], content)
         except Exception as err:
@@ -567,14 +566,12 @@ class ResourceImportInputSLZ(serializers.Serializer):
             )
 
         validate_err_list = openapi_manager.validate()
-
         if len(validate_err_list) != 0:
             slz = ResourceImportCheckFailOutputSLZ(
                 instance=validate_err_list,
                 many=True,
             )
-            validate_result["validate_err_list"] = slz.data
-            return validate_result
+            return {"validate_err_list": slz.data}
 
         slz = ResourceDataImportSLZ(
             data=openapi_manager.raw_resource_list,
@@ -584,8 +581,9 @@ class ResourceImportInputSLZ(serializers.Serializer):
             },
         )
         slz.is_valid(raise_exception=True)
-        validate_result["resource_list"] = openapi_manager.resource_list
-        return validate_result
+        return {
+            "resource_list": openapi_manager.resource_list,
+        }
 
 
 class ResourceImportCheckInputSLZ(ResourceImportInputSLZ):

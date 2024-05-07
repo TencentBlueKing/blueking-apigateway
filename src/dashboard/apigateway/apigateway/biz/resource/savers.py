@@ -23,6 +23,7 @@ from django.utils.translation import gettext as _
 from pydantic import parse_obj_as
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
+from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.biz.resource import ResourceHandler
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ProxyTypeEnum
@@ -30,7 +31,6 @@ from apigateway.core.models import Context, Gateway, Proxy, Resource
 from apigateway.utils.time import now_datetime
 
 from .models import ResourceData
-from ...apps.openapi.models import OpenAPIResourceSchema
 
 BULK_BATCH_SIZE = 100
 
@@ -267,14 +267,7 @@ class ResourcesSaver:
         del_resource_openapi_schema_ids = []
         for resource_data in self.resource_data_list:
             assert resource_data.resource
-            no_schema = False
-            if (
-                len(resource_data.openapi_schema.get("requestBody", {}))
-                + len(resource_data.openapi_schema.get("parameters", {}))
-                + len(resource_data.openapi_schema.get("responses", {}))
-                == 0
-            ):
-                no_schema = True
+            no_schema = resource_data.openapi_schema == {}
 
             if resource_data.resource.id in remaining_resource_schemas:
                 old_resource_openapi_schema = remaining_resource_schemas[resource_data.resource.id]
