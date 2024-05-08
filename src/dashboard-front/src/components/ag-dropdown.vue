@@ -19,6 +19,7 @@
             @click="handleDropdownClick(item)"
             :class="{ disabled: item.disabled }"
             :key="item.value"
+            v-bk-tooltips="{ content: item?.tooltips, disabled: !item?.tooltips }"
           >
             {{ item.label }}
           </bk-dropdown-item>
@@ -34,6 +35,10 @@ import { AngleRight } from 'bkui-vue/lib/icon';
 
 const slots = useSlots();
 
+interface ApigwIDropList extends IDropList {
+  tooltips?: string;
+}
+
 const props = defineProps({
   text: {
     type: String,
@@ -44,7 +49,7 @@ const props = defineProps({
     default: 'click',
   },
   dropdownList: {
-    type: Array as PropType<IDropList[]>,
+    type: Array as PropType<ApigwIDropList[]>,
     default: [{ value: 'test', label: '测试' }],
   },
   isDisabled: {
