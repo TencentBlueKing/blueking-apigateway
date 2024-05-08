@@ -22,7 +22,6 @@ from cachetools import TTLCache, cached
 from django.conf import settings
 
 from esb.bkcore.models import AppAccount
-from esb.paas2.models import App
 
 
 class AppSecureInfo:
@@ -34,12 +33,6 @@ class AppSecureInfo:
     @cached(cache=TTLCache(maxsize=2000, ttl=300))
     def get_by_app_code(cls, app_code: str) -> Optional[dict]:
         secure_key_list = []
-
-        # get secret from paas
-        if settings.BK_PAAS2_ENABLED:
-            app = App.objects.filter(code=app_code).first()
-            if app:
-                secure_key_list.append(app.auth_token)
 
         # get secret from esb
         app = AppAccount.objects.filter(app_code=app_code).first()

@@ -25,7 +25,6 @@ from apigateway.apps.plugin.constants import (
     PluginBindingScopeEnum,
     PluginBindingSourceEnum,
     PluginStyleEnum,
-    PluginTypeEnum,
     PluginTypeScopeEnum,
 )
 from apigateway.apps.plugin.managers import (
@@ -35,7 +34,7 @@ from apigateway.apps.plugin.managers import (
     PluginTypeManager,
 )
 from apigateway.common.i18n.field import I18nProperty
-from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
+from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway
 from apigateway.schema.models import Schema
 from apigateway.utils.django import JSONField
@@ -156,36 +155,6 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
         return f"<PluginConfig {self.pk}/{self.type.code}>"
 
 
-# ====================================================
-
-
-# FIXME: delete it in 1.14
-class Plugin(ConfigModelMixin):
-    """废弃模型，保留是为了迁移数据"""
-
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
-    name = models.CharField(max_length=64, db_index=True)
-    description = models.TextField(blank=True, default="")
-    type = models.CharField(max_length=32, choices=PluginTypeEnum.get_choices())
-
-    target = models.ForeignKey(PluginConfig, on_delete=models.SET_NULL, null=True)
-    schema = models.ForeignKey(Schema, blank=True, null=True, on_delete=models.PROTECT)
-
-    # config from ConfigModelMixin
-
-    def __str__(self):
-        return f"<Plugin: {self.api}/{self.name}/{self.type}>"
-
-    class Meta:
-        db_table = "plugin"
-        verbose_name = _("插件")
-        verbose_name_plural = _("插件")
-        unique_together = ("api", "name", "type")
-
-
-# ====================================================
-
-
 class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
     """插件绑定
 
@@ -205,10 +174,6 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
         default=PluginBindingSourceEnum.USER_CREATE.value,
         null=True,
     )
-
-    # FIXME: remove in 1.14
-    type = models.CharField(max_length=32, choices=PluginTypeEnum.get_choices(), null=True)
-    plugin = models.ForeignKey(Plugin, on_delete=models.SET_NULL, null=True)
 
     objects = PluginBindingManager()
 

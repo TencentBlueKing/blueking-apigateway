@@ -26,7 +26,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ("label", "0003_auto_20230227_2006"),
         ("support", "0015_auto_20230227_2006"),
-        ("access_strategy", "0007_auto_20230227_2006"),
         ("plugin", "0005_auto_20230227_2006"),
         ("monitor", "0008_auto_20230227_2006"),
         ("permission", "0009_auto_20210219_2129"),

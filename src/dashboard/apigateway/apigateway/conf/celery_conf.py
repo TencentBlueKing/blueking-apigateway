@@ -32,7 +32,6 @@ CELERY_IMPORTS = (
     "apigateway.apps.monitor.tasks",
     "apigateway.apps.metrics.tasks",
     "apigateway.apps.permission.tasks",
-    "apigateway.legacy_esb.tasks",
     "apigateway.apps.esb.component.tasks",
     "apigateway.controller.tasks",
 )

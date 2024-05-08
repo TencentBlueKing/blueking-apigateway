@@ -51,13 +51,6 @@ sync_bk_esb() {
     echo "API gateway bk-esb sync definition end"
 }
 
-sync_bk_esb_buffet() {
-    # sync gateway bk-esb-buffet
-    echo "API gateway bk-esb-buffet sync definition start ..."
-    python manage.py sync_apigw_config --api-name=bk-esb-buffet --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-buffet-definition.yaml"
-    echo "API gateway bk-esb-buffet sync definition end ..."
-}
-
 sync_bk_default() {
     # sync gateway bk-default
     echo "API gateway ${DEFAULT_MICRO_GATEWAY_API_NAME} sync definition start ..."
@@ -73,9 +66,5 @@ sync_bk_default() {
 sync_bk_default
 sync_bk_apigateway
 sync_bk_esb
-sync_bk_esb_buffet
 sync_bk_apigateway_inner
 
-
-# 升级脚本执行
-python manage.py diff_and_make_new_release --more --run --pub
