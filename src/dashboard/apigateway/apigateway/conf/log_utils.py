@@ -125,11 +125,6 @@ def get_logging_config(log_level: str, is_local: bool, log_dir: str, log_to_file
                 "level": "INFO",
                 "propagate": True,
             },
-            "apigateway.legacy_esb.management": {
-                "handlers": ["console_simple"],
-                "level": "INFO",
-                "propagate": True,
-            },
         },
     }
 
