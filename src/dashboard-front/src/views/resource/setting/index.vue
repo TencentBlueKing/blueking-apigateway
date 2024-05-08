@@ -505,11 +505,14 @@ const { t } = useI18n();
 const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
 // 导入下拉
 const importDropData = ref([{ value: 'config', label: '资源配置' }, { value: 'doc', label: '资源文档' }]);
+interface ApigwIDropList extends IDropList {
+  tooltips?: string;
+}
 // 导出下拉
-const exportDropData = ref<IDropList[]>([
+const exportDropData = ref<ApigwIDropList[]>([
   { value: 'all', label: t('全部资源') },
-  { value: 'filtered', label: t('已筛选资源'), disabled: false },
-  { value: 'selected', label: t('已选资源'), disabled: false }]);
+  { value: 'filtered', label: t('已筛选资源'), disabled: false, tooltips: t('请先筛选资源') },
+  { value: 'selected', label: t('已选资源'), disabled: false, tooltips: t('请先勾选资源') }]);
 
 const route = useRoute();
 const router = useRouter();
@@ -1098,7 +1101,7 @@ const settings = {
     { name: t('文档'), field: 'docs' },
     { name: t('标签'), field: 'labels' },
     { name: t('更新时间'), field: 'updated_time' },
-    { name: t('操作'), field: 'act' },
+    { name: t('操作'), field: 'act', disabled: true },
   ],
   checked: ['name', 'backend_name', 'method', 'path', 'plugin_count', 'docs', 'labels', 'updated_time', 'act'],
 };

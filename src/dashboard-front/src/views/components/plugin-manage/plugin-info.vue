@@ -6,27 +6,51 @@
     <div class="info-header">
       <span class="cur-icon">{{ pluginCodeFirst(curPluginInfo?.code) }}</span>
       <div class="cur-text">
-        <p class="cur-name">{{ curPluginInfo?.name }}</p>
-        <ul class="cur-binding-info">
-          <li>
-            {{ t('当前版本：') }}
-            <span class="cur-version">{{ t('1.0.0') }}</span>
-          </li>
-          <li>
-            {{ t('已绑定的资源：') }}
-            <span :class="[curPluginInfo?.related_scope_count?.resource === 0 ? 'empty' : 'bound',]">
-              {{ curPluginInfo?.related_scope_count?.resource }}
-            </span>
-          </li>
-          <li>
-            {{ t('已绑定的环境：') }}
-            <span :class="[curPluginInfo?.related_scope_count?.stage === 0 ? 'empty' : 'bound',]">
-              {{ curPluginInfo?.related_scope_count?.stage }}
-            </span>
-          </li>
-        </ul>
+        <div class="cur-info">
+          <span class="cur-name">{{ curPluginInfo?.name }}</span>
+          <ul class="cur-binding-info">
+            <li>
+              {{ t('当前版本：') }}
+              <span class="cur-version">{{ t('1.0.0') }}</span>
+            </li>
+            <li>
+              {{ t('已绑定的资源：') }}
+              <span :class="[curPluginInfo?.related_scope_count?.resource === 0 ? 'empty' : 'bound',]">
+                {{ curPluginInfo?.related_scope_count?.resource }}
+              </span>
+            </li>
+            <li>
+              {{ t('已绑定的环境：') }}
+              <span :class="[curPluginInfo?.related_scope_count?.stage === 0 ? 'empty' : 'bound',]">
+                {{ curPluginInfo?.related_scope_count?.stage }}
+              </span>
+            </li>
+          </ul>
+        </div>
+        <div class="cur-describe">
+          {{ curPluginInfo?.notes }}
+        </div>
+      </div>
+      <div class="choose-plugin" v-show="isAdd" @click="showChoosePlugin = !showChoosePlugin">
+        <transfer />
+        <span>切换插件</span>
       </div>
     </div>
+    <bk-select
+      class="choose-plugin-select"
+      v-model="choosePlugin"
+      :clearable="false"
+      @change="handleChoosePlugin"
+      v-show="showChoosePlugin"
+    >
+      <bk-option
+        v-for="item in pluginList"
+        :id="item.code"
+        :key="item.code"
+        :name="item.name"
+        :disabled="isBound(item)"
+      />
+    </bk-select>
     <div class="info-form-container mt20">
       <!-- <bk-form ref="formRef" class="info-form" :model="configFormData" :rules="rules" form-type="vertical">
         <bk-form-item :label="t('名称')" property="name" required>
@@ -96,12 +120,13 @@ import createForm from '@blueking/bkui-form';
 import { json2yaml, yaml2json } from '@/common/util';
 import whitelistTable from './whitelist-table.vue';
 import { useStage } from '@/store';
+import { Transfer } from 'bkui-vue/lib/icon';
 
 const stageStore = useStage();
 const BkSchemaForm = createForm();
 
 const { t } = useI18n();
-const emit = defineEmits(['on-change']);
+const emit = defineEmits(['on-change', 'choose-plugin']);
 
 const schemaFormData = ref({});
 const formConfig = ref({
@@ -123,12 +148,22 @@ const props = defineProps({
   type: {
     type: String,
   },
+  pluginList: {
+    type: Array<any>,
+    default: () => [],
+  },
+  bindingPlugins: {
+    type: Array<any>,
+    default: () => [],
+  },
 });
 
 const { curPlugin } = toRefs(props);
 const formRef = ref(null);
 const whitelist = ref(null);
 const curPluginInfo = ref<any>(curPlugin);
+const choosePlugin = ref<string>(curPluginInfo.value?.code);
+const showChoosePlugin = ref<boolean>(false);
 const isPluginFormLoading = ref(false);
 const infoNotes = ref('');
 const isAdd = ref(false);
@@ -141,6 +176,12 @@ const pluginCodeFirst = computed(() => {
 });
 const typeId = ref<number>();
 const formStyle = ref<string>();
+
+const isBound = computed(() => {
+  return function (obj: any) {
+    return props?.bindingPlugins?.some((item: { code: string; }) => item.code === obj.code);
+  };
+});
 
 // 上一页
 const handlePre = () => {
@@ -199,13 +240,11 @@ const handleCancel = () => {
   }
   emit('on-change', 'editCancel');
 };
-const init = async () => {
-  isStage.value = props.scopeInfo.scopeType === 'stage';
-  isAdd.value = props.type === 'add';
-  curPluginInfo.value = props.curPlugin;
-  const { scopeInfo: { apigwId } } = props;
-  const { curPlugin: { code } } = props;
+
+const getSchemaFormData = async (code: string) => {
   try {
+    const { scopeInfo: { apigwId } } = props;
+
     isPluginFormLoading.value = true;
     const res = await getPluginForm(apigwId, code);
     // const res = {
@@ -436,14 +475,33 @@ const init = async () => {
     console.log('error', error);
   }
 };
+
+const handleChoosePlugin = () => {
+  const plugin = props?.pluginList?.filter((item: any) => item.code === choosePlugin.value)[0];
+  if (plugin) {
+    curPluginInfo.value = plugin;
+    getSchemaFormData(choosePlugin.value);
+    emit('choose-plugin', plugin);
+  }
+};
+
+const init = async () => {
+  isStage.value = props.scopeInfo.scopeType === 'stage';
+  isAdd.value = props.type === 'add';
+  curPluginInfo.value = props.curPlugin;
+  const { curPlugin: { code } } = props;
+  getSchemaFormData(code);
+};
 init();
 </script>
 
 <style lang="scss" scoped>
 .info-header {
   background-color: #f5f7fa;;
-  padding: 15px 20px;
+  border-radius: 2px;
+  padding: 8px 16px;
   display: flex;
+  position: relative;
 
   .cur-icon {
     display: inline-block;
@@ -459,34 +517,60 @@ init();
     margin-right: 18px;
   }
 
-  .cur-name {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 10px;
-    margin-top: 10px;
-    color: #313238;
+  .cur-text {
+    .cur-info {
+      margin-top: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      .cur-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: #313238;
+        margin-right: 24px;
+      }
+      .cur-binding-info {
+        display: flex;
+        align-items: center;
+        color: #979ba5;
+        font-size: 12px;
+        li:not(:nth-last-child(1)) {
+          margin-right: 32px;
+        }
+        .cur-version {
+          color: #313238;
+          font-weight: 700;
+        }
+
+        .empty {
+          color: #63656e;
+          font-weight: 700;
+        }
+
+        .bound {
+          color: #3a84ff;
+          font-weight: 700;
+        }
+      }
+    }
+    .cur-describe {
+      font-size: 12px;
+      color: #63656E;
+    }
   }
 
-  .cur-binding-info {
+  .choose-plugin {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 24px;
+    font-size: 14px;
+    color: #3A84FF;
     display: flex;
-    width: 370px;
-    justify-content: space-between;
-    color: #979ba5;
-    font-size: 12px;
-
-    .cur-version {
-      color: #313238;
-      font-weight: 700;
-    }
-
-    .empty {
-      color: #63656e;
-      font-weight: 700;
-    }
-
-    .bound {
-      color: #3a84ff;
-      font-weight: 700;
+    align-content: center;
+    cursor: pointer;
+    span {
+      margin-left: 4px;
     }
   }
 }
@@ -509,6 +593,16 @@ init();
   }
   .ml8 {
     margin-left: 8px;
+  }
+}
+
+.choose-plugin-select {
+  margin-top: 4px;
+  :deep(.bk-input) {
+    border: 1px solid #DCDEE5;
+    .angle-up {
+      color: #DCDEE5;;
+    }
   }
 }
 </style>
