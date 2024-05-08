@@ -46,7 +46,7 @@ class ResourceSyncApi(generics.CreateAPIView):
             data=request.data,
             context={
                 "stages": Stage.objects.filter(gateway=request.gateway),
-                "gateway": request.gatewa,
+                "gateway": request.gateway,
             },
         )
         slz.is_valid(raise_exception=True)
