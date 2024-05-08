@@ -19,11 +19,13 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
-from apigateway.biz.validators import MaxCountPerGatewayValidator
+from apigateway.biz.releaser import ReleaseValidationError
+from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -38,6 +40,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
     release = serializers.SerializerMethodField(help_text="发布信息")
     resource_version = serializers.SerializerMethodField(help_text="资源版本")
     publish_id = serializers.SerializerMethodField(help_text="发布ID")
+    publish_validate_msg = serializers.SerializerMethodField(help_text="发布校验结果,如果有值，则不能发布")
     new_resource_version = serializers.SerializerMethodField(help_text="新资源版本")
     description = SerializerTranslatedField(
         default_field="description_i18n",
@@ -61,15 +64,25 @@ class StageOutputSLZ(serializers.ModelSerializer):
             "release",
             "resource_version",
             "publish_id",
+            "publish_validate_msg",
             "new_resource_version",
         )
 
     def get_release(self, obj):
+        # 获取stage发布状态
+        has_release = self.context["stage_release"].get(obj.id, {}).get("release_status", False)
+
+        # 如果stage有发布，则获取其实时发布状态，否则则为未发布
+        status = (
+            self.context["stage_publish_status"].get(obj.id, {}).get("status", ReleaseStatusEnum.SUCCESS.value)
+            if has_release
+            else ReleaseStatusEnum.UNRELEASED.value
+        )
+
         release_time = self.context["stage_release"].get(obj.id, {}).get("release_time", "")
+
         return {
-            "status": self.context["stage_publish_status"]
-            .get(obj.id, {})
-            .get("status", ReleaseStatusEnum.UNRELEASED.value),
+            "status": status,
             "created_time": serializers.DateTimeField(allow_null=True, required=False).to_representation(release_time),
             "created_by": self.context["stage_release"].get(obj.id, {}).get("release_by", ""),
         }
@@ -82,6 +95,21 @@ class StageOutputSLZ(serializers.ModelSerializer):
 
     def get_publish_id(self, obj):
         return self.context["stage_publish_status"].get(obj.id, {}).get("publish_id", 0)
+
+    def get_publish_validate_msg(self, obj):
+        """
+        获取发布校验结果
+        """
+
+        validate_err_message: str = ""
+
+        publish_validator = PublishValidator(obj.gateway, obj)
+        try:
+            publish_validator()
+        except (ValidationError, ReleaseValidationError) as err:
+            validate_err_message = err.detail[0] if isinstance(err, ValidationError) else str(err)
+
+        return validate_err_message
 
     def get_new_resource_version(self, obj):
         new_resource_version = self.context["new_resource_version"]

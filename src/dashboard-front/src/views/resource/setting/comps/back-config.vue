@@ -141,10 +141,11 @@
 <script setup lang="tsx">
 import { ref, unref, watch, computed,  onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { cloneDeep } from 'lodash';
+
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
 import { useCommon } from '../../../../store';
 import { useGetGlobalProperties } from '@/hooks';
-import { cloneDeep } from 'lodash';
 import mitt from '@/common/event-bus';
 
 const props = defineProps({
@@ -184,6 +185,7 @@ const timeInputRef = ref(null)
 // 全局变量
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
+import { Message } from 'bkui-vue';
 
 const rules = {
   'config.path': [
@@ -288,12 +290,14 @@ const renderTimeOutLabel = () => {
                   <bk-input
                     v-model={timeOutValue.value}
                     maxlength={3}
+                    overMaxLengthLimit={true}
                     class={isTimeEmpty ? 'time-empty-error' : ''}
                     placeholder={t('请输入超时时间')}
                     onInput={(value:string) => {handleTimeOutInput(value)}}
                     nativeOnKeypress={(value:string) => { value = value.replace(/\d/g, '') }}
                     autofocus={true}
                     suffix='s'
+                    onEnter={() => handleConfirmTime()}
                   />
                 </div>
                 <div class='back-config-timeout-tip'>{t('最大 300s')}</div>
@@ -307,7 +311,7 @@ const renderTimeOutLabel = () => {
           onCancel={() => handleCancelTime()}
         >
           <i
-            class="apigateway-icon icon-ag-edit-line edit-action"
+            class="apigateway-icon icon-ag-bulk-edit edit-action"
             v-bk-tooltips={{
               content: (
                 <div>
@@ -320,12 +324,10 @@ const renderTimeOutLabel = () => {
           />
         </bk-pop-confirm>
         <i
-          class="apigateway-icon icon-ag-cc-history refresh-icon"
+          class="apigateway-icon icon-ag-undo-2 refresh-icon"
           v-bk-tooltips={{
             content: (
-              <div>
-                {t('恢复初始值')}
-              </div>
+              <div>{t('恢复初始值')}</div>
             )
           }}
           onClick={() => handleRefreshTime()}
@@ -409,6 +411,31 @@ const handleMouseLeave = (e: Event, row: Record<string, number | string | boolea
   }, 100);
 };
 
+const init = async () => {
+  const res = await getBackendsListData(common.apigwId);
+  servicesData.value = res.results;
+};
+
+const validate = async () => {
+  let isHost = true;
+  for (let i = 0; i < servicesConfigs.value?.length; i++) {
+    const item = servicesConfigs.value[i];
+    if (!item?.hosts[0]?.host) {
+      isHost = false;
+      break;
+    }
+  }
+  if (isHost) {
+    await backRef.value?.validate();
+  } else {
+    Message({
+      theme: 'warning',
+      message: '请先配置后端服务地址',
+    });
+    return Promise.reject('请先配置后端服务地址');
+  }
+};
+
 watch(
   () => props.detail,
   (val: any) => {
@@ -420,15 +447,6 @@ watch(
   },
   { immediate: true },
 );
-
-const init = async () => {
-  const res = await getBackendsListData(common.apigwId);
-  servicesData.value = res.results;
-};
-
-const validate = async () => {
-  await backRef.value?.validate();
-};
 
 onMounted(() => {
   // 事件总线监听重新获取环境列表

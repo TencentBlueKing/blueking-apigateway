@@ -10,18 +10,26 @@
              isDragging ? 'dragging' : '',
              isDetail && !isShowLeft ? 'welt' : '']"
     id="resourceId">
-
     <div
       class="resource-container-lf"
       id="resourceLf"
-      :style="{ minWidth: isDetail ? isShowLeft ? '320px' : '0' : '100%' }"
-    >
+      :style="{ minWidth: isDetail ? isShowLeft ? '320px' : '0' : '100%' }">
       <bk-alert
         v-show="versionConfigs.needNewVersion && !isDetail"
         theme="warning"
         class="mb20"
-        :title="versionConfigs.versionMessage"
-      />
+      >
+        <template #title>
+          {{ versionConfigs.versionMessage }}
+          <bk-button
+            text
+            theme="primary"
+            v-if="versionConfigs.needNewVersion"
+            @click="handleCreateResourceVersion">
+            立即生成版本
+          </bk-button>
+        </template>
+      </bk-alert>
       <div class="operate flex-row justify-content-between mb15">
         <div class="flex-1 flex-row align-items-center">
           <div class="mr8">
@@ -43,8 +51,7 @@
             :is-disabled="!selections.length"></ag-dropdown>
           <ag-dropdown
             :text="t('更多')"
-            v-show="isDetail && isShowLeft"
-          >
+            v-show="isDetail && isShowLeft">
             <div class="nest-dropdown">
               <ag-dropdown
                 :text="t('导入')"
@@ -104,6 +111,7 @@
           <bk-table
             class="table-layout"
             :data="tableData"
+            :max-height="660"
             remote-pagination
             :pagination="pagination"
             :key="tableDataKey"
@@ -118,8 +126,8 @@
             :row-class="handleRowClass"
             border="outer"
             :settings="settings">
-            <bk-table-column width="80" type="selection" align="center" />
-            <bk-table-column :label="t('资源名称')" width="160" prop="name">
+            <bk-table-column width="80" type="selection" align="center" fixed />
+            <bk-table-column :label="t('资源名称')" width="160" prop="name" fixed>
               <template #default="{ row }">
                 <div class="resource-name">
                   <div
@@ -139,8 +147,7 @@
             <bk-table-column
               width="130"
               :label="t('后端服务')"
-              prop="backend_name"
-            >
+              prop="backend_name">
               <template #default="{ row }">
                 {{row?.backend?.name}}
               </template>
@@ -149,28 +156,24 @@
               prop="method"
               :label="renderMethodsLabel"
               :show-overflow-tooltip="false"
-              width="180"
-            >
+              width="130">
               <template #default="{ row }">
                 <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
               </template>
             </bk-table-column>
             <bk-table-column
               :label="t('前端请求路径')"
-              prop="path"
-            >
+              prop="path">
             </bk-table-column>
             <bk-table-column
               :label="t('插件数')"
-              width="60"
-              prop="plugin_count"
-            >
+              width="40"
+              prop="plugin_count">
               <template #default="{ row }">
                 <bk-button
                   text
                   theme="primary"
-                  @click="handleShowInfo(row.id, 'pluginManage')"
-                >
+                  @click="handleShowInfo(row.id, 'pluginManage')">
                   {{row?.plugin_count}}
                 </bk-button>
               </template>
@@ -178,8 +181,7 @@
             <bk-table-column
               :label="t('文档')"
               width="80"
-              prop="docs"
-            >
+              prop="docs">
               <template #default="{ row }">
                 <section v-if="row?.docs?.length" @click="handleShowDoc(row)">
                   <span class="document-info">
@@ -201,13 +203,12 @@
               :label="t('标签')"
               :show-overflow-tooltip="false"
               prop="labels"
-              width="280"
-            >
+              width="180">
               <template #default="{ row }">
                 <span class="text-warp" v-if="!row?.isEditLabel" @click="handleEditLabel(row)">
                   <span
                     v-if="row?.labels?.length"
-                    v-bk-tooltips="{ content: row?.labelText.join(';') }">
+                    v-bk-tooltips="{ content: tipsContent(row?.labelText), theme: 'light', placement: 'left' }">
                     <template v-for="(item, index) in row?.labels" :key="item.id">
                       <span style="margin-left: 4px;" v-if="index < row.tagOrder">
                         <bk-tag @click="handleEditLabel(row)">
@@ -217,9 +218,9 @@
                     </template>
                     <bk-tag
                       v-if="row.labels.length > row.tagOrder"
+                      @click="handleEditLabel(row)"
                       class="tag-cls">
                       +{{ row.labels.length - row.tagOrder }}
-                      <!-- ... -->
                     </bk-tag>
                   </span>
                   <span v-else>--</span>
@@ -228,7 +229,7 @@
                     @click="handleEditLabel(row)"
                     class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                 </span>
-                <section v-else>
+                <section style="position: absolute; width: 160px;" v-else>
                   <SelectCheckBox
                     :cur-select-label-ids="curLabelIds"
                     :resource-id="resourceId"
@@ -242,20 +243,18 @@
             <bk-table-column
               :label="t('更新时间')"
               prop="updated_time"
-              :sort="true"
-            >
+              :sort="true">
             </bk-table-column>
             <bk-table-column
               :label="t('操作')"
-              width="160"
-              prop="act"
-            >
+              width="140"
+              fixed="right"
+              prop="act">
               <template #default="{ data }">
                 <bk-button
                   text
                   theme="primary"
-                  @click="handleEditResource(data.id, 'edit')"
-                >
+                  @click="handleEditResource(data.id, 'edit')">
                   {{ t('编辑') }}
                 </bk-button>
 
@@ -263,8 +262,7 @@
                   text
                   theme="primary"
                   class="pl10 pr10"
-                  @click="handleEditResource(data.id, 'clone')"
-                >
+                  @click="handleEditResource(data.id, 'clone')">
                   {{ t('克隆') }}
                 </bk-button>
 
@@ -273,8 +271,7 @@
                   content="删除操作无法撤回，请谨慎操作！"
                   width="288"
                   trigger="click"
-                  @confirm="handleDeleteResource(data.id)"
-                >
+                  @confirm="handleDeleteResource(data.id)">
                   <bk-button
                     text
                     theme="primary">
@@ -321,19 +318,14 @@
         <bk-tab
           v-model:active="active"
           type="card-tab"
-          class="resource-tab-panel"
-        >
+          class="resource-tab-panel">
           <bk-tab-panel
             v-for="item in panels"
             :key="item.name"
             :name="item.name"
             :label="item.label"
-            render-directive="if"
-          >
-            <bk-loading
-              :opacity="1"
-              :loading="isComponentLoading"
-            >
+            render-directive="if">
+            <bk-loading :opacity="1" :loading="isComponentLoading">
               <!-- deleted-success 删除成功需要请求一次列表数据 更新详情 -->
               <component
                 v-if="item.name === active && resourceId"
@@ -444,14 +436,18 @@
           :cur-resource="curResource" @fetch="handleSuccess" @on-update="handleUpdateTitle"></ResourcesDoc>
       </template>
     </bk-sideslider>
+
     <!-- 生成版本 -->
-    <!-- <version-sideslider ref="versionSidesliderRef" /> -->
+    <version-sideslider ref="versionSidesliderRef" @done="mitt.emit('on-update-plugin');" />
   </div>
 </template>
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, onBeforeMount, shallowRef, h } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
+import { cloneDeep } from 'lodash';
+import { Message } from 'bkui-vue';
+
 import { useQueryList, useSelection } from '@/hooks';
 import {
   getResourceListData, deleteResources,
@@ -459,9 +455,8 @@ import {
   exportResources, exportDocs, checkNeedNewVersion,
   getGatewayLabels,
 } from '@/http';
-import { Message } from 'bkui-vue';
 import Detail from './detail.vue';
-// import VersionSideslider from './comps/version-sideslider.vue';
+import VersionSideslider from './comps/version-sideslider.vue';
 import SelectCheckBox from './comps/select-check-box.vue';
 import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
@@ -471,9 +466,8 @@ import RenderCustomColumn from '@/components/custom-table-header-filter';
 import ResourceSettingTopBar from '@/components/resource-setting-top-bar.vue';
 import mitt from '@/common/event-bus';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
-import { cloneDeep } from 'lodash';
 import { is24HoursAgo } from '@/common/util';
-import {  useCommon } from '@/store';
+import {  useCommon, useResourceVersion } from '@/store';
 
 const props = defineProps({
   apigwId: {
@@ -505,6 +499,7 @@ type TableEmptyConfType = {
 const leftWidth = ref('320px');
 const methodsEnum: any = ref(MethodsEnum);
 const common = useCommon();
+const resourceVersionStore = useResourceVersion();
 const { t } = useI18n();
 // 批量下拉的item
 const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
@@ -527,7 +522,7 @@ const tableEmptyConf = ref<TableEmptyConfType>({
 });
 
 // ref
-// const versionSidesliderRef = ref(null);
+const versionSidesliderRef = ref(null);
 // 导出参数
 const exportParams: IexportParams = reactive({
   export_type: '',
@@ -718,7 +713,7 @@ const {
   resetSelections,
 } = useSelection();
 
-const init =  () => {
+const init = () => {
   handleShowVersion();
   getLabelsData();
 };
@@ -765,6 +760,10 @@ const handleCreateResource = () => {
 // 编辑资源
 const handleEditResource = (id: number, type: string) => {
   const name = type === 'edit' ? 'apigwResourceEdit' : 'apigwResourceClone';
+  resourceVersionStore.setPageStatus({
+    isDetail: false,
+    isShowLeft: true,
+  });
   router.push({
     name,
     params: {
@@ -1041,18 +1040,9 @@ const handleEditLabel = (data: any) => {
 };
 
 // 生成版本功能
-// const handleCreateResourceVersion = async () => {
-//   if (!versionConfigs.needNewVersion) {
-//     Message({
-//       message: t('资源及资源文档无变更, 不需要生成新版本'),
-//       theme: 'error',
-//       width: 'auto',
-//     });
-//     return;
-//   }
-
-//   versionSidesliderRef.value.showReleaseSideslider();
-// };
+const handleCreateResourceVersion = async () => {
+  versionSidesliderRef.value.showReleaseSideslider();
+};
 
 // 获取标签数据
 const getLabelsData = async () => {
@@ -1091,6 +1081,12 @@ const handleRowClass = (v: any) => {
   return ret.join(' ');
 };
 
+const tipsContent = (data: any[]) => {
+  return h('div', {}, [
+    data.map((item: string) => h('div', { style: 'display: flex; align-items: center', class: 'mt5 tips-cls' }, [item])),
+  ]);
+};
+
 const settings = {
   trigger: 'click',
   fields: [
@@ -1111,7 +1107,7 @@ watch(
   () => isDetail.value,
   (v) => {
     if (!v) {
-      tableData.value?.map((item: any) => {
+      tableData.value?.forEach((item: any) => {
         item.highlight = false;
       });
     }
@@ -1140,7 +1136,7 @@ watch(
     // 设置显示的tag值
     tableData.value.forEach((item: any) => {
       item.is24HoursAgo = is24HoursAgo(item.created_time);
-      item.tagOrder = '3';
+      item.tagOrder = 1;
       item.labelText = item.labels?.map((label: any) => {
         return label.name;
       });
@@ -1219,6 +1215,29 @@ watch(() => route, () => {
   }
 }, { immediate: true, deep: true });
 
+watch(
+  () => [isDetail.value, isShowLeft.value],
+  () => {
+    resourceVersionStore.setPageStatus({
+      isDetail: isDetail.value,
+      isShowLeft: isShowLeft.value,
+    });
+  },
+);
+
+const recoverPageStatus = () => {
+  const { isDetail: d, isShowLeft: l } = resourceVersionStore.getPageStatus;
+  isDetail.value = d;
+  isShowLeft.value = l;
+
+  const el = document.getElementById('resourceLf');
+  if (!l) {
+    el.style.width = '0px';
+  } else {
+    el.style.width = leftWidth.value;
+  }
+};
+
 onMounted(() => {
   init();
   dragTwoColDiv('resourceId', 'resourceLf', 'resourceLine'/* , 'resourceRg' */);
@@ -1228,6 +1247,9 @@ onMounted(() => {
     getList();
     handleShowVersion();
   });
+  if (route.meta.pageStatus) {
+    recoverPageStatus();
+  }
 });
 
 onBeforeMount(() => {
@@ -1295,8 +1317,8 @@ onBeforeMount(() => {
   .left-wraper{
     position: relative;
     background: #fff;
-    height: calc(100vh - 220px);
-    overflow-y: auto;
+    // height: calc(100vh - 220px);
+    // overflow-y: auto;
     // padding-bottom: 24px;
     .document-info{
       color: #3a84ff;
@@ -1304,11 +1326,12 @@ onBeforeMount(() => {
       cursor: pointer;
     }
     .plus-class{
-      font-size: 12px;
+      font-size: 14px;
+      font-weight: bold;
       cursor: pointer;
       color: #979BA5;
       background: #EAEBF0;
-      padding: 5px;
+      padding: 4px;
       &:hover {
         color: #3A84FF;
         background: #E1ECFF;
@@ -1352,10 +1375,10 @@ onBeforeMount(() => {
       }
     }
 
-    .text-warp{
+    .text-warp {
       position: relative;
       cursor: pointer;
-      .edit-icon{
+      .edit-icon {
         position: absolute;
         font-size: 24px;
         cursor: pointer;
@@ -1363,6 +1386,9 @@ onBeforeMount(() => {
         top: -2px;
         // top: 8px;
         // right: -20px;
+      }
+      :deep(.bk-tag-text) {
+        max-width: 80px;
       }
     }
     .tag-cls{
@@ -1444,5 +1470,23 @@ onBeforeMount(() => {
 }
 .welt {
   padding-left: 0px;
+}
+.ag-dot {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 50%;
+  border: 1px solid #C4C6CC;
+}
+
+.tips-cls {
+  background: #f0f1f5;
+  padding: 3px 8px;
+  border-radius: 2px;
+  cursor: default;
+  &:hover {
+    background: #d7d9e1 !important;
+  }
 }
 </style>

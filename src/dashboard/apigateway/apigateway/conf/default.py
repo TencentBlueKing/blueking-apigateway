@@ -108,7 +108,6 @@ INSTALLED_APPS = [
     "apigateway.schema",
     "apigateway.core",
     "apigateway.apps.gateway",
-    "apigateway.apps.access_strategy",
     "apigateway.apps.plugin",
     "apigateway.apps.label",
     "apigateway.apps.permission",
@@ -131,9 +130,6 @@ INSTALLED_APPS = [
     # "iam.contrib.iam_migration",
     # 蓝鲸通知中心
     "bk_notice_sdk",
-    # 开源版旧版 ESB 数据
-    "apigateway.legacy_esb",
-    "apigateway.legacy_esb.paas2",
 ]
 
 MIDDLEWARE = [
@@ -327,23 +323,7 @@ DATABASES = {
             "isolation_level": env.str("BK_ESB_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
         },
     },
-    "paas2": {
-        "ENGINE": env.str("BK_PAAS2_DATABASE_ENGINE", "django.db.backends.mysql"),
-        "NAME": env.str("BK_PAAS2_DATABASE_NAME", ""),
-        "USER": env.str("BK_PAAS2_DATABASE_USER", ""),
-        "PASSWORD": env.str("BK_PAAS2_DATABASE_PASSWORD", ""),
-        "HOST": env.str("BK_PAAS2_DATABASE_HOST", ""),
-        "PORT": env.int("BK_PAAS2_DATABASE_PORT", 3306),
-        "OPTIONS": {
-            "isolation_level": env.str("BK_PAAS2_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
-        },
-    },
 }
-
-# 如果 paas2 database 未配置，则去除
-BK_PAAS2_ENABLED = all([DATABASES["paas2"]["NAME"], DATABASES["paas2"]["USER"], DATABASES["paas2"]["HOST"]])
-if not BK_PAAS2_ENABLED:
-    DATABASES.pop("paas2", None)
 
 # redis 配置
 REDIS_HOST = env.str("BK_APIGW_REDIS_HOST", "localhost")
@@ -438,15 +418,6 @@ else:
     CELERY_TASK_DEFAULT_QUEUE = env.str(
         "BK_APIGW_CELERY_TASK_DEFAULT_QUEUE", f"{REDIS_PREFIX}bk_apigateway_dashboard_celery"
     )
-
-CELERY_BEAT_SCHEDULE.update(
-    {
-        "apigateway.legacy_esb.tasks.sync_legacy_esb_reusable_data": {
-            "task": "apigateway.legacy_esb.tasks.sync_legacy_esb_reusable_data",
-            "schedule": crontab(minute="*/5"),
-        },
-    }
-)
 
 if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
     CELERY_BEAT_SCHEDULE.update(
@@ -859,7 +830,6 @@ GLOBAL_GATEWAY_FEATURE_FLAG = {
     # 2024-02-20 in 1.13 has no support for FEATURE_FLAG_MICRO_GATEWAY_ENABLED, comment it until it's supported
     # "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
     "PLUGIN_ENABLED": env.bool("FEATURE_FLAG_PLUGIN_ENABLED", True),
-    "STAGE_RATE_LIMIT_ENABLED": env.bool("FEATURE_FLAG_STAGE_RATE_LIMIT_ENABLED", False),
     "RESOURCE_WITH_MOCK_ENABLED": env.bool("FEATURE_FLAG_RESOURCE_WITH_MOCK_ENABLED", False),
     "RESOURCE_DISABLE_STAGE_ENABLED": env.bool("FEATURE_FLAG_RESOURCE_DISABLE_STAGE_ENABLED", False),
     "BACKEND_SERVICE_ENABLED": env.bool("FEATURE_FLAG_BACKEND_SERVICE_ENABLED", False),

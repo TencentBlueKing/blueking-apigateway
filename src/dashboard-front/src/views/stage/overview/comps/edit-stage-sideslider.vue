@@ -3,7 +3,6 @@
   <div class="sideslider-wrapper">
     <bk-sideslider
       v-model:isShow="isShow"
-      :title="isAdd ? t('新建环境') : t('编辑环境')"
       :quick-close="true"
       width="960"
       ext-cls="stage-sideslider-cls"
@@ -12,192 +11,216 @@
       @hidden="emit('hidden')"
       :transfer="true"
     >
+      <template #header>
+        <div class="custom-side-header">
+          <div class="title">{{ isAdd ? t('新建环境') : t('编辑环境') }}</div>
+          <template v-if="!isAdd">
+            <span></span>
+            <div class="subtitle">{{ curStageData.name }}</div>
+          </template>
+        </div>
+      </template>
       <template #default>
         <bk-loading :loading="isDialogLoading">
           <div class="sideslider-content">
-            <section class="stage-form-item">
-              <div class="title">
-                <i class="apigateway-icon icon-ag-down-shape"></i>
-                {{ t('基本信息') }}
-              </div>
-              <div class="content">
-                <bk-form
-                  ref="baseInfoRef"
-                  :label-width="180"
-                  :model="curStageData"
-                  form-type="vertical"
-                >
-                  <bk-form-item
-                    :label="t('环境名称')"
-                    :required="true"
-                    :property="'name'"
-                    :rules="rules.name"
-                  >
-                    <bk-input
-                      :placeholder="t('请输入 2-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头')"
-                      v-model="curStageData.name"
-                      :disabled="!isAdd"
-                    ></bk-input>
-                    <p
-                      slot="tip"
-                      class="ag-tip mt5"
-                    >
-                      <i class="apigateway-icon icon-ag-info"></i>
-                      {{ t('环境唯一标识，创建后不可修改。创建网关成功后可新增环境') }}
-                    </p>
-                  </bk-form-item>
-                  <bk-form-item label="">
-                    <div class="address">
-                      <label>{{ t('访问地址') }}：</label>
-                      <!-- 网关名/环境名 -->
-                      <span>{{ stageAddress || '--' }}</span>
-                      <i
-                        class="apigateway-icon icon-ag-copy-info"
-                        @click.self="copy(stageAddress)"
-                      ></i>
-                    </div>
-                  </bk-form-item>
-                  <bk-form-item :label="t('描述')">
-                    <bk-input
-                      v-model="curStageData.description"
-                      :placeholder="t('请输入描述')"
-                    ></bk-input>
-                  </bk-form-item>
-                </bk-form>
-              </div>
-            </section>
-            <!-- 根据配置来 -->
-            <section
-              class="stage-form-item"
-              v-for="(backend, backendIndex) in curStageData.backends"
-              :key="backend.name"
-            >
-              <div class="title" v-if="backendIndex === 0">
-                <i class="apigateway-icon icon-ag-down-shape"></i>
-                {{ t('后端服务配置') }}
-              </div>
-              <div class="content">
-                <section class="backend-config-item">
-                  <div class="item-title">{{ backend.name }}</div>
-                  <div class="item-content">
+            <bk-collapse v-model="activeKey" class="bk-collapse-service">
+              <bk-collapse-panel name="base-info">
+                <template #header>
+                  <div class="panel-header">
+                    <angle-up-fill
+                      :class="[activeKey?.includes('base-info') ? 'panel-header-show' : 'panel-header-hide']"
+                    />
+                    <div class="title">{{ t('基础信息') }}</div>
+                  </div>
+                </template>
+                <template #content>
+                  <div class="content">
                     <bk-form
-                      ref="backendConfigRef"
+                      ref="baseInfoRef"
                       :label-width="180"
-                      :model="backend"
+                      :model="curStageData"
                       form-type="vertical"
                     >
                       <bk-form-item
+                        :label="t('环境名称')"
                         :required="true"
-                        :label="t('负载均衡类型')"
+                        :property="'name'"
+                        :rules="rules.name"
                       >
-                        <bk-select
-                          :clearable="false"
-                          :placeholder="t('负载均衡类型')"
-                          v-model="backend.config.loadbalance"
+                        <bk-input
+                          :placeholder="t('请输入 2-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头')"
+                          v-model="curStageData.name"
+                          :disabled="!isAdd"
+                        ></bk-input>
+                        <p
+                          class="ag-tip mt5"
                         >
-                          <bk-option
-                            v-for="option in loadbalanceList"
-                            :key="option.id"
-                            :id="option.id"
-                            :name="option.name"
-                          ></bk-option>
-                        </bk-select>
+                          <i class="apigateway-icon icon-ag-info"></i>
+                          {{ t('环境唯一标识，创建后不可修改。创建网关成功后可新增环境') }}
+                        </p>
                       </bk-form-item>
-
-                      <bk-form-item
-                        label="后端服务地址"
-                        v-for="(hostItem, index) of backend.config.hosts"
-                        :required="true"
-                        :property="`config.hosts.${index}.host`"
-                        :key="index"
-                        :rules="rules.host"
-                        :class="['backend-item-cls', { 'form-item-special': index !== 0 }]"
-                      >
-                        <div class="host-item mb10">
-                          <bk-input
-                            :placeholder="$t('格式: host:port')"
-                            v-model="hostItem.host"
-                            :key="backend.config.loadbalance"
-                          >
-                            <template #prefix>
-                              <bk-select
-                                v-model="hostItem.scheme"
-                                class="scheme-select-cls"
-                                style="width: 120px"
-                                :clearable="false"
-                              >
-                                <bk-option
-                                  v-for="(item, index1) in schemeList"
-                                  :key="index1"
-                                  :value="item.value"
-                                  :label="item.value"
-                                />
-                              </bk-select>
-                              <div class="slash">://</div>
-                            </template>
-                            <template
-                              #suffix
-                              v-if="backend.config.loadbalance === 'weighted-roundrobin'"
-                            >
-                              <bk-form-item
-                                :rules="rules.weight"
-                                :property="`config.hosts.${index}.weight`"
-                                label=""
-                                style="margin-bottom: 0px;">
-                                <bk-input
-                                  :class="['suffix-slot-cls', 'weights-input', { 'is-error': hostItem.isRoles }]"
-                                  :placeholder="$t('权重')"
-                                  type="number"
-                                  :min="1"
-                                  :max="10000"
-                                  v-model="hostItem.weight"
-                                ></bk-input>
-                              </bk-form-item>
-                            </template>
-                          </bk-input>
-
+                      <bk-form-item label="">
+                        <div class="address">
+                          <label>{{ t('访问地址') }}：</label>
+                          <!-- 网关名/环境名 -->
+                          <span>{{ stageAddress || '--' }}</span>
                           <i
-                            class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
-                            @click="handleAddServiceAddress(backend.name)"
-                          ></i>
-                          <i
-                            class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
-                            :class="{ disabled: backend.config.hosts.length < 2 }"
-                            @click="
-                              backend.config.hosts.length < 2 ? '' : handleDeleteServiceAddress(backend.name, index)"
+                            class="apigateway-icon icon-ag-copy-info"
+                            @click.self="copy(stageAddress)"
                           ></i>
                         </div>
                       </bk-form-item>
-
-                      <bk-form-item
-                        :label="$t('超时时间')"
-                        :required="true"
-                        :property="'config.timeout'"
-                        class="timeout-item-cls"
-                        :rules="rules.timeout"
-                        :error-display-type="'normal'"
-                      >
+                      <bk-form-item :label="t('描述')" class="last-form-item">
                         <bk-input
-                          type="number"
-                          :min="1"
-                          :max="300"
-                          v-model="backend.config.timeout"
-                        >
-                          <template #suffix>
-                            <div class="group-text group-text-style" :class="locale === 'en' ? 'long' : ''">
-                              {{ $t('秒') }}
-                            </div>
-                          </template>
-                        </bk-input>
-                        <p class="timeout-tip" :class="locale === 'en' ? 'long' : ''">
-                          {{ $t('最大 300 秒') }}
-                        </p>
+                          v-model="curStageData.description"
+                          :placeholder="t('请输入描述')"
+                        ></bk-input>
                       </bk-form-item>
                     </bk-form>
                   </div>
-                </section>
-              </div>
-            </section>
+                </template>
+              </bk-collapse-panel>
+
+              <bk-collapse-panel name="stage-config">
+                <template #header>
+                  <div class="panel-header">
+                    <angle-up-fill
+                      :class="[activeKey?.includes('stage-config') ? 'panel-header-show' : 'panel-header-hide']"
+                    />
+                    <div class="title">{{ t('后端服务配置') }}</div>
+                  </div>
+                </template>
+                <template #content>
+                  <div class="stage">
+                    <bk-collapse :list="curStageData.backends" header-icon="right-shape" v-model="activeIndex">
+                      <template #title="backend">
+                        <span class="stage-name">
+                          {{ backend.name }}
+                        </span>
+                      </template>
+                      <template #content="backend">
+                        <bk-form
+                          :ref="setBackendConfigRef"
+                          :label-width="180"
+                          :model="backend"
+                          form-type="vertical"
+                        >
+                          <bk-form-item
+                            :required="true"
+                            :label="t('负载均衡类型')"
+                          >
+                            <bk-select
+                              :clearable="false"
+                              :placeholder="t('负载均衡类型')"
+                              v-model="backend.config.loadbalance"
+                            >
+                              <bk-option
+                                v-for="option in loadbalanceList"
+                                :key="option.id"
+                                :id="option.id"
+                                :name="option.name"
+                              ></bk-option>
+                            </bk-select>
+                          </bk-form-item>
+
+                          <bk-form-item
+                            label="后端服务地址"
+                            v-for="(hostItem, index) of backend.config.hosts"
+                            :required="true"
+                            :property="`config.hosts.${index}.host`"
+                            :key="index"
+                            :rules="rules.host"
+                            :class="['backend-item-cls', { 'form-item-special': index !== 0 }]"
+                          >
+                            <div class="host-item">
+                              <bk-input
+                                :placeholder="$t('格式: host:port')"
+                                v-model="hostItem.host"
+                                :key="backend.config.loadbalance"
+                              >
+                                <template #prefix>
+                                  <bk-select
+                                    v-model="hostItem.scheme"
+                                    class="scheme-select-cls"
+                                    style="width: 120px"
+                                    :clearable="false"
+                                  >
+                                    <bk-option
+                                      v-for="(item, index1) in schemeList"
+                                      :key="index1"
+                                      :value="item.value"
+                                      :label="item.value"
+                                    />
+                                  </bk-select>
+                                  <div class="slash">://</div>
+                                </template>
+                                <template
+                                  #suffix
+                                  v-if="backend.config.loadbalance === 'weighted-roundrobin'"
+                                >
+                                  <bk-form-item
+                                    :rules="rules.weight"
+                                    :property="`config.hosts.${index}.weight`"
+                                    label=""
+                                    style="margin-bottom: 0px;">
+                                    <bk-input
+                                      :class="['suffix-slot-cls', 'weights-input', { 'is-error': hostItem.isRoles }]"
+                                      :placeholder="$t('权重')"
+                                      type="number"
+                                      :min="1"
+                                      :max="10000"
+                                      v-model="hostItem.weight"
+                                    ></bk-input>
+                                  </bk-form-item>
+                                </template>
+                              </bk-input>
+
+                              <i
+                                class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
+                                @click="handleAddServiceAddress(backend.name)"
+                              ></i>
+                              <i
+                                class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
+                                :class="{ disabled: backend.config.hosts.length < 2 }"
+                                @click="
+                                  backend.config.hosts.length < 2 ?
+                                    '' :
+                                    handleDeleteServiceAddress(backend.name, index)"
+                              ></i>
+                            </div>
+                          </bk-form-item>
+
+                          <bk-form-item
+                            :label="$t('超时时间')"
+                            :required="true"
+                            :property="'config.timeout'"
+                            class="timeout-item-cls"
+                            :rules="rules.timeout"
+                            :error-display-type="'normal'"
+                          >
+                            <bk-input
+                              type="number"
+                              :min="1"
+                              :max="300"
+                              v-model="backend.config.timeout"
+                            >
+                              <template #suffix>
+                                <div class="group-text group-text-style" :class="locale === 'en' ? 'long' : ''">
+                                  {{ $t('秒') }}
+                                </div>
+                              </template>
+                            </bk-input>
+                            <p class="timeout-tip" :class="locale === 'en' ? 'long' : ''">
+                              {{ $t('最大 300 秒') }}
+                            </p>
+                          </bk-form-item>
+                        </bk-form>
+                      </template>
+                    </bk-collapse>
+                  </div>
+                </template>
+              </bk-collapse-panel>
+            </bk-collapse>
           </div>
 
           <div class="footer-btn-wrapper">
@@ -255,6 +278,7 @@ import { useCommon, useStage } from '@/store';
 import { copy } from '@/common/util';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties, useSidebar } from '@/hooks';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
 
 const { t, locale } = useI18n();
 const common = useCommon();
@@ -264,7 +288,8 @@ const route = useRoute();
 
 const isShow = ref(false);
 const isAdsorb = ref<boolean>(false);
-
+const activeKey = ref(['base-info', 'stage-config']);
+const activeIndex = ref([0]);
 const emit = defineEmits(['hidden']);
 
 // 全局变量
@@ -395,7 +420,7 @@ const isDialogLoading = ref(true);
 
 // 获取对应Ref
 const baseInfoRef = ref(null);
-const backendConfigRef = ref(null);
+const backendConfigRef = ref([]);
 
 // 网关id
 const apigwId = +route.params.id;
@@ -403,13 +428,21 @@ const apigwId = +route.params.id;
 // 默认为新建
 const isAdd = ref(true);
 
+const setBackendConfigRef = (el: any) => {
+  if (el !== null) {
+    backendConfigRef.value.push(el);
+  }
+};
+
 // 新建初始化（新建）
 const addInit = async () => {
   isDialogLoading.value = true;
   // 获取当前网关下的backends(获取后端服务列表)
   const res = await getBackendsListData(apigwId);
   console.log('获取all后端服务列表', res);
-  curStageData.value.backends = res.results.map((item: any) => {
+  activeIndex.value = [];
+  curStageData.value.backends = res.results.map((item: any, index: number) => {
+    activeIndex.value.push(index);
     // 后端服务配置默认值
     return {
       id: item.id,
@@ -437,6 +470,10 @@ const getStageBackendList = async () => {
   isDialogLoading.value = true;
   const backendList = await getStageBackends(common.apigwId, stageStore.curStageData.id);
   curStageData.value.backends = backendList;
+  activeIndex.value = [];
+  backendList?.forEach((item: any, index: number) => {
+    activeIndex.value.push(index);
+  });
   // 数据转换
   isDialogLoading.value = false;
 };
@@ -454,6 +491,7 @@ const handleCloseSideSlider = () => {
       },
     ],
   };
+  activeIndex.value = [0];
 };
 
 // 显示侧边栏
@@ -643,51 +681,25 @@ defineExpose({
   }
 }
 .sideslider-content {
-  padding: 20px 40px;
-  .stage-form-item {
-    .title {
-      height: 54px;
-      line-height: 54px;
-      font-weight: 700;
+  padding: 20px 40px 32px;
+  .host-item {
+    display: flex;
+    align-items: center;
+    i {
       font-size: 14px;
-      color: #313238;
-    }
-  }
-  .backend-config-item {
-    .item-title {
-      height: 40px;
-      line-height: 40px;
-      background: #f0f1f5;
-      border-radius: 2px;
-      font-weight: 700;
-      font-size: 14px;
-      color: #63656e;
-      padding: 0 16px;
-    }
-    .item-content {
-      background: #f5f7fa;
-      padding: 20px 32px;
-
-      .host-item {
-        display: flex;
-        align-items: center;
-        i {
-          font-size: 14px;
-          color: #979ba5;
-          cursor: pointer;
-          &:hover {
-            color: #63656e;
-          }
-
-          &.disabled {
-            color: #dcdee5;
-            cursor: not-allowed;
-          }
-        }
-        :deep(.bk-form-error) {
-          position: relative;
-        }
+      color: #979ba5;
+      cursor: pointer;
+      &:hover {
+        color: #63656e;
       }
+
+      &.disabled {
+        color: #dcdee5;
+        cursor: not-allowed;
+      }
+    }
+    :deep(.bk-form-error) {
+      position: relative;
     }
   }
   .address {
@@ -782,7 +794,7 @@ defineExpose({
   }
 }
 .backend-item-cls {
-  margin-bottom: 8px;
+  margin-bottom: 18px;
   :deep(.bk-form-error) {
     position: relative;
   }
@@ -799,7 +811,7 @@ defineExpose({
 .footer-btn-wrapper {
   bottom: 0;
   height: 52px;
-  padding-left: 20px;
+  padding-left: 40px;
 }
 .fixed-footer-btn-wrapper {
   position: fixed;
@@ -807,7 +819,7 @@ defineExpose({
   left: 0;
   right: 0;
   padding: 10px 0;
-  padding-left: 20px;
+  padding-left: 40px;
   background: #fff;
   box-shadow: 0 -2px 4px 0 #0000000f;
   z-index: 9;
@@ -815,5 +827,71 @@ defineExpose({
 }
 .is-pinned {
   opacity: 0;
+}
+.bk-collapse-service {
+  .panel-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 0px;
+    cursor: pointer;
+    .title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #313238;
+      margin-left: 8px;
+    }
+
+    .panel-header-show {
+      transition: .2s;
+      transform: rotate(0deg);
+    }
+    .panel-header-hide {
+      transition: .2s;
+      transform: rotate(-90deg);
+    }
+  }
+
+  :deep(.bk-collapse-content) {
+    padding: 0px;
+  }
+
+  .stage {
+    :deep(.bk-collapse-title) {
+      margin-left: 23px;
+      font-size: 14px;
+      color: #63656E;
+      font-weight: 700;
+    }
+    :deep(.bk-collapse-item) {
+      background-color: #F5F7FB;
+      &:not(:nth-last-child(1)) {
+        margin-bottom: 25px;
+      }
+
+      .bk-collapse-content {
+        padding: 5px 32px;
+      }
+    }
+
+    .stage-name {
+      color: #63656E;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    :deep(.bk-collapse-icon) {
+      left: 17px;
+      top: 17px;
+      color: #979AA2;
+
+      svg {
+        font-size: 13px;
+      }
+    }
+  }
+
+  .last-form-item {
+    margin-bottom: 12px;
+  }
 }
 </style>

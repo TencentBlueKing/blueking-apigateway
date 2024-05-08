@@ -40,8 +40,8 @@ export default {
   // 环境访问地址域名
   STAGE_DOMAIN: BK_API_RESOURCE_URL_TMPL,
 
-  // 加入圈子
-  MARKER: 'https://bk.tencent.com/s-mart/community/',
+  // 开源社区 or 加入圈子
+  MARKER: 'https://github.com/TencentBlueKing/blueking-apigateway',
 
   OA_DOMAIN: '',
 

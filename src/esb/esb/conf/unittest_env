@@ -1,5 +1,4 @@
 unset BK_ESB_DATABASE_PASSWORD
-unset BK_PAAS2_DATABASE_PASSWORD
 
 export BKPAAS_ENVIRONMENT="dev"
 export BK_APP_CODE="bk_apigateway"
@@ -9,5 +8,3 @@ export SECRET_KEY="H4lkkFMyTT/Aymft8Z96YLHX4E24DK3LB74tQXiztms3vOdTCXcHcJYiV2btc
 export ESB_TOKEN="H4lkkFMyTT/Aymft8Z96YLHX4E24DK3LB74tQXiztms3vOdTCXcHcJYiV2btc2PuOzG4Pk5ERn9H8tehpJFB3Q=="
 export BK_ESB_DATABASE_ENGINE="django.db.backends.sqlite3"
 export BK_ESB_DATABASE_NAME="esb_unittest.sqlite3"
-export BK_PAAS2_DATABASE_ENGINE="django.db.backends.sqlite3"
-export BK_PAAS2_DATABASE_NAME="paas2_unittest.sqlite3"

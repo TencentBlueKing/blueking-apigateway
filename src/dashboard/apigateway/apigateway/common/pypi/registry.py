@@ -18,6 +18,7 @@
 #
 from typing import Any
 
+from packaging.version import InvalidVersion
 from packaging.version import parse as parse_version
 from pypi_simple import PyPISimple
 
@@ -45,7 +46,13 @@ class SimplePypiRegistry:
             if not p.version:
                 continue
 
-            version = parse_version(p.version)
+            version = None
+            try:
+                # bad version will be ignored
+                version = parse_version(p.version)
+            except InvalidVersion:
+                pass
+
             yield version, p
 
     def search(self, name: str, version: str = "", package_type: str = ""):
@@ -61,6 +68,10 @@ class SimplePypiRegistry:
 
         for v, p in self._iter_packages(name, False):
             if package_type and p.package_type != package_type:
+                continue
+
+            # skip
+            if v is None:
                 continue
 
             # 指定了版本号，说明只查询指定版本

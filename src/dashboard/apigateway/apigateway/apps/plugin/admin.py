@@ -21,8 +21,8 @@ from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginFor
 
 
 class PluginTypeAdmin(admin.ModelAdmin):
-    list_display = ["id", "code", "name_i18n"]
-    search_fields = ["code", "name_i18n"]
+    list_display = ["id", "code", "name"]
+    search_fields = ["code", "name"]
     list_filter = ["code", "is_public"]
 
 

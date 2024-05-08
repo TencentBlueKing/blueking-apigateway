@@ -96,6 +96,7 @@ const getLogsList = async () => {
 
     // 整理步骤
     const steps: any = [];
+    state.objectSteps = [];
     state.totalDuration = 0;
     const subStep = res?.events[res?.events?.length - 1]?.step || 0;
     let allDetail = '';
@@ -127,7 +128,7 @@ const getLogsList = async () => {
         }
       });
 
-      // 计算耗时，第一个节点用自身的 endTime - startTime ，后面的节点用自身节点的 endTime - 前一个节点的 endTime
+      // 计算耗时，第一个节点用自身的 endTime - startTime，后面的节点用自身节点的 endTime - 前一个节点的 endTime
       let firstChild: any = {};
       if (index === 0) {
         [firstChild] = children;
@@ -137,7 +138,9 @@ const getLogsList = async () => {
       const lastChild = children[children.length - 1];
 
       const date1 = dayjs(firstChild?.created_time);
-      const date2 = dayjs(lastChild?.created_time);
+
+      // 如果失败了，那么 lastChild 不存在，此时 dayjs(lastChild) 就是 dayjs(null) 或 dayjs(undefined) 就是当前的时间
+      const date2 = dayjs(lastChild?.created_time || firstChild?.created_time);
 
       const duration = date2.diff(date1, 's', true);
       state.totalDuration += duration;

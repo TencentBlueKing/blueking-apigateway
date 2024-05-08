@@ -51,13 +51,6 @@ sync_bk_esb() {
     echo "API gateway bk-esb sync definition end"
 }
 
-sync_bk_esb_buffet() {
-    # sync gateway bk-esb-buffet
-    echo "API gateway bk-esb-buffet sync definition start ..."
-    python manage.py sync_apigw_config --api-name=bk-esb-buffet --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-buffet-definition.yaml"
-    echo "API gateway bk-esb-buffet sync definition end ..."
-}
-
 sync_bk_default() {
     # sync gateway bk-default
     echo "API gateway ${DEFAULT_MICRO_GATEWAY_API_NAME} sync definition start ..."
@@ -73,10 +66,5 @@ sync_bk_default() {
 sync_bk_default
 sync_bk_apigateway
 sync_bk_esb
-sync_bk_esb_buffet
 sync_bk_apigateway_inner
 
-# 1.13 同步所有网关数据, 确保数据最新; 这个需要在1.14中删除
-# 不能导致 post_migrate job 失败, 否则job 失败后会一直重试, 导致所有网关一直处于发布状态, 带来不必要的负载; 如果失败, 手工执行
-python manage.py sync_releases_to_shared_micro_gateway_parallel && echo "sync_releases_to_shared_micro_gateway success!" || echo "sync_releases_to_shared_micro_gateway fail!"
-# 1.13 同步所有网关数据, 确保数据最新; 这个需要在1.14中删除

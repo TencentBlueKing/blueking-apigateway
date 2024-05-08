@@ -26,9 +26,12 @@
         >
           <bk-table-column prop="backend" :label="t('后端服务')">
             <template #default="{ row }">
-              <bk-button theme="primary" text @click="handleEditStage(row.name)">
-                {{ row?.proxy?.backend?.name }}
-              </bk-button>
+              <div class="backend-td">
+                <bk-button theme="primary" text>
+                  {{ row?.proxy?.backend?.name }}
+                </bk-button>
+                <edit-line class="backend-edit" @click="handleEditStage(row.name)" fill="#1768EF" />
+              </div>
             </template>
           </bk-table-column>
           <bk-table-column
@@ -151,6 +154,7 @@ import resourceDetails from './resource-details.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import RenderCustomColumn from '@/components/custom-table-header-filter';
+import { EditLine } from 'bkui-vue/lib/icon';
 import { copy } from '@/common/util';
 import { useRoute } from 'vue-router';
 
@@ -277,7 +281,7 @@ const isHighlight = (v: any) => {
 };
 
 const setHighlight = (name: string) => {
-  curPageData.value?.map((item: any) => {
+  curPageData.value?.forEach((item: any) => {
     if (item.name === name) {
       item.highlight = true;
     } else {
@@ -287,7 +291,7 @@ const setHighlight = (name: string) => {
 };
 
 const clearHighlight = () => {
-  curPageData.value?.map((item: any) => {
+  curPageData.value?.forEach((item: any) => {
     item.highlight = false;
   });
 };
@@ -449,7 +453,7 @@ onMounted(() => {
 .table-layout {
   :deep(.row-cls){
     td{
-      background: #f2fff4 !important;
+      background: #e1ecff !important;
     }
   }
   :deep(.bk-table-head) {
@@ -460,6 +464,14 @@ onMounted(() => {
   height: 420px;
   display: flex;
   align-items: center;
+  :deep(.bk-exception-description) {
+    font-size: 14px;
+    margin-top: 0px;
+  }
+  :deep(.bk-exception-img) {
+    width: 220px;
+    height: 130px;
+  }
 }
 .plugin-tag {
   display: inline-block;
@@ -478,6 +490,21 @@ onMounted(() => {
   &.info {
     color: #3A84FF;
     background: #EDF4FF;
+  }
+}
+.backend-td {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  .backend-edit {
+    margin-left: 4px;
+    cursor: pointer;
+    opacity: 0;
+  }
+  &:hover {
+    .backend-edit {
+      opacity: 1;
+    }
   }
 }
 </style>

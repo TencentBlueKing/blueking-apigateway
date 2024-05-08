@@ -38,9 +38,7 @@ class PluginBindingManager(models.Manager):
         scope_type: str,
         scope_ids: List[int],
         username: str,
-        plugin=None,
         config=None,
-        type_=None,
     ):
         """将插件 plugin 绑定到指定 scopes"""
         for scope_id in scope_ids:
@@ -48,16 +46,13 @@ class PluginBindingManager(models.Manager):
                 gateway=gateway,
                 scope_type=scope_type,
                 scope_id=scope_id,
-                type=type_,
                 defaults={
-                    "plugin": plugin,
                     "config": config,
                     "created_by": username,
                     "updated_by": username,
                 },
             )
             if not created:
-                binding.plugin = plugin
                 binding.updated_by = username
                 binding.save()
 

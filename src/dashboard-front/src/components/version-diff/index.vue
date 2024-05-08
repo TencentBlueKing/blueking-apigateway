@@ -42,12 +42,13 @@
       <bk-input
         clearable
         class="fl mr10"
-        style="width: 300px"
-        :placeholder="$t('请输入资源名称或请求路径，回车结束')"
+        style="width: 310px"
+        :placeholder="$t('请输入资源名称、资源地址或请求路径，回车结束')"
         type="search"
         v-model="searchParams.keyword"
         @enter="handleSearch"
         @clear="handleClear"
+        @change="updateTableEmptyConfig()"
       >
       </bk-input>
       <bk-select
@@ -56,6 +57,7 @@
         style="width: 140px"
         :clearable="true"
         :placeholder="$t('全部差异类型')"
+        @change="updateTableEmptyConfig()"
       >
         <bk-option
           v-for="option in diffTypeList"
@@ -87,32 +89,37 @@
         <div class="source-header">
           <!-- <div class="marked">{{ $t("源版本") }}</div> -->
           <div class="version">
-            <bk-select
-              class="fl mr10 choose-version"
-              v-model="localSourceId"
-              v-if="sourceSwitch || pageType === 'createVersion'"
-              :placeholder="$t('请选择源版本')"
-              :clearable="false"
-              :input-search="false"
-              :filterable="true"
-              @change="handleVersionChange">
-              <template #trigger>
-                <span class="trigger-label">
-                  {{ localSourceTriggerLabel }}
+            <template v-if="localSourceId">
+              <bk-select
+                class="fl mr10 choose-version"
+                v-model="localSourceId"
+                v-if="sourceSwitch || pageType === 'createVersion'"
+                :placeholder="$t('请选择源版本')"
+                :clearable="false"
+                :input-search="false"
+                :filterable="true"
+                @change="handleVersionChange">
+                <template #trigger>
+                  <span class="trigger-label" v-bk-tooltips="{ content: localSourceTriggerLabel, delay: 300 }">
+                    {{ localSourceTriggerLabel }}
+                  </span>
                   <DownShape class="trigger-label-icon" />
-                </span>
-              </template>
-              <bk-option
-                v-for="option in localVersionList"
-                :key="option.id"
-                :id="option.id"
-                :disabled="option.id === localTargetId"
-                :name="option.resource_version_display"
-              >
-              </bk-option>
-            </bk-select>
+                </template>
+                <bk-option
+                  v-for="option in localVersionList"
+                  :key="option.id"
+                  :id="option.id"
+                  :disabled="option.id === localTargetId"
+                  :name="option.resource_version_display"
+                >
+                </bk-option>
+              </bk-select>
+              <strong class="title" v-else>
+                {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
+              </strong>
+            </template>
             <strong class="title" v-else>
-              {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
+              暂无版本
             </strong>
           </div>
         </div>
@@ -344,23 +351,28 @@
             </template>
           </div>
 
-          <!-- 无数据 -->
-          <bk-exception
-            class="mt50"
-            type="search-empty"
-            scene="part"
-            v-if="!hasResult && !isDataLoading"
-          >
-            {{
-              !localSourceId
-                ? $t("请选择源版本")
-                : !localTargetId
+          <template v-if="!hasResult && !isDataLoading">
+            <!-- 无数据 -->
+            <TableEmpty
+              v-if="hasFilter"
+              :keyword="tableEmptyConf.keyword"
+              :abnormal="tableEmptyConf.isAbnormal"
+              @reacquire="getDiffData"
+              @clear-filter="handleClearFilterKey"
+            />
+            <bk-exception
+              class="mt50 diff-tips"
+              type="search-empty"
+              scene="part"
+              v-else
+            >
+              {{
+                !localTargetId
                   ? $t("请选择目标版本")
-                  : hasFilter
-                    ? $t("无匹配内容")
-                    : $t("版本资源配置无差异")
-            }}
-          </bk-exception>
+                  : $t("版本资源配置无差异")
+              }}
+            </bk-exception>
+          </template>
         </bk-loading>
       </div>
     </div>
@@ -374,6 +386,7 @@ import resourceDetail from '@/components/resource-detail/index.vue';
 import { useI18n } from 'vue-i18n';
 import { Spinner, RightShape, DownShape } from 'bkui-vue/lib/icon';
 import { useCommon } from '@/store';
+import TableEmpty from '@/components/table-empty.vue';
 import { resourceVersionsDiff, getResourceVersionsList, getGatewayLabels, getBackendsListData } from '@/http';
 
 const { t } = useI18n();
@@ -382,6 +395,10 @@ const common = useCommon();
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
+const tableEmptyConf = ref<{ keyword: string; isAbnormal: boolean }>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 const props = defineProps({
   versionList: {
@@ -514,13 +531,15 @@ const checkMatch = (item: any, type: any) => {
   if (searchParams.diffType && searchParams.diffType !== type) {
     return false;
   }
-  const method = item.method.toLowerCase();
-  const path = item.path.toLowerCase();
-  const name = item.name.toLowerCase();
+  const method = item?.method?.toLowerCase();
+  const path = item?.path?.toLowerCase();
+  const backendPath = item?.proxy?.config?.path?.toLowerCase();
+  const name = item?.name?.toLowerCase();
   const keyword = searchKeyword.value.toLowerCase();
   return (
     method.indexOf(keyword) > -1
     || path.indexOf(keyword) > -1
+    || backendPath.indexOf(keyword) > -1
     || name.indexOf(keyword) > -1
   );
 };
@@ -562,6 +581,27 @@ const renderTitle = (item: any) => {
   return `<div class="bk-tag ${tagCls} bk-tag--default" style="border-radius: 2px;margin-right: 4px;">`
       + `<span class="bk-tag-text">${method}</span>`
       + `</div><span class="title-content">${path}</span>`;
+};
+
+const updateTableEmptyConfig = () => {
+  const isSearch = !!searchParams.keyword || !!searchParams.diffType;
+  if (isSearch && !hasResult.value) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (isSearch) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+const handleClearFilterKey = () => {
+  searchParams.keyword = '';
+  searchParams.diffType = '';
+  searchKeyword.value = '';
+  getDiffData();
+  updateTableEmptyConfig();
 };
 
 const handleVersionChange = () => {
@@ -795,6 +835,10 @@ onMounted(() => {
 }
 
 .diff-main {
+  max-height: calc(100vh - 362px);
+  min-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
   .diff-loading {
     min-height: 300px;
     padding: 6px 0px;
@@ -881,9 +925,9 @@ onMounted(() => {
     }
   }
 
-  .source-box {
-    border-right: 1px solid #dcdee5;
-  }
+  // .source-box {
+  //   border-right: 1px solid #dcdee5;
+  // }
 
   // .target-box {
   //   border-left: 1px solid #dcdee5;
@@ -949,16 +993,27 @@ onMounted(() => {
     display: flex;
 
     .choose-version {
-      width: 150px;
+      width: 320px;
       cursor: pointer;
+      :deep(.bk-select-trigger) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
       .trigger-label {
         position: relative;
         display: inline-block;
-        .trigger-label-icon {
-          position: relative;
-          top: 2px;
-        }
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 4px;
       }
+      // .trigger-label-icon {
+      //   position: absolute;
+      //   top: 15px;
+      //   right: 0;
+      // }
     }
 
     .marked {
@@ -1046,5 +1101,8 @@ onMounted(() => {
       box-shadow: none;
     }
   }
+}
+.diff-tips {
+  color: #63656E;
 }
 </style>

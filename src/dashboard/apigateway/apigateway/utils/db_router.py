@@ -25,9 +25,7 @@ class DBRouter:
 
     APP_LABEL_TO_DB = {
         "bkcore": "bkcore",
-        "paas2": "paas2",
         "apigateway": "legacy",
-        "legacy_esb": "paas2",
     }
 
     def db_for_read(self, model, **hints):

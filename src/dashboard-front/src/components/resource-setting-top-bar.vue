@@ -16,7 +16,8 @@
         {{ t('与历史版本对比') }}
       </bk-button>
       <bk-button
-        class="operate-btn"
+        class="operate-btn-primary"
+        theme="primary"
         @click="handleCreateResourceVersion"
         :disabled="!latest"
         v-bk-tooltips="{ content: '资源无更新，无需生成版本', disabled: latest }"
@@ -38,7 +39,7 @@
     :quick-close="true"
   >
     <template #default>
-      <div class="p20">
+      <div class="p20 pure-diff">
         <version-diff ref="diffRef" :source-id="diffSourceId" :target-id="diffTargetId" />
       </div>
     </template>
@@ -132,6 +133,7 @@ const handleCreateResourceVersion = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-width: 1280px;
   .top-title-wrapper {
     display: flex;
     align-items: center;
@@ -157,26 +159,30 @@ const handleCreateResourceVersion = async () => {
     }
   }
   .operate-btn-wrapper {
-    .operate-btn {
+    .operate-btn,
+    .operate-btn-primary {
       height: 26px;
       font-size: 12px;
-      color: #63656E;
       padding: 0 12px;
       i {
         font-size: 16px;
         margin-right: 4px;
       }
-      &.bk-button.is-disabled {
-        color: #dcdee5;
-        cursor: not-allowed;
-        border-color: #dcdee5;
-      }
+    }
+    .operate-btn {
+      color: #63656E;
       &.bk-button.is-disabled {
         color: #dcdee5;
         cursor: not-allowed;
         border-color: #dcdee5;
       }
     }
+  }
+}
+
+.pure-diff {
+  :deep(.diff-main) {
+    max-height: calc(100vh - 240px) !important;
   }
 }
 </style>

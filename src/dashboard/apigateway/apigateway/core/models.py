@@ -32,13 +32,10 @@ from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
-    BackendConfigTypeEnum,
     BackendTypeEnum,
-    BackendUpstreamTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
     GatewayStatusEnum,
-    LoadBalanceTypeEnum,
     MicroGatewayStatusEnum,
     ProxyTypeEnum,
     PublishEventEnum,
@@ -47,8 +44,6 @@ from apigateway.core.constants import (
     PublishSourceEnum,
     ReleaseStatusEnum,
     ResourceVersionSchemaEnum,
-    SSLCertificateBindingScopeTypeEnum,
-    SSLCertificateTypeEnum,
     StageStatusEnum,
 )
 from apigateway.core.utils import get_path_display
@@ -245,8 +240,6 @@ class Proxy(ConfigModelMixin):
     backend = models.ForeignKey("Backend", null=True, default=None, on_delete=models.PROTECT)
 
     # TODO: 1.14 待删除
-    backend_config_type = models.CharField(max_length=32, default=BackendConfigTypeEnum.DEFAULT.value)
-    backend_service = models.ForeignKey("BackendService", on_delete=models.SET_NULL, null=True, default=None)
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
 
     # config = from ConfigModelMixin
@@ -318,33 +311,6 @@ class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
         verbose_name_plural = "StageResourceDisabled"
         unique_together = ("stage", "resource")
         db_table = "core_stage_resource_disabled"
-
-
-# TODO delete it 1.14
-class StageItem(TimestampedModelMixin, OperatorModelMixin):
-    """Stage 配置项"""
-
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
-    type = models.CharField(max_length=64)
-    name = models.CharField(max_length=128)
-    description = models.TextField(blank=True, default="")
-
-    class Meta:
-        db_table = "core_stage_item"
-
-
-# TODO delete it 1.14
-class StageItemConfig(TimestampedModelMixin, OperatorModelMixin):
-    """Stage 配置项数据"""
-
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
-    stage = models.ForeignKey(Stage, on_delete=models.CASCADE)
-    stage_item = models.ForeignKey(StageItem, on_delete=models.CASCADE)
-    config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
-
-    class Meta:
-        unique_together = ("api", "stage", "stage_item")
-        db_table = "core_stage_item_config"
 
 
 # ============================================ backend ============================================
@@ -764,74 +730,3 @@ class MicroGatewayReleaseHistory(models.Model):
 
     class Meta:
         db_table = "core_micro_gateway_release_history"
-
-
-# TODO delete it 1.14
-class BackendService(TimestampedModelMixin, OperatorModelMixin):
-    """网关后端服务"""
-
-    api = models.ForeignKey(Gateway, on_delete=models.CASCADE)
-
-    name = models.CharField(max_length=128, db_index=True)
-    description_i18n = I18nProperty(models.TextField(blank=True, null=True, default=None))
-    description = description_i18n.default_field(default="")
-    description_en = description_i18n.field("en")
-
-    loadbalance = models.CharField(max_length=32, default=LoadBalanceTypeEnum.RR.value)
-    upstream_type = models.CharField(max_length=64, default=BackendUpstreamTypeEnum.NODE.value)
-    stage_item = models.ForeignKey(StageItem, on_delete=models.PROTECT, blank=True, null=True, default=None)
-    upstream_custom_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
-    upstream_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
-    upstream_extra_config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
-
-    pass_host = models.CharField(max_length=32, default="pass")
-    upstream_host = models.CharField(max_length=512, default="")
-    scheme = models.CharField(max_length=32, default="http")
-    timeout = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
-    ssl_enabled = models.BooleanField(default=False)
-
-    class Meta:
-        db_table = "core_backend_service"
-
-
-class SslCertificate(TimestampedModelMixin, OperatorModelMixin):
-    """SSL 证书"""
-
-    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    type = models.CharField(
-        max_length=32,
-        choices=SSLCertificateTypeEnum.get_choices(),
-        db_index=True,
-    )
-    name = models.CharField(max_length=128, db_index=True, help_text=_("引用类证书，名称表示引用名称"))
-    snis = JSONField(default=list, blank=True)
-    cert = models.TextField(blank=True, default="")
-    key = models.TextField(blank=True, default="")
-    ca_cert = models.TextField(blank=True, default="")
-    expires = models.DateTimeField(_("过期时间"))
-
-    class Meta:
-        db_table = "core_ssl_certificate"
-
-    def __str__(self):
-        return f"<SslCertificate: {self.pk}/{self.name}>"
-
-
-class SslCertificateBinding(TimestampedModelMixin, OperatorModelMixin):
-    """证书绑定"""
-
-    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    scope_type = models.CharField(
-        max_length=32,
-        choices=SSLCertificateBindingScopeTypeEnum.get_choices(),
-        db_index=True,
-    )
-    scope_id = models.IntegerField(db_index=True)
-    ssl_certificate = models.ForeignKey(SslCertificate, on_delete=models.PROTECT)
-
-    def __str__(self):
-        return f"<SslCertificateBinding: {self.scope_type}/{self.scope_id}>"
-
-    class Meta:
-        db_table = "core_ssl_certificate_binding"
-        unique_together = ("gateway", "scope_type", "scope_id", "ssl_certificate")

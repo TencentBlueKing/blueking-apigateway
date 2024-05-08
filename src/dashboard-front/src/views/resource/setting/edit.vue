@@ -3,8 +3,7 @@
     <bk-collapse
       class="page-wrapper-padding collapse-cls"
       v-model="activeIndex"
-      use-card-theme
-    >
+      use-card-theme>
       <bk-collapse-panel name="baseInfo">
         <template #header>
           <div class="panel-header">
@@ -133,6 +132,12 @@ const handleSubmit = async () => {
     } else {
       await createResources(apigwId, params);
     }
+    formDataBack.value = {
+      baseFormData: baseInfoRef.value.formData,
+      frontFormData: frontConfigRef.value.frontConfigData,
+      backFormData: backConfigRef.value.backConfigData,
+    };
+    mitt.emit('on-leave-page-change', formDataBack.value);
     Message({
       message: t(`${resourceId.value && !isClone.value ? '更新' : '新建'}成功`),
       theme: 'success',

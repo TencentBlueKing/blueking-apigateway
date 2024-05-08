@@ -988,7 +988,7 @@
                       "bk_app_code": {
                         "type": "string",
                         "title": "蓝鲸应用ID",
-                        "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+                        "pattern": "^[a-z][a-z0-9_-]{0,31}$",
                         "ui:rules": [
                           "required"
                         ]
@@ -1204,7 +1204,7 @@
                       "bk_app_code": {
                         "type": "string",
                         "title": "App Id",
-                        "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+                        "pattern": "^[a-z][a-z0-9_-]{0,31}$",
                         "ui:rules": [
                           "required"
                         ]

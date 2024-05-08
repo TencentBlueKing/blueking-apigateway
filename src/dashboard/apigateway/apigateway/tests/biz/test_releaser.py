@@ -21,8 +21,6 @@ import json
 import pytest
 from ddf import G
 
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.biz.releaser import (
     BaseGatewayReleaser,
     MicroGatewayReleaseHistory,
@@ -31,7 +29,7 @@ from apigateway.biz.releaser import (
     ReleaseValidationError,
 )
 from apigateway.common.user_credentials import UserCredentials
-from apigateway.core.constants import GatewayStatusEnum, ReleaseStatusEnum
+from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -114,168 +112,6 @@ class TestBaseGatewayReleaser:
 
         mock_release.assert_called()
         # mock_post_release.assert_called()
-
-    def test_validate_gateway_status(self, fake_gateway, fake_stage, fake_backend, fake_resource_version):
-        releaser = BaseGatewayReleaser.from_data(
-            fake_gateway,
-            fake_stage.id,
-            fake_resource_version.id,
-            "",
-            user_credentials=UserCredentials(
-                credentials="access_token",
-            ),
-        )
-        assert releaser._validate_gateway_status(fake_gateway.id) is None
-
-        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
-        fake_gateway.save()
-        with pytest.raises(ReleaseValidationError):
-            releaser._validate_gateway_status(fake_gateway.id)
-
-    @pytest.mark.parametrize(
-        "vars, mock_used_stage_vars, will_error",
-        [
-            # ok
-            (
-                {
-                    "prefix": "/o",
-                    "domain": "bking.com",
-                },
-                {
-                    "in_path": ["prefix"],
-                    "in_host": ["domain"],
-                },
-                False,
-            ),
-            # var in path not exist
-            (
-                {
-                    "domain": "bking.com",
-                },
-                {
-                    "in_path": ["prefix"],
-                    "in_host": ["domain"],
-                },
-                True,
-            ),
-            # var in path invalid
-            (
-                {
-                    "prefix": "/test/?a=b",
-                    "domain": "bking.com",
-                },
-                {
-                    "in_path": ["prefix"],
-                    "in_host": ["domain"],
-                },
-                True,
-            ),
-            # var in hosts not exist
-            (
-                {
-                    "prefix": "/test/",
-                },
-                {
-                    "in_path": ["prefix"],
-                    "in_host": ["domain"],
-                },
-                True,
-            ),
-            # var in hosts invalid
-            (
-                {
-                    "prefix": "/test/",
-                    "domain": "http://bking.com",
-                },
-                {
-                    "in_path": ["prefix"],
-                    "in_host": ["domain"],
-                },
-                True,
-            ),
-        ],
-    )
-    def test_validate_stage_vars(
-        self, mocker, fake_gateway, fake_stage, fake_resource_version, vars, mock_used_stage_vars, will_error
-    ):
-        mocker.patch(
-            "apigateway.biz.validators.ResourceVersionHandler.get_used_stage_vars",
-            return_value=mock_used_stage_vars,
-        )
-
-        fake_stage.vars = vars
-        fake_stage.save(update_fields=["_vars"])
-        releaser = BaseGatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
-
-        if will_error:
-            with pytest.raises(Exception):
-                releaser._validate_stage_vars(fake_stage, fake_resource_version.id)
-            return
-
-        assert releaser._validate_stage_vars(fake_stage, fake_resource_version.id) is None
-
-    @pytest.mark.parametrize(
-        "contain_hosts_ret,succeeded",
-        [
-            (True, True),
-            (False, False),
-        ],
-    )
-    def test_validate_stage_upstreams(
-        self,
-        contain_hosts_ret,
-        succeeded,
-        fake_gateway,
-        fake_stage,
-        fake_resource_version,
-        mocker,
-    ):
-        with mocker.patch(
-            "apigateway.biz.releaser.StageProxyHTTPContext.contain_hosts",
-            return_value=contain_hosts_ret,
-        ):
-            releaser = BaseGatewayReleaser(
-                gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version
-            )
-
-            if not succeeded:
-                with pytest.raises(ReleaseValidationError):
-                    releaser._validate_stage_upstreams(fake_gateway.id, fake_stage, fake_resource_version.id)
-            else:
-                assert (
-                    releaser._validate_stage_upstreams(fake_gateway.id, fake_stage, fake_resource_version.id) is None
-                )
-
-    def test_validate_stage_plugins(
-        self,
-        fake_stage,
-        fake_gateway,
-        fake_resource_version,
-        echo_plugin_type,
-        echo_plugin_stage_binding,
-        faker,
-    ):
-        echo_plugin2 = G(
-            PluginConfig,
-            gateway=fake_gateway,
-            name="echo-plugin",
-            type=echo_plugin_type,
-            yaml=json.dumps(
-                {
-                    faker.random_element(["before_body", "body", "after_body"]): faker.pystr(),
-                }
-            ),
-        )
-        echo_plugin_stage_binding2 = G(
-            PluginBinding,
-            gateway=echo_plugin2.gateway,
-            config=echo_plugin2,
-            scope_type=PluginBindingScopeEnum.STAGE.value,
-            scope_id=fake_stage.pk,
-        )
-        releaser = BaseGatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
-        with pytest.raises(ReleaseValidationError):
-            releaser._validate_stage_plugins(fake_stage)
 
     def test_activate_stages(self, fake_gateway, fake_resource_version):
         s1 = G(Stage, gateway=fake_gateway, status=0)

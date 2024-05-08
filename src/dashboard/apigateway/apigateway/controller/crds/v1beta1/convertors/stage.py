@@ -71,7 +71,7 @@ class StageConvertor(BaseConvertor):
 
     def _get_default_stage_plugins(self) -> List[PluginConfig]:
         """Get the default plugins for stage, which is shared by all resources in the stage"""
-        plugins = [
+        return [
             PluginConfig(name="bk-opentelemetry"),
             PluginConfig(name="prometheus"),
             PluginConfig(name="bk-real-ip"),
@@ -105,17 +105,6 @@ class StageConvertor(BaseConvertor):
                 },
             ),
         ]
-
-        # Only append this plugin config if it's enabled
-        # it’s better to take advantage of the “_meta.disabled” field directly instead
-        # of implementing our own similar mechanics.
-        global_rate_limit_config = self._release_data.stage_rate_limit_config
-        if global_rate_limit_config and global_rate_limit_config.get("enabled", False):
-            if "enabled" in global_rate_limit_config:
-                del global_rate_limit_config["enabled"]
-            plugins.append(PluginConfig(name="bk-stage-global-rate-limit", config=global_rate_limit_config))
-
-        return plugins
 
     def _get_stage_plugins(self) -> List[PluginConfig]:
         return [

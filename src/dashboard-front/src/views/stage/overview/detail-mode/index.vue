@@ -13,8 +13,8 @@
             <template v-if="stageData.release.status === 'unreleased'">
               <span class="no-release-label">未发布</span>
               <span class="no-release-dot"></span>
-              <span class="no-release-icon apigateway-icon icon-ag-edit-line" @click="handleEditStage">
-              </span>
+              <!-- <span class="no-release-icon apigateway-icon icon-ag-edit-line" @click="handleEditStage">
+              </span> -->
             </template>
             <span class="name">
               {{ stageData.name }}
@@ -126,7 +126,7 @@
         </section>
       </bk-loading>
       <bk-alert
-        type="warning"
+        theme="warning"
         :title="t('环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作')"
         class="mt15 mb15"
       ></bk-alert>
@@ -519,8 +519,8 @@ onMounted(async () => {
       .unrelease {
         display: inline-block;
         font-size: 10px;
-        color: #fe9c00;
-        background: #fff1db;
+        // color: #fe9c00;
+        // background: #fff1db;
         border-radius: 2px;
         padding: 2px 5px;
         line-height: 1;

@@ -27,7 +27,7 @@ class OpenAPIFormatEnum(StructuredEnum):
 
 
 # bk app code
-APP_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
+APP_CODE_PATTERN = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
 
 # Semver
 SEMVER_PATTERN = re.compile(

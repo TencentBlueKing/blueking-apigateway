@@ -19,7 +19,7 @@ import json
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from django.utils.functional import cached_property
 
@@ -59,7 +59,7 @@ class ReleaseData:
     def _stage_contexts(self) -> Dict[str, Dict[str, Any]]:
         """
         :return: A dict contains all the context objects at "stage" scope, the key is
-            the type of context, such as "stage_rate_limit".
+            the type of context.
         """
         return {
             c.type: c.snapshot(as_dict=True)
@@ -76,13 +76,6 @@ class ReleaseData:
     @cached_property
     def stage_upstreams(self) -> Dict[str, Any]:
         return self.stage_backend_config.get("upstreams")
-
-    @cached_property
-    def stage_rate_limit_config(self) -> Optional[Dict[str, Any]]:
-        rate_limit = self._stage_contexts.get(ContextTypeEnum.STAGE_RATE_LIMIT.value)
-        if not rate_limit:
-            return None
-        return json.loads(rate_limit["config"])
 
     @cached_property
     def jwt_private_key(self) -> str:

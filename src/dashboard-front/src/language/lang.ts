@@ -1289,10 +1289,12 @@ const lang: ILANG = {
   '配置插件': ['Configure plugin'],
   '添加插件': ['Add plugin'],
   '修改插件': ['Modify plugin'],
+  '产品文档': ['Product documentation'],
   '尚未添加插件，': ['No plugin added,'],
   '立即添加': ['Add now'],
   '添加成功': ['Added successfully'],
   '确定停用插件？': ['Are you sure to disable the plugin?'],
+  '请输入资源名称、资源地址或请求路径，回车结束': ['Enter the resource name, resource address, or request path, and press Enter'],
   '将删除相关配置，不可恢复，请确认是否删除': ['Will delete related configurations, cannot be restored, please confirm deletion'],
   '停用成功': ['Successfully disabled'],
   '已绑定的环境：': ['Bound environments:'],
@@ -1351,7 +1353,7 @@ const lang: ILANG = {
   '当前环境尚未发布，暂无资源信息': ['The current environment has not been released, there are no resource information available'],
   '尚未发布': ['Not released yet'],
   '请输入 SDK 版本号': ['Please enter the SDK version number'],
-  'SDK仅包含公开资源，生成后会上传到pypi源': ['The SDK only includes public resources, and will be uploaded to the PyPI source after generation'],
+  'SDK仅包含公开资源，生成后会上传到pypi源或bkrepo': ['The SDK only includes public resources, and will be uploaded to the PyPI or BKRepo source after generation'],
   '生成语言': ['Generation language'],
 
   '最大 300s': ['Maximum 300s'],
@@ -1403,6 +1405,11 @@ const lang: ILANG = {
   '': [''],
   '新建后端服务': ['Create backend service'],
   '于': ['at'],
+  '超时时间不能为空': ['Timeout cannot be empty'],
+  '标签新建成功': ['Label created successfully'],
+  '修改标签成功': ['Label modified successfully'],
+  '标签修改成功': ['Label modified successfully'],
+  '删除标签成功': ['Label deleted successfully'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
