@@ -144,7 +144,7 @@ class TestResourceProxyDiffer:
                         {
                             "method": "GET",
                             "path": "/",
-                            "timeout": 10,
+                            "timeout": {"connect": 10, "read": 10, "send": 10},
                             "upstreams": {},
                             "transform_headers": {},
                         }
@@ -156,15 +156,21 @@ class TestResourceProxyDiffer:
                         {
                             "method": "POST",
                             "path": "/echo",
-                            "timeout": 20,
+                            "timeout": {"connect": 20, "read": 20, "send": 20},
                             "upstreams": {},
                             "transform_headers": {},
                         }
                     ),
                 },
                 (
-                    {"config": {"method": "GET", "path": "/", "timeout": 10}},
-                    {"config": {"method": "POST", "path": "/echo", "timeout": 20}},
+                    {"config": {"method": "GET", "path": "/", "timeout": {"connect": 10, "read": 10, "send": 10}}},
+                    {
+                        "config": {
+                            "method": "POST",
+                            "path": "/echo",
+                            "timeout": {"connect": 20, "read": 20, "send": 20},
+                        }
+                    },
                 ),
             ),
             # mock
@@ -202,7 +208,7 @@ class TestResourceProxyDiffer:
                         {
                             "method": "GET",
                             "path": "/",
-                            "timeout": 10,
+                            "timeout": {"connect": 10, "read": 10, "send": 10},
                             "upstreams": {},
                             "transform_headers": {},
                         }
@@ -226,7 +232,7 @@ class TestResourceProxyDiffer:
                             "method": "GET",
                             "path": "/",
                             "match_subpath": False,
-                            "timeout": 10,
+                            "timeout": {"connect": 10, "read": 10, "send": 10},
                             "upstreams": {},
                             "transform_headers": {},
                         },

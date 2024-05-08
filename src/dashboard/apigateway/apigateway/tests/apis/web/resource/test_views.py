@@ -57,8 +57,8 @@ class TestResourceListCreateApi:
     def test_list(self, request_view, fake_gateway, fake_backend, data, expected):
         resource_1 = G(Resource, gateway=fake_gateway, path="/echo/", method="GET", name="echo")
         resource_2 = G(Resource, gateway=fake_gateway, path="/test/", method="GET", name="test")
-        G(Proxy, resource=resource_1, backend=fake_backend)
-        G(Proxy, resource=resource_2, backend=fake_backend)
+        G(Proxy, resource=resource_1, backend=fake_backend, _config={})
+        G(Proxy, resource=resource_2, backend=fake_backend, _config={})
 
         resp = request_view(
             method="GET",
@@ -86,7 +86,7 @@ class TestResourceListCreateApi:
                         "method": "GET",
                         "path": "/echo/",
                         "match_subpath": False,
-                        "timeout": 30,
+                        "timeout": {"connect": 30, "read": 30, "send": 30},
                     }
                 },
                 "auth_config": {
@@ -160,7 +160,7 @@ class TestResourceRetrieveUpdateDestroyApi:
                 "config": {
                     "method": "GET",
                     "path": "/echo/",
-                    "timeout": 30,
+                    "timeout": {"connect": 30, "read": 30, "send": 30},
                 },
             },
             "auth_config": {
@@ -313,7 +313,7 @@ class TestResourceImportCheckApi:
                                                 "method": "get",
                                                 "path": "/hello/",
                                                 "matchSubpath": True,
-                                                "timeout": 30,
+                                                "timeout": {"connect": 30, "read": 30, "send": 30},
                                             },
                                         },
                                     },
@@ -365,7 +365,7 @@ class TestResourceImportCheckApi:
                                                 "method": "get",
                                                 "path": "/hello/",
                                                 "matchSubpath": False,
-                                                "timeout": 30,
+                                                "timeout": {"connect": 30, "read": 30, "send": 30},
                                             },
                                         },
                                     },
@@ -433,7 +433,7 @@ class TestResourceImportApi:
                                                 "type": "HTTP",
                                                 "path": "/hello/",
                                                 "method": "get",
-                                                "timeout": 30,
+                                                "timeout": {"connect": 30, "read": 30, "send": 30},
                                             },
                                         },
                                     },
@@ -449,7 +449,7 @@ class TestResourceImportApi:
                                                 "type": "HTTP",
                                                 "path": "/hello/",
                                                 "method": "any",
-                                                "timeout": 0,
+                                                "timeout": {"connect": 0, "read": 0, "send": 0},
                                             }
                                         },
                                     },
@@ -485,7 +485,7 @@ class TestResourceImportApi:
                                                 "type": "HTTP",
                                                 "path": "/hello/",
                                                 "method": "get",
-                                                "timeout": 30,
+                                                "timeout": {"connect": 30, "read": 30, "send": 30},
                                             },
                                         },
                                     },
@@ -501,7 +501,7 @@ class TestResourceImportApi:
                                                 "type": "HTTP",
                                                 "path": "/hello/",
                                                 "method": "any",
-                                                "timeout": 30,
+                                                "timeout": {"connect": 30, "read": 30, "send": 30},
                                             }
                                         },
                                     },

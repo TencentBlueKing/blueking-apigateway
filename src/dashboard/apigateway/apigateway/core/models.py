@@ -24,9 +24,12 @@ from typing import List
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
+from jsonschema import ValidationError, validate
 
+from apigateway.common.exceptions import SchemaNotExist, SchemaValidationError
 from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
+from apigateway.common.timeout import convert_timeout
 from apigateway.core import managers
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
@@ -298,6 +301,47 @@ class Proxy(ConfigModelMixin):
 
         super().save(*args, **kwargs)
 
+    @property
+    def config(self):
+        if not self._config:
+            return {}
+
+        data = json.loads(self._config)
+
+        # 处理timeout兼容数据
+        if self.type == ProxyTypeEnum.HTTP.value and isinstance(data.get("timeout", 0), int):
+            data["timeout"] = convert_timeout(data.get("timeout", 0))
+
+        return data
+
+    @config.setter
+    def config(self, data):
+        # should be valid JSON string
+        if isinstance(data, str):
+            data = json.loads(data)
+
+        # 允许模型定义中 schema 为 None，此时，直接保存 config 的配置
+        # 如果模型定义中不允许 schema 为 None，通过模型 save 时 schema 不能为空的校验，保证非法 config 不会被保存
+        if not self.schema:
+            self._config = json.dumps(data)
+            return
+
+        if not self.schema.schema:
+            raise SchemaNotExist("schema is empty!")
+
+        schema = self.schema.schema
+
+        try:
+            validate(instance=data, schema=schema)
+        except ValidationError as ve:
+            logger.exception("validate config fail!")
+            raise SchemaValidationError(str(ve))
+        except Exception as e:
+            logger.exception("validate fail, unknown fail!")
+            raise SchemaValidationError(str(e))
+
+        self._config = json.dumps(data)
+
 
 class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
     """
@@ -367,11 +411,34 @@ class Backend(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_backend"
 
 
+class BackendConfigJSONField(JSONField):
+    def from_db_value(self, *args, **kwargs):
+        data = super().from_db_value(*args, **kwargs)
+        if isinstance(data, dict):
+            # 兼容旧版本timeout数据
+            if "timeout" in data and isinstance(data["timeout"], int):
+                data["timeout"] = convert_timeout(data["timeout"])
+
+            # 补充retries和retry_timeout默认值
+            if "retries" not in data:
+                data["retries"] = 0
+
+            if "retry_timeout" not in data:
+                data["retry_timeout"] = 0
+
+            if "hash_on" not in data:
+                data["hash_on"] = ""
+
+            if "key" not in data:
+                data["key"] = ""
+        return data
+
+
 class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
     backend = models.ForeignKey(Backend, on_delete=models.PROTECT)
     stage = models.ForeignKey(Stage, on_delete=models.PROTECT)
-    config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
+    config = BackendConfigJSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
 
     class Meta:
         unique_together = ("gateway", "backend", "stage")

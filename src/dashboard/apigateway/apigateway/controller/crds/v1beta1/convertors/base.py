@@ -24,8 +24,24 @@ from urllib.parse import urlparse
 from blue_krill.cubing_case import shortcuts
 
 from apigateway.controller.crds.base import KubernetesResourceMetadata
+from apigateway.controller.crds.constants import UpstreamHashOnEnum, UpstreamTypeEnum
 from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.core.models import MicroGateway
+
+BACKEND_UPSTREAM_TYPE = {
+    "roundrobin": UpstreamTypeEnum.ROUNDROBIN,
+    "weighted-roundrobin": UpstreamTypeEnum.ROUNDROBIN,
+    "chash": UpstreamTypeEnum.CHASH,
+    "ewma": UpstreamTypeEnum.EWMA,
+    "least_conn": UpstreamTypeEnum.LEAST_CONN,
+}
+
+BACKEND_UPSTREAM_HASH_ON = {
+    "vars": UpstreamHashOnEnum.VARS,
+    "header": UpstreamHashOnEnum.HEADER,
+    "cookie": UpstreamHashOnEnum.COOKIE,
+    "query_string": UpstreamHashOnEnum.VARS,
+}
 
 
 @dataclass
@@ -98,3 +114,18 @@ class BaseConvertor(ABC):
             headers.update(dict.fromkeys(transform_headers.get("delete") or [], ""))
 
         return headers
+
+    def _convert_upstream_type(self, loadbalance: str) -> UpstreamTypeEnum:
+        return BACKEND_UPSTREAM_TYPE.get(loadbalance, UpstreamTypeEnum.ROUNDROBIN)
+
+    def _convert_chash_hash_on_type(self, hash_on: str) -> Optional[UpstreamHashOnEnum]:
+        return BACKEND_UPSTREAM_HASH_ON.get(hash_on)
+
+    def _convert_chash_hash_on_key(self, hash_on: str, key: str) -> Optional[str]:
+        if not key:
+            return None
+
+        if hash_on == "query_string":
+            return "arg_{}".format(key)
+
+        return key

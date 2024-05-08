@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from django.utils.functional import cached_property
 
+from apigateway.common.timeout import convert_timeout
 from apigateway.controller.crds.constants import (
     ResourceRewriteHeadersStrategyEnum,
     UpstreamSchemeEnum,
@@ -171,10 +172,16 @@ class HttpResourceConvertor(BaseConvertor):
         if not upstreams:
             return None
 
+        loadbalance = self._release_data.stage_backend_config.get("loadbalance", UpstreamTypeEnum.ROUNDROBIN.value)
+        hash_on = self._release_data.stage_backend_config.get("hash_on", "")
         upstream = Upstream(
             # 因为路由中设置了超时，此处会被覆盖，加上只是作为防御
             timeout=self._convert_http_resource_timeout(resource_proxy),
-            type=UpstreamTypeEnum.ROUNDROBIN,
+            type=self._convert_upstream_type(loadbalance),
+            retries=self._release_data.stage_backend_config.get("retries", 0),
+            retryTimeout=self._release_data.stage_backend_config.get("retry_timeout", 0),
+            hash_on=self._convert_chash_hash_on_type(hash_on),
+            key=self._convert_chash_hash_on_key(hash_on, self._release_data.stage_backend_config.get("key", "")),
         )
 
         for host in upstreams.get("hosts", []):
@@ -185,13 +192,14 @@ class HttpResourceConvertor(BaseConvertor):
         return upstream
 
     def _convert_http_resource_timeout(self, resource_proxy: Dict[str, Any]) -> TimeoutConfig:
-        # 资源没有配置则使用环境的
-        timeout = resource_proxy.get("timeout") or self._release_data.stage_backend_config.get("timeout") or 60
+        # 资源没有配置则使用环境的, 兼容 v1/v2 数据
+        resource_timeout = convert_timeout(resource_proxy.get("timeout", 0))
+        stage_timeout = convert_timeout(self._release_data.stage_backend_config.get("timeout", 0))
 
         return TimeoutConfig(
-            connect=timeout,
-            send=timeout,
-            read=timeout,
+            connect=resource_timeout["connect"] or stage_timeout["connect"] or 60,
+            send=resource_timeout["send"] or stage_timeout["send"] or 60,
+            read=resource_timeout["read"] or stage_timeout["read"] or 60,
         )
 
     def _convert_http_resource_rewrite(self, resource_proxy: Dict[str, Any]) -> ResourceRewrite:
