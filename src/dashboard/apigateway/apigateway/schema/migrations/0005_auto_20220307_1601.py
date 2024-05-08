@@ -34,7 +34,6 @@ class Migration(migrations.Migration):
                 choices=[
                     ("context", "CONTEXT"),
                     ("proxy", "PROXY"),
-                    ("access_strategy", "ACCESS_STRATEGY"),
                     ("plugin", "PLUGIN"),
                     ("monitor", "MONITOR"),
                     ("apisdk", "APISDK"),

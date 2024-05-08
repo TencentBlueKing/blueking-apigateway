@@ -115,7 +115,7 @@ class PluginSynchronizer:
             )
 
         if remaining_key_to_binding:
-            # 已创建且当前存在的 binding 已被 pop 出去，剩余的(排除用户创建的)即为需要删除的 binding
+            # 已创建且当前存在的 binding 已被 pop 出去，剩余的 (排除用户创建的) 即为需要删除的 binding
             bindings_to_delete: List[PluginBinding] = [
                 binding
                 for binding in remaining_key_to_binding.values()
