@@ -24,6 +24,7 @@ from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
 from .context import BaseContext
 
 
+# FIXME: remove it if no `Context` required
 class GatewayFeatureFlagContext(BaseContext):
     scope_type = ContextScopeTypeEnum.GATEWAY.value
     type = ContextTypeEnum.GATEWAY_FEATURE_FLAG.value
