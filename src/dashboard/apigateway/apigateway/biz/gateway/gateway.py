@@ -30,7 +30,7 @@ from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
-from apigateway.biz.iam import IAMHandler
+from apigateway.biz.iam import IAMAuthHandler, IAMHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -38,17 +38,40 @@ from apigateway.biz.stage import StageHandler
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
-from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
+from apigateway.core.models import (
+    Backend,
+    BackendConfig,
+    Context,
+    Gateway,
+    Release,
+    Resource,
+    Stage,
+)
+from apigateway.iam.constants import ActionEnum
+from apigateway.iam.models import IAMGradeManager
 from apigateway.utils.dict import deep_update
 
 
 class GatewayHandler:
-    @staticmethod
-    def list_gateways_by_user(username: str) -> List[Gateway]:
+    iam_handler = IAMAuthHandler()
+
+    def list_gateways_by_user(self, username: str) -> List[Gateway]:
         """获取用户有权限的的网关列表"""
-        # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
-        queryset = Gateway.objects.filter(_maintainers__contains=username)
-        return [gateway for gateway in queryset if gateway.has_permission(username)]
+        if not IAMGradeManager.objects.exists():
+            # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
+            queryset = Gateway.objects.filter(_maintainers__contains=username)
+            return [gateway for gateway in queryset if gateway.has_permission(username)]
+
+        # 从IAM 查询用户有权限查看的网关
+        policies = self.iam_handler.query_policies(username, ActionEnum.VIEW_GATEWAY.value)
+        if not policies:
+            return []
+
+        if self.iam_handler.is_any_policies(policies):
+            return Gateway.objects.all()
+
+        ids = self.iam_handler.policies_to_gateway_ids(policies)
+        return Gateway.objects.filter(id__in=ids)
 
     @staticmethod
     def get_stages_with_release_status(gateway_ids: List[int]) -> Dict[int, list]:
@@ -194,13 +217,14 @@ class GatewayHandler:
             GatewayAppBindingHandler.update_gateway_app_bindings(gateway, app_codes_to_binding)
 
         # 7. 在权限中心注册分级管理员，创建用户组
-        if settings.USE_BK_IAM_PERMISSION:
+        if IAMGradeManager.objects.exists():
             IAMHandler.register_grade_manager_and_builtin_user_groups(gateway)
 
     @staticmethod
     def delete_gateway(gateway_id: int):
         # 0. 删除权限中心中网关的分级管理员和用户组
-        IAMHandler.delete_grade_manager_and_builtin_user_groups(gateway_id)
+        if IAMGradeManager.objects.filter(gateway_id=gateway_id).exists():
+            IAMHandler.delete_grade_manager_and_builtin_user_groups(gateway_id)
 
         # 1. delete gateway context
 
@@ -282,5 +306,6 @@ class GatewayHandler:
     @staticmethod
     def get_max_resource_count(gateway_name: str):
         return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
-            gateway_name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
+            gateway_name,
+            settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"],
         )

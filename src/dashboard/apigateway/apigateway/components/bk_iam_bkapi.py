@@ -81,7 +81,10 @@ class BKIAMClient:
         """
         api_result, response = self._request_handler.call_api(
             self._client.api.v2_management_delete_grade_manager,
-            path_params={"system_id": settings.BK_IAM_SYSTEM_ID, "id": grade_manager_id},
+            path_params={
+                "system_id": settings.BK_IAM_SYSTEM_ID,
+                "id": grade_manager_id,
+            },
         )
         return self._request_handler.parse_api_result(api_result, response, {"code": 0}, itemgetter("data"))
 
@@ -142,7 +145,10 @@ class BKIAMClient:
         """
         api_result, response = self._request_handler.call_api(
             self._client.api.v2_management_grade_manager_create_groups,
-            path_params={"system_id": settings.BK_IAM_SYSTEM_ID, "id": grade_manager_id},
+            path_params={
+                "system_id": settings.BK_IAM_SYSTEM_ID,
+                "id": grade_manager_id,
+            },
             data={"groups": user_groups},
         )
         return self._request_handler.parse_api_result(api_result, response, {"code": 0}, itemgetter("data"))
@@ -225,7 +231,26 @@ class BKIAMClient:
         for policies in authorization_scopes:
             api_result, response = self._request_handler.call_api(
                 self._client.api.v2_management_groups_policies_grant,
-                path_params={"system_id": settings.BK_IAM_SYSTEM_ID, "id": user_group_id},
+                path_params={
+                    "system_id": settings.BK_IAM_SYSTEM_ID,
+                    "id": user_group_id,
+                },
                 data=policies,
             )
             self._request_handler.parse_api_result(api_result, response, {"code": 0}, itemgetter("data"))
+
+    def check_user_group_belong(self, username: str, user_group_ids: List[int]):
+        """
+        检查用户是否属于用户组
+
+        :param username: 用户名
+        :param user_group_ids: 用户组ID列表
+        """
+        api_result, response = self._request_handler.call_api(
+            self._client.api.v2_management_check_user_group_belong,
+            path_params={"system_id": settings.BK_IAM_SYSTEM_ID, "user_id": username},
+            params={
+                "group_ids": ",".join(map(str, user_group_ids)),
+            },
+        )
+        return self._request_handler.parse_api_result(api_result, response, {"code": 0}, itemgetter("data"))

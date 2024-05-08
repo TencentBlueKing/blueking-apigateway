@@ -24,6 +24,7 @@ from rest_framework import generics, status
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.label.models import APILabel
 from apigateway.biz.audit import Auditor
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
@@ -48,6 +49,11 @@ from .serializers import GatewayLabelInputSLZ, GatewayLabelOutputSLZ
     ),
 )
 class GatewayLabelListCreateApi(generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.MANAGE_LABEL.value,
+        "post": ActionEnum.MANAGE_LABEL.value,
+    }
+
     serializer_class = GatewayLabelInputSLZ
 
     def get_queryset(self):
@@ -104,6 +110,12 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
     ),
 )
 class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+    method_permission = {
+        "get": ActionEnum.MANAGE_LABEL.value,
+        "put": ActionEnum.MANAGE_LABEL.value,
+        "delete": ActionEnum.MANAGE_LABEL.value,
+    }
+
     serializer_class = GatewayLabelInputSLZ
     lookup_field = "id"
 

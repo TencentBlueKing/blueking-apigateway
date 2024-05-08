@@ -31,6 +31,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import BackendConfig, Stage
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
@@ -69,6 +70,11 @@ class StageQuerySetMixin:
     ),
 )
 class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_STAGE.value,
+        "post": ActionEnum.CREATE_STAGE.value,
+    }
+
     queryset = Stage.objects.order_by("id")
 
     def list(self, request, *args, **kwargs):
@@ -146,6 +152,13 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
     ),
 )
 class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_STAGE.value,
+        "put": ActionEnum.EDIT_STAGE.value,
+        "delete": ActionEnum.DELETE_STAGE.value,
+        "patch": ActionEnum.EDIT_STAGE.value,
+    }
+
     lookup_field = "id"
     queryset = Stage.objects.all()
 
@@ -256,6 +269,11 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
     ),
 )
 class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_STAGE.value,
+        "put": ActionEnum.EDIT_STAGE.value,
+    }
+
     lookup_field = "id"
     serializer_class = StageVarsSLZ
     queryset = Stage.objects.all()
@@ -312,6 +330,10 @@ class BackendConfigQuerySetMixin:
     ),
 )
 class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_STAGE.value,
+    }
+
     queryset = BackendConfig.objects.order_by("backend_id").prefetch_related("backend")
 
     def list(self, request, *args, **kwargs):
@@ -338,6 +360,11 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
     ),
 )
 class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.RetrieveUpdateAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_STAGE.value,
+        "put": ActionEnum.EDIT_STAGE.value,
+    }
+
     queryset = BackendConfig.objects.prefetch_related("backend")
     serializer_class = BackendConfigInputSLZ
 
@@ -385,6 +412,10 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
     ),
 )
 class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
+    method_permission = {
+        "put": ActionEnum.EDIT_STAGE.value,
+    }
+
     lookup_field = "id"
     serializer_class = StageStatusInputSLZ
     queryset = Stage.objects.all()

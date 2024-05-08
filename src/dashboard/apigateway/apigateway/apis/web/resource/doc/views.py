@@ -26,6 +26,7 @@ from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.audit import Auditor
 from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 from apigateway.core.models import Resource
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import DocInputSLZ, DocOutputSLZ
@@ -49,6 +50,11 @@ from .serializers import DocInputSLZ, DocOutputSLZ
     ),
 )
 class DocListCreateApi(generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_RESOURCE.value,
+        "post": ActionEnum.MANAGE_RESOURCE_DOC.value,
+    }
+
     serializer_class = DocInputSLZ
 
     def get_queryset(self):
@@ -129,6 +135,11 @@ class DocListCreateApi(generics.ListCreateAPIView):
     ),
 )
 class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
+    method_permission = {
+        "put": ActionEnum.MANAGE_RESOURCE_DOC.value,
+        "delete": ActionEnum.MANAGE_RESOURCE_DOC.value,
+    }
+
     serializer_class = DocInputSLZ
     lookup_field = "id"
 

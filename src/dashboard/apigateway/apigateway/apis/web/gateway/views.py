@@ -18,7 +18,9 @@
 from typing import List, Optional
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -29,11 +31,16 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
+from apigateway.biz.iam import IAMAuthHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
+from apigateway.iam.constants import GATEWAY_DEFAULT_ROLES, ActionEnum, UserRoleEnum
+from apigateway.iam.handlers.gateway_member import GatewayMemberHandler
+from apigateway.iam.handlers.user_group import IAMUserGroupHandler
+from apigateway.iam.models import IAMGradeManager
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
@@ -43,6 +50,8 @@ from .serializers import (
     GatewayListInputSLZ,
     GatewayListOutputSLZ,
     GatewayRetrieveOutputSLZ,
+    GatewayRoleInputSLZ,
+    GatewayRoleMembersInputSLZ,
     GatewayUpdateInputSLZ,
     GatewayUpdateStatusInputSLZ,
 )
@@ -68,7 +77,7 @@ from .serializers import (
 class GatewayListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         # 获取用户有权限的网关列表，后续切换到 IAM
-        gateways = GatewayHandler.list_gateways_by_user(request.user.username)
+        gateways = GatewayHandler().list_gateways_by_user(request.user.username)
         gateway_ids = [gateway.id for gateway in gateways]
 
         slz = GatewayListInputSLZ(data=request.query_params)
@@ -177,6 +186,13 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
     ),
 )
 class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_GATEWAY.value,
+        "put": ActionEnum.MANAGE_GATEWAY.value,
+        "patch": ActionEnum.MANAGE_GATEWAY.value,
+        "delete": ActionEnum.MANAGE_GATEWAY.value,
+    }
+
     queryset = Gateway.objects.all()
     serializer_class = GatewayRetrieveOutputSLZ
     lookup_url_kwarg = "gateway_id"
@@ -255,6 +271,10 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     ),
 )
 class GatewayUpdateStatusApi(generics.UpdateAPIView):
+    method_permission = {
+        "put": ActionEnum.MANAGE_GATEWAY.value,
+    }
+
     queryset = Gateway.objects.all()
     serializer_class = GatewayUpdateStatusInputSLZ
     lookup_url_kwarg = "gateway_id"
@@ -298,6 +318,10 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
     ),
 )
 class GatewayFeatureFlagsApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_GATEWAY.value,
+    }
+
     queryset = Gateway.objects.all()
     serializer_class = GatewayFeatureFlagsOutputSLZ
     lookup_url_kwarg = "gateway_id"
@@ -309,3 +333,219 @@ class GatewayFeatureFlagsApi(generics.ListAPIView):
         slz = self.get_serializer({"feature_flags": feature_flags})
 
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关成员列表",
+        responses={status.HTTP_200_OK: GatewayRoleMembersInputSLZ()},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="添加网关成员",
+        request_body=GatewayRoleMembersInputSLZ,
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayRoleMembersListCreateApi(generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_MEMBERS.value,
+        "post": ActionEnum.MANAGE_MEMBERS.value,
+    }
+
+    queryset = Gateway.objects.all()
+    lookup_url_kwarg = "gateway_id"
+
+    member_handler = GatewayMemberHandler()
+    group_handler = IAMUserGroupHandler()
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        role_members = []
+        for role in GATEWAY_DEFAULT_ROLES:
+            exists_usernames = {i["username"] for i in role_members}
+            usernames = self.group_handler.fetch_user_group_members(instance.id, role)
+            role_members.extend([{"username": i, "role": role.value} for i in usernames if i not in exists_usernames])
+
+        return OKJsonResponse(data=role_members)
+
+    def create(self, request, *args, **kwargs):
+        slz = GatewayRoleMembersInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        username = slz.validated_data["username"]
+        role = slz.validated_data["role"]
+
+        instance = self.get_object()
+
+        self.member_handler.add_member(instance, UserRoleEnum.get(role), username)
+
+        Auditor.record_gateway_member_op_success(
+            op_type=OpTypeEnum.CREATE,
+            username=request.user.username,
+            gateway_id=instance.id,
+            instance_id=instance.id,
+            instance_name=instance.name,
+            data_before={},
+            data_after=slz.validated_data,
+        )
+
+        return OKJsonResponse()
+
+
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        operation_description="切换网关成员角色",
+        request_body=GatewayRoleInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_description="删除网关成员",
+        request_body=GatewayRoleInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayRoleMembersUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
+    method_permission = {
+        "put": ActionEnum.MANAGE_MEMBERS.value,
+        "delete": ActionEnum.MANAGE_MEMBERS.value,
+    }
+
+    queryset = Gateway.objects.all()
+    lookup_url_kwarg = "gateway_id"
+
+    member_handler = GatewayMemberHandler()
+    group_handler = IAMUserGroupHandler()
+
+    def update(self, request, *args, **kwargs):
+        slz = GatewayRoleInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        instance = self.get_object()
+
+        username = kwargs["username"]
+        get_object_or_404(get_user_model(), username=username)
+        for role in self.group_handler.get_user_role(instance.id, username):
+            self.member_handler.delete_member(instance, role, username)
+
+        role = slz.validated_data["role"]
+        self.member_handler.add_member(instance, UserRoleEnum.get(role), username)
+
+        Auditor.record_gateway_member_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=instance.id,
+            instance_id=instance.id,
+            instance_name=instance.name,
+            data_before={},
+            data_after=slz.validated_data,
+        )
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+    def destroy(self, request, *args, **kwargs):
+        slz = GatewayRoleInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        username = kwargs["username"]
+        get_object_or_404(get_user_model(), username=username)
+        role = slz.validated_data["role"]
+
+        instance = self.get_object()
+
+        self.member_handler.delete_member(instance, UserRoleEnum.get(role), username)
+
+        Auditor.record_gateway_member_op_success(
+            op_type=OpTypeEnum.DELETE,
+            username=request.user.username,
+            gateway_id=instance.id,
+            instance_id=instance.id,
+            instance_name=instance.name,
+            data_before={},
+            data_after=slz.validated_data,
+        )
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取登录用户对应网关的角色",
+        responses={status.HTTP_200_OK: GatewayRoleInputSLZ()},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_description="退出网关角色",
+        request_body=GatewayRoleInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayRoleRetrieveDestroyApi(generics.RetrieveAPIView, generics.DestroyAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_GATEWAY.value,
+        "delete": ActionEnum.VIEW_GATEWAY.value,
+    }
+
+    queryset = Gateway.objects.all()
+    lookup_url_kwarg = "gateway_id"
+
+    group_handler = IAMUserGroupHandler()
+    member_handler = GatewayMemberHandler()
+    auth_handler = IAMAuthHandler()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        if not IAMGradeManager.objects.filter(gateway=instance).exists():
+            role = UserRoleEnum.MANAGER.value if instance.has_permission(request.user.username) else None
+            return OKJsonResponse(data={"role": role})
+
+        roles = self.group_handler.get_user_role(instance.id, request.user.username)
+        if roles:
+            return OKJsonResponse(data={"role": roles[0].value})
+
+        # 特殊用户, 比如超级管理员, 可能会有any权限, 直接返回MANAGER
+        policies = self.auth_handler.query_policies(request.user.username, ActionEnum.VIEW_GATEWAY.value)
+        if policies and self.auth_handler.is_any_policies(policies):
+            return OKJsonResponse(data={"role": UserRoleEnum.MANAGER.value})
+
+        return OKJsonResponse(data={"role": None})
+
+    def destroy(self, request, *args, **kwargs):
+        slz = GatewayRoleInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        role = slz.validated_data["role"]
+
+        instance = self.get_object()
+
+        self.member_handler.delete_member(instance, UserRoleEnum.get(role), request.user.username)
+
+        Auditor.record_gateway_member_op_success(
+            op_type=OpTypeEnum.DELETE,
+            username=request.user.username,
+            gateway_id=instance.id,
+            instance_id=instance.id,
+            instance_name=instance.name,
+            data_before={},
+            data_after={"username": request.user.username, "role": role},
+        )
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

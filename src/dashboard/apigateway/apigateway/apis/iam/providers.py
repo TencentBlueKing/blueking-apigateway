@@ -24,9 +24,8 @@ from iam.collection import FancyDict
 from iam.resource.provider import ListResult, ResourceProvider
 from iam.resource.utils import Page, get_filter_obj, get_page_obj
 
-from apigateway.apps.plugin.models import PluginConfig
 from apigateway.components.bk_iam_bkapi import BKIAMClient
-from apigateway.core.models import Gateway, Resource, Stage
+from apigateway.core.models import Gateway
 from apigateway.iam.constants import ResourceTypeEnum
 from apigateway.iam.models import IAMGradeManager
 
@@ -128,177 +127,11 @@ class GatewayProvider(BaseResourceProvider):
         return ListResult(results=results, count=queryset.count())
 
 
-class GatewayStageProvider(BaseResourceProvider):
-    """网关环境反向拉取"""
-
-    @fetch_gateway_id_in_filter
-    def list_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        queryset = Stage.objects.filter(gateway_id=self.gateway_id_in_filter).values("id", "name")
-        results = [
-            {
-                "id": str(stage["id"]),
-                "display_name": stage["name"],
-            }
-            for stage in queryset[page_obj.slice_from : page_obj.slice_to]
-        ]
-        return ListResult(results=results, count=queryset.count())
-
-    @fetch_gateway_id_in_filter
-    def fetch_instance_info(self, filter_obj: FancyDict, **options) -> ListResult:
-        ids = filter_obj.ids or []
-
-        approvers = self._fetch_gateway_approvers([self.gateway_id_in_filter])
-        iam_approver = approvers.get(self.gateway_id_in_filter) or []
-
-        queryset = Stage.objects.filter(gateway_id=self.gateway_id_in_filter, id__in=map(int, ids)).values(
-            "id", "name"
-        )
-        results = [
-            {
-                "id": str(stage["id"]),
-                "display_name": stage["name"],
-                "_bk_iam_approver_": iam_approver,
-            }
-            for stage in queryset
-        ]
-
-        return ListResult(results=results, count=len(results))
-
-    @fetch_gateway_id_in_filter
-    def search_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        """支持模糊搜索环境名"""
-        queryset = Stage.objects.filter(gateway_id=self.gateway_id_in_filter)
-        if filter_obj.keyword:
-            queryset = queryset.filter(name__icontains=filter_obj.keyword)
-
-        queryset = queryset.values("id", "name")
-        results = [
-            {
-                "id": str(stage["id"]),
-                "display_name": stage["name"],
-            }
-            for stage in queryset[page_obj.slice_from : page_obj.slice_to]
-        ]
-
-        return ListResult(results=results, count=queryset.count())
-
-
-class GatewayResourceProvider(BaseResourceProvider):
-    """网关资源反向拉取"""
-
-    @fetch_gateway_id_in_filter
-    def list_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        queryset = Resource.objects.filter(gateway_id=self.gateway_id_in_filter).values("id", "name")
-        results = [
-            {
-                "id": str(resource["id"]),
-                "display_name": resource["name"],
-            }
-            for resource in queryset[page_obj.slice_from : page_obj.slice_to]
-        ]
-        return ListResult(results=results, count=queryset.count())
-
-    @fetch_gateway_id_in_filter
-    def fetch_instance_info(self, filter_obj: FancyDict, **options) -> ListResult:
-        ids = filter_obj.ids or []
-
-        approvers = self._fetch_gateway_approvers([self.gateway_id_in_filter])
-        iam_approver = approvers.get(self.gateway_id_in_filter) or []
-
-        queryset = Resource.objects.filter(gateway_id=self.gateway_id_in_filter, id__in=map(int, ids)).values(
-            "id", "name"
-        )
-        results = [
-            {
-                "id": str(resource["id"]),
-                "display_name": resource["name"],
-                "_bk_iam_approver_": iam_approver,
-            }
-            for resource in queryset
-        ]
-
-        return ListResult(results=results, count=len(results))
-
-    @fetch_gateway_id_in_filter
-    def search_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        """支持模糊搜索资源名"""
-        queryset = Resource.objects.filter(gateway_id=self.gateway_id_in_filter)
-        if filter_obj.keyword:
-            queryset = queryset.filter(name__icontains=filter_obj.keyword)
-
-        queryset = queryset.values("id", "name")
-        results = [
-            {
-                "id": str(resource["id"]),
-                "display_name": resource["name"],
-            }
-            for resource in queryset[page_obj.slice_from : page_obj.slice_to]
-        ]
-        return ListResult(results=results, count=queryset.count())
-
-
-class GatewayPluginConfigProvider(BaseResourceProvider):
-    """网关插件反向拉取"""
-
-    @fetch_gateway_id_in_filter
-    def list_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        queryset = PluginConfig.objects.filter(gateway_id=self.gateway_id_in_filter).values("id", "name")
-        results = [
-            {
-                "id": str(plugin["id"]),
-                "display_name": plugin["name"],
-            }
-            for plugin in queryset[page_obj.slice_from : page_obj.slice_to]
-        ]
-        return ListResult(results=results, count=queryset.count())
-
-    @fetch_gateway_id_in_filter
-    def fetch_instance_info(self, filter_obj: FancyDict, **options) -> ListResult:
-        ids = filter_obj.ids or []
-
-        approvers = self._fetch_gateway_approvers([self.gateway_id_in_filter])
-        iam_approver = approvers.get(self.gateway_id_in_filter) or []
-
-        queryset = PluginConfig.objects.filter(gateway_id=self.gateway_id_in_filter, id__in=map(int, ids)).values(
-            "id", "name"
-        )
-        results = [
-            {
-                "id": str(plugin["id"]),
-                "display_name": plugin["name"],
-                "_bk_iam_approver_": iam_approver,
-            }
-            for plugin in queryset
-        ]
-
-        return ListResult(results=results, count=queryset.count())
-
-    @fetch_gateway_id_in_filter
-    def search_instance(self, filter_obj: FancyDict, page_obj: Page, **options) -> ListResult:
-        """支持模糊搜索插件配置名"""
-        queryset = PluginConfig.objects.filter(gateway_id=self.gateway_id_in_filter)
-        if filter_obj.keyword:
-            queryset = queryset.filter(name__icontains=filter_obj.keyword)
-
-        queryset = queryset.values("id", "name")
-        results = [
-            {
-                "id": str(plugin["id"]),
-                "display_name": plugin["name"],
-            }
-            for plugin in queryset[page_obj.slice_from : page_obj.slice_to]
-        ]
-        return ListResult(results=results, count=queryset.count())
-
-
 class IAMResourceProviderFactory:
     """网关各类资源反向拉取工厂"""
 
     provider_cls_map: Dict[ResourceTypeEnum, Type[ResourceProvider]] = {
         ResourceTypeEnum.GATEWAY: GatewayProvider,
-        ResourceTypeEnum.STAGE: GatewayStageProvider,
-        ResourceTypeEnum.RESOURCE: GatewayResourceProvider,
-        ResourceTypeEnum.PLUGIN_CONFIG: GatewayPluginConfigProvider,
     }
 
     def __init__(self, resource_type: ResourceTypeEnum):
@@ -358,7 +191,7 @@ class IAMResourceProviderFactory:
     def _parse_filter_and_page(self, data: Dict) -> Tuple[FancyDict, Page]:
         """处理请求参数"""
         filter_obj = get_filter_obj(
-            data["filter"], ["ids", "parent", "search", "resource_type_chain", "keyword", "ancestors"]
+            data.get("filter", {}), ["ids", "parent", "search", "resource_type_chain", "keyword", "ancestors"]
         )
         page_obj = get_page_obj(data.get("page"))
         return filter_obj, page_obj

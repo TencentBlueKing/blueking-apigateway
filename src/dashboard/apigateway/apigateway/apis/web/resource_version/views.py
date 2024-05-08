@@ -31,6 +31,7 @@ from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceV
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.core.models import Release, Resource, ResourceVersion
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -63,6 +64,11 @@ from .serializers import (
     ),
 )
 class ResourceVersionListCreateApi(generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_VERSION.value,
+        "post": ActionEnum.CREATE_VERSION.value,
+    }
+
     lookup_field = "id"
 
     def get_queryset(self):
@@ -111,6 +117,10 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
 
 
 class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_VERSION.value,
+    }
+
     serializer_class = ResourceVersionRetrieveOutputSLZ
     lookup_field = "id"
 
@@ -164,6 +174,10 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
 
 
 class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_VERSION.value,
+    }
+
     def get_queryset(self):
         return ResourceVersion.objects.filter(gateway=self.request.gateway).order_by("-id")
 
@@ -195,6 +209,10 @@ class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
 
 
 class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_VERSION.value,
+    }
+
     def get_queryset(self):
         return ResourceVersion.objects.filter(gateway=self.request.gateway)
 

@@ -32,6 +32,7 @@ from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.responses import OKJsonResponse
 
 
@@ -54,6 +55,11 @@ from apigateway.utils.responses import OKJsonResponse
     ),
 )
 class GatewaySDKListCreateApi(generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.MANAGE_SDK.value,
+        "post": ActionEnum.MANAGE_SDK.value,
+    }
+
     serializer_class = serializers.GatewaySDKListOutputSLZ
     lookup_field = "id"
 

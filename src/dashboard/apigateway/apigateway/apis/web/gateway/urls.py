@@ -32,4 +32,17 @@ urlpatterns = [
             ]
         ),
     ),
+    path(
+        "<int:gateway_id>/members/",
+        views.GatewayRoleMembersListCreateApi.as_view(),
+        name="gateway_members.list_create",
+    ),
+    path(
+        "<int:gateway_id>/members/<str:username>/",
+        views.GatewayRoleMembersUpdateDestroyApi.as_view(),
+        name="gateway_members.update_destroy",
+    ),
+    path(
+        "<int:gateway_id>/role/", views.GatewayRoleRetrieveDestroyApi.as_view(), name="gateway_role.retrieve_destroy"
+    ),
 ]

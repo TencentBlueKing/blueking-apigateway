@@ -22,6 +22,9 @@
                   "id": "view_gateway"
                 },
                 {
+                  "id": "view_members"
+                },
+                {
                   "id": "manage_members"
                 },
                 {
@@ -53,6 +56,24 @@
                 },
                 {
                   "id": "view_stage"
+                }
+              ]
+            },
+            {
+              "name": "后端服务管理",
+              "name_en": "Backend Management",
+              "actions": [
+                {
+                  "id": "create_backend"
+                },
+                {
+                  "id": "edit_backend"
+                },
+                {
+                  "id": "delete_backend"
+                },
+                {
+                  "id": "view_backend"
                 }
               ]
             },
@@ -103,6 +124,9 @@
               "name_en": "Version",
               "actions": [
                 {
+                  "id": "create_version"
+                },
+                {
                   "id": "view_version"
                 }
               ]
@@ -134,6 +158,15 @@
                 },
                 {
                   "id": "view_statistics"
+                }
+              ]
+            },
+            {
+              "name": "告警",
+              "name_en": "Alarm",
+              "actions": [
+                {
+                  "id": "manage_alarm"
                 }
               ]
             },

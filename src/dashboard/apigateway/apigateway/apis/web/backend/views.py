@@ -28,6 +28,7 @@ from apigateway.biz.backend import BackendHandler
 from apigateway.biz.proxy import ProxyHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Backend, BackendConfig
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
@@ -59,6 +60,11 @@ class BackendQuerySetMixin:
     ),
 )
 class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_BACKEND.value,
+        "post": ActionEnum.CREATE_BACKEND.value,
+    }
+
     queryset = Backend.objects.order_by("-updated_time")
     serializer_class = BackendListOutputSLZ
     filterset_class = BackendFilter
@@ -130,6 +136,12 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
     ),
 )
 class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_BACKEND.value,
+        "put": ActionEnum.EDIT_BACKEND.value,
+        "delete": ActionEnum.DELETE_BACKEND.value,
+    }
+
     lookup_field = "id"
     serializer_class = BackendInputSLZ
     queryset = Backend.objects.all()
