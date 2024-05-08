@@ -108,7 +108,6 @@ INSTALLED_APPS = [
     "apigateway.schema",
     "apigateway.core",
     "apigateway.apps.gateway",
-    "apigateway.apps.access_strategy",
     "apigateway.apps.plugin",
     "apigateway.apps.label",
     "apigateway.apps.permission",

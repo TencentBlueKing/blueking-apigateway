@@ -35,8 +35,6 @@ from apigateway.core.models import (
     ReleaseHistory,
     Resource,
     ResourceVersion,
-    SslCertificate,
-    SslCertificateBinding,
     Stage,
     StageResourceDisabled,
 )
@@ -185,5 +183,3 @@ admin.site.register(MicroGateway, MicroGatewayAdmin)
 admin.site.register(MicroGatewayReleaseHistory, MicroGatewayReleaseHistoryAdmin)
 admin.site.register(Backend, BackendAdmin)
 admin.site.register(BackendConfig, BackendConfigAdmin)
-admin.site.register(SslCertificate, SslCertificateAdmin)
-admin.site.register(SslCertificateBinding, SslCertificateBindingAdmin)
