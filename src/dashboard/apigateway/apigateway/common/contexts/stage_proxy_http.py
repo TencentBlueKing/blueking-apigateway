@@ -24,7 +24,7 @@ from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
 from .context import BaseContext
 
 
-# TODO DELETE IT 1.14
+# FIXME: remove it if no legacy release data exists
 class StageProxyHTTPContext(BaseContext):
     """Context data related with HTTP proxy in "stage" scope."""
 

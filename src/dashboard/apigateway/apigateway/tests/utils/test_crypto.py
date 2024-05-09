@@ -20,7 +20,6 @@ import pytest
 from django.utils.encoding import smart_bytes, smart_str
 
 from apigateway.utils.crypto import (
-    CertificateChecker,
     KeyGenerator,
     KeyValidator,
     RSAKeyValidationError,
@@ -56,39 +55,3 @@ class TestKeyValidator:
 
         with pytest.raises(RSAKeyValidationError):
             KeyValidator().validate_rsa_key(smart_bytes("invalid-private-key"), smart_bytes("invalid-public-key"))
-
-
-class TestCertificateChecker:
-    def test_check(self, fake_tls_key, fake_tls_cert, fake_tls_cacert):
-        checker = CertificateChecker(key=fake_tls_key, cert=fake_tls_cert, ca_cert=fake_tls_cacert)
-        result = checker.check()
-        assert result["snis"] == ["bkapi.example.com"]
-        assert result["validity_end"] > result["validity_start"] > 0
-
-    def test_check_cert_key_matched(self, fake_tls_key, fake_tls_cert):
-        checker = CertificateChecker(key=fake_tls_key, cert=fake_tls_cert, ca_cert=None)
-        assert checker._check_cert_key_matched() is None
-
-    def test_check_cert_key_matched_error(self, fake_rsa_private_key, fake_tls_cert):
-        checker = CertificateChecker(key=fake_rsa_private_key, cert=fake_tls_cert, ca_cert=None)
-        with pytest.raises(RSAKeyValidationError):
-            checker._check_cert_key_matched()
-
-        checker = CertificateChecker(key="invalid-private-key", cert=fake_tls_cert, ca_cert=None)
-        with pytest.raises(ValueError):
-            checker._check_cert_key_matched()
-
-        with pytest.raises(ValueError):
-            CertificateChecker(key=fake_rsa_private_key, cert="invalid-cert", ca_cert=None)
-
-    def test_check_cert_is_issued_by_cacert(self, fake_tls_key, fake_tls_cert, fake_tls_cacert):
-        checker = CertificateChecker(key=fake_tls_key, cert=fake_tls_cert, ca_cert=None)
-        assert checker._check_cert_is_issued_by_cacert() is None
-
-        checker = CertificateChecker(key=fake_tls_key, cert=fake_tls_cert, ca_cert=fake_tls_cacert)
-        assert checker._check_cert_is_issued_by_cacert() is None
-
-        # cacert as cert
-        checker = CertificateChecker(key=fake_tls_key, cert=fake_tls_cacert, ca_cert=fake_tls_cert)
-        with pytest.raises(RSAKeyValidationError):
-            checker._check_cert_is_issued_by_cacert()

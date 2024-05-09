@@ -18,18 +18,11 @@
 #
 import base64
 import hashlib
-import itertools
-from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import Tuple, Union
 
-from cryptography import x509
-from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from cryptography.x509.oid import ExtensionOID, NameOID
+from cryptography.hazmat.primitives.asymmetric import rsa
 from django.utils.encoding import force_bytes
-
-from apigateway.utils.time import timestamp
 
 
 class RSAKeyValidationError(Exception):
@@ -80,89 +73,6 @@ class KeyValidator:
         expected_public_key = get_public_key_from_private_key(private_key)
         if expected_public_key.strip() != public_key:
             raise RSAKeyValidationError("public key not match")
-
-
-@dataclass
-class CertificateChecker:
-    key: str
-    cert: str
-    ca_cert: Optional[str] = None
-
-    def __post_init__(self):
-        self._x509_cert = self._load_pem_x509_certificate(self.cert, name="cert")
-        self._x509_ca_cert = self._load_pem_x509_certificate(self.ca_cert, name="ca_cert")
-
-    def check(self):
-        self._check_cert_key_matched()
-        self._check_cert_is_issued_by_cacert()
-        return self._extract_cert_info()
-
-    def _load_pem_x509_certificate(self, pem_cert: Optional[Union[str, bytes]], name: str) -> x509.Certificate:
-        if not pem_cert:
-            return None
-
-        try:
-            return x509.load_pem_x509_certificate(force_bytes(pem_cert))
-        except Exception:
-            raise ValueError(f"{name} invalid: unable to load certificate")
-
-    def _check_cert_key_matched(self):
-        public_key_for_cert = self._x509_cert.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
-        try:
-            public_key_for_key = get_public_key_from_private_key(self.key)
-        except RSAKeyValidationError:
-            raise ValueError("key invalid: unable to load private key")
-
-        if public_key_for_cert != public_key_for_key:
-            raise RSAKeyValidationError("key and cert are not matched")
-
-    def _check_cert_is_issued_by_cacert(self):
-        if not self._x509_ca_cert:
-            return
-
-        public_key_for_cacert = self._x509_ca_cert.public_key()
-        try:
-            # https://cryptography.io/en/latest/x509/reference/#cryptography.x509.Certificate.tbs_certificate_bytes
-            public_key_for_cacert.verify(
-                self._x509_cert.signature,
-                self._x509_cert.tbs_certificate_bytes,
-                padding.PKCS1v15(),
-                self._x509_cert.signature_hash_algorithm,
-            )
-        except InvalidSignature:
-            raise RSAKeyValidationError("cert maybe not issued by cacert")
-
-    def _extract_cert_info(self):
-        return {
-            "snis": self._extract_snis(),
-            "validity_start": timestamp(self._x509_cert.not_valid_before),
-            "validity_end": timestamp(self._x509_cert.not_valid_after),
-        }
-
-    def _extract_snis(self):
-        # https://support.dnsimple.com/articles/what-is-common-name/
-        snis = []
-
-        for name in itertools.chain(
-            self._extract_common_names(),
-            self._extract_alternative_names(),
-        ):
-            if name not in snis:
-                snis.append(name)  # ruff: noqa: PERF401
-
-        return snis
-
-    def _extract_common_names(self):
-        return [attr.value for attr in self._x509_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)]
-
-    def _extract_alternative_names(self) -> List[str]:
-        try:
-            extensions = self._x509_cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
-            return extensions.value.get_values_for_type(x509.DNSName)
-        except x509.ExtensionNotFound:
-            return []
 
 
 def calculate_fingerprint(content):

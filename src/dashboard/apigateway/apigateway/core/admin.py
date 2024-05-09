@@ -154,18 +154,6 @@ class BackendConfigAdmin(admin.ModelAdmin):
     list_filter = ["gateway", "backend", "stage"]
 
 
-class SslCertificateAdmin(admin.ModelAdmin):
-    list_display = ["id", "gateway", "name", "type", "expires", "updated_time"]
-    search_fields = ["name"]
-    list_filter = ["gateway"]
-
-
-class SslCertificateBindingAdmin(admin.ModelAdmin):
-    list_display = ["id", "gateway", "scope_type", "scope_id", "ssl_certificate_id"]
-    search_fields = ["scope_id", "ssl_certificate_id"]
-    list_filter = ["gateway"]
-
-
 admin.site.register(Gateway, GatewayAdmin)
 admin.site.register(Stage, StageAdmin)
 admin.site.register(Resource, ResourceAdmin)
