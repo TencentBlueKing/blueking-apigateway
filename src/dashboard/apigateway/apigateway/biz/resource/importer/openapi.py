@@ -19,6 +19,7 @@
 import json
 from typing import Any, Dict, List
 
+from openapi_spec_validator.validation.exceptions import UnresolvableParameterError
 from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
 from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
 from prance import ResolvingParser
@@ -90,6 +91,7 @@ class OpenAPIImportManager:
                 list(err.absolute_path),
             )
             for err in spec_validator.cls(self.openapi_data).iter_errors()
+            if not isinstance(err, UnresolvableParameterError)  # 需要排除路径参数校验
         ]
 
         if len(schema_validate_result) > 0:

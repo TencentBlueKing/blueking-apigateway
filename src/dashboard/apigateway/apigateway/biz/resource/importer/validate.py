@@ -29,7 +29,7 @@ from apigateway.biz.resource.importer.schema import SchemaValidateErr
 from apigateway.biz.resource.models import ResourceData
 from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
 from apigateway.core.constants import HTTP_METHOD_ANY
-from apigateway.core.models import Gateway, Resource
+from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.utils.list import get_duplicate_items
 
 
@@ -61,6 +61,7 @@ class ResourceImportValidator:
         self._validate_label_count()
         self._validate_plugin_type()
         self._validate_plugin_config()
+        self._validate_backend()
         return self.schema_validate_result
 
     def _get_unchanged_resources(self) -> List[Dict[str, Any]]:
@@ -255,12 +256,37 @@ class ResourceImportValidator:
                         plugin_type.schema and plugin_type.schema.schema,
                     )
                 except Exception as err:
-                    raise ValueError(
+                    validate_err = SchemaValidateErr(
                         _(
                             "资源的插件配置校验失败，资源名称：{resource_name}，插件类型：{plugin_type_code}，错误信息：{err}。"
                         ).format(
                             resource_name=resource_data.name,
                             plugin_type_code=plugin_type.code,
                             err=err,
-                        )
+                        ),
+                        f"$.paths.{resource_data.path}.{resource_data.method}.x-bk-apigateway-resource",
+                        absolute_path=[],
                     )
+                    self.schema_validate_result.append(validate_err)
+
+    def _validate_backend(self):
+        """
+        校验resource 绑定的backend
+        - backend_name必须存在
+        """
+        backends = {backend.name: backend for backend in Backend.objects.filter(gateway=self.gateway)}
+
+        for resource_data in self.resource_data_list:
+            if resource_data.backend is None:
+                continue
+            backend = backends.get(resource_data.backend.name)
+            if not backend:
+                validate_err = SchemaValidateErr(
+                    _("资源的后端服务校验失败，资源名称：{resource_name}，后端服务：{backend_name} 不存在").format(
+                        resource_name=resource_data.name,
+                        plugin_type_code=resource_data.backend.name,
+                    ),
+                    f"$.paths.{resource_data.path}.{resource_data.method}.x-bk-apigateway-resource.backend",
+                    absolute_path=[],
+                )
+                self.schema_validate_result.append(validate_err)

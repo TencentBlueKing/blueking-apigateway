@@ -19,7 +19,9 @@
 
 
 class TestResourceSyncApi:
-    def test_sync(self, request_view, fake_gateway, mocker, fake_resource_swagger, ignore_related_app_permission):
+    def test_sync(
+        self, request_view, fake_gateway, fake_backend, mocker, fake_resource_swagger, ignore_related_app_permission
+    ):
         mocker.patch(
             "apigateway.apis.open.resource.views.ResourcesImporter.from_resources",
             return_value=mocker.MagicMock(

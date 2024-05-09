@@ -144,7 +144,7 @@ def fake_backend(fake_gateway, fake_stage, faker):
     backend = G(
         Backend,
         gateway=fake_gateway,
-        name=faker.pystr(),
+        name="default",
     )
 
     G(

@@ -19,9 +19,10 @@
 from functools import partial
 from importlib.resources import as_file, files
 from os import path
-from typing import Any, Dict, Hashable, List, Mapping, Tuple
+from typing import Any, Dict, Hashable, Iterator, List, Mapping, Optional, Tuple
 
 from jsonschema.validators import Draft4Validator, Draft202012Validator
+from jsonschema_path import SchemaPath
 from jsonschema_path.readers import FilePathReader
 from lazy_object_proxy import Proxy
 from openapi_spec_validator import versions
@@ -32,13 +33,46 @@ from openapi_spec_validator.validation import (
     openapi_v30_spec_validator,
     openapi_v31_spec_validator,
 )
+from openapi_spec_validator.validation.exceptions import DuplicateOperationIDError
+from openapi_spec_validator.validation.keywords import OperationValidator
 from openapi_spec_validator.versions.datatypes import SpecVersion
+from prance import ValidationError
 
 openapi_validator_mapping: Mapping[SpecVersion, SpecValidatorProxy] = {
     versions.OPENAPIV2: openapi_v2_spec_validator,
     versions.OPENAPIV30: openapi_v30_spec_validator,
     versions.OPENAPIV31: openapi_v31_spec_validator,
 }
+
+
+class ApigwOperationValidator(OperationValidator):
+    """
+    重写openapi_spec_validator的OperationValidator,不需要校验路径参数
+    """
+
+    def __call__(
+        self,
+        url: str,
+        name: str,
+        operation: SchemaPath,
+        path_parameters: Optional[SchemaPath],
+    ) -> Iterator[ValidationError]:
+        assert self.operation_ids_registry is not None
+
+        operation_id = operation.getkey("operationId")
+        if operation_id is not None and operation_id in self.operation_ids_registry:
+            yield DuplicateOperationIDError(f"Operation ID '{operation_id}' for '{name}' in '{url}' is not unique")
+        self.operation_ids_registry.append(operation_id)
+
+        if "responses" in operation:
+            responses = operation / "responses"
+            yield from self.responses_validator(responses)
+
+        if "parameters" in operation:
+            parameters = operation / "parameters"
+            yield from self.parameters_validator(parameters)
+
+        return
 
 
 def _load_open_schema_for_apigw(version: str) -> Tuple[Mapping[Hashable, Any], str]:
@@ -84,6 +118,8 @@ def set_openapi_parser_schema_validator(spec_version: SpecVersion):
     get_apigw_schema_content = Proxy(partial(_get_apigw_schema_content, spec_version))
 
     SPEC2VALIDATOR[spec_version].schema_validator = Proxy(partial(Draft4Validator, get_apigw_schema_content))
+
+    SPEC2VALIDATOR[spec_version].keyword_validators["operation"] = ApigwOperationValidator
 
 
 def convert_swagger_formdata_to_openapi(formdata_params: List[Dict[str, Any]], consumers: List[str]) -> Dict[str, Any]:

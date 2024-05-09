@@ -157,26 +157,10 @@ class TestArchiveParser:
 
 
 class TestSwagger:
-    def test_parse(self, mocker):
-        mocker.patch("apigateway.biz.resource_doc.importer.parsers.SwaggerParser._expand_swagger", return_value="")
-        mocker.patch(
-            "apigateway.biz.resource_doc.importer.parsers.SwaggerManager.load_from_swagger",
-            return_value=mocker.MagicMock(
-                **{
-                    "validate.return_value": None,
-                    "get_paths.return_value": {
-                        "/user": {
-                            "get": {
-                                "operationId": "get_user",
-                            }
-                        }
-                    },
-                }
-            ),
-        )
+    def test_parse(self, fake_gateway, fake_resource_swagger, fake_backend):
+        docs = OpenAPIParser(fake_gateway.id)._parse(fake_resource_swagger, DocLanguageEnum.ZH)
 
-        docs = OpenAPIParser(1)._parse("openapi", DocLanguageEnum.ZH)
-        assert docs[0].resource_name == "get_user"
+        assert docs[0].resource_name == "http_get_mapping_user_id"
         assert docs[0].language == DocLanguageEnum.ZH
         assert docs[0].content != ""
         assert docs[0].openapi != ""

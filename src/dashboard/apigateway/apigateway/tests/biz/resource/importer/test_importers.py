@@ -23,21 +23,12 @@ from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.constants import PluginBindingSourceEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
-from apigateway.biz.resource.importer import ResourcesImporter
+from apigateway.biz.resource.importer import ResourceDataConvertor, ResourcesImporter
 from apigateway.core.models import Backend, Resource
 from apigateway.utils.yaml import yaml_dumps
 
 
 class TestResourcesImporter:
-    def test_init__error(self, fake_gateway, fake_resource_data):
-        resource_data_list = [
-            fake_resource_data.copy(deep=True),
-            fake_resource_data.copy(deep=True),
-        ]
-
-        with pytest.raises(ValueError):
-            ResourcesImporter(fake_gateway, resource_data_list)
-
     def test_from_resources(self, fake_gateway):
         G(Backend, gateway=fake_gateway, name="foo")
         resources = [
@@ -53,7 +44,8 @@ class TestResourcesImporter:
             }
         ]
 
-        importer = ResourcesImporter.from_resources(fake_gateway, resources)
+        resource_data_list = ResourceDataConvertor(fake_gateway, resources).convert()
+        importer = ResourcesImporter.from_resources(fake_gateway, resource_data_list)
         assert len(importer.resource_data_list) == 1
 
     def test_import_resources(self, fake_gateway, fake_resource_data):

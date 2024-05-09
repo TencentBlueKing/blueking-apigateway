@@ -323,7 +323,7 @@ class ResourceOpenAPISchemaVersionHandler:
         """
         创建resource schema version
         """
-        resource_ids = [resource["id"] for resource in resource_version.data]
+        resource_ids = [resource["id"] for resource in resource_version.data if "id" in resource]
 
         # 查询资源所有的schema
         resource_schemas = OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids)

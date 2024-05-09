@@ -171,14 +171,12 @@ class OpenAPIParser(BaseParser):
         openapi_manager = OpenAPIImportManager.load_from_openapi_content(gateway, openapi)
 
         validate_err_list = openapi_manager.validate()
-
         if len(validate_err_list) > 0 or not openapi_manager.parser:
             raise SchemaValidationError("")
 
         docs = []
         for path, path_item in openapi_manager.parser.get_paths().items():
-            for method, original_operation in path_item.items():  # Rename the variable here
-                # Use a different variable for the converted operation
+            for method, original_operation in path_item.items():
                 converted_operation = original_operation
                 if openapi_manager.openapi_version != OPENAPIV2:
                     converted_operation = convert_openapi3_operation_to_openapi2(original_operation)
