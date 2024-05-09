@@ -98,7 +98,9 @@
                       <bk-dropdown-item
                         v-for="item in stageList"
                         :key="item.id"
-                        @click="handleClickStage(item, data)"
+                        @click="!item.publish_validate_msg ? handleClickStage(item, data) : ''"
+                        :class="{ 'menu-item-disabled': !!item.publish_validate_msg }"
+                        v-bk-tooltips="{ content: t(item.publish_validate_msg), disabled: !item.publish_validate_msg }"
                       >
                         {{ item.name }}
                       </bk-dropdown-item>
@@ -402,6 +404,16 @@ onUnmounted(() => {
   }
   :deep(.bk-table-body) {
     scrollbar-color: transparent transparent;
+  }
+}
+:deep(.menu-item-disabled) {
+  background-color: #dcdee5;
+  color: #fff;
+  cursor: not-allowed;
+  &:hover {
+    background-color: #dcdee5;
+    color: #fff;
+    cursor: not-allowed;
   }
 }
 </style>
