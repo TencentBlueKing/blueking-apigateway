@@ -13,8 +13,8 @@
             <template v-if="stageData.release.status === 'unreleased'">
               <span class="no-release-label">未发布</span>
               <span class="no-release-dot"></span>
-              <span class="no-release-icon apigateway-icon icon-ag-edit-line" @click="handleEditStage">
-              </span>
+              <!-- <span class="no-release-icon apigateway-icon icon-ag-edit-line" @click="handleEditStage">
+              </span> -->
             </template>
             <span class="name">
               {{ stageData.name }}
@@ -519,8 +519,8 @@ onMounted(async () => {
       .unrelease {
         display: inline-block;
         font-size: 10px;
-        color: #fe9c00;
-        background: #fff1db;
+        // color: #fe9c00;
+        // background: #fff1db;
         border-radius: 2px;
         padding: 2px 5px;
         line-height: 1;

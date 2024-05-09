@@ -23,7 +23,7 @@ from django.core.management.base import BaseCommand
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginType
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
+from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ProxyTypeEnum
 from apigateway.core.models import Context, Proxy, Stage
 from apigateway.utils import yaml
 
@@ -80,7 +80,7 @@ class Command(BaseCommand):
                     failed_stages = +1
                     self.stdout.write(
                         f"Gateway {stage.gateway.name} Stage {stage.id}"
-                        f" has plugin biding[{plugin_binding.config.yaml}] config for no transform_headers "
+                        f" has plugin binding[{plugin_binding.config.yaml}] config for no transform_headers "
                     )
 
         self.stdout.write(
@@ -89,7 +89,7 @@ class Command(BaseCommand):
         )
 
     def check_resource_header_rewrite_migration(self):
-        proxies = Proxy.objects.prefetch_related("resource").all()
+        proxies = Proxy.objects.filter(type=ProxyTypeEnum.HTTP.value).prefetch_related("resource").all()
         self.stdout.write("Checking header rewrite plugin migration for resource")
         # 统计check结果
         total_resources = proxies.count()
@@ -128,7 +128,7 @@ class Command(BaseCommand):
                     failed_resources = +1
                     self.stdout.write(
                         f"Resource {proxy.resource.id}"
-                        f" has plugin biding[{plugin_binding.config.yaml}] config for no transform_headers "
+                        f" has plugin binding[{plugin_binding.config.yaml}] config for no transform_headers "
                     )
 
         self.stdout.write(

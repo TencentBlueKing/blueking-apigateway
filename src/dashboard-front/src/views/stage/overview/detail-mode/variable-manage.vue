@@ -44,6 +44,7 @@
                       :clearable="false"
                       :max-length="50"
                       @focus="handleInputFocus(index)"
+                      @enter="() => handleInputEnter(index)"
                       @blur="handleInputBlur(index)"
                     />
                   </bk-form-item>
@@ -67,6 +68,7 @@
                     :ref="(el: HTMLElement) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
                     :clearable="false"
                     @focus="handleInputFocus(index)"
+                    @enter="() => handleInputEnter(index)"
                     @blur="handleInputBlur(index)"
                   />
                 </bk-form-item>
@@ -85,8 +87,12 @@
           </template>
         </bk-table-column> -->
         <bk-table-column :label="t('操作')" :resizable="false">
-          <template #default="{ row, index, column }">
-            <div class="normal-status" v-show="!row.isFocus">
+          <template #default="{ index, column }">
+            <div class="normal-status">
+              <i class="apigateway-icon icon-ag-plus-circle-shape" @click="addRow(index, column.index)" />
+              <i class="apigateway-icon icon-ag-minus-circle-shape" @click="delRow(index)" />
+            </div>
+            <!-- <div class="normal-status" v-show="!row.isFocus">
               <i class="apigateway-icon icon-ag-plus-circle-shape" @click="addRow(index, column.index)" />
               <i class="apigateway-icon icon-ag-minus-circle-shape" @click="delRow(index)" />
             </div>
@@ -106,7 +112,7 @@
               >
                 {{ t('取消') }}
               </bk-button>
-            </div>
+            </div> -->
           </template>
         </bk-table-column>
       </bk-table>
@@ -264,18 +270,18 @@ const confirmRowEdit = async (index: number) => {
   };
 };
 
-const cancelRowEdit = async (index: number) => {
-  // const { name, value } = tableData.value[index];
-  // 如果没有变量名称或者变量值，取消直接删除
-  // if (!name || !value) {
-  //   tableData.value?.splice(index, 1);
-  //   return;
-  // }
-  // if (await validateName(index)) {
-  //   tableData.value[index].isEdit = false;
-  // }
-  tableData.value[index] = Object.assign(tableData.value[index], { isEdit: false, isFocus: false });
-};
+// const cancelRowEdit = async (index: number) => {
+//   // const { name, value } = tableData.value[index];
+//   // 如果没有变量名称或者变量值，取消直接删除
+//   // if (!name || !value) {
+//   //   tableData.value?.splice(index, 1);
+//   //   return;
+//   // }
+//   // if (await validateName(index)) {
+//   //   tableData.value[index].isEdit = false;
+//   // }
+//   tableData.value[index] = Object.assign(tableData.value[index], { isEdit: false, isFocus: false });
+// };
 
 const editTable = () => {
   tableIsEdit.value = true;
@@ -316,6 +322,10 @@ const addRow = async (index: number, columnIndex: number) => {
 
 const delRow = (index: number) => {
   tableData.value?.splice(index, 1);
+};
+
+const handleInputEnter = (index: number) => {
+  confirmRowEdit(index);
 };
 
 const handleInputFocus = (index: number) => {

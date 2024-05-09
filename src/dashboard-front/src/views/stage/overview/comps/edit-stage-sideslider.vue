@@ -3,7 +3,6 @@
   <div class="sideslider-wrapper">
     <bk-sideslider
       v-model:isShow="isShow"
-      :title="isAdd ? t('新建环境') : t('编辑环境')"
       :quick-close="true"
       width="960"
       ext-cls="stage-sideslider-cls"
@@ -12,6 +11,15 @@
       @hidden="emit('hidden')"
       :transfer="true"
     >
+      <template #header>
+        <div class="custom-side-header">
+          <div class="title">{{ isAdd ? t('新建环境') : t('编辑环境') }}</div>
+          <template v-if="!isAdd">
+            <span></span>
+            <div class="subtitle">{{ curStageData.name }}</div>
+          </template>
+        </div>
+      </template>
       <template #default>
         <bk-loading :loading="isDialogLoading">
           <div class="sideslider-content">
@@ -673,7 +681,7 @@ defineExpose({
   }
 }
 .sideslider-content {
-  padding: 20px 40px;
+  padding: 20px 40px 32px;
   .host-item {
     display: flex;
     align-items: center;
@@ -803,7 +811,7 @@ defineExpose({
 .footer-btn-wrapper {
   bottom: 0;
   height: 52px;
-  padding-left: 20px;
+  padding-left: 40px;
 }
 .fixed-footer-btn-wrapper {
   position: fixed;
@@ -811,7 +819,7 @@ defineExpose({
   left: 0;
   right: 0;
   padding: 10px 0;
-  padding-left: 20px;
+  padding-left: 40px;
   background: #fff;
   box-shadow: 0 -2px 4px 0 #0000000f;
   z-index: 9;
@@ -856,7 +864,9 @@ defineExpose({
     }
     :deep(.bk-collapse-item) {
       background-color: #F5F7FB;
-      margin-bottom: 25px;
+      &:not(:nth-last-child(1)) {
+        margin-bottom: 25px;
+      }
 
       .bk-collapse-content {
         padding: 5px 32px;

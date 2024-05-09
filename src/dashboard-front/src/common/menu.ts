@@ -21,11 +21,29 @@ export const createMenuData = (): IMenu[] => {
     //     },
     //   ],
     // },
+    // {
+    //   name: 'apigwStageOverview',
+    //   enabled: true,
+    //   title: t('环境概览'),
+    //   icon: 'resource',
+    // },
     {
-      name: 'apigwStageOverview',
+      name: 'apigwStageManage',
       enabled: true,
-      title: t('环境概览'),
+      title: '环境管理',
       icon: 'resource',
+      children: [
+        {
+          name: 'apigwStageOverview',
+          enabled: true,
+          title: '环境概览',
+        },
+        {
+          name: 'apigwReleaseHistory',
+          enabled: true,
+          title: '发布记录',
+        },
+      ],
     },
     {
       name: 'apigwBackendService',
@@ -95,7 +113,8 @@ export const createMenuData = (): IMenu[] => {
     {
       name: 'apigwMonitorAlarm',
       title: t('监控告警'),
-      icon: 'monitor',
+      // icon: 'monitor',
+      icon: 'notification',
       enabled: user.featureFlags?.ENABLE_MONITOR,
       children: [
         {

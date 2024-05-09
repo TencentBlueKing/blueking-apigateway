@@ -141,10 +141,11 @@
 <script setup lang="tsx">
 import { ref, unref, watch, computed,  onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { cloneDeep } from 'lodash';
+
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
 import { useCommon } from '../../../../store';
 import { useGetGlobalProperties } from '@/hooks';
-import { cloneDeep } from 'lodash';
 import mitt from '@/common/event-bus';
 
 const props = defineProps({
@@ -288,6 +289,7 @@ const renderTimeOutLabel = () => {
                   <bk-input
                     v-model={timeOutValue.value}
                     maxlength={3}
+                    overMaxLengthLimit={true}
                     class={isTimeEmpty ? 'time-empty-error' : ''}
                     placeholder={t('请输入超时时间')}
                     onInput={(value:string) => {handleTimeOutInput(value)}}

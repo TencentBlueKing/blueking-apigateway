@@ -16,7 +16,8 @@
         {{ t('与历史版本对比') }}
       </bk-button>
       <bk-button
-        class="operate-btn"
+        class="operate-btn-primary"
+        theme="primary"
         @click="handleCreateResourceVersion"
         :disabled="!latest"
         v-bk-tooltips="{ content: '资源无更新，无需生成版本', disabled: latest }"
@@ -158,15 +159,18 @@ const handleCreateResourceVersion = async () => {
     }
   }
   .operate-btn-wrapper {
-    .operate-btn {
+    .operate-btn,
+    .operate-btn-primary {
       height: 26px;
       font-size: 12px;
-      color: #63656E;
       padding: 0 12px;
       i {
         font-size: 16px;
         margin-right: 4px;
       }
+    }
+    .operate-btn {
+      color: #63656E;
       &.bk-button.is-disabled {
         color: #dcdee5;
         cursor: not-allowed;

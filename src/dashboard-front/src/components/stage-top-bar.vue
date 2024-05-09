@@ -35,14 +35,16 @@
 
       <i
         v-if="scrollState.isShowIcon"
-        class="apigateway-icon icon-ag-pa-arrow-left"
+        :class="['apigateway-icon', 'icon-ag-pa-arrow-left', prevDisabled ? 'icon-arrow-enable' : '']"
         @click="handlePrev"
+        v-bk-tooltips="{ content: '已显示最前', disabled: prevDisabled }"
       ></i>
 
       <i
         v-if="scrollState.isShowIcon"
-        class="apigateway-icon icon-ag-ps-arrow-right"
+        :class="['apigateway-icon', 'icon-ag-ps-arrow-right', nextDisabled ? 'icon-arrow-enable' : '']"
         @click="handleNext"
+        v-bk-tooltips="{ content: '没有更多了', disabled: nextDisabled }"
       ></i>
       <!-- 添加环境 -->
       <plus
@@ -51,12 +53,6 @@
         @click="handleAddStage"
         style="font-size: 28px; cursor: pointer;"
       />
-    </div>
-
-    <div class="publish-btn">
-      <bk-button text theme="primary" @click="handleToPublish">
-        {{ t("发布记录") }}
-      </bk-button>
     </div>
 
     <!-- 环境侧边栏 -->
@@ -99,6 +95,9 @@ const modelTypes = ref([
 
 // 获取环境列表
 const apigwId = computed(() => common.apigwId);
+
+const prevDisabled = ref<boolean>(false);
+const nextDisabled = ref<boolean>(true);
 
 // 新建环境
 const stageSidesliderRef = ref(null);
@@ -209,16 +208,6 @@ const handleChangeStage = async (name: string, isDelete?: Boolean) => {
   });
 };
 
-// 跳转到发布记录
-const handleToPublish = () => {
-  router.push({
-    name: 'apigwReleaseHistory',
-    params: {
-      id: apigwId.value,
-    },
-  });
-};
-
 // 滚动数据
 const scrollState = ref({
   position: 'left',
@@ -300,6 +289,10 @@ const calculateMaxScroll = () => {
 const handlePrev = () => {
   if (scrollState.value.offset < leftIconWidth) {
     scrollState.value.offset = Math.min(scrollState.value.offset + curScrollOffset, leftIconWidth);
+    prevDisabled.value = true;
+  } else {
+    prevDisabled.value = false;
+    nextDisabled.value = true;
   }
 };
 
@@ -309,8 +302,11 @@ const handleNext = () => {
   if (Math.abs(scrollState.value.offset) < maxScrollLeft.value) {
     scrollState.value.offset = Math.max(scrollState.value.offset - curScrollOffset, - maxScrollLeft.value);
     isNextClick = true;
+    nextDisabled.value = true;
   } else {
     isNextClick = true;
+    nextDisabled.value = false;
+    prevDisabled.value = true;
   }
 };
 
@@ -373,13 +369,14 @@ defineExpose({
 <style lang="scss" scoped>
 .stage-top-bar {
   position: absolute;
-  height: 51px;
+  height: 52px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  top: 0;
+  top: -1px;
   width: 100%;
   padding: 0 24px;
+  box-sizing: border-box;
   background: #fff;
   border-bottom: 1px solid #dcdee5;
   box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
@@ -394,10 +391,6 @@ defineExpose({
   .title {
     color: #313238;
     font-size: 16px;
-  }
-  .publish-btn {
-    position: absolute;
-    right: 24px;
   }
   .model-type {
     display: flex;
@@ -491,19 +484,20 @@ defineExpose({
       &.active {
         border-top: 3px solid #3a84ff;
         background-color: #f0f5ff;
+        font-weight: bold;
+        color: #3a84ff;
       }
     }
   }
   .add-stage-icon,
   .icon-ag-pa-arrow-left,
   .icon-ag-ps-arrow-right {
-    height: 51px;
+    height: 52px;
     background: #fff;
     top: 50%;
     transform: translateY(-50%);
     position: absolute;
     right: 0;
-    cursor: pointer;
   }
 
   .notposition {
@@ -518,11 +512,7 @@ defineExpose({
     font-size: 16px;
     font-weight: 700;
     color: #979ba5;
-
-    &:hover {
-      color: #3a84ff;
-      background: #F0F5FF;
-    }
+    cursor: not-allowed;
   }
   .icon-ag-pa-arrow-left {
     box-shadow: 4px 0 8px 0 #0000001a;
@@ -531,6 +521,13 @@ defineExpose({
   .icon-ag-ps-arrow-right {
     box-shadow: -4px 0 8px 0 #0000001a;
     right: 28px;
+  }
+  .icon-arrow-enable {
+    cursor: pointer;
+    &:hover {
+      color: #3a84ff;
+      background: #F0F5FF;
+    }
   }
 }
 </style>

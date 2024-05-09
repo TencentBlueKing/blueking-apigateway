@@ -34,7 +34,7 @@
                   theme="info"
                   :title="`${t('最新版本号')}: ${versionList[0]?.version || '--'},
                   ${t('于')} ${versionList[0]?.created_time || '--'} ${t('创建')}`"
-                  class="mt15 mb15"
+                  class="mb15"
                 />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
@@ -48,10 +48,10 @@
                       v-model="formData.version"
                       :placeholder="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')"
                     />
-                    <!-- <div class="form-tips">
+                    <div class="form-tips">
                       <i class="apigateway-icon icon-ag-info"></i>
                       {{ t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}
-                    </div> -->
+                    </div>
                   </bk-form-item>
                   <bk-form-item>
                     <section class="ft12">
@@ -306,7 +306,7 @@ defineExpose({
     }
 
     .main {
-      padding: 0 100px;
+      padding: 15px 100px 0px;
 
       .add {
         color: #34d97b;

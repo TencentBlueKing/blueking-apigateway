@@ -112,7 +112,7 @@ def merge_plugin_config(
                 s_app_code_plugin_config[app_code] = plugin_config
             else:
                 print(
-                    f"app_code: {app_code} already in stage: {stage_id}, skip, the resource_ids in {plugin_config} maybe permission amplification"
+                    f"[WARN] app_code: {app_code} already in stage: {stage_id}, skip, the resource_ids in {plugin_config} maybe permission amplification"
                 )
 
         merged_config[stage_id] = s_app_code_plugin_config

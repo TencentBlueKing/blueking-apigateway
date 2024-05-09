@@ -57,7 +57,7 @@ export const hideLoginModal = () => {
 export const showLoginModal = (data: ILoginData = {}) => {
   if (isShow) return;
   isShow = true;
-  const url = data?.login_url || getLoginUrl(`${process.env.BK_LOGIN_URL}/plain`, `${location.origin}/static/login_success.html?is_ajax=1`, 'big');
+  const url = data?.login_url || getLoginUrl(`${window.BK_LOGIN_URL}/plain`, `${location.origin}/static/login_success.html?is_ajax=1`, 'big');
   const width = 700;
   const height = 510;
   const { availHeight, availWidth } = window.screen;
@@ -87,5 +87,5 @@ export const showLoginModal = (data: ILoginData = {}) => {
 
 // 退出登录
 export const logout = () => {
-  location.href = getLoginUrl(process.env.BK_LOGIN_URL, location.origin, 'small');
+  location.href = getLoginUrl(window.BK_LOGIN_URL, location.origin, 'small');
 };

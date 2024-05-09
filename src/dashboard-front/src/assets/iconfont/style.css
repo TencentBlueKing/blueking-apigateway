@@ -338,6 +338,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-ziyuanguanli:before {
 	content: "\e168";
 }
+.icon-ag-notification:before {
+	content: "\e17f";
+}
 .icon-ag-chayiduibi-shixin:before {
 	content: "\e16e";
 }

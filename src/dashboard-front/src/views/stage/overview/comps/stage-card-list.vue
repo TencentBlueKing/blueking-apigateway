@@ -4,7 +4,14 @@
       <div class="title">
         <div class="title-lf">
           <spinner v-if="getStatus(stageData) === 'doing'" fill="#3A84FF" />
-          <span v-else :class="['dot', getStatus(stageData)]"></span>
+          <span
+            v-else
+            :class="['dot', getStatus(stageData)]"
+            v-bk-tooltips="{
+              content: getStatusText(getStatus(stageData)),
+              disabled: !getStatusText(getStatus(stageData)) }"
+          >
+          </span>
           {{ stageData.name }}
         </div>
         <div class="title-rg">
@@ -120,7 +127,7 @@ import { useI18n } from 'vue-i18n';
 import { Message, InfoBox } from 'bkui-vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 
-import { copy, getStatus } from '@/common/util';
+import { copy, getStatus, getStatusText } from '@/common/util';
 import logDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties } from '@/hooks';
@@ -299,7 +306,6 @@ onUnmounted(() => {
   padding: 0 24px;
   box-shadow: 0 2px 4px 0 #1919290d;;
   border-radius: 2px;
-  cursor: pointer;
   &:hover {
     box-shadow: 0 2px 4px 0 #0000001a, 0 2px 4px 0 #1919290d;
   }
@@ -328,7 +334,7 @@ onUnmounted(() => {
   .content {
     padding-top: 16px;
     font-size: 12px;
-
+    cursor: pointer;
     .apigw-form-item {
       display: flex;
       align-items: center;
@@ -374,8 +380,8 @@ onUnmounted(() => {
     .unrelease {
       display: inline-block;
       font-size: 10px;
-      color: #FE9C00;
-      background: #FFF1DB;
+      // color: #FE9C00;
+      // background: #FFF1DB;
       border-radius: 2px;
       padding: 2px 5px;
       line-height: 1;
@@ -407,7 +413,7 @@ onUnmounted(() => {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-
+    cursor: pointer;
     &.success {
       border: 1px solid #3FC06D;
       background: #E5F6EA;

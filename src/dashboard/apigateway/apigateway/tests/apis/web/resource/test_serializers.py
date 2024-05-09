@@ -47,7 +47,7 @@ class TestResourceListOutputSLZ:
         [
             (
                 {"latest_version_created_time": None},
-                True,
+                False,
             ),
             (
                 {"latest_version_created_time": datetime.datetime(2020, 1, 1, tzinfo=tzutc())},

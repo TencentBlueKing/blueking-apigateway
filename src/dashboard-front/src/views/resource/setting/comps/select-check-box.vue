@@ -9,6 +9,7 @@
     :show-on-init="!isAdd"
     v-model="curLabelIds"
     selected-style="checkbox"
+    :disable-focus-behavior="true"
     :popover-options="{
       extCls: 'select-check-box-popover-wrapper'
     }"
@@ -20,11 +21,13 @@
             content: $t('标签最多只能选择10个'),
             disabled: !(!curLabelIds.includes(option.id) && curLabelIds.length >= 10) }"
           :disabled="!curLabelIds.includes(option.id) && curLabelIds.length >= 10"
-          class="flex-row align-items-center justify-content-between item-container" style="width: 100%;"
+          class="select-option-row"
           v-if="!option.isEdited"
           @mouseenter="handleMouseEnter(index)"
           @mouseleave="handleMouseLeave">
-          {{ option.name }}
+          <div class="select-option-row-name">
+            {{ option.name }}
+          </div>
           <div class="icon-container" v-if="hoverIndex === index">
             <i
               class="icon apigateway-icon icon-ag-edit-line" style="margin-right: 6px;"
@@ -33,23 +36,23 @@
               title="确认删除该标签？"
               width="288"
               trigger="click"
-              @confirm="handleDeleteOptionItemConfirm(option)"
-            >
+              @confirm="handleDeleteOptionItemConfirm(option)">
               <i
                 class="icon apigateway-icon icon-ag-delet"
                 @click.stop="handleDeleteOptionItem"></i>
             </bk-pop-confirm>
           </div>
         </div>
-        <div v-else @click.stop="handleInputFocus">
+        <div v-else style="width: 100%;">
           <bk-input
-            style="width: 180px"
             ref="editInputRef"
-            v-model="option.name"
+            :value="option.name"
             size="small"
-            @enter="updateOption(option.name, option.id)"
-            @input="handleInputFocus"
-            :placeholder="t('请输入标签， enter保存')"
+            @click="(e: any) => stopEvent(e)"
+            @change="(v: string, e: any) => handleChange(option, v, e)"
+            @blur="(e: any) => stopEvent(e)"
+            @enter="updateOption(option)"
+            :placeholder="t('请输入标签，enter保存')"
           />
         </div>
       </template>
@@ -80,9 +83,10 @@
   </bk-select>
 </template>
 <script setup lang="ts">
-import { ref, computed, toRefs, PropType, nextTick, watch } from 'vue';
+import { ref, computed, toRefs, PropType, watch } from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
+import { cloneDeep } from 'lodash';
 
 import { updateResourcesLabels, createResourcesLabels, deleteResourcesLabels, updateResourcesLabelItem } from '@/http';
 
@@ -113,7 +117,7 @@ const editInputRef = ref(null);
 const hoverIndex = ref<number>(null);
 const isIconClick = ref<boolean>(false);  // 是否点击了icon
 
-const curLabelIdsbackUp = ref(curLabelIds.value);
+const curLabelIdsbackUp = ref(cloneDeep(curLabelIds.value));
 
 // 相同的标签
 const isSameLabels = computed(() => {
@@ -164,32 +168,67 @@ const handleToggle = async (v: boolean) => {
 
 // 新增标签
 const addOption = async () => {
-  if (optionName.value.trim()) {
-    await createResourcesLabels(apigwId, { name: optionName.value });
+  const optionNameTmp = optionName.value.trim();
+  if (optionNameTmp) {
+    const ret = await createResourcesLabels(apigwId, { name: optionNameTmp });
     Message({
       message: t('标签新建成功'),
       theme: 'success',
       width: 'auto',
     });
     optionName.value = '';
+    if (curLabelIds.value.length < 10) {
+      curLabelIds.value.push(ret.id);
+      if (!isAdd.value) {
+        await updateResourcesLabels(apigwId, resourceId.value, { label_ids: curLabelIds.value });
+      }
+    }
+    emit('label-add-success', ret.id);
   }
   showEdit.value = false;
-  emit('label-add-success');
 };
 
+const handleChange = async (option: any, v: string, e: any) => {
+  e.stopPropagation();
+  e.preventDefault();
+  option.name = v;
+  await updateOption(option);
+};
+
+const stopEvent = (e: any) => {
+  e.stopPropagation();
+  e.preventDefault();
+};
+
+const isUpdatingOption = ref(false);
 // 更新标签
-const updateOption = async (name: string, id: number) => {
-  if (name.trim()) {
-    await updateResourcesLabelItem(apigwId, id, { name });
-    Message({
-      message: t('标签修改成功'),
-      theme: 'success',
-      width: 'auto',
-    });
-    labelsData.value.forEach((item: any) => {
-      item.isEdited = false;
-    });
-    emit('update-success');
+const updateOption = async (option: any) => {
+  await new Promise(resolve => setTimeout(resolve, 100));
+  if (isUpdatingOption.value) {
+    return;
+  }
+
+  const { name, id }: { name: string, id: number } = option;
+  try {
+    if (name.trim()) {
+      isUpdatingOption.value = true;
+      await updateResourcesLabelItem(apigwId, id, { name });
+      Message({
+        message: t('标签修改成功'),
+        theme: 'success',
+        width: 'auto',
+      });
+      labelsData.value.forEach((item: any) => {
+        item.isEdited = false;
+      });
+      emit('update-success');
+    }
+  } catch (e) {
+    console.error('标签修改失败', e);
+  } finally {
+    setTimeout(() => {
+      isUpdatingOption.value = false;
+    }, 200);
   }
 };
 
@@ -231,11 +270,11 @@ const handleDeleteOptionItemConfirm = async (e: any) => {
 };
 
 // 输入框聚焦
-const handleInputFocus = () => {
-  nextTick(() => {
-    editInputRef.value[0].focus();
-  });
-};
+// const handleInputFocus = () => {
+//   nextTick(() => {
+//     editInputRef.value[0].focus();
+//   });
+// };
 // 鼠标移入事件
 const handleMouseEnter = (i: number) => {
   hoverIndex.value = i;
@@ -263,32 +302,55 @@ const handleMouseLeave = () => {
   }
 }
 .select-check-box-popover-wrapper {
-  .item-container {
+  // .item-container {
+  //   width: 100%;
+  //   position: relative;
+  //   .icon-container {
+  //     position: absolute;
+  //     right: -20px;
+  //     .icon {
+  //       &:hover {
+  //         color: #3a84ff;
+  //       }
+  //     }
+  //   }
+  // }
+
+  &.bk-popover.bk-pop2-content.bk-select-popover {
+    .bk-select-content-wrapper {
+      .bk-select-option.is-multiple {
+        padding-right: 14px;
+      }
+    }
+  }
+  .custom-extension {
+    .plus-icon {
+      color: #979ba5;
+      font-size: 14px;
+      margin-right: 5px;
+    }
+  }
+
+  .select-option-row {
+    display: inline-block;
     width: 100%;
     position: relative;
+    overflow: hidden;
     .icon-container {
       position: absolute;
-      right: -20px;
+      right: 0;
+      top: 0;
       .icon {
         &:hover {
           color: #3a84ff;
         }
       }
     }
-  }
-
-  // &.bk-popover.bk-pop2-content.bk-select-popover {
-  //   .bk-select-content-wrapper {
-  //     .bk-select-option.is-multiple {
-  //       padding-right: 12px;
-  //     }
-  //   }
-  // }
-  .custom-extension {
-    .plus-icon {
-      color: #979ba5;
-      font-size: 14px;
-      margin-right: 5px;
+    .select-option-row-name {
+      width: 80%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 }
