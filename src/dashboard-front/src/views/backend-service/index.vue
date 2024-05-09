@@ -85,169 +85,13 @@
         </bk-table>
       </bk-loading>
     </div>
-    <!-- 新建/编辑sideslider -->
-    <bk-sideslider
-      v-model:isShow="sidesliderConfi.isShow"
-      :quick-close="true"
-      ext-cls="backend-service-slider"
-      width="960"
-      :before-close="handleBeforeClose"
-      @animation-end="handleAnimationEnd"
-    >
-      <template #header>
-        <div class="custom-side-header">
-          <div class="title">{{ sidesliderConfi.title }}</div>
-          <template v-if="curOperate === 'edit'">
-            <span></span>
-            <div class="subtitle">{{ baseInfo.name }}</div>
-          </template>
-        </div>
-      </template>
-      <template #default>
-        <div class="content">
-          <bk-alert theme="warning" :title="editTitle" class="service-tips" v-if="curOperate === 'edit' && isPublish" />
 
-          <bk-collapse v-model="activeKey" class="bk-collapse-service">
-            <bk-collapse-panel name="base-info">
-              <template #header>
-                <div class="panel-header">
-                  <angle-up-fill
-                    :class="[activeKey?.includes('base-info') ? 'panel-header-show' : 'panel-header-hide']"
-                  />
-                  <div class="title">{{ t('基础信息') }}</div>
-                </div>
-              </template>
-              <template #content>
-                <div>
-                  <bk-form
-                    ref="baseInfoRef" class="base-info-form" :model="baseInfo"
-                    form-type="vertical">
-                    <bk-form-item :label="t('服务名称')" property="name" required :rules="baseInfoRules.name">
-                      <bk-input
-                        v-model="baseInfo.name" :placeholder="t('请输入 1-20 字符的字母、数字、连字符(-)，以字母开头')"
-                        :disabled="curOperate === 'edit'" />
-                      <p class="aler-text">{{ t('后端服务唯一标识，创建后不可修改') }}</p>
-                    </bk-form-item>
-                    <bk-form-item :label="t('描述')" property="description" class="last-form-item">
-                      <bk-input v-model="baseInfo.description" :placeholder="t('请输入描述')" />
-                    </bk-form-item>
-                  </bk-form>
-                </div>
-              </template>
-            </bk-collapse-panel>
-
-            <bk-collapse-panel name="stage-config">
-              <template #header>
-                <div class="panel-header">
-                  <angle-up-fill
-                    :class="[activeKey?.includes('stage-config') ? 'panel-header-show' : 'panel-header-hide']"
-                  />
-                  <div class="title">{{ t('各环境的服务配置') }}</div>
-                </div>
-              </template>
-              <template #content>
-                <div class="stage">
-                  <bk-collapse :list="stageConfig" header-icon="right-shape" v-model="activeIndex">
-                    <template #title="slotProps">
-                      <span class="stage-name">
-                        {{ slotProps.name || slotProps.configs.stage.name}}
-                      </span>
-                    </template>
-                    <template #content="slotProps">
-                      <bk-form
-                        :ref="getSatgeConfigRef"
-                        class="stage-config-form " :model="slotProps" form-type="vertical">
-                        <bk-form-item
-                          :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
-                          <bk-select
-                            v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
-                          >
-                            <bk-option
-                              v-for="option of loadbalanceList" :key="option.id" :value="option.id"
-                              :label="option.name">
-                            </bk-option>
-                          </bk-select>
-                        </bk-form-item>
-                        <bk-form-item
-                          :label="t('后端服务地址')"
-                          v-for="(hostItem, i) in slotProps.configs.hosts"
-                          :key="i"
-                          :rules="configRules.host"
-                          :property="`configs.hosts.${i}.host`"
-                          :class="['backend-item-cls', { 'form-item-special': i !== 0 }]"
-                          required>
-                          <div class="host-item">
-                            <bk-input :placeholder="t('格式如：host:port')" v-model="hostItem.host" :key="i">
-                              <template #prefix>
-                                <bk-select
-                                  v-model="hostItem.scheme"
-                                  class="scheme-select-cls w80"
-                                  :filterable="false"
-                                  :clearable="false">
-                                  <bk-option
-                                    v-for="(item, index) in schemeList" :key="index" :value="item.value"
-                                    :label="item.value" />
-                                </bk-select>
-                                <div class="slash">://</div>
-                              </template>
-                              <template #suffix v-if="slotProps.configs.loadbalance === 'weighted-roundrobin'">
-                                <bk-form-item
-                                  :rules="configRules.weight"
-                                  :property="`configs.hosts.${i}.weight`"
-                                  label=""
-                                  style="margin-bottom: 0px;">
-                                  <bk-input
-                                    class="suffix-slot-cls weights-input"
-                                    :placeholder="t('权重')"
-                                    type="number"
-                                    :min="1"
-                                    :max="10000"
-                                    v-model="hostItem.weight"
-                                  ></bk-input>
-                                </bk-form-item>
-                              </template>
-                            </bk-input>
-                            <i
-                              class="add-host-btn apigateway-icon icon-ag-plus-circle-shape ml10"
-                              @click="handleAddServiceAddress(slotProps.name)"></i>
-                            <i
-                              class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape ml10"
-                              :class="{ disabled: slotProps.configs.hosts.length < 2 }"
-                              @click="handleDeleteServiceAddress(slotProps.name, i)"></i>
-                          </div>
-                        </bk-form-item>
-                        <bk-form-item
-                          :label="t('超时时间')" :required="true" :property="'configs.timeout'" class="timeout-item"
-                          :rules="configRules.timeout" :error-display-type="'normal'">
-                          <bk-input
-                            type="number" :min="1" :max="300"
-                            v-model="slotProps.configs.timeout" class="time-input">
-                            <template #suffix>
-                              <div class="group-text group-text-style" :class="locale === 'en' ? 'long' : ''">
-                                {{ t('秒') }}
-                              </div>
-                            </template>
-                          </bk-input>
-                          <span class="timeout-tip" :class="locale === 'en' ? 'long' : ''"> {{ t('最大 300 秒') }} </span>
-                        </bk-form-item>
-                      </bk-form>
-                    </template>
-                  </bk-collapse>
-                </div>
-              </template>
-            </bk-collapse-panel>
-          </bk-collapse>
-        </div>
-      </template>
-      <template #footer>
-        <div class="pl30">
-          <bk-button theme="primary" class="mr5 w80" @click="handleConfirm" :loading="isSaveLoading">
-            {{ t('确定') }}
-          </bk-button>
-          <bk-button class="w80" @click="handleCancel">{{ t('取消') }}</bk-button>
-        </div>
-      </template>
-    </bk-sideslider>
+    <addBackendService
+      :base="baseInfo"
+      :edit-id="backendServiceId"
+      ref="addBackendServiceRef"
+      @done="getList()"
+    />
     <!-- <bk-dialog
       :is-show="isBackDialogShow"
       class="sideslider-close-back-dialog-cls"
@@ -259,135 +103,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { InfoBox, Message } from 'bkui-vue';
 import { useRouter } from 'vue-router';
 import { useCommon } from '@/store';
 import { timeFormatter } from '@/common/util';
-import { useQueryList, useSidebar } from '@/hooks';
+import { useQueryList } from '@/hooks';
 import {
-  getStageList,
   getBackendServiceList,
-  createBackendService,
-  getBackendServiceDetail,
-  updateBackendService,
   deleteBackendService,
 } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
-import { AngleUpFill } from 'bkui-vue/lib/icon';
+import addBackendService from '@/views/backend-service/add.vue';
 
-const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const common = useCommon();
 const router = useRouter();
 const { apigwId } = common; // 网关id
 
-const filterData = ref({ name: '', type: '' });
-const isSaveLoading = ref<boolean>(false);
-const isPublish = ref<boolean>(false);
-const baseInfoRef = ref(null);
-const stageConfigRef = ref([]);
-const curOperate = ref<string>('add');
-const editTitle = ref<string>(t('如果环境和资源已经发布，服务配置修改后，将立即对所有已发布资源生效'));
-const finaConfigs = ref([]);
-const curServiceDetail = ref({
-  id: 0,
-  name: '',
-  description: '',
-  configs: [],
-});
-const stageList = ref([]);
-const stageConfig = ref([]);
-const activeIndex = ref([]);
-const activeKey = ref(['base-info', 'stage-config']);
-const sidesliderConfi = reactive({
-  isShow: false,
-  title: '',
-});
-// 负载均衡类型
-const loadbalanceList = reactive([
-  { id: 'roundrobin', name: t('轮询(Round-Robin)') },
-  { id: 'weighted-roundrobin', name: t('加权轮询(Weighted Round-Robin)') },
-]);
-// scheme 类型
-const schemeList = [{ value: 'http' }, { value: 'https' }];
-const tableEmptyConf = ref({
-  keyword: '',
-  isAbnormal: false,
-});
+const addBackendServiceRef = ref(null);
+const backendServiceId = ref<number | undefined>();
 // 基础信息
 const baseInfo = ref({
   name: '',
   description: '',
 });
-// 基础信息校验规则
-const baseInfoRules = {
-  name: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => {
-        const reg = /^[a-zA-Z][a-zA-Z0-9-]{0,19}$/;
-        return reg.test(value);
-      },
-      message: t('请输入 1-20 字符的字母、数字、连字符(-)，以字母开头'),
-      trigger: 'blur',
-    },
-  ],
-};
-// 服务配置校验规则
-const configRules = {
-  loadbalance: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'change',
-    },
-  ],
-  host: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'blur',
-    },
-    {
-      validator(value: string) {
-        const reg = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
-        return reg.test(value);
-      },
-      message: t('请输入合法Host，如：example.com'),
-      trigger: 'blur',
-    },
-  ],
-  weight: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'change',
-    },
-  ],
-  timeout: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'blur',
-    },
-    {
-      validator(val: number) {
-        if (val < 0 || val > 300) {
-          return false;
-        }
-        return true;
-      },
-      message: t('超时时间不能小于1且不能大于300'),
-      trigger: 'blur',
-    },
-  ],
-};
+const filterData = ref({ name: '', type: '' });
+const tableEmptyConf = ref({
+  keyword: '',
+  isAbnormal: false,
+});
 
 // 列表hooks
 const {
@@ -416,100 +162,25 @@ const isWithinTime = (date: string) => {
   return diff < twentyFourHours;
 };
 
-// 获取所有stage服务配置的ref
-const getSatgeConfigRef = (el: any) => {
-  console.log(el);
-  if (el !== null) {
-    stageConfigRef.value.push(el);
-  }
-};
-
 // 新建btn
 const handleAdd = () => {
-  curOperate.value = 'add';
   baseInfo.value = {
     name: '',
     description: '',
   };
-  stageConfig.value = stageList.value.map((item: any) => {
-    const { name, id, description } = item;
-    const newItem = {
-      name,
-      id,
-      description,
-      configs: {
-        loadbalance: 'roundrobin',
-        timeout: 30,
-        hosts: [{
-          scheme: 'http',
-          host: '',
-          weight: 100,
-        }],
-        stage_id: id,
-      },
-    };
-    return newItem;
-  });
-  sidesliderConfi.isShow = true;
-  sidesliderConfi.title = t('新建后端服务');
-  const sliderParams = {
-    curServiceDetail: curServiceDetail.value,
-    stageConfig: stageConfig.value,
-    baseInfo: baseInfo.value,
-  };
-  initSidebarFormData(sliderParams);
-};
-
-// 增加服务地址
-const handleAddServiceAddress = (name: string) => {
-  console.log(name);
-  console.log(stageConfig.value);
-  const isAddItem = stageConfig.value;
-  isAddItem.forEach((item) => {
-    if (item.name === name) {
-      item.configs.hosts.push({
-        scheme: 'http',
-        host: '',
-        weight: 100,
-      });
-    }
-  });
-};
-
-// 删除服务地址
-const handleDeleteServiceAddress = (name: string, index: number) => {
-  const isDeleteItem = stageConfig.value;
-  isDeleteItem.forEach((item) => {
-    if (item.name === name && item.configs.hosts.length !== 1) {
-      item.configs.hosts.splice(index, 1);
-    }
-  });
+  backendServiceId.value = undefined;
+  addBackendServiceRef.value?.show();
 };
 
 // 点击名称/编辑
 const handleEdit = async (data: any) => {
-  curOperate.value = 'edit';
   baseInfo.value = {
     name: data.name,
     description: data.description,
   };
-  sidesliderConfi.title = t('编辑后端服务');
-  try {
-    const res = await getBackendServiceDetail(apigwId, data.id);
-    curServiceDetail.value = res;
-    stageConfig.value = res.configs.map((item: any) => {
-      return { configs: item, name: item?.stage?.name, id: item?.stage?.id };
-    });
-    sidesliderConfi.isShow = true;
-    const sliderParams = {
-      curServiceDetail: curServiceDetail.value,
-      stageConfig: stageConfig.value,
-      baseInfo: baseInfo.value,
-    };
-    initSidebarFormData(sliderParams);
-  } catch (error) {
-    console.log('error', error);
-  }
+
+  backendServiceId.value = data.id;
+  addBackendServiceRef.value?.show();
 };
 
 // 点击关联的资源数
@@ -548,92 +219,6 @@ const handleDelete = (item: any) => {
   });
 };
 
-// 确认btn
-const handleConfirm = async () => {
-  // 基础信息校验
-  await baseInfoRef.value.validate();
-  const isAdd = curOperate.value === 'add';
-
-  console.log(stageConfigRef.value);
-
-  // 逐个stage服务配置的校验
-  for (const item of stageConfigRef.value) {
-    if (item === null) break;
-    await item.validate();
-  }
-  finaConfigs.value = stageConfig.value.map((item) => {
-    const id =  isAdd ? item.id : item.configs.stage.id;
-    const newItem = {
-      timeout: item.configs.timeout,
-      loadbalance: item.configs.loadbalance,
-      hosts: item.configs.hosts,
-      stage_id: id,
-    };
-    return newItem;
-  });
-
-  const { name, description } = baseInfo.value;
-  const params = {
-    name,
-    description,
-    configs: finaConfigs.value,
-  };
-  isSaveLoading.value = true;
-  try {
-    if (isAdd) {
-      await createBackendService(apigwId, params);
-    } else {
-      await updateBackendService(apigwId, curServiceDetail.value.id, params);
-    }
-    if (isPublish.value && !isAdd) {
-      sidesliderConfi.isShow = false;
-      InfoBox({
-        title: t('内容保存成功，正在发布至环境中'),
-        infoType: 'success',
-        subTitle: t('如果编辑的后端服务绑定的环境有发布就会立即发布到对应环境当中'),
-        confirmText: t('去查看'),
-        cancelText: t('关闭'),
-        onConfirm: () => {
-          router.push({
-            name: 'apigwReleaseHistory',
-          });
-        },
-      });
-    } else {
-      Message({
-        message: isAdd ? t('新建成功') : t('更新成功'),
-        theme: 'success',
-      });
-      sidesliderConfi.isShow = false;
-    }
-    stageConfigRef.value = [];
-    getList();
-  } catch (error) {
-    console.log('error', error);
-  } finally {
-    isSaveLoading.value = false;
-  }
-};
-
-const handleBeforeClose = async () => {
-  const sliderParams = {
-    curServiceDetail: curServiceDetail.value,
-    stageConfig: stageConfig.value,
-    baseInfo: baseInfo.value,
-  };
-  return isSidebarClosed(JSON.stringify(sliderParams));
-};
-
-const handleAnimationEnd = () => {
-  handleCancel();
-};
-
-// 取消btn
-const handleCancel = () => {
-  sidesliderConfi.isShow = false;
-  stageConfigRef.value = [];
-};
-
 const handleClearFilterKey = () => {
   filterData.value = { name: '', type: '' };
   getList();
@@ -653,22 +238,6 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
-const init = async () => {
-  try {
-    const res = await getStageList(apigwId);
-    stageList.value = res;
-    console.log(stageList.value);
-    res.forEach((item: any, index: number) => {
-      activeIndex.value.push(index);
-    });
-    isPublish.value = stageList.value.some((item: any) => item.publish_id !== 0);
-    console.log(isPublish.value);
-  } catch (error) {
-    console.log('error', error);
-  }
-};
-init();
-
 watch(
   () => tableData.value, () => {
     updateTableEmptyConfig();
@@ -681,31 +250,11 @@ watch(
 .w80 {
   width: 80px;
 }
-.mb24{
-  margin-bottom: 24px;
-}
 .w500 {
   width: 500px;
 }
 :deep(.new-created){
   background-color: #f1fcf5 !important;
-}
-.content{
-  padding: 20px 40px 30px;
-}
-.backend-service-slider {
-  :deep(.bk-modal-content) {
-    min-height: calc(100vh - 104px) !important;
-    overflow-y: auto;
-  }
-
-  .base-info {
-    .base-info-form {
-      .aler-text {
-        color: #A5A4A7;
-      }
-    }
-  }
 }
 .table-layout {
   :deep(.bk-table-body) {
@@ -726,85 +275,6 @@ watch(
     scrollbar-color: transparent transparent;
   }
 }
-.host-item {
-  display: flex;
-  align-items: center;
-
-  i {
-    font-size: 14px;
-    color: #979ba5;
-    cursor: pointer;
-    &:hover {
-      color: #63656e;
-    }
-
-    &.disabled {
-      color: #dcdee5;
-      cursor: not-allowed;
-    }
-  }
-
-  :deep(.bk-form-error) {
-    position: relative;
-  }
-}
-
-.form-item-special {
-  :deep(.bk-form-label) {
-    display: none;
-  }
-}
-
-.suffix-slot-cls {
-  width: 80px;
-  line-height: 30px;
-  font-size: 12px;
-  color: #63656e;
-  text-align: center;
-  height: 28px;
-  border: none;
-  border-left: 1px solid #c4c6cc !important;
-}
-
-.scheme-select-cls {
-  color: #63656e;
-  overflow: hidden;
-
-  :deep(.bk-input--default) {
-    border: none;
-    border-right: 1px solid #c4c6cc;
-  }
-}
-
-.timeout-item {
-  width: 200px;
-  position: relative;
-
-  .timeout-tip {
-    position: absolute;
-    top: 0px;
-    right: -70px;
-    &.long {
-      right: -120px;
-    }
-  }
-
-  .group-text {
-    width: 20px;
-    text-align: left;
-    &.long {
-      width: 50px;
-    }
-  }
-}
-
-.slash {
-  color: #63656e;
-  background: #fafbfd;
-  padding: 0 10px;
-  border-right: 1px solid #c4c6cc;
-}
-
 .ag-host-input {
   width: 80px;
   line-height: 30px;
@@ -813,115 +283,5 @@ watch(
   outline: none;
   padding: 0 10px;
   text-align: center;
-}
-
-.title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #323237;
-
-  .icon {
-    color: #62666B;
-    font-size: 18px;
-    margin-right: 10px;
-  }
-}
-
-// :deep(.bk-input--number-control) {
-//   display: none;
-// }
-
-.backend-config-item {
-  .item-content {
-    background: #f5f7fa;
-    padding: 20px 32px;
-
-    .host-item {
-      display: flex;
-      align-items: center;
-
-      i {
-        font-size: 14px;
-        color: #979ba5;
-        cursor: pointer;
-
-        &.disabled {
-          color: #dcdee5;
-        }
-      }
-
-      :deep(.bk-form-error) {
-        position: relative;
-      }
-    }
-  }
-}
-
-.service-tips {
-  margin-bottom: 12px;
-}
-.bk-collapse-service {
-  .panel-header {
-    display: flex;
-    align-items: center;
-    padding: 12px 0px;
-    cursor: pointer;
-    .title {
-      font-weight: 700;
-      font-size: 14px;
-      color: #313238;
-      margin-left: 8px;
-    }
-
-    .panel-header-show {
-      transition: .2s;
-      transform: rotate(0deg);
-    }
-    .panel-header-hide {
-      transition: .2s;
-      transform: rotate(-90deg);
-    }
-  }
-
-  :deep(.bk-collapse-content) {
-    padding: 0px;
-  }
-
-  .stage {
-    :deep(.bk-collapse-title) {
-      margin-left: 23px;
-      font-size: 14px;
-      color: #63656E;
-      font-weight: 700;
-    }
-    :deep(.bk-collapse-item) {
-      background-color: #F5F7FB;
-      margin-bottom: 25px;
-
-      .bk-collapse-content {
-        padding: 5px 40px;
-      }
-    }
-
-    .stage-name {
-      color: #63656E;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    :deep(.bk-collapse-icon) {
-      left: 17px;
-      top: 17px;
-      color: #979AA2;
-
-      svg {
-        font-size: 13px;
-      }
-    }
-  }
-
-  .last-form-item {
-    margin-bottom: 12px;
-  }
 }
 </style>
