@@ -1410,6 +1410,8 @@ const lang: ILANG = {
   '修改标签成功': ['Label modified successfully'],
   '标签修改成功': ['Label modified successfully'],
   '删除标签成功': ['Label deleted successfully'],
+  '--': ['--'],
+  '蓝鲸应用认证，用户认证': ['BlueKing app authentication, User Verified'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

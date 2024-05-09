@@ -131,14 +131,14 @@
               <template #default="{ row }">
                 <div class="resource-name">
                   <div
-                    v-bk-tooltips="{ content: row?.name }"
+                    v-bk-tooltips="{ content: row?.name, placement: 'right', delay: 300, }"
                     :class="['name', { 'name-updated': row?.has_updated }]"
                     @click="handleShowInfo(row.id)">
                     {{row?.name}}
                   </div>
                   <div
                     v-if="row?.has_updated"
-                    v-bk-tooltips="{ content: '资源已更新' }"
+                    v-bk-tooltips="{ content: '资源已更新', placement: 'right', delay: 300, }"
                     class="dot warning"
                   />
                 </div>
