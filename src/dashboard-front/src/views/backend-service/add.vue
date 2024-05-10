@@ -384,18 +384,35 @@ const handleConfirm = async () => {
     }
     if (isPublish.value && props.editId) {
       sidesliderConfi.isShow = false;
-      InfoBox({
-        title: t('内容保存成功，正在发布至环境中'),
-        infoType: 'success',
-        subTitle: t('如果编辑的后端服务绑定的环境有发布就会立即发布到对应环境当中'),
-        confirmText: t('去查看'),
-        cancelText: t('关闭'),
-        onConfirm: () => {
-          router.push({
-            name: 'apigwReleaseHistory',
-          });
-        },
+
+      const stageNames = stageConfig.value?.map((item: any) => {
+        return item.name;
       });
+
+      if (stageNames?.length) {
+        InfoBox({
+          title: t('后端服务内容保存成功，正在发布到对应的环境'),
+          infoType: 'success',
+          width: 482,
+          subTitle: t('当前后端服务（{name}）已绑定以下 {num} 个环境，所有修改都将发布到这些环境中：{names}', { name: baseInfo.value.name, num: stageNames?.length, names: stageNames?.join('，') }),
+          confirmText: t('去查看发布记录'),
+          cancelText: t('关闭'),
+          onConfirm: () => {
+            router.push({
+              name: 'apigwReleaseHistory',
+            });
+          },
+        });
+      } else {
+        InfoBox({
+          title: t('后端服务内容保存成功'),
+          infoType: 'success',
+          dialogType: 'confirm',
+          headerAlign: 'center',
+          footerAlign: 'center',
+          confirmText: t('关闭'),
+        });
+      }
     } else {
       Message({
         message: !props.editId ? t('新建成功') : t('更新成功'),

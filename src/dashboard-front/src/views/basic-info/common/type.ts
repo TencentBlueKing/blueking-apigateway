@@ -15,6 +15,7 @@ export interface BasicInfoParams {
   created_time: string
   public_key: string
   is_official: boolean
+  publish_validate_msg: string
 }
 
 export interface DialogParams {
