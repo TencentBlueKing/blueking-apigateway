@@ -115,7 +115,12 @@
                 </bk-option>
               </bk-select>
               <strong class="title" v-else>
-                {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
+                <template v-if="pageType === 'publishEnvironment'">
+                  当前版本（{{ sourceVersion.version }}）
+                </template>
+                <template v-else>
+                  {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
+                </template>
               </strong>
             </template>
             <strong class="title" v-else>
@@ -152,7 +157,12 @@
             </bk-select>
             <strong class="title" v-else>
               <template v-if="pageType !== 'createVersion'">
-                {{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}
+                <template v-if="pageType === 'publishEnvironment'">
+                  待发布（{{ targetVersion.version }}）
+                </template>
+                <template v-else>
+                  {{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}
+                </template>
               </template>
               <template v-else>
                 {{t('当前最新资源列表')}}
@@ -426,7 +436,7 @@ const props = defineProps({
     default: true,
   },
   pageType: {
-    type: String,
+    type: String, // createVersion: 生成资源版本  publishEnvironment: 发布到环境
     default: '',
   },
 });
