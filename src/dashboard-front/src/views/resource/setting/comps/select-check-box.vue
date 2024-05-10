@@ -140,6 +140,10 @@ watch(curLabelIds, () => {
 
 //
 const handleToggle = async (v: boolean) => {
+  if (!v) {
+    showEdit.value = false;
+    optionName.value = '';
+  }
   // 新增标签标识
   if (isAdd.value) return;
   setTimeout(async () => {
