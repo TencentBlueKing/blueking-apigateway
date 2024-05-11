@@ -31,7 +31,8 @@
             <bk-button
               theme="primary"
               size="small"
-              :disabled="getStatus(stageData) === 'doing'"
+              :disabled="getStatus(stageData) === 'doing' || !!stageData.publish_validate_msg"
+              v-bk-tooltips="{ content: t(stageData.publish_validate_msg), disabled: !stageData.publish_validate_msg }"
               @click="handleRelease(stageData)"
             >
               {{ t('发布资源') }}
@@ -73,7 +74,7 @@
         <div class="apigw-form-item">
           <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('当前资源版本')}：` }}</div>
           <div class="value">
-            <span class="unrelease" v-if="stageData.release.status === 'unreleased'">{{ t('未发布') }}</span>
+            <span class="unrelease" v-if="stageData.release.status === 'unreleased'">--</span>
             <span v-else>{{ stageData.resource_version.version || '--' }}</span>
             <template v-if="getStatus(stageData) === 'doing'">
               <bk-tag theme="info">发布中</bk-tag>,
