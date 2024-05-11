@@ -18,8 +18,18 @@
         v-show="versionConfigs.needNewVersion && !isDetail"
         theme="warning"
         class="mb20"
-        :title="versionConfigs.versionMessage"
-      />
+      >
+        <template #title>
+          {{ versionConfigs.versionMessage }}
+          <bk-button
+            text
+            theme="primary"
+            v-if="versionConfigs.needNewVersion"
+            @click="handleCreateResourceVersion">
+            立即生成版本
+          </bk-button>
+        </template>
+      </bk-alert>
       <div class="operate flex-row justify-content-between mb15">
         <div class="flex-1 flex-row align-items-center">
           <div class="mr8">
@@ -41,8 +51,7 @@
             :is-disabled="!selections.length"></ag-dropdown>
           <ag-dropdown
             :text="t('更多')"
-            v-show="isDetail && isShowLeft"
-          >
+            v-show="isDetail && isShowLeft">
             <div class="nest-dropdown">
               <ag-dropdown
                 :text="t('导入')"
@@ -122,14 +131,14 @@
               <template #default="{ row }">
                 <div class="resource-name">
                   <div
-                    v-bk-tooltips="{ content: row?.name }"
+                    v-bk-tooltips="{ content: row?.name, placement: 'right', delay: 300, }"
                     :class="['name', { 'name-updated': row?.has_updated }]"
                     @click="handleShowInfo(row.id)">
                     {{row?.name}}
                   </div>
                   <div
                     v-if="row?.has_updated"
-                    v-bk-tooltips="{ content: '资源已更新' }"
+                    v-bk-tooltips="{ content: '资源已更新', placement: 'right', delay: 300, }"
                     class="dot warning"
                   />
                 </div>
@@ -220,7 +229,7 @@
                     @click="handleEditLabel(row)"
                     class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                 </span>
-                <section style="position: absolute; width: 100%;" v-else>
+                <section style="position: absolute; width: 160px;" v-else>
                   <SelectCheckBox
                     :cur-select-label-ids="curLabelIds"
                     :resource-id="resourceId"
@@ -427,8 +436,9 @@
           :cur-resource="curResource" @fetch="handleSuccess" @on-update="handleUpdateTitle"></ResourcesDoc>
       </template>
     </bk-sideslider>
+
     <!-- 生成版本 -->
-    <!-- <version-sideslider ref="versionSidesliderRef" /> -->
+    <version-sideslider ref="versionSidesliderRef" @done="mitt.emit('on-update-plugin');" />
   </div>
 </template>
 <script setup lang="ts">
@@ -446,7 +456,7 @@ import {
   getGatewayLabels,
 } from '@/http';
 import Detail from './detail.vue';
-// import VersionSideslider from './comps/version-sideslider.vue';
+import VersionSideslider from './comps/version-sideslider.vue';
 import SelectCheckBox from './comps/select-check-box.vue';
 import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
@@ -495,11 +505,14 @@ const { t } = useI18n();
 const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
 // 导入下拉
 const importDropData = ref([{ value: 'config', label: '资源配置' }, { value: 'doc', label: '资源文档' }]);
+interface ApigwIDropList extends IDropList {
+  tooltips?: string;
+}
 // 导出下拉
-const exportDropData = ref<IDropList[]>([
+const exportDropData = ref<ApigwIDropList[]>([
   { value: 'all', label: t('全部资源') },
-  { value: 'filtered', label: t('已筛选资源'), disabled: false },
-  { value: 'selected', label: t('已选资源'), disabled: false }]);
+  { value: 'filtered', label: t('已筛选资源'), disabled: false, tooltips: t('请先筛选资源') },
+  { value: 'selected', label: t('已选资源'), disabled: false, tooltips: t('请先勾选资源') }]);
 
 const route = useRoute();
 const router = useRouter();
@@ -512,7 +525,7 @@ const tableEmptyConf = ref<TableEmptyConfType>({
 });
 
 // ref
-// const versionSidesliderRef = ref(null);
+const versionSidesliderRef = ref(null);
 // 导出参数
 const exportParams: IexportParams = reactive({
   export_type: '',
@@ -1030,18 +1043,9 @@ const handleEditLabel = (data: any) => {
 };
 
 // 生成版本功能
-// const handleCreateResourceVersion = async () => {
-//   if (!versionConfigs.needNewVersion) {
-//     Message({
-//       message: t('资源及资源文档无变更, 不需要生成新版本'),
-//       theme: 'error',
-//       width: 'auto',
-//     });
-//     return;
-//   }
-
-//   versionSidesliderRef.value.showReleaseSideslider();
-// };
+const handleCreateResourceVersion = async () => {
+  versionSidesliderRef.value.showReleaseSideslider();
+};
 
 // 获取标签数据
 const getLabelsData = async () => {
@@ -1097,7 +1101,7 @@ const settings = {
     { name: t('文档'), field: 'docs' },
     { name: t('标签'), field: 'labels' },
     { name: t('更新时间'), field: 'updated_time' },
-    { name: t('操作'), field: 'act' },
+    { name: t('操作'), field: 'act', disabled: true },
   ],
   checked: ['name', 'backend_name', 'method', 'path', 'plugin_count', 'docs', 'labels', 'updated_time', 'act'],
 };

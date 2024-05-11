@@ -4,6 +4,7 @@
     <bk-form-item
       :label="t('服务')"
       required
+      class="item-service"
     >
       <bk-select
         :input-search="false"
@@ -11,7 +12,16 @@
         v-model="backConfigData.id" @change="handleServiceChange">
         <bk-option v-for="item in servicesData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
+      <bk-button theme="primary" class="ml10" v-if="isEditService" @click="editService">
+        编辑服务
+      </bk-button>
     </bk-form-item>
+    <bk-alert
+      theme="error"
+      title="后端服务地址不允许为空，请更新"
+      class="table-warning"
+      v-if="isEditService"
+    />
     <bk-table
       v-if="backConfigData.id"
       class="table-layout"
@@ -136,17 +146,26 @@
       </div>
     </bk-form-item>
   </bk-form>
+
+  <addBackendService
+    :base="baseInfo"
+    :edit-id="backConfigData.id"
+    ref="addBackendServiceRef"
+    @done="handleServiceChange(backConfigData.id)"
+    @close="handleServiceChange(backConfigData.id)"
+  />
 </template>
 
 <script setup lang="tsx">
 import { ref, unref, watch, computed,  onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { cloneDeep } from 'lodash';
-
+import { Message } from 'bkui-vue';
 import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
 import { useCommon } from '../../../../store';
 import { useGetGlobalProperties } from '@/hooks';
 import mitt from '@/common/event-bus';
+import addBackendService from '@/views/backend-service/add.vue';
 
 const props = defineProps({
   detail: {
@@ -159,7 +178,7 @@ const backRef = ref(null);
 const frontPath = ref('');
 const { t } = useI18n();
 const common = useCommon();
-const backConfigData = ref({
+const backConfigData = ref<any>({
   id: '',
   config: {
     path: '',
@@ -167,6 +186,10 @@ const backConfigData = ref({
     match_subpath: false,
     timeout: 0
   },
+});
+const baseInfo = ref({
+  name: '',
+  description: '',
 });
 const methodData = ref(common.methodList);
 // 服务列表下拉框数据
@@ -185,6 +208,7 @@ const timeInputRef = ref(null)
 // 全局变量
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
+const addBackendServiceRef = ref(null);
 
 const rules = {
   'config.path': [
@@ -211,6 +235,18 @@ const formatDefaultTime = computed(() => {
     return ''
   }
 })
+
+const isEditService = computed(() => {
+  let flag = false;
+  for (let i = 0; i < servicesConfigs.value?.length; i++) {
+    const item = servicesConfigs.value[i];
+    if (!item?.hosts[0].host) {
+      flag = true;
+      break;
+    }
+  }
+  return flag;
+});
 
 const handleTimeOutTotal = (value: any[]) => {
   backConfigData.value.config.timeout = Number(value[0].timeout);
@@ -349,6 +385,18 @@ const handleServiceChange = async (backendId: number) => {
   [servicesConfigs.value, servicesConfigsStorage.value] = [cloneDeep(res.configs || []), cloneDeep(resStorage.configs || [])];
 };
 
+const editService = () => {
+  const service = servicesData.value?.filter((item: any) => item.id === backConfigData.value.id)[0];
+  if (service) {
+    baseInfo.value = {
+      name: service.name,
+      description: service.description,
+    };
+
+    addBackendServiceRef.value?.show();
+  }
+};
+
 // 校验路径
 const handleCheckPath = async () => {
   try {
@@ -359,7 +407,6 @@ const handleCheckPath = async () => {
     };
     const res = await backendsPathCheck(common.apigwId, params);
     servicesCheckData.value = res;
-    console.log('servicesCheckData', servicesCheckData.value);
   } catch (error) {
 
   }
@@ -416,7 +463,23 @@ const init = async () => {
 };
 
 const validate = async () => {
-  await backRef.value?.validate();
+  let isHost = true;
+  for (let i = 0; i < servicesConfigs.value?.length; i++) {
+    const item = servicesConfigs.value[i];
+    if (!item?.hosts[0]?.host) {
+      isHost = false;
+      break;
+    }
+  }
+  if (isHost) {
+    await backRef.value?.validate();
+  } else {
+    Message({
+      theme: 'warning',
+      message: '请先配置后端服务地址',
+    });
+    return Promise.reject('请先配置后端服务地址');
+  }
 };
 
 watch(
@@ -454,14 +517,28 @@ defineExpose({
     width: auto !important;
     // width: 700px !important;
   }
+  .table-warning {
+    max-width: 700px !important;
+    margin: 0 0 8px 150px;
+  }
 
   .public-switch {
     height: 32px;
   }
 
+  .item-service {
+    :deep(.bk-form-content) {
+      display: flex;
+    }
+  }
+
   .service,
   .method {
     max-width: 700px !important;
+  }
+  .service {
+    display: inline-block;
+    flex: 1;
   }
 
   .w700 {

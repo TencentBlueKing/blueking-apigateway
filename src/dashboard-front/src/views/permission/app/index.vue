@@ -98,7 +98,7 @@
 
     <!-- 主动授权sideslider -->
     <bk-sideslider
-      ext-cls="auth-sideslider" :title="authSliderConf.title" :width="800"
+      class="auth-sideslider" :title="authSliderConf.title" :width="800"
       v-model:isShow="authSliderConf.isShow" quick-close :before-close="handleBeforeClose" @hidden="handleHidden">
       <template #default>
         <p class="ag-span-title"> {{ t('你将对指定的蓝鲸应用添加访问资源的权限') }} </p>

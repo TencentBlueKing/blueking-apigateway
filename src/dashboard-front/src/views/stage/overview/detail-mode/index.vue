@@ -45,7 +45,7 @@
                     class="unrelease"
                     v-if="stageData.release.status === 'unreleased'"
                   >
-                    {{ t('尚未发布') }}
+                    --
                   </span>
                   <span v-else>{{ stageData.resource_version.version || '--' }}</span>
                 </div>
@@ -85,7 +85,14 @@
               v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
               {{ t('发布资源') }}
             </bk-button>
-            <bk-button v-else theme="primary" class="mr10" @click="handleRelease">
+            <bk-button
+              v-else
+              theme="primary"
+              class="mr10"
+              :disabled="!!stageData?.publish_validate_msg"
+              v-bk-tooltips="{ content: t(stageData?.publish_validate_msg),
+                               disabled: !stageData?.publish_validate_msg }"
+              @click="handleRelease">
               {{ t('发布资源') }}
             </bk-button>
             <bk-button
@@ -224,6 +231,7 @@ const stageData: any = computed(() => {
     },
     resource_version: '',
     new_resource_version: '',
+    publish_validate_msg: '',
   };
 });
 
@@ -380,6 +388,7 @@ const basicInfoData = ref<BasicInfoParams>({
   created_by: '',
   created_time: '',
   public_key: '',
+  publish_validate_msg: '',
   maintainers: [],
   developers: [],
   is_public: true,

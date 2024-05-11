@@ -1355,7 +1355,11 @@ const lang: ILANG = {
   '请输入 SDK 版本号': ['Please enter the SDK version number'],
   'SDK仅包含公开资源，生成后会上传到pypi源或bkrepo': ['The SDK only includes public resources, and will be uploaded to the PyPI or BKRepo source after generation'],
   '生成语言': ['Generation language'],
-
+  '编辑后端服务': ['Edit back-end services'],
+  '去查看发布记录': ['Go to the release record'],
+  '后端服务内容保存成功，正在发布到对应的环境': ['The back-end service content is saved successfully and is being published to the corresponding environment'],
+  '当前后端服务（{name}）已绑定以下 {num} 个环境，所有修改都将发布到这些环境中：{names}': ['The current backend service ({name}) has bound the following {num} environments to which all changes will be published: {names}'],
+  '网关环境【prod】中的配置【后端服务地址】不合法。请在网关 `后端服务` 中进行配置。': ['The back-end service address configured in gateway environment prod is invalid. Please configure in Gateway back-end services.'],
   '最大 300s': ['Maximum 300s'],
   '恢复初始值': ['Reset to default'],
   '请输入超时时间': ['Please enter the timeout period'],
@@ -1410,6 +1414,8 @@ const lang: ILANG = {
   '修改标签成功': ['Label modified successfully'],
   '标签修改成功': ['Label modified successfully'],
   '删除标签成功': ['Label deleted successfully'],
+  '--': ['--'],
+  '蓝鲸应用认证，用户认证': ['BlueKing app authentication, User Verified'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
